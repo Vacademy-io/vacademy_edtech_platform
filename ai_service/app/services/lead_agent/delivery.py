@@ -17,7 +17,7 @@ import re
 from typing import Any, Dict, List, Optional, Tuple
 from urllib.parse import urlparse
 
-from . import admin_core, billing, engine_api, pacing, store
+from . import admin_core, billing, dedupe, engine_api, pacing, store
 from . import db as ladb
 from .research import last10
 
@@ -248,12 +248,13 @@ MAX_DELIVERY_ATTEMPTS = 5
 CREATED_STATUSES = ("CREATED", "ALREADY_CREATED")   # bulk-intake is idempotent on external_id
 
 
-def _prepare(agent: Dict[str, Any], want: int, day, quota: int) -> Dict[str, Any]:
-    """Hold up to `want` APPROVED candidates and take as many of today's delivery
-    slots (atomically, lead_agent_day.delivered); held candidates without a slot
-    are let go again."""
+def _prepare(agent: Dict[str, Any], want: int, day, quota: int,
+             only_ids: Optional[List[str]] = None) -> Dict[str, Any]:
+    """Hold up to `want` APPROVED candidates (of only_ids, when given) and take as many of
+    today's delivery slots (atomically, lead_agent_day.delivered); held candidates without a
+    slot are let go again."""
     with ladb.session() as db:
-        picked = store.claim_approved(db, agent["id"], want)
+        picked = store.claim_approved(db, agent["id"], want, ids=only_ids)
         granted = store.reserve_deliveries(db, agent["id"], day, len(picked), quota)
         for extra in picked[granted:]:
             store.set_candidate(db, extra["id"], expect=["APPROVED"], not_before="now()")
@@ -311,23 +312,28 @@ def _uncharged(agent_id: str) -> List[Dict[str, Any]]:
         return [c for c in (store.get_candidate(db, i) for i in ids) if c]
 
 
-async def deliver(agent: Dict[str, Any], *, now=None) -> Dict[str, int]:
-    """One delivery pass for an agent. Returns counts."""
+async def deliver(agent: Dict[str, Any], *, now=None, ignore_window: bool = False,
+                  only_ids: Optional[List[str]] = None) -> Dict[str, int]:
+    """One delivery pass for an agent. Returns counts. ignore_window / only_ids: an admin's Sync
+    now, which delivers outside the window too, all approved leads or the ones picked (the daily
+    quota and the monthly credit cap still apply)."""
     out = {"delivered": 0, "skipped": 0, "failed": 0}
     # charges that were not settled earlier (same idempotency key; charged_at marks settled)
     for cand in await asyncio.to_thread(_uncharged, agent["id"]):
         await asyncio.to_thread(billing.charge, cand, agent)
-    if not pacing.in_window(agent.get("window_json"), now):
+    if not ignore_window and not pacing.in_window(agent.get("window_json"), now):
         return out
     quota = int(agent.get("daily_quota") or 0)
     want = quota
     cap_room = await asyncio.to_thread(billing.cap_room, agent)
     if cap_room is not None:
         want = min(want, cap_room)
+    if only_ids is not None:
+        want = min(want, len(only_ids))
     if want <= 0:
         return out
     day = pacing.agent_day(agent.get("window_json"), now)
-    prep = await asyncio.to_thread(_prepare, agent, want, day, quota)
+    prep = await asyncio.to_thread(_prepare, agent, want, day, quota, only_ids)
     unused = 0          # reserved slots not turned into a delivered lead
 
     async def give_back(n: int = 1) -> None:
@@ -356,9 +362,10 @@ async def deliver(agent: Dict[str, Any], *, now=None) -> Dict[str, int]:
 
         if fresh_rows:
             try:
+                # Compared as research's check before the AI step and dedupe compare (dedupe.phone_key / email_key).
                 found = await admin_core.existing_contacts(
-                    agent["institute_id"], [p for p in (last10(r.get("mobile")) for r in fresh_rows) if p],
-                    [r["email"].lower() for r in fresh_rows if r.get("email")])
+                    agent["institute_id"], [p for p in (dedupe.phone_key(r.get("mobile")) for r in fresh_rows) if p],
+                    [dedupe.email_key(r["email"]) for r in fresh_rows if r.get("email")])
             except admin_core.AdminCoreError as exc:
                 logger.warning("lead agent: existing-contacts failed for agent %s: %s", agent["id"], exc)
                 for r in fresh_rows:
@@ -367,11 +374,12 @@ async def deliver(agent: Dict[str, Any], *, now=None) -> Dict[str, int]:
                     await give_back()
                 fresh_rows = []
                 found = {}
-            phones, emails = set(found.get("phones") or []), set(found.get("emails") or [])
+            phones = {dedupe.phone_key(p) or p for p in found.get("phones") or []}
+            emails = {dedupe.email_key(e) for e in found.get("emails") or []}
             keep = []
             for r in fresh_rows:
-                if (r.get("mobile") and last10(r["mobile"]) in phones) or (
-                        r.get("email") and r["email"].lower() in emails):
+                if (r.get("mobile") and dedupe.phone_key(r["mobile"]) in phones) or (
+                        r.get("email") and dedupe.email_key(r["email"]) in emails):
                     await asyncio.to_thread(_skip, r["external_id"], "Already in your leads (same phone or email)")
                     out["skipped"] += 1
                     await give_back()

@@ -73,6 +73,8 @@ export function isReportEndpointMissing(error: unknown): boolean {
 export interface SourcePerformanceRow {
     /** WEBSITE / GOOGLE_ADS / … ('UNKNOWN' when untagged); null on the totals row. */
     source_type: string | null;
+    /** Set when source_type is the leads' campaign type. */
+    campaign_type?: string | null;
     leads: number;
     connected_leads: number;
     interested: number;

@@ -82,6 +82,7 @@
         "summaryHide": "Masquer le résumé"
     },
     "chips": {
+        "tierUnclassified": "Non classé",
         "search": "Recherche : {{query}}",
         "audience": "Audience : {{names}}",
         "campaignType": "{{term}}: {{types}}",

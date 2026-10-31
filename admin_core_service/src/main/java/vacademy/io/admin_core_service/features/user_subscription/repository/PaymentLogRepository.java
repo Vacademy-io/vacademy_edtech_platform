@@ -302,6 +302,9 @@ public interface PaymentLogRepository extends JpaRepository<PaymentLog, String> 
           AND (:noPaymentPlanFilter = true OR EXISTS (
                 SELECT 1 FROM payment_plan fpp
                 WHERE fpp.id = up.plan_id AND fpp.name IN (:paymentPlanNames)))
+          AND (:noPaymentModeFilter = true
+                OR pl.payment_mode IN (:paymentModes)
+                OR CONCAT(pl.payment_mode, '|', pl.payment_sub_mode) IN (:paymentModes))
           AND NOT EXISTS (
                 SELECT 1 FROM package_session_learner_invitation_to_payment_option psli_int
                 WHERE psli_int.enroll_invite_id = ei.id
@@ -345,6 +348,9 @@ public interface PaymentLogRepository extends JpaRepository<PaymentLog, String> 
         JOIN invoice i ON iplm.invoice_id = i.id
         WHERE :includeInvoiceLogs = true
           AND :noPaymentPlanFilter = true
+          AND (:noPaymentModeFilter = true
+                OR pl.payment_mode IN (:paymentModes)
+                OR CONCAT(pl.payment_mode, '|', pl.payment_sub_mode) IN (:paymentModes))
           -- Same batch rule as the arm above. Without it a payment that happens to carry an
           -- invoice walked straight past the batch filter, so filtering by batch quietly showed
           -- rows from every other batch as well.
@@ -389,6 +395,7 @@ public interface PaymentLogRepository extends JpaRepository<PaymentLog, String> 
         FROM invoice i
         WHERE :includeUnpaidInvoices = true
           AND :noPaymentPlanFilter = true
+          AND :noPaymentModeFilter = true
           -- An invoice raised on its own belongs to no batch, so a batch filter cannot vouch
           -- for it and it drops out, exactly as it does under the plan filter.
           AND :noPackageSessionFilter = true
@@ -468,6 +475,8 @@ public interface PaymentLogRepository extends JpaRepository<PaymentLog, String> 
       @Param("searchPhoneDigits") String searchPhoneDigits,
       @Param("paymentPlanNames") List<String> paymentPlanNames,
       @Param("noPaymentPlanFilter") boolean noPaymentPlanFilter,
+      @Param("paymentModes") List<String> paymentModes,
+      @Param("noPaymentModeFilter") boolean noPaymentModeFilter,
       @Param("abandonedAfterHours") long abandonedAfterHours,
       @Param("noBucketFilter") boolean noBucketFilter,
       @Param("bucketPaid") boolean bucketPaid,
@@ -522,6 +531,8 @@ public interface PaymentLogRepository extends JpaRepository<PaymentLog, String> 
       @Param("searchPhoneDigits") String searchPhoneDigits,
       @Param("paymentPlanNames") List<String> paymentPlanNames,
       @Param("noPaymentPlanFilter") boolean noPaymentPlanFilter,
+      @Param("paymentModes") List<String> paymentModes,
+      @Param("noPaymentModeFilter") boolean noPaymentModeFilter,
       @Param("abandonedAfterHours") long abandonedAfterHours);
 
 
@@ -738,6 +749,41 @@ public interface PaymentLogRepository extends JpaRepository<PaymentLog, String> 
       ORDER BY pp.name
       """, nativeQuery = true)
   List<String> findDistinctPaymentPlanNames(@Param("instituteId") String instituteId);
+
+  /**
+   * Every (mode, option) pair the institute's payments were recorded with, plus one stored
+   * details blob per pair for its labels. Feeds the payment-mode filter's dropdown, so a mode
+   * since removed from Settings stays filterable. Walks from the institute's invites and invoices
+   * down to their payments, so only offline-recorded rows of this institute are read.
+   */
+  @Query(value = """
+      SELECT m.payment_mode AS mode, m.payment_sub_mode AS subMode,
+             MAX(m.payment_details_json) AS detailsJson
+      FROM (
+        SELECT pl.payment_mode, pl.payment_sub_mode, pl.payment_details_json
+        FROM enroll_invite ei
+        JOIN user_plan up ON up.enroll_invite_id = ei.id
+        JOIN payment_log pl ON pl.user_plan_id = up.id
+        WHERE ei.institute_id = :instituteId AND pl.payment_mode IS NOT NULL
+        UNION ALL
+        SELECT pl.payment_mode, pl.payment_sub_mode, pl.payment_details_json
+        FROM invoice i
+        JOIN invoice_payment_log_mapping iplm ON iplm.invoice_id = i.id
+        JOIN payment_log pl ON pl.id = iplm.payment_log_id
+        WHERE i.institute_id = :instituteId AND pl.payment_mode IS NOT NULL
+      ) m
+      GROUP BY m.payment_mode, m.payment_sub_mode
+      ORDER BY m.payment_mode, m.payment_sub_mode
+      """, nativeQuery = true)
+  List<UsedPaymentModeProjection> findUsedPaymentModes(@Param("instituteId") String instituteId);
+
+  interface UsedPaymentModeProjection {
+    String getMode();
+
+    String getSubMode();
+
+    String getDetailsJson();
+  }
 
   /**
    * Counts this plan's payment logs created at/after {@code since} that have not failed.

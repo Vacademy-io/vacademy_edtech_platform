@@ -192,6 +192,33 @@ def phone_region(site_domain: str | None, country: str | None = None) -> str:
     return _TLD_REGION.get(tld) or _COUNTRY_REGION.get((country or "").strip().lower()) or DEFAULT_REGION
 
 
+# The countries the tables above know, by region code, for reasons in plain words ("IN" -> "India").
+_REGION_NAME = {region: name.title() for name, region in reversed(_COUNTRY_REGION.items())}
+
+
+def domain_region(site_domain: str | None) -> str | None:
+    """The country of a country-code domain (.in, .co.uk, .com.au), None for a generic one (.com, .org,
+    .io) or a country the table does not know: no evidence of where the organisation is."""
+    return _TLD_REGION.get((site_domain or "").rsplit(".", 1)[-1].lower())
+
+
+def country_region(country: str | None) -> str | None:
+    """A market's country as a region code ("India" -> "IN"), None when the table does not know it."""
+    return _COUNTRY_REGION.get(" ".join((country or "").split()).lower())
+
+
+def number_region(value: str | None) -> str | None:
+    """The country of a phone saved in international form ("+1 347-353-1469" -> "US"), None when that cannot
+    be told (no country code, a non-geographic or unreadable number)."""
+    region = _number_region(value or "") if (value or "").strip().startswith("+") else None
+    return region if region and region not in ("ZZ", "001") else None
+
+
+def region_name(region: str) -> str:
+    """A region's country name when the table knows it ("US" -> "United States"), else the code itself."""
+    return _REGION_NAME.get(region, region)
+
+
 @dataclass(frozen=True)
 class Contact:
     kind: str  # published_email | institute_phone | whatsapp | contact_form

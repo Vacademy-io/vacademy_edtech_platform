@@ -16,6 +16,7 @@ import {
     bulkDecideCandidates,
     createAgent,
     decideCandidate,
+    deliverAgentNow,
     getAgent,
     getAgentStats,
     getCandidate,
@@ -95,7 +96,7 @@ export const useApprovedWaiting = (agentId: string) =>
         refetchInterval: 60_000,
     });
 
-export const useCandidate =(candidateId: string, enabled: boolean) =>
+export const useCandidate = (candidateId: string, enabled: boolean) =>
     useQuery({
         queryKey: leadAgentKeys.candidate(candidateId),
         queryFn: () => getCandidate(candidateId),
@@ -167,6 +168,37 @@ export function useRunNow() {
     });
 }
 
+export function useDeliverNow(agentId: string) {
+    const qc = useQueryClient();
+    return useMutation({
+        mutationFn: (ids?: string[]) => deliverAgentNow(agentId, ids),
+        onSuccess: (r) => {
+            const done = [
+                `${r.delivered} delivered to the lead list`,
+                r.skipped ? `${r.skipped} skipped (already a lead or suppressed)` : '',
+                r.failed ? `${r.failed} failed, will retry` : '',
+            ]
+                .filter(Boolean)
+                .join(', ');
+            if (r.waiting > 0 && r.quotaLeft === 0) {
+                toast.warning(
+                    `${done}. ${r.waiting} still waiting: today’s daily limit is reached. Raise it in Settings or they go out tomorrow.`
+                );
+            } else if (r.delivered + r.skipped + r.failed === 0 && r.waiting > 0) {
+                toast.warning(
+                    `Nothing delivered. ${r.waiting} still waiting: the monthly credit cap may be reached.`
+                );
+            } else {
+                toast.success(done);
+            }
+            void qc.invalidateQueries({ queryKey: leadAgentKeys.candidatesOf(agentId) });
+            void qc.invalidateQueries({ queryKey: leadAgentKeys.agents() });
+            void qc.invalidateQueries({ queryKey: leadAgentKeys.agent(agentId) });
+        },
+        onError: (e) => toast.error(apiErrorMessage(e, 'Could not sync the approved leads.')),
+    });
+}
+
 export function useDecideCandidate(agentId: string) {
     const qc = useQueryClient();
     return useMutation({
@@ -180,7 +212,7 @@ export function useDecideCandidate(agentId: string) {
             reason?: string;
         }) => decideCandidate(candidateId, action, reason),
         onSuccess: (_c, { action }) => {
-            toast.success(action === 'APPROVE' ? 'Approved. It will be delivered.' : 'Rejected');
+            toast.success(action === 'APPROVE' ? 'Approved. It is ready to send.' : 'Rejected');
             void qc.invalidateQueries({ queryKey: leadAgentKeys.candidatesOf(agentId) });
             void qc.invalidateQueries({ queryKey: leadAgentKeys.agents() });
         },

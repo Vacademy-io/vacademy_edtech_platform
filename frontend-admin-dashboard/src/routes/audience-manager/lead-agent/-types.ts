@@ -91,6 +91,13 @@ export interface Market {
 }
 
 export interface AgentGate {
+    /** The lowest score a lead can have and still be sent (0 to 100). Each day the agent sends the
+     * best leads at or above it, best first, up to the daily quota. */
+    send_score: number;
+    /** Every lead waits for the admin's approval before it is sent. */
+    require_approval: boolean;
+    /** No longer decide anything. Kept in the payload for agents saved before "rank and fill", and
+     * sent back untouched on save. */
     auto_score: number;
     review_score: number;
     min_contact: MinContact;

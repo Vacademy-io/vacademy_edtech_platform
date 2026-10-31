@@ -44,7 +44,9 @@ export function TurnOnDialog({
                         It will find and research organisations now, and deliver up to{' '}
                         {agent.daily_quota} leads a day into{' '}
                         {agent.audience_name ? `“${agent.audience_name}”` : 'its lead list'} inside
-                        the delivery window.
+                        the delivery window, best first
+                        {agent.gate.require_approval ? ', once you have approved them' : ''}. You
+                        are charged only for leads that are sent.
                     </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AutomationWarning />

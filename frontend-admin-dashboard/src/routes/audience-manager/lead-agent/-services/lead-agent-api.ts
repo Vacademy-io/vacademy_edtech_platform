@@ -186,6 +186,9 @@ const normalizeGate = (raw: unknown): AgentGate => {
     const minContact = str(g.min_contact);
     const effort = str(g.effort)?.toUpperCase() ?? null;
     return {
+        // Agents saved before "rank and fill" have neither: they read as the default bar, no approval.
+        send_score: num(g.send_score) ?? DEFAULT_GATE.send_score,
+        require_approval: g.require_approval === true,
         auto_score: num(g.auto_score) ?? DEFAULT_GATE.auto_score,
         review_score: num(g.review_score) ?? DEFAULT_GATE.review_score,
         min_contact:
@@ -464,6 +467,33 @@ export async function runAgentNow(agentId: string): Promise<{ queued: boolean }>
         `${LEAD_AGENT_BASE}/agents/${encodeURIComponent(agentId)}/run-now`
     );
     return { queued: asObject(res.data).queued !== false };
+}
+
+export interface DeliverNowResult {
+    delivered: number;
+    skipped: number;
+    failed: number;
+    /** APPROVED leads still waiting after this pass. */
+    waiting: number;
+    /** Deliveries left in today's daily limit. */
+    quotaLeft: number;
+}
+
+/** Sync now: deliver the approved leads straight away (also while paused or outside the window):
+ * the ones in `ids`, or without ids the best-scored ones up to today's daily limit. */
+export async function deliverAgentNow(agentId: string, ids?: string[]): Promise<DeliverNowResult> {
+    const res = await authenticatedAxiosInstance.post(
+        `${LEAD_AGENT_BASE}/agents/${encodeURIComponent(agentId)}/deliver-now`,
+        ids?.length ? { ids } : {}
+    );
+    const d = asObject(res.data);
+    return {
+        delivered: num(d.delivered) ?? 0,
+        skipped: num(d.skipped) ?? 0,
+        failed: num(d.failed) ?? 0,
+        waiting: num(d.waiting) ?? 0,
+        quotaLeft: num(d.quota_left) ?? 0,
+    };
 }
 
 export async function getAgentStats(agentId: string, days = 14): Promise<AgentStatsDay[]> {

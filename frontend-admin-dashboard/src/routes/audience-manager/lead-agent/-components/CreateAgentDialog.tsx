@@ -50,7 +50,16 @@ function ReviewStep({ values, listName }: { values: AgentFormValues; listName: s
                 .join(' ')}`,
         ],
         ['Where it runs', MODE_LABEL[values.mode]],
-        ['Quality', `Auto ${values.auto_score} · review ${values.review_score}`],
+        [
+            'Minimum score to send',
+            Number.isFinite(values.send_score) ? String(values.send_score) : '—',
+        ],
+        [
+            'Approval',
+            values.require_approval
+                ? 'You approve each lead before it is sent'
+                : 'Not needed, the best leads are sent automatically',
+        ],
         ['Monthly credit cap', values.monthly_credit_cap || 'No cap'],
     ];
     return (

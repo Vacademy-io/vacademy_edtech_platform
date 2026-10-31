@@ -1,23 +1,30 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link } from '@tanstack/react-router';
-import { Check, Tray, X } from '@phosphor-icons/react';
+import { Check, PaperPlaneTilt, Tray, X } from '@phosphor-icons/react';
 import { MyButton } from '@/components/design-system/button';
 import { MyPagination } from '@/components/design-system/pagination';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Skeleton } from '@/components/ui/skeleton';
 import { EmptyState, ErrorState } from '@/routes/manage-pages/site-assistant/-components/TabStates';
 import type { CandidateStatus, CandidateStatusFilter, LeadAgent } from '../-types';
-import { useBulkDecide, useCandidates, useDecideCandidate } from '../-hooks/use-lead-agent';
+import {
+    useBulkDecide,
+    useCandidates,
+    useDecideCandidate,
+    useDeliverNow,
+} from '../-hooks/use-lead-agent';
 import { apiErrorMessage } from '../-services/lead-agent-api';
 import { CandidateCard } from './CandidateCard';
 import { RejectDialog } from './RejectDialog';
 
 export const PAGE_SIZE = 25;
 
-const EMPTY: Partial<Record<CandidateStatus, { title: string; body: string }>> = {
-    REVIEW: {
-        title: 'Nothing to review',
-        body: 'Leads that score between your review and auto-deliver scores wait here for one click.',
+type EmptyCopy = { title: string; body: string };
+
+const EMPTY: Partial<Record<CandidateStatus, EmptyCopy>> = {
+    APPROVED: {
+        title: 'No leads ready to send',
+        body: 'Leads that score at least your minimum score wait here until the agent sends them, best first, up to your daily quota.',
     },
     DELIVERED: {
         title: 'No leads delivered yet',
@@ -25,12 +32,22 @@ const EMPTY: Partial<Record<CandidateStatus, { title: string; body: string }>> =
     },
     REJECTED: {
         title: 'No rejected or skipped leads',
-        body: 'Leads that score too low, that you reject, or that are skipped (the same organisation as another lead, or already in your leads) are kept here. They are never delivered or charged.',
+        body: 'Leads that score below your minimum score to send, that lack a buying signal you require, that you reject, or that are skipped (the same organisation as another lead, or already in your leads) are kept here. They are never delivered or charged.',
     },
 };
 
+/** The approval queue only ever holds leads at or above the minimum score (lower ones are rejected):
+ * every one of them when approval is on, otherwise just those that need a person (possible
+ * duplicates, leads judged only from Google Maps). */
+const approvalEmpty = (requireApproval: boolean): EmptyCopy => ({
+    title: 'Nothing waiting for approval',
+    body: requireApproval
+        ? 'Leads that score at least your minimum score wait here for one click before they are sent. Approved leads are sent best first, up to your daily quota.'
+        : 'Leads that score at least your minimum score are sent automatically. Only the ones that need a person wait here: possible duplicates and leads judged only from Google Maps. To approve every lead first, turn on “Approve leads before they’re sent” in Settings.',
+});
+
 /** A paged list of candidates in one status (or several; the first picks the empty state). The REVIEW
- * list adds approve / reject and bulk actions. */
+ * list adds approve / reject and bulk actions; the APPROVED list, delivering the selected leads now. */
 export function CandidatesTab({
     agent,
     status,
@@ -45,11 +62,14 @@ export function CandidatesTab({
     const decide = useDecideCandidate(agent.id);
     const bulk = useBulkDecide(agent.id);
     const primary = typeof status === 'string' ? status : status[0];
+    const deliver = useDeliverNow(agent.id);
     const reviewing = primary === 'REVIEW';
+    const delivering = primary === 'APPROVED' && agent.status !== 'ARCHIVED';
+    const selectable = reviewing || delivering;
     const items = useMemo(() => query.data?.items ?? [], [query.data]);
     const total = query.data?.total ?? 0;
     const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
-    const busy = decide.isPending || bulk.isPending;
+    const busy = decide.isPending || bulk.isPending || deliver.isPending;
 
     // Selection only covers what is on screen.
     useEffect(() => {
@@ -128,7 +148,12 @@ export function CandidatesTab({
         );
     }
     if (items.length === 0) {
-        const empty = primary ? EMPTY[primary] : undefined;
+        const empty =
+            primary === 'REVIEW'
+                ? approvalEmpty(agent.gate.require_approval)
+                : primary
+                  ? EMPTY[primary]
+                  : undefined;
         return (
             <EmptyState
                 icon={<Tray className="size-8 text-neutral-400" />}
@@ -143,7 +168,7 @@ export function CandidatesTab({
 
     return (
         <div className="flex flex-col gap-4">
-            {reviewing && (
+            {selectable && (
                 <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-neutral-200 bg-neutral-50 px-4 py-2">
                     <label className="flex cursor-pointer items-center gap-2 text-body text-neutral-700">
                         <Checkbox
@@ -158,7 +183,23 @@ export function CandidatesTab({
                             ? `${selected.size} selected`
                             : 'Select all on this page'}
                     </label>
-                    {selected.size > 0 && (
+                    {delivering && selected.size > 0 && (
+                        <MyButton
+                            type="button"
+                            buttonType="primary"
+                            scale="small"
+                            disable={busy}
+                            onClick={() =>
+                                deliver.mutate([...selected], {
+                                    onSuccess: () => setSelected(new Set()),
+                                })
+                            }
+                        >
+                            <PaperPlaneTilt className="size-4" />{' '}
+                            {deliver.isPending ? 'Delivering…' : `Deliver ${selected.size}`}
+                        </MyButton>
+                    )}
+                    {reviewing && selected.size > 0 && (
                         <div className="flex gap-2">
                             <MyButton
                                 type="button"
@@ -191,13 +232,14 @@ export function CandidatesTab({
                     <CandidateCard
                         key={c.id}
                         candidate={c}
-                        selectable={reviewing}
+                        selectable={selectable}
                         selected={selected.has(c.id)}
                         onSelectedChange={(on) => toggle(c.id, on)}
                         onApprove={reviewing ? () => approve([c.id]) : undefined}
                         onReject={reviewing ? () => setRejectIds([c.id]) : undefined}
                         busy={busy}
                         listLink={listLink}
+                        sendScore={agent.gate.send_score}
                     />
                 ))}
             </div>

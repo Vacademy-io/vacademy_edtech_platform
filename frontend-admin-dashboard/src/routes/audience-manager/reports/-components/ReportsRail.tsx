@@ -7,7 +7,7 @@ const GROUPS: Array<[string, string[]]> = [
     ['campaigns', ['sources', 'utm']],
     ['calling', ['calling', 'lead-calls', 'call-intelligence']],
     ['team', ['activity', 'counsellors', 'conversions', 'manager']],
-    ['revenue', ['revenue', 'cohort', 'forecast']],
+    ['revenue', ['revenue', 'admissions', 'cohort', 'forecast']],
     ['custom', ['custom']],
 ];
 
@@ -27,6 +27,7 @@ const LABEL_KEY: Record<string, string> = {
     conversions: 'conversions',
     manager: 'manager',
     revenue: 'revenue',
+    admissions: 'admissions',
     cohort: 'cohort',
     forecast: 'forecast',
     custom: 'custom',

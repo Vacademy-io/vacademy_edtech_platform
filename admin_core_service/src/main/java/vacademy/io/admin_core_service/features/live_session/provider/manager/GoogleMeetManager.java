@@ -22,6 +22,7 @@ import vacademy.io.admin_core_service.features.live_session.provider.service.goo
 import vacademy.io.admin_core_service.features.live_session.provider.support.ScheduleConflicts;
 import vacademy.io.admin_core_service.features.live_session.repository.LiveSessionRepository;
 import vacademy.io.admin_core_service.features.live_session.repository.SessionScheduleRepository;
+import vacademy.io.admin_core_service.features.live_session.service.LiveSessionInstructorService;
 import vacademy.io.common.auth.dto.UserDTO;
 import vacademy.io.common.exceptions.VacademyException;
 import vacademy.io.common.meeting.dto.*;
@@ -31,8 +32,10 @@ import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.OffsetDateTime;
 import java.time.ZonedDateTime;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -70,6 +73,7 @@ public class GoogleMeetManager implements LiveSessionProviderStrategy {
     private final SessionScheduleRepository scheduleRepository;
     private final LiveSessionRepository sessionRepository;
     private final AuthService authService;
+    private final LiveSessionInstructorService instructorService;
 
     @Override
     public String getProviderName() {
@@ -169,9 +173,11 @@ public class GoogleMeetManager implements LiveSessionProviderStrategy {
         log.info("google.meet.create accountId={} space={} institute={}",
                 account.getId(), spaceName, instituteId);
 
-        // Make the class creator a co-host now, not at the first "Start as host". Google takes a
-        // few seconds to apply a new co-host, so one added right before Meet opens lands in the lobby.
-        addCreatorAsCohost(account, spaceName, request.getSessionId());
+        // Make the creator and the assigned teachers co-hosts now, not at the first "Start as host".
+        // Google takes a few seconds to apply a new co-host, so one added right before Meet opens
+        // joins as a plain participant (or waits in the lobby). Step 2 saves the instructors before
+        // the spaces are created, so they are already in the DB here.
+        addSessionCohosts(account, spaceName, request.getSessionId());
 
         return CreateMeetingResponseDTO.builder()
                 .providerMeetingId(spaceName)
@@ -537,36 +543,42 @@ public class GoogleMeetManager implements LiveSessionProviderStrategy {
         }
     }
 
-    /** Best-effort: a missing creator email or a Google error never fails the class creation. */
-    private void addCreatorAsCohost(GoogleAccount account, String spaceName, String sessionId) {
+    /** Best-effort: a missing email or a Google error never fails the class creation. */
+    private void addSessionCohosts(GoogleAccount account, String spaceName, String sessionId) {
         if (sessionId == null) return;
         try {
-            String creatorId = sessionRepository.findById(sessionId)
-                    .map(LiveSession::getCreatedByUserId)
-                    .orElse(null);
-            String email = lookupUserEmail(creatorId);
-            CohostResult result = ensureCohost(account, spaceName, email);
-            log.info("google.meet.create.cohost space={} creator={} result={}", spaceName, creatorId, result);
+            for (String email : sessionCohostEmails(sessionId)) {
+                CohostResult result = ensureCohost(account, spaceName, email);
+                log.info("google.meet.create.cohost space={} sessionId={} result={}", spaceName, sessionId, result);
+            }
         } catch (Exception e) {
             log.warn("google.meet.create.cohost.fail space={} reason={}", spaceName, e.getMessage());
         }
     }
 
     /**
-     * Login email from auth_service. Users live in the auth_service DB, not admin_core's, and the
-     * request token never carries the email.
+     * Login emails of everyone who presses "Start as host" on this class: the assigned instructors
+     * (or the creator when none are assigned) plus the creator. Emails come from auth_service: users
+     * live in its DB, not admin_core's, and the request token never carries the email.
      */
-    private String lookupUserEmail(String userId) {
-        if (userId == null || userId.isBlank()) return null;
+    public List<String> sessionCohostEmails(String sessionId) {
+        LiveSession session = sessionId == null ? null : sessionRepository.findById(sessionId).orElse(null);
+        if (session == null) return List.of();
+        Set<String> userIds = new LinkedHashSet<>(instructorService.getEffectiveInstructorUserIds(session));
+        if (session.getCreatedByUserId() != null && !session.getCreatedByUserId().isBlank()) {
+            userIds.add(session.getCreatedByUserId());
+        }
+        if (userIds.isEmpty()) return List.of();
         try {
-            return authService.getUsersFromAuthServiceByUserIds(List.of(userId)).stream()
+            return authService.getUsersFromAuthServiceByUserIds(new ArrayList<>(userIds)).stream()
                     .map(UserDTO::getEmail)
                     .filter(e -> e != null && !e.isBlank())
-                    .findFirst()
-                    .orElse(null);
+                    .map(String::trim)
+                    .distinct()
+                    .toList();
         } catch (Exception e) {
-            log.warn("google.meet email lookup failed userId={} reason={}", userId, e.getMessage());
-            return null;
+            log.warn("google.meet email lookup failed sessionId={} reason={}", sessionId, e.getMessage());
+            return List.of();
         }
     }
 

@@ -166,13 +166,16 @@ def _scored(score, flags, base=None):
             "has_intent": False, "reach_level": "likely"}
 
 
-def test_a_lead_judged_from_its_maps_listing_always_waits_for_review():
+def test_a_lead_judged_from_its_maps_listing_waits_for_review_at_or_above_the_send_bar():
     lead = {"contact_quality": {"level": "likely"}}
-    cfg = {"auto_score": 50, "review_score": 45, "min_contact": "likely"}
+    cfg = {"send_score": 25, "min_contact": "likely"}
     decision, reasons = gate(_scored(26, ["maps_only"]), lead, cfg)
     assert decision == "REVIEW" and "Judged from its Google Maps listing" in reasons[-1]
     assert gate(_scored(90, ["maps_only"]), lead, cfg)[0] == "REVIEW"  # never AUTO
     assert gate(_scored(26, ["maps_only", "no_contact"]), lead, cfg)[0] == "REJECT"  # a hard reject still wins
+    # below the bar it is rejected (rank and fill, 2026-10-30: nobody reviews in this funnel)
+    assert gate(_scored(26, ["maps_only"]), lead, {**cfg, "send_score": 50}) == (
+        "REJECT", ["Judged from its Google Maps listing only: score 26 is below the send bar (50)"])
 
 
 # ------------------------------------------------------------------------------------------ contact hunt

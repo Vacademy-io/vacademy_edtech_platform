@@ -203,6 +203,12 @@ export interface PaymentLogsResponse {
 export interface PaymentLogsRequest {
     /** Plan names to keep. Invoice rows carry no plan, so any value here drops them. */
     payment_plan_names?: string[];
+    /**
+     * Offline payment modes to keep: a mode code ("CASH") for every option under it, or
+     * "MODE|SUB_MODE" ("UPI|PHONEPE") for one option. Gateway payments and unpaid invoices carry
+     * no mode, so any value here drops them.
+     */
+    payment_modes?: string[];
     /** Which KPI tile the table is showing: total | paid | pending | abandoned | failed. */
     status_bucket?: string;
     institute_id: string;

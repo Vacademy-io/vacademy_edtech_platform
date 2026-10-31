@@ -64,6 +64,14 @@ public class PaymentLogFilterRequestDTO {
     private List<String> paymentPlanNames;
 
     /**
+     * Narrow to payments recorded with one of these offline payment modes (the institute's own
+     * modes from Settings, custom ones included). A token is a mode code ("CASH") matching every
+     * option under it, or "MODE|SUB_MODE" ("UPI|PHONEPE") for one option. Gateway payments and
+     * raised-but-unpaid invoices carry no mode, so any value here drops them.
+     */
+    private List<String> paymentModes;
+
+    /**
      * Which KPI tile the table is showing: total | paid | pending | abandoned | failed. Server-side
      * because "pending" absorbs NULL and unknown statuses, which no `payment_status IN (...)`
      * filter can express.

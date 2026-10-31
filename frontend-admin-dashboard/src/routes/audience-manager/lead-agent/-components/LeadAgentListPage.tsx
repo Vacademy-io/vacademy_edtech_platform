@@ -14,7 +14,7 @@ import { AgentStatusSwitch, WorkersOnline } from './AgentStatusControls';
 import { CreateAgentDialog } from './CreateAgentDialog';
 
 const WHAT_IT_DOES =
-    'A Lead Agent is attached to one lead list. It reads your brief (what you sell, who buys it and where), finds organisations on the web, reads their websites, scores how good a fit they are and finds a way to reach a decision maker. Strong leads go into the list every day, up to your daily limit and inside your working hours; borderline ones wait for your review. From there the list’s own automations take over.';
+    'A Lead Agent is attached to one lead list. It reads your brief (what you sell, who buys it and where), finds organisations on the web, reads their websites, scores how good a fit they are and finds a way to reach a decision maker. Every day the best leads go into the list, best first, up to your daily limit and inside your working hours. You can ask to approve leads before they are sent. From there the list’s own automations take over.';
 
 const Stat = ({ label, value }: { label: string; value: string }) => (
     <div className="flex flex-col">
@@ -51,8 +51,8 @@ function AgentCard({ agent }: { agent: LeadAgent }) {
                     <Stat
                         label={
                             agent.review_waiting !== undefined
-                                ? 'Waiting for review'
-                                : 'To review today'
+                                ? 'Waiting for approval'
+                                : 'To approve today'
                         }
                         value={review === undefined ? '—' : String(review)}
                     />

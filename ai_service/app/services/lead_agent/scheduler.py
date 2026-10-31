@@ -10,10 +10,11 @@ allowlist is empty.
     ACTIVE agents of allow-listed institutes ONE AT A TIME (tick_owner /
     tick_until, SKIP LOCKED, renewed between steps, released at the end; no
     second worker or run-now ticks an agent while its lease lives) and for each:
-    plan (cached weekly),
-    discover when the pipeline backlog is below 3 x the rest of today's quota,
-    fewer leads went to review today than that rest, and the wallet / monthly
-    cap allows; deliver inside the window. Once a day:
+    plan (cached weekly); judge the leads waiting in REVIEW again with the
+    agent's current gate (no AI; agents that need no approval); discover while
+    the pool of leads ready to send plus those on their way is short of
+    POOL_DAYS days of the quota, and the wallet / monthly cap allows; deliver
+    inside the window, best score first. Once a day:
     retention (expired lead_org_page rows, search cache older than 7 days).
   * research pool: up to lead_agent.max_concurrency candidates researched at
     once (READY claimed with SKIP LOCKED, 15-minute lease, 3 attempts -> FAILED).
@@ -27,9 +28,10 @@ import logging
 import socket
 import time
 import uuid
-from typing import List, Optional, Set
+from datetime import datetime, timezone
+from typing import Any, Dict, List, Optional, Set
 
-from . import billing, delivery, discovery, fetcher, flags, llm, pacing, planner, research, store
+from . import billing, delivery, discovery, engine_api, fetcher, flags, llm, pacing, planner, research, store
 from . import db as ladb
 
 logger = logging.getLogger(__name__)
@@ -41,7 +43,11 @@ FETCH_IDLE_S = 10
 FETCH_BUSY_S = 2
 FETCH_BATCH = 6
 RETENTION_EVERY_S = 24 * 3600
-BACKLOG_FACTOR = 3
+# Rank and fill (2026-10-30): discovery keeps this many days of the daily quota ready to send (or on its
+# way), so each day's delivery picks the best of a pool instead of whatever cleared a fixed bar.
+POOL_DAYS = 2
+# REVIEW leads judged again per tick (rejudge_waiting): no AI, a few hundred rows a minute at most.
+REJUDGE_BATCH = 200
 
 _TASKS: List[asyncio.Task] = []
 _running_research: Set[str] = set()
@@ -112,12 +118,101 @@ async def _keep_lease(agent_id: str) -> None:
         raise LeaseLost(agent_id)
 
 
-def _pipeline_state(agent) -> tuple:
-    day = pacing.agent_day(agent.get("window_json"))
+def needs_approval(agent: dict) -> bool:
+    """The agent sends no lead a person has not approved (gate_json.require_approval)."""
+    return bool((agent.get("gate_json") or {}).get("require_approval"))
+
+
+def _pool_state(agent: dict) -> Dict[str, int]:
     with ladb.session() as db:
-        today = store.get_day(db, agent["id"], day)
-        backlog = store.backlog(db, agent["id"])
-    return int(today.get("delivered") or 0), backlog, int(today.get("review") or 0)
+        return store.pool_counts(db, agent["id"])
+
+
+def pool_need(agent: dict, counts: Dict[str, int]) -> Dict[str, int]:
+    """How many candidates discovery should look for (rank and fill, 2026-10-30):
+
+      pool      = APPROVED leads not delivered yet (+ REVIEW when the agent needs approval: a person
+                  turns them into sendable leads)
+      in_flight = DISCOVERED / FETCHING / READY / RESEARCHING
+      target    = POOL_DAYS x daily_quota
+      need      = target - pool - in_flight (never below 0)
+
+    Today's deliveries do not enter it: once today's quota is sent, the pool still feeds the next days.
+    The old rule (discover while the backlog was under 3 x the rest of today's quota, and stop once
+    today's REVIEW count reached that rest) kept searching while leads piled up in a REVIEW queue nobody
+    worked on (2026-10-30: about 820 researched leads waiting; Voomsales 14 delivered, 214 in REVIEW)."""
+    quota = max(0, int(agent.get("daily_quota") or 0))
+    pool = int(counts.get("approved") or 0) + (int(counts.get("review") or 0) if needs_approval(agent) else 0)
+    in_flight = int(counts.get("in_flight") or 0)
+    target = POOL_DAYS * quota
+    return {"pool": pool, "in_flight": in_flight, "target": target, "need": max(0, target - pool - in_flight)}
+
+
+def _judgeable(scored: Any, lead: Any) -> bool:
+    return isinstance(scored, dict) and isinstance(lead, dict) and all(k in scored for k in store.GATE_INPUTS)
+
+
+def rejudge_waiting(db, agent: dict, limit: int = REJUDGE_BATCH) -> Dict[str, int]:
+    """The agent's leads waiting in REVIEW, judged again from what research stored (score_json,
+    lead_json) with the agent's current gate: no AI, no search. AUTO -> APPROVED (delivered with the
+    next ones, best score first), REJECT -> REJECTED with the gate's reasons; a lead the gate still
+    sends to a person stays in REVIEW. Clears the queue the old two-bar gate left (2026-10-30: about
+    820 researched leads in REVIEW, which nobody works on: the funnel after delivery is automated).
+    A Maps-only lead or a possible duplicate below the send bar, or failing the list's min_contact /
+    require_intent, is REJECTED too; otherwise it stays for a person.
+
+    Only for an agent that needs no approval. Never a lead a person decided, nor a row missing what the
+    gate reads (store.review_to_rejudge picks the rows), at most `limit` per call. A row the gate keeps
+    (or cannot read) is stamped with the gate's fingerprint (store.mark_rejudged) and not read again
+    until the gate changes, so kept rows never crowd new ones out of the batch. Each move and each stamp
+    expects REVIEW, so a person deciding at the same moment wins, and a second run finds nothing more to
+    do. Returns {"approved", "rejected"}.
+
+    lead_agent_day counters are not rewritten: they record what research decided on that day (a lead
+    that went to REVIEW on Monday stays in Monday's review count), not where the lead is now."""
+    out = {"approved": 0, "rejected": 0}
+    gate_cfg = agent.get("gate_json") or {}
+    if needs_approval(agent):
+        return out
+    when = datetime.now(timezone.utc).isoformat(timespec="seconds")
+    fingerprint = engine_api.gate_fingerprint(gate_cfg)
+    kept: List[str] = []
+    for cand in store.review_to_rejudge(db, agent["id"], limit=limit, fingerprint=fingerprint):
+        decision = _rejudge_one(db, cand, gate_cfg, when)
+        if decision in ("AUTO", "REJECT"):
+            out["approved" if decision == "AUTO" else "rejected"] += 1
+        elif decision is None:
+            kept.append(cand["id"])
+    store.mark_rejudged(db, kept, fingerprint)
+    return out
+
+
+def _rejudge_one(db, cand: dict, gate_cfg: dict, when: str) -> Optional[str]:
+    """One REVIEW row gated again: "AUTO" / "REJECT" when it moved, "" when a person decided it meanwhile
+    (the move expected REVIEW), None when it stays in REVIEW (the gate keeps it, or cannot read it)."""
+    scored, lead = cand.get("score_json"), cand.get("lead_json")
+    if not _judgeable(scored, lead):
+        return None
+    try:
+        decision, reasons = engine_api.gate(scored, lead, gate_cfg)
+    except Exception:  # noqa: BLE001 - a row the gate cannot read stays in REVIEW for a person
+        logger.warning("lead agent: could not judge REVIEW lead %s again", cand["id"], exc_info=True)
+        return None
+    score_json = {**scored, "gate_reasons": list(reasons), "rejudged_at": when}
+    if decision == "AUTO":
+        moved = store.set_candidate(db, cand["id"], expect=["REVIEW"], status="APPROVED", decision="AUTO",
+                                    score_json=score_json, not_before="now()")
+    elif decision == "REJECT":
+        moved = store.set_candidate(db, cand["id"], expect=["REVIEW"], status="REJECTED", decision="REJECT",
+                                    score_json=score_json, reject_reason="; ".join(reasons)[:300])
+    else:
+        return None
+    return decision if moved is not None else ""
+
+
+def _rejudge(agent: dict) -> Dict[str, int]:
+    with ladb.session() as db:
+        return rejudge_waiting(db, agent)
 
 
 def _set_error(agent_id: str, error: Optional[str]) -> None:
@@ -126,7 +221,7 @@ def _set_error(agent_id: str, error: Optional[str]) -> None:
 
 
 async def tick_agent(agent: dict) -> dict:
-    """Plan, discover and deliver for one agent. Returns a summary."""
+    """Plan, re-judge the REVIEW queue, discover and deliver for one agent. Returns a summary."""
     summary: dict = {"agent_id": agent["id"]}
     day = pacing.agent_day(agent.get("window_json"))
     ctx = llm.CallContext(institute_id=agent["institute_id"], agent_id=agent["id"], day=day)
@@ -137,20 +232,27 @@ async def tick_agent(agent: dict) -> dict:
         plan = None
     await asyncio.to_thread(discovery.schedule_discovered, agent)
     await _keep_lease(agent["id"])
+    if not needs_approval(agent):
+        # Before pacing and delivery: what the gate passes now counts toward the pool and goes out today.
+        try:
+            summary["rejudged"] = await asyncio.to_thread(_rejudge, agent)
+        except Exception as exc:  # noqa: BLE001 - never in the way of discovery and delivery
+            logger.exception("lead agent: re-judging the REVIEW queue of %s failed", agent["id"])
+            summary["rejudged"] = {"error": f"{type(exc).__name__}: {str(exc)[:200]}"}
     if plan:
-        delivered, backlog, sent_to_review = await asyncio.to_thread(_pipeline_state, agent)
-        room = max(0, int(agent.get("daily_quota") or 0) - delivered)
-        summary.update(room=room, backlog=backlog, review=sent_to_review)
-        if room > 0 and sent_to_review >= room:
-            # Today the gate already sent a person as many leads as are left of today's quota; more
-            # searching would only grow that queue (2026-10-27: 21 of the first 23 delivered leads
-            # came from it). Counted per day, so a queue nobody works on cannot stop the agent for good.
-            summary["discovery"] = {"skipped": "review queue covers today"}
-        elif room > 0 and backlog < BACKLOG_FACTOR * room:
-            ok, why = await asyncio.to_thread(billing.affordable, agent, room)
+        pace = pool_need(agent, await asyncio.to_thread(_pool_state, agent))
+        summary.update(pace)
+        if pace["need"] <= 0:
+            summary["discovery"] = {"skipped": "pool full"}
+        else:
+            want = min(pace["need"], discovery.MAX_CANDIDATES_PER_ROUND)
+            # The wallet must pay for the leads this round looks for (each may be delivered and charged),
+            # but never for more than one day's quota: a wallet that pays for today is enough to search.
+            leads = min(want, max(1, int(agent.get("daily_quota") or 0)))
+            ok, why = await asyncio.to_thread(billing.affordable, agent, leads)
             if ok:
-                try:
-                    summary["discovery"] = await discovery.run_round(agent, plan, BACKLOG_FACTOR * room - backlog)
+                try:  # run_round keeps the daily round limit (discovery.round_limit)
+                    summary["discovery"] = await discovery.run_round(agent, plan, want)
                 except (llm.LLMUnavailable,) as exc:
                     await asyncio.to_thread(_set_error, agent["id"], f"Discovery paused: {exc}")
             else:
@@ -329,4 +431,4 @@ async def stop_lead_agent_workers() -> None:
 
 
 __all__ = ["start_lead_agent_workers", "stop_lead_agent_workers", "tick_once", "tick_agent", "run_now",
-           "drain_research_once"]
+           "drain_research_once", "pool_need", "rejudge_waiting", "needs_approval"]

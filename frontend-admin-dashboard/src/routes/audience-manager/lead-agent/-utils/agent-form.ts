@@ -153,8 +153,16 @@ export const agentFormSchema = z
         end: z.string().regex(HHMM, 'Pick an end time'),
         days: z.array(z.number().int().min(1).max(7)).min(1, 'Pick at least one day'),
         mode: z.enum(['LOCAL', 'REMOTE', 'AUTO']),
-        auto_score: z.number().int().min(1, '1 to 100').max(100, '1 to 100'),
-        review_score: z.number().int().min(0, '0 to 100').max(100, '0 to 100'),
+        send_score: z
+            .number({ invalid_type_error: 'Enter a number from 0 to 100' })
+            .int('Whole numbers only')
+            .min(0, 'Enter a number from 0 to 100')
+            .max(100, 'Enter a number from 0 to 100'),
+        require_approval: z.boolean(),
+        /** Legacy: no field edits these. They carry an agent's saved values through a save untouched,
+         * so they are never validated (an old agent's pair must not block saving). */
+        auto_score: z.number(),
+        review_score: z.number(),
         min_contact: z.enum(['direct', 'likely', 'general']),
         require_intent: z.boolean(),
         auto_competitor_users: z.boolean(),
@@ -168,13 +176,6 @@ export const agentFormSchema = z
             ),
     })
     .superRefine((v, ctx) => {
-        if (v.review_score >= v.auto_score) {
-            ctx.addIssue({
-                code: z.ZodIssueCode.custom,
-                path: ['review_score'],
-                message: 'The review score must be below the auto-deliver score',
-            });
-        }
         if (v.start >= v.end) {
             ctx.addIssue({
                 code: z.ZodIssueCode.custom,
@@ -212,8 +213,8 @@ export const STEP_FIELDS: (keyof AgentFormValues)[][] = [
         'end',
         'days',
         'mode',
-        'auto_score',
-        'review_score',
+        'send_score',
+        'require_approval',
         'min_contact',
         'require_intent',
         'auto_competitor_users',
@@ -252,6 +253,8 @@ export function defaultFormValues(audienceId = ''): AgentFormValues {
         end: window.end,
         days: window.days,
         mode: 'AUTO',
+        send_score: DEFAULT_GATE.send_score,
+        require_approval: DEFAULT_GATE.require_approval,
         auto_score: DEFAULT_GATE.auto_score,
         review_score: DEFAULT_GATE.review_score,
         min_contact: DEFAULT_GATE.min_contact,
@@ -303,6 +306,8 @@ export function formValuesFromAgent(agent: LeadAgent): AgentFormValues {
         end: agent.window.end,
         days: agent.window.days,
         mode: agent.mode,
+        send_score: agent.gate.send_score,
+        require_approval: agent.gate.require_approval,
         auto_score: agent.gate.auto_score,
         review_score: agent.gate.review_score,
         min_contact: agent.gate.min_contact,
@@ -390,6 +395,9 @@ export function payloadFromForm(v: AgentFormValues): AgentPayload {
         monthly_credit_cap: v.monthly_credit_cap === '' ? null : Number(v.monthly_credit_cap),
         mode: v.mode,
         gate: {
+            send_score: v.send_score,
+            require_approval: v.require_approval,
+            // Untouched: they came from the agent (or the defaults) and no field edits them.
             auto_score: v.auto_score,
             review_score: v.review_score,
             min_contact: v.min_contact,

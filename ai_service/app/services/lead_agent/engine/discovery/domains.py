@@ -19,16 +19,18 @@ EXCLUDED_DOMAINS = frozenset({
     "getmyuni.com", "edumetrics.in", "urbanpro.com", "superprof.co.in", "yet5.com", "edufever.com",
     "eduvidya.com", "indiastudychannel.com", "schoolmykids.com", "edustoke.com", "zollege.in",
     "coachingselect.com", "studyguideindia.com", "indiaeducation.net", "targetstudy.com", "eduwar.com",
-    "jagranjosh.com", "embibe.com", "toppr.com", "vedantu.com",
+    "jagranjosh.com", "embibe.com", "toppr.com", "vedantu.com", "getcampusinfo.com",
     # business directories and marketplaces
     "indiamart.com", "tradeindia.com", "yellowpages.in", "asklaila.com", "grotal.com", "zaubacorp.com",
     "tofler.in", "mouthshut.com", "trustpilot.com", "magicbricks.com", "99acres.com", "nobroker.in",
+    "lyfskills.com",
     # jobs
     "naukri.com", "indeed.com", "glassdoor.com", "glassdoor.co.in", "ambitionbox.com", "foundit.in",
     "apna.co", "workindia.in", "internshala.com", "shine.com", "timesjobs.com", "monsterindia.com",
     "freshersworld.com", "jobhai.com", "hirect.in", "iimjobs.com", "hirist.tech", "cutshort.io", "wellfound.com",
     "jooble.org", "careerjet.co.in", "simplyhired.co.in", "schooljobsinindia.com", "teacheron.com",
-    "collegebatch.com", "quikr.com", "olx.in", "naukrigulf.com", "kitjob.in",
+    "collegebatch.com", "quikr.com", "olx.in", "naukrigulf.com", "kitjob.in", "freshersnow.com", "jobsaisle.com",
+    "academicjobs.com", "michaelpage.co.in", "michaelpage.com",
     # social, video, Q&A, encyclopedias, blogs
     "linkedin.com", "facebook.com", "instagram.com", "youtube.com", "twitter.com", "x.com", "threads.net",
     "pinterest.com", "quora.com", "reddit.com", "wikipedia.org", "medium.com", "blogspot.com",
@@ -43,9 +45,28 @@ EXCLUDED_DOMAINS = frozenset({
     "freepressjournal.in", "dainikbhaskar.com", "bhaskar.com", "patrika.com", "naidunia.com", "reuters.com",
     "bloomberg.com", "forbesindia.com", "khaleejtimes.com", "gulfnews.com", "thenationalnews.com", "arabianbusiness.com",
     "zawya.com", "bbc.co.uk", "bbc.com", "theguardian.com", "abc.net.au", "smh.com.au",
+    "rediff.com", "indianweb2.com", "e-pao.net", "pharmabiz.com", "healthcareasiamagazine.com", "ripublication.com",
     # press releases
     "prnewswire.com", "businesswire.com", "globenewswire.com", "einpresswire.com", "pib.gov.in", "newswire.com",
 })
+# Link shorteners, link-in-bio, form and company-data sites: a Google Maps "website" or a matched site
+# pointing at one is not the organisation's own site, and research read the service's home page instead.
+# Kept apart from EXCLUDED_DOMAINS so "bit", "is" or "wa" never count as a portal's name (is_portal_name):
+# "BIT" is an institute.
+SHARED_LINK_DOMAINS = frozenset({
+    "bit.ly", "tinyurl.com", "fb.me", "goo.gl", "g.page", "rb.gy", "cutt.ly", "rebrand.ly", "shorturl.at", "t.ly",
+    "is.gd", "linktr.ee", "wa.me", "jotform.com", "crunchbase.com", "datanyze.com", "revenuebase.ai",
+})
+# Domains on these suffixes are listings ("mysuru.directory").
+_LISTING_SUFFIXES = (".directory",)
+_NEVER_OWN = EXCLUDED_DOMAINS | SHARED_LINK_DOMAINS
+# 2026-10-30 audit of the 179 "Not the kind of organisation" rejects on prod: 34 were not about kind at
+# all, the pages read belonged to someone else. 22 of them were on a site added to the lists above (bit.ly
+# x3, fb.me, crunchbase.com, datanyze.com, revenuebase.ai; rediff.com x2, indianweb2.com, e-pao.net,
+# pharmabiz.com, healthcareasiamagazine.com, ripublication.com; freshersnow.com, jobsaisle.com,
+# academicjobs.com, michaelpage.co.in; mysuru.directory x2, getcampusinfo.com, lyfskills.com). The other 12
+# were the organisation's own domain showing someone else (gambling pages on a lapsed domain, a suspended
+# account, a redirect page): no domain list can catch those.
 
 
 def registered_domain(url: str) -> str | None:
@@ -68,7 +89,8 @@ def is_excluded(domain: str | None) -> bool:
     """Excluded sites and their subdomains (e.g. 'someone.blogspot.com')."""
     if domain is None:
         return True
-    return domain in EXCLUDED_DOMAINS or any(domain.endswith("." + d) for d in EXCLUDED_DOMAINS)
+    return (domain in _NEVER_OWN or any(domain.endswith("." + d) for d in _NEVER_OWN)
+            or domain.endswith(_LISTING_SUFFIXES))
 
 
 # 'shine', 'naukri', 'indeed'...: a signal whose 'organisation' is only one of these names is the portal itself.

@@ -49,6 +49,16 @@ def _extraction():
     })
 
 
+@pytest.fixture(autouse=True)
+def nothing_in_the_leads(monkeypatch):
+    """admin_core existing-contacts before research (test_la_spend.py covers it): nothing known yet."""
+    from app.services.lead_agent import admin_core
+
+    async def existing(institute_id, phones, emails):
+        return {"phones": [], "emails": []}
+    monkeypatch.setattr(admin_core, "existing_contacts", existing)
+
+
 @pytest.fixture
 def scripted(monkeypatch):
     calls = []
@@ -217,9 +227,10 @@ def _maps_contacts(la_db, cid):
 
 
 def _gate(la_db, agent, auto=70, review=0):
+    """The bar a lead must reach: send_score since rank and fill (2026-10-30), review_score before it."""
     with la_db() as db:
         store.update_agent(db, agent["id"], INSTITUTE, {"gate_json": {"auto_score": auto, "review_score": review,
-                                                                      "min_contact": "likely",
+                                                                      "send_score": review, "min_contact": "likely",
                                                                       "require_intent": False}})
         db.commit()
 
@@ -350,13 +361,16 @@ def test_an_unreadable_site_with_a_maps_phone_is_judged_from_the_listing_and_wai
     assert lead["fetch"]["pages_used"] == 0 and lead["fetch"]["maps_only"] is True
 
 
-def test_a_maps_only_lead_below_the_review_bar_still_waits_for_review(la_db, scripted):
-    agent = make_world(la_db, plan=PLAN)  # default bar 45: a listing alone scores below it
+def test_a_maps_only_lead_below_the_send_bar_is_rejected_saying_why(la_db, scripted):
+    # Rank and fill (2026-10-30, engine scoring.gate): a listing-only lead waits for a person only at or
+    # above the send bar; below it (default 50) it is rejected, the reason naming the listing.
+    agent = make_world(la_db, plan=PLAN)
     cand = _maps_candidate(la_db, agent, "dead.in", **UNREADABLE_MAPS)
     _claimed(la_db, cand)
-    assert asyncio.run(research.research_candidate(cand["id"])) == "REVIEW"
+    assert asyncio.run(research.research_candidate(cand["id"])) == "REJECTED"
     row = _row(la_db, cand["id"])
-    assert row["score"] < 45 and row["score_json"]["gate_reasons"][0].startswith(f"Score {row['score']} counts only")
+    assert scripted == [] and row["score"] < 50
+    assert row["reject_reason"].startswith(f"Judged from its Google Maps listing only: score {row['score']}")
 
 
 @pytest.mark.parametrize("maps, reason", [
@@ -417,7 +431,8 @@ def test_a_basic_agent_spends_no_extra_search(la_db, scripted, monkeypatch):
     monkeypatch.setattr(search_mod, "serper", lambda: Serper())
     agent = make_world(la_db, plan=PLAN)
     with la_db() as db:
-        store.update_agent(db, agent["id"], INSTITUTE, {"gate_json": {**research.DEFAULT_GATE, "effort": "BASIC"}})
+        store.update_agent(db, agent["id"], INSTITUTE,
+                           {"gate_json": {**engine_api.default_gate(), "effort": "BASIC"}})
         db.commit()
     cand = make_candidate(la_db, agent, "winnersinstitute.in", status="READY")
     _page(la_db, cand, "https://winnersinstitute.in/", "home", HELPLINE_HOME, has_form=False)

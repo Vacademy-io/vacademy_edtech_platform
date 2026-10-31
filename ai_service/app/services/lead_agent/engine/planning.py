@@ -182,9 +182,28 @@ def match_places(guided: dict[str, Any]) -> list[str] | None:
 
 
 def all_locations(guided: dict[str, Any]) -> list[str]:
+    """The parts of every location in one list (the plan's locations: discovery searches in the first one
+    when it is given no place). Joined, it reads as one place: use market_names for a prompt that judges
+    where an organisation is."""
     if worldwide_run(guided):
         return ["Worldwide"]
     return list(dict.fromkeys(part for loc in location_list(guided) for part in guided_locations(loc)))
+
+
+def market_names(markets: list[dict[str, Any]] | None) -> list[str]:
+    """One name per market, most specific part first ("Jaipur, Rajasthan, India"; "delhi, India"), as written.
+    Prod audit 2026-10-30: research showed all_locations joined, "Rajasthan, India, delhi", and the model
+    called Delhi colleges "outside the requested Rajasthan location" although Delhi was one of the markets."""
+    names: list[str] = []
+    for market in markets or []:
+        if not isinstance(market, dict):
+            continue
+        location = {k: " ".join(str(market.get(k) or "").split()) for k in ("city", "state", "country")}
+        if is_worldwide(location):
+            return ["Worldwide"]
+        if parts := guided_locations(location):
+            names.append(", ".join(parts))
+    return list(dict.fromkeys(names))
 
 
 # Measured costs with GLM 5.3 Flash: a web search (8 results) about $0.0014, reading one organisation

@@ -17,6 +17,7 @@ import vacademy.io.admin_core_service.features.live_session.provider.service.goo
 import vacademy.io.admin_core_service.features.live_session.provider.service.google.GoogleEventsSubscriptionService;
 import vacademy.io.admin_core_service.features.live_session.repository.LiveSessionRepository;
 import vacademy.io.admin_core_service.features.live_session.repository.SessionScheduleRepository;
+import vacademy.io.admin_core_service.features.live_session.service.LiveSessionInstructorService;
 import vacademy.io.common.auth.dto.UserDTO;
 import vacademy.io.common.exceptions.VacademyException;
 import vacademy.io.common.meeting.dto.CreateMeetingRequestDTO;
@@ -56,6 +57,7 @@ class GoogleMeetCreateFallbackTest {
     private final List<String> urls = new ArrayList<>();
     private final LiveSessionRepository sessions = mock(LiveSessionRepository.class);
     private final AuthService auth = mock(AuthService.class);
+    private final LiveSessionInstructorService instructors = mock(LiveSessionInstructorService.class);
     private GoogleAccount account;
 
     private GoogleMeetManager manager(boolean recordingEnabled) {
@@ -70,7 +72,7 @@ class GoogleMeetCreateFallbackTest {
         });
         return new GoogleMeetManager(store, tokens, mock(GoogleConferenceService.class),
                 mock(GoogleEventsSubscriptionService.class), web, mock(SessionScheduleRepository.class),
-                sessions, auth);
+                sessions, auth, instructors);
     }
 
     private void reply(HttpStatus status, String body) {
@@ -231,5 +233,29 @@ class GoogleMeetCreateFallbackTest {
         reply(HttpStatus.OK, OK);
         assertEquals("spaces/abc", m.createMeeting(requestForSession(), "inst-1").getProviderMeetingId());
         assertEquals(3, calls.get()); // no members call without an email
+    }
+
+    @Test
+    @DisplayName("assigned teacher is made co-host at create too, not only the creator")
+    void assignedTeacherAddedAsCohost() {
+        GoogleMeetManager m = manager(false);
+        LiveSession session = new LiveSession();
+        session.setCreatedByUserId("creator-1");
+        when(sessions.findById("ses-1")).thenReturn(Optional.of(session));
+        when(instructors.getEffectiveInstructorUserIds(session)).thenReturn(List.of("teacher-1"));
+        UserDTO teacher = new UserDTO();
+        teacher.setEmail("teacher@gmail.com");
+        UserDTO creator = new UserDTO();
+        creator.setEmail("admin@org.in");
+        when(auth.getUsersFromAuthServiceByUserIds(List.of("teacher-1", "creator-1")))
+                .thenReturn(List.of(teacher, creator));
+        reply(HttpStatus.OK, OK);
+        reply(HttpStatus.OK, "{}");
+        reply(HttpStatus.CONFLICT, "{}");
+
+        assertEquals("spaces/abc", m.createMeeting(requestForSession(), "inst-1").getProviderMeetingId());
+        assertEquals(3, calls.get());
+        assertEquals("https://meet.googleapis.com/v2/spaces/abc/members", urls.get(1));
+        assertEquals("https://meet.googleapis.com/v2/spaces/abc/members", urls.get(2));
     }
 }

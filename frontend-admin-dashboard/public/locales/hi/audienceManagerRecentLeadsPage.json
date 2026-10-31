@@ -81,6 +81,7 @@
         "summaryHide": "सारांश छिपाएँ"
     },
     "chips": {
+        "tierUnclassified": "अवर्गीकृत",
         "search": "खोज: {{query}}",
         "audience": "ऑडियंस: {{names}}",
         "campaignType": "{{term}}: {{types}}",

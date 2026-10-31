@@ -38,11 +38,12 @@ def _extraction(in_segment=True):
     })
 
 
-def _data(effort="STANDARD", home=HOME, discovery=None, review=45):
+def _data(effort="STANDARD", home=HOME, discovery=None, review=45, send=50):
     now = datetime.now(timezone.utc)
     agent = {"id": "a-1", "institute_id": "i-1", "mode": "REMOTE", "brief_json": BRIEF, "plan_json": PLAN,
              "markets_json": [{"country": "India", "city": "Indore"}],
-             "gate_json": {"auto_score": 70, "review_score": review, "min_contact": "likely", "effort": effort}}
+             "gate_json": {"send_score": send, "auto_score": 70, "review_score": review, "min_contact": "likely",
+                           "effort": effort}}
     page = {"url": "https://winnersinstitute.in/", "final_url": "https://winnersinstitute.in/", "access": "ok",
             "text": home, "links_json": [], "has_form": False, "page_type": "home", "fetched_at": now,
             "platform_hints_json": []}
@@ -130,7 +131,7 @@ def test_a_listing_without_a_website_needs_the_same_name_in_the_same_city():
 @pytest.mark.parametrize("why, data", [
     ("BASIC buys no search", _data(effort="BASIC")),
     ("found through the Maps lane already", _data(discovery={"query": "q", "maps": {**OURS, "phone": None}})),
-    ("cannot reach the review bar even with a contact", _data(review=95)),
+    ("cannot reach the send bar even with a contact", _data(send=95)),
 ])
 def test_no_maps_search_when_the_effort_or_the_lead_does_not_call_for_one(why, data):
     calls = Calls(maps_places=[OURS])
