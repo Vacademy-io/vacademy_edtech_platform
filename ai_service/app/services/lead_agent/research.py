@@ -10,7 +10,10 @@ Cheapest filter first:
      listing; helplines, toll-free, fax, template and other organisations' contacts left out) are looked
      up in the institute's leads (admin_core existing-contacts, as delivery does): one already there is
      SKIPPED "Already in your leads (same phone or email)" (prod 2026-10-30: 102 of 118 skips were found
-     only at delivery, after full research). A failed lookup never stops research: delivery checks again;
+     only at delivery, after full research). Any usable one counts, as in dedupe.py: a usable phone or email
+     two leads share means one organisation, and outreach would reach it twice; delivery checks only the
+     phone and email it sends because that is all its row holds. A failed lookup never stops research:
+     delivery checks again;
   2. the engine: LLM extraction (quotes checked against the pages) ->
      build_lead (contacts rated, stage; the Maps listing's phone confirms a
      website number or is added as one more) -> platform fingerprint + size
@@ -57,8 +60,6 @@ EXTRACT_MAX_TOKENS = 6000  # reasoning counts as output (llm.REASONING_EFFORT)
 LOOKUP_MAX_TOKENS = 3000  # ~1,500 of it can be reasoning
 LLM_RETRY_S = 600
 INVALID_RETRY_S = 1800
-DEFAULT_GATE = {"send_score": 50, "require_approval": False, "min_contact": "likely", "require_intent": False,
-                "auto_competitor_users": False}
 UNREADABLE = "No readable page (website could not be read)"
 MAPS_UNFIT = "Website unreadable and its Google Maps listing does not show the kind of organisation the brief targets"
 # delivery.py's note for a lead whose phone or email is already a contact of the institute
@@ -82,8 +83,14 @@ def brief_industries(plan: Dict[str, Any], brief: Dict[str, Any]) -> List[dict]:
 
 
 def industry_names(plan: Dict[str, Any], brief: Dict[str, Any]) -> List[str]:
-    names = [" ".join(str(i.get("name") or i.get("search_term") or "").split()) for i in brief_industries(plan, brief)]
-    return list(dict.fromkeys(n for n in names if n))
+    """The names the extraction prompt lists, read from the industries as discovery's selection prompt reads
+    them (engine discovery.kinds.industry_names)."""
+    return engine_api.industry_names(brief_industries(plan, brief))
+
+
+def gate_settings(agent: Dict[str, Any]) -> Dict[str, Any]:
+    """The agent's gate_json over the engine gate's defaults (one copy: engine scoring.DEFAULT_GATE)."""
+    return {**engine_api.default_gate(), **(agent.get("gate_json") or {})}
 
 
 def _load(candidate_id: str) -> Optional[Dict[str, Any]]:
@@ -113,7 +120,7 @@ def pipeline(data: Dict[str, Any], *, ask, search, mx=None, maps=None, web=None,
     cand, agent, org, pages, supp = data["cand"], data["agent"], data["org"], data["pages"], data["supp"]
     brief = agent.get("brief_json") or {}
     plan = agent.get("plan_json") or {}
-    gate_cfg = {**DEFAULT_GATE, **(agent.get("gate_json") or {})}
+    gate_cfg = gate_settings(agent)
     markets = agent.get("markets_json") or []
     country = (markets[0] or {}).get("country") if markets else None
     place = (plan.get("places") or [None])[0]
@@ -370,24 +377,21 @@ def usable_keys(contacts: List[Any], maps_phone: Optional[Dict[str, Any]], *, si
         items.append(item)
     if maps_phone:
         items.append(dict(maps_phone))
-    phones: Set[str] = set()
-    emails: Set[str] = set()
-    for item in items:
-        kind, value = item.get("kind"), str(item.get("value") or "").strip()
-        if kind not in (*PHONE_KINDS, "published_email") or not value:
-            continue
-        try:
-            tier, _why = engine_api.rate_contact(item, site_domain=site_domain, organisation=organisation,
-                                                 region=region)
-        except Exception:  # noqa: BLE001 - an unratable contact is simply not looked up
-            continue
-        if tier == "avoid":
-            continue
-        if kind in PHONE_KINDS and last10(value):
-            phones.add(last10(value))
-        elif kind == "published_email" and "@" in value:
-            emails.add(value.lower())
-    return phones, emails
+    # Compared as dedupe compares and delivery checks (dedupe.keys_of): one normaliser for all three.
+    return dedupe.keys_of(item for item in items
+                          if _tier(item, site_domain=site_domain, organisation=organisation, region=region)
+                          not in (None, "avoid"))
+
+
+def _tier(item: Dict[str, Any], *, site_domain: Optional[str], organisation: str, region: str) -> Optional[str]:
+    """A phone's or an email's tier before the AI step (engine contacts.rate_contact), None for any other
+    contact or one that cannot be rated: it is then simply not looked up."""
+    if item.get("kind") not in (*PHONE_KINDS, "published_email") or not str(item.get("value") or "").strip():
+        return None
+    try:
+        return engine_api.rate_contact(item, site_domain=site_domain, organisation=organisation, region=region)[0]
+    except Exception:  # noqa: BLE001 - an unratable contact is not looked up; research goes on
+        return None
 
 
 def _already_in_leads(known: KnownContacts, phones: Set[str],
@@ -401,8 +405,8 @@ def _already_in_leads(known: KnownContacts, phones: Set[str],
     except Exception as exc:  # noqa: BLE001 - fail open: an unreachable admin_core never stops research
         logger.warning("lead agent: existing-contacts check before research failed (%s); research continues", exc)
         return None
-    shared_phones = sorted(phones & {last10(p) or p for p in found.get("phones") or []})
-    shared_emails = sorted(emails & {str(e).lower() for e in found.get("emails") or []})
+    shared_phones = sorted(phones & {dedupe.phone_key(p) or p for p in found.get("phones") or []})
+    shared_emails = sorted(emails & {dedupe.email_key(e) for e in found.get("emails") or []})
     return (shared_phones, shared_emails) if shared_phones or shared_emails else None
 
 
@@ -437,7 +441,7 @@ def _dedupe(db, cand: Dict[str, Any], agent: Dict[str, Any], result: Dict[str, A
     except Exception:  # noqa: BLE001
         logger.exception("lead agent: duplicate check of %s failed; saved without it", cand["id"])
         return result
-    return dedupe.apply(result, match, {**DEFAULT_GATE, **(agent.get("gate_json") or {})})
+    return dedupe.apply(result, match, gate_settings(agent))
 
 
 def _save(cand: Dict[str, Any], agent: Dict[str, Any], result: Dict[str, Any]) -> Optional[str]:

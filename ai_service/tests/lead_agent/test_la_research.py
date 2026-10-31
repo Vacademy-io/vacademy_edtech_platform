@@ -431,7 +431,8 @@ def test_a_basic_agent_spends_no_extra_search(la_db, scripted, monkeypatch):
     monkeypatch.setattr(search_mod, "serper", lambda: Serper())
     agent = make_world(la_db, plan=PLAN)
     with la_db() as db:
-        store.update_agent(db, agent["id"], INSTITUTE, {"gate_json": {**research.DEFAULT_GATE, "effort": "BASIC"}})
+        store.update_agent(db, agent["id"], INSTITUTE,
+                           {"gate_json": {**engine_api.default_gate(), "effort": "BASIC"}})
         db.commit()
     cand = make_candidate(la_db, agent, "winnersinstitute.in", status="READY")
     _page(la_db, cand, "https://winnersinstitute.in/", "home", HELPLINE_HOME, has_form=False)
