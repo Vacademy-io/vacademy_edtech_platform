@@ -76,10 +76,12 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import vacademy.io.admin_core_service.features.live_activity.core.LiveActivityDedupeKeys;
 import vacademy.io.admin_core_service.features.live_activity.core.LiveActivityRecorder;
 import vacademy.io.admin_core_service.features.live_activity.dto.LiveActivityEvent;
@@ -505,12 +507,12 @@ public class LearnerEnrollRequestService {
 
         int lineQuantity = lineQuantity(extraData);
 
-        // Stock for a paid checkout is held before the gateway is called, so two learners
+        // Books picked at rent checkout are held before the gateway is called, so two learners
         // can't both pay for the last copy (409 "Only N left" when short). A multi-item v2
-        // order holds for the whole order up front (STOCK_HELD_BY_ORDER) and hands each item
-        // its holds in STOCK_HOLDS; free / admin enrollments take stock on activation instead.
+        // order (the storefront cart) holds for the whole order up front (STOCK_HELD_BY_ORDER)
+        // and hands each item its holds in STOCK_HOLDS; everything else takes stock on activation.
         List<StockHold> requestHolds = shouldHoldStockForRequest(enrollDTO, extraData)
-                ? holdStockForRequest(learnerEnrollRequestDTO.getInstituteId(), enrollDTO, lineQuantity)
+                ? holdStockForRequest(learnerEnrollRequestDTO.getInstituteId(), enrollDTO)
                 : List.of();
 
         UserPlan userPlan = createUserPlan(
@@ -1215,7 +1217,7 @@ public class LearnerEnrollRequestService {
     }
 
     /**
-     * A single-request (v1) paid checkout holds its own stock: payment is about to be
+     * A single-request (v1) paid checkout holds its rent picks: payment is about to be
      * initiated for it, nobody holds for it already (a v2 order holds for every item up
      * front), and it is not an admin / skipped-payment enrollment, which takes stock when the
      * plan activates. The phase-2 gateway confirmation never reaches here (it returned above).
@@ -1229,36 +1231,28 @@ public class LearnerEnrollRequestService {
     }
 
     /**
-     * Holds {@code quantity} of each enrolled package session (PURCHASE) and 1 of each book
-     * picked at rent checkout (RENT_PREFERENCE: not enrolled now, held until an admin assigns
-     * it). Unlimited sessions are skipped by StockHoldService. Throws 409 when short.
+     * Holds 1 of each book picked at rent checkout (RENT_PREFERENCE: not enrolled now, held
+     * until an admin assigns it). The package sessions the request enrolls are not held: only
+     * the storefront cart holds what it sells (the v2 order, and these rent picks), so a
+     * single-course checkout keeps its old behaviour — no 409, and its plan takes stock when it
+     * activates (flagged oversold if none is left). Unlimited sessions are skipped by
+     * StockHoldService. Throws 409 when a picked book is short.
      */
-    private List<StockHold> holdStockForRequest(String instituteId, LearnerPackageSessionsEnrollDTO enrollDTO,
-                                                int quantity) {
-        Map<String, Integer> purchase = new LinkedHashMap<>();
-        if (enrollDTO.getPackageSessionIds() != null) {
-            for (String packageSessionId : enrollDTO.getPackageSessionIds()) {
-                if (StringUtils.hasText(packageSessionId)) {
-                    purchase.putIfAbsent(packageSessionId, quantity);
-                }
-            }
-        }
+    private List<StockHold> holdStockForRequest(String instituteId, LearnerPackageSessionsEnrollDTO enrollDTO) {
+        Set<String> enrolled = enrollDTO.getPackageSessionIds() != null
+                ? new HashSet<>(enrollDTO.getPackageSessionIds())
+                : Set.of();
         Map<String, Integer> rentPreference = new LinkedHashMap<>();
         if (enrollDTO.getRequestedBookPackageSessionIds() != null) {
             for (String packageSessionId : enrollDTO.getRequestedBookPackageSessionIds()) {
-                if (StringUtils.hasText(packageSessionId) && !purchase.containsKey(packageSessionId)) {
+                if (StringUtils.hasText(packageSessionId) && !enrolled.contains(packageSessionId)) {
                     rentPreference.putIfAbsent(packageSessionId, 1);
                 }
             }
         }
-        List<StockHold> holds = new ArrayList<>();
-        if (!purchase.isEmpty()) {
-            holds.addAll(stockHoldService.hold(instituteId, purchase, StockHoldKind.PURCHASE));
-        }
-        if (!rentPreference.isEmpty()) {
-            holds.addAll(stockHoldService.hold(instituteId, rentPreference, StockHoldKind.RENT_PREFERENCE));
-        }
-        return holds;
+        return rentPreference.isEmpty()
+                ? List.of()
+                : stockHoldService.hold(instituteId, rentPreference, StockHoldKind.RENT_PREFERENCE);
     }
 
     /**
