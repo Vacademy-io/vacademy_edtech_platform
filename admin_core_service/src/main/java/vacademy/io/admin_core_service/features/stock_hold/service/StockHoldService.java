@@ -35,7 +35,7 @@ import java.util.TreeMap;
 import java.util.stream.Collectors;
 
 /**
- * Stock held while a learner pays, and every later movement of that stock (V633).
+ * Stock held while a learner pays, and every later movement of that stock (V635).
  *
  * <p>Only package sessions with {@code max_seats} set are stock-tracked; every method here
  * ignores unlimited sessions, so courses without stock never see a row.
@@ -388,7 +388,7 @@ public class StockHoldService {
      *
      * @param packageSessionIdOrNull limit to one session (de-assign), or null for the whole plan
      * @return true when the plan had any stock_hold row — the caller then skips its legacy
-     *         increment; false for plans created before V633, which keep today's behaviour.
+     *         increment; false for plans created before V635, which keep today's behaviour.
      */
     @Transactional
     public boolean restoreForPlan(String userPlanId, String packageSessionIdOrNull) {

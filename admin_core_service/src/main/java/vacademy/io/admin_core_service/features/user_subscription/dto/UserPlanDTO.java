@@ -23,7 +23,7 @@ public class UserPlanDTO {
     private String id;
     private String userId;
     private String paymentPlanId;
-    /** Copies bought on this line; null on DTOs built before V633 reads as 1. */
+    /** Copies bought on this line; null on DTOs built before V635 reads as 1. */
     private Integer quantity;
     private String planJson;
 

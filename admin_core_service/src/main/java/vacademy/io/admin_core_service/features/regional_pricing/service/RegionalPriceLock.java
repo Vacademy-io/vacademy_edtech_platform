@@ -40,7 +40,7 @@ public final class RegionalPriceLock {
 
     /**
      * Gross price of the whole line: {@link #listPrice} × {@code user_plan.quantity} (copies
-     * bought on this plan), before any discount. Quantity 1 — every plan before V633 and every
+     * bought on this plan), before any discount. Quantity 1 — every plan before V635 and every
      * subscription — returns exactly {@link #listPrice}.
      */
     public static double linePrice(UserPlan userPlan) {

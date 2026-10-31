@@ -558,7 +558,7 @@ public class BulkDeassignmentService {
             // Only give stock back when the slot is actually freed. A plan with stock_hold rows
             // gets back exactly what it took, once — cancelUserPlan above may already have
             // restored it, and restoreForPlan then just reports the plan as handled. Plans from
-            // before V633 have no rows and keep the old increment, by the plan's quantity.
+            // before V635 have no rows and keep the old increment, by the plan's quantity.
             if (slotFreed) {
                 boolean restored = StringUtils.hasText(userPlanId)
                         && stockHoldService.restoreForPlan(userPlanId, packageSessionId);

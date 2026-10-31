@@ -374,7 +374,7 @@ public class UserPlanService {
      * @param regionalQuote the viewer's regional price, resolved by a learner checkout
      *                      (RegionalPriceResolver). When present it is locked onto the UserPlan
      *                      so this and every later charge use it. Admin-side callers pass null.
-     * @param quantity      copies bought on this line (V633); below 1 is stored as 1. The plan's
+     * @param quantity      copies bought on this line (V635); below 1 is stored as 1. The plan's
      *                      price stays the UNIT price — the line total is unit price x quantity.
      */
     @Transactional
@@ -551,7 +551,7 @@ public class UserPlanService {
             double unitListPrice = regionallyPriced
                     ? saved.getRegionalPrice().doubleValue()
                     : paymentPlan.getActualPrice();
-            // The plan price is per copy; this line bought `quantity` copies (V633). The
+            // The plan price is per copy; this line bought `quantity` copies (V635). The
             // payment-initiation amount, when present, is already the line total.
             double planListPrice = unitListPrice * Math.max(1, saved.getQuantity() != null ? saved.getQuantity() : 1);
             double accrualAmount = planListPrice;
@@ -1699,7 +1699,7 @@ public class UserPlanService {
 
         // Terminate removes access, so the plan's stock goes back once (a returned book is on the
         // shelf again). A soft cancel keeps access until the plan ends — the item is still with
-        // the learner — so only holds still waiting for payment go back. Plans from before V633
+        // the learner — so only holds still waiting for payment go back. Plans from before V635
         // have no stock rows and keep today's behaviour. Never throws.
         try {
             if (force) {

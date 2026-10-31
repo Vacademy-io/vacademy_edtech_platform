@@ -167,7 +167,7 @@ private String id;
     private String regionalCountry;
 
     /**
-     * Copies bought on this line (V633), e.g. 4 copies of one book. The payment plan's
+     * Copies bought on this line (V635), e.g. 4 copies of one book. The payment plan's
      * actual_price stays the UNIT price; the line total is unit price x quantity.
      * Initialised to 1 so the NOT NULL column is never sent an explicit NULL on insert.
      */

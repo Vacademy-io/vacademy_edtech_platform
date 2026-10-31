@@ -1,6 +1,6 @@
 package vacademy.io.admin_core_service.features.stock_hold.enums;
 
-/** What a {@code stock_hold} row is for. See V633. */
+/** What a {@code stock_hold} row is for. See V635. */
 public enum StockHoldKind {
     /** Stock for the plan's own package session(s). */
     PURCHASE,

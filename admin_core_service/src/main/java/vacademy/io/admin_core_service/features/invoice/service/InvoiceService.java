@@ -864,7 +864,7 @@ public class InvoiceService {
      * The legacy multi-package flow records the whole order total on its gateway
      * log (see MultiPackageLearnerEnrollService), so summing those amounts
      * over-counts the invoice — hence that flow's lines are priced from the payment
-     * plan x quantity instead. Orders placed since V633 record each line's own
+     * plan x quantity instead. Orders placed since V635 record each line's own
      * total, which is that same figure, so the rule holds for both shapes and
      * stays keyed on the "MP" order id. A parent/child order allocates the real
      * total across its children, so there the log's own amount IS the truth, and
@@ -1035,7 +1035,7 @@ public class InvoiceService {
             // instead of paymentLog.getPaymentAmount() (which may contain the total gateway charge)
             BigDecimal paymentAmount;
             if (paymentLogs.size() > 1 && !perLogAmounts) {
-                // Multi-package ("MP") order: the gateway log of an order placed before V633
+                // Multi-package ("MP") order: the gateway log of an order placed before V635
                 // carries the whole order total, so the line has to be priced from the plan or
                 // the invoice multiplies. Newer orders record each line's own total, which is
                 // the same plan x quantity figure, so both shapes invoice alike.

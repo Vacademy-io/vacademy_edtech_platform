@@ -11,7 +11,7 @@ import org.hibernate.annotations.UuidGenerator;
 
 import java.util.Date;
 
-/** One stock movement a checkout made on a stock-tracked package session (V633). */
+/** One stock movement a checkout made on a stock-tracked package session (V635). */
 @AllArgsConstructor
 @NoArgsConstructor
 @Getter
