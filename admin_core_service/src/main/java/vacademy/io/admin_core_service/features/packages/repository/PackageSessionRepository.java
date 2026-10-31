@@ -602,4 +602,72 @@ public interface PackageSessionRepository extends JpaRepository<PackageSession, 
             "WHERE ps.id = :id")
     Optional<PackageSession> findByIdWithRelations(@Param("id") String id);
 
+    // ── Stock (max_seats / available_slots): one conditional UPDATE each, never read-then-save.
+    // Two payments for the same book used to read the same count and both save it (a lost
+    // update), or trip @Version and roll back the webhook. These bump version too, so a stale
+    // PackageSession entity saved later in the same transaction fails loudly instead of
+    // writing its old count back. No @Transactional: callers are transactional services, and a
+    // participating proxy would mark a webhook transaction rollback-only on any exception.
+
+    /** Takes :qty only when that much is left. 1 = taken; 0 = short, unlimited, or no such row. */
+    @Modifying
+    @Query(value = """
+            UPDATE package_session
+            SET available_slots = available_slots - :qty, version = COALESCE(version, 0) + 1
+            WHERE id = :id AND max_seats IS NOT NULL AND available_slots >= :qty
+            """, nativeQuery = true)
+    int takeAvailableSlots(@Param("id") String id, @Param("qty") int qty);
+
+    /** Gives :qty back, capped at max_seats. 0 = unlimited or no such row. */
+    @Modifying
+    @Query(value = """
+            UPDATE package_session
+            SET available_slots = LEAST(COALESCE(available_slots, 0) + :qty, max_seats),
+                version = COALESCE(version, 0) + 1
+            WHERE id = :id AND max_seats IS NOT NULL
+            """, nativeQuery = true)
+    int giveBackAvailableSlots(@Param("id") String id, @Param("qty") int qty);
+
+    /**
+     * The old decrementAvailability semantics in one statement: takes up to :qty and stops at 0
+     * instead of refusing. 0 = nothing left, unlimited, or no such row.
+     */
+    @Modifying
+    @Query(value = """
+            UPDATE package_session
+            SET available_slots = GREATEST(available_slots - :qty, 0), version = COALESCE(version, 0) + 1
+            WHERE id = :id AND max_seats IS NOT NULL AND available_slots > 0
+            """, nativeQuery = true)
+    int decrementAvailableSlotsClamped(@Param("id") String id, @Param("qty") int qty);
+
+    /** Stock and naming facts for stock holds, read fresh (a projection never comes from a stale entity). */
+    interface StockInfoProjection {
+        String getPackageSessionId();
+        Integer getMaxSeats();
+        Integer getAvailableSlots();
+        String getLevelId();
+        String getPackageId();
+        String getPackageName();
+        String getPackageType();
+    }
+
+    @Query("""
+            SELECT ps.id AS packageSessionId, ps.maxSeats AS maxSeats, ps.availableSlots AS availableSlots,
+                   l.id AS levelId, p.id AS packageId, p.packageName AS packageName, p.packageType AS packageType
+            FROM PackageSession ps
+            LEFT JOIN ps.level l
+            LEFT JOIN ps.packageEntity p
+            WHERE ps.id IN :ids
+            """)
+    List<StockInfoProjection> findStockInfoByIds(@Param("ids") java.util.Collection<String> ids);
+
+    /** The subset of {@code ids} whose package belongs to the institute. */
+    @Query(value = """
+            SELECT DISTINCT ps.id FROM package_session ps
+            JOIN package_institute pi ON pi.package_id = ps.package_id
+            WHERE ps.id IN (:ids) AND pi.institute_id = :instituteId
+            """, nativeQuery = true)
+    List<String> findIdsOfInstitute(@Param("ids") java.util.Collection<String> ids,
+                                    @Param("instituteId") String instituteId);
+
 }

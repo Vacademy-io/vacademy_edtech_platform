@@ -9,6 +9,7 @@ import { useTranslation } from "react-i18next";
 import { parseHtmlToString } from "@/lib/utils";
 import { getTerminology } from "@/components/common/layout-container/sidebar/utils";
 import { ContentTerms, SystemTerms } from "@/types/naming-settings";
+import { releaseStockHold } from "../-services/enroll-invite-services";
 
 // Razorpay rejects payment creation when `description` exceeds 255 characters
 // ("Could not validate payment create request due to: description: the length
@@ -21,6 +22,11 @@ import { ContentTerms, SystemTerms } from "@/types/naming-settings";
 // limit even though `String.length` says it fits.
 const RAZORPAY_DESCRIPTION_MAX_BYTES = 255;
 const RAZORPAY_DESCRIPTION_ELLIPSIS = "..."; // ASCII: 1 byte per char
+
+// How long the Razorpay window stays open, in seconds. Matches the 30 minutes
+// the server holds stock for an unpaid order, so a window left open never
+// outlives the hold it is paying for.
+const RAZORPAY_CHECKOUT_TIMEOUT_SECONDS = 1800;
 
 function toRazorpayDescription(raw: string, fallback: string): string {
   const text = parseHtmlToString(raw).replace(/\s+/g, " ").trim();
@@ -57,6 +63,10 @@ export interface RazorpayCheckoutFormRef {
     // make Razorpay Checkout open in mandate mode (UPI Autopay / card e-mandate).
     recurring?: number;
     customerId?: string;
+    // The payment log the enroll call created (its `payment_response.order_id`).
+    // When given, closing the window without paying releases the stock held
+    // for that order straight away instead of after the 30-minute expiry.
+    paymentLogId?: string;
   }) => void;
 }
 
@@ -156,6 +166,7 @@ export const RazorpayCheckoutForm = forwardRef<
         email: string;
         recurring?: number;
         customerId?: string;
+        paymentLogId?: string;
       }) => {
         if (!isScriptLoaded) {
           console.error("Razorpay script not loaded");
@@ -173,11 +184,16 @@ export const RazorpayCheckoutForm = forwardRef<
           return;
         }
 
+        // Set once Razorpay reports a payment, so a dismiss that follows the
+        // success never gives back stock the learner has just paid for.
+        let paymentSubmitted = false;
+
         const options: Record<string, unknown> = {
           key: orderDetails.razorpayKeyId,
           amount: orderDetails.amount,
           currency: orderDetails.currency,
           order_id: orderDetails.razorpayOrderId,
+          timeout: RAZORPAY_CHECKOUT_TIMEOUT_SECONDS,
           // Autopay: run Checkout in recurring/mandate mode so the learner
           // authorizes UPI Autopay / a card e-mandate (needs a customer_id + an
           // order created with a token block, both from the backend).
@@ -197,6 +213,7 @@ export const RazorpayCheckoutForm = forwardRef<
             razorpay_order_id: string;
             razorpay_signature: string;
           }) {
+            paymentSubmitted = true;
             if (onPaymentReady) {
               onPaymentReady({
                 razorpay_payment_id: response.razorpay_payment_id,
@@ -215,6 +232,11 @@ export const RazorpayCheckoutForm = forwardRef<
           },
           modal: {
             ondismiss: function () {
+              // Fire and forget: the release never throws and must not delay
+              // the cancelled handling below.
+              if (!paymentSubmitted) {
+                void releaseStockHold(orderDetails.paymentLogId);
+              }
               if (onError) {
                 onError(t("razorpayCheckout.paymentCancelled"));
               }

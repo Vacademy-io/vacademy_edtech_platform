@@ -171,6 +171,7 @@
         "title": "मेरे ऑर्डर",
         "empty": "कोई ऑर्डर नहीं मिला।",
         "unknownBook": "अज्ञात",
+        "quantity": "× {{quantity}}",
         "trackingExpected": "5-7 दिनों में अपेक्षित",
         "trackingSource": "ट्रैकिंग स्रोत",
         "paidAmount": "भुगतान {{amount}}",

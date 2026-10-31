@@ -79,7 +79,12 @@ export const CPO_OPEN_DUES_URL = `${BASE_URL}/admin-core-service/open/v1/fee/cpo
 export const CPO_OPEN_PAY_INSTALLMENTS_URL = `${BASE_URL}/admin-core-service/open/v1/fee/cpo-pay-installments`;
 export const CPO_OPEN_SCHEDULE_URL = `${BASE_URL}/admin-core-service/open/v1/fee/cpo-schedule`;
 export const CPO_ENROLL_WITHOUT_PAYMENT_URL = `${BASE_URL}/admin-core-service/v1/learner/enroll`;
+// GET ?paymentLogId=<id> → { payment_status: PAID | PAYMENT_PENDING | FAILED, … }. Also the status check
+// the storefront cart polls after Razorpay returns (the name's spelling is historical; keep it).
 export const PEYMENT_LOG_STATUS_URL = `${BASE_URL}/admin-core-service/open/v1/payment-log`;
+// POST ?paymentLogId=<id> → { released: n }. No login: puts back the stock held for an unpaid
+// order when the learner closes the gateway window (holds also expire on their own after 30 min).
+export const STOCK_HOLD_RELEASE_URL = `${BASE_URL}/admin-core-service/open/v1/stock-hold/release`;
 export const GET_PAYMENT_GATEWAY_DETAILS_URL = `${BASE_URL}/admin-core-service/open/v1/institute/payment-setting/payment-gateway-details`;
 export const ENROLLMENT_INVITE_URL = `${BASE_URL}/admin-core-service/open/learner/enroll-invite`;
 // learner/v1/enroll + Cashfree status – localhost:8072 in dev, BASE_URL in production (override via VITE_ENROLL_API_BASE_URL)

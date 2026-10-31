@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 import { PackageSessionInventory } from '../-types/inventory-types';
 import { UpdateCapacityDialog } from './update-capacity-dialog';
+import { HeldSlots } from './held-slots';
 import { useReserveSlot, useReleaseSlot } from '../-hooks/use-inventory-data';
 import { toast } from 'sonner';
 
@@ -212,12 +213,15 @@ export const InventoryCardView = ({ items, isLoading }: InventoryCardViewProps) 
                                                 Unlimited
                                             </Badge>
                                         ) : (
-                                            <span
-                                                className={`text-sm font-semibold ${availabilityInfo.textColor}`}
-                                            >
-                                                {item.availableSlots?.toLocaleString()} /{' '}
-                                                {item.maxSeats?.toLocaleString()}
-                                            </span>
+                                            <div className="flex flex-wrap items-center justify-end gap-2">
+                                                <span
+                                                    className={`text-sm font-semibold ${availabilityInfo.textColor}`}
+                                                >
+                                                    {item.availableSlots?.toLocaleString()} /{' '}
+                                                    {item.maxSeats?.toLocaleString()}
+                                                </span>
+                                                <HeldSlots item={item} />
+                                            </div>
                                         )}
                                     </div>
 

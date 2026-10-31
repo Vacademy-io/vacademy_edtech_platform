@@ -146,6 +146,11 @@ export interface UserPlan {
     enroll_invite: EnrollInviteData;
     payment_option: PaymentOption;
     payment_plan_dto: PaymentPlanDTO;
+    /**
+     * Copies of the item on this plan. `payment_plan_dto.actual_price` stays the price of ONE
+     * copy, so what the plan cost is actual_price x quantity. Absent on older servers: treat as 1.
+     */
+    quantity?: number;
     policy_details?: PolicyDetails[];
 }
 

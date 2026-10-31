@@ -412,13 +412,15 @@ public class PaymentLogService {
             // Two other shapes reach here and must keep quoting their own log, as
             // they always have:
             //   * a single-course invoice — one log, its amount IS the order;
-            //   * a legacy multi-package order, where every child log already
-            //     carries the whole order total (MultiPackageLearnerEnrollService
-            //     copies it onto each) and the invoice is priced from plan list
-            //     prices instead. Quoting the invoice there would report the
-            //     un-discounted sum as the amount paid.
-            // A parent/child order is the one case where the log holds strictly
-            // less than the order — which is exactly the test below.
+            //   * a legacy multi-package order whose gateway log carries the whole
+            //     order total while the invoice is priced from plan list prices.
+            //     Quoting the invoice there would report the un-discounted sum as
+            //     the amount paid.
+            // A parent/child order is the case where the log holds strictly less
+            // than the order — which is exactly the test below. A multi-book ("MP")
+            // order now passes it too: every log, the gateway one included, records
+            // only its own line (unit price x quantity), and its invoice is priced
+            // from plan x quantity, which is the order total the gateway charged.
             double thisLog = paymentLog.getPaymentAmount() != null ? paymentLog.getPaymentAmount() : 0d;
             if (invoiceResult.getPaymentLogCount() <= 1 || thisLog >= paid - 0.005) {
                 return null;
@@ -429,6 +431,40 @@ public class PaymentLogService {
             log.warn("Could not read order amounts from invoice for payment log {}: {}",
                     paymentLog.getId(), e.getMessage());
             return null;
+        }
+    }
+
+    /**
+     * The amount a PAYMENT_SUCCESS / PAYMENT_FAILED workflow is told about.
+     *
+     * <p>A multi-book ("MP") order's gateway log used to carry the whole order total. It now
+     * records only its own line, and the order total moves to
+     * {@code payment_specific_data.order_total}; workflows built on that log keep receiving the
+     * order total from there. The other logs of the order get a copy of the gateway log's
+     * payment_specific_data (see addChildLogsToPayment), so they may carry order_total as well,
+     * but each lists itself in childPaymentLogIds and keeps reporting its own amount, as before.
+     * Every other payment reports its own amount, unchanged.
+     */
+    // Visible for testing.
+    static Double workflowAmount(PaymentLog paymentLog) {
+        Double ownAmount = paymentLog.getPaymentAmount();
+        if (!StringUtils.hasText(paymentLog.getPaymentSpecificData())) {
+            return ownAmount;
+        }
+        try {
+            Map<String, Object> data = JsonUtil.fromJson(paymentLog.getPaymentSpecificData(), Map.class);
+            Object raw = data != null ? data.get("order_total") : null;
+            if (raw == null) {
+                return ownAmount;
+            }
+            if (data.get("childPaymentLogIds") instanceof Collection<?> childIds
+                    && childIds.contains(paymentLog.getId())) {
+                return ownAmount;
+            }
+            return raw instanceof Number n ? n.doubleValue() : Double.parseDouble(raw.toString());
+        } catch (Exception e) {
+            log.debug("Could not read order_total for payment log {}: {}", paymentLog.getId(), e.getMessage());
+            return ownAmount;
         }
     }
 
@@ -907,7 +943,9 @@ public class PaymentLogService {
                 successCtx.put("paymentLog", paymentLog);
                 successCtx.put("userId", paymentLog.getUserId());
                 successCtx.put("userPlanId", paidPlan.getId());
-                successCtx.put("amount", paymentLog.getPaymentAmount());
+                // The order total on a multi-book order's gateway log, which now records only
+                // its own line — see workflowAmount.
+                successCtx.put("amount", workflowAmount(paymentLog));
                 successCtx.put("vendor", paymentLog.getVendor());
                 successCtx.put("enrollInviteId", paidPlan.getEnrollInviteId());
                 // Enrich for SEND_WHATSAPP workflows: PAYMENT_SUCCESS carries neither the
@@ -2047,6 +2085,9 @@ public class PaymentLogService {
                     .id(userPlan.getId())
                     .userId(userPlan.getUserId())
                     .paymentPlanId(userPlan.getPaymentPlanId())
+                    // Copies on this line: Manage Payments and My Orders show "Book x 4" and
+                    // price the line as unit price x quantity.
+                    .quantity(userPlan.getQuantity())
                     .appliedCouponDiscountId(userPlan.getAppliedCouponDiscountId())
                     .appliedCouponDiscountJson(userPlan.getAppliedCouponDiscountJson())
                     .appliedCoupon(vacademy.io.admin_core_service.features.user_subscription.dto.CouponSnapshotDTO
@@ -2335,7 +2376,8 @@ public class PaymentLogService {
                 contextData.put("paymentLog", paymentLog);
                 contextData.put("userId", userId);
                 contextData.put("userPlanId", userPlan.getId());
-                contextData.put("amount", paymentLog.getPaymentAmount());
+                // Same figure the PAYMENT_SUCCESS workflow receives — see workflowAmount.
+                contextData.put("amount", workflowAmount(paymentLog));
                 contextData.put("vendor", paymentLog.getVendor());
                 contextData.put("enrollInviteId", userPlan.getEnrollInviteId());
                 // Add packageSessionIds from the SSIGM mappings for context

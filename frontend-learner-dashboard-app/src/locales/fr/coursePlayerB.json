@@ -97,7 +97,10 @@
             "paymentSuccessful": "Paiement réussi !",
             "paymentCancelled": "Paiement annulé",
             "checkoutSuccessful": "Paiement finalisé avec succès !",
-            "checkoutFailedDefault": "Échec du paiement. Veuillez réessayer."
+            "checkoutFailedDefault": "Échec du paiement. Veuillez réessayer.",
+            "confirmingPayment": "Confirmation de votre paiement en cours...",
+            "paymentFailed": "Votre paiement n'a pas pu être finalisé. Votre panier n'a pas changé, vous pouvez donc réessayer.",
+            "paymentPending": "Votre paiement est en cours de confirmation. Votre panier sera vidé dès qu'il sera confirmé."
         },
         "razorpayDescription": "Inscription au {{course}}",
         "errors": {
@@ -139,7 +142,8 @@
             "secure": "Sécurisé",
             "subtotalCount_many": "Sous-total ({{count}} articles)"
         },
-        "whatsappRequired": "Vérification WhatsApp requise pour continuer"
+        "whatsappRequired": "Vérification WhatsApp requise pour continuer",
+        "awaitingConfirmation": "Votre paiement est en cours de confirmation. Veuillez ne pas payer à nouveau. Actualisez cette page dans quelques minutes pour vérifier."
     },
     "policy": {
         "notFoundTitle": "Politique introuvable",

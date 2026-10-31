@@ -39,4 +39,12 @@ public class MultiPackageLearnerEnrollRequestDTO {
     @JsonAlias("enrollmentType")
     private String enrollmentType;
 
+    /**
+     * Storefront only: the catalogue (site) tag the cart was priced on. Its
+     * {@code globalSettings.payment.additionalCharges} decide which shipping tier the order
+     * must carry (AdditionalChargeValidator). Optional; older clients send none.
+     */
+    @JsonProperty("catalogue_tag")
+    private String catalogueTag;
+
 }

@@ -5,6 +5,17 @@ export interface InventoryAvailability {
     maxSeats: number | null;
     availableSlots: number | null;
     isUnlimited: boolean;
+    /**
+     * Stock reserved by checkouts still in progress (already taken out of availableSlots). The
+     * server releases it after 30 minutes or when the payment window is closed. Always set once
+     * the response has gone through the inventory service (0 when the server omits it).
+     */
+    heldSlots?: number;
+    /**
+     * The spelling the backend contract uses for the same figure, while the sibling fields are
+     * camelCase. Only the service reads it, to fill heldSlots.
+     */
+    held_slots?: number | null;
 }
 
 export interface UpdateCapacityRequest {
@@ -23,6 +34,8 @@ export interface PackageSessionInventory {
     maxSeats?: number | null;
     availableSlots?: number | null;
     isUnlimited?: boolean;
+    /** Stock held by checkouts in progress; see InventoryAvailability.heldSlots. */
+    heldSlots?: number;
     isLoadingInventory?: boolean;
 }
 

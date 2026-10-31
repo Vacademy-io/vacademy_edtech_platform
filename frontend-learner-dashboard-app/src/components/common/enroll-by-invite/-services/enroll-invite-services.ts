@@ -5,6 +5,7 @@ import {
   ENROLL_USER_INVITE_PAYMENT_URL,
   GET_PAYMENT_GATEWAY_DETAILS_URL,
   PEYMENT_LOG_STATUS_URL,
+  STOCK_HOLD_RELEASE_URL,
   ENROLLMENT_FORM_SUBMIT,
   ENROLLMENT_POLICY_URL,
   CPO_OPEN_DUES_URL,
@@ -622,6 +623,27 @@ export const handleGetPaymentCompletionStatus = ({
     queryFn: () => getPaymentCompletionStatus({ paymentLogId }),
     staleTime: 60 * 60 * 1000,
   };
+};
+
+/**
+ * Puts back the stock held for an unpaid order. Call it, without awaiting, when
+ * the learner closes the gateway window: the server only releases holds on an
+ * order that is still unpaid, needs no login, and expires the rest on its own
+ * after 30 minutes. It never throws, so it can never get in the way of the
+ * "payment cancelled" handling that follows.
+ */
+export const releaseStockHold = async (
+  paymentLogId: string | null | undefined,
+): Promise<void> => {
+  const id = paymentLogId?.trim();
+  if (!id) return;
+  try {
+    await axios.post(STOCK_HOLD_RELEASE_URL, null, {
+      params: { paymentLogId: id },
+    });
+  } catch (error) {
+    console.warn("[releaseStockHold] Could not release the stock hold:", error);
+  }
 };
 
 // Enrollment Policy API 

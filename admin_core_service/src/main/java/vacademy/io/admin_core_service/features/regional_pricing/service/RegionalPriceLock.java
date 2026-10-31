@@ -38,6 +38,21 @@ public final class RegionalPriceLock {
         return plan != null ? plan.getActualPrice() : 0.0;
     }
 
+    /**
+     * Gross price of the whole line: {@link #listPrice} × {@code user_plan.quantity} (copies
+     * bought on this plan), before any discount. Quantity 1 — every plan before V635 and every
+     * subscription — returns exactly {@link #listPrice}.
+     */
+    public static double linePrice(UserPlan userPlan) {
+        double unit = listPrice(userPlan);
+        int quantity = userPlan != null && userPlan.getQuantity() != null
+                ? Math.max(1, userPlan.getQuantity()) : 1;
+        if (quantity == 1) {
+            return unit;
+        }
+        return Math.round(unit * quantity * 100.0) / 100.0;
+    }
+
     /** Charge currency: the lock's, else {@code fallback}. */
     public static String currency(UserPlan userPlan, String fallback) {
         return isLocked(userPlan) ? userPlan.getRegionalCurrency() : fallback;

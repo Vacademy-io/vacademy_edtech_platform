@@ -1794,6 +1794,8 @@ const PaymentForm: React.FC<PaymentFormProps> = ({
             currency: orderDetails.currency || currency,
             contact: orderDetails.contact || phone,
             email: orderDetails.email || email,
+            // Closing Checkout releases the stock held for this order.
+            paymentLogId: paymentResponse?.payment_response?.order_id,
           });
         } else {
           throw new Error(t("enrollmentPaymentDialog.razorpayNotReady"));

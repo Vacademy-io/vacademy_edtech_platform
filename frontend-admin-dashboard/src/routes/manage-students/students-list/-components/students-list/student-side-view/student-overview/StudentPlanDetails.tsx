@@ -17,6 +17,7 @@ import {
     TrendUp,
     ChatText,
     CalendarCheck,
+    Package,
 } from '@phosphor-icons/react';
 import { useCallback, useEffect, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
@@ -38,6 +39,7 @@ import { useTranslation } from 'react-i18next';
 import type { TFunction } from 'i18next';
 import { useGetUserBasicDetails } from '@/services/get_user_basic_details';
 import { fallbackCurrency, getInstituteDefaultCurrency } from '@/utils/institute-currency';
+import { getPlanQuantity } from '@/routes/manage-payments/-utils/planQuantity';
 
 interface StudentPlanDetailsProps {
     userId: string;
@@ -78,7 +80,11 @@ const isCpoPlan = (plan: UserPlan): boolean =>
 /** Memberships that have lapsed but can be brought back with a manual renewal. */
 const LAPSED_STATUSES = ['EXPIRED', 'CANCELED', 'PAYMENT_FAILED'];
 
-const getPlanAmount = (plan: UserPlan): number => plan.payment_plan_dto?.actual_price || 0;
+/** payment_plan_dto.actual_price is the price of ONE copy. */
+const getPlanUnitPrice = (plan: UserPlan): number => plan.payment_plan_dto?.actual_price || 0;
+
+/** What the plan cost in total: the unit price times the copies on it. */
+const getPlanAmount = (plan: UserPlan): number => getPlanUnitPrice(plan) * getPlanQuantity(plan);
 
 // The plan's currency, else the institute's saved default (Settings → Payment). 'N/A' when
 // neither is known — the card then hides the amount rather than guess a symbol.
@@ -520,10 +526,13 @@ const PlanCard = ({
     const daysLeft = computeDaysLeft(plan.end_date);
     const tone = getDaysLeftTone(t, daysLeft);
     const expiryLabel = getExpiryLabel(plan);
+    const quantity = getPlanQuantity(plan);
+    const unitPrice = getPlanUnitPrice(plan);
     const amount = getPlanAmount(plan);
     const currency = getPlanCurrency(plan);
     const appliedCoupon = parseAppliedCoupon(plan);
-    const couponDiscount = computeCouponDiscount(amount, appliedCoupon);
+    // A coupon takes its discount off each copy, so the saving scales with the copies bought.
+    const couponDiscount = computeCouponDiscount(unitPrice, appliedCoupon) * quantity;
     const finalAmount = Math.max(0, amount - couponDiscount);
     const hasCouponDiscount = couponDiscount > 0 && finalAmount < amount;
 
@@ -591,6 +600,21 @@ const PlanCard = ({
                         <span>{t('dates.ends', { date: expiryLabel })}</span>
                     </div>
                 )}
+                <div className="flex items-center gap-1">
+                    <Package className="size-3 text-neutral-400" />
+                    <span>
+                        {t('quantity.label', { quantity, defaultValue: 'Qty {{quantity}}' })}
+                        {quantity > 1 && currency !== 'N/A' && unitPrice > 0 && (
+                            <span className="text-neutral-400">
+                                {' · '}
+                                {t('quantity.each', {
+                                    price: `${getCurrencySymbol(currency)}${unitPrice}`,
+                                    defaultValue: '{{price}} each',
+                                })}
+                            </span>
+                        )}
+                    </span>
+                </div>
                 {currency !== 'N/A' && amount > 0 && (
                     <div className="flex items-center gap-1">
                         <CurrencyDollar className="size-3 text-neutral-400" />

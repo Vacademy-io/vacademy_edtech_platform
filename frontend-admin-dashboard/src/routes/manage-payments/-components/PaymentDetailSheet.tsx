@@ -16,6 +16,7 @@ import { ContentTerms, SystemTerms } from '@/routes/settings/-components/NamingS
 import { formatMoney, resolveEntryCurrency } from '@/utils/payment-currency';
 import { derivePaymentTypeLabel } from '../-utils/exportPaymentLogsCsv';
 import { entryPaymentStatus, paymentStatusMeta } from '../-utils/paymentStatus';
+import { getPlanLineTotal, getPlanQuantity, getPlanUnitPrice } from '../-utils/planQuantity';
 import { GatewayBadge } from './GatewayBadge';
 import { readRecordedPaymentDetails } from '@/services/offline-payment-modes';
 import { getPublicUrl } from '@/services/upload_file';
@@ -148,6 +149,10 @@ export function PaymentDetailSheet({
     const hasTime = Boolean(log?.created_at);
     const timestamp = log?.created_at || log?.date;
     const courseTerm = getTerminology(ContentTerms.Course, SystemTerms.Course);
+    // Unit price is the price of ONE copy (payment_plan_dto.actual_price); the line total is that
+    // times the copies on the plan. Invoice rows have no plan, so none of the three show.
+    const unitPrice = getPlanUnitPrice(plan);
+    const lineTotal = getPlanLineTotal(plan);
 
     const timeline: TimelineEvent[] = [
         {
@@ -284,6 +289,31 @@ export function PaymentDetailSheet({
                             {plan?.status ? plan.status.replace(/_/g, ' ') : '—'}
                         </Row>
                         <Row label="Payment plan">{plan?.payment_plan_dto?.name || '—'}</Row>
+                        {plan && (
+                            <>
+                                <Row label="Quantity">
+                                    <span className="tabular-nums">{getPlanQuantity(plan)}</span>
+                                </Row>
+                                {unitPrice !== null && (
+                                    <Row label="Unit price">
+                                        <span className="tabular-nums">
+                                            {formatMoney(unitPrice, currency, {
+                                                maximumFractionDigits: 2,
+                                            })}
+                                        </span>
+                                    </Row>
+                                )}
+                                {lineTotal !== null && (
+                                    <Row label="Line total">
+                                        <span className="tabular-nums">
+                                            {formatMoney(lineTotal, currency, {
+                                                maximumFractionDigits: 2,
+                                            })}
+                                        </span>
+                                    </Row>
+                                )}
+                            </>
+                        )}
                         {plan?.source === 'SUB_ORG' && plan?.sub_org_details?.name && (
                             <Row label="Organization">{plan.sub_org_details.name}</Row>
                         )}

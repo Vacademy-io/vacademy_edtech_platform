@@ -28,6 +28,7 @@ import { GatewayBadge } from './GatewayBadge';
 import { derivePaymentTypeLabel } from '../-utils/exportPaymentLogsCsv';
 import { daysUntil, dueState, formatPlanDate } from '../-utils/planDates';
 import { paymentReceivedAt } from '../-utils/paymentReceivedAt';
+import { getPlanQuantity } from '../-utils/planQuantity';
 
 // ─── Redesign cell primitives ──────────────────────────────────────────────────
 
@@ -809,11 +810,18 @@ export function PaymentLogsTable({
                 header: `${getTerminology(ContentTerms.Course, SystemTerms.Course)}/Membership`,
                 accessorFn: (row) => row?.user_plan?.enroll_invite?.name || '',
                 cell: ({ row }) => {
-                    const enrollInvite = row.original?.user_plan?.enroll_invite;
+                    const userPlan = row.original?.user_plan;
+                    const enrollInvite = userPlan?.enroll_invite;
                     return (
                         <div className="space-y-1">
                             <div className="font-medium text-neutral-700">
                                 {enrollInvite?.name || '-'}
+                                {/* Always shown, "× 1" included. Invoice rows have no plan, so no quantity. */}
+                                {userPlan && (
+                                    <span className="ml-1 whitespace-nowrap font-normal tabular-nums text-neutral-500">
+                                        × {getPlanQuantity(userPlan)}
+                                    </span>
+                                )}
                             </div>
                             <div className="text-xs text-neutral-500">
                                 Code: {enrollInvite?.invite_code || '-'}

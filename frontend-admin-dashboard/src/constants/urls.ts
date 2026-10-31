@@ -1281,6 +1281,9 @@ export const GET_MY_SYSTEM_FILES = `${BASE_URL}/admin-core-service/system-files/
 // Learner Portal Access
 export const GET_LEARNER_PORTAL_ACCESS = `${BASE_URL}/admin-core-service/admin/learner-portal/v1/access`;
 
+// Admin-only enroll (requires admin login). The public /v2/learner/enroll rejects MANUAL enrollments.
+export const ENROLL_LEARNER_V2_ADMIN = `${BASE_URL}/admin-core-service/v2/admin/learner/enroll`;
+// Public enroll: only a fallback for an admin-core that predates the admin-only one (see enrollLearnerV2).
 export const ENROLL_LEARNER_V2 = `${BASE_URL}/admin-core-service/v2/learner/enroll`;
 export const CANCEL_USER_PLAN = (user_plan_id: string) =>
     `${BASE_URL}/admin-core-service/v1/user-plan/${user_plan_id}/cancel`;

@@ -33,6 +33,7 @@ import {
 } from 'lucide-react';
 import { PackageSessionInventory } from '../-types/inventory-types';
 import { UpdateCapacityDialog } from './update-capacity-dialog';
+import { HeldSlots } from './held-slots';
 import { useReserveSlot, useReleaseSlot } from '../-hooks/use-inventory-data';
 import { toast } from 'sonner';
 import { getTerminology, getTerminologyPlural } from '@/components/common/layout-container/sidebar/utils';
@@ -258,7 +259,10 @@ export const InventoryTableView = ({
                                                 {getCapacityDisplay(item)}
                                             </TableCell>
                                             <TableCell className="text-center">
-                                                {getAvailableDisplay(item)}
+                                                <div className="flex flex-wrap items-center justify-center gap-2">
+                                                    {getAvailableDisplay(item)}
+                                                    <HeldSlots item={item} />
+                                                </div>
                                             </TableCell>
                                             <TableCell>{getAvailabilityBadge(item)}</TableCell>
                                             <TableCell className="text-right">

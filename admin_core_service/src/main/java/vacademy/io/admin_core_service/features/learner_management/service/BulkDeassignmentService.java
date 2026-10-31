@@ -13,6 +13,9 @@ import vacademy.io.admin_core_service.features.institute_learner.manager.Learner
 import vacademy.io.admin_core_service.features.institute_learner.repository.StudentSessionRepository;
 import vacademy.io.admin_core_service.features.learner_management.dto.*;
 import vacademy.io.admin_core_service.features.packages.service.PackageSessionService;
+import vacademy.io.admin_core_service.features.stock_hold.service.StockHoldService;
+import vacademy.io.admin_core_service.features.user_subscription.entity.UserPlan;
+import vacademy.io.admin_core_service.features.user_subscription.repository.UserPlanRepository;
 import vacademy.io.admin_core_service.features.user_subscription.service.PaymentDeletionService;
 import vacademy.io.admin_core_service.features.user_subscription.service.UserPlanService;
 import vacademy.io.common.auth.dto.UserDTO;
@@ -48,6 +51,8 @@ public class BulkDeassignmentService {
     private final InstituteSettingService instituteSettingService;
     private final PaymentDeletionService paymentDeletionService;
     private final CourseRemovalHistoryService courseRemovalHistoryService;
+    private final StockHoldService stockHoldService;
+    private final UserPlanRepository userPlanRepository;
 
     private static final String MODE_SOFT = "SOFT";
     private static final String MODE_HARD = "HARD";
@@ -550,9 +555,16 @@ public class BulkDeassignmentService {
                         userId, packageSessionId, mode, accessTillDate);
             }
 
-            // Only increment inventory when the slot is actually freed
+            // Only give stock back when the slot is actually freed. A plan with stock_hold rows
+            // gets back exactly what it took, once — cancelUserPlan above may already have
+            // restored it, and restoreForPlan then just reports the plan as handled. Plans from
+            // before V635 have no rows and keep the old increment, by the plan's quantity.
             if (slotFreed) {
-                packageSessionService.incrementAvailability(packageSessionId, 1);
+                boolean restored = StringUtils.hasText(userPlanId)
+                        && stockHoldService.restoreForPlan(userPlanId, packageSessionId);
+                if (!restored) {
+                    packageSessionService.incrementAvailability(packageSessionId, legacyQuantity(userPlanId));
+                }
             }
 
             String actionTaken = MODE_HARD.equals(mode)
@@ -577,6 +589,22 @@ public class BulkDeassignmentService {
                     .status("FAILED").actionTaken("NONE")
                     .message(e.getMessage())
                     .build();
+        }
+    }
+
+    /** Copies the plan bought (1 when there is no plan, or it was deleted with its history). */
+    private int legacyQuantity(String userPlanId) {
+        if (!StringUtils.hasText(userPlanId)) {
+            return 1;
+        }
+        try {
+            return userPlanRepository.findById(userPlanId)
+                    .map(UserPlan::getQuantity)
+                    .filter(q -> q != null && q > 0)
+                    .orElse(1);
+        } catch (Exception e) {
+            log.warn("Could not read quantity of plan {}; giving back 1: {}", userPlanId, e.getMessage());
+            return 1;
         }
     }
 
