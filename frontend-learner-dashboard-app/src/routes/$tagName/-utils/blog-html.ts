@@ -122,6 +122,25 @@ export const scopeBlogCss = (css: string, scope: string = BLOG_CSS_SCOPE): strin
   return out;
 };
 
+const BOX_WIDTH_DECL_RE =
+  /(^|[{;\s])((?:min-|max-)?width|margin(?:-left|-right|-inline(?:-start|-end)?)?|padding(?:-left|-right|-inline(?:-start|-end)?)?)(\s*:\s*)([^;{}]*)/gi;
+
+/**
+ * A pasted page often breaks out to the full screen with `width:100vw;
+ * margin-left:calc(50% - 50vw)`. That only lands right when the article is
+ * centred on screen; in the Sidebar layout the body column sits off-centre, so
+ * the box runs past the right edge and the whole page scrolls sideways. In
+ * width, margin and padding a percentage is of the containing block, so vw → %
+ * turns "the screen" into "the article": the breakout fills the column and its
+ * centring margin cancels to 0. Font sizes and the like keep their vw.
+ */
+export const containViewportWidths = (css: string): string =>
+  css.replace(
+    BOX_WIDTH_DECL_RE,
+    (_m, lead: string, prop: string, colon: string, value: string) =>
+      `${lead}${prop}${colon}${value.replace(/(\d*\.?\d+)[sld]?vw\b/gi, "$1%")}`
+  );
+
 /** The post's own `<style>` blocks, scrubbed and scoped; "" when it has none. */
 const extractBlogCss = (html: string): { html: string; css: string } => {
   const sheets: string[] = [];
@@ -130,7 +149,8 @@ const extractBlogCss = (html: string): { html: string; css: string } => {
     return "";
   });
   if (!sheets.length) return { html, css: "" };
-  return { html: rest, css: scopeBlogCss(scrubCss(wrapBareColourTokens(sheets.join("\n")), true)) };
+  const css = scrubCss(wrapBareColourTokens(sheets.join("\n")), true);
+  return { html: rest, css: scopeBlogCss(containViewportWidths(css)) };
 };
 
 const ALLOWED_TAGS = [
@@ -185,6 +205,10 @@ const sanitizeToDom = (html: string): HTMLElement => {
   });
   body.querySelectorAll("img").forEach((img) => {
     if (!img.getAttribute("loading")) img.setAttribute("loading", "lazy");
+  });
+  // The same full-bleed breakout written inline (`style="width:100vw;…"`).
+  body.querySelectorAll<HTMLElement>("[style*='vw' i]").forEach((el) => {
+    el.setAttribute("style", containViewportWidths(el.getAttribute("style") || ""));
   });
   return body;
 };
