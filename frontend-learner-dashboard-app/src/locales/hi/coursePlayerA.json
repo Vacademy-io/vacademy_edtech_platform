@@ -229,6 +229,8 @@
     },
     "scormViewer": {
       "swipeHint": "पन्ने पलटने के लिए स्वाइप करें",
+      "previousPage": "पिछला पृष्ठ",
+      "nextPage": "अगला पृष्ठ",
       "defaultTitle": "इंटरैक्टिव प्रीव्यू",
       "fullScreen": "फ़ुल स्क्रीन",
       "openInNewTab": "नए टैब में खोलें",

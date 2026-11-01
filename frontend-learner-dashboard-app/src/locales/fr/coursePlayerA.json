@@ -230,6 +230,8 @@
     },
     "scormViewer": {
       "swipeHint": "Balayez pour tourner les pages",
+      "previousPage": "Page précédente",
+      "nextPage": "Page suivante",
       "defaultTitle": "Aperçu interactif",
       "fullScreen": "Plein écran",
       "openInNewTab": "Ouvrir dans un nouvel onglet",

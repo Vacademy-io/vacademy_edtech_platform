@@ -233,6 +233,8 @@
     },
     "scormViewer": {
       "swipeHint": "اسحب لتقليب الصفحات",
+      "previousPage": "الصفحة السابقة",
+      "nextPage": "الصفحة التالية",
       "defaultTitle": "معاينة تفاعلية",
       "fullScreen": "ملء الشاشة",
       "openInNewTab": "فتح في علامة تبويب جديدة",

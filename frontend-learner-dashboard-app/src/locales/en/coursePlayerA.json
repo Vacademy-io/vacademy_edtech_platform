@@ -229,6 +229,8 @@
     },
     "scormViewer": {
       "swipeHint": "Swipe to turn the pages",
+      "previousPage": "Previous page",
+      "nextPage": "Next page",
       "defaultTitle": "Interactive preview",
       "fullScreen": "Full screen",
       "openInNewTab": "Open in a new tab",
