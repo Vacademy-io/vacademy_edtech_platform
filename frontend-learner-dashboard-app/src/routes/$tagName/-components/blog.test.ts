@@ -179,6 +179,22 @@ h2, .pcm :is(p, li){line-height:1.6}
     expect(sanitizeBlogArticle("<style>.a{color:red}</style ><p>x</p>").css).not.toContain("</");
   });
 
+  it("keeps a full-bleed 100vw breakout inside the article column", () => {
+    const { css, html } = sanitizeBlogArticle(`<style>
+.g{width:100vw !important;max-width:100vw;margin-left:calc(-50vw + 50%) !important;margin-right:calc(50% - 50dvw);padding:0 5vw}
+.g h1{font-size:clamp(32px,5vw,54px)}
+.g{--w:100vw}
+@media (min-width:880px){.g .s{min-width:80vw}}
+</style><div class="g" style="width:100vw;margin-left:calc(50% - 50vw);height:50vh"><h1>Hi</h1></div>`);
+    expect(css).toContain(
+      ".catalogue-blog-article .g{width:100% !important;max-width:100%;margin-left:calc(-50% + 50%) !important;margin-right:calc(50% - 50%);padding:0 5%}"
+    );
+    expect(css).toContain("font-size:clamp(32px,5vw,54px)");
+    expect(css).toContain("--w:100vw");
+    expect(css).toContain("@media (min-width:880px){.catalogue-blog-article .g .s{min-width:80%}}");
+    expect(html).toContain('style="width:100%;margin-left:calc(50% - 50%);height:50vh"');
+  });
+
   it("returns no css for a body without a stylesheet, and keeps CSS out of card previews", () => {
     expect(sanitizeBlogArticle("<p>plain</p>").css).toBe("");
     expect(blogPlainText(pasted)).toBe("Hello");
