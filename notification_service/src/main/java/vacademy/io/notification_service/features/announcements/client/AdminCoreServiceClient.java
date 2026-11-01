@@ -288,6 +288,33 @@ public class AdminCoreServiceClient {
     }
 
     /**
+     * Members' membership merge tags, {@code userId -> {practice_name, expiry_date_long,
+     * subscription_link, ...}} (see {@link vacademy.io.notification_service.features.send.service.MembershipPlaceholders#KEYS}). Empty map on any
+     * failure: the caller then leaves those tokens to the usual unresolved-placeholder handling.
+     */
+    public Map<String, Map<String, String>> getMembershipPlaceholders(String instituteId, List<String> userIds) {
+        if (instituteId == null || userIds == null || userIds.isEmpty()) {
+            return Map.of();
+        }
+        try {
+            Map<String, Object> body = new HashMap<>();
+            body.put("instituteId", instituteId);
+            body.put("userIds", userIds);
+            ResponseEntity<String> response = internalClientUtils.makeHmacRequest(clientName, "POST",
+                    adminCoreServiceBaseUrl, "/admin-core-service/internal/membership/placeholders", body);
+            if (response == null || response.getBody() == null || response.getBody().isBlank()) {
+                return Map.of();
+            }
+            return new ObjectMapper().readValue(response.getBody(),
+                    new TypeReference<Map<String, Map<String, String>>>() {});
+        } catch (Exception e) {
+            log.warn("Failed to fetch membership placeholders for {} users at institute {}: {}",
+                    userIds.size(), instituteId, e.getMessage());
+            return Map.of();
+        }
+    }
+
+    /**
      * Get user IDs by tags for a given institute
      */
     @Retryable(value = {RestClientException.class}, maxAttempts = 3, backoff = @Backoff(delay = 1000))

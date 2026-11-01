@@ -38,6 +38,7 @@ import {
     toTemplateOptions,
 } from '@/components/templates/TemplateSearchableSelect';
 import { bulkEmailService, type BulkEmailResult } from '@/services/bulkEmailService';
+import { isServerResolvedEmailVariable } from '@/lib/email-templates/server-resolved-variables';
 import { useDialogStore } from '../../../../-hooks/useDialogStore';
 
 // Multi-step compose flow modelled on the audience-manager SendMessageDialog, but
@@ -135,7 +136,11 @@ export const SendEmailDialog = () => {
 
     // Placeholders present across subject + body (drives the mapping step)
     const variableKeys = useMemo(
-        () => extractPlaceholders(`${subject} ${body}`),
+        // Membership tags are filled per recipient by the notification service on send.
+        () =>
+            extractPlaceholders(`${subject} ${body}`).filter(
+                (k) => !isServerResolvedEmailVariable(k)
+            ),
         [subject, body]
     );
 

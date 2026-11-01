@@ -148,6 +148,22 @@ public interface UserPlanRepository extends JpaRepository<UserPlan, String> {
                         @Param("instituteId") String instituteId,
                         @Param("statuses") List<String> statuses);
 
+        /**
+         * Batch form of the query above, for MembershipPlaceholderService: every plan of the
+         * given users at one institute, with the EnrollInvite fetched for its billing timezone.
+         */
+        @Query("""
+                        SELECT DISTINCT up FROM UserPlan up
+                        JOIN FETCH up.enrollInvite ei
+                        WHERE up.userId IN :userIds
+                          AND ei.instituteId = :instituteId
+                          AND up.status IN :statuses
+                        """)
+        List<UserPlan> findAllByUserIdInAndInstituteIdAndStatusIn(
+                        @Param("userIds") List<String> userIds,
+                        @Param("instituteId") String instituteId,
+                        @Param("statuses") List<String> statuses);
+
         /** Newest plan a user holds on a given invite — sub-org registration payment retry. */
         Optional<UserPlan> findFirstByUserIdAndEnrollInviteIdOrderByCreatedAtDesc(
                         String userId, String enrollInviteId);

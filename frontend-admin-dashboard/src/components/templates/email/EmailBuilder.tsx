@@ -187,9 +187,11 @@ const defaultMergeTags: Record<string, Record<string, string>> = Object.fromEntr
     ])
 );
 
-// Membership renewal / expiry reminder merge tags. These resolve only in the
-// enrolment-policy reminder emails (EmailNotificationService.buildPlaceholders) that a
-// course's BEFORE_EXPIRY / expiry notifications send — not in announcements or workflows.
+// Membership renewal / expiry reminder merge tags, built by admin-core's
+// MembershipPlaceholderService. They resolve in the enrolment-policy reminder emails and in
+// every unified email send that knows the recipient's user id: the student side view, bulk
+// email, announcements and workflow SEND_EMAIL nodes (the notification service fills them per
+// recipient; see lib/email-templates/server-resolved-variables.ts).
 const membershipRenewalMergeTags = {
     'Membership Renewal': {
         'Learner Name': '{{learner_name}}',

@@ -104,7 +104,8 @@
         "unresolved": "(अनसुलझा)",
         "livePreviewLabel": "संदेश पूर्वावलोकन",
         "sourceSearchPlaceholder": "फ़ील्ड खोजें...",
-        "sourceNoMatch": "आपकी खोज से कोई फ़ील्ड मेल नहीं खाता।"
+        "sourceNoMatch": "आपकी खोज से कोई फ़ील्ड मेल नहीं खाता।",
+        "serverFilled": "ईमेल भेजते समय शिक्षार्थी की सदस्यता से अपने-आप भरे जाते हैं: {{keys}}"
     },
     "reviewStep": {
         "messageSent": "संदेश भेजा गया",

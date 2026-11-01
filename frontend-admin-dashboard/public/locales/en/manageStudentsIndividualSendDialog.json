@@ -104,7 +104,8 @@
         "unresolved": "(unresolved)",
         "livePreviewLabel": "Message preview",
         "sourceSearchPlaceholder": "Search fields...",
-        "sourceNoMatch": "No field matches your search."
+        "sourceNoMatch": "No field matches your search.",
+        "serverFilled": "Filled automatically from the learner's membership when the email is sent: {{keys}}"
     },
     "reviewStep": {
         "messageSent": "Message Sent",

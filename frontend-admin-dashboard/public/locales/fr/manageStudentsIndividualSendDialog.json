@@ -104,7 +104,8 @@
         "unresolved": "(non résolu)",
         "livePreviewLabel": "Aperçu du message",
         "sourceSearchPlaceholder": "Rechercher un champ...",
-        "sourceNoMatch": "Aucun champ ne correspond à votre recherche."
+        "sourceNoMatch": "Aucun champ ne correspond à votre recherche.",
+        "serverFilled": "Remplies automatiquement à partir de l'adhésion de l'apprenant lors de l'envoi de l'e-mail : {{keys}}"
     },
     "reviewStep": {
         "messageSent": "Message envoyé",

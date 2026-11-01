@@ -104,7 +104,8 @@
         "unresolved": "(غير محدد)",
         "livePreviewLabel": "معاينة الرسالة",
         "sourceSearchPlaceholder": "ابحث في الحقول...",
-        "sourceNoMatch": "لا يوجد حقل يطابق بحثك."
+        "sourceNoMatch": "لا يوجد حقل يطابق بحثك.",
+        "serverFilled": "تُملأ تلقائيًا من عضوية المتعلم عند إرسال البريد الإلكتروني: {{keys}}"
     },
     "reviewStep": {
         "messageSent": "تم إرسال الرسالة",
