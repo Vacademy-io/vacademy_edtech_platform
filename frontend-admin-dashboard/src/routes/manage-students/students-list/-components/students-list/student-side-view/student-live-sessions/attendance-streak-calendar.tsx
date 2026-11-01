@@ -35,19 +35,16 @@ const STREAK_WINDOW_DAYS = 180;
 const COLLAPSED_DAYS = 7;
 const WEEK_STARTS_ON = 1; // Monday
 
+// Two states only: green for a day with a class attended, grey otherwise. Same steps as the
+// attendance donut, so a colour means one thing across the tab.
 const STATUS_STYLE: Record<DayStatus, string> = {
-    // Same status steps as the attendance donut, so a colour means one thing across the tab.
     attended: 'bg-success-700 text-white',
-    partial: 'bg-warning-400 text-white',
-    missed: 'bg-danger-700 text-white',
     unmarked: 'bg-neutral-400 text-white',
 };
 
 const STATUS_LABEL: Record<DayStatus, string> = {
     attended: 'Attended',
-    partial: 'Attended some',
-    missed: 'Missed',
-    unmarked: 'Not marked yet',
+    unmarked: 'Not attended',
 };
 
 const dayTitle = (date: string, summary?: DaySummary) => {
