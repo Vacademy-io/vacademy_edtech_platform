@@ -104,4 +104,46 @@ describe("scormViewer", () => {
     expect(await mount("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 Chrome/134.0 Safari/537.36"))
       .toBe("60vh");
   });
+
+  it("book look on phones shows page arrows only once the wrapper says it can turn pages, and sends the turn", async () => {
+    vi.spyOn(window, "matchMedia").mockImplementation((q: string) => ({
+      matches: false, media: q, onchange: null,
+      addEventListener: () => {}, removeEventListener: () => {}, addListener: () => {}, removeListener: () => {},
+      dispatchEvent: () => false,
+    }) as unknown as MediaQueryList);
+    const el = document.createElement("div");
+    document.body.appendChild(el);
+    const root = createRoot(el);
+    (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
+    await act(async () => {
+      root.render(React.createElement(JsonRenderer, {
+        page: page({ launchUrl: LAUNCH, appearance: "book", backgroundColor: "#fffdf8" }), globalSettings: {} as never,
+        instituteId: "inst", tagName: "tag",
+      } as never));
+    });
+    const prev = () => el.querySelector('button[aria-label="Previous page"]');
+    const next = () => el.querySelector('button[aria-label="Next page"]');
+    expect(el.textContent).toContain("Swipe to turn the pages");
+    expect(next()).toBeNull();
+
+    const frameWin = (el.querySelector("iframe[data-scorm-frame]") as HTMLIFrameElement).contentWindow!;
+    // A message from anywhere but the player frame changes nothing.
+    await act(async () => {
+      window.dispatchEvent(new MessageEvent("message", { data: { type: "vacademy_scorm_nav_ready" }, source: window }));
+    });
+    expect(next()).toBeNull();
+
+    await act(async () => {
+      window.dispatchEvent(new MessageEvent("message", { data: { type: "vacademy_scorm_nav_ready" }, source: frameWin }));
+    });
+    expect(prev()).not.toBeNull();
+    const post = vi.spyOn(frameWin, "postMessage").mockImplementation(() => {});
+    await act(async () => { (next() as HTMLButtonElement).click(); });
+    expect(post).toHaveBeenCalledWith({ type: "vacademy_scorm_nav", dir: "next" }, "https://vacademy-media-storage-public.s3.amazonaws.com");
+    await act(async () => { (prev() as HTMLButtonElement).click(); });
+    expect(post).toHaveBeenLastCalledWith({ type: "vacademy_scorm_nav", dir: "prev" }, "https://vacademy-media-storage-public.s3.amazonaws.com");
+    act(() => root.unmount());
+    el.remove();
+    vi.restoreAllMocks();
+  });
 });

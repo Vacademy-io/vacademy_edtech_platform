@@ -2,11 +2,13 @@ package vacademy.io.admin_core_service.features.slide.service;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 import vacademy.io.admin_core_service.features.media_service.service.MediaService;
 import vacademy.io.admin_core_service.features.slide.entity.ScormSlide;
 import vacademy.io.admin_core_service.features.slide.repository.ScormSlideRepository;
+import vacademy.io.common.exceptions.VacademyException;
 import vacademy.io.common.media.dto.FileDetailsDTO;
 
 import javax.xml.parsers.DocumentBuilder;
@@ -35,7 +37,8 @@ public class ScormService {
     // New name rather than an overwrite: the media bucket serves objects as
     // immutable for a year, so a changed file at the old key would never reach
     // CloudFront or browsers that already cached it.
-    private static final String PLAYER_FILE_NAME = "vacademy_player_v2.html";
+    // v3: page turning for hosts that draw their own arrows (vacademy_scorm_nav).
+    private static final String PLAYER_FILE_NAME = "vacademy_player_v3.html";
     private static final String LEGACY_PLAYER_FILE_NAME = "vacademy_player.html";
 
     private final ScormSlideRepository scormSlideRepository;
@@ -132,26 +135,15 @@ public class ScormService {
                 upgraded.add(slide.getId());
                 continue;
             }
-            File tempDir = null;
             try {
-                tempDir = Files.createTempDirectory("scorm_player_" + slide.getId()).toFile();
-                File player = generatePlayerWrapper(tempDir, slide.getLaunchPath(), slide.getScormVersion());
-                String key = slide.getOriginalFileId() + "/" + PLAYER_FILE_NAME;
-                FileDetailsDTO result = mediaService.uploadFileToKey(new CustomMultipartFile(player), key);
-                if (result == null || result.getUrl() == null || !result.getUrl().endsWith("/" + PLAYER_FILE_NAME)) {
+                if (uploadCurrentPlayer(slide) == null) {
                     failed.add(slide.getId() + " (upload returned no usable url)");
                     continue;
                 }
-                slide.setLaunchUrl(result.getUrl());
-                scormSlideRepository.save(slide);
                 upgraded.add(slide.getId());
             } catch (Exception e) {
                 log.error("[SCORM] Player upgrade failed for scorm_slide {}", slide.getId(), e);
                 failed.add(slide.getId() + " (" + e.getMessage() + ")");
-            } finally {
-                if (tempDir != null) {
-                    deleteDirectory(tempDir);
-                }
             }
         }
 
@@ -163,6 +155,61 @@ public class ScormService {
         summary.put("failed", failed);
         summary.put("slideIds", upgraded);
         return summary;
+    }
+
+    /**
+     * Puts one SCORM slide on the current player, whatever player it launches
+     * through now (a website scormViewer needs v3 for its page arrows). Same
+     * upload as {@link #upgradeLegacyPlayers}; the old player file stays, so
+     * reverting is restoring the returned previous launch_url.
+     */
+    public Map<String, Object> refreshPlayer(String slideId) {
+        ScormSlide slide = scormSlideRepository.findById(slideId)
+                .orElseThrow(() -> new VacademyException(HttpStatus.NOT_FOUND, "SCORM slide not found: " + slideId));
+        if (isBlank(slide.getOriginalFileId()) || isBlank(slide.getLaunchPath())) {
+            throw new VacademyException(HttpStatus.BAD_REQUEST, "SCORM slide has no original_file_id or launch_path");
+        }
+        String previous = slide.getLaunchUrl();
+        String url;
+        try {
+            url = uploadCurrentPlayer(slide);
+        } catch (IOException e) {
+            log.error("[SCORM] Player refresh failed for scorm_slide {}", slideId, e);
+            throw new VacademyException(HttpStatus.INTERNAL_SERVER_ERROR, "Player upload failed: " + e.getMessage());
+        }
+        if (url == null) {
+            throw new VacademyException(HttpStatus.INTERNAL_SERVER_ERROR, "Player upload returned no usable url");
+        }
+        Map<String, Object> summary = new LinkedHashMap<>();
+        summary.put("slideId", slideId);
+        summary.put("previousLaunchUrl", previous);
+        summary.put("launchUrl", url);
+        return summary;
+    }
+
+    /**
+     * Uploads {@link #PLAYER_FILE_NAME} next to the slide's package and points
+     * its launch_url at it. Null when the upload gave back no usable url (the
+     * slide is then left as it was).
+     */
+    private String uploadCurrentPlayer(ScormSlide slide) throws IOException {
+        File tempDir = null;
+        try {
+            tempDir = Files.createTempDirectory("scorm_player_" + slide.getId()).toFile();
+            File player = generatePlayerWrapper(tempDir, slide.getLaunchPath(), slide.getScormVersion());
+            String key = slide.getOriginalFileId() + "/" + PLAYER_FILE_NAME;
+            FileDetailsDTO result = mediaService.uploadFileToKey(new CustomMultipartFile(player), key);
+            if (result == null || result.getUrl() == null || !result.getUrl().endsWith("/" + PLAYER_FILE_NAME)) {
+                return null;
+            }
+            slide.setLaunchUrl(result.getUrl());
+            scormSlideRepository.save(slide);
+            return result.getUrl();
+        } finally {
+            if (tempDir != null) {
+                deleteDirectory(tempDir);
+            }
+        }
     }
 
     private static boolean isBlank(String s) {
@@ -255,6 +302,33 @@ public class ScormService {
                             } catch(e) { /* a package on another origin keeps its own look */ }
                         }
 
+                        // Page turning for hosts that draw their own arrows (a website's
+                        // scormViewer on phones, where iSpring Flip only swipes). The
+                        // host cannot reach the content across origins, so it sends
+                        // vacademy_scorm_nav and the content gets the arrow key its
+                        // player already turns pages on. Hosts learn the wrapper can do
+                        // this from vacademy_scorm_nav_ready; course players ignore it.
+                        function announceNav() {
+                            try {
+                                if (window.parent && window.parent !== window) {
+                                    window.parent.postMessage({ type: 'vacademy_scorm_nav_ready' }, '*');
+                                }
+                            } catch(e) { /* ignore */ }
+                        }
+                        function turnPage(dir) {
+                            try {
+                                var doc = document.getElementById('scormContent').contentDocument;
+                                if (!doc) return;
+                                var key = dir === 'prev' ? 'ArrowLeft' : 'ArrowRight';
+                                var code = dir === 'prev' ? 37 : 39;
+                                ['keydown', 'keyup'].forEach(function(type) {
+                                    doc.dispatchEvent(new KeyboardEvent(type, {
+                                        key: key, code: key, keyCode: code, which: code, bubbles: true
+                                    }));
+                                });
+                            } catch(e) { /* a package on another origin turns by itself */ }
+                        }
+
                         // Content waits for the learner's data; see generatePlayerWrapper
                         var contentStarted = false;
                         function startContent() {
@@ -262,11 +336,16 @@ public class ScormService {
                             contentStarted = true;
                             var frame = document.getElementById('scormContent');
                             frame.addEventListener('load', applyEmbedLook);
+                            frame.addEventListener('load', announceNav);
                             frame.src = frame.getAttribute('data-src');
                         }
 
                         // Listen for initialization data from parent app
                         window.addEventListener('message', function(event) {
+                            if (event.data && event.data.type === 'vacademy_scorm_nav') {
+                                if (event.source === window.parent) turnPage(event.data.dir);
+                                return;
+                            }
                             if (event.data && event.data.type === 'vacademy_scorm_init') {
                                 if (contentStarted) return;
                                 if (event.data.cmiData) {

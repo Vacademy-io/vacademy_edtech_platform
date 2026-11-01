@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { ArrowSquareOut, ArrowsOut, BookOpenText } from "@phosphor-icons/react";
+import { ArrowSquareOut, ArrowsOut, BookOpenText, CaretLeft, CaretRight } from "@phosphor-icons/react";
 import { useMediaQuery } from "@/hooks/use-media-query";
 
 /**
@@ -142,6 +142,31 @@ export const ScormViewerComponent: React.FC<ScormViewerProps> = ({
     }
   }, [target]);
 
+  // Page arrows on phones, where iSpring Flip only swipes. Shown once the
+  // player wrapper says it can turn pages (vacademy_scorm_nav_ready, v3
+  // wrapper and later); older packages keep just the swipe hint.
+  const [navReady, setNavReady] = useState(false);
+  useEffect(() => {
+    const onMessage = (event: MessageEvent) => {
+      if (event.source && event.source === iframeRef.current?.contentWindow && event.data?.type === "vacademy_scorm_nav_ready") {
+        setNavReady(true);
+      }
+    };
+    window.addEventListener("message", onMessage);
+    return () => window.removeEventListener("message", onMessage);
+  }, []);
+  const turnPage = useCallback(
+    (dir: "prev" | "next") => {
+      if (!target) return;
+      try {
+        iframeRef.current?.contentWindow?.postMessage({ type: "vacademy_scorm_nav", dir }, target.origin);
+      } catch {
+        /* the reader can still swipe */
+      }
+    },
+    [target],
+  );
+
   // iOS Safari has no element fullscreen; there the package opens in its own tab.
   const openFullScreen = useCallback(() => {
     const box = frameBoxRef.current;
@@ -152,6 +177,8 @@ export const ScormViewerComponent: React.FC<ScormViewerProps> = ({
     }
   }, [target]);
 
+  const navBtn =
+    "inline-flex size-11 shrink-0 items-center justify-center rounded-full border border-catalogue-border bg-catalogue-bg-elevated text-catalogue-text-primary shadow-sm transition active:scale-95";
   const iconBtn =
     "inline-flex items-center gap-1.5 rounded-lg px-3 py-2 text-sm font-medium text-catalogue-text-primary transition hover:bg-catalogue-interactive-hover";
 
@@ -196,7 +223,19 @@ export const ScormViewerComponent: React.FC<ScormViewerProps> = ({
               )}
             </div>
             {!isTablet && (
-              <p className="mt-2 text-center text-sm text-catalogue-text-muted">{t("jsonRenderer.scormViewer.swipeHint")}</p>
+              <div className="mt-2 flex items-center justify-center gap-3">
+                {navReady && (
+                  <button type="button" onClick={() => turnPage("prev")} className={navBtn} aria-label={t("jsonRenderer.scormViewer.previousPage")}>
+                    <CaretLeft className="size-5" weight="bold" aria-hidden="true" />
+                  </button>
+                )}
+                <p className="text-center text-sm text-catalogue-text-muted">{t("jsonRenderer.scormViewer.swipeHint")}</p>
+                {navReady && (
+                  <button type="button" onClick={() => turnPage("next")} className={navBtn} aria-label={t("jsonRenderer.scormViewer.nextPage")}>
+                    <CaretRight className="size-5" weight="bold" aria-hidden="true" />
+                  </button>
+                )}
+              </div>
             )}
           </>
         ) : (
