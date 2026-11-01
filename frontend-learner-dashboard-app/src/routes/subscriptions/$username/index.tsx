@@ -268,6 +268,7 @@ function RouteComponent() {
  * Membership list + stop flow. Three visually distinct states per plan, because
  * a learner glancing at this page should be able to tell them apart instantly:
  * - renewing      → next payment date + "Stop membership" button, no banner
+ *                   (no autopay: just the button, while the plan is active and renewable)
  * - stopped       → amber "Membership stopped" + the date classes run until
  * - payment failed → red, with the pay-now option below
  *
@@ -575,6 +576,15 @@ function ManageSubscriptions({ instituteId }: { instituteId: string }) {
         const accessUntil = formatDate(sub.end_date);
         const autopayOn =
           sub.has_active_mandate && sub.status !== "CANCELED";
+        // A renewable membership with no autopay can still be stopped: cancelling just marks
+        // it as not renewing and access runs to the end date, the same as stopping autopay.
+        // Limited to ACTIVE plans with a future end date that offer renewal, so one-off and
+        // lifetime purchases never show a stop button.
+        const endsInFuture =
+          !!sub.end_date && new Date(sub.end_date).getTime() > Date.now();
+        const canStop =
+          autopayOn ||
+          (sub.status === "ACTIVE" && !!sub.can_renew_manually && endsInFuture);
         const paymentFailed = sub.status === "PAYMENT_FAILED";
         return (
           <div
@@ -607,7 +617,7 @@ function ManageSubscriptions({ instituteId }: { instituteId: string }) {
                   )}
                 </div>
               </div>
-              {autopayOn && (
+              {canStop && (
                 <MyButton
                   type="button"
                   scale="small"
