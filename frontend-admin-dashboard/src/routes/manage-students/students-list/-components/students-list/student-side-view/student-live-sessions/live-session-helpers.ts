@@ -30,13 +30,12 @@ export const formatMinutes = (mins: number | null | undefined) => {
 // ── Attendance by day ────────────────────────────────────────────────────────
 
 /**
- * How a learner did on one calendar day that had at least one class.
- * - attended: present at every class that day
- * - partial: present at some, not all
- * - missed: present at none, at least one marked absent
- * - unmarked: no attendance recorded for any class yet (not synced / not marked)
+ * How a learner did on one calendar day that had at least one class. Deliberately two states so
+ * the calendar reads at a glance:
+ * - attended: present at one or more classes that day
+ * - unmarked: no class attended — marked absent, or attendance not recorded yet
  */
-export type DayStatus = 'attended' | 'partial' | 'missed' | 'unmarked';
+export type DayStatus = 'attended' | 'unmarked';
 
 export interface DaySummary {
     date: string;
@@ -54,27 +53,19 @@ export const summariseByDay = (classes: LearnerLiveClass[]): Map<string, DaySumm
     }
     const out = new Map<string, DaySummary>();
     for (const [date, list] of byDate) {
-        const present = list.filter((c) => c.attendance_status === 'PRESENT').length;
-        const absent = list.filter((c) => c.attendance_status === 'ABSENT').length;
-        let status: DayStatus;
-        if (present === list.length) status = 'attended';
-        else if (present > 0) status = 'partial';
-        else if (absent > 0) status = 'missed';
-        else status = 'unmarked';
-        out.set(date, { date, status, classes: list });
+        const attended = list.some((c) => c.attendance_status === 'PRESENT');
+        out.set(date, { date, status: attended ? 'attended' : 'unmarked', classes: list });
     }
     return out;
 };
-
-const counts = (s: DayStatus) => s === 'attended' || s === 'partial';
 
 /**
  * Streaks are counted in CLASS days — days with no class neither extend nor break a streak, so a
  * learner on a Mon/Wed/Fri batch isn't penalised for the days in between.
  *
- * `current` walks back from the most recent class day. Today's classes are skipped while they are
- * still unmarked, since attendance syncs from the provider after the class ends and an unsynced
- * class shouldn't wipe out the streak in the meantime.
+ * `current` walks back from the most recent class day. Today is skipped until a class is attended,
+ * since attendance syncs from the provider after the class ends and an unsynced class shouldn't
+ * wipe out the streak in the meantime.
  */
 export const computeStreaks = (
     days: Map<string, DaySummary>,
@@ -85,7 +76,7 @@ export const computeStreaks = (
     let longest = 0;
     let run = 0;
     for (const d of ordered) {
-        if (counts(d.status)) {
+        if (d.status === 'attended') {
             run += 1;
             longest = Math.max(longest, run);
         } else if (!(d.date === today && d.status === 'unmarked')) {
@@ -97,7 +88,7 @@ export const computeStreaks = (
     for (let i = ordered.length - 1; i >= 0; i--) {
         const d = ordered[i]!;
         if (d.date === today && d.status === 'unmarked') continue;
-        if (!counts(d.status)) break;
+        if (d.status !== 'attended') break;
         current += 1;
     }
     return { current, longest };
