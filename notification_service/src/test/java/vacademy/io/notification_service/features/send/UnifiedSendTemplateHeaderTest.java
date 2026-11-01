@@ -5,6 +5,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
+import vacademy.io.notification_service.features.announcements.client.AdminCoreServiceClient;
 import vacademy.io.notification_service.features.announcements.service.UserAnnouncementPreferenceService;
 import vacademy.io.notification_service.features.chatbot_flow.entity.NotificationTemplate;
 import vacademy.io.notification_service.features.chatbot_flow.repository.NotificationTemplateRepository;
@@ -62,7 +63,8 @@ class UnifiedSendTemplateHeaderTest {
                 templateRepository,
                 mock(UserAnnouncementPreferenceService.class),
                 mock(EmailCcResolver.class),
-                mock(NotificationLogRepository.class));
+                mock(NotificationLogRepository.class),
+                mock(AdminCoreServiceClient.class));
 
         when(whatsAppService.sendWhatsappMessagesDetailed(anyString(), any(), any(), any(), any(), any(),
                 anyString(), any(), anyString(), any(), any(), any()))

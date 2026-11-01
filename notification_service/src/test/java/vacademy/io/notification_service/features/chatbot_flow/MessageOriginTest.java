@@ -5,6 +5,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
+import vacademy.io.notification_service.features.announcements.client.AdminCoreServiceClient;
 import vacademy.io.notification_service.features.announcements.service.UserAnnouncementPreferenceService;
 import vacademy.io.notification_service.features.chatbot_flow.dto.MessageOriginDTO;
 import vacademy.io.notification_service.features.chatbot_flow.engine.ChatbotFlowEngine;
@@ -98,7 +99,8 @@ class MessageOriginTest {
         UnifiedSendService service = new UnifiedSendService(whatsAppService, mock(EmailService.class),
                 mock(PushNotificationService.class), mock(SendBatchRepository.class), new ObjectMapper(),
                 mock(BatchProcessorService.class), templates, mock(UserAnnouncementPreferenceService.class),
-                mock(EmailCcResolver.class), mock(NotificationLogRepository.class));
+                mock(EmailCcResolver.class), mock(NotificationLogRepository.class),
+                mock(AdminCoreServiceClient.class));
 
         service.send(UnifiedSendRequest.builder()
                 .instituteId(INSTITUTE)

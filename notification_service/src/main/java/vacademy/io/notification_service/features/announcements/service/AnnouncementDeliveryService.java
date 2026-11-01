@@ -27,6 +27,7 @@ import vacademy.io.notification_service.features.notification_log.entity.Notific
 import vacademy.io.notification_service.features.notification_log.repository.NotificationLogRepository;
 import vacademy.io.notification_service.features.send.dto.UnifiedSendRequest;
 import vacademy.io.notification_service.features.send.dto.UnifiedSendResponse;
+import vacademy.io.notification_service.features.send.service.MembershipPlaceholders;
 import vacademy.io.notification_service.features.send.service.UnifiedSendService;
 import vacademy.io.notification_service.service.EmailService;
 import vacademy.io.notification_service.features.firebase_notifications.service.PushNotificationService;
@@ -190,6 +191,8 @@ public class AnnouncementDeliveryService {
         boolean needsReferral = content.getContent() != null
                 && REFERRAL_TOKENS.stream().anyMatch(content.getContent()::contains);
         String referralInviteId = (String) emailConfig.get("referral_enroll_invite_id");
+        // Membership merge tags (practice, plan end date, subscriptions link), likewise only when used.
+        boolean needsMembership = MembershipPlaceholders.usedIn(content.getContent(), subject);
         
         log.info("Delivering announcement {} via email with type: {}, from: {}, subject: {}", 
                  announcement.getId(), resolvedEmailType, fromEmail, subject);
@@ -266,6 +269,9 @@ public class AnnouncementDeliveryService {
             Map<String, Map<String, String>> referralLinks = needsReferral
                     ? adminCoreServiceClient.getReferralLinks(announcement.getInstituteId(), userIds, referralInviteId)
                     : Map.of();
+            Map<String, Map<String, String>> membershipByUser = needsMembership
+                    ? adminCoreServiceClient.getMembershipPlaceholders(announcement.getInstituteId(), userIds)
+                    : Map.of();
 
             // Process each message in this batch
             int batchSuccess = 0;
@@ -312,9 +318,15 @@ public class AnnouncementDeliveryService {
                     }
 
                     // Process HTML content with variables (use cached users - no additional API calls)
-                    String processedContent = applyReferralTokens(
+                    // A recipient with no plan gets blanks here, so unified send does not look
+                    // them up again one by one.
+                    Map<String, String> membership = needsMembership
+                            ? membershipByUser.getOrDefault(message.getUserId(), MembershipPlaceholders.blanks())
+                            : null;
+                    String processedContent = MembershipPlaceholders.apply(applyReferralTokens(
                             processHtmlVariables(content.getContent(), message, announcement, userEmailMap, passwordByUserId, resolvedInstituteEmail),
-                            referral);
+                            referral), membership);
+                    String processedSubject = MembershipPlaceholders.apply(subject, membership);
 
                         // RATE LIMITING: Acquire permit before sending (blocks if limit exceeded)
                         rateLimiter.acquire();
@@ -330,7 +342,7 @@ public class AnnouncementDeliveryService {
                             .recipients(List.of(UnifiedSendRequest.Recipient.builder()
                                     .email(userEmail).userId(message.getUserId()).build()))
                             .options(UnifiedSendRequest.SendOptions.builder()
-                                    .emailSubject(subject)
+                                    .emailSubject(processedSubject)
                                     .emailBody(processedContent)
                                     .emailType(resolvedEmailType)
                                     .fromEmail(fromEmail)
@@ -462,6 +474,16 @@ public class AnnouncementDeliveryService {
             try {
                 String body = processHtmlVariables(html, message, announcement, Map.of(user.getId(), user),
                         Map.of(user.getId(), TEST_PASSWORD_PLACEHOLDER), instituteEmail);
+                String testSubject = subject;
+                // Membership tags render with the matched member's own plan, as the real send will.
+                if (MembershipPlaceholders.usedIn(html, subject)) {
+                    Map<String, String> membership = matchedUser
+                            ? adminCoreServiceClient.getMembershipPlaceholders(request.getInstituteId(),
+                                    List.of(user.getId())).getOrDefault(user.getId(), MembershipPlaceholders.blanks())
+                            : MembershipPlaceholders.blanks();
+                    body = MembershipPlaceholders.apply(body, membership);
+                    testSubject = MembershipPlaceholders.apply(subject, membership);
+                }
                 getEmailRateLimiter().acquire();
                 // No userId: the admin is testing on their own inbox, so the matched user's
                 // unsubscribe preference must not silently swallow the test.
@@ -471,7 +493,7 @@ public class AnnouncementDeliveryService {
                         .recipients(List.of(UnifiedSendRequest.Recipient.builder()
                                 .email(rawEmail).build()))
                         .options(UnifiedSendRequest.SendOptions.builder()
-                                .emailSubject(subject)
+                                .emailSubject(testSubject)
                                 .emailBody(body)
                                 .emailType(emailType)
                                 .fromEmail(fromEmail)

@@ -5,6 +5,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
+import vacademy.io.notification_service.features.announcements.client.AdminCoreServiceClient;
 import vacademy.io.notification_service.features.announcements.service.UserAnnouncementPreferenceService;
 import vacademy.io.notification_service.features.chatbot_flow.repository.NotificationTemplateRepository;
 import vacademy.io.notification_service.features.firebase_notifications.service.PushNotificationService;
@@ -54,7 +55,8 @@ class UnifiedSendPlainLogSourceTest {
                 mock(NotificationTemplateRepository.class),
                 mock(UserAnnouncementPreferenceService.class),
                 ccResolver,
-                mock(NotificationLogRepository.class));
+                mock(NotificationLogRepository.class),
+                mock(AdminCoreServiceClient.class));
     }
 
     private UnifiedSendRequest emailRequest(String source) {

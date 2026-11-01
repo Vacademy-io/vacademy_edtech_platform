@@ -3,7 +3,6 @@ package vacademy.io.admin_core_service.features.enrollment_policy.notification;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 import vacademy.io.admin_core_service.features.enrollment_policy.dto.EmailNotificationContentDTO;
@@ -13,23 +12,16 @@ import vacademy.io.admin_core_service.features.enrollment_policy.enums.Notificat
 import vacademy.io.admin_core_service.features.enrollment_policy.processor.EnrolmentContext;
 import vacademy.io.admin_core_service.features.enrollment_policy.service.EnrollmentTemplateService;
 import vacademy.io.admin_core_service.features.institute.entity.Template;
-import vacademy.io.admin_core_service.features.institute.repository.InstituteRepository;
-import vacademy.io.admin_core_service.features.learner.service.LearnerPortalAccessService;
 import vacademy.io.admin_core_service.features.notification.dto.NotificationDTO;
 import vacademy.io.admin_core_service.features.notification.dto.NotificationToUserDTO;
 import vacademy.io.admin_core_service.features.notification_service.service.NotificationService;
+import vacademy.io.admin_core_service.features.user_subscription.service.MembershipPlaceholderService;
 import vacademy.io.common.auth.dto.UserDTO;
 import vacademy.io.common.exceptions.VacademyException;
-import vacademy.io.common.institute.entity.Institute;
 
-import java.net.URLEncoder;
-import java.nio.charset.StandardCharsets;
-import java.text.SimpleDateFormat;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
-import java.util.TimeZone;
 
 @Slf4j
 @Service
@@ -43,11 +35,7 @@ public class EmailNotificationService implements INotificationService {
     private vacademy.io.admin_core_service.features.notification_service.service.BillingContactRecipientResolver billingContactRecipientResolver;
 
     @Autowired
-    private InstituteRepository instituteRepository;
-
-    @Lazy
-    @Autowired
-    private LearnerPortalAccessService learnerPortalAccessService;
+    private MembershipPlaceholderService membershipPlaceholderService;
 
     private final EnrollmentTemplateService enrollmentTemplateService;
 
@@ -179,78 +167,23 @@ public class EmailNotificationService implements INotificationService {
     /**
      * Builds the placeholder values for one UserPlan. The same map is substituted into the
      * template here and handed to the unified send as recipient variables, so the learner
-     * copy and the billing-contact copy always render identically.
+     * copy and the billing-contact copy always render identically. The membership keys come
+     * from MembershipPlaceholderService, which also serves side-view and campaign sends.
      */
     private Map<String, String> buildPlaceholders(EnrolmentContext context, String instituteId) {
-        UserDTO userDTO = context.getUser();
-        String learnerName = userDTO != null && StringUtils.hasText(userDTO.getFullName())
-                ? userDTO.getFullName().trim()
-                : "Learner";
-        String[] nameParts = learnerName.split("\\s+", 2);
+        Map<String, String> placeholders = new HashMap<>(membershipPlaceholderService.forPlan(
+                context.getUserPlan(), context.getUser(), instituteId, context.getBillingZone()));
 
         // Get course name from first mapping (all belong to same UserPlan)
         String courseName = context.getMappings() != null && !context.getMappings().isEmpty()
             ? enrollmentTemplateService.formatCourseName(context.getMappings().get(0).getPackageSession())
             : "Your Course";
-
-        Map<String, String> placeholders = new HashMap<>();
-        placeholders.put("learner_name", learnerName);
-        placeholders.put("first_name", nameParts[0]);
-        placeholders.put("last_name", nameParts.length > 1 ? nameParts[1] : "");
         placeholders.put("course_name", courseName);
-        placeholders.put("expiry_date", formatEndDate(context, "yyyy-MM-dd"));
-        // Human-readable form for learner-facing copy, e.g. "14 November 2026".
-        placeholders.put("expiry_date_long", formatEndDate(context, "d MMMM yyyy"));
-        placeholders.put("renewal_link", "https://vacademy.io/renew"); // Hardcoded for now
-        placeholders.put("practice_name", resolveSubOrgName(context));
-        placeholders.put("subscription_link", buildSubscriptionLink(userDTO, instituteId));
-        return placeholders;
-    }
-
-    private String formatEndDate(EnrolmentContext context, String pattern) {
         if (context.getEndDate() == null) {
-            return "N/A";
+            placeholders.put("expiry_date", "N/A");
         }
-        SimpleDateFormat format = new SimpleDateFormat(pattern, Locale.ENGLISH);
-        if (context.getBillingZone() != null) {
-            format.setTimeZone(TimeZone.getTimeZone(context.getBillingZone()));
-        }
-        return format.format(context.getEndDate());
-    }
-
-    /** Name of the sub-org (practice) a SUB_ORG plan was bought for; blank for individual plans. */
-    private String resolveSubOrgName(EnrolmentContext context) {
-        String subOrgId = context.getUserPlan() != null ? context.getUserPlan().getSubOrgId() : null;
-        if (!StringUtils.hasText(subOrgId)) {
-            return "";
-        }
-        try {
-            return instituteRepository.findById(subOrgId)
-                    .map(Institute::getInstituteName)
-                    .orElse("");
-        } catch (Exception e) {
-            log.warn("Could not resolve sub-org name for {}: {}", subOrgId, e.getMessage());
-            return "";
-        }
-    }
-
-    /**
-     * The learner portal page where a member manages (and can cancel) their subscription:
-     * {@code <portal>/subscriptions/<username>}, on the same host the learner's other portal
-     * links use.
-     */
-    private String buildSubscriptionLink(UserDTO userDTO, String instituteId) {
-        if (userDTO == null || !StringUtils.hasText(userDTO.getUsername())) {
-            return "";
-        }
-        try {
-            return learnerPortalAccessService.resolvePortalBaseUrl(instituteId, userDTO.getId())
-                    + "/subscriptions/"
-                    + URLEncoder.encode(userDTO.getUsername(), StandardCharsets.UTF_8);
-        } catch (Exception e) {
-            log.warn("Could not build subscription link for user {}: {}", userDTO.getId(), e.getMessage());
-            return "";
-        }
+        placeholders.put("renewal_link", "https://vacademy.io/renew"); // Hardcoded for now
+        return placeholders;
     }
 
     private String replacePlaceholders(String template, Map<String, String> placeholders) {

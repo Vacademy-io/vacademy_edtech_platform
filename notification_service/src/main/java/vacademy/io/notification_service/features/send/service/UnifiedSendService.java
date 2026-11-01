@@ -7,6 +7,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import vacademy.io.notification_service.features.chatbot_flow.entity.NotificationTemplate;
 import vacademy.io.notification_service.features.chatbot_flow.repository.NotificationTemplateRepository;
+import vacademy.io.notification_service.features.announcements.client.AdminCoreServiceClient;
 import vacademy.io.notification_service.features.announcements.service.UserAnnouncementPreferenceService;
 import vacademy.io.notification_service.features.firebase_notifications.service.PushNotificationService;
 import vacademy.io.notification_service.features.send.dto.SendBatchSummaryDTO;
@@ -39,6 +40,7 @@ public class UnifiedSendService implements SendChannelRouter {
     private final UserAnnouncementPreferenceService userAnnouncementPreferenceService;
     private final EmailCcResolver emailCcResolver;
     private final NotificationLogRepository notificationLogRepository;
+    private final AdminCoreServiceClient adminCoreServiceClient;
 
     private static final int SYNC_THRESHOLD = 100;
 
@@ -459,6 +461,20 @@ public class UnifiedSendService implements SendChannelRouter {
         // through would double-count campaigns there. Only inbox replies need to be told apart.
         final String plainLogSource = plainLogSource(opts.getSource());
 
+        // Membership merge tags ({{practice_name}}, {{expiry_date_long}}, {{subscription_link}}, ...)
+        // live in admin-core. Fetch them once for the whole batch, and only when the message
+        // uses one, so ordinary sends never make the call.
+        Map<String, Map<String, String>> membershipByUser = Map.of();
+        if (MembershipPlaceholders.usedIn(templateSubject, templateBody)) {
+            List<String> memberIds = request.getRecipients().stream()
+                    .map(UnifiedSendRequest.Recipient::getUserId)
+                    .filter(id -> id != null && !id.isBlank() && !id.contains("@"))
+                    .distinct()
+                    .toList();
+            membershipByUser = adminCoreServiceClient.getMembershipPlaceholders(
+                    request.getInstituteId(), memberIds);
+        }
+
         // Optional rate limiting for bulk sends (e.g., announcements)
         com.google.common.util.concurrent.RateLimiter rateLimiter = null;
         if (opts.getRateLimitPerSecond() != null && opts.getRateLimitPerSecond() > 0) {
@@ -489,6 +505,9 @@ public class UnifiedSendService implements SendChannelRouter {
                 // the caller supplied fullName/parentName (and vice versa). Callers'
                 // explicit keys always win; this only adds the spellings they omitted.
                 Map<String, String> vars = UnifiedVariableAliases.expand(r.getVariables());
+                if (!membershipByUser.isEmpty() && r.getUserId() != null) {
+                    vars = MembershipPlaceholders.fillMissing(vars, membershipByUser.get(r.getUserId()));
+                }
                 for (Map.Entry<String, String> var : vars.entrySet()) {
                     String placeholder = "{{" + var.getKey() + "}}";
                     String value = var.getValue() != null ? var.getValue() : "";

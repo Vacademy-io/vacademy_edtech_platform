@@ -54,6 +54,7 @@ import { SearchableSelect } from '@/components/design-system/searchable-select';
 import { toast } from 'sonner';
 import { v4 as uuidv4 } from 'uuid';
 import { useTranslation } from 'react-i18next';
+import { isServerResolvedEmailVariable } from '@/lib/email-templates/server-resolved-variables';
 import type { TFunction } from 'i18next';
 
 type Channel = 'EMAIL' | 'WHATSAPP';
@@ -435,10 +436,21 @@ export function IndividualSendDialog({
             return extractPlaceholders(selectedWaTemplate.bodyText ?? '');
         }
         if (channel === 'EMAIL') {
-            return extractPlaceholders(`${subject} ${body}`);
+            // Membership tags are filled by the server on send, so there is nothing to map.
+            return extractPlaceholders(`${subject} ${body}`).filter(
+                (k) => !isServerResolvedEmailVariable(k)
+            );
         }
         return [];
     }, [channel, selectedWaTemplate, subject, body]);
+
+    const serverFilledKeys = useMemo<string[]>(
+        () =>
+            channel === 'EMAIL'
+                ? extractPlaceholders(`${subject} ${body}`).filter(isServerResolvedEmailVariable)
+                : [],
+        [channel, subject, body]
+    );
 
     // Auto-map variables when they first appear
     useEffect(() => {
@@ -519,11 +531,14 @@ export function IndividualSendDialog({
         return out;
     }, [variableKeys, resolveValue]);
 
-    // Replace placeholders in a string with resolved values (for email preview/send)
+    // Replace placeholders in a string with resolved values (for email preview/send).
+    // Membership tags stay as {{token}} for the notification service to fill per recipient.
     const interpolate = useCallback(
         (text: string) => {
             if (!text) return text;
-            return text.replace(/\{\{(\w+)\}\}/g, (_, key) => resolvedVariables[key] ?? '');
+            return text.replace(/\{\{(\w+)\}\}/g, (full, key) =>
+                isServerResolvedEmailVariable(key) ? full : resolvedVariables[key] ?? ''
+            );
         },
         [resolvedVariables]
     );
@@ -1014,6 +1029,16 @@ export function IndividualSendDialog({
         );
     };
 
+    const serverFilledNote =
+        serverFilledKeys.length > 0 ? (
+            <p className="text-xs text-muted-foreground">
+                {t('variableMappingStep.serverFilled', {
+                    keys: serverFilledKeys.map((k) => `{{${k}}}`).join(', '),
+                    interpolation: { escapeValue: false },
+                })}
+            </p>
+        ) : null;
+
     const renderVariableMappingStep = () => {
         if (variableKeys.length === 0) {
             return (
@@ -1023,6 +1048,7 @@ export function IndividualSendDialog({
                         <CheckCircle className="size-8" />
                         <p className="text-sm">{t('variableMappingStep.noVariables')}</p>
                     </div>
+                    {serverFilledNote}
                     {renderWaMessagePreview(t('variableMappingStep.livePreviewLabel'))}
                 </div>
             );
@@ -1033,6 +1059,7 @@ export function IndividualSendDialog({
                 <p className="mb-3 text-sm text-muted-foreground">
                     {t('variableMappingStep.mapHint')}
                 </p>
+                {serverFilledNote}
                 <div className="rounded-md border">
                     {/* `minmax(0,...)` on every column lets long content (e.g. emails)
                         truncate inside the cell instead of forcing the row wider than
