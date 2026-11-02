@@ -13,6 +13,7 @@ import vacademy.io.admin_core_service.features.auth_service.service.AuthService;
 import vacademy.io.admin_core_service.features.faculty.entity.FacultySubjectPackageSessionMapping;
 import vacademy.io.admin_core_service.features.faculty.repository.FacultySubjectPackageSessionMappingRepository;
 import vacademy.io.admin_core_service.features.institute.repository.InstituteRepository;
+import vacademy.io.admin_core_service.features.media_service.service.MediaService;
 import vacademy.io.admin_core_service.features.institute.service.setting.InstituteSettingService;
 import vacademy.io.admin_core_service.features.institute_learner.entity.Student;
 import vacademy.io.admin_core_service.features.institute_learner.repository.InstituteStudentRepository;
@@ -109,6 +110,7 @@ public class BatchSummaryReportService {
     private final FacultySubjectPackageSessionMappingRepository facultyMappingRepository;
     private final AuthService authService;
     private final NotificationService notificationService;
+    private final MediaService mediaService;
     private final ObjectMapper objectMapper;
 
     // ── summary ─────────────────────────────────────────────────────────────────
@@ -125,6 +127,7 @@ public class BatchSummaryReportService {
                 .batchName(batchId == null ? ALL_BATCHES_LABEL : request.getBatchName())
                 .instituteName(institute == null ? null : institute.getInstituteName())
                 .brandColor(institute == null ? null : ThemeColorResolver.resolve(institute.getInstituteThemeCode()))
+                .logoUrl(logoUrl(institute))
                 .startDate(request.getStartDate())
                 .endDate(request.getEndDate())
                 .sections(sectionsFor(request, setting));
@@ -428,8 +431,13 @@ public class BatchSummaryReportService {
         StringBuilder h = new StringBuilder(16_000);
         h.append("<!DOCTYPE html><html><head><meta charset=\"UTF-8\"><style>").append(css(brand)).append("</style></head><body>");
 
-        h.append("<table class=\"band\"><tr><td class=\"band-logo\"><div class=\"logo\">")
-                .append(esc(initials(r.getInstituteName()))).append("</div></td><td><div class=\"band-i1\">")
+        h.append("<table class=\"band\"><tr><td class=\"band-logo\">");
+        if (StringUtils.hasText(r.getLogoUrl())) {
+            h.append("<div class=\"logo-img\"><img src=\"").append(esc(r.getLogoUrl())).append("\" alt=\"\"/></div>");
+        } else {
+            h.append("<div class=\"logo\">").append(esc(initials(r.getInstituteName()))).append("</div>");
+        }
+        h.append("</td><td><div class=\"band-i1\">")
                 .append(esc(r.getInstituteName())).append("</div><div class=\"band-i2\">")
                 .append(child != null ? "Progress report" : "Batch report").append("</div></td><td class=\"band-r\"><div class=\"band-r1\">")
                 .append(esc(child != null ? child.getFullName() : r.getBatchName())).append("</div><div class=\"band-r2\">")
@@ -751,7 +759,9 @@ public class BatchSummaryReportService {
                 + "body{font-family:Helvetica,Arial,sans-serif;color:#1f2937;font-size:11px;margin:0;}"
                 + "table{border-collapse:collapse;width:100%;}td{vertical-align:top;}"
                 + ".band{background:" + brand + ";color:#ffffff;}.band td{padding:18px 0;vertical-align:middle;}"
-                + ".band-logo{width:76px;padding-left:32px !important;}"
+                + ".band-logo{width:96px;padding-left:32px !important;}"
+                + ".logo-img{width:52px;height:52px;padding:4px;border-radius:8px;background:#ffffff;text-align:center;}"
+                + ".logo-img img{max-width:52px;max-height:52px;}"
                 + ".logo{width:42px;height:42px;line-height:42px;border-radius:8px;background:#ffffff;color:" + brand
                 + ";font-weight:bold;font-size:16px;text-align:center;}"
                 + ".band-i1{font-size:14px;font-weight:bold;}.band-i2{font-size:10px;}"
@@ -816,8 +826,12 @@ public class BatchSummaryReportService {
     private String emailBody(BatchSummaryReportDTO r, BatchSummaryReportDTO.LearnerRow child) {
         String brand = brand(r);
         StringBuilder h = new StringBuilder("<div style=\"font-family:Helvetica,Arial,sans-serif;color:#1f2937;font-size:14px;max-width:560px;\">");
-        h.append("<div style=\"background:").append(brand).append(";color:#ffffff;padding:16px 20px;border-radius:10px 10px 0 0;\">")
-                .append("<div style=\"font-size:16px;font-weight:bold;\">").append(esc(r.getInstituteName())).append("</div>")
+        h.append("<div style=\"background:").append(brand).append(";color:#ffffff;padding:16px 20px;border-radius:10px 10px 0 0;\">");
+        if (StringUtils.hasText(r.getLogoUrl())) {
+            h.append("<img src=\"").append(esc(r.getLogoUrl()))
+                    .append("\" alt=\"\" style=\"max-height:40px;max-width:140px;background:#ffffff;border-radius:6px;padding:4px;margin-bottom:8px;\"/>");
+        }
+        h.append("<div style=\"font-size:16px;font-weight:bold;\">").append(esc(r.getInstituteName())).append("</div>")
                 .append("<div style=\"font-size:12px;\">").append(esc(joinNonBlank(" · ", r.getBatchName(), dateLabel(r)))).append("</div></div>")
                 .append("<div style=\"border:1px solid #e5e7eb;border-top:0;padding:18px 20px;border-radius:0 0 10px 10px;\">");
         if (child != null) {
@@ -1019,6 +1033,18 @@ public class BatchSummaryReportService {
         BatchReportSettingConfig picked = new BatchReportSettingConfig();
         picked.setSections(request.getSections());
         return picked.resolvedSections();
+    }
+
+    /** Public logo URL for the report header; null when there is no logo or it cannot be resolved. */
+    private String logoUrl(Institute institute) {
+        if (institute == null || !StringUtils.hasText(institute.getLogoFileId())) return null;
+        try {
+            String url = mediaService.getFilePublicUrlByIdWithoutExpiry(institute.getLogoFileId());
+            return StringUtils.hasText(url) ? url : null;
+        } catch (Exception e) {
+            log.warn("[BatchSummaryReport] logo url failed for institute={}: {}", institute.getId(), e.getMessage());
+            return null;
+        }
     }
 
     private Institute institute(String instituteId) {

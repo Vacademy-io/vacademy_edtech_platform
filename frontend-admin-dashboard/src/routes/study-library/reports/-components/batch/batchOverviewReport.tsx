@@ -137,6 +137,7 @@ const BatchOverviewBody = ({
         <div className="flex flex-col gap-4">
             <ReportHero
                 brand={brand}
+                logo={{ url: data.logo_url, name: data.institute_name }}
                 kicker={data.batch_name ?? 'All batches'}
                 headline={headlineFor(data)}
                 subline={

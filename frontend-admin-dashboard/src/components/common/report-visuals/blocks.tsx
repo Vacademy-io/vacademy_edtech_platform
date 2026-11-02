@@ -70,8 +70,29 @@ export const StatTile = ({
     </div>
 );
 
+/** Institute logo on a white tile; hides itself when the image cannot load. */
+const HeroLogo = ({ url, name }: { url: string; name?: string | null }) => {
+    const [ok, setOk] = useState(true);
+    if (!ok) return null;
+    return (
+        <div className="flex items-center gap-2">
+            <div className="flex h-10 items-center rounded-lg border border-neutral-200 bg-white px-2">
+                <img
+                    src={url}
+                    alt=""
+                    crossOrigin="anonymous"
+                    className="h-7 w-auto max-w-[120px] object-contain"
+                    onError={() => setOk(false)}
+                />
+            </div>
+            {name && <span className="text-sm font-semibold text-neutral-700">{name}</span>}
+        </div>
+    );
+};
+
 export const ReportHero = ({
     brand,
+    logo,
     kicker,
     headline,
     subline,
@@ -83,6 +104,8 @@ export const ReportHero = ({
     compact = false,
 }: {
     brand: string;
+    /** Institute logo shown above the kicker. */
+    logo?: { url?: string | null; name?: string | null } | null;
     kicker: string;
     headline: string;
     subline?: string;
@@ -103,6 +126,11 @@ export const ReportHero = ({
     >
         <div className={cn('flex items-center gap-4', compact ? 'p-4' : 'p-6')}>
             <div className="flex min-w-0 flex-1 flex-col gap-1">
+                {logo?.url && (
+                    <div className="mb-2">
+                        <HeroLogo url={logo.url} name={logo.name} />
+                    </div>
+                )}
                 <span
                     className="text-2xs font-semibold uppercase tracking-wider"
                     style={{ color: brand }}

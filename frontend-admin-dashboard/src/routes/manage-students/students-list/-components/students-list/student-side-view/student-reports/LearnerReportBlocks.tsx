@@ -38,10 +38,16 @@ interface BlockProps {
     animate?: boolean;
 }
 
-export const LearnerHero = ({ m, brand, compact }: BlockProps & { compact?: boolean }) => (
+export const LearnerHero = ({
+    m,
+    brand,
+    compact,
+    logo,
+}: BlockProps & { compact?: boolean; logo?: { url?: string | null; name?: string | null } }) => (
     <ReportHero
         brand={brand}
         compact={compact}
+        logo={logo}
         kicker={`${m.firstName}'s progress`}
         headline={m.headline}
         subline={m.subline || undefined}
