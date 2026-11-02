@@ -560,15 +560,19 @@
             },
             "sourceTypeLabel": "Terminer un(e)",
             "sourceType": {
+                "COURSE": "Cours entier",
                 "SUBJECT": "Matière",
                 "MODULE": "Module",
                 "CHAPTER": "Chapitre"
             },
             "sourceText": "{{type}} « {{name}} »",
+            "sourceTextCourse": "le cours « {{name}} »",
             "sourceUnnamed": "le contenu choisi",
             "choose": "Choisir",
             "loading": "Chargement…",
             "noSubjects": "Aucune matière dans ce groupe",
+            "noChapters": "Aucun chapitre dans ce module",
+            "courseOnly": "Ce cours n'a ni matières, ni modules, ni chapitres : les apprenants commencent quand ils terminent le cours entier.",
             "subjectFirst": "Choisissez d'abord une matière",
             "moduleFirst": "Choisissez d'abord un module",
             "change": "Modifier",
@@ -577,7 +581,7 @@
             "threshold": "Considéré comme terminé à (%)",
             "thresholdHint": "Les apprenants qui n'ont pas encore atteint ce seuil ne voient pas le plan.",
             "startLocked": "Le début ne peut plus changer une fois le plan publié.",
-            "startLockedContent": "Commence quand les apprenants terminent {{type}} « {{name}} » ({{percent}} %)",
+            "startLockedContent": "Commence quand les apprenants terminent {{source}} ({{percent}} %)",
             "summaryContent": "{{days}} après que chaque apprenant a terminé {{source}}. Le jour 1 est ce jour-là ; ceux qui ne l'ont pas terminé ne voient pas encore le plan.",
             "publishLeadContent": "Chaque apprenant de {{batch}} commence au jour 1 quand il termine {{source}} ({{percent}} %). Le plan va jusqu'au jour {{last}}.",
             "cardHintContent": "Les jours comptent à partir du jour où chaque apprenant termine {{source}} (jour 1 = ce jour-là). Ceux qui ne l'ont pas terminé ne voient pas encore le plan."

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useFormContext, useWatch, type Control } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
@@ -23,6 +23,8 @@ import { useStudyLibraryQuery } from '@/routes/study-library/courses/-services/g
 import { handleFetchModulesWithChapters } from '@/routes/study-library/courses/-services/getModulesWithChapters';
 import type { StartSourceType, StartTrigger } from '../../-types/types';
 import type { ComposerForm } from '../forms/composer-schema';
+import { sourceTypeLabel, startSourceText } from '../../-utils/start-source';
+import { parsePercent } from '../../-utils/format';
 import {
     chapterIdOf,
     chapterNameOf,
@@ -36,13 +38,10 @@ interface ModuleLike {
 }
 
 const TRIGGERS: StartTrigger[] = ['JOIN', 'CONTENT'];
-const SOURCE_TYPES: StartSourceType[] = ['SUBJECT', 'MODULE', 'CHAPTER'];
 
-function parsePercent(raw: string): number | null {
-    const trimmed = raw.trim();
-    if (!trimmed) return null;
-    const n = Number(trimmed);
-    return Number.isFinite(n) ? Math.trunc(n) : null;
+/** Shallow courses keep their skipped levels as one placeholder named DEFAULT. */
+function onlyDefault(names: (string | undefined)[]): boolean {
+    return names.length === 1 && (names[0] ?? '').trim().toUpperCase() === 'DEFAULT';
 }
 
 /**
@@ -72,14 +71,27 @@ export function StartTriggerField({
 
     const options = { shouldDirty: true, shouldValidate: formState.isSubmitted };
     const sourceError = formState.errors.startSourceId?.message;
-    const thresholdError = formState.errors.startThreshold?.message;
+    // Shown as soon as the box holds 0, not only after a save attempt.
+    const thresholdError =
+        formState.errors.startThreshold?.message ??
+        (threshold != null && (threshold < 1 || threshold > 100)
+            ? 'composer.errors.startThreshold'
+            : undefined);
     const batchError =
         trigger === 'CONTENT' &&
         formState.errors.packageSessionIds?.message === 'composer.errors.startSourceOneBatch';
 
-    if (!relative) return null;
+    // The chosen content belongs to one batch's course: switching to another batch drops it.
+    const lastBatch = useRef(batchId);
+    useEffect(() => {
+        const previous = lastBatch.current;
+        lastBatch.current = batchId ?? previous;
+        if (!previous || !batchId || previous === batchId || !sourceId) return;
+        setValue('startSourceId', null, { shouldDirty: true });
+        setValue('startSourceName', null, { shouldDirty: true });
+    }, [batchId, sourceId, setValue]);
 
-    const sourceLabel = sourceType ? t(`composer.relative.sourceType.${sourceType}`) : '';
+    if (!relative) return null;
 
     if (locked) {
         return (
@@ -89,8 +101,15 @@ export function StartTriggerField({
                     <span className="font-semibold text-neutral-800">
                         {trigger === 'CONTENT'
                             ? t('composer.relative.startLockedContent', {
-                                  type: sourceLabel,
-                                  name: sourceName || t('composer.relative.sourceUnnamed'),
+                                  source: startSourceText(
+                                      {
+                                          scheduleMode: 'RELATIVE',
+                                          startTrigger: 'CONTENT',
+                                          startSourceType: sourceType ?? undefined,
+                                          startSourceName: sourceName,
+                                      },
+                                      t
+                                  ),
                                   percent: threshold ?? 100,
                               })
                             : t('composer.relative.start.JOIN')}
@@ -175,8 +194,8 @@ export function StartTriggerField({
                                 setValue('startSourceId', null, options);
                                 setValue('startSourceName', null, options);
                             }}
-                            onPick={(id, name) => {
-                                setValue('startSourceType', sourceType ?? 'CHAPTER', options);
+                            onPick={(type, id, name) => {
+                                setValue('startSourceType', type, options);
                                 setValue('startSourceId', id, options);
                                 setValue('startSourceName', name, options);
                             }}
@@ -187,9 +206,9 @@ export function StartTriggerField({
                     )}
                     <div className="max-w-xs">
                         <MyInput
-                            inputType="number"
-                            min={1}
-                            max={100}
+                            inputType="text"
+                            inputMode="numeric"
+                            maxLength={3}
                             label={t('composer.relative.threshold')}
                             aria-label={t('composer.relative.threshold')}
                             inputPlaceholder="100"
@@ -211,8 +230,10 @@ export function StartTriggerField({
 }
 
 /**
- * Subject, then module, then chapter, as deep as the chosen type needs. A saved choice
- * shows by name with a Change button: only its id is stored, not the path to it.
+ * The whole course, or a subject, module or chapter of it, following the course's depth:
+ * levels a shallow course skips (kept as one DEFAULT placeholder) are neither shown nor
+ * offered, so a depth-3 course offers chapters only and a depth-2 course the whole course.
+ * A saved choice shows by name with a Change button: only its id is stored, not the path.
  */
 function ContentSourcePicker({
     batchId,
@@ -227,24 +248,31 @@ function ContentSourcePicker({
     sourceId: string | null;
     sourceName: string | null;
     onTypeChange: (type: StartSourceType) => void;
-    onPick: (id: string, name: string) => void;
+    onPick: (type: StartSourceType, id: string, name: string) => void;
 }) {
     const { t } = useTranslation('engagement');
     const [browsing, setBrowsing] = useState(!sourceId);
     const [subjectId, setSubjectId] = useState('');
     const [moduleId, setModuleId] = useState('');
+    // Browsing whenever nothing is chosen (also after a batch switch cleared the choice).
+    const open = browsing || !sourceId;
 
     const { studyLibraryData } = useStudyLibraryStore();
     const { getDetailsFromPackageSessionId } = useInstituteDetailsStore();
-    const libraryQuery = useQuery({ ...useStudyLibraryQuery(), enabled: browsing });
+    const libraryQuery = useQuery({ ...useStudyLibraryQuery(), enabled: open });
 
-    const subjects: SubjectType[] = useMemo(() => {
+    const { subjects, depth, courseName } = useMemo(() => {
         const details = getDetailsFromPackageSessionId({ packageSessionId: batchId });
-        if (!details) return [];
-        const course = studyLibraryData?.find((c) => c.course.id === details.package_dto?.id);
-        const session = course?.sessions.find((s) => s.session_dto.id === details.session?.id);
-        const level = session?.level_with_details.find((l) => l.id === details.level?.id);
-        return level?.subjects ?? [];
+        const course = details
+            ? studyLibraryData?.find((c) => c.course.id === details.package_dto?.id)
+            : undefined;
+        const session = course?.sessions.find((s) => s.session_dto.id === details?.session?.id);
+        const level = session?.level_with_details.find((l) => l.id === details?.level?.id);
+        return {
+            subjects: (level?.subjects ?? []) as SubjectType[],
+            depth: course?.course.course_depth ?? null,
+            courseName: course?.course.package_name || details?.package_dto?.package_name || '',
+        };
     }, [studyLibraryData, getDetailsFromPackageSessionId, batchId]);
 
     // A different batch means a different course tree.
@@ -254,15 +282,14 @@ function ContentSourcePicker({
     }, [batchId]);
 
     useEffect(() => {
-        if (browsing && !subjectId && subjects.length === 1 && subjects[0]) {
+        if (open && !subjectId && subjects.length === 1 && subjects[0]) {
             setSubjectId(subjects[0].id);
         }
-    }, [browsing, subjectId, subjects]);
+    }, [open, subjectId, subjects]);
 
-    const needsModules = sourceType !== 'SUBJECT';
     const modulesQuery = useQuery({
         ...handleFetchModulesWithChapters(subjectId, batchId),
-        enabled: browsing && needsModules && Boolean(subjectId),
+        enabled: open && sourceType !== 'COURSE' && sourceType !== 'SUBJECT' && Boolean(subjectId),
     });
     const modules: ModuleLike[] = useMemo(
         () =>
@@ -272,7 +299,51 @@ function ContentSourcePicker({
             })),
         [modulesQuery.data]
     );
+
+    useEffect(() => {
+        if (open && !moduleId && modules.length === 1 && modules[0]) {
+            setModuleId(modules[0].module.id);
+        }
+    }, [open, moduleId, modules]);
     const chapters = modules.find((m) => m.module.id === moduleId)?.chapters ?? [];
+
+    // course_depth: 5 = subject/module/chapter, 4 = module/chapter, 3 = chapter, 2 = slides
+    // only. Older courses without a depth fall back to spotting the DEFAULT placeholder.
+    const subjectHidden =
+        subjects.length === 1 &&
+        ((depth != null && depth < 5) || onlyDefault(subjects.map((s) => s.subject_name)));
+    const moduleHidden =
+        (depth != null && depth < 4 && modules.length <= 1) ||
+        (modules.length === 1 && onlyDefault(modules.map((m) => m.module.module_name)));
+    const chapterHidden =
+        (depth != null && depth < 3) ||
+        (moduleHidden && chapters.length === 1 && onlyDefault(chapters.map(chapterNameOf)));
+    const types: StartSourceType[] = [
+        'COURSE',
+        ...(subjectHidden ? [] : (['SUBJECT'] as const)),
+        ...(moduleHidden ? [] : (['MODULE'] as const)),
+        ...(chapterHidden ? [] : (['CHAPTER'] as const)),
+    ];
+    // Wait for the course before deciding a type isn't offered.
+    const courseKnown = depth != null || subjects.length > 0;
+
+    function pickCourse() {
+        onPick('COURSE', batchId, courseName);
+        setBrowsing(false);
+    }
+
+    // A type this course doesn't have (e.g. Chapter on a slides-only course) moves to the
+    // deepest one it does; the whole course is picked straight away.
+    const lastTypeFix = useRef('');
+    useEffect(() => {
+        if (!open || !courseKnown || types.includes(sourceType)) return;
+        const next = types[types.length - 1] ?? 'COURSE';
+        const key = `${batchId}:${sourceType}:${next}`;
+        if (lastTypeFix.current === key) return;
+        lastTypeFix.current = key;
+        onTypeChange(next);
+        if (next === 'COURSE' && !sourceId) pickCourse();
+    });
 
     if (!browsing && sourceId) {
         return (
@@ -280,9 +351,7 @@ function ContentSourcePicker({
                 <p className="flex min-w-0 items-center gap-2 text-body text-neutral-800">
                     <Flag size={16} className="shrink-0 text-primary-500" aria-hidden />
                     <span className="truncate">
-                        <span className="font-semibold">
-                            {t(`composer.relative.sourceType.${sourceType}`)}:
-                        </span>{' '}
+                        <span className="font-semibold">{sourceTypeLabel(sourceType, t)}:</span>{' '}
                         {sourceName || t('composer.relative.sourceUnnamed')}
                     </span>
                 </p>
@@ -300,46 +369,60 @@ function ContentSourcePicker({
 
     const loadingSubjects =
         subjects.length === 0 && (libraryQuery.isLoading || libraryQuery.isFetching);
+    const showSubject = sourceType !== 'COURSE' && !subjectHidden;
+    const showModule = (sourceType === 'MODULE' || sourceType === 'CHAPTER') && !moduleHidden;
+    const showChapter = sourceType === 'CHAPTER';
 
     return (
         <div className="grid gap-3 sm:grid-cols-2">
-            <SelectBox
-                label={t('composer.relative.sourceTypeLabel')}
-                value={sourceType}
-                onChange={(value) => {
-                    onTypeChange(value as StartSourceType);
-                    setModuleId('');
-                }}
-                options={SOURCE_TYPES.map((type) => ({
-                    value: type,
-                    label: t(`composer.relative.sourceType.${type}`),
-                }))}
-            />
-            <SelectBox
-                label={t('composer.relative.sourceType.SUBJECT')}
-                value={subjectId}
-                placeholder={
-                    loadingSubjects
-                        ? t('composer.relative.loading')
-                        : subjects.length === 0
-                          ? t('composer.relative.noSubjects')
-                          : t('composer.relative.choose')
-                }
-                disabled={subjects.length === 0}
-                onChange={(value) => {
-                    setSubjectId(value);
-                    setModuleId('');
-                    if (sourceType === 'SUBJECT') {
-                        const name = subjects.find((s) => s.id === value)?.subject_name ?? '';
-                        onPick(value, name);
-                        setBrowsing(false);
-                    }
-                }}
-                options={subjects.map((s) => ({ value: s.id, label: s.subject_name }))}
-            />
-            {needsModules && (
+            {types.length > 1 && (
                 <SelectBox
-                    label={t('composer.relative.sourceType.MODULE')}
+                    label={t('composer.relative.sourceTypeLabel')}
+                    value={sourceType}
+                    onChange={(value) => {
+                        const next = value as StartSourceType;
+                        onTypeChange(next);
+                        setModuleId('');
+                        if (next === 'COURSE') pickCourse();
+                    }}
+                    options={types.map((type) => ({
+                        value: type,
+                        label: sourceTypeLabel(type, t),
+                    }))}
+                />
+            )}
+            {types.length === 1 && courseKnown && (
+                <p className="text-caption text-neutral-600 sm:col-span-2">
+                    {t('composer.relative.courseOnly')}
+                </p>
+            )}
+            {showSubject && (
+                <SelectBox
+                    label={sourceTypeLabel('SUBJECT', t)}
+                    value={subjectId}
+                    placeholder={
+                        loadingSubjects
+                            ? t('composer.relative.loading')
+                            : subjects.length === 0
+                              ? t('composer.relative.noSubjects')
+                              : t('composer.relative.choose')
+                    }
+                    disabled={subjects.length === 0}
+                    onChange={(value) => {
+                        setSubjectId(value);
+                        setModuleId('');
+                        if (sourceType === 'SUBJECT') {
+                            const name = subjects.find((s) => s.id === value)?.subject_name ?? '';
+                            onPick('SUBJECT', value, name);
+                            setBrowsing(false);
+                        }
+                    }}
+                    options={subjects.map((s) => ({ value: s.id, label: s.subject_name }))}
+                />
+            )}
+            {showModule && (
+                <SelectBox
+                    label={sourceTypeLabel('MODULE', t)}
                     value={moduleId}
                     placeholder={
                         !subjectId
@@ -355,7 +438,7 @@ function ContentSourcePicker({
                             const name =
                                 modules.find((m) => m.module.id === value)?.module.module_name ??
                                 '';
-                            onPick(value, name);
+                            onPick('MODULE', value, name);
                             setBrowsing(false);
                         }
                     }}
@@ -365,19 +448,23 @@ function ContentSourcePicker({
                     }))}
                 />
             )}
-            {sourceType === 'CHAPTER' && (
+            {showChapter && (
                 <SelectBox
-                    label={t('composer.relative.sourceType.CHAPTER')}
+                    label={sourceTypeLabel('CHAPTER', t)}
                     value=""
                     placeholder={
                         !moduleId
-                            ? t('composer.relative.moduleFirst')
-                            : t('composer.relative.choose')
+                            ? modulesQuery.isLoading
+                                ? t('composer.relative.loading')
+                                : t('composer.relative.moduleFirst')
+                            : chapters.length === 0
+                              ? t('composer.relative.noChapters')
+                              : t('composer.relative.choose')
                     }
                     disabled={!moduleId || chapters.length === 0}
                     onChange={(value) => {
                         const chapter = chapters.find((c) => chapterIdOf(c) === value);
-                        onPick(value, chapterNameOf(chapter) ?? '');
+                        onPick('CHAPTER', value, chapterNameOf(chapter) ?? '');
                         setBrowsing(false);
                     }}
                     options={chapters.map((c) => ({

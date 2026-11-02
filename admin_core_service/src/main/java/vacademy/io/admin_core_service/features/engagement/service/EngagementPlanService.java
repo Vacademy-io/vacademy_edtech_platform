@@ -823,8 +823,8 @@ public class EngagementPlanService {
     }
 
     /**
-     * Sets what a RELATIVE plan's Day 1 counts from. CONTENT needs a subject, module or
-     * chapter taught in the plan's batch; CALENDAR plans always keep JOIN and no source.
+     * Sets what a RELATIVE plan's Day 1 counts from. CONTENT needs the batch's whole course,
+     * or a subject, module or chapter taught in it; CALENDAR plans always keep JOIN and no source.
      */
     private void applyStartTrigger(EngagementPlan plan, EngagementPlanRequest request) {
         String trigger = request.getStartTrigger() == null ? plan.getStartTrigger()
@@ -839,13 +839,16 @@ public class EngagementPlanService {
         }
         String typeRaw = request.getStartSourceType() != null ? request.getStartSourceType() : plan.getStartSourceType();
         EngagementRelativeSchedule.ContentSource type = EngagementRelativeSchedule.ContentSource.of(typeRaw);
-        if (type == null) throw new VacademyException("Choose a subject, module or chapter to start the plan from");
-        String sourceId = request.getStartSourceId() != null ? request.getStartSourceId().trim() : plan.getStartSourceId();
-        if (sourceId == null || sourceId.isBlank()) {
-            throw new VacademyException("Choose a subject, module or chapter to start the plan from");
-        }
+        if (type == null) throw new VacademyException("Choose what learners must complete to start the plan");
         String batch = plan.getPackageSessionId();
+        // The whole course is always the plan's own batch, so it follows a batch change.
+        String sourceId = type == EngagementRelativeSchedule.ContentSource.COURSE ? batch
+                : request.getStartSourceId() != null ? request.getStartSourceId().trim() : plan.getStartSourceId();
+        if (sourceId == null || sourceId.isBlank()) {
+            throw new VacademyException("Choose what learners must complete to start the plan");
+        }
         long found = switch (type) {
+            case COURSE -> 1;
             case SUBJECT -> planRepository.countSubjectInBatch(sourceId, batch);
             case MODULE -> planRepository.countModuleInBatch(sourceId, batch);
             case CHAPTER -> planRepository.countChapterInBatch(sourceId, batch);

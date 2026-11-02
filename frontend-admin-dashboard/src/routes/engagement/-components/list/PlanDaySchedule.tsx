@@ -17,9 +17,9 @@ import {
     instituteTimeZone,
     slotLastDate,
     slotPhase,
-    startSourceText,
     todayInZone,
 } from '../../-utils/format';
+import { startSourceText } from '../../-utils/start-source';
 
 /** Upcoming days shown before "Show N more days". */
 const UPCOMING_VISIBLE = 2;

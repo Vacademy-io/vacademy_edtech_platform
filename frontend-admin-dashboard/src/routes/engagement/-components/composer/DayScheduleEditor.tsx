@@ -35,9 +35,9 @@ import {
     isEveryDay,
     slotLastDate,
     slotRunDates,
-    startSourceText,
     weekdayLabels,
 } from '../../-utils/format';
+import { startSourceText } from '../../-utils/start-source';
 import { dayHeading, dayRanks } from './DayRail';
 
 /**
