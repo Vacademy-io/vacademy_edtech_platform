@@ -328,6 +328,52 @@ class PatchRubricResponse(BaseModel):
 
 # --------------------------- Upload inspection ------------------------------
 
+class ReRenderAnnotationEdit(BaseModel):
+    """A teacher's change to one pen mark the AI drew. The mark is found by the
+    fields it was stored with (style, target, page_id, text)."""
+    style: Optional[str] = None
+    target: Optional[str] = None
+    page_id: Optional[str] = None
+    text: Optional[str] = None
+    # DELETE = leave it off the copy; EDIT = write `new_text` instead.
+    action: Literal["DELETE", "EDIT"] = "DELETE"
+    new_text: Optional[str] = None
+
+
+class ReRenderQuestionOverride(BaseModel):
+    question_id: str
+    marks_awarded: Optional[float] = None
+    feedback: Optional[str] = None
+    annotation_edits: list[ReRenderAnnotationEdit] = Field(default_factory=list)
+
+
+class ReRenderRequest(BaseModel):
+    """Re-draw a checked copy from its saved render inputs with the teacher's
+    corrections. Every current correction is sent each time (the saved inputs
+    stay the AI's original), so a re-render is idempotent."""
+    process_id: str
+    institute_id: Optional[str] = None
+    attempt_id: Optional[str] = None
+    # A fresh link to the student's original PDF (links expire; never stored).
+    pdf_url: str
+    overrides: list[ReRenderQuestionOverride] = Field(default_factory=list)
+    # None = the pen the copy was first drawn with.
+    pen_style: Optional[dict[str, Any]] = None
+    # None = the template the copy was first drawn with.
+    comment_placement: Optional[str] = None
+    # What the system stores after the teacher's changes (gate G9): per question,
+    # whether an "any N of M" group counts it, and the attempt total. None = the
+    # copy's own (no choice groups / an older caller).
+    counted: Optional[dict[str, bool]] = None
+    total_marks_awarded: Optional[float] = None
+
+
+class ReRenderResponse(BaseModel):
+    evaluated_file_id: str
+    total_marks_awarded: float
+    total_max_marks: float
+
+
 class InspectRequest(BaseModel):
     pdf_url: str = Field(..., min_length=1)
 

@@ -286,7 +286,7 @@ def test_a_hindi_answer_keeps_the_graders_mark_under_the_scheme():
     assert v["marks_awarded"] == 17
     assert table["rows"][0] == {"part": "A", "counts": {"X": 1, "/": 0, "#": 0}, "deducted": 33.0,
                                 "obtained": 17.0, "max": 50.0, "percent": 34.0,
-                                "paragraph_wise": True, "remarks": "Para-wise"}
+                                "paragraph_wise": True, "remarks": "Para-wise", "question_id": "q1"}
     assert "marked on the copy" in v["feedback"]
 
 

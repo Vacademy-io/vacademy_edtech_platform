@@ -2,6 +2,7 @@
   - POST /copy-check/grade            (Java triggers a copy grade; deduped across
                                        pods via copy_check_job, 429 when this pod is full)
   - POST /copy-check/inspect          (page count / encryption of an uploaded PDF)
+  - POST /copy-check/re-render        (re-draw a checked copy with a teacher's corrections)
   - POST /copy-check/{job_id}/cancel
   - GET  /copy-check/{job_id}/status
   - GET  /copy-check/rubric/{assessment_id}
@@ -50,11 +51,13 @@ from ..schemas.copy_check import (
     InspectResponse,
     PatchRubricRequest,
     PatchRubricResponse,
+    ReRenderRequest,
+    ReRenderResponse,
     RubricResponse,
     UpsertQuestionAnswerRequest,
     UpsertRubricRequest,
 )
-from ..services.copy_check import cancellation, job_guard, upload_inspect
+from ..services.copy_check import cancellation, job_guard, re_render, upload_inspect
 from ..services.copy_check.orchestrator import _new_job_id, grade_copy, run
 
 logger = logging.getLogger(__name__)
@@ -423,3 +426,36 @@ async def delete_question_answer(
     if not deleted:
         raise HTTPException(status_code=404, detail="Question answer not found")
     return {"assessment_id": assessment_id, "question_id": question_id, "deleted": True}
+
+
+@router.post(
+    "/re-render",
+    response_model=ReRenderResponse,
+    dependencies=[Depends(require_internal_service_token)],
+)
+async def re_render_copy(req: ReRenderRequest, db: Session = Depends(db_dependency)):
+    """Re-draw a checked copy from its saved render inputs with the teacher's
+    corrections (marks, remarks, removed / rewritten pen notes) and, optionally,
+    a different pen. 404 when the copy was drawn before render inputs were
+    saved: the caller asks for a re-check instead. 502 when drawing or the
+    upload failed; the existing copy is untouched either way."""
+    try:
+        out = await re_render.re_render(
+            db,
+            process_id=req.process_id,
+            pdf_url=req.pdf_url,
+            institute_id=req.institute_id,
+            attempt_id=req.attempt_id,
+            overrides=[o.model_dump() for o in req.overrides],
+            pen_style=req.pen_style,
+            comment_placement=req.comment_placement,
+            counted=req.counted,
+            total_marks_awarded=req.total_marks_awarded,
+        )
+    except re_render.SnapshotMissing:
+        raise HTTPException(status_code=404, detail="No saved render for this copy; run the AI check again")
+    except re_render.SnapshotForbidden:
+        raise HTTPException(status_code=403, detail="Copy belongs to another institute")
+    except re_render.RenderFailed:
+        raise HTTPException(status_code=502, detail="Could not draw the checked copy")
+    return ReRenderResponse(**out)
