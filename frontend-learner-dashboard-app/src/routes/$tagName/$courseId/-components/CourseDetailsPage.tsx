@@ -1247,7 +1247,18 @@ const CourseDetailsPageContent: React.FC<CourseDetailsPageContentProps> = ({
   const classicLayout =
     (catalogueData?.globalSettings as { courseDetails?: { layout?: string } } | undefined)
       ?.courseDetails?.layout === "classic" || learnerCourseDetails?.layout === "classic";
-  const standardLayout = !ebookLayout && !classicLayout;
+  // A site whose `details` page is an html template ({{course.*}} tokens + its
+  // own data-vacademy="enrol" buttons) owns the whole course page: the
+  // built-in course view and the mobile buy bar would render a second copy of
+  // the course under it. Dialogs, header and footer still come from here.
+  const htmlDetailsTemplate = !!catalogueData?.pages?.some(
+    (page) =>
+      (page.id === "details" || page.route === "course-details") &&
+      page.components?.some(
+        (c) => c?.type === "htmlPage" && (c as { enabled?: boolean }).enabled !== false,
+      ),
+  );
+  const standardLayout = !ebookLayout && !classicLayout && !htmlDetailsTemplate;
   const configuredLanguages = useMemo(
     () => courseLanguagesOf(courseLanguageSettings),
     [courseLanguageSettings],
@@ -2284,6 +2295,7 @@ const CourseDetailsPageContent: React.FC<CourseDetailsPageContentProps> = ({
       {/* The classic layout (courseDetails.layout "classic"). */}
       {!ebookLayout &&
         classicLayout &&
+        !htmlDetailsTemplate &&
         (catalogueData?.globalSettings as any)?.courseCatalogeType?.enabled !==
         true && (
         <div className="pt-4 pb-24 sm:pt-6 bg-catalogue-bg-subtle w-full">
@@ -2859,6 +2871,7 @@ const CourseDetailsPageContent: React.FC<CourseDetailsPageContentProps> = ({
       {/* Mobile Action Buttons - Fixed at bottom for course details page.
           The ebook layout puts Buy now in the first screen instead. */}
       {!ebookLayout &&
+        !htmlDetailsTemplate &&
         (catalogueData?.globalSettings as any)?.courseCatalogeType?.enabled !==
         true && (
         <div className="md:hidden fixed bottom-0 start-0 end-0 z-50 bg-catalogue-bg-elevated border-t border-catalogue-border p-4">
@@ -2928,6 +2941,7 @@ const CourseDetailsPageContent: React.FC<CourseDetailsPageContentProps> = ({
           courseId={courseId}
           hasMobileBar={
             !ebookLayout &&
+            !htmlDetailsTemplate &&
             (catalogueData.globalSettings as { courseCatalogeType?: { enabled?: boolean } } | undefined)
               ?.courseCatalogeType?.enabled !== true
           }
