@@ -55,6 +55,14 @@ public class CopyCheckGradeRequestDto {
     private String commentPlacement;
 
     /**
+     * The teacher's pen on the checked copy, from the institute's
+     * {@code ASSESSMENT_SETTING.aiCopyCheck.penStyle}: {@code {ink, font, size}}.
+     * Null (nothing set) keeps the usual red pen and the request unchanged.
+     */
+    @JsonProperty("pen_style")
+    private Map<String, Object> penStyle;
+
+    /**
      * The assessment's own AI checking settings, read while the request is built;
      * dispatch merges the institute default into exam_context. Never sent.
      */
