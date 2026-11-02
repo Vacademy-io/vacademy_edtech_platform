@@ -1,0 +1,27 @@
+{
+    "penStyle": {
+        "title": "जाँची गई कॉपी पर पेन",
+        "hint": "AI छात्र की कॉपी पर अंक और टिप्पणियाँ कैसे लिखेगा।",
+        "ink": "स्याही का रंग",
+        "font": "लिखावट",
+        "size": "आकार",
+        "inks": {
+            "RED": "लाल",
+            "BLUE": "नीला",
+            "GREEN": "हरा",
+            "BLACK": "काला",
+            "PURPLE": "बैंगनी"
+        },
+        "fonts": {
+            "KALAM": "Kalam",
+            "PATRICK_HAND": "Patrick Hand",
+            "ARCHITECTS_DAUGHTER": "Architects Daughter"
+        },
+        "sizes": {
+            "SMALL": "छोटा",
+            "MEDIUM": "मध्यम",
+            "LARGE": "बड़ा"
+        },
+        "sample": "अच्छा काम · 4/5"
+    }
+}

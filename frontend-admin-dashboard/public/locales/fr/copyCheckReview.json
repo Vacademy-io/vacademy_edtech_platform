@@ -1,0 +1,27 @@
+{
+    "penStyle": {
+        "title": "Stylo sur la copie corrigée",
+        "hint": "Comment l'IA écrit les notes et remarques sur la copie de l'élève.",
+        "ink": "Couleur de l'encre",
+        "font": "Écriture",
+        "size": "Taille",
+        "inks": {
+            "RED": "Rouge",
+            "BLUE": "Bleu",
+            "GREEN": "Vert",
+            "BLACK": "Noir",
+            "PURPLE": "Violet"
+        },
+        "fonts": {
+            "KALAM": "Kalam",
+            "PATRICK_HAND": "Patrick Hand",
+            "ARCHITECTS_DAUGHTER": "Architects Daughter"
+        },
+        "sizes": {
+            "SMALL": "Petite",
+            "MEDIUM": "Moyenne",
+            "LARGE": "Grande"
+        },
+        "sample": "Bon travail · 4/5"
+    }
+}

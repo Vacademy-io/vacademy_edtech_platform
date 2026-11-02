@@ -1,0 +1,27 @@
+{
+    "penStyle": {
+        "title": "Pen on the checked copy",
+        "hint": "How the AI writes marks and remarks on the student's copy.",
+        "ink": "Ink colour",
+        "font": "Handwriting",
+        "size": "Size",
+        "inks": {
+            "RED": "Red",
+            "BLUE": "Blue",
+            "GREEN": "Green",
+            "BLACK": "Black",
+            "PURPLE": "Purple"
+        },
+        "fonts": {
+            "KALAM": "Kalam",
+            "PATRICK_HAND": "Patrick Hand",
+            "ARCHITECTS_DAUGHTER": "Architects Daughter"
+        },
+        "sizes": {
+            "SMALL": "Small",
+            "MEDIUM": "Medium",
+            "LARGE": "Large"
+        },
+        "sample": "Good work · 4/5"
+    }
+}

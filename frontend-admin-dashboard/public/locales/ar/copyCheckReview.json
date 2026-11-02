@@ -1,0 +1,27 @@
+{
+    "penStyle": {
+        "title": "القلم على الورقة المصححة",
+        "hint": "كيف يكتب الذكاء الاصطناعي الدرجات والملاحظات على ورقة الطالب.",
+        "ink": "لون الحبر",
+        "font": "الخط اليدوي",
+        "size": "الحجم",
+        "inks": {
+            "RED": "أحمر",
+            "BLUE": "أزرق",
+            "GREEN": "أخضر",
+            "BLACK": "أسود",
+            "PURPLE": "بنفسجي"
+        },
+        "fonts": {
+            "KALAM": "Kalam",
+            "PATRICK_HAND": "Patrick Hand",
+            "ARCHITECTS_DAUGHTER": "Architects Daughter"
+        },
+        "sizes": {
+            "SMALL": "صغير",
+            "MEDIUM": "متوسط",
+            "LARGE": "كبير"
+        },
+        "sample": "عمل جيد · 4/5"
+    }
+}
