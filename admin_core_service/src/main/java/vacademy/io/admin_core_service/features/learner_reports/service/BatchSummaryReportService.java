@@ -48,6 +48,7 @@ import java.util.ArrayList;
 import java.util.Base64;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -76,7 +77,8 @@ import java.util.Set;
 public class BatchSummaryReportService {
 
     private static final long MAX_RANGE_DAYS = 366;
-    private static final int MAX_LEARNERS = 3000;
+    /** Roster cap for one batch; the all-batches report has no cap. */
+    private static final int MAX_LEARNERS = 10000;
     private static final int MAX_BATCHES_COMPARED = 40;
     private static final int ACTIVITY_ROWS = 10;
     private static final int HIGHLIGHT_ROWS = 10;
@@ -128,23 +130,40 @@ public class BatchSummaryReportService {
                 .endDate(request.getEndDate())
                 .sections(sectionsFor(request, setting));
 
-        // Roster
-        List<String> roster = new ArrayList<>(new LinkedHashSet<>(batchId == null
-                ? mappingRepository.findDistinctUserIdsByInstituteAndStatus(instituteId, ACTIVE)
-                : mappingRepository.findDistinctUserIdsByPackageSessionAndStatus(batchId, ACTIVE)));
-        roster.removeIf(id -> !StringUtils.hasText(id));
-        boolean truncated = roster.size() > MAX_LEARNERS;
-        if (truncated) roster = new ArrayList<>(roster.subList(0, MAX_LEARNERS));
-        out.enrolledLearners(roster.size()).learnersTruncated(truncated);
-        Map<String, String> names = learnerNames(roster);
-
-        // Assessment scores
+        // Roster and assessment attempts. One batch: every enrolled learner gets a row. All
+        // batches: the institute-wide attempts are fetched in one call and only learners who
+        // were assessed get a row (the rest are counted as not assessed), so a large institute
+        // is covered in full.
         String start = request.getStartDate().toString();
         String end = request.getEndDate().toString();
-        List<AssessmentServiceClient.CohortAttempt> attempts = roster.isEmpty() ? List.of()
-                : assessmentServiceClient.fetchCohortAttempts(instituteId, roster, start, end).stream()
-                .filter(a -> a.percentage() != null && a.userId() != null && a.assessmentId() != null)
-                .toList();
+        List<String> roster;
+        long enrolled;
+        boolean truncated = false;
+        List<AssessmentServiceClient.CohortAttempt> attempts;
+        if (batchId == null) {
+            Set<String> active = new HashSet<>(mappingRepository.findDistinctUserIdsByInstituteAndStatus(instituteId, ACTIVE));
+            active.remove(null);
+            enrolled = active.size();
+            attempts = assessmentServiceClient.fetchInstituteAttempts(instituteId, start, end).stream()
+                    .filter(a -> a.percentage() != null && a.userId() != null && a.assessmentId() != null)
+                    .filter(a -> active.contains(a.userId()))
+                    .toList();
+            roster = new ArrayList<>(new LinkedHashSet<>(attempts.stream()
+                    .map(AssessmentServiceClient.CohortAttempt::userId).toList()));
+        } else {
+            roster = new ArrayList<>(new LinkedHashSet<>(
+                    mappingRepository.findDistinctUserIdsByPackageSessionAndStatus(batchId, ACTIVE)));
+            roster.removeIf(id -> !StringUtils.hasText(id));
+            truncated = roster.size() > MAX_LEARNERS;
+            if (truncated) roster = new ArrayList<>(roster.subList(0, MAX_LEARNERS));
+            enrolled = roster.size();
+            attempts = roster.isEmpty() ? List.of()
+                    : assessmentServiceClient.fetchCohortAttempts(instituteId, roster, start, end).stream()
+                    .filter(a -> a.percentage() != null && a.userId() != null && a.assessmentId() != null)
+                    .toList();
+        }
+        out.enrolledLearners(enrolled).learnersTruncated(truncated);
+        Map<String, String> names = learnerNames(roster);
 
         Map<String, double[]> byUser = new HashMap<>(); // userId -> [sum, count]
         Map<String, List<AssessmentServiceClient.CohortAttempt>> byAssessment = new LinkedHashMap<>();
@@ -158,7 +177,7 @@ public class BatchSummaryReportService {
         byUser.forEach((id, acc) -> userAvg.put(id, acc[0] / acc[1]));
 
         List<BatchSummaryReportDTO.LearnerRow> learners = new ArrayList<>();
-        long strong = 0, average = 0, weak = 0, none = 0;
+        long strong = 0, average = 0, weak = 0, none = Math.max(0, enrolled - roster.size());
         for (String id : roster) {
             Double avg = userAvg.get(id);
             String band = band(avg);
@@ -220,7 +239,7 @@ public class BatchSummaryReportService {
                 .totalAttempts(attempts.size())
                 .avgScore(userAvg.isEmpty() ? null
                         : round1(userAvg.values().stream().mapToDouble(Double::doubleValue).average().orElse(0)))
-                .participationRate(roster.isEmpty() ? null : round1(byUser.size() * 100.0 / roster.size()))
+                .participationRate(enrolled == 0 ? null : round1(byUser.size() * 100.0 / enrolled))
                 .strongLearners(strong)
                 .averageLearners(average)
                 .weakLearners(weak)

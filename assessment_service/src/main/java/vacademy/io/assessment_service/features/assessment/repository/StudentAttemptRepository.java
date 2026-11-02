@@ -939,6 +939,61 @@ public interface StudentAttemptRepository extends CrudRepository<StudentAttempt,
             @Param("startDate") Date startDate,
             @Param("endDate") Date endDate);
 
+    /**
+     * Institute-wide sibling of findCohortAttemptsBetween for the all-batches report: the latest
+     * ENDED attempt of every learner on every institute assessment inside the window, capped by
+     * maxRows. Same percentage basis.
+     */
+    @Query(value = """
+            WITH attempts AS (
+                SELECT DISTINCT ON (aur.user_id, a.id)
+                    aur.user_id     AS user_id,
+                    a.id            AS assessment_id,
+                    a.name          AS assessment_name,
+                    sa.created_at   AS attempt_at,
+                    sa.total_marks  AS earned_marks
+                FROM public.student_attempt sa
+                JOIN public.assessment_user_registration aur
+                    ON aur.id = sa.registration_id
+                JOIN public.assessment a
+                    ON a.id = aur.assessment_id
+                    AND a.status = 'PUBLISHED'
+                JOIN public.assessment_institute_mapping aim
+                    ON aim.assessment_id = a.id
+                    AND aim.institute_id = :instituteId
+                WHERE sa.status = 'ENDED'
+                  AND sa.created_at >= :startDate
+                  AND sa.created_at < :endDate
+                  AND aur.user_id IS NOT NULL
+                ORDER BY aur.user_id, a.id, sa.created_at DESC
+            ),
+            achievable AS (
+                SELECT s.assessment_id       AS assessment_id,
+                       SUM(s.total_marks)    AS total_achievable
+                FROM public.section s
+                WHERE s.status <> 'DELETED'
+                  AND s.assessment_id IN (SELECT DISTINCT assessment_id FROM attempts)
+                GROUP BY s.assessment_id
+            )
+            SELECT
+                t.user_id           AS userId,
+                t.assessment_id     AS assessmentId,
+                t.assessment_name   AS assessmentName,
+                t.attempt_at        AS attemptAt,
+                CASE
+                    WHEN t.earned_marks IS NOT NULL AND ach.total_achievable > 0
+                    THEN (t.earned_marks / ach.total_achievable) * 100.0
+                END                 AS percentage
+            FROM attempts t
+            LEFT JOIN achievable ach ON ach.assessment_id = t.assessment_id
+            LIMIT :maxRows
+            """, nativeQuery = true)
+    List<CohortAssessmentAttemptProjection> findInstituteAttemptsBetween(
+            @Param("instituteId") String instituteId,
+            @Param("startDate") Date startDate,
+            @Param("endDate") Date endDate,
+            @Param("maxRows") int maxRows);
+
     @Query(value = """
             SELECT sa.* FROM student_attempt sa
             JOIN assessment_user_registration aur ON aur.id = sa.registration_id
