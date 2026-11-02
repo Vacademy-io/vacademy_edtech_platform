@@ -12,6 +12,7 @@ import vacademy.io.assessment_service.features.assessment.dto.admin_get_dto.resp
 import vacademy.io.assessment_service.features.assessment.dto.admin_get_dto.response.ParticipantsQuestionOverallDetailDto;
 import vacademy.io.assessment_service.features.assessment.dto.admin_get_dto.response.StudentAttemptHistoryProjection;
 import vacademy.io.assessment_service.features.assessment.dto.admin_get_dto.response.StudentReportDto;
+import vacademy.io.assessment_service.features.assessment.dto.admin_get_dto.response.CohortAssessmentAttemptProjection;
 import vacademy.io.assessment_service.features.assessment.dto.admin_get_dto.response.UserAssessmentHistorySummaryProjection;
 import vacademy.io.assessment_service.features.assessment.dto.manual_evaluation.ManualAttemptResponseDto;
 import vacademy.io.assessment_service.features.assessment.entity.StudentAttempt;
@@ -882,6 +883,61 @@ public interface StudentAttemptRepository extends CrudRepository<StudentAttempt,
             @Param("instituteId") String instituteId,
             @Param("userIds") List<String> userIds,
             @Param("since") Date since);
+
+    /**
+     * Cohort attempts for the batch report: one row per learner and assessment, the latest
+     * ENDED attempt created inside the window, on PUBLISHED assessments mapped to the institute.
+     * Percentage uses the same achievable-marks basis as findAssessmentHistorySummaryForUsersSince
+     * and is null when it cannot be computed.
+     */
+    @Query(value = """
+            WITH attempts AS (
+                SELECT DISTINCT ON (aur.user_id, a.id)
+                    aur.user_id     AS user_id,
+                    a.id            AS assessment_id,
+                    a.name          AS assessment_name,
+                    sa.created_at   AS attempt_at,
+                    sa.total_marks  AS earned_marks
+                FROM public.student_attempt sa
+                JOIN public.assessment_user_registration aur
+                    ON aur.id = sa.registration_id
+                    AND aur.user_id IN (:userIds)
+                JOIN public.assessment a
+                    ON a.id = aur.assessment_id
+                    AND a.status = 'PUBLISHED'
+                JOIN public.assessment_institute_mapping aim
+                    ON aim.assessment_id = a.id
+                    AND aim.institute_id = :instituteId
+                WHERE sa.status = 'ENDED'
+                  AND sa.created_at >= :startDate
+                  AND sa.created_at < :endDate
+                ORDER BY aur.user_id, a.id, sa.created_at DESC
+            ),
+            achievable AS (
+                SELECT s.assessment_id       AS assessment_id,
+                       SUM(s.total_marks)    AS total_achievable
+                FROM public.section s
+                WHERE s.status <> 'DELETED'
+                  AND s.assessment_id IN (SELECT DISTINCT assessment_id FROM attempts)
+                GROUP BY s.assessment_id
+            )
+            SELECT
+                t.user_id           AS userId,
+                t.assessment_id     AS assessmentId,
+                t.assessment_name   AS assessmentName,
+                t.attempt_at        AS attemptAt,
+                CASE
+                    WHEN t.earned_marks IS NOT NULL AND ach.total_achievable > 0
+                    THEN (t.earned_marks / ach.total_achievable) * 100.0
+                END                 AS percentage
+            FROM attempts t
+            LEFT JOIN achievable ach ON ach.assessment_id = t.assessment_id
+            """, nativeQuery = true)
+    List<CohortAssessmentAttemptProjection> findCohortAttemptsBetween(
+            @Param("instituteId") String instituteId,
+            @Param("userIds") List<String> userIds,
+            @Param("startDate") Date startDate,
+            @Param("endDate") Date endDate);
 
     @Query(value = """
             SELECT sa.* FROM student_attempt sa

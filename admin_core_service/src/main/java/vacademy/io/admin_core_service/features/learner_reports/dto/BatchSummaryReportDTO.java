@@ -11,12 +11,10 @@ import java.time.LocalDate;
 import java.util.List;
 
 /**
- * Basic batch report: how many learners passed (average quiz score against the institute's
- * pass mark), course completion, time and concentration for the window, subject progress,
- * per-learner results and the most active learners.
- *
- * Quiz results cover every attempt to date — quiz grading has no date dimension — while the
- * completion, time, concentration and activity figures are for the selected window.
+ * Basic batch report for one batch, or every batch of the institute, over a date window:
+ * assessment scores (average, score bands, per assessment, per subject, per learner), topic
+ * strengths and weaknesses rolled up from analysed attempts, and for a single batch its course
+ * completion, time, concentration, subject progress and most active learners.
  */
 @Data
 @Builder
@@ -25,6 +23,7 @@ import java.util.List;
 @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
 public class BatchSummaryReportDTO {
 
+    /** Null for the all-batches report. */
     private String packageSessionId;
     private String batchName;
     private String instituteName;
@@ -32,29 +31,81 @@ public class BatchSummaryReportDTO {
     private String brandColor;
     private LocalDate startDate;
     private LocalDate endDate;
-
-    private double passPercentage;
     private List<String> sections;
 
     private long enrolledLearners;
-    private long learnersAttempted;
-    private long passedLearners;
-    private long failedLearners;
-    private long notAttemptedLearners;
-    /** passedLearners / enrolledLearners, as a %. Null when the batch has no learners. */
-    private Double passRate;
-    private Double avgQuizScore;
-    private int quizzesInCourse;
-    /** The learner list was capped by the quiz-results row limit. */
+    /** Learners with at least one assessment attempt in the window. */
+    private long learnersAssessed;
+    private int assessmentsHeld;
+    private long totalAttempts;
+    /** Mean of the learners average assessment score. Null when nobody was assessed. */
+    private Double avgScore;
+    /** learnersAssessed / enrolledLearners, as a %. */
+    private Double participationRate;
+    /** The roster was capped; only the first learners are counted. */
     private boolean learnersTruncated;
 
+    /** Learners by average score: 60% and above, 40 to 60%, under 40%, and not assessed. */
+    private long strongLearners;
+    private long averageLearners;
+    private long weakLearners;
+    private long notAssessedLearners;
+
+    private List<AssessmentRow> assessments;
+    private List<SubjectScoreRow> subjectScores;
+    private List<TopicRow> topics;
+    /** Analysed attempts the topic roll-up was built from. */
+    private Integer attemptsAnalyzed;
+    private List<LearnerRow> learners;
+    /** All-batches report only: average score per batch. */
+    private List<BatchRow> batches;
+
+    // Single batch only.
     private Double avgCourseCompletion;
     private Double avgTimeSpentMinutes;
     private Double avgConcentration;
-
     private List<SubjectRow> subjects;
-    private List<LearnerRow> learners;
     private List<ActivityRow> activity;
+
+    @Data
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
+    public static class AssessmentRow {
+        private String assessmentId;
+        private String name;
+        /** First attempt date in the window (yyyy-MM-dd). */
+        private String date;
+        private String subject;
+        private int attempts;
+        private Double avgScore;
+    }
+
+    @Data
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
+    public static class SubjectScoreRow {
+        private String subject;
+        private Double avgScore;
+        private int assessments;
+        private int attempts;
+    }
+
+    @Data
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
+    public static class TopicRow {
+        private String topic;
+        private int questions;
+        private int correct;
+        private Double accuracy;
+        private String masteryLevel;
+    }
 
     @Data
     @Builder
@@ -76,11 +127,22 @@ public class BatchSummaryReportDTO {
     public static class LearnerRow {
         private String userId;
         private String fullName;
-        private Double avgScorePercent;
-        private int quizzesAttempted;
-        private int quizzesInCourse;
-        /** PASSED, FAILED or NOT_ATTEMPTED. */
-        private String status;
+        private Double avgScore;
+        private int assessmentsTaken;
+        /** STRONG, AVERAGE, WEAK or NOT_ASSESSED. */
+        private String band;
+    }
+
+    @Data
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
+    public static class BatchRow {
+        private String packageSessionId;
+        private long learners;
+        private long learnersAssessed;
+        private Double avgScore;
     }
 
     @Data

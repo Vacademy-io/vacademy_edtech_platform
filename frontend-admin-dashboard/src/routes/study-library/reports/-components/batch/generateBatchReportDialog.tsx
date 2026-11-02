@@ -116,6 +116,8 @@ export function GenerateBatchReportDialog({
     };
 
     const noSections = sections.length === 0;
+    // Sending goes to one batch's teachers or parents, so it needs a batch.
+    const canSend = !!request?.package_session_id;
 
     return (
         <MyDialog
@@ -227,14 +229,16 @@ export function GenerateBatchReportDialog({
                         <MyButton
                             buttonType="secondary"
                             onClick={() => setConfirm('TEACHERS')}
-                            disabled={noSections || !!busy}
+                            disabled={noSections || !canSend || !!busy}
+                            title={canSend ? undefined : 'Pick a batch to send'}
                         >
                             <ChalkboardTeacher className="size-4" />
                             Send to teachers
                         </MyButton>
                         <MyButton
                             onClick={() => setConfirm('PARENTS')}
-                            disabled={noSections || !!busy}
+                            disabled={noSections || !canSend || !!busy}
+                            title={canSend ? undefined : 'Pick a batch to send'}
                         >
                             <UsersThree className="size-4" />
                             Send to parents

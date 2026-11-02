@@ -122,12 +122,6 @@ export const LearnerReportDocument = ({
     const periodLabel = `${format(new Date(range.start), 'd MMM yyyy')} – ${format(new Date(range.end), 'd MMM yyyy')}`;
     const footer = `${m.studentName} · ${periodLabel}`;
     const props = { m, brand, animate: false };
-    const page2 =
-        m.strengths.length + m.weaknesses.length > 0 ||
-        !!m.attendance ||
-        (m.progress?.subjects.length ?? 0) > 0 ||
-        m.blooms.length > 0 ||
-        !!m.confidence;
 
     return (
         <div className="flex flex-col gap-6 bg-neutral-100 p-6">
@@ -159,8 +153,7 @@ export const LearnerReportDocument = ({
                     )}
                 </div>
             </Page>
-            {page2 && (
-                <Page footer={footer}>
+            <Page footer={footer}>
                     <Band snapshot={snapshot} m={m} brand={brand} batchName={batchName} periodLabel={periodLabel} />
                     <div className="flex flex-col gap-4 px-10 pt-6">
                         <TopicsBlock {...props} />
@@ -171,7 +164,6 @@ export const LearnerReportDocument = ({
                         <ThinkingBlock {...props} />
                     </div>
                 </Page>
-            )}
         </div>
     );
 };

@@ -13,7 +13,10 @@ import {
     TopicRadar,
     TrendChart,
 } from '@/components/common/report-visuals/charts';
-import { GrowthIllustration } from '@/components/common/report-visuals/illustrations';
+import {
+    EmptyReportIllustration,
+    GrowthIllustration,
+} from '@/components/common/report-visuals/illustrations';
 import { REPORT_COLORS, pct, scoreColor } from '@/components/common/report-visuals/palette';
 import type { LearnerReportModel } from './learner-report-model';
 
@@ -21,6 +24,13 @@ import type { LearnerReportModel } from './learner-report-model';
  * The learner report blocks. The Reports tab stacks them in one column; the printable report
  * lays the same blocks out on A4 pages.
  */
+
+const BlockEmpty = ({ brand, text }: { brand: string; text: string }) => (
+    <div className="flex flex-col items-center gap-1 py-3 text-center">
+        <EmptyReportIllustration brand={brand} className="w-24" />
+        <span className="text-xs text-neutral-500">{text}</span>
+    </div>
+);
 
 interface BlockProps {
     m: LearnerReportModel;
@@ -92,7 +102,13 @@ export const LearnerTiles = ({ m, narrow }: BlockProps & { narrow?: boolean }) =
 );
 
 export const SubjectsBlock = ({ m, brand, animate }: BlockProps) => {
-    if (m.subjects.length === 0) return null;
+    if (m.subjects.length === 0) {
+        return (
+            <ReportBlock brand={brand} tag="Marks by subject" title="No graded work yet">
+                <BlockEmpty brand={brand} text="Subject scores appear once assessments are graded." />
+            </ReportBlock>
+        );
+    }
     const above = m.subjects.filter((s) => s.klass != null && (s.you ?? 0) > s.klass).length;
     const withClass = m.subjects.filter((s) => s.klass != null).length;
     return (
@@ -112,7 +128,13 @@ export const SubjectsBlock = ({ m, brand, animate }: BlockProps) => {
 };
 
 export const TrendBlock = ({ m, brand, animate }: BlockProps) => {
-    if (m.trend.length < 2) return null;
+    if (m.trend.length === 0) {
+        return (
+            <ReportBlock brand={brand} tag="Score trend" title="No assessments yet">
+                <BlockEmpty brand={brand} text="Each assessment taken adds a point here." />
+            </ReportBlock>
+        );
+    }
     const first = m.trend[0]?.you ?? 0;
     const last = m.trend[m.trend.length - 1]?.you ?? 0;
     const delta = Math.round(last - first);
@@ -135,7 +157,16 @@ export const TrendBlock = ({ m, brand, animate }: BlockProps) => {
 };
 
 export const TopicsBlock = ({ m, brand, animate }: BlockProps) => {
-    if (m.strengths.length === 0 && m.weaknesses.length === 0) return null;
+    if (m.strengths.length === 0 && m.weaknesses.length === 0) {
+        return (
+            <ReportBlock brand={brand} tag="Strengths and weaknesses" title="No analysed attempts yet">
+                <BlockEmpty
+                    brand={brand}
+                    text="Topic strengths appear once assessment attempts are analysed."
+                />
+            </ReportBlock>
+        );
+    }
     const title =
         m.topicsMastered > 0
             ? `${m.topicsMastered} topic${m.topicsMastered === 1 ? '' : 's'} mastered, ${m.weaknesses.length} to work on`
@@ -169,7 +200,13 @@ export const TopicsBlock = ({ m, brand, animate }: BlockProps) => {
 };
 
 export const AttendanceBlock = ({ m, brand, animate }: BlockProps) => {
-    if (!m.attendance) return null;
+    if (!m.attendance) {
+        return (
+            <ReportBlock brand={brand} tag="Attendance" title="No classes in these dates">
+                <BlockEmpty brand={brand} text="Live class attendance shows up here." />
+            </ReportBlock>
+        );
+    }
     const a = m.attendance;
     return (
         <ReportBlock
@@ -210,7 +247,13 @@ export const AttendanceBlock = ({ m, brand, animate }: BlockProps) => {
 };
 
 export const ProgressBlock = ({ m, brand }: BlockProps) => {
-    if (!m.progress || m.progress.subjects.length === 0) return null;
+    if (!m.progress || m.progress.subjects.length === 0) {
+        return (
+            <ReportBlock brand={brand} tag="Course progress" title="No course progress yet">
+                <BlockEmpty brand={brand} text="Pick a batch to see progress through its course." />
+            </ReportBlock>
+        );
+    }
     return (
         <ReportBlock
             brand={brand}
@@ -233,20 +276,21 @@ export const ProgressBlock = ({ m, brand }: BlockProps) => {
 };
 
 export const ThinkingBlock = ({ m, brand, animate }: BlockProps) => {
-    if (m.blooms.length === 0 && !m.confidence) return null;
     return (
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-            {m.blooms.length > 0 && (
-                <ReportBlock
-                    brand={brand}
-                    tag="Bloom's taxonomy"
-                    title="Thinking skills"
-                    lede="Each question is tagged with the kind of thinking it needs."
-                >
+            <ReportBlock
+                brand={brand}
+                tag="Bloom's taxonomy"
+                title="Thinking skills"
+                lede="Each question is tagged with the kind of thinking it needs."
+            >
+                {m.blooms.length > 0 ? (
                     <BloomPyramid levels={m.blooms} />
-                </ReportBlock>
-            )}
-            {m.confidence && (
+                ) : (
+                    <BlockEmpty brand={brand} text="Needs analysed assessment attempts." />
+                )}
+            </ReportBlock>
+            {m.confidence ? (
                 <ReportBlock
                     brand={brand}
                     tag="Confidence"
@@ -261,6 +305,10 @@ export const ThinkingBlock = ({ m, brand, animate }: BlockProps) => {
                         legend="below"
                         animate={animate}
                     />
+                </ReportBlock>
+            ) : (
+                <ReportBlock brand={brand} tag="Confidence" title="How sure the answers were">
+                    <BlockEmpty brand={brand} text="Needs analysed assessment attempts." />
                 </ReportBlock>
             )}
         </div>

@@ -6,6 +6,8 @@ import authenticatedAxiosInstance from '@/lib/auth/axiosInstance';
 export const BATCH_REPORT_SECTIONS = [
     'OVERVIEW',
     'RESULTS',
+    'ASSESSMENTS',
+    'STRENGTHS',
     'SUBJECT_PROGRESS',
     'TOP_PERFORMERS',
     'NEEDS_ATTENTION',
@@ -20,60 +22,102 @@ export const BATCH_REPORT_SECTION_META: Record<
 > = {
     OVERVIEW: {
         label: 'Overview',
-        description: 'Learners, pass rate, average quiz score, completion, time and concentration.',
+        description: 'Learners, participation, assessments held and course completion.',
         namesLearners: false,
     },
     RESULTS: {
-        label: 'Results',
-        description: 'How many learners passed, failed or have not attempted a quiz.',
+        label: 'Score bands',
+        description: 'Learners at 60% and above, 40 to 60%, under 40%, and where scores fall.',
+        namesLearners: false,
+    },
+    ASSESSMENTS: {
+        label: 'Assessments',
+        description: 'Average score in each assessment over time, and by subject.',
+        namesLearners: false,
+    },
+    STRENGTHS: {
+        label: 'Strengths and weaknesses',
+        description: 'Topics the batch answers well and topics to work on.',
         namesLearners: false,
     },
     SUBJECT_PROGRESS: {
-        label: 'Subject progress',
-        description: 'Average completion and time per subject.',
+        label: 'Course progress',
+        description: 'Average completion and time per subject (one batch only).',
         namesLearners: false,
     },
     TOP_PERFORMERS: {
         label: 'Top performers',
-        description: 'The ten learners with the highest average quiz score.',
+        description: 'The ten learners with the highest average score.',
         namesLearners: true,
     },
     NEEDS_ATTENTION: {
         label: 'Needs attention',
-        description: 'Learners who failed or have not attempted, lowest first.',
+        description: 'Learners under 40% or with no assessment attempt.',
         namesLearners: true,
     },
     LEARNER_RESULTS: {
         label: 'All learners',
-        description: 'Every learner with their average quiz score and result.',
+        description: 'Every learner with their average score.',
         namesLearners: true,
     },
     ACTIVITY: {
         label: 'Most active learners',
-        description: 'Top ten by time spent learning in the selected dates.',
+        description: 'Top ten by time spent learning (one batch only).',
         namesLearners: true,
     },
 };
 
-export type BatchLearnerStatus = 'PASSED' | 'FAILED' | 'NOT_ATTEMPTED';
+export type BatchLearnerBand = 'STRONG' | 'AVERAGE' | 'WEAK' | 'NOT_ASSESSED';
 
 export interface BatchSummaryReport {
-    package_session_id: string;
+    package_session_id: string | null;
     batch_name: string | null;
     institute_name: string | null;
+    brand_color: string | null;
     start_date: string;
     end_date: string;
-    pass_percentage: number;
     sections: BatchReportSection[];
     enrolled_learners: number;
-    learners_attempted: number;
-    passed_learners: number;
-    failed_learners: number;
-    not_attempted_learners: number;
-    pass_rate: number | null;
-    avg_quiz_score: number | null;
-    quizzes_in_course: number;
+    learners_assessed: number;
+    assessments_held: number;
+    total_attempts: number;
+    avg_score: number | null;
+    participation_rate: number | null;
     learners_truncated: boolean;
+    strong_learners: number;
+    average_learners: number;
+    weak_learners: number;
+    not_assessed_learners: number;
+    assessments: {
+        assessment_id: string;
+        name: string;
+        date: string | null;
+        subject: string | null;
+        attempts: number;
+        avg_score: number | null;
+    }[];
+    subject_scores: { subject: string; avg_score: number | null; assessments: number; attempts: number }[];
+    topics: {
+        topic: string;
+        questions: number;
+        correct: number;
+        accuracy: number | null;
+        mastery_level: string | null;
+    }[];
+    attempts_analyzed: number | null;
+    learners: {
+        user_id: string;
+        full_name: string;
+        avg_score: number | null;
+        assessments_taken: number;
+        band: BatchLearnerBand;
+    }[];
+    batches: {
+        package_session_id: string;
+        learners: number;
+        learners_assessed: number;
+        avg_score: number | null;
+    }[] | null;
     avg_course_completion: number | null;
     avg_time_spent_minutes: number | null;
     avg_concentration: number | null;
@@ -82,15 +126,7 @@ export interface BatchSummaryReport {
         avg_completion: number | null;
         avg_time_minutes: number | null;
         modules: number;
-    }[];
-    learners: {
-        user_id: string;
-        full_name: string;
-        avg_score_percent: number | null;
-        quizzes_attempted: number;
-        quizzes_in_course: number;
-        status: BatchLearnerStatus;
-    }[];
+    }[] | null;
     activity: {
         rank: number | null;
         user_id: string;
@@ -98,11 +134,12 @@ export interface BatchSummaryReport {
         total_time_minutes: number | null;
         daily_avg_minutes: number | null;
         avg_concentration: number | null;
-    }[];
+    }[] | null;
 }
 
 export interface BatchSummaryRequest {
-    package_session_id: string;
+    /** Omitted for the all-batches report. */
+    package_session_id?: string;
     batch_name?: string;
     start_date: string;
     end_date: string;
@@ -121,7 +158,6 @@ export interface BatchReportSendResult {
 export interface BatchReportTemplate {
     sections: BatchReportSection[];
     all_sections: BatchReportSection[];
-    pass_percentage: number;
 }
 
 export const fetchBatchSummaryReport = async (
@@ -138,7 +174,7 @@ export const getBatchSummaryReportQuery = (body: BatchSummaryRequest) =>
     queryOptions({
         queryKey: ['BATCH_SUMMARY_REPORT', body],
         queryFn: () => fetchBatchSummaryReport(body),
-        enabled: !!body.package_session_id && !!body.start_date && !!body.end_date,
+        enabled: !!body.start_date && !!body.end_date,
         staleTime: 60_000,
     });
 

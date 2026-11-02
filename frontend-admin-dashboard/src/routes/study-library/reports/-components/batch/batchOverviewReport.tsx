@@ -1,6 +1,14 @@
 import { useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { Books, Brain, Clock, Exam, UsersThree, WarningCircle } from '@phosphor-icons/react';
+import {
+    ArrowDown,
+    ArrowUp,
+    Books,
+    ChartLineUp,
+    Exam,
+    UsersThree,
+    WarningCircle,
+} from '@phosphor-icons/react';
 import { DashboardLoader } from '@/components/core/dashboard-loader';
 import {
     Select,
@@ -15,13 +23,24 @@ import {
     resolveTimeline,
     type TimelineValue,
 } from '@/components/common/report-timeline-filter';
-import { getTerminology } from '@/components/common/layout-container/sidebar/utils';
-import { ContentTerms, SystemTerms } from '@/routes/settings/-components/NamingSettings';
-import { ReportBlock, ReportHero, StatTile } from '@/components/common/report-visuals/blocks';
 import {
+    getTerminology,
+    getTerminologyPlural,
+} from '@/components/common/layout-container/sidebar/utils';
+import { ContentTerms, SystemTerms } from '@/routes/settings/-components/NamingSettings';
+import {
+    ReportBlock,
+    ReportHero,
+    StatTile,
+    TopicColumn,
+} from '@/components/common/report-visuals/blocks';
+import {
+    CompareBarChart,
     DonutChart,
     HorizontalBars,
     ScoreHistogram,
+    TopicRadar,
+    TrendChart,
     toHistogram,
 } from '@/components/common/report-visuals/charts';
 import {
@@ -43,54 +62,99 @@ import {
 import { useBatchOptions } from '../batchMultiSelect';
 import { GenerateBatchReportDialog } from './generateBatchReportDialog';
 
+const ALL = '__all__';
+const STRONG_FROM = 60;
+
+const Empty = ({ brand, text }: { brand: string; text: string }) => (
+    <div className="flex flex-col items-center gap-1 py-4 text-center">
+        <EmptyReportIllustration brand={brand} className="w-28" />
+        <span className="text-xs text-neutral-500">{text}</span>
+    </div>
+);
+
 const headlineFor = (r: BatchSummaryReport) => {
-    if (r.enrolled_learners === 0) return 'No learners in this batch yet';
-    if (r.learners_attempted === 0) return 'No quiz attempts yet';
-    return `${r.passed_learners} of ${r.enrolled_learners} learners passed`;
+    if (r.enrolled_learners === 0) return 'No learners yet';
+    if (r.avg_score == null) return 'No assessment attempts in these dates';
+    if (r.avg_score >= 60) return 'Strong results across the board';
+    if (r.avg_score >= 40) return 'Steady, with room to grow';
+    return 'Scores need attention';
 };
 
-const BatchOverviewBody = ({ data, brand }: { data: BatchSummaryReport; brand: string }) => {
-    const scored = useMemo(
-        () => data.learners.filter((l) => l.avg_score_percent != null),
+const BatchOverviewBody = ({
+    data,
+    brand,
+    batchLabels,
+}: {
+    data: BatchSummaryReport;
+    brand: string;
+    batchLabels: Map<string, string>;
+}) => {
+    const single = !!data.package_session_id;
+    const scored = useMemo(() => data.learners.filter((l) => l.avg_score != null), [data]);
+    const histogram = useMemo(() => toHistogram(scored.map((l) => l.avg_score)), [scored]);
+    const topics = useMemo(
+        () => data.topics.filter((t) => t.accuracy != null && t.questions > 0),
         [data]
     );
-    const histogram = useMemo(() => toHistogram(scored.map((l) => l.avg_score_percent)), [scored]);
+    const strengths = useMemo(
+        () =>
+            topics
+                .filter((t) => (t.accuracy ?? 0) >= STRONG_FROM)
+                .sort((a, b) => (b.accuracy ?? 0) - (a.accuracy ?? 0)),
+        [topics]
+    );
+    const weaknesses = useMemo(
+        () =>
+            topics
+                .filter((t) => (t.accuracy ?? 0) < STRONG_FROM)
+                .sort((a, b) => (a.accuracy ?? 0) - (b.accuracy ?? 0)),
+        [topics]
+    );
     const needsAttention = useMemo(
         () =>
             data.learners
-                .filter((l) => l.status !== 'PASSED')
+                .filter((l) => l.band === 'WEAK' || l.band === 'NOT_ASSESSED')
                 .sort((a, b) => {
-                    if (a.status !== b.status) return a.status === 'FAILED' ? -1 : 1;
-                    return (a.avg_score_percent ?? 0) - (b.avg_score_percent ?? 0);
+                    if (a.band !== b.band) return a.band === 'WEAK' ? -1 : 1;
+                    return (a.avg_score ?? 0) - (b.avg_score ?? 0);
                 })
                 .slice(0, 6),
         [data]
     );
+    const trend = data.assessments.slice(-12).map((a) => ({
+        label: a.name,
+        sub: a.date ?? undefined,
+        you: a.avg_score,
+        klass: null,
+    }));
     const topScorers = scored.slice(0, 8);
-    const maxTime = Math.max(1, ...data.activity.map((a) => a.total_time_minutes ?? 0));
+    const activity = data.activity ?? [];
+    const maxTime = Math.max(1, ...activity.map((a) => a.total_time_minutes ?? 0));
+    const batches = (data.batches ?? []).filter((b) => b.learners > 0);
 
     return (
         <div className="flex flex-col gap-4">
             <ReportHero
                 brand={brand}
-                kicker={data.batch_name ?? 'Batch report'}
+                kicker={data.batch_name ?? 'All batches'}
                 headline={headlineFor(data)}
                 subline={
-                    data.avg_quiz_score != null
-                        ? `Average quiz score ${pct(data.avg_quiz_score)} across ${data.quizzes_in_course} quiz${data.quizzes_in_course === 1 ? '' : 'zes'}.`
+                    data.assessments_held > 0
+                        ? `${data.assessments_held} assessment${data.assessments_held === 1 ? '' : 's'}, ${data.total_attempts} attempts.`
                         : undefined
                 }
-                bigValue={data.pass_rate != null ? `${Math.round(data.pass_rate)}` : '—'}
-                bigSuffix={data.pass_rate != null ? '%' : undefined}
-                bigCaption="passed"
+                bigValue={data.avg_score != null ? `${Math.round(data.avg_score)}` : '—'}
+                bigSuffix={data.avg_score != null ? '%' : undefined}
+                bigCaption="average score"
                 illustration={<ClassIllustration brand={brand} className="h-auto w-full" />}
                 track={
-                    data.avg_course_completion != null
+                    data.participation_rate != null
                         ? {
-                              value: data.avg_course_completion,
+                              value: data.participation_rate,
                               left: (
                                   <>
-                                      Course completion <b>{pct(data.avg_course_completion)}</b>
+                                      <b>{data.learners_assessed}</b> of {data.enrolled_learners}{' '}
+                                      learners took an assessment
                                   </>
                               ),
                           }
@@ -98,58 +162,58 @@ const BatchOverviewBody = ({ data, brand }: { data: BatchSummaryReport; brand: s
                 }
             />
 
-            <div className="grid grid-cols-2 gap-3 md:grid-cols-5">
+            <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
                 <StatTile
                     value={data.enrolled_learners}
                     label="Learners"
                     icon={<UsersThree className="size-3.5" />}
                 />
                 <StatTile
-                    value={pct(data.avg_quiz_score)}
-                    label="Avg quiz score"
-                    color={scoreColor(data.avg_quiz_score)}
+                    value={pct(data.participation_rate)}
+                    label="Took an assessment"
+                    color={brand}
                     icon={<Exam className="size-3.5" />}
                 />
                 <StatTile
-                    value={pct(data.avg_course_completion)}
-                    label="Course completion"
-                    color={brand}
-                    icon={<Books className="size-3.5" />}
+                    value={data.assessments_held}
+                    label="Assessments held"
+                    icon={<ChartLineUp className="size-3.5" />}
                 />
-                <StatTile
-                    value={minutesLabel(data.avg_time_spent_minutes)}
-                    label="Avg time per learner"
-                    icon={<Clock className="size-3.5" />}
-                />
-                <StatTile
-                    value={pct(data.avg_concentration)}
-                    label="Concentration"
-                    icon={<Brain className="size-3.5" />}
-                />
+                {single ? (
+                    <StatTile
+                        value={pct(data.avg_course_completion)}
+                        label="Course completion"
+                        icon={<Books className="size-3.5" />}
+                    />
+                ) : (
+                    <StatTile
+                        value={data.total_attempts}
+                        label="Attempts"
+                        icon={<Exam className="size-3.5" />}
+                    />
+                )}
             </div>
 
             <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
                 <ReportBlock
                     brand={brand}
-                    tag="Results"
-                    title={
-                        data.enrolled_learners > 0
-                            ? `${pct(data.pass_rate)} passed, ${data.not_attempted_learners} yet to attempt`
-                            : 'No learners yet'
-                    }
+                    tag="Score bands"
+                    title={`${data.strong_learners} of ${data.enrolled_learners} learners at 60% or more`}
+                    lede="Learners by their average assessment score."
                 >
                     <DonutChart
                         data={[
-                            { label: 'Passed', value: data.passed_learners, color: REPORT_COLORS.good },
-                            { label: 'Failed', value: data.failed_learners, color: REPORT_COLORS.bad },
+                            { label: '60% and above', value: data.strong_learners, color: REPORT_COLORS.good },
+                            { label: '40 to 60%', value: data.average_learners, color: REPORT_COLORS.warn },
+                            { label: 'Under 40%', value: data.weak_learners, color: REPORT_COLORS.bad },
                             {
-                                label: 'Not attempted',
-                                value: data.not_attempted_learners,
+                                label: 'Not assessed',
+                                value: data.not_assessed_learners,
                                 color: REPORT_COLORS.neutral,
                             },
                         ]}
-                        centerValue={pct(data.pass_rate)}
-                        centerLabel="passed"
+                        centerValue={pct(data.avg_score)}
+                        centerLabel="average"
                         size={170}
                     />
                 </ReportBlock>
@@ -157,104 +221,167 @@ const BatchOverviewBody = ({ data, brand }: { data: BatchSummaryReport; brand: s
                 <ReportBlock
                     brand={brand}
                     tag="Where learners stand"
-                    title={
-                        scored.length > 0
-                            ? `${histogram.filter((b) => b.from >= 60).reduce((s, b) => s + b.count, 0)} of ${scored.length} scored 60% or more`
-                            : 'No quiz scores yet'
-                    }
-                    lede="How many learners have an average quiz score in each range."
+                    title={scored.length > 0 ? 'Spread of scores' : 'No scores yet'}
+                    lede="How many learners have an average score in each range."
                 >
                     {scored.length > 0 ? (
                         <ScoreHistogram data={histogram} height={200} />
                     ) : (
-                        <EmptyReportIllustration brand={brand} className="mx-auto w-36" />
+                        <Empty brand={brand} text="No assessment attempts in these dates." />
                     )}
                 </ReportBlock>
 
                 <ReportBlock
                     brand={brand}
-                    tag="Subject progress"
+                    tag="Assessments"
                     title={
-                        data.subjects.length > 0
-                            ? `Furthest along in ${[...data.subjects].sort((a, b) => (b.avg_completion ?? 0) - (a.avg_completion ?? 0))[0]?.subject_name}`
-                            : 'No subject progress yet'
+                        data.assessments.length > 0
+                            ? `${data.assessments.length} assessment${data.assessments.length === 1 ? '' : 's'} in these dates`
+                            : 'No assessments in these dates'
                     }
-                    lede="Average completion and time per learner in each subject."
+                    lede="Average score in each assessment, in date order."
                 >
-                    {data.subjects.length > 0 ? (
-                        <HorizontalBars
-                            color={brand}
-                            rows={data.subjects.map((s) => ({
-                                key: s.subject_name,
-                                label: s.subject_name,
-                                value: s.avg_completion,
-                                display: pct(s.avg_completion),
-                                sub: minutesLabel(s.avg_time_minutes),
+                    {trend.length > 0 ? (
+                        <TrendChart data={trend} brand={brand} />
+                    ) : (
+                        <Empty brand={brand} text="Scores appear once learners attempt an assessment." />
+                    )}
+                </ReportBlock>
+
+                <ReportBlock
+                    brand={brand}
+                    tag="By subject"
+                    title={
+                        data.subject_scores[0]
+                            ? `Best in ${data.subject_scores[0].subject}`
+                            : 'No subject scores yet'
+                    }
+                    lede="Average score in each subject's assessments."
+                >
+                    {data.subject_scores.length > 0 ? (
+                        <CompareBarChart
+                            brand={brand}
+                            youLabel="Average score"
+                            data={data.subject_scores.map((s) => ({
+                                name: s.subject,
+                                you: s.avg_score,
+                                klass: null,
                             }))}
                         />
                     ) : (
-                        <p className="text-sm text-neutral-500">Nothing completed yet.</p>
+                        <Empty brand={brand} text="Subjects are read from assessment names." />
                     )}
                 </ReportBlock>
+            </div>
+
+            <ReportBlock
+                brand={brand}
+                tag="Strengths and weaknesses"
+                title={
+                    topics.length > 0
+                        ? `${strengths.length} strong, ${weaknesses.length} to work on`
+                        : 'No analysed attempts yet'
+                }
+                lede="Questions answered correctly in each topic across the learners. 60% or above is a strength."
+            >
+                {topics.length === 0 ? (
+                    <Empty
+                        brand={brand}
+                        text="Topic accuracy appears once assessment attempts are analysed."
+                    />
+                ) : (
+                    <div className="grid grid-cols-1 items-center gap-4 lg:grid-cols-[1fr_1fr_1fr]">
+                        {topics.length >= 3 ? (
+                            <TopicRadar
+                                brand={brand}
+                                data={[...strengths, ...weaknesses]
+                                    .slice(0, 10)
+                                    .map((t) => ({ topic: t.topic, accuracy: t.accuracy ?? 0 }))}
+                            />
+                        ) : (
+                            <div />
+                        )}
+                        <TopicColumn
+                            title="Strengths"
+                            icon={<ArrowUp className="size-4 text-success-600" weight="bold" />}
+                            rows={strengths}
+                            brand={brand}
+                            empty="No topic at 60% or above yet."
+                        />
+                        <TopicColumn
+                            title="Needs work"
+                            icon={<ArrowDown className="size-4 text-danger-600" weight="bold" />}
+                            rows={weaknesses}
+                            brand={brand}
+                            empty="No topic below 60%."
+                        />
+                    </div>
+                )}
+            </ReportBlock>
+
+            <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+                {!single && (
+                    <ReportBlock
+                        brand={brand}
+                        tag="Batches compared"
+                        title={
+                            batches[0]?.avg_score != null
+                                ? `${batchLabels.get(batches[0].package_session_id) ?? 'A batch'} leads`
+                                : 'No batch scores yet'
+                        }
+                        lede="Average score of each batch's assessed learners."
+                    >
+                        {batches.some((b) => b.avg_score != null) ? (
+                            <HorizontalBars
+                                color={brand}
+                                marker={
+                                    data.avg_score != null
+                                        ? { value: data.avg_score, label: 'Institute average' }
+                                        : null
+                                }
+                                rows={batches.slice(0, 12).map((b) => ({
+                                    key: b.package_session_id,
+                                    label: batchLabels.get(b.package_session_id) ?? 'Batch',
+                                    value: b.avg_score,
+                                    display: pct(b.avg_score),
+                                    sub: `${b.learners_assessed}/${b.learners} assessed`,
+                                    color: scoreColor(b.avg_score),
+                                }))}
+                            />
+                        ) : (
+                            <Empty brand={brand} text="No batch has assessment scores yet." />
+                        )}
+                    </ReportBlock>
+                )}
 
                 <ReportBlock
                     brand={brand}
-                    tag="Top scorers"
+                    tag="Top performers"
                     title={
                         topScorers[0]
-                            ? `${topScorers[0].full_name} leads with ${pct(topScorers[0].avg_score_percent)}`
-                            : 'No quiz scores yet'
+                            ? `${topScorers[0].full_name} leads with ${pct(topScorers[0].avg_score)}`
+                            : 'No scores yet'
                     }
-                    lede="Highest average quiz scores."
+                    lede="Highest average assessment scores."
                 >
                     {topScorers.length > 0 ? (
                         <HorizontalBars
                             color={brand}
                             marker={
-                                data.avg_quiz_score != null
-                                    ? { value: data.avg_quiz_score, label: 'Batch average' }
+                                data.avg_score != null
+                                    ? { value: data.avg_score, label: 'Average' }
                                     : null
                             }
                             rows={topScorers.map((l) => ({
                                 key: l.user_id,
                                 label: l.full_name,
-                                value: l.avg_score_percent,
-                                display: pct(l.avg_score_percent),
-                                color: scoreColor(l.avg_score_percent),
+                                value: l.avg_score,
+                                display: pct(l.avg_score),
+                                color: scoreColor(l.avg_score),
                             }))}
                         />
                     ) : (
-                        <p className="text-sm text-neutral-500">Nobody has attempted a quiz.</p>
-                    )}
-                </ReportBlock>
-
-                <ReportBlock
-                    brand={brand}
-                    tag="Most active"
-                    title={
-                        data.activity[0]
-                            ? `${data.activity[0].full_name} spent the most time learning`
-                            : 'No learning activity in these dates'
-                    }
-                    lede="Time spent learning in the selected dates."
-                >
-                    {data.activity.length > 0 ? (
-                        <HorizontalBars
-                            color={brand}
-                            max={maxTime}
-                            rows={data.activity.map((a) => ({
-                                key: a.user_id,
-                                label: a.full_name,
-                                value: a.total_time_minutes,
-                                display: minutesLabel(a.total_time_minutes),
-                                sub:
-                                    a.avg_concentration != null
-                                        ? `${Math.round(a.avg_concentration)}% focus`
-                                        : undefined,
-                            }))}
-                        />
-                    ) : (
-                        <p className="text-sm text-neutral-500">No activity recorded.</p>
+                        <Empty brand={brand} text="Nobody has attempted an assessment yet." />
                     )}
                 </ReportBlock>
 
@@ -263,10 +390,10 @@ const BatchOverviewBody = ({ data, brand }: { data: BatchSummaryReport; brand: s
                     tag="Needs attention"
                     title={
                         needsAttention.length > 0
-                            ? `${data.failed_learners + data.not_attempted_learners} learners need a nudge`
+                            ? `${data.weak_learners + data.not_assessed_learners} learners need a nudge`
                             : 'Everyone is on track'
                     }
-                    lede="Below the pass mark first, then learners yet to attempt a quiz."
+                    lede="Under 40% first, then learners with no assessment attempt."
                 >
                     {needsAttention.length === 0 ? (
                         <p className="text-sm text-neutral-500">Nobody to follow up with.</p>
@@ -279,7 +406,7 @@ const BatchOverviewBody = ({ data, brand }: { data: BatchSummaryReport; brand: s
                                         weight="fill"
                                         style={{
                                             color:
-                                                l.status === 'FAILED'
+                                                l.band === 'WEAK'
                                                     ? REPORT_COLORS.bad
                                                     : REPORT_COLORS.neutral,
                                         }}
@@ -289,20 +416,78 @@ const BatchOverviewBody = ({ data, brand }: { data: BatchSummaryReport; brand: s
                                         className="ml-auto shrink-0 text-xs font-semibold"
                                         style={{
                                             color:
-                                                l.status === 'FAILED'
+                                                l.band === 'WEAK'
                                                     ? REPORT_COLORS.bad
                                                     : REPORT_COLORS.muted,
                                         }}
                                     >
-                                        {l.status === 'FAILED'
-                                            ? pct(l.avg_score_percent)
-                                            : 'Not attempted'}
+                                        {l.band === 'WEAK' ? pct(l.avg_score) : 'Not assessed'}
                                     </span>
                                 </li>
                             ))}
                         </ul>
                     )}
                 </ReportBlock>
+
+                {single && (
+                    <ReportBlock
+                        brand={brand}
+                        tag="Course progress"
+                        title={
+                            (data.subjects ?? []).length > 0
+                                ? `${pct(data.avg_course_completion)} of the course completed`
+                                : 'No course progress yet'
+                        }
+                        lede="Average completion and time per learner in each subject."
+                    >
+                        {(data.subjects ?? []).length > 0 ? (
+                            <HorizontalBars
+                                color={brand}
+                                rows={(data.subjects ?? []).map((s) => ({
+                                    key: s.subject_name,
+                                    label: s.subject_name,
+                                    value: s.avg_completion,
+                                    display: pct(s.avg_completion),
+                                    sub: minutesLabel(s.avg_time_minutes),
+                                }))}
+                            />
+                        ) : (
+                            <Empty brand={brand} text="Nothing completed yet." />
+                        )}
+                    </ReportBlock>
+                )}
+
+                {single && (
+                    <ReportBlock
+                        brand={brand}
+                        tag="Most active"
+                        title={
+                            activity[0]
+                                ? `${activity[0].full_name} spent the most time learning`
+                                : 'No learning activity in these dates'
+                        }
+                        lede="Time spent learning in the selected dates."
+                    >
+                        {activity.length > 0 ? (
+                            <HorizontalBars
+                                color={brand}
+                                max={maxTime}
+                                rows={activity.map((a) => ({
+                                    key: a.user_id,
+                                    label: a.full_name,
+                                    value: a.total_time_minutes,
+                                    display: minutesLabel(a.total_time_minutes),
+                                    sub:
+                                        a.avg_concentration != null
+                                            ? `${Math.round(a.avg_concentration)}% focus`
+                                            : undefined,
+                                }))}
+                            />
+                        ) : (
+                            <Empty brand={brand} text="No activity recorded." />
+                        )}
+                    </ReportBlock>
+                )}
             </div>
         </div>
     );
@@ -316,19 +501,23 @@ export default function BatchOverviewReport({
 }) {
     const batchOptions = useBatchOptions();
     const brand = useBrandColor();
-    const [picked, setPicked] = useState<string>('');
+    const [picked, setPicked] = useState<string>(ALL);
     const [timeline, setTimeline] = useState<TimelineValue>(DEFAULT_TIMELINE);
     const range = resolveTimeline(timeline);
-    const batchId = fixedPackageSessionId ?? picked;
-    const batchLabel = batchOptions.find((b) => b.value === batchId)?.label;
+    const batchId = fixedPackageSessionId ?? (picked === ALL ? undefined : picked);
+    const batchLabels = useMemo(
+        () => new Map(batchOptions.map((b) => [b.value, b.label])),
+        [batchOptions]
+    );
+    const batchLabel = batchId ? batchLabels.get(batchId) : undefined;
     const batchTerm = getTerminology(ContentTerms.Batch, SystemTerms.Batch);
+    const batchesTerm = getTerminologyPlural(ContentTerms.Batch, SystemTerms.Batch);
 
     const request: BatchSummaryRequest | null = useMemo(
         () =>
-            batchId && range
+            range
                 ? {
-                      package_session_id: batchId,
-                      batch_name: batchLabel,
+                      ...(batchId ? { package_session_id: batchId, batch_name: batchLabel } : {}),
                       start_date: range.start,
                       end_date: range.end,
                   }
@@ -337,9 +526,7 @@ export default function BatchOverviewReport({
     );
 
     const { data, isLoading, isError } = useQuery({
-        ...getBatchSummaryReportQuery(
-            request ?? { package_session_id: '', start_date: '', end_date: '' }
-        ),
+        ...getBatchSummaryReportQuery(request ?? { start_date: '', end_date: '' }),
     });
 
     return (
@@ -350,9 +537,10 @@ export default function BatchOverviewReport({
                         {batchTerm}
                         <Select value={picked} onValueChange={setPicked}>
                             <SelectTrigger className="h-9 w-full text-sm">
-                                <SelectValue placeholder={`Select a ${batchTerm.toLowerCase()}`} />
+                                <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
+                                <SelectItem value={ALL}>All {batchesTerm.toLowerCase()}</SelectItem>
                                 {batchOptions.map((b) => (
                                     <SelectItem key={b.value} value={b.value}>
                                         {b.label}
@@ -371,14 +559,7 @@ export default function BatchOverviewReport({
                 </div>
             </div>
 
-            {!batchId ? (
-                <div className="flex flex-col items-center gap-2 py-10 text-center">
-                    <ClassIllustration brand={brand} className="w-44" />
-                    <span className="text-sm text-neutral-500">
-                        Select a {batchTerm.toLowerCase()} to see its report.
-                    </span>
-                </div>
-            ) : !range ? (
+            {!range ? (
                 <p className="py-10 text-center text-sm text-neutral-500">
                     Pick a start and end date.
                 </p>
@@ -389,7 +570,7 @@ export default function BatchOverviewReport({
                     Couldn&apos;t load this report.
                 </p>
             ) : (
-                <BatchOverviewBody data={data} brand={brand} />
+                <BatchOverviewBody data={data} brand={brand} batchLabels={batchLabels} />
             )}
         </div>
     );
