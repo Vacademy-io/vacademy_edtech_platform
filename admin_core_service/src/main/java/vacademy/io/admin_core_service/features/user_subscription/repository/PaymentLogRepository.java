@@ -431,13 +431,19 @@ public interface PaymentLogRepository extends JpaRepository<PaymentLog, String> 
    * is deliberately not treated the same way: it keeps its long-standing place in the Pending tab,
    * which is where admins go to chase it. That asymmetry predates this query — it is carried over
    * from the filter this replaced, not introduced here.
+   *
+   * Abandoned also takes an unfinished payment on an enrolment that is no longer live (cancelled,
+   * terminated, expired). Pending leaves it out because that money will never arrive; without a
+   * home here it was counted under All and sat in no tab, so the tabs never added up to All.
    */
   String BUCKET_PREDICATE = """
       (:noBucketFilter = true OR (
        NOT (combined.row_status = 'CANCELLED' AND combined.row_type = 'PAYMENT_LOG') AND (
             (:bucketPaid = true AND combined.row_status = 'PAID')
          OR (:bucketFailed = true AND combined.row_status = 'FAILED')
-         OR (:bucketAbandoned = true AND combined.row_status = 'ABANDONED')
+         OR (:bucketAbandoned = true AND (combined.row_status = 'ABANDONED'
+             OR (combined.due_eligible = false
+                 AND UPPER(combined.row_status) NOT IN ('PAID', 'FAILED', 'RETRIED', 'CANCELLED'))))
          OR (:bucketPending = true AND combined.due_eligible = true
              AND combined.row_status NOT IN ('PAID', 'FAILED', 'ABANDONED', 'RETRIED')))))
       """;

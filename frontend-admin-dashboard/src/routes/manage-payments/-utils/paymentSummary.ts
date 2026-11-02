@@ -18,17 +18,13 @@ export interface PaymentSummary {
     pending: StatBucket;
     /**
      * Checkouts opened and never finished: PAYMENT_PENDING rows older than the gateway's order
-     * TTL (the server reports them as ABANDONED). Nobody got access and nothing is owed, so they
-     * sit in neither Pending nor Due — they are a leads signal, not a finance one.
+     * TTL (the server reports them as ABANDONED), plus unsettled records on a cancelled /
+     * terminated / expired enrolment — that money will never arrive either, and with no tab of
+     * their own those rows made All larger than the tabs added up to. Nobody got access and
+     * nothing is owed, so they sit in neither Pending nor Due — a leads signal, not a finance one.
      */
     abandoned: StatBucket;
     failed: StatBucket;
-    /**
-     * Unsettled records on a cancelled / terminated / expired enrolment. Deliberately in NO card:
-     * this money will never arrive, so showing it as pending or due overstated both. The rows stay
-     * in the table under "All" for audit.
-     */
-    notCounted: StatBucket;
 }
 
 const emptyBucket = (): StatBucket => ({ count: 0, amountByCurrency: {} });
@@ -39,7 +35,6 @@ export const emptyPaymentSummary = (): PaymentSummary => ({
     pending: emptyBucket(),
     abandoned: emptyBucket(),
     failed: emptyBucket(),
-    notCounted: emptyBucket(),
 });
 
 const addToBucket = (bucket: StatBucket, amount: number, currency: string) => {
@@ -132,10 +127,10 @@ export const computePaymentSummary = (entries: PaymentLogEntry[]): PaymentSummar
         const bucket = classifyEntry(entry);
         addToBucket(summary.total, amount, currency);
 
-        // An unsettled record on a dead enrolment is money that will never arrive. It belongs in
-        // no card — counting it as "pending" overstated the gateway backlog.
+        // An unsettled record on a dead enrolment is money that will never arrive — counting it
+        // as "pending" overstated the gateway backlog. It is a checkout nobody will finish.
         if (bucket === 'pending' && !isDueEligibleEntry(entry)) {
-            addToBucket(summary.notCounted, amount, currency);
+            addToBucket(summary.abandoned, amount, currency);
             continue;
         }
 
@@ -182,9 +177,10 @@ export const summaryFromStatusTotals = (totals: PaymentStatusTotal[]): PaymentSu
 
         add(summary.total);
 
-        // An unsettled record on a dead enrolment is money that will never arrive.
+        // An unsettled record on a dead enrolment is money that will never arrive: Abandoned,
+        // matching the server's abandoned tab filter.
         if (bucket === 'pending' && !group.due_eligible) {
-            add(summary.notCounted);
+            add(summary.abandoned);
             continue;
         }
 
