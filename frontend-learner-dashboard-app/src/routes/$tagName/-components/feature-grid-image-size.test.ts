@@ -35,4 +35,11 @@ describe("featureGrid image size", () => {
     expect(render("small")).toContain("max-w-16");
     expect(render("medium")).toContain("max-w-24");
   });
+
+  it("contains small/medium icons so non-square art is not cropped; large photos still cover", () => {
+    expect(render("small")).toContain("object-contain");
+    expect(render("medium")).toContain("object-contain");
+    expect(render()).toContain("object-cover");
+    expect(render()).not.toContain("object-contain");
+  });
 });
