@@ -11,7 +11,6 @@ import {
     TableHeader,
     TableRow,
 } from '@/components/ui/table';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { MyDialog } from '@/components/design-system/dialog';
@@ -241,11 +240,15 @@ export default function Evaluation({
 
                     {sections.map((section) => (
                         <TabsContent key={section.sectionId} value={section.sectionId}>
-                            <ScrollArea className="h-64 rounded-md border">
-                                <Table>
+                            {/* Full list, no inner scroll box: the panel body already
+                                scrolls, and a fixed h-64 box showed only ~3 questions on
+                                laptop screens. Fixed layout keeps the remark column
+                                inside the narrow panel. */}
+                            <div className="overflow-hidden rounded-md border">
+                                <Table className="table-fixed">
                                     <TableHeader>
                                         <TableRow>
-                                            <TableHead className="w-fit">
+                                            <TableHead className="w-16">
                                                 {t('questionNo')}
                                             </TableHead>
                                             <TableHead className="text-center">
@@ -254,7 +257,7 @@ export default function Evaluation({
                                             <TableHead className="text-center">
                                                 {t('maxMarks')}
                                             </TableHead>
-                                            <TableHead className="w-10">
+                                            <TableHead className="w-11">
                                                 <span className="sr-only">
                                                     {tReview('manual.overallRemarks')}
                                                 </span>
@@ -272,16 +275,23 @@ export default function Evaluation({
                                             return (
                                                 <Fragment key={question.questionId}>
                                                     <TableRow>
-                                                        <TableCell className="flex cursor-pointer items-center space-x-2 text-base font-medium">
-                                                            <strong>{question.questionNo}</strong>
-                                                            <ArrowSquareOut
-                                                                onClick={(e) => {
-                                                                    e.stopPropagation();
-                                                                    setPreviewQuestionContent(
-                                                                        question.content
-                                                                    );
-                                                                }}
-                                                            />
+                                                        <TableCell className="text-base font-medium">
+                                                            {/* flex on the inner div, not the td:
+                                                                a flex td drops out of the table
+                                                                layout and pushed the columns right. */}
+                                                            <div className="flex cursor-pointer items-center gap-2">
+                                                                <strong>
+                                                                    {question.questionNo}
+                                                                </strong>
+                                                                <ArrowSquareOut
+                                                                    onClick={(e) => {
+                                                                        e.stopPropagation();
+                                                                        setPreviewQuestionContent(
+                                                                            question.content
+                                                                        );
+                                                                    }}
+                                                                />
+                                                            </div>
                                                         </TableCell>
 
                                                         <TableCell className="text-center">
@@ -297,7 +307,7 @@ export default function Evaluation({
                                                                         e.target.value
                                                                     )
                                                                 }
-                                                                className="mx-auto w-fit p-0.5 text-center"
+                                                                className="mx-auto w-16 p-0.5 text-center"
                                                                 min={0}
                                                                 step="0.5"
                                                             />
@@ -305,7 +315,7 @@ export default function Evaluation({
                                                         <TableCell className="text-center">
                                                             {question.maxMarks}
                                                         </TableCell>
-                                                        <TableCell className="w-10 p-1">
+                                                        <TableCell className="p-1">
                                                             <MyButton
                                                                 type="button"
                                                                 layoutVariant="icon"
@@ -368,7 +378,7 @@ export default function Evaluation({
                                         })}
                                     </TableBody>
                                 </Table>
-                            </ScrollArea>
+                            </div>
                         </TabsContent>
                     ))}
                 </Tabs>
