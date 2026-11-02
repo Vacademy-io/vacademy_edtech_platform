@@ -301,6 +301,16 @@ def _word_range(text: str, start: int, end: int) -> list[int]:
     return [covered[0], covered[-1], len(words)]
 
 
+# Characters a student does not write inside a sentence; in a quote they are
+# the reader's noise ("can state @ his minority", checked copy 2026-11-02).
+_JUNK = frozenset("@#$%^*=<>|~_{}[]\\`")
+
+
+def has_junk(wrong: str, correct: str) -> bool:
+    """The quoted words hold a stray symbol the correction does not."""
+    return any(ch in _JUNK and ch not in (correct or "") for ch in wrong or "")
+
+
 def _locate(wrong: str, text: str) -> Optional[tuple[int, int]]:
     """Where `wrong` sits in the row text: exact, then ignoring case and runs
     of spaces. None when the words are not on the row."""
@@ -341,7 +351,7 @@ def parse_errors(content: str, rows_by_id: dict[str, dict[str, Any]]) -> list[di
         # row and the reply must agree before one can be found in the other.
         wrong = unicodedata.normalize("NFC", " ".join(str(item.get("wrong") or "").split()))
         correct = unicodedata.normalize("NFC", " ".join(str(item.get("correct") or "").split()))
-        if row is None or not wrong or not correct or wrong == correct:
+        if row is None or not wrong or not correct or wrong == correct or has_junk(wrong, correct):
             continue
         text = unicodedata.normalize("NFC", str(row.get("text") or ""))
         where = _locate(wrong, text)
@@ -469,14 +479,53 @@ def feedback_text(errors: list[dict[str, Any]]) -> str:
     """The "Language:" paragraph appended to a question's feedback."""
     if not errors:
         return ""
+    merged = _merge_repeats(errors)
     parts = []
-    for e in errors[:MAX_FEEDBACK_ERRORS]:
+    for e, times in merged[:MAX_FEEDBACK_ERRORS]:
         why = f" ({e['why']})" if e.get("why") else ""
         sym = f" [{symbols(e)}]" if e.get("symbol") else ""
-        parts.append(f"\"{e['wrong']}\" → \"{e['correct']}\"{why}{sym}")
-    more = len(errors) - MAX_FEEDBACK_ERRORS
+        rep = f" (×{times})" if times > 1 else ""
+        parts.append(f"\"{e['wrong']}\" → \"{e['correct']}\"{why}{sym}{rep}")
+    more = len(merged) - MAX_FEEDBACK_ERRORS
     tail = f"; and {more} more" if more > 0 else ""
     return "Language: " + "; ".join(parts) + tail + "."
+
+
+def _merge_repeats(errors: list[dict[str, Any]]) -> list[tuple[dict[str, Any], int]]:
+    """The answer's errors with each repeated correction listed once, with how
+    many times it was found, in reading order. "ab intio" -> "ab initio" and
+    "void ab intio" -> "void ab initio" are one correction: the longer quote
+    only adds words that did not change, so the shorter one is listed. The
+    copy still marks every spot; only the written list is merged."""
+    def key(text: Any) -> str:
+        return " ".join(str(text or "").lower().split())
+
+    def same_fix(short_w: str, short_c: str, long_w: str, long_c: str) -> bool:
+        # The long quote is the short one with the same unchanged words
+        # around it on both sides ("void " + "ab intio" / "void " + "ab initio").
+        padded = f" {long_w} "
+        i = padded.find(f" {short_w} ")
+        if i < 0:
+            return False
+        before, after = padded[:i + 1], padded[i + 1 + len(short_w):]
+        return f" {long_c} " == before + short_c + after
+
+    merged: list[list[Any]] = []          # [error, times]
+    for e in errors:
+        w, c, sym = key(e.get("wrong")), key(e.get("correct")), symbols(e) if e.get("symbol") else ""
+        for slot in merged:
+            o = slot[0]
+            ow, oc = key(o.get("wrong")), key(o.get("correct"))
+            if sym != (symbols(o) if o.get("symbol") else ""):
+                continue
+            if same_fix(w, c, ow, oc) or same_fix(ow, oc, w, c):
+                if len(w) < len(ow):
+                    slot[0] = e
+                slot[1] += 1
+                break
+        else:
+            merged.append([e, 1])
+    return [(e, n) for e, n in merged]
 
 
 def with_language_feedback(feedback: Any, errors: list[dict[str, Any]]) -> str:
