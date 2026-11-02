@@ -189,7 +189,8 @@
             "FAILED": "विफल",
             "PAYMENT_PENDING": "भुगतान लंबित",
             "NOT_INITIATED": "शुरू नहीं हुआ",
-            "PENDING": "लंबित"
+            "PENDING": "लंबित",
+            "RETRIED": "पुनः प्रयास किया"
         },
         "orderStatus": {
             "ORDERED": "ऑर्डर किया गया",

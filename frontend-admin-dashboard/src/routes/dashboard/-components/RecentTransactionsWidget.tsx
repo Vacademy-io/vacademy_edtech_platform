@@ -60,6 +60,8 @@ const buildStatusLabel =
         if (s === 'PAYMENT_PENDING' || s === 'NOT_INITIATED') return t('status.pending');
         // A stale, unfinished checkout — neither pending nor failed. Neutral tone, plain label.
         if (s === 'ABANDONED') return 'Abandoned';
+        // A failed attempt paid on a later retry — neutral, it needs nothing.
+        if (s === 'RETRIED') return 'Retried';
         if (s === 'FAILED') return t('status.failed');
         if (s === 'CANCELLED') return t('status.cancelled');
         return status || '—';

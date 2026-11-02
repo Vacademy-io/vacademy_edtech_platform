@@ -7,6 +7,8 @@ const PAYMENT_STATUS_META: Record<string, { label: string; chip: StatusType }> =
     PAYMENT_PENDING: { label: 'Pending', chip: 'WARNING' },
     NOT_INITIATED: { label: 'Not initiated', chip: 'INFO' },
     ABANDONED: { label: 'Abandoned checkout', chip: 'INFO' },
+    // A failed attempt followed by a later attempt that went through — any money is on that row.
+    RETRIED: { label: 'Failed, retried later', chip: 'INFO' },
     // A voided invoice row; a voided payment is labelled from its own status below.
     CANCELLED: { label: 'Cancelled', chip: 'INFO' },
     VOIDED: { label: 'Voided', chip: 'DANGER' },

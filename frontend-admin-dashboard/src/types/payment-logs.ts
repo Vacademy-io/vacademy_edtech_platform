@@ -128,7 +128,9 @@ export interface PaymentLogEntry {
     /**
      * PAID | FAILED | PAYMENT_PENDING | NOT_INITIATED; ABANDONED for a PAYMENT_PENDING row too
      * old to complete (server-derived, never persisted); or CANCELLED for a voided invoice —
-     * which is shown but never counted toward collected or due.
+     * which is shown but never counted toward collected or due. RETRIED is a FAILED attempt the
+     * learner then paid on a later attempt (server-derived): the money is on that later row, so
+     * this one is shown but counted nowhere.
      */
     current_payment_status:
         | 'PAID'
@@ -137,6 +139,7 @@ export interface PaymentLogEntry {
         | 'NOT_INITIATED'
         | 'ABANDONED'
         | 'CANCELLED'
+        | 'RETRIED'
         | string;
     user: User;
     /**

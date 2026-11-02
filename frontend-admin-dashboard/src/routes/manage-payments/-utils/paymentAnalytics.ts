@@ -1,7 +1,7 @@
 import type { PaymentLogEntry } from '@/types/payment-logs';
 import { isRealCurrency, resolveEntryCurrency } from '@/utils/payment-currency';
 import { derivePaymentTypeLabel } from './exportPaymentLogsCsv';
-import { classifyEntry, isCancelledEntry, isDueEligibleEntry } from './paymentSummary';
+import { classifyEntry, isDueEligibleEntry, isUncountedEntry } from './paymentSummary';
 import { paymentReceivedAt } from './paymentReceivedAt';
 
 /**
@@ -110,10 +110,10 @@ const topSlices = (map: Record<string, AmountSlice>, limit?: number): AmountSlic
 };
 
 export const computePaymentAnalytics = (allEntries: PaymentLogEntry[]): PaymentAnalytics => {
-    // Voided invoices are dropped up front, exactly as the KPI cards drop them. The bucketing
+    // Voided invoices and retried failures are dropped up front, exactly as the KPI cards drop them. The bucketing
     // below is shared with those cards, so letting a cancelled row through here would have it
     // counted as still-due in the dashboard while the cards ignored it.
-    const entries = allEntries.filter((entry) => !isCancelledEntry(entry));
+    const entries = allEntries.filter((entry) => !isUncountedEntry(entry));
     const primaryCurrency = pickPrimaryCurrency(entries);
 
     // Only fold an amount into the running totals when it was taken in the primary currency (or an

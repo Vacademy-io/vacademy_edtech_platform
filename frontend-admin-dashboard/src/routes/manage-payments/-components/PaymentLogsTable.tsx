@@ -85,6 +85,13 @@ const PAYMENT_STATUS_PILL: Record<string, { label: string; cls: string; dot: str
         cls: 'bg-neutral-100 text-neutral-500',
         dot: 'bg-neutral-400',
     },
+    // A failed attempt the learner then paid on a retry. The money is on the later PAID row, so
+    // this one is in no total — counting it as paid counted that money twice.
+    RETRIED: {
+        label: 'Retried',
+        cls: 'bg-neutral-100 text-neutral-500',
+        dot: 'bg-neutral-300',
+    },
     // A voided invoice. Visible for audit, excluded from every total.
     CANCELLED: {
         label: 'Cancelled',

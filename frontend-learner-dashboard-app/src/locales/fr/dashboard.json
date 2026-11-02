@@ -195,7 +195,8 @@
             "FAILED": "ÉCHOUÉ",
             "PAYMENT_PENDING": "PAIEMENT EN ATTENTE",
             "NOT_INITIATED": "NON INITIÉ",
-            "PENDING": "EN ATTENTE"
+            "PENDING": "EN ATTENTE",
+            "RETRIED": "RÉESSAYÉ"
         },
         "orderStatus": {
             "ORDERED": "COMMANDÉ",

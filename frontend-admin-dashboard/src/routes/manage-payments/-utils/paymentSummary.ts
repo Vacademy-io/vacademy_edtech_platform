@@ -90,6 +90,18 @@ export const isCancelledEntry = (entry: PaymentLogEntry): boolean =>
     (entry.payment_log?.payment_status || '').toUpperCase() === 'VOIDED';
 
 /**
+ * Server statuses that are listed but sit in no card and no total: CANCELLED (voided — never
+ * collected, no longer owed) and RETRIED (a failed attempt the learner paid on a later attempt,
+ * whose own PAID row already carries the money — counting this one as paid counted it twice).
+ */
+const UNCOUNTED_STATUSES = new Set(['CANCELLED', 'RETRIED']);
+
+/** Is this row left out of every card and total? See UNCOUNTED_STATUSES. */
+export const isUncountedEntry = (entry: PaymentLogEntry): boolean =>
+    isCancelledEntry(entry) ||
+    UNCOUNTED_STATUSES.has((entry.current_payment_status || '').toUpperCase());
+
+/**
  * Classify one payment record. "pending" absorbs PAYMENT_PENDING, NOT_INITIATED, null and any
  * other non-paid/non-failed status — which is why the Pending tile filters the table here rather
  * than through the API: `payment_status IN (...)` can never match a NULL row. ABANDONED is the
@@ -112,7 +124,7 @@ export const computePaymentSummary = (entries: PaymentLogEntry[]): PaymentSummar
     const summary = emptyPaymentSummary();
 
     for (const entry of entries) {
-        if (isCancelledEntry(entry)) continue;
+        if (isUncountedEntry(entry)) continue;
 
         const amount = entry.payment_log?.payment_amount || 0;
         const currency = resolveEntryCurrency(entry);
@@ -139,7 +151,7 @@ export const computePaymentSummary = (entries: PaymentLogEntry[]): PaymentSummar
  * table only ever downloads one page.
  *
  * The server classifies each row exactly as the row mapper does (a FAILED payment superseded by an
- * ACTIVE plan reads PAID, a stale PAYMENT_PENDING reads ABANDONED, a voided one reads CANCELLED),
+ * ACTIVE plan reads RETRIED, a stale PAYMENT_PENDING reads ABANDONED, a voided one reads CANCELLED),
  * so the bucket rules below are the row-level rules applied to whole groups.
  */
 export const summaryFromStatusTotals = (totals: PaymentStatusTotal[]): PaymentSummary => {
@@ -147,8 +159,9 @@ export const summaryFromStatusTotals = (totals: PaymentStatusTotal[]): PaymentSu
 
     for (const group of totals) {
         const status = (group.status || '').toUpperCase();
-        // Cancelled money was never collected and is no longer owed: it sits in no card.
-        if (status === 'CANCELLED') continue;
+        // Cancelled money was never collected and is no longer owed, and a retried failure is
+        // paid on its retry: neither sits in a card.
+        if (UNCOUNTED_STATUSES.has(status)) continue;
 
         const add = (bucket: StatBucket) => {
             bucket.count += group.count;

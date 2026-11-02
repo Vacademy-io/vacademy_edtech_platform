@@ -283,7 +283,13 @@ export function TransactionsView() {
 
     // Totals over every matching row, and the institute's full plan list. One small call, so the
     // tiles stay accurate without the table having to download the whole result set.
-    const { data: summaryData, refetch: refetchSummary } = useQuery({
+    const {
+        data: summaryData,
+        refetch: refetchSummary,
+        isPending: summaryPending,
+        isFetching: summaryFetching,
+        isFetchedAfterMount: summaryIsFresh,
+    } = useQuery({
         queryKey: ['payment-logs-summary', requestFilters],
         queryFn: () => fetchPaymentLogsSummary(requestFilters),
         staleTime: 30000,
@@ -321,7 +327,12 @@ export function TransactionsView() {
      * can't answer the last two: an overdue instalment nobody paid has no row at all, and a lapsed
      * renewal leaves only the failed attempt. Same window and course scope as the table.
      */
-    const { data: billingSummary, isFetchedAfterMount: billingIsFresh } = useQuery({
+    const {
+        data: billingSummary,
+        isFetchedAfterMount: billingIsFresh,
+        isPending: billingPending,
+        isFetching: billingFetching,
+    } = useQuery({
         queryKey: [
             'payment-billing-summary',
             startDate,
@@ -389,6 +400,21 @@ export function TransactionsView() {
                 : null,
         [billingSummary, billingHasMoney, instituteCurrency]
     );
+
+    /**
+     * The headline, the cards and the tab counts come from two calls (the records summary and the
+     * billing summary) that land at different moments. Painting whichever arrived first made the
+     * numbers jump within a second: "0 payments" before the summary, the paid-records amount before
+     * the billing figure replaced it, and on a return visit the cached copy before the refetch.
+     * So they wait until both describe the current filters, fetched on this visit. A background
+     * refetch later (window focus) still updates in place — that is a real change, not a flicker.
+     * A failed billing call is not pending, so the records fallback still shows.
+     */
+    const figuresLoading =
+        summaryPending ||
+        billingPending ||
+        (!summaryIsFresh && summaryFetching) ||
+        (!billingIsFresh && billingFetching);
 
     // Which cards — and their tabs — the admin chose to show. Defaults follow the fee model.
     const cardPrefs = useKpiCardPrefs(billing);
@@ -674,32 +700,40 @@ export function TransactionsView() {
     // the stale-checkout pile — a warm-lead list for counsellors, not money in flight.
     // Each tab follows its card in the Cards settings; All and Paid are always there.
     const shown = cardPrefs.visible;
+    // While the figures load every count reads a dash rather than a 0 that jumps a second later.
+    const segmentCount = (n: number): number | null => (figuresLoading ? null : n);
     const segments: StatusSegment[] = [
-        { key: 'total', label: 'All', count: paymentSummary.total.count },
-        { key: 'paid', label: 'Paid', count: paymentSummary.paid.count },
+        { key: 'total', label: 'All', count: segmentCount(paymentSummary.total.count) },
+        { key: 'paid', label: 'Paid', count: segmentCount(paymentSummary.paid.count) },
         ...(shown.has('pending')
             ? [
                   {
                       key: 'pending' as const,
                       label: 'Pending',
-                      count: paymentSummary.pending.count,
+                      count: segmentCount(paymentSummary.pending.count),
                   },
                   {
                       key: 'abandoned' as const,
                       label: 'Abandoned',
-                      count: paymentSummary.abandoned.count,
+                      count: segmentCount(paymentSummary.abandoned.count),
                   },
               ]
             : []),
         ...(shown.has('failed')
-            ? [{ key: 'failed' as const, label: 'Failed', count: paymentSummary.failed.count }]
+            ? [
+                  {
+                      key: 'failed' as const,
+                      label: 'Failed',
+                      count: segmentCount(paymentSummary.failed.count),
+                  },
+              ]
             : []),
         ...(shown.has('outstanding')
             ? [
                   {
                       key: 'outstanding' as const,
                       label: 'Outstanding',
-                      count: billing?.learnersOutstanding ?? 0,
+                      count: segmentCount(billing?.learnersOutstanding ?? 0),
                   },
               ]
             : []),
@@ -708,10 +742,11 @@ export function TransactionsView() {
                   {
                       key: 'due' as const,
                       label: 'Due',
-                      count:
+                      count: segmentCount(
                           balanceScope === 'due'
                               ? outstanding?.totalElements ?? 0
-                              : billing?.learnersOwing ?? 0,
+                              : billing?.learnersOwing ?? 0
+                      ),
                   },
               ]
             : []),
@@ -720,7 +755,7 @@ export function TransactionsView() {
                   {
                       key: 'upcoming' as const,
                       label: 'Upcoming',
-                      count: billing?.learnersUpcomingAll ?? 0,
+                      count: segmentCount(billing?.learnersUpcomingAll ?? 0),
                   },
               ]
             : []),
@@ -950,7 +985,7 @@ export function TransactionsView() {
                     <div className="flex flex-wrap items-center gap-3">
                         <DateRangeDropdown value={dateRange} onChange={handleDateRangeChange} />
                         <p className="text-body text-neutral-500">
-                            {isLoadingPayments ? (
+                            {isLoadingPayments || figuresLoading ? (
                                 'Loading payments…'
                             ) : (
                                 <>
@@ -1053,7 +1088,7 @@ export function TransactionsView() {
                 <PaymentKpiCards
                     summary={paymentSummary}
                     billing={billing}
-                    isLoading={isLoadingPayments}
+                    isLoading={isLoadingPayments || figuresLoading}
                     activeKey={view === 'balances' ? balanceScope : statusBucket}
                     onSelect={handleSummarySelect}
                     visibleKeys={cardPrefs.visible}

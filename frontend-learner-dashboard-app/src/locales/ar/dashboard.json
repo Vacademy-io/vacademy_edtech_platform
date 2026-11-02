@@ -213,7 +213,8 @@
             "FAILED": "فشل",
             "PAYMENT_PENDING": "الدفع قيد الانتظار",
             "NOT_INITIATED": "لم يبدأ",
-            "PENDING": "قيد الانتظار"
+            "PENDING": "قيد الانتظار",
+            "RETRIED": "أعيدت المحاولة"
         },
         "orderStatus": {
             "ORDERED": "تم الطلب",
