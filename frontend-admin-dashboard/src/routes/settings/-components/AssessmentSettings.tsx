@@ -20,6 +20,10 @@ import ResultNotificationTemplatesCard from './ResultNotificationTemplatesCard';
 import ExamExperienceSettingsCard from './ExamExperienceSettingsCard';
 import { CommentPlacementPicker } from '@/components/common/ai-copy-check/CommentPlacementPicker';
 import {
+    PenStylePicker,
+    normalizePenStyle,
+} from '@/components/common/ai-copy-check/PenStylePicker';
+import {
     CopyCheckSettingsFields,
     EMPTY_COPY_CHECK_SETTINGS,
 } from '@/components/common/ai-copy-check/CopyCheckSettingsFields';
@@ -206,6 +210,22 @@ const AssessmentSettings = () => {
                                 setSettings((prev) => ({
                                     ...prev,
                                     aiCopyCheck: { ...prev.aiCopyCheck, commentPlacement },
+                                }));
+                                setHasChanges(true);
+                            }}
+                        />
+                        {/* The pen every checked copy is drawn with */}
+                        <PenStylePicker
+                            value={normalizePenStyle(settings.aiCopyCheck?.penStyle)}
+                            onChange={(penStyle) => {
+                                setSettings((prev) => ({
+                                    ...prev,
+                                    aiCopyCheck: {
+                                        ...prev.aiCopyCheck,
+                                        commentPlacement:
+                                            prev.aiCopyCheck?.commentPlacement ?? 'INSIDE',
+                                        penStyle,
+                                    },
                                 }));
                                 setHasChanges(true);
                             }}

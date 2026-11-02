@@ -178,6 +178,7 @@ public class CopyCheckOrchestratorService {
         }
         request.setCommentPlacement(commentPlacementFor(request, facts));
         applyCopyCheckSettings(request, facts);
+        request.setPenStyle(penStyleFor(request, facts));
 
         String jobId;
         try {
@@ -381,6 +382,40 @@ public class CopyCheckOrchestratorService {
         Object subject = examContext.get("subject");
         if (subject != null && request.getQuestions() != null) {
             request.getQuestions().forEach(q -> q.setSubject(subject.toString()));
+        }
+    }
+
+    /**
+     * The institute's pen for checked copies ({@code ASSESSMENT_SETTING.aiCopyCheck.penStyle}),
+     * or null for the usual red pen. Copies only; partner API traffic never takes the
+     * dashboard's institute default. Same cached admin-core read as the AI checking
+     * defaults; a slow or failed lookup means the usual pen, never a failed check.
+     */
+    /**
+     * The pen lookup reads the same cached admin-core answer the AI checking defaults
+     * just fetched, so it is normally instant. When admin-core is slow that first read
+     * has already waited; a pen is cosmetic, so this one waits briefly and the copy
+     * gets the usual pen rather than adding seconds to every dispatch.
+     */
+    private static final long PEN_LOOKUP_WAIT_MS = 500;
+
+    Map<String, Object> penStyleFor(CopyCheckGradeRequestDto request, DispatchFacts facts) {
+        if (!"COPY".equals(request.getAnswerMode()) || facts.apiTraffic() || adminCoreServiceClient == null) {
+            return null;
+        }
+        AdminCoreServiceClient client = adminCoreServiceClient;
+        try {
+            Map<String, Object> defaults = CompletableFuture
+                    .supplyAsync(() -> client.getAiCopyCheckDefaults(facts.instituteId()), TEMPLATE_LOOKUP)
+                    .get(PEN_LOOKUP_WAIT_MS, TimeUnit.MILLISECONDS);
+            return defaults == null ? null : CopyPenStyle.clean(defaults.get("penStyle"));
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            return null;
+        } catch (Exception e) {
+            log.info("[copy-check] institute pen lookup for {} not back in time; usual pen ({})",
+                    facts.instituteId(), e.getClass().getSimpleName());
+            return null;
         }
     }
 

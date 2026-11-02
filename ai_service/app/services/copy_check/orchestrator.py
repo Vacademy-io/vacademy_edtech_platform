@@ -9,6 +9,7 @@ and between questions — matching the Java cancellation model.
 from __future__ import annotations
 
 import asyncio
+import copy
 import logging
 import os
 import uuid
@@ -21,6 +22,7 @@ from ..ai_billing import UC, metering_api_key, metering_user, record_tool_billin
 from ..api_key_resolver import ApiKeyResolver
 from ..chat_llm_client import ChatLLMClient
 from ...repositories.copy_check_rubric_repository import CopyCheckRubricRepository
+from ...repositories import copy_check_render_snapshot_repository as render_snapshot
 from . import annotator, answer_language, callbacks, cancellation, deduction_check, deduction_scheme, evaluation_table, language_check, language_feedback, language_vision, locate, math_reread, option_letter, orientation, typed_answers, vision_transcript
 from .choice_groups import counted_awarded, counted_flags, resolve_paper_max
 from .failure import (
@@ -465,7 +467,7 @@ async def _apply_scheme(
     keeps the grader's mark: a missed page must never read as no mistakes."""
     by_id = {str(q.get("question_id")): q for q in questions}
     positions = language_feedback.row_positions(layout_map)
-    marked: list[tuple[tuple[int, int], Any]] = []
+    marked: list[tuple[tuple[int, int], Any, str]] = []
     paragraph_wise: list[str] = []
     for v in verdicts:
         qid = str(v.get("question_id"))
@@ -493,14 +495,18 @@ async def _apply_scheme(
             v["feedback"] = f"{str(v.get('feedback') or '').rstrip()}\n\n{line}".strip()
         else:
             tally = deduction_scheme.apply(v, scheme, errors)
-        marked.append((positions.get(str((v.get("answer_rows") or [""])[0]), (0, 0)), tally))
+        marked.append((positions.get(str((v.get("answer_rows") or [""])[0]), (0, 0)), tally, qid))
     if not marked:
         return None
     # The sheet's parts are lettered in the order they are written on it (a
     # student may answer Q2 first), not in question order.
     marked.sort(key=lambda m: m[0])
-    parts = [(deduction_scheme.part_label(i), t) for i, (_pos, t) in enumerate(marked)]
+    parts = [(deduction_scheme.part_label(i), t) for i, (_pos, t, _qid) in enumerate(marked)]
     table = deduction_scheme.table_rows(scheme, parts)
+    # Which question each row is, so a teacher's corrected mark can be
+    # re-drawn into the right row (copy-check re-render).
+    for row, (_pos, _t, row_qid) in zip(table["rows"], marked):
+        row["question_id"] = row_qid
     table["paragraph_wise_questions"] = paragraph_wise
     first = (layout_map.get("pages") or [{}])[0]
     image = (page_images or {}).get(first.get("page_id"))
@@ -1122,6 +1128,22 @@ async def run(req: dict[str, Any], job_id: str, db: Session) -> str:
                  if str(req.get("comment_placement") or "").strip().upper() == "OUTSIDE" else {})
         if table_data:
             panel["evaluation_table"] = table_data
+        if req.get("pen_style"):
+            panel["pen_style"] = req.get("pen_style")
+        # What this copy is drawn from, so a teacher's corrections can be
+        # re-drawn on it later (POST /copy-check/re-render). Taken before the
+        # render, which edits the verdicts in place. Best-effort.
+        await asyncio.to_thread(
+            render_snapshot.save_in_own_session,
+            process_id, req.get("attempt_id"), institute_id, layout_map,
+            copy.deepcopy(verdicts),
+            {"comment_placement": panel.get("comment_placement"),
+             "question_labels": _printed_labels(questions),
+             "evaluation_table": table_data or None,
+             "pen_style": req.get("pen_style") or None,
+             # Partner copies never get the "not counted" note (see above).
+             "api_copy": is_api_actor(billing["billing_actor"])},
+        )
         evaluated_file_id = await annotator.render_and_upload(
             pdf_url, layout_map, verdicts, req.get("attempt_id") or process_id, **panel,
         )

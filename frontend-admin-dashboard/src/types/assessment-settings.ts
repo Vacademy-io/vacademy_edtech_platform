@@ -76,9 +76,22 @@ export type CommentPlacement = 'INSIDE' | 'OUTSIDE';
  */
 export type LanguageFeedback = 'HIGHLIGHT' | 'OFF';
 
+/** Ink, handwriting and size of the AI's pen on checked copies (ai_service pen_style.py). */
+export type PenInk = 'RED' | 'BLUE' | 'GREEN' | 'BLACK' | 'PURPLE';
+export type PenFont = 'KALAM' | 'PATRICK_HAND' | 'ARCHITECTS_DAUGHTER';
+export type PenSize = 'SMALL' | 'MEDIUM' | 'LARGE';
+export interface PenStyle {
+    ink: PenInk;
+    font: PenFont;
+    size: PenSize;
+}
+export const DEFAULT_PEN_STYLE: PenStyle = { ink: 'RED', font: 'KALAM', size: 'MEDIUM' };
+
 export interface AiCopyCheckSettings {
     /** The template preselected when copies are sent for AI checking. */
     commentPlacement: CommentPlacement;
+    /** The pen every checked copy is drawn with. Absent = the usual red pen. */
+    penStyle?: PenStyle;
     /** Marking instructions for the AI, used when an assessment has none of its own. */
     instructions?: string;
     /** Used when an assessment has made no choice of its own. */

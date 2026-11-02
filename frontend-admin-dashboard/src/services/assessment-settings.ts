@@ -51,6 +51,9 @@ export const mergeWithDefaults = (
             ...(settings?.aiCopyCheck?.languageFeedback === 'HIGHLIGHT' && {
                 languageFeedback: 'HIGHLIGHT' as const,
             }),
+            ...(settings?.aiCopyCheck?.penStyle && {
+                penStyle: settings.aiCopyCheck.penStyle,
+            }),
         },
         assessmentFolders: {
             enabled: settings?.assessmentFolders?.enabled === true,

@@ -15,11 +15,13 @@ import vacademy.io.assessment_service.features.assessment.service.evaluation_ai.
 import vacademy.io.assessment_service.features.assessment.service.evaluation_ai.AiEvaluationReviewService;
 import vacademy.io.assessment_service.features.assessment.service.evaluation_ai.AiEvaluationService;
 import vacademy.io.assessment_service.features.assessment.service.evaluation_ai.AssessmentChoiceService;
+import vacademy.io.assessment_service.features.assessment.service.evaluation_ai.CopyCheckReRenderService;
 import vacademy.io.assessment_service.features.assessment.service.evaluation_ai.DashboardChoiceGroups;
 import vacademy.io.assessment_service.features.assessment.service.evaluation_ai.EvaluationAccessValidator;
 import vacademy.io.common.auth.model.CustomUserDetails;
 
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/assessment-service/assessment/evaluation-ai")
@@ -32,6 +34,7 @@ public class AiEvaluationController {
         private final AiEvaluationRetrofitService retrofitService;
         private final EvaluationAccessValidator accessValidator;
         private final AssessmentChoiceService choiceService;
+        private final CopyCheckReRenderService reRenderService;
 
         /**
          * Is this test AI-checkable, or does it only hold the manual-upload
@@ -178,7 +181,35 @@ public class AiEvaluationController {
                 accessValidator.requireProcessAccess(user, instituteId, processId);
                 accessValidator.requireStaffRole(user);
                 reviewService.overrideQuestion(processId, questionId, request.getMarksAwarded(),
-                                request.getFeedback(), user.getUserId());
+                                request.getFeedback(), request.getAnnotationEdits(), user.getUserId());
                 return ResponseEntity.ok("Question evaluation updated");
+        }
+
+        /**
+         * Teacher review: re-draw the AI checked copy with every correction made on the
+         * review page (marks, remarks, removed / rewritten pen notes), optionally in another
+         * pen. Body (all optional): {@code {"pen_style": {"ink", "font", "size"},
+         * "comment_placement": "INSIDE" | "OUTSIDE"}}. Returns the new checked copy's file id.
+         */
+        @PostMapping("/review/{processId}/regenerate-copy")
+        public ResponseEntity<Map<String, Object>> regenerateCheckedCopy(
+                        @RequestAttribute("user") CustomUserDetails user,
+                        @RequestHeader(value = "clientId", required = false) String instituteId,
+                        @PathVariable String processId,
+                        @RequestBody(required = false) Map<String, Object> body) {
+                accessValidator.requireProcessAccess(user, instituteId, processId);
+                accessValidator.requireStaffRole(user);
+                Object pen = body == null ? null : body.get("pen_style");
+                Object placement = body == null ? null : body.get("comment_placement");
+                @SuppressWarnings("unchecked")
+                Map<String, Object> penStyle = pen instanceof Map ? (Map<String, Object>) pen : null;
+                CopyCheckReRenderService.Result result = reRenderService.reRender(processId, instituteId,
+                                penStyle, placement == null ? null : placement.toString(), user.getUserId());
+                Map<String, Object> out = new java.util.LinkedHashMap<>();
+                out.put("evaluated_file_id", result.evaluatedFileId());
+                out.put("total_marks_awarded", result.totalMarksAwarded());
+                out.put("total_max_marks", result.totalMaxMarks());
+                out.put("questions_changed", result.questionsChanged());
+                return ResponseEntity.ok(out);
         }
 }

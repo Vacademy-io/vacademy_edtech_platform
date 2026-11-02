@@ -36,7 +36,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { MagnifyingGlassMinus, MagnifyingGlassPlus, X, SidebarSimple, ListNumbers, ArrowUUpLeft, ArrowUUpRight, Info, PaperPlaneTilt } from "@phosphor-icons/react";
+import { MagnifyingGlassMinus, MagnifyingGlassPlus, X, SidebarSimple, ListNumbers, ArrowUUpLeft, ArrowUUpRight, Info, PaperPlaneTilt, Sparkle } from "@phosphor-icons/react";
 import { PDFDocument } from "pdf-lib";
 // Lazy-load heavy libs where used
 import Calculator from "./calculator";
@@ -73,6 +73,12 @@ import { MyDialog } from "@/components/design-system/dialog";
 import { useMarksStore, feedbackKey } from "@/stores/evaluation/marks-store";
 import { LoadingOverlay, UploadingOverlay } from "./Overlay";
 import { readEvalReturnUrl, clearEvalReturnUrl } from "../-utils/eval-return";
+import { applyReviewEdits, planAiMarks, toFabricObject } from "../-utils/ai-marks-to-fabric";
+import {
+    getEvaluationProcesses,
+    getEvaluationProgress,
+    getLayoutMap,
+} from "@/routes/assessment/assessment-list/assessment-details/$assessmentId/$examType/$assesssmentType/$assessmentTab/-services/ai-evaluation-services";
 import { runEvaluationSubmit } from "../-utils/submit-evaluation";
 import { useTranslation } from "react-i18next";
 import type { TFunction } from "i18next";
@@ -182,6 +188,7 @@ const PDFEvaluator = ({
     assessmentVisibility,
 }: PDFEvaluatorProps) => {
     const { t, i18n: i18nInstance } = useTranslation("evaluationPdfEditor");
+    const { t: tReview } = useTranslation("copyCheckReview");
     const TOOL_HELP = buildToolHelp(t);
     const CONTROL_HELP = buildControlHelp(t);
     const PEN_SWATCHES = buildPenSwatches(t);
@@ -705,6 +712,106 @@ const PDFEvaluator = ({
     // already tells the evaluator their marking was kept — a second "Draft saved"
     // toast right after an error reads as contradictory. It also rethrows there,
     // so the caller can report whether the rescue actually worked.
+    // --- AI marks as editable canvas objects ---
+    // The AI checked copy is a flat PDF. This brings the latest AI check of this
+    // attempt onto the raw sheet as ordinary canvas objects (ticks, crosses,
+    // circles, lines, notes, scores) that the teacher moves, deletes, edits or
+    // adds to, and pre-fills question-wise marks/remarks the teacher has not
+    // entered yet. Once per mount, so a second click never doubles the marks.
+    const [isImportingAi, setIsImportingAi] = useState(false);
+    const aiImportedRef = useRef(false);
+    const importAiMarks = async () => {
+        if (isFreeTool || !fabricCanvas || !assessmentId || !attemptId || isImportingAi) return;
+        if (aiImportedRef.current) {
+            toast.info(tReview("aiImport.already"));
+            return;
+        }
+        setIsImportingAi(true);
+        try {
+            const runs = await getEvaluationProcesses(assessmentId);
+            const run = (runs ?? [])
+                .filter((r: any) => r.attempt_id === attemptId && r.status === "COMPLETED")
+                .sort(
+                    (a: any, b: any) =>
+                        new Date(b.completed_at ?? 0).getTime() - new Date(a.completed_at ?? 0).getTime()
+                )[0];
+            if (!run) {
+                toast.error(tReview("aiImport.none"));
+                return;
+            }
+            const progress = await getEvaluationProgress(run.process_id);
+            const layout = progress?.layout_map_url ? await getLayoutMap(progress.layout_map_url) : null;
+            const questions = (progress?.completed_questions ?? []).map((q: any) => ({
+                ...q,
+                annotations: applyReviewEdits(
+                    q.annotations ?? q.evaluation_details_json?.annotations ?? [],
+                    q.annotation_edits
+                ),
+            }));
+            const cw = fabricCanvas.width;
+            const ch = fabricCanvas.height;
+            const plans = planAiMarks(layout as any, questions, (page) => pageCanvasDims[page] ?? { width: cw, height: ch });
+
+            const version = fabricCanvas.toJSON().version;
+            const otherPages: Record<number, any[]> = {};
+            for (const plan of plans) {
+                const obj = toFabricObject(plan);
+                if (plan.page === pageNumber) fabricCanvas.add(obj);
+                else (otherPages[plan.page] ??= []).push(obj.toObject());
+            }
+            fabricCanvas.requestRenderAll();
+            if (Object.keys(otherPages).length) {
+                setAnnotations((prev) => {
+                    const next = { ...prev };
+                    for (const [page, objs] of Object.entries(otherPages)) {
+                        const current = next[Number(page)];
+                        next[Number(page)] = {
+                            ...(current ?? { version }),
+                            objects: [...(current?.objects ?? []), ...objs],
+                        };
+                    }
+                    return next;
+                });
+                setPageCanvasDims((prev) => {
+                    const next = { ...prev };
+                    for (const page of Object.keys(otherPages)) {
+                        if (!next[Number(page)]) next[Number(page)] = { width: cw, height: ch };
+                    }
+                    return next;
+                });
+            }
+
+            // Question-wise marks and remarks, only where the teacher has none yet.
+            const sectionOf: Record<string, string> = {};
+            Object.entries(questionData ?? {}).forEach(([sectionId, qs]: [string, any]) =>
+                (qs ?? []).forEach((q: any) => (sectionOf[q.question_id] = sectionId))
+            );
+            let filled = 0;
+            for (const q of questions) {
+                if (q.status !== "COMPLETED" || q.marks_awarded == null) continue;
+                const sectionId = sectionOf[q.question_id];
+                if (!sectionId || marksData.some((m) => m.question_id === q.question_id)) continue;
+                addOrUpdateMark({
+                    section_id: sectionId,
+                    question_id: q.question_id,
+                    status: "evaluated",
+                    marks: Number(q.marks_awarded),
+                });
+                if (q.feedback && !feedbackByQuestion[feedbackKey(sectionId, q.question_id)]) {
+                    setQuestionFeedback(sectionId, q.question_id, q.feedback);
+                }
+                filled++;
+            }
+            aiImportedRef.current = true;
+            toast.success(tReview("aiImport.done", { marks: plans.length, questions: filled }));
+        } catch (e) {
+            console.error("AI marks import failed", e);
+            toast.error(tReview("aiImport.failed"));
+        } finally {
+            setIsImportingAi(false);
+        }
+    };
+
     const saveDraftNow = async ({ announce = true } = {}) => {
         if (isFreeTool || !attemptId) return;
         if (savingDraftRef.current) return;
@@ -1811,6 +1918,21 @@ const PDFEvaluator = ({
                                 </div>
 
                                 <div className="flex items-center gap-2">
+                                    {!isFreeTool && assessmentId && attemptId && (
+                                        <MyButton
+                                            type="button"
+                                            buttonType="secondary"
+                                            scale="medium"
+                                            onClick={importAiMarks}
+                                            disabled={isImportingAi || !fabricCanvas}
+                                            className="gap-1.5"
+                                            aria-label={tReview("aiImport.hint")}
+                                            title={tReview("aiImport.hint")}
+                                        >
+                                            <Sparkle className="size-4" aria-hidden="true" />
+                                            {isImportingAi ? tReview("aiImport.working") : tReview("aiImport.button")}
+                                        </MyButton>
+                                    )}
                                     <MyButton
                                         buttonType="primary"
                                         scale="medium"

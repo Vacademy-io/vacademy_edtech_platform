@@ -36,16 +36,19 @@ INK = (214, 28, 40)                      # red ballpoint
 class Pen:
     """One teacher, one pen. Create once per copy with a fixed seed."""
 
-    def __init__(self, seed: int, font: str = DEFAULT_FONT, slant_deg: float | None = None):
+    def __init__(self, seed: int, font: str = DEFAULT_FONT, slant_deg: float | None = None,
+                 ink: tuple[int, int, int] | None = None):
         self.rng = random.Random(seed)
         self.font_path = str(FONT_DIR / font)
+        # The institute's / teacher's chosen ink; None = the usual red ballpoint.
+        self.ink = tuple(ink) if ink else INK
         self.slant = slant_deg if slant_deg is not None else self.rng.uniform(-3.0, 2.0)
         self.darkness = self.rng.uniform(0.85, 1.0)     # this pen's ink strength
 
     # ------------------------------------------------------------ ink helpers
     def _colour(self, alpha: float = 1.0) -> tuple[int, int, int, int]:
         d = self.darkness * self.rng.uniform(0.9, 1.0)
-        r, g, b = INK
+        r, g, b = self.ink
         return (int(r * (0.92 + 0.08 * d)), int(g * d), int(b * d), int(255 * alpha))
 
     def _stroke(self, layer: Image.Image, pts: list[tuple[float, float]], width: float) -> None:

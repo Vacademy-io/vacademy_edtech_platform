@@ -12,6 +12,7 @@ import {
     Percent,
     Trophy,
     X,
+    ArrowsClockwise,
 } from '@phosphor-icons/react';
 import type { Icon } from '@phosphor-icons/react';
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
@@ -57,6 +58,15 @@ import {
     type QuestionScoreMarker,
 } from './-components/PdfAnnotationOverlay';
 import { RubricChangedBadge } from './-components/RubricChangedBadge';
+import { RegenerateCopyDialog } from './-components/RegenerateCopyDialog';
+import {
+    PenNotesEditor,
+    buildAnnotationEdits,
+    editableNotes,
+    initialNoteChoices,
+    type NoteChoice,
+} from './-components/PenNotesEditor';
+import { getAssessmentSettingsFromCache } from '@/services/assessment-settings';
 import { parseReviewMeta, type ReviewAttribution } from './-utils/review-meta';
 import { getLayoutMap } from '@/routes/assessment/assessment-list/assessment-details/$assessmentId/$examType/$assesssmentType/$assessmentTab/-services/ai-evaluation-services';
 
@@ -154,6 +164,8 @@ function StatCard({
 
 function RouteComponent() {
     const { t } = useTranslation('assessmentEvaluationAi');
+    const { t: tReview } = useTranslation('copyCheckReview');
+    const queryClient = useQueryClient();
     const { attemptId, processId } = Route.useParams();
     const navigate = useNavigate();
     const router = useRouter();
@@ -164,6 +176,7 @@ function RouteComponent() {
     const [startTime] = useState(Date.now());
     const [isStopEvaluation, setIsStopEvaluation] = useState(false);
     const [isPdfPanelOpen, setIsPdfPanelOpen] = useState(false);
+    const [isRedrawOpen, setIsRedrawOpen] = useState(false);
     const [pdfUrl, setPdfUrl] = useState<string | null>(null);
     // Which file id `pdfUrl` was resolved from, so a switch from the raw sheet
     // (shown while the run is in progress) to the checked copy reloads the viewer.
@@ -246,6 +259,19 @@ function RouteComponent() {
     const answerSheetFileId: string | null =
         checkedFileId ?? (attemptDetails as string | null) ?? null;
     const showOverlay = progress?.overall_status === 'COMPLETED' && !checkedFileId;
+
+    // A teacher's correction made after the copy was last drawn is not on the
+    // student's PDF yet. The AI's own render never carries a teacher's edit, so
+    // with no re-draw every edited question counts.
+    const copyIsStale = useMemo(() => {
+        if (!checkedFileId) return false;
+        const redrawnAt = progress?.copy_redrawn_at
+            ? new Date(progress.copy_redrawn_at).getTime()
+            : 0;
+        return (progress?.completed_questions ?? []).some(
+            (q) => q.is_edited && (!q.edited_at || new Date(q.edited_at).getTime() > redrawnAt)
+        );
+    }, [checkedFileId, progress?.copy_redrawn_at, progress?.completed_questions]);
 
     const annotations: Annotation[] = useMemo(() => {
         const out: Annotation[] = [];
@@ -565,19 +591,48 @@ function RouteComponent() {
                             { value: 'pending', label: t('filters.pending') },
                         ]}
                     />
-                    {answerSheetFileId && (
-                        <MyButton
-                            onClick={handleViewAnswerSheet}
-                            disabled={isLoadingPdf}
-                            buttonType="secondary"
-                            scale="medium"
-                            className="gap-2 sm:min-w-0"
-                        >
-                            <FileText size={16} />
-                            {isLoadingPdf ? t('answerSheet.loading') : t('answerSheet.button')}
-                        </MyButton>
-                    )}
+                    <div className="flex flex-wrap items-center gap-2">
+                        {checkedFileId && (
+                            <MyButton
+                                onClick={() => setIsRedrawOpen(true)}
+                                buttonType={copyIsStale ? 'primary' : 'secondary'}
+                                scale="medium"
+                                className="gap-2 sm:min-w-0"
+                            >
+                                <ArrowsClockwise size={16} />
+                                {tReview('redraw.button')}
+                            </MyButton>
+                        )}
+                        {answerSheetFileId && (
+                            <MyButton
+                                onClick={handleViewAnswerSheet}
+                                disabled={isLoadingPdf}
+                                buttonType="secondary"
+                                scale="medium"
+                                className="gap-2 sm:min-w-0"
+                            >
+                                <FileText size={16} />
+                                {isLoadingPdf ? t('answerSheet.loading') : t('answerSheet.button')}
+                            </MyButton>
+                        )}
+                    </div>
                 </div>
+
+                {copyIsStale && (
+                    <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-warning-200 bg-warning-50 px-4 py-3">
+                        <p className="text-body font-medium text-warning-700">
+                            {tReview('redraw.staleBanner')}
+                        </p>
+                        <MyButton
+                            type="button"
+                            buttonType="secondary"
+                            scale="small"
+                            onClick={() => setIsRedrawOpen(true)}
+                        >
+                            {tReview('redraw.button')}
+                        </MyButton>
+                    </div>
+                )}
 
                 {/* Banners */}
                 {progress.overall_status === 'COMPLETED' && (
@@ -705,6 +760,24 @@ function RouteComponent() {
                     </div>
                 </DialogContent>
             </Dialog>
+
+            {isRedrawOpen && (
+                <RegenerateCopyDialog
+                    open={isRedrawOpen}
+                    onOpenChange={setIsRedrawOpen}
+                    processId={processId}
+                    defaultPen={getAssessmentSettingsFromCache().aiCopyCheck?.penStyle}
+                    onDone={() => {
+                        // The viewer reloads the new copy the next time it opens.
+                        setIsPdfPanelOpen(false);
+                        setPdfUrl(null);
+                        setPdfFileId(null);
+                        queryClient.invalidateQueries({
+                            queryKey: ['EVALUATION_PROGRESS', processId],
+                        });
+                    }}
+                />
+            )}
         </LayoutContainer>
     );
 }
@@ -746,12 +819,19 @@ function QuestionCard({
     const [isEditing, setIsEditing] = useState(false);
     const [marksInput, setMarksInput] = useState('');
     const [feedbackInput, setFeedbackInput] = useState('');
+    const questionAnnotations =
+        question.annotations ?? question.evaluation_details_json?.annotations ?? [];
+    const [noteChoices, setNoteChoices] = useState<Record<number, NoteChoice>>({});
 
     const overrideMutation = useMutation({
         mutationFn: () =>
             overrideQuestionEvaluation(processId, question.question_id, {
                 marks_awarded: Number(marksInput) || 0,
                 feedback: feedbackInput,
+                // Only questions with pen notes send the list (it replaces the saved one).
+                ...(editableNotes(questionAnnotations).length > 0
+                    ? { annotation_edits: buildAnnotationEdits(questionAnnotations, noteChoices) }
+                    : {}),
             }),
         onSuccess: () => {
             toast.success(t('toasts.marksUpdated'));
@@ -926,6 +1006,12 @@ function QuestionCard({
                                                     : ''
                                             );
                                             setFeedbackInput(question.feedback ?? '');
+                                            setNoteChoices(
+                                                initialNoteChoices(
+                                                    questionAnnotations,
+                                                    question.annotation_edits
+                                                )
+                                            );
                                             setIsEditing(true);
                                         }}
                                     >
@@ -966,6 +1052,14 @@ function QuestionCard({
                                             placeholder={t('teacherReview.feedbackPlaceholder')}
                                         />
                                     </div>
+                                    {editableNotes(questionAnnotations).length > 0 && (
+                                        <PenNotesEditor
+                                            annotations={questionAnnotations}
+                                            value={noteChoices}
+                                            onChange={setNoteChoices}
+                                            disabled={overrideMutation.isPending}
+                                        />
+                                    )}
                                     <div className="flex justify-end gap-2">
                                         <MyButton
                                             type="button"

@@ -141,10 +141,24 @@ public class AiEvaluationProgressService {
                                 .participantDetails(participantDetails)
                                 .assessmentId(assessmentId)
                                 .fileId(fileId)
+                                .copyRedrawnAt(copyRedrawnAtOf(process))
                                 .layoutMapUrl(layoutMapUrl)
                                 .rubricVersion(rubricVersion)
                                 .aiServiceJobId(process.getAiServiceJobId())
                                 .build();
+        }
+
+        private String copyRedrawnAtOf(AiEvaluationProcess process) {
+                String json = process.getEvaluationJson();
+                if (json == null || json.isBlank()) {
+                        return null;
+                }
+                try {
+                        JsonNode node = objectMapper.readTree(json).path("re_rendered_at");
+                        return node.isTextual() ? node.asText() : null;
+                } catch (Exception e) {
+                        return null;
+                }
         }
 
         private String evaluatedFileIdOf(AiEvaluationProcess process) {
@@ -290,6 +304,7 @@ public class AiEvaluationProgressService {
                 JsonNode evaluationDetailsJson = null;
                 List<JsonNode> annotations = null;
                 List<JsonNode> criteriaBreakdown = null;
+                List<JsonNode> annotationEdits = null;
                 Double confidence = null;
                 String errorDetail = null;
 
@@ -320,6 +335,13 @@ public class AiEvaluationProgressService {
                                         criteriaBreakdown = new java.util.ArrayList<>();
                                         for (JsonNode item : fullResultJson.get("criteria_breakdown")) {
                                                 criteriaBreakdown.add(item);
+                                        }
+                                }
+                                if (fullResultJson.has(AiEvaluationReviewService.ANNOTATION_EDITS_KEY)
+                                                && fullResultJson.get(AiEvaluationReviewService.ANNOTATION_EDITS_KEY).isArray()) {
+                                        annotationEdits = new java.util.ArrayList<>();
+                                        for (JsonNode item : fullResultJson.get(AiEvaluationReviewService.ANNOTATION_EDITS_KEY)) {
+                                                annotationEdits.add(item);
                                         }
                                 }
                                 if (fullResultJson.has("confidence")) {
@@ -367,10 +389,12 @@ public class AiEvaluationProgressService {
                                 .evaluationDetailsJson(evaluationDetailsJson)
                                 .annotations(annotations)
                                 .criteriaBreakdown(criteriaBreakdown)
+                                .annotationEdits(annotationEdits)
                                 .rubricVersion(questionEval.getRubricVersion())
                                 .confidence(confidence)
                                 .errorDetail(errorDetail)
                                 .isEdited(questionEval.getIsEdited())
+                                .editedAt(questionEval.getEditedAt())
                                 .startedAt(questionEval.getStartedAt())
                                 .completedAt(questionEval.getCompletedAt())
                                 .build();
