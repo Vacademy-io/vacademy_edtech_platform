@@ -68,6 +68,9 @@ export const COMPOSER_ERRORS = {
     catchUpPercent: 'composer.errors.catchUpPercent',
     dayNumber: 'composer.errors.dayNumber',
     dayOrder: 'composer.errors.dayOrder',
+    startSource: 'composer.errors.startSource',
+    startSourceOneBatch: 'composer.errors.startSourceOneBatch',
+    startThreshold: 'composer.errors.startThreshold',
 } as const;
 
 const K = COMPOSER_ERRORS;
@@ -355,6 +358,14 @@ export const composerSchema = z
         timezone: optionalText,
         /** Chosen when the plan is created; fixed afterwards. */
         scheduleMode: z.enum(['CALENDAR', 'RELATIVE']),
+        /** RELATIVE plans: count Day 1 from joining, or from completing chosen content. */
+        startTrigger: z.enum(['JOIN', 'CONTENT']),
+        startSourceType: z.enum(['SUBJECT', 'MODULE', 'CHAPTER']).nullable().optional(),
+        startSourceId: optionalText,
+        startSourceName: optionalText,
+        startThreshold: optionalInt,
+        /** Read-only: set once the plan has gone live; its start is then fixed. */
+        publishedAt: optionalText,
         defaultMissPolicy: missPolicy,
         defaultCatchUpDays: optionalInt,
         defaultCatchUpPercent: optionalInt,
@@ -367,6 +378,31 @@ export const composerSchema = z
                 path: ['packageSessionIds'],
                 message: K.batch,
             });
+        }
+        if (plan.scheduleMode === 'RELATIVE' && plan.startTrigger === 'CONTENT') {
+            if (!plan.startSourceType || !plan.startSourceId) {
+                ctx.addIssue({
+                    code: z.ZodIssueCode.custom,
+                    path: ['startSourceId'],
+                    message: K.startSource,
+                });
+            }
+            // A subject, module or chapter belongs to one batch's course.
+            if (!plan.id && plan.packageSessionIds.length > 1) {
+                ctx.addIssue({
+                    code: z.ZodIssueCode.custom,
+                    path: ['packageSessionIds'],
+                    message: K.startSourceOneBatch,
+                });
+            }
+            const threshold = plan.startThreshold;
+            if (threshold != null && (threshold < 1 || threshold > 100)) {
+                ctx.addIssue({
+                    code: z.ZodIssueCode.custom,
+                    path: ['startThreshold'],
+                    message: K.startThreshold,
+                });
+            }
         }
         if (plan.scheduleMode === 'RELATIVE') {
             // Day N is stored as a date counted from RELATIVE_DAY_ONE (see relativeDayOf).
@@ -619,6 +655,7 @@ export function newComposerForm(options: NewComposerOptions = {}): ComposerForm 
         status: options.status ?? 'DRAFT',
         packageSessionIds: options.packageSessionIds ?? [],
         scheduleMode: options.scheduleMode ?? 'CALENDAR',
+        startTrigger: 'JOIN',
         defaultMissPolicy: 'EXPIRES',
         slots: [
             newSlotForm({
@@ -800,6 +837,59 @@ export function slotToForm(slot: SlotLike): SlotForm {
     };
 }
 
+/** The start fields of a saved plan or request; anything but a full CONTENT start is JOIN. */
+export function startFieldsOf(
+    plan: Nullable<
+        Pick<
+            EngagementPlanRequest,
+            | 'scheduleMode'
+            | 'startTrigger'
+            | 'startSourceType'
+            | 'startSourceId'
+            | 'startSourceName'
+            | 'startThreshold'
+        >
+    >
+): Pick<
+    ComposerForm,
+    'startTrigger' | 'startSourceType' | 'startSourceId' | 'startSourceName' | 'startThreshold'
+> {
+    const content =
+        plan.scheduleMode === 'RELATIVE' &&
+        plan.startTrigger === 'CONTENT' &&
+        Boolean(plan.startSourceType) &&
+        Boolean(plan.startSourceId);
+    if (!content) {
+        return {
+            startTrigger: 'JOIN',
+            startSourceType: null,
+            startSourceId: null,
+            startSourceName: null,
+            startThreshold: null,
+        };
+    }
+    return {
+        startTrigger: 'CONTENT',
+        startSourceType: plan.startSourceType ?? null,
+        startSourceId: plan.startSourceId ?? null,
+        startSourceName: plan.startSourceName ?? null,
+        startThreshold: plan.startThreshold ?? null,
+    };
+}
+
+/** The start fields a request carries: RELATIVE plans only, CONTENT with its source. */
+function startFieldsToRequest(form: ComposerForm): Partial<EngagementPlanRequest> {
+    if (form.scheduleMode !== 'RELATIVE') return {};
+    if (form.startTrigger !== 'CONTENT') return { startTrigger: 'JOIN' };
+    return {
+        startTrigger: 'CONTENT',
+        startSourceType: form.startSourceType ?? undefined,
+        startSourceId: optional(form.startSourceId),
+        startSourceName: optional(form.startSourceName),
+        startThreshold: optional(form.startThreshold) ?? 100,
+    };
+}
+
 /** A saved plan as the composer's form, every day and task included. */
 export function dtoToForm(plan: EngagementPlanDTO): ComposerForm {
     return {
@@ -812,6 +902,8 @@ export function dtoToForm(plan: EngagementPlanDTO): ComposerForm {
         packageSessionIds: plan.packageSessionId ? [plan.packageSessionId] : [],
         timezone: plan.timezone ?? null,
         scheduleMode: plan.scheduleMode === 'RELATIVE' ? 'RELATIVE' : 'CALENDAR',
+        ...startFieldsOf(plan),
+        publishedAt: plan.publishedAt ?? null,
         defaultMissPolicy: plan.defaultMissPolicy ?? 'EXPIRES',
         defaultCatchUpDays: plan.defaultCatchUpDays ?? null,
         defaultCatchUpPercent: plan.defaultCatchUpPercent ?? null,
@@ -833,6 +925,7 @@ export function requestToForm(request: EngagementPlanRequest): ComposerForm {
             request.packageSessionIds ??
             (request.packageSessionId ? [request.packageSessionId] : []),
         scheduleMode: request.scheduleMode === 'RELATIVE' ? 'RELATIVE' : 'CALENDAR',
+        ...startFieldsOf(request),
         defaultMissPolicy: request.defaultMissPolicy ?? 'EXPIRES',
         defaultCatchUpDays: request.defaultCatchUpDays ?? null,
         defaultCatchUpPercent: request.defaultCatchUpPercent ?? null,
@@ -1018,6 +1111,7 @@ export function formToRequest(form: ComposerForm): EngagementPlanRequest {
         status: form.status,
         // Only a new plan picks its mode; the server refuses a change on update.
         ...(form.id ? {} : { scheduleMode: form.scheduleMode }),
+        ...startFieldsToRequest(form),
         defaultMissPolicy: form.defaultMissPolicy,
         defaultCatchUpDays: optional(form.defaultCatchUpDays),
         defaultCatchUpPercent: optional(form.defaultCatchUpPercent),

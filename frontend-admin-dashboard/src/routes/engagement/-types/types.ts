@@ -27,6 +27,13 @@ export type EngagementItemType =
  */
 export type ScheduleMode = 'CALENDAR' | 'RELATIVE';
 
+/**
+ * What a RELATIVE plan's Day 1 counts from. JOIN: the learner's batch join day.
+ * CONTENT: the day they complete a chosen subject, module or chapter.
+ */
+export type StartTrigger = 'JOIN' | 'CONTENT';
+export type StartSourceType = 'SUBJECT' | 'MODULE' | 'CHAPTER';
+
 export type PlanStatus = 'DRAFT' | 'PUBLISHED' | 'ARCHIVED' | 'DELETED';
 
 /**
@@ -98,6 +105,14 @@ export interface EngagementPlanRequest {
     status?: PlanStatus;
     /** Set on create only; the server refuses a change. Missing = CALENDAR. */
     scheduleMode?: ScheduleMode;
+    /** RELATIVE only. Missing = JOIN. Can change only until the plan is first published. */
+    startTrigger?: StartTrigger;
+    startSourceType?: StartSourceType;
+    startSourceId?: string;
+    /** Display only: the subject/module/chapter name when it was picked. */
+    startSourceName?: string;
+    /** Completion percent that counts as done, 1–100 (server default 100). */
+    startThreshold?: number;
     defaultMissPolicy?: MissPolicy;
     defaultCatchUpDays?: number;
     defaultCatchUpPercent?: number;
@@ -168,6 +183,12 @@ export interface EngagementPlanDTO {
     timezone: string;
     /** Missing on older servers = CALENDAR. */
     scheduleMode?: ScheduleMode | null;
+    /** RELATIVE plans; missing on older servers = JOIN. */
+    startTrigger?: StartTrigger | null;
+    startSourceType?: StartSourceType | null;
+    startSourceId?: string | null;
+    startSourceName?: string | null;
+    startThreshold?: number | null;
     /** When the plan was first published: Day 1 for learners already in the batch. */
     publishedAt?: string | null;
     defaultMissPolicy: MissPolicy;

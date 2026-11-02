@@ -425,3 +425,29 @@ function timeZoneShortName(timeZone: string, lang: string): string {
         return '';
     }
 }
+
+/**
+ * "Chapter “Fractions”" for a plan that starts when learners complete chosen content, or
+ * null for any other plan. `t` is the engagement namespace.
+ */
+export function startSourceText(
+    plan: Partial<
+        Pick<
+            EngagementPlanDTO,
+            'scheduleMode' | 'startTrigger' | 'startSourceType' | 'startSourceName'
+        >
+    >,
+    t: (key: string, options?: Record<string, unknown>) => string
+): string | null {
+    if (
+        plan.scheduleMode !== 'RELATIVE' ||
+        plan.startTrigger !== 'CONTENT' ||
+        !plan.startSourceType
+    ) {
+        return null;
+    }
+    return t('composer.relative.sourceText', {
+        type: t(`composer.relative.sourceType.${plan.startSourceType}`),
+        name: plan.startSourceName || t('composer.relative.sourceUnnamed'),
+    });
+}

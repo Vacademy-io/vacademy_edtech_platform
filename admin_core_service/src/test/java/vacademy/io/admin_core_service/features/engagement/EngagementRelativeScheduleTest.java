@@ -121,4 +121,71 @@ class EngagementRelativeScheduleTest {
         assertEquals(LocalDate.of(2026, 9, 5), dayOnes.get("old"));
         assertEquals(LocalDate.of(2026, 9, 20), dayOnes.get("new"));
     }
+
+    private EngagementPlan contentPlan(Timestamp published) {
+        EngagementPlan p = plan(published);
+        p.setStartTrigger("CONTENT");
+        p.setStartSourceType("CHAPTER");
+        p.setStartSourceId("ch-1");
+        p.setStartThreshold(80);
+        return p;
+    }
+
+    @Test
+    @DisplayName("content start: Day 1 is the day each learner completed the chapter; others are left out")
+    void contentStartBatch() {
+        EngagementPlan p = contentPlan(at(2026, 9, 5, 10));
+        Mockito.when(repo.findContentStartsForBatch("plan-1", "ps-1", "CHAPTER", "ch-1",
+                "PERCENTAGE_CHAPTER_COMPLETED", 80)).thenReturn(List.of(
+                new Object[]{"done-early", at(2026, 8, 20, 10)},
+                new Object[]{"done-late", at(2026, 9, 22, 23)}));
+        Map<String, LocalDate> dayOnes = schedule.dayOnesForBatch(p);
+        // Completed before the plan went live: starts on the publish day, like joiners.
+        assertEquals(LocalDate.of(2026, 9, 5), dayOnes.get("done-early"));
+        assertEquals(LocalDate.of(2026, 9, 22), dayOnes.get("done-late"));
+        assertEquals(2, dayOnes.size());
+        Mockito.verify(repo, Mockito.never()).findJoinDatesForBatch(Mockito.anyString());
+    }
+
+    @Test
+    @DisplayName("content start: a learner who has not completed the chapter has no Day 1")
+    void contentStartUserNotYet() {
+        EngagementPlan p = contentPlan(at(2026, 9, 5, 10));
+        EngagementPlan joinPlan = plan(at(2026, 9, 5, 10));
+        joinPlan.setId("plan-2");
+        joinPlan.setPackageSessionId("ps-2");
+        Mockito.when(repo.findContentStartForUser("plan-1", "u-1", "CHAPTER", "ch-1",
+                "PERCENTAGE_CHAPTER_COMPLETED", 80)).thenReturn(List.of());
+        Mockito.when(repo.findJoinDatesForUser("u-1", List.of("ps-2"))).thenReturn(
+                List.<Object[]>of(new Object[]{"ps-2", at(2026, 9, 10, 9)}));
+        Map<String, LocalDate> dayOnes = schedule.dayOnesForUser("u-1", List.of(p, joinPlan));
+        assertFalse(dayOnes.containsKey("plan-1"));
+        assertEquals(LocalDate.of(2026, 9, 10), dayOnes.get("plan-2"));
+    }
+
+    @Test
+    @DisplayName("content start: Day 1 for one learner comes from their completion moment")
+    void contentStartUserDone() {
+        EngagementPlan p = contentPlan(at(2026, 9, 5, 10));
+        Mockito.when(repo.findContentStartForUser("plan-1", "u-1", "CHAPTER", "ch-1",
+                "PERCENTAGE_CHAPTER_COMPLETED", 80)).thenReturn(List.of(at(2026, 9, 18, 7)));
+        assertEquals(LocalDate.of(2026, 9, 18), schedule.dayOnesForUser("u-1", List.of(p)).get("plan-1"));
+    }
+
+    @Test
+    @DisplayName("content start needs a known source; threshold is clamped to 1..100")
+    void contentStartGuards() {
+        EngagementPlan p = contentPlan(at(2026, 9, 5, 10));
+        assertTrue(p.isContentStart());
+        p.setStartThreshold(null);
+        assertEquals(100, p.effectiveStartThreshold());
+        p.setStartThreshold(250);
+        assertEquals(100, p.effectiveStartThreshold());
+        p.setScheduleMode("CALENDAR");
+        assertFalse(p.isContentStart());
+        p.setScheduleMode("RELATIVE");
+        p.setStartSourceType("LESSON");
+        assertEquals(0, schedule.freezeContentStarts(p));
+        assertTrue(schedule.dayOnesForBatch(p).isEmpty());
+    }
 }

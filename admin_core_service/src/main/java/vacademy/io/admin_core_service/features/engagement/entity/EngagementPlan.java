@@ -66,6 +66,28 @@ public class EngagementPlan {
     @Column(name = "published_at")
     private Timestamp publishedAt;
 
+    /**
+     * RELATIVE plans: what Day 1 counts from. JOIN = the learner's batch join day;
+     * CONTENT = the day they complete {@link #startSourceId}.
+     */
+    @Column(name = "start_trigger", nullable = false)
+    private String startTrigger = "JOIN";
+
+    /** CONTENT start: SUBJECT, MODULE or CHAPTER. */
+    @Column(name = "start_source_type")
+    private String startSourceType;
+
+    @Column(name = "start_source_id")
+    private String startSourceId;
+
+    /** Name of the start content when it was picked; display only. */
+    @Column(name = "start_source_name")
+    private String startSourceName;
+
+    /** CONTENT start: completion percent that counts as done (1–100). */
+    @Column(name = "start_threshold")
+    private Integer startThreshold;
+
     @Column(name = "created_by_user_id", nullable = false)
     private String createdByUserId;
 
@@ -77,5 +99,16 @@ public class EngagementPlan {
 
     public boolean isRelative() {
         return "RELATIVE".equals(scheduleMode);
+    }
+
+    /** A RELATIVE plan whose Day 1 is the day the learner completes chosen content. */
+    public boolean isContentStart() {
+        return isRelative() && "CONTENT".equals(startTrigger)
+                && startSourceType != null && startSourceId != null;
+    }
+
+    /** Completion percent that counts as done; 100 unless set. */
+    public int effectiveStartThreshold() {
+        return startThreshold == null ? 100 : Math.max(1, Math.min(100, startThreshold));
     }
 }

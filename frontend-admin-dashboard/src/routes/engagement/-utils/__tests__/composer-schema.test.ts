@@ -689,3 +689,90 @@ describe('days after joining (RELATIVE plans)', () => {
         expect(planLifecycle(plan)).toBe('RUNNING');
     });
 });
+
+describe('content start (Day 1 = completing a subject, module or chapter)', () => {
+    function relativeDemo(): EngagementPlanDTO {
+        const plan = demoPlan();
+        plan.scheduleMode = 'RELATIVE';
+        plan.slots = plan.slots!.map((slot, i) => ({
+            ...slot,
+            startDate: relativeDate(i + 1),
+            endDate: null,
+            startDay: i + 1,
+            endDay: i + 1,
+            dowMask: null,
+        }));
+        return plan;
+    }
+
+    it('round-trips a saved content start and sends it on update', () => {
+        const plan = {
+            ...relativeDemo(),
+            startTrigger: 'CONTENT' as const,
+            startSourceType: 'CHAPTER' as const,
+            startSourceId: 'ch-1',
+            startSourceName: 'Fractions',
+            startThreshold: 80,
+        };
+        const form = dtoToForm(plan);
+        expect(form.startTrigger).toBe('CONTENT');
+        expect(composerSchema.safeParse(form).success).toBe(true);
+        const request = formToRequest(form);
+        expect(request).toMatchObject({
+            startTrigger: 'CONTENT',
+            startSourceType: 'CHAPTER',
+            startSourceId: 'ch-1',
+            startSourceName: 'Fractions',
+            startThreshold: 80,
+        });
+        expect(request.scheduleMode).toBeUndefined();
+    });
+
+    it('reads a half-filled or calendar start as JOIN and sends nothing for calendar plans', () => {
+        const half = dtoToForm({ ...relativeDemo(), startTrigger: 'CONTENT' });
+        expect(half.startTrigger).toBe('JOIN');
+        expect(formToRequest(half).startTrigger).toBe('JOIN');
+        const calendar = dtoToForm({
+            ...demoPlan(),
+            startTrigger: 'CONTENT',
+            startSourceType: 'CHAPTER',
+            startSourceId: 'x',
+        });
+        expect(calendar.startTrigger).toBe('JOIN');
+        expect(formToRequest(calendar).startTrigger).toBeUndefined();
+    });
+
+    it('requires a source, one batch and a 1-100 threshold', () => {
+        const form: ComposerForm = {
+            ...newComposerForm({ scheduleMode: 'RELATIVE', packageSessionIds: ['ps-1', 'ps-2'] }),
+            title: 'Revision',
+            startTrigger: 'CONTENT',
+            startSourceType: 'MODULE',
+            startThreshold: 150,
+        };
+        form.slots[0]!.items[0]!.title = 'Read';
+        const result = composerSchema.safeParse(form);
+        expect(result.success).toBe(false);
+        const messages = result.success ? [] : result.error.issues.map((i) => i.message);
+        expect(messages).toContain(COMPOSER_ERRORS.startSource);
+        expect(messages).toContain(COMPOSER_ERRORS.startSourceOneBatch);
+        expect(messages).toContain(COMPOSER_ERRORS.startThreshold);
+    });
+
+    it('defaults the threshold to 100 on a new content-start plan', () => {
+        const form: ComposerForm = {
+            ...newComposerForm({ scheduleMode: 'RELATIVE', packageSessionIds: ['ps-1'] }),
+            title: 'Revision',
+            startTrigger: 'CONTENT',
+            startSourceType: 'SUBJECT',
+            startSourceId: 'sub-1',
+        };
+        expect(formToRequest(form)).toMatchObject({
+            scheduleMode: 'RELATIVE',
+            startTrigger: 'CONTENT',
+            startSourceType: 'SUBJECT',
+            startSourceId: 'sub-1',
+            startThreshold: 100,
+        });
+    });
+});

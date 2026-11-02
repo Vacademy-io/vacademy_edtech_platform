@@ -83,7 +83,9 @@
         "untitled": "Plan sans titre",
         "created": "Créé le {{date}}",
         "afterJoining_one": "Jour 1 après l'inscription",
-        "afterJoining_other": "Jours 1–{{count}} après l'inscription"
+        "afterJoining_other": "Jours 1–{{count}} après l'inscription",
+        "afterCompleting_one": "Jour 1 après {{source}}",
+        "afterCompleting_other": "Jours 1–{{count}} après {{source}}"
     },
     "composer": {
         "titleNew": "Nouveau plan d'engagement",
@@ -172,7 +174,10 @@
             "cardId": "Cette carte a un identifiant invalide. Dupliquez-la et supprimez l'originale.",
             "cardDuplicateId": "Deux cartes ont le même identifiant. Dupliquez l'une d'elles et supprimez l'originale.",
             "dayNumber": "Saisissez un jour entre 1 et 366.",
-            "dayOrder": "Le dernier jour doit être entre le premier jour et 366."
+            "dayOrder": "Le dernier jour doit être entre le premier jour et 366.",
+            "startSource": "Choisissez la matière, le module ou le chapitre que les apprenants doivent terminer.",
+            "startSourceOneBatch": "Un plan qui commence à la fin d'un contenu se crée pour un seul groupe à la fois.",
+            "startThreshold": "Saisissez un pourcentage entre 1 et 100."
         },
         "types": {
             "READING_HTML": "Lecture",
@@ -545,7 +550,37 @@
             "repeat": "Répéter les mêmes tâches sur plusieurs jours",
             "summary": "{{days}} après l'inscription de chaque apprenant. Le jour 1 est le jour d'inscription ; les apprenants déjà dans le groupe commencent le jour de la publication.",
             "publishLead": "Chaque apprenant de {{batch}} commence au jour 1 : le jour où il rejoint le groupe, ou aujourd'hui s'il y est déjà. Le plan va jusqu'au jour {{last}}.",
-            "cardHint": "Les jours comptent à partir de l'inscription de chaque apprenant (jour 1 = jour d'inscription). Les apprenants déjà dans le groupe ont commencé le jour de la publication."
+            "cardHint": "Les jours comptent à partir de l'inscription de chaque apprenant (jour 1 = jour d'inscription). Les apprenants déjà dans le groupe ont commencé le jour de la publication.",
+            "startLabel": "Le jour 1 commence",
+            "start": {
+                "JOIN": "À l'inscription au groupe",
+                "JOIN_hint": "Les apprenants déjà dans le groupe commencent le jour de la publication.",
+                "CONTENT": "Quand ils terminent un contenu",
+                "CONTENT_hint": "Le jour 1 de chaque apprenant est le jour où il termine la matière, le module ou le chapitre choisi."
+            },
+            "sourceTypeLabel": "Terminer un(e)",
+            "sourceType": {
+                "SUBJECT": "Matière",
+                "MODULE": "Module",
+                "CHAPTER": "Chapitre"
+            },
+            "sourceText": "{{type}} « {{name}} »",
+            "sourceUnnamed": "le contenu choisi",
+            "choose": "Choisir",
+            "loading": "Chargement…",
+            "noSubjects": "Aucune matière dans ce groupe",
+            "subjectFirst": "Choisissez d'abord une matière",
+            "moduleFirst": "Choisissez d'abord un module",
+            "change": "Modifier",
+            "keepCurrent": "Garder {{name}}",
+            "pickOneBatch": "Choisissez un seul groupe pour sélectionner sa matière, son module ou son chapitre.",
+            "threshold": "Considéré comme terminé à (%)",
+            "thresholdHint": "Les apprenants qui n'ont pas encore atteint ce seuil ne voient pas le plan.",
+            "startLocked": "Le début ne peut plus changer une fois le plan publié.",
+            "startLockedContent": "Commence quand les apprenants terminent {{type}} « {{name}} » ({{percent}} %)",
+            "summaryContent": "{{days}} après que chaque apprenant a terminé {{source}}. Le jour 1 est ce jour-là ; ceux qui ne l'ont pas terminé ne voient pas encore le plan.",
+            "publishLeadContent": "Chaque apprenant de {{batch}} commence au jour 1 quand il termine {{source}} ({{percent}} %). Le plan va jusqu'au jour {{last}}.",
+            "cardHintContent": "Les jours comptent à partir du jour où chaque apprenant termine {{source}} (jour 1 = ce jour-là). Ceux qui ne l'ont pas terminé ne voient pas encore le plan."
         }
     },
     "preview": {

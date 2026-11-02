@@ -17,6 +17,7 @@ import {
     instituteTimeZone,
     slotLastDate,
     slotPhase,
+    startSourceText,
     todayInZone,
 } from '../../-utils/format';
 
@@ -143,6 +144,7 @@ export function PlanDaySchedule({
     const timeZone = plan.timezone || instituteTimeZone();
     const today = plan.today || todayInZone(timeZone, now);
     const wallNow = wallClockInZone(timeZone, now);
+    const contentStart = startSourceText(plan, t);
     const slots = plan.slots;
     // A join-based plan has no shared "today": every learner is on their own day.
     const relative = plan.scheduleMode === 'RELATIVE';
@@ -177,7 +179,11 @@ export function PlanDaySchedule({
     if (relative) {
         return (
             <div className="space-y-4">
-                <p className="text-caption text-neutral-600">{t('composer.relative.cardHint')}</p>
+                <p className="text-caption text-neutral-600">
+                    {contentStart
+                        ? t('composer.relative.cardHintContent', { source: contentStart })
+                        : t('composer.relative.cardHint')}
+                </p>
                 {[...slots].sort(bySchedule).map((slot) => renderDay(slot, 'UPCOMING'))}
                 {showZone && (
                     <p className="text-caption text-neutral-600">

@@ -79,7 +79,9 @@
         "untitled": "बिना शीर्षक प्लान",
         "created": "{{date}} को बनाया",
         "afterJoining_one": "जुड़ने के बाद Day 1",
-        "afterJoining_other": "जुड़ने के बाद Day 1–{{count}}"
+        "afterJoining_other": "जुड़ने के बाद Day 1–{{count}}",
+        "afterCompleting_one": "{{source}} के बाद Day 1",
+        "afterCompleting_other": "{{source}} के बाद Day 1–{{count}}"
     },
     "composer": {
         "titleNew": "नया सहभागिता प्लान",
@@ -168,7 +170,10 @@
             "cardId": "इस कार्ड की id अमान्य है। इसकी कॉपी बनाएं और मूल कार्ड हटा दें।",
             "cardDuplicateId": "दो कार्ड की id एक ही है। इनमें से एक की कॉपी बनाएं और मूल कार्ड हटा दें।",
             "dayNumber": "1 से 366 के बीच कोई दिन डालें।",
-            "dayOrder": "आख़िरी दिन पहले दिन और 366 के बीच होना चाहिए।"
+            "dayOrder": "आख़िरी दिन पहले दिन और 366 के बीच होना चाहिए।",
+            "startSource": "वह subject, module या chapter चुनें जो learners को पूरा करना है।",
+            "startSourceOneBatch": "content पूरा करने पर शुरू होने वाला plan एक बार में एक ही बैच के लिए बनता है।",
+            "startThreshold": "1 से 100 के बीच प्रतिशत डालें।"
         },
         "types": {
             "READING_HTML": "रीडिंग",
@@ -511,7 +516,37 @@
             "repeat": "यही टास्क और दिनों पर दोहराएँ",
             "summary": "हर learner के जुड़ने के बाद {{days}}। Day 1 जुड़ने का दिन है; जो learners पहले से बैच में हैं वे publish वाले दिन से शुरू करते हैं।",
             "publishLead": "{{batch}} का हर learner Day 1 से शुरू करता है: जिस दिन वह जुड़ता है, या आज अगर वह पहले से बैच में है। प्लान Day {{last}} तक चलता है।",
-            "cardHint": "दिन हर learner की जुड़ने की तारीख से गिने जाते हैं (Day 1 = जुड़ने का दिन)। पहले से बैच में मौजूद learners publish वाले दिन से शुरू हुए।"
+            "cardHint": "दिन हर learner की जुड़ने की तारीख से गिने जाते हैं (Day 1 = जुड़ने का दिन)। पहले से बैच में मौजूद learners publish वाले दिन से शुरू हुए।",
+            "startLabel": "Day 1 कब शुरू हो",
+            "start": {
+                "JOIN": "जब वह बैच में जुड़े",
+                "JOIN_hint": "पहले से बैच में मौजूद learners publish वाले दिन से शुरू करेंगे।",
+                "CONTENT": "जब वह content पूरा करे",
+                "CONTENT_hint": "हर learner का Day 1 वह दिन होगा जब वह आपका चुना subject, module या chapter पूरा करेगा।"
+            },
+            "sourceTypeLabel": "पूरा करना है",
+            "sourceType": {
+                "SUBJECT": "Subject",
+                "MODULE": "Module",
+                "CHAPTER": "Chapter"
+            },
+            "sourceText": "{{type}} “{{name}}”",
+            "sourceUnnamed": "चुना गया content",
+            "choose": "चुनें",
+            "loading": "लोड हो रहा है…",
+            "noSubjects": "इस बैच में कोई subject नहीं है",
+            "subjectFirst": "पहले subject चुनें",
+            "moduleFirst": "पहले module चुनें",
+            "change": "बदलें",
+            "keepCurrent": "{{name}} ही रखें",
+            "pickOneBatch": "subject, module या chapter चुनने के लिए एक बैच चुनें।",
+            "threshold": "कितना पूरा होने पर माना जाए (%)",
+            "thresholdHint": "जो learners यहाँ तक नहीं पहुँचे, उन्हें plan नहीं दिखेगा।",
+            "startLocked": "Plan publish होने के बाद शुरुआत नहीं बदली जा सकती।",
+            "startLockedContent": "learners के {{type}} “{{name}}” पूरा करने पर शुरू ({{percent}}%)",
+            "summaryContent": "{{days}}, हर learner के {{source}} पूरा करने के बाद। Day 1 वही दिन है; जिन्होंने इसे पूरा नहीं किया उन्हें plan अभी नहीं दिखेगा।",
+            "publishLeadContent": "{{batch}} का हर learner {{source}} पूरा करने पर ({{percent}}%) Day 1 से शुरू करेगा। Plan Day {{last}} तक चलेगा।",
+            "cardHintContent": "दिन उस दिन से गिने जाते हैं जब learner {{source}} पूरा करता है (Day 1 = वह दिन)। जिन्होंने इसे पूरा नहीं किया उन्हें plan अभी नहीं दिखता।"
         }
     },
     "preview": {

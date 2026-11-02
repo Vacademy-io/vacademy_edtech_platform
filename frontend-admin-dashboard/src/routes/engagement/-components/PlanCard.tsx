@@ -52,6 +52,7 @@ import {
     formatFraction,
     planDateRange,
     planLifecycle,
+    startSourceText,
 } from '../-utils/format';
 import { PlanOverviewDialog } from './PlanOverviewDialog';
 import { ItemTrackingDialog } from './ItemTrackingDialog';
@@ -537,7 +538,12 @@ export function metaLine(
         hideBatch ? null : plan.packageSessionLabel?.trim() || null,
         range ? formatDayRange(range.first, range.last, lang) : null,
         plan.scheduleMode === 'RELATIVE'
-            ? t('card.afterJoining', { count: plan.lastDay ?? plan.dayCount ?? 1 })
+            ? startSourceText(plan, t)
+                ? t('card.afterCompleting', {
+                      count: plan.lastDay ?? plan.dayCount ?? 1,
+                      source: startSourceText(plan, t),
+                  })
+                : t('card.afterJoining', { count: plan.lastDay ?? plan.dayCount ?? 1 })
             : null,
         typeof plan.dayCount === 'number' && plan.dayCount > 0
             ? t('card.days', { count: plan.dayCount })
