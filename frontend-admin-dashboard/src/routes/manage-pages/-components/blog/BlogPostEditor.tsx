@@ -163,6 +163,11 @@ const TEMPLATES: Array<{ key: BlogPostTemplate; name: string; hint: string }> = 
         name: 'Focus',
         hint: 'Narrow reading column, progress bar on top, floating share buttons.',
     },
+    {
+        key: 'FULL_WIDTH',
+        name: 'Full width',
+        hint: 'The post fills the screen edge to edge, like a page. For posts designed with their own banner and title.',
+    },
 ];
 
 /** Text lines of a schematic page; `w` is a width utility. */
@@ -239,6 +244,17 @@ const TemplateThumbnail = ({
                         <SchematicLines widths={['w-full', 'w-full', 'w-4/5', 'w-full']} />
                     </div>
                 </>
+            )}
+            {template === 'FULL_WIDTH' && (
+                <div className="absolute inset-0 flex flex-col">
+                    <div className={cn('flex h-7 flex-col justify-center gap-1 px-2', accent)}>
+                        <span className="h-1.5 w-1/3 rounded-full bg-white" />
+                        <span className="h-1 w-1/2 rounded-full bg-white/70" />
+                    </div>
+                    <div className="flex flex-1 flex-col gap-1 bg-neutral-50 px-2 pt-1.5">
+                        <SchematicLines widths={['w-full', 'w-full', 'w-5/6']} />
+                    </div>
+                </div>
             )}
         </div>
     );

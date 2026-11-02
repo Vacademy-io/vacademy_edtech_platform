@@ -239,9 +239,28 @@ const headingId = (text: string) => {
  * "forms" from shadowing a document property. `css` is the post's own
  * stylesheet, already scoped to BLOG_CSS_SCOPE ("" when it has none).
  */
-export const sanitizeBlogArticle = (html: string): { html: string; css: string; headings: BlogHeading[] } => {
+export interface BlogArticleOutline {
+  html: string;
+  css: string;
+  headings: BlogHeading[];
+  /** The body carries its own <h1>, so the page must not print a second one. */
+  hasOwnH1: boolean;
+  /**
+   * The body is a designed page of its own (an <h1>, or wrapped in one
+   * div/article/section/header/main) rather than loose paragraphs — the Full
+   * width layout then shows it as-is, without the page's title block.
+   */
+  isSelfContained: boolean;
+}
+
+const PAGE_WRAPPER_TAGS = new Set(["DIV", "ARTICLE", "SECTION", "HEADER", "MAIN"]);
+
+export const sanitizeBlogArticle = (html: string): BlogArticleOutline => {
   const own = extractBlogCss(html || "");
   const body = sanitizeToDom(own.html);
+  const hasOwnH1 = !!body.querySelector("h1");
+  const first = body.firstElementChild;
+  const isSelfContained = hasOwnH1 || (!!first && PAGE_WRAPPER_TAGS.has(first.tagName));
   const used = new Set<string>();
   const headings: BlogHeading[] = [];
   body.querySelectorAll("h2, h3").forEach((h) => {
@@ -266,7 +285,7 @@ export const sanitizeBlogArticle = (html: string): { html: string; css: string; 
     used.add(id);
     headings.push({ id, text, level: h.tagName === "H2" ? 2 : 3 });
   });
-  return { html: body.innerHTML, css: own.css, headings };
+  return { html: body.innerHTML, css: own.css, headings, hasOwnH1, isSelfContained };
 };
 
 /** Plain-text preview of a body, for cards that have no excerpt. */

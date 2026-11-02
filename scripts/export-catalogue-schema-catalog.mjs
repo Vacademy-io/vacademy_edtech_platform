@@ -318,6 +318,7 @@ const DATA_BOUND = {
         '/<page>/<post-slug>, so put it on a DEDICATED page (route "blog"), never on the home page. Placement + ' +
         'look only: heading, subheading, layout grid|list, columns 2|3, pageSize, category ("" = all), show* toggles, ' +
         'allowLikes (visitor likes on cards and articles; default false, keep it off on non-blog sections such as exam guides). ' +
+        'articleTemplate ("" = each post\'s own layout; CLASSIC|SIDEBAR_TOC|MAGAZINE|FOCUS|FULL_WIDTH forces it on every article this section opens, later posts included). ' +
         'Never invent posts — there are none in the page JSON.',
 };
 

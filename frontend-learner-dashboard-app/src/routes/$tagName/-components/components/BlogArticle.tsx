@@ -16,7 +16,13 @@ import {
 } from "@phosphor-icons/react";
 import { cn } from "@/lib/utils";
 import { BlogService, type BlogPostSummary, type BlogTemplate } from "../../-services/blog-service";
-import { blogPlainText, sanitizeBlogArticle, type BlogHeading } from "../../-utils/blog-html";
+import { resolveBlogTemplate } from "../../-utils/blog-template";
+import {
+  blogPlainText,
+  sanitizeBlogArticle,
+  type BlogArticleOutline,
+  type BlogHeading,
+} from "../../-utils/blog-html";
 import { markResourceUnlocked, rememberResourceIdentity, useResourceUnlocked } from "../../-utils/resource-unlock";
 import { useCourseTerms } from "../../-utils/catalogue-naming";
 import { LeadFormComponent } from "./LeadFormComponent";
@@ -33,6 +39,13 @@ import { BlogLikeButton } from "./BlogLikeButton";
  *                current heading highlighted and a progress rail
  *   MAGAZINE     full-width cover with the title over it; related posts after
  *   FOCUS        narrow column, reading-progress bar, floating share buttons
+ *   FULL_WIDTH   the post's own HTML is the page: edge to edge, no column,
+ *                sidebar or title block above it (a post designed as a full
+ *                page brings its own banner and title)
+ *
+ * The blog section can force one layout on every post it opens
+ * (`layoutOverride`), so a site can show all its articles one way, including
+ * posts written later.
  *
  * Every layout is the same parts in a different arrangement — meta line, body
  * (or the gate form), recommended courses, tags, back/copy-link footer — so the
@@ -63,14 +76,12 @@ export interface BlogArticleProps {
   onBack: () => void;
   gateAudienceId: string;
   gateTitle?: string;
+  /** The section's article layout: wins over the post's own when set. */
+  layoutOverride?: BlogTemplate | "";
 }
 
 /** A sidebar of contents needs something to list; with fewer headings the post reads as Classic. */
 const MIN_TOC_HEADINGS = 2;
-
-const TEMPLATES: BlogTemplate[] = ["CLASSIC", "SIDEBAR_TOC", "MAGAZINE", "FOCUS"];
-const readTemplate = (raw: unknown): BlogTemplate =>
-  TEMPLATES.includes(raw as BlogTemplate) ? (raw as BlogTemplate) : "CLASSIC";
 
 /* ─── Scroll tracking ──────────────────────────────────────────────────── */
 
@@ -153,7 +164,7 @@ const scrollToHeading = (id: string) => {
 export const BlogArticle: React.FC<BlogArticleProps> = ({
   slug, instituteId, tagName, globalSettings, listPath, postPath, onOpenPost, readMoreLabel, backLabel,
   showDate, showAuthor, showCategory, showReadingTime, allowLikes, isPreviewMode, sectionStyle, locale, onBack,
-  gateAudienceId, gateTitle,
+  gateAudienceId, gateTitle, layoutOverride,
 }) => {
   const { t } = useTranslation("coursePlayerB");
   const unlocked = useResourceUnlocked(gateAudienceId);
@@ -182,12 +193,15 @@ export const BlogArticle: React.FC<BlogArticleProps> = ({
     if (typeof window !== "undefined") window.scrollTo({ top: 0 });
   }, [slug]);
 
-  const outline = useMemo(
-    () => (post?.content_html ? sanitizeBlogArticle(post.content_html) : { html: "", css: "", headings: [] as BlogHeading[] }),
+  const outline = useMemo<BlogArticleOutline>(
+    () =>
+      post?.content_html
+        ? sanitizeBlogArticle(post.content_html)
+        : { html: "", css: "", headings: [] as BlogHeading[], hasOwnH1: false, isSelfContained: false },
     [post?.content_html]
   );
 
-  let template = readTemplate(post?.template);
+  let template = resolveBlogTemplate(layoutOverride, post?.template);
   // A gated article has no body on screen to list or track.
   const headings = locked ? [] : outline.headings;
   if (template === "SIDEBAR_TOC" && headings.length < MIN_TOC_HEADINGS) template = "CLASSIC";
@@ -300,7 +314,7 @@ export const BlogArticle: React.FC<BlogArticleProps> = ({
     <img src={post.cover_image_url} alt="" className="mb-8 w-full rounded-catalogue-lg object-cover" />
   ) : null;
 
-  const body = (variant?: "magazine" | "focus") =>
+  const body = (variant?: "magazine" | "focus" | "full") =>
     locked ? (
       <div className="space-y-6">
         {description && <p className="catalogue-lead text-catalogue-text-secondary">{description}</p>}
@@ -328,7 +342,8 @@ export const BlogArticle: React.FC<BlogArticleProps> = ({
           className={cn(
             "catalogue-rich-text catalogue-blog-article",
             variant === "magazine" && "catalogue-blog-article--magazine",
-            variant === "focus" && "catalogue-blog-article--focus"
+            variant === "focus" && "catalogue-blog-article--focus",
+            variant === "full" && "catalogue-blog-article--full"
           )}
           dangerouslySetInnerHTML={{ __html: outline.html }}
         />
@@ -446,6 +461,40 @@ export const BlogArticle: React.FC<BlogArticleProps> = ({
             locale={locale}
             likes={allowLikes ? { instituteId, disabled: isPreviewMode } : undefined}
           />
+        </div>
+      </article>
+    );
+  }
+
+  if (template === "FULL_WIDTH") {
+    // A designed post is the whole page, as on a site where it was built: its
+    // own banner and title on top, its own backgrounds edge to edge. Loose
+    // paragraphs (or a gated post, whose body is not on screen) still get the
+    // title block, and their text keeps a readable width (catalogue-blog.css).
+    const ownsPage = !locked && outline.isSelfContained;
+    return (
+      <article className="catalogue-blog-full bg-catalogue-bg" style={sectionStyle}>
+        {seo}
+        {ownsPage ? (
+          !outline.hasOwnH1 && <h1 className="sr-only">{post.title}</h1>
+        ) : (
+          <div className="catalogue-shell-prose pt-10 sm:pt-14">
+            <div className="mb-6">{back()}</div>
+            <header className="mb-8">
+              {eyebrow()}
+              <h1 className="catalogue-h1 text-catalogue-text-primary">{post.title}</h1>
+              {meta()}
+            </header>
+            {cover}
+          </div>
+        )}
+        {locked ? <div className="catalogue-shell-prose">{body()}</div> : body("full")}
+        <div className="pb-12 sm:pb-16">
+          <div className="catalogue-shell">{courses}</div>
+          <div className="catalogue-shell-prose">
+            {tags}
+            {footer}
+          </div>
         </div>
       </article>
     );

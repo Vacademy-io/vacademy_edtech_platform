@@ -54,7 +54,7 @@ public class CatalogueBlogService {
             BlogPostStatus.DRAFT.name(), BlogPostStatus.PUBLISHED.name(), BlogPostStatus.ARCHIVED.name());
     private static final Set<String> SOURCES = Set.of("EDITOR", "MCP", "AI");
     private static final String DEFAULT_TEMPLATE = "CLASSIC";
-    private static final Set<String> TEMPLATES = Set.of(DEFAULT_TEMPLATE, "SIDEBAR_TOC", "MAGAZINE", "FOCUS");
+    private static final Set<String> TEMPLATES = Set.of(DEFAULT_TEMPLATE, "SIDEBAR_TOC", "MAGAZINE", "FOCUS", "FULL_WIDTH");
     private static final int MAX_RECOMMENDED_COURSES = 6;
     /** The browser-made visitor id: a UUID in practice, anything id-like up to the column width. */
     private static final Pattern VISITOR_KEY = Pattern.compile("^[A-Za-z0-9_-]{8,64}$");

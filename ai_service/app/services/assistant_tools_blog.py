@@ -140,11 +140,13 @@ BLOG_EDIT_SCHEMA: Dict[str, Any] = {
                 "slug": {"type": "string", "description": "URL segment; made from the title when omitted."},
                 "template": {
                     "type": "string",
-                    "enum": ["CLASSIC", "SIDEBAR_TOC", "MAGAZINE", "FOCUS"],
+                    "enum": ["CLASSIC", "SIDEBAR_TOC", "MAGAZINE", "FOCUS", "FULL_WIDTH"],
                     "description": (
                         "Article layout. CLASSIC (default) one column; SIDEBAR_TOC a sticky contents list built "
                         "from the h2/h3 headings (pick it for long guides with 3+ sections); MAGAZINE cover "
-                        "image as a full-width hero (needs cover_image_url); FOCUS a narrow reading column."
+                        "image as a full-width hero (needs cover_image_url); FOCUS a narrow reading column; "
+                        "FULL_WIDTH the body fills the screen edge to edge with no title block (for a body "
+                        "designed as a whole page with its own banner and title)."
                     ),
                 },
             },

@@ -36,7 +36,7 @@ public class BlogPostRequest {
     private String seoDescription;
     /** EDITOR (default) | MCP | AI — who is writing. */
     private String source;
-    /** CLASSIC | SIDEBAR_TOC | MAGAZINE | FOCUS. */
+    /** CLASSIC | SIDEBAR_TOC | MAGAZINE | FOCUS | FULL_WIDTH. */
     private String template;
     /** Course (package) ids to recommend under the article, in order; an empty list clears them. */
     private List<String> recommendedCourseIds;

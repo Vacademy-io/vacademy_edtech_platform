@@ -273,3 +273,36 @@
     -webkit-box-orient: vertical;
     overflow: hidden;
 }
+
+/* Full width: the post's own HTML is the page, edge to edge — its banner and
+   background bands span the screen and it sets its own inner widths. Posts
+   written for a narrow theme column often break out with width:100vw, which
+   counts the scrollbar; clip so that never scrolls the page sideways. */
+.catalogue-blog-full {
+    overflow-x: clip;
+}
+/* The post's banner meets the site header, as on a site where the page was
+   built: the section's authored padding (set for the post list) would leave a
+   strip above it. The wrapper carries that padding inline, hence !important. */
+.page > :has(.catalogue-blog-full) {
+    padding-block: 0 !important;
+}
+/* A designed post's first element often starts with a top margin; without a
+   new formatting context it collapses out of the post's own background and
+   paints as a blank strip under the site header. flow-root keeps it inside.
+   Zero specificity (:where), so any display the post sets on its wrapper
+   (inline, its own stylesheet, a flex/grid class) still wins — a flex or grid
+   box does not let the margin escape either. */
+.catalogue-blog-article--full {
+    display: flow-root;
+}
+:where(.catalogue-blog-article--full) > :where(div, article, section, header, main) {
+    display: flow-root;
+}
+/* Loose top-level text (a post that is not a designed page) keeps a readable
+   line length instead of running across the whole screen. Class doubled so it
+   outranks .catalogue-rich-text p's margin shorthand whatever the CSS order. */
+.catalogue-blog-article.catalogue-blog-article--full > :not(div, article, section, header, main, footer, nav, aside) {
+    max-width: min(var(--catalogue-content-prose, 48rem), calc(100% - 2.5rem));
+    margin-inline: auto;
+}
