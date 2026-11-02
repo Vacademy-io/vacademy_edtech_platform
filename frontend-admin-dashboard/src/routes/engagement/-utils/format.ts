@@ -427,27 +427,11 @@ function timeZoneShortName(timeZone: string, lang: string): string {
 }
 
 /**
- * "Chapter “Fractions”" for a plan that starts when learners complete chosen content, or
- * null for any other plan. `t` is the engagement namespace.
+ * What the percent box holds: whole numbers only, never above 100. Blank means the
+ * default (100). 0 stays so the box can show why it isn't allowed.
  */
-export function startSourceText(
-    plan: Partial<
-        Pick<
-            EngagementPlanDTO,
-            'scheduleMode' | 'startTrigger' | 'startSourceType' | 'startSourceName'
-        >
-    >,
-    t: (key: string, options?: Record<string, unknown>) => string
-): string | null {
-    if (
-        plan.scheduleMode !== 'RELATIVE' ||
-        plan.startTrigger !== 'CONTENT' ||
-        !plan.startSourceType
-    ) {
-        return null;
-    }
-    return t('composer.relative.sourceText', {
-        type: t(`composer.relative.sourceType.${plan.startSourceType}`),
-        name: plan.startSourceName || t('composer.relative.sourceUnnamed'),
-    });
+export function parsePercent(raw: string): number | null {
+    const digits = raw.replace(/[^0-9]/g, '').slice(0, 3);
+    if (!digits) return null;
+    return Math.min(100, Number(digits));
 }

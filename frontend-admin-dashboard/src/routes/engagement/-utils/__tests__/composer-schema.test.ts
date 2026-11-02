@@ -21,7 +21,7 @@ import {
     type ItemForm,
     type SlotForm,
 } from '../../-components/forms/composer-schema';
-import { planLifecycle, todayInZone } from '../format';
+import { parsePercent, planLifecycle, todayInZone } from '../format';
 import type {
     EngagementItemDTO,
     EngagementItemRequest,
@@ -774,5 +774,37 @@ describe('content start (Day 1 = completing a subject, module or chapter)', () =
             startSourceId: 'sub-1',
             startThreshold: 100,
         });
+    });
+
+    it('sends a whole-course start with the batch as its source', () => {
+        const form: ComposerForm = {
+            ...newComposerForm({ scheduleMode: 'RELATIVE', packageSessionIds: ['ps-1'] }),
+            title: 'After the course',
+            startTrigger: 'CONTENT',
+            startSourceType: 'COURSE',
+            startSourceId: 'ps-1',
+            startSourceName: 'Parenting basics',
+        };
+        const result = composerSchema.safeParse(form);
+        const messages = result.success ? [] : result.error.issues.map((i) => i.message);
+        expect(messages).not.toContain(COMPOSER_ERRORS.startSource);
+        expect(messages).not.toContain(COMPOSER_ERRORS.startSourceOneBatch);
+        expect(messages).not.toContain(COMPOSER_ERRORS.startThreshold);
+        expect(formToRequest(form)).toMatchObject({
+            startSourceType: 'COURSE',
+            startSourceId: 'ps-1',
+            startThreshold: 100,
+        });
+    });
+
+    it('keeps the completion percent a whole number no higher than 100', () => {
+        expect(parsePercent('')).toBeNull();
+        expect(parsePercent('80')).toBe(80);
+        expect(parsePercent('150')).toBe(100);
+        expect(parsePercent('9999')).toBe(100);
+        expect(parsePercent('-5')).toBe(5);
+        expect(parsePercent('7.5')).toBe(75);
+        expect(parsePercent('abc')).toBeNull();
+        expect(parsePercent('0')).toBe(0);
     });
 });

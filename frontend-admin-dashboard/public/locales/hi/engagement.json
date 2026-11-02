@@ -526,15 +526,19 @@
             },
             "sourceTypeLabel": "पूरा करना है",
             "sourceType": {
+                "COURSE": "पूरा course",
                 "SUBJECT": "Subject",
                 "MODULE": "Module",
                 "CHAPTER": "Chapter"
             },
             "sourceText": "{{type}} “{{name}}”",
+            "sourceTextCourse": "course “{{name}}”",
             "sourceUnnamed": "चुना गया content",
             "choose": "चुनें",
             "loading": "लोड हो रहा है…",
             "noSubjects": "इस बैच में कोई subject नहीं है",
+            "noChapters": "इस module में कोई chapter नहीं है",
+            "courseOnly": "इस course में कोई subject, module या chapter नहीं है, इसलिए learners पूरा course पूरा करने पर शुरू करेंगे।",
             "subjectFirst": "पहले subject चुनें",
             "moduleFirst": "पहले module चुनें",
             "change": "बदलें",
@@ -543,7 +547,7 @@
             "threshold": "कितना पूरा होने पर माना जाए (%)",
             "thresholdHint": "जो learners यहाँ तक नहीं पहुँचे, उन्हें plan नहीं दिखेगा।",
             "startLocked": "Plan publish होने के बाद शुरुआत नहीं बदली जा सकती।",
-            "startLockedContent": "learners के {{type}} “{{name}}” पूरा करने पर शुरू ({{percent}}%)",
+            "startLockedContent": "learners के {{source}} पूरा करने पर शुरू ({{percent}}%)",
             "summaryContent": "{{days}}, हर learner के {{source}} पूरा करने के बाद। Day 1 वही दिन है; जिन्होंने इसे पूरा नहीं किया उन्हें plan अभी नहीं दिखेगा।",
             "publishLeadContent": "{{batch}} का हर learner {{source}} पूरा करने पर ({{percent}}%) Day 1 से शुरू करेगा। Plan Day {{last}} तक चलेगा।",
             "cardHintContent": "दिन उस दिन से गिने जाते हैं जब learner {{source}} पूरा करता है (Day 1 = वह दिन)। जिन्होंने इसे पूरा नहीं किया उन्हें plan अभी नहीं दिखता।"

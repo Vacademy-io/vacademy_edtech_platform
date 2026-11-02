@@ -52,8 +52,8 @@ import {
     formatFraction,
     planDateRange,
     planLifecycle,
-    startSourceText,
 } from '../-utils/format';
+import { startSourceText } from '../-utils/start-source';
 import { PlanOverviewDialog } from './PlanOverviewDialog';
 import { ItemTrackingDialog } from './ItemTrackingDialog';
 import { PlanComposerDialog } from './PlanComposerDialog';

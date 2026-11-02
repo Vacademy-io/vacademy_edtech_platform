@@ -127,6 +127,8 @@ public class EngagementRelativeSchedule {
 
     /** Where learner progress stores completion for each start content type. */
     public enum ContentSource {
+        /** The whole course of the plan's batch; its id is the batch (package session) id. */
+        COURSE("PACKAGE_SESSION", "PERCENTAGE_PACKAGE_SESSION_COMPLETED"),
         SUBJECT("SUBJECT", "PERCENTAGE_SUBJECT_COMPLETED"),
         MODULE("MODULE", "PERCENTAGE_MODULE_COMPLETED"),
         CHAPTER("CHAPTER", "PERCENTAGE_CHAPTER_COMPLETED");
@@ -139,7 +141,7 @@ public class EngagementRelativeSchedule {
             this.operation = operation;
         }
 
-        /** Null for anything that is not SUBJECT, MODULE or CHAPTER. */
+        /** Null for anything that is not COURSE, SUBJECT, MODULE or CHAPTER. */
         public static ContentSource of(String raw) {
             if (raw == null) return null;
             for (ContentSource s : values()) if (s.name().equalsIgnoreCase(raw.trim())) return s;
