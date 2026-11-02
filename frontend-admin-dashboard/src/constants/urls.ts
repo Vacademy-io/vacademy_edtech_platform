@@ -879,6 +879,8 @@ export const GET_EVALUATION_DRAFT = `${BASE_URL}/assessment-service/assessment/m
 export const DELETE_EVALUATION_DRAFT = `${BASE_URL}/assessment-service/assessment/manual-evaluation/delete/draft`;
 export const GET_INVITE_DETAILS = `${BASE_URL}/admin-core-service/learner-invitation/learner-invitation-detail-by-id`;
 export const GET_BATCH_REPORT = `${BASE_URL}/admin-core-service/learner-management/batch-report`;
+/** Learning Reports → Batch → Overview: summary, preview, pdf, send, setting. */
+export const BATCH_SUMMARY_REPORT_BASE = `${BASE_URL}/admin-core-service/learner-management/batch-summary-report`;
 export const GET_LEARNERS_REPORT = `${BASE_URL}/admin-core-service/learner-management/learner-report`;
 export const GET_LEADERBOARD_DATA = `${BASE_URL}/admin-core-service/learner-management/batch-report/leaderboard`;
 export const SUBJECT_WISE_BATCH_REPORT = `${BASE_URL}/admin-core-service/learner-management/batch-report/subject-wise-progress`;

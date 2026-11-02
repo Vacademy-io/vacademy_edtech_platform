@@ -2,8 +2,6 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import BatchReports from './batch/batchReports';
-import StudentReports from './student/studentReports';
-import LiveClassReports from './live/liveClassReports';
 import LeaderboardReports from './leaderboard/LeaderboardReports';
 import { MyButton } from '@/components/design-system/button';
 import { MyDialog } from '@/components/design-system/dialog';
@@ -24,8 +22,6 @@ import { useMutation, useQuery } from '@tanstack/react-query';
 import { getBadgesEnabled } from '@/routes/settings/-services/badges-settings';
 import { DashboardLoader } from '@/components/core/dashboard-loader';
 import { toast } from 'sonner';
-import { RoleTerms, SystemTerms } from '@/routes/settings/-components/NamingSettings';
-import { getTerminology } from '@/components/common/layout-container/sidebar/utils';
 
 const reportTypes = [
     ReportDurationEnum.DAILY,
@@ -37,8 +33,11 @@ export default function HeaderTabs() {
     const { t } = useTranslation('studyLibraryReportsHeaderTabs');
     const search = useSearch({ from: Route.id });
 
+    // Batch is the only always-on tab (the Learner and Live class tabs were retired — a
+    // learner's reports live on their profile's Reports tab), so an old ?studentReport link
+    // lands on Batch unless it asked for the leaderboard.
     const [selectedTab, setSelectedTab] = useState(
-        search.studentReport ? search.studentReport.tab : 'BATCH'
+        search.studentReport?.tab === 'LEADERBOARD' ? 'LEADERBOARD' : 'BATCH'
     );
     const [settingDialogState, setSettingDialogState] = useState(false);
     const [settingDetails, setSettingDetails] = useState<InstituteSettingResponse>();
@@ -184,24 +183,6 @@ export default function HeaderTabs() {
                         >
                             {t('tabs.batch')}
                         </TabsTrigger>
-                        <TabsTrigger
-                            value="STUDENT"
-                            className={`flex min-w-fit gap-1.5 rounded-none px-6 py-2 !shadow-none sm:px-12 ${selectedTab === 'STUDENT'
-                                    ? 'border-4px rounded-t-sm border !border-b-0 border-primary-200 !bg-primary-50'
-                                    : 'border-none bg-transparent'
-                                }`}
-                        >
-                            {getTerminology(RoleTerms.Learner, SystemTerms.Learner)}
-                        </TabsTrigger>
-                        <TabsTrigger
-                            value="LIVE"
-                            className={`flex min-w-fit gap-1.5 rounded-none px-6 py-2 !shadow-none sm:px-12 ${selectedTab === 'LIVE'
-                                    ? 'border-4px rounded-t-sm border !border-b-0 border-primary-200 !bg-primary-50'
-                                    : 'border-none bg-transparent'
-                                }`}
-                        >
-                            {t('tabs.liveClasses')}
-                        </TabsTrigger>
                         {showLeaderboard && (
                             <TabsTrigger
                                 value="LEADERBOARD"
@@ -228,12 +209,6 @@ export default function HeaderTabs() {
                 </div>
                 <TabsContent value="BATCH">
                     <BatchReports></BatchReports>
-                </TabsContent>
-                <TabsContent value="STUDENT">
-                    <StudentReports></StudentReports>
-                </TabsContent>
-                <TabsContent value="LIVE">
-                    <LiveClassReports></LiveClassReports>
                 </TabsContent>
                 {showLeaderboard && (
                     <TabsContent value="LEADERBOARD">

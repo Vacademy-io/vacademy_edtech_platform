@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useStudentSidebar } from '../../../../-context/selected-student-sidebar-context';
 import { InitiateReportDialog } from './InitiateReportDialog';
@@ -22,6 +22,7 @@ import {
     XCircle,
     Spinner,
     CircleNotch,
+    ChartLineUp,
     type Icon as PhosphorIcon,
 } from '@phosphor-icons/react';
 import { format } from 'date-fns';
@@ -30,8 +31,11 @@ import { ComprehensiveReportDialog } from './ComprehensiveReportDialog';
 import { LearnedFromChatsPanel } from './LearnedFromChatsPanel';
 import { MyButton } from '@/components/design-system/button';
 import { toast } from 'sonner';
-import { getTerminology } from '@/components/common/layout-container/sidebar/utils';
-import { RoleTerms, SystemTerms } from '@/routes/settings/-components/NamingSettings';
+import {
+    getTerminology,
+    getTerminologyPlural,
+} from '@/components/common/layout-container/sidebar/utils';
+import { ContentTerms, RoleTerms, SystemTerms } from '@/routes/settings/-components/NamingSettings';
 import {
     ProfileSectionCard,
     ProfileSkeleton,
@@ -41,6 +45,14 @@ import {
     ProfileHeroStat,
 } from '../profile-ui';
 import { cn } from '@/lib/utils';
+import { StudentReportSnapshot } from './StudentReportSnapshot';
+import { ALL_BATCHES, BatchPicker } from '../BatchPicker';
+import {
+    DEFAULT_TIMELINE,
+    ReportTimelineFilter,
+    resolveTimeline,
+    type TimelineValue,
+} from '@/components/common/report-timeline-filter';
 
 export const StudentReports = () => {
     const { t } = useTranslation('manageStudentsReports');
@@ -70,6 +82,33 @@ export const StudentReports = () => {
 
     const [pendingProcesses, setPendingProcesses] = useState<string[]>([]);
     const [statusCheckLoading, setStatusCheckLoading] = useState(false);
+
+    // Basic report filters. They also pre-fill "Generate report", so the detailed report
+    // covers what the admin is looking at.
+    const packageSessionIds = useMemo(
+        () =>
+            selectedStudent?.all_package_session_ids?.length
+                ? selectedStudent.all_package_session_ids
+                : selectedStudent?.package_session_id
+                  ? [selectedStudent.package_session_id]
+                  : [],
+        [selectedStudent?.all_package_session_ids, selectedStudent?.package_session_id]
+    );
+    const [batch, setBatch] = useState<string>(ALL_BATCHES);
+    const [timeline, setTimeline] = useState<TimelineValue>(DEFAULT_TIMELINE);
+    const range = resolveTimeline(timeline);
+    // One batch: the picker is hidden, so scope to it rather than to "all".
+    const batchId =
+        batch !== ALL_BATCHES
+            ? batch
+            : packageSessionIds.length === 1
+              ? packageSessionIds[0]
+              : undefined;
+
+    useEffect(() => {
+        setBatch(ALL_BATCHES);
+        // eslint-disable-next-line react-hooks/exhaustive-deps -- reset the filter per learner only
+    }, [selectedStudent?.user_id]);
 
     const checkPendingProcesses = () => {
         const storedProcesses = sessionStorage.getItem('student_analysis_processes');
@@ -275,6 +314,9 @@ export const StudentReports = () => {
                         </MyButton>
                     )}
                     <InitiateReportDialog
+                        defaultStartDate={range?.start}
+                        defaultEndDate={range?.end}
+                        defaultBatchId={batchId}
                         onSuccess={() => {
                             fetchReports();
                             checkPendingProcesses();
@@ -283,7 +325,31 @@ export const StudentReports = () => {
                 </div>
             </ProfileActionBar>
 
+            {selectedStudent?.user_id && (
+                <ProfileSectionCard icon={ChartLineUp as PhosphorIcon} heading="Basic report">
+                    <div className="mb-3 flex flex-col gap-2">
+                        <BatchPicker
+                            packageSessionIds={packageSessionIds}
+                            value={batch}
+                            onChange={setBatch}
+                            allLabel={`All ${getTerminologyPlural(ContentTerms.Batch, SystemTerms.Batch).toLowerCase()}`}
+                        />
+                        <ReportTimelineFilter value={timeline} onChange={setTimeline} />
+                    </div>
+                    <StudentReportSnapshot
+                        userId={selectedStudent.user_id}
+                        instituteId={selectedStudent.institute_id}
+                        batchId={batchId}
+                        range={range}
+                    />
+                </ProfileSectionCard>
+            )}
+
             {selectedStudent?.user_id && <LearnedFromChatsPanel userId={selectedStudent.user_id} />}
+
+            <span className="mt-1 text-xs font-semibold uppercase tracking-wide text-neutral-400">
+                Detailed reports
+            </span>
 
             {/* Hero stat tiles — visible once data is loaded and there are reports */}
             {!loading && !fetchError && reports.length > 0 && (
@@ -325,7 +391,14 @@ export const StudentReports = () => {
                     icon={FileText as PhosphorIcon}
                     title={t('empty.title')}
                     hint={t('empty.hint')}
-                    action={<InitiateReportDialog onSuccess={fetchReports} />}
+                    action={
+                        <InitiateReportDialog
+                            defaultStartDate={range?.start}
+                            defaultEndDate={range?.end}
+                            defaultBatchId={batchId}
+                            onSuccess={fetchReports}
+                        />
+                    }
                 />
             ) : (
                 /* Report cards grouped by status */

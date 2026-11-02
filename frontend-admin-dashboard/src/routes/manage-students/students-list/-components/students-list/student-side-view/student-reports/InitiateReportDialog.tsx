@@ -14,6 +14,11 @@ import { RoleTerms, SystemTerms } from '@/routes/settings/-components/NamingSett
 
 interface InitiateReportDialogProps {
     onSuccess?: () => void;
+    /** Pre-fill from the Reports tab filters (yyyy-MM-dd); still editable in the dialog. */
+    defaultStartDate?: string;
+    defaultEndDate?: string;
+    /** Batch the report is scoped to; falls back to the learner's current batch. */
+    defaultBatchId?: string;
 }
 
 /** Admin-selectable report module keys. Must match the backend ReportModule keys. */
@@ -43,7 +48,12 @@ const buildReportModules = (t: TFunction): { key: string; label: string }[] => [
     { key: 'login', label: t('moduleLabels.login') },
 ];
 
-export const InitiateReportDialog = ({ onSuccess }: InitiateReportDialogProps) => {
+export const InitiateReportDialog = ({
+    onSuccess,
+    defaultStartDate,
+    defaultEndDate,
+    defaultBatchId,
+}: InitiateReportDialogProps) => {
     const { t } = useTranslation('manageStudentsInitiateReportDialog');
     const [open, setOpen] = useState(false);
     const [reportName, setReportName] = useState('');
@@ -63,6 +73,8 @@ export const InitiateReportDialog = ({ onSuccess }: InitiateReportDialogProps) =
             setSelectedModules(ALL_MODULE_KEYS);
             setReportName('');
             setSendEmail(true);
+            if (defaultStartDate) setStartDate(defaultStartDate);
+            if (defaultEndDate) setEndDate(defaultEndDate);
         }
     };
 
@@ -98,7 +110,11 @@ export const InitiateReportDialog = ({ onSuccess }: InitiateReportDialogProps) =
         }
 
         // Package/session is taken from the selected student (not shown in the form).
-        const packageSessionId = (selectedStudent.package_session_id ?? '').trim();
+        const packageSessionId = (
+            defaultBatchId ||
+            selectedStudent.package_session_id ||
+            ''
+        ).trim();
 
         setLoading(true);
         try {

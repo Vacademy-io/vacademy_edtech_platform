@@ -79,6 +79,7 @@ export const SETTINGS_TAB_FEATURES: Readonly<Record<SettingsTabs, readonly strin
     [SettingsTabs.Language]: null,
     [SettingsTabs.AiSettings]: null,
     [SettingsTabs.ScheduledReports]: null,
+    [SettingsTabs.BatchReports]: null,
     [SettingsTabs.AssistantTools]: null,
     [SettingsTabs.McpServer]: null,
     // ── LMS ──

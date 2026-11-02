@@ -6,6 +6,9 @@ public enum SettingKeyEnums {
     // schedule against the institute's own timezone. Read/write via
     // GenericSettingStrategy like any other key — no bespoke config table.
     REPORT_SETTING,
+    // Learning Reports → Batch: which sections a generated batch report renders and the quiz
+    // pass mark (BatchReportSettingConfig). GenericSettingStrategy, no bespoke table.
+    BATCH_REPORT_SETTING,
     NAMING_SETTING,
     COURSE_SETTING,
     CERTIFICATE_SETTING,
