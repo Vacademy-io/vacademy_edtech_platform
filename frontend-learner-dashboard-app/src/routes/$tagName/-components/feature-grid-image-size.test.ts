@@ -17,13 +17,13 @@ import { JsonRenderer } from "./JsonRenderer";
  * line icons read as clip art and nothing — editor or MCP — could shrink them.
  */
 const IMG = "https://cdn.example.com/icons/comic.png";
-const render = (iconSize?: string) =>
+const render = (iconSize?: string, imageFit?: string) =>
   renderToString(
     React.createElement(JsonRenderer, {
       page: {
         id: "p", route: "p", title: "p",
         components: [{ id: "fg", type: "featureGrid", enabled: true,
-          props: { style: "minimal", ...(iconSize ? { iconSize } : {}), features: [{ title: "Comic", description: "d", image: IMG }] } }],
+          props: { style: "minimal", ...(iconSize ? { iconSize } : {}), ...(imageFit ? { imageFit } : {}), features: [{ title: "Comic", description: "d", image: IMG }] } }],
       },
       globalSettings: {} as never, instituteId: "inst", tagName: "tag",
     } as never),
@@ -36,10 +36,12 @@ describe("featureGrid image size", () => {
     expect(render("medium")).toContain("max-w-24");
   });
 
-  it("contains small/medium icons so non-square art is not cropped; large photos still cover", () => {
-    expect(render("small")).toContain("object-contain");
-    expect(render("medium")).toContain("object-contain");
-    expect(render()).toContain("object-cover");
-    expect(render()).not.toContain("object-contain");
+  it("keeps cover by default at every size; imageFit 'contain' is opt-in", () => {
+    for (const size of [undefined, "small", "medium"]) {
+      expect(render(size)).toContain("object-cover");
+      expect(render(size)).not.toContain("object-contain");
+    }
+    expect(render("small", "contain")).toContain("object-contain");
+    expect(render("small", "contain")).not.toContain("object-cover");
   });
 });

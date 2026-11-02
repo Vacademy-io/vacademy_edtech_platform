@@ -13,7 +13,7 @@ import { renderBoldMarks } from "./JsonRenderer";
 
 const html = (t: unknown) => renderToString(React.createElement("div", null, renderBoldMarks(t)));
 
-describe("FAQ answer bold marks", () => {
+describe("FAQ answer bold marks (faqSection boldMarks: true)", () => {
   it("bolds **runs** and keeps the rest as text", () => {
     const out = html("**Dispatch begins 20 Nov.** Use the button.");
     expect(out).toContain("<strong");

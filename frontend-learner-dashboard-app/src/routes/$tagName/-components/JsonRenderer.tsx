@@ -1020,8 +1020,8 @@ const CategoryTilesRenderer: React.FC<any> = ({ headerText, subheading, features
 };
 
 /**
- * FAQ answers are plain text; `**text**` marks a bold run (e.g. a delivery date).
- * Split rather than parsed as HTML, so nothing else in the answer is interpreted.
+ * With faqSection `boldMarks: true` (opt-in), `**text**` in an answer marks a bold
+ * run. Split rather than parsed as HTML, so nothing else in the answer is interpreted.
  */
 export const renderBoldMarks = (text: unknown): React.ReactNode => {
   if (typeof text !== 'string' || !text.includes('**')) return text as React.ReactNode;
@@ -1030,7 +1030,7 @@ export const renderBoldMarks = (text: unknown): React.ReactNode => {
   );
 };
 
-const FaqSectionRenderer: React.FC<any> = ({ headerText, subheading, faqs = [], backgroundColor }) => {
+const FaqSectionRenderer: React.FC<any> = ({ headerText, subheading, faqs = [], backgroundColor, boldMarks = false }) => {
   const [openIndex, setOpenIndex] = React.useState<number | null>(null);
   const sectionUid = React.useId();
   const txt = sectionText(backgroundColor);
@@ -1060,7 +1060,7 @@ const FaqSectionRenderer: React.FC<any> = ({ headerText, subheading, faqs = [], 
                   aria-labelledby={`faq-trigger-${sectionUid}-${i}`}
                   className="border-t border-catalogue-border-subtle px-6 py-4 text-catalogue-text-secondary leading-relaxed"
                 >
-                  {renderBoldMarks(faq.answer)}
+                  {boldMarks ? renderBoldMarks(faq.answer) : faq.answer}
                 </div>
               )}
             </div>
@@ -2043,7 +2043,7 @@ const ResourceCard: React.FC<{ feature: any; index: number; gateAudienceId: stri
 };
 
 const FeatureGridRenderer: React.FC<any> = ({
-  headerText, subheading, columns = 3, features = [], style = 'cards', iconSize = 'large', backgroundColor, align,
+  headerText, subheading, columns = 3, features = [], style = 'cards', iconSize = 'large', imageFit = 'cover', backgroundColor, align,
   layout, gateAudienceId = '', gateTitle, gateAll = false, autoScroll = false, autoScrollIntervalMs, autoScrollLoop = false, filterParam,
 }) => {
   // 'carousel' rails (photo / resource) can advance on their own, one card at a time.
@@ -2372,9 +2372,9 @@ const FeatureGridRenderer: React.FC<any> = ({
                 {f.image ? (
                   // iconSize sizes a feature's own image too (a line icon at 160px read as
                   // clip art); 'large', the default, keeps the original 160px.
-                  // Small/medium are icons: contain them, since a non-square line
-                  // icon in the 1:1 box lost its left and right edges to cover.
-                  <img src={f.image} alt={f.title || ''} className={`${isLeft ? '' : 'mx-auto'} w-full ${iconSize === 'small' ? 'max-w-16 object-contain' : iconSize === 'medium' ? 'max-w-24 object-contain' : 'max-w-40 object-cover'} h-auto rounded-lg`} style={{ aspectRatio: '1/1' }} />
+                  // imageFit 'contain' (opt-in) keeps a non-square icon whole in the
+                  // 1:1 box; the default 'cover' crops it to fill, as before.
+                  <img src={f.image} alt={f.title || ''} className={`${isLeft ? '' : 'mx-auto'} w-full ${iconSize === 'small' ? 'max-w-16' : iconSize === 'medium' ? 'max-w-24' : 'max-w-40'} h-auto rounded-lg ${imageFit === 'contain' ? 'object-contain' : 'object-cover'}`} style={{ aspectRatio: '1/1' }} />
                 ) : IconComp ? (
                   <span className={`inline-flex items-center justify-center rounded-2xl bg-gradient-to-br from-primary-50 to-primary-100 ring-1 ring-primary-100 text-primary-500 transition-transform duration-300 ease-out group-hover:scale-105 ${iconSize === 'small' ? 'size-11 p-2.5' : iconSize === 'medium' ? 'size-12 p-3' : 'size-14 p-3.5'} ${isLeft ? '' : 'mx-auto'}`}>
                     <IconComp size={iconSize === 'small' ? 20 : iconSize === 'medium' ? 26 : 30} weight="duotone" aria-hidden="true" />

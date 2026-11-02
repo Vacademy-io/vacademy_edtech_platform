@@ -1046,7 +1046,7 @@ public class LearnerEnrollRequestService {
                     || !StringUtils.hasText(paymentLog.getUserId())) {
                 return null;
             }
-            EnrollInvite invite = enrollInviteService.findById(enrollDTO.getEnrollInviteId());
+            EnrollInvite invite = enrollInviteRepository.findById(enrollDTO.getEnrollInviteId()).orElse(null);
             if (invite == null || !vacademy.io.admin_core_service.features.product_page.service
                     .ProductPageAutoLoginService.isInviteEnabled(invite.getSettingJson())) {
                 return null;
