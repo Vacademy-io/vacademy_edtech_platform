@@ -1,6 +1,5 @@
 import { useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { EmptyReportIllustration } from '@/components/common/report-visuals/illustrations';
 import { useBrandColor } from '@/components/common/report-visuals/palette';
 import { getStudentReportSnapshotQuery } from '@/services/student-report-snapshot';
 import { ProfileError, ProfileSkeleton } from '../profile-ui';
@@ -62,20 +61,6 @@ export const StudentReportSnapshot = ({
         );
     }
 
-    if (!m.hasAnything) {
-        return (
-            <div className="flex flex-col items-center gap-2 py-6 text-center">
-                <EmptyReportIllustration brand={brand} className="w-40" />
-                <span className="text-sm font-semibold text-neutral-700">
-                    Nothing to report for these dates
-                </span>
-                <span className="max-w-xs text-xs text-neutral-500">
-                    No assessments, attendance or progress were recorded. Try a wider range.
-                </span>
-            </div>
-        );
-    }
-
     const props = { m, brand };
     return (
         <div className="flex flex-col gap-3">
@@ -89,11 +74,6 @@ export const StudentReportSnapshot = ({
             </div>
             <LearnerHero {...props} compact />
             <LearnerTiles {...props} narrow />
-            {!m.progress && !batchId && (
-                <p className="-mt-1 text-2xs text-neutral-500">
-                    Pick a batch to see course progress.
-                </p>
-            )}
             <SubjectsBlock {...props} />
             <TrendBlock {...props} />
             <TopicsBlock {...props} />

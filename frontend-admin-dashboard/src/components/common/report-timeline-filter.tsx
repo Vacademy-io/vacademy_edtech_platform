@@ -27,6 +27,8 @@ export type TimelinePreset =
     | 'THIS_MONTH'
     | 'LAST_MONTH'
     | 'LAST_30_DAYS'
+    | 'LAST_3_MONTHS'
+    | 'LAST_12_MONTHS'
     | 'CUSTOM';
 
 export interface TimelineValue {
@@ -47,6 +49,8 @@ const PRESET_LABELS: Record<TimelinePreset, string> = {
     THIS_MONTH: 'This month',
     LAST_MONTH: 'Last month',
     LAST_30_DAYS: 'Last 30 days',
+    LAST_3_MONTHS: 'Last 3 months',
+    LAST_12_MONTHS: 'Last 12 months',
     CUSTOM: 'Custom range',
 };
 
@@ -55,7 +59,7 @@ const WEEK_STARTS_ON = 1; // Monday
 
 const ymd = (d: Date) => format(d, 'yyyy-MM-dd');
 
-export const DEFAULT_TIMELINE: TimelineValue = { preset: 'THIS_MONTH' };
+export const DEFAULT_TIMELINE: TimelineValue = { preset: 'LAST_12_MONTHS' };
 
 /**
  * The range a timeline value covers, or null for an incomplete or inverted custom range.
@@ -88,6 +92,10 @@ export function resolveTimeline(
         }
         case 'LAST_30_DAYS':
             return { start: ymd(subDays(today, 29)), end: todayYmd };
+        case 'LAST_3_MONTHS':
+            return { start: ymd(subMonths(today, 3)), end: todayYmd };
+        case 'LAST_12_MONTHS':
+            return { start: ymd(subDays(today, 364)), end: todayYmd };
         case 'CUSTOM':
             if (!value.customStart || !value.customEnd || value.customStart > value.customEnd) {
                 return null;

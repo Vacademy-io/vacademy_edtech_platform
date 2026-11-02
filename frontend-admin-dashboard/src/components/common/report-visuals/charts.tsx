@@ -286,7 +286,7 @@ export const TrendChart = ({
     brand: string;
     height?: number;
     animate?: boolean;
-    /** A dashed horizontal guide, e.g. the pass mark. */
+    /** A dashed horizontal guide, e.g. a target score. */
     referenceAt?: number;
 }) => {
     const hasClass = data.some((d) => d.klass != null);

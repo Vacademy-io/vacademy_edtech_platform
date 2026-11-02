@@ -2310,6 +2310,24 @@ public interface ActivityLogRepository extends JpaRepository<ActivityLog, String
             @Param("endDate") java.sql.Timestamp endDate);
 
     /**
+     * Processed analysis JSON for a whole cohort within a date range, newest first and capped by
+     * maxRows. Used by the batch report to roll topic mastery up across a batch. Only the json
+     * column is read, so large cohorts stay cheap to load.
+     */
+    @Query(value = "SELECT processed_json FROM activity_log " +
+            "WHERE user_id IN (:userIds) " +
+            "AND status = 'processed' " +
+            "AND processed_json IS NOT NULL " +
+            "AND created_at BETWEEN :startDate AND :endDate " +
+            "ORDER BY created_at DESC " +
+            "LIMIT :maxRows", nativeQuery = true)
+    List<String> findProcessedJsonForUsers(
+            @Param("userIds") List<String> userIds,
+            @Param("startDate") java.sql.Timestamp startDate,
+            @Param("endDate") java.sql.Timestamp endDate,
+            @Param("maxRows") int maxRows);
+
+    /**
      * Student report raw detail: what the learner studied in a window, one row per slide —
      * [slide_id, title, slide_type, visits, engaged_minutes, max_percentage_watched,
      * first_seen, last_seen], most time first. The llm_* analytics rows are not study time

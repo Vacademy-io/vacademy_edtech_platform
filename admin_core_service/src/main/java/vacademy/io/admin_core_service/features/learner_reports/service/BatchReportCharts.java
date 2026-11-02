@@ -21,6 +21,9 @@ final class BatchReportCharts {
     record Slice(String label, double value, String color) {
     }
 
+    record Point(String label, double value) {
+    }
+
     private BatchReportCharts() {
     }
 
@@ -109,6 +112,44 @@ final class BatchReportCharts {
             }
         }
         s.append(text(x0, h - 6, "Average quiz score (%) · learners in each range", 10, false, MUTED, "start"));
+        return svg(w, h, s);
+    }
+
+    /** Average score per assessment as a line with dots and value labels, on a 0-100 scale. */
+    static String trend(List<Point> points, String brand, int w) {
+        int h = 190;
+        double x0 = 34, x1 = w - 14, top = 18, base = 150;
+        StringBuilder s = new StringBuilder();
+        for (int g = 0; g <= 4; g++) {
+            double y = base - (base - top) * g / 4.0;
+            s.append(line(x0, y, x1, y, LINE, 1));
+            s.append(text(x0 - 6, y + 3, (g * 25) + "%", 9, false, MUTED, "end"));
+        }
+        int n = points.size();
+        if (n == 0) return svg(w, h, s);
+        double step = n == 1 ? 0 : (x1 - x0 - 20) / (n - 1);
+        StringBuilder path = new StringBuilder();
+        double[][] xy = new double[n][2];
+        for (int i = 0; i < n; i++) {
+            double x = n == 1 ? (x0 + x1) / 2 : x0 + 10 + step * i;
+            double y = base - (base - top) * Math.max(0, Math.min(100, points.get(i).value())) / 100.0;
+            xy[i][0] = x;
+            xy[i][1] = y;
+            path.append(i == 0 ? "M" : " L").append(f(x)).append(' ').append(f(y));
+        }
+        if (n > 1) {
+            s.append("<path d=\"").append(path).append(" L").append(f(xy[n - 1][0])).append(' ').append(f(base))
+                    .append(" L").append(f(xy[0][0])).append(' ').append(f(base)).append(" Z\" fill=\"").append(brand)
+                    .append("\" fill-opacity=\"0.12\"/>");
+            s.append("<path d=\"").append(path).append("\" fill=\"none\" stroke=\"").append(brand).append("\" stroke-width=\"2.5\"/>");
+        }
+        int labelEvery = n > 8 ? 2 : 1;
+        for (int i = 0; i < n; i++) {
+            s.append("<circle cx=\"").append(f(xy[i][0])).append("\" cy=\"").append(f(xy[i][1])).append("\" r=\"4\" fill=\"")
+                    .append(brand).append("\" stroke=\"#ffffff\" stroke-width=\"1.5\"/>");
+            s.append(text(xy[i][0], xy[i][1] - 8, Math.round(points.get(i).value()) + "%", 9.5, true, INK, "middle"));
+            if (i % labelEvery == 0) s.append(text(xy[i][0], base + 15, points.get(i).label(), 9, false, MUTED, "middle"));
+        }
         return svg(w, h, s);
     }
 

@@ -12,6 +12,8 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import vacademy.io.assessment_service.features.learner_assessment.dto.internal.BatchAssessmentHistoryRequest;
 import vacademy.io.assessment_service.features.learner_assessment.dto.internal.BatchAssessmentHistoryResponse;
+import vacademy.io.assessment_service.features.learner_assessment.dto.internal.CohortAssessmentRequest;
+import vacademy.io.assessment_service.features.learner_assessment.dto.internal.CohortAssessmentResponse;
 import vacademy.io.assessment_service.features.learner_assessment.dto.internal.StudentAssessmentHistoryResponse;
 import vacademy.io.assessment_service.features.learner_assessment.service.StudentAnalysisInternalService;
 
@@ -97,5 +99,15 @@ public class StudentAnalysisInternalController {
                 studentAnalysisInternalService.fetchAssessmentHistoryBatch(request);
 
         return ResponseEntity.ok(response);
+    }
+
+    /**
+     * Cohort attempts for the admin batch report: body with instituteId, userIds (max 500),
+     * startDate and endDate (yyyy-MM-dd). Returns the latest ENDED attempt per learner and
+     * assessment in the window.
+     */
+    @PostMapping("/assessment-history/cohort")
+    public ResponseEntity<CohortAssessmentResponse> getCohortAttempts(@RequestBody CohortAssessmentRequest request) {
+        return ResponseEntity.ok(studentAnalysisInternalService.fetchCohortAttempts(request));
     }
 }

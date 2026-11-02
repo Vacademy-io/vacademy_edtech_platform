@@ -78,6 +78,53 @@ public class AssessmentServiceClient {
         }
     }
 
+    /** One learner's latest attempt on one assessment, from the cohort endpoint. */
+    public record CohortAttempt(String userId, String assessmentId, String assessmentName,
+                                String attemptAt, Double percentage) {
+    }
+
+    private static final int COHORT_CHUNK = 500;
+
+    /**
+     * Latest ENDED attempt of each learner on each assessment in [startDate, endDate], for the
+     * batch report. Users are sent in chunks of 500 (the endpoint limit). A failed chunk is
+     * logged and skipped, so one bad call leaves the rest of the report intact.
+     */
+    public List<CohortAttempt> fetchCohortAttempts(String instituteId, List<String> userIds,
+                                                   String startDate, String endDate) {
+        List<CohortAttempt> out = new ArrayList<>();
+        if (userIds == null || userIds.isEmpty()) return out;
+        for (int i = 0; i < userIds.size(); i += COHORT_CHUNK) {
+            List<String> chunk = userIds.subList(i, Math.min(userIds.size(), i + COHORT_CHUNK));
+            try {
+                java.util.Map<String, Object> body = java.util.Map.of(
+                        "instituteId", instituteId,
+                        "userIds", chunk,
+                        "startDate", startDate,
+                        "endDate", endDate);
+                ResponseEntity<String> response = internalClientUtils.makeHmacRequest(clientName, "POST",
+                        assessmentServiceBaseUrl, "/assessment-service/internal/student-analysis/assessment-history/cohort", body);
+                if (response == null || response.getStatusCode() != HttpStatus.OK || response.getBody() == null) {
+                    log.warn("[AssessmentServiceClient] cohort chunk returned {}", response == null ? null : response.getStatusCode());
+                    continue;
+                }
+                JsonNode attempts = objectMapper.readTree(response.getBody()).path("attempts");
+                if (!attempts.isArray()) continue;
+                for (JsonNode a : attempts) {
+                    out.add(new CohortAttempt(
+                            a.path("userId").asText(null),
+                            a.path("assessmentId").asText(null),
+                            a.path("assessmentName").asText(null),
+                            a.path("attemptAt").asText(null),
+                            nodeAsDouble(a, "percentage")));
+                }
+            } catch (Exception e) {
+                log.warn("[AssessmentServiceClient] cohort chunk failed for institute={}: {}", instituteId, e.getMessage());
+            }
+        }
+        return out;
+    }
+
     private AssessmentHistoryResponse parseResponse(String body) {
         try {
             JsonNode root = objectMapper.readTree(body);
