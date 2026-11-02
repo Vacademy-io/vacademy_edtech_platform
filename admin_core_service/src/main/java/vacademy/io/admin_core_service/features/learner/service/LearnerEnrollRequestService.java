@@ -118,6 +118,9 @@ public class LearnerEnrollRequestService {
     private LearnerCouponService learnerCouponService;
 
     @Autowired
+    private vacademy.io.admin_core_service.features.product_page.service.ProductPageAutoLoginService autoLoginService;
+
+    @Autowired
     private CouponValidationService couponValidationService;
 
     @Autowired
@@ -1024,7 +1027,39 @@ public class LearnerEnrollRequestService {
         response.setUser(user);
         response.setPaymentResponse(paymentResponse);
         response.setUserPlanId(paymentLog.getUserPlan().getId());
+        response.setLoginCode(issueInviteLoginCode(
+                learnerEnrollRequestDTO.getLearnerPackageSessionEnroll(), paymentLog, instituteId));
         return response;
+    }
+
+    /**
+     * One-time login code so the buyer lands inside the course instead of on "check your
+     * email" (invite setting postformfillConfiguration.autoLoginAfterPayment). The account is
+     * read from auth by the payment log's user, never from the request, so the never-logged-in
+     * check sees the real account. Never throws: the payment is already taken.
+     */
+    private String issueInviteLoginCode(LearnerPackageSessionsEnrollDTO enrollDTO,
+            vacademy.io.admin_core_service.features.user_subscription.entity.PaymentLog paymentLog,
+            String instituteId) {
+        try {
+            if (enrollDTO == null || !StringUtils.hasText(enrollDTO.getEnrollInviteId())
+                    || !StringUtils.hasText(paymentLog.getUserId())) {
+                return null;
+            }
+            EnrollInvite invite = enrollInviteService.findById(enrollDTO.getEnrollInviteId());
+            if (invite == null || !vacademy.io.admin_core_service.features.product_page.service
+                    .ProductPageAutoLoginService.isInviteEnabled(invite.getSettingJson())) {
+                return null;
+            }
+            List<UserDTO> users = authService.getUsersFromAuthServiceByUserIds(List.of(paymentLog.getUserId()));
+            if (users == null || users.isEmpty()) {
+                return null;
+            }
+            return autoLoginService.issueForInvite(invite, paymentLog.getId(), users.get(0), instituteId);
+        } catch (Exception e) {
+            log.warn("Invite auto-login code not issued for payment log {}: {}", paymentLog.getId(), e.getMessage());
+            return null;
+        }
     }
 
     private EnrollInvite getValidatedEnrollInvite(String enrollInviteId) {
