@@ -68,28 +68,43 @@ public class RevenueReportService {
      * SAME way the rest of the report suite resolves it: the enquiry counsellor on the lead's
      * representative response (best_score_response_id → linked_users), falling back to the lead
      * profile's assigned_counselor_id. assigned_counselor_id alone is almost never populated, so
-     * scoping on it would zero out every scoped (non-admin) caller. Source falls back
-     * best_source_type → representative-response source_type → 'UNKNOWN'.
+     * scoping on it would zero out every scoped (non-admin) caller. Source = the student's first
+     * enquiry, see {@link #leadAttribution}.
      */
-    private static final String CONV_CTE = """
-            conv AS (
+    private static final String CONV_CTE = "conv AS (" + leadAttribution(true) + ")\n";
+
+    /**
+     * Every lead profile of the institute (converted or not), attributed like {@link #CONV_CTE}.
+     * Booked admissions count every enrolled student, as the Admissions tab does, not only the
+     * ones whose pipeline status still reads CONVERTED.
+     */
+    private static final String LEAD_ALL_CTE = "lead_all AS (" + leadAttribution(false) + ")\n";
+
+    /**
+     * Lead attribution: source = the student's first enquiry (its campaign type), counsellor = the
+     * enquiry counsellor on the profile's best-scoring response, falling back to
+     * assigned_counselor_id.
+     */
+    private static String leadAttribution(boolean convertedOnly) {
+        return """
                 SELECT ulp.user_id,
-                       """ + ReportSourceSql.effective("COALESCE(ulp.best_source_type, ar.source_type)", "sa.campaign_type") + """
+                       """ + ReportSourceSql.firstEnquirySource("fe", "ulp.best_source_type") + """
                            AS source_type,
                        COALESCE(lu.user_id, ulp.assigned_counselor_id)           AS counsellor_id
                 FROM user_lead_profile ulp
                 LEFT JOIN audience_response ar ON ar.id = ulp.best_score_response_id
-                LEFT JOIN audience sa ON sa.id = ar.audience_id
+                """ + ReportSourceSql.firstEnquiryJoin("fe", "ulp.user_id", "ulp.institute_id") + """
                 LEFT JOIN LATERAL (
                     SELECT lu2.user_id FROM linked_users lu2
                     WHERE lu2.source = 'ENQUIRY' AND lu2.source_id = ar.enquiry_id
                     ORDER BY lu2.created_at DESC LIMIT 1
                 ) lu ON true
                 WHERE ulp.institute_id = :instituteId
+                """ + (convertedOnly ? """
                   AND ulp.conversion_status = 'CONVERTED'
                   AND (:scopeCsv IS NULL OR COALESCE(lu.user_id, ulp.assigned_counselor_id) = ANY(STRING_TO_ARRAY(:scopeCsv, ',')))
-            )
-            """;
+                """ : "");
+    }
 
     /** PAID payments in-window from the scoped converted leads. payment_amount NOT NULL keeps SUM/COUNT aligned. */
     private static final String PAID_CTE = """
@@ -142,7 +157,7 @@ public class RevenueReportService {
             """;
 
     /**
-     * Admissions + booked fee: converted leads ENROLLED in the window (institute-TZ enrolled_date,
+     * Admissions + booked fee: students ENROLLED in the window (institute-TZ enrolled_date,
      * falling back to the mapping's created_at) and the full fee on those enrolments' plans,
      * whatever has been collected so far — the admissions view counsellors are judged on, as
      * opposed to {@link #PAID_CTE}'s cash-in-window. One plan can back several mappings, so
@@ -151,11 +166,13 @@ public class RevenueReportService {
      */
     private static final String BOOKED_CTE = """
             enr AS (
-                SELECT DISTINCT c.user_id, c.counsellor_id, s.user_plan_id
+                SELECT DISTINCT s.user_id, c.counsellor_id, s.user_plan_id
                 FROM student_session_institute_group_mapping s
-                JOIN conv c ON c.user_id = s.user_id
+                LEFT JOIN lead_all c ON c.user_id = s.user_id
                 WHERE s.institute_id = :instituteId
+                  AND (:scopeCsv IS NULL OR c.counsellor_id = ANY(STRING_TO_ARRAY(:scopeCsv, ',')))
                   AND s.status IN ('ACTIVE', 'COMPLETED', 'INVITED')
+                  AND NOT (s.status = 'INVITED' AND COALESCE(s.source, '') = 'TERMINATED')
                   AND COALESCE(s.enrolled_date, (s.created_at AT TIME ZONE 'UTC' AT TIME ZONE :tz)::date) >= :fromDay
                   AND COALESCE(s.enrolled_date, (s.created_at AT TIME ZONE 'UTC' AT TIME ZONE :tz)::date) <  :toDay
             ),
@@ -175,13 +192,13 @@ public class RevenueReportService {
             )
             """;
 
-    private static final String BOOKED_TOTALS_SQL = "WITH " + CONV_CTE + ", " + BOOKED_CTE + """
+    private static final String BOOKED_TOTALS_SQL = "WITH " + LEAD_ALL_CTE + ", " + BOOKED_CTE + """
             SELECT COUNT(*)              AS admissions,
                    COALESCE(SUM(fee), 0) AS booked_revenue
             FROM booked
             """;
 
-    private static final String BOOKED_BY_COUNSELLOR_SQL = "WITH " + CONV_CTE + ", " + BOOKED_CTE + """
+    private static final String BOOKED_BY_COUNSELLOR_SQL = "WITH " + LEAD_ALL_CTE + ", " + BOOKED_CTE + """
             SELECT counsellor_id         AS user_id,
                    COUNT(*)              AS admissions,
                    COALESCE(SUM(fee), 0) AS booked_revenue

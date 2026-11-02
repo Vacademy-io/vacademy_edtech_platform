@@ -48,6 +48,7 @@ public class LeadReportService {
     private final vacademy.io.admin_core_service.features.counsellor_workbench.service.CounsellorScopeService counsellorScopeService;
     private final LeadReportSettingService settingService;
     private final LeadDeduplicationService leadDeduplicationService;
+    private final AdmissionReportService admissionReportService;
 
     private static final int DEFAULT_RANGE_DAYS = 30;
 
@@ -202,11 +203,19 @@ public class LeadReportService {
         // Zero rows are appended after the data-driven ones (below).
         List<String> scopedCounsellors = scopedActiveCounsellors(instituteId, scopeCsv);
 
+        // Conversions = admissions in the window (per student x month, exactly as the Admissions
+        // tab counts them) credited to the admission's counsellor, so this column, the Admissions
+        // tab and the Revenue tab's admissions agree.
+        Map<String, Long> admissionsByCounsellor = admissionsByCounsellor(instituteId, fromDate, toDate,
+                scopeCsv, trimToNull(audienceId), trimToNull(sourceType));
+
         // Batch-resolve counsellor names (one call to auth-service for all ids
         // in the result AND the zero-padded roster).
         Map<String, String> nameById = Collections.emptyMap();
         List<String> ids = java.util.stream.Stream.concat(
-                        raw.stream().map(LeadReportProjections.CounselorRowProjection::getCounselorId),
+                        java.util.stream.Stream.concat(
+                                raw.stream().map(LeadReportProjections.CounselorRowProjection::getCounselorId),
+                                admissionsByCounsellor.keySet().stream()),
                         scopedCounsellors.stream())
                 .filter(s -> s != null && !s.isBlank()).distinct().collect(Collectors.toList());
         if (!ids.isEmpty()) {
@@ -225,7 +234,7 @@ public class LeadReportService {
         List<CounselorPerformanceDTO.Row> rows = raw.stream().map(r -> {
             long assigned = nz(r.getLeadsAssigned());
             long responded = nz(r.getLeadsResponded());
-            long conversions = nz(r.getConversions());
+            long conversions = admissionsByCounsellor.getOrDefault(r.getCounselorId(), 0L);
             Long tatMet = tatMinutes == null ? null : r.getTatMetCount();
             return CounselorPerformanceDTO.Row.builder()
                     .counselorId(r.getCounselorId())
@@ -249,8 +258,14 @@ public class LeadReportService {
         Set<String> presentIds = rows.stream()
                 .map(CounselorPerformanceDTO.Row::getCounselorId)
                 .collect(Collectors.toSet());
-        scopedCounsellors.stream()
-                .filter(id -> !presentIds.contains(id))
+        // Counsellors with admissions but no lead in the window (an older lead converting now)
+        // come first among the appended rows, then the scoped roster with nothing at all.
+        java.util.stream.Stream.concat(
+                        admissionsByCounsellor.keySet().stream()
+                                .filter(id -> !presentIds.contains(id))
+                                .sorted(),
+                        scopedCounsellors.stream()
+                                .filter(id -> !presentIds.contains(id) && !admissionsByCounsellor.containsKey(id)))
                 .map(id -> CounselorPerformanceDTO.Row.builder()
                         .counselorId(id)
                         .counselorName(Optional.ofNullable(nameByIdFinal.get(id))
@@ -258,7 +273,7 @@ public class LeadReportService {
                                 .orElse(id))
                         .leadsAssigned(0)
                         .leadsResponded(0)
-                        .conversions(0)
+                        .conversions(admissionsByCounsellor.getOrDefault(id, 0L))
                         .conversionRate(null)
                         .avgResponseMinutes(null)
                         .tatMetCount(tatMinutes == null ? null : 0L)
@@ -266,8 +281,8 @@ public class LeadReportService {
                         .openLeads(0)
                         .overdueLeads(0)
                         .build())
-                .sorted(Comparator.comparing(CounselorPerformanceDTO.Row::getCounselorName,
-                        String.CASE_INSENSITIVE_ORDER))
+                .sorted(Comparator.comparing((CounselorPerformanceDTO.Row r) -> r.getConversions() == 0)
+                        .thenComparing(CounselorPerformanceDTO.Row::getCounselorName, String.CASE_INSENSITIVE_ORDER))
                 .forEach(rows::add);
 
         // Summary: weighted averages so a few heavy counsellors don't get equal weight to outliers.
@@ -293,6 +308,25 @@ public class LeadReportService {
                 .rows(rows)
                 .summary(summary)
                 .build();
+    }
+
+    /**
+     * Admissions in the window per counsellor, from the Admissions tab's own rows. The list and
+     * source filters apply to the student's first enquiry (its list, its source), the same
+     * attribution every admission figure uses. Admissions with no counsellor are left out, as
+     * they have no row here.
+     */
+    private Map<String, Long> admissionsByCounsellor(String instituteId, String fromDate, String toDate,
+                                                     String scopeCsv, String audienceId, String sourceType) {
+        Map<String, Long> out = new java.util.HashMap<>();
+        for (AdmissionReportService.AdmissionRow a : admissionReportService.admissionRows(
+                instituteId, fromDate, toDate, scopeCsv)) {
+            if (a.counsellorId() == null || a.counsellorId().isBlank()) continue;
+            if (audienceId != null && !audienceId.equals(a.firstAudienceId())) continue;
+            if (sourceType != null && !sourceType.equalsIgnoreCase(a.source())) continue;
+            out.merge(a.counsellorId(), 1L, Long::sum);
+        }
+        return out;
     }
 
     // ─────────────────────────────────────────────────────────────────────

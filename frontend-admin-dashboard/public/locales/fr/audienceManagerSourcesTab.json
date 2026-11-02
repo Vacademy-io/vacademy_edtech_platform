@@ -21,6 +21,7 @@
     },
     "footnote": {
         "connected": "Joints = prospects ayant reçu au moins un appel connecté (selon vos paramètres de téléphonie).",
-        "interested": "Intéressés = prospects passés en statut « intéressé » sur cette période."
+        "interested": "Intéressés = prospects passés en statut « intéressé » sur cette période.",
+        "won": "Gagnés = inscriptions sur cette période, attribuées à la source de la première demande de l'élève ; Conv % = gagnés ÷ prospects de cette source sur la période."
     }
 }
