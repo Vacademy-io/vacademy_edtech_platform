@@ -65,5 +65,10 @@
             "language": "Language mark",
             "other": "Mark"
         }
+    },
+    "manual": {
+        "remarksFor": "Remarks for Q{{number}}",
+        "remarksPlaceholder": "Remarks for this question (optional)",
+        "overallRemarks": "Remarks"
     }
 }

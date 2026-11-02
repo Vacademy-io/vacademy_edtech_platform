@@ -65,5 +65,10 @@
             "language": "Marque de langue",
             "other": "Marque"
         }
+    },
+    "manual": {
+        "remarksFor": "Remarques pour Q{{number}}",
+        "remarksPlaceholder": "Remarques pour cette question (facultatif)",
+        "overallRemarks": "Remarques"
     }
 }

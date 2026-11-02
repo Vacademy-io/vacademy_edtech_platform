@@ -65,5 +65,10 @@
             "language": "علامة لغوية",
             "other": "علامة"
         }
+    },
+    "manual": {
+        "remarksFor": "ملاحظات السؤال {{number}}",
+        "remarksPlaceholder": "ملاحظات لهذا السؤال (اختياري)",
+        "overallRemarks": "الملاحظات"
     }
 }

@@ -65,5 +65,10 @@
             "language": "भाषा चिह्न",
             "other": "चिह्न"
         }
+    },
+    "manual": {
+        "remarksFor": "प्रश्न {{number}} की टिप्पणी",
+        "remarksPlaceholder": "इस प्रश्न के लिए टिप्पणी (वैकल्पिक)",
+        "overallRemarks": "टिप्पणियाँ"
     }
 }
