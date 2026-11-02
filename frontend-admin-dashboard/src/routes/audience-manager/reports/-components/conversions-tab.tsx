@@ -6,7 +6,7 @@
  * strip, a per-counsellor summary, and the lead-level rows behind it. Clicking a counsellor narrows
  * the lead list to their leads; both tables export to CSV.
  */
-import { useMemo, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { GraduationCap, ListBullets, UserCheck, Users, X } from '@phosphor-icons/react';
@@ -62,6 +62,7 @@ export function ConversionsTab({
     const [leadDir, setLeadDir] = useState<'asc' | 'desc'>('desc');
     const [selected, setSelected] = useState<string | null>(null);
     const [visible, setVisible] = useState(PAGE_SIZE);
+    const leadsRef = useRef<HTMLDivElement>(null);
 
     const unassignedLabel = t('unassigned');
 
@@ -110,8 +111,14 @@ export function ConversionsTab({
         }
     };
     const selectCounsellor = (key: string) => {
-        setSelected((cur) => (cur === key ? null : key));
+        const selecting = selected !== key;
+        setSelected(selecting ? key : null);
         setVisible(PAGE_SIZE);
+        // Picking a counsellor filters the lead list below — take the admin straight to it.
+        if (selecting)
+            requestAnimationFrame(() =>
+                leadsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+            );
     };
 
     return (
@@ -236,168 +243,170 @@ export function ConversionsTab({
                 )}
             </ReportSection>
 
-            <ReportSection
-                title={t('leads.title')}
-                icon={<ListBullets size={18} />}
-                actions={
-                    <ExportWithColumnPickerButton
-                        filename={`converted-leads_${fromDate}_${toDate}.csv`}
-                        disabled={leads.length === 0}
-                        getHeadersAndRows={() => ({
-                            headers: [
-                                t('column.lead'),
-                                t('column.phone'),
-                                t('column.email'),
-                                t('column.course'),
-                                t('column.enrolledAt'),
-                                t('column.enrolmentStatus'),
-                                t('column.counsellor'),
-                                t('column.campaign'),
-                                t('column.source'),
-                            ],
-                            rows: leads.map((r) => [
-                                r.lead_name ?? r.user_id,
-                                r.phone,
-                                r.email,
-                                r.course_name,
-                                fmtDateTime(r.enrolled_at),
-                                r.enrolment_status,
-                                r.counsellor_id == null ? unassignedLabel : r.counsellor_name,
-                                r.campaign_name,
-                                r.source_type,
-                            ]),
-                        })}
-                    />
-                }
-            >
-                {selectedRow && (
-                    <div className="flex items-center gap-2">
-                        <span className="inline-flex items-center gap-1 rounded-full border border-primary-200 bg-primary-50 px-2.5 py-0.5 text-xs font-medium text-primary-700">
-                            {t('leads.filteredBy', { name: selectedRow.name })}
-                            <button
-                                type="button"
-                                onClick={() => setSelected(null)}
-                                aria-label={t('leads.clearFilter')}
-                                className="rounded-full hover:bg-primary-100"
-                            >
-                                <X size={11} weight="bold" />
-                            </button>
-                        </span>
-                    </div>
-                )}
-                {truncated && (
-                    <p className="text-xs text-amber-700">{t('leads.truncated', { count: 5000 })}</p>
-                )}
-                {leads.length === 0 ? (
-                    <EmptyHint message={t('empty.noConversions')} />
-                ) : (
-                    <>
-                        <div className="overflow-x-auto">
-                            <table className="w-full text-sm">
-                                <thead>
-                                    <tr className="border-b border-neutral-200 text-left text-xs font-semibold uppercase tracking-wide text-neutral-600 whitespace-nowrap">
-                                        <SortableHeader
-                                            label={t('column.lead')}
-                                            sortKey="lead_name"
-                                            current={leadSort}
-                                            dir={leadDir}
-                                            onClick={toggleLead}
-                                            align="left"
-                                        />
-                                        <SortableHeader
-                                            label={t('column.course')}
-                                            sortKey="course_name"
-                                            current={leadSort}
-                                            dir={leadDir}
-                                            onClick={toggleLead}
-                                            align="left"
-                                        />
-                                        <SortableHeader
-                                            label={t('column.enrolledAt')}
-                                            sortKey="enrolled_at"
-                                            current={leadSort}
-                                            dir={leadDir}
-                                            onClick={toggleLead}
-                                            align="left"
-                                        />
-                                        <SortableHeader
-                                            label={t('column.counsellor')}
-                                            sortKey="counsellor_name"
-                                            current={leadSort}
-                                            dir={leadDir}
-                                            onClick={toggleLead}
-                                            align="left"
-                                        />
-                                        <SortableHeader
-                                            label={t('column.campaign')}
-                                            sortKey="campaign_name"
-                                            current={leadSort}
-                                            dir={leadDir}
-                                            onClick={toggleLead}
-                                            align="left"
-                                        />
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {leads.slice(0, visible).map((r: ConversionLeadRow) => (
-                                        <tr
-                                            key={r.enrolment_id}
-                                            className="border-b border-neutral-100 align-top last:border-0 hover:bg-neutral-50"
-                                        >
-                                            <td className="min-w-48 py-3 pr-3">
-                                                <div className="font-medium text-neutral-900">
-                                                    {r.lead_name ?? r.user_id}
-                                                </div>
-                                                {(r.phone || r.email) && (
-                                                    <div className="text-xs text-neutral-500">
-                                                        {r.phone ?? r.email}
-                                                    </div>
-                                                )}
-                                            </td>
-                                            <td className="min-w-56 py-3 pr-3 text-neutral-800">
-                                                {r.course_name ?? '—'}
-                                            </td>
-                                            <td className="whitespace-nowrap py-3 pr-3 text-neutral-800">
-                                                {fmtDateTime(r.enrolled_at)}
-                                            </td>
-                                            <td
-                                                className={cn(
-                                                    'whitespace-nowrap py-3 pr-3',
-                                                    r.counsellor_id == null
-                                                        ? 'italic text-neutral-500'
-                                                        : 'text-neutral-800'
-                                                )}
-                                            >
-                                                {r.counsellor_id == null
-                                                    ? unassignedLabel
-                                                    : r.counsellor_name ?? r.counsellor_id}
-                                            </td>
-                                            <td className="py-3 pr-3 text-neutral-800">
-                                                <div>{r.campaign_name ?? '—'}</div>
-                                                {r.source_type && (
-                                                    <div className="text-xs text-neutral-500">
-                                                        {r.source_type}
-                                                    </div>
-                                                )}
-                                            </td>
-                                        </tr>
-                                    ))}
-                                </tbody>
-                            </table>
+            <div ref={leadsRef} className="scroll-mt-4">
+                <ReportSection
+                    title={t('leads.title')}
+                    icon={<ListBullets size={18} />}
+                    actions={
+                        <ExportWithColumnPickerButton
+                            filename={`converted-leads_${fromDate}_${toDate}.csv`}
+                            disabled={leads.length === 0}
+                            getHeadersAndRows={() => ({
+                                headers: [
+                                    t('column.lead'),
+                                    t('column.phone'),
+                                    t('column.email'),
+                                    t('column.course'),
+                                    t('column.enrolledAt'),
+                                    t('column.enrolmentStatus'),
+                                    t('column.counsellor'),
+                                    t('column.campaign'),
+                                    t('column.source'),
+                                ],
+                                rows: leads.map((r) => [
+                                    r.lead_name ?? r.user_id,
+                                    r.phone,
+                                    r.email,
+                                    r.course_name,
+                                    fmtDateTime(r.enrolled_at),
+                                    r.enrolment_status,
+                                    r.counsellor_id == null ? unassignedLabel : r.counsellor_name,
+                                    r.campaign_name,
+                                    r.source_type,
+                                ]),
+                            })}
+                        />
+                    }
+                >
+                    {selectedRow && (
+                        <div className="flex items-center gap-2">
+                            <span className="inline-flex items-center gap-1 rounded-full border border-primary-200 bg-primary-50 px-2.5 py-0.5 text-xs font-medium text-primary-700">
+                                {t('leads.filteredBy', { name: selectedRow.name })}
+                                <button
+                                    type="button"
+                                    onClick={() => setSelected(null)}
+                                    aria-label={t('leads.clearFilter')}
+                                    className="rounded-full hover:bg-primary-100"
+                                >
+                                    <X size={11} weight="bold" />
+                                </button>
+                            </span>
                         </div>
-                        {leads.length > visible && (
-                            <button
-                                type="button"
-                                onClick={() => setVisible((v) => v + PAGE_SIZE)}
-                                className="self-center rounded-md border border-neutral-200 px-3 py-1 text-xs text-neutral-700 hover:bg-neutral-50"
-                            >
-                                {t('leads.showMore', { shown: visible, total: leads.length })}
-                            </button>
-                        )}
-                    </>
-                )}
-                <p className="text-xs text-neutral-400">{t('leads.footnote')}</p>
-            </ReportSection>
+                    )}
+                    {truncated && (
+                        <p className="text-xs text-amber-700">{t('leads.truncated', { count: 5000 })}</p>
+                    )}
+                    {leads.length === 0 ? (
+                        <EmptyHint message={t('empty.noConversions')} />
+                    ) : (
+                        <>
+                            <div className="overflow-x-auto">
+                                <table className="w-full text-sm">
+                                    <thead>
+                                        <tr className="border-b border-neutral-200 text-left text-xs font-semibold uppercase tracking-wide text-neutral-600 whitespace-nowrap">
+                                            <SortableHeader
+                                                label={t('column.lead')}
+                                                sortKey="lead_name"
+                                                current={leadSort}
+                                                dir={leadDir}
+                                                onClick={toggleLead}
+                                                align="left"
+                                            />
+                                            <SortableHeader
+                                                label={t('column.course')}
+                                                sortKey="course_name"
+                                                current={leadSort}
+                                                dir={leadDir}
+                                                onClick={toggleLead}
+                                                align="left"
+                                            />
+                                            <SortableHeader
+                                                label={t('column.enrolledAt')}
+                                                sortKey="enrolled_at"
+                                                current={leadSort}
+                                                dir={leadDir}
+                                                onClick={toggleLead}
+                                                align="left"
+                                            />
+                                            <SortableHeader
+                                                label={t('column.counsellor')}
+                                                sortKey="counsellor_name"
+                                                current={leadSort}
+                                                dir={leadDir}
+                                                onClick={toggleLead}
+                                                align="left"
+                                            />
+                                            <SortableHeader
+                                                label={t('column.campaign')}
+                                                sortKey="campaign_name"
+                                                current={leadSort}
+                                                dir={leadDir}
+                                                onClick={toggleLead}
+                                                align="left"
+                                            />
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {leads.slice(0, visible).map((r: ConversionLeadRow) => (
+                                            <tr
+                                                key={r.enrolment_id}
+                                                className="border-b border-neutral-100 align-top last:border-0 hover:bg-neutral-50"
+                                            >
+                                                <td className="min-w-48 py-3 pr-3">
+                                                    <div className="font-medium text-neutral-900">
+                                                        {r.lead_name ?? r.user_id}
+                                                    </div>
+                                                    {(r.phone || r.email) && (
+                                                        <div className="text-xs text-neutral-500">
+                                                            {r.phone ?? r.email}
+                                                        </div>
+                                                    )}
+                                                </td>
+                                                <td className="min-w-56 py-3 pr-3 text-neutral-800">
+                                                    {r.course_name ?? '—'}
+                                                </td>
+                                                <td className="whitespace-nowrap py-3 pr-3 text-neutral-800">
+                                                    {fmtDateTime(r.enrolled_at)}
+                                                </td>
+                                                <td
+                                                    className={cn(
+                                                        'whitespace-nowrap py-3 pr-3',
+                                                        r.counsellor_id == null
+                                                            ? 'italic text-neutral-500'
+                                                            : 'text-neutral-800'
+                                                    )}
+                                                >
+                                                    {r.counsellor_id == null
+                                                        ? unassignedLabel
+                                                        : r.counsellor_name ?? r.counsellor_id}
+                                                </td>
+                                                <td className="py-3 pr-3 text-neutral-800">
+                                                    <div>{r.campaign_name ?? '—'}</div>
+                                                    {r.source_type && (
+                                                        <div className="text-xs text-neutral-500">
+                                                            {r.source_type}
+                                                        </div>
+                                                    )}
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                            {leads.length > visible && (
+                                <button
+                                    type="button"
+                                    onClick={() => setVisible((v) => v + PAGE_SIZE)}
+                                    className="self-center rounded-md border border-neutral-200 px-3 py-1 text-xs text-neutral-700 hover:bg-neutral-50"
+                                >
+                                    {t('leads.showMore', { shown: visible, total: leads.length })}
+                                </button>
+                            )}
+                        </>
+                    )}
+                    <p className="text-xs text-neutral-400">{t('leads.footnote')}</p>
+                </ReportSection>
+            </div>
         </div>
     );
 }
