@@ -632,6 +632,7 @@ function ManageSubscriptions({
     // wording that names no period at all, rather than implying a year.
     const period = planPeriodOf(sub.plan_validity_days);
     const priceLabel = formatPrice(sub.plan_price, sub.currency);
+    const accessUntil = formatDate(sub.end_date);
     const hasEnded = sub.status === "EXPIRED" || sub.status === "PAYMENT_FAILED";
     const billed = period ? periodInMonths(period) : null;
     return (
