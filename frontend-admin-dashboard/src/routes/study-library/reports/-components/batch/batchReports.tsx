@@ -25,7 +25,10 @@ export default function BatchReports({ packageSessionId, courseId }: BatchReport
     const { t } = useTranslation('studyLibraryBatchReports');
     // Per-role Display Setting (Settings → Display → Course Page Settings).
     // Defaults to on, so existing institutes keep the tab without touching config.
-    const showLearnerProgress = useLearnerProgressReportEnabled();
+    // Learning Reports (no batch from the page) shows only Overview and AI Analysis; Course
+    // Details → Reports keeps the per-batch progress and timeline tabs.
+    const coursePage = !!packageSessionId;
+    const showLearnerProgress = useLearnerProgressReportEnabled() && coursePage;
 
     return (
         <div className="w-full">
@@ -51,6 +54,7 @@ export default function BatchReports({ packageSessionId, courseId }: BatchReport
                                 })}
                             </TabsTrigger>
                         )}
+                        {coursePage && (
                         <TabsTrigger
                             value="timeline"
                             className="flex items-center gap-2 px-4 py-2.5 text-sm font-medium rounded-md transition-all duration-200 data-[state=active]:bg-primary-500 data-[state=active]:text-white data-[state=active]:shadow-sm hover:bg-primary-50 hover:text-primary-600"
@@ -60,8 +64,10 @@ export default function BatchReports({ packageSessionId, courseId }: BatchReport
                             </svg>
                             {t('learningTimeline')}
                         </TabsTrigger>
-                        <TabsTrigger 
-                            value="progress" 
+                        )}
+                        {coursePage && (
+                        <TabsTrigger
+                            value="progress"
                             className="flex items-center gap-2 px-4 py-2.5 text-sm font-medium rounded-md transition-all duration-200 data-[state=active]:bg-primary-500 data-[state=active]:text-white data-[state=active]:shadow-sm hover:bg-primary-50 hover:text-primary-600"
                         >
                             <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -69,6 +75,7 @@ export default function BatchReports({ packageSessionId, courseId }: BatchReport
                             </svg>
                             {t('learningProgress')}
                         </TabsTrigger>
+                        )}
                         <TabsTrigger
                             value="ai-analysis"
                             className="flex items-center gap-2 px-4 py-2.5 text-sm font-medium rounded-md transition-all duration-200 data-[state=active]:bg-primary-500 data-[state=active]:text-white data-[state=active]:shadow-sm hover:bg-primary-50 hover:text-primary-600"
@@ -101,6 +108,7 @@ export default function BatchReports({ packageSessionId, courseId }: BatchReport
                         </TabsContent>
                     )}
 
+                    {coursePage && (
                     <TabsContent value="timeline" className="mt-0 p-6 focus-visible:outline-none">
                         <TimelineReports
                             fixedPackageSessionId={packageSessionId}
@@ -108,12 +116,17 @@ export default function BatchReports({ packageSessionId, courseId }: BatchReport
                         />
                     </TabsContent>
                     
+                    )}
+
+                    {coursePage && (
                     <TabsContent value="progress" className="mt-0 p-6 focus-visible:outline-none">
                         <ProgressReports
                             fixedPackageSessionId={packageSessionId}
                             fixedCourseId={courseId}
                         />
                     </TabsContent>
+
+                    )}
 
                     <TabsContent value="ai-analysis" className="mt-0 p-6 focus-visible:outline-none">
                         <BatchAiAnalysis fixedPackageSessionId={packageSessionId} />

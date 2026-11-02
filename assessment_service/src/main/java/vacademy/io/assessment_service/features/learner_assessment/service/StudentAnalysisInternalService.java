@@ -69,6 +69,9 @@ public class StudentAnalysisInternalService {
     /** Default look-back window (days) for the batch endpoint when sinceDays is omitted. */
     static final int DEFAULT_SINCE_DAYS = 90;
 
+    /** Row cap for the institute-wide cohort query (all-batches report). */
+    static final int MAX_INSTITUTE_ATTEMPTS = 100_000;
+
     @Autowired
     private StudentAttemptRepository studentAttemptRepository;
 
@@ -198,16 +201,15 @@ public class StudentAnalysisInternalService {
 
     /**
      * Cohort attempts for the admin batch report: the latest ENDED attempt of each learner on
-     * each assessment in [startDate, endDate]. Max {@value #MAX_BATCH_USERS} learners per call.
+     * each assessment in [startDate, endDate]. Max {@value #MAX_BATCH_USERS} learners per call;
+     * with no userIds, every learner of the institute (capped at {@value #MAX_INSTITUTE_ATTEMPTS} rows).
      */
     public CohortAssessmentResponse fetchCohortAttempts(CohortAssessmentRequest request) {
         if (request == null || request.getInstituteId() == null || request.getInstituteId().isBlank()) {
             throw new VacademyException(HttpStatus.BAD_REQUEST, "instituteId is required");
         }
-        if (request.getUserIds() == null || request.getUserIds().isEmpty()) {
-            return CohortAssessmentResponse.builder().attempts(List.of()).build();
-        }
-        if (request.getUserIds().size() > MAX_BATCH_USERS) {
+        boolean instituteWide = request.getUserIds() == null || request.getUserIds().isEmpty();
+        if (!instituteWide && request.getUserIds().size() > MAX_BATCH_USERS) {
             throw new VacademyException(HttpStatus.BAD_REQUEST,
                     "userIds exceeds the maximum of " + MAX_BATCH_USERS + " per call");
         }
@@ -222,19 +224,26 @@ public class StudentAnalysisInternalService {
         if (start.isAfter(end)) {
             throw new VacademyException(HttpStatus.BAD_REQUEST, "startDate is after endDate");
         }
-        Set<String> ids = new LinkedHashSet<>();
-        for (String id : request.getUserIds()) {
-            if (id != null && !id.isBlank()) ids.add(id);
-        }
-        if (ids.isEmpty()) {
-            return CohortAssessmentResponse.builder().attempts(List.of()).build();
-        }
         Date from = Date.from(start.atStartOfDay(ZoneId.systemDefault()).toInstant());
         Date to = Date.from(end.plusDays(1).atStartOfDay(ZoneId.systemDefault()).toInstant());
+        List<CohortAssessmentAttemptProjection> rows;
+        if (instituteWide) {
+            rows = studentAttemptRepository.findInstituteAttemptsBetween(
+                    request.getInstituteId(), from, to, MAX_INSTITUTE_ATTEMPTS);
+        } else {
+            Set<String> ids = new LinkedHashSet<>();
+            for (String id : request.getUserIds()) {
+                if (id != null && !id.isBlank()) ids.add(id);
+            }
+            if (ids.isEmpty()) {
+                return CohortAssessmentResponse.builder().attempts(List.of()).build();
+            }
+            rows = studentAttemptRepository.findCohortAttemptsBetween(
+                    request.getInstituteId(), new ArrayList<>(ids), from, to);
+        }
 
         List<CohortAssessmentResponse.Attempt> attempts = new ArrayList<>();
-        for (CohortAssessmentAttemptProjection row : studentAttemptRepository
-                .findCohortAttemptsBetween(request.getInstituteId(), new ArrayList<>(ids), from, to)) {
+        for (CohortAssessmentAttemptProjection row : rows) {
             attempts.add(CohortAssessmentResponse.Attempt.builder()
                     .userId(row.getUserId())
                     .assessmentId(row.getAssessmentId())
@@ -243,8 +252,8 @@ public class StudentAnalysisInternalService {
                     .percentage(roundToOneDecimal(row.getPercentage()))
                     .build());
         }
-        log.info("student-analysis/cohort: instituteId={} users={} attempts={} [{} - {}]",
-                request.getInstituteId(), ids.size(), attempts.size(), start, end);
+        log.info("student-analysis/cohort: instituteId={} instituteWide={} attempts={} [{} - {}]",
+                request.getInstituteId(), instituteWide, attempts.size(), start, end);
         return CohortAssessmentResponse.builder().attempts(attempts).build();
     }
 

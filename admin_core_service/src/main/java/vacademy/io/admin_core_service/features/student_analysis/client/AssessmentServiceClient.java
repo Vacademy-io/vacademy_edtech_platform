@@ -96,33 +96,45 @@ public class AssessmentServiceClient {
         if (userIds == null || userIds.isEmpty()) return out;
         for (int i = 0; i < userIds.size(); i += COHORT_CHUNK) {
             List<String> chunk = userIds.subList(i, Math.min(userIds.size(), i + COHORT_CHUNK));
-            try {
-                java.util.Map<String, Object> body = java.util.Map.of(
-                        "instituteId", instituteId,
-                        "userIds", chunk,
-                        "startDate", startDate,
-                        "endDate", endDate);
-                ResponseEntity<String> response = internalClientUtils.makeHmacRequest(clientName, "POST",
-                        assessmentServiceBaseUrl, "/assessment-service/internal/student-analysis/assessment-history/cohort", body);
-                if (response == null || response.getStatusCode() != HttpStatus.OK || response.getBody() == null) {
-                    log.warn("[AssessmentServiceClient] cohort chunk returned {}", response == null ? null : response.getStatusCode());
-                    continue;
-                }
-                JsonNode attempts = objectMapper.readTree(response.getBody()).path("attempts");
-                if (!attempts.isArray()) continue;
-                for (JsonNode a : attempts) {
-                    out.add(new CohortAttempt(
-                            a.path("userId").asText(null),
-                            a.path("assessmentId").asText(null),
-                            a.path("assessmentName").asText(null),
-                            a.path("attemptAt").asText(null),
-                            nodeAsDouble(a, "percentage")));
-                }
-            } catch (Exception e) {
-                log.warn("[AssessmentServiceClient] cohort chunk failed for institute={}: {}", instituteId, e.getMessage());
-            }
+            postCohort(instituteId, chunk, startDate, endDate, out);
         }
         return out;
+    }
+
+    /** Every learner of the institute: the cohort endpoint with no userIds (all-batches report). */
+    public List<CohortAttempt> fetchInstituteAttempts(String instituteId, String startDate, String endDate) {
+        List<CohortAttempt> out = new ArrayList<>();
+        postCohort(instituteId, List.of(), startDate, endDate, out);
+        return out;
+    }
+
+    private void postCohort(String instituteId, List<String> userIds, String startDate, String endDate,
+                            List<CohortAttempt> out) {
+        try {
+            java.util.Map<String, Object> body = java.util.Map.of(
+                    "instituteId", instituteId,
+                    "userIds", userIds,
+                    "startDate", startDate,
+                    "endDate", endDate);
+            ResponseEntity<String> response = internalClientUtils.makeHmacRequest(clientName, "POST",
+                    assessmentServiceBaseUrl, "/assessment-service/internal/student-analysis/assessment-history/cohort", body);
+            if (response == null || response.getStatusCode() != HttpStatus.OK || response.getBody() == null) {
+                log.warn("[AssessmentServiceClient] cohort call returned {}", response == null ? null : response.getStatusCode());
+                return;
+            }
+            JsonNode attempts = objectMapper.readTree(response.getBody()).path("attempts");
+            if (!attempts.isArray()) return;
+            for (JsonNode a : attempts) {
+                out.add(new CohortAttempt(
+                        a.path("userId").asText(null),
+                        a.path("assessmentId").asText(null),
+                        a.path("assessmentName").asText(null),
+                        a.path("attemptAt").asText(null),
+                        nodeAsDouble(a, "percentage")));
+            }
+        } catch (Exception e) {
+            log.warn("[AssessmentServiceClient] cohort call failed for institute={}: {}", instituteId, e.getMessage());
+        }
     }
 
     private AssessmentHistoryResponse parseResponse(String body) {
