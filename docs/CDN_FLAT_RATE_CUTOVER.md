@@ -1,6 +1,16 @@
 # Media CDN: drop the origin failover, then move to the flat-rate Pro plan
 
-**Status:** steps 1–4 DONE on 30 Oct 2026. Watching (step 5) until ~4 Nov, then Pro.
+**Status:** DONE. On the Pro plan ($15/month) since 2 Nov 2026, 10:58 UTC.
+- Subscription `arn:aws:pricingplanmanager::774305604826:subscription:sub_3LY3F1ZsegDPJiJXBjSEWWtqZlC`
+  covers the distribution and its WAF web ACL. Allowance: 10 M requests and 50 TB a month.
+  We use about 1.5 M requests and 2.2 TB.
+- Pro allows managed ("default") cache policies only. `PRIVATE_UPLOAD/*` and `ADMIN_UPLOAD/*`
+  moved from the custom `CachingOptimized-With-Origin` to Managed-CachingOptimized.
+  CORS still comes from Managed-SimpleCORS. Config before that change:
+  `~/cdn-cutover-backup/cf-preplan-20261102-1056.json`.
+- Three days after the cut-over: 169 k requests, 0 to private-only keys, 403 rate 1.12%.
+- Leaving Pro: a cancellation takes effect at the end of the billing month. Business
+  ($200) is the next tier up. Origin failover needs Premium.
 - Code: merged to main in 3d2b850170 and deployed 16:37 UTC. It includes 2da3997172,
   which checks a batch's files in parallel (the catalogue API gives a batch 5 s).
 - Access logs before the cut-over: 74% of default-behavior requests (17.0k of 22.9k,
