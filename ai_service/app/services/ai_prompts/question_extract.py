@@ -15,6 +15,8 @@ For each question:
 - "question_number": the number printed in the paper, as a string ("1", "17", "Q3" → "3"). Keep the paper's own numbering.
 - "section": the section / part name it falls under if the paper has sections ("Section A", "Logical Reasoning"), else null.
 - SHARED MATERIAL: a comprehension passage, a data table, a case study, "Directions for questions 5–8", a diagram that a GROUP of questions depends on goes ONCE into the top-level "passages" map (key "P1", "P2", …, value = the material verbatim as HTML) and every question of the group carries "passage_id": "P1". Never put it inside "question.content". A question with no shared material has "passage_id": null.
+- SHARED OPTIONS: when ONE list of options is printed for a whole group of questions — Assertion–Reason ("(a) Both Assertion and Reason are true and Reason is the correct explanation … (d) Assertion is false but Reason is true"), "Mark (a) if only I follows …" — that list is NOT shared material: every question of the group is MCQS and carries the complete list as its own "options", with the printed labels.
+- CASE STUDY: a numbered item that asks nothing itself — only a case, passage or data followed by its own questions ("33. Read the case below and answer the following:" then "1. … 2. …" or "(i) … (ii) …", each with its own options or answer) — is shared material, not a question: put its text and figure in "passages", do not list it as a question, and number each of its questions "<its number>.<part>": "33.1", "33.2" (parts (i), (ii) → "33.1", "33.2"). A question that asks something and has parts ("5. (a) Define … (b) Explain …") stays ONE question exactly as printed.
 - "question": {{"type": "HTML", "content": "the question exactly as printed, as HTML, WITHOUT its number"}}. Keep tables as <table>.
 - FIGURES: a <!--DS_TAG:…--> comment is a figure or diagram cropped from the page. Put it inside the "question.content" of the question it belongs to — the one that says "in the figure", "the diagram below", "shown above", or the nearest question when nothing says so — at the point where it was printed. Never drop a DS_TAG, never move one into "options", never repeat one. A figure shared by several questions goes in their "passage".
 - FORMULAS: write every mathematical expression as LaTeX inside $…$ (inline) or $$…$$ (display): $x^2 + 3x - 4 = 0$, $\\frac{{a}}{{b}}$, $\\sqrt{{154}}$, $\\int_0^1$. Text that is already LaTeX stays as it is. A text layer reads stacked expressions as fragments ("2√154 2", "x / 2" on separate lines) — reassemble them into the expression the paper prints; never change a value.
@@ -24,7 +26,7 @@ For each question:
     TRUE_FALSE — true/false statements;  NUMERIC — no options printed and the answer is a number;
     ONE_WORD — no options, fill in the blank / one word;  LONG_ANSWER — no options, descriptive / explain / derive / match the following / essays.
     Comprehension / case-study MCQs are MCQS with a "passage_id".
-- "marks": marks printed for the question or its section (number), else null. "negative_marks": likewise, else null.
+- "marks": marks printed for the question or its section (number), else null. "negative_marks": likewise, else null. Marks printed for a whole case study ("Case Study (4M)", "SECTION C (Case Study) (5M)" over five parts) are the whole case's: give each part its own printed mark, else the case's marks divided by its number of parts.
 - "correct_options": preview_ids of the correct option(s) ONLY if the answer is printed right at the question (an "Ans." line, a tick, a bold/underlined option). Otherwise []. The answer key at the end of the paper is handled separately — do not look for it here.
 - "ans": the printed answer for non-MCQ types only if printed at the question, else "". "exp": the printed explanation if any, else "".
 
@@ -83,8 +85,17 @@ ANSWER KEY / SOLUTIONS — PART {index} OF {total}:
 """
 
 
-def build_extract_prompt(html: str, *, index: int, total: int, user_notes: str = "") -> str:
+_CARRIED = """
+SHARED MATERIAL CARRIED OVER FROM THE PREVIOUS PART (a passage / chart / table whose set of questions continues into this part). It is NOT part of this part: extract no question from it. When a question below belongs to that set (it refers to the passage, chart or data), put this material, verbatim with its DS_TAG comments, into "passages" and point the question at it. A question that does not depend on it gets no passage from it.
+{carried}
+END OF CARRIED MATERIAL.
+"""
+
+
+def build_extract_prompt(html: str, *, index: int, total: int, user_notes: str = "", carried: str = "") -> str:
     notes = f"TEACHER'S NOTES (follow them where they apply): {user_notes.strip()}\n" if user_notes.strip() else ""
+    if carried.strip():
+        notes += _CARRIED.replace("{carried}", carried)
     return _EXTRACT.format(html=html, index=index, total=total, notes=notes)
 
 
