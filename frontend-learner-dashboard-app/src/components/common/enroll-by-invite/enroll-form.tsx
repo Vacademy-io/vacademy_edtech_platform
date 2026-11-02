@@ -1113,6 +1113,49 @@ const EnrollByInvite = ({
     }
   };
 
+  // "Open the course after purchase" (invite setting
+  // postformfillConfiguration.autoLoginAfterPayment): a paid enroll for a brand
+  // new account carries a one-time login_code. Swap it for a session and open
+  // the course, instead of "check your email for credentials". Returns false
+  // when there is no code or the swap fails, so the caller shows the normal
+  // success screen.
+  const autoLoginWithCode = async (response: any): Promise<boolean> => {
+    const loginCode: string | undefined = response?.login_code;
+    if (!loginCode || !inviteConfig?.autoLoginAfterPayment) return false;
+    setIsAutoLoggingIn(true);
+    setCurrentStep(5);
+    try {
+      const { exchangeProductPageLoginCode } = await import(
+        "@/routes/product-pages/$productPageCode/-services/product-page-service"
+      );
+      const tokens = await exchangeProductPageLoginCode(loginCode, instituteId);
+      await performFullAuthCycle(
+        { accessToken: tokens.access_token, refreshToken: tokens.refresh_token },
+        instituteId,
+      );
+      // Open the course only when the invite sells exactly one; a bundle lands
+      // on the course list. The admin's redirectPath wins over both.
+      const sessions = inviteData?.package_session_to_payment_options ?? [];
+      const psId =
+        sessions.length === 1 ? sessions[0]?.package_session_id : undefined;
+      const courseId = psId
+        ? getBundleSessionDetails(psId)?.package_dto?.id
+        : undefined;
+      const target =
+        inviteConfig?.redirectPath ||
+        (courseId
+          ? `/study-library/courses/course-details?courseId=${encodeURIComponent(courseId)}&selectedTab=ALL`
+          : "/study-library/courses");
+      // replace(): Back must not return to a checkout that is already paid.
+      window.location.replace(target);
+      return true;
+    } catch (error) {
+      console.error("[EnrollByInvite] Login-code auto-login failed:", error);
+      setIsAutoLoggingIn(false);
+      return false;
+    }
+  };
+
   // Helper function to fetch enrollment policy and show appropriate dialog
   // Helper function to fetch enrollment policy and show appropriate dialog
   const fetchAndHandleEnrollmentPolicy = async (
@@ -2271,6 +2314,7 @@ const EnrollByInvite = ({
               paymentResponse?.payment_response?.response_data
                 ?.paymentStatus === "PAID"
             ) {
+              if (await autoLoginWithCode(paymentResponse)) return;
               if (inviteConfig?.redirectPath) {
                 window.location.href = inviteConfig.redirectPath;
                 return;
