@@ -1122,6 +1122,8 @@ async def run(req: dict[str, Any], job_id: str, db: Session) -> str:
                  if str(req.get("comment_placement") or "").strip().upper() == "OUTSIDE" else {})
         if table_data:
             panel["evaluation_table"] = table_data
+        if req.get("pen_style"):
+            panel["pen_style"] = req.get("pen_style")
         evaluated_file_id = await annotator.render_and_upload(
             pdf_url, layout_map, verdicts, req.get("attempt_id") or process_id, **panel,
         )

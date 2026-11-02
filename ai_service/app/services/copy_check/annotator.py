@@ -32,6 +32,7 @@ from typing import Any, Optional
 
 import httpx
 
+from . import pen_style as _ps
 from . import row_align
 
 logger = logging.getLogger(__name__)
@@ -697,7 +698,8 @@ def _pen_for(pdf_bytes: bytes) -> Any:
     try:
         from . import hand_render
         seed = int.from_bytes(hashlib.blake2b(pdf_bytes[:1 << 20], digest_size=8).digest(), "big")
-        return hand_render.Pen(seed)
+        return hand_render.Pen(seed, font=_ps.font_file() or hand_render.DEFAULT_FONT,
+                               ink=_ps.ink_255())
     except Exception:
         logger.debug("hand_render unavailable; using the vector pen", exc_info=True)
         return None
@@ -766,7 +768,7 @@ def _pen_text_overlay(page: Any, origin: Any, text: str, size: float,
         # Kalam carries a small x-height, so at the size the placement ladder
         # chose for the old face it reads a shade too small beside the
         # student's hand. The guide asks for notes ~1.1x the line height.
-        px = max(6, int(round(size * S * 1.18)))
+        px = max(6, int(round(size * S * 1.18 * _ps.scale())))
         font = ImageFont.truetype(pen.font_path, px)
         # Shrink until the line fits before the limit the caller set; the
         # caller has already wrapped, so this rarely runs more than once.
@@ -801,7 +803,7 @@ def _pen_mark_overlay(page: Any, style: str, cx: float, cy: float, size: float) 
     try:
         from PIL import Image
         S = _PEN_SCALE
-        h = size * S
+        h = size * S * _ps.scale()
         layer = Image.new("RGBA", (int(h * 4), int(h * 4)), (0, 0, 0, 0))
         if style == "tick":
             # vertex sits low-left in the box, the tail climbs to the right
@@ -831,7 +833,7 @@ def _pen_total_layer(text: str, size: float) -> tuple[Any, float, float]:
     from PIL import Image, ImageFont
     pen = _PEN[0]
     S = _PEN_SCALE
-    px = int(round(size * S))
+    px = int(round(size * S * _ps.scale()))
     font = ImageFont.truetype(pen.font_path, px)
     w = font.getlength(text)
     layer = Image.new("RGBA", (int(w * 2.2) + 6 * px, 6 * px), (0, 0, 0, 0))
@@ -1351,7 +1353,7 @@ def _write_correction(page: Any, box: Any, lines: list[str], size: float, rng) -
     """Write a correction's lines top-left in `box`, in the copy's red."""
     import fitz
 
-    colour = _STYLE_COLOR["language"]
+    colour = _ps.colour(_STYLE_COLOR["language"])
     if any(_needs_shaping(ln) for ln in lines) and _deva_write(page, box, lines, size, colour):
         return
     step = _correction_metrics(" ".join(lines), size)[1]
@@ -1424,7 +1426,7 @@ def _draw_language(page: Any, rect: Any, ann: dict[str, Any], line_h: float,
     drop = rect.y1 + rng.uniform(1.5, 3.0)
     saved = _ROW_SLOPE[0]
     _ROW_SLOPE[0] = 0.0
-    _hand_line(page, fitz.Point(x0, drop), fitz.Point(x1, drop), _STYLE_COLOR["language"], 1.2, rng,
+    _hand_line(page, fitz.Point(x0, drop), fitz.Point(x1, drop), _ps.colour(_STYLE_COLOR["language"]), 1.2, rng,
                wobble=0.4, overshoot=1.0)
     _ROW_SLOPE[0] = saved
 
@@ -1504,7 +1506,7 @@ def _draw_language(page: Any, rect: Any, ann: dict[str, Any], line_h: float,
             if hits(mbox) or mbox.intersects(box) or any(mbox.intersects(o) for o in page_boxes):
                 mbox = fitz.Rect(x0 - 1.0 - mw, mbox.y0, x0 - 1.0, mbox.y1)
             _pen_text(page, fitz.Point(mbox.x0, drop + msz * 0.15), str(number), msz,
-                      _STYLE_COLOR["language"], rng, rise=0.0, tilt=0.0)
+                      _ps.colour(_STYLE_COLOR["language"]), rng, rise=0.0, tilt=0.0)
             page_boxes.append(mbox)
         page_boxes.append(box)
         return where
@@ -1555,7 +1557,7 @@ def _draw_mark(page: Any, rect: Any, style: str, bounds: Any = None,
     """
     import fitz
 
-    colour = _STYLE_COLOR.get(style, _HIGHLIGHT)
+    colour = _ps.colour(_STYLE_COLOR.get(style, _HIGHLIGHT))
     # Seeded on the mark itself: same script, same marks, every time.
     rng = _hand_rng(style, round(rect.x0, 1), round(rect.y0, 1), round(rect.width, 1))
 
@@ -2840,7 +2842,7 @@ def _write_in_free_band(page: Any, rect: Any, note: str, occupied: Optional[list
     for i, line in enumerate(lines):
         _pen_text(page,
                   fitz.Point(x0 + rng.uniform(-0.6, 0.6), y0 + size * 0.95 + line_h * i),
-                  line, size, _NOTE_TEXT, rng, slant=slant,
+                  line, size, _ps.colour(_NOTE_TEXT), rng, slant=slant,
                   max_x=(sheet.x1 - 3.0),
                   rise=math.degrees(math.atan(band_lift / max(widest, 1.0))),
                   tilt=note_tilt)
@@ -2902,7 +2904,7 @@ def _strip_note(page: Any, rect: Any, note: str, occupied: Optional[list],
         for i, line in enumerate(lines):
             _pen_text(page, fitz.Point(left + rng.uniform(-0.5, 0.5),
                                        top + size * 0.95 + gap * i),
-                      line, size, _NOTE_TEXT, rng, max_x=right,
+                      line, size, _ps.colour(_NOTE_TEXT), rng, max_x=right,
                       rise=math.degrees(math.atan(lift / max(widest, 1.0))),
                       tilt=tilt)
         logger.debug("pen note written in the marking strip")
@@ -2916,7 +2918,7 @@ def _pen_text_width(text: str, size: float) -> float:
     if pen is not None:
         try:
             from PIL import ImageFont
-            px = max(6, int(round(size * _PEN_SCALE * 1.18)))
+            px = max(6, int(round(size * _PEN_SCALE * 1.18 * _ps.scale())))
             return ImageFont.truetype(pen.font_path, px).getlength(text) * 1.08 / _PEN_SCALE
         except Exception:
             pass
@@ -3182,7 +3184,7 @@ def _place_by_contract(page: Any, rect: Any, style: str, note: str, position: Op
         return None
     rng = _hand_rng("contract", style, note[:24], round(rect.y0, 1))
     for t, x0, by in lines:
-        _pen_text(page, fitz.Point(x0, by), t, size, _NOTE_TEXT, rng,
+        _pen_text(page, fitz.Point(x0, by), t, size, _ps.colour(_NOTE_TEXT), rng,
                   slant=rng.uniform(-3.0, 3.0), max_x=sheet.x1 - 2.0)
     placed = boxes[0]
     for b in boxes[1:]:
@@ -3252,7 +3254,7 @@ def _place_score_right(page: Any, rect: Any, note: str, sheet: Any,
                 logger.debug("SCORE %r at %s refused: %s", note, box, why)
                 continue
             rng = _hand_rng("score-right", note, round(cand.y0, 1))
-            _pen_text(page, fitz.Point(x0, base_y), note, size, _NOTE_TEXT, rng,
+            _pen_text(page, fitz.Point(x0, base_y), note, size, _ps.colour(_NOTE_TEXT), rng,
                       slant=rng.uniform(-3.0, 3.0), max_x=sheet.x1 - 2.0)
             logger.debug("SCORE %r placed right by fallback at %s", note, box)
             return box
@@ -3400,7 +3402,7 @@ def _place_note(page: Any, rect: Any, style: str, note: str,
         for i, line in enumerate(lines):
             base = fitz.Point(x + note_rng.uniform(-0.6, 0.6),
                               y_top + size * 0.95 + gap * i)
-            _pen_text(page, base, line, size, _NOTE_TEXT, note_rng, slant=slant,
+            _pen_text(page, base, line, size, _ps.colour(_NOTE_TEXT), note_rng, slant=slant,
                       max_x=((sheet.x1 - 3.0) if sheet else page.rect.width - 3.0),
                       rise=eff, tilt=note_tilt)
 
@@ -3810,7 +3812,7 @@ def _draw_score_badge(page: Any, centre: Any, awarded: float, out_of: Optional[f
         text = _latin1(text)
         width = _text_width(text, badge_font, size, badge_measure)
         _hand_text(page, fitz.Point(centre.x - width / 2.0, baseline_y), text,
-                   badge_font, size, _WRONG, badge_rng, font=badge_measure,
+                   badge_font, size, _ps.colour(_WRONG), badge_rng, font=badge_measure,
                    slant=badge_rng.uniform(-4.0, 4.0))
 
 
@@ -3821,7 +3823,7 @@ def _draw_score_badge(page: Any, centre: Any, awarded: float, out_of: Optional[f
     if badge_rng.random() < 0.35:
         _hand_oval(page, fitz.Rect(centre.x - radius, centre.y - radius * 0.92,
                                    centre.x + radius, centre.y + radius * 0.92),
-                   _WRONG, 1.7, badge_rng)
+                   _ps.colour(_WRONG), 1.7, badge_rng)
 
 
     if out_of is None:
@@ -3870,9 +3872,9 @@ def _draw_grand_total(page: Any, centre: Any, awarded: float, out_of: float,
     rx = width / 2.0 + size * 0.42
     ry = size * 0.80                              # overall ~2.3 lines tall
     oval = fitz.Rect(centre.x - rx, centre.y - ry, centre.x + rx, centre.y + ry)
-    _hand_oval(page, oval, _WRONG, 1.9, rng)
+    _hand_oval(page, oval, _ps.colour(_WRONG), 1.9, rng)
     _hand_text(page, fitz.Point(centre.x - width / 2.0, centre.y + size * 0.34),
-               text, font, size, _WRONG, rng, font=measure,
+               text, font, size, _ps.colour(_WRONG), rng, font=measure,
                slant=rng.uniform(-3.0, 3.0))
     return fitz.Rect(oval.x0 - 2.0, oval.y0 - 2.0, oval.x1 + 2.0, oval.y1 + 2.0)
 
@@ -4214,7 +4216,7 @@ def _write_reason_whole(page: Any, sheet: Any, text: str, near_y: float,
             rise = math.degrees(math.atan(lift / max(widest, 1.0)))
             for i, line in enumerate(lines):
                 _pen_text(page, fitz.Point(x0 + rng.uniform(-0.6, 0.6), y0 + size * 0.95 + step * i),
-                          line, size, _NOTE_TEXT, rng, slant=slant,
+                          line, size, _ps.colour(_NOTE_TEXT), rng, slant=slant,
                           max_x=sheet.x1 - 3.0, rise=rise, tilt=tilt)
             return box
         # That gap is not usable here (off the paper, or ink the bands
@@ -5053,7 +5055,7 @@ def _append_summary(doc: Any, verdicts: list[dict[str, Any]],
     page.insert_text((48, y), f"Total: {_fmt_marks(total)} / {_fmt_marks(out_of)}",
                      fontsize=13, color=_SUMMARY_HEADING)
     page.insert_text((190, y), f"Percentage: {pct:.1f}%", fontsize=13, color=_SUMMARY_HEADING)
-    page.insert_text((330, y), f"Grade: {grade_for(pct)}", fontsize=13, color=_WRONG)
+    page.insert_text((330, y), f"Grade: {grade_for(pct)}", fontsize=13, color=_ps.colour(_WRONG))
     y += 22
 
     # Any question the model was unsure of is named here rather than buried, so
@@ -5064,7 +5066,7 @@ def _append_summary(doc: Any, verdicts: list[dict[str, Any]],
     if unsure:
         names = ", ".join(f"Q{v.get('question_number') or '?'}" for v in unsure)
         page.insert_text((48, y), f"Teacher review required: {names}",
-                         fontsize=10, color=_WRONG)
+                         fontsize=10, color=_ps.colour(_WRONG))
         y += 18
 
     remarks = (overall or {}).get("teacher_remarks") if overall else None
@@ -5237,7 +5239,18 @@ _RENDER_POOL = ThreadPoolExecutor(max_workers=1, thread_name_prefix="copy-check-
 def _render_sync(pdf_bytes: bytes, layout_map: dict[str, Any], verdicts: list[dict[str, Any]],
                  comment_placement: Optional[str] = None,
                  question_labels: Optional[dict[str, str]] = None,
-                 evaluation_table: Optional[dict[str, Any]] = None) -> bytes:
+                 evaluation_table: Optional[dict[str, Any]] = None,
+                 pen_style: Optional[_ps.PenStyle] = None) -> bytes:
+    """One render on the single render worker, in the chosen pen (None = the usual copy)."""
+    with _ps.applied(pen_style):
+        return _render_with_pen(pdf_bytes, layout_map, verdicts, comment_placement,
+                                question_labels, evaluation_table)
+
+
+def _render_with_pen(pdf_bytes: bytes, layout_map: dict[str, Any], verdicts: list[dict[str, Any]],
+                     comment_placement: Optional[str] = None,
+                     question_labels: Optional[dict[str, str]] = None,
+                     evaluation_table: Optional[dict[str, Any]] = None) -> bytes:
     def render(total_ring: bool) -> bytes:
         annotated = None
         if (comment_placement or "").strip().upper() == COMMENTS_OUTSIDE:
@@ -5298,8 +5311,12 @@ async def render_and_upload(
     comment_placement: Optional[str] = None,
     question_labels: Optional[dict[str, str]] = None,
     evaluation_table: Optional[dict[str, Any]] = None,
+    pen_style: Optional[dict[str, Any]] = None,
 ) -> Optional[str]:
     """Produce the checked copy and return its media-service fileId.
+
+    `pen_style` is the request's {"ink", "font", "size"} (see pen_style.py);
+    None or unknown values draw the usual copy.
 
     Returns None on any failure. Grading has already succeeded and been
     reported by the time this runs, so a rendering or upload problem must
@@ -5309,7 +5326,7 @@ async def render_and_upload(
         pdf_bytes = await _fetch_pdf(pdf_url)
         annotated = await asyncio.get_running_loop().run_in_executor(
             _RENDER_POOL, _render_sync, pdf_bytes, layout_map, verdicts,
-            comment_placement, question_labels, evaluation_table)
+            comment_placement, question_labels, evaluation_table, _ps.parse(pen_style))
         file_id = await _upload(annotated, f"evaluated-copy-{attempt_id}.pdf")
         if not file_id:
             logger.warning("copy-check annotator: media-service returned no id for attempt %s", attempt_id)

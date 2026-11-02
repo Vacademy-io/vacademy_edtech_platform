@@ -21,6 +21,8 @@ import logging
 import re
 from typing import Any, Optional
 
+from . import pen_style as _ps
+
 logger = logging.getLogger(__name__)
 
 # A printed row that belongs to an evaluation table.
@@ -318,7 +320,7 @@ def _write(page: Any, rect: Any, text: str, size: float) -> None:
     w = font.text_length(text, fontsize=size)
     x = rect.x0 + (rect.width - w) / 2.0
     y = rect.y0 + (rect.height + size * 0.7) / 2.0
-    page.insert_text(fitz.Point(x, y), text, fontsize=size, color=_RED, **kw)
+    page.insert_text(fitz.Point(x, y), text, fontsize=size, color=_ps.colour(_RED), **kw)
 
 
 def fill(pdf_bytes: bytes, layout_map: dict[str, Any], table: dict[str, Any],
@@ -390,6 +392,6 @@ def _compact(doc: Any, table: dict[str, Any]) -> bool:
     for r, cells_ in enumerate([header] + body):
         for c, text in enumerate(cells_):
             rect = fitz.Rect(left + c * col_w, top + r * row_h, left + (c + 1) * col_w, top + (r + 1) * row_h)
-            page.draw_rect(rect, color=_RED, width=0.6)
+            page.draw_rect(rect, color=_ps.colour(_RED), width=0.6)
             _write(page, rect, text, 10.0 if r == 0 else 12.0)
     return True

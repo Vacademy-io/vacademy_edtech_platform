@@ -143,6 +143,11 @@ class CopyCheckGradeRequest(BaseModel):
     # beside it. Absent (or any other value) keeps the usual behaviour - never a
     # reason to refuse a copy.
     comment_placement: Optional[str] = None
+    # The teacher's pen on the checked copy: {"ink": "BLUE" | "#1f3fa0",
+    # "font": "KALAM" | "PATRICK_HAND" | "ARCHITECTS_DAUGHTER",
+    # "size": "SMALL" | "MEDIUM" | "LARGE"}. Absent or unknown values keep the
+    # usual red pen (services/copy_check/pen_style.py).
+    pen_style: Optional[dict[str, Any]] = None
 
     @model_validator(mode="after")
     def _copy_needs_pdf(self) -> "CopyCheckGradeRequest":
