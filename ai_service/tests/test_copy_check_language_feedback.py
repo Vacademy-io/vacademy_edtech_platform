@@ -175,6 +175,31 @@ def test_errors_map_to_the_answer_holding_their_rows():
     assert lf.errors_for_answer(by_row, ["nope", "p2_r1"], pos) == []
 
 
+def test_feedback_lists_a_repeated_correction_once():
+    def err(row, wrong, correct):
+        return {"row": row, "page_id": "p1", "wrong": wrong, "correct": correct, "why": "",
+                "kind": "grammar", "span": [0.1, 0.2]}
+    errors = [err("p1_r1", "cannot enter in a contract", "cannot enter into a contract"),
+              err("p1_r2", "void ab intio", "void ab initio"),
+              err("p1_r3", "enter in a contract", "enter into a contract"),
+              err("p1_r4", "ab intio", "ab initio"),
+              err("p1_r5", "This boys is", "These boys are"),
+              err("p1_r6", "is", "are")]
+    assert lf.feedback_text(errors) == (
+        "Language: \"enter in a contract\" → \"enter into a contract\" (×2); "
+        "\"ab intio\" → \"ab initio\" (×2); \"This boys is\" → \"These boys are\"; \"is\" → \"are\".")
+    # Every spot is still marked on the copy.
+    assert len(lf.annotations(errors, "q1")) == 6
+
+
+def test_text_pass_drops_quotes_with_stray_symbols():
+    rows = {"p1_r1": {"line_id": "p1_r1", "text": "a minor can state @ his minority"}}
+    reply = json.dumps({"errors": [
+        {"row": "p1_r1", "wrong": "state @ his", "correct": "plead his", "kind": "word"},
+        {"row": "p1_r1", "wrong": "can state", "correct": "can plead", "kind": "word"}]})
+    assert [e["wrong"] for e in lf.parse_errors(reply, rows)] == ["can state"]
+
+
 def test_feedback_paragraph_and_annotations():
     errors = [{"row": f"p1_r{i}", "page_id": "p1", "wrong": f"w{i}", "correct": f"c{i}", "why": "tense",
                "kind": "grammar", "span": [0.1, 0.2]} for i in range(25)]

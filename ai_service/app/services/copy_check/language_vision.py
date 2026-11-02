@@ -43,6 +43,7 @@ from pathlib import Path
 from typing import Any, Callable, Optional
 
 from . import answer_language, deduction_scheme as ds
+from .language_feedback import has_junk as lf_has_junk
 
 logger = logging.getLogger(__name__)
 
@@ -259,9 +260,20 @@ def _misread(w: str, c: str) -> bool:
 
 
 def reading_slip(wrong: str, correct: str, kind: str = "") -> bool:
-    """A correction that changes nothing, or a "spelling error" that the
-    handwriting being misread explains. Only spelling is judged: an added
-    article, a hyphen or a wrong word is never a reading slip."""
+    """A correction that changes nothing, a quote holding a character no
+    student writes in a sentence, or a correction that the handwriting being
+    misread explains.
+
+    The quote is lined up with its correction word by word. A word changed
+    into one other word is judged only for spelling (an added article, a
+    hyphen or a wrong word is never a reading slip). A word that became two,
+    or two that became one, is judged for every kind: "aualid contract" ->
+    "a valid contract" is "a valid" read with u for v, not a missing article.
+    One misread word makes the whole quote untrustworthy (checked copy
+    2026-11-02: "Amina's personal jroherty" -> "A minor's personal property"
+    went through because "personal" was right)."""
+    if lf_has_junk(wrong, correct):
+        return True
     nw, nc = norm(wrong), norm(correct)
     if not nw or nw == nc:
         return True
@@ -269,13 +281,20 @@ def reading_slip(wrong: str, correct: str, kind: str = "") -> bool:
         # The shape/sound tables below are Latin letters; any other script
         # is guarded by the strict transcript match in to_error instead.
         return False
-    if str(kind or "").strip().lower() not in ("spelling", ""):
-        return False
+    spelling = str(kind or "").strip().lower() in ("spelling", "")
     ww, cw = nw.split(), nc.split()
-    if len(ww) != len(cw):
-        return False
-    diffs = [(w, c) for w, c in zip(ww, cw) if w != c]
-    return bool(diffs) and all(_misread(w, c) for w, c in diffs)
+    for op, i1, i2, j1, j2 in SequenceMatcher(None, ww, cw, autojunk=False).get_opcodes():
+        if op != "replace":
+            continue
+        a, b = ww[i1:i2], cw[j1:j2]
+        if len(a) == len(b):
+            if spelling and any(w != c and _misread(w, c) for w, c in zip(a, b)):
+                return True
+        elif "".join(a) == "".join(b) or _misread("".join(a), "".join(b)):
+            # Only the spacing changed ("Act1872" -> "Act, 1872"), or the
+            # letters did by shape: either way the reader, not the student.
+            return True
+    return False
 
 
 # ----------------------------------------------------- rows and bands

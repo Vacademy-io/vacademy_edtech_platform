@@ -107,6 +107,29 @@ def test_reading_slip_drops_shape_misreads_and_keeps_real_misspellings():
     assert not lv.reading_slip("बुद्धिमता", "बुद्धिमत्ता", "spelling")
 
 
+def test_reading_slip_judges_each_word_of_a_phrase_and_split_or_joined_words():
+    # A checked law copy listed these as the student's slips; every one was
+    # the handwriting read wrong (p for j/h, v for u, a stray "@").
+    for wrong, correct, kind in (
+            ("Amina's personal jroherty", "A minor's personal property", "spelling"),
+            ("a minion can hlead for miniority", "a minor can plead minority", "spelling"),
+            ("aualid contract", "a valid contract", "spelling"),
+            ("aualid contract", "a valid contract", "article"),
+            ("Act1872", "Act, 1872", "punctuation"),
+            ("can state @ his minority", "can plead his minority", "word")):
+        assert lv.reading_slip(wrong, correct, kind), (wrong, correct, kind)
+    # The same copy's real slips stay.
+    for wrong, correct, kind in (
+            ("void ab intio", "void ab initio", "spelling"), ("allawed", "allowed", "spelling"),
+            ("Both the seller", "Both the sellers", "grammar"),
+            ("it will became void", "it will become void", "grammar"),
+            ("an punishable offense", "a punishable offence", "grammar"),
+            ("cannot enter in a contract", "cannot enter into a contract", "grammar"),
+            ("minior he cannot enter", "minor, so he cannot enter", "sentence"),
+            ("valid than void", "valid then void", "spelling")):
+        assert not lv.reading_slip(wrong, correct, kind), (wrong, correct, kind)
+
+
 PAGE = {"page_id": "p2", "width": 1000, "height": 1000, "lines": [
     {"line_id": "p2_r1", "text": "Minister P.V. Narasimha Rao and Finance Minister", "box": [50, 100, 900, 60]},
     {"line_id": "p2_r2", "text": "results were democratic: India's GDP growth", "box": [50, 500, 900, 60]},
