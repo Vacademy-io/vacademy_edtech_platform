@@ -3,6 +3,7 @@ package vacademy.io.admin_core_service.features.catalog_api.service;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.i18n.LocaleContextHolder;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.util.UriUtils;
@@ -21,6 +22,7 @@ import vacademy.io.admin_core_service.features.catalog_api.rules.LearningPaths.P
 import vacademy.io.admin_core_service.features.catalog_api.rules.LearningPaths.Step;
 import vacademy.io.admin_core_service.features.course.dto.CourseDTOWithDetails;
 import vacademy.io.admin_core_service.features.learner_study_library.dto.LearnerModuleDTOWithDetails;
+import vacademy.io.admin_core_service.features.learner_study_library.dto.LearnerSlidesDetailDTO;
 import vacademy.io.admin_core_service.features.learner_study_library.dto.LearnerSubjectProjection;
 import vacademy.io.admin_core_service.features.learner_study_library.service.LearnerOpenStudyLibraryService;
 import vacademy.io.admin_core_service.features.packages.service.PackagePageContentService;
@@ -29,6 +31,7 @@ import vacademy.io.admin_core_service.features.product_page.dto.ProductPageRespo
 import vacademy.io.admin_core_service.features.study_library.dto.LevelDTOWithDetails;
 import vacademy.io.admin_core_service.features.study_library.dto.SessionDTOWithDetails;
 import vacademy.io.common.auth.dto.UserDTO;
+import vacademy.io.common.core.i18n.LocaleRegistry;
 
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
@@ -1443,7 +1446,9 @@ public class CatalogApiService {
         final List<CatalogRow> levels = rows;
         // Keyed by the levels actually chosen, not the requested code: any language that matches
         // none falls back to every level, and must share that entry rather than rebuild it.
-        String key = instituteId + "|" + levels.stream().map(CatalogRow::packageSessionId)
+        // Slide titles come translated in the request locale, so the locale is part of the key.
+        String locale = LocaleRegistry.normalize(LocaleContextHolder.getLocale().toLanguageTag());
+        String key = instituteId + "|" + locale + "|" + levels.stream().map(CatalogRow::packageSessionId)
                 .filter(Objects::nonNull).sorted().collect(Collectors.joining(","));
         return outlines.get(key, k -> buildOutline(levels));
     }
@@ -1471,7 +1476,11 @@ public class CatalogApiService {
                                 // is_hidden is not selected by the open query today; kept so a
                                 // hidden chapter can never surface once it is.
                                 .filter(c -> c != null && !Boolean.TRUE.equals(c.getIsHidden()))
-                                .forEach(c -> chapters.add(named(c.getId(), c.getChapterName())));
+                                .forEach(c -> {
+                                    Map<String, Object> cv = named(c.getId(), c.getChapterName());
+                                    cv.put("slides", outlineSlides(c.getId()));
+                                    chapters.add(cv);
+                                });
                     }
                     Map<String, Object> m = named(module.getModule().getId(), module.getModule().getModuleName());
                     m.put("chapters", chapters);
@@ -1490,6 +1499,35 @@ public class CatalogApiService {
         Map<String, Object> out = new LinkedHashMap<>();
         out.put("levels", levels);
         return out;
+    }
+
+    /**
+     * A chapter's lessons, title and type only (never the media/content itself). Most courses
+     * are flat (subject, module and chapter all "DEFAULT"), so without these the outline of
+     * such a course carried no content at all.
+     */
+    private List<Map<String, Object>> outlineSlides(String chapterId) {
+        List<Map<String, Object>> slides = new ArrayList<>();
+        if (chapterId == null) return slides;
+        List<LearnerSlidesDetailDTO> rows;
+        try {
+            rows = openStudyLibraryService.getLearnerSlides(chapterId);
+        } catch (RuntimeException e) {
+            // Lessons are an extra on the outline: one unreadable chapter must not fail the whole call.
+            log.warn("catalog-api: outline slides failed for chapter {}: {}", chapterId, e.getMessage());
+            return slides;
+        }
+        if (rows == null) return slides;
+        rows.stream()
+                .filter(sl -> sl != null && !Boolean.TRUE.equals(sl.getIsHidden()))
+                .sorted(Comparator.comparing(LearnerSlidesDetailDTO::getSlideOrder,
+                        Comparator.nullsLast(Comparator.naturalOrder())))
+                .forEach(sl -> {
+                    Map<String, Object> v = named(sl.getId(), sl.getTitle());
+                    v.put("type", sl.getSourceType() == null ? null : sl.getSourceType().toLowerCase(Locale.ROOT));
+                    slides.add(v);
+                });
+        return slides;
     }
 
     private static Map<String, Object> named(String id, String name) {
