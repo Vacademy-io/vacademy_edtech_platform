@@ -23,5 +23,47 @@
             "LARGE": "Large"
         },
         "sample": "Good work · 4/5"
+    },
+    "redraw": {
+        "button": "Update checked copy",
+        "staleBanner": "You changed marks, remarks or pen notes. Update the checked copy so the student's PDF shows them.",
+        "dialogTitle": "Update checked copy",
+        "dialogHint": "The copy is drawn again with your corrections. Marks, remarks and pen notes you changed replace the AI's; everything else stays where it was.",
+        "keepPen": "Keep the pen this copy was checked with",
+        "layout": "Remarks",
+        "layoutKeep": "As checked",
+        "layoutInside": "On the copy",
+        "layoutOutside": "Beside the copy",
+        "cancel": "Cancel",
+        "submit": "Update copy",
+        "working": "Drawing the copy...",
+        "done": "Checked copy updated",
+        "failed": "Could not update the checked copy. Please try again."
+    },
+    "notes": {
+        "title": "Pen notes on the copy",
+        "hint": "Remove a note or rewrite it. Applied when you update the checked copy.",
+        "empty": "The AI wrote no notes for this question.",
+        "remove": "Remove",
+        "undo": "Keep",
+        "removed": "Removed",
+        "edit": "Rewrite",
+        "editPlaceholder": "What the note should say",
+        "styles": {
+            "tick": "Tick",
+            "cross": "Cross",
+            "circle": "Circle",
+            "strike": "Strike-through",
+            "strikethrough": "Strike-through",
+            "underline": "Underline",
+            "margin_note": "Margin note",
+            "region_note": "Note",
+            "brace": "Bracket",
+            "summary": "Summary",
+            "feedback": "Remark",
+            "deduction_reason": "Deduction reason",
+            "language": "Language mark",
+            "other": "Mark"
+        }
     }
 }

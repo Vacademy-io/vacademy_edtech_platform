@@ -65,6 +65,10 @@ export interface QuestionProgress {
      *  FAILED questions, admin-facing. */
     error_detail?: string | null;
     is_edited?: boolean;
+    /** When a teacher last changed this question on the review page. */
+    edited_at?: string | null;
+    /** The teacher's edits to the AI's pen notes for this question. */
+    annotation_edits?: AnnotationEdit[] | null;
     started_at?: string;
     completed_at?: string;
 }
@@ -102,6 +106,8 @@ export interface EvaluationProgress {
      *  run's own complete payload — null while in flight, or when the run produced
      *  no copy. Not the attempt's latest evaluated_file_id. */
     file_id?: string | null;
+    /** When a teacher last had the checked copy re-drawn (null = the AI's own copy). */
+    copy_redrawn_at?: string | null;
     layout_map_url?: string | null;
     rubric_version?: number | null;
     ai_service_job_id?: string | null;
@@ -273,14 +279,51 @@ export const getEvaluationProcesses = async (
  * Teacher review: override a single question's marks and/or feedback before the
  * result is released. Turns the AI verdict into a draft the teacher approves.
  */
+/** A teacher's change to one pen note the AI drew, named by the fields it was stored with. */
+export interface AnnotationEdit {
+    style?: string | null;
+    target?: string | null;
+    page_id?: string | null;
+    text?: string | null;
+    action: 'DELETE' | 'EDIT';
+    new_text?: string | null;
+}
+
 export const overrideQuestionEvaluation = async (
     processId: string,
     questionId: string,
-    payload: { marks_awarded: number; feedback?: string }
+    payload: { marks_awarded: number; feedback?: string; annotation_edits?: AnnotationEdit[] }
 ): Promise<void> => {
     const response = await authenticatedAxiosInstance({
         method: 'PUT',
         url: `${REVIEW_EVALUATION_URL}/${processId}/question/${questionId}`,
+        data: payload,
+    });
+    return response?.data;
+};
+
+export interface RegenerateCopyResponse {
+    evaluated_file_id: string;
+    total_marks_awarded: number | null;
+    total_max_marks: number | null;
+    questions_changed: number;
+}
+
+/**
+ * Re-draw the AI checked copy with every correction made on the review page
+ * (marks, remarks, pen notes), optionally in another pen / remarks layout.
+ * `pen_style` omitted = the pen the copy was checked with.
+ */
+export const regenerateCheckedCopy = async (
+    processId: string,
+    payload: {
+        pen_style?: { ink: string; font: string; size: string };
+        comment_placement?: 'INSIDE' | 'OUTSIDE';
+    }
+): Promise<RegenerateCopyResponse> => {
+    const response = await authenticatedAxiosInstance({
+        method: 'POST',
+        url: `${REVIEW_EVALUATION_URL}/${processId}/regenerate-copy`,
         data: payload,
     });
     return response?.data;

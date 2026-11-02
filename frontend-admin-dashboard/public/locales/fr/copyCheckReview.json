@@ -23,5 +23,47 @@
             "LARGE": "Grande"
         },
         "sample": "Bon travail · 4/5"
+    },
+    "redraw": {
+        "button": "Mettre à jour la copie corrigée",
+        "staleBanner": "Vous avez modifié des notes, remarques ou annotations. Mettez à jour la copie corrigée pour que le PDF de l'élève les affiche.",
+        "dialogTitle": "Mettre à jour la copie corrigée",
+        "dialogHint": "La copie est redessinée avec vos corrections. Les notes, remarques et annotations modifiées remplacent celles de l'IA ; le reste ne bouge pas.",
+        "keepPen": "Garder le stylo de la correction",
+        "layout": "Remarques",
+        "layoutKeep": "Comme corrigé",
+        "layoutInside": "Sur la copie",
+        "layoutOutside": "À côté de la copie",
+        "cancel": "Annuler",
+        "submit": "Mettre à jour",
+        "working": "Dessin de la copie...",
+        "done": "Copie corrigée mise à jour",
+        "failed": "Impossible de mettre à jour la copie corrigée. Réessayez."
+    },
+    "notes": {
+        "title": "Annotations sur la copie",
+        "hint": "Supprimez ou réécrivez une annotation. Appliqué à la mise à jour de la copie.",
+        "empty": "L'IA n'a écrit aucune annotation pour cette question.",
+        "remove": "Supprimer",
+        "undo": "Garder",
+        "removed": "Supprimée",
+        "edit": "Réécrire",
+        "editPlaceholder": "Texte de l'annotation",
+        "styles": {
+            "tick": "Coche",
+            "cross": "Croix",
+            "circle": "Cercle",
+            "strike": "Barré",
+            "strikethrough": "Barré",
+            "underline": "Soulignement",
+            "margin_note": "Note en marge",
+            "region_note": "Note",
+            "brace": "Accolade",
+            "summary": "Résumé",
+            "feedback": "Remarque",
+            "deduction_reason": "Motif de retrait",
+            "language": "Marque de langue",
+            "other": "Marque"
+        }
     }
 }
