@@ -70,5 +70,14 @@
         "remarksFor": "Remarks for Q{{number}}",
         "remarksPlaceholder": "Remarks for this question (optional)",
         "overallRemarks": "Remarks"
+    },
+    "aiImport": {
+        "button": "Bring AI marks",
+        "working": "Bringing AI marks...",
+        "hint": "Put the AI check's ticks, notes and marks on this copy so you can move, edit or delete them.",
+        "done": "{{marks}} AI marks placed on the copy; {{questions}} question marks filled in. Move, edit or delete them like your own.",
+        "none": "This copy has no finished AI check yet.",
+        "already": "AI marks are already on this copy.",
+        "failed": "Could not bring the AI marks. Please try again."
     }
 }

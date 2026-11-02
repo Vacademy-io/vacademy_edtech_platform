@@ -70,5 +70,14 @@
         "remarksFor": "Remarques pour Q{{number}}",
         "remarksPlaceholder": "Remarques pour cette question (facultatif)",
         "overallRemarks": "Remarques"
+    },
+    "aiImport": {
+        "button": "Importer les marques IA",
+        "working": "Import des marques IA...",
+        "hint": "Placez les coches, notes et points de la correction IA sur cette copie pour les déplacer, modifier ou supprimer.",
+        "done": "{{marks}} marques IA placées sur la copie ; {{questions}} notes de questions remplies. Déplacez-les, modifiez-les ou supprimez-les comme les vôtres.",
+        "none": "Cette copie n'a pas encore de correction IA terminée.",
+        "already": "Les marques IA sont déjà sur cette copie.",
+        "failed": "Impossible d'importer les marques IA. Réessayez."
     }
 }
