@@ -60,21 +60,17 @@ public class CustomReportService {
     private record Dim(String label, String expr) {
     }
 
-    /** The lead's source as every report names it (its campaign's type, else its channel). */
-    private static final String SOURCE_EXPR =
-            ReportSourceSql.effective("COALESCE(ulp.best_source_type, sar.source_type)", "sa.campaign_type");
+    /** The lead's source as every report names it: its first enquiry's campaign type, else its channel. */
+    private static final String SOURCE_EXPR = ReportSourceSql.firstEnquirySource("fe", "ulp.best_source_type");
 
-    /** The lead's best-scoring enquiry and its campaign, for SOURCE_EXPR. */
-    private static final String SOURCE_JOINS = """
-            LEFT JOIN audience_response sar ON sar.id = ulp.best_score_response_id
-            LEFT JOIN audience sa ON sa.id = sar.audience_id
-            """;
+    /** The lead's first enquiry and its campaign, for SOURCE_EXPR and CAMPAIGN_EXPR. */
+    private static final String SOURCE_JOINS = ReportSourceSql.firstEnquiryJoin("fe", "ulp.user_id", "ulp.institute_id");
 
     /** Key of the "last follow-up response" field (needs FOLLOWUP_JOIN). */
     private static final String FOLLOWUP_RESPONSE_KEY = "followup_response";
 
-    /** The lead's campaign name (the list it came in through). */
-    private static final String CAMPAIGN_EXPR = "COALESCE(NULLIF(TRIM(sa.campaign_name), ''), 'UNKNOWN')";
+    /** The lead's campaign name (the list its first enquiry came in through). */
+    private static final String CAMPAIGN_EXPR = "COALESCE(NULLIF(TRIM(fe.campaign_name), ''), 'UNKNOWN')";
 
     /** The response recorded on the lead's latest answered follow-up (e.g. CNR, Call later). */
     private static final String FOLLOWUP_RESPONSE_EXPR = "COALESCE(NULLIF(TRIM(lfr.student_response), ''), 'NO_RESPONSE')";

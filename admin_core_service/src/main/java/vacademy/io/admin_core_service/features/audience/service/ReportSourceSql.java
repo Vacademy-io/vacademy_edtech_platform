@@ -28,4 +28,39 @@ final class ReportSourceSql {
         return "(CASE WHEN " + fromCampaignType(sourceTypeExpr, campaignTypeExpr)
                 + " THEN TRIM(" + campaignTypeExpr + ") ELSE COALESCE(" + sourceTypeExpr + ", 'UNKNOWN') END)";
     }
+
+    /**
+     * Join for the student's FIRST enquiry in the institute (earliest audience_response, opt-out
+     * rows excluded), exposing {@code <alias>.source_type}, {@code <alias>.campaign_type},
+     * {@code <alias>.campaign_name} and {@code <alias>.audience_id}. Every report attributes a student to this one enquiry, so a
+     * later form never moves an admission to another source.
+     */
+    static String firstEnquiryJoin(String alias, String userIdExpr, String instituteIdExpr) {
+        return """
+                LEFT JOIN LATERAL (
+                    SELECT fr.source_type, fa.campaign_type, fa.campaign_name, fr.audience_id
+                    FROM audience_response fr
+                    JOIN audience fa ON fa.id = fr.audience_id
+                    WHERE fr.user_id = %s
+                      AND fa.institute_id = %s
+                      AND (fr.source_type IS NULL OR fr.source_type <> 'OPT_OUT')
+                    ORDER BY fr.created_at, fr.id
+                    LIMIT 1
+                ) %s ON true
+                """.formatted(userIdExpr, instituteIdExpr, alias);
+    }
+
+    /**
+     * Source of the first enquiry joined by {@link #firstEnquiryJoin}; a student with no enquiry
+     * falls back to {@code fallbackSourceExpr} (the lead profile's best_source_type, which is
+     * where a source recorded outside an enquiry lives).
+     */
+    static String firstEnquirySource(String alias, String fallbackSourceExpr) {
+        return effective("COALESCE(" + alias + ".source_type, " + fallbackSourceExpr + ")", alias + ".campaign_type");
+    }
+
+    /** True when {@link #firstEnquirySource} came from the first enquiry's campaign type. */
+    static String firstEnquiryFromCampaignType(String alias) {
+        return fromCampaignType(alias + ".source_type", alias + ".campaign_type");
+    }
 }

@@ -61,6 +61,7 @@ public class AdmissionReportService {
                 JOIN package p ON p.id = ps.package_id
                 WHERE s.institute_id = :instituteId
                   AND s.status IN ('ACTIVE', 'COMPLETED', 'INVITED')
+                  AND NOT (s.status = 'INVITED' AND COALESCE(s.source, '') = 'TERMINATED')
                   AND COALESCE(s.enrolled_date, (s.created_at AT TIME ZONE 'UTC' AT TIME ZONE :tz)::date) >= :fromDay
                   AND COALESCE(s.enrolled_date, (s.created_at AT TIME ZONE 'UTC' AT TIME ZONE :tz)::date) <  :toDay
             )
@@ -71,8 +72,8 @@ public class AdmissionReportService {
      * group order (else its first tag); the main course of a student who joined several in a month
      * is the one with the best-ranked tag, then the earliest enrolment. A fee plan belongs to the
      * first month it was enrolled in, so a plan spanning two months is not counted twice.
-     * The lead side (source, counsellor) mirrors the Revenue report: the profile's best-scoring
-     * enquiry, its campaign and its enquiry counsellor.
+     * The lead side mirrors the Revenue report: the source is the student's first enquiry (its
+     * campaign type), the counsellor is the enquiry counsellor of the profile's best-scoring enquiry.
      */
     private static final String ADMISSIONS_SQL = "WITH " + ENR_CTE + """
             , enr_tag AS (
@@ -112,14 +113,15 @@ public class AdmissionReportService {
             ),
             ld AS (
                 SELECT ulp.user_id,
-                       """ + ReportSourceSql.effective("COALESCE(ulp.best_source_type, ar.source_type)", "sa.campaign_type") + """
+                       """ + ReportSourceSql.firstEnquirySource("fe", "ulp.best_source_type") + """
                            AS source_type,
-                       """ + ReportSourceSql.fromCampaignType("COALESCE(ulp.best_source_type, ar.source_type)", "sa.campaign_type") + """
+                       """ + ReportSourceSql.firstEnquiryFromCampaignType("fe") + """
                            AS from_campaign,
+                       fe.audience_id AS first_audience_id,
                        COALESCE(lu.user_id, ulp.assigned_counselor_id) AS counsellor_id
                 FROM user_lead_profile ulp
                 LEFT JOIN audience_response ar ON ar.id = ulp.best_score_response_id
-                LEFT JOIN audience sa ON sa.id = ar.audience_id
+                """ + ReportSourceSql.firstEnquiryJoin("fe", "ulp.user_id", "ulp.institute_id") + """
                 LEFT JOIN LATERAL (
                     SELECT lu2.user_id FROM linked_users lu2
                     WHERE lu2.source = 'ENQUIRY' AND lu2.source_id = ar.enquiry_id
@@ -131,7 +133,7 @@ public class AdmissionReportService {
             SELECT m.user_id, m.month, m.package_id, m.package_name, m.tag, c.n_courses,
                    COALESCE(mo.fee, 0)  AS fee,
                    COALESCE(mo.paid, 0) AS paid,
-                   ld.source_type, ld.from_campaign, ld.counsellor_id,
+                   ld.source_type, ld.from_campaign, ld.first_audience_id, ld.counsellor_id,
                    """ + "%FIELD_VALUE%" + """
                        AS field_value
             FROM main m
@@ -194,45 +196,27 @@ public class AdmissionReportService {
 
     record AdmissionRow(String userId, String month, String packageId, String packageName,
                                 String tag, int courses, double fee, double paid,
-                                String source, boolean fromCampaign, String counsellorId, String fieldValue) {
+                                String source, boolean fromCampaign, String counsellorId, String fieldValue,
+                                String firstAudienceId) {
+
+        AdmissionRow(String userId, String month, String packageId, String packageName,
+                     String tag, int courses, double fee, double paid,
+                     String source, boolean fromCampaign, String counsellorId, String fieldValue) {
+            this(userId, month, packageId, packageName, tag, courses, fee, paid, source, fromCampaign,
+                    counsellorId, fieldValue, null);
+        }
     }
 
     @Transactional(readOnly = true)
     public AdmissionReportDTO getAdmissions(String instituteId, String fromDate, String toDate,
                                             String teamId, String counsellorUserId, String callerUserId) {
         LeadReportSettingService.ReportSettings settings = settingService.get(instituteId);
-        ZoneId zone = safeZone(settings.timezone());
-        LocalDate today = LocalDate.now(zone);
-        LocalDate to = parseOr(toDate, today);
-        LocalDate from = parseOr(fromDate, to.minusDays(DEFAULT_RANGE_DAYS - 1L));
         String scopeCsv = scopeResolver.resolveScopeUsersCsv(
                 instituteId, callerUserId, trimToNull(teamId), trimToNull(counsellorUserId));
         List<String> tagOrder = settings.courseGroupOrder() == null ? List.of() : settings.courseGroupOrder();
         String fieldId = settings.admissionFieldId();
 
-        MapSqlParameterSource p = new MapSqlParameterSource()
-                .addValue("instituteId", instituteId)
-                .addValue("tz", zone.getId())
-                .addValue("fromDay", java.sql.Date.valueOf(from), Types.DATE)
-                .addValue("toDay", java.sql.Date.valueOf(to.plusDays(1)), Types.DATE)
-                .addValue("scopeCsv", scopeCsv, Types.VARCHAR)
-                .addValue("tagOrderCsv", String.join(",", tagOrder), Types.VARCHAR)
-                .addValue("fieldId", fieldId, Types.VARCHAR);
-        String sql = ADMISSIONS_SQL.replace("%FIELD_VALUE%", fieldId != null ? FIELD_VALUE_SQL : "CAST(NULL AS text)");
-
-        List<AdmissionRow> rows = jdbc.query(sql, p, (rs, i) -> new AdmissionRow(
-                rs.getString("user_id"),
-                rs.getString("month"),
-                rs.getString("package_id"),
-                rs.getString("package_name"),
-                emptyToBlank(rs.getString("tag")),
-                rs.getInt("n_courses"),
-                rs.getDouble("fee"),
-                rs.getDouble("paid"),
-                Optional.ofNullable(rs.getString("source_type")).orElse(UNKNOWN),
-                rs.getBoolean("from_campaign"),
-                rs.getString("counsellor_id"),
-                trimToNull(rs.getString("field_value"))));
+        List<AdmissionRow> rows = queryRows(instituteId, fromDate, toDate, scopeCsv, settings, fieldId);
 
         List<String> courseTags = orderedTags(rows, tagOrder);
 
@@ -379,6 +363,48 @@ public class AdmissionReportService {
             log.warn("[AdmissionReport] name hydration failed: {}", e.getMessage());
             return Collections.emptyMap();
         }
+    }
+
+    /**
+     * The admission rows of the range (one per student x month), exactly as the Admissions tab
+     * counts them, for the other report tabs to count admissions the same way. No custom field.
+     */
+    List<AdmissionRow> admissionRows(String instituteId, String fromDate, String toDate, String scopeCsv) {
+        return queryRows(instituteId, fromDate, toDate, scopeCsv, settingService.get(instituteId), null);
+    }
+
+    private List<AdmissionRow> queryRows(String instituteId, String fromDate, String toDate, String scopeCsv,
+                                         LeadReportSettingService.ReportSettings settings, String fieldId) {
+        ZoneId zone = safeZone(settings.timezone());
+        LocalDate today = LocalDate.now(zone);
+        LocalDate to = parseOr(toDate, today);
+        LocalDate from = parseOr(fromDate, to.minusDays(DEFAULT_RANGE_DAYS - 1L));
+        List<String> tagOrder = settings.courseGroupOrder() == null ? List.of() : settings.courseGroupOrder();
+
+        MapSqlParameterSource p = new MapSqlParameterSource()
+                .addValue("instituteId", instituteId)
+                .addValue("tz", zone.getId())
+                .addValue("fromDay", java.sql.Date.valueOf(from), Types.DATE)
+                .addValue("toDay", java.sql.Date.valueOf(to.plusDays(1)), Types.DATE)
+                .addValue("scopeCsv", scopeCsv, Types.VARCHAR)
+                .addValue("tagOrderCsv", String.join(",", tagOrder), Types.VARCHAR)
+                .addValue("fieldId", fieldId, Types.VARCHAR);
+        String sql = ADMISSIONS_SQL.replace("%FIELD_VALUE%", fieldId != null ? FIELD_VALUE_SQL : "CAST(NULL AS text)");
+
+        return jdbc.query(sql, p, (rs, i) -> new AdmissionRow(
+                rs.getString("user_id"),
+                rs.getString("month"),
+                rs.getString("package_id"),
+                rs.getString("package_name"),
+                emptyToBlank(rs.getString("tag")),
+                rs.getInt("n_courses"),
+                rs.getDouble("fee"),
+                rs.getDouble("paid"),
+                Optional.ofNullable(rs.getString("source_type")).orElse(UNKNOWN),
+                rs.getBoolean("from_campaign"),
+                rs.getString("counsellor_id"),
+                trimToNull(rs.getString("field_value")),
+                rs.getString("first_audience_id")));
     }
 
     private ZoneId safeZone(String tz) {

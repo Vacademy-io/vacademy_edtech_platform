@@ -295,7 +295,8 @@ export function SourcesTab({
                 </TooltipProvider>
             )}
             <p className="text-xs text-neutral-400">
-                {t('footnote.connected')} {t('footnote.interested')}
+                {t('footnote.connected')} {t('footnote.interested')}{' '}
+                {t('footnote.won')}
             </p>
         </ReportSection>
     );

@@ -21,6 +21,7 @@
     },
     "footnote": {
         "connected": "Connected = leads with at least one connected call (per your telephony settings).",
-        "interested": "Interested = leads that entered an interested status in this range."
+        "interested": "Interested = leads that entered an interested status in this range.",
+        "won": "Won = admissions in this range, credited to the student's first enquiry source; Conv % = won ÷ leads from that source in this range."
     }
 }

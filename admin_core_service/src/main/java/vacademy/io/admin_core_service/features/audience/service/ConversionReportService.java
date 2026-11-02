@@ -58,8 +58,16 @@ public class ConversionReportService {
     private static final int AUTH_BATCH_SIZE = 500;
     private static final DateTimeFormatter LOCAL_DATE_TIME = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm");
 
-    /** Enrolment states that mean the enrolment really happened (excludes INVITED / PENDING_FOR_APPROVAL / DELETED). */
-    private static final String ENROLLED_STATUSES = " ('ACTIVE', 'INACTIVE', 'TERMINATED', 'EXPIRED')\n";
+    /**
+     * Enrolment states counted as an admission, the same set the Admissions tab counts. A hard
+     * removal leaves the row INVITED with source TERMINATED; that is a removed student, not an
+     * admission, so it is excluded.
+     */
+    private static final String ENROLLED_STATUSES = " ('ACTIVE', 'COMPLETED', 'INVITED')\n"
+            + "              AND NOT (m.status = 'INVITED' AND COALESCE(m.source, '') = 'TERMINATED')\n";
+
+    /** The admission day: enrolled_date, else the mapping's created_at in the institute timezone. */
+    private static final String ENROLLED_DAY = "COALESCE(m.enrolled_date, (m.created_at AT TIME ZONE 'UTC' AT TIME ZONE :tz)::date)";
 
     /** Courses with an in-window enrolment — the candidates the conversion policy is evaluated on. */
     private static final String CANDIDATE_PACKAGES_SQL = """
@@ -67,23 +75,24 @@ public class ConversionReportService {
             FROM student_session_institute_group_mapping m
             JOIN package_session ps ON ps.id = m.package_session_id
             WHERE m.institute_id = :instituteId
-              AND m.created_at >= :fromTs AND m.created_at < :toTs
+              AND """ + " " + ENROLLED_DAY + " >= :fromDay AND " + ENROLLED_DAY + """
+               < :toDay
               AND m.status IN """ + ENROLLED_STATUSES;
 
     /**
-     * Counted enrolments. The user must already have been a lead when they enrolled — their lead
-     * profile existed, or (profiles can be built late by the batch rebuild) they had a campaign
-     * response by then — so an existing student who fills a form later is not a conversion.
+     * Counted enrolments: every in-window admission (same day rule and statuses as the Admissions
+     * tab) of a student who has a lead profile. Source = the student's first enquiry.
      */
     private static final String CONV_CTE = """
             conv AS (
                 SELECT m.id         AS enrolment_id,
                        m.user_id,
                        m.created_at AS enrolled_at,
+                       m.enrolled_date AS enrolled_day,
                        m.status     AS enrolment_status,
                        ps.package_id,
-                       ar.audience_id,
-                       """ + ReportSourceSql.effective("COALESCE(ulp.best_source_type, ar.source_type)", "sa.campaign_type") + """
+                       fe.audience_id,
+                       """ + ReportSourceSql.firstEnquirySource("fe", "ulp.best_source_type") + """
                            AS source_type,
                        COALESCE(lu.user_id, ulp.assigned_counselor_id)           AS counsellor_id
                 FROM student_session_institute_group_mapping m
@@ -91,22 +100,17 @@ public class ConversionReportService {
                 JOIN user_lead_profile ulp
                     ON ulp.user_id = m.user_id AND ulp.institute_id = m.institute_id
                 LEFT JOIN audience_response ar ON ar.id = ulp.best_score_response_id
-                LEFT JOIN audience sa ON sa.id = ar.audience_id
+                """ + ReportSourceSql.firstEnquiryJoin("fe", "m.user_id", "m.institute_id") + """
                 LEFT JOIN LATERAL (
                     SELECT lu2.user_id FROM linked_users lu2
                     WHERE lu2.source = 'ENQUIRY' AND lu2.source_id = ar.enquiry_id
                     ORDER BY lu2.created_at DESC LIMIT 1
                 ) lu ON true
                 WHERE m.institute_id = :instituteId
-                  AND m.created_at >= :fromTs AND m.created_at < :toTs
+                  AND """ + " " + ENROLLED_DAY + " >= :fromDay AND " + ENROLLED_DAY + """
+                   < :toDay
                   AND m.status IN """ + ENROLLED_STATUSES + """
                   AND ps.package_id = ANY(STRING_TO_ARRAY(:packageCsv, ','))
-                  AND (COALESCE(ulp.created_at, ulp.last_calculated_at) <= m.created_at
-                       OR EXISTS (SELECT 1 FROM audience_response r
-                                  JOIN audience a ON a.id = r.audience_id
-                                  WHERE r.user_id = m.user_id
-                                    AND a.institute_id = m.institute_id
-                                    AND r.created_at <= m.created_at))
                   AND (:scopeCsv IS NULL OR COALESCE(lu.user_id, ulp.assigned_counselor_id) = ANY(STRING_TO_ARRAY(:scopeCsv, ',')))
             )
             """;
@@ -125,14 +129,14 @@ public class ConversionReportService {
             """;
 
     private static final String LEADS_SQL = "WITH " + CONV_CTE + """
-            SELECT c.enrolment_id, c.user_id, c.enrolled_at, c.enrolment_status, c.package_id,
+            SELECT c.enrolment_id, c.user_id, c.enrolled_at, c.enrolled_day, c.enrolment_status, c.package_id,
                    c.source_type, c.counsellor_id,
                    p.package_name,
                    a.campaign_name
             FROM conv c
             LEFT JOIN package p ON p.id = c.package_id
             LEFT JOIN audience a ON a.id = c.audience_id
-            ORDER BY c.enrolled_at DESC
+            ORDER BY COALESCE(c.enrolled_day, CAST(c.enrolled_at AS date)) DESC, c.enrolled_at DESC
             LIMIT :rowLimit
             """;
 
@@ -145,14 +149,11 @@ public class ConversionReportService {
         String scopeCsv = scopeResolver.resolveScopeUsersCsv(
                 instituteId, callerUserId, trimToNull(teamId), trimToNull(counsellorUserId));
 
-        List<String> convertingPackages = convertingPackageIds(instituteId, w);
+        List<String> convertingPackages = convertingPackageIds(instituteId, w, zone);
         if (convertingPackages.isEmpty()) {
             return emptyReport();
         }
-        MapSqlParameterSource p = new MapSqlParameterSource()
-                .addValue("instituteId", instituteId)
-                .addValue("fromTs", w.fromUtc(), Types.TIMESTAMP)
-                .addValue("toTs", w.toUtc(), Types.TIMESTAMP)
+        MapSqlParameterSource p = windowParams(instituteId, w, zone)
                 .addValue("scopeCsv", scopeCsv, Types.VARCHAR)
                 .addValue("packageCsv", String.join(",", convertingPackages))
                 // One extra row tells us whether the list was cut off.
@@ -175,7 +176,9 @@ public class ConversionReportService {
                         .userId(rs.getString("user_id"))
                         .packageId(rs.getString("package_id"))
                         .courseName(rs.getString("package_name"))
-                        .enrolledAt(toLocal(rs.getTimestamp("enrolled_at"), zone))
+                        .enrolledAt(rs.getDate("enrolled_day") != null
+                                ? rs.getDate("enrolled_day").toLocalDate().atStartOfDay().format(LOCAL_DATE_TIME)
+                                : toLocal(rs.getTimestamp("enrolled_at"), zone))
                         .enrolmentStatus(rs.getString("enrolment_status"))
                         .counsellorId(rs.getString("counsellor_id"))
                         .campaignName(rs.getString("campaign_name"))
@@ -218,13 +221,9 @@ public class ConversionReportService {
     // ─────────────────────────────────────────────────────────────────────
 
     /** In-window enrolled courses whose enrolment counts as a conversion (per-course policy). */
-    private List<String> convertingPackageIds(String instituteId, Window w) {
+    private List<String> convertingPackageIds(String instituteId, Window w, ZoneId zone) {
         List<String> candidates = jdbc.queryForList(CANDIDATE_PACKAGES_SQL,
-                new MapSqlParameterSource()
-                        .addValue("instituteId", instituteId)
-                        .addValue("fromTs", w.fromUtc(), Types.TIMESTAMP)
-                        .addValue("toTs", w.toUtc(), Types.TIMESTAMP),
-                String.class);
+                windowParams(instituteId, w, zone), String.class);
         return candidates.stream()
                 .filter(id -> id != null && !id.isBlank())
                 .filter(id -> leadConversionPolicyService.countsAsConversion(instituteId, id))
@@ -277,12 +276,16 @@ public class ConversionReportService {
         LocalDate today = LocalDate.now(zone);
         LocalDate to = parseOr(toDate, today);
         LocalDate from = parseOr(fromDate, to.minusDays(DEFAULT_RANGE_DAYS - 1L));
-        return new Window(toUtc(from, zone), toUtc(to.plusDays(1), zone));
+        return new Window(from, to.plusDays(1));
     }
 
-    private static Timestamp toUtc(LocalDate localDate, ZoneId zone) {
-        return Timestamp.valueOf(localDate.atStartOfDay(zone)
-                .withZoneSameInstant(ZoneOffset.UTC).toLocalDateTime());
+    /** Institute, timezone and the [fromDay, toDay) admission-day window. */
+    private static MapSqlParameterSource windowParams(String instituteId, Window w, ZoneId zone) {
+        return new MapSqlParameterSource()
+                .addValue("instituteId", instituteId)
+                .addValue("tz", zone.getId())
+                .addValue("fromDay", java.sql.Date.valueOf(w.fromDay()), Types.DATE)
+                .addValue("toDay", java.sql.Date.valueOf(w.toDay()), Types.DATE);
     }
 
     private ZoneId safeZone(String tz) {
@@ -307,6 +310,6 @@ public class ConversionReportService {
         return (s == null || s.isBlank()) ? null : s.trim();
     }
 
-    private record Window(Timestamp fromUtc, Timestamp toUtc) {
+    private record Window(LocalDate fromDay, LocalDate toDay) {
     }
 }
