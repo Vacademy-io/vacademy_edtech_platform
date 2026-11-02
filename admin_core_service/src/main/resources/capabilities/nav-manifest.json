@@ -1868,8 +1868,8 @@
       "route": "/access-passes",
       "order": 42,
       "default_visible": {
-        "ADMIN": false,
-        "TEACHER": false
+        "ADMIN": true,
+        "TEACHER": true
       },
       "sub_tabs": []
     }
