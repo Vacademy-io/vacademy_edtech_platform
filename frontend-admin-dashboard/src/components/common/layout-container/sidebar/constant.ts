@@ -92,7 +92,7 @@ export const controlledTabs = [
     // Mentorship: hidden by default (feature not broadly rolled out); admins
     // opt it in per institute via Display Settings (see admin-defaults.ts).
     'mentorship',
-    // Access Passes: hidden for every role until turned on in Display Settings.
+    // Access Passes: visible for every role by default; hideable via Display Settings.
     'access-passes',
     // ERP (HR & Payroll): opt-in per institute, same as above. Payroll is not
     // something to surface by accident.

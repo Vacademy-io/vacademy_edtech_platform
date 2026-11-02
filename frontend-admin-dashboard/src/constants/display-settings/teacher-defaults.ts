@@ -37,8 +37,6 @@ function mapSidebarToTeacherConfig(menu: SidebarItemsType[]): SidebarTabConfig[]
                 // Live activity ships hidden for teachers too -- this is what makes
                 // the toggle genuinely per-role rather than institute-wide.
                 item.id !== 'live-activity' &&
-                // Access Passes ship hidden for every role; opt in via Display Settings.
-                item.id !== 'access-passes' &&
                 // AI Course/Program Creator ships hidden; admins opt in via Display Settings.
                 item.id !== 'ai-copilot-tab'
                     ? true
