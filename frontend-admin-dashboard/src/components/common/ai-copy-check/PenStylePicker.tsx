@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ChipToggleGroup } from '@/components/design-system/chips';
 import { cn } from '@/lib/utils';
@@ -35,6 +36,28 @@ const SAMPLE_SCALE: Record<PenSize, string> = {
     LARGE: 'text-h3',
 };
 
+/** The same faces ai_service writes with (copy_check/fonts). */
+const SAMPLE_FONT: Record<PenFont, string> = {
+    KALAM: 'font-hand-kalam',
+    PATRICK_HAND: 'font-hand-patrick',
+    ARCHITECTS_DAUGHTER: 'font-hand-architects',
+};
+
+// Kalam is loaded for the whole app (index.html); the other two only once a
+// picker is shown, so no other page pays for them.
+const EXTRA_FONTS_HREF =
+    'https://fonts.googleapis.com/css2?family=Patrick+Hand&family=Architects+Daughter&display=swap';
+const EXTRA_FONTS_LINK_ID = 'pen-style-picker-fonts';
+
+const loadExtraFonts = () => {
+    if (typeof document === 'undefined' || document.getElementById(EXTRA_FONTS_LINK_ID)) return;
+    const link = document.createElement('link');
+    link.id = EXTRA_FONTS_LINK_ID;
+    link.rel = 'stylesheet';
+    link.href = EXTRA_FONTS_HREF;
+    document.head.appendChild(link);
+};
+
 /** Fill in anything missing from a saved pen with the usual pen. */
 export const normalizePenStyle = (raw?: Partial<PenStyle> | null): PenStyle => ({
     ink: INKS.includes(raw?.ink as PenInk) ? (raw!.ink as PenInk) : DEFAULT_PEN_STYLE.ink,
@@ -59,6 +82,7 @@ export const PenStylePicker = ({
     showHeading?: boolean;
 }) => {
     const { t } = useTranslation('copyCheckReview');
+    useEffect(loadExtraFonts, []);
     const set = (patch: Partial<PenStyle>) => !disabled && onChange({ ...value, ...patch });
 
     return (
@@ -132,12 +156,10 @@ export const PenStylePicker = ({
             </div>
 
             <div className="rounded-md border border-neutral-200 bg-white px-3 py-2">
+                {/* Plain string, not cn(): tailwind-merge reads text-body / text-h3
+                    as a colour and drops them next to the ink class. */}
                 <p
-                    className={cn(
-                        'font-serif italic',
-                        SAMPLE_SCALE[value.size],
-                        INK_TEXT[value.ink]
-                    )}
+                    className={`${SAMPLE_FONT[value.font]} ${SAMPLE_SCALE[value.size]} ${INK_TEXT[value.ink]}`}
                 >
                     {t('penStyle.sample')}
                 </p>

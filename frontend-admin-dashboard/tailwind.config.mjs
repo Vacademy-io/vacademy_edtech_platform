@@ -97,6 +97,12 @@ module.exports = {
                 // side view) so they follow the institute font even though they
                 // render outside the main app tree.
                 app: ['var(--app-font-family, "Open Sans", sans-serif)'],
+                // The AI checker's handwriting faces (ai_service copy_check/fonts),
+                // for the pen preview in PenStylePicker. Kalam comes from index.html;
+                // the picker loads the other two when it opens.
+                'hand-kalam': ['Kalam', 'cursive'],
+                'hand-patrick': ['"Patrick Hand"', 'cursive'],
+                'hand-architects': ['"Architects Daughter"', 'cursive'],
             },
             fontSize: {
                 h1: [
