@@ -52,7 +52,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { getAllProductPages } from '../product-pages/-services/product-pages-service';
 import { listBlogPosts } from '../-services/blog-service';
 import { handleFetchCampaignsList } from '@/routes/audience-manager/list/-services/get-campaigns-list';
-import { AUDIENCE_CAMPAIGN, GET_INVITE_LIST } from '@/constants/urls';
+import { AUDIENCE_CAMPAIGN, GET_INVITE_LINKS } from '@/constants/urls';
 import axios from 'axios';
 import { getTokenFromCookie } from '@/lib/auth/sessionUtility';
 import { TokenKey } from '@/constants/auth/tokens';
@@ -5970,18 +5970,37 @@ const ProductCourseGridEditor = ({ component, pageId, updateComponent }: any) =>
  *  another screen first. This lists the real invitations by name and builds the
  *  canonical URL with createInviteLink, the same helper the invite screens use,
  *  so the institute's white-label learner domain is honoured instead of
- *  hardcoding one. */
+ *  hardcoding one.
+ *
+ *  The list comes from enrol invites (Students → Invite, the ones that carry a
+ *  payment plan). It used to read the legacy learner-invitation table, whose
+ *  auto-made "default <course>" codes the learner invite page cannot resolve,
+ *  so a button wired from that list opened a dead link. */
+const INVITE_PICKER_PAGE_SIZE = 100;
+const INVITE_PICKER_MAX_PAGES = 10;
 const InviteLinkPicker = ({ value, onChange }: { value: string; onChange: (v: string) => void }) => {
     const instituteId = getCurrentInstituteId();
     const { instituteDetails } = useInstituteDetailsStore();
     const { data, isLoading, isError } = useQuery({
-        queryKey: ['htmlPageInviteLinks', instituteId],
+        queryKey: ['htmlPageEnrollInviteLinks', instituteId],
         queryFn: async () => {
-            const res = await authenticatedAxiosInstance.post(
-                `${GET_INVITE_LIST}?instituteId=${instituteId}&pageNo=0&pageSize=100`,
-                { status: ['ACTIVE'], name: '' }
-            );
-            return (res.data?.content ?? []) as { id: string; name: string; invite_code: string }[];
+            const invites: { id: string; name: string; invite_code: string }[] = [];
+            for (let pageNo = 0; pageNo < INVITE_PICKER_MAX_PAGES; pageNo++) {
+                const res = await authenticatedAxiosInstance.post(
+                    `${GET_INVITE_LINKS}?instituteId=${instituteId}&pageNo=${pageNo}&pageSize=${INVITE_PICKER_PAGE_SIZE}`,
+                    {
+                        search_name: '',
+                        package_session_ids: [],
+                        payment_option_ids: [],
+                        sort_columns: {},
+                        tags: [],
+                    }
+                );
+                const content = (res.data?.content ?? []) as typeof invites;
+                invites.push(...content.filter((inv) => inv.invite_code));
+                if (res.data?.last !== false || content.length === 0) break;
+            }
+            return invites;
         },
         enabled: !!instituteId,
     });
