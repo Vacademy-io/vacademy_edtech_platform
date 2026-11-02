@@ -15,6 +15,13 @@
         "manualDialog": {
             "title": "प्रश्न पत्र मैन्युअल रूप से बनाएं"
         },
+        "csvCard": {
+            "title": "CSV / Excel अपलोड करें",
+            "subtitle": "शीट से प्रश्न जोड़ें"
+        },
+        "csvDialog": {
+            "title": "CSV / Excel से आए प्रश्न जाँचें"
+        },
         "savedCard": {
             "title": "सहेजा गया पेपर चुनें",
             "subtitle": "किसी मौजूदा पेपर का पुन: उपयोग करें"

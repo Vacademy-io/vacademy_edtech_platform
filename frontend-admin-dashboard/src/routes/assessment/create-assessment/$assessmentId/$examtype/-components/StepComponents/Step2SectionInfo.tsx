@@ -77,6 +77,7 @@ import TipTapEditor from '@/components/tiptap/TipTapEditor';
 import { toast } from 'sonner';
 import { MyQuestion } from '@/types/assessments/question-paper-form';
 import QuestionSelectorDialog from '@/routes/assessment/question-papers/-components/QuestionSelectorDialog';
+import Step2UploadFromSheet from './-components/Step2UploadFromSheet';
 import { AssessmentQuestionEditDialog } from './-components/AssessmentQuestionEditDialog';
 import { QuestionOptionsList } from '@/components/common/assessment/question-options-list';
 
@@ -816,6 +817,14 @@ export const Step2SectionInfo = ({
                             />
                         </AlertDialogContent>
                     </AlertDialog>
+                    <Step2UploadFromSheet
+                        form={form}
+                        index={index}
+                        examType={examtype}
+                        defaultSubject={defaultSubject}
+                        currentQuestionIndex={currentQuestionIndex}
+                        setCurrentQuestionIndex={setCurrentQuestionIndex}
+                    />
                     <Dialog
                         open={isSavedQuestionPaperDialogOpen}
                         onOpenChange={setIsSavedQuestionPaperDialogOpen}

@@ -15,6 +15,13 @@
         "manualDialog": {
             "title": "Create Question Paper Manually"
         },
+        "csvCard": {
+            "title": "Upload CSV / Excel",
+            "subtitle": "Import questions from a sheet"
+        },
+        "csvDialog": {
+            "title": "Review Questions From CSV / Excel"
+        },
         "savedCard": {
             "title": "Choose Saved Paper",
             "subtitle": "Reuse an existing paper"

@@ -15,6 +15,13 @@
         "manualDialog": {
             "title": "إنشاء ورقة أسئلة يدويًا"
         },
+        "csvCard": {
+            "title": "رفع CSV / Excel",
+            "subtitle": "استيراد الأسئلة من جدول"
+        },
+        "csvDialog": {
+            "title": "مراجعة الأسئلة من CSV / Excel"
+        },
         "savedCard": {
             "title": "اختيار ورقة محفوظة",
             "subtitle": "إعادة استخدام ورقة موجودة"
