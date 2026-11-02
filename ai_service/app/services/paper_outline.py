@@ -186,6 +186,41 @@ _DURATION_SHORT = re.compile(
     r"(\d+(?:\.\d+)?)\s*(" + _HOURS + r"|minutes?|mins?)\b(?:\s*(\d+)\s*" + _MINS + r"\b)?", re.I
 )
 
+# The paper's maximum marks as printed on its front page: "M.M : 42",
+# "Maximum Marks: 80", "Max. Marks 100", "Total Marks: 50", "पूर्णांक : 80".
+_MAX_MARKS = re.compile(
+    r"(?:\bmax(?:imum)?\.?\s*marks?|(?<![A-Za-z])m\s*\.\s*m\b\.?|\btotal\s+marks|\bfull\s+marks|पूर्णांक)"
+    r"\s*[:\-–=|]*\s*(\d{1,4}(?:\.\d+)?)(?![\d.])",
+    re.I,
+)
+# A front page laid out as a table reaches us as markdown pipe rows
+# ("| Time : | 40 Minutes |", "| :--- | :--- |"); the cells read as one line.
+_PIPE_RULE_ROW = re.compile(r"\|?\s*:?-{3,}:?\s*(?=\|)")
+
+
+def _untabled(text: str) -> str:
+    return re.sub(r"\s+", " ", _PIPE_RULE_ROW.sub(" ", text).replace("|", " ")).strip()
+
+
+def max_marks_of(text: str) -> Optional[float]:
+    """The paper's maximum marks printed in its front matter, else None."""
+    m = _MAX_MARKS.search(_untabled(text or ""))
+    if not m:
+        return None
+    value = _num(m.group(1))
+    return value if value and value > 0 else None
+
+
+def _main_sequence(numbers: Sequence[int]) -> List[int]:
+    """A section's own question numbers in order, without the sub-question
+    numbers folded into it: a case study "33." with its parts "1. … 5."
+    reads [33, 1, 2, 3, 4, 5, 34, 1, …] — the section runs 33–34, not 1–34."""
+    out: List[int] = []
+    for n in numbers:
+        if not out or n > out[-1]:
+            out.append(n)
+    return out
+
 
 def _minutes(amount: str, unit: str, extra: Optional[str]) -> Optional[int]:
     try:
@@ -474,7 +509,7 @@ def outline_of_blocks(blocks: Sequence[str], key_at: Optional[int]) -> Dict[str,
         marks = _num(m.group(4))
         if marks is not None:
             ranges.append({"from": int(m.group(1)), "to": int(m.group(2)), "marks": marks})
-    paper_minutes = duration_of(front)
+    paper_minutes = duration_of(_untabled(front))
     first_heading_at = sections[0].get("heading_at") if sections else None
     for sec in sections:
         sec.pop("heading_at", None)
@@ -496,12 +531,13 @@ def outline_of_blocks(blocks: Sequence[str], key_at: Optional[int]) -> Dict[str,
         sec["negative_marks"] = neg
         sec["count"] = len(set(sec["numbers"]))
         if sec["numbers"]:
-            sec["from"], sec["to"] = min(sec["numbers"]), max(sec["numbers"])
+            own_numbers = _main_sequence(sec["numbers"])
+            sec["from"], sec["to"] = own_numbers[0], own_numbers[-1]
         sec.pop("numbers", None)
     # "Time: 30 minutes" under the first section's heading, with no time
     # printed above it, is that section's own time, not the paper's.
     if (paper_minutes is not None and first_heading_at is not None and first_heading_at < first_q
-            and duration_of(" ".join(texts[:first_heading_at])) is None
+            and duration_of(_untabled(" ".join(texts[:first_heading_at]))) is None
             and all(sec["duration_minutes"] for sec in sections)):
         paper_minutes = None
     # A paper that times each section separately is as long as the sections
@@ -514,6 +550,7 @@ def outline_of_blocks(blocks: Sequence[str], key_at: Optional[int]) -> Dict[str,
         "marking": {"marks": paper_marking["marks"], "negative_marks": paper_marking["negative_marks"]},
         "duration_minutes": paper_minutes,
         "ranges": ranges,
+        "max_marks": max_marks_of(front),
     }
 
 
@@ -533,6 +570,9 @@ def _printed_marks(q: Dict[str, Any]) -> Optional[float]:
     return _num(next((g for g in m.groups() if g), None)) if m else None
 
 
+_SUB_NUMBER = re.compile(r"^(\d{1,3})\.\d{1,2}$")
+
+
 def apply_outline(questions: List[Dict[str, Any]], outline: Dict[str, Any]) -> None:
     """Name each question's section and settle its marks in place. Sections
     are matched by question number; when the paper restarts numbering in
@@ -541,10 +581,15 @@ def apply_outline(questions: List[Dict[str, Any]], outline: Dict[str, Any]) -> N
     paper = outline.get("marking") or {}
     ranges = outline.get("ranges") or []
     nos: List[Optional[int]] = []
+    labels: List[str] = []
     for q in questions:
         s = str(q.get("question_number") or "").strip()
-        nos.append(int(s) if s.isdigit() else None)
-    known = [n for n in nos if n is not None]
+        # "33.2" — part 2 of case study 33 — sits wherever question 33 does.
+        sub = _SUB_NUMBER.match(s)
+        nos.append(int(s) if s.isdigit() else int(sub.group(1)) if sub else None)
+        labels.append(s)
+    # Plain numbers compare as before (as integers); "33.2" by its label.
+    known = [str(n) if lab.isdigit() else lab for lab, n in zip(labels, nos) if n is not None]
     by_number = len(known) == len(set(known))
 
     k = 0
