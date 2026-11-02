@@ -604,7 +604,8 @@
         "stopFailedTitle": "Couldn't stop your membership",
         "paymentReceivedTitle": "Payment received!",
         "paymentReceivedDescription": "Your membership is being reactivated — this takes a few seconds.",
-        "paymentNotCompletedTitle": "Payment not completed"
+        "paymentNotCompletedTitle": "Payment not completed",
+        "sessionRenewed": "Your sign-in had expired, so we've signed you back in. Please press Stop membership again."
       },
       "cancelDialog": {
         "title": "Stop your membership?",
@@ -645,6 +646,17 @@
       },
       "autopayRequiredHint": "Auto-pay is required to continue your membership.",
       "autopayRequiredBlocked": "Tick auto-pay above to continue your membership."
+    },
+    "cancelPage": {
+      "title": "Thinking of stopping your membership?",
+      "support": "We're sorry to hear you might be leaving, and we understand plans change. If there's anything we can help with first, just email <mail>{{email}}</mail>.",
+      "supportNoEmail": "We're sorry to hear you might be leaving, and we understand plans change.",
+      "stopBody": "If you'd prefer to stop your membership, you can do that here. You'll keep access until the end of your current membership.",
+      "stoppedTitle": "Your membership is stopped",
+      "stoppedWithDate": "You'll keep access until {{date}}. You won't be charged again.",
+      "stoppedNoDate": "You'll keep access until the end of your current membership. You won't be charged again.",
+      "nothingToStop": "This membership isn't set to renew, so there's nothing to stop.",
+      "renewIntro": "Thank you for learning with us. We'd love to keep learning with you."
     },
     "paymentReturn": {
       "confirmingTitle": "Confirming your payment…",
