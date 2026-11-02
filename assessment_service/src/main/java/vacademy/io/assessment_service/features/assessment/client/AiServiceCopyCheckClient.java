@@ -117,6 +117,43 @@ public class AiServiceCopyCheckClient {
         return response;
     }
 
+    /** ai_service has no saved render for this copy (drawn before re-render existed). */
+    public static class ReRenderUnavailableException extends RuntimeException {
+        public ReRenderUnavailableException(String message) {
+            super(message);
+        }
+    }
+
+    /**
+     * POST /copy-check/re-render — re-draw a checked copy from the inputs saved when it
+     * was first drawn, with the teacher's corrections and (optionally) another pen.
+     * Synchronous: one copy on ai_service's render worker, typically a few seconds.
+     * Returns ai_service's {@code {evaluated_file_id, total_marks_awarded, total_max_marks}}.
+     * Throws {@link ReRenderUnavailableException} on 404 (no saved render), and the
+     * WebClient error otherwise.
+     */
+    public Map<String, Object> reRender(Map<String, Object> body) {
+        try {
+            Map<String, Object> response = webClient.post()
+                    .uri("/copy-check/re-render")
+                    .header("X-Internal-Service-Token", internalToken)
+                    .bodyValue(body)
+                    .retrieve()
+                    .bodyToMono(Map.class)
+                    .timeout(Duration.ofSeconds(180))
+                    .block();
+            if (response == null || response.get("evaluated_file_id") == null) {
+                throw new IllegalStateException("ai_service returned no checked copy");
+            }
+            return response;
+        } catch (WebClientResponseException e) {
+            if (e.getStatusCode().value() == 404) {
+                throw new ReRenderUnavailableException("no saved render for this copy");
+            }
+            throw e;
+        }
+    }
+
     /**
      * What ai_service read from a PDF without grading it (contract C4,
      * {@code POST /copy-check/inspect}): its page count (null when unknown), whether it

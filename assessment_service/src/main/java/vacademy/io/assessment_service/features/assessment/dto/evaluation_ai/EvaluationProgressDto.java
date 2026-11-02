@@ -48,6 +48,12 @@ public class EvaluationProgressDto {
         @JsonProperty("file_id")
         private String fileId;
 
+        // When a teacher last had the checked copy re-drawn with their corrections
+        // (null = the AI's own copy). The review page compares it with each
+        // question's edited_at to say the copy is out of date.
+        @JsonProperty("copy_redrawn_at")
+        private String copyRedrawnAt;
+
         @JsonProperty("layout_map_url")
         private String layoutMapUrl;
 

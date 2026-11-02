@@ -42,8 +42,26 @@ public class AiEvaluationReviewService {
     @org.springframework.beans.factory.annotation.Autowired(required = false)
     private vacademy.io.assessment_service.features.open_evaluation.submission.ApiSubmissionFeed submissionFeed;
 
+    /** Key in ai_question_evaluation.evaluation_result_json holding the teacher's pen-note edits. */
+    public static final String ANNOTATION_EDITS_KEY = "reviewer_annotation_edits";
+    private static final com.fasterxml.jackson.databind.ObjectMapper JSON =
+            new com.fasterxml.jackson.databind.ObjectMapper();
+
     @Transactional
     public void overrideQuestion(String processId, String questionId, Double marks, String feedback,
+            String editorUserId) {
+        overrideQuestion(processId, questionId, marks, feedback, null, editorUserId);
+    }
+
+    /**
+     * As {@link #overrideQuestion(String, String, Double, String, String)}, plus the
+     * teacher's changes to the pen notes the AI drew for this question (null = keep the
+     * saved list). They are kept beside the AI verdict and applied when the checked copy
+     * is re-drawn ({@link CopyCheckReRenderService}).
+     */
+    @Transactional
+    public void overrideQuestion(String processId, String questionId, Double marks, String feedback,
+            java.util.List<vacademy.io.assessment_service.features.assessment.dto.evaluation_ai.QuestionOverrideRequest.AnnotationEdit> annotationEdits,
             String editorUserId) {
         AiEvaluationProcess process = processRepository.findByIdWithStudentAttempt(processId)
                 .orElseThrow(() -> new ResourceNotFoundException("Evaluation process not found: " + processId));
@@ -69,6 +87,9 @@ public class AiEvaluationReviewService {
             row.setFeedback(feedback);
         }
         row.setStatus("COMPLETED");
+        if (annotationEdits != null) {
+            row.setEvaluationResultJson(withAnnotationEdits(row.getEvaluationResultJson(), annotationEdits));
+        }
         row.setIsEdited(true);
         row.setEditedBy(editorUserId);
         row.setEditedAt(new Date());
@@ -100,6 +121,33 @@ public class AiEvaluationReviewService {
         }
         log.info("[copy-check] question {} of process {} overridden to {} by {}",
                 questionId, processId, clamped, editorUserId);
+    }
+
+    /** The stored verdict JSON with the teacher's pen-note edits replaced. */
+    static String withAnnotationEdits(String resultJson,
+            java.util.List<vacademy.io.assessment_service.features.assessment.dto.evaluation_ai.QuestionOverrideRequest.AnnotationEdit> edits) {
+        com.fasterxml.jackson.databind.node.ObjectNode root;
+        try {
+            com.fasterxml.jackson.databind.JsonNode parsed = resultJson == null ? null : JSON.readTree(resultJson);
+            root = parsed instanceof com.fasterxml.jackson.databind.node.ObjectNode o ? o : JSON.createObjectNode();
+        } catch (Exception e) {
+            root = JSON.createObjectNode();
+        }
+        com.fasterxml.jackson.databind.node.ArrayNode list = root.putArray(ANNOTATION_EDITS_KEY);
+        for (var e : edits) {
+            if (e == null) continue;
+            String action = "EDIT".equalsIgnoreCase(e.getAction()) ? "EDIT" : "DELETE";
+            com.fasterxml.jackson.databind.node.ObjectNode n = list.addObject();
+            n.put("style", e.getStyle());
+            n.put("target", e.getTarget());
+            n.put("page_id", e.getPageId());
+            n.put("text", e.getText());
+            n.put("action", action);
+            if ("EDIT".equals(action)) {
+                n.put("new_text", e.getNewText());
+            }
+        }
+        return root.toString();
     }
 
     /**

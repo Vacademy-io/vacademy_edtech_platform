@@ -52,6 +52,11 @@ public class QuestionEvaluationResultDto {
         @JsonProperty("criteria_breakdown")
         private List<JsonNode> criteriaBreakdown;
 
+        // The teacher's edits to the AI's pen notes ({style, target, page_id, text,
+        // action DELETE|EDIT, new_text}); applied when the checked copy is re-drawn.
+        @JsonProperty("annotation_edits")
+        private List<JsonNode> annotationEdits;
+
         @JsonProperty("rubric_version")
         private Integer rubricVersion;
 
@@ -67,6 +72,9 @@ public class QuestionEvaluationResultDto {
         // True once a teacher has overridden this question on the review page.
         @JsonProperty("is_edited")
         private Boolean isEdited;
+
+        @JsonProperty("edited_at")
+        private Date editedAt;
 
         // Timestamps
         @JsonProperty("started_at")

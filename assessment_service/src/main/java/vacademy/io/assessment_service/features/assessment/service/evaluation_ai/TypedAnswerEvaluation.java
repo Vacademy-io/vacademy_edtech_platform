@@ -131,6 +131,14 @@ public class TypedAnswerEvaluation {
         return total;
     }
 
+    /**
+     * The questions an "any N of M" choice group leaves out of the total for these
+     * marks, exactly as {@link #attemptTotal} decides it. Empty without groups.
+     */
+    public Set<String> notCountedQuestionIds(StudentAttempt attempt, List<AiQuestionEvaluation> rows) {
+        return notCounted(attempt, rows);
+    }
+
     private Set<String> notCounted(StudentAttempt attempt, List<AiQuestionEvaluation> rows) {
         if (choiceGroups == null || attempt == null || attempt.getRegistration() == null
                 || attempt.getRegistration().getAssessment() == null) {
