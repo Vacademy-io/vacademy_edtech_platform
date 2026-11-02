@@ -38,10 +38,16 @@ interface BlockProps {
     animate?: boolean;
 }
 
-export const LearnerHero = ({ m, brand, compact }: BlockProps & { compact?: boolean }) => (
+export const LearnerHero = ({
+    m,
+    brand,
+    compact,
+    logo,
+}: BlockProps & { compact?: boolean; logo?: { url?: string | null; name?: string | null } }) => (
     <ReportHero
         brand={brand}
         compact={compact}
+        logo={logo}
         kicker={`${m.firstName}'s progress`}
         headline={m.headline}
         subline={m.subline || undefined}
@@ -186,6 +192,7 @@ export const TopicsBlock = ({ m, brand, animate }: BlockProps) => {
                     rows={m.strengths}
                     brand={brand}
                     empty="No topic at 60% or above yet."
+                    expandable={animate !== false}
                 />
                 <TopicColumn
                     title="Needs work"
@@ -193,6 +200,7 @@ export const TopicsBlock = ({ m, brand, animate }: BlockProps) => {
                     rows={m.weaknesses}
                     brand={brand}
                     empty="No topic below 60%."
+                    expandable={animate !== false}
                 />
             </div>
         </ReportBlock>

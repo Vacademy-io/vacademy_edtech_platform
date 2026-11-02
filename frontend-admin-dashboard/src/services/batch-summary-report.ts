@@ -74,6 +74,7 @@ export interface BatchSummaryReport {
     batch_name: string | null;
     institute_name: string | null;
     brand_color: string | null;
+    logo_url?: string | null;
     start_date: string;
     end_date: string;
     sections: BatchReportSection[];

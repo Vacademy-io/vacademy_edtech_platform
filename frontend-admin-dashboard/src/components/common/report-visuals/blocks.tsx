@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react';
+import { useMemo, useState, type ReactNode } from 'react';
 import { cn } from '@/lib/utils';
 import { REPORT_COLORS, scoreColor, tint } from './palette';
 
@@ -70,8 +70,29 @@ export const StatTile = ({
     </div>
 );
 
+/** Institute logo on a white tile; hides itself when the image cannot load. */
+const HeroLogo = ({ url, name }: { url: string; name?: string | null }) => {
+    const [ok, setOk] = useState(true);
+    if (!ok) return null;
+    return (
+        <div className="flex items-center gap-2">
+            <div className="flex h-10 items-center rounded-lg border border-neutral-200 bg-white px-2">
+                <img
+                    src={url}
+                    alt=""
+                    crossOrigin="anonymous"
+                    className="h-7 w-auto max-w-[120px] object-contain"
+                    onError={() => setOk(false)}
+                />
+            </div>
+            {name && <span className="text-sm font-semibold text-neutral-700">{name}</span>}
+        </div>
+    );
+};
+
 export const ReportHero = ({
     brand,
+    logo,
     kicker,
     headline,
     subline,
@@ -83,6 +104,8 @@ export const ReportHero = ({
     compact = false,
 }: {
     brand: string;
+    /** Institute logo shown above the kicker. */
+    logo?: { url?: string | null; name?: string | null } | null;
     kicker: string;
     headline: string;
     subline?: string;
@@ -103,6 +126,11 @@ export const ReportHero = ({
     >
         <div className={cn('flex items-center gap-4', compact ? 'p-4' : 'p-6')}>
             <div className="flex min-w-0 flex-1 flex-col gap-1">
+                {logo?.url && (
+                    <div className="mb-2">
+                        <HeroLogo url={logo.url} name={logo.name} />
+                    </div>
+                )}
                 <span
                     className="text-2xs font-semibold uppercase tracking-wider"
                     style={{ color: brand }}
@@ -192,6 +220,35 @@ export interface TopicRow {
 }
 
 /** One column of topics (strengths or needs work) with accuracy bars and mastery pips. */
+const TopicBar = ({ t, brand }: { t: TopicRow; brand: string }) => (
+    <div className="flex flex-col gap-1">
+        <div className="flex items-center justify-between gap-2 text-xs">
+            <span className="truncate font-medium text-neutral-700" title={t.topic}>
+                {t.topic}
+            </span>
+            <span className="flex shrink-0 items-center gap-1.5 text-neutral-500">
+                {t.correct}/{t.questions}
+                <MasteryPips level={t.mastery_level} brand={brand} />
+            </span>
+        </div>
+        <div className="h-1.5 w-full rounded-full bg-neutral-100">
+            <div
+                className="h-full rounded-full"
+                style={{
+                    width: `${Math.max(3, Math.min(100, t.accuracy ?? 0))}%`,
+                    background: scoreColor(t.accuracy),
+                }}
+            />
+        </div>
+    </div>
+);
+
+const PAGE = 50;
+
+/**
+ * One column of topics (strengths or needs work) with accuracy bars and mastery pips.
+ * {@code expandable} adds "Show all": a searchable, scrollable list loaded 50 at a time.
+ */
 export const TopicColumn = ({
     title,
     icon,
@@ -199,6 +256,7 @@ export const TopicColumn = ({
     brand,
     empty,
     max = 6,
+    expandable = false,
 }: {
     title: string;
     icon?: ReactNode;
@@ -206,41 +264,77 @@ export const TopicColumn = ({
     brand: string;
     empty: string;
     max?: number;
-}) => (
-    <div className="flex flex-col gap-2">
-        <span className="flex items-center gap-1.5 text-sm font-semibold text-neutral-700">
-            {icon}
-            {title}
-            <span className="text-xs font-normal text-neutral-400">({rows.length})</span>
-        </span>
-        {rows.length === 0 ? (
-            <p className="text-xs text-neutral-400">{empty}</p>
-        ) : (
-            rows.slice(0, max).map((t) => (
-                <div key={t.topic} className="flex flex-col gap-1">
-                    <div className="flex items-center justify-between gap-2 text-xs">
-                        <span className="truncate font-medium text-neutral-700" title={t.topic}>
-                            {t.topic}
-                        </span>
-                        <span className="flex shrink-0 items-center gap-1.5 text-neutral-500">
-                            {t.correct}/{t.questions}
-                            <MasteryPips level={t.mastery_level} brand={brand} />
-                        </span>
-                    </div>
-                    <div className="h-1.5 w-full rounded-full bg-neutral-100">
-                        <div
-                            className="h-full rounded-full"
-                            style={{
-                                width: `${Math.max(3, Math.min(100, t.accuracy ?? 0))}%`,
-                                background: scoreColor(t.accuracy),
-                            }}
-                        />
+    expandable?: boolean;
+}) => {
+    const [open, setOpen] = useState(false);
+    const [search, setSearch] = useState('');
+    const [shown, setShown] = useState(PAGE);
+    const filtered = useMemo(() => {
+        const needle = search.trim().toLowerCase();
+        return needle ? rows.filter((r) => r.topic.toLowerCase().includes(needle)) : rows;
+    }, [rows, search]);
+    const canExpand = expandable && rows.length > max;
+
+    return (
+        <div className="flex flex-col gap-2">
+            <span className="flex items-center gap-1.5 text-sm font-semibold text-neutral-700">
+                {icon}
+                {title}
+                <span className="text-xs font-normal text-neutral-400">({rows.length})</span>
+                {canExpand && (
+                    <button
+                        type="button"
+                        onClick={() => {
+                            setOpen((o) => !o);
+                            setSearch('');
+                            setShown(PAGE);
+                        }}
+                        className="ml-auto text-xs font-medium hover:underline"
+                        style={{ color: brand }}
+                    >
+                        {open ? 'Show less' : `Show all ${rows.length}`}
+                    </button>
+                )}
+            </span>
+            {rows.length === 0 ? (
+                <p className="text-xs text-neutral-400">{empty}</p>
+            ) : open ? (
+                <div className="flex flex-col gap-2">
+                    <input
+                        value={search}
+                        onChange={(e) => {
+                            setSearch(e.target.value);
+                            setShown(PAGE);
+                        }}
+                        placeholder="Search topics"
+                        className="h-8 rounded-md border border-neutral-200 px-2 text-xs outline-none focus:border-neutral-400"
+                    />
+                    <div className="flex max-h-80 flex-col gap-2 overflow-y-auto pr-1">
+                        {filtered.slice(0, shown).map((t) => (
+                            <TopicBar key={t.topic} t={t} brand={brand} />
+                        ))}
+                        {filtered.length === 0 && (
+                            <p className="text-xs text-neutral-400">No topic matches.</p>
+                        )}
+                        {filtered.length > shown && (
+                            <button
+                                type="button"
+                                onClick={() => setShown((n) => n + PAGE)}
+                                className="self-start text-xs font-medium hover:underline"
+                                style={{ color: brand }}
+                            >
+                                Show {Math.min(PAGE, filtered.length - shown)} more of{' '}
+                                {filtered.length - shown}
+                            </button>
+                        )}
                     </div>
                 </div>
-            ))
-        )}
-    </div>
-);
+            ) : (
+                rows.slice(0, max).map((t) => <TopicBar key={t.topic} t={t} brand={brand} />)
+            )}
+        </div>
+    );
+};
 
 const BLOOM_ORDER = [
     ['create', 'Create', 'designing something new'],

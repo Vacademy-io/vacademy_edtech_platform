@@ -72,7 +72,11 @@ export const StudentReportSnapshot = ({
                     range={range}
                 />
             </div>
-            <LearnerHero {...props} compact />
+            <LearnerHero
+                {...props}
+                compact
+                logo={{ url: data.institute?.logo_url, name: data.institute?.name }}
+            />
             <LearnerTiles {...props} narrow />
             <SubjectsBlock {...props} />
             <TrendBlock {...props} />

@@ -29,6 +29,8 @@ public class BatchSummaryReportDTO {
     private String instituteName;
     /** Institute theme colour (hex) for the report header and charts; null for the default. */
     private String brandColor;
+    /** Public URL of the institute logo; null when the institute has none. */
+    private String logoUrl;
     private LocalDate startDate;
     private LocalDate endDate;
     private List<String> sections;

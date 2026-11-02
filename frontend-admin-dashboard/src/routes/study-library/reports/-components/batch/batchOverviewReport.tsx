@@ -60,6 +60,7 @@ import {
     type BatchSummaryRequest,
 } from '@/services/batch-summary-report';
 import { useBatchOptions } from '../batchMultiSelect';
+import { BatchComparison } from './batchComparison';
 import { GenerateBatchReportDialog } from './generateBatchReportDialog';
 
 const ALL = '__all__';
@@ -100,14 +101,15 @@ const BatchOverviewBody = ({
         () =>
             topics
                 .filter((t) => (t.accuracy ?? 0) >= STRONG_FROM)
-                .sort((a, b) => (b.accuracy ?? 0) - (a.accuracy ?? 0)),
+                // Same accuracy: the topic backed by more questions first.
+                .sort((a, b) => (b.accuracy ?? 0) - (a.accuracy ?? 0) || b.questions - a.questions),
         [topics]
     );
     const weaknesses = useMemo(
         () =>
             topics
                 .filter((t) => (t.accuracy ?? 0) < STRONG_FROM)
-                .sort((a, b) => (a.accuracy ?? 0) - (b.accuracy ?? 0)),
+                .sort((a, b) => (a.accuracy ?? 0) - (b.accuracy ?? 0) || b.questions - a.questions),
         [topics]
     );
     const needsAttention = useMemo(
@@ -130,12 +132,12 @@ const BatchOverviewBody = ({
     const topScorers = scored.slice(0, 8);
     const activity = data.activity ?? [];
     const maxTime = Math.max(1, ...activity.map((a) => a.total_time_minutes ?? 0));
-    const batches = (data.batches ?? []).filter((b) => b.learners > 0);
 
     return (
         <div className="flex flex-col gap-4">
             <ReportHero
                 brand={brand}
+                logo={{ url: data.logo_url, name: data.institute_name }}
                 kicker={data.batch_name ?? 'All batches'}
                 headline={headlineFor(data)}
                 subline={
@@ -307,6 +309,7 @@ const BatchOverviewBody = ({
                             rows={strengths}
                             brand={brand}
                             empty="No topic at 60% or above yet."
+                            expandable
                         />
                         <TopicColumn
                             title="Needs work"
@@ -314,6 +317,7 @@ const BatchOverviewBody = ({
                             rows={weaknesses}
                             brand={brand}
                             empty="No topic below 60%."
+                            expandable
                         />
                     </div>
                 )}
@@ -321,37 +325,7 @@ const BatchOverviewBody = ({
 
             <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
                 {!single && (
-                    <ReportBlock
-                        brand={brand}
-                        tag="Batches compared"
-                        title={
-                            batches[0]?.avg_score != null
-                                ? `${batchLabels.get(batches[0].package_session_id) ?? 'A batch'} leads`
-                                : 'No batch scores yet'
-                        }
-                        lede="Average score of each batch's assessed learners."
-                    >
-                        {batches.some((b) => b.avg_score != null) ? (
-                            <HorizontalBars
-                                color={brand}
-                                marker={
-                                    data.avg_score != null
-                                        ? { value: data.avg_score, label: 'Institute average' }
-                                        : null
-                                }
-                                rows={batches.slice(0, 12).map((b) => ({
-                                    key: b.package_session_id,
-                                    label: batchLabels.get(b.package_session_id) ?? 'Batch',
-                                    value: b.avg_score,
-                                    display: pct(b.avg_score),
-                                    sub: `${b.learners_assessed}/${b.learners} assessed`,
-                                    color: scoreColor(b.avg_score),
-                                }))}
-                            />
-                        ) : (
-                            <Empty brand={brand} text="No batch has assessment scores yet." />
-                        )}
-                    </ReportBlock>
+                    <BatchComparison data={data} brand={brand} batchLabels={batchLabels} />
                 )}
 
                 <ReportBlock
