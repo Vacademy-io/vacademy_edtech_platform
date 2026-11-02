@@ -104,6 +104,10 @@ export default function Evaluation({
             }),
         }));
     }, [questionData, marksData]);
+    // The open section tab: the one the teacher picked, else the first section.
+    const shownSection = sections.some((s) => s.sectionId === activeSection)
+        ? activeSection
+        : sections[0]?.sectionId ?? '';
 
     // Flatten across sections so we can offer a single "overall marks" control when
     // the assessment is just one question (the assessment-as-a-slide shape).
@@ -223,25 +227,20 @@ export default function Evaluation({
                     <p className="text-xs text-neutral-400">{t('enterOverallScoreHint')}</p>
                 </div>
             ) : (
-                <Tabs>
+                // Controlled, with the first section open by default. Uncontrolled
+                // Tabs had no value, so the question table stayed hidden until the
+                // teacher clicked "Section 1".
+                <Tabs value={shownSection} onValueChange={setActiveSection}>
                     <TabsList>
                         {sections.map((section, index) => (
-                            <TabsTrigger
-                                key={section.sectionId}
-                                onClick={() => setActiveSection(section.sectionId)}
-                                value={section.sectionId}
-                            >
+                            <TabsTrigger key={section.sectionId} value={section.sectionId}>
                                 {t('sectionNumber', { number: index + 1 })}
                             </TabsTrigger>
                         ))}
                     </TabsList>
 
                     {sections.map((section) => (
-                        <TabsContent
-                            key={section.sectionId}
-                            hidden={activeSection !== section.sectionId}
-                            value={activeSection}
-                        >
+                        <TabsContent key={section.sectionId} value={section.sectionId}>
                             <ScrollArea className="h-64 rounded-md border">
                                 <Table>
                                     <TableHeader>

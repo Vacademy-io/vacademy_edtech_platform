@@ -205,62 +205,6 @@ const ReleaseResultComponent = ({
     );
 };
 
-// Confirmation shown before opening the manual evaluation tool for an attempt
-// that has already been evaluated. Re-grading resets its status to "Evaluating"
-// until new marks are submitted, so warn the teacher first.
-export const ManualReEvaluateConfirmComponent = ({
-    student,
-    onConfirm,
-    onClose,
-}: {
-    student: Pick<AssessmentRevaluateStudentInterface, 'full_name'>;
-    onConfirm: () => void;
-    onClose: () => void;
-}) => {
-    const { t } = useTranslation('assessmentStudentAttemptDropdown');
-    return (
-        <DialogContent className="flex flex-col p-0">
-            <h1 className="rounded-md bg-primary-50 p-4 text-primary-500">
-                {t('dialogs.manualReEvaluate.title')}
-            </h1>
-            <div className="flex flex-col gap-2 p-4">
-                <div className="flex items-center gap-1 text-danger-600">
-                    <p>{t('dialogs.attentionLabel')}</p>
-                    <WarningCircle size={18} />
-                </div>
-                <h1>
-                    <span className="text-primary-500">{student.full_name}</span>
-                    {t('dialogs.manualReEvaluate.messagePart1')}{' '}
-                    <span className="font-semibold">
-                        {t('dialogs.manualReEvaluate.evaluatingLabel')}
-                    </span>{' '}
-                    {t('dialogs.manualReEvaluate.messagePart2')}
-                </h1>
-                <div className="mt-4 flex justify-end gap-2">
-                    <MyButton
-                        type="button"
-                        scale="medium"
-                        buttonType="secondary"
-                        className="font-medium"
-                        onClick={onClose}
-                    >
-                        {t('dialogs.cancel')}
-                    </MyButton>
-                    <MyButton
-                        type="button"
-                        scale="medium"
-                        buttonType="primary"
-                        className="font-medium"
-                        onClick={onConfirm}
-                    >
-                        {t('dialogs.continue')}
-                    </MyButton>
-                </div>
-            </div>
-        </DialogContent>
-    );
-};
-
 const StudentEvaluateWithAIComponent = ({
     student,
     onClose,
@@ -854,16 +798,10 @@ const StudentAttemptDropdown = ({ student }: { student: AssessmentRevaluateStude
                                 <>
                                     <DropdownMenuItem
                                         className="cursor-pointer"
-                                        onClick={() => {
-                                            // Already-evaluated attempts get a confirmation
-                                            // (re-grading resets status to "Evaluating"); a
-                                            // first-time evaluation opens the tool directly.
-                                            if (isEvaluationPending) {
-                                                handleManualEvaluate();
-                                            } else {
-                                                handleProvideReattempt('Manual Re-evaluate');
-                                            }
-                                        }}
+                                        // Opens the tool directly, evaluated or not: the
+                                        // backend never moves an evaluated attempt back
+                                        // to Evaluating just for opening it.
+                                        onClick={handleManualEvaluate}
                                     >
                                         {t('dropdown.manual')}
                                     </DropdownMenuItem>
@@ -1002,16 +940,6 @@ const StudentAttemptDropdown = ({ student }: { student: AssessmentRevaluateStude
                         onClose={() => setOpenDialog(false)}
                         assessmentData={assessmentData}
                         isReEvaluation={!isEvaluationPending}
-                    />
-                )}
-                {selectedOption === 'Manual Re-evaluate' && (
-                    <ManualReEvaluateConfirmComponent
-                        student={student}
-                        onConfirm={() => {
-                            setOpenDialog(false);
-                            handleManualEvaluate();
-                        }}
-                        onClose={() => setOpenDialog(false)}
                     />
                 )}
             </Dialog>

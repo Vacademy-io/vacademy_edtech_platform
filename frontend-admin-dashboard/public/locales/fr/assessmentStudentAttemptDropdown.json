@@ -13,12 +13,6 @@
             "title": "Publier le résultat",
             "confirmMessagePrefix": "Voulez-vous vraiment publier le résultat pour"
         },
-        "manualReEvaluate": {
-            "title": "Réévaluer la tentative",
-            "evaluatingLabel": "En cours d’évaluation",
-            "messagePart1": "a déjà une tentative évaluée. La réévaluer la fera repasser à l’état",
-            "messagePart2": "jusqu’à ce que vous soumettiez de nouvelles notes. Voulez-vous continuer ?"
-        },
         "evaluateWithAI": {
             "title": "Évaluer l’évaluation avec l’IA",
             "evaluatingLabel": "En cours d’évaluation",
