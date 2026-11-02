@@ -801,6 +801,21 @@ public interface StudentSessionInstituteGroupMappingRepository
       @Param("statuses") List<String> statuses);
 
   /**
+   * Every batch and learner pair of an institute in the given statuses, one row each as
+   * [package_session_id, user_id]. Used by the batch report to compare all batches in one read.
+   */
+  @Query(value = """
+      SELECT DISTINCT package_session_id, user_id FROM student_session_institute_group_mapping
+      WHERE institute_id = :instituteId
+        AND status IN (:statuses)
+        AND package_session_id IS NOT NULL
+        AND user_id IS NOT NULL
+      """, nativeQuery = true)
+  List<Object[]> findPackageSessionUserPairsByInstituteAndStatus(
+      @Param("instituteId") String instituteId,
+      @Param("statuses") List<String> statuses);
+
+  /**
    * Learners enrolled in one batch — the recipient list for a daily-engagement push.
    * Distinct so a re-enrolled learner is not notified twice.
    */

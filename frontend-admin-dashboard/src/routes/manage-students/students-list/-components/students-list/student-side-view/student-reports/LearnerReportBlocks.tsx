@@ -186,6 +186,7 @@ export const TopicsBlock = ({ m, brand, animate }: BlockProps) => {
                     rows={m.strengths}
                     brand={brand}
                     empty="No topic at 60% or above yet."
+                    expandable={animate !== false}
                 />
                 <TopicColumn
                     title="Needs work"
@@ -193,6 +194,7 @@ export const TopicsBlock = ({ m, brand, animate }: BlockProps) => {
                     rows={m.weaknesses}
                     brand={brand}
                     empty="No topic below 60%."
+                    expandable={animate !== false}
                 />
             </div>
         </ReportBlock>

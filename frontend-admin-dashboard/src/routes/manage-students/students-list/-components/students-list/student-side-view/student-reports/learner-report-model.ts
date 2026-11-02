@@ -44,10 +44,10 @@ export const splitStrengths = (topics: TopicMastery[]) => {
     const scored = topics.filter((t) => t.accuracy != null && t.questions > 0);
     const strengths = scored
         .filter((t) => (t.accuracy ?? 0) >= STRENGTH_THRESHOLD)
-        .sort((a, b) => (b.accuracy ?? 0) - (a.accuracy ?? 0));
+        .sort((a, b) => (b.accuracy ?? 0) - (a.accuracy ?? 0) || b.questions - a.questions);
     const weaknesses = scored
         .filter((t) => (t.accuracy ?? 0) < STRENGTH_THRESHOLD)
-        .sort((a, b) => (a.accuracy ?? 0) - (b.accuracy ?? 0));
+        .sort((a, b) => (a.accuracy ?? 0) - (b.accuracy ?? 0) || b.questions - a.questions);
     return { strengths, weaknesses };
 };
 

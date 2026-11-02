@@ -79,7 +79,6 @@ public class BatchSummaryReportService {
     private static final long MAX_RANGE_DAYS = 366;
     /** Roster cap for one batch; the all-batches report has no cap. */
     private static final int MAX_LEARNERS = 10000;
-    private static final int MAX_BATCHES_COMPARED = 40;
     private static final int ACTIVITY_ROWS = 10;
     private static final int HIGHLIGHT_ROWS = 10;
     private static final double STRONG_FROM = 60;
@@ -278,13 +277,16 @@ public class BatchSummaryReportService {
         return out.build();
     }
 
-    /** Average score per batch for the all-batches report, best first. */
+    /** Average score and participation of every batch for the all-batches report, best first. */
     private List<BatchSummaryReportDTO.BatchRow> compareBatches(String instituteId, Map<String, Double> userAvg) {
         List<BatchSummaryReportDTO.BatchRow> rows = new ArrayList<>();
         try {
-            for (String ps : mappingRepository.findDistinctPackageSessionIdsByInstituteAndStatus(
-                    instituteId, ACTIVE, MAX_BATCHES_COMPARED)) {
-                List<String> ids = mappingRepository.findDistinctUserIdsByPackageSessionAndStatus(ps, ACTIVE);
+            Map<String, List<String>> byBatch = new LinkedHashMap<>();
+            for (Object[] pair : mappingRepository.findPackageSessionUserPairsByInstituteAndStatus(instituteId, ACTIVE)) {
+                if (pair == null || pair.length < 2 || pair[0] == null || pair[1] == null) continue;
+                byBatch.computeIfAbsent(pair[0].toString(), k -> new ArrayList<>()).add(pair[1].toString());
+            }
+            byBatch.forEach((ps, ids) -> {
                 double sum = 0;
                 int n = 0;
                 for (String id : ids) {
@@ -300,7 +302,7 @@ public class BatchSummaryReportService {
                         .learnersAssessed(n)
                         .avgScore(n == 0 ? null : round1(sum / n))
                         .build());
-            }
+            });
         } catch (Exception e) {
             log.warn("[batch-summary] batch comparison failed for institute {}: {}", instituteId, e.getMessage());
         }
@@ -599,9 +601,13 @@ public class BatchSummaryReportService {
             return;
         }
         List<BatchSummaryReportDTO.TopicRow> strong = topics.stream().filter(t -> t.getAccuracy() >= STRONG_FROM)
-                .sorted(Comparator.comparing(BatchSummaryReportDTO.TopicRow::getAccuracy).reversed()).limit(6).toList();
+                .sorted(Comparator.comparing(BatchSummaryReportDTO.TopicRow::getAccuracy).reversed()
+                        .thenComparing(Comparator.comparingInt(BatchSummaryReportDTO.TopicRow::getQuestions).reversed()))
+                .limit(6).toList();
         List<BatchSummaryReportDTO.TopicRow> weak = topics.stream().filter(t -> t.getAccuracy() < STRONG_FROM)
-                .sorted(Comparator.comparing(BatchSummaryReportDTO.TopicRow::getAccuracy)).limit(6).toList();
+                .sorted(Comparator.comparing(BatchSummaryReportDTO.TopicRow::getAccuracy)
+                        .thenComparing(Comparator.comparingInt(BatchSummaryReportDTO.TopicRow::getQuestions).reversed()))
+                .limit(6).toList();
         String body = "<table class=\"cols\"><tr><td class=\"col\"><div class=\"sub-h\">Strengths</div>" + topicBars(strong, "None yet.")
                 + "</td><td class=\"col-gap\"></td><td class=\"col\"><div class=\"sub-h\">Needs work</div>" + topicBars(weak, "None.")
                 + "</td></tr></table>";
