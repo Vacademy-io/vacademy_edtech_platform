@@ -662,15 +662,19 @@
             },
             "sourceTypeLabel": "إكمال",
             "sourceType": {
+                "COURSE": "الدورة كاملة",
                 "SUBJECT": "مادة",
                 "MODULE": "وحدة",
                 "CHAPTER": "فصل"
             },
             "sourceText": "{{type}} «{{name}}»",
+            "sourceTextCourse": "الدورة «{{name}}»",
             "sourceUnnamed": "المحتوى المختار",
             "choose": "اختر",
             "loading": "جارٍ التحميل…",
             "noSubjects": "لا توجد مواد في هذه الدفعة",
+            "noChapters": "لا توجد فصول في هذه الوحدة",
+            "courseOnly": "لا تحتوي هذه الدورة على مواد أو وحدات أو فصول، لذا يبدأ المتعلمون عند إكمال الدورة كاملة.",
             "subjectFirst": "اختر مادة أولاً",
             "moduleFirst": "اختر وحدة أولاً",
             "change": "تغيير",
@@ -679,7 +683,7 @@
             "threshold": "يُعد مكتملاً عند (%)",
             "thresholdHint": "لا يرى الخطة المتعلمون الذين لم يصلوا إلى هذه النسبة بعد.",
             "startLocked": "لا يمكن تغيير البداية بعد نشر الخطة.",
-            "startLockedContent": "تبدأ عندما يكمل المتعلمون {{type}} «{{name}}» ({{percent}}%)",
+            "startLockedContent": "تبدأ عندما يكمل المتعلمون {{source}} ({{percent}}%)",
             "summaryContent": "{{days}} بعد أن يكمل كل متعلم {{source}}. اليوم 1 هو ذلك اليوم، ولا يرى الخطة بعد من لم يكمله.",
             "publishLeadContent": "يبدأ كل متعلم في {{batch}} اليوم 1 عند إكمال {{source}} ({{percent}}%). تستمر الخطة حتى اليوم {{last}}.",
             "cardHintContent": "تُحسب الأيام من يوم إكمال كل متعلم {{source}} (اليوم 1 = ذلك اليوم). من لم يكمله لا يرى الخطة بعد."

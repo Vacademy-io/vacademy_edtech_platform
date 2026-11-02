@@ -526,15 +526,19 @@
             },
             "sourceTypeLabel": "Complete a",
             "sourceType": {
+                "COURSE": "Whole course",
                 "SUBJECT": "Subject",
                 "MODULE": "Module",
                 "CHAPTER": "Chapter"
             },
             "sourceText": "{{type}} “{{name}}”",
+            "sourceTextCourse": "the course “{{name}}”",
             "sourceUnnamed": "the chosen content",
             "choose": "Choose",
             "loading": "Loading…",
             "noSubjects": "No subjects in this batch",
+            "noChapters": "No chapters in this module",
+            "courseOnly": "This course has no subjects, modules or chapters, so learners start when they complete the whole course.",
             "subjectFirst": "Choose a subject first",
             "moduleFirst": "Choose a module first",
             "change": "Change",
@@ -543,7 +547,7 @@
             "threshold": "Counts as complete at (%)",
             "thresholdHint": "Learners who haven't reached this yet don't see the plan.",
             "startLocked": "The start can't change after the plan is published.",
-            "startLockedContent": "Starts when learners complete {{type}} “{{name}}” ({{percent}}%)",
+            "startLockedContent": "Starts when learners complete {{source}} ({{percent}}%)",
             "summaryContent": "{{days}} after each learner completes {{source}}. Day 1 is that day; learners who haven't completed it don't see the plan yet.",
             "publishLeadContent": "Each learner in {{batch}} starts on Day 1 when they complete {{source}} ({{percent}}% done). The plan runs to Day {{last}}.",
             "cardHintContent": "Days count from the day each learner completes {{source}} (Day 1 = that day). Learners who haven't completed it don't see the plan yet."

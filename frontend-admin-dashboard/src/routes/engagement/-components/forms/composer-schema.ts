@@ -360,7 +360,7 @@ export const composerSchema = z
         scheduleMode: z.enum(['CALENDAR', 'RELATIVE']),
         /** RELATIVE plans: count Day 1 from joining, or from completing chosen content. */
         startTrigger: z.enum(['JOIN', 'CONTENT']),
-        startSourceType: z.enum(['SUBJECT', 'MODULE', 'CHAPTER']).nullable().optional(),
+        startSourceType: z.enum(['COURSE', 'SUBJECT', 'MODULE', 'CHAPTER']).nullable().optional(),
         startSourceId: optionalText,
         startSourceName: optionalText,
         startThreshold: optionalInt,

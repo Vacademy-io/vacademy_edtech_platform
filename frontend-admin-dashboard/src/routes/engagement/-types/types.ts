@@ -32,7 +32,8 @@ export type ScheduleMode = 'CALENDAR' | 'RELATIVE';
  * CONTENT: the day they complete a chosen subject, module or chapter.
  */
 export type StartTrigger = 'JOIN' | 'CONTENT';
-export type StartSourceType = 'SUBJECT' | 'MODULE' | 'CHAPTER';
+/** COURSE = the whole course of the plan's batch (its id is the batch id). */
+export type StartSourceType = 'COURSE' | 'SUBJECT' | 'MODULE' | 'CHAPTER';
 
 export type PlanStatus = 'DRAFT' | 'PUBLISHED' | 'ARCHIVED' | 'DELETED';
 

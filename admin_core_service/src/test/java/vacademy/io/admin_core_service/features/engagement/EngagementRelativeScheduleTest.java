@@ -173,6 +173,17 @@ class EngagementRelativeScheduleTest {
     }
 
     @Test
+    @DisplayName("content start: the whole course reads the batch's course completion")
+    void contentStartWholeCourse() {
+        EngagementPlan p = contentPlan(at(2026, 9, 5, 10));
+        p.setStartSourceType("COURSE");
+        p.setStartSourceId("ps-1");
+        Mockito.when(repo.findContentStartForUser("plan-1", "u-1", "PACKAGE_SESSION", "ps-1",
+                "PERCENTAGE_PACKAGE_SESSION_COMPLETED", 80)).thenReturn(List.of(at(2026, 9, 25, 7)));
+        assertEquals(LocalDate.of(2026, 9, 25), schedule.dayOnesForUser("u-1", List.of(p)).get("plan-1"));
+    }
+
+    @Test
     @DisplayName("content start needs a known source; threshold is clamped to 1..100")
     void contentStartGuards() {
         EngagementPlan p = contentPlan(at(2026, 9, 5, 10));
