@@ -811,13 +811,24 @@ public class AudienceService {
             repeatLeadSettings = dupMatch.get().repeatLeadSettings();
         }
 
-        // 1. Create/fetch the lead's user in auth_service (no credentials email).
-        UserDTO createdUser = authService.createUserFromAuthService(userDTO, audience.getInstituteId(), false);
+        // 1. Create/fetch the lead's user in auth_service (no credentials email); a repeat may
+        //    join the person who already holds the phone (repeatLead.samePersonByPhone).
+        ResolvedLeadUser resolved = resolveLeadUser(userDTO, audience.getInstituteId(), audience.getId(),
+                repeatLeadSettings != null, null);
+        UserDTO createdUser = resolved.user();
         String userId = createdUser != null ? createdUser.getId() : null;
 
         // 2. Dedup per person per campaign (same behaviour as submitLeadV2).
         if (StringUtils.hasText(userId)
                 && audienceResponseRepository.existsByAudienceIdAndUserId(audience.getId(), userId)) {
+            if (resolved.joinedByPhone()) {
+                String repeatedLeadId = applySameListRepeat(repeatLeadSettings, audience, userId,
+                        StringUtils.hasText(dto.getSourceType()) ? dto.getSourceType() : "COURSE_CATALOGUE",
+                        dto.getEmail(), dto.getMobileNumber(), null, null, null, createdUser.getFullName());
+                if (repeatedLeadId != null) {
+                    return repeatedLeadId;
+                }
+            }
             // Their lead may have been soft-deleted — revive it rather than leaving them
             // permanently invisible. Return either way: this is still a duplicate submission.
             reactivateSoftDeletedLeads(audience.getId(), userId);
@@ -999,13 +1010,23 @@ public class AudienceService {
             repeatLeadSettings = dupMatch.get().repeatLeadSettings();
         }
 
-        // 1. Create/fetch the lead's user in auth_service (no credentials email).
-        UserDTO createdUser = authService.createUserFromAuthService(userDTO, audience.getInstituteId(), false);
+        // 1. Create/fetch the lead's user in auth_service (no credentials email); a repeat may
+        //    join the person who already holds the phone (repeatLead.samePersonByPhone).
+        ResolvedLeadUser resolved = resolveLeadUser(userDTO, audience.getInstituteId(), audience.getId(),
+                repeatLeadSettings != null, null);
+        UserDTO createdUser = resolved.user();
         String userId = createdUser != null ? createdUser.getId() : null;
 
         // 2. Per-person-per-campaign dedup — revive a soft-deleted lead rather than duplicate.
         if (StringUtils.hasText(userId)
                 && audienceResponseRepository.existsByAudienceIdAndUserId(audience.getId(), userId)) {
+            if (resolved.joinedByPhone()) {
+                String repeatedLeadId = applySameListRepeat(repeatLeadSettings, audience, userId, "LIVE_SESSION",
+                        email, mobileNumber, null, null, null, createdUser.getFullName());
+                if (repeatedLeadId != null) {
+                    return repeatedLeadId;
+                }
+            }
             reactivateSoftDeletedLeads(audience.getId(), userId);
             return "You are already captured as a lead for this campaign";
         }
@@ -1545,8 +1566,9 @@ public class AudienceService {
             if (userDTO != null && StringUtils.hasText(userDTO.getEmail())) {
                 // Call auth_service to create or fetch existing user
                 // sendCred = false (no email notification)
-                createdUser = resolveLeadUser(userDTO, audience.getInstituteId(),
+                ResolvedLeadUser resolved = resolveLeadUser(userDTO, audience.getInstituteId(),
                         requestDTO.getAudienceId(), repeatLeadSettings != null, requestDTO.getCounsellorId());
+                createdUser = resolved.user();
                 userId = createdUser.getId();
                 // Prepare effectively final variables for lambda
                 final UserDTO userForNotification = createdUser;
@@ -1556,6 +1578,15 @@ public class AudienceService {
                 // Duplicate submission guard: same audience + same user
                 if (StringUtils.hasText(userId) &&
                         audienceResponseRepository.existsByAudienceIdAndUserId(requestDTO.getAudienceId(), userId)) {
+                    if (resolved.joinedByPhone()) {
+                        String repeatedLeadId = applySameListRepeat(repeatLeadSettings, audience, userId,
+                                requestDTO.getSourceType(), userDTO.getEmail(), userDTO.getMobileNumber(),
+                                requestDTO.getCreatedByUserId(), requestDTO.getCounsellorId(),
+                                requestDTO.getCounsellorName(), createdUser.getFullName());
+                        if (repeatedLeadId != null) {
+                            return repeatedLeadId;
+                        }
+                    }
                     // Revive a soft-deleted lead instead of blackholing the resubmission.
                     reactivateSoftDeletedLeads(requestDTO.getAudienceId(), userId);
                     return "You have already submitted your response for this campaign";
@@ -2121,25 +2152,32 @@ public class AudienceService {
      * second owner. The submission's own name, email and phone are kept on the returned DTO,
      * so this request's notifications go where they always did.
      *
+     * <p>This also holds when the person already has a lead in this same list: the caller's
+     * one-lead-per-person-per-list guard then sees {@link ResolvedLeadUser#joinedByPhone()} and
+     * treats the submission as a repeat of that lead ({@link #applySameListRepeat}) instead of
+     * adding a second row or a second person.
+     *
      * <p>Kept exactly as before (create or fetch by email, no credentials email) when it is
-     * not such a repeat, the lookup fails, the person already has a lead in this same list
-     * (a repeat there still comes in as its own lead), or the request names a counsellor
-     * other than the person's current owner (so intake never moves an owned lead).
+     * not such a repeat, the lookup fails, or the request names a counsellor other than the
+     * person's current owner (so intake never moves an owned lead).
      */
-    private UserDTO resolveLeadUser(UserDTO userDTO, String instituteId, String audienceId,
+    private ResolvedLeadUser resolveLeadUser(UserDTO userDTO, String instituteId, String audienceId,
             boolean repeatLead, String requestedCounsellorId) {
         if (repeatLead && userDTO != null) {
             try {
                 String existingId = leadDeduplicationService
                         .findExistingLeadUserIdByPhone(instituteId, audienceId, userDTO.getMobileNumber())
                         .orElse(null);
-                if (existingId != null && canJoinExistingPerson(existingId, instituteId, audienceId,
-                        requestedCounsellorId)) {
+                if (existingId != null && canJoinExistingPerson(existingId, instituteId, requestedCounsellorId)) {
                     List<UserDTO> found = authService.getUsersFromAuthServiceByUserIds(List.of(existingId));
                     UserDTO existing = found == null ? null : found.stream()
                             .filter(u -> u != null && existingId.equals(u.getId()))
                             .findFirst().orElse(null);
                     if (existing != null) {
+                        // Same email as the person's account: auth_service would have returned
+                        // this very person, so nothing differs from the email path (a same-list
+                        // resubmission, e.g. a webhook retry, stays "already submitted").
+                        boolean newEmail = !sameEmail(existing.getEmail(), userDTO.getEmail());
                         if (StringUtils.hasText(userDTO.getEmail())) existing.setEmail(userDTO.getEmail());
                         if (StringUtils.hasText(userDTO.getFullName())) existing.setFullName(userDTO.getFullName());
                         if (StringUtils.hasText(userDTO.getMobileNumber())) {
@@ -2147,7 +2185,7 @@ public class AudienceService {
                         }
                         logger.info("Repeat lead for audience {} joins existing person {} by phone",
                                 audienceId, existingId);
-                        return existing;
+                        return new ResolvedLeadUser(existing, newEmail);
                     }
                 }
             } catch (Exception e) {
@@ -2155,18 +2193,27 @@ public class AudienceService {
                         audienceId, e.getMessage());
             }
         }
-        return authService.createUserFromAuthService(userDTO, instituteId, false);
+        return new ResolvedLeadUser(authService.createUserFromAuthService(userDTO, instituteId, false), false);
     }
 
     /**
-     * Whether a repeat may join {@code existingId}: not when that person already has a lead
-     * in this list, and not when the request names a counsellor other than their owner.
+     * The lead's person record from {@link #resolveLeadUser}. {@code joinedByPhone}: the person
+     * was found by phone and this submission's email is not the one on their account, so the
+     * email path would have made (or picked) a different person. Only then does a lead this
+     * person already has in the same list turn the submission into a same-list repeat.
      */
-    private boolean canJoinExistingPerson(String existingId, String instituteId, String audienceId,
-            String requestedCounsellorId) {
-        if (audienceResponseRepository.existsByAudienceIdAndUserId(audienceId, existingId)) {
-            return false;
-        }
+    private record ResolvedLeadUser(UserDTO user, boolean joinedByPhone) {
+    }
+
+    private static boolean sameEmail(String a, String b) {
+        return StringUtils.hasText(a) && StringUtils.hasText(b) && a.trim().equalsIgnoreCase(b.trim());
+    }
+
+    /**
+     * Whether a repeat may join {@code existingId}: not when the request names a counsellor
+     * other than their owner. A lead the person already has in this list does not stop it.
+     */
+    private boolean canJoinExistingPerson(String existingId, String instituteId, String requestedCounsellorId) {
         if (!StringUtils.hasText(requestedCounsellorId)) {
             return true;
         }
@@ -2174,6 +2221,106 @@ public class AudienceService {
                 .map(p -> p.getAssignedCounselorId())
                 .orElse(null);
         return !StringUtils.hasText(owner) || owner.equals(requestedCounsellorId);
+    }
+
+    /**
+     * Id of the enquiry a same-list repeat stands for. That enquiry is never saved; it only
+     * carries this submission's source, contact and creator into the repeat-lead steps. As
+     * the id matches no row, the "lead it repeats" lookups exclude nothing, so they find the
+     * person's existing lead in this list just as a cross-list repeat finds its earlier lead.
+     */
+    static final String SAME_LIST_REPEAT_ID = "same-list-repeat";
+
+    private static boolean isSameListRepeat(AudienceResponse response) {
+        return response != null && SAME_LIST_REPEAT_ID.equals(response.getId());
+    }
+
+    /**
+     * A repeat (repeatLead.samePersonByPhone) whose person already has a lead in this list.
+     * One lead per person per list stays the rule, so instead of a second row this revives
+     * that lead if it was soft-deleted, applies what a cross-list repeat gets (counsellor
+     * policy, reattempt follow-up / bell / tier, status reset) against it, and writes a
+     * Reattempt entry on its journey whatever the reattempt switches say, since no new lead
+     * row shows the enquiry. Lead score, form answers and workflows of the existing lead are
+     * left as they are.
+     *
+     * @return the existing lead's id, the same success result a new lead returns; null when
+     *         no lead of this person is found in the list (the caller keeps its old answer)
+     */
+    private String applySameListRepeat(LeadDedupSettingService.RepeatLeadSettings repeatLeadSettings,
+            Audience audience, String userId, String sourceType, String email, String phone,
+            String createdByUserId, String requestCounsellorId, String requestCounsellorName, String leadName) {
+        String audienceId = audience.getId();
+        String instituteId = audience.getInstituteId();
+        reactivateSoftDeletedLeads(audienceId, userId);
+        AudienceResponse existing = latestActiveLeadInList(audienceId, userId);
+        if (existing == null) {
+            return null;
+        }
+        AudienceResponse enquiry = AudienceResponse.builder()
+                .id(SAME_LIST_REPEAT_ID)
+                .audienceId(audienceId)
+                .userId(userId)
+                .sourceType(sourceType)
+                .parentEmail(email)
+                .parentMobile(truncateForParentMobileColumn(phone))
+                .createdByUserId(createdByUserId)
+                .build();
+        String campaignName = audience.getCampaignName();
+        applyCounsellorAssignment(repeatLeadSettings, enquiry, userId, instituteId,
+                requestCounsellorId, requestCounsellorName, leadName, campaignName, email, phone);
+        recordReattempt(repeatLeadSettings, enquiry, userId, instituteId, email, phone, leadName, campaignName);
+        applyRepeatLeadStatus(repeatLeadSettings, userId, instituteId, enquiry, email, phone);
+        logSameListReattempt(existing, enquiry, campaignName);
+        logger.info("Repeat lead for audience {}: person {} already has lead {} here, applied as a repeat of it",
+                audienceId, userId, existing.getId());
+        return existing.getId();
+    }
+
+    /** This person's newest live lead in this list, or null. */
+    private AudienceResponse latestActiveLeadInList(String audienceId, String userId) {
+        List<AudienceResponse> rows = audienceResponseRepository.findByAudienceIdAndUserIdAndAudienceStatus(
+                audienceId, userId, AudienceStatusEnum.ACTIVE.name());
+        if (CollectionUtils.isEmpty(rows)) {
+            return null;
+        }
+        return rows.stream()
+                .filter(Objects::nonNull)
+                .max(Comparator.comparing(AudienceResponse::getCreatedAt,
+                        Comparator.nullsFirst(Comparator.naturalOrder())))
+                .orElse(null);
+    }
+
+    /** "Reattempt" on the existing lead's journey for a same-list repeat. Best-effort. */
+    private void logSameListReattempt(AudienceResponse existing, AudienceResponse enquiry, String campaignName) {
+        AudienceResponseRepository.PrimaryLeadRow lead = new AudienceResponseRepository.PrimaryLeadRow() {
+            @Override
+            public String getResponseId() {
+                return existing.getId();
+            }
+
+            @Override
+            public String getUserId() {
+                return existing.getUserId();
+            }
+
+            @Override
+            public String getCounsellorId() {
+                return null;
+            }
+
+            @Override
+            public String getStatusKey() {
+                return null;
+            }
+        };
+        try {
+            leadDeduplicationService.logReattempt(lead, enquiry, reattemptSourceLabel(enquiry.getSourceType()),
+                    campaignName);
+        } catch (Exception e) {
+            logger.error("Same-list repeat on lead {}: failed to log the reattempt: {}",
+                    existing.getId(), e.getMessage());
+        }
     }
 
     /**
@@ -2326,7 +2473,11 @@ public class AudienceService {
         }
         String sourceLabel = reattemptSourceLabel(savedResponse.getSourceType());
 
-        if (reattempt.markDuplicate() && (!reattempt.duplicateOpenOnly() || isOpenLeadStatus(primary.getStatusKey()))) {
+        // A same-list repeat adds no row to flag, and applySameListRepeat writes its journey
+        // entry on the lead it repeats in that list.
+        boolean sameListRepeat = isSameListRepeat(savedResponse);
+        if (!sameListRepeat && reattempt.markDuplicate()
+                && (!reattempt.duplicateOpenOnly() || isOpenLeadStatus(primary.getStatusKey()))) {
             try {
                 audienceResponseRepository.markDuplicateOf(savedResponse.getId(), primary.getResponseId());
             } catch (Exception e) {
@@ -2334,7 +2485,7 @@ public class AudienceService {
                         savedResponse.getId(), primary.getResponseId(), e.getMessage());
             }
         }
-        if (reattempt.journeyEntry()) {
+        if (reattempt.journeyEntry() && !sameListRepeat) {
             try {
                 leadDeduplicationService.logReattempt(primary, savedResponse, sourceLabel, campaignName);
             } catch (Exception e) {
@@ -2543,13 +2694,23 @@ public class AudienceService {
 
                 // Call auth_service to create or fetch existing user
                 // sendCred = false (no email notification)
-                createdUser = resolveLeadUser(userDTO, audience.getInstituteId(),
+                ResolvedLeadUser resolved = resolveLeadUser(userDTO, audience.getInstituteId(),
                         requestDTO.getAudienceId(), repeatLeadSettings != null, requestDTO.getCounsellorId());
+                createdUser = resolved.user();
                 userId = createdUser.getId();
 
                 // Duplicate submission guard: same audience + same user
                 if (StringUtils.hasText(userId) &&
                         audienceResponseRepository.existsByAudienceIdAndUserId(requestDTO.getAudienceId(), userId)) {
+                    if (resolved.joinedByPhone()) {
+                        String repeatedLeadId = applySameListRepeat(repeatLeadSettings, audience, userId,
+                                requestDTO.getSourceType(), userDTO.getEmail(), userDTO.getMobileNumber(),
+                                requestDTO.getCreatedByUserId(), requestDTO.getCounsellorId(),
+                                requestDTO.getCounsellorName(), createdUser.getFullName());
+                        if (repeatedLeadId != null) {
+                            return repeatedLeadId;
+                        }
+                    }
                     // Revive a soft-deleted lead instead of blackholing the resubmission.
                     reactivateSoftDeletedLeads(requestDTO.getAudienceId(), userId);
                     return "You have already submitted your response for this campaign";
@@ -5929,7 +6090,8 @@ public class AudienceService {
                 .mobileNumber(processedData.getPhone())
                 .build();
 
-        UserDTO createdUser = resolveLeadUser(userDTO, instituteId, audienceId, repeatLeadSettings != null, null);
+        ResolvedLeadUser resolved = resolveLeadUser(userDTO, instituteId, audienceId, repeatLeadSettings != null, null);
+        UserDTO createdUser = resolved.user();
         String userId = createdUser.getId();
 
         // Ensure mobile number from form is preserved (auth service might return
@@ -5944,6 +6106,15 @@ public class AudienceService {
 
         // Duplicate submission guard
         if (audienceResponseRepository.existsByAudienceIdAndUserId(audienceId, userId)) {
+            if (resolved.joinedByPhone()) {
+                String repeatedLeadId = applySameListRepeat(repeatLeadSettings, audience, userId, formProvider,
+                        processedData.getEmail(), processedData.getPhone(), null, null, null,
+                        createdUser.getFullName());
+                if (repeatedLeadId != null) {
+                    recordWebhookCampaignTouch(webhookUtm, instituteId, userId, processedData, audienceId);
+                    return repeatedLeadId;
+                }
+            }
             logger.warn("Duplicate submission for audienceId={}, userId={}", audienceId, userId);
             // Revive a soft-deleted lead instead of blackholing the resubmission. This path is
             // the Meta/Zoho/Google form webhooks, so it's the most likely to re-deliver a lead
