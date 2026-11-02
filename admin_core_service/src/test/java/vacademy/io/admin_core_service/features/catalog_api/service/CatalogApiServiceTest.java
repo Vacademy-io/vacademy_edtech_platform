@@ -386,4 +386,59 @@ class CatalogApiServiceTest {
         assertNull(data(service.courses(BV_INSTITUTE, query())).get(0).get("url"));
         verify(loader, never()).courseInit(any(), any());
     }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void outlineListsEachChaptersVisibleSlidesSoAFlatCourseIsNotEmpty() {
+        LearnerOpenStudyLibraryService open = mock(LearnerOpenStudyLibraryService.class);
+        var subject = mock(vacademy.io.admin_core_service.features.learner_study_library.dto.LearnerSubjectProjection.class);
+        when(subject.getId()).thenReturn("s1");
+        when(subject.getSubjectName()).thenReturn("DEFAULT");
+        when(open.getSubjectsByPackageSessionId(anyString())).thenReturn(List.of(subject));
+        var module = new vacademy.io.admin_core_service.features.module.dto.ModuleDTO();
+        module.setId("m1");
+        module.setModuleName("DEFAULT");
+        var chapter = new vacademy.io.admin_core_service.features.chapter.dto.LearnerChapterDetailsDTO();
+        chapter.setId("c1");
+        chapter.setChapterName("DEFAULT");
+        when(open.getModulesDetailsWithChapters(eq("s1"), anyString())).thenReturn(List.of(
+                new vacademy.io.admin_core_service.features.learner_study_library.dto.LearnerModuleDTOWithDetails(
+                        module, null, new ArrayList<>(List.of(chapter)))));
+        var second = slide("sl2", "Part 2", "VIDEO", 1, null);
+        var first = slide("sl1", "Introduction", "SCORM", 0, null);
+        var hidden = slide("sl3", "Draft", "DOCUMENT", 2, true);
+        when(open.getLearnerSlides("c1")).thenReturn(List.of(second, hidden, first));
+        service = new CatalogApiService(loader, open, mock(PackagePageContentService.class));
+
+        Map<String, Object> outline = service.outline(BV_INSTITUTE, EBOOK_EN, null);
+
+        var level = ((List<Map<String, Object>>) outline.get("levels")).get(0);
+        var subj = ((List<Map<String, Object>>) level.get("subjects")).get(0);
+        var mod = ((List<Map<String, Object>>) subj.get("modules")).get(0);
+        var ch = ((List<Map<String, Object>>) mod.get("chapters")).get(0);
+        var slides = (List<Map<String, Object>>) ch.get("slides");
+        assertEquals(List.of("Introduction", "Part 2"), slides.stream().map(x -> x.get("name")).toList());
+        assertEquals(List.of("scorm", "video"), slides.stream().map(x -> x.get("type")).toList());
+        assertEquals(Set.of("id", "name", "type"), slides.get(0).keySet());
+
+        // One unreadable chapter leaves its lessons out; the outline itself still answers.
+        when(open.getLearnerSlides("c1")).thenThrow(new RuntimeException("bad slide json"));
+        service = new CatalogApiService(loader, open, mock(PackagePageContentService.class));
+        var again = (List<Map<String, Object>>) ((List<Map<String, Object>>) ((List<Map<String, Object>>)
+                ((List<Map<String, Object>>) service.outline(BV_INSTITUTE, EBOOK_EN, null).get("levels")).get(0)
+                        .get("subjects")).get(0).get("modules")).get(0).get("chapters");
+        assertEquals("c1", again.get(0).get("id"));
+        assertEquals(List.of(), again.get(0).get("slides"));
+    }
+
+    private static vacademy.io.admin_core_service.features.learner_study_library.dto.LearnerSlidesDetailDTO slide(
+            String id, String title, String type, int order, Boolean hidden) {
+        var s = new vacademy.io.admin_core_service.features.learner_study_library.dto.LearnerSlidesDetailDTO();
+        s.setId(id);
+        s.setTitle(title);
+        s.setSourceType(type);
+        s.setSlideOrder(order);
+        s.setIsHidden(hidden);
+        return s;
+    }
 }
