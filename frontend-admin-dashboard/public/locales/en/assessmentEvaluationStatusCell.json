@@ -6,5 +6,7 @@
     "noEvaluatedCopyError": "No evaluated copy found for this attempt.",
     "loadFailedError": "Failed to load the evaluated copy. Please try again.",
     "evaluatedCopyHeading": "Evaluated Copy",
-    "fileNamePrefix": "Evaluated-Copy"
+    "fileNamePrefix": "Evaluated-Copy",
+    "editCopy": "Edit",
+    "editCopyHint": "Opens in the evaluation tool with the AI's marks on the copy. Select any mark or note to move, change or delete it."
 }

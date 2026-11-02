@@ -208,12 +208,12 @@ const ReleaseResultComponent = ({
 // Confirmation shown before opening the manual evaluation tool for an attempt
 // that has already been evaluated. Re-grading resets its status to "Evaluating"
 // until new marks are submitted, so warn the teacher first.
-const ManualReEvaluateConfirmComponent = ({
+export const ManualReEvaluateConfirmComponent = ({
     student,
     onConfirm,
     onClose,
 }: {
-    student: AssessmentRevaluateStudentInterface;
+    student: Pick<AssessmentRevaluateStudentInterface, 'full_name'>;
     onConfirm: () => void;
     onClose: () => void;
 }) => {

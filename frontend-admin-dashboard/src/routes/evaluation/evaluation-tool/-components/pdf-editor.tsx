@@ -172,6 +172,9 @@ interface PDFEvaluatorProps {
     instituteId?: string;
     examType?: string;
     assessmentVisibility?: string;
+    // Bring the AI's marks onto the sheet by itself once it loads (Edit on an
+    // evaluated copy). Skipped when a saved draft was restored.
+    autoImportAi?: boolean;
 }
 
 const PDFEvaluator = ({
@@ -186,6 +189,7 @@ const PDFEvaluator = ({
     instituteId,
     examType,
     assessmentVisibility,
+    autoImportAi = false,
 }: PDFEvaluatorProps) => {
     const { t, i18n: i18nInstance } = useTranslation("evaluationPdfEditor");
     const { t: tReview } = useTranslation("copyCheckReview");
@@ -228,6 +232,8 @@ const PDFEvaluator = ({
     const savingDraftRef = useRef(false);
     // Ensures we only attempt the one-time draft restore per mount.
     const restoreAttemptedRef = useRef(false);
+    // Outcome of that restore: "none" = no saved draft (AI marks may be auto-placed).
+    const [draftCheck, setDraftCheck] = useState<"pending" | "draft" | "none">("pending");
 
     // Submit is allowed once the evaluator has awarded at least one mark. Remarks
     // are optional.
@@ -720,10 +726,12 @@ const PDFEvaluator = ({
     // entered yet. Once per mount, so a second click never doubles the marks.
     const [isImportingAi, setIsImportingAi] = useState(false);
     const aiImportedRef = useRef(false);
-    const importAiMarks = async () => {
+    // `auto`: the Edit-on-evaluated-copy open, not a click — a copy with no AI
+    // check (teacher-checked) just opens as usual, with no error toast.
+    const importAiMarks = async ({ auto = false }: { auto?: boolean } = {}) => {
         if (isFreeTool || !fabricCanvas || !assessmentId || !attemptId || isImportingAi) return;
         if (aiImportedRef.current) {
-            toast.info(tReview("aiImport.already"));
+            if (!auto) toast.info(tReview("aiImport.already"));
             return;
         }
         setIsImportingAi(true);
@@ -736,7 +744,7 @@ const PDFEvaluator = ({
                         new Date(b.completed_at ?? 0).getTime() - new Date(a.completed_at ?? 0).getTime()
                 )[0];
             if (!run) {
-                toast.error(tReview("aiImport.none"));
+                if (!auto) toast.error(tReview("aiImport.none"));
                 return;
             }
             const progress = await getEvaluationProgress(run.process_id);
@@ -812,6 +820,22 @@ const PDFEvaluator = ({
         }
     };
 
+    // Opened with Edit on an evaluated copy: bring the AI's marks once the first
+    // page has painted (the canvas has its real size, so marks land in place) and
+    // the draft check is done. A restored draft is the teacher's own work, so it
+    // wins; the "Bring AI marks" button still adds the AI's marks on top.
+    const [firstPageRendered, setFirstPageRendered] = useState(false);
+    const autoImportTriedRef = useRef(false);
+    useEffect(() => {
+        if (!autoImportAi || autoImportTriedRef.current) return;
+        if (!fabricCanvas || !firstPageRendered || draftCheck !== "none") return;
+        autoImportTriedRef.current = true;
+        // Size check once more, in case the page painted before the canvas existed.
+        remeasureCanvasToPdf();
+        void importAiMarks({ auto: true });
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [autoImportAi, fabricCanvas, firstPageRendered, draftCheck]);
+
     const saveDraftNow = async ({ announce = true } = {}) => {
         if (isFreeTool || !attemptId) return;
         if (savingDraftRef.current) return;
@@ -859,7 +883,11 @@ const PDFEvaluator = ({
         (async () => {
             try {
                 const draft = await getEvaluationDraft(attemptId);
-                if (!draft) return;
+                if (!draft) {
+                    setDraftCheck("none");
+                    return;
+                }
+                setDraftCheck("draft");
 
                 const restoredAnnotations = draft.annotations || {};
                 setAnnotations(restoredAnnotations);
@@ -924,6 +952,9 @@ const PDFEvaluator = ({
                 });
             } catch (error) {
                 console.error("Failed to restore evaluation draft:", error);
+                // Unknown whether a draft exists: don't auto-place AI marks that a
+                // later "Save draft" could write over the teacher's own work.
+                setDraftCheck("draft");
             }
         })();
         // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -1311,8 +1342,9 @@ const PDFEvaluator = ({
 
             // Check if the active canvas object is a text object with an active cursor
             const isTextObjectActive =
-                fabricCanvas?.getActiveObject()?.type === "i-text" &&
-                (fabricCanvas?.getActiveObject() as fabric.IText)?.isEditing;
+                // i-text AND textbox (the AI's longer notes are textboxes) — while
+                // typing in one, Backspace must edit the text, not delete the note.
+                (fabricCanvas?.getActiveObject() as fabric.IText)?.isEditing === true;
 
             // Only proceed with delete if none of the above conditions are true
             if (
@@ -1923,7 +1955,7 @@ const PDFEvaluator = ({
                                             type="button"
                                             buttonType="secondary"
                                             scale="medium"
-                                            onClick={importAiMarks}
+                                            onClick={() => importAiMarks()}
                                             disabled={isImportingAi || !fabricCanvas}
                                             className="gap-1.5"
                                             aria-label={tReview("aiImport.hint")}
@@ -2033,6 +2065,7 @@ const PDFEvaluator = ({
                                                         // annotatable (first paint can land after the
                                                         // initial measure, and page sizes can vary).
                                                         remeasureCanvasToPdf();
+                                                        setFirstPageRendered(true);
                                                     }}
                                                 />
                                             </Document>
