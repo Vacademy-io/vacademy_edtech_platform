@@ -17,10 +17,10 @@
  *
  * Every tab is read-only; this page never writes anything.
  */
-import { ReportsRail } from './ReportsRail';
+import { LABEL_KEY, ReportsRail } from './ReportsRail';
 import { DatePickerButton } from '@/components/shared/crm-enhance/date-picker-button';
 import { ReportScope } from './ReportScope';
-import { lazy, Suspense, useEffect, useMemo, useState } from 'react';
+import { lazy, Suspense, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useNavigate, useSearch } from '@tanstack/react-router';
@@ -38,9 +38,7 @@ import { cn } from '@/lib/utils';
 import { useInstituteDetailsStore } from '@/stores/students/students-list/useInstituteDetailsStore';
 import { useNavHeadingStore } from '@/stores/layout-container/useNavHeadingStore';
 import { TeamPicker } from '@/components/shared/crm/TeamPicker';
-import {
-    fetchCounsellors,
-} from '@/routes/counsellors/-services/counsellor-workbench-services';
+import { fetchCounsellors } from '@/routes/counsellors/-services/counsellor-workbench-services';
 import { handleFetchCampaignsList } from '@/routes/audience-manager/list/-services/get-campaigns-list';
 import type { ReportTab } from '../index';
 import { OverviewTab } from './overview-tab';
@@ -143,6 +141,10 @@ export function LeadReportsPage() {
     const [applied, setApplied] = useState(defaults);
     const [teamId, setTeamId] = useState<string | undefined>(undefined);
     const [counsellorUserId, setCounsellorUserId] = useState<string | undefined>(undefined);
+    // Name of a counsellor picked by drilling from a report row — lets the picker show it
+    // even when that person is not in the caller's roster list.
+    const [counsellorName, setCounsellorName] = useState<string | undefined>(undefined);
+    const pageTopRef = useRef<HTMLDivElement>(null);
     const [audienceId, setAudienceId] = useState<string | undefined>(undefined);
 
     const activePreset = PRESETS.find((p) => {
@@ -163,6 +165,7 @@ export function LeadReportsPage() {
         setApplied(defaults);
         setTeamId(undefined);
         setCounsellorUserId(undefined);
+        setCounsellorName(undefined);
         setAudienceId(undefined);
     };
 
@@ -171,6 +174,7 @@ export function LeadReportsPage() {
     const handleTeamChange = (next: string | undefined) => {
         setTeamId(next);
         setCounsellorUserId(undefined);
+        setCounsellorName(undefined);
     };
 
     const [isRefreshing, setIsRefreshing] = useState(false);
@@ -197,6 +201,17 @@ export function LeadReportsPage() {
     // Only forward the campaign scope to tabs that can filter by it — keeps the
     // excluded tabs' query keys stable when a campaign is selected elsewhere.
     const campaignApplies = CAMPAIGN_FILTERABLE_TABS.has(activeTab);
+    // Drill from a report row to one counsellor. The team filter is cleared so a team
+    // that counsellor is not in cannot zero the numbers; the page scrolls back up so the
+    // filter bar shows who is selected.
+    const handleCounsellorFilter = (userId: string | undefined, name?: string, tab?: string) => {
+        setTeamId(undefined);
+        setCounsellorUserId(userId);
+        setCounsellorName(userId ? name : undefined);
+        if (tab && tab !== activeTab) setActiveTab(tab);
+        pageTopRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    };
+
     const tabProps: ReportTabProps = {
         instituteId,
         fromDate: applied.from,
@@ -204,92 +219,107 @@ export function LeadReportsPage() {
         teamId,
         counsellorUserId,
         audienceId: campaignApplies ? audienceId : undefined,
+        onCounsellorFilter: handleCounsellorFilter,
     };
 
     // The CRM Intelligence report tab only exists when the feature is on.
     const callIntelligenceEnabled = useCallIntelligenceEnabled();
 
     return (
-        <div className="flex min-h-full flex-col gap-6 bg-neutral-50 p-6">
-            {/* Page header */}
-            <header className="flex flex-wrap items-start justify-between gap-3">
-                <div className="flex flex-col gap-1">
-                    <h1 className="text-2xl font-bold tracking-tight text-neutral-900">
-                        {t('header.title')}
-                    </h1>
-                    <p className="text-sm text-neutral-600">{t('header.subtitle')}</p>
-                </div>
-                <Button
-                    onClick={refresh}
-                    size="sm"
-                    variant="outline"
-                    disabled={!instituteId || isRefreshing}
-                    className="gap-2"
-                >
-                    <ArrowsClockwise size={14} className={cn(isRefreshing && 'animate-spin')} />
-                    {t('header.refresh')}
-                </Button>
-            </header>
+        <div ref={pageTopRef} className="flex min-h-full flex-col gap-4 bg-neutral-50 p-4 lg:p-6">
+            {/* Which report — full-width nav so the report below gets the whole width.
+                The page title already sits in the top bar, so no second header here. */}
+            <ReportsRail
+                active={activeTab}
+                onSelect={setActiveTab}
+                showIntelligence={!!callIntelligenceEnabled}
+                actions={
+                    <Button
+                        onClick={refresh}
+                        size="sm"
+                        variant="outline"
+                        disabled={!instituteId || isRefreshing}
+                        className="shrink-0 gap-2"
+                    >
+                        <ArrowsClockwise size={14} className={cn(isRefreshing && 'animate-spin')} />
+                        {t('header.refresh')}
+                    </Button>
+                }
+            />
 
-            {/* Shared filter bar — feeds every tab */}
-            <div className="flex flex-wrap items-end gap-x-3 gap-y-4 rounded-xl border border-neutral-200 bg-white p-4 shadow-sm">
-                <div className="flex h-9 items-center gap-1 self-end rounded-md border border-neutral-200 bg-white p-1">
-                    {PRESETS.map((p) => (
-                        <button
-                            key={p.key}
-                            type="button"
-                            onClick={() => applyPreset(p.days)}
-                            className={cn(
-                                'rounded px-2.5 py-1 text-xs transition-colors',
-                                activePreset === p.key
-                                    ? 'bg-primary-500 text-white'
-                                    : 'text-neutral-600 hover:bg-neutral-50'
-                            )}
-                        >
-                            {t('filters.presetLabel', { days: p.days })}
-                        </button>
-                    ))}
-                </div>
-                <DatePickerButton
-                    label={t('filters.from')}
-                    value={fromDate}
-                    onChange={setFromDate}
-                    max={toDate || undefined}
-                    className="self-end"
-                />
-                <DatePickerButton
-                    label={t('filters.to')}
-                    value={toDate}
-                    onChange={setToDate}
-                    min={fromDate || undefined}
-                    className="self-end"
-                />
-                <Button onClick={apply} size="sm" className="h-9 self-end" disabled={!instituteId}>
-                    {t('filters.apply')}
-                </Button>
-                <Button onClick={reset} size="sm" variant="ghost" className="h-9 self-end">
-                    {t('filters.reset')}
-                </Button>
-                {/* Scope filters — flow inline as equal-height items so they share the
-                    date controls' baseline, and wrap together (left-aligned) when the
-                    bar runs out of width instead of detaching to a right-pushed row. */}
-                {campaignApplies && (
-                    <>
-                        <div className="hidden h-9 w-px self-end bg-neutral-200 sm:block" />
-                        <CampaignScopePicker
-                            instituteId={instituteId}
-                            value={audienceId}
-                            onChange={setAudienceId}
+            {/* Shared filter bar — feeds every tab. Dates on the left, scope on the right. */}
+            <div className="flex flex-col gap-3 rounded-xl border border-neutral-200 bg-white p-4 shadow-sm">
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                    <div className="flex flex-wrap items-center gap-2">
+                        <div className="flex h-9 items-center gap-1 rounded-md border border-neutral-200 bg-white p-1">
+                            {PRESETS.map((p) => (
+                                <button
+                                    key={p.key}
+                                    type="button"
+                                    onClick={() => applyPreset(p.days)}
+                                    className={cn(
+                                        'rounded px-3 py-1 text-sm transition-colors',
+                                        activePreset === p.key
+                                            ? 'bg-primary-500 text-white'
+                                            : 'text-neutral-600 hover:bg-neutral-50'
+                                    )}
+                                >
+                                    {t('filters.presetLabel', { days: p.days })}
+                                </button>
+                            ))}
+                        </div>
+                        <DatePickerButton
+                            label={t('filters.from')}
+                            value={fromDate}
+                            onChange={setFromDate}
+                            max={toDate || undefined}
                         />
-                    </>
-                )}
-                <TeamPicker instituteId={instituteId} value={teamId} onChange={handleTeamChange} />
-                <CounsellorScopePicker
-                    instituteId={instituteId}
-                    value={counsellorUserId}
-                    onChange={setCounsellorUserId}
-                />
-                <div className="w-full border-t border-neutral-100 pt-3">
+                        <DatePickerButton
+                            label={t('filters.to')}
+                            value={toDate}
+                            onChange={setToDate}
+                            min={fromDate || undefined}
+                        />
+                        <Button onClick={apply} size="sm" className="h-9" disabled={!instituteId}>
+                            {t('filters.apply')}
+                        </Button>
+                        <Button onClick={reset} size="sm" variant="ghost" className="h-9">
+                            {t('filters.reset')}
+                        </Button>
+                    </div>
+                    <div className="flex flex-wrap items-center gap-2">
+                        {campaignApplies && (
+                            <CampaignScopePicker
+                                instituteId={instituteId}
+                                value={audienceId}
+                                onChange={setAudienceId}
+                            />
+                        )}
+                        <TeamPicker
+                            instituteId={instituteId}
+                            value={teamId}
+                            onChange={handleTeamChange}
+                        />
+                        <CounsellorScopePicker
+                            instituteId={instituteId}
+                            value={counsellorUserId}
+                            selectedName={counsellorName}
+                            onChange={(next) => {
+                                setCounsellorUserId(next);
+                                setCounsellorName(undefined);
+                            }}
+                        />
+                    </div>
+                </div>
+                {/* What this report shows + which filters it reads. */}
+                <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-2 border-t border-neutral-100 pt-3">
+                    <p className="min-w-0 text-sm text-neutral-600">
+                        <span className="font-semibold text-neutral-900">
+                            {t(`tabs.${LABEL_KEY[activeTab] ?? 'overview'}`)}
+                        </span>
+                        <span className="text-neutral-400"> · </span>
+                        {t(`descriptions.${LABEL_KEY[activeTab] ?? 'overview'}`)}
+                    </p>
                     <ReportScope tab={activeTab} listApplies={campaignApplies} />
                 </div>
             </div>
@@ -300,15 +330,7 @@ export function LeadReportsPage() {
                 </div>
             )}
 
-            <Tabs value={activeTab} onValueChange={setActiveTab} className="flex flex-col gap-6">
-                <div className="flex flex-col gap-6 lg:flex-row lg:items-start">
-                    <ReportsRail
-                        active={activeTab}
-                        onSelect={setActiveTab}
-                        showIntelligence={!!callIntelligenceEnabled}
-                    />
-                    <div className="min-w-0 flex-1">
-
+            <Tabs value={activeTab} onValueChange={setActiveTab} className="min-w-0">
                 <TabsContent value="overview">
                     <OverviewTab {...tabProps} />
                 </TabsContent>
@@ -371,8 +393,6 @@ export function LeadReportsPage() {
                 <TabsContent value="custom">
                     <CustomReportTab {...tabProps} />
                 </TabsContent>
-                    </div>
-                </div>
             </Tabs>
         </div>
     );
@@ -393,10 +413,13 @@ export function LeadReportsPage() {
 function CounsellorScopePicker({
     instituteId,
     value,
+    selectedName,
     onChange,
 }: {
     instituteId: string;
     value: string | undefined;
+    /** Shown for `value` when it is not in the roster (picked from a report row). */
+    selectedName?: string;
     onChange: (userId: string | undefined) => void;
 }) {
     const { t } = useTranslation('audienceManagerLeadReportsPage');
@@ -410,16 +433,20 @@ function CounsellorScopePicker({
         queryFn: () => fetchCounsellors(instituteId, { size: 500 }),
     });
 
-    const options = useMemo(
-        () =>
-            (rosterQuery.data?.content ?? [])
-                .map((c) => ({ id: c.user_id, name: c.full_name ?? c.email ?? c.user_id }))
-                .sort((a, b) => a.name.localeCompare(b.name)),
-        [rosterQuery.data]
-    );
+    const options = useMemo(() => {
+        const list = (rosterQuery.data?.content ?? [])
+            .map((c) => ({ id: c.user_id, name: c.full_name ?? c.email ?? c.user_id }))
+            .sort((a, b) => a.name.localeCompare(b.name));
+        // A counsellor picked from a report row may be outside the roster (e.g. an admin
+        // who enrolled students) — keep them selectable so the picker never shows blank.
+        if (value && !list.some((o) => o.id === value)) {
+            list.unshift({ id: value, name: selectedName ?? value });
+        }
+        return list;
+    }, [rosterQuery.data, value, selectedName]);
 
-    // No roster visibility → no picker (reports stay scoped to the caller).
-    if (rosterQuery.isError || options.length === 0) return null;
+    // No roster visibility and nothing picked → no picker (reports stay scoped to the caller).
+    if (!value && (rosterQuery.isError || options.length === 0)) return null;
 
     return (
         <Select
@@ -488,10 +515,7 @@ function CampaignScopePicker({
             value={value ?? ALL_AUDIENCES_VALUE}
             onValueChange={(v) => onChange(v === ALL_AUDIENCES_VALUE ? undefined : v)}
         >
-            <SelectTrigger
-                className="h-9 w-48 bg-white"
-                aria-label={t('campaignPicker.ariaLabel')}
-            >
+            <SelectTrigger className="h-9 w-48 bg-white" aria-label={t('campaignPicker.ariaLabel')}>
                 <Megaphone className="mr-1.5 size-4 shrink-0 text-neutral-400" />
                 <SelectValue placeholder={t('campaignPicker.allCampaigns')} />
             </SelectTrigger>

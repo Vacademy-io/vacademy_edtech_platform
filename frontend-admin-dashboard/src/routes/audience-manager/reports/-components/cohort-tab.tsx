@@ -96,7 +96,7 @@ export function CohortTab({
                 <div className="overflow-x-auto">
                     <table className="w-full text-sm">
                         <thead>
-                            <tr className="border-b border-neutral-200 text-left text-xs uppercase tracking-wide text-neutral-500">
+                            <tr className="border-b border-neutral-200 text-left text-xs font-semibold uppercase tracking-wide text-neutral-600 whitespace-nowrap">
                                 <th className="py-2 pe-3">{t('table.headers.cohort')}</th>
                                 <th className="py-2 pe-3 text-end">{t('table.headers.leads')}</th>
                                 <th className="py-2 pe-3 text-end">
@@ -125,24 +125,24 @@ export function CohortTab({
                                     key={c.cohort}
                                     className="border-b border-neutral-100 last:border-0 hover:bg-neutral-50"
                                 >
-                                    <td className="py-2.5 pr-3 font-medium text-neutral-900">
+                                    <td className="py-3 pr-3 font-medium text-neutral-900">
                                         {fmtCohortLabel(c.cohort)}
                                     </td>
-                                    <td className="py-2.5 pr-3 text-right text-neutral-800">
+                                    <td className="py-3 pr-3 text-right text-neutral-800">
                                         {fmtNumber(c.leads)}
                                     </td>
-                                    <td className="py-2.5 pr-3 text-right text-neutral-800">
+                                    <td className="py-3 pr-3 text-right text-neutral-800">
                                         {fmtNumber(c.converted)}
                                     </td>
                                     <td
                                         className={cn(
-                                            'py-2.5 pr-3 text-right',
+                                            'py-3 pr-3 text-right',
                                             convRateClass(c.conversion_rate)
                                         )}
                                     >
                                         {fmtPct(c.conversion_rate)}
                                     </td>
-                                    <td className="py-2.5 pr-3 text-right">
+                                    <td className="py-3 pr-3 text-right">
                                         <div className="flex items-center justify-end gap-2">
                                             <div className="hidden h-1.5 w-16 overflow-hidden rounded-full bg-neutral-100 sm:block">
                                                 <div
@@ -157,13 +157,13 @@ export function CohortTab({
                                             </span>
                                         </div>
                                     </td>
-                                    <td className="py-2.5 pr-3 text-right text-neutral-800">
+                                    <td className="py-3 pr-3 text-right text-neutral-800">
                                         {fmtCurrency(c.avg_deal_value, currency)}
                                     </td>
-                                    <td className="py-2.5 pr-3 text-right text-neutral-800">
+                                    <td className="py-3 pr-3 text-right text-neutral-800">
                                         {fmtCurrency(c.revenue_per_lead, currency)}
                                     </td>
-                                    <td className="py-2.5 pr-3 text-right text-neutral-600">
+                                    <td className="py-3 pr-3 text-right text-neutral-600">
                                         {fmtDays(c.median_days_to_convert)}
                                     </td>
                                 </tr>

@@ -250,7 +250,7 @@ export function CustomReportTab({
                             <div className="overflow-x-auto">
                                 <table className="w-full text-sm">
                                     <thead>
-                                        <tr className="border-b border-neutral-200 text-left text-xs uppercase tracking-wide text-neutral-500">
+                                        <tr className="whitespace-nowrap border-b border-neutral-200 text-left text-xs font-semibold uppercase tracking-wide text-neutral-600">
                                             <th className="sticky left-0 z-10 bg-white py-2 pr-3 text-left">
                                                 {pivot.rowDim.label}
                                             </th>
@@ -270,7 +270,7 @@ export function CustomReportTab({
                                                 key={r.key}
                                                 className="border-b border-neutral-100 last:border-0 hover:bg-neutral-50"
                                             >
-                                                <td className="sticky left-0 z-10 bg-white py-2.5 pr-3 font-medium text-neutral-900">
+                                                <td className="sticky left-0 z-10 min-w-48 bg-white py-3 pr-3 font-medium text-neutral-900">
                                                     {r.key}
                                                 </td>
                                                 {pivot.colKeys.map((k) => {
@@ -279,7 +279,7 @@ export function CustomReportTab({
                                                         <td
                                                             key={k}
                                                             className={cn(
-                                                                'py-2.5 pl-3 text-right tabular-nums',
+                                                                'py-3 pl-3 text-right tabular-nums',
                                                                 v != null && v !== 0
                                                                     ? 'text-neutral-800'
                                                                     : 'text-neutral-300'
@@ -289,7 +289,7 @@ export function CustomReportTab({
                                                         </td>
                                                     );
                                                 })}
-                                                <td className="py-2.5 pl-3 text-right font-semibold text-neutral-900">
+                                                <td className="py-3 pl-3 text-right font-semibold text-neutral-900">
                                                     {formatCell(pivotRowTotal(r.values), 'number')}
                                                 </td>
                                             </tr>
@@ -317,7 +317,7 @@ export function CustomReportTab({
                             <div className="overflow-x-auto">
                                 <table className="w-full text-sm">
                                     <thead>
-                                        <tr className="border-b border-neutral-200 text-left text-xs uppercase tracking-wide text-neutral-500">
+                                        <tr className="whitespace-nowrap border-b border-neutral-200 text-left text-xs font-semibold uppercase tracking-wide text-neutral-600">
                                             {result.columns.map((c) => (
                                                 <th
                                                     key={c.key}
@@ -345,7 +345,7 @@ export function CustomReportTab({
                                                         <td
                                                             key={ci}
                                                             className={cn(
-                                                                'py-2.5 pr-3',
+                                                                'py-3 pr-3',
                                                                 col?.kind === 'measure'
                                                                     ? 'text-right text-neutral-800'
                                                                     : 'font-medium text-neutral-900'

@@ -41,5 +41,11 @@
         "mainCourse": "A student who joined several courses at once is counted once, under the course whose group comes first in Settings → Reports → Course group order (else the course they were enrolled in first). Course groups are course tags.",
         "fieldHint": "Pick the field to break admissions down by (for example Branch) in Settings → Reports → Admissions field.",
         "definitions": "An admission is a student enrolled in a month of the selected period. Fees are their fee plans for those enrolments (cancelled, voided and waived instalments left out); paid is what has been collected on them so far; due is fees minus paid."
+    },
+    "drill": {
+        "rowTitle": "See only {{name}}'s admissions",
+        "banner": "Showing only {{name}}'s admissions",
+        "bannerNoName": "Showing one counsellor's admissions",
+        "showAll": "Show all counsellors"
     }
 }

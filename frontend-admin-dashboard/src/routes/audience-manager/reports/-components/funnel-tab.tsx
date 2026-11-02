@@ -142,7 +142,7 @@ export function FunnelTab({
                         <div className="overflow-x-auto">
                             <table className="w-full text-sm">
                                 <thead>
-                                    <tr className="border-b border-neutral-200 text-left text-xs uppercase tracking-wide text-neutral-500">
+                                    <tr className="border-b border-neutral-200 text-left text-xs font-semibold uppercase tracking-wide text-neutral-600 whitespace-nowrap">
                                         <th className="py-2 pe-3 text-start">
                                             {t('table.headers.stage')}
                                         </th>
@@ -170,7 +170,7 @@ export function FunnelTab({
                                             className="group cursor-pointer border-b border-neutral-100 last:border-0 hover:bg-neutral-50"
                                             onClick={() => drill(s.status_key)}
                                         >
-                                            <td className="py-2.5 pr-3">
+                                            <td className="py-3 pr-3">
                                                 <span className="flex items-center gap-2">
                                                     {/* Catalog colour from API — isolated dynamic style. */}
                                                     <span
@@ -193,18 +193,18 @@ export function FunnelTab({
                                                     />
                                                 </span>
                                             </td>
-                                            <td className="py-2.5 pr-3 text-right text-neutral-800">
+                                            <td className="py-3 pr-3 text-right text-neutral-800">
                                                 {fmtNumber(s.entered)}
                                             </td>
-                                            <td className="py-2.5 pr-3 text-right text-neutral-800">
+                                            <td className="py-3 pr-3 text-right text-neutral-800">
                                                 {fmtNumber(s.current_stock)}
                                             </td>
-                                            <td className="py-2.5 pr-3 text-right text-neutral-800">
+                                            <td className="py-3 pr-3 text-right text-neutral-800">
                                                 {fmtDays(s.median_days_in_stage)}
                                             </td>
                                             <td
                                                 className={cn(
-                                                    'py-2.5 pr-3 text-right',
+                                                    'py-3 pr-3 text-right',
                                                     s.advanced_rate == null
                                                         ? 'text-neutral-400'
                                                         : s.advanced_rate >= 50
@@ -216,7 +216,7 @@ export function FunnelTab({
                                             >
                                                 {fmtPct(s.advanced_rate)}
                                             </td>
-                                            <td className="py-2.5 pr-3 text-right">
+                                            <td className="py-3 pr-3 text-right">
                                                 {s.regressed > 0 ? (
                                                     <span className="font-medium text-red-600">
                                                         {fmtNumber(s.regressed)}

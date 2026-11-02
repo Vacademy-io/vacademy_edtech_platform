@@ -28,6 +28,7 @@ import {
     fmtNumber,
     fmtPct,
     type ReportTabProps,
+    fmtDateTime,
 } from './report-shared';
 
 type CounsellorSortKey = 'name' | 'converted_leads' | 'enrolments';
@@ -38,9 +39,6 @@ const UNASSIGNED = '__unassigned__';
 const PAGE_SIZE = 100;
 
 const counsellorKey = (userId: string | null) => userId ?? UNASSIGNED;
-/** Institute-local "yyyy-MM-ddTHH:mm" → "yyyy-MM-dd HH:mm". */
-const fmtEnrolledAt = (v: string | null) => (v ? v.replace('T', ' ') : '—');
-
 export function ConversionsTab({
     instituteId,
     fromDate,
@@ -171,7 +169,7 @@ export function ConversionsTab({
                     <div className="overflow-x-auto">
                         <table className="w-full text-sm">
                             <thead>
-                                <tr className="border-b border-neutral-200 text-left text-xs uppercase tracking-wide text-neutral-500">
+                                <tr className="border-b border-neutral-200 text-left text-xs font-semibold uppercase tracking-wide text-neutral-600 whitespace-nowrap">
                                     <SortableHeader
                                         label={t('column.counsellor')}
                                         sortKey="name"
@@ -212,7 +210,7 @@ export function ConversionsTab({
                                         >
                                             <td
                                                 className={cn(
-                                                    'py-2.5 pr-3 font-medium',
+                                                    'py-3 pr-3 font-medium',
                                                     r.user_id == null
                                                         ? 'italic text-neutral-500'
                                                         : 'text-neutral-900'
@@ -220,13 +218,13 @@ export function ConversionsTab({
                                             >
                                                 {r.name}
                                             </td>
-                                            <td className="py-2.5 pr-3 text-right font-semibold text-green-700">
+                                            <td className="py-3 pr-3 text-right font-semibold text-green-700">
                                                 {fmtNumber(r.converted_leads)}
                                             </td>
-                                            <td className="py-2.5 pr-3 text-right text-neutral-800">
+                                            <td className="py-3 pr-3 text-right text-neutral-800">
                                                 {fmtNumber(r.enrolments)}
                                             </td>
-                                            <td className="py-2.5 pr-3 text-right text-neutral-800">
+                                            <td className="py-3 pr-3 text-right text-neutral-800">
                                                 {fmtPct(share(r.converted_leads, totals.converted_leads))}
                                             </td>
                                         </tr>
@@ -262,7 +260,7 @@ export function ConversionsTab({
                                 r.phone,
                                 r.email,
                                 r.course_name,
-                                fmtEnrolledAt(r.enrolled_at),
+                                fmtDateTime(r.enrolled_at),
                                 r.enrolment_status,
                                 r.counsellor_id == null ? unassignedLabel : r.counsellor_name,
                                 r.campaign_name,
@@ -297,7 +295,7 @@ export function ConversionsTab({
                         <div className="overflow-x-auto">
                             <table className="w-full text-sm">
                                 <thead>
-                                    <tr className="border-b border-neutral-200 text-left text-xs uppercase tracking-wide text-neutral-500">
+                                    <tr className="border-b border-neutral-200 text-left text-xs font-semibold uppercase tracking-wide text-neutral-600 whitespace-nowrap">
                                         <SortableHeader
                                             label={t('column.lead')}
                                             sortKey="lead_name"
@@ -346,7 +344,7 @@ export function ConversionsTab({
                                             key={r.enrolment_id}
                                             className="border-b border-neutral-100 align-top last:border-0 hover:bg-neutral-50"
                                         >
-                                            <td className="py-2.5 pr-3">
+                                            <td className="min-w-48 py-3 pr-3">
                                                 <div className="font-medium text-neutral-900">
                                                     {r.lead_name ?? r.user_id}
                                                 </div>
@@ -356,15 +354,15 @@ export function ConversionsTab({
                                                     </div>
                                                 )}
                                             </td>
-                                            <td className="py-2.5 pr-3 text-neutral-800">
+                                            <td className="min-w-56 py-3 pr-3 text-neutral-800">
                                                 {r.course_name ?? '—'}
                                             </td>
-                                            <td className="whitespace-nowrap py-2.5 pr-3 text-neutral-800">
-                                                {fmtEnrolledAt(r.enrolled_at)}
+                                            <td className="whitespace-nowrap py-3 pr-3 text-neutral-800">
+                                                {fmtDateTime(r.enrolled_at)}
                                             </td>
                                             <td
                                                 className={cn(
-                                                    'py-2.5 pr-3',
+                                                    'whitespace-nowrap py-3 pr-3',
                                                     r.counsellor_id == null
                                                         ? 'italic text-neutral-500'
                                                         : 'text-neutral-800'
@@ -374,7 +372,7 @@ export function ConversionsTab({
                                                     ? unassignedLabel
                                                     : r.counsellor_name ?? r.counsellor_id}
                                             </td>
-                                            <td className="py-2.5 pr-3 text-neutral-800">
+                                            <td className="py-3 pr-3 text-neutral-800">
                                                 <div>{r.campaign_name ?? '—'}</div>
                                                 {r.source_type && (
                                                     <div className="text-xs text-neutral-500">

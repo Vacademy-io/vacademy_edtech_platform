@@ -151,7 +151,7 @@ export function SourcesTab({
                     <div className="overflow-x-auto">
                         <table className="w-full text-sm">
                             <thead>
-                                <tr className="border-b border-neutral-200 text-left text-xs uppercase tracking-wide text-neutral-500">
+                                <tr className="border-b border-neutral-200 text-left text-xs font-semibold uppercase tracking-wide text-neutral-600 whitespace-nowrap">
                                     <SortableHeader
                                         label={t('columns.source')}
                                         sortKey="source_type"
@@ -219,7 +219,7 @@ export function SourcesTab({
                                             })
                                         }
                                     >
-                                        <td className="py-2.5 pr-3">
+                                        <td className="py-3 pr-3">
                                             <span className="flex items-center gap-1 font-medium text-neutral-900">
                                                 {r.source_type ?? t('unknownSource')}
                                                 <CaretRight
@@ -228,27 +228,27 @@ export function SourcesTab({
                                                 />
                                             </span>
                                         </td>
-                                        <td className="py-2.5 pr-3 text-right text-neutral-800">
+                                        <td className="py-3 pr-3 text-right text-neutral-800">
                                             {fmtNumber(r.leads)}
                                         </td>
-                                        <td className="py-2.5 pr-3 text-right text-neutral-800">
+                                        <td className="py-3 pr-3 text-right text-neutral-800">
                                             {fmtNumber(r.connected_leads)}
                                         </td>
-                                        <td className="py-2.5 pr-3 text-right text-neutral-800">
+                                        <td className="py-3 pr-3 text-right text-neutral-800">
                                             {fmtNumber(r.interested)}
                                         </td>
-                                        <td className="py-2.5 pr-3 text-right text-neutral-800">
+                                        <td className="py-3 pr-3 text-right text-neutral-800">
                                             {fmtNumber(r.won)}
                                         </td>
                                         <td
                                             className={cn(
-                                                'py-2.5 pr-3 text-right',
+                                                'py-3 pr-3 text-right',
                                                 convRateClass(r.conversion_rate)
                                             )}
                                         >
                                             {fmtPct(r.conversion_rate)}
                                         </td>
-                                        <td className="py-2.5 pr-3 text-right font-medium text-green-700">
+                                        <td className="py-3 pr-3 text-right font-medium text-green-700">
                                             {r.revenue ? fmtCurrency(r.revenue) : '—'}
                                         </td>
                                         <WaveTwoCell value={r.spend} />
@@ -260,28 +260,28 @@ export function SourcesTab({
                             {totals && (
                                 <tfoot>
                                     <tr className="border-t border-neutral-200 bg-neutral-50/60 font-semibold text-neutral-900">
-                                        <td className="py-2.5 pe-3">{t('footerTotal')}</td>
-                                        <td className="py-2.5 pr-3 text-right">
+                                        <td className="py-3 pe-3">{t('footerTotal')}</td>
+                                        <td className="py-3 pr-3 text-right">
                                             {fmtNumber(totals.leads)}
                                         </td>
-                                        <td className="py-2.5 pr-3 text-right">
+                                        <td className="py-3 pr-3 text-right">
                                             {fmtNumber(totals.connected_leads)}
                                         </td>
-                                        <td className="py-2.5 pr-3 text-right">
+                                        <td className="py-3 pr-3 text-right">
                                             {fmtNumber(totals.interested)}
                                         </td>
-                                        <td className="py-2.5 pr-3 text-right">
+                                        <td className="py-3 pr-3 text-right">
                                             {fmtNumber(totals.won)}
                                         </td>
                                         <td
                                             className={cn(
-                                                'py-2.5 pr-3 text-right',
+                                                'py-3 pr-3 text-right',
                                                 convRateClass(totals.conversion_rate)
                                             )}
                                         >
                                             {fmtPct(totals.conversion_rate)}
                                         </td>
-                                        <td className="py-2.5 pr-3 text-right text-green-700">
+                                        <td className="py-3 pr-3 text-right text-green-700">
                                             {totals.revenue ? fmtCurrency(totals.revenue) : '—'}
                                         </td>
                                         <WaveTwoCell value={totals.spend} />
@@ -310,11 +310,11 @@ function WaveTwoCell({ value }: { value: SourcePerformanceRow['spend'] }) {
     const { t } = useTranslation('audienceManagerSourcesTab');
     if (value != null) {
         return (
-            <td className="py-2.5 pr-3 text-right text-neutral-800">{value.toLocaleString()}</td>
+            <td className="py-3 pr-3 text-right text-neutral-800">{value.toLocaleString()}</td>
         );
     }
     return (
-        <td className="py-2.5 pr-3 text-right">
+        <td className="py-3 pr-3 text-right">
             <Tooltip>
                 <TooltipTrigger asChild>
                     <span className="cursor-default text-neutral-300">—</span>

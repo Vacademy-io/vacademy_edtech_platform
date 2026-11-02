@@ -23,6 +23,8 @@
         "loading": "Loading counsellors…",
         "empty": "No counsellor activity in this range.",
         "topPerformer": "Top performer",
+        "viewAdmissions": "Admissions",
+        "viewAdmissionsTitle": "Open the Admissions report for {{name}}",
         "headers": {
             "counsellor": "Counsellor",
             "assigned": "Assigned",

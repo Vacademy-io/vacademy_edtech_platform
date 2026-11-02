@@ -216,7 +216,7 @@ export function FollowupsTab({
                     <div className="overflow-x-auto">
                         <table className="w-full text-sm">
                             <thead>
-                                <tr className="border-b border-neutral-200 text-left text-xs uppercase tracking-wide text-neutral-500">
+                                <tr className="border-b border-neutral-200 text-left text-xs font-semibold uppercase tracking-wide text-neutral-600 whitespace-nowrap">
                                     <SortableHeader
                                         label={t('table.headers.counsellor')}
                                         sortKey="name"
@@ -278,7 +278,7 @@ export function FollowupsTab({
                                             className="group cursor-pointer border-b border-neutral-100 last:border-0 hover:bg-neutral-50"
                                             onClick={() => drill(r.user_id)}
                                         >
-                                            <td className="py-2.5 pr-3">
+                                            <td className="py-3 pr-3">
                                                 <div className="flex items-center gap-2">
                                                     <div
                                                         className={cn(
@@ -297,7 +297,7 @@ export function FollowupsTab({
                                                     </span>
                                                 </div>
                                             </td>
-                                            <td className="py-2.5 pr-3 text-right text-neutral-800">
+                                            <td className="py-3 pr-3 text-right text-neutral-800">
                                                 {r.due_today > 0 ? (
                                                     <span className="font-medium text-amber-700">
                                                         {r.due_today}
@@ -309,10 +309,10 @@ export function FollowupsTab({
                                             <OverdueCell value={r.overdue_1_3} />
                                             <OverdueCell value={r.overdue_3_7} />
                                             <OverdueCell value={r.overdue_7_plus} strong />
-                                            <td className="py-2.5 pr-3 text-right text-neutral-800">
+                                            <td className="py-3 pr-3 text-right text-neutral-800">
                                                 {r.upcoming}
                                             </td>
-                                            <td className="py-2.5 pr-3 text-right">
+                                            <td className="py-3 pr-3 text-right">
                                                 {r.oldest_overdue_days != null ? (
                                                     <span className="inline-flex items-center gap-1 font-medium text-red-600">
                                                         <WarningCircle size={12} weight="fill" />
@@ -358,7 +358,7 @@ export function FollowupsTab({
 /** Overdue count cell — red when non-zero, muted zero otherwise. */
 function OverdueCell({ value, strong }: { value: number; strong?: boolean }) {
     return (
-        <td className="py-2.5 pr-3 text-right">
+        <td className="py-3 pr-3 text-right">
             {value > 0 ? (
                 <span className={cn('text-red-600', strong ? 'font-semibold' : 'font-medium')}>
                     {value}

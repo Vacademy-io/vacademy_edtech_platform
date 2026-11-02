@@ -64,7 +64,7 @@ export function DatePickerButton({
                     <CalendarBlank className="size-4 text-neutral-400" />
                     <span className="text-neutral-500">{label}</span>
                     <span className="font-medium text-neutral-800">
-                        {selected ? format(selected, 'd MMM yyyy') : placeholder}
+                        {selected ? format(selected, 'dd/MM/yyyy') : placeholder}
                     </span>
                 </Button>
             </PopoverTrigger>
