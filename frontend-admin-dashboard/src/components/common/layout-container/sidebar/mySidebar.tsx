@@ -46,7 +46,11 @@ import {
     TEACHER_DISPLAY_SETTINGS_KEY,
     type DisplaySettingsData,
 } from '@/types/display-settings';
-import { getDisplaySettings, getDisplaySettingsFromCache } from '@/services/display-settings';
+import {
+    DISPLAY_SETTINGS_UPDATED_EVENT,
+    getDisplaySettings,
+    getDisplaySettingsFromCache,
+} from '@/services/display-settings';
 import { getNotificationSettings } from '@/services/notification-settings';
 import { useFileUpload } from '@/hooks/use-file-upload';
 import { cn } from '@/lib/utils';
@@ -233,6 +237,15 @@ export const MySidebar = ({ sidebarComponent }: { sidebarComponent?: React.React
                 .catch(() => setRoleDisplay(null))
                 .finally(() => setRoleDisplayResolved(true));
         }
+        // A save in Display Settings re-caches the role's settings and fires this event.
+        // Without it the sidebar kept the copy it mounted with, so a tab switched on was
+        // still missing until the next page change or reload.
+        const onUpdate = () => {
+            const fresh = getDisplaySettingsFromCache(getActiveRoleDisplaySettingsKey());
+            if (fresh) setRoleDisplay(fresh);
+        };
+        window.addEventListener(DISPLAY_SETTINGS_UPDATED_EVENT, onUpdate);
+        return () => window.removeEventListener(DISPLAY_SETTINGS_UPDATED_EVENT, onUpdate);
     }, []);
 
     // Reuse the roleDisplay blob loaded above rather than the assessment-actions
