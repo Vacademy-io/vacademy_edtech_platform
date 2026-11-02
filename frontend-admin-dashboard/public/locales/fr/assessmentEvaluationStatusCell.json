@@ -6,5 +6,7 @@
     "noEvaluatedCopyError": "Aucune copie évaluée trouvée pour cette tentative.",
     "loadFailedError": "Échec du chargement de la copie évaluée. Veuillez réessayer.",
     "evaluatedCopyHeading": "Copie évaluée",
-    "fileNamePrefix": "Copie-Evaluee"
+    "fileNamePrefix": "Copie-Evaluee",
+    "editCopy": "Modifier",
+    "editCopyHint": "S'ouvre dans l'outil d'évaluation avec les marques de l'IA sur la copie. Sélectionnez une marque ou une note pour la déplacer, la modifier ou la supprimer."
 }

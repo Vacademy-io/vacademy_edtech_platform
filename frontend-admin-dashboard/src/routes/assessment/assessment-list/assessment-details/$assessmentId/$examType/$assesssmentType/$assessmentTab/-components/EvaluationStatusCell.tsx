@@ -1,10 +1,14 @@
 import { useState } from 'react';
 import { useSuspenseQuery } from '@tanstack/react-query';
+import { useNavigate } from '@tanstack/react-router';
 import { toast } from 'sonner';
 import { useTranslation } from 'react-i18next';
-import { Eye } from '@phosphor-icons/react';
+import { Eye, PencilSimple } from '@phosphor-icons/react';
 import { Row } from '@tanstack/react-table';
 import { MyButton } from '@/components/design-system/button';
+import { Dialog } from '@/components/ui/dialog';
+import { stashEvalReturnUrl } from '@/routes/evaluation/evaluation-tool/-utils/eval-return';
+import { ManualReEvaluateConfirmComponent } from './assessment-submissions-dropdown-individual/student-attempt-dropdown';
 import { StatusChips } from '@/components/design-system/chips';
 import { StudentTable } from '@/types/student-table-types';
 import { ActivityStatus } from '@/components/design-system/utils/types/chips-types';
@@ -20,11 +24,13 @@ import { Route } from '..';
 // evaluated (annotated) copy of the answer sheet.
 export const EvaluationStatusCell = ({ row }: { row: Row<StudentTable> }) => {
     const { t } = useTranslation('assessmentEvaluationStatusCell');
-    const { assessmentId } = Route.useParams();
+    const { assessmentId, examType } = Route.useParams();
     const instituteId = getInstituteId();
+    const navigate = useNavigate();
     const [isOpening, setIsOpening] = useState(false);
     const [previewOpen, setPreviewOpen] = useState(false);
     const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+    const [editConfirmOpen, setEditConfirmOpen] = useState(false);
 
     // Cached — same query the submissions tab and row dropdown already use.
     const { data: assessmentData } = useSuspenseQuery(
@@ -84,6 +90,27 @@ export const EvaluationStatusCell = ({ row }: { row: Row<StudentTable> }) => {
         }
     };
 
+    // Edit = the manual evaluation tool for this attempt (same route and return
+    // path as the row menu's Re-evaluate → Manual), opened with the AI's marks
+    // already on the sheet as editable objects. The attempt is already
+    // evaluated, so the same warning comes first: it moves back to Evaluating
+    // until new marks are submitted.
+    const openManualEditor = () => {
+        if (!rowData.attempt_id) return;
+        setEditConfirmOpen(false);
+        stashEvalReturnUrl(window.location.href);
+        navigate({
+            to: '/evaluation/evaluate/$assessmentId/$attemptId/$examType',
+            params: {
+                assessmentId,
+                attemptId: rowData.attempt_id,
+                examType: examType || 'EXAM',
+            },
+            // The AI's marks come onto the sheet as editable objects on open.
+            search: { aiMarks: true },
+        });
+    };
+
     return (
         <div className="flex items-center gap-2">
             <StatusChips status={mappedStatus}>
@@ -108,7 +135,33 @@ export const EvaluationStatusCell = ({ row }: { row: Row<StudentTable> }) => {
                 fileUrl={previewUrl}
                 heading={t('evaluatedCopyHeading')}
                 downloadName={`${t('fileNamePrefix')}-${rowData.full_name || rowData.attempt_id || 'attempt'}`}
+                footerActions={
+                    rowData.attempt_id ? (
+                        <MyButton
+                            type="button"
+                            buttonType="primary"
+                            scale="medium"
+                            title={t('editCopyHint')}
+                            onClick={() => {
+                                setPreviewOpen(false);
+                                setEditConfirmOpen(true);
+                            }}
+                        >
+                            <PencilSimple size={18} />
+                            {t('editCopy')}
+                        </MyButton>
+                    ) : null
+                }
             />
+            <Dialog open={editConfirmOpen} onOpenChange={setEditConfirmOpen}>
+                {editConfirmOpen && (
+                    <ManualReEvaluateConfirmComponent
+                        student={{ full_name: rowData.full_name }}
+                        onConfirm={openManualEditor}
+                        onClose={() => setEditConfirmOpen(false)}
+                    />
+                )}
+            </Dialog>
         </div>
     );
 };

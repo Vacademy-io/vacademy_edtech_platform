@@ -47,6 +47,7 @@ const goBack = () => {
 const EvaluateAttemptComponent = () => {
     const { t } = useTranslation('evaluationAttemptIndex');
     const { attemptId, assessmentId, examType } = Route.useParams();
+    const { aiMarks } = Route.useSearch();
     const { data: instituteDetails } = useSuspenseQuery(useInstituteQuery());
     const [file, setFile] = useState<File | null>(null);
     const [fetchError, setFetchError] = useState(false);
@@ -181,6 +182,7 @@ const EvaluateAttemptComponent = () => {
                     instituteId={instituteDetails?.id}
                     examType={examType}
                     assessmentVisibility={assessmentVisibility}
+                    autoImportAi={aiMarks === true}
                 />
             )}
         </>

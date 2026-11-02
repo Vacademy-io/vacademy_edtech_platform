@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { DownloadSimple } from '@phosphor-icons/react';
 import { MyDialog } from '@/components/design-system/dialog';
@@ -18,6 +18,8 @@ interface FilePreviewDialogProps {
     // Base name (no extension) for the Download button — the real extension is
     // resolved from the file bytes by downloadFileFromUrl.
     downloadName: string;
+    // Extra buttons shown before Download (e.g. Edit on the evaluated copy).
+    footerActions?: ReactNode;
 }
 
 // In-app preview for submission / evaluated answer-sheet files. Stored files
@@ -31,6 +33,7 @@ export const FilePreviewDialog = ({
     fileUrl,
     heading,
     downloadName,
+    footerActions,
 }: FilePreviewDialogProps) => {
     const { t } = useTranslation('assessmentFilePreviewDialog');
     const [objectUrl, setObjectUrl] = useState<string | null>(null);
@@ -95,19 +98,22 @@ export const FilePreviewDialog = ({
             heading={heading}
             dialogWidth="max-w-4xl"
             footer={
-                <MyButton
-                    type="button"
-                    buttonType="secondary"
-                    scale="medium"
-                    disable={!fileUrl}
-                    onAsyncClick={async () => {
-                        if (fileUrl) await downloadFileFromUrl(fileUrl, downloadName);
-                    }}
-                    loadingText={t('downloading')}
-                >
-                    <DownloadSimple size={18} />
-                    {t('download')}
-                </MyButton>
+                <div className="flex flex-wrap items-center justify-end gap-2">
+                    {footerActions}
+                    <MyButton
+                        type="button"
+                        buttonType="secondary"
+                        scale="medium"
+                        disable={!fileUrl}
+                        onAsyncClick={async () => {
+                            if (fileUrl) await downloadFileFromUrl(fileUrl, downloadName);
+                        }}
+                        loadingText={t('downloading')}
+                    >
+                        <DownloadSimple size={18} />
+                        {t('download')}
+                    </MyButton>
+                </div>
             }
         >
             {/* Viewport-relative viewer height — no spacing token exists for vh. */}
