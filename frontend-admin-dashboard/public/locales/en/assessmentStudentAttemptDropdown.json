@@ -13,12 +13,6 @@
             "title": "Release Result",
             "confirmMessagePrefix": "Are you sure you want to release result for"
         },
-        "manualReEvaluate": {
-            "title": "Re-evaluate Attempt",
-            "evaluatingLabel": "Evaluating",
-            "messagePart1": "’s attempt has already been evaluated. Re-evaluating will move it back to",
-            "messagePart2": "until you submit new marks. Do you want to continue?"
-        },
         "evaluateWithAI": {
             "title": "Evaluate Assessment with AI",
             "evaluatingLabel": "Evaluating",
