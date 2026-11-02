@@ -37,8 +37,6 @@ const OPT_IN_TAB_IDS = new Set<string>([
     'live-activity',
     'ai-copilot-tab',
     'mentorship',
-    // Access Passes: off until an institute decides to sell or assign passes.
-    'access-passes',
     // NOTE: the ERP modules are deliberately NOT listed here. The opt-in gate
     // for ERP is the rail CATEGORY, which ships `visible: false` (see
     // display-settings.ts). Hiding the modules as well made turning the

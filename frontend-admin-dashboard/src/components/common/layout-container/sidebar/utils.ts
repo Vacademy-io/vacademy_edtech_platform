@@ -1281,8 +1281,8 @@ export const getSidebarItemsData = (): SidebarItemsType[] => [
     },
 
     // Access Passes (one purchase -> several courses). An LMS tab, appended last so no
-    // other tab's order moves. Ships HIDDEN for every role (OPT_IN_TAB_IDS, the teacher
-    // defaults and controlledTabs): an institute turns it on in Display Settings.
+    // other tab's order moves. Ships VISIBLE for every role; an institute can hide it in
+    // Display Settings.
     {
         icon: Ticket,
         title: sidebarT('sidebar:accessPasses'),
