@@ -968,14 +968,19 @@ export function TransactionsView() {
         setDetailOpen(true);
     };
 
-    // Subline: "N payments · ₹X collected · M need attention". Abandoned checkouts are not
-    // "attention" — nothing can be done about a gateway order that has already expired.
+    // Subline: "N paid · ₹X collected · M need attention · K abandoned" — the same buckets the cards
+    // show, so no number on the line can be read against a different number on a card. (It used to
+    // lead with the all-records count, "328 payments", next to a Collected card saying "284
+    // payments".) Abandoned checkouts are not "attention" — nothing can be done about a gateway
+    // order that has already expired — so they get their own segment.
     // Collected reads the same figure as the Collected card (the server's PAID total), so the two
     // never disagree; the paid records are only the fallback while that figure is unavailable.
     const collectedAmount = billing
         ? formatMoney(billing.collected, billing.currency, { maximumFractionDigits: 0 })
         : summarizeBucketAmount(paymentSummary.paid.amountByCurrency).display;
+    const paidCount = paymentSummary.paid.count;
     const needAttention = paymentSummary.pending.count + paymentSummary.failed.count;
+    const abandonedCount = paymentSummary.abandoned.count;
 
     return (
         <StudentSidebarProvider>
@@ -990,9 +995,9 @@ export function TransactionsView() {
                             ) : (
                                 <>
                                     <span className="font-medium text-neutral-700">
-                                        {paymentSummary.total.count.toLocaleString()}
+                                        {paidCount.toLocaleString()}
                                     </span>{' '}
-                                    payments
+                                    paid
                                     {collectedAmount && (
                                         <>
                                             {' · '}
@@ -1002,7 +1007,12 @@ export function TransactionsView() {
                                             collected
                                         </>
                                     )}
-                                    {needAttention > 0 && <> · {needAttention} need attention</>}
+                                    {needAttention > 0 && (
+                                        <> · {needAttention.toLocaleString()} need attention</>
+                                    )}
+                                    {abandonedCount > 0 && (
+                                        <> · {abandonedCount.toLocaleString()} abandoned</>
+                                    )}
                                 </>
                             )}
                         </p>
