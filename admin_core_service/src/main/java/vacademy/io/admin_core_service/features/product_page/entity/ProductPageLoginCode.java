@@ -6,7 +6,7 @@ import org.hibernate.annotations.UuidGenerator;
 
 import java.time.LocalDateTime;
 
-/** One-time code that lets the buyer's browser log in right after a product-page purchase. */
+/** One-time code that lets the buyer's browser log in right after a product-page or enroll-invite purchase. */
 @AllArgsConstructor
 @NoArgsConstructor
 @Getter
@@ -29,8 +29,13 @@ public class ProductPageLoginCode {
     @Column(name = "institute_id", nullable = false)
     private String instituteId;
 
-    @Column(name = "product_page_id", nullable = false)
+    /** Set for a product-page purchase; null for an enroll-invite purchase. */
+    @Column(name = "product_page_id")
     private String productPageId;
+
+    /** Set for an enroll-invite purchase; null for a product-page purchase. */
+    @Column(name = "enroll_invite_id")
+    private String enrollInviteId;
 
     @Column(name = "payment_log_id", nullable = false, unique = true)
     private String paymentLogId;

@@ -12,6 +12,7 @@ import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.util.StringUtils;
 import vacademy.io.admin_core_service.features.auth_service.service.AuthService;
 import vacademy.io.admin_core_service.features.common.util.JsonUtil;
+import vacademy.io.admin_core_service.features.enroll_invite.entity.EnrollInvite;
 import vacademy.io.admin_core_service.features.product_page.dto.ProductPageLoginCodeExchangeResponse;
 import vacademy.io.admin_core_service.features.product_page.entity.ProductPage;
 import vacademy.io.admin_core_service.features.product_page.entity.ProductPageLoginCode;
@@ -33,7 +34,8 @@ import java.util.HexFormat;
 import java.util.Map;
 
 /**
- * "Log the buyer in after purchase" for product pages (settings_json.autoLoginAfterPayment).
+ * "Log the buyer in after purchase" for product pages (settings_json.autoLoginAfterPayment)
+ * and enroll invites (setting_json.postformfillConfiguration.autoLoginAfterPayment).
  *
  * <p>The checkout is open: anyone can type any email, and the account behind it is reused.
  * Handing out a session for that email would let a stranger buy a cheap course in someone
@@ -78,9 +80,29 @@ public class ProductPageAutoLoginService {
      * Never throws: a failure here must not fail an enrollment that has already been paid for.
      */
     public String issue(ProductPage page, String paymentLogId, UserDTO user, String instituteId) {
+        if (page == null || !isEnabled(page.getSettingsJson())) {
+            return null;
+        }
+        return issueCode(page.getId(), null, paymentLogId, user, instituteId);
+    }
+
+    /**
+     * The same one-time code for an enroll-invite purchase, when the invite's
+     * setting_json has postformfillConfiguration.autoLoginAfterPayment = true. Same rules:
+     * only an account this checkout created and that has never logged in qualifies.
+     * Never throws.
+     */
+    public String issueForInvite(EnrollInvite invite, String paymentLogId, UserDTO user, String instituteId) {
+        if (invite == null || !isInviteEnabled(invite.getSettingJson())) {
+            return null;
+        }
+        return issueCode(null, invite.getId(), paymentLogId, user, instituteId);
+    }
+
+    private String issueCode(String pageId, String enrollInviteId, String paymentLogId, UserDTO user,
+                             String instituteId) {
         try {
-            if (page == null || !isEnabled(page.getSettingsJson())
-                    || user == null || !StringUtils.hasText(user.getId())
+            if (user == null || !StringUtils.hasText(user.getId())
                     || !StringUtils.hasText(paymentLogId) || !StringUtils.hasText(instituteId)
                     || user.getLastLoginTime() != null) {
                 return null;
@@ -90,9 +112,9 @@ public class ProductPageAutoLoginService {
             String code = Base64.getUrlEncoder().withoutPadding().encodeToString(raw);
             String codeHash = sha256(code);
             String userId = user.getId();
-            String pageId = page.getId();
 
-            Runnable record = () -> recordIfEligible(codeHash, userId, instituteId, pageId, paymentLogId);
+            Runnable record = () -> recordIfEligible(codeHash, userId, instituteId, pageId, enrollInviteId,
+                    paymentLogId);
             if (TransactionSynchronizationManager.isSynchronizationActive()) {
                 TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
                     @Override
@@ -111,7 +133,7 @@ public class ProductPageAutoLoginService {
     }
 
     private void recordIfEligible(String codeHash, String userId, String instituteId, String pageId,
-                                  String paymentLogId) {
+                                  String enrollInviteId, String paymentLogId) {
         try {
             newTransaction.executeWithoutResult(status -> {
                 PaymentLog paymentLog = paymentLogRepository.findById(paymentLogId).orElse(null);
@@ -133,6 +155,7 @@ public class ProductPageAutoLoginService {
                 row.setUserId(userId);
                 row.setInstituteId(instituteId);
                 row.setProductPageId(pageId);
+                row.setEnrollInviteId(enrollInviteId);
                 row.setPaymentLogId(paymentLogId);
                 row.setExpiresAt(LocalDateTime.now().plusMinutes(CODE_TTL_MINUTES));
                 loginCodeRepository.save(row);
@@ -175,6 +198,22 @@ public class ProductPageAutoLoginService {
         try {
             Map<String, Object> settings = JsonUtil.fromJson(settingsJson, Map.class);
             return settings != null && Boolean.TRUE.equals(settings.get("autoLoginAfterPayment"));
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
+    /** Invite setting: {"postformfillConfiguration": {"autoLoginAfterPayment": true}}. */
+    @SuppressWarnings("unchecked")
+    public static boolean isInviteEnabled(String settingJson) {
+        if (!StringUtils.hasText(settingJson)) {
+            return false;
+        }
+        try {
+            Map<String, Object> settings = JsonUtil.fromJson(settingJson, Map.class);
+            Object postForm = settings == null ? null : settings.get("postformfillConfiguration");
+            return postForm instanceof Map
+                    && Boolean.TRUE.equals(((Map<String, Object>) postForm).get("autoLoginAfterPayment"));
         } catch (Exception e) {
             return false;
         }
