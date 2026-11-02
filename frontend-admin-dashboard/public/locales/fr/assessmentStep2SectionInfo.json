@@ -15,6 +15,13 @@
         "manualDialog": {
             "title": "Créer un questionnaire manuellement"
         },
+        "csvCard": {
+            "title": "Importer CSV / Excel",
+            "subtitle": "Importer des questions depuis une feuille"
+        },
+        "csvDialog": {
+            "title": "Vérifier les questions du CSV / Excel"
+        },
         "savedCard": {
             "title": "Choisir un questionnaire enregistré",
             "subtitle": "Réutiliser un questionnaire existant"

@@ -55,6 +55,14 @@ interface QuestionPaperUploadProps {
     setCurrentQuestionIndex: Dispatch<SetStateAction<number>>;
     examType?: string;
     defaultSubject?: string;
+    /**
+     * Questions already read from a file outside this dialog (a CSV / Excel
+     * sheet). They go through the same checks and the same commit as a
+     * document upload, so the teacher reviews them here and saves the paper.
+     */
+    initialQuestions?: MyQuestion[];
+    /** Called once the paper is saved — lets a caller close its own dialog. */
+    onSaved?: () => void;
 }
 
 // Helper hook for form management
@@ -450,6 +458,8 @@ export const QuestionPaperUpload = ({
     setCurrentQuestionIndex,
     examType = 'EXAM',
     defaultSubject,
+    initialQuestions,
+    onSaved,
 }: QuestionPaperUploadProps) => {
     const { t } = useTranslation('assessmentQuestionPaperUpload');
     const queryClient = useQueryClient();
@@ -601,6 +611,7 @@ export const QuestionPaperUpload = ({
             setIsManualQuestionPaperDialogOpen(false);
             setIsUploadFromDeviceDialogOpen(false);
             queryClient.invalidateQueries({ queryKey: ['GET_QUESTION_PAPER_FILTERED_DATA'] });
+            onSaved?.();
         },
         onError: (error: unknown) => {
             toast.error(error as string);
@@ -797,6 +808,24 @@ export const QuestionPaperUpload = ({
         setPendingIssues([]);
         handleRemoveQuestionPaper();
     };
+
+    // Questions read from a CSV / Excel sheet before this dialog opened: the
+    // same checks and the same commit as a document upload, once.
+    const initialQuestionsLoaded = useRef(false);
+    useEffect(() => {
+        if (initialQuestionsLoaded.current || !initialQuestions?.length) return;
+        initialQuestionsLoaded.current = true;
+        const issues = validateUploadedQuestions(initialQuestions, examType);
+        if (issues.length === 0) {
+            commitQuestions(initialQuestions);
+            return;
+        }
+        setPendingQuestions(initialQuestions);
+        setPendingIssues(issues);
+        setDiagnosticsOpen(true);
+        // commitQuestions is recreated every render; the ref makes this run once.
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [initialQuestions, examType]);
 
     return (
         <>
