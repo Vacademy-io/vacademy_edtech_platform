@@ -19,13 +19,13 @@ import java.util.Map;
 /**
  * Learning Reports → Batch → Overview.
  *
- *   POST /summary   the basic batch report (pass rate, completion, subjects, learners)
+ *   POST /summary   the basic report for a batch, or all batches when no batch is given
  *   POST /preview   the generated report as HTML, rendered with the institute's template
  *   POST /pdf       the same document as a PDF
  *   POST /send      email it to the batch's teachers, or each parent their own child's copy
- *   GET  /setting   the template (sections + pass mark) with defaults applied
+ *   GET  /setting   the template sections with defaults applied
  *
- * The institute comes from the clientId header and is checked against the principal; the
+ * The institute comes from the clientId header and is checked against the principal; a given
  * batch must belong to it. Viewing needs any staff role, sending needs an admin, since it
  * emails parents.
  */
@@ -81,8 +81,7 @@ public class BatchSummaryReportController {
         BatchReportSettingConfig setting = batchSummaryReportService.loadSetting(instituteId);
         return ResponseEntity.ok(Map.of(
                 "sections", setting.resolvedSections(),
-                "all_sections", BatchReportSettingConfig.ALL_SECTIONS,
-                "pass_percentage", setting.resolvedPassPercentage()));
+                "all_sections", BatchReportSettingConfig.ALL_SECTIONS));
     }
 
     private String staffInstitute(HttpServletRequest http, CustomUserDetails user) {

@@ -7,6 +7,7 @@ import org.springframework.context.annotation.Lazy;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import vacademy.io.assessment_service.features.assessment.dto.admin_get_dto.response.CohortAssessmentAttemptProjection;
 import vacademy.io.assessment_service.features.assessment.dto.admin_get_dto.response.StudentAttemptHistoryProjection;
 import vacademy.io.assessment_service.features.assessment.dto.admin_get_dto.response.UserAssessmentHistorySummaryProjection;
 import vacademy.io.assessment_service.features.assessment.repository.StudentAttemptRepository;
@@ -17,11 +18,15 @@ import vacademy.io.assessment_service.features.learner_assessment.dto.internal.A
 import vacademy.io.assessment_service.features.learner_assessment.dto.internal.AssessmentSectionSummaryDto;
 import vacademy.io.assessment_service.features.learner_assessment.dto.internal.BatchAssessmentHistoryRequest;
 import vacademy.io.assessment_service.features.learner_assessment.dto.internal.BatchAssessmentHistoryResponse;
+import vacademy.io.assessment_service.features.learner_assessment.dto.internal.CohortAssessmentRequest;
+import vacademy.io.assessment_service.features.learner_assessment.dto.internal.CohortAssessmentResponse;
 import vacademy.io.assessment_service.features.learner_assessment.dto.internal.StudentAssessmentHistoryResponse;
 import vacademy.io.assessment_service.features.learner_assessment.dto.internal.UserAssessmentSummaryDto;
 import vacademy.io.common.exceptions.VacademyException;
 
 import java.time.Instant;
+import java.time.LocalDate;
+import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -189,6 +194,58 @@ public class StudentAnalysisInternalService {
         return BatchAssessmentHistoryResponse.builder()
                 .byUserId(byUserId)
                 .build();
+    }
+
+    /**
+     * Cohort attempts for the admin batch report: the latest ENDED attempt of each learner on
+     * each assessment in [startDate, endDate]. Max {@value #MAX_BATCH_USERS} learners per call.
+     */
+    public CohortAssessmentResponse fetchCohortAttempts(CohortAssessmentRequest request) {
+        if (request == null || request.getInstituteId() == null || request.getInstituteId().isBlank()) {
+            throw new VacademyException(HttpStatus.BAD_REQUEST, "instituteId is required");
+        }
+        if (request.getUserIds() == null || request.getUserIds().isEmpty()) {
+            return CohortAssessmentResponse.builder().attempts(List.of()).build();
+        }
+        if (request.getUserIds().size() > MAX_BATCH_USERS) {
+            throw new VacademyException(HttpStatus.BAD_REQUEST,
+                    "userIds exceeds the maximum of " + MAX_BATCH_USERS + " per call");
+        }
+        LocalDate start;
+        LocalDate end;
+        try {
+            start = LocalDate.parse(request.getStartDate());
+            end = LocalDate.parse(request.getEndDate());
+        } catch (Exception e) {
+            throw new VacademyException(HttpStatus.BAD_REQUEST, "startDate and endDate must be yyyy-MM-dd");
+        }
+        if (start.isAfter(end)) {
+            throw new VacademyException(HttpStatus.BAD_REQUEST, "startDate is after endDate");
+        }
+        Set<String> ids = new LinkedHashSet<>();
+        for (String id : request.getUserIds()) {
+            if (id != null && !id.isBlank()) ids.add(id);
+        }
+        if (ids.isEmpty()) {
+            return CohortAssessmentResponse.builder().attempts(List.of()).build();
+        }
+        Date from = Date.from(start.atStartOfDay(ZoneId.systemDefault()).toInstant());
+        Date to = Date.from(end.plusDays(1).atStartOfDay(ZoneId.systemDefault()).toInstant());
+
+        List<CohortAssessmentResponse.Attempt> attempts = new ArrayList<>();
+        for (CohortAssessmentAttemptProjection row : studentAttemptRepository
+                .findCohortAttemptsBetween(request.getInstituteId(), new ArrayList<>(ids), from, to)) {
+            attempts.add(CohortAssessmentResponse.Attempt.builder()
+                    .userId(row.getUserId())
+                    .assessmentId(row.getAssessmentId())
+                    .assessmentName(row.getAssessmentName())
+                    .attemptAt(row.getAttemptAt() != null ? row.getAttemptAt().toInstant().toString() : null)
+                    .percentage(roundToOneDecimal(row.getPercentage()))
+                    .build());
+        }
+        log.info("student-analysis/cohort: instituteId={} users={} attempts={} [{} - {}]",
+                request.getInstituteId(), ids.size(), attempts.size(), start, end);
+        return CohortAssessmentResponse.builder().attempts(attempts).build();
     }
 
     // -------------------------------------------------------------------------

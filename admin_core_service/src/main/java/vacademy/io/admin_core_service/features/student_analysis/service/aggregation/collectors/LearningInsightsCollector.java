@@ -53,6 +53,39 @@ public class LearningInsightsCollector {
             if (logs == null || logs.isEmpty()) {
                 return LearningInsightsSection.builder().available(false).build();
             }
+            return fromJson(logs.stream().map(ActivityLog::getProcessedJson).toList());
+        } catch (Exception e) {
+            log.error("[LearningInsightsCollector] Failed for userId={}: {}", userId, e.getMessage());
+            return LearningInsightsSection.builder().available(false).build();
+        }
+    }
+
+    /** Most rows parsed for a cohort roll-up; newest first. */
+    private static final int MAX_COHORT_ROWS = 3000;
+
+    /**
+     * Topic mastery, Bloom levels and confidence rolled up across a cohort (the batch report),
+     * from the newest {@value #MAX_COHORT_ROWS} analysed attempts in the window.
+     */
+    public LearningInsightsSection collectForUsers(List<String> userIds, LocalDate startDate, LocalDate endDate) {
+        if (userIds == null || userIds.isEmpty()) {
+            return LearningInsightsSection.builder().available(false).build();
+        }
+        try {
+            Timestamp startTs = Timestamp.valueOf(startDate.atStartOfDay());
+            Timestamp endTs = Timestamp.valueOf(endDate.atTime(23, 59, 59));
+            return fromJson(activityLogRepository.findProcessedJsonForUsers(userIds, startTs, endTs, MAX_COHORT_ROWS));
+        } catch (Exception e) {
+            log.error("[LearningInsightsCollector] Cohort roll-up failed for {} users: {}", userIds.size(), e.getMessage());
+            return LearningInsightsSection.builder().available(false).build();
+        }
+    }
+
+    private LearningInsightsSection fromJson(List<String> rows) {
+        try {
+            if (rows == null || rows.isEmpty()) {
+                return LearningInsightsSection.builder().available(false).build();
+            }
 
             TopicAccumulator topics = new TopicAccumulator();
             BloomAccumulator blooms = new BloomAccumulator();
@@ -60,8 +93,7 @@ public class LearningInsightsCollector {
             List<LearningInsightsSection.Misconception> misconceptions = new ArrayList<>();
 
             int analyzed = 0;
-            for (ActivityLog log : logs) {
-                String json = log.getProcessedJson();
+            for (String json : rows) {
                 if (json == null || json.isBlank()) continue;
                 JsonNode root;
                 try {
@@ -109,7 +141,7 @@ public class LearningInsightsCollector {
                     .build();
 
         } catch (Exception e) {
-            log.error("[LearningInsightsCollector] Failed for userId={}: {}", userId, e.getMessage());
+            log.error("[LearningInsightsCollector] Failed to roll up insights: {}", e.getMessage());
             return LearningInsightsSection.builder().available(false).build();
         }
     }

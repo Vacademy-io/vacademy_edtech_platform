@@ -6,7 +6,6 @@ import { getInstituteId } from '@/constants/helper';
 import { GET_INSITITUTE_SETTINGS } from '@/constants/urls';
 import { MyButton } from '@/components/design-system/button';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Input } from '@/components/ui/input';
 import { DashboardLoader } from '@/components/core/dashboard-loader';
 import {
     BATCH_REPORT_SECTIONS,
@@ -16,16 +15,14 @@ import {
 
 /**
  * Settings → Batch reports: the template behind Learning Reports → Batch → Generate report —
- * which sections it renders, and the average quiz score a learner needs to count as passed.
+ * which sections it renders.
  * Stored under the BATCH_REPORT_SETTING institute setting (backend BatchReportSettingConfig).
  */
 const SETTING_KEY = 'BATCH_REPORT_SETTING';
 const SAVE_URL = GET_INSITITUTE_SETTINGS.replace('/get', '/save-setting');
-const DEFAULT_PASS = 40;
 
 interface BatchReportSettingData {
     sections: BatchReportSection[];
-    passPercentage: number;
 }
 
 /** GET returns the SettingDto ({ key, name, data }), so the saved content is at res.data.data. */
@@ -39,13 +36,9 @@ async function fetchSetting(): Promise<BatchReportSettingData> {
         const sections = Array.isArray(stored?.sections)
             ? BATCH_REPORT_SECTIONS.filter((s) => stored.sections.includes(s))
             : [];
-        const pass = Number(stored?.passPercentage);
-        return {
-            sections: sections.length ? sections : [...BATCH_REPORT_SECTIONS],
-            passPercentage: Number.isFinite(pass) && pass >= 0 && pass <= 100 ? pass : DEFAULT_PASS,
-        };
+        return { sections: sections.length ? sections : [...BATCH_REPORT_SECTIONS] };
     } catch {
-        return { sections: [...BATCH_REPORT_SECTIONS], passPercentage: DEFAULT_PASS };
+        return { sections: [...BATCH_REPORT_SECTIONS] };
     }
 }
 
@@ -64,21 +57,13 @@ export default function BatchReportSettings({ isTab }: { isTab?: boolean }) {
         queryFn: fetchSetting,
     });
     const [sections, setSections] = useState<BatchReportSection[]>([]);
-    const [pass, setPass] = useState<string>(String(DEFAULT_PASS));
 
     useEffect(() => {
-        if (data) {
-            setSections(data.sections);
-            setPass(String(data.passPercentage));
-        }
+        if (data) setSections(data.sections);
     }, [data]);
 
-    const passNumber = Number(pass);
-    const passValid =
-        pass.trim() !== '' && Number.isFinite(passNumber) && passNumber >= 0 && passNumber <= 100;
-
     const save = useMutation({
-        mutationFn: () => saveSetting({ sections, passPercentage: passNumber }),
+        mutationFn: () => saveSetting({ sections }),
         onSuccess: () => {
             toast.success('Batch report settings saved');
             queryClient.invalidateQueries({ queryKey: ['BATCH_REPORT_SETTING'] });
@@ -130,32 +115,10 @@ export default function BatchReportSettings({ isTab }: { isTab?: boolean }) {
                 })}
             </section>
 
-            <section className="flex flex-col gap-2 rounded-lg border border-neutral-200 p-4">
-                <h3 className="text-sm font-semibold text-neutral-700">Pass mark</h3>
-                <p className="text-xs text-neutral-500">
-                    A learner counts as passed when their average quiz score is at least this.
-                </p>
-                <div className="flex items-center gap-2">
-                    <Input
-                        type="number"
-                        min={0}
-                        max={100}
-                        value={pass}
-                        onChange={(e) => setPass(e.target.value)}
-                        className="w-28"
-                        aria-label="Pass mark percentage"
-                    />
-                    <span className="text-sm text-neutral-600">%</span>
-                </div>
-                {!passValid && (
-                    <p className="text-xs text-danger-600">Enter a number from 0 to 100.</p>
-                )}
-            </section>
-
             <div>
                 <MyButton
                     onClick={() => save.mutate()}
-                    disabled={!passValid || sections.length === 0 || save.isPending}
+                    disabled={sections.length === 0 || save.isPending}
                 >
                     {save.isPending ? 'Saving…' : 'Save changes'}
                 </MyButton>

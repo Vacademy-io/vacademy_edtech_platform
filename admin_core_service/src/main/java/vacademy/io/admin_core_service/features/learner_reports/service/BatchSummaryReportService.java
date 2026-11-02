@@ -16,6 +16,7 @@ import vacademy.io.admin_core_service.features.institute.repository.InstituteRep
 import vacademy.io.admin_core_service.features.institute.service.setting.InstituteSettingService;
 import vacademy.io.admin_core_service.features.institute_learner.entity.Student;
 import vacademy.io.admin_core_service.features.institute_learner.repository.InstituteStudentRepository;
+import vacademy.io.admin_core_service.features.institute_learner.repository.StudentSessionInstituteGroupMappingRepository;
 import vacademy.io.admin_core_service.features.learner_reports.dto.BatchReportSettingConfig;
 import vacademy.io.admin_core_service.features.learner_reports.dto.BatchReportSettingConfig.BatchReportSection;
 import vacademy.io.admin_core_service.features.learner_reports.dto.BatchSummaryReportDTO;
@@ -26,9 +27,11 @@ import vacademy.io.admin_core_service.features.learner_reports.dto.ReportFilterD
 import vacademy.io.admin_core_service.features.learner_reports.dto.SubjectProgressDTO;
 import vacademy.io.admin_core_service.features.notification_service.service.NotificationService;
 import vacademy.io.admin_core_service.features.packages.repository.PackageSessionRepository;
-import vacademy.io.admin_core_service.features.quiz_results.dto.LearnerQuizOverviewResponse;
-import vacademy.io.admin_core_service.features.quiz_results.service.QuizResultsService;
+import vacademy.io.admin_core_service.features.student_analysis.client.AssessmentServiceClient;
+import vacademy.io.admin_core_service.features.student_analysis.dto.comprehensive.LearningInsightsSection;
+import vacademy.io.admin_core_service.features.student_analysis.service.aggregation.SubjectResolver;
 import vacademy.io.admin_core_service.features.student_analysis.service.aggregation.ThemeColorResolver;
+import vacademy.io.admin_core_service.features.student_analysis.service.aggregation.collectors.LearningInsightsCollector;
 import vacademy.io.common.auth.dto.UserDTO;
 import vacademy.io.common.auth.model.CustomUserDetails;
 import vacademy.io.common.exceptions.VacademyException;
@@ -44,6 +47,7 @@ import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -53,18 +57,18 @@ import java.util.Objects;
 import java.util.Set;
 
 /**
- * Learning Reports → Batch → Overview: the basic batch report, the template-driven document
- * generated from it (HTML for preview and email, PDF for download) and sending it to the
- * batch's teachers or to parents.
+ * Learning Reports → Batch → Overview: the basic report for one batch or for every batch of the
+ * institute, the template-driven document generated from it (HTML for preview, PDF for download
+ * and email) and sending it to a batch's teachers or to parents.
  *
- * <p>Built entirely from existing report data — quiz results for pass / fail, the batch report
- * queries for completion, time, concentration, subject progress and the activity leaderboard.
- * Each source is fetched independently, so one failing query leaves its figures empty instead
- * of failing the whole report.
+ * <p>Scores come from assessment attempts in the window (assessment_service cohort endpoint):
+ * each learner's average, score bands, per assessment and per subject. Strengths and weaknesses
+ * are the topic accuracy of analysed attempts rolled up across the cohort. A single batch adds
+ * its course completion, time, concentration, subject progress and most active learners. Each
+ * source is fetched independently, so one failure leaves only its own figures empty.
  *
  * <p>A parent only ever receives their own child's results: their copy drops every section that
- * names other learners and adds a "your child" block. Teachers receive the batch report as is,
- * and only teachers mapped to this batch are addressed.
+ * names other learners and is framed around the child. Teachers receive the batch report.
  */
 @Slf4j
 @Service
@@ -72,16 +76,31 @@ import java.util.Set;
 public class BatchSummaryReportService {
 
     private static final long MAX_RANGE_DAYS = 366;
+    private static final int MAX_LEARNERS = 3000;
+    private static final int MAX_BATCHES_COMPARED = 40;
     private static final int ACTIVITY_ROWS = 10;
     private static final int HIGHLIGHT_ROWS = 10;
+    private static final double STRONG_FROM = 60;
+    private static final double AVERAGE_FROM = 40;
+    private static final List<String> ACTIVE = List.of("ACTIVE");
     private static final String DEFAULT_BRAND = "#4f46e5";
+    private static final String ALL_BATCHES_LABEL = "All batches";
     private static final DateTimeFormatter DATE_LABEL = DateTimeFormatter.ofPattern("d MMM yyyy", Locale.ENGLISH);
+    private static final DateTimeFormatter SHORT_DATE = DateTimeFormatter.ofPattern("d MMM", Locale.ENGLISH);
 
     public static final String AUDIENCE_TEACHERS = "TEACHERS";
     public static final String AUDIENCE_PARENTS = "PARENTS";
 
+    public static final String BAND_STRONG = "STRONG";
+    public static final String BAND_AVERAGE = "AVERAGE";
+    public static final String BAND_WEAK = "WEAK";
+    public static final String BAND_NOT_ASSESSED = "NOT_ASSESSED";
+
     private final BatchReportService batchReportService;
-    private final QuizResultsService quizResultsService;
+    private final AssessmentServiceClient assessmentServiceClient;
+    private final LearningInsightsCollector learningInsightsCollector;
+    private final SubjectResolver subjectResolver;
+    private final StudentSessionInstituteGroupMappingRepository mappingRepository;
     private final PackageSessionRepository packageSessionRepository;
     private final InstituteRepository instituteRepository;
     private final InstituteSettingService instituteSettingService;
@@ -97,63 +116,182 @@ public class BatchSummaryReportService {
                                            CustomUserDetails user) {
         validate(instituteId, request);
         BatchReportSettingConfig setting = loadSetting(instituteId);
-        double passMark = setting.resolvedPassPercentage();
-        String batchId = request.getPackageSessionId();
+        String batchId = StringUtils.hasText(request.getPackageSessionId()) ? request.getPackageSessionId() : null;
         Institute institute = institute(instituteId);
 
         BatchSummaryReportDTO.BatchSummaryReportDTOBuilder out = BatchSummaryReportDTO.builder()
                 .packageSessionId(batchId)
-                .batchName(request.getBatchName())
+                .batchName(batchId == null ? ALL_BATCHES_LABEL : request.getBatchName())
                 .instituteName(institute == null ? null : institute.getInstituteName())
                 .brandColor(institute == null ? null : ThemeColorResolver.resolve(institute.getInstituteThemeCode()))
                 .startDate(request.getStartDate())
                 .endDate(request.getEndDate())
-                .passPercentage(passMark)
                 .sections(sectionsFor(request, setting));
 
-        // Pass / fail from quiz results (graded to date).
+        // Roster
+        List<String> roster = new ArrayList<>(new LinkedHashSet<>(batchId == null
+                ? mappingRepository.findDistinctUserIdsByInstituteAndStatus(instituteId, ACTIVE)
+                : mappingRepository.findDistinctUserIdsByPackageSessionAndStatus(batchId, ACTIVE)));
+        roster.removeIf(id -> !StringUtils.hasText(id));
+        boolean truncated = roster.size() > MAX_LEARNERS;
+        if (truncated) roster = new ArrayList<>(roster.subList(0, MAX_LEARNERS));
+        out.enrolledLearners(roster.size()).learnersTruncated(truncated);
+        Map<String, String> names = learnerNames(roster);
+
+        // Assessment scores
+        String start = request.getStartDate().toString();
+        String end = request.getEndDate().toString();
+        List<AssessmentServiceClient.CohortAttempt> attempts = roster.isEmpty() ? List.of()
+                : assessmentServiceClient.fetchCohortAttempts(instituteId, roster, start, end).stream()
+                .filter(a -> a.percentage() != null && a.userId() != null && a.assessmentId() != null)
+                .toList();
+
+        Map<String, double[]> byUser = new HashMap<>(); // userId -> [sum, count]
+        Map<String, List<AssessmentServiceClient.CohortAttempt>> byAssessment = new LinkedHashMap<>();
+        for (AssessmentServiceClient.CohortAttempt a : attempts) {
+            double[] acc = byUser.computeIfAbsent(a.userId(), k -> new double[2]);
+            acc[0] += a.percentage();
+            acc[1]++;
+            byAssessment.computeIfAbsent(a.assessmentId(), k -> new ArrayList<>()).add(a);
+        }
+        Map<String, Double> userAvg = new HashMap<>();
+        byUser.forEach((id, acc) -> userAvg.put(id, acc[0] / acc[1]));
+
         List<BatchSummaryReportDTO.LearnerRow> learners = new ArrayList<>();
+        long strong = 0, average = 0, weak = 0, none = 0;
+        for (String id : roster) {
+            Double avg = userAvg.get(id);
+            String band = band(avg);
+            switch (band) {
+                case BAND_STRONG -> strong++;
+                case BAND_AVERAGE -> average++;
+                case BAND_WEAK -> weak++;
+                default -> none++;
+            }
+            learners.add(BatchSummaryReportDTO.LearnerRow.builder()
+                    .userId(id)
+                    .fullName(names.getOrDefault(id, "Learner"))
+                    .avgScore(round1(avg))
+                    .assessmentsTaken(byUser.containsKey(id) ? (int) byUser.get(id)[1] : 0)
+                    .band(band)
+                    .build());
+        }
+        learners.sort(Comparator.comparing(BatchSummaryReportDTO.LearnerRow::getAvgScore,
+                Comparator.nullsLast(Comparator.reverseOrder())));
+
+        List<BatchSummaryReportDTO.AssessmentRow> assessmentRows = new ArrayList<>();
+        for (List<AssessmentServiceClient.CohortAttempt> rows : byAssessment.values()) {
+            AssessmentServiceClient.CohortAttempt first = rows.get(0);
+            String date = rows.stream().map(AssessmentServiceClient.CohortAttempt::attemptAt)
+                    .filter(Objects::nonNull).min(Comparator.naturalOrder()).orElse(null);
+            assessmentRows.add(BatchSummaryReportDTO.AssessmentRow.builder()
+                    .assessmentId(first.assessmentId())
+                    .name(first.assessmentName())
+                    .date(date == null || date.length() < 10 ? date : date.substring(0, 10))
+                    .subject(subject(first.assessmentName()))
+                    .attempts(rows.size())
+                    .avgScore(round1(rows.stream().mapToDouble(AssessmentServiceClient.CohortAttempt::percentage).average().orElse(0)))
+                    .build());
+        }
+        assessmentRows.sort(Comparator.comparing(BatchSummaryReportDTO.AssessmentRow::getDate,
+                Comparator.nullsLast(Comparator.naturalOrder())));
+
+        Map<String, double[]> bySubject = new LinkedHashMap<>(); // subject -> [weighted sum, attempts, assessments]
+        for (BatchSummaryReportDTO.AssessmentRow a : assessmentRows) {
+            if (a.getSubject() == null || a.getAvgScore() == null) continue;
+            double[] acc = bySubject.computeIfAbsent(a.getSubject(), k -> new double[3]);
+            acc[0] += a.getAvgScore() * a.getAttempts();
+            acc[1] += a.getAttempts();
+            acc[2]++;
+        }
+        List<BatchSummaryReportDTO.SubjectScoreRow> subjectScores = new ArrayList<>();
+        bySubject.forEach((name, acc) -> subjectScores.add(BatchSummaryReportDTO.SubjectScoreRow.builder()
+                .subject(name)
+                .avgScore(acc[1] > 0 ? round1(acc[0] / acc[1]) : null)
+                .attempts((int) acc[1])
+                .assessments((int) acc[2])
+                .build()));
+        subjectScores.sort(Comparator.comparing(BatchSummaryReportDTO.SubjectScoreRow::getAvgScore,
+                Comparator.nullsLast(Comparator.reverseOrder())));
+
+        out.learners(learners)
+                .learnersAssessed(byUser.size())
+                .assessmentsHeld(byAssessment.size())
+                .totalAttempts(attempts.size())
+                .avgScore(userAvg.isEmpty() ? null
+                        : round1(userAvg.values().stream().mapToDouble(Double::doubleValue).average().orElse(0)))
+                .participationRate(roster.isEmpty() ? null : round1(byUser.size() * 100.0 / roster.size()))
+                .strongLearners(strong)
+                .averageLearners(average)
+                .weakLearners(weak)
+                .notAssessedLearners(none)
+                .assessments(assessmentRows)
+                .subjectScores(subjectScores);
+
+        // Strengths and weaknesses
         try {
-            LearnerQuizOverviewResponse quiz = quizResultsService.getLearnerOverview(batchId, user);
-            long passed = 0, failed = 0, notAttempted = 0;
-            for (LearnerQuizOverviewResponse.LearnerRow row : nonNull(quiz.getLearners())) {
-                String status;
-                if (row.getQuizzesAttempted() <= 0 || row.getAvgScorePercent() == null) {
-                    status = "NOT_ATTEMPTED";
-                    notAttempted++;
-                } else if (row.getAvgScorePercent() >= passMark) {
-                    status = "PASSED";
-                    passed++;
-                } else {
-                    status = "FAILED";
-                    failed++;
+            LearningInsightsSection insights =
+                    learningInsightsCollector.collectForUsers(roster, request.getStartDate(), request.getEndDate());
+            List<BatchSummaryReportDTO.TopicRow> topics = new ArrayList<>();
+            if (insights != null && insights.getTopicMastery() != null) {
+                for (LearningInsightsSection.TopicMastery t : insights.getTopicMastery()) {
+                    topics.add(BatchSummaryReportDTO.TopicRow.builder()
+                            .topic(t.getTopic())
+                            .questions(t.getQuestions() == null ? 0 : t.getQuestions())
+                            .correct(t.getCorrect() == null ? 0 : t.getCorrect())
+                            .accuracy(t.getAccuracy())
+                            .masteryLevel(t.getMasteryLevel())
+                            .build());
                 }
-                learners.add(BatchSummaryReportDTO.LearnerRow.builder()
-                        .userId(row.getUserId())
-                        .fullName(row.getFullName())
-                        .avgScorePercent(round1(row.getAvgScorePercent()))
-                        .quizzesAttempted(row.getQuizzesAttempted())
-                        .quizzesInCourse(row.getQuizzesInCourse())
-                        .status(status)
+            }
+            out.topics(topics).attemptsAnalyzed(insights == null ? null : insights.getAttemptsAnalyzed());
+        } catch (Exception e) {
+            log.warn("[batch-summary] topic roll-up failed for {}: {}", batchId, e.getMessage());
+            out.topics(List.of());
+        }
+
+        if (batchId == null) {
+            out.batches(compareBatches(instituteId, userAvg));
+            out.subjects(List.of()).activity(List.of());
+        } else {
+            addBatchProgress(out, batchId, request, user);
+        }
+        return out.build();
+    }
+
+    /** Average score per batch for the all-batches report, best first. */
+    private List<BatchSummaryReportDTO.BatchRow> compareBatches(String instituteId, Map<String, Double> userAvg) {
+        List<BatchSummaryReportDTO.BatchRow> rows = new ArrayList<>();
+        try {
+            for (String ps : mappingRepository.findDistinctPackageSessionIdsByInstituteAndStatus(
+                    instituteId, ACTIVE, MAX_BATCHES_COMPARED)) {
+                List<String> ids = mappingRepository.findDistinctUserIdsByPackageSessionAndStatus(ps, ACTIVE);
+                double sum = 0;
+                int n = 0;
+                for (String id : ids) {
+                    Double avg = userAvg.get(id);
+                    if (avg != null) {
+                        sum += avg;
+                        n++;
+                    }
+                }
+                rows.add(BatchSummaryReportDTO.BatchRow.builder()
+                        .packageSessionId(ps)
+                        .learners(ids.size())
+                        .learnersAssessed(n)
+                        .avgScore(n == 0 ? null : round1(sum / n))
                         .build());
             }
-            long enrolled = quiz.getSummary() != null ? quiz.getSummary().getEnrolledLearners() : learners.size();
-            out.enrolledLearners(enrolled)
-                    .learnersAttempted(passed + failed)
-                    .passedLearners(passed)
-                    .failedLearners(failed)
-                    .notAttemptedLearners(notAttempted)
-                    .passRate(enrolled > 0 ? round1(passed * 100.0 / enrolled) : null)
-                    .avgQuizScore(quiz.getSummary() != null ? round1(quiz.getSummary().getAvgScorePercent()) : null)
-                    .quizzesInCourse(quiz.getSummary() != null ? quiz.getSummary().getQuizzesInCourse() : 0)
-                    .learnersTruncated(quiz.isTruncated());
         } catch (Exception e) {
-            log.warn("[batch-summary] quiz results failed for batch {}: {}", batchId, e.getMessage());
+            log.warn("[batch-summary] batch comparison failed for institute {}: {}", instituteId, e.getMessage());
         }
-        learners.sort(Comparator.comparing(BatchSummaryReportDTO.LearnerRow::getAvgScorePercent,
+        rows.sort(Comparator.comparing(BatchSummaryReportDTO.BatchRow::getAvgScore,
                 Comparator.nullsLast(Comparator.reverseOrder())));
-        out.learners(learners);
+        return rows;
+    }
 
+    private void addBatchProgress(BatchSummaryReportDTO.BatchSummaryReportDTOBuilder out, String batchId,
+                                  BatchSummaryReportRequest request, CustomUserDetails user) {
         ReportFilterDTO filter = new ReportFilterDTO();
         filter.setPackageSessionId(batchId);
         filter.setStartDate(Date.valueOf(request.getStartDate()));
@@ -205,8 +343,36 @@ public class BatchSummaryReportService {
             log.warn("[batch-summary] activity leaderboard failed for batch {}: {}", batchId, e.getMessage());
             out.activity(List.of());
         }
+    }
 
-        return out.build();
+    private Map<String, String> learnerNames(List<String> ids) {
+        Map<String, String> names = new HashMap<>();
+        for (int i = 0; i < ids.size(); i += 1000) {
+            try {
+                for (Student s : studentRepository.findByUserIdIn(ids.subList(i, Math.min(ids.size(), i + 1000)))) {
+                    if (StringUtils.hasText(s.getFullName())) names.putIfAbsent(s.getUserId(), s.getFullName());
+                }
+            } catch (Exception e) {
+                log.warn("[batch-summary] learner names failed: {}", e.getMessage());
+            }
+        }
+        return names;
+    }
+
+    private String subject(String assessmentName) {
+        try {
+            String s = subjectResolver.resolve(null, assessmentName);
+            return StringUtils.hasText(s) && !subjectResolver.isPlaceholder(s) ? s : null;
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    static String band(Double avg) {
+        if (avg == null) return BAND_NOT_ASSESSED;
+        if (avg >= STRONG_FROM) return BAND_STRONG;
+        if (avg >= AVERAGE_FROM) return BAND_AVERAGE;
+        return BAND_WEAK;
     }
 
     // ── document ────────────────────────────────────────────────────────────────
@@ -258,12 +424,14 @@ public class BatchSummaryReportService {
             switch (section) {
                 case BatchReportSection.OVERVIEW -> appendTiles(h, r, child);
                 case BatchReportSection.RESULTS -> appendResults(h, r, child, brand);
+                case BatchReportSection.ASSESSMENTS -> appendAssessments(h, r, brand);
+                case BatchReportSection.STRENGTHS -> appendStrengths(h, r);
                 case BatchReportSection.SUBJECT_PROGRESS -> appendSubjects(h, r, brand);
                 case BatchReportSection.TOP_PERFORMERS -> appendTopPerformers(h, r);
                 case BatchReportSection.NEEDS_ATTENTION -> appendLearnerTable(h, "Needs attention",
-                        "Below the pass mark first, then learners yet to attempt a quiz.", needsAttention(r), r);
+                        "Under 40% first, then learners with no assessment attempt.", needsAttention(r), r);
                 case BatchReportSection.LEARNER_RESULTS -> appendLearnerTable(h, "All learners",
-                        "Every learner with their average quiz score.", r.getLearners(), r);
+                        "Every learner with their average assessment score.", nonNull(r.getLearners()), r);
                 case BatchReportSection.ACTIVITY -> appendActivity(h, r, brand);
                 default -> {
                 }
@@ -276,28 +444,30 @@ public class BatchSummaryReportService {
 
     private void appendBatchHero(StringBuilder h, BatchSummaryReportDTO r) {
         String headline;
-        if (r.getEnrolledLearners() == 0) headline = "No learners in this batch yet";
-        else if (r.getLearnersAttempted() == 0) headline = "No quiz attempts yet";
-        else headline = r.getPassedLearners() + " of " + r.getEnrolledLearners() + " learners passed";
-        String sub = r.getAvgQuizScore() == null ? "" : "Average quiz score " + pct(r.getAvgQuizScore())
-                + " across " + r.getQuizzesInCourse() + (r.getQuizzesInCourse() == 1 ? " quiz." : " quizzes.");
-        hero(h, esc(r.getBatchName() == null ? "Batch report" : r.getBatchName()), headline, sub,
-                r.getPassRate() == null ? "—" : Math.round(r.getPassRate()) + "%", "passed",
-                r.getAvgCourseCompletion(), "Course completion " + pct(r.getAvgCourseCompletion()));
+        if (r.getEnrolledLearners() == 0) headline = "No learners yet";
+        else if (r.getAvgScore() == null) headline = "No assessment attempts in these dates";
+        else if (r.getAvgScore() >= STRONG_FROM) headline = "Strong results across the board";
+        else if (r.getAvgScore() >= AVERAGE_FROM) headline = "Steady, with room to grow";
+        else headline = "Scores need attention";
+        String sub = r.getAssessmentsHeld() == 0 ? ""
+                : r.getAssessmentsHeld() + (r.getAssessmentsHeld() == 1 ? " assessment, " : " assessments, ")
+                + r.getTotalAttempts() + " attempts.";
+        hero(h, esc(r.getBatchName() == null ? ALL_BATCHES_LABEL : r.getBatchName()), headline, sub,
+                r.getAvgScore() == null ? "—" : Math.round(r.getAvgScore()) + "%", "average score",
+                r.getParticipationRate(), r.getLearnersAssessed() + " of " + r.getEnrolledLearners() + " learners assessed");
     }
 
     private void appendChildHero(StringBuilder h, BatchSummaryReportDTO r, BatchSummaryReportDTO.LearnerRow c) {
-        String headline = switch (c.getStatus() == null ? "" : c.getStatus()) {
-            case "PASSED" -> c.getAvgScorePercent() != null && r.getAvgQuizScore() != null
-                    && c.getAvgScorePercent() >= r.getAvgQuizScore() ? "Above the batch average" : "Passing, with room to grow";
-            case "FAILED" -> "Let us build on this";
-            default -> "Yet to attempt a quiz";
-        };
-        String sub = c.getQuizzesAttempted() + " of " + c.getQuizzesInCourse() + " quizzes attempted"
-                + (r.getAvgQuizScore() != null ? " · batch average " + pct(r.getAvgQuizScore()) : "") + ".";
+        String headline;
+        if (c.getAvgScore() == null) headline = "No assessment attempts in these dates";
+        else if (r.getAvgScore() != null && c.getAvgScore() >= r.getAvgScore()) headline = "Above the batch average";
+        else if (c.getAvgScore() >= STRONG_FROM) headline = "Good work";
+        else headline = "Let us build on this";
+        String sub = c.getAssessmentsTaken() + (c.getAssessmentsTaken() == 1 ? " assessment taken" : " assessments taken")
+                + (r.getAvgScore() != null ? " · batch average " + pct(r.getAvgScore()) : "") + ".";
         hero(h, esc(firstName(c.getFullName())) + "&#8217;s progress", headline, sub,
-                c.getAvgScorePercent() == null ? "—" : Math.round(c.getAvgScorePercent()) + "%", "average score",
-                r.getAvgCourseCompletion(), "Batch course completion " + pct(r.getAvgCourseCompletion()));
+                c.getAvgScore() == null ? "—" : Math.round(c.getAvgScore()) + "%", "average score",
+                null, null);
     }
 
     private void hero(StringBuilder h, String kickerHtml, String headline, String sub, String big, String bigLabel,
@@ -317,59 +487,125 @@ public class BatchSummaryReportService {
     private void appendTiles(StringBuilder h, BatchSummaryReportDTO r, BatchSummaryReportDTO.LearnerRow child) {
         h.append("<table class=\"tiles\"><tr>");
         if (child != null) {
-            h.append(tile(pct(child.getAvgScorePercent()), "average quiz score", scoreColor(child.getAvgScorePercent())))
-                    .append(tile(child.getQuizzesAttempted() + "/" + child.getQuizzesInCourse(), "quizzes attempted", BatchReportCharts.INK))
-                    .append(tile(pct(r.getAvgQuizScore()), "batch average", BatchReportCharts.INK))
-                    .append(tile(pct(r.getAvgCourseCompletion()), "batch course completion", BatchReportCharts.INK));
+            h.append(tile(pct(child.getAvgScore()), "average score", scoreColor(child.getAvgScore())))
+                    .append(tile(String.valueOf(child.getAssessmentsTaken()), "assessments taken", BatchReportCharts.INK))
+                    .append(tile(pct(r.getAvgScore()), "batch average", BatchReportCharts.INK))
+                    .append(tile(String.valueOf(r.getAssessmentsHeld()), "assessments held", BatchReportCharts.INK));
         } else {
             h.append(tile(String.valueOf(r.getEnrolledLearners()), "learners", BatchReportCharts.INK))
-                    .append(tile(pct(r.getAvgQuizScore()), "average quiz score", scoreColor(r.getAvgQuizScore())))
-                    .append(tile(minutes(r.getAvgTimeSpentMinutes()), "avg time per learner", BatchReportCharts.INK))
-                    .append(tile(pct(r.getAvgConcentration()), "concentration", BatchReportCharts.INK));
+                    .append(tile(pct(r.getParticipationRate()), "took an assessment", BatchReportCharts.INK))
+                    .append(tile(String.valueOf(r.getAssessmentsHeld()), "assessments held", BatchReportCharts.INK))
+                    .append(r.getPackageSessionId() != null
+                            ? tile(pct(r.getAvgCourseCompletion()), "course completion", BatchReportCharts.INK)
+                            : tile(String.valueOf(r.getTotalAttempts()), "attempts", BatchReportCharts.INK));
         }
         h.append("</tr></table>");
     }
 
     private void appendResults(StringBuilder h, BatchSummaryReportDTO r, BatchSummaryReportDTO.LearnerRow child, String brand) {
         String donut = BatchReportCharts.donut(List.of(
-                        new BatchReportCharts.Slice("Passed", r.getPassedLearners(), BatchReportCharts.GOOD),
-                        new BatchReportCharts.Slice("Failed", r.getFailedLearners(), BatchReportCharts.BAD),
-                        new BatchReportCharts.Slice("Not attempted", r.getNotAttemptedLearners(), BatchReportCharts.NEUTRAL)),
-                pct(r.getPassRate()), "passed", 140);
+                        new BatchReportCharts.Slice("60% and above", r.getStrongLearners(), BatchReportCharts.GOOD),
+                        new BatchReportCharts.Slice("40 to 60%", r.getAverageLearners(), BatchReportCharts.WARN),
+                        new BatchReportCharts.Slice("Under 40%", r.getWeakLearners(), BatchReportCharts.BAD),
+                        new BatchReportCharts.Slice("Not assessed", r.getNotAssessedLearners(), BatchReportCharts.NEUTRAL)),
+                pct(r.getAvgScore()), "average", 140);
         long enrolled = Math.max(r.getEnrolledLearners(), 1);
         String legend = "<table class=\"legend\">"
-                + legendRow("Passed", r.getPassedLearners(), enrolled, BatchReportCharts.GOOD)
-                + legendRow("Failed", r.getFailedLearners(), enrolled, BatchReportCharts.BAD)
-                + legendRow("Not attempted", r.getNotAttemptedLearners(), enrolled, BatchReportCharts.NEUTRAL)
+                + legendRow("60% and above", r.getStrongLearners(), enrolled, BatchReportCharts.GOOD)
+                + legendRow("40 to 60%", r.getAverageLearners(), enrolled, BatchReportCharts.WARN)
+                + legendRow("Under 40%", r.getWeakLearners(), enrolled, BatchReportCharts.BAD)
+                + legendRow("Not assessed", r.getNotAssessedLearners(), enrolled, BatchReportCharts.NEUTRAL)
                 + "</table>";
 
         int[] counts = new int[10];
         for (BatchSummaryReportDTO.LearnerRow l : nonNull(r.getLearners())) {
-            if (l.getAvgScorePercent() != null) counts[BatchReportCharts.bucketOf(l.getAvgScorePercent())]++;
+            if (l.getAvgScore() != null) counts[BatchReportCharts.bucketOf(l.getAvgScore())]++;
         }
-        boolean placed = child != null && child.getAvgScorePercent() != null;
-        int mine = placed ? BatchReportCharts.bucketOf(child.getAvgScorePercent()) : -1;
-        String pill = placed ? firstName(child.getFullName()) + " · " + Math.round(child.getAvgScorePercent()) + "%" : null;
+        boolean placed = child != null && child.getAvgScore() != null;
+        int mine = placed ? BatchReportCharts.bucketOf(child.getAvgScore()) : -1;
+        String pill = placed ? firstName(child.getFullName()) + " · " + Math.round(child.getAvgScore()) + "%" : null;
         String histogram = BatchReportCharts.histogram(counts, mine, pill, brand, 330);
 
-        String resultsHead = r.getEnrolledLearners() == 0 ? "No learners yet"
-                : pct(r.getPassRate()) + " passed, " + r.getNotAttemptedLearners() + " yet to attempt";
         h.append("<table class=\"cols\"><tr><td class=\"col\">")
-                .append(block("Results", esc(resultsHead), "Pass mark: " + fmt(r.getPassPercentage()) + "% average quiz score.",
+                .append(block("Score bands", esc(r.getStrongLearners() + " of " + r.getEnrolledLearners() + " learners at 60% or more"),
+                        "Learners by their average assessment score.",
                         "<table class=\"donut\"><tr><td class=\"donut-c\">" + donut + "</td><td>" + legend + "</td></tr></table>"))
                 .append("</td><td class=\"col-gap\"></td><td class=\"col\">")
                 .append(block("Where learners stand",
-                        child != null ? "Where " + esc(firstName(child.getFullName())) + " stands" : "Spread of quiz scores",
+                        child != null ? "Where " + esc(firstName(child.getFullName())) + " stands" : "Spread of scores",
                         child != null ? "Learners in each score range. Other learners are counted, never named."
                                 : "Learners in each score range.",
                         histogram))
                 .append("</td></tr></table>");
     }
 
+    private void appendAssessments(StringBuilder h, BatchSummaryReportDTO r, String brand) {
+        List<BatchSummaryReportDTO.AssessmentRow> rows = nonNull(r.getAssessments());
+        if (rows.isEmpty()) {
+            h.append(block("Assessments", "No assessment attempts in these dates", null, ""));
+            return;
+        }
+        List<BatchSummaryReportDTO.AssessmentRow> recent = rows.size() > 12 ? rows.subList(rows.size() - 12, rows.size()) : rows;
+        List<BatchReportCharts.Point> points = new ArrayList<>();
+        for (BatchSummaryReportDTO.AssessmentRow a : recent) {
+            points.add(new BatchReportCharts.Point(shortDate(a.getDate()), a.getAvgScore() == null ? 0 : a.getAvgScore()));
+        }
+        StringBuilder body = new StringBuilder(BatchReportCharts.trend(points, brand, 660));
+        List<BatchSummaryReportDTO.SubjectScoreRow> subjects = nonNull(r.getSubjectScores());
+        if (!subjects.isEmpty()) {
+            body.append("<div class=\"sub-h\">By subject</div>");
+            for (BatchSummaryReportDTO.SubjectScoreRow s : subjects) {
+                body.append(bar(s.getSubject(), s.getAssessments() + (s.getAssessments() == 1 ? " assessment" : " assessments")
+                        + " · <b>" + pct(s.getAvgScore()) + "</b>", s.getAvgScore(), 100, scoreColor(s.getAvgScore())));
+            }
+        }
+        body.append("<div class=\"sub-h\">Each assessment</div>");
+        for (BatchSummaryReportDTO.AssessmentRow a : recent) {
+            body.append(bar(a.getName(), esc(shortDate(a.getDate())) + " · " + a.getAttempts() + " attempts · <b>"
+                    + pct(a.getAvgScore()) + "</b>", a.getAvgScore(), 100, scoreColor(a.getAvgScore())));
+        }
+        BatchSummaryReportDTO.AssessmentRow best = recent.stream()
+                .max(Comparator.comparing(BatchSummaryReportDTO.AssessmentRow::getAvgScore, Comparator.nullsFirst(Comparator.naturalOrder())))
+                .orElse(recent.get(0));
+        h.append(block("Assessments", "Best result: " + esc(best.getName()) + " at " + pct(best.getAvgScore()),
+                "Average score in each assessment, in date order.", body.toString()));
+    }
+
+    private void appendStrengths(StringBuilder h, BatchSummaryReportDTO r) {
+        List<BatchSummaryReportDTO.TopicRow> topics = nonNull(r.getTopics()).stream()
+                .filter(t -> t.getAccuracy() != null && t.getQuestions() > 0).toList();
+        if (topics.isEmpty()) {
+            h.append(block("Strengths and weaknesses", "No analysed attempts in these dates",
+                    "Topic accuracy appears once assessment attempts are analysed.", ""));
+            return;
+        }
+        List<BatchSummaryReportDTO.TopicRow> strong = topics.stream().filter(t -> t.getAccuracy() >= STRONG_FROM)
+                .sorted(Comparator.comparing(BatchSummaryReportDTO.TopicRow::getAccuracy).reversed()).limit(6).toList();
+        List<BatchSummaryReportDTO.TopicRow> weak = topics.stream().filter(t -> t.getAccuracy() < STRONG_FROM)
+                .sorted(Comparator.comparing(BatchSummaryReportDTO.TopicRow::getAccuracy)).limit(6).toList();
+        String body = "<table class=\"cols\"><tr><td class=\"col\"><div class=\"sub-h\">Strengths</div>" + topicBars(strong, "None yet.")
+                + "</td><td class=\"col-gap\"></td><td class=\"col\"><div class=\"sub-h\">Needs work</div>" + topicBars(weak, "None.")
+                + "</td></tr></table>";
+        long strongCount = topics.stream().filter(t -> t.getAccuracy() >= STRONG_FROM).count();
+        h.append(block("Strengths and weaknesses", strongCount + " strong, " + (topics.size() - strongCount) + " to work on",
+                "Questions answered correctly in each topic across the batch. 60% or above is a strength.", body));
+    }
+
+    private static String topicBars(List<BatchSummaryReportDTO.TopicRow> rows, String empty) {
+        if (rows.isEmpty()) return "<div class=\"cap\">" + empty + "</div>";
+        StringBuilder s = new StringBuilder();
+        for (BatchSummaryReportDTO.TopicRow t : rows) {
+            s.append(bar(t.getTopic(), t.getCorrect() + "/" + t.getQuestions() + " · <b>" + pct(t.getAccuracy()) + "</b>",
+                    t.getAccuracy(), 100, scoreColor(t.getAccuracy())));
+        }
+        return s.toString();
+    }
+
     private void appendSubjects(StringBuilder h, BatchSummaryReportDTO r, String brand) {
+        if (r.getPackageSessionId() == null) return;
         List<BatchSummaryReportDTO.SubjectRow> subjects = nonNull(r.getSubjects());
         if (subjects.isEmpty()) {
-            h.append(block("Subject progress", "No subject progress yet", null, ""));
+            h.append(block("Course progress", "No course progress yet", null, ""));
             return;
         }
         BatchSummaryReportDTO.SubjectRow top = subjects.stream()
@@ -381,24 +617,23 @@ public class BatchSummaryReportService {
             bars.append(bar(s.getSubjectName(), esc(minutes(s.getAvgTimeMinutes())) + " · <b>" + pct(s.getAvgCompletion()) + "</b>",
                     s.getAvgCompletion(), 100, brand));
         }
-        h.append(block("Subject progress", "Furthest along in " + esc(top.getSubjectName()),
+        h.append(block("Course progress", "Furthest along in " + esc(top.getSubjectName()),
                 "Average completion and time per learner in each subject.", bars.toString()));
     }
 
     private void appendTopPerformers(StringBuilder h, BatchSummaryReportDTO r) {
         List<BatchSummaryReportDTO.LearnerRow> top = nonNull(r.getLearners()).stream()
-                .filter(l -> l.getAvgScorePercent() != null).limit(HIGHLIGHT_ROWS).toList();
+                .filter(l -> l.getAvgScore() != null).limit(HIGHLIGHT_ROWS).toList();
         if (top.isEmpty()) {
-            h.append(block("Top performers", "No quiz scores yet", null, ""));
+            h.append(block("Top performers", "No assessment scores yet", null, ""));
             return;
         }
         StringBuilder bars = new StringBuilder();
         for (BatchSummaryReportDTO.LearnerRow l : top) {
-            bars.append(bar(l.getFullName(), "<b>" + pct(l.getAvgScorePercent()) + "</b>", l.getAvgScorePercent(), 100,
-                    scoreColor(l.getAvgScorePercent())));
+            bars.append(bar(l.getFullName(), "<b>" + pct(l.getAvgScore()) + "</b>", l.getAvgScore(), 100, scoreColor(l.getAvgScore())));
         }
-        h.append(block("Top performers", esc(top.get(0).getFullName()) + " leads with " + pct(top.get(0).getAvgScorePercent()),
-                "Highest average quiz scores.", bars.toString()));
+        h.append(block("Top performers", esc(top.get(0).getFullName()) + " leads with " + pct(top.get(0).getAvgScore()),
+                "Highest average assessment scores.", bars.toString()));
     }
 
     private void appendLearnerTable(StringBuilder h, String title, String lede, List<BatchSummaryReportDTO.LearnerRow> rows,
@@ -407,22 +642,22 @@ public class BatchSummaryReportService {
             h.append(block(title, "Nobody to show", null, ""));
             return;
         }
-        StringBuilder t = new StringBuilder("<table class=\"grid\"><tr><th>Learner</th><th class=\"num\">Avg quiz score</th>")
-                .append("<th class=\"num\">Quizzes</th><th>Result</th></tr>");
+        StringBuilder t = new StringBuilder("<table class=\"grid\"><tr><th>Learner</th><th class=\"num\">Average score</th>")
+                .append("<th class=\"num\">Assessments</th><th>Band</th></tr>");
         for (BatchSummaryReportDTO.LearnerRow l : rows) {
             t.append("<tr><td>").append(esc(l.getFullName())).append("</td><td class=\"num\">")
-                    .append(pct(l.getAvgScorePercent())).append("</td><td class=\"num\">")
-                    .append(l.getQuizzesAttempted()).append(" / ").append(l.getQuizzesInCourse())
-                    .append("</td><td>").append(statusLabel(l.getStatus())).append("</td></tr>");
+                    .append(pct(l.getAvgScore())).append("</td><td class=\"num\">")
+                    .append(l.getAssessmentsTaken()).append("</td><td>").append(bandLabel(l.getBand())).append("</td></tr>");
         }
         t.append("</table>");
         if (r.isLearnersTruncated() && rows == r.getLearners()) {
-            t.append("<div class=\"cap\">The batch is larger than the report shows; only the first learners are listed.</div>");
+            t.append("<div class=\"cap\">Only the first ").append(MAX_LEARNERS).append(" learners are counted.</div>");
         }
         h.append(block(title, rows.size() + (rows.size() == 1 ? " learner" : " learners"), lede, t.toString()));
     }
 
     private void appendActivity(StringBuilder h, BatchSummaryReportDTO r, String brand) {
+        if (r.getPackageSessionId() == null) return;
         List<BatchSummaryReportDTO.ActivityRow> rows = nonNull(r.getActivity());
         if (rows.isEmpty()) {
             h.append(block("Most active", "No learning activity in these dates", null, ""));
@@ -467,7 +702,22 @@ public class BatchSummaryReportService {
 
     private static String scoreColor(Double v) {
         if (v == null) return BatchReportCharts.MUTED;
-        return v >= 60 ? BatchReportCharts.GOOD : v >= 40 ? BatchReportCharts.WARN : BatchReportCharts.BAD;
+        return v >= STRONG_FROM ? BatchReportCharts.GOOD : v >= AVERAGE_FROM ? BatchReportCharts.WARN : BatchReportCharts.BAD;
+    }
+
+    private static String bandLabel(String band) {
+        if (BAND_STRONG.equals(band)) return "<span class=\"strong\">60% and above</span>";
+        if (BAND_AVERAGE.equals(band)) return "<span class=\"avg\">40 to 60%</span>";
+        if (BAND_WEAK.equals(band)) return "<span class=\"weak\">Under 40%</span>";
+        return "<span class=\"na\">Not assessed</span>";
+    }
+
+    private static String shortDate(String isoDate) {
+        try {
+            return java.time.LocalDate.parse(isoDate).format(SHORT_DATE);
+        } catch (Exception e) {
+            return isoDate == null ? "" : isoDate;
+        }
     }
 
     private static String css(String brand) {
@@ -495,7 +745,8 @@ public class BatchSummaryReportService {
                 + ".block{border:1px solid #e5e7eb;border-radius:12px;padding:12px 14px;margin-bottom:12px;page-break-inside:avoid;}"
                 + ".tag{font-size:8.5px;font-weight:bold;letter-spacing:1px;text-transform:uppercase;color:" + brand + ";}"
                 + ".h2{font-size:14px;font-weight:bold;color:#111827;margin:2px 0 2px 0;}.lede{font-size:10px;color:#6b7280;margin-bottom:8px;}"
-                + ".cols .col{width:49%;}.col-gap{width:2%;}.cols .block{min-height:236px;}"
+                + ".sub-h{font-size:10px;font-weight:bold;color:#374151;margin:10px 0 2px 0;}"
+                + ".cols .col{width:49%;}.col-gap{width:2%;}"
                 + ".donut td{vertical-align:middle;}.donut-c{width:150px;}"
                 + ".legend td{padding:4px 2px;font-size:11px;}.sw-c{width:16px;}.sw{width:10px;height:10px;border-radius:2px;}"
                 + ".num{text-align:right;}.muted{color:#6b7280;}"
@@ -503,7 +754,7 @@ public class BatchSummaryReportService {
                 + ".bar{height:7px;background:#f1f5f9;border-radius:4px;margin-bottom:4px;}.bar-f{height:7px;border-radius:4px;}"
                 + ".grid th,.grid td{padding:6px 8px;text-align:left;border-bottom:1px solid #e5e7eb;font-size:10.5px;}"
                 + ".grid th{background:#f8fafc;color:#374151;font-size:10px;}.grid td.num,.grid th.num{text-align:right;}"
-                + ".passed{color:#15803d;font-weight:bold;}.failed{color:#b91c1c;font-weight:bold;}.na{color:#6b7280;}"
+                + ".strong{color:#15803d;font-weight:bold;}.avg{color:#b45309;font-weight:bold;}.weak{color:#b91c1c;font-weight:bold;}.na{color:#6b7280;}"
                 + ".cap{font-size:9.5px;color:#6b7280;margin-top:6px;}"
                 + ".foot{padding:8px 32px 18px 32px;font-size:9px;color:#9ca3af;}";
     }
@@ -547,16 +798,16 @@ public class BatchSummaryReportService {
         if (child != null) {
             h.append("<p>Here is the progress report for <b>").append(esc(child.getFullName())).append("</b>.</p>")
                     .append("<table style=\"border-collapse:collapse;margin:8px 0 14px 0;\"><tr>")
-                    .append(emailStat(pct(child.getAvgScorePercent()), "average quiz score", scoreColor(child.getAvgScorePercent())))
-                    .append(emailStat(child.getQuizzesAttempted() + "/" + child.getQuizzesInCourse(), "quizzes attempted", BatchReportCharts.INK))
-                    .append(emailStat(pct(r.getAvgQuizScore()), "batch average", BatchReportCharts.INK))
+                    .append(emailStat(pct(child.getAvgScore()), "average score", scoreColor(child.getAvgScore())))
+                    .append(emailStat(String.valueOf(child.getAssessmentsTaken()), "assessments taken", BatchReportCharts.INK))
+                    .append(emailStat(pct(r.getAvgScore()), "batch average", BatchReportCharts.INK))
                     .append("</tr></table>");
         } else {
             h.append("<p>Here is the batch report for <b>").append(esc(r.getBatchName())).append("</b>.</p>")
                     .append("<table style=\"border-collapse:collapse;margin:8px 0 14px 0;\"><tr>")
-                    .append(emailStat(pct(r.getPassRate()), "passed", BatchReportCharts.GOOD))
-                    .append(emailStat(pct(r.getAvgQuizScore()), "average quiz score", scoreColor(r.getAvgQuizScore())))
-                    .append(emailStat(pct(r.getAvgCourseCompletion()), "course completion", brand))
+                    .append(emailStat(pct(r.getAvgScore()), "average score", scoreColor(r.getAvgScore())))
+                    .append(emailStat(String.valueOf(r.getAssessmentsHeld()), "assessments", BatchReportCharts.INK))
+                    .append(emailStat(pct(r.getParticipationRate()), "took an assessment", brand))
                     .append("</tr></table>");
         }
         h.append("<p style=\"color:#6b7280;font-size:13px;\">The full report with charts is attached as a PDF.</p></div></div>");
@@ -575,6 +826,9 @@ public class BatchSummaryReportService {
         String audience = request.getAudience() == null ? "" : request.getAudience().trim().toUpperCase(Locale.ROOT);
         if (!AUDIENCE_TEACHERS.equals(audience) && !AUDIENCE_PARENTS.equals(audience)) {
             throw new VacademyException(HttpStatus.BAD_REQUEST, "audience must be TEACHERS or PARENTS");
+        }
+        if (!StringUtils.hasText(request.getPackageSessionId())) {
+            throw new VacademyException(HttpStatus.BAD_REQUEST, "Pick a batch to send the report");
         }
         BatchSummaryReportDTO report = summarize(instituteId, request, user);
         String subjectSuffix = joinNonBlank(" · ", report.getBatchName(), dateLabel(report));
@@ -655,7 +909,7 @@ public class BatchSummaryReportService {
         List<String> notes = new ArrayList<>();
         if (noEmail > 0) notes.add(noEmail + " learner(s) have no parent email on their profile.");
         if (failed > 0) notes.add(failed + " parent email(s) could not be sent.");
-        if (report.isLearnersTruncated()) notes.add("The batch is larger than one report covers; only the first learners were included.");
+        if (report.isLearnersTruncated()) notes.add("Only the first " + MAX_LEARNERS + " learners were included.");
         return BatchSummaryReportDTO.SendResult.builder()
                 .audience(AUDIENCE_PARENTS).sent(sent).skipped(noEmail + failed).notes(notes).build();
     }
@@ -704,8 +958,8 @@ public class BatchSummaryReportService {
     // ── helpers ─────────────────────────────────────────────────────────────────
 
     private void validate(String instituteId, BatchSummaryReportRequest r) {
-        if (r == null || !StringUtils.hasText(r.getPackageSessionId())) {
-            throw new VacademyException(HttpStatus.BAD_REQUEST, "Pick a batch");
+        if (r == null) {
+            throw new VacademyException(HttpStatus.BAD_REQUEST, "Missing report request");
         }
         if (r.getStartDate() == null || r.getEndDate() == null) {
             throw new VacademyException(HttpStatus.BAD_REQUEST, "Pick a start and end date");
@@ -716,9 +970,11 @@ public class BatchSummaryReportService {
         if (ChronoUnit.DAYS.between(r.getStartDate(), r.getEndDate()) > MAX_RANGE_DAYS) {
             throw new VacademyException(HttpStatus.BAD_REQUEST, "Pick a range of at most " + MAX_RANGE_DAYS + " days");
         }
-        String owner = packageSessionRepository.findInstituteIdByPackageSessionId(r.getPackageSessionId()).orElse(null);
-        if (!instituteId.equals(owner)) {
-            throw new VacademyException(HttpStatus.NOT_FOUND, "Batch not found");
+        if (StringUtils.hasText(r.getPackageSessionId())) {
+            String owner = packageSessionRepository.findInstituteIdByPackageSessionId(r.getPackageSessionId()).orElse(null);
+            if (!instituteId.equals(owner)) {
+                throw new VacademyException(HttpStatus.NOT_FOUND, "Batch not found");
+            }
         }
     }
 
@@ -749,11 +1005,11 @@ public class BatchSummaryReportService {
     }
 
     private static List<BatchSummaryReportDTO.LearnerRow> needsAttention(BatchSummaryReportDTO r) {
-        List<BatchSummaryReportDTO.LearnerRow> out = new ArrayList<>(r.getLearners().stream()
-                .filter(l -> !"PASSED".equals(l.getStatus())).toList());
-        // Failed (lowest score first) before not attempted.
-        out.sort(Comparator.comparing((BatchSummaryReportDTO.LearnerRow l) -> "NOT_ATTEMPTED".equals(l.getStatus()))
-                .thenComparing(BatchSummaryReportDTO.LearnerRow::getAvgScorePercent,
+        List<BatchSummaryReportDTO.LearnerRow> out = new ArrayList<>(nonNull(r.getLearners()).stream()
+                .filter(l -> BAND_WEAK.equals(l.getBand()) || BAND_NOT_ASSESSED.equals(l.getBand())).toList());
+        // Under 40% (lowest first) before not assessed.
+        out.sort(Comparator.comparing((BatchSummaryReportDTO.LearnerRow l) -> BAND_NOT_ASSESSED.equals(l.getBand()))
+                .thenComparing(BatchSummaryReportDTO.LearnerRow::getAvgScore,
                         Comparator.nullsLast(Comparator.naturalOrder())));
         return out.size() > HIGHLIGHT_ROWS ? out.subList(0, HIGHLIGHT_ROWS) : out;
     }
@@ -761,12 +1017,6 @@ public class BatchSummaryReportService {
     private static String dateLabel(BatchSummaryReportDTO r) {
         if (r.getStartDate() == null || r.getEndDate() == null) return "";
         return r.getStartDate().format(DATE_LABEL) + " – " + r.getEndDate().format(DATE_LABEL);
-    }
-
-    private static String statusLabel(String status) {
-        if ("PASSED".equals(status)) return "<span class=\"passed\">Passed</span>";
-        if ("FAILED".equals(status)) return "<span class=\"failed\">Failed</span>";
-        return "<span class=\"na\">Not attempted</span>";
     }
 
     private static String pct(Double v) {
