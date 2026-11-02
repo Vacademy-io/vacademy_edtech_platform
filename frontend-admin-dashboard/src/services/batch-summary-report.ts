@@ -104,6 +104,10 @@ export interface BatchSummaryReport {
         correct: number;
         accuracy: number | null;
         mastery_level: string | null;
+        /** Learners with questions in this topic. */
+        learners?: number | null;
+        /** Of those, learners under 40% in this topic. */
+        learners_struggling?: number | null;
     }[];
     attempts_analyzed: number | null;
     learners: {
@@ -112,6 +116,10 @@ export interface BatchSummaryReport {
         avg_score: number | null;
         assessments_taken: number;
         band: BatchLearnerBand;
+        /** Score in the most recent assessment. */
+        latest_score?: number | null;
+        /** Latest score minus the average of the earlier ones; null with one assessment. */
+        score_change?: number | null;
     }[];
     batches: {
         package_session_id: string;

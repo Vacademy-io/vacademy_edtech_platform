@@ -2311,17 +2311,18 @@ public interface ActivityLogRepository extends JpaRepository<ActivityLog, String
 
     /**
      * Processed analysis JSON for a whole cohort within a date range, newest first and capped by
-     * maxRows. Used by the batch report to roll topic mastery up across a batch. Only the json
-     * column is read, so large cohorts stay cheap to load.
+     * maxRows, as [user_id, processed_json] rows. Used by the batch report to roll topic mastery
+     * up across a batch and count the learners behind each topic. Only these two columns are
+     * read, so large cohorts stay cheap to load.
      */
-    @Query(value = "SELECT processed_json FROM activity_log " +
+    @Query(value = "SELECT user_id, processed_json FROM activity_log " +
             "WHERE user_id IN (:userIds) " +
             "AND status = 'processed' " +
             "AND processed_json IS NOT NULL " +
             "AND created_at BETWEEN :startDate AND :endDate " +
             "ORDER BY created_at DESC " +
             "LIMIT :maxRows", nativeQuery = true)
-    List<String> findProcessedJsonForUsers(
+    List<Object[]> findProcessedJsonForUsers(
             @Param("userIds") List<String> userIds,
             @Param("startDate") java.sql.Timestamp startDate,
             @Param("endDate") java.sql.Timestamp endDate,

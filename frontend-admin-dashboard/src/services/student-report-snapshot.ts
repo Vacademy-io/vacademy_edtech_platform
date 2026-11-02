@@ -15,6 +15,13 @@ export interface TopicMastery {
     mastery_level: string | null;
 }
 
+export interface SnapshotMisconception {
+    topic?: string | null;
+    context?: string | null;
+    misconception: string;
+    remediation?: string | null;
+}
+
 export interface SubjectMarks {
     subject: string;
     marks_obtained: number | null;
@@ -84,6 +91,8 @@ export interface StudentReportSnapshot {
             guesses?: number | null;
             high_confidence_wrong?: number | null;
         } | null;
+        /** Mistakes the AI found in analysed attempts, with how to fix them. */
+        misconceptions?: SnapshotMisconception[] | null;
     } | null;
     attendance?: {
         available: boolean;

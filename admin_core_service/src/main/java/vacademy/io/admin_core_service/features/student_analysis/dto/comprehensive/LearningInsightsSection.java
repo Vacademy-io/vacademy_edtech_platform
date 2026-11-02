@@ -68,6 +68,10 @@ public class LearningInsightsSection {
         private Double avgTimeSeconds;
         /** Expert / Proficient / Developing / Beginner — derived from aggregated accuracy. */
         private String masteryLevel;
+        /** Cohort roll-up only: learners with questions in this topic. */
+        private Integer learners;
+        /** Cohort roll-up only: of those, learners under 40% in this topic. */
+        private Integer learnersStruggling;
     }
 
     @Data

@@ -3,6 +3,7 @@ import type { CompareRow, DonutSlice, TrendPoint } from '@/components/common/rep
 import { REPORT_COLORS } from '@/components/common/report-visuals/palette';
 import {
     STRENGTH_THRESHOLD,
+    type SnapshotMisconception,
     type StudentReportSnapshot,
     type TopicMastery,
 } from '@/services/student-report-snapshot';
@@ -32,6 +33,9 @@ export interface LearnerReportModel {
     confidence: DonutSlice[] | null;
     /** Share of assessments where the learner beat the class average, when known. */
     aboveClassShare: { above: number; of: number } | null;
+    /** Latest score minus the average of the earlier assessments; null with fewer than two. */
+    movement: number | null;
+    mistakes: SnapshotMisconception[];
     summary: string;
     hasAnything: boolean;
 }
@@ -107,6 +111,14 @@ export const buildLearnerReport = (
                 ? round1((a.class_average / a.total_marks) * 100)
                 : null,
     }));
+    const scores = trend.map((t) => t.you ?? 0);
+    const movement =
+        scores.length >= 2
+            ? round1(
+                  (scores[scores.length - 1] ?? 0) -
+                      scores.slice(0, -1).reduce((a, b) => a + b, 0) / (scores.length - 1)
+              )
+            : null;
     const compared = trend.filter((t) => t.klass != null);
     const aboveClassShare =
         compared.length > 0
@@ -168,6 +180,11 @@ export const buildLearnerReport = (
     const sub: string[] = [];
     if (best?.you != null) sub.push(`Strongest in ${best.name} (${Math.round(best.you)}%).`);
     if (worst?.you != null && worst.you < 50) sub.push(`${worst.name} needs the most attention.`);
+    if (movement != null && Math.abs(movement) >= 5) {
+        sub.push(
+            `Latest score ${movement > 0 ? 'up' : 'down'} ${Math.round(Math.abs(movement))} points on earlier assessments.`
+        );
+    }
     const subline = sub.join(' ');
 
     const summary: string[] = [];
@@ -211,6 +228,8 @@ export const buildLearnerReport = (
         blooms: (s.learning_insights?.blooms ?? []).filter((b) => (b.total ?? 0) > 0),
         confidence,
         aboveClassShare,
+        movement,
+        mistakes: (s.learning_insights?.misconceptions ?? []).filter((x) => !!x.misconception),
         summary: summary.join(' '),
         hasAnything:
             assessments.length > 0 ||

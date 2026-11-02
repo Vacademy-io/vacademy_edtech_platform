@@ -12,6 +12,7 @@ import {
     AttendanceBlock,
     LearnerHero,
     LearnerTiles,
+    MistakesBlock,
     ProgressBlock,
     SubjectsBlock,
     ThinkingBlock,
@@ -154,16 +155,22 @@ export const LearnerReportDocument = ({
                 </div>
             </Page>
             <Page footer={footer}>
-                    <Band snapshot={snapshot} m={m} brand={brand} batchName={batchName} periodLabel={periodLabel} />
-                    <div className="flex flex-col gap-4 px-10 pt-6">
-                        <TopicsBlock {...props} />
-                        <div className="grid grid-cols-2 gap-3">
-                            <AttendanceBlock {...props} />
-                            <ProgressBlock {...props} />
-                        </div>
-                        <ThinkingBlock {...props} />
+                <Band snapshot={snapshot} m={m} brand={brand} batchName={batchName} periodLabel={periodLabel} />
+                <div className="flex flex-col gap-4 px-10 pt-6">
+                    <TopicsBlock {...props} />
+                    <div className="grid grid-cols-2 gap-3">
+                        <AttendanceBlock {...props} />
+                        <ProgressBlock {...props} />
                     </div>
-                </Page>
+                </div>
+            </Page>
+            <Page footer={footer}>
+                <Band snapshot={snapshot} m={m} brand={brand} batchName={batchName} periodLabel={periodLabel} />
+                <div className="flex flex-col gap-4 px-10 pt-6">
+                    <MistakesBlock {...props} max={3} />
+                    <ThinkingBlock {...props} />
+                </div>
+            </Page>
         </div>
     );
 };

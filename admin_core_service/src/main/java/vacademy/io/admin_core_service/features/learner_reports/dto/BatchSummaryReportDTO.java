@@ -107,6 +107,10 @@ public class BatchSummaryReportDTO {
         private int correct;
         private Double accuracy;
         private String masteryLevel;
+        /** Learners with questions in this topic. */
+        private Integer learners;
+        /** Of those, learners under 40% in this topic. */
+        private Integer learnersStruggling;
     }
 
     @Data
@@ -133,6 +137,10 @@ public class BatchSummaryReportDTO {
         private int assessmentsTaken;
         /** STRONG, AVERAGE, WEAK or NOT_ASSESSED. */
         private String band;
+        /** Score in the most recent assessment of the window. */
+        private Double latestScore;
+        /** latestScore minus the average of the earlier assessments; null with fewer than two. */
+        private Double scoreChange;
     }
 
     @Data
