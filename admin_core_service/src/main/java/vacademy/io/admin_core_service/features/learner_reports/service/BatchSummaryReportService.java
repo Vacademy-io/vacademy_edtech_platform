@@ -178,6 +178,25 @@ public class BatchSummaryReportService {
         Map<String, Double> userAvg = new HashMap<>();
         byUser.forEach((id, acc) -> userAvg.put(id, acc[0] / acc[1]));
 
+        // Latest score and its change against the earlier assessments, per learner
+        Map<String, List<AssessmentServiceClient.CohortAttempt>> timeline = new HashMap<>();
+        for (AssessmentServiceClient.CohortAttempt a : attempts) {
+            timeline.computeIfAbsent(a.userId(), k -> new ArrayList<>()).add(a);
+        }
+        Map<String, Double> latest = new HashMap<>();
+        Map<String, Double> change = new HashMap<>();
+        timeline.forEach((id, list) -> {
+            list.sort(Comparator.comparing(AssessmentServiceClient.CohortAttempt::attemptAt,
+                    Comparator.nullsFirst(Comparator.naturalOrder())));
+            double last = list.get(list.size() - 1).percentage();
+            latest.put(id, last);
+            if (list.size() >= 2) {
+                double earlier = list.subList(0, list.size() - 1).stream()
+                        .mapToDouble(AssessmentServiceClient.CohortAttempt::percentage).average().orElse(last);
+                change.put(id, last - earlier);
+            }
+        });
+
         List<BatchSummaryReportDTO.LearnerRow> learners = new ArrayList<>();
         long strong = 0, average = 0, weak = 0, none = Math.max(0, enrolled - roster.size());
         for (String id : roster) {
@@ -195,6 +214,8 @@ public class BatchSummaryReportService {
                     .avgScore(round1(avg))
                     .assessmentsTaken(byUser.containsKey(id) ? (int) byUser.get(id)[1] : 0)
                     .band(band)
+                    .latestScore(round1(latest.get(id)))
+                    .scoreChange(round1(change.get(id)))
                     .build());
         }
         learners.sort(Comparator.comparing(BatchSummaryReportDTO.LearnerRow::getAvgScore,
@@ -262,6 +283,8 @@ public class BatchSummaryReportService {
                             .correct(t.getCorrect() == null ? 0 : t.getCorrect())
                             .accuracy(t.getAccuracy())
                             .masteryLevel(t.getMasteryLevel())
+                            .learners(t.getLearners())
+                            .learnersStruggling(t.getLearnersStruggling())
                             .build());
                 }
             }

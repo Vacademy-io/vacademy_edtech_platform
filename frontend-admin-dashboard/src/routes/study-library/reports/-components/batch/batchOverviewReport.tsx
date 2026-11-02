@@ -10,6 +10,7 @@ import {
     WarningCircle,
 } from '@phosphor-icons/react';
 import { DashboardLoader } from '@/components/core/dashboard-loader';
+import { cn } from '@/lib/utils';
 import {
     Select,
     SelectContent,
@@ -65,6 +66,10 @@ import { GenerateBatchReportDialog } from './generateBatchReportDialog';
 
 const ALL = '__all__';
 const STRONG_FROM = 60;
+/** A drop of this many points since the earlier assessments flags a learner as slipping. */
+const SLIPPING_BY = 10;
+const ATTENTION_ROWS = 8;
+const RETEACH_ROWS = 6;
 
 const Empty = ({ brand, text }: { brand: string; text: string }) => (
     <div className="flex flex-col items-center gap-1 py-4 text-center">
@@ -112,16 +117,43 @@ const BatchOverviewBody = ({
                 .sort((a, b) => (a.accuracy ?? 0) - (b.accuracy ?? 0) || b.questions - a.questions),
         [topics]
     );
-    const needsAttention = useMemo(
+    // Slipping (biggest drop first), then under 40% (lowest first), then not assessed.
+    const attentionAll = useMemo(() => {
+        const rank = (l: BatchSummaryReport['learners'][number]) =>
+            (l.score_change ?? 0) <= -SLIPPING_BY ? 0 : l.band === 'WEAK' ? 1 : 2;
+        return data.learners
+            .filter(
+                (l) =>
+                    (l.score_change ?? 0) <= -SLIPPING_BY ||
+                    l.band === 'WEAK' ||
+                    l.band === 'NOT_ASSESSED'
+            )
+            .sort(
+                (a, b) =>
+                    rank(a) - rank(b) ||
+                    (rank(a) === 0
+                        ? (a.score_change ?? 0) - (b.score_change ?? 0)
+                        : (a.avg_score ?? 0) - (b.avg_score ?? 0))
+            );
+    }, [data]);
+    const slippingCount = attentionAll.filter((l) => (l.score_change ?? 0) <= -SLIPPING_BY).length;
+    const attentionCount =
+        attentionAll.length + (data.learners.length < data.enrolled_learners
+            ? data.not_assessed_learners - attentionAll.filter((l) => l.band === 'NOT_ASSESSED').length
+            : 0);
+    const needsAttention = attentionAll.slice(0, ATTENTION_ROWS);
+    // Topics where the most learners are under 40%.
+    const reteach = useMemo(
         () =>
-            data.learners
-                .filter((l) => l.band === 'WEAK' || l.band === 'NOT_ASSESSED')
-                .sort((a, b) => {
-                    if (a.band !== b.band) return a.band === 'WEAK' ? -1 : 1;
-                    return (a.avg_score ?? 0) - (b.avg_score ?? 0);
-                })
-                .slice(0, 6),
-        [data]
+            topics
+                .filter((t) => (t.learners_struggling ?? 0) > 0 && (t.learners ?? 0) > 0)
+                .sort(
+                    (a, b) =>
+                        (b.learners_struggling ?? 0) - (a.learners_struggling ?? 0) ||
+                        (a.accuracy ?? 0) - (b.accuracy ?? 0)
+                )
+                .slice(0, RETEACH_ROWS),
+        [topics]
     );
     const trend = data.assessments.slice(-12).map((a) => ({
         label: a.name,
@@ -147,7 +179,7 @@ const BatchOverviewBody = ({
                 }
                 bigValue={data.avg_score != null ? `${Math.round(data.avg_score)}` : '—'}
                 bigSuffix={data.avg_score != null ? '%' : undefined}
-                bigCaption="average score"
+                bigCaption="average marks scored"
                 illustration={<ClassIllustration brand={brand} className="h-auto w-full" />}
                 track={
                     data.participation_rate != null
@@ -323,6 +355,36 @@ const BatchOverviewBody = ({
                 )}
             </ReportBlock>
 
+            <ReportBlock
+                brand={brand}
+                tag="Topics to reteach"
+                title={
+                    reteach[0]
+                        ? `${reteach[0].topic}: ${reteach[0].learners_struggling} of ${reteach[0].learners} learners under 40%`
+                        : 'No topic where learners are struggling'
+                }
+                lede="Topics with the most learners under 40%."
+            >
+                {reteach.length > 0 ? (
+                    <HorizontalBars
+                        color={REPORT_COLORS.bad}
+                        rows={reteach.map((t) => ({
+                            key: t.topic,
+                            label: t.topic,
+                            value: ((t.learners_struggling ?? 0) / (t.learners ?? 1)) * 100,
+                            display: `${t.learners_struggling} of ${t.learners} learners`,
+                            sub: `${pct(t.accuracy)} correct`,
+                            color: REPORT_COLORS.bad,
+                        }))}
+                    />
+                ) : (
+                    <Empty
+                        brand={brand}
+                        text="Appears once analysed attempts show learners under 40% in a topic."
+                    />
+                )}
+            </ReportBlock>
+
             <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
                 {!single && (
                     <BatchComparison data={data} brand={brand} batchLabels={batchLabels} />
@@ -363,11 +425,13 @@ const BatchOverviewBody = ({
                     brand={brand}
                     tag="Needs attention"
                     title={
-                        needsAttention.length > 0
-                            ? `${data.weak_learners + data.not_assessed_learners} learners need a nudge`
+                        attentionCount > 0
+                            ? slippingCount > 0
+                                ? `${attentionCount} learners need a nudge, ${slippingCount} slipping`
+                                : `${attentionCount} learners need a nudge`
                             : 'Everyone is on track'
                     }
-                    lede="Under 40% first, then learners with no assessment attempt."
+                    lede={`Scores down ${SLIPPING_BY} points or more first, then under 40%, then no assessment.`}
                 >
                     {needsAttention.length === 0 ? (
                         <p className="text-sm text-neutral-500">Nobody to follow up with.</p>
@@ -380,22 +444,38 @@ const BatchOverviewBody = ({
                                         weight="fill"
                                         style={{
                                             color:
-                                                l.band === 'WEAK'
-                                                    ? REPORT_COLORS.bad
-                                                    : REPORT_COLORS.neutral,
+                                                l.band === 'NOT_ASSESSED'
+                                                    ? REPORT_COLORS.neutral
+                                                    : REPORT_COLORS.bad,
                                         }}
                                     />
                                     <span className="truncate text-neutral-700">{l.full_name}</span>
+                                    {(l.score_change ?? 0) <= -SLIPPING_BY && (
+                                        <span
+                                            className="ml-auto flex shrink-0 items-center gap-0.5 rounded-full px-1.5 py-0.5 text-2xs font-semibold"
+                                            style={{
+                                                color: REPORT_COLORS.bad,
+                                                background: '#fef2f2',
+                                            }}
+                                            title={`Latest ${pct(l.latest_score)}, average ${pct(l.avg_score)}`}
+                                        >
+                                            <ArrowDown className="size-3" weight="bold" />
+                                            {Math.round(-(l.score_change ?? 0))}
+                                        </span>
+                                    )}
                                     <span
-                                        className="ml-auto shrink-0 text-xs font-semibold"
+                                        className={cn(
+                                            'shrink-0 text-xs font-semibold',
+                                            (l.score_change ?? 0) > -SLIPPING_BY && 'ml-auto'
+                                        )}
                                         style={{
                                             color:
-                                                l.band === 'WEAK'
-                                                    ? REPORT_COLORS.bad
-                                                    : REPORT_COLORS.muted,
+                                                l.band === 'NOT_ASSESSED'
+                                                    ? REPORT_COLORS.muted
+                                                    : scoreColor(l.avg_score),
                                         }}
                                     >
-                                        {l.band === 'WEAK' ? pct(l.avg_score) : 'Not assessed'}
+                                        {l.band === 'NOT_ASSESSED' ? 'Not assessed' : pct(l.avg_score)}
                                     </span>
                                 </li>
                             ))}

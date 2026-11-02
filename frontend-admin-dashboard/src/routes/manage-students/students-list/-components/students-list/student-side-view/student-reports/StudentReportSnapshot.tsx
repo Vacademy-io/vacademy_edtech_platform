@@ -8,6 +8,7 @@ import {
     AttendanceBlock,
     LearnerHero,
     LearnerTiles,
+    MistakesBlock,
     ProgressBlock,
     SubjectsBlock,
     ThinkingBlock,
@@ -81,6 +82,7 @@ export const StudentReportSnapshot = ({
             <SubjectsBlock {...props} />
             <TrendBlock {...props} />
             <TopicsBlock {...props} />
+            <MistakesBlock {...props} />
             <AttendanceBlock {...props} />
             <ProgressBlock {...props} />
             <ThinkingBlock {...props} />

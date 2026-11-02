@@ -1,4 +1,13 @@
-import { ArrowDown, ArrowUp, Books, CalendarCheck, Exam, Medal } from '@phosphor-icons/react';
+import {
+    ArrowDown,
+    ArrowUp,
+    Books,
+    CalendarCheck,
+    Exam,
+    Lightbulb,
+    Medal,
+    WarningCircle,
+} from '@phosphor-icons/react';
 import {
     BloomPyramid,
     ReportBlock,
@@ -17,7 +26,7 @@ import {
     EmptyReportIllustration,
     GrowthIllustration,
 } from '@/components/common/report-visuals/illustrations';
-import { REPORT_COLORS, pct, scoreColor } from '@/components/common/report-visuals/palette';
+import { REPORT_COLORS, pct, scoreColor, tint } from '@/components/common/report-visuals/palette';
 import type { LearnerReportModel } from './learner-report-model';
 
 /**
@@ -320,5 +329,61 @@ export const ThinkingBlock = ({ m, brand, animate }: BlockProps) => {
                 </ReportBlock>
             )}
         </div>
+    );
+};
+
+/** Mistakes the AI found in the analysed attempts, each with how to fix it. */
+export const MistakesBlock = ({ m, brand, max = 4 }: BlockProps & { max?: number }) => {
+    if (m.mistakes.length === 0) {
+        return (
+            <ReportBlock brand={brand} tag="What to practise" title="No mistakes to review">
+                <BlockEmpty brand={brand} text="Mistakes appear once assessment attempts are analysed." />
+            </ReportBlock>
+        );
+    }
+    const shown = m.mistakes.slice(0, max);
+    return (
+        <ReportBlock
+            brand={brand}
+            tag="What to practise"
+            title={`${shown.length} mistake${shown.length === 1 ? '' : 's'} to fix`}
+            lede="From recent assessments, with how to get it right next time."
+        >
+            <ul className="flex flex-col gap-2.5">
+                {shown.map((x, i) => (
+                    <li key={i} className="flex flex-col gap-1.5 rounded-xl border border-neutral-200 p-3">
+                        {x.topic && (
+                            <span
+                                className="text-2xs font-semibold uppercase tracking-wider"
+                                style={{ color: brand }}
+                            >
+                                {x.topic}
+                            </span>
+                        )}
+                        <div className="flex gap-2 text-sm text-neutral-700">
+                            <WarningCircle
+                                className="mt-0.5 size-4 shrink-0"
+                                weight="fill"
+                                style={{ color: REPORT_COLORS.bad }}
+                            />
+                            <span>{x.misconception}</span>
+                        </div>
+                        {x.remediation && (
+                            <div
+                                className="flex gap-2 rounded-lg px-2.5 py-2 text-sm text-neutral-700"
+                                style={{ background: tint(brand, 0.93) }}
+                            >
+                                <Lightbulb
+                                    className="mt-0.5 size-4 shrink-0"
+                                    weight="fill"
+                                    style={{ color: brand }}
+                                />
+                                <span>{x.remediation}</span>
+                            </div>
+                        )}
+                    </li>
+                ))}
+            </ul>
+        </ReportBlock>
     );
 };
