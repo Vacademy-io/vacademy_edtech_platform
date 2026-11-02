@@ -89,7 +89,7 @@ public class CatalogueBlogPost {
     @Column(name = "reading_minutes")
     private Integer readingMinutes;
 
-    /** CLASSIC | SIDEBAR_TOC | MAGAZINE | FOCUS — the article layout on the learner site. */
+    /** CLASSIC | SIDEBAR_TOC | MAGAZINE | FOCUS | FULL_WIDTH — the article layout on the learner site. */
     @Column(name = "template", nullable = false, length = 32)
     @Builder.Default
     private String template = "CLASSIC";

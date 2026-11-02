@@ -16,7 +16,7 @@ import {
 export type BlogPostStatus = 'DRAFT' | 'PUBLISHED' | 'ARCHIVED';
 
 /** How the learner site lays out the article. Absent = CLASSIC. */
-export type BlogPostTemplate = 'CLASSIC' | 'SIDEBAR_TOC' | 'MAGAZINE' | 'FOCUS';
+export type BlogPostTemplate = 'CLASSIC' | 'SIDEBAR_TOC' | 'MAGAZINE' | 'FOCUS' | 'FULL_WIDTH';
 
 /** Most courses a post can recommend under the article. */
 export const BLOG_MAX_RECOMMENDED_COURSES = 6;

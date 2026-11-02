@@ -577,6 +577,8 @@ export const buildComponentTemplates = (t: TFunction): Record<string, Omit<Compo
             showCategoryFilter: true,
             // Heart + count on cards and articles; off until the admin turns it on.
             allowLikes: false,
+            // '' = each post opens in its own layout; a template name forces it on every post here.
+            articleTemplate: '',
             readMoreLabel: t('blog.readMoreLabel'),
             backLabel: t('blog.backLabel'),
             emptyMessage: t('blog.emptyMessage'),

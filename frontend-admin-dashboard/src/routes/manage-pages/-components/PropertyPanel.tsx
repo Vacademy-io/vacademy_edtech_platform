@@ -5270,6 +5270,23 @@ const BlogEditor = ({ component, pageId, updateComponent }: any) => {
                 </div>
                 <p className="text-xs text-gray-500">{t('blog.allowLikesHelp')}</p>
             </div>
+            {/* '' = each post opens in the layout picked in its own editor. */}
+            <div className="space-y-2">
+                <Label>{t('blog.articleTemplate')}</Label>
+                <select
+                    className="w-full rounded border px-3 py-2 text-sm"
+                    value={props.articleTemplate || ''}
+                    onChange={(e) => updateProp('articleTemplate', e.target.value)}
+                >
+                    <option value="">{t('blog.articleTemplatePostOwn')}</option>
+                    <option value="CLASSIC">{t('blog.articleTemplateClassic')}</option>
+                    <option value="SIDEBAR_TOC">{t('blog.articleTemplateSidebar')}</option>
+                    <option value="MAGAZINE">{t('blog.articleTemplateMagazine')}</option>
+                    <option value="FOCUS">{t('blog.articleTemplateFocus')}</option>
+                    <option value="FULL_WIDTH">{t('blog.articleTemplateFullWidth')}</option>
+                </select>
+                <p className="text-xs text-gray-500">{t('blog.articleTemplateHelp')}</p>
+            </div>
             <div className="space-y-2">
                 <Label>{t('blog.readMoreLabel')}</Label>
                 <Input value={props.readMoreLabel || ''} onChange={(e) => updateProp('readMoreLabel', e.target.value)} />

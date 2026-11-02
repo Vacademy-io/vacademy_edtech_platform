@@ -3,7 +3,7 @@ import { useTranslation } from "react-i18next";
 import { useLocation, useNavigate } from "@tanstack/react-router";
 import { ArrowLeft, ArrowRight } from "@phosphor-icons/react";
 import { RouteMatcher } from "../../-services/route-matcher";
-import { BlogService, type BlogPostPage } from "../../-services/blog-service";
+import { BlogService, type BlogPostPage, type BlogTemplate } from "../../-services/blog-service";
 import { blogPostSlugFor, isHomeRoute } from "../../-utils/blog-route";
 import { BlogCard } from "./BlogCard";
 import { BlogArticle } from "./BlogArticle";
@@ -65,6 +65,12 @@ export interface BlogComponentProps {
   /** Heading above that form. */
   gateTitle?: string;
   /**
+   * Layout for every article this section opens ('' = each post's own, picked
+   * in the post editor). Set it to show a whole blog one way, posts written
+   * later included.
+   */
+  articleTemplate?: BlogTemplate | "";
+  /**
    * Teaser mode, e.g. a "Blog & News" strip on the home page: the first
    * `pageSize` posts with no pager, a "View more" button to this page route,
    * and every article opening on that page instead of this one.
@@ -104,6 +110,7 @@ export const BlogComponent: React.FC<BlogComponentProps> = ({
   textColor,
   gateAudienceId = "",
   gateTitle,
+  articleTemplate = "",
   viewMoreRoute,
   viewMoreLabel,
   globalSettings,
@@ -171,6 +178,7 @@ export const BlogComponent: React.FC<BlogComponentProps> = ({
         onBack={() => navigate({ to: listPath as never })}
         gateAudienceId={String(gateAudienceId || "").trim()}
         gateTitle={gateTitle}
+        layoutOverride={articleTemplate}
       />
     );
   }

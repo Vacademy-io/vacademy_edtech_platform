@@ -34,7 +34,7 @@ export interface BlogPostSummary {
   like_count?: number | null;
 }
 
-export type BlogTemplate = "CLASSIC" | "SIDEBAR_TOC" | "MAGAZINE" | "FOCUS";
+export type BlogTemplate = "CLASSIC" | "SIDEBAR_TOC" | "MAGAZINE" | "FOCUS" | "FULL_WIDTH";
 
 export interface BlogPostPage {
   content: BlogPostSummary[];
