@@ -67,6 +67,14 @@ public class SubscriptionDTO {
     private String supportEmail;
 
     /**
+     * The plan's payment option type (SUBSCRIPTION | ONE_TIME | FREE | DONATION | CPO), so a
+     * screen can tell a recurring membership from a one-time purchase. Read from the live
+     * PaymentOption, falling back to the payment_option_json snapshot when that row is gone;
+     * null when neither is known.
+     */
+    private String paymentOptionType;
+
+    /**
      * This plan row was never a membership: no enrolment was ever created against it and no
      * payment ever succeeded on it — an abandoned or failed first checkout. Renewal is
      * refused for it (a renewal extends existing access, and there is none), so the client

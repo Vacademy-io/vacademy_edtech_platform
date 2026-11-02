@@ -558,7 +558,11 @@ function ManageSubscriptions({ instituteId }: { instituteId: string }) {
     );
   }
 
-  const subs = subscriptions ?? [];
+  // This page manages recurring memberships only, so one-time purchases are left off. A row
+  // with no type (an older backend that does not send it) is kept rather than hidden.
+  const subs = (subscriptions ?? []).filter(
+    (sub) => !sub.payment_option_type || sub.payment_option_type === "SUBSCRIPTION",
+  );
 
   return (
     <div className="space-y-4">

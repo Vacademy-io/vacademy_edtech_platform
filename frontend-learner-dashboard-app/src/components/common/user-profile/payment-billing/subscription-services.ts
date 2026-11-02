@@ -44,6 +44,8 @@ export interface Subscription {
    * another institute's address.
    */
   support_email?: string | null;
+  /** SUBSCRIPTION | ONE_TIME | FREE | DONATION | CPO. Absent on older backends. */
+  payment_option_type?: string | null;
   /**
    * This plan row was never a membership — an abandoned or failed first checkout. The server
    * refuses to renew it (a renewal extends existing access, and there is none), so offer

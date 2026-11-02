@@ -243,6 +243,7 @@ public class SubscriptionService {
                 // learner is shown is the period they are actually charged for.
                 .planValidityDays(PlanValidityResolver.resolveValidityDays(plan))
                 .supportEmail(resolveSupportEmail(instituteId).orElse(null))
+                .paymentOptionType(resolvePaymentOptionType(plan))
                 .vendorId(plan.getEnrollInvite() != null ? plan.getEnrollInvite().getVendorId() : null)
                 .canRenewManually(canRenewManually)
                 .canCompleteEnrollment(unfinishedSignup)
@@ -257,6 +258,30 @@ public class SubscriptionService {
                 .canChangePlan(planChange.canChangePlan())
                 .scheduledPlanChange(planChange.scheduledChange())
                 .build();
+    }
+
+    /**
+     * The plan's payment option type, upper-cased. Live PaymentOption first (the same source
+     * the renewal scheduler gates on), then the payment_option_json snapshot taken at
+     * enrolment, for a plan whose option row was since removed. Null when neither says.
+     */
+    private String resolvePaymentOptionType(UserPlan plan) {
+        if (plan.getPaymentOption() != null && StringUtils.hasText(plan.getPaymentOption().getType())) {
+            return plan.getPaymentOption().getType().trim().toUpperCase();
+        }
+        if (!StringUtils.hasText(plan.getPaymentOptionJson())) {
+            return null;
+        }
+        try {
+            String type = new com.fasterxml.jackson.databind.ObjectMapper()
+                    .readTree(plan.getPaymentOptionJson())
+                    .path("type").asText("").trim();
+            return type.isEmpty() ? null : type.toUpperCase();
+        } catch (Exception e) {
+            log.warn("Could not read payment option type from snapshot for plan {}: {}",
+                    plan.getId(), e.getMessage());
+            return null;
+        }
     }
 
     /**
