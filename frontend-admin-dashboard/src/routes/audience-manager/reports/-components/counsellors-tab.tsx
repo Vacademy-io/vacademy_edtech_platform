@@ -10,7 +10,7 @@ import { useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useNavigate } from '@tanstack/react-router';
 import { useTranslation } from 'react-i18next';
-import { CaretRight, Trophy, Users, WarningCircle } from '@phosphor-icons/react';
+import { CaretRight, GraduationCap, Trophy, Users, WarningCircle } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import {
     fetchCounselorPerformance,
@@ -41,6 +41,7 @@ export function CounsellorsTab({
     teamId,
     counsellorUserId,
     audienceId,
+    onCounsellorFilter,
 }: ReportTabProps) {
     const navigate = useNavigate();
     const { t } = useTranslation('audienceManagerCounsellorsTab');
@@ -153,6 +154,11 @@ export function CounsellorsTab({
                         search: { counsellor: counselorId },
                     })
                 }
+                onViewAdmissions={
+                    onCounsellorFilter
+                        ? (id, name) => onCounsellorFilter(id, name, 'admissions')
+                        : undefined
+                }
             />
         </ReportSection>
     );
@@ -176,8 +182,15 @@ interface CounsellorTableProps {
     loading: boolean;
     /** Drill-through — row click opens that counsellor's Recent Leads. */
     onRowClick?: (counselorId: string) => void;
+    /** Opens the Admissions report filtered to this counsellor. */
+    onViewAdmissions?: (counselorId: string, name: string) => void;
 }
-function CounsellorTable({ performance, loading, onRowClick }: CounsellorTableProps) {
+function CounsellorTable({
+    performance,
+    loading,
+    onRowClick,
+    onViewAdmissions,
+}: CounsellorTableProps) {
     const { t } = useTranslation('audienceManagerCounsellorsTab');
     const [sortKey, setSortKey] = useState<SortKey>('leads_assigned');
     const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc');
@@ -239,7 +252,7 @@ function CounsellorTable({ performance, loading, onRowClick }: CounsellorTablePr
         <div className="overflow-x-auto">
             <table className="w-full text-sm">
                 <thead>
-                    <tr className="border-b border-neutral-200 text-left text-xs uppercase tracking-wide text-neutral-500">
+                    <tr className="border-b border-neutral-200 text-left text-xs font-semibold uppercase tracking-wide text-neutral-600 whitespace-nowrap">
                         <SortableHeader
                             label={t('table.headers.counsellor')}
                             sortKey="counselor_name"
@@ -304,6 +317,7 @@ function CounsellorTable({ performance, loading, onRowClick }: CounsellorTablePr
                             dir={sortDir}
                             onClick={toggleSort}
                         />
+                        {onViewAdmissions && <th className="py-3 pl-3" />}
                     </tr>
                 </thead>
                 <tbody>
@@ -322,7 +336,7 @@ function CounsellorTable({ performance, loading, onRowClick }: CounsellorTablePr
                                 )}
                                 onClick={onRowClick ? () => onRowClick(r.counselor_id) : undefined}
                             >
-                                <td className="py-2.5 pr-3">
+                                <td className="py-3 pr-3">
                                     <div className="flex items-center gap-2">
                                         <div
                                             className={cn(
@@ -351,38 +365,38 @@ function CounsellorTable({ performance, loading, onRowClick }: CounsellorTablePr
                                         </div>
                                     </div>
                                 </td>
-                                <td className="py-2.5 pr-3 text-right text-neutral-800">
+                                <td className="py-3 pr-3 text-right text-neutral-800">
                                     {r.leads_assigned}
                                 </td>
-                                <td className="py-2.5 pr-3 text-right text-neutral-800">
+                                <td className="py-3 pr-3 text-right text-neutral-800">
                                     {r.leads_responded}
                                 </td>
-                                <td className="py-2.5 pr-3 text-right text-neutral-800">
+                                <td className="py-3 pr-3 text-right text-neutral-800">
                                     {r.conversions}
                                 </td>
                                 <td
                                     className={cn(
-                                        'py-2.5 pr-3 text-right',
+                                        'py-3 pr-3 text-right',
                                         convRateClass(r.conversion_rate)
                                     )}
                                 >
                                     {fmtPct(r.conversion_rate)}
                                 </td>
-                                <td className="py-2.5 pr-3 text-right text-neutral-800">
+                                <td className="py-3 pr-3 text-right text-neutral-800">
                                     {fmtMinutes(r.avg_response_minutes)}
                                 </td>
                                 <td
                                     className={cn(
-                                        'py-2.5 pr-3 text-right',
+                                        'py-3 pr-3 text-right',
                                         tatMetClass(r.tat_met_rate)
                                     )}
                                 >
                                     {fmtPct(r.tat_met_rate)}
                                 </td>
-                                <td className="py-2.5 pr-3 text-right text-neutral-800">
+                                <td className="py-3 pr-3 text-right text-neutral-800">
                                     {r.open_leads}
                                 </td>
-                                <td className="py-2.5 pr-3 text-right">
+                                <td className="py-3 pr-3 text-right">
                                     {r.overdue_leads > 0 ? (
                                         <span className="inline-flex items-center gap-1 font-medium text-red-600">
                                             <WarningCircle size={12} weight="fill" />
@@ -392,6 +406,25 @@ function CounsellorTable({ performance, loading, onRowClick }: CounsellorTablePr
                                         <span className="text-neutral-400">0</span>
                                     )}
                                 </td>
+                                {onViewAdmissions && (
+                                    <td className="py-3 pl-3 text-right">
+                                        <button
+                                            type="button"
+                                            title={t('table.viewAdmissionsTitle', {
+                                                name: r.counselor_name,
+                                            })}
+                                            onClick={(e) => {
+                                                // The row itself opens Recent Leads.
+                                                e.stopPropagation();
+                                                onViewAdmissions(r.counselor_id, r.counselor_name);
+                                            }}
+                                            className="inline-flex items-center gap-1 whitespace-nowrap rounded-md border border-neutral-200 bg-white px-2.5 py-1 text-xs font-medium text-primary-600 transition-colors hover:border-primary-300 hover:bg-primary-50"
+                                        >
+                                            <GraduationCap size={14} />
+                                            {t('table.viewAdmissions')}
+                                        </button>
+                                    </td>
+                                )}
                             </tr>
                         );
                     })}

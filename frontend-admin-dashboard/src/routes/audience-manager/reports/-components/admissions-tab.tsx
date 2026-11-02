@@ -12,6 +12,9 @@ import { useTranslation } from 'react-i18next';
 import {
     BookOpen,
     CalendarBlank,
+    CaretRight,
+    UserFocus,
+    X,
     CurrencyCircleDollar,
     GraduationCap,
     MapPin,
@@ -27,6 +30,7 @@ import {
     fetchAdmissions,
     type AdmissionRow,
 } from '../-services/get-admission-reports';
+import { cn } from '@/lib/utils';
 import {
     EmptyHint,
     ExportWithColumnPickerButton,
@@ -49,6 +53,7 @@ export function AdmissionsTab({
     toDate,
     teamId,
     counsellorUserId,
+    onCounsellorFilter,
 }: ReportTabProps) {
     const { t, i18n } = useTranslation('audienceManagerAdmissionsTab');
     const params = { instituteId, fromDate, toDate, teamId, counsellorUserId };
@@ -81,16 +86,43 @@ export function AdmissionsTab({
     const collected =
         totals && totals.fees > 0 ? Math.round((totals.paid / totals.fees) * 1000) / 10 : null;
 
+    // Who the tab is narrowed to (set from the counsellor table below or the filter bar).
+    const focusedName = counsellorUserId
+        ? (data?.by_counsellor ?? []).find((r) => r.key === counsellorUserId)?.label ?? null
+        : null;
+    const focusBanner = counsellorUserId ? (
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-primary-200 bg-primary-50 px-4 py-3">
+            <span className="flex items-center gap-2 text-sm text-neutral-800">
+                <UserFocus size={18} className="shrink-0 text-primary-600" />
+                {focusedName ? t('drill.banner', { name: focusedName }) : t('drill.bannerNoName')}
+            </span>
+            {onCounsellorFilter && (
+                <button
+                    type="button"
+                    onClick={() => onCounsellorFilter(undefined)}
+                    className="inline-flex items-center gap-1 rounded-md px-2 py-1 text-sm font-medium text-primary-600 transition-colors hover:bg-primary-100"
+                >
+                    <X size={14} />
+                    {t('drill.showAll')}
+                </button>
+            )}
+        </div>
+    ) : null;
+
     if (!totals || totalAdmissions === 0) {
         return (
-            <ReportSection title={t('title')} icon={<GraduationCap size={18} />}>
-                <EmptyHint message={t('empty')} />
-            </ReportSection>
+            <div className="flex flex-col gap-6">
+                {focusBanner}
+                <ReportSection title={t('title')} icon={<GraduationCap size={18} />}>
+                    <EmptyHint message={t('empty')} />
+                </ReportSection>
+            </div>
         );
     }
 
     return (
         <div className="flex flex-col gap-6">
+            {focusBanner}
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
                 <KpiCard
                     label={t('column.admissions')}
@@ -203,6 +235,17 @@ export function AdmissionsTab({
                 rows={data?.by_counsellor ?? []}
                 nameHeader={t('column.counsellor')}
                 nameOf={(r) => (r.key ? r.label ?? r.key : t('labels.unassigned'))}
+                onRowClick={
+                    onCounsellorFilter
+                        ? (r) =>
+                              r.key && r.key !== counsellorUserId
+                                  ? onCounsellorFilter(r.key, r.label ?? r.key)
+                                  : undefined
+                        : undefined
+                }
+                rowClickTitle={(r) =>
+                    r.key ? t('drill.rowTitle', { name: r.label ?? r.key }) : undefined
+                }
                 tags={tags}
                 tagLabel={tagLabel}
                 showTags
@@ -252,6 +295,9 @@ interface BreakdownTableProps {
     currency: string;
     csvName: string;
     footnote?: string;
+    /** Row drill-through (rows with a key only). */
+    onRowClick?: (row: AdmissionRow) => void;
+    rowClickTitle?: (row: AdmissionRow) => string | undefined;
 }
 
 /** Name · [course groups] · admissions · share · fees · paid · due, with a total row. */
@@ -269,6 +315,8 @@ function BreakdownTable({
     currency,
     csvName,
     footnote,
+    onRowClick,
+    rowClickTitle,
 }: BreakdownTableProps) {
     const { t } = useTranslation('audienceManagerAdmissionsTab');
     const share = (n: number) => (total > 0 ? Math.round((n / total) * 1000) / 10 : null);
@@ -314,7 +362,7 @@ function BreakdownTable({
                 <div className="overflow-x-auto">
                     <table className="w-full text-sm">
                         <thead>
-                            <tr className="border-b border-neutral-200 text-left text-xs uppercase tracking-wide text-neutral-500">
+                            <tr className="whitespace-nowrap border-b border-neutral-200 text-left text-xs font-semibold uppercase tracking-wide text-neutral-600">
                                 <th className="py-2 pr-3">{nameHeader}</th>
                                 {extraColumn && <th className="py-2 pr-3">{extraColumn.header}</th>}
                                 {tagCols.map((tag) => (
@@ -330,71 +378,98 @@ function BreakdownTable({
                             </tr>
                         </thead>
                         <tbody>
-                            {rows.map((r) => (
-                                <tr
-                                    key={r.key}
-                                    className="border-b border-neutral-100 last:border-0 hover:bg-neutral-50"
-                                >
-                                    <td className="py-2.5 pr-3 font-medium text-neutral-900">
-                                        {nameOf(r)}
-                                    </td>
-                                    {extraColumn && (
-                                        <td className="py-2.5 pr-3 text-neutral-600">
-                                            {extraColumn.value(r)}
+                            {rows.map((r) => {
+                                const clickable = !!onRowClick && !!r.key;
+                                return (
+                                    <tr
+                                        key={r.key}
+                                        className={cn(
+                                            'group border-b border-neutral-100 last:border-0 hover:bg-neutral-50',
+                                            clickable && 'cursor-pointer'
+                                        )}
+                                        onClick={
+                                            clickable && onRowClick
+                                                ? () => onRowClick(r)
+                                                : undefined
+                                        }
+                                        title={clickable ? rowClickTitle?.(r) : undefined}
+                                    >
+                                        <td className="py-3 pr-3 font-medium text-neutral-900">
+                                            <span className="inline-flex items-center gap-1">
+                                                <span
+                                                    className={cn(
+                                                        clickable &&
+                                                            'text-primary-600 group-hover:underline'
+                                                    )}
+                                                >
+                                                    {nameOf(r)}
+                                                </span>
+                                                {clickable && (
+                                                    <CaretRight
+                                                        size={12}
+                                                        className="text-neutral-300 transition-colors group-hover:text-primary-500"
+                                                    />
+                                                )}
+                                            </span>
                                         </td>
-                                    )}
-                                    {tagCols.map((tag) => (
-                                        <td
-                                            key={tag}
-                                            className="py-2.5 pr-3 text-right text-neutral-700"
-                                        >
-                                            {fmtNumber(r.tag_counts[tag] ?? 0)}
+                                        {extraColumn && (
+                                            <td className="py-3 pr-3 text-neutral-600">
+                                                {extraColumn.value(r)}
+                                            </td>
+                                        )}
+                                        {tagCols.map((tag) => (
+                                            <td
+                                                key={tag}
+                                                className="py-3 pr-3 text-right text-neutral-700"
+                                            >
+                                                {fmtNumber(r.tag_counts[tag] ?? 0)}
+                                            </td>
+                                        ))}
+                                        <td className="py-3 pr-3 text-right font-semibold text-neutral-900">
+                                            {fmtNumber(r.admissions)}
                                         </td>
-                                    ))}
-                                    <td className="py-2.5 pr-3 text-right font-semibold text-neutral-900">
-                                        {fmtNumber(r.admissions)}
-                                    </td>
-                                    <td className="py-2.5 pr-3 text-right text-neutral-600">
-                                        {fmtPct(share(r.admissions))}
-                                    </td>
-                                    <td className="py-2.5 pr-3 text-right text-neutral-800">
-                                        {fmtCurrency(r.fees, currency)}
-                                    </td>
-                                    <td className="py-2.5 pr-3 text-right text-green-700">
-                                        {fmtCurrency(r.paid, currency)}
-                                    </td>
-                                    <td className="py-2.5 pr-3 text-right text-warning-700">
-                                        {fmtCurrency(r.due, currency)}
-                                    </td>
-                                </tr>
-                            ))}
+                                        <td className="py-3 pr-3 text-right text-neutral-600">
+                                            {fmtPct(share(r.admissions))}
+                                        </td>
+                                        <td className="py-3 pr-3 text-right text-neutral-800">
+                                            {fmtCurrency(r.fees, currency)}
+                                        </td>
+                                        <td className="py-3 pr-3 text-right text-green-700">
+                                            {fmtCurrency(r.paid, currency)}
+                                        </td>
+                                        <td className="py-3 pr-3 text-right text-warning-700">
+                                            {fmtCurrency(r.due, currency)}
+                                        </td>
+                                    </tr>
+                                );
+                            })}
                             <tr className="border-t border-neutral-200 font-semibold text-neutral-900">
-                                <td className="py-2.5 pr-3">{t('column.total')}</td>
-                                {extraColumn && <td className="py-2.5 pr-3" />}
+                                <td className="py-3 pr-3">{t('column.total')}</td>
+                                {extraColumn && <td className="py-3 pr-3" />}
                                 {tagCols.map((tag) => (
-                                    <td key={tag} className="py-2.5 pr-3 text-right">
+                                    <td key={tag} className="py-3 pr-3 text-right">
                                         {fmtNumber(sum((r) => r.tag_counts[tag] ?? 0))}
                                     </td>
                                 ))}
-                                <td className="py-2.5 pr-3 text-right">
+                                <td className="py-3 pr-3 text-right">
                                     {fmtNumber(sum((r) => r.admissions))}
                                 </td>
-                                <td className="py-2.5 pr-3 text-right">
+                                <td className="py-3 pr-3 text-right">
                                     {fmtPct(share(sum((r) => r.admissions)))}
                                 </td>
-                                <td className="py-2.5 pr-3 text-right">
+                                <td className="py-3 pr-3 text-right">
                                     {fmtCurrency(
                                         sum((r) => r.fees),
                                         currency
                                     )}
                                 </td>
-                                <td className="py-2.5 pr-3 text-right">
+                                <td className="py-3 pr-3 text-right">
                                     {fmtCurrency(
                                         sum((r) => r.paid),
                                         currency
                                     )}
                                 </td>
-                                <td className="py-2.5 pr-3 text-right">
+                                <td className="py-3 pr-3 text-right">
                                     {fmtCurrency(
                                         sum((r) => r.due),
                                         currency

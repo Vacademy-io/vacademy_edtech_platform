@@ -49,6 +49,8 @@ import {
     fmtNumber,
     fmtPct,
     type ReportTabProps,
+    fmtDay,
+    fmtDayShort,
 } from './report-shared';
 
 const RECENT_LEADS_ROUTE = '/audience-manager/recent-leads' as const;
@@ -377,7 +379,7 @@ export function UtmTab({ instituteId, fromDate, toDate }: ReportTabProps) {
                             <div className="overflow-x-auto">
                                 <table className="w-full text-sm">
                                     <thead>
-                                        <tr className="border-b border-neutral-200 text-left text-xs uppercase tracking-wide text-neutral-500">
+                                        <tr className="whitespace-nowrap border-b border-neutral-200 text-left text-xs font-semibold uppercase tracking-wide text-neutral-600">
                                             <SortableHeader
                                                 label={t('table.columns.campaign')}
                                                 sortKey="utm_campaign"
@@ -438,7 +440,7 @@ export function UtmTab({ instituteId, fromDate, toDate }: ReportTabProps) {
                                                 className="group cursor-pointer border-b border-neutral-100 last:border-0 hover:bg-neutral-50"
                                                 onClick={() => openCampaignRow(r)}
                                             >
-                                                <td className="py-2.5 pr-3">
+                                                <td className="py-3 pr-3">
                                                     <span className="flex items-center gap-1 font-medium text-neutral-900">
                                                         {r.utm_campaign ?? (
                                                             <span className="italic text-neutral-400">
@@ -451,16 +453,16 @@ export function UtmTab({ instituteId, fromDate, toDate }: ReportTabProps) {
                                                         />
                                                     </span>
                                                 </td>
-                                                <td className="py-2.5 pr-3 text-neutral-800">
+                                                <td className="py-3 pr-3 text-neutral-800">
                                                     {r.utm_source ?? '—'}
                                                 </td>
-                                                <td className="py-2.5 pr-3 text-neutral-800">
+                                                <td className="py-3 pr-3 text-neutral-800">
                                                     {r.utm_medium ?? '—'}
                                                 </td>
-                                                <td className="py-2.5 pr-3 text-neutral-600">
+                                                <td className="py-3 pr-3 text-neutral-600">
                                                     {sourceTypeLabel(r.source_type) ?? '—'}
                                                 </td>
-                                                <td className="py-2.5 pr-3 text-right text-neutral-800">
+                                                <td className="py-3 pr-3 text-right text-neutral-800">
                                                     {fmtNumber(r.people)}
                                                     {r.touches !== r.people && (
                                                         <span className="ml-1 text-xs text-neutral-400">
@@ -470,19 +472,19 @@ export function UtmTab({ instituteId, fromDate, toDate }: ReportTabProps) {
                                                         </span>
                                                     )}
                                                 </td>
-                                                <td className="py-2.5 pr-3 text-right font-medium text-green-700">
+                                                <td className="py-3 pr-3 text-right font-medium text-green-700">
                                                     {fmtNumber(r.enrolled)}
                                                 </td>
                                                 <td
                                                     className={cn(
-                                                        'py-2.5 pr-3 text-right',
+                                                        'py-3 pr-3 text-right',
                                                         convRateClass(rate(r))
                                                     )}
                                                 >
                                                     {fmtPct(rate(r))}
                                                 </td>
-                                                <td className="py-2.5 pr-3 text-right text-xs text-neutral-500">
-                                                    {r.last_seen ? formatDate(r.last_seen) : '—'}
+                                                <td className="py-3 pr-3 text-right text-xs text-neutral-500">
+                                                    {r.last_seen ? fmtDay(r.last_seen) : '—'}
                                                 </td>
                                             </tr>
                                         ))}
@@ -496,12 +498,6 @@ export function UtmTab({ instituteId, fromDate, toDate }: ReportTabProps) {
         </div>
     );
 }
-
-const formatDate = (iso: string): string => {
-    const d = new Date(iso);
-    if (Number.isNaN(d.getTime())) return iso;
-    return d.toLocaleDateString(undefined, { day: '2-digit', month: 'short', year: 'numeric' });
-};
 
 // ── Daily trend (bars for touches, line for people) ────────────────────
 
@@ -583,18 +579,6 @@ function TrendChart({
                         />
                     ) : null
                 )}
-                {ticks.map((i) => (
-                    <text
-                        key={i}
-                        x={xFor(i)}
-                        y={H - 10}
-                        fontSize="10"
-                        textAnchor="middle"
-                        className="fill-neutral-400"
-                    >
-                        {points[i]?.date.slice(5)}
-                    </text>
-                ))}
                 <text
                     x={PAD - 5}
                     y={PAD + 5}
@@ -614,6 +598,12 @@ function TrendChart({
                     0
                 </text>
             </svg>
+            {/* X axis as HTML text, so labels stay crisp when the SVG stretches. */}
+            <div className="flex justify-between px-6 text-xs text-neutral-500">
+                {ticks.map((i) => (
+                    <span key={i}>{fmtDayShort(points[i]?.date)}</span>
+                ))}
+            </div>
         </div>
     );
 }

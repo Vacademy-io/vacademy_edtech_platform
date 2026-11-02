@@ -211,7 +211,7 @@ export default function CallIntelligenceTab({ instituteId, fromDate, toDate }: R
                     <div className="overflow-x-auto">
                         <table className="w-full text-sm">
                             <thead>
-                                <tr className="border-b border-neutral-200 text-xs uppercase tracking-wide text-neutral-500">
+                                <tr className="border-b border-neutral-200 text-xs font-semibold uppercase tracking-wide text-neutral-600 whitespace-nowrap">
                                     <th className="py-2 text-start">{t('table.counsellor')}</th>
                                     <th className="py-2 text-end">{t('table.calls')}</th>
                                     <th className="py-2 text-end">{t('table.avgCaller')}</th>

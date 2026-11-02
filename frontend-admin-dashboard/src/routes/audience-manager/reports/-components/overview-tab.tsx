@@ -43,6 +43,7 @@ import {
     sourceDrillSearch,
     tierBgClass,
     type ReportTabProps,
+    fmtDayShort,
 } from './report-shared';
 
 /** Where every drill-through on this tab lands. */
@@ -231,11 +232,13 @@ export function OverviewTab({
                 />
             </div>
 
-            {/* Status donut + Daily trend side by side; each card keeps its own height. */}
-            <div className="grid grid-cols-1 gap-4 lg:grid-cols-3 lg:items-start">
+            {/* Status donut + Daily trend side by side, same height; the chart fills its card. */}
+            <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
                 <section className="flex min-w-0 flex-col gap-4 rounded-xl border border-neutral-200 bg-white p-5 shadow-sm">
-                    <div className="flex items-center gap-2">
-                        <Funnel size={18} className="text-neutral-500" />
+                    <div className="-mx-5 flex items-center gap-2.5 border-b border-neutral-100 px-5 pb-4">
+                        <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-primary-50 text-primary-600">
+                            <Funnel size={18} />
+                        </span>
                         <h2 className="text-base font-semibold text-neutral-900">
                             {t('status.title')}
                         </h2>
@@ -261,9 +264,11 @@ export function OverviewTab({
                 </section>
 
                 <section className="flex flex-col gap-4 rounded-xl border border-neutral-200 bg-white p-5 shadow-sm lg:col-span-2">
-                    <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                            <ChartLineUp size={18} className="text-neutral-500" />
+                    <div className="-mx-5 flex flex-wrap items-center justify-between gap-2 border-b border-neutral-100 px-5 pb-4">
+                        <div className="flex items-center gap-2.5">
+                            <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-primary-50 text-primary-600">
+                                <ChartLineUp size={18} />
+                            </span>
                             <h2 className="text-base font-semibold text-neutral-900">
                                 {t('trend.title')}
                             </h2>
@@ -447,7 +452,9 @@ function StatusDonut({ data, total, onSelectStatus }: StatusDonutProps) {
                                         className="size-3 shrink-0 rounded-sm"
                                         style={{ backgroundColor: d.color ?? undefined }}
                                     />
-                                    <span className="truncate text-neutral-700">{d.label}</span>
+                                    <span className="truncate text-neutral-700" title={d.label}>
+                                        {d.label}
+                                    </span>
                                 </div>
                                 <div className="flex items-baseline gap-2">
                                     <span className="font-medium text-neutral-900">{d.count}</span>
@@ -513,10 +520,10 @@ function TrendChart({ points }: TrendChartProps) {
     );
 
     return (
-        <div className="overflow-x-auto">
+        <div className="flex flex-1 flex-col justify-center gap-1 overflow-x-auto">
             <svg
                 viewBox={`0 0 ${W} ${H}`}
-                className="h-44 w-full"
+                className="h-56 w-full"
                 preserveAspectRatio="none"
                 role="img"
                 aria-label={t('trend.ariaLabel')}
@@ -573,19 +580,6 @@ function TrendChart({ points }: TrendChartProps) {
                         />
                     </g>
                 ))}
-                {/* X labels */}
-                {ticks.map((i) => (
-                    <text
-                        key={i}
-                        x={xFor(i)}
-                        y={H - 10}
-                        fontSize="10"
-                        textAnchor="middle"
-                        className="fill-neutral-400"
-                    >
-                        {points[i]?.date.slice(5)}
-                    </text>
-                ))}
                 {/* Y bounds */}
                 <text
                     x={PAD - 5}
@@ -606,6 +600,12 @@ function TrendChart({ points }: TrendChartProps) {
                     0
                 </text>
             </svg>
+            {/* X axis as HTML text, so labels stay crisp when the SVG stretches. */}
+            <div className="flex justify-between px-6 text-xs text-neutral-500">
+                {ticks.map((i) => (
+                    <span key={i}>{fmtDayShort(points[i]?.date)}</span>
+                ))}
+            </div>
         </div>
     );
 }

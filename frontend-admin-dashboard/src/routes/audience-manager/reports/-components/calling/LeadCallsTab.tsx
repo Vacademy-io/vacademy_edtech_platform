@@ -50,6 +50,9 @@ import {
     ReportTabSkeleton,
     fmtNumber,
     type ReportTabProps,
+    fmtDateTime,
+    fmtDay,
+    fmtTime,
 } from '../report-shared';
 
 const PAGE_SIZE = 25;
@@ -330,7 +333,7 @@ function CalledLeadsTable({ rows }: { rows: CalledLeadRow[] }) {
         <div className="overflow-x-auto">
             <table className="w-full text-sm">
                 <thead>
-                    <tr className="border-b border-neutral-200 text-left text-xs uppercase tracking-wide text-neutral-500">
+                    <tr className="border-b border-neutral-200 text-left text-xs font-semibold uppercase tracking-wide text-neutral-600">
                         <th className="sticky start-0 z-10 bg-white py-2 pe-3 text-start">
                             {t('field.lead')}
                         </th>
@@ -357,7 +360,7 @@ function CalledLeadsTable({ rows }: { rows: CalledLeadRow[] }) {
                             key={r.response_id}
                             className="border-b border-neutral-100 last:border-0 hover:bg-neutral-50"
                         >
-                            <td className="sticky left-0 z-10 bg-white py-2.5 pr-3">
+                            <td className="sticky left-0 z-10 min-w-44 bg-white py-3 pr-3">
                                 <div className="flex flex-col">
                                     <span className="font-medium text-neutral-900">
                                         {r.lead_name || t('row.unknownLead')}
@@ -369,41 +372,53 @@ function CalledLeadsTable({ rows }: { rows: CalledLeadRow[] }) {
                                     )}
                                 </div>
                             </td>
-                            <td className="py-2.5 pl-3">
+                            <td className="py-3 pl-3">
                                 <LeadStatusChip
                                     label={r.lead_status_label}
                                     color={r.lead_status_color}
                                 />
                             </td>
-                            <td className="py-2.5 pl-3 text-neutral-700">
+                            <td className="whitespace-nowrap py-3 pl-3 text-neutral-700">
                                 {r.counsellor_name ?? r.counsellor_user_id ?? '—'}
                             </td>
-                            <td className="py-2.5 pl-3 text-right font-semibold tabular-nums text-neutral-900">
+                            <td className="py-3 pl-3 text-right font-semibold tabular-nums text-neutral-900">
                                 {fmtNumber(r.attempts)}
                             </td>
                             <OutcomeCell value={r.connected} toneClass="text-success-600" />
                             <OutcomeCell value={r.callbacks} toneClass="text-info-600" />
                             <OutcomeCell value={r.not_picked} toneClass="text-warning-600" />
                             <OutcomeCell value={r.failed} toneClass="text-danger-600" />
-                            <td className="whitespace-nowrap py-2.5 pl-3 text-neutral-700">
+                            <td className="py-3 pl-3 text-neutral-700">
                                 <div className="flex flex-col">
-                                    <span>{fmtDateTime(r.last_call_at)}</span>
-                                    <span className="text-xs text-neutral-400">
-                                        {r.last_disposition_key
-                                            ? humanizeKey(r.last_disposition_key)
-                                            : humanizeCallStatus(r.last_call_status ?? '')}
+                                    <span className="whitespace-nowrap">{fmtDay(r.last_call_at)}</span>
+                                    <span className="text-xs text-neutral-500">
+                                        {[
+                                            fmtTime(r.last_call_at),
+                                            r.last_disposition_key
+                                                ? humanizeKey(r.last_disposition_key)
+                                                : humanizeCallStatus(r.last_call_status ?? ''),
+                                        ]
+                                            .filter(Boolean)
+                                            .join(' · ')}
                                     </span>
                                 </div>
                             </td>
                             <td
                                 className={cn(
-                                    'whitespace-nowrap py-2.5 pl-3',
+                                    'whitespace-nowrap py-3 pl-3',
                                     r.next_callback_at
                                         ? 'font-medium text-info-600'
                                         : 'text-neutral-300'
                                 )}
                             >
-                                {r.next_callback_at ? fmtDateTime(r.next_callback_at) : '—'}
+                                {r.next_callback_at ? (
+                                    <div className="flex flex-col">
+                                        <span>{fmtDay(r.next_callback_at)}</span>
+                                        <span className="text-xs">{fmtTime(r.next_callback_at)}</span>
+                                    </div>
+                                ) : (
+                                    '—'
+                                )}
                             </td>
                         </tr>
                     ))}
@@ -421,7 +436,7 @@ function UncalledLeadsTable({ rows }: { rows: UncalledLeadRow[] }) {
         <div className="overflow-x-auto">
             <table className="w-full text-sm">
                 <thead>
-                    <tr className="border-b border-neutral-200 text-left text-xs uppercase tracking-wide text-neutral-500">
+                    <tr className="border-b border-neutral-200 text-left text-xs font-semibold uppercase tracking-wide text-neutral-600 whitespace-nowrap">
                         <th className="sticky start-0 z-10 bg-white py-2 pe-3 text-start">
                             {t('field.lead')}
                         </th>
@@ -437,7 +452,7 @@ function UncalledLeadsTable({ rows }: { rows: UncalledLeadRow[] }) {
                             key={r.response_id}
                             className="border-b border-neutral-100 last:border-0 hover:bg-neutral-50"
                         >
-                            <td className="sticky left-0 z-10 bg-white py-2.5 pr-3">
+                            <td className="sticky left-0 z-10 min-w-48 bg-white py-3 pr-3">
                                 <div className="flex flex-col">
                                     <span className="font-medium text-neutral-900">
                                         {r.lead_name || t('row.unknownLead')}
@@ -449,21 +464,21 @@ function UncalledLeadsTable({ rows }: { rows: UncalledLeadRow[] }) {
                                     )}
                                 </div>
                             </td>
-                            <td className="py-2.5 pl-3 text-neutral-700">
+                            <td className="py-3 pl-3 text-neutral-700">
                                 {humanizeKey(r.source_type ?? 'UNKNOWN')}
                             </td>
-                            <td className="py-2.5 pl-3">
+                            <td className="whitespace-nowrap py-3 pl-3">
                                 <LeadStatusChip
                                     label={r.lead_status_label}
                                     color={r.lead_status_color}
                                 />
                             </td>
-                            <td className="py-2.5 pl-3 text-neutral-700">
+                            <td className="whitespace-nowrap py-3 pl-3 text-neutral-700">
                                 {r.counsellor_name ?? r.counsellor_user_id ?? (
                                     <span className="text-warning-600">{t('row.unassigned')}</span>
                                 )}
                             </td>
-                            <td className="whitespace-nowrap py-2.5 pl-3 text-neutral-700">
+                            <td className="whitespace-nowrap py-3 pl-3 text-neutral-700">
                                 {fmtDateTime(r.submitted_at)}
                             </td>
                         </tr>
@@ -519,26 +534,13 @@ function OutcomeCell({ value, toneClass }: { value: number; toneClass: string })
     return (
         <td
             className={cn(
-                'py-2.5 pl-3 text-right tabular-nums',
+                'py-3 pl-3 text-right tabular-nums',
                 value > 0 ? cn('font-medium', toneClass) : 'text-neutral-300'
             )}
         >
             {fmtNumber(value)}
         </td>
     );
-}
-
-/** ISO-8601 UTC → local "22 Jul, 3:41 pm"; em-dash when absent. */
-function fmtDateTime(iso: string | null | undefined): string {
-    if (!iso) return '—';
-    const d = new Date(iso);
-    if (Number.isNaN(d.getTime())) return '—';
-    return d.toLocaleString(undefined, {
-        day: 'numeric',
-        month: 'short',
-        hour: 'numeric',
-        minute: '2-digit',
-    });
 }
 
 /** SNAKE_CASE key → "Title Case" display. */

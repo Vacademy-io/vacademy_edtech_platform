@@ -196,7 +196,7 @@ export function ManagerTab({
                     <div className="overflow-x-auto">
                         <table className="w-full text-sm">
                             <thead>
-                                <tr className="border-b border-neutral-200 text-left text-xs uppercase tracking-wide text-neutral-500">
+                                <tr className="border-b border-neutral-200 text-left text-xs font-semibold uppercase tracking-wide text-neutral-600 whitespace-nowrap">
                                     <SortableHeader
                                         label={t('table.team')}
                                         sortKey="name"
@@ -317,7 +317,7 @@ export function ManagerTab({
 
 function TeamRow({ row, pinned = false }: { row: TeamRollupRow; pinned?: boolean }) {
     const { t } = useTranslation('audienceManagerManagerTab');
-    const numCell = 'py-2.5 pr-3 text-right text-neutral-800';
+    const numCell = 'py-3 pr-3 text-right text-neutral-800';
     return (
         <tr
             className={cn(
@@ -327,24 +327,24 @@ function TeamRow({ row, pinned = false }: { row: TeamRollupRow; pinned?: boolean
                     : 'hover:bg-neutral-50'
             )}
         >
-            <td className="py-2.5 pr-3">
+            <td className="py-3 pr-3">
                 <span className="flex items-center gap-2 font-medium text-neutral-900">
                     <Users size={14} className="shrink-0 text-neutral-400" />
                     {pinned ? teamLabel(row, t) || t('total') : teamLabel(row, t)}
                 </span>
             </td>
-            <td className="py-2.5 pr-3 text-left text-neutral-700">
+            <td className="py-3 pr-3 text-left text-neutral-700">
                 {row.head_name ?? <span className="text-neutral-400">—</span>}
             </td>
             <td className={numCell}>{fmtNumber(row.counsellors)}</td>
             <td className={numCell}>{fmtNumber(row.leads)}</td>
             <td className={numCell}>{fmtNumber(row.responded)}</td>
             <td className={numCell}>{fmtNumber(row.conversions)}</td>
-            <td className={cn('py-2.5 pr-3 text-right', convRateClass(row.conversion_rate))}>
+            <td className={cn('py-3 pr-3 text-right', convRateClass(row.conversion_rate))}>
                 {fmtPct(row.conversion_rate)}
             </td>
             <td className={numCell}>{fmtNumber(row.open)}</td>
-            <td className="py-2.5 pr-3 text-right">
+            <td className="py-3 pr-3 text-right">
                 {row.overdue > 0 ? (
                     <span className="font-medium text-red-600">{fmtNumber(row.overdue)}</span>
                 ) : (
@@ -355,7 +355,7 @@ function TeamRow({ row, pinned = false }: { row: TeamRollupRow; pinned?: boolean
             <td className={numCell}>
                 {row.target != null ? fmtNumber(row.target) : <span className="text-neutral-400">—</span>}
             </td>
-            <td className={cn('py-2.5 pr-3 text-right', convRateClass(row.attainment_pct))}>
+            <td className={cn('py-3 pr-3 text-right', convRateClass(row.attainment_pct))}>
                 {row.attainment_pct != null ? fmtPct(row.attainment_pct) : '—'}
             </td>
         </tr>

@@ -22,6 +22,8 @@
         "total": "Total",
         "totalLeads": "Total leads",
         "pending": "Pending",
-        "totalRowLabel": "TOTAL"
+        "totalRowLabel": "TOTAL",
+        "emptyStatusesHidden_one": "{{count}} status column with only zeros is hidden here (the CSV export has every status).",
+        "emptyStatusesHidden_other": "{{count}} status columns with only zeros are hidden here (the CSV export has every status)."
     }
 }

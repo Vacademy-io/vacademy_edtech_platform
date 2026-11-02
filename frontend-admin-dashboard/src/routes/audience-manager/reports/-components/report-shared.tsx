@@ -6,6 +6,7 @@
  * Everything here is purely presentational; data fetching stays in the tabs.
  */
 import { useId, useState, type ReactNode } from 'react';
+import { format, parseISO } from 'date-fns';
 import { useTranslation } from 'react-i18next';
 import {
     CaretDown,
@@ -43,6 +44,9 @@ export interface ReportTabProps {
      *  "clean" lead-based tabs (whose queries join audience_response) honour it;
      *  the shared bar hides the picker on tabs where it can't filter cleanly. */
     audienceId?: string;
+    /** Drill to one counsellor: sets the shared counsellor filter (undefined clears it)
+     *  and, when `tab` is given, opens that report. Same filter the bar's picker sets. */
+    onCounsellorFilter?: (userId: string | undefined, name?: string, tab?: string) => void;
 }
 
 // ── Formatters ─────────────────────────────────────────────────────────
@@ -104,6 +108,45 @@ export function fmtCurrencyCompact(n: number | null | undefined, currency?: stri
     } catch {
         return n.toLocaleString();
     }
+}
+
+// ── Dates ──────────────────────────────────────────────────────────────
+// The rest of the admin app shows dates as dd/mm/yyyy, so every report does too.
+// Inputs are the API's ISO strings: a plain day ("2026-10-04"), an institute-local
+// time ("2026-10-04T14:30") or a full timestamp ("2026-10-04T09:00:00Z"). parseISO
+// reads the first two as local time, so a plain day never shifts by a timezone.
+
+function parseReportDate(value: string | null | undefined): Date | null {
+    if (!value) return null;
+    const d = parseISO(value);
+    return Number.isNaN(d.getTime()) ? null : d;
+}
+
+/** "04/10/2026"; em-dash when missing. */
+export function fmtDay(value: string | null | undefined): string {
+    const d = parseReportDate(value);
+    return d ? format(d, 'dd/MM/yyyy') : '—';
+}
+
+/** "04/10" — chart axis ticks, where the year is already in the filter bar. */
+export function fmtDayShort(value: string | null | undefined): string {
+    const d = parseReportDate(value);
+    return d ? format(d, 'dd/MM') : '';
+}
+
+/** "02:30 PM" — the time half of a timestamp, for two-line date cells. */
+export function fmtTime(value: string | null | undefined): string {
+    const d = parseReportDate(value);
+    return d ? format(d, 'hh:mm a') : '';
+}
+
+/** "04/10/2026, 02:30 PM"; a value that carries no time of day ("2026-10-04" or
+ *  exactly midnight) shows the date alone. Em-dash when missing. */
+export function fmtDateTime(value: string | null | undefined): string {
+    const d = parseReportDate(value);
+    if (!d) return '—';
+    const dateOnly = value!.length <= 10 || (d.getHours() === 0 && d.getMinutes() === 0);
+    return format(d, dateOnly ? 'dd/MM/yyyy' : 'dd/MM/yyyy, hh:mm a');
 }
 
 /** Days with one decimal ("3.5d"); em-dash when unknown. */
@@ -185,6 +228,15 @@ export function KpiCard({
     loading,
     onClick,
 }: KpiCardProps) {
+    // A coloured stripe on the left ties each number to its meaning at a glance.
+    const toneToAccentClass: Record<NonNullable<KpiCardProps['tone']>, string> = {
+        default: 'border-l-neutral-300',
+        primary: 'border-l-primary-500',
+        success: 'border-l-success-500',
+        warning: 'border-l-warning-500',
+        danger: 'border-l-danger-500',
+        info: 'border-l-info-500',
+    };
     const toneToIconClass: Record<NonNullable<KpiCardProps['tone']>, string> = {
         default: 'bg-neutral-100 text-neutral-600',
         primary: 'bg-blue-100 text-blue-600',
@@ -196,8 +248,9 @@ export function KpiCard({
     return (
         <div
             className={cn(
-                'group flex min-w-0 flex-col gap-3 rounded-xl border border-neutral-200 bg-white p-4 shadow-sm transition-shadow hover:shadow-md',
-                onClick && 'cursor-pointer hover:border-primary-200'
+                'group flex min-w-0 flex-col gap-2 rounded-xl border border-l-4 border-neutral-200 bg-white p-4 shadow-sm transition-shadow duration-200 hover:shadow-md',
+                toneToAccentClass[tone],
+                onClick && 'cursor-pointer'
             )}
             onClick={onClick}
             role={onClick ? 'button' : undefined}
@@ -214,7 +267,7 @@ export function KpiCard({
             }
         >
             <div className="flex items-start justify-between gap-2">
-                <span className="min-w-0 text-xs font-medium uppercase tracking-wide text-neutral-500">
+                <span className="min-w-0 text-sm font-medium leading-snug text-neutral-600">
                     {label}
                 </span>
                 {icon && (
@@ -231,12 +284,12 @@ export function KpiCard({
             {loading ? (
                 <span className="h-8 w-24 animate-pulse rounded bg-neutral-100" />
             ) : (
-                <span className="text-2xl font-bold tabular-nums tracking-tight text-neutral-900">
+                <span className="text-3xl font-bold tabular-nums tracking-tight text-neutral-900">
                     {value}
                 </span>
             )}
             {(sub || onClick) && (
-                <span className="flex items-center justify-between text-xs text-neutral-500">
+                <span className="flex items-center justify-between gap-2 text-xs leading-relaxed text-neutral-500">
                     {sub}
                     {onClick && (
                         <CaretRight
@@ -273,9 +326,13 @@ export function ReportSection({
                 className
             )}
         >
-            <div className="flex flex-wrap items-center justify-between gap-2">
-                <div className="flex items-center gap-2">
-                    {icon && <span className="text-neutral-500">{icon}</span>}
+            <div className="-mx-5 flex flex-wrap items-center justify-between gap-2 border-b border-neutral-100 px-5 pb-4">
+                <div className="flex items-center gap-2.5">
+                    {icon && (
+                        <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-primary-50 text-primary-600">
+                            {icon}
+                        </span>
+                    )}
                     <h2 className="text-base font-semibold text-neutral-900">{title}</h2>
                 </div>
                 {actions}
@@ -296,9 +353,11 @@ export function BreakdownCard({
 }) {
     return (
         <div className="flex flex-col gap-4 rounded-xl border border-neutral-200 bg-white p-5 shadow-sm">
-            <div className="flex items-center gap-2">
-                <span className="text-neutral-500">{icon}</span>
-                <h3 className="text-sm font-semibold text-neutral-900">{title}</h3>
+            <div className="-mx-5 flex items-center gap-2.5 border-b border-neutral-100 px-5 pb-4">
+                <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-primary-50 text-primary-600">
+                    {icon}
+                </span>
+                <h3 className="text-base font-semibold text-neutral-900">{title}</h3>
             </div>
             <div className="flex flex-col gap-3">{children}</div>
         </div>
@@ -348,8 +407,10 @@ export function BreakdownBar({
             }
         >
             <div className="flex items-center justify-between text-sm">
-                <span className="truncate text-neutral-700">{label}</span>
-                <span className="flex items-center gap-1 font-medium text-neutral-900">
+                <span className="truncate text-neutral-800" title={label}>
+                    {label}
+                </span>
+                <span className="flex shrink-0 items-center gap-1 font-semibold tabular-nums text-neutral-900">
                     {count}
                     {converted != null && (
                         <span className="ms-1 text-xs text-green-700">
@@ -399,7 +460,8 @@ export function BreakdownBar({
 export function EmptyHint({ message }: { message?: string }) {
     const { t } = useTranslation('audienceManagerReportShared');
     return (
-        <div className="flex h-32 items-center justify-center text-sm text-neutral-400">
+        <div className="flex h-32 flex-col items-center justify-center gap-2 text-center text-sm text-neutral-500">
+            <ChartBar size={24} className="text-neutral-300" />
             {message ?? t('emptyHint.default')}
         </div>
     );
@@ -639,9 +701,9 @@ export function SortableHeader<K extends string>({
     return (
         <th
             className={cn(
-                'cursor-pointer select-none py-2 pr-3 transition-colors hover:text-neutral-700',
+                'cursor-pointer select-none py-3 pr-3 transition-colors hover:text-neutral-900',
                 align === 'right' ? 'text-right' : 'text-left',
-                active && 'text-neutral-700'
+                active && 'text-primary-600'
             )}
             onClick={() => onClick(sortKey)}
         >

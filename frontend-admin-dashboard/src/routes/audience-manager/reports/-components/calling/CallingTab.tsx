@@ -55,6 +55,7 @@ import {
     type CallsHeatmapCell,
 } from './calling-reports-service';
 import { buildCsv, downloadCsv } from './calling-csv';
+import { fmtDayShort } from '../report-shared';
 
 // ── Formatting helpers ─────────────────────────────────────────────────
 
@@ -553,19 +554,6 @@ function DailyCallsChart({ points }: { points: CallsDailyPoint[] }) {
                         />
                     </g>
                 ))}
-                {/* X labels */}
-                {ticks.map((i) => (
-                    <text
-                        key={i}
-                        x={xFor(i)}
-                        y={H - 10}
-                        fontSize="10"
-                        textAnchor="middle"
-                        className="fill-neutral-400"
-                    >
-                        {points[i]?.date.slice(5)}
-                    </text>
-                ))}
                 {/* Y bounds */}
                 <text
                     x={PAD - 5}
@@ -586,6 +574,12 @@ function DailyCallsChart({ points }: { points: CallsDailyPoint[] }) {
                     0
                 </text>
             </svg>
+            {/* X axis as HTML text, so labels stay crisp when the SVG stretches. */}
+            <div className="flex justify-between px-6 text-xs text-neutral-500">
+                {ticks.map((i) => (
+                    <span key={i}>{fmtDayShort(points[i]?.date)}</span>
+                ))}
+            </div>
         </div>
     );
 }
@@ -636,7 +630,7 @@ function CounsellorCallsTable({ rows }: { rows: CallsByCounsellorRow[] }) {
         <div className="overflow-x-auto">
             <table className="w-full text-sm">
                 <thead>
-                    <tr className="border-b border-neutral-200 text-left text-xs uppercase tracking-wide text-neutral-500">
+                    <tr className="border-b border-neutral-200 text-left text-xs font-semibold uppercase tracking-wide text-neutral-600 whitespace-nowrap">
                         <SortableHeader
                             label={t('counsellorTable.headers.counsellor')}
                             sortKey="name"
@@ -691,26 +685,26 @@ function CounsellorCallsTable({ rows }: { rows: CallsByCounsellorRow[] }) {
                             key={r.user_id}
                             className="border-b border-neutral-100 last:border-0 hover:bg-neutral-50"
                         >
-                            <td className="py-2.5 pr-3 font-medium text-neutral-900">{r.name}</td>
-                            <td className="py-2.5 pr-3 text-right text-neutral-800">{r.dials}</td>
-                            <td className="py-2.5 pr-3 text-right text-neutral-800">
+                            <td className="py-3 pr-3 font-medium text-neutral-900">{r.name}</td>
+                            <td className="py-3 pr-3 text-right text-neutral-800">{r.dials}</td>
+                            <td className="py-3 pr-3 text-right text-neutral-800">
                                 {r.connected}
                             </td>
                             <td
                                 className={cn(
-                                    'py-2.5 pr-3 text-right',
+                                    'py-3 pr-3 text-right',
                                     connectRateClass(r.connect_rate)
                                 )}
                             >
                                 {fmtPct(r.connect_rate)}
                             </td>
-                            <td className="py-2.5 pr-3 text-right text-neutral-800">
+                            <td className="py-3 pr-3 text-right text-neutral-800">
                                 {fmtTalkHm(r.talk_seconds)}
                             </td>
-                            <td className="py-2.5 pr-3 text-right text-neutral-800">
+                            <td className="py-3 pr-3 text-right text-neutral-800">
                                 {fmtMinSec(r.avg_call_seconds)}
                             </td>
-                            <td className="py-2.5 pr-3">
+                            <td className="py-3 pr-3">
                                 <OutcomeChips outcomes={r.outcomes} />
                             </td>
                         </tr>

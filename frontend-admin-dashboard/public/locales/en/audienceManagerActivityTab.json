@@ -5,7 +5,15 @@
         "summary_other": "{{count}} activities · institute timezone",
         "empty": "No activity in this range.",
         "barTooltip_one": "{{date}} — {{count}} activity",
-        "barTooltip_other": "{{date}} — {{count}} activities"
+        "barTooltip_other": "{{date}} — {{count}} activities",
+        "average": "Daily average",
+        "busiest": "Busiest day",
+        "idleDays": "Days with no activity",
+        "idleOf_one": "of {{count}} day",
+        "idleOf_other": "of {{count}} days",
+        "hoverHint": "Point at a bar to see that day's count.",
+        "dayCount_one": "{{count}} activity",
+        "dayCount_other": "{{count}} activities"
     },
     "counsellorActivity": {
         "title": "Counsellor activity",

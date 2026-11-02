@@ -36,6 +36,7 @@ import {
     fmtCurrency,
     fmtNumber,
     type ReportTabProps,
+    fmtDay,
 } from './report-shared';
 
 type SourceSortKey = 'source_type' | 'revenue' | 'paying_leads' | 'payments' | 'avg_deal_value';
@@ -156,7 +157,7 @@ export function RevenueTab({
                         {trend.map((d) => (
                             <div
                                 key={d.date}
-                                className="group flex flex-1 flex-col items-center gap-1"
+                                className="group flex h-full flex-1 flex-col items-center gap-1"
                             >
                                 <div className="relative flex w-full flex-1 items-end">
                                     <div
@@ -165,7 +166,7 @@ export function RevenueTab({
                                             height: `${Math.max(2, (d.revenue / peakRevenue) * 100)}%`,
                                         }}
                                         title={t('dailyRevenue.barTooltip', {
-                                            date: d.date,
+                                            date: fmtDay(d.date),
                                             amount: fmtCurrency(d.revenue, currency),
                                             count: d.payments,
                                         })}
@@ -210,7 +211,7 @@ export function RevenueTab({
                     <div className="overflow-x-auto">
                         <table className="w-full text-sm">
                             <thead>
-                                <tr className="border-b border-neutral-200 text-left text-xs uppercase tracking-wide text-neutral-500">
+                                <tr className="border-b border-neutral-200 text-left text-xs font-semibold uppercase tracking-wide text-neutral-600 whitespace-nowrap">
                                     <SortableHeader
                                         label={t('column.source')}
                                         sortKey="source_type"
@@ -255,19 +256,19 @@ export function RevenueTab({
                                         key={r.source_type}
                                         className="border-b border-neutral-100 last:border-0 hover:bg-neutral-50"
                                     >
-                                        <td className="py-2.5 pr-3 font-medium text-neutral-900">
+                                        <td className="py-3 pr-3 font-medium text-neutral-900">
                                             {r.source_type}
                                         </td>
-                                        <td className="py-2.5 pr-3 text-right font-semibold text-green-700">
+                                        <td className="py-3 pr-3 text-right font-semibold text-green-700">
                                             {fmtCurrency(r.revenue, currency)}
                                         </td>
-                                        <td className="py-2.5 pr-3 text-right text-neutral-800">
+                                        <td className="py-3 pr-3 text-right text-neutral-800">
                                             {fmtNumber(r.paying_leads)}
                                         </td>
-                                        <td className="py-2.5 pr-3 text-right text-neutral-800">
+                                        <td className="py-3 pr-3 text-right text-neutral-800">
                                             {fmtNumber(r.payments)}
                                         </td>
-                                        <td className="py-2.5 pr-3 text-right text-neutral-800">
+                                        <td className="py-3 pr-3 text-right text-neutral-800">
                                             {fmtCurrency(r.avg_deal_value, currency)}
                                         </td>
                                     </tr>
@@ -314,7 +315,7 @@ export function RevenueTab({
                     <div className="overflow-x-auto">
                         <table className="w-full text-sm">
                             <thead>
-                                <tr className="border-b border-neutral-200 text-left text-xs uppercase tracking-wide text-neutral-500">
+                                <tr className="border-b border-neutral-200 text-left text-xs font-semibold uppercase tracking-wide text-neutral-600 whitespace-nowrap">
                                     <SortableHeader
                                         label={t('column.counsellor')}
                                         sortKey="name"
@@ -373,25 +374,25 @@ export function RevenueTab({
                                         key={r.user_id}
                                         className="border-b border-neutral-100 last:border-0 hover:bg-neutral-50"
                                     >
-                                        <td className="py-2.5 pr-3 font-medium text-neutral-900">
+                                        <td className="py-3 pr-3 font-medium text-neutral-900">
                                             {r.name ?? r.user_id}
                                         </td>
-                                        <td className="py-2.5 pr-3 text-right text-neutral-800">
+                                        <td className="py-3 pr-3 text-right text-neutral-800">
                                             {fmtNumber(r.admissions)}
                                         </td>
-                                        <td className="py-2.5 pr-3 text-right font-semibold text-neutral-900">
+                                        <td className="py-3 pr-3 text-right font-semibold text-neutral-900">
                                             {fmtCurrency(r.booked_revenue, currency)}
                                         </td>
-                                        <td className="py-2.5 pr-3 text-right font-semibold text-green-700">
+                                        <td className="py-3 pr-3 text-right font-semibold text-green-700">
                                             {fmtCurrency(r.revenue, currency)}
                                         </td>
-                                        <td className="py-2.5 pr-3 text-right text-neutral-800">
+                                        <td className="py-3 pr-3 text-right text-neutral-800">
                                             {fmtNumber(r.paying_leads)}
                                         </td>
-                                        <td className="py-2.5 pr-3 text-right text-neutral-800">
+                                        <td className="py-3 pr-3 text-right text-neutral-800">
                                             {fmtNumber(r.payments)}
                                         </td>
-                                        <td className="py-2.5 pr-3 text-right text-neutral-800">
+                                        <td className="py-3 pr-3 text-right text-neutral-800">
                                             {fmtCurrency(r.avg_deal_value, currency)}
                                         </td>
                                     </tr>
