@@ -102,6 +102,14 @@ public class PaymentLogService {
      */
     public static final String ABANDONED_PAYMENT_STATUS = "ABANDONED";
 
+    /**
+     * Derived listing status for a FAILED log the learner recovered from: a later plan on the same
+     * invite went ACTIVE, normally through its own PAID log. This attempt is neither collected
+     * money (no money arrived on it) nor a failure to chase, so it is counted in no total. Never
+     * persisted.
+     */
+    public static final String RETRIED_PAYMENT_STATUS = "RETRIED";
+
     private static final Logger log = LoggerFactory.getLogger(PaymentLogService.class);
 
     @Autowired
@@ -1722,11 +1730,12 @@ public class PaymentLogService {
                         .build())
                 .collect(Collectors.toList());
         return PaymentLogSummaryResponseDTO.builder()
-                // Cancelled/voided money was never collected and is no longer owed, so it sits in
-                // no tile — the headline totals leave it out too, exactly as the cards do.
-                .totalCount(totals.stream().filter(t -> !"CANCELLED".equals(t.getStatus()))
+                // Cancelled/voided money was never collected and is no longer owed, and a retried
+                // failure is paid on its retry, so neither sits in a tile — the headline totals
+                // leave them out too, exactly as the cards do.
+                .totalCount(totals.stream().filter(t -> countsInTotals(t.getStatus()))
                         .mapToLong(PaymentLogSummaryResponseDTO.StatusTotal::getCount).sum())
-                .totalAmount(totals.stream().filter(t -> !"CANCELLED".equals(t.getStatus()))
+                .totalAmount(totals.stream().filter(t -> countsInTotals(t.getStatus()))
                         .mapToDouble(PaymentLogSummaryResponseDTO.StatusTotal::getAmount).sum())
                 .statusTotals(totals)
                 // The plan picker lists every plan the institute has, not just the plans surviving
@@ -1734,6 +1743,10 @@ public class PaymentLogService {
                 .paymentPlanNames(paymentLogRepository.findDistinctPaymentPlanNames(f.instituteId()))
                 .usedPaymentModes(findUsedPaymentModes(f.instituteId()))
                 .build();
+    }
+
+    private static boolean countsInTotals(String status) {
+        return !"CANCELLED".equals(status) && !RETRIED_PAYMENT_STATUS.equals(status);
     }
 
     /**
@@ -2109,7 +2122,7 @@ public class PaymentLogService {
 
                 if (subsequentActivePlan.isPresent()
                         && UserPlanStatusEnum.ACTIVE.equals(subsequentActivePlan.get().getStatus())) {
-                    return PaymentStatusEnum.PAID.name();
+                    return RETRIED_PAYMENT_STATUS;
                 }
             }
             return PaymentStatusEnum.FAILED.name();

@@ -15,7 +15,8 @@ export type SegmentKey = SummaryStatusKey;
 export interface StatusSegment {
     key: SegmentKey;
     label: string;
-    count: number;
+    /** null while the figures are still loading — a dash, never a 0 that jumps a second later. */
+    count: number | null;
 }
 
 interface PaymentControlBarProps {
@@ -114,7 +115,7 @@ export function PaymentControlBar({
                                     isActive ? 'text-neutral-500' : 'text-neutral-400'
                                 )}
                             >
-                                {seg.count}
+                                {seg.count ?? '–'}
                             </span>
                         </button>
                     );

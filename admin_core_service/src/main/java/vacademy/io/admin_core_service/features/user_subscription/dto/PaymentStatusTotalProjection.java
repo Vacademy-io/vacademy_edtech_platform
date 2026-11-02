@@ -7,10 +7,10 @@ package vacademy.io.admin_core_service.features.user_subscription.dto;
 public interface PaymentStatusTotalProjection {
 
     /**
-     * The row's *classified* status — PAID / FAILED / ABANDONED / CANCELLED / NOT_INITIATED /
-     * raw pending status — not the stored column. The query applies the same rules the row mapper
-     * applies (a FAILED payment superseded by an ACTIVE plan reads PAID; a stale PAYMENT_PENDING
-     * reads ABANDONED), so the tiles agree with the rows they filter to.
+     * The row's *classified* status — PAID / FAILED / RETRIED / ABANDONED / CANCELLED /
+     * NOT_INITIATED / raw pending status — not the stored column. The query applies the same rules
+     * the row mapper applies (a FAILED payment superseded by an ACTIVE plan reads RETRIED; a stale
+     * PAYMENT_PENDING reads ABANDONED), so the tiles agree with the rows they filter to.
      */
     String getStatus();
 

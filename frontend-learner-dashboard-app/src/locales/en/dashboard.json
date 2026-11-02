@@ -189,7 +189,8 @@
             "FAILED": "FAILED",
             "PAYMENT_PENDING": "PAYMENT PENDING",
             "NOT_INITIATED": "NOT INITIATED",
-            "PENDING": "PENDING"
+            "PENDING": "PENDING",
+            "RETRIED": "RETRIED"
         },
         "orderStatus": {
             "ORDERED": "ORDERED",

@@ -55,6 +55,21 @@ describe('summaryFromStatusTotals', () => {
         expect(summary.total.count).toBe(2);
     });
 
+    it('counts a failed attempt paid on its retry once — on the retry, not as a second payment', () => {
+        // Each retry used to be a FAILED row the server read as PAID plus the PAID retry itself,
+        // so the Paid tile ran ahead of the billing figure the Collected card shows.
+        const summary = summaryFromStatusTotals([
+            group({ count: 254, amount: 8173 }),
+            group({ status: 'RETRIED', count: 7, amount: 250 }),
+        ]);
+
+        expect(summary.paid.count).toBe(254);
+        expect(summary.paid.amountByCurrency.INR).toBe(8173);
+        expect(summary.failed.count).toBe(0);
+        expect(summary.pending.count).toBe(0);
+        expect(summary.total.count).toBe(254);
+    });
+
     it('leaves cancelled money out of every bucket, including the total', () => {
         const summary = summaryFromStatusTotals([
             group({ count: 1, amount: 100 }),

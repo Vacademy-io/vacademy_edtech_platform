@@ -206,6 +206,12 @@ public interface PaymentLogRepository extends JpaRepository<PaymentLog, String> 
    * with both a plan and an invoice appears in both arms, and UNION only collapses rows that match
    * on every column, not on id alone.
    *
+   * A FAILED log whose learner went on to an ACTIVE plan on the same invite is RETRIED: any
+   * money arrived on the later attempt, which normally carries its own PAID log (a few plans are
+   * activated without one). Reading it as PAID counted that money twice, so the Paid tile ran
+   * ahead of the Collected card, and reading it as FAILED would ask admins to chase a learner who
+   * already paid. It sits in no bucket, like a cancelled row - see BUCKET_PREDICATE.
+   *
    * The three arms this screen unions together: payment logs reached through a user plan,
    * payment logs reached through an invoice, and invoices raised but never paid against.
    *
@@ -228,7 +234,7 @@ public interface PaymentLogRepository extends JpaRepository<PaymentLog, String> 
                             WHERE nxt.user_id = up.user_id
                               AND nxt.enroll_invite_id = up.enroll_invite_id
                               AND nxt.created_at > up.created_at
-                            ORDER BY nxt.created_at ASC LIMIT 1) = 'ACTIVE' THEN 'PAID'
+                            ORDER BY nxt.created_at ASC LIMIT 1) = 'ACTIVE' THEN 'RETRIED'
                  WHEN pl.payment_status = 'FAILED' THEN 'FAILED'
                  WHEN pl.payment_status = 'PAYMENT_PENDING' AND pl.created_at IS NOT NULL
                       AND pl.created_at + make_interval(hours => CAST(:abandonedAfterHours AS int)) < NOW()
@@ -324,7 +330,7 @@ public interface PaymentLogRepository extends JpaRepository<PaymentLog, String> 
                             WHERE nxt.user_id = iup.user_id
                               AND nxt.enroll_invite_id = iup.enroll_invite_id
                               AND nxt.created_at > iup.created_at
-                            ORDER BY nxt.created_at ASC LIMIT 1) = 'ACTIVE' THEN 'PAID'
+                            ORDER BY nxt.created_at ASC LIMIT 1) = 'ACTIVE' THEN 'RETRIED'
                  WHEN pl.payment_status = 'FAILED' THEN 'FAILED'
                  WHEN pl.payment_status = 'PAYMENT_PENDING' AND pl.created_at IS NOT NULL
                       AND pl.created_at + make_interval(hours => CAST(:abandonedAfterHours AS int)) < NOW()
@@ -433,7 +439,7 @@ public interface PaymentLogRepository extends JpaRepository<PaymentLog, String> 
          OR (:bucketFailed = true AND combined.row_status = 'FAILED')
          OR (:bucketAbandoned = true AND combined.row_status = 'ABANDONED')
          OR (:bucketPending = true AND combined.due_eligible = true
-             AND combined.row_status NOT IN ('PAID', 'FAILED', 'ABANDONED')))))
+             AND combined.row_status NOT IN ('PAID', 'FAILED', 'ABANDONED', 'RETRIED')))))
       """;
 
   @Query(value = "SELECT combined.id AS rowId, combined.row_type AS rowType FROM ("

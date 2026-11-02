@@ -88,6 +88,8 @@ const PAYMENT_STATUS_STYLES: Record<string, string> = {
     PAYMENT_PENDING: "bg-yellow-50 text-yellow-700",
     NOT_INITIATED: "bg-gray-100 text-gray-600",
     PENDING: "bg-yellow-50 text-yellow-700",
+    // A failed attempt paid on a later retry — the later order is the paid one.
+    RETRIED: "bg-gray-100 text-gray-600",
 };
 
 interface RawCouponSnapshot {
