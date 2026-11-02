@@ -35,6 +35,7 @@ import {
     isEveryDay,
     slotLastDate,
     slotRunDates,
+    startSourceText,
     weekdayLabels,
 } from '../../-utils/format';
 import { dayHeading, dayRanks } from './DayRail';
@@ -100,6 +101,20 @@ export function DayScheduleEditor({
     const catchUpPercent = useWatch({ control, name: 'defaultCatchUpPercent' });
     // A join-based plan: dates are "Day N" placeholders (see relativeDayOf).
     const relative = useWatch({ control, name: 'scheduleMode' }) === 'RELATIVE';
+    const startTrigger = useWatch({ control, name: 'startTrigger' });
+    const startSourceType = useWatch({ control, name: 'startSourceType' });
+    const startSourceName = useWatch({ control, name: 'startSourceName' });
+    const contentStart = relative
+        ? startSourceText(
+              {
+                  scheduleMode: 'RELATIVE',
+                  startTrigger,
+                  startSourceType: startSourceType ?? null,
+                  startSourceName: startSourceName ?? null,
+              },
+              t
+          )
+        : null;
 
     // A problem in a collapsed schedule must be visible (and focusable): open it.
     const { errors } = useFormState({ control });
@@ -472,18 +487,23 @@ export function DayScheduleEditor({
                             <p className="flex items-start gap-1.5 text-caption text-neutral-600">
                                 <Info size={14} className="mt-0.5 shrink-0" aria-hidden />
                                 <span>
-                                    {relative
-                                        ? t('composer.relative.summary', {
+                                    {relative && contentStart
+                                        ? t('composer.relative.summaryContent', {
                                               days: heading.label,
+                                              source: contentStart,
                                           })
-                                        : repeats
-                                          ? t('composer.schedule.repeatSummary', {
-                                                count: runDates.length,
-                                                range: heading.label,
+                                        : relative
+                                          ? t('composer.relative.summary', {
+                                                days: heading.label,
                                             })
-                                          : t('composer.schedule.oneDaySummary', {
-                                                date: heading.label,
-                                            })}
+                                          : repeats
+                                            ? t('composer.schedule.repeatSummary', {
+                                                  count: runDates.length,
+                                                  range: heading.label,
+                                              })
+                                            : t('composer.schedule.oneDaySummary', {
+                                                  date: heading.label,
+                                              })}
                                 </span>
                             </p>
                         </fieldset>

@@ -23,6 +23,13 @@ public class EngagementPlanDTO {
     private String timezone;
     /** CALENDAR or RELATIVE. */
     private String scheduleMode;
+    /** RELATIVE plans: JOIN or CONTENT. */
+    private String startTrigger;
+    /** CONTENT start: SUBJECT | MODULE | CHAPTER, its id, name and threshold. */
+    private String startSourceType;
+    private String startSourceId;
+    private String startSourceName;
+    private Integer startThreshold;
     private String publishedAt;
     /** RELATIVE plans: the last day number any slot runs on. */
     private Integer lastDay;

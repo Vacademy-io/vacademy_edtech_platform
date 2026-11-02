@@ -79,7 +79,9 @@
         "untitled": "Untitled plan",
         "created": "Created {{date}}",
         "afterJoining_one": "Day 1 after joining",
-        "afterJoining_other": "Days 1–{{count}} after joining"
+        "afterJoining_other": "Days 1–{{count}} after joining",
+        "afterCompleting_one": "Day 1 after {{source}}",
+        "afterCompleting_other": "Days 1–{{count}} after {{source}}"
     },
     "composer": {
         "titleNew": "New engagement plan",
@@ -168,7 +170,10 @@
             "cardId": "This card has an invalid id. Duplicate it and delete the original.",
             "cardDuplicateId": "Two cards share an id. Duplicate one of them and delete the original.",
             "dayNumber": "Enter a day from 1 to 366.",
-            "dayOrder": "The last day must be between the first day and 366."
+            "dayOrder": "The last day must be between the first day and 366.",
+            "startSource": "Choose the subject, module or chapter learners must complete.",
+            "startSourceOneBatch": "A plan that starts on completing content can be created for one batch at a time.",
+            "startThreshold": "Enter a percent from 1 to 100."
         },
         "types": {
             "READING_HTML": "Reading",
@@ -511,7 +516,37 @@
             "repeat": "Repeat the same tasks on more days",
             "summary": "{{days}} after each learner joins. Day 1 is the join day; learners already in the batch start on the day you publish.",
             "publishLead": "Each learner in {{batch}} starts on Day 1: the day they join, or today if they're already in the batch. The plan runs to Day {{last}}.",
-            "cardHint": "Days count from each learner's join date (Day 1 = the join day). Learners already in the batch started on the publish day."
+            "cardHint": "Days count from each learner's join date (Day 1 = the join day). Learners already in the batch started on the publish day.",
+            "startLabel": "Day 1 starts",
+            "start": {
+                "JOIN": "When they join the batch",
+                "JOIN_hint": "Learners already in the batch start on the day you publish.",
+                "CONTENT": "When they complete content",
+                "CONTENT_hint": "Each learner's Day 1 is the day they complete a subject, module or chapter you pick."
+            },
+            "sourceTypeLabel": "Complete a",
+            "sourceType": {
+                "SUBJECT": "Subject",
+                "MODULE": "Module",
+                "CHAPTER": "Chapter"
+            },
+            "sourceText": "{{type}} “{{name}}”",
+            "sourceUnnamed": "the chosen content",
+            "choose": "Choose",
+            "loading": "Loading…",
+            "noSubjects": "No subjects in this batch",
+            "subjectFirst": "Choose a subject first",
+            "moduleFirst": "Choose a module first",
+            "change": "Change",
+            "keepCurrent": "Keep {{name}}",
+            "pickOneBatch": "Pick one batch to choose its subject, module or chapter.",
+            "threshold": "Counts as complete at (%)",
+            "thresholdHint": "Learners who haven't reached this yet don't see the plan.",
+            "startLocked": "The start can't change after the plan is published.",
+            "startLockedContent": "Starts when learners complete {{type}} “{{name}}” ({{percent}}%)",
+            "summaryContent": "{{days}} after each learner completes {{source}}. Day 1 is that day; learners who haven't completed it don't see the plan yet.",
+            "publishLeadContent": "Each learner in {{batch}} starts on Day 1 when they complete {{source}} ({{percent}}% done). The plan runs to Day {{last}}.",
+            "cardHintContent": "Days count from the day each learner completes {{source}} (Day 1 = that day). Learners who haven't completed it don't see the plan yet."
         }
     },
     "preview": {

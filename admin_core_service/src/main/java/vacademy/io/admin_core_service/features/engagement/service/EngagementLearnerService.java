@@ -1568,8 +1568,10 @@ public class EngagementLearnerService {
             throw new VacademyException("Task not found");
         }
         if (plan.isRelative() && relativeSchedule != null) {
-            slot = relativeSchedule.localize(plan, slot,
-                    relativeSchedule.dayOnesForUser(userId, List.of(plan)).get(plan.getId()));
+            LocalDate dayOne = relativeSchedule.dayOnesForUser(userId, List.of(plan)).get(plan.getId());
+            // A content-start plan is not the learner's until they complete its start content.
+            if (dayOne == null && plan.isContentStart()) throw new VacademyException("Task not found");
+            slot = relativeSchedule.localize(plan, slot, dayOne);
         }
 
         ZonedDateTime now = nowIn(plan);

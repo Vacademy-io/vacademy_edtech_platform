@@ -130,6 +130,14 @@ export function buildDuplicateRequest(
     const from = planStartDate(source);
     const shift = from && !relative ? daysBetween(from, options.startDate) : 0;
     const safeShift = Number.isFinite(shift) ? shift : 0;
+    // A content start names a subject/module/chapter of the source batch's course, so it
+    // is kept only for a copy into that same batch; other copies count from joining.
+    const keepContentStart =
+        relative &&
+        source.startTrigger === 'CONTENT' &&
+        Boolean(source.startSourceType && source.startSourceId) &&
+        options.packageSessionIds.length === 1 &&
+        options.packageSessionIds[0] === source.packageSessionId;
     return {
         title: options.title.trim(),
         description: source.description?.trim() || undefined,
@@ -137,6 +145,15 @@ export function buildDuplicateRequest(
         subjectId: source.subjectId ?? undefined,
         status: 'DRAFT',
         ...(relative ? { scheduleMode: 'RELATIVE' as const } : {}),
+        ...(keepContentStart
+            ? {
+                  startTrigger: 'CONTENT' as const,
+                  startSourceType: source.startSourceType ?? undefined,
+                  startSourceId: source.startSourceId ?? undefined,
+                  startSourceName: source.startSourceName ?? undefined,
+                  startThreshold: source.startThreshold ?? undefined,
+              }
+            : {}),
         defaultMissPolicy: source.defaultMissPolicy,
         defaultCatchUpDays: source.defaultCatchUpDays ?? undefined,
         defaultCatchUpPercent: source.defaultCatchUpPercent ?? undefined,

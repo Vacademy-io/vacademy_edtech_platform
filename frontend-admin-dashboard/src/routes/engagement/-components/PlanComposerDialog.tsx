@@ -68,6 +68,7 @@ import type { PickedSlide } from './CourseSlidePicker';
 import { PlanPreview } from './PlanPreview';
 import { DayRail, dayHeading, dayRanks, orderDays } from './composer/DayRail';
 import { DayScheduleEditor } from './composer/DayScheduleEditor';
+import { StartTriggerField } from './composer/StartTriggerField';
 import { TaskList, type DayOption } from './composer/TaskList';
 import { ComposerFooterActions, ComposerFooterLeft } from './composer/ComposerFooter';
 import {
@@ -1239,6 +1240,10 @@ function PlanDetails({
             </div>
 
             <ScheduleModeField control={control} isEdit={isEdit} onChange={onScheduleModeChange} />
+            <StartTriggerField
+                control={control}
+                batchId={batches.length === 1 ? batches[0]!.id : undefined}
+            />
 
             {foreignBatches > 0 && (
                 <p className="flex items-start gap-2 rounded-md bg-warning-50 px-3 py-2 text-caption text-warning-700">

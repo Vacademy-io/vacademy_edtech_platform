@@ -36,13 +36,25 @@ export interface PublishSummary {
      * (each learner starts on their own Day 1).
      */
     relative?: { firstDay: number; lastDay: number } | null;
+    /** A plan that starts when learners complete chosen content. */
+    contentStart?: { type: string; name: string | null; percent: number } | null;
 }
 
 const MAX_DATES = 400;
 
 /** The numbers the publish confirm shows, from the form as it will be saved. */
 export function buildPublishSummary(
-    form: Pick<ComposerForm, 'slots'> & Partial<Pick<ComposerForm, 'scheduleMode'>>,
+    form: Pick<ComposerForm, 'slots'> &
+        Partial<
+            Pick<
+                ComposerForm,
+                | 'scheduleMode'
+                | 'startTrigger'
+                | 'startSourceType'
+                | 'startSourceName'
+                | 'startThreshold'
+            >
+        >,
     options: {
         batchLabels: string[];
         learnerCount?: number | null;
@@ -77,6 +89,14 @@ export function buildPublishSummary(
                 cap && cap > 0 ? dates.filter((date) => perDate.get(date)! > cap).length : 0,
             dailyItemCap: cap ?? null,
             relative: { firstDay, lastDay },
+            contentStart:
+                form.startTrigger === 'CONTENT' && form.startSourceType
+                    ? {
+                          type: form.startSourceType,
+                          name: form.startSourceName ?? null,
+                          percent: form.startThreshold ?? 100,
+                      }
+                    : null,
         };
     }
     return {
@@ -156,17 +176,31 @@ export function PublishSummaryDialog({
             {summary && (
                 <div className="space-y-4">
                     <p className="text-body text-neutral-700">
-                        {summary.relative
-                            ? t('composer.relative.publishLead', {
+                        {summary.relative && summary.contentStart
+                            ? t('composer.relative.publishLeadContent', {
                                   batch,
                                   last: summary.relative.lastDay,
+                                  percent: summary.contentStart.percent,
+                                  source: t('composer.relative.sourceText', {
+                                      type: t(
+                                          `composer.relative.sourceType.${summary.contentStart.type}`
+                                      ),
+                                      name:
+                                          summary.contentStart.name ||
+                                          t('composer.relative.sourceUnnamed'),
+                                  }),
                               })
-                            : summary.startsOn
-                              ? t('composer.publishSummary.lead', {
+                            : summary.relative
+                              ? t('composer.relative.publishLead', {
                                     batch,
-                                    date: formatDay(summary.startsOn, lang),
+                                    last: summary.relative.lastDay,
                                 })
-                              : t('composer.publishSummary.leadOver', { batch })}
+                              : summary.startsOn
+                                ? t('composer.publishSummary.lead', {
+                                      batch,
+                                      date: formatDay(summary.startsOn, lang),
+                                  })
+                                : t('composer.publishSummary.leadOver', { batch })}
                     </p>
 
                     <dl className="grid grid-cols-3 gap-2">

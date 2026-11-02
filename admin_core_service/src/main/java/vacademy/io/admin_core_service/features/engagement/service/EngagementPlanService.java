@@ -117,6 +117,7 @@ public class EngagementPlanService {
         plan.setDefaultCatchUpDays(request.getDefaultCatchUpDays());
         plan.setDefaultCatchUpPercent(request.getDefaultCatchUpPercent());
         plan.setScheduleMode(safeScheduleMode(request.getScheduleMode()));
+        applyStartTrigger(plan, request);
         stampPublished(plan);
         plan.setCreatedByUserId(userId);
         plan.setUpdatedAt(now());
@@ -143,6 +144,14 @@ public class EngagementPlanService {
             // Every learner's timeline, attempt and reveal is computed from the mode;
             // switching it under a running plan would move tasks around for everyone.
             throw new VacademyException("A plan's schedule type can't change. Create a new plan instead.");
+        }
+        if (startTriggerChanges(plan, request)) {
+            // Learners' Day 1 is frozen from the start content once the plan is live;
+            // pointing it at other content would move everyone's tasks.
+            if (plan.getPublishedAt() != null) {
+                throw new VacademyException("A published plan's start can't change. Create a new plan instead.");
+            }
+            applyStartTrigger(plan, request);
         }
         if (request.getDefaultMissPolicy() != null) {
             plan.setDefaultMissPolicy(safeMissPolicy(request.getDefaultMissPolicy()));
@@ -792,6 +801,70 @@ public class EngagementPlanService {
         return "RELATIVE".equalsIgnoreCase(raw == null ? "" : raw.trim()) ? "RELATIVE" : "CALENDAR";
     }
 
+    /** True when the request sets any start field to something other than what is stored. */
+    private static boolean startTriggerChanges(EngagementPlan plan, EngagementPlanRequest request) {
+        if (request.getStartTrigger() == null && request.getStartSourceType() == null
+                && request.getStartSourceId() == null && request.getStartThreshold() == null) {
+            return false;
+        }
+        String trigger = request.getStartTrigger() == null ? plan.getStartTrigger()
+                : safeStartTrigger(request.getStartTrigger());
+        if (!Objects.equals(trigger, plan.getStartTrigger())) return true;
+        if (!"CONTENT".equals(trigger)) return false;
+        return (request.getStartSourceType() != null
+                        && !request.getStartSourceType().trim().equalsIgnoreCase(String.valueOf(plan.getStartSourceType())))
+                || (request.getStartSourceId() != null && !request.getStartSourceId().equals(plan.getStartSourceId()))
+                || (request.getStartThreshold() != null
+                        && !Objects.equals(request.getStartThreshold(), plan.getStartThreshold()));
+    }
+
+    private static String safeStartTrigger(String raw) {
+        return "CONTENT".equalsIgnoreCase(raw == null ? "" : raw.trim()) ? "CONTENT" : "JOIN";
+    }
+
+    /**
+     * Sets what a RELATIVE plan's Day 1 counts from. CONTENT needs a subject, module or
+     * chapter taught in the plan's batch; CALENDAR plans always keep JOIN and no source.
+     */
+    private void applyStartTrigger(EngagementPlan plan, EngagementPlanRequest request) {
+        String trigger = request.getStartTrigger() == null ? plan.getStartTrigger()
+                : safeStartTrigger(request.getStartTrigger());
+        if (!plan.isRelative() || !"CONTENT".equals(trigger)) {
+            plan.setStartTrigger("JOIN");
+            plan.setStartSourceType(null);
+            plan.setStartSourceId(null);
+            plan.setStartSourceName(null);
+            plan.setStartThreshold(null);
+            return;
+        }
+        String typeRaw = request.getStartSourceType() != null ? request.getStartSourceType() : plan.getStartSourceType();
+        EngagementRelativeSchedule.ContentSource type = EngagementRelativeSchedule.ContentSource.of(typeRaw);
+        if (type == null) throw new VacademyException("Choose a subject, module or chapter to start the plan from");
+        String sourceId = request.getStartSourceId() != null ? request.getStartSourceId().trim() : plan.getStartSourceId();
+        if (sourceId == null || sourceId.isBlank()) {
+            throw new VacademyException("Choose a subject, module or chapter to start the plan from");
+        }
+        String batch = plan.getPackageSessionId();
+        long found = switch (type) {
+            case SUBJECT -> planRepository.countSubjectInBatch(sourceId, batch);
+            case MODULE -> planRepository.countModuleInBatch(sourceId, batch);
+            case CHAPTER -> planRepository.countChapterInBatch(sourceId, batch);
+        };
+        if (found == 0) throw new VacademyException("That " + type.name().toLowerCase() + " isn't part of this batch");
+        Integer threshold = request.getStartThreshold() != null ? request.getStartThreshold() : plan.getStartThreshold();
+        if (threshold != null && (threshold < 1 || threshold > 100)) {
+            throw new VacademyException("Completion percent must be between 1 and 100");
+        }
+        plan.setStartTrigger("CONTENT");
+        plan.setStartSourceType(type.name());
+        plan.setStartSourceId(sourceId);
+        if (request.getStartSourceName() != null) {
+            String name = request.getStartSourceName().trim();
+            plan.setStartSourceName(name.length() > 500 ? name.substring(0, 500) : name);
+        }
+        plan.setStartThreshold(threshold == null ? 100 : threshold);
+    }
+
     /** The first time a plan goes live; RELATIVE plans start existing learners on this day. */
     private void stampPublished(EngagementPlan plan) {
         if (plan.getPublishedAt() == null
@@ -821,6 +894,11 @@ public class EngagementPlanService {
                 .status(plan.getStatus())
                 .timezone(plan.getTimezone())
                 .scheduleMode(plan.getScheduleMode())
+                .startTrigger(plan.isRelative() ? plan.getStartTrigger() : null)
+                .startSourceType(plan.isContentStart() ? plan.getStartSourceType() : null)
+                .startSourceId(plan.isContentStart() ? plan.getStartSourceId() : null)
+                .startSourceName(plan.isContentStart() ? plan.getStartSourceName() : null)
+                .startThreshold(plan.isContentStart() ? plan.effectiveStartThreshold() : null)
                 .publishedAt(plan.getPublishedAt() == null ? null : plan.getPublishedAt().toInstant().toString())
                 .defaultMissPolicy(plan.getDefaultMissPolicy())
                 .defaultCatchUpDays(plan.getDefaultCatchUpDays())
