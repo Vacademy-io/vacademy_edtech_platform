@@ -341,6 +341,7 @@ export const StudentReports = () => {
                         instituteId={selectedStudent.institute_id}
                         batchId={batchId}
                         range={range}
+                        learnerName={selectedStudent.full_name}
                     />
                 </ProfileSectionCard>
             )}

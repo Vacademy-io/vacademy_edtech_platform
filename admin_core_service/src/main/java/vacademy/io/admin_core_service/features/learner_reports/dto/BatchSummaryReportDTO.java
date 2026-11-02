@@ -28,6 +28,8 @@ public class BatchSummaryReportDTO {
     private String packageSessionId;
     private String batchName;
     private String instituteName;
+    /** Institute theme colour (hex) for the report header and charts; null for the default. */
+    private String brandColor;
     private LocalDate startDate;
     private LocalDate endDate;
 

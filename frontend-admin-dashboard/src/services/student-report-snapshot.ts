@@ -29,14 +29,47 @@ export interface SubjectPerformance {
     class_average: number | null;
 }
 
+export interface SnapshotAssessment {
+    assessment_id: string;
+    name?: string | null;
+    date?: string | null;
+    subject?: string | null;
+    marks?: number | null;
+    total_marks?: number | null;
+    percentage?: number | null;
+    grade?: string | null;
+    rank?: number | null;
+    percentile?: number | null;
+    /** Class average in marks, not percent. */
+    class_average?: number | null;
+}
+
+export interface SnapshotBloomLevel {
+    level: string;
+    total?: number | null;
+    correct?: number | null;
+    accuracy?: number | null;
+}
+
 export interface StudentReportSnapshot {
+    student?: {
+        name?: string | null;
+        enrollment_no?: string | null;
+        batch?: string | null;
+        avatar_url?: string | null;
+    } | null;
+    institute?: {
+        name?: string | null;
+        logo_url?: string | null;
+        theme_color?: string | null;
+    } | null;
     academics?: {
         available: boolean;
         average_percentage?: number | null;
         class_average_percentage?: number | null;
         best_subject?: string | null;
         weakest_subject?: string | null;
-        assessments?: { assessment_id: string }[] | null;
+        assessments?: SnapshotAssessment[] | null;
         subject_performance?: SubjectPerformance[] | null;
     } | null;
     subject_marks?: { available: boolean; subjects?: SubjectMarks[] | null } | null;
@@ -44,14 +77,35 @@ export interface StudentReportSnapshot {
         available: boolean;
         attempts_analyzed?: number | null;
         topic_mastery?: TopicMastery[] | null;
+        blooms?: SnapshotBloomLevel[] | null;
+        confidence?: {
+            overall?: number | null;
+            knows?: number | null;
+            guesses?: number | null;
+            high_confidence_wrong?: number | null;
+        } | null;
     } | null;
     attendance?: {
         available: boolean;
         overall_percentage?: number | null;
         present?: number | null;
+        absent?: number | null;
+        late?: number | null;
         total_sessions?: number | null;
+        weekly?: { week: string; percentage: number | null }[] | null;
     } | null;
-    course_progress?: { available: boolean; overall_completion_percentage?: number | null } | null;
+    course_progress?: {
+        available: boolean;
+        overall_completion_percentage?: number | null;
+        subjects?:
+            | {
+                  subject_id?: string | null;
+                  subject: string;
+                  completion_percentage?: number | null;
+                  time_hours?: number | null;
+              }[]
+            | null;
+    } | null;
 }
 
 /** Strength / weakness cut-off on topic accuracy — the same 60% line the AI learner report uses. */
