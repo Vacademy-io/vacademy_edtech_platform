@@ -21,7 +21,7 @@ describe('summaryFromStatusTotals', () => {
         expect(summary.paid.count).toBe(5);
         expect(summary.paid.amountByCurrency.INR).toBe(500);
         // Eligibility only gates pending — paid money is paid either way.
-        expect(summary.notCounted.count).toBe(0);
+        expect(summary.abandoned.count).toBe(0);
     });
 
     it('keeps currencies apart', () => {
@@ -44,15 +44,34 @@ describe('summaryFromStatusTotals', () => {
         expect(summary.pending.amountByCurrency.INR).toBe(500);
     });
 
-    it('moves unsettled money on a dead enrolment out of pending', () => {
+    it('moves unsettled money on a dead enrolment out of pending into abandoned', () => {
         const summary = summaryFromStatusTotals([
             group({ status: 'PAYMENT_PENDING', count: 2, amount: 200, due_eligible: false }),
         ]);
 
         expect(summary.pending.count).toBe(0);
-        expect(summary.notCounted.count).toBe(2);
+        expect(summary.abandoned.count).toBe(2);
         // Still money the institute billed, so it stays in the headline total.
         expect(summary.total.count).toBe(2);
+    });
+
+    it('adds the tabs up to All', () => {
+        const summary = summaryFromStatusTotals([
+            group({ status: 'PAID', count: 5 }),
+            group({ status: 'FAILED', count: 2 }),
+            group({ status: 'ABANDONED', count: 3 }),
+            group({ status: 'PAYMENT_PENDING', count: 1 }),
+            group({ status: 'PAYMENT_PENDING', count: 4, due_eligible: false }),
+            group({ status: 'NOT_INITIATED', count: 1, due_eligible: false }),
+        ]);
+
+        expect(summary.abandoned.count).toBe(8);
+        expect(
+            summary.paid.count +
+                summary.pending.count +
+                summary.abandoned.count +
+                summary.failed.count
+        ).toBe(summary.total.count);
     });
 
     it('counts a failed attempt paid on its retry once — on the retry, not as a second payment', () => {

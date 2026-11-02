@@ -230,7 +230,7 @@ describe('dashboard analytics vs KPI cards', () => {
         expect(analytics.outstanding.amount).toBe(7200);
         expect(analytics.outstanding.count).toBe(summary.pending.count);
         expect(summary.pending.amountByCurrency.INR).toBe(7200);
-        expect(summary.notCounted.amountByCurrency.INR).toBe(14400);
+        expect(summary.abandoned.amountByCurrency.INR).toBe(14400);
 
         // ...but the funnel still describes every record it says it counts, dead plan included.
         const invoiced = analytics.funnel.find((stage) => stage.label === 'Invoiced')!;
@@ -285,7 +285,7 @@ describe('pending excludes dead enrolments', () => {
         expect(isDueEligibleEntry(planEntry('canceled', 'PAYMENT_PENDING', 1))).toBe(false);
     });
 
-    it('drops a cancelled enrolment from Pending into notCounted, keeping it in Total', () => {
+    it('drops a cancelled enrolment from Pending into Abandoned, keeping it in Total', () => {
         const summary = computePaymentSummary([
             planEntry('ACTIVE', 'PAYMENT_PENDING', 7200),
             planEntry('CANCELED', 'PAYMENT_PENDING', 14400),
@@ -298,8 +298,8 @@ describe('pending excludes dead enrolments', () => {
         // Pending is only the live enrolment.
         expect(summary.pending.count).toBe(1);
         expect(summary.pending.amountByCurrency.INR).toBe(7200);
-        expect(summary.notCounted.count).toBe(3);
-        expect(summary.notCounted.amountByCurrency.INR).toBe(19201);
+        expect(summary.abandoned.count).toBe(3);
+        expect(summary.abandoned.amountByCurrency.INR).toBe(19201);
     });
 
     it('still counts what a cancelled enrolment actually paid as collected', () => {
@@ -307,6 +307,6 @@ describe('pending excludes dead enrolments', () => {
         // either, so dropping it here would make the two disagree.
         const summary = computePaymentSummary([planEntry('CANCELED', 'PAID', 5000)]);
         expect(summary.paid.amountByCurrency.INR).toBe(5000);
-        expect(summary.notCounted.count).toBe(0);
+        expect(summary.abandoned.count).toBe(0);
     });
 });
