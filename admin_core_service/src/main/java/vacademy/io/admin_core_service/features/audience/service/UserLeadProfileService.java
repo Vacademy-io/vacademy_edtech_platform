@@ -652,6 +652,7 @@ public class UserLeadProfileService {
                     .audienceId(r.getAudienceId())
                     .campaignName(aud != null ? aud.getCampaignName() : null)
                     .campaignStatus(aud != null ? aud.getStatus() : null)
+                    .campaignType(aud != null ? aud.getCampaignType() : null)
                     .responseId(r.getId())
                     .overallStatus(r.getOverallStatus())
                     .audienceStatus(r.getAudienceStatus())

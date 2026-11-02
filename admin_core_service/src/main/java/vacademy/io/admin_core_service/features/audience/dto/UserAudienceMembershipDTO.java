@@ -40,6 +40,13 @@ public class UserAudienceMembershipDTO {
     @JsonProperty("source_type")
     private String sourceType;
 
+    /**
+     * The campaign's channel (audience.campaign_type, e.g. FACEBOOK / WEBSITE / REFERENCE) — what
+     * the institute calls the lead's "Source". Free text, may be comma-separated or null.
+     */
+    @JsonProperty("campaign_type")
+    private String campaignType;
+
     @JsonProperty("submitted_at")
     private Timestamp submittedAt;
 

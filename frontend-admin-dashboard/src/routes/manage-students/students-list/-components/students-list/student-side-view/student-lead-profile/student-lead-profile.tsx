@@ -114,6 +114,8 @@ interface AudienceMembership {
     response_id: string;
     overall_status: string | null;
     source_type: string | null;
+    /** The campaign's channel (audience.campaign_type) — the lead's "Source". */
+    campaign_type?: string | null;
     submitted_at: string | null;
     lead_score: number | null;
 }
@@ -246,6 +248,19 @@ function sourceLabel(source: string | null): string {
         .toLowerCase()
         .replace(/_/g, ' ')
         .replace(/\b\w/g, (c) => c.toUpperCase());
+}
+
+// campaign_type is free text and may be comma-separated ("WEBSITE,GOOGLE_ADS");
+// returns the readable parts, or [] when none is set so the row shows nothing.
+// OPT_OUT is the system marker of the institute's opt-out list, not a source.
+function campaignSources(campaignType: string | null | undefined): string[] {
+    if (!campaignType) return [];
+    const parts = campaignType
+        .split(',')
+        .map((part) => part.trim())
+        .filter((part) => part && !part.toUpperCase().includes('OPT_OUT'))
+        .map(sourceLabel);
+    return Array.from(new Set(parts));
 }
 
 function campaignStatusChip(status: string | null) {
@@ -1062,6 +1077,7 @@ function AddNoteForm({ userId, audienceResponseId }: AddNoteFormProps) {
 
 function AudienceListSection({ userId }: { userId: string }) {
     const { t } = useTranslation('manageStudentsLeadProfile');
+    const terminology = useLeadTerminology();
     const instituteId = getCurrentInstituteId() ?? '';
     const { data: audiences, isLoading } = useQuery({
         queryKey: ['user-audiences', userId, instituteId],
@@ -1088,32 +1104,50 @@ function AudienceListSection({ userId }: { userId: string }) {
                 </span>
             </div>
             <div className="flex flex-col gap-1.5">
-                {audiences.map((a) => (
-                    <div
-                        key={a.response_id}
-                        className="flex items-center justify-between rounded-lg border border-neutral-100 bg-neutral-50 px-3 py-2"
-                    >
-                        <div className="min-w-0 flex-1">
-                            <p className="truncate text-sm font-medium text-neutral-800">
-                                {a.campaign_name || t('audiences.unnamedCampaign')}
-                            </p>
-                            <div className="mt-0.5 flex items-center gap-2 text-caption text-neutral-400">
-                                {a.source_type && <span>{sourceLabel(a.source_type)}</span>}
-                                {a.submitted_at && <span>{formatDate(a.submitted_at)}</span>}
+                {audiences.map((a) => {
+                    const sources = campaignSources(a.campaign_type);
+                    return (
+                        <div
+                            key={a.response_id}
+                            className="flex items-center justify-between rounded-lg border border-neutral-100 bg-neutral-50 px-3 py-2"
+                        >
+                            <div className="min-w-0 flex-1">
+                                <p className="truncate text-sm font-medium text-neutral-800">
+                                    {a.campaign_name || t('audiences.unnamedCampaign')}
+                                </p>
+                                <div className="mt-0.5 flex items-center gap-2 text-caption text-neutral-400">
+                                    {a.source_type && <span>{sourceLabel(a.source_type)}</span>}
+                                    {a.submitted_at && <span>{formatDate(a.submitted_at)}</span>}
+                                </div>
+                                {sources.length > 0 && (
+                                    <div className="mt-1 flex flex-wrap items-center gap-1">
+                                        <span className="text-caption text-neutral-500">
+                                            {terminology.campaignType}:
+                                        </span>
+                                        {sources.map((src) => (
+                                            <span
+                                                key={src}
+                                                className="rounded-full bg-primary-50 px-2 py-0.5 text-caption font-medium text-primary-500"
+                                            >
+                                                {src}
+                                            </span>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+                            <div className="flex items-center gap-2">
+                                {a.lead_score != null && (
+                                    <LeadScoreBadge score={a.lead_score} size="sm" />
+                                )}
+                                <span
+                                    className={`rounded-full px-2 py-0.5 text-caption font-medium ${campaignStatusChip(a.campaign_status)}`}
+                                >
+                                    {a.campaign_status ?? '—'}
+                                </span>
                             </div>
                         </div>
-                        <div className="flex items-center gap-2">
-                            {a.lead_score != null && (
-                                <LeadScoreBadge score={a.lead_score} size="sm" />
-                            )}
-                            <span
-                                className={`rounded-full px-2 py-0.5 text-caption font-medium ${campaignStatusChip(a.campaign_status)}`}
-                            >
-                                {a.campaign_status ?? '—'}
-                            </span>
-                        </div>
-                    </div>
-                ))}
+                    );
+                })}
             </div>
         </div>
     );
