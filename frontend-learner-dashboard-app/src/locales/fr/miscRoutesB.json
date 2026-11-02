@@ -557,7 +557,8 @@
         "stopFailedTitle": "Impossible d'arrêter votre abonnement",
         "paymentReceivedTitle": "Paiement reçu !",
         "paymentReceivedDescription": "Votre abonnement est en cours de réactivation — cela prend quelques secondes.",
-        "paymentNotCompletedTitle": "Paiement non finalisé"
+        "paymentNotCompletedTitle": "Paiement non finalisé",
+        "sessionRenewed": "Votre connexion avait expiré, nous vous avons reconnecté. Veuillez appuyer à nouveau sur Arrêter l'abonnement."
       },
       "cancelDialog": {
         "title": "Arrêter votre abonnement ?",
@@ -598,6 +599,17 @@
       },
       "autopayRequiredHint": "Le paiement automatique est requis pour poursuivre votre abonnement.",
       "autopayRequiredBlocked": "Cochez le paiement automatique ci-dessus pour poursuivre votre abonnement."
+    },
+    "cancelPage": {
+      "title": "Vous pensez à arrêter votre abonnement ?",
+      "support": "Nous sommes désolés d'apprendre que vous pourriez partir, et nous comprenons que les projets changent. Si nous pouvons vous aider d'abord, écrivez simplement à <mail>{{email}}</mail>.",
+      "supportNoEmail": "Nous sommes désolés d'apprendre que vous pourriez partir, et nous comprenons que les projets changent.",
+      "stopBody": "Si vous préférez arrêter votre abonnement, vous pouvez le faire ici. Vous garderez l'accès jusqu'à la fin de votre abonnement en cours.",
+      "stoppedTitle": "Votre abonnement est arrêté",
+      "stoppedWithDate": "Vous garderez l'accès jusqu'au {{date}}. Vous ne serez plus prélevé.",
+      "stoppedNoDate": "Vous garderez l'accès jusqu'à la fin de votre abonnement en cours. Vous ne serez plus prélevé.",
+      "nothingToStop": "Cet abonnement n'est pas renouvelé automatiquement, il n'y a donc rien à arrêter.",
+      "renewIntro": "Merci d'apprendre avec nous. Nous serions ravis de continuer à apprendre avec vous."
     },
     "paymentReturn": {
       "confirmingTitle": "Confirmation de votre paiement…",

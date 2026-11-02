@@ -15,6 +15,7 @@
 const PASSWORDLESS_LANDING_ROUTES: RegExp[] = [
   /^\/study-library\/live-class\/[^/]+\/?$/,
   /^\/user-profile\/edit\/[^/]+\/?$/,
+  /^\/subscriptions\/[^/]+\/cancel\/?$/,
 ];
 
 export const isPasswordlessLandingRoute = (pathname: string): boolean =>
