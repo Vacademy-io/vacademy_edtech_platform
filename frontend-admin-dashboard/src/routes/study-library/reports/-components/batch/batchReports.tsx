@@ -4,7 +4,8 @@ import TimelineReports from './timelineReports';
 import ProgressReports from './progressReports';
 import BatchAiAnalysis from './batchAiAnalysis';
 import LearnerProgressReports from './learnerProgressReports';
-import { UsersThree } from '@phosphor-icons/react';
+import BatchOverviewReport from './batchOverviewReport';
+import { ChartPieSlice, UsersThree } from '@phosphor-icons/react';
 import { getTerminology } from '@/components/common/layout-container/sidebar/utils';
 import { RoleTerms, SystemTerms } from '@/routes/settings/-components/NamingSettings';
 import { useLearnerProgressReportEnabled } from './useLearnerProgressReportEnabled';
@@ -28,13 +29,17 @@ export default function BatchReports({ packageSessionId, courseId }: BatchReport
 
     return (
         <div className="w-full">
-            <Tabs
-                defaultValue={showLearnerProgress ? 'learners' : 'timeline'}
-                className="w-full"
-            >
+            <Tabs defaultValue="overview" className="w-full">
                 {/* Modern Tab Navigation with Institute Theme */}
                 <div className="border-b border-neutral-200 bg-white px-6 py-4">
                     <TabsList className="h-11 bg-neutral-100 p-1 rounded-lg shadow-sm">
+                        <TabsTrigger
+                            value="overview"
+                            className="flex items-center gap-2 rounded-md px-4 py-2.5 text-sm font-medium transition-all duration-200 hover:bg-primary-50 hover:text-primary-600 data-[state=active]:bg-primary-500 data-[state=active]:text-white data-[state=active]:shadow-sm"
+                        >
+                            <ChartPieSlice size={16} />
+                            Overview
+                        </TabsTrigger>
                         {showLearnerProgress && (
                             <TabsTrigger
                                 value="learners"
@@ -78,6 +83,10 @@ export default function BatchReports({ packageSessionId, courseId }: BatchReport
                 
                 {/* Tab Content */}
                 <div className="bg-white">
+                    <TabsContent value="overview" className="mt-0 p-6 focus-visible:outline-none">
+                        <BatchOverviewReport fixedPackageSessionId={packageSessionId} />
+                    </TabsContent>
+
                     {showLearnerProgress && (
                         <TabsContent
                             value="learners"

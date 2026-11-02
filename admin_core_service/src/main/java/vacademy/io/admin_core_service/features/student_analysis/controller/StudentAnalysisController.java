@@ -23,6 +23,13 @@ import vacademy.io.admin_core_service.features.student_analysis.dto.UserLinkedDa
 import vacademy.io.admin_core_service.features.student_analysis.entity.UserLinkedData;
 import vacademy.io.admin_core_service.features.student_analysis.repository.UserLinkedDataRepository;
 import vacademy.io.common.auth.model.CustomUserDetails;
+import vacademy.io.common.exceptions.VacademyException;
+import vacademy.io.admin_core_service.core.security.InstituteAccessValidator;
+import vacademy.io.admin_core_service.features.institute_learner.repository.StudentSessionInstituteGroupMappingRepository;
+import vacademy.io.admin_core_service.features.packages.repository.PackageSessionRepository;
+import vacademy.io.admin_core_service.features.student_analysis.service.aggregation.ComprehensiveReportAggregator;
+import org.springframework.format.annotation.DateTimeFormat;
+import java.util.Set;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import vacademy.io.admin_core_service.features.student_analysis.dto.comprehensive.ComprehensiveStudentReport;
@@ -49,6 +56,57 @@ public class StudentAnalysisController {
         private final StudentReportPdfService reportPdfService;
         private final vacademy.io.admin_core_service.core.security.GuardianAccessGuard guardianAccessGuard;
         private final vacademy.io.admin_core_service.features.institute_learner.repository.InstituteStudentRepository studentRepository;
+        private final ComprehensiveReportAggregator comprehensiveReportAggregator;
+        private final InstituteAccessValidator instituteAccessValidator;
+        private final StudentSessionInstituteGroupMappingRepository mappingRepository;
+        private final PackageSessionRepository packageSessionRepository;
+
+        /** Modules the side-view Reports tab summarises; the AI step never runs for these. */
+        private static final Set<String> SNAPSHOT_MODULES = Set.of(
+                        ReportModule.ACADEMICS.getKey(),
+                        ReportModule.LEARNING_INSIGHTS.getKey(),
+                        ReportModule.ATTENDANCE.getKey(),
+                        ReportModule.PROGRESS.getKey());
+        private static final long SNAPSHOT_MAX_RANGE_DAYS = 366;
+
+        /**
+         * The admin side-view Reports tab: one learner's marks by subject, topic mastery (the basis
+         * of the strengths / weaknesses it shows), attendance and course progress for a window —
+         * the deterministic layer of the comprehensive report, returned synchronously and without
+         * the AI narrative, so it costs no credits. {@code batchId} scopes attendance and progress;
+         * omit it for all of the learner's batches (progress then reports unavailable).
+         */
+        @GetMapping("/snapshot")
+        @Operation(summary = "Learner report snapshot", description = "Subject marks, topic mastery, attendance and progress for one learner and window, without AI.")
+        public ResponseEntity<ComprehensiveStudentReport> getSnapshot(
+                        @RequestParam("userId") String userId,
+                        @RequestParam("instituteId") String instituteId,
+                        @RequestParam(value = "batchId", required = false) String batchId,
+                        @RequestParam("startDate") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) java.time.LocalDate startDate,
+                        @RequestParam("endDate") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) java.time.LocalDate endDate,
+                        @RequestAttribute("user") CustomUserDetails userDetails) {
+                instituteAccessValidator.requireStaffAccess(userDetails, instituteId);
+                String dateError = validateWindow(startDate, endDate);
+                if (dateError != null) {
+                        throw new VacademyException(HttpStatus.BAD_REQUEST, dateError);
+                }
+                if (java.time.temporal.ChronoUnit.DAYS.between(startDate, endDate) > SNAPSHOT_MAX_RANGE_DAYS) {
+                        throw new VacademyException(HttpStatus.BAD_REQUEST,
+                                        "Pick a range of at most " + SNAPSHOT_MAX_RANGE_DAYS + " days.");
+                }
+                // The aggregator takes the institute on trust, so the learner must be enrolled in it
+                // and a named batch must belong to it.
+                if (mappingRepository.findLatestPackageSessionIdByUserIdAndInstituteId(userId, instituteId).isEmpty()) {
+                        return ResponseEntity.notFound().build();
+                }
+                String batch = (batchId == null || batchId.isBlank()) ? null : batchId;
+                if (batch != null && !instituteId.equals(
+                                packageSessionRepository.findInstituteIdByPackageSessionId(batch).orElse(null))) {
+                        return ResponseEntity.notFound().build();
+                }
+                return ResponseEntity.ok(comprehensiveReportAggregator.collect(
+                                userId, instituteId, batch, startDate, endDate, SNAPSHOT_MODULES));
+        }
 
         @PostMapping("/initiate")
         @Auditable(

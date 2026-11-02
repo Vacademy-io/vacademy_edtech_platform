@@ -13,6 +13,7 @@ import CertificatesSettings from '../-components/Certificates/CertificatesSettin
 import { TemplateSettings } from '@/components/templates';
 import AiSettings from '../-components/AiSettings';
 import ScheduledReportsSettings from '../-components/ScheduledReportsSettings';
+import BatchReportSettings from '../-components/BatchReportSettings';
 import SchoolSettings from '../-components/School/SchoolSettings';
 import WhiteLabelSettings from '../-components/WhiteLabelSettings';
 import AppStatusSettings from '../-components/AppStatusSettings';
@@ -189,6 +190,13 @@ export const getAvailableSettingsTabs = (): SettingsTabEntry[] => {
             tab: SettingsTabs.ScheduledReports,
             value: 'Scheduled Reports',
             component: ScheduledReportsSettings,
+            domain: 'General',
+            group: 'Platform Configuration',
+        },
+        {
+            tab: SettingsTabs.BatchReports,
+            value: 'Batch Reports',
+            component: BatchReportSettings,
             domain: 'General',
             group: 'Platform Configuration',
         },

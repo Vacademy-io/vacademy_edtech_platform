@@ -8,19 +8,15 @@ import {
 } from '@/routes/manage-students/students-list/-types/student-subjects-details-types';
 import { useInstituteDetailsStore } from '@/stores/students/students-list/useInstituteDetailsStore';
 import { BatchForSessionType } from '@/schemas/student/student-list/institute-schema';
-import { MyButton } from '@/components/design-system/button';
 import { MyDropdown } from '@/components/design-system/dropdown';
 import { StatusChip } from '@/components/design-system/status-chips';
 import calculateLearningPercentage from '@/routes/manage-students/students-list/-utils/calculateLearningPercentage';
 import { getTerminology } from '@/components/common/layout-container/sidebar/utils';
 import { ContentTerms, SystemTerms } from '@/routes/settings/-components/NamingSettings';
 import { useForm, FormProvider } from 'react-hook-form';
-import { useRouter } from '@tanstack/react-router';
 import {
     GraduationCap,
     Stack,
-    ChartLineUp,
-    ClockCounterClockwise,
     CaretDown,
     CaretRight,
     VideoCamera,
@@ -34,7 +30,6 @@ import {
     ProfileError,
     ProfileEmpty,
     ProfileHero,
-    ProfileActionBar,
     ProfileMiniBar,
 } from '../profile-ui';
 import { InlineProgress } from './inline-progress';
@@ -70,7 +65,6 @@ export const StudentLearningProgress = ({ isSubmissionTab }: { isSubmissionTab?:
 
     const [batch, setBatch] = useState<BatchForSessionType | null>(null);
     const [percentageCompleted, setPercentageCompleted] = useState<number>(0);
-    const router = useRouter();
 
     // Multi-enrollment: admin scopes the progress view to a specific batch.
     // Defaults to the row's primary (latest) ps_id; falls back to the legacy single field.
@@ -202,47 +196,6 @@ export const StudentLearningProgress = ({ isSubmissionTab }: { isSubmissionTab?:
             </div>
         );
 
-    // ── Report navigation handlers ───────────────────────────────────────────
-    // learningTab is lower-cased to match the Tabs `value` in studentReports.tsx
-    // (`timeline` / `progress`). levelId uses batch.level.id — was incorrectly
-    // set to batch.session.id, which made the Level prefill always miss.
-    const handleLearningTimeLineClick = () => {
-        router.navigate({
-            to: '/study-library/reports',
-            search: {
-                studentReport: {
-                    tab: 'STUDENT',
-                    learningTab: 'timeline',
-                    courseId: batch?.package_dto.id,
-                    sessionId: batch?.session.id,
-                    levelId: batch?.level.id,
-                    fullName: selectedStudent.full_name,
-                    userId: isSubmissionTab
-                        ? selectedStudent?.id || ''
-                        : selectedStudent?.user_id || '',
-                },
-            },
-        });
-    };
-    const handleLearningProgressClick = () => {
-        router.navigate({
-            to: '/study-library/reports',
-            search: {
-                studentReport: {
-                    tab: 'STUDENT',
-                    learningTab: 'progress',
-                    courseId: batch?.package_dto.id,
-                    sessionId: batch?.session.id,
-                    levelId: batch?.level.id,
-                    fullName: selectedStudent.full_name,
-                    userId: isSubmissionTab
-                        ? selectedStudent?.id || ''
-                        : selectedStudent?.user_id || '',
-                },
-            },
-        });
-    };
-
     // ── Hero derived values ──────────────────────────────────────────────────
     const heroTone =
         percentageCompleted >= 75
@@ -296,26 +249,6 @@ export const StudentLearningProgress = ({ isSubmissionTab }: { isSubmissionTab?:
                         )}
                     </div>
                 </ProfileHero>
-
-                {/* ── Report action bar ─────────────────────────────────── */}
-                <ProfileActionBar>
-                    <MyButton
-                        buttonType="secondary"
-                        scale="medium"
-                        onClick={handleLearningTimeLineClick}
-                    >
-                        <ClockCounterClockwise className="size-4" />
-                        {t('actions.learningTimeline')}
-                    </MyButton>
-                    <MyButton
-                        buttonType="secondary"
-                        scale="medium"
-                        onClick={handleLearningProgressClick}
-                    >
-                        <ChartLineUp className="size-4" />
-                        {t('actions.learningProgress')}
-                    </MyButton>
-                </ProfileActionBar>
 
                 {/* ── Course content — Subject dropdown selects which subject's
                        modules to show; modules are an accordion stack. ─────── */}
