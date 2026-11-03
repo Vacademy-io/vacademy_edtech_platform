@@ -6,6 +6,8 @@ import {
 } from '@/constants/urls';
 import { getMainDomain, getSubdomain } from '@/utils/subdomain';
 import { detectVisitorCountry } from '@/utils/geo-country';
+import { isNative } from '@/native/platform';
+import { shouldForceEvalezyShell } from '@/native/flavor';
 
 export type DomainResolveResponse = {
     instituteId: string | null;
@@ -270,6 +272,10 @@ export function getPreferredPhoneCountries(): ResolvedPhoneCountries {
 }
 
 export async function resolveInstituteForCurrentHost(): Promise<DomainResolveResponse | null> {
+    // The Evalezy app's WebView host is just "localhost": resolving it could brand
+    // the app as (and pin its login to) whichever institute owns a localhost row.
+    // No institute owns Evalezy, so it resolves nothing and keeps its own brand.
+    if (isNative() && shouldForceEvalezyShell()) return null;
     try {
         const hostname = window.location.hostname;
 

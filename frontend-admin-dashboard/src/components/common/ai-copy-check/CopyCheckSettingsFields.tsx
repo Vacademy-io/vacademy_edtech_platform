@@ -88,6 +88,8 @@ export const CopyCheckSettingsFields = ({
                     value={value.instructions}
                     maxLength={INSTRUCTIONS_MAX}
                     rows={4}
+                    // Same size as the Subject / Class inputs above (the base Textarea is 16px on phones).
+                    className="text-sm"
                     placeholder={t('aiSettings.instructionsPlaceholder')}
                     onChange={(e) => set({ instructions: e.target.value })}
                     disabled={disabled}

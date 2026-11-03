@@ -56,7 +56,11 @@
         "startedBy": "{{name}} द्वारा शुरू · {{when}}",
         "emailFailed": "पूरा होने का ईमेल नहीं भेजा जा सका।",
         "waitingHint_one": "{{count}} कॉपी किसी छात्र से नहीं मिल सकी। जाँचने के लिए छात्र चुनें।",
-        "waitingHint_other": "{{count}} कॉपियाँ किसी छात्र से नहीं मिल सकीं। जाँचने के लिए हर एक के लिए छात्र चुनें।"
+        "waitingHint_other": "{{count}} कॉपियाँ किसी छात्र से नहीं मिल सकीं। जाँचने के लिए हर एक के लिए छात्र चुनें।",
+        "pickBatch": "चेक चुनें",
+        "batchLabel": "{{when}} · {{copies}}",
+        "copies_one": "{{count}} कॉपी",
+        "copies_other": "{{count}} कॉपी"
     },
     "stats": {
         "total": "कॉपियाँ",

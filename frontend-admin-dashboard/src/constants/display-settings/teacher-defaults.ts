@@ -56,7 +56,8 @@ function mapSidebarToTeacherConfig(menu: SidebarItemsType[]): SidebarTabConfig[]
                             !sub.adminOnly &&
                             subId !== 'suborg-teams' &&
                             subId !== 'manage-institute-suborgs' &&
-                            subId !== 'notification-hub',
+                            subId !== 'notification-hub' &&
+                            subId !== 'evalezy',
                     };
                 }) || [],
         }));

@@ -115,6 +115,28 @@ export interface AssessmentFolderSettings {
     enabled: boolean;
 }
 
+/** Size of a scanned page in Evalezy: STANDARD keeps uploads light, HIGH helps small handwriting. */
+export type EvalezyScanQuality = 'STANDARD' | 'HIGH';
+
+/**
+ * Evalezy — the simple copy-check app (evalezy.vacademy.io and the Evalezy mobile
+ * app): pick an assessment, scan or upload copies, the AI checks them, download
+ * the checked copies as a zip. Same portal and login; these switches are the
+ * institute's whole control over it. The AI template, instructions and language
+ * feedback come from `aiCopyCheck` like every other copy check.
+ */
+export interface EvalezySettings {
+    /** This institute's admins may use Evalezy. Off = the app shows a "turned off" page. */
+    enabled: boolean;
+    /** Scan pages with the device camera. */
+    allowCamera: boolean;
+    /** Pick PDFs and photos from the device. */
+    allowUpload: boolean;
+    scanQuality: EvalezyScanQuality;
+    /** Email the person who sent the copies when the batch is checked. */
+    notifyEmail: boolean;
+}
+
 export interface AssessmentSettingsData {
     offlineEntry: {
         enabled: boolean;
@@ -124,6 +146,7 @@ export interface AssessmentSettingsData {
     resultNotifications: ResultNotificationSettings;
     examExperience: ExamExperienceSettings;
     aiCopyCheck?: AiCopyCheckSettings;
+    evalezy?: EvalezySettings;
 }
 
 /** Default: STUDENT/LEARNER receive results; every other role (incl. ADMIN) does not. */
@@ -170,6 +193,30 @@ export const DEFAULT_EXAM_EXPERIENCE: ExamExperienceSettings = {
     mobile: { hideAppNavigation: true },
 };
 
+/** On by default: Evalezy only reaches features an admin already has in the portal. */
+export const DEFAULT_EVALEZY_SETTINGS: EvalezySettings = {
+    enabled: true,
+    allowCamera: true,
+    allowUpload: true,
+    scanQuality: 'STANDARD',
+    notifyEmail: true,
+};
+
+/** Fill in a partially-saved `evalezy` block; unknown values fall back to the default. */
+export const mergeEvalezySettings = (
+    incoming?: Partial<EvalezySettings> | null
+): EvalezySettings => {
+    const flag = (value: unknown, fallback: boolean) =>
+        typeof value === 'boolean' ? value : fallback;
+    return {
+        enabled: flag(incoming?.enabled, DEFAULT_EVALEZY_SETTINGS.enabled),
+        allowCamera: flag(incoming?.allowCamera, DEFAULT_EVALEZY_SETTINGS.allowCamera),
+        allowUpload: flag(incoming?.allowUpload, DEFAULT_EVALEZY_SETTINGS.allowUpload),
+        scanQuality: incoming?.scanQuality === 'HIGH' ? 'HIGH' : 'STANDARD',
+        notifyEmail: flag(incoming?.notifyEmail, DEFAULT_EVALEZY_SETTINGS.notifyEmail),
+    };
+};
+
 export const DEFAULT_ASSESSMENT_SETTINGS: AssessmentSettingsData = {
     offlineEntry: {
         enabled: false,
@@ -186,6 +233,7 @@ export const DEFAULT_ASSESSMENT_SETTINGS: AssessmentSettingsData = {
     },
     aiCopyCheck: { commentPlacement: 'INSIDE' },
     assessmentFolders: { enabled: false },
+    evalezy: { ...DEFAULT_EVALEZY_SETTINGS },
 };
 
 /** The saved template, or INSIDE for anything missing or unknown. */

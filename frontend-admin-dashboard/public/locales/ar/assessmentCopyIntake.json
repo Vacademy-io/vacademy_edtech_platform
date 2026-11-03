@@ -56,7 +56,11 @@
         "startedBy": "بدأه {{name}} · {{when}}",
         "emailFailed": "تعذّر إرسال بريد الانتهاء.",
         "waitingHint_one": "تعذّر مطابقة ورقة واحدة مع طالب. اختر الطالب لتصحيحها.",
-        "waitingHint_other": "تعذّر مطابقة {{count}} أوراق مع طلاب. اختر الطالب لكل منها لتصحيحها."
+        "waitingHint_other": "تعذّر مطابقة {{count}} أوراق مع طلاب. اختر الطالب لكل منها لتصحيحها.",
+        "pickBatch": "اختر عملية تصحيح",
+        "batchLabel": "{{when}} · {{copies}}",
+        "copies_one": "ورقة واحدة",
+        "copies_other": "{{count}} أوراق"
     },
     "stats": {
         "total": "الأوراق",

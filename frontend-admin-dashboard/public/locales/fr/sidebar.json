@@ -121,6 +121,7 @@
     "salarySetup": "Configuration des salaires",
     "salesDashboard": "Tableau de bord des ventes",
     "scannedAnswerSheetEvaluation": "Évaluation de copies scannées",
+    "evalezy": "Evalezy (scanner et corriger les copies)",
     "scheduleAnnouncement": "Programmer une annonce",
     "liveSessionDashboard": "Tableau de bord : {{term}}",
     "scheduledLiveSessions": "{{term}} programmées",

@@ -1,0 +1,98 @@
+{
+    "header": {
+        "backToPortal": "Back to dashboard",
+        "signOut": "Sign out",
+        "menu": "Menu"
+    },
+    "off": {
+        "title": "Evalezy is turned off",
+        "body": "Your institute has turned off Evalezy. An admin can turn it on in Settings → Assessment → Evalezy app."
+    },
+    "common": {
+        "retry": "Try again",
+        "loading": "Loading…"
+    },
+    "home": {
+        "title": "Check answer copies",
+        "subtitle": "Pick the assessment, scan or upload the copies, and the AI checks them.",
+        "search": "Search assessments",
+        "error": "Couldn't load your assessments.",
+        "noMatch": "No assessment matches your search.",
+        "empty": "No assessments to check yet",
+        "emptyHint": "Assessments that are checked by hand show up here once they are published.",
+        "students_one": "{{count}} student",
+        "students_other": "{{count}} students",
+        "more": "Show more"
+    },
+    "assessment": {
+        "back": "All assessments",
+        "loadError": "Couldn't load this assessment.",
+        "questions_one": "{{count}} question",
+        "questions_other": "{{count}} questions",
+        "noPaper": "This assessment has no questions yet, so copies can't be checked. Add the question paper in the dashboard first.",
+        "addTitle": "Add copies",
+        "scan": "Scan with camera",
+        "scanHint": "Page by page; tap \"Next student\" between copies",
+        "upload": "Upload files",
+        "reading": "Reading photos…",
+        "uploadHint": "Each PDF is one copy. Photos picked together make one copy.",
+        "noInput": "Adding copies is turned off for your institute.",
+        "checkSettings": "Checking settings",
+        "costPending": "Working out the cost…",
+        "cost_one": "1 copy · {{credits}} credits",
+        "cost_other": "{{count}} copies · {{credits}} credits",
+        "balance_one": "Balance: {{count}}",
+        "balance_other": "Balance: {{count}}",
+        "insufficient": "Not enough credits for these copies. Remove some copies or add credits.",
+        "send_one": "Check {{count}} copy",
+        "send_other": "Check {{count}} copies",
+        "sending": "Sending {{done}} of {{total}}…",
+        "showResults_one": "Show checked copies",
+        "showResults_other": "Show checked copies ({{count}} batches)"
+    },
+    "scanner": {
+        "copy": "Copy {{number}}",
+        "pages_one": "{{count}} page",
+        "pages_other": "{{count}} pages",
+        "copiesSoFar_one": "{{count}} copy done",
+        "copiesSoFar_other": "{{count}} copies done",
+        "done": "Done",
+        "noCamera": "The live camera isn't available here. Take each page with your camera app instead.",
+        "takePhoto": "Take a photo",
+        "pageAlt": "Page {{number}}",
+        "removePage": "Remove page {{number}}",
+        "saving": "Saving page…",
+        "hint": "Hold the page flat and fill the frame",
+        "capture": "Take picture",
+        "nextStudent": "Next student",
+        "copySaved": "Copy {{number}} saved",
+        "pageFailed": "That page couldn't be saved. Take it again."
+    },
+    "tray": {
+        "title_one": "{{count}} copy ready · {{pages}}",
+        "title_other": "{{count}} copies ready · {{pages}}",
+        "scannedCopy": "Scanned copy {{number}}",
+        "pages_one": "{{count}} page",
+        "pages_other": "{{count}} pages",
+        "sending": "Sending…",
+        "sent": "Sent",
+        "failed": "Couldn't send. It stays here so you can try again.",
+        "split": "One per photo",
+        "removeCopy": "Remove copy {{number}}",
+        "fileName": "Copy {{number}}.pdf"
+    },
+    "errors": {
+        "tooMany": "You can send up to {{max}} copies at a time.",
+        "tooLarge": "{{name}} is larger than {{mb}} MB.",
+        "notSupported": "{{name}} isn't a PDF or a photo.",
+        "photoUnreadable": "{{name}} couldn't be read.",
+        "nothingUploaded": "No copy could be uploaded. Check your connection and try again.",
+        "startFailed": "Couldn't start the check. Try again."
+    },
+    "toasts": {
+        "scanned_one": "1 copy added",
+        "scanned_other": "{{count}} copies added",
+        "started_one": "Checking 1 copy. You can leave this page; we'll email you when it's done.",
+        "started_other": "Checking {{count}} copies. You can leave this page; we'll email you when they're done."
+    }
+}

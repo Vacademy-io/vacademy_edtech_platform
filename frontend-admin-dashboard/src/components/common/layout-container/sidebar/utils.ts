@@ -1224,6 +1224,14 @@ export const getSidebarItemsData = (): SidebarItemsType[] => [
                 subItemLink: '/evaluation/evaluation-tool',
                 subItemId: 'scanned-evaluation',
             },
+            // Evalezy: the simple scan -> AI check -> zip page (also the whole of
+            // evalezy.vacademy.io and the Evalezy app). Ships hidden; opt in via
+            // Display Settings.
+            {
+                subItem: sidebarT('sidebar:evalezy'),
+                subItemLink: '/evalezy',
+                subItemId: 'evalezy',
+            },
         ],
     },
     {

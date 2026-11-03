@@ -56,7 +56,11 @@
         "startedBy": "Lancée par {{name}} · {{when}}",
         "emailFailed": "L'e-mail de fin n'a pas pu être envoyé.",
         "waitingHint_one": "{{count}} copie n'a pas pu être associée à un élève. Choisissez l'élève pour la corriger.",
-        "waitingHint_other": "{{count}} copies n'ont pas pu être associées à un élève. Choisissez l'élève de chacune pour les corriger."
+        "waitingHint_other": "{{count}} copies n'ont pas pu être associées à un élève. Choisissez l'élève de chacune pour les corriger.",
+        "pickBatch": "Choisir une correction",
+        "batchLabel": "{{when}} · {{copies}}",
+        "copies_one": "{{count}} copie",
+        "copies_other": "{{count}} copies"
     },
     "stats": {
         "total": "Copies",

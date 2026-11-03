@@ -37,6 +37,19 @@ export interface AdminFlavor {
      */
     forceVimShell: boolean;
     /**
+     * When true the app is the Evalezy copy-check app: cold start, the root path and
+     * every portal route are kept inside the simple `/evalezy` shell (pick an
+     * assessment → scan/upload copies → AI check → download the checked zip).
+     * Same bundle, same login and APIs as the full portal; see src/lib/evalezy-mode.ts.
+     */
+    forceEvalezyShell?: boolean;
+    /**
+     * Host whose https links open this app (Android App Links / iOS Universal
+     * Links). Mirrors `deepLinkHost` in android/app/mobile-flavors.json; the JS
+     * deep-link handler maps `https://<host>/<path>` to the in-app route `<path>`.
+     */
+    deepLinkHost?: string;
+    /**
      * Fixed branding/theme source. A native WebView has no meaningful hostname,
      * so instead of host-based domain routing the app resolves branding via this
      * fixed (domain, subdomain) against the EXISTING public domain-routing
@@ -64,6 +77,21 @@ export const ADMIN_FLAVORS = {
         brandingDomain: 'vacademy.io',
         brandingSubdomain: 'admin-app',
         instituteId: 'ca3c4734-7913-48a8-b116-f8f7e0c60eba',
+        deepLinkHost: 'dash.vacademy.io',
+        ota: 'self-hosted',
+    },
+    // Evalezy: the AI copy-check app. Same portal and login (any institute's admin
+    // can sign in); the bundle is held inside the /evalezy shell. Deliberately NO
+    // brandingDomain: no institute owns Evalezy, so like the web host
+    // evalezy.vacademy.io it resolves no domain-routing row and wears the Evalezy
+    // brand (index.tsx), and login never gets pinned to one institute.
+    evalezy: {
+        key: 'evalezy',
+        appId: 'io.evalezy.app',
+        appName: 'Evalezy',
+        forceVimShell: false,
+        forceEvalezyShell: true,
+        deepLinkHost: 'evalezy.vacademy.io',
         ota: 'self-hosted',
     },
     vimotion: {

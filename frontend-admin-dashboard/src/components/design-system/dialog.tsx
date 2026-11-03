@@ -80,8 +80,8 @@ export const MyDialog = ({
                         {headerActions || <div className="w-8" />}
                     </div>
 
-                    {/* Center - Title */}
-                    <div className="flex flex-1 justify-center">
+                    {/* Center - Title. min-w-0 lets a long heading truncate instead of running under the close button. */}
+                    <div className="flex min-w-0 flex-1 justify-center">
                         <DialogTitle asChild>
                             <h2 className="truncate text-lg font-semibold text-gray-900">
                                 {heading}

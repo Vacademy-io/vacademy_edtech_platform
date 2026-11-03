@@ -129,7 +129,8 @@ export const CopyCheckCriteriaDialog = ({
                     </MyButton>
                 }
             >
-                <div className="flex flex-col gap-4 p-4">
+                {/* MyDialog already pads its body; extra padding only from sm up keeps phones roomy. */}
+                <div className="flex flex-col gap-4 sm:p-4">
                     <p className="text-body text-neutral-600">{t('criteria.dialogIntro')}</p>
 
                     {query.isLoading && (
@@ -323,27 +324,31 @@ export const CopyCheckCriteriaPanel = ({
 
     return (
         <div className="flex flex-col gap-3 rounded-md border border-neutral-200 p-3">
-            <div className="flex items-start gap-3">
-                <span className="flex size-9 shrink-0 items-center justify-center rounded-md bg-primary-50">
-                    <ListChecks size={20} className="text-primary-500" />
-                </span>
-                <div className="flex min-w-0 flex-1 flex-col">
-                    <span className="text-body font-medium text-neutral-800">
-                        {t('criteria.title')}
+            {/* Phones: the button drops under the text, else it squeezes the summary to a word per line. */}
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-start">
+                <div className="flex min-w-0 flex-1 items-start gap-3">
+                    <span className="flex size-9 shrink-0 items-center justify-center rounded-md bg-primary-50">
+                        <ListChecks size={20} className="text-primary-500" />
                     </span>
-                    <span className="text-caption text-neutral-500">
-                        {query.isLoading
-                            ? t('criteria.loading')
-                            : query.isError
-                              ? t('criteria.loadFailed')
-                              : total === 0
-                                ? t('criteria.noQuestions')
-                                : t('criteria.summary', { set, total })}
-                    </span>
+                    <div className="flex min-w-0 flex-1 flex-col">
+                        <span className="text-body font-medium text-neutral-800">
+                            {t('criteria.title')}
+                        </span>
+                        <span className="text-caption text-neutral-500">
+                            {query.isLoading
+                                ? t('criteria.loading')
+                                : query.isError
+                                  ? t('criteria.loadFailed')
+                                  : total === 0
+                                    ? t('criteria.noQuestions')
+                                    : t('criteria.summary', { set, total })}
+                        </span>
+                    </div>
                 </div>
                 <MyButton
                     buttonType="secondary"
                     scale="small"
+                    className="h-9 w-full sm:h-6 sm:w-auto"
                     disabled={disabled || !assessmentId}
                     onClick={() => setOpen(true)}
                 >

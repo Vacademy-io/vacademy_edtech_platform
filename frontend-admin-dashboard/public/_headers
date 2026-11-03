@@ -1,0 +1,6 @@
+# Cloudflare Pages headers. Apple fetches the app-site-association file without
+# an extension; serve it as JSON so Universal Links verify (Evalezy app).
+/.well-known/apple-app-site-association
+  Content-Type: application/json
+/.well-known/assetlinks.json
+  Content-Type: application/json

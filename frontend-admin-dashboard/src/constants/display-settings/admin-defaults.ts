@@ -9,6 +9,9 @@ import { DEFAULT_ASSESSMENT_ACTION_SETTINGS } from '@/types/display-settings';
 
 // Sub-items that should default to hidden. Admins can opt them in via display settings.
 const SUB_ITEMS_HIDDEN_BY_DEFAULT = new Set<string>([
+    // Evalezy (simple copy-check page): the full Submissions tab already does
+    // this, so it only shows for institutes that turn it on.
+    'evalezy',
     'suborg-teams',
     'manage-institute-suborgs',
     'notification-hub',

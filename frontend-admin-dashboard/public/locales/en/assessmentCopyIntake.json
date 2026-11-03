@@ -58,7 +58,11 @@
         "waitingHint_one": "{{count}} copy could not be matched to a student. Pick the student to check it.",
         "waitingHint_other": "{{count}} copies could not be matched to a student. Pick the student for each to check them.",
         "sourceUpload": "Uploaded PDFs",
-        "sourceSubmitted": "Submitted copies"
+        "sourceSubmitted": "Submitted copies",
+        "pickBatch": "Choose a check",
+        "batchLabel": "{{when}} · {{copies}}",
+        "copies_one": "{{count}} copy",
+        "copies_other": "{{count}} copies"
     },
     "stats": {
         "total": "Copies",

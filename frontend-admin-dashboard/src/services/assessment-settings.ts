@@ -7,6 +7,7 @@ import {
     AssessmentSettingsResponse,
     DEFAULT_ASSESSMENT_SETTINGS,
     DEFAULT_REPORT_BRANDING,
+    mergeEvalezySettings,
     mergeExamExperience,
     normalizeCommentPlacement,
 } from '@/types/assessment-settings';
@@ -58,6 +59,7 @@ export const mergeWithDefaults = (
         assessmentFolders: {
             enabled: settings?.assessmentFolders?.enabled === true,
         },
+        evalezy: mergeEvalezySettings(settings?.evalezy),
     };
 };
 

@@ -1,0 +1,98 @@
+{
+    "header": {
+        "backToPortal": "Retour au tableau de bord",
+        "signOut": "Se déconnecter",
+        "menu": "Menu"
+    },
+    "off": {
+        "title": "Evalezy est désactivé",
+        "body": "Votre établissement a désactivé Evalezy. Un administrateur peut l’activer dans Paramètres → Évaluation → Application Evalezy."
+    },
+    "common": {
+        "retry": "Réessayer",
+        "loading": "Chargement…"
+    },
+    "home": {
+        "title": "Corriger les copies",
+        "subtitle": "Choisissez l’évaluation, scannez ou importez les copies, et l’IA les corrige.",
+        "search": "Rechercher une évaluation",
+        "error": "Impossible de charger vos évaluations.",
+        "noMatch": "Aucune évaluation ne correspond à votre recherche.",
+        "empty": "Aucune évaluation à corriger pour le moment",
+        "emptyHint": "Les évaluations corrigées à la main apparaissent ici une fois publiées.",
+        "students_one": "{{count}} élève",
+        "students_other": "{{count}} élèves",
+        "more": "Afficher plus"
+    },
+    "assessment": {
+        "back": "Toutes les évaluations",
+        "loadError": "Impossible de charger cette évaluation.",
+        "questions_one": "{{count}} question",
+        "questions_other": "{{count}} questions",
+        "noPaper": "Cette évaluation n’a pas encore de questions, les copies ne peuvent donc pas être corrigées. Ajoutez d’abord le sujet dans le tableau de bord.",
+        "addTitle": "Ajouter des copies",
+        "scan": "Scanner avec l’appareil photo",
+        "scanHint": "Page par page ; touchez « Élève suivant » entre deux copies",
+        "upload": "Importer des fichiers",
+        "reading": "Lecture des photos…",
+        "uploadHint": "Chaque PDF est une copie. Les photos choisies ensemble forment une copie.",
+        "noInput": "L’ajout de copies est désactivé pour votre établissement.",
+        "checkSettings": "Paramètres de correction",
+        "costPending": "Calcul du coût…",
+        "cost_one": "1 copie · {{credits}} crédits",
+        "cost_other": "{{count}} copies · {{credits}} crédits",
+        "balance_one": "Solde : {{count}}",
+        "balance_other": "Solde : {{count}}",
+        "insufficient": "Crédits insuffisants pour ces copies. Retirez des copies ou ajoutez des crédits.",
+        "send_one": "Corriger {{count}} copie",
+        "send_other": "Corriger {{count}} copies",
+        "sending": "Envoi {{done}} sur {{total}}…",
+        "showResults_one": "Voir les copies corrigées",
+        "showResults_other": "Voir les copies corrigées ({{count}} lots)"
+    },
+    "scanner": {
+        "copy": "Copie {{number}}",
+        "pages_one": "{{count}} page",
+        "pages_other": "{{count}} pages",
+        "copiesSoFar_one": "{{count}} copie terminée",
+        "copiesSoFar_other": "{{count}} copies terminées",
+        "done": "Terminé",
+        "noCamera": "La caméra en direct n’est pas disponible ici. Prenez chaque page avec votre appareil photo.",
+        "takePhoto": "Prendre une photo",
+        "pageAlt": "Page {{number}}",
+        "removePage": "Retirer la page {{number}}",
+        "saving": "Enregistrement de la page…",
+        "hint": "Tenez la page à plat et remplissez le cadre",
+        "capture": "Prendre la photo",
+        "nextStudent": "Élève suivant",
+        "copySaved": "Copie {{number}} enregistrée",
+        "pageFailed": "Cette page n’a pas pu être enregistrée. Reprenez-la."
+    },
+    "tray": {
+        "title_one": "{{count}} copie prête · {{pages}}",
+        "title_other": "{{count}} copies prêtes · {{pages}}",
+        "scannedCopy": "Copie scannée {{number}}",
+        "pages_one": "{{count}} page",
+        "pages_other": "{{count}} pages",
+        "sending": "Envoi…",
+        "sent": "Envoyée",
+        "failed": "Envoi impossible. Elle reste ici pour réessayer.",
+        "split": "Une par photo",
+        "removeCopy": "Retirer la copie {{number}}",
+        "fileName": "Copie {{number}}.pdf"
+    },
+    "errors": {
+        "tooMany": "Vous pouvez envoyer jusqu’à {{max}} copies à la fois.",
+        "tooLarge": "{{name}} dépasse {{mb}} Mo.",
+        "notSupported": "{{name}} n’est ni un PDF ni une photo.",
+        "photoUnreadable": "{{name}} n’a pas pu être lu.",
+        "nothingUploaded": "Aucune copie n’a pu être importée. Vérifiez votre connexion et réessayez.",
+        "startFailed": "Impossible de lancer la correction. Réessayez."
+    },
+    "toasts": {
+        "scanned_one": "1 copie ajoutée",
+        "scanned_other": "{{count}} copies ajoutées",
+        "started_one": "Correction d’1 copie en cours. Vous pouvez quitter cette page ; nous vous enverrons un e-mail à la fin.",
+        "started_other": "Correction de {{count}} copies en cours. Vous pouvez quitter cette page ; nous vous enverrons un e-mail à la fin."
+    }
+}

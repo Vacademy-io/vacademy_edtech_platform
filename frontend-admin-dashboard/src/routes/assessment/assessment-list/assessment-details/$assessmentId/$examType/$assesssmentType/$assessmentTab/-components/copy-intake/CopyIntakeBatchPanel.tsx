@@ -17,6 +17,13 @@ import { MyButton } from '@/components/design-system/button';
 import { MyDialog } from '@/components/design-system/dialog';
 import { MyInput } from '@/components/design-system/input';
 import { StatusChip, type StatusType } from '@/components/design-system/status-chips';
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from '@/components/ui/select';
 import { DashboardLoader } from '@/components/core/dashboard-loader';
 import { cn } from '@/lib/utils';
 import {
@@ -61,6 +68,15 @@ const ACTIVE_ITEM: ReadonlySet<CopyIntakeItemStatus> = new Set([
 ]);
 
 const POLL_MS = 6000;
+
+/** "23 Oct, 12:43 pm" — short enough for a picker row and the summary line on a phone. */
+const shortWhen = (iso: string) =>
+    new Date(iso).toLocaleString(undefined, {
+        day: 'numeric',
+        month: 'short',
+        hour: 'numeric',
+        minute: '2-digit',
+    });
 
 /**
  * Where a bulk upload lives after "Start": one row per copy, what was read off
@@ -147,17 +163,24 @@ export const CopyIntakeBatchPanel = ({
 
     return (
         <section className="flex flex-col gap-4 rounded-xl border border-neutral-200 bg-white p-4 shadow-sm sm:p-5">
-            <div className="flex flex-wrap items-start justify-between gap-3">
+            <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">
                     <h3 className="text-subtitle font-semibold text-neutral-800">
                         {t('panel.title')}
                     </h3>
                     <p className="text-caption text-neutral-500">{t('panel.subtitle')}</p>
                 </div>
-                <div className="flex items-center gap-2">
-                    <MyButton type="button" buttonType="secondary" scale="small" onClick={refresh}>
+                <div className="flex shrink-0 items-center gap-1">
+                    <MyButton
+                        type="button"
+                        buttonType="secondary"
+                        scale="small"
+                        aria-label={t('panel.refresh')}
+                        title={t('panel.refresh')}
+                        onClick={refresh}
+                    >
                         <ArrowsClockwise size={14} />
-                        {t('panel.refresh')}
+                        <span className="hidden sm:inline">{t('panel.refresh')}</span>
                     </MyButton>
                     <MyButton
                         type="button"
@@ -172,29 +195,24 @@ export const CopyIntakeBatchPanel = ({
                 </div>
             </div>
 
+            {/* One row per earlier check; a dropdown keeps a long history from eating the screen. */}
             {batches.length > 1 && (
-                <div className="flex flex-wrap gap-2">
-                    {batches.map((b) => (
-                        <button
-                            key={b.id}
-                            type="button"
-                            onClick={() => setSelectedId(b.id)}
-                            className={cn(
-                                'rounded-full border px-3 py-1 text-caption font-medium',
-                                b.id === batchId
-                                    ? 'border-primary-500 bg-primary-50 text-primary-600'
-                                    : 'border-neutral-200 bg-white text-neutral-600 hover:border-primary-300'
-                            )}
-                        >
-                            {new Date(b.created_at).toLocaleString()} · {b.total_items} ·{' '}
-                            {t(
-                                b.source === 'SUBMITTED'
-                                    ? 'panel.sourceSubmitted'
-                                    : 'panel.sourceUpload'
-                            )}
-                        </button>
-                    ))}
-                </div>
+                <Select value={batchId ?? undefined} onValueChange={setSelectedId}>
+                    <SelectTrigger className="w-full sm:w-80" aria-label={t('panel.pickBatch')}>
+                        <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                        {batches.map((b) => (
+                            <SelectItem key={b.id} value={b.id}>
+                                {t('panel.batchLabel', {
+                                    when: shortWhen(b.created_at),
+                                    copies: t('panel.copies', { count: b.total_items }),
+                                })}
+                                {b.source === 'SUBMITTED' && ` · ${t('panel.sourceSubmitted')}`}
+                            </SelectItem>
+                        ))}
+                    </SelectContent>
+                </Select>
             )}
 
             {loadingList || loadingBatch ? (
@@ -275,9 +293,10 @@ const BatchSummary = ({ batch, instituteId }: { batch: CopyIntakeBatch; institut
               : batch.status === 'FAILED'
                 ? 'DANGER'
                 : 'INFO';
+    const running = !isCopyIntakeSettled(batch.status);
     return (
         <div className="flex flex-col gap-3">
-            <div className="flex flex-wrap items-center gap-3">
+            <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
                 <div className="flex items-center gap-1.5">
                     {batch.status === 'RUNNING' && (
                         <CircleNotch size={14} className="shrink-0 animate-spin text-primary-500" />
@@ -289,37 +308,37 @@ const BatchSummary = ({ batch, instituteId }: { batch: CopyIntakeBatch; institut
                         showIcon={tone !== 'INFO'}
                     />
                 </div>
-                <StatusChip
-                    text={t(
-                        batch.source === 'SUBMITTED'
-                            ? 'panel.sourceSubmitted'
-                            : 'panel.sourceUpload'
-                    )}
-                    textSize="text-caption"
-                    status="INFO"
-                    showIcon={false}
-                />
+                {/* Uploads are the usual case; only learner-submitted batches get a tag. */}
+                {batch.source === 'SUBMITTED' && (
+                    <StatusChip
+                        text={t('panel.sourceSubmitted')}
+                        textSize="text-caption"
+                        status="INFO"
+                        showIcon={false}
+                    />
+                )}
                 <span className="text-caption text-neutral-500">
                     {t('panel.startedBy', {
                         name: batch.created_by_name || '—',
-                        when: new Date(batch.created_at).toLocaleString(),
+                        when: shortWhen(batch.created_at),
                     })}
                 </span>
                 {batch.email_status === 'FAILED' && (
                     <span className="text-caption text-danger-600">{t('panel.emailFailed')}</span>
                 )}
-                <DownloadCheckedCopiesButton batch={batch} instituteId={instituteId} />
             </div>
             {batch.error_message && (
                 <p className="text-caption text-warning-700">{batch.error_message}</p>
             )}
-            <div className="h-2 w-full overflow-hidden rounded-full bg-neutral-100">
-                <div
-                    className="h-full rounded-full bg-primary-500 transition-all"
-                    style={{ width: `${pct}%` }}
-                />
-            </div>
-            <div className="grid grid-cols-2 gap-2 text-sm sm:grid-cols-5">
+            {running && (
+                <div className="h-1.5 w-full overflow-hidden rounded-full bg-neutral-100">
+                    <div
+                        className="h-full rounded-full bg-primary-500 transition-all"
+                        style={{ width: `${pct}%` }}
+                    />
+                </div>
+            )}
+            <div className="grid grid-cols-5 divide-x divide-neutral-200 rounded-md border border-neutral-200 bg-neutral-50">
                 <Stat label={t('stats.total')} value={batch.total_items} />
                 <Stat label={t('stats.checked')} value={batch.evaluated} tone="text-success-600" />
                 <Stat label={t('stats.inProgress')} value={batch.in_progress} />
@@ -330,6 +349,7 @@ const BatchSummary = ({ batch, instituteId }: { batch: CopyIntakeBatch; institut
                 />
                 <Stat label={t('stats.failed')} value={batch.failed} tone="text-danger-600" />
             </div>
+            <DownloadCheckedCopiesButton batch={batch} instituteId={instituteId} />
         </div>
     );
 };
@@ -370,9 +390,9 @@ const DownloadCheckedCopiesButton = ({
     return (
         <MyButton
             type="button"
-            buttonType="secondary"
-            scale="small"
-            className="ml-auto"
+            buttonType="primary"
+            scale="medium"
+            className="w-full sm:w-auto sm:self-start"
             disabled={download.isPending}
             onClick={() => download.mutate()}
         >
@@ -390,10 +410,13 @@ const DownloadCheckedCopiesButton = ({
     );
 };
 
+/** One cell of the stats strip; the colour only shows when there is something to count. */
 const Stat = ({ label, value, tone }: { label: string; value: number; tone?: string }) => (
-    <div className="rounded-md border border-neutral-200 bg-neutral-50 px-3 py-2">
-        <div className="text-caption text-neutral-500">{label}</div>
-        <div className={cn('text-lg font-semibold text-neutral-800', tone)}>{value}</div>
+    <div className="flex min-w-0 flex-col items-center gap-0.5 px-1 py-2 text-center">
+        <div className={cn('text-lg font-semibold text-neutral-800', value > 0 && tone)}>
+            {value}
+        </div>
+        <div className="text-caption leading-tight text-neutral-500">{label}</div>
     </div>
 );
 
@@ -453,7 +476,7 @@ const ReadCell = ({ item, submitted }: { item: CopyIntakeItem; submitted?: boole
         .join(' · ');
     return (
         <div>
-            <div className="text-neutral-800">{item.extracted_name}</div>
+            <div className="break-words text-neutral-800">{item.extracted_name}</div>
             {detail && <div className="text-caption text-neutral-500">{detail}</div>}
         </div>
     );
@@ -464,7 +487,8 @@ const StudentCell = ({ item }: { item: CopyIntakeItem }) => {
         return (
             <span className="flex items-center gap-1.5 text-neutral-800">
                 <UserCircle size={16} className="shrink-0 text-primary-500" />
-                {item.matched_name}
+                {/* Names can be long emails with no spaces; let them wrap instead of widening the card. */}
+                <span className="min-w-0 break-words">{item.matched_name}</span>
             </span>
         );
     }
@@ -642,15 +666,21 @@ const ItemCard = (ctx: ItemContext) => {
                     <StatusCell item={item} />
                 </div>
             </div>
-            <dl className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1 text-sm">
-                <dt className="text-caption text-neutral-500">{t('table.read')}</dt>
-                <dd className="min-w-0">
-                    <ReadCell item={item} submitted={ctx.submitted} />
-                </dd>
-                <dt className="text-caption text-neutral-500">{t('table.student')}</dt>
-                <dd className="min-w-0">
-                    <StudentCell item={item} />
-                </dd>
+            {/* Side by side, label over value: what the sheet says next to who it went to,
+                so a wrong match is visible at a glance and long names get the full column. */}
+            <dl className="grid grid-cols-2 gap-3 text-sm">
+                <div className="flex min-w-0 flex-col gap-0.5">
+                    <dt className="text-caption text-neutral-500">{t('table.read')}</dt>
+                    <dd className="min-w-0">
+                        <ReadCell item={item} submitted={ctx.submitted} />
+                    </dd>
+                </div>
+                <div className="flex min-w-0 flex-col gap-0.5">
+                    <dt className="text-caption text-neutral-500">{t('table.student')}</dt>
+                    <dd className="min-w-0">
+                        <StudentCell item={item} />
+                    </dd>
+                </div>
             </dl>
             <ItemActions {...ctx} />
         </li>
