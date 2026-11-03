@@ -13,6 +13,9 @@
         "barTooltip_one": "{{date}} : {{amount}} ({{count}} paiement)",
         "barTooltip_many": "{{date}} : {{amount}} ({{count}} paiements)",
         "barTooltip_other": "{{date}} : {{amount}} ({{count}} paiements)",
+        "hoverAmount_one": "{{amount}} · {{count}} paiement",
+        "hoverAmount_many": "{{amount}} · {{count}} paiements",
+        "hoverAmount_other": "{{amount}} · {{count}} paiements",
         "footnote": "Chaque paiement compte au jour où il a été payé (la date de transaction saisie pour les paiements manuels)."
     },
     "bySource": {

@@ -23,6 +23,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 /**
@@ -53,6 +54,10 @@ public class ConversionReportService {
     private final LeadConversionPolicyService leadConversionPolicyService;
 
     private static final int DEFAULT_RANGE_DAYS = 30;
+    private static final String DEFAULT_CURRENCY = "INR";
+    private static final long CURRENCY_TTL_MS = 30L * 60 * 1000;
+    /** institute id -> its payment currency; bounded by the number of institutes. */
+    private final Map<String, CachedCurrency> currencyCache = new ConcurrentHashMap<>();
     /** Lead rows returned to the tab (and its CSV); the totals are never capped. */
     private static final int MAX_LEAD_ROWS = 5000;
     private static final int AUTH_BATCH_SIZE = 500;
@@ -90,6 +95,7 @@ public class ConversionReportService {
                        m.created_at AS enrolled_at,
                        m.enrolled_date AS enrolled_day,
                        m.status     AS enrolment_status,
+                       m.user_plan_id,
                        ps.package_id,
                        fe.audience_id,
                        """ + ReportSourceSql.firstEnquirySource("fe", "ulp.best_source_type") + """
@@ -128,16 +134,86 @@ public class ConversionReportService {
             ORDER BY converted_leads DESC, enrolments DESC
             """;
 
+    /**
+     * Lead rows with the money side of each admission: the fee plan's booked fee, what is paid,
+     * how many installments are paid, and the next unpaid installment. A plan bought for several
+     * courses is shown once, on its earliest enrolment (the plan owner), so a column total never
+     * counts one plan twice; the other rows of that plan carry plan_shared = true.
+     *
+     * <p>The owner is picked only among the rows the tab actually gets (rn <= :shownLimit). When
+     * the list is cut at the row cap, a plan whose earliest enrolment fell outside it still shows
+     * its amounts on its earliest row that is listed, instead of on a row nobody sees.
+     *
+     * <p>Ownership is a window function, not a join back onto a CTE: the planner estimates a CTE
+     * at one row and nested-loops it, which cost seconds on institutes with thousands of
+     * enrolments. The fee table is read once, through its user_plan_id index, for owner plans only.
+     * plan_shared is set only when the plan has fee rows, so a plan with no fee never reads as
+     * "in another course's fee plan".
+     */
     private static final String LEADS_SQL = "WITH " + CONV_CTE + """
+            , ranked AS (
+                SELECT c.*,
+                       ROW_NUMBER() OVER (
+                           ORDER BY COALESCE(c.enrolled_day, CAST(c.enrolled_at AS date)) DESC,
+                                    c.enrolled_at DESC, c.enrolment_id
+                       ) AS rn
+                FROM conv c
+            ),
+            page AS (
+                SELECT r.*,
+                       (r.user_plan_id IS NOT NULL AND r.rn <= :shownLimit
+                        AND ROW_NUMBER() OVER (
+                                PARTITION BY r.user_plan_id, (r.rn <= :shownLimit)
+                                ORDER BY COALESCE(r.enrolled_day, CAST(r.enrolled_at AS date)),
+                                         r.enrolled_at, r.enrolment_id
+                            ) = 1) AS plan_owner
+                FROM ranked r
+                WHERE r.rn <= :rowLimit
+            ),
+            money AS (
+                SELECT f.user_plan_id,
+                       SUM(f.amount_expected)                                                   AS fee,
+                       SUM(COALESCE(f.amount_paid, 0))                                          AS paid,
+                       COUNT(*)                                                                 AS installments,
+                       COUNT(*) FILTER (WHERE COALESCE(f.amount_paid, 0) >= f.amount_expected)  AS installments_paid,
+                       (ARRAY_AGG(f.amount_expected - COALESCE(f.amount_paid, 0)
+                                  ORDER BY f.due_date NULLS LAST, f.installment_number NULLS LAST, f.created_at)
+                            FILTER (WHERE COALESCE(f.amount_paid, 0) < f.amount_expected))[1]   AS next_amount,
+                       (ARRAY_AGG(f.due_date
+                                  ORDER BY f.due_date NULLS LAST, f.installment_number NULLS LAST, f.created_at)
+                            FILTER (WHERE COALESCE(f.amount_paid, 0) < f.amount_expected))[1]   AS next_due_date
+                FROM student_fee_payment f
+                WHERE f.user_plan_id IN (SELECT user_plan_id FROM page WHERE plan_owner)
+                  AND f.amount_expected IS NOT NULL
+                  AND COALESCE(f.status, '') NOT IN ('CANCELLED', 'VOIDED', 'WAIVED')
+                GROUP BY f.user_plan_id
+            )
             SELECT c.enrolment_id, c.user_id, c.enrolled_at, c.enrolled_day, c.enrolment_status, c.package_id,
                    c.source_type, c.counsellor_id,
                    p.package_name,
-                   a.campaign_name
-            FROM conv c
+                   a.campaign_name,
+                   (c.user_plan_id IS NOT NULL AND NOT c.plan_owner
+                    AND c.user_plan_id IN (SELECT user_plan_id FROM money)) AS plan_shared,
+                   mo.fee, mo.paid, mo.installments, mo.installments_paid,
+                   mo.next_amount, mo.next_due_date
+            FROM page c
             LEFT JOIN package p ON p.id = c.package_id
             LEFT JOIN audience a ON a.id = c.audience_id
-            ORDER BY COALESCE(c.enrolled_day, CAST(c.enrolled_at AS date)) DESC, c.enrolled_at DESC
-            LIMIT :rowLimit
+            LEFT JOIN money mo ON c.plan_owner AND mo.user_plan_id = c.user_plan_id
+            ORDER BY c.rn
+            """;
+
+    /** Modal currency across this institute's PAID converted-lead payments (same as Revenue). */
+    private static final String CURRENCY_SQL = """
+            SELECT pl.currency
+            FROM payment_log pl
+            JOIN user_lead_profile ulp
+                ON ulp.user_id = pl.user_id AND ulp.institute_id = :instituteId
+            WHERE pl.payment_status = 'PAID' AND pl.currency IS NOT NULL
+              AND ulp.conversion_status = 'CONVERTED'
+            GROUP BY pl.currency
+            ORDER BY COUNT(*) DESC
+            LIMIT 1
             """;
 
     @Transactional(readOnly = true)
@@ -157,7 +233,9 @@ public class ConversionReportService {
                 .addValue("scopeCsv", scopeCsv, Types.VARCHAR)
                 .addValue("packageCsv", String.join(",", convertingPackages))
                 // One extra row tells us whether the list was cut off.
-                .addValue("rowLimit", MAX_LEAD_ROWS + 1);
+                .addValue("rowLimit", MAX_LEAD_ROWS + 1)
+                // The fee plan's row is picked among the rows actually returned (the extra one is cut).
+                .addValue("shownLimit", MAX_LEAD_ROWS);
 
         List<ConversionReportDTO.CounsellorRow> byCounsellor = jdbc.query(BY_COUNSELLOR_SQL, p, (rs, i) ->
                 ConversionReportDTO.CounsellorRow.builder()
@@ -183,6 +261,14 @@ public class ConversionReportService {
                         .counsellorId(rs.getString("counsellor_id"))
                         .campaignName(rs.getString("campaign_name"))
                         .sourceType(rs.getString("source_type"))
+                        .planShared(rs.getBoolean("plan_shared"))
+                        .fee(rs.getBigDecimal("fee"))
+                        .paid(rs.getBigDecimal("paid"))
+                        .installments(nullableInt(rs, "installments"))
+                        .installmentsPaid(nullableInt(rs, "installments_paid"))
+                        .nextDueAmount(rs.getBigDecimal("next_amount"))
+                        .nextDueDate(rs.getDate("next_due_date") != null
+                                ? rs.getDate("next_due_date").toLocalDate().toString() : null)
                         .build());
         boolean truncated = leads.size() > MAX_LEAD_ROWS;
         if (truncated) {
@@ -213,6 +299,7 @@ public class ConversionReportService {
                 .byCounsellor(byCounsellor)
                 .leads(leads)
                 .leadsTruncated(truncated)
+                .currency(resolveCurrency(instituteId))
                 .build();
     }
 
@@ -230,12 +317,45 @@ public class ConversionReportService {
                 .collect(Collectors.toList());
     }
 
+    private static Integer nullableInt(java.sql.ResultSet rs, String column) throws java.sql.SQLException {
+        int v = rs.getInt(column);
+        return rs.wasNull() ? null : v;
+    }
+
+    /**
+     * The institute's payment currency, cached for {@link #CURRENCY_TTL_MS}: it only formats the fee
+     * columns and almost never changes, so the payment_log scan behind it should not run on every
+     * open of the tab.
+     */
+    private String resolveCurrency(String instituteId) {
+        long now = System.currentTimeMillis();
+        CachedCurrency hit = currencyCache.get(instituteId);
+        if (hit != null && now - hit.at() < CURRENCY_TTL_MS) {
+            return hit.currency();
+        }
+        String currency;
+        try {
+            List<String> found = jdbc.queryForList(CURRENCY_SQL,
+                    new MapSqlParameterSource("instituteId", instituteId), String.class);
+            currency = found.isEmpty() || found.get(0) == null ? DEFAULT_CURRENCY : found.get(0);
+        } catch (Exception e) {
+            // Not cached, so the next call tries again.
+            return DEFAULT_CURRENCY;
+        }
+        currencyCache.put(instituteId, new CachedCurrency(currency, now));
+        return currency;
+    }
+
+    private record CachedCurrency(String currency, long at) {
+    }
+
     private static ConversionReportDTO emptyReport() {
         return ConversionReportDTO.builder()
                 .totals(ConversionReportDTO.Totals.builder().convertedLeads(0).enrolments(0).build())
                 .byCounsellor(List.of())
                 .leads(List.of())
                 .leadsTruncated(false)
+                .currency(DEFAULT_CURRENCY)
                 .build();
     }
 

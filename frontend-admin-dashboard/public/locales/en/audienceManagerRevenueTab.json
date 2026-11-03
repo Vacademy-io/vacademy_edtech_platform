@@ -12,6 +12,8 @@
         "title": "Daily revenue",
         "barTooltip_one": "{{date}}: {{amount}} ({{count}} payment)",
         "barTooltip_other": "{{date}}: {{amount}} ({{count}} payments)",
+        "hoverAmount_one": "{{amount}} · {{count}} payment",
+        "hoverAmount_other": "{{amount}} · {{count}} payments",
         "footnote": "Each payment counts on the day it was paid (the transaction date entered for manual payments)."
     },
     "bySource": {

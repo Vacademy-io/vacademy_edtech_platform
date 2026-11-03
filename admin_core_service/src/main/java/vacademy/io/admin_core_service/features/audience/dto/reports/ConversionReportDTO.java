@@ -7,6 +7,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.math.BigDecimal;
 import java.util.List;
 
 /**
@@ -36,6 +37,8 @@ public class ConversionReportDTO {
     private List<LeadRow> leads;
     /** True when more enrolments matched than {@link #leads} carries. */
     private boolean leadsTruncated;
+    /** ISO currency of the fee amounts on the lead rows. */
+    private String currency;
 
     @Data
     @NoArgsConstructor
@@ -81,5 +84,21 @@ public class ConversionReportDTO {
         private String counsellorName;
         private String campaignName;
         private String sourceType;
+        /**
+         * True when this enrolment's fee plan also covers another listed row, which carries the
+         * plan's amounts; the money fields below are then null so a plan is never counted twice.
+         * The carrying row is always one of the returned rows, even when the list is capped.
+         */
+        private boolean planShared;
+        /** Booked fee of the enrolment's plan (sum of its live installments); null = no plan. */
+        private BigDecimal fee;
+        /** Paid so far against the plan. */
+        private BigDecimal paid;
+        /** Live installments in the plan, and how many of them are fully paid. */
+        private Integer installments;
+        private Integer installmentsPaid;
+        /** What is left on the next unpaid installment, and its due date (yyyy-MM-dd). */
+        private BigDecimal nextDueAmount;
+        private String nextDueDate;
     }
 }

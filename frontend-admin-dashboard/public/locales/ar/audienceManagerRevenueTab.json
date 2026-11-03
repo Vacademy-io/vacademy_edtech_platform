@@ -16,6 +16,12 @@
         "barTooltip_few": "{{date}}: {{amount}} ({{count}} دفعات)",
         "barTooltip_many": "{{date}}: {{amount}} ({{count}} دفعة)",
         "barTooltip_other": "{{date}}: {{amount}} ({{count}} دفعة)",
+        "hoverAmount_zero": "{{amount}} · {{count}} دفعة",
+        "hoverAmount_one": "{{amount}} · {{count}} دفعة",
+        "hoverAmount_two": "{{amount}} · {{count}} دفعة",
+        "hoverAmount_few": "{{amount}} · {{count}} دفعة",
+        "hoverAmount_many": "{{amount}} · {{count}} دفعة",
+        "hoverAmount_other": "{{amount}} · {{count}} دفعة",
         "footnote": "تُحتسب كل دفعة في يوم سدادها (تاريخ المعاملة المُدخل للدفعات اليدوية)."
     },
     "bySource": {

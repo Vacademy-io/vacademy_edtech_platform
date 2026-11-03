@@ -42,7 +42,21 @@ export interface ConversionLeadRow {
     counsellor_id: string | null;
     counsellor_name: string | null;
     campaign_name: string | null;
+    /** The lead's source: its first enquiry's campaign type, else the source type. */
     source_type: string | null;
+    /**
+     * True when this enrolment's fee plan also covers another row, which carries the plan's
+     * amounts — the money fields are then null so a plan is never counted twice.
+     */
+    plan_shared: boolean;
+    /** Booked fee of the enrolment's plan; null = no fee plan. */
+    fee: number | null;
+    paid: number | null;
+    installments: number | null;
+    installments_paid: number | null;
+    /** What is left on the next unpaid installment, and its due date (yyyy-MM-dd). */
+    next_due_amount: number | null;
+    next_due_date: string | null;
 }
 
 export interface ConversionReport {
@@ -50,6 +64,8 @@ export interface ConversionReport {
     by_counsellor: ConversionCounsellorRow[];
     leads: ConversionLeadRow[];
     leads_truncated: boolean;
+    /** ISO currency of the fee amounts. */
+    currency: string;
 }
 
 export const conversionsQueryKey = (p: CrmReportParams) =>
@@ -70,5 +86,6 @@ export async function fetchConversions(p: CrmReportParams): Promise<ConversionRe
         by_counsellor: Array.isArray(data?.by_counsellor) ? data.by_counsellor : [],
         leads: Array.isArray(data?.leads) ? data.leads : [],
         leads_truncated: !!data?.leads_truncated,
+        currency: data?.currency ?? 'INR',
     };
 }

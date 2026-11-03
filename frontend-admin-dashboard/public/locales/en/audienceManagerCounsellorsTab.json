@@ -48,7 +48,8 @@
             "contact": "Contact",
             "courses": "Courses",
             "enrolledOn": "Enrolled on",
-            "source": "Campaign / Source"
+            "source": "Campaign / Source",
+            "campaign": "Campaign"
         }
     }
 }
