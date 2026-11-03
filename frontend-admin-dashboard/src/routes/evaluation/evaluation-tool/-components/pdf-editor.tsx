@@ -1045,9 +1045,6 @@ const PDFEvaluator = ({
             height: (fabricCanvas && fabricCanvas.height) || dimensions.height,
         };
 
-        const pdfDoc = await PDFDocument.load(await pdfFile.arrayBuffer());
-        const pageCount = pdfDoc.getPageCount();
-
         // Only loaded if some page actually needs rasterising.
         let pdfJsDoc: any = null;
         const getPdfJsDoc = async () => {
@@ -1057,6 +1054,23 @@ const PDFEvaluator = ({
             return pdfJsDoc;
         };
 
+        // Encrypted uploads (owner-password / "permissions" protected — common
+        // for PDFs exported by scanner apps) render fine in pdf.js, which
+        // decrypts them, but pdf-lib refuses to load them. `ignoreEncryption`
+        // is NOT a fix: pdf-lib doesn't decrypt, so the saved file comes out
+        // blank/garbled. Instead rebuild a fresh, unencrypted PDF with every
+        // page rasterised through pdf.js (the same path rotated pages use).
+        // (Detect via `isEncrypted` — pdf-lib's EncryptedPDFError is ES5-compiled,
+        // so `instanceof` on it is always false.)
+        let pdfDoc = await PDFDocument.load(await pdfFile.arrayBuffer(), {
+            ignoreEncryption: true,
+        });
+        const rebuildFromRaster = pdfDoc.isEncrypted;
+        if (rebuildFromRaster) pdfDoc = await PDFDocument.create();
+        const pageCount = rebuildFromRaster
+            ? (await getPdfJsDoc()).numPages
+            : pdfDoc.getPageCount();
+
         for (let i = 0; i < pageCount; i++) {
             const pageNum1 = i + 1; // annotations/rotations are 1-based
             const pageAnnotations = perPageAnnotations[pageNum1];
@@ -1064,9 +1078,9 @@ const PDFEvaluator = ({
             const dims = perPageDims[pageNum1] || fallbackDims;
 
             // Untouched page → leave the original completely alone.
-            if (!pageAnnotations && rotation === 0) continue;
+            if (!rebuildFromRaster && !pageAnnotations && rotation === 0) continue;
 
-            if (rotation === 0) {
+            if (!rebuildFromRaster && rotation === 0) {
                 const pngDataUrl = await renderInkOverlayPng(pageAnnotations, dims);
                 if (!pngDataUrl) continue; // saved annotation layer turned out empty
                 const overlay = await pdfDoc.embedPng(dataUrlToUint8(pngDataUrl));
@@ -1126,7 +1140,8 @@ const PDFEvaluator = ({
             const flattenedImg = await pdfDoc.embedJpg(dataUrlToUint8(flattenedJpg));
             const ptWidth = baseViewport.width;
             const ptHeight = baseViewport.height;
-            pdfDoc.removePage(i);
+            // Rebuilding: the new doc is empty, so pages are appended in order.
+            if (!rebuildFromRaster) pdfDoc.removePage(i);
             const newPage = pdfDoc.insertPage(i, [ptWidth, ptHeight]);
             newPage.drawImage(flattenedImg, { x: 0, y: 0, width: ptWidth, height: ptHeight });
         }
