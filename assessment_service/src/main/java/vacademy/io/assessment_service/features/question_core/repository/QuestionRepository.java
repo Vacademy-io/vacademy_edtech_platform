@@ -39,6 +39,13 @@ public interface QuestionRepository extends JpaRepository<Question, String> {
                     + "    SELECT 1 FROM entity_tags et "
                     + "    WHERE et.entity_id = q.id AND et.entity_name = 'QUESTION' "
                     + "        AND et.tag_id = ANY(string_to_array(:tagIdsCsv, ',')))) "
+                    + "AND (:libraryNodeIdsCsv IS NULL OR EXISTS ("
+                    + "    SELECT 1 FROM question_library_mapping lm "
+                    + "    WHERE lm.question_id = q.id "
+                    + "        AND lm.node_id = ANY(string_to_array(:libraryNodeIdsCsv, ',')))) "
+                    + "AND (:unsortedFlag IS NULL OR NOT EXISTS ("
+                    + "    SELECT 1 FROM question_library_mapping lu WHERE lu.question_id = q.id)) "
+                    + "AND NOT EXISTS (SELECT 1 FROM question_library_version qv WHERE qv.old_question_id = q.id) "
                     + "AND (:name IS NULL OR EXISTS ("
                     + "    SELECT 1 FROM assessment_rich_text_data t "
                     + "    WHERE t.id = q.text_id AND t.content ILIKE CONCAT('%', :name, '%')))";
@@ -62,6 +69,11 @@ public interface QuestionRepository extends JpaRepository<Question, String> {
      *   - kb ids and node ids are matched with the jsonb containment operator so the GIN
      *     index on source_meta is used. node_ids is an array inside the document, hence
      *     the array-wrapped right-hand side.
+     *   - libraryNodeIdsCsv must already include every topic below the chosen ones -
+     *     the manager expands it. unsortedFlag is any non-null value to mean only
+     *     questions in no library topic.
+     *   - A question replaced by a newer version from the library (question_library_version)
+     *     never appears, so nobody picks the stale copy for a new test.
      *   - The tag and text filters are SEPARATE EXISTS clauses rather than one EXISTS
      *     with an OR across columns -- the latter degenerates into a per-row seq scan.
      *
@@ -84,6 +96,8 @@ public interface QuestionRepository extends JpaRepository<Question, String> {
             @Param("kbIdsCsv") String kbIdsCsv,
             @Param("kbNodeIdsCsv") String kbNodeIdsCsv,
             @Param("tagIdsCsv") String tagIdsCsv,
+            @Param("libraryNodeIdsCsv") String libraryNodeIdsCsv,
+            @Param("unsortedFlag") String unsortedFlag,
             Pageable pageable
     );
 }

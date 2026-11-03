@@ -10,6 +10,7 @@ import vacademy.io.assessment_service.features.question_bank.dto.QuestionBankFil
 import vacademy.io.assessment_service.features.question_core.dto.QuestionDTO;
 import vacademy.io.assessment_service.features.question_core.entity.Question;
 import vacademy.io.assessment_service.features.question_core.repository.QuestionRepository;
+import vacademy.io.assessment_service.features.question_library.service.QuestionLibraryTreeResolver;
 import vacademy.io.common.auth.model.CustomUserDetails;
 import vacademy.io.common.exceptions.VacademyException;
 
@@ -28,6 +29,9 @@ public class GetQuestionBankManager {
     @Autowired
     private QuestionRepository questionRepository;
 
+    @Autowired
+    private QuestionLibraryTreeResolver libraryTreeResolver;
+
     /** Questions with no explicit status filter are ACTIVE ones. */
     private static final List<String> DEFAULT_STATUSES = List.of("ACTIVE");
 
@@ -39,6 +43,17 @@ public class GetQuestionBankManager {
         QuestionBankFilter safeFilter = filter == null ? new QuestionBankFilter() : filter;
 
         Pageable pageable = PageRequest.of(pageNo, pageSize, Sort.by(Sort.Direction.DESC, "created_at"));
+
+        // A library topic matches the questions of every topic below it too. When every
+        // asked-for topic is gone (deleted in another tab), nothing can match - return an
+        // empty page rather than dropping the filter and showing the whole bank.
+        String libraryNodeIdsCsv = null;
+        if (safeFilter.getLibraryNodeIds() != null && !safeFilter.getLibraryNodeIds().isEmpty()) {
+            List<String> expanded = libraryTreeResolver.withDescendants(instituteId, safeFilter.getLibraryNodeIds());
+            if (expanded.isEmpty()) return Page.empty(pageable);
+            libraryNodeIdsCsv = toCsv(expanded);
+        }
+        String unsortedFlag = Boolean.TRUE.equals(safeFilter.getUnsortedOnly()) ? "Y" : null;
 
         Page<Question> questions = questionRepository.findQuestionsByFilters(
                 instituteId,
@@ -56,6 +71,8 @@ public class GetQuestionBankManager {
                 toCsv(safeFilter.getKbIds()),
                 toCsv(safeFilter.getKbNodeIds()),
                 toCsv(safeFilter.getTagIds()),
+                libraryNodeIdsCsv,
+                unsortedFlag,
                 pageable
         );
 

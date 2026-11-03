@@ -602,7 +602,7 @@ public class AddQuestionPaperFromImportManager {
         question.setExplanationTextData(AssessmentRichTextData.fromDTO(questionRequest.getExplanationText()));
     }
 
-    private void addQuestionEntityTags(List<Question> questions, List<QuestionDTO> questionRequests, String instituteId) {
+    public void addQuestionEntityTags(List<Question> questions, List<QuestionDTO> questionRequests, String instituteId) {
 
         // Replace-on-save: clear existing SUBJECT links for these questions so removals in the UI
         // are respected (no-op for brand-new questions). AI 'TAGS'/'TOPIC' links are left intact.
