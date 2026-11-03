@@ -78,7 +78,19 @@ public class EngagementDailyReportDao {
                    long busy, long failed, long inProgress, long totalSeconds, Double avgConnectedSec, double credits) {
     }
 
-    record MessageCredit(String engineId, String channel, LocalDate day, double credits) {
+    /** decision: an AI decision token charge (no channel), else a message charge. */
+    record MessageCredit(String engineId, String channel, LocalDate day, double credits, boolean decision) {
+        MessageCredit(String engineId, String channel, LocalDate day, double credits) {
+            this(engineId, channel, day, credits, false);
+        }
+    }
+
+    /** Money per credit (pre-tax) and where it came from: PURCHASE or CATALOG. */
+    record CreditRate(String source, String currency, double rate) {
+    }
+
+    /** One influenced payment for one engine that touched the payer (a payment repeats per engine). */
+    record InfluencedPayment(String engineId, String paymentId, String userId, double amount, String currency) {
     }
 
     record Balance(Double balance, double last7) {
@@ -197,7 +209,24 @@ public class EngagementDailyReportDao {
     List<MessageCredit> messageCredits(MapSqlParameterSource p) {
         return rows(EngagementDailyReportSql.MESSAGE_CREDITS, p).stream()
                 .map(r -> new MessageCredit(str(r, "engine_id"), str(r, "channel"), LocalDate.parse(str(r, "day")),
-                        dbl(r, "credits")))
+                        dbl(r, "credits"), "DECISION".equals(str(r, "kind"))))
+                .toList();
+    }
+
+    /** null when neither a purchase nor an active pack price exists. */
+    CreditRate creditRate(MapSqlParameterSource p) {
+        List<Map<String, Object>> rows = rows(EngagementDailyReportSql.CREDIT_RATE, p);
+        if (rows.isEmpty()) return null;
+        Map<String, Object> r = rows.get(0);
+        Double rate = dblOrNull(r, "rate");
+        if (rate == null || rate <= 0) return null;
+        return new CreditRate(str(r, "source"), str(r, "currency"), rate);
+    }
+
+    List<InfluencedPayment> influencedPayments(MapSqlParameterSource p) {
+        return rows(EngagementDailyReportSql.INFLUENCED_REVENUE, p).stream()
+                .map(r -> new InfluencedPayment(str(r, "engine_id"), str(r, "payment_id"), str(r, "user_id"),
+                        dbl(r, "amount"), str(r, "currency")))
                 .toList();
     }
 

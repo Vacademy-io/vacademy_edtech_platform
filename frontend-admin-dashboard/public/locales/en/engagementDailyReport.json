@@ -73,6 +73,10 @@
         "selectedEngine": "Selected engine",
         "searchEngines": "Search engines…",
         "noEngines": "No engines found.",
+        "refresh": "Refresh",
+        "refreshing": "Refreshing…",
+        "refreshHint": "The report is kept for 3 minutes. Refresh to see a payment or charge from the last few minutes.",
+        "refreshFailed": "Couldn’t refresh the report. Please try again.",
         "export": "Export",
         "exporting": "Preparing…",
         "exportExcel": "Excel (.xlsx)",
@@ -294,7 +298,7 @@
     },
     "costChart": {
         "title": "Where the credits went",
-        "subtitle": "Messages, calls and the Lead Agent.",
+        "subtitle": "AI decisions, messages, calls and the Lead Agent.",
         "centerLabel": "credits",
         "empty": "No credits or WhatsApp charges on this day",
         "empty_range": "No credits or WhatsApp charges in this period",
@@ -314,7 +318,10 @@
             "demos": "Demos",
             "conversions": "Conversions",
             "credits": "Credits",
-            "costPerReply": "Credits per reply"
+            "costPerReply": "Credits per reply",
+            "spend": "Spend",
+            "revenue": "Influenced revenue",
+            "roi": "ROI"
         }
     },
     "lists": {
@@ -509,7 +516,8 @@
         "subtitle_range": "Everything the engine spent in this period.",
         "credits": {
             "title": "Credits",
-            "subtitle": "Spent on AI-written messages, AI calls and the Lead Agent.",
+            "subtitle": "Spent on AI decisions, AI-written messages, AI calls and the Lead Agent.",
+            "decisions": "AI decisions",
             "messages": "Messages",
             "calls": "Calls",
             "leadAgent": "Lead Agent",
@@ -608,7 +616,8 @@
         "costCredits": "Costs - credits",
         "costWhatsapp": "Costs - WhatsApp",
         "costWhatsappCategories": "WhatsApp by category",
-        "realCost": "Real cost (USD)"
+        "realCost": "Real cost (USD)",
+        "roi": "ROI"
     },
     "errorSection": {
         "lists": "leads added",
@@ -623,7 +632,60 @@
         "delivery": "delivery details",
         "replies": "replies",
         "whatsappCost": "WhatsApp charges",
-        "newTemplates": "new WhatsApp templates"
+        "newTemplates": "new WhatsApp templates",
+        "creditRate": "credit price",
+        "revenue": "influenced revenue"
+    },
+    "roi": {
+        "title": "Return on spend",
+        "subtitle": "What the engines cost on this day, and the revenue from the people they reached.",
+        "subtitle_range": "What the engines cost in this period, and the revenue from the people they reached.",
+        "spend": "Spent",
+        "spendHint": "Credits used by the engines (AI decisions, messages, AI calls, Lead Agent) at your credit price, plus WhatsApp charges from Meta in the same currency. Before tax.",
+        "revenue": "Influenced revenue",
+        "revenueHint": "Payments received on this day from converted leads who got a message or an AI call from an engine before paying.",
+        "revenueHint_range": "Payments received in this period from converted leads who got a message or an AI call from an engine before paying.",
+        "multiple": "ROI",
+        "net": "Net return",
+        "payingLeads": "Paying leads",
+        "payments": "Payments",
+        "costPerPayingLead": "Spend per paying lead",
+        "credits": "Credits used",
+        "creditSpend": "Credits in money",
+        "whatsappSpend": "WhatsApp charges",
+        "creditRate": "Credit price",
+        "rateSource": {
+            "purchase": "From your latest credit pack purchase",
+            "catalog": "List price of a credit pack (no purchase found)"
+        },
+        "rate": {
+            "purchase": "{{credits}} credits at your credit pack price of {{rate}} per credit",
+            "catalog": "{{credits}} credits at the list price of {{rate}} per credit"
+        },
+        "attribution": "Influenced, not caused: a payment counts when the engine reached the person before they paid. A person two engines reached counts for each engine in the engine table, once in this total.",
+        "failed": "We couldn’t work out the return on spend. The rest of the report is fine.",
+        "state": {
+            "ok": "Influenced revenue divided by what the engines cost. Above 1× means more came back than was spent.",
+            "noRate": "We don’t know your price per credit yet, so the spend can’t be shown in money. Buy a credit pack or ask support to set one.",
+            "mismatch": "Your payments are in a different currency from your credits, so the two can’t be compared.",
+            "failed": "We couldn’t work out the return on spend."
+        },
+        "breakdown": {
+            "title": "Where the spend went",
+            "decisions": "AI decisions",
+            "messages": "Messages",
+            "calls": "AI calls",
+            "leadAgent": "Lead Agent",
+            "whatsapp": "WhatsApp (Meta)",
+            "item": "{{label}}: {{credits}} credits · {{money}}",
+            "moneyOnly": "{{label}}: {{money}}"
+        },
+        "note": {
+            "payingVsConversions": "{{paying}} paying leads but {{conversions}} conversions: a lead who converted before this period and paid in it counts as paying, not as a conversion.",
+            "otherCurrency_one": "{{count}} payment in another currency than {{currency}} is left out.",
+            "otherCurrency_other": "{{count}} payments in other currencies than {{currency}} are left out.",
+            "whatsappExcluded": "WhatsApp charges are in a different currency, so they are shown but not added to the spend."
+        }
     },
     "atLeast": "at least {{value}}",
     "retrying": "Trying again…",

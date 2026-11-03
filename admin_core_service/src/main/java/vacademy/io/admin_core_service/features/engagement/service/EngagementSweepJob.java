@@ -42,6 +42,7 @@ public class EngagementSweepJob {
     private final EngagementActionRepository actionRepository;
     private final EngagementDecisionService decisionService;
     private final EngagementEngineService engineService;
+    private final EngagementCreditGate creditGate;
 
     @Qualifier("engagementExecutor")
     private final ThreadPoolTaskExecutor engagementExecutor;
@@ -89,6 +90,16 @@ public class EngagementSweepJob {
         Instant now = Instant.now().truncatedTo(java.time.temporal.ChronoUnit.MILLIS);
         List<EngagementMember> due = memberRepository.findDueMembers(engine.getId(), now, membersPerEngine);
         if (due.isEmpty()) return;
+
+        // AI decisions cost credits. With the balance used up, leave the members unclaimed (they stay
+        // due and are looked at once the institute tops up; the engine cursor brings it back in a few
+        // minutes). An unreadable balance is not "empty": a credits-service blip must not stop engines.
+        // Replies to a person who wrote in are a separate path and are never held here.
+        if (creditGate.decisionsPaused(engine.getInstituteId())) {
+            log.info("Engine {}: credits used up for institute {}, AI decisions paused", engine.getId(),
+                    engine.getInstituteId());
+            return;
+        }
 
         // Lease CAS per row: only rows we WIN. A loser was claimed by another replica.
         Instant leaseUntil = now.plus(Duration.ofMinutes(leaseMinutes));

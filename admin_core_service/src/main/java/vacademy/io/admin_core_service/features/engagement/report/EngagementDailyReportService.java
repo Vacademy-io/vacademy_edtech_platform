@@ -16,6 +16,8 @@ import vacademy.io.admin_core_service.features.engagement.report.EngagementDaily
 import vacademy.io.admin_core_service.features.engagement.report.EngagementDailyReportDao.Booking;
 import vacademy.io.admin_core_service.features.engagement.report.EngagementDailyReportDao.CallDay;
 import vacademy.io.admin_core_service.features.engagement.report.EngagementDailyReportDao.Conversion;
+import vacademy.io.admin_core_service.features.engagement.report.EngagementDailyReportDao.CreditRate;
+import vacademy.io.admin_core_service.features.engagement.report.EngagementDailyReportDao.InfluencedPayment;
 import vacademy.io.admin_core_service.features.engagement.report.EngagementDailyReportDao.Engine;
 import vacademy.io.admin_core_service.features.engagement.report.EngagementDailyReportDao.ErrorRow;
 import vacademy.io.admin_core_service.features.engagement.report.EngagementDailyReportDao.ListSelector;
@@ -86,6 +88,10 @@ public class EngagementDailyReportService {
     static final String OTHER_TEMPLATES = "(other)";
     /** errors key when the WhatsApp rate card cannot be read (the amount is then unknown, not 0). */
     static final String WHATSAPP_COST = "whatsappCost";
+    /** errors key when the money per credit cannot be read (the spend in money is then unknown). */
+    static final String CREDIT_RATE = "creditRate";
+    /** errors key when the influenced revenue cannot be read (ROI is then unknown, not zero). */
+    static final String REVENUE = "revenue";
     private static final String STATEMENT_TIMEOUT = "SET LOCAL statement_timeout = '8s'";
     private static final String DEFAULT_CURRENCY = "INR";
 
@@ -128,6 +134,16 @@ public class EngagementDailyReportService {
      */
     public EngagementDailyReport daily(String instituteId, String engineId, String date, String from, String to,
                                        boolean superAdmin) {
+        return daily(instituteId, engineId, date, from, to, superAdmin, false);
+    }
+
+    /**
+     * {@link #daily} with {@code fresh}: skip the cached copy and build the report again (the
+     * dashboard's Refresh button), then cache the new one. Without it a payment or a charge shows
+     * up to {@link #CACHE_TTL} late.
+     */
+    public EngagementDailyReport daily(String instituteId, String engineId, String date, String from, String to,
+                                       boolean superAdmin, boolean fresh) {
         ZoneId zone = zone(timezoneService.getTimezoneId(instituteId));
         LocalDate today = LocalDate.now(zone);
         EngagementReportDay.Period period = EngagementReportDay.period(date, from, to, today);
@@ -135,7 +151,7 @@ public class EngagementDailyReportService {
         String engine = engineId == null || engineId.isBlank() ? null : engineId.trim();
         String key = String.join("|", instituteId, engine == null ? "*" : engine, period.from().toString(),
                 period.to().toString(), zone.getId(), superAdmin ? "sa" : "admin");
-        EngagementDailyReport cached = cache.getIfPresent(key);
+        EngagementDailyReport cached = fresh ? null : cache.getIfPresent(key);
         if (cached != null) return cached;
         EngagementDailyReport report = build(instituteId, engine, period, today, zone, superAdmin);
         if (cacheable(report.errors())) cache.put(key, report);
@@ -294,6 +310,9 @@ public class EngagementDailyReportService {
         List<EngagementDailyReportDao.NewTemplateRow> newTemplates;
         List<Conversion> conversions = List.of();
         List<Booking> bookings = List.of();
+        /** null when no rate exists or the section failed (errors names creditRate then). */
+        CreditRate creditRate;
+        List<InfluencedPayment> payments = List.of();
     }
 
     private EngagementDailyReport build(String instituteId, String engineId, EngagementReportDay.Period period,
@@ -388,6 +407,15 @@ public class EngagementDailyReportService {
             d.bookings = dao.bookings(p);
             return null;
         }));
+        section(CREDIT_RATE, errors, () -> inTx(() -> {
+            d.creditRate = dao.creditRate(p);
+            return null;
+        }));
+        section(REVENUE, errors, () -> inTx(() -> {
+            List<InfluencedPayment> rows = dao.influencedPayments(p);
+            d.payments = rows == null ? List.of() : rows;
+            return null;
+        }));
 
         // Delivery and replies: every WhatsApp / email message that went out in the signals range,
         // and the previous period's when they fit under the cap.
@@ -472,6 +500,8 @@ public class EngagementDailyReportService {
         long leadsAdded, sent, replies, cohortReplied, decisions, demosBooked;
         final Set<String> conversions = new HashSet<>();
         double credits;
+        /** Meta charges for this engine's priced WhatsApp messages, in the report's WhatsApp currency. */
+        double waCost;
     }
 
     private static final class ChannelAcc {
@@ -804,6 +834,7 @@ public class EngagementDailyReportService {
                     currency = price.currency();
                     waAmount += price.rate();
                     t.cost += price.rate();
+                    if (ea != null) ea.waCost += price.rate();
                     CategoryAcc c = categories.computeIfAbsent(category + "|" + price.rate() + "|" + estimated,
                             k -> new CategoryAcc(category, price.rate(), estimated));
                     c.count++;
@@ -846,14 +877,18 @@ public class EngagementDailyReportService {
                 round1(totalSeconds / 60.0), connected == 0 ? 0 : Math.round(connectedSecondsWeighted / connected),
                 round2(callCredits));
 
-        // ── message credits ──
-        double messageCredits = 0;
+        // ── message and AI decision credits ──
+        double messageCredits = 0, decisionCredits = 0;
         for (MessageCredit m : d.messageCredits) {
             TrendAcc t = daily.get(m.day());
             if (t != null) t.credits += m.credits();
             if (!w.inPeriod(m.day())) continue;
-            messageCredits += m.credits();
-            ChannelAcc ch = m.channel() == null ? null : channels.get(m.channel());
+            if (m.decision()) {
+                decisionCredits += m.credits();
+            } else {
+                messageCredits += m.credits();
+            }
+            ChannelAcc ch = m.decision() || m.channel() == null ? null : channels.get(m.channel());
             if (ch != null) ch.credits += m.credits();
             EngineAcc ea = perEngine.get(m.engineId());
             if (ea != null) ea.credits += m.credits();
@@ -919,11 +954,13 @@ public class EngagementDailyReportService {
                 Math.max(0, scheduled.size() - done.size() - noShow.size()), converted.size(), statusChanges);
 
         // ── costs ──
-        double creditsTotal = messageCredits + callCredits + leadAgentCredits;
+        double creditsTotal = messageCredits + decisionCredits + callCredits + leadAgentCredits;
         Costs costs = new Costs(
-                new CreditCosts(round2(messageCredits), round2(callCredits), round2(leadAgentCredits), round2(creditsTotal)),
+                new CreditCosts(round2(messageCredits), round2(decisionCredits), round2(callCredits),
+                        round2(leadAgentCredits), round2(creditsTotal)),
                 new WhatsAppCost(round4(waAmount), cur, billable, estimatedMsgs, missingRate, missingRate > 0),
                 new AiUsage(tokensIn, tokensOut, withUsage, trackedSinceDay == null ? null : trackedSinceDay.toString()));
+        Roi roi = roi(creditsTotal, d.creditRate, waAmount, cur, d.payments, !errors.containsKey(REVENUE));
         RealCost realCost = superAdmin
                 ? new RealCost(round6(aiUsd), round6(leadAgentUsd), null, round6(aiUsd + leadAgentUsd))
                 : null;
@@ -1009,9 +1046,10 @@ public class EngagementDailyReportService {
                 boolean active = a.leadsAdded + a.sent + a.replies + a.decisions + a.demosBooked
                         + a.conversions.size() > 0 || a.credits > 0;
                 if (!active && "ARCHIVED".equals(e.status())) continue;
+                EngineMoney money = engineMoney(e.id(), a.credits, a.waCost, d.creditRate, cur, roi, d.payments);
                 engineRows.add(new EngineRow(e.id(), e.name(), e.system(), a.leadsAdded, a.sent, a.replies,
                         rate(a.cohortReplied, a.sent), a.demosBooked, a.conversions.size(), round2(a.credits),
-                        per(a.credits, a.replies)));
+                        per(a.credits, a.replies), money.spend(), money.revenue(), money.payingLeads(), money.roi()));
             }
             engineRows.sort(Comparator.comparingLong(EngineRow::sent).reversed()
                     .thenComparing(EngineRow::name, Comparator.nullsLast(Comparator.naturalOrder())));
@@ -1057,7 +1095,7 @@ public class EngagementDailyReportService {
         return new EngagementDailyReport(w.toDay().toString(), w.fromDay().toString(), w.toDay().toString(), w.days(),
                 w.zone().getId(), engineId, Instant.now().toString(),
                 options, summary, funnel, trendRows, previous, engineRows, listRows, runs, channelRows, calls,
-                emailBlock, waBlock, templateRows, newTemplates(d.newTemplates), outcomes, costs, realCost, health,
+                emailBlock, waBlock, templateRows, newTemplates(d.newTemplates), outcomes, costs, roi, realCost, health,
                 errors);
     }
 
@@ -1194,6 +1232,101 @@ public class EngagementDailyReportService {
     /** part / whole as a 0..1 fraction; 0 when there is no whole. */
     private static double rate(long part, long whole) {
         return whole <= 0 ? 0.0 : round4((double) part / whole);
+    }
+
+    // ── ROI ──────────────────────────────────────────────────────────────────
+
+    /**
+     * The period's ROI block (see {@link Roi}). Spend is in the credit rate's currency; WhatsApp is
+     * added only when Meta billed in that currency. Revenue counts each payment once, in its most
+     * common currency (the spend's on a tie or when there are none).
+     *
+     * @param revenueKnown false when the revenue read failed: the multiple and net are then null
+     */
+    static Roi roi(double credits, CreditRate rate, double waAmount, String waCurrency,
+                   List<InfluencedPayment> payments, boolean revenueKnown) {
+        String spendCurrency = rate == null ? null : upper(rate.currency());
+        Double creditSpend = rate == null ? null : round2(credits * rate.rate());
+        boolean waIncluded = spendCurrency != null && waAmount > 0 && spendCurrency.equals(upper(waCurrency));
+        Double totalSpend = creditSpend == null ? null : round2(creditSpend + (waIncluded ? waAmount : 0));
+
+        Revenue rev = revenue(payments, null, spendCurrency);
+        boolean mismatch = totalSpend != null && rev.payments() > 0 && !rev.currency().equals(spendCurrency);
+        boolean comparable = revenueKnown && totalSpend != null && !mismatch;
+        return new Roi(round2(credits),
+                rate == null ? null : round4(rate.rate()), spendCurrency, rate == null ? null : rate.source(),
+                creditSpend, round2(waAmount), waIncluded, totalSpend,
+                round2(rev.amount()), rev.currency(), rev.payments(), rev.payingLeads(), rev.otherCurrency(),
+                comparable && totalSpend > 0 ? round2(rev.amount() / totalSpend) : null,
+                comparable ? round2(rev.amount() - totalSpend) : null,
+                comparable && rev.payingLeads() > 0 ? round2(totalSpend / rev.payingLeads()) : null,
+                mismatch);
+    }
+
+    record Revenue(double amount, String currency, long payments, long payingLeads, long otherCurrency) {
+    }
+
+    /**
+     * Influenced revenue of one engine (engineId) or of all (null), each payment once. currency:
+     * the given one (an engine row follows the report's), else the most common, else fallback.
+     */
+    static Revenue revenue(List<InfluencedPayment> payments, String engineId, String fallback) {
+        Map<String, InfluencedPayment> byId = new LinkedHashMap<>();
+        for (InfluencedPayment p : payments == null ? List.<InfluencedPayment>of() : payments) {
+            if (p.paymentId() == null || (engineId != null && !engineId.equals(p.engineId()))) continue;
+            byId.putIfAbsent(p.paymentId(), p);
+        }
+        Map<String, Long> counts = new HashMap<>();
+        byId.values().forEach(p -> counts.merge(upper(p.currency()), 1L, Long::sum));
+        String fb = fallback != null ? fallback : DEFAULT_CURRENCY;
+        String currency = counts.entrySet().stream()
+                .max(Comparator.comparingLong((Map.Entry<String, Long> e) -> e.getValue())
+                        .thenComparing(e -> e.getKey().equals(fb) ? 1 : 0))
+                .map(Map.Entry::getKey).orElse(fb);
+        return revenueIn(byId.values(), currency);
+    }
+
+    private static Revenue revenueIn(java.util.Collection<InfluencedPayment> payments, String currency) {
+        double amount = 0;
+        long n = 0, other = 0;
+        Set<String> users = new HashSet<>();
+        for (InfluencedPayment p : payments) {
+            if (!currency.equals(upper(p.currency()))) {
+                other++;
+                continue;
+            }
+            amount += p.amount();
+            n++;
+            if (p.userId() != null) users.add(p.userId());
+        }
+        return new Revenue(amount, currency, n, users.size(), other);
+    }
+
+    record EngineMoney(Double spend, double revenue, long payingLeads, Double roi) {
+    }
+
+    /** One engine's spend, influenced revenue (in the report's revenue currency) and ROI. */
+    static EngineMoney engineMoney(String engineId, double credits, double waCost, CreditRate rate,
+                                   String waCurrency, Roi roi, List<InfluencedPayment> payments) {
+        String currency = roi != null ? roi.revenueCurrency() : DEFAULT_CURRENCY;
+        Map<String, InfluencedPayment> mine = new LinkedHashMap<>();
+        for (InfluencedPayment p : payments == null ? List.<InfluencedPayment>of() : payments) {
+            if (engineId.equals(p.engineId()) && p.paymentId() != null) mine.putIfAbsent(p.paymentId(), p);
+        }
+        Revenue rev = revenueIn(mine.values(), currency);
+        Double spend = null;
+        if (rate != null) {
+            boolean wa = waCost > 0 && upper(rate.currency()).equals(upper(waCurrency));
+            spend = round2(credits * rate.rate() + (wa ? waCost : 0));
+        }
+        boolean comparable = spend != null && spend > 0 && roi != null && !roi.currencyMismatch()
+                && roi.roiMultiple() != null;
+        return new EngineMoney(spend, round2(rev.amount()), rev.payingLeads(),
+                comparable ? round2(rev.amount() / spend) : null);
+    }
+
+    private static String upper(String currency) {
+        return currency == null || currency.isBlank() ? DEFAULT_CURRENCY : currency.trim().toUpperCase(Locale.ROOT);
     }
 
     /** Credits per outcome; null when there was no outcome. */

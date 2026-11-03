@@ -26,6 +26,7 @@ import type { ReportLinks, ReportLinkTarget } from './report-links';
 import { listFilter, TEMPLATE_MOVED_FILTER } from './outcomes-params';
 import type { ReportTerms } from './report-terms';
 import { BUCKET_TONE, TEMPLATE_BUCKETS, type TemplateBucket } from './template-status';
+import { formatMultiple, roiTone } from './report-roi';
 
 /*
  * One description of every table and stat block on the page. The screen renders it
@@ -295,8 +296,52 @@ const buildPerEngine = (
                 (r) => r.costPerReply,
                 { format: formatCredits, raw: true, sortable: true, size: 104 }
             ),
+            ...perEngineMoneyColumns(data, ctx),
         ],
     };
+};
+
+/**
+ * Spend, influenced revenue and ROI per engine: only when the server sends the ROI block. A
+ * person two engines touched counts for both, so the revenue column can add up to more than
+ * the total in the ROI card.
+ */
+const perEngineMoneyColumns = (
+    data: EngagementDailyReport,
+    ctx: ReportCtx
+): ReportColumn<DailyReportEngineRow>[] => {
+    const roi = data.roi;
+    if (!roi) return [];
+    const { t } = ctx;
+    const comparable = !!roi.rateCurrency && !roi.currencyMismatch;
+    return [
+        numberColumn(ctx, 'spend', t('perEngine.col.spend'), (r) => r.spend ?? null, {
+            format: (n) => (roi.rateCurrency ? formatMoney(n, roi.rateCurrency) : DASH),
+            raw: true,
+            sortable: true,
+            size: 112,
+        }),
+        numberColumn(ctx, 'revenue', t('perEngine.col.revenue'), (r) => r.revenue ?? 0, {
+            format: (n) => formatMoney(n, roi.revenueCurrency),
+            raw: true,
+            sortable: true,
+            size: 120,
+        }),
+        numberColumn(ctx, 'roi', t('perEngine.col.roi'), (r) => (comparable ? r.roi : null), {
+            format: formatMultiple,
+            raw: true,
+            sortable: true,
+            size: 80,
+            tone: (r) =>
+                !comparable || r.roi === null || r.roi === undefined
+                    ? undefined
+                    : r.roi >= 1
+                      ? 'success'
+                      : r.roi > 0
+                        ? 'warning'
+                        : 'danger',
+        }),
+    ];
 };
 
 const buildLists = (
@@ -948,6 +993,16 @@ const buildCosts = (data: EngagementDailyReport, ctx: ReportCtx) => {
     const total = c.credits.total;
     const share = (n: number) => (total > 0 ? n / total : null);
     const creditRows: CreditRow[] = [
+        // An older server sends no AI decision charges: no row rather than a false 0.
+        ...(c.credits.decisions === undefined
+            ? []
+            : [
+                  {
+                      key: 'decisions',
+                      label: t('costs.credits.decisions'),
+                      credits: c.credits.decisions,
+                  },
+              ]),
         { key: 'messages', label: t('costs.credits.messages'), credits: c.credits.messages },
         { key: 'calls', label: t('costs.credits.calls'), credits: c.credits.calls },
         { key: 'leadAgent', label: t('costs.credits.leadAgent'), credits: c.credits.leadAgent },
@@ -1081,6 +1136,79 @@ const buildRealCost = (data: EngagementDailyReport, ctx: ReportCtx): ReportStats
     };
 };
 
+/** The ROI figures as a stat block: shown in the hero on screen, exported first. */
+const buildRoi = (data: EngagementDailyReport, ctx: ReportCtx): ReportStatsSpec | null => {
+    const { t } = ctx;
+    const roi = data.roi;
+    if (!roi) return null;
+    const spendCur = roi.rateCurrency;
+    const comparable = !!spendCur && !roi.currencyMismatch;
+    const money = (
+        key: string,
+        label: string,
+        n: number | null,
+        currency: string | null,
+        hint?: string
+    ) =>
+        n === null || n === undefined || !currency
+            ? stat(key, label, DASH, { value: null, hint })
+            : stat(key, label, formatMoney(n, currency), { value: n, hint });
+    const tone = roiTone(roi);
+    return {
+        key: 'roi',
+        title: t('roi.title'),
+        subtitle: t('roi.subtitle'),
+        note: t('roi.attribution'),
+        sheetName: t('sheet.roi'),
+        stats: [
+            money('totalSpend', t('roi.spend'), roi.totalSpend, spendCur, t('roi.spendHint')),
+            money(
+                'revenue',
+                t('roi.revenue'),
+                roi.revenue,
+                roi.revenueCurrency,
+                t('roi.revenueHint')
+            ),
+            stat(
+                'roiMultiple',
+                t('roi.multiple'),
+                comparable ? formatMultiple(roi.roiMultiple) : DASH,
+                {
+                    value: comparable ? roi.roiMultiple : null,
+                    tone: tone === 'neutral' ? undefined : tone,
+                }
+            ),
+            money('net', t('roi.net'), comparable ? roi.net : null, spendCur),
+            countStat(ctx, 'payingLeads', t('roi.payingLeads'), roi.payingLeads),
+            countStat(ctx, 'payments', t('roi.payments'), roi.payments),
+            money(
+                'costPerPayingLead',
+                t('roi.costPerPayingLead'),
+                comparable ? roi.costPerPayingLead : null,
+                spendCur
+            ),
+            stat('credits', t('roi.credits'), formatCredits(roi.credits), { value: roi.credits }),
+            money('creditSpend', t('roi.creditSpend'), roi.creditSpend, spendCur),
+            money(
+                'whatsappSpend',
+                t('roi.whatsappSpend'),
+                roi.whatsappSpend,
+                data.costs?.whatsapp.currency ?? spendCur,
+                roi.whatsappIncluded ? undefined : t('roi.note.whatsappExcluded')
+            ),
+            money(
+                'creditRate',
+                t('roi.creditRate'),
+                roi.creditRate,
+                spendCur,
+                roi.rateSource === 'PURCHASE'
+                    ? t('roi.rateSource.purchase')
+                    : t('roi.rateSource.catalog')
+            ),
+        ],
+    };
+};
+
 // ─── the model ──────────────────────────────────────────────────────────────
 
 export interface ReportModel {
@@ -1100,6 +1228,7 @@ export interface ReportModel {
     costWhatsapp: ReportStatsSpec | null;
     costWhatsappCategories: ReportTableSpec<DailyReportWhatsappCategory> | null;
     realCost: ReportStatsSpec | null;
+    roi: ReportStatsSpec | null;
 }
 
 export const buildReportModel = (data: EngagementDailyReport, ctx: ReportCtx): ReportModel => {
@@ -1123,6 +1252,7 @@ export const buildReportModel = (data: EngagementDailyReport, ctx: ReportCtx): R
         costWhatsapp: costs.whatsapp,
         costWhatsappCategories: costs.categories,
         realCost: buildRealCost(data, ctx),
+        roi: buildRoi(data, ctx),
     };
 };
 
@@ -1184,6 +1314,7 @@ export const buildExportTables = (
     const addStats = (spec: ReportStatsSpec | null) => {
         if (spec && !failed(spec.key)) out.push(statsToExport(spec, t));
     };
+    addStats(model.roi);
     addTable(model.perEngine, data.engineId === null);
     addTable(model.lists);
     addStats(model.runsStats);

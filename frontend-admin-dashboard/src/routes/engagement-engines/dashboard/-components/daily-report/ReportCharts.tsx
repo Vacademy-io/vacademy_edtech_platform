@@ -595,6 +595,7 @@ export function ChannelsCard({
 // ─── Cost breakdown ─────────────────────────────────────────────────────────
 
 const COST_SLICES = [
+    { key: 'decisions', fill: WARNING, dot: 'bg-warning-500' },
     { key: 'messages', fill: PRIMARY, dot: 'bg-primary-500' },
     { key: 'calls', fill: INFO, dot: 'bg-info-500' },
     { key: 'leadAgent', fill: SUCCESS, dot: 'bg-success-500' },

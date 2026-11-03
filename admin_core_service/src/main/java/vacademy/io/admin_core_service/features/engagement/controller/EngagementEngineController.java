@@ -49,6 +49,7 @@ public class EngagementEngineController {
     private final EngagementAccessGuard accessGuard;
     private final vacademy.io.admin_core_service.features.engagement.service.EngagementChannelReadiness channelReadiness;
     private final vacademy.io.admin_core_service.features.engagement.service.EngagementUpcomingCallsService upcomingCalls;
+    private final vacademy.io.admin_core_service.features.engagement.service.EngagementCreditGate creditGate;
 
     @org.springframework.beans.factory.annotation.Value("${engagement.autonomy.first-n:5}")
     private int defaultFirstN;
@@ -96,6 +97,11 @@ public class EngagementEngineController {
         // channel, so the per-channel count above never sees it. Its graduation is the action type's.
         byChannel.put("AI_CALL", actionRepository.countApprovedCrmActions(engineId, "SCHEDULE_AI_CALL"));
         body.put("approvedSendsByChannel", byChannel);
+        // AI decisions cost credits: with the balance used up the sweep stops asking the model, and
+        // the engine page says so. Null balance = could not be read (no warning then).
+        java.util.Optional<Double> balance = creditGate.balance(engine.getInstituteId());
+        body.put("creditBalance", balance.orElse(null));
+        body.put("decisionsPausedNoCredits", creditGate.decisionsPaused(balance));
         body.put("effectiveFirstN", effectiveFirstN);
         return ResponseEntity.ok(body);
     }

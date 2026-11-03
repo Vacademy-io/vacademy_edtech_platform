@@ -109,7 +109,7 @@ class EngagementAiCallPromiseDispatchTest {
             when(gate.clampToAllowedWindow(any(), any())).thenAnswer(inv -> inv.getArgument(1));
             when(gate.scheduleSend(any(), any(), any())).thenAnswer(inv -> inv.getArgument(1));
             when(credits.readBalance("i1")).thenReturn(Optional.of(50.0));
-            when(credits.deductPrecomputed(any(), any(), any(), any(), any(), any())).thenReturn(true);
+            when(credits.deductPrecomputed(any(), any(), any(), any(), any(), any(), any())).thenReturn(true);
             EngagementAction sent = new EngagementAction();
             sent.setId("a1");
             sent.setStatus("SENT");

@@ -4,7 +4,7 @@ import { humanizeKey } from './report-format';
 /*
  * The server builds the report from independent queries and lists the ones that failed in
  * `errors`, by query name (lists, runs, outreach, calls, costs, whatsappCost, creditBalance,
- * statusChanges, conversions, demos, delivery, replies, newTemplates). One screen section can
+ * statusChanges, conversions, demos, delivery, replies, newTemplates, creditRate, revenue). One screen section can
  * draw on several queries, so this maps each section to the queries it needs. A name that
  * matches a section directly (a response field such as "funnel") also counts, in case the
  * server starts using those.
@@ -26,7 +26,8 @@ export type ReportPart =
     | 'statusChanges'
     | 'costs'
     | 'whatsappCost'
-    | 'realCost';
+    | 'realCost'
+    | 'roi';
 
 const PART_DEPS: Record<ReportPart, string[]> = {
     funnel: ['outreach', 'calls', 'delivery', 'replies', 'demos', 'conversions'],
@@ -47,6 +48,8 @@ const PART_DEPS: Record<ReportPart, string[]> = {
     // The WhatsApp charges come from the messages sent and their delivery receipts.
     whatsappCost: ['outreach', 'delivery'],
     realCost: ['costs', 'calls', 'lists', 'runs'],
+    // Spend (credits at the credit rate, WhatsApp charges) against the influenced revenue.
+    roi: ['costs', 'calls', 'lists', 'creditRate', 'revenue', 'outreach', 'delivery'],
 };
 
 const KPI_DEPS: Record<string, string[]> = {

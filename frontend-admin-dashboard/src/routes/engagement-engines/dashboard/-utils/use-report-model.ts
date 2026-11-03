@@ -13,6 +13,7 @@ import { buildHealthBanners, type HealthBanner } from './report-health';
 import { buildKpis, type ReportKpi } from './report-kpis';
 import { makeReportLinks } from './report-links';
 import { buildReportModel, type ReportCtx, type ReportModel } from './report-tables';
+import { buildRoiHero, type RoiHeroView } from './report-roi';
 import { rangeT } from './report-range-t';
 import { reportTerms } from './report-terms';
 
@@ -21,6 +22,7 @@ export interface ReportView {
     model: ReportModel;
     kpis: ReportKpi[];
     banners: HealthBanner[];
+    roi: RoiHeroView | null;
 }
 
 /** The name an engine goes by in the picker, the file names and the exports. */
@@ -58,6 +60,7 @@ export function useReportView(data: EngagementDailyReport | undefined): ReportVi
             model: buildReportModel(data, ctx),
             kpis: buildKpis(data, tr, channelLabel, links),
             banners: buildHealthBanners(data, t),
+            roi: buildRoiHero(data, tr),
         };
     }, [data, t, tConstants, terms]);
 }

@@ -374,6 +374,17 @@ class EngagementDailyReportPeriodTest {
         }
 
         @Test
+        void freshSkipsTheCachedCopyAndCachesTheNewOne() {
+            String from = ago(6).toString(), to = today.toString();
+
+            service.daily(INST, null, null, from, to, false);
+            service.daily(INST, null, null, from, to, false, true);   // the Refresh button
+            service.daily(INST, null, null, from, to, false);
+
+            verify(dao, times(2)).engines(INST);                  // built twice, the third call was cached
+        }
+
+        @Test
         void thePreviousPeriodsDeliveryIsSkippedWhenItWouldPassTheCap() {
             Window w = EngagementDailyReportService.window(ago(9), today, today, IST);
             List<Send> current = new ArrayList<>(), before = new ArrayList<>();

@@ -12,6 +12,7 @@ import { ChannelsCard, CostBreakdownCard, FunnelCard, TrendCard } from './Report
 import { ReportSections } from './ReportSections';
 import { HealthBanners } from './HealthBanners';
 import { KpiCards } from './KpiCards';
+import { RoiHero } from './RoiHero';
 import { SectionError } from './ReportSection';
 import { ReportRangeContext } from './range-context';
 import { ReportRetryingContext } from './retry-context';
@@ -171,6 +172,8 @@ export function DailyReport({
                     {tooMany && <Notice>{t('tooManyNote')}</Notice>}
                     {stillArriving && <Notice>{t('recentNote')}</Notice>}
                     {view && <HealthBanners banners={view.banners} />}
+
+                    <RoiHero roi={view?.roi ?? null} isLoading={isLoading} onRetry={onRetry} />
 
                     <KpiCards
                         kpis={view?.kpis ?? []}

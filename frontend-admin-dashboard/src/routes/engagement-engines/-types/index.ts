@@ -137,6 +137,10 @@ export interface EngineDetail {
     /** Approved human sends per channel; graduation to auto-send is per channel. */
     approvedSendsByChannel?: Record<string, number>;
     effectiveFirstN?: number;
+    /** The institute's credit balance; null when it could not be read. */
+    creditBalance?: number | null;
+    /** AI decisions cost credits: true while they are paused because the credits are used up. */
+    decisionsPausedNoCredits?: boolean;
 }
 
 export interface EnrollmentResult {

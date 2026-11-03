@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { CaretDown, DownloadSimple, FilePdf, FileXls } from '@phosphor-icons/react';
+import { ArrowClockwise, CaretDown, DownloadSimple, FilePdf, FileXls } from '@phosphor-icons/react';
 import { useTranslation } from 'react-i18next';
 import { MyButton } from '@/components/design-system/button';
 import {
@@ -41,6 +41,9 @@ interface ReportFilterBarProps {
     exportDisabled: boolean;
     /** The formats on offer. With one, Export is a plain button; with two, a menu (the default). */
     exportKinds?: ExportKind[];
+    /** Build the report again on the server instead of using its 3-minute copy. No button without it. */
+    onRefresh?: () => void;
+    refreshing?: boolean;
 }
 
 /** Engine picker, period picker (a day or a range, with previous/next arrows), and the Export menu. */
@@ -56,6 +59,8 @@ export function ReportFilterBar({
     exporting,
     exportDisabled,
     exportKinds = ALL_EXPORT_KINDS,
+    onRefresh,
+    refreshing = false,
 }: ReportFilterBarProps) {
     const { t } = useTranslation('engagementDailyReport');
     const { t: tConstants } = useTranslation('engagementEnginesConstants');
@@ -96,7 +101,23 @@ export function ReportFilterBar({
                 />
             </div>
             <PeriodPicker value={period} onChange={onPeriodChange} min={minDate} max={maxDate} />
-            <div className="sm:ms-auto">
+            <div className="flex items-center gap-2 sm:ms-auto">
+                {onRefresh && (
+                    <MyButton
+                        buttonType="secondary"
+                        scale="medium"
+                        className="gap-2"
+                        disable={refreshing}
+                        onClick={onRefresh}
+                        title={t('filter.refreshHint')}
+                    >
+                        <ArrowClockwise
+                            size={16}
+                            className={refreshing ? 'animate-spin' : undefined}
+                        />
+                        {refreshing ? t('filter.refreshing') : t('filter.refresh')}
+                    </MyButton>
+                )}
                 {onlyKind ? (
                     <MyButton
                         buttonType="secondary"

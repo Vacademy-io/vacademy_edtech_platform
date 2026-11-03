@@ -40,6 +40,7 @@ from ..schemas.credits import (
     CreditCheckResponse,
     CreditDeductRequest,
     CreditDeductResponse,
+    CreditRefundUsageRequest,
     CreditRateConfigResponse,
     CreditRateConfigUpdateRequest,
     InternalGrantFromPaymentRequest,
@@ -309,6 +310,25 @@ def deduct_credits(
     This is called after the AI operation completes with actual token counts.
     """
     return service.deduct_credits(request)
+
+
+@router.post(
+    "/refund-usage",
+    response_model=CreditDeductResponse,
+    summary="Give back one earlier usage charge (internal)",
+    description=(
+        "Refunds a usage charge whose work did not happen, found by the batch_id or "
+        "idempotency key it was deducted with. Capped at what that charge took and "
+        "applied at most once per key. Requires X-Internal-Service-Token, like /deduct."
+    ),
+)
+def refund_usage_charge(
+    request: CreditRefundUsageRequest,
+    service: CreditService = Depends(get_credit_service),
+    _: None = Depends(require_internal_service_token),
+):
+    return service.refund_usage_charge(
+        request.institute_id, request.charge_key, request.credits, request.description)
 
 
 # ============================================================================

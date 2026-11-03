@@ -1,4 +1,5 @@
-import { keepPreviousData, useQuery } from '@tanstack/react-query';
+import { useCallback, useState } from 'react';
+import { keepPreviousData, useQuery, useQueryClient } from '@tanstack/react-query';
 import { isAxiosError } from 'axios';
 import authenticatedAxiosInstance from '@/lib/auth/axiosInstance';
 import { ENGAGEMENT_DAILY_REPORT, ENGAGEMENT_DAILY_REPORT_ITEMS } from '@/constants/urls';
@@ -113,6 +114,13 @@ export interface DailyReportEngineRow {
     conversions: number;
     credits: number;
     costPerReply: number | null;
+    /** Money: credits at the credit rate (+ this engine's WhatsApp charges). Null when the rate is unknown. */
+    spend?: number | null;
+    /** Influenced revenue of the people this engine touched; a person two engines touched counts for both. */
+    revenue?: number;
+    payingLeads?: number;
+    /** revenue / spend; null when it cannot be worked out. */
+    roi?: number | null;
 }
 
 export interface DailyReportLeadAgent {
@@ -252,7 +260,14 @@ export interface DailyReportOutcomes {
 }
 
 export interface DailyReportCosts {
-    credits: { messages: number; calls: number; leadAgent: number; total: number };
+    credits: {
+        messages: number;
+        /** The AI's token charges for deciding what to do. Absent on older servers. */
+        decisions?: number;
+        calls: number;
+        leadAgent: number;
+        total: number;
+    };
     whatsapp: {
         amount: number;
         currency: string;
@@ -270,6 +285,34 @@ export interface DailyReportCosts {
         /** yyyy-MM-dd; days before this have no token counts. Null until any exist. */
         trackedSince: string | null;
     };
+}
+
+/**
+ * What the engines cost in money and the revenue that came back. Revenue = PAID payments in the
+ * period by converted leads who got an engine message or AI call before paying ("influenced").
+ */
+export interface DailyReportRoi {
+    credits: number;
+    /** Money per credit (pre-tax); null when unknown. */
+    creditRate: number | null;
+    rateCurrency: string | null;
+    /** PURCHASE = the institute's latest credit pack purchase; CATALOG = the list price. */
+    rateSource: 'PURCHASE' | 'CATALOG' | null;
+    creditSpend: number | null;
+    whatsappSpend: number | null;
+    /** WhatsApp is in totalSpend only when Meta billed in the rate's currency. */
+    whatsappIncluded: boolean;
+    totalSpend: number | null;
+    revenue: number;
+    revenueCurrency: string;
+    payments: number;
+    payingLeads: number;
+    /** Payments in another currency, left out of revenue. */
+    otherCurrencyPayments: number;
+    roiMultiple: number | null;
+    net: number | null;
+    costPerPayingLead: number | null;
+    currencyMismatch: boolean;
 }
 
 /** Super admins only. */
@@ -372,6 +415,8 @@ export interface EngagementDailyReport {
     newTemplates?: DailyReportNewTemplates | null;
     outcomes: DailyReportOutcomes | null;
     costs: DailyReportCosts | null;
+    /** Null on older servers. */
+    roi: DailyReportRoi | null;
     realCost: DailyReportRealCost | null;
     health: DailyReportHealthItem[];
     /** Section name (a field of this object) to a failure message. */
@@ -476,6 +521,7 @@ export const normalizeDailyReport = (
             ? { ...raw.outcomes, statusChanges: list(raw.outcomes.statusChanges) }
             : null,
         costs: raw?.costs ?? null,
+        roi: raw?.roi ?? null,
         realCost: raw?.realCost ?? null,
         health: list(raw?.health),
         errors: raw?.errors ?? {},
@@ -486,7 +532,9 @@ export const normalizeDailyReport = (
 export const fetchEngagementDailyReport = async (
     instituteId: string,
     engineId: string | null,
-    period: ReportPeriod | null
+    period: ReportPeriod | null,
+    /** Skip the server's 3-minute copy and build the report again (the Refresh button). */
+    fresh = false
 ): Promise<EngagementDailyReport> => {
     const res = await authenticatedAxiosInstance.get<Partial<EngagementDailyReport>>(
         ENGAGEMENT_DAILY_REPORT,
@@ -495,11 +543,19 @@ export const fetchEngagementDailyReport = async (
                 instituteId,
                 ...(engineId ? { engineId } : {}),
                 ...periodParams(period),
+                ...(fresh ? { fresh: true } : {}),
             },
         }
     );
     return normalizeDailyReport(res.data);
 };
+
+const reportQueryKey = (
+    instituteId: string,
+    engineId: string | null,
+    from: string | null,
+    to: string | null
+) => ['engagement-daily-report', instituteId, engineId, from, to] as const;
 
 const REPORT_STALE_MS = 3 * 60 * 1000;
 
@@ -519,7 +575,7 @@ export function useEngagementDailyReport(
     const from = period?.from ?? null;
     const to = period?.to ?? null;
     return useQuery({
-        queryKey: ['engagement-daily-report', instituteId, engineId, from, to],
+        queryKey: reportQueryKey(instituteId, engineId, from, to),
         queryFn: () =>
             fetchEngagementDailyReport(instituteId, engineId, from && to ? { from, to } : null),
         enabled: enabled && !!instituteId,
@@ -533,6 +589,38 @@ export function useEngagementDailyReport(
         },
         placeholderData: keepPreviousData,
     });
+}
+
+/**
+ * The Refresh button: asks the server to build the report again instead of answering from its
+ * 3-minute copy, and puts the answer where useEngagementDailyReport reads it. Without it a new
+ * payment or charge shows up to 3 minutes late.
+ */
+export function useRefreshEngagementDailyReport(
+    instituteId: string,
+    engineId: string | null,
+    period: ReportPeriod | null
+) {
+    const queryClient = useQueryClient();
+    const from = period?.from ?? null;
+    const to = period?.to ?? null;
+    const [refreshing, setRefreshing] = useState(false);
+    const refresh = useCallback(async () => {
+        if (!instituteId) return;
+        setRefreshing(true);
+        try {
+            const data = await fetchEngagementDailyReport(
+                instituteId,
+                engineId,
+                from && to ? { from, to } : null,
+                true
+            );
+            queryClient.setQueryData(reportQueryKey(instituteId, engineId, from, to), data);
+        } finally {
+            setRefreshing(false);
+        }
+    }, [instituteId, engineId, from, to, queryClient]);
+    return { refresh, refreshing };
 }
 
 // ─── The people behind the numbers ──────────────────────────────────────────

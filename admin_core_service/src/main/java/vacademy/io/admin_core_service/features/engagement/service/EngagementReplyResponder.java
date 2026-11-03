@@ -358,14 +358,15 @@ public class EngagementReplyResponder {
 
         boolean settled = false; // true = answered (SENT) or a human-visible task exists for this reply
         if (decision.isAnswer()) {
-            // NOTE (intentional, product decision 2026-07-18): auto-replies are NOT credit-gated or
-            // charged — unlike the proactive dispatch path (EngagementDispatchJob.dispatchOne, which
-            // runs the affordability gate + per-message deduct + circuit breaker). These are free-form
-            // WhatsApp SESSION replies (free on Meta's side, inside the user-opened 24h window), and
-            // gating them would ghost a paying customer's own question when the institute's AI credits
-            // run dry. The kill switch (auto_send_killed, honored via findAutoReplyCandidates) is the
-            // emergency stop for this path. Do NOT "fix" this asymmetry by wiring a CreditClient here
-            // without a deliberate pricing decision — the divergence is by design.
+            // NOTE (intentional, product decision 2026-07-18): auto-replies are NOT credit-gated —
+            // unlike the proactive dispatch path (EngagementDispatchJob.dispatchOne, which runs the
+            // affordability gate + circuit breaker). Gating them would ghost a paying customer's own
+            // question when the institute's AI credits run dry. The kill switch (auto_send_killed,
+            // honored via findAutoReplyCandidates) is the emergency stop for this path.
+            // Pricing decision 2026-11-03 (V640): a SENT reply IS charged one message credit, after
+            // the send, by EngagementDispatchJob.reconcileBilling (allow_negative, so it never blocks
+            // the reply), and its AI decision tokens by EngagementBillingJob. Do NOT add a credit gate
+            // here.
             // Auto-send: claim (OPEN→DISPATCHING) then dispatch the free-form reply.
             if (actionRepository.claimForDispatch(action.getId(), instituteId, now) == 1) {
                 EngagementAction claimed = actionRepository.findById(action.getId()).orElse(action);

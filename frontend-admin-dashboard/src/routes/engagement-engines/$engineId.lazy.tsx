@@ -342,6 +342,17 @@ function EngineDetailPage() {
                     </div>
                 )}
 
+                {data.decisionsPausedNoCredits &&
+                    (engine.status === 'ACTIVE' || engine.status === 'DRY_RUN') && (
+                        <div
+                            role="alert"
+                            className="flex items-start gap-2 rounded-xl border border-danger-200 bg-danger-50 p-3 text-danger-700"
+                        >
+                            <Warning size={18} className="mt-0.5 shrink-0" />
+                            <span className="text-body">{t('creditsPausedBanner')}</span>
+                        </div>
+                    )}
+
                 {engine.status === 'TEMPLATES_PENDING' && hasWhatsApp && (
                     <div className="flex items-start gap-2 rounded-xl border border-warning-200 bg-warning-50 p-3 text-warning-700">
                         <Warning size={18} className="mt-0.5 shrink-0" />

@@ -1572,6 +1572,49 @@ class CreditService:
             message=f"Refunded {amount} credits",
         )
 
+    def refund_usage_charge(
+        self,
+        institute_id: str,
+        charge_key: str,
+        credits: Decimal,
+        description: Optional[str] = None,
+    ) -> CreditDeductResponse:
+        """
+        Give back one earlier usage charge (e.g. a message the provider refused after it
+        was billed). The charge is found by its batch_id or idempotency key; the refund
+        never exceeds what that charge took from the wallet, net of refunds already made
+        for it, so a repeated call refunds nothing. A transaction-scoped advisory lock on
+        the key serialises concurrent calls until refund_credits commits.
+        """
+        self.db.execute(text("SELECT pg_advisory_xact_lock(hashtext(:k))"), {"k": "refund:" + charge_key})
+        row = self.db.execute(text("""
+            SELECT
+              COALESCE((SELECT SUM(-amount) FROM credit_transactions
+                         WHERE institute_id = :i AND transaction_type = 'USAGE_DEDUCTION'
+                           AND (batch_id = :k OR external_reference_id = :k)), 0) AS charged,
+              COALESCE((SELECT SUM(amount) FROM credit_transactions
+                         WHERE institute_id = :i AND transaction_type = 'REFUND'
+                           AND batch_id = :k), 0) AS refunded
+        """), {"i": institute_id, "k": charge_key}).fetchone()
+        charged = Decimal(str(row.charged or 0))
+        refunded = Decimal(str(row.refunded or 0))
+        amount = min(Decimal(str(credits)), charged - refunded)
+        if amount <= Decimal("0"):
+            self.db.rollback()  # ends the transaction and releases the advisory lock
+            return CreditDeductResponse(
+                success=True,
+                credits_deducted=Decimal("0"),
+                new_balance=Decimal("0"),
+                transaction_id=None,
+                message="Nothing left to refund for this charge",
+            )
+        return self.refund_credits(
+            institute_id,
+            amount,
+            description or "Refund of an unused charge",
+            batch_id=charge_key,
+        )
+
     def _refund_with_plan(self, institute_id: str, amount: Decimal, description: str,
                           batch_id: str) -> Optional[CreditDeductResponse]:
         """refund_credits for a live-subscription institute and a batch with

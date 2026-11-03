@@ -41,7 +41,8 @@ public class EngagementDailyReportController {
             @RequestParam(value = "engineId", required = false) String engineId,
             @RequestParam(value = "date", required = false) String date,
             @RequestParam(value = "from", required = false) String from,
-            @RequestParam(value = "to", required = false) String to) {
+            @RequestParam(value = "to", required = false) String to,
+            @RequestParam(value = "fresh", required = false, defaultValue = "false") boolean fresh) {
         if (instituteId == null || instituteId.isBlank()) {
             throw new InvalidRequestException("instituteId is required");
         }
@@ -52,6 +53,6 @@ public class EngagementDailyReportController {
             throw new ForbiddenException(e.getMessage());
         }
         boolean superAdmin = SuperAdminAuthUtil.isSuperAdminUserId(user.getUserId());
-        return ResponseEntity.ok(reportService.daily(instituteId, engineId, date, from, to, superAdmin));
+        return ResponseEntity.ok(reportService.daily(instituteId, engineId, date, from, to, superAdmin, fresh));
     }
 }
