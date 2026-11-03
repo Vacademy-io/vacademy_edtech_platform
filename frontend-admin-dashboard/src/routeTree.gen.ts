@@ -65,6 +65,7 @@ import { Route as VimDashboardRouteImport } from "./routes/vim/dashboard"
 import { Route as McpAuthorizeRouteImport } from "./routes/mcp/authorize"
 import { Route as KnowledgeBasePublishRouteImport } from "./routes/knowledge-base/publish"
 import { Route as KnowledgeBaseKbIdRouteImport } from "./routes/knowledge-base/$kbId"
+import { Route as EvalezyNewRouteImport } from "./routes/evalezy/new"
 import { Route as EvalezyAssessmentIdRouteImport } from "./routes/evalezy/$assessmentId"
 import { Route as EngagementEnginesEngineIdRouteImport } from "./routes/engagement-engines/$engineId"
 import { Route as CounsellorsUserIdRouteImport } from "./routes/counsellors/$userId"
@@ -637,6 +638,11 @@ const KnowledgeBaseKbIdRoute = KnowledgeBaseKbIdRouteImport.update({
 } as any).lazy(() =>
   import("./routes/knowledge-base/$kbId.lazy").then((d) => d.Route),
 )
+const EvalezyNewRoute = EvalezyNewRouteImport.update({
+  id: "/new",
+  path: "/new",
+  getParentRoute: () => EvalezyRouteRoute,
+} as any)
 const EvalezyAssessmentIdRoute = EvalezyAssessmentIdRouteImport.update({
   id: "/$assessmentId",
   path: "/$assessmentId",
@@ -2229,6 +2235,7 @@ export interface FileRoutesByFullPath {
   "/counsellors/$userId": typeof CounsellorsUserIdRoute
   "/engagement-engines/$engineId": typeof EngagementEnginesEngineIdRoute
   "/evalezy/$assessmentId": typeof EvalezyAssessmentIdRoute
+  "/evalezy/new": typeof EvalezyNewRoute
   "/knowledge-base/$kbId": typeof KnowledgeBaseKbIdRoute
   "/knowledge-base/publish": typeof KnowledgeBasePublishRoute
   "/mcp/authorize": typeof McpAuthorizeRoute
@@ -2481,6 +2488,7 @@ export interface FileRoutesByTo {
   "/counsellors/$userId": typeof CounsellorsUserIdRoute
   "/engagement-engines/$engineId": typeof EngagementEnginesEngineIdRoute
   "/evalezy/$assessmentId": typeof EvalezyAssessmentIdRoute
+  "/evalezy/new": typeof EvalezyNewRoute
   "/knowledge-base/$kbId": typeof KnowledgeBaseKbIdRoute
   "/knowledge-base/publish": typeof KnowledgeBasePublishRoute
   "/mcp/authorize": typeof McpAuthorizeRoute
@@ -2736,6 +2744,7 @@ export interface FileRoutesById {
   "/counsellors/$userId": typeof CounsellorsUserIdRoute
   "/engagement-engines/$engineId": typeof EngagementEnginesEngineIdRoute
   "/evalezy/$assessmentId": typeof EvalezyAssessmentIdRoute
+  "/evalezy/new": typeof EvalezyNewRoute
   "/knowledge-base/$kbId": typeof KnowledgeBaseKbIdRoute
   "/knowledge-base/publish": typeof KnowledgeBasePublishRoute
   "/mcp/authorize": typeof McpAuthorizeRoute
@@ -2992,6 +3001,7 @@ export interface FileRouteTypes {
     | "/counsellors/$userId"
     | "/engagement-engines/$engineId"
     | "/evalezy/$assessmentId"
+    | "/evalezy/new"
     | "/knowledge-base/$kbId"
     | "/knowledge-base/publish"
     | "/mcp/authorize"
@@ -3244,6 +3254,7 @@ export interface FileRouteTypes {
     | "/counsellors/$userId"
     | "/engagement-engines/$engineId"
     | "/evalezy/$assessmentId"
+    | "/evalezy/new"
     | "/knowledge-base/$kbId"
     | "/knowledge-base/publish"
     | "/mcp/authorize"
@@ -3498,6 +3509,7 @@ export interface FileRouteTypes {
     | "/counsellors/$userId"
     | "/engagement-engines/$engineId"
     | "/evalezy/$assessmentId"
+    | "/evalezy/new"
     | "/knowledge-base/$kbId"
     | "/knowledge-base/publish"
     | "/mcp/authorize"
@@ -4399,6 +4411,13 @@ declare module "@tanstack/react-router" {
       fullPath: "/knowledge-base/$kbId"
       preLoaderRoute: typeof KnowledgeBaseKbIdRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    "/evalezy/new": {
+      id: "/evalezy/new"
+      path: "/new"
+      fullPath: "/evalezy/new"
+      preLoaderRoute: typeof EvalezyNewRouteImport
+      parentRoute: typeof EvalezyRouteRoute
     }
     "/evalezy/$assessmentId": {
       id: "/evalezy/$assessmentId"
@@ -5763,11 +5782,13 @@ declare module "@tanstack/react-router" {
 
 interface EvalezyRouteRouteChildren {
   EvalezyAssessmentIdRoute: typeof EvalezyAssessmentIdRoute
+  EvalezyNewRoute: typeof EvalezyNewRoute
   EvalezyIndexRoute: typeof EvalezyIndexRoute
 }
 
 const EvalezyRouteRouteChildren: EvalezyRouteRouteChildren = {
   EvalezyAssessmentIdRoute: EvalezyAssessmentIdRoute,
+  EvalezyNewRoute: EvalezyNewRoute,
   EvalezyIndexRoute: EvalezyIndexRoute,
 }
 

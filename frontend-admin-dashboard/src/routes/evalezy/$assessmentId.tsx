@@ -44,6 +44,13 @@ import {
     type CopyIntakeUploadedFile,
 } from '@/routes/assessment/assessment-list/assessment-details/$assessmentId/$examType/$assesssmentType/$assessmentTab/-services/copy-intake-services';
 import { CopyIntakeBatchPanel } from '@/routes/assessment/assessment-list/assessment-details/$assessmentId/$examType/$assesssmentType/$assessmentTab/-components/copy-intake/CopyIntakeBatchPanel';
+import { EnableAiChecking } from '@/routes/study-library/courses/course-details/subjects/modules/chapters/slides/-components/enable-ai-checking';
+import { getAiGradability } from '@/services/paper-digitise';
+import {
+    decideStudentMapping,
+    useInstituteStudentMapping,
+} from '@/components/common/ai-copy-check/StudentMappingPicker';
+import { MapStudentsChoiceDialog } from '@/routes/assessment/assessment-list/assessment-details/$assessmentId/$examType/$assesssmentType/$assessmentTab/-components/copy-intake/MapStudentsChoiceDialog';
 import { CameraScanner } from './-components/CameraScanner';
 import { CopyTray, draftPageCount, type DraftCopy } from './-components/CopyTray';
 import { useEvalezySettings } from './-hooks/useEvalezySettings';
@@ -113,6 +120,22 @@ function EvalezyAssessmentPage() {
         [details.data]
     );
     const examType = saved?.assessment_mode || 'EXAM';
+    // A test made in the app starts on the "Upload your answer sheet." placeholder until its
+    // paper has been read and reviewed; until then the AI has nothing to check copies against.
+    const { data: gradability } = useQuery({
+        queryKey: ['AI_GRADABILITY', assessmentId],
+        queryFn: () => getAiGradability(assessmentId),
+        enabled: Boolean(assessmentId),
+        staleTime: 60 * 1000,
+    });
+    const placeholderOnly = Boolean(gradability?.placeholder_only);
+    // Copies can only be matched when the test has students: linked batches or registrations.
+    const hasStudents =
+        packageSessionIds.length > 0 ||
+        Number(details.data?.[2]?.saved_data?.pre_user_registrations ?? 0) > 0;
+    const paperTotalMarks: number = (
+        (details.data?.[1]?.saved_data?.sections ?? []) as Array<{ total_marks?: number }>
+    ).reduce((sum, section) => sum + (Number(section?.total_marks) || 0), 0);
 
     const { data: batches = [] } = useQuery({
         queryKey: ['COPY_INTAKE_BATCHES', assessmentId, instituteId],
@@ -245,8 +268,13 @@ function EvalezyAssessmentPage() {
         copies.length
     );
 
+    // Asked on send: map the copies to students, or only check them and take the zip.
+    const [choiceOpen, setChoiceOpen] = useState(false);
+    // Settings → Assessment: ask each time, always match to students, or only check.
+    const studentMapping = useInstituteStudentMapping(true);
+    const { t: tIntake } = useTranslation('assessmentCopyIntake');
     const send = useMutation({
-        mutationFn: async () => {
+        mutationFn: async (mapStudents: boolean) => {
             const queue = copies.map((copy, index) => ({ copy, index }));
             const uploaded: (CopyIntakeUploadedFile & { order: number; copyId: string })[] = [];
             const worker = async () => {
@@ -297,7 +325,8 @@ function EvalezyAssessmentPage() {
                 undefined,
                 settings.notifyEmail,
                 commentPlacement,
-                toCopyCheckConfig(copyCheckSettings)
+                toCopyCheckConfig(copyCheckSettings),
+                mapStudents
             );
             return { batch, sent: new Set(uploaded.map((u) => u.copyId)) };
         },
@@ -365,6 +394,7 @@ function EvalezyAssessmentPage() {
         !sending &&
         !readingPhotos &&
         !noPaper &&
+        !placeholderOnly &&
         questionsPerCopy > 0 &&
         cost.sufficient !== false;
     const pageTotal = copies.reduce((sum, c) => sum + draftPageCount(c), 0);
@@ -395,69 +425,87 @@ function EvalezyAssessmentPage() {
                 </p>
             )}
 
-            {/* Get copies in */}
-            <section className="flex flex-col gap-3 rounded-lg border border-neutral-200 bg-white p-4">
-                <h2 className="text-subtitle font-semibold text-neutral-800">
-                    {t('assessment.addTitle')}
-                </h2>
-                {settings.allowCamera || settings.allowUpload ? (
-                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                        {settings.allowCamera && (
-                            <button
-                                type="button"
-                                disabled={sending}
-                                onClick={() => setScannerOpen(true)}
-                                className="flex flex-col items-center gap-2 rounded-lg border-2 border-primary-200 bg-primary-50 px-4 py-6 text-center transition-colors hover:border-primary-400 disabled:opacity-50"
-                            >
-                                <Camera size={32} className="text-primary-500" />
-                                <span className="text-subtitle font-semibold text-neutral-800">
-                                    {t('assessment.scan')}
-                                </span>
-                                <span className="text-caption text-neutral-500">
-                                    {t('assessment.scanHint')}
-                                </span>
-                            </button>
-                        )}
-                        {settings.allowUpload && (
-                            <button
-                                type="button"
-                                disabled={sending || readingPhotos}
-                                onClick={() => fileInputRef.current?.click()}
-                                onDragOver={(e) => e.preventDefault()}
-                                onDrop={(e) => {
-                                    e.preventDefault();
-                                    void addFiles(Array.from(e.dataTransfer.files));
-                                }}
-                                className="flex flex-col items-center gap-2 rounded-lg border-2 border-dashed border-neutral-300 bg-neutral-50 px-4 py-6 text-center transition-colors hover:border-primary-400 hover:bg-primary-50 disabled:opacity-50"
-                            >
-                                <UploadSimple size={32} className="text-primary-500" />
-                                <span className="text-subtitle font-semibold text-neutral-800">
-                                    {readingPhotos
-                                        ? t('assessment.reading')
-                                        : t('assessment.upload')}
-                                </span>
-                                <span className="text-caption text-neutral-500">
-                                    {t('assessment.uploadHint')}
-                                </span>
-                                <input
-                                    ref={fileInputRef}
-                                    type="file"
-                                    multiple
-                                    accept="application/pdf,image/*"
-                                    className="hidden"
-                                    onChange={(e) => {
-                                        if (e.target.files)
-                                            void addFiles(Array.from(e.target.files));
-                                        e.target.value = '';
+            {/* The paper read + review that turns the placeholder into real questions.
+                Renders nothing once the test has them. */}
+            <EnableAiChecking
+                assessmentId={assessmentId}
+                assessmentName={saved.name ?? undefined}
+                instructionsHtml={saved?.instructions?.content ?? undefined}
+                totalMarks={paperTotalMarks > 0 ? paperTotalMarks : null}
+                framed
+                onEnabled={() => void queryClient.invalidateQueries()}
+            />
+
+            {placeholderOnly ? (
+                <p className="flex items-start gap-2 rounded-lg border border-neutral-200 bg-white p-3 text-body text-neutral-600">
+                    <WarningCircle size={18} className="mt-px shrink-0 text-warning-600" />
+                    {t('assessment.waitForPaper')}
+                </p>
+            ) : (
+                /* Get copies in */
+                <section className="flex flex-col gap-3 rounded-lg border border-neutral-200 bg-white p-4">
+                    <h2 className="text-subtitle font-semibold text-neutral-800">
+                        {t('assessment.addTitle')}
+                    </h2>
+                    {settings.allowCamera || settings.allowUpload ? (
+                        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                            {settings.allowCamera && (
+                                <button
+                                    type="button"
+                                    disabled={sending}
+                                    onClick={() => setScannerOpen(true)}
+                                    className="flex flex-col items-center gap-2 rounded-lg border-2 border-primary-200 bg-primary-50 px-4 py-6 text-center transition-colors hover:border-primary-400 disabled:opacity-50"
+                                >
+                                    <Camera size={32} className="text-primary-500" />
+                                    <span className="text-subtitle font-semibold text-neutral-800">
+                                        {t('assessment.scan')}
+                                    </span>
+                                    <span className="text-caption text-neutral-500">
+                                        {t('assessment.scanHint')}
+                                    </span>
+                                </button>
+                            )}
+                            {settings.allowUpload && (
+                                <button
+                                    type="button"
+                                    disabled={sending || readingPhotos}
+                                    onClick={() => fileInputRef.current?.click()}
+                                    onDragOver={(e) => e.preventDefault()}
+                                    onDrop={(e) => {
+                                        e.preventDefault();
+                                        void addFiles(Array.from(e.dataTransfer.files));
                                     }}
-                                />
-                            </button>
-                        )}
-                    </div>
-                ) : (
-                    <p className="text-body text-neutral-500">{t('assessment.noInput')}</p>
-                )}
-            </section>
+                                    className="flex flex-col items-center gap-2 rounded-lg border-2 border-dashed border-neutral-300 bg-neutral-50 px-4 py-6 text-center transition-colors hover:border-primary-400 hover:bg-primary-50 disabled:opacity-50"
+                                >
+                                    <UploadSimple size={32} className="text-primary-500" />
+                                    <span className="text-subtitle font-semibold text-neutral-800">
+                                        {readingPhotos
+                                            ? t('assessment.reading')
+                                            : t('assessment.upload')}
+                                    </span>
+                                    <span className="text-caption text-neutral-500">
+                                        {t('assessment.uploadHint')}
+                                    </span>
+                                    <input
+                                        ref={fileInputRef}
+                                        type="file"
+                                        multiple
+                                        accept="application/pdf,image/*"
+                                        className="hidden"
+                                        onChange={(e) => {
+                                            if (e.target.files)
+                                                void addFiles(Array.from(e.target.files));
+                                            e.target.value = '';
+                                        }}
+                                    />
+                                </button>
+                            )}
+                        </div>
+                    ) : (
+                        <p className="text-body text-neutral-500">{t('assessment.noInput')}</p>
+                    )}
+                </section>
+            )}
 
             {copies.length > 0 && (
                 <section className="flex flex-col gap-3">
@@ -539,7 +587,11 @@ function EvalezyAssessmentPage() {
                             scale="large"
                             className="w-full"
                             disabled={!canSend}
-                            onClick={() => send.mutate()}
+                            onClick={() => {
+                                const decided = decideStudentMapping(studentMapping, hasStudents);
+                                if (decided.ask) setChoiceOpen(true);
+                                else send.mutate(decided.mapStudents);
+                            }}
                         >
                             <Sparkle size={18} weight="fill" />
                             {sending
@@ -550,6 +602,15 @@ function EvalezyAssessmentPage() {
                                   })
                                 : t('assessment.send', { count: copies.length })}
                         </MyButton>
+                        {studentMapping !== 'ASK' && (
+                            <p className="text-caption text-neutral-500">
+                                {studentMapping === 'CHECK_ONLY'
+                                    ? tIntake('mapping.decidedCheckOnly')
+                                    : hasStudents
+                                      ? tIntake('mapping.decidedMap')
+                                      : tIntake('mapChoice.noStudents')}
+                            </p>
+                        )}
                     </div>
                 </section>
             )}
@@ -577,6 +638,17 @@ function EvalezyAssessmentPage() {
                         {t('assessment.showResults', { count: batches.length })}
                     </MyButton>
                 ))}
+
+            <MapStudentsChoiceDialog
+                open={choiceOpen}
+                onOpenChange={setChoiceOpen}
+                copies={copies.length}
+                canMap={hasStudents}
+                onConfirm={(mapStudents) => {
+                    setChoiceOpen(false);
+                    send.mutate(mapStudents);
+                }}
+            />
 
             {scannerOpen && <CameraScanner scanQuality={settings.scanQuality} onDone={addScans} />}
         </div>

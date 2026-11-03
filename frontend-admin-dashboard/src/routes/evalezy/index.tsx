@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react';
-import { createFileRoute, Link } from '@tanstack/react-router';
+import { createFileRoute, Link, useNavigate } from '@tanstack/react-router';
 import { useInfiniteQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
-import { CalendarBlank, CaretRight, ClipboardText, Users } from '@phosphor-icons/react';
+import { CalendarBlank, CaretRight, ClipboardText, Plus, Users } from '@phosphor-icons/react';
 import { MyInput } from '@/components/design-system/input';
 import { MyButton } from '@/components/design-system/button';
 import { DashboardLoader } from '@/components/core/dashboard-loader';
@@ -29,6 +29,8 @@ interface AssessmentPage {
  */
 function EvalezyHome() {
     const { t } = useTranslation('evalezy');
+    const navigate = useNavigate();
+    const newAssessment = () => navigate({ to: '/evalezy/new' });
     const instituteId = getInstituteId();
     const [search, setSearch] = useState('');
     const [term, setTerm] = useState('');
@@ -62,9 +64,21 @@ function EvalezyHome() {
 
     return (
         <div className="flex flex-col gap-4">
-            <div>
-                <h1 className="text-h3 font-semibold text-neutral-800">{t('home.title')}</h1>
-                <p className="text-body text-neutral-500">{t('home.subtitle')}</p>
+            <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                    <h1 className="text-h3 font-semibold text-neutral-800">{t('home.title')}</h1>
+                    <p className="text-body text-neutral-500">{t('home.subtitle')}</p>
+                </div>
+                <MyButton
+                    type="button"
+                    buttonType="primary"
+                    scale="medium"
+                    className="shrink-0"
+                    onClick={newAssessment}
+                >
+                    <Plus size={16} weight="bold" />
+                    {t('home.new')}
+                </MyButton>
             </div>
 
             <MyInput
@@ -97,6 +111,18 @@ function EvalezyHome() {
                         {term ? t('home.noMatch') : t('home.empty')}
                     </p>
                     {!term && <p className="text-body text-neutral-500">{t('home.emptyHint')}</p>}
+                    {!term && (
+                        <MyButton
+                            type="button"
+                            buttonType="primary"
+                            scale="medium"
+                            className="mt-2"
+                            onClick={newAssessment}
+                        >
+                            <Plus size={16} weight="bold" />
+                            {t('home.newFromPaper')}
+                        </MyButton>
+                    )}
                 </div>
             ) : (
                 <ul className="flex flex-col gap-2">
