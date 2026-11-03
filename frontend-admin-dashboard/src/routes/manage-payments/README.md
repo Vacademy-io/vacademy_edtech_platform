@@ -197,7 +197,7 @@ POST /admin-core-service/v1/user-plan/payment-logs?pageNo={page}&pageSize={size}
 
 -   Paginated list of payment logs with comprehensive data:
     -   `payment_log`: Core payment transaction details
-    -   `user_plan`: Associated user plan with nested `enroll_invite`, `payment_option`, and `payment_plan_dto`
+    -   `user_plan`: Associated user plan with nested `enroll_invite`, `payment_option`, and `payment_plan_dto`. Also carries `quantity` (copies on the plan, defaults to 1); `payment_plan_dto.actual_price` is the price of ONE copy, so the line total is `actual_price × quantity`. The table shows "Name × qty", the detail sheet shows Quantity / Unit price / Line total, and the CSV has a Quantity column
     -   `user`: Complete user profile information
     -   `current_payment_status`: Derived payment status from reconciliation logic
 

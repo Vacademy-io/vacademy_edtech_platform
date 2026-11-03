@@ -195,6 +195,7 @@
         "title": "طلباتي",
         "empty": "لا توجد طلبات.",
         "unknownBook": "غير معروف",
+        "quantity": "× {{quantity}}",
         "trackingExpected": "متوقع خلال 5-7 أيام",
         "trackingSource": "مصدر التتبع",
         "paidAmount": "المدفوع {{amount}}",

@@ -3,6 +3,7 @@ import { readRecordedPaymentDetails } from '@/services/offline-payment-modes';
 import { fetchPaymentLogs } from '@/services/payment-logs';
 import type { PaymentLogEntry, PaymentLogsRequest } from '@/types/payment-logs';
 import { resolveEntryCurrency } from '@/utils/payment-currency';
+import { getPlanQuantity } from './planQuantity';
 
 // Fetch in large pages to keep the number of round-trips small, and cap total rows so an
 // accidental "All Time" export on a huge institute can't hang the browser.
@@ -82,6 +83,8 @@ const toCsvRow = (entry: PaymentLogEntry): Record<string, string | number> => {
         'Plan Status': plan?.status ?? '',
         'Payment Type': derivePaymentTypeLabel(entry),
         'Course / Membership': plan?.enroll_invite?.name ?? '',
+        // Copies on the plan; blank for invoice rows, which have no plan behind them.
+        Quantity: plan ? getPlanQuantity(plan) : '',
         'Invite Code': plan?.enroll_invite?.invite_code ?? '',
         Organization: plan?.source === 'SUB_ORG' ? (plan?.sub_org_details?.name ?? '') : '',
         'Payment Plan': plan?.payment_plan_dto?.name ?? '',

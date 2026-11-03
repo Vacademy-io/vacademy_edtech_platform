@@ -27,6 +27,12 @@ public class LearnerPackageSessionsEnrollDTO {
      * decrements usage_limit at UserPlan creation. Null/blank = no coupon.
      */
     private String couponCode;
+    /**
+     * Rent checkout only: the books the learner picked (rent-level package session ids).
+     * They are not enrolled by this request; the server holds 1 of each until an admin
+     * assigns them. Null/empty for every other checkout.
+     */
+    private java.util.List<String> requestedBookPackageSessionIds;
 
     /**
      * Optional. Discount an admin applies on the manual-enroll path

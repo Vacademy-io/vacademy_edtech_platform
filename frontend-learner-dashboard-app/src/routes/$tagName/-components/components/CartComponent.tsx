@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef, useMemo } from "react";
 import { FitImage } from "@/components/common/fit-image/FitImage";
 import { useTranslation } from "react-i18next";
 import axios from "axios";
-import { useCartStore, CartItem } from "../../-stores/cart-store";
+import { useCartStore, clearPendingCheckout, getPendingCartMode, CartItem } from "../../-stores/cart-store";
 import { CartComponentProps } from "../../-types/course-catalogue-types";
 import { getPublicUrlWithoutLogin } from "@/services/upload_file";
 import { Trash, Plus, Minus, X } from "@phosphor-icons/react";
@@ -21,6 +21,14 @@ import {
   sumChargeAmounts,
   ResolvedCharge,
 } from "../../-utils/additional-charges-util";
+import {
+  PENDING_ORDER_CHECK_WINDOW_MS,
+  isPendingOrderStale,
+  pollPaymentOutcome,
+} from "../../-utils/payment-confirmation";
+
+/** Orders whose payment check is under way, so each is checked (and redirected from) once. */
+const orderChecksInFlight = new Set<string>();
 
 
 // Helper for simple image loading in Rent loop
@@ -362,13 +370,14 @@ export const CartComponent: React.FC<CartComponentProps> = ({
   emptyStateMessage,
   styles = {},
   instituteId, // Accept instituteId prop
+  tagName,
   globalSettings,
   onlyLogic = false,
   isPreviewMode = false,
 }) => {
   const { t } = useTranslation("coursePlayerB");
   const resolvedEmptyStateMessage = emptyStateMessage || t("cart.emptyDefault");
-  const { items, removeItem, updateQuantity, membershipPlan, getItemCount, getTotal, syncCart } = useCartStore();
+  const { items, removeItem, updateQuantity, clearCart, membershipPlan, getItemCount, getTotal, syncCart } = useCartStore();
   const [imageUrls, setImageUrls] = useState<Record<string, string>>({});
   const [isRentMode, setIsRentMode] = useState(false);
   const [membershipPlans, setMembershipPlans] = useState<MembershipPlan[]>([]);
@@ -378,141 +387,145 @@ export const CartComponent: React.FC<CartComponentProps> = ({
 
 
 
-  // Check for pending payment verification on mount
+  // Check, on mount, whether an order the learner started has since been paid.
+  // Only a PAID order clears the cart and moves the learner on; an unpaid one
+  // (Razorpay closed, payment failed or still settling) leaves the cart alone.
   useEffect(() => {
     const pendingOrderId = localStorage.getItem("pendingOrderId");
-    if (pendingOrderId) {
-      console.log("Found pending order ID:", pendingOrderId);
+    if (!pendingOrderId) return;
+    // One check per order: a second cart on the page (or StrictMode's second
+    // mount) must not run, and redirect from, a second one.
+    if (orderChecksInFlight.has(pendingOrderId)) return;
+    orderChecksInFlight.add(pendingOrderId);
+    console.log("Found pending order ID:", pendingOrderId);
 
-      const verifyPayment = async (attempts = 1) => {
-        // 1. Get InstituteId from storage (CapacitorStorage.InstituteId or fallbacks)
-        let effectiveInstituteId = instituteId || INSTITUTE_ID;
-        try {
-          // Look for specifically requested CapacitorStorage key which maps to web localstorage
-          let storedInstId = localStorage.getItem("CapacitorStorage.InstituteId") ||
-            localStorage.getItem("instituteId") ||
-            localStorage.getItem("CapacitorStorage.instituteId");
+    // The institute to restore the session for: storage first, then the prop.
+    const resolveInstituteId = (): string => {
+      let effectiveInstituteId = instituteId || INSTITUTE_ID;
+      try {
+        // Look for specifically requested CapacitorStorage key which maps to web localstorage
+        let storedInstId = localStorage.getItem("CapacitorStorage.InstituteId") ||
+          localStorage.getItem("instituteId") ||
+          localStorage.getItem("CapacitorStorage.instituteId");
 
-          if (storedInstId) {
-            // Remove any potential double quotes if it was stringified in storage
-            storedInstId = storedInstId.replace(/^"(.*)"$/, '$1');
-            effectiveInstituteId = storedInstId;
-            console.log("[CartComponent] Using InstituteId from storage:", effectiveInstituteId);
-          }
-        } catch (e) {
-          console.warn("[CartComponent] Failed to read InstituteId from storage", e);
+        if (storedInstId) {
+          // Remove any potential double quotes if it was stringified in storage
+          storedInstId = storedInstId.replace(/^"(.*)"$/, '$1');
+          effectiveInstituteId = storedInstId;
+          console.log("[CartComponent] Using InstituteId from storage:", effectiveInstituteId);
+        }
+      } catch (e) {
+        console.warn("[CartComponent] Failed to read InstituteId from storage", e);
+      }
+      return effectiveInstituteId;
+    };
+
+    // Helper to clear pending storage and redirect
+    const cleanupAndCompleteRedirect = async (url: string) => {
+      clearPendingCheckout();
+      toast.success(t("cart.toast.loginAutomated"));
+
+      // Verify persistence before redirecting to avoid race conditions
+      console.log("[CartComponent] Verifying persistence before redirect...");
+      let verified = false;
+      for (let i = 0; i < 20; i++) { // Try for up to 4 seconds (20 * 200ms)
+        const token = await getTokenFromStorage(TokenKey.accessToken);
+        const { value: studentDetails } = await Preferences.get({ key: "StudentDetails" });
+        const { value: instituteDetails } = await Preferences.get({ key: "InstituteDetails" });
+
+        if (token && studentDetails && instituteDetails) {
+          console.log("[CartComponent] Persistence verified. Redirecting now.");
+          verified = true;
+          break;
+        }
+        await new Promise((resolve) => setTimeout(resolve, 200));
+      }
+
+      if (!verified) {
+        console.warn("[CartComponent] Persistence verification timed out. Redirecting anyway.");
+      }
+
+      window.location.replace(url);
+    };
+
+    // The order is paid: empty the cart, sign the learner in and send them on.
+    const completePaidOrder = async () => {
+      try {
+        // The order's own cart: this tab may not know whether it was rent or buy.
+        await clearCart(getPendingCartMode());
+
+        // Recovery reads the pending credentials/tokens, so they are cleared after it.
+        const { checkAndRecoverSession } = await import("@/services/auth-cycle-service");
+        const sessionRecovered = await checkAndRecoverSession(resolveInstituteId());
+        const targetCoursesUrl = new URL("/dashboard", window.location.origin).toString();
+
+        if (sessionRecovered) {
+          await cleanupAndCompleteRedirect(targetCoursesUrl);
+          return;
         }
 
-        try {
-          console.log(`[CartComponent] Verifying payment (Attempt ${attempts}/3)... with InstituteId: ${effectiveInstituteId}`);
+        // Fallback: the payment is confirmed, but auto-login didn't trigger or failed.
+        console.warn("[CartComponent] Payment PAID but Auto-Login didn't trigger or failed.");
 
-          console.log(`[CartComponent] Optimistic Auto-Login (Attempt ${attempts}): Skipping Payment Check`);
+        // Critical Check: Are we authenticated?
+        const currentToken = await getTokenFromStorage(TokenKey.accessToken);
+        clearPendingCheckout();
+        if (!currentToken) {
+          console.error("[CartComponent] User is NOT authenticated. Redirecting to login instead of courses.");
+          toast.success(t("cart.toast.loginRequiredAfterPayment"));
 
-          // SKIPPING API CHECK: Simulate success
-          // const baseUrl = import.meta.env.VITE_BACKEND_URL || "http://localhost:8072";
-          // const url = `${baseUrl}/admin-core-service/open/payments/PHONEPE/status/${pendingOrderId}`;
-          // const response = await axios.get(...)
-
-          const response = {
-            data: { status: "COMPLETED" }
-          };
-
-          console.log(`[CartComponent] Payment verification response (Attempt ${attempts}):`, response.data);
-
-          const { checkAndRecoverSession } = await import("@/services/auth-cycle-service");
-          const sessionRecovered = await checkAndRecoverSession(effectiveInstituteId);
-          const targetCoursesUrl = new URL("/dashboard", window.location.origin).toString();
-
-          if (sessionRecovered) {
-            cleanupAndCompleteRedirect(targetCoursesUrl);
-            return;
-          }
-
-          // Case 3: Fallback Verification (Payment is confirmed, but Auto-Login failed/skipped)
-          if (response.data?.status === "COMPLETED") {
-            console.warn("[CartComponent] Payment COMPLETED but Auto-Login didn't trigger or failed.");
-
-            // Critical Check: Are we authenticated?
-            const currentToken = await getTokenFromStorage(TokenKey.accessToken);
-            if (!currentToken) {
-              console.error("[CartComponent] User is NOT authenticated. Redirecting to login instead of courses.");
-              toast.success(t("cart.toast.loginRequiredAfterPayment"));
-
-              // Redirect to Login if we couldn't auth
-              localStorage.removeItem("pendingOrderId");
-              setTimeout(() => {
-                window.location.href = "/login";
-              }, 1500);
-              return;
-            }
-
-            toast.success(t("cart.toast.redirecting"));
-            localStorage.removeItem("pendingOrderId");
-            setTimeout(() => {
-              window.location.href = targetCoursesUrl;
-            }, 500);
-          } else if (attempts < 3) {
-            // If payment not yet completed, retry
-            console.log(`[CartComponent] Payment not 'COMPLETED' (status: ${response.data?.status}). Retrying in 3s...`);
-            setTimeout(() => verifyPayment(attempts + 1), 3000);
-          } else {
-            // Exhausted attempts
-            console.warn("[CartComponent] Payment status check finished without 'COMPLETED' status (or automated login match).");
-            setTimeout(() => {
-              window.location.href = targetCoursesUrl;
-            }, 2000);
-          }
-        } catch (error) {
-          console.error(`Error verifying payment (Attempt ${attempts}):`, error);
-
-          // Retry logic handling...
-          if (attempts < 3) {
-            setTimeout(() => verifyPayment(attempts + 1), 3000);
-          } else {
-            console.error("[CartComponent] All verification attempts failed.");
-            // Don't strand the user, send them to dashboard/home
-            setTimeout(() => {
-              const targetCoursesUrl = new URL("/dashboard", window.location.origin).toString();
-              window.location.href = targetCoursesUrl;
-            }, 2000);
-          }
-        }
-      };
-
-      // Helper to clear pending storage and redirect
-      const cleanupAndCompleteRedirect = async (url: string) => {
-        localStorage.removeItem("pendingOrderId");
-        localStorage.removeItem("pendingUsername");
-        localStorage.removeItem("pendingUserPassword");
-        localStorage.removeItem("pendingAccessToken");
-        localStorage.removeItem("pendingRefreshToken");
-        toast.success(t("cart.toast.loginAutomated"));
-
-        // Verify persistence before redirecting to avoid race conditions
-        console.log("[CartComponent] Verifying persistence before redirect...");
-        let verified = false;
-        for (let i = 0; i < 20; i++) { // Try for up to 4 seconds (20 * 200ms)
-          const token = await getTokenFromStorage(TokenKey.accessToken);
-          const { value: studentDetails } = await Preferences.get({ key: "StudentDetails" });
-          const { value: instituteDetails } = await Preferences.get({ key: "InstituteDetails" });
-
-          if (token && studentDetails && instituteDetails) {
-            console.log("[CartComponent] Persistence verified. Redirecting now.");
-            verified = true;
-            break;
-          }
-          await new Promise((resolve) => setTimeout(resolve, 200));
+          // Redirect to Login if we couldn't auth
+          setTimeout(() => {
+            window.location.href = "/login";
+          }, 1500);
+          return;
         }
 
-        if (!verified) {
-          console.warn("[CartComponent] Persistence verification timed out. Redirecting anyway.");
+        toast.success(t("cart.toast.redirecting"));
+        setTimeout(() => {
+          window.location.href = targetCoursesUrl;
+        }, 500);
+      } catch (error) {
+        // The payment is confirmed, so don't strand the learner: send them to the dashboard.
+        console.error("[CartComponent] Completing the paid order failed:", error);
+        clearPendingCheckout();
+        setTimeout(() => {
+          window.location.href = new URL("/dashboard", window.location.origin).toString();
+        }, 2000);
+      }
+    };
+
+    const verifyPayment = async () => {
+      try {
+        console.log(`[CartComponent] Checking the payment status of order ${pendingOrderId}...`);
+        // Looks a few times, 3 s apart, so a webhook that is just landing is caught.
+        const outcome = await pollPaymentOutcome(pendingOrderId, {
+          timeoutMs: PENDING_ORDER_CHECK_WINDOW_MS,
+        });
+        console.log(`[CartComponent] Payment status of order ${pendingOrderId}:`, outcome);
+
+        if (outcome === "paid") {
+          await completePaidOrder();
+        } else if (outcome === "failed") {
+          // The payment did not go through. Forget the order; the cart stays so the learner can try again.
+          clearPendingCheckout();
+        } else {
+          // Still settling (or the check could not be made): leave everything for the next
+          // visit, unless the order is so old that it never will.
+          const createdAt = localStorage.getItem("pendingOrderCreatedAt");
+          if (!createdAt) {
+            // Noted before the start time was kept: its age is unknown, so start the clock now.
+            localStorage.setItem("pendingOrderCreatedAt", String(Date.now()));
+          } else if (isPendingOrderStale(createdAt)) {
+            clearPendingCheckout();
+          }
         }
+      } finally {
+        orderChecksInFlight.delete(pendingOrderId);
+      }
+    };
 
-        window.location.replace(url);
-      };
-
-      verifyPayment();
-    }
+    verifyPayment();
   }, [instituteId]);
 
   useEffect(() => {
@@ -904,6 +917,7 @@ export const CartComponent: React.FC<CartComponentProps> = ({
         isPreviewMode={isPreviewMode}
         isRentMode={false}
         additionalCharges={resolvedAdditionalCharges}
+        catalogueTag={tagName}
       />
     </div>
   );

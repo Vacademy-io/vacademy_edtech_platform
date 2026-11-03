@@ -103,7 +103,10 @@
             "paymentSuccessful": "تم الدفع بنجاح!",
             "paymentCancelled": "تم إلغاء الدفع",
             "checkoutSuccessful": "تم الدفع بنجاح!",
-            "checkoutFailedDefault": "فشل إتمام الدفع. حاول مرة أخرى."
+            "checkoutFailedDefault": "فشل إتمام الدفع. حاول مرة أخرى.",
+            "confirmingPayment": "جارٍ تأكيد الدفع...",
+            "paymentFailed": "تعذّر إتمام الدفع. لم تتغير سلة التسوق، لذا يمكنك المحاولة مرة أخرى.",
+            "paymentPending": "جارٍ تأكيد الدفع. ستُفرَّغ سلة التسوق فور تأكيده."
         },
         "razorpayDescription": "التسجيل في {{course}}",
         "errors": {
@@ -148,7 +151,8 @@
             "itemsCount": "{{count}} عنصر",
             "secure": "آمن"
         },
-        "whatsappRequired": "يلزم التحقق من واتساب للمتابعة"
+        "whatsappRequired": "يلزم التحقق من واتساب للمتابعة",
+        "awaitingConfirmation": "جارٍ تأكيد الدفع. يرجى عدم الدفع مرة أخرى. حدّث هذه الصفحة بعد بضع دقائق للتحقق."
     },
     "policy": {
         "notFoundTitle": "السياسة غير موجودة",

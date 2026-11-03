@@ -171,6 +171,7 @@
         "title": "My Orders",
         "empty": "No orders found.",
         "unknownBook": "Unknown",
+        "quantity": "× {{quantity}}",
         "trackingExpected": "Expected in 5-7 days",
         "trackingSource": "Tracking Source",
         "paidAmount": "Paid {{amount}}",

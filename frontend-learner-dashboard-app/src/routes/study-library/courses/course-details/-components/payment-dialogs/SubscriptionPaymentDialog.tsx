@@ -510,6 +510,8 @@ export const SubscriptionPaymentDialog: React.FC<PaymentDialogProps> = ({
         currency: orderDetails.currency || getCurrency(),
         contact: orderDetails.contact || contact,
         email: orderDetails.email || sanitizedEmail,
+        // Closing Checkout releases the stock held for this order.
+        paymentLogId: result?.payment_response?.order_id,
       });
 
       // Modal is now open; stop the button spinner. Completion is handled by

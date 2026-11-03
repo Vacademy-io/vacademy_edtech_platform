@@ -706,6 +706,9 @@ export interface CartComponentProps {
   onlyLogic?: boolean;
   /** The page editor's preview: checkout and OTP never call the server. */
   isPreviewMode?: boolean;
+  /** The storefront catalogue tag this cart sits on; sent with a buy checkout so the server
+   *  checks the shipping tier against that catalogue. Absent for the hidden payment-check cart. */
+  tagName?: string;
 }
 
 export interface CartSummaryProps {

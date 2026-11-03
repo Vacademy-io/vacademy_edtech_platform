@@ -177,6 +177,7 @@
         "title": "Mes commandes",
         "empty": "Aucune commande trouvée.",
         "unknownBook": "Inconnu",
+        "quantity": "× {{quantity}}",
         "trackingExpected": "Livraison prévue sous 5 à 7 jours",
         "trackingSource": "Source de suivi",
         "paidAmount": "Payé {{amount}}",

@@ -137,9 +137,11 @@ public class OneTimePaymentOptionOperation implements PaymentOptionOperationStra
                 }
             } else {
                 // Regional lock (if any) wins over the plan's base price — see RegionalPriceLock.
-                double listPrice = RegionalPriceLock.listPrice(userPlan);
-                log.info("Setting payment amount to {} from plan {}", listPrice, paymentPlan.getId());
-                learnerPackageSessionsEnrollDTO.getPaymentInitiationRequest().setAmount(listPrice);
+                // The line is unit price × the copies on this plan (user_plan.quantity).
+                double linePrice = RegionalPriceLock.linePrice(userPlan);
+                log.info("Setting payment amount to {} from plan {} (quantity {})",
+                        linePrice, paymentPlan.getId(), userPlan.getQuantity());
+                learnerPackageSessionsEnrollDTO.getPaymentInitiationRequest().setAmount(linePrice);
             }
             if (RegionalPriceLock.isLocked(userPlan)) {
                 learnerPackageSessionsEnrollDTO.getPaymentInitiationRequest()
@@ -170,10 +172,10 @@ public class OneTimePaymentOptionOperation implements PaymentOptionOperationStra
             // path. No action taken — the BE-derived amount has already won
             // and the gateway will see the correct value.
             //
-            // Multi-package child enrollments (PARENT_PAYMENT_LOG_ID set)
-            // always mismatch by design: each child reuses the parent's
-            // TOTAL amount as feSuppliedAmount but the BE narrows it to the
-            // child plan's price. Suppress so the WARN remains a real signal.
+            // Multi-package child enrollments (PARENT_PAYMENT_LOG_ID set) are
+            // priced by MultiPackageLearnerEnrollService (line total per item),
+            // not by the FE, so the comparison says nothing there. Suppress so
+            // the WARN remains a real signal.
             Double finalAmount = learnerPackageSessionsEnrollDTO.getPaymentInitiationRequest().getAmount();
             boolean isMultiPackageChild = extraData.containsKey("PARENT_PAYMENT_LOG_ID");
             if (!isMultiPackageChild && feSuppliedAmount != null && finalAmount != null

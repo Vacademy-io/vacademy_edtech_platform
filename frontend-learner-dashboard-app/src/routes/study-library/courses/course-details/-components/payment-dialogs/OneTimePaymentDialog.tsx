@@ -558,6 +558,8 @@ export const OneTimePaymentDialog: React.FC<OneTimePaymentDialogProps> = ({
           enrollmentData.currency,
         contact: orderDetails.contact || contact,
         email: orderDetails.email || email,
+        // Closing Checkout releases the stock held for this order.
+        paymentLogId: result?.payment_response?.order_id,
       });
 
       // Modal is now open; stop the button spinner. Completion is handled by

@@ -9,7 +9,13 @@ import org.springframework.web.bind.annotation.RestController;
 import vacademy.io.admin_core_service.features.learner.dto.v2.MultiPackageLearnerEnrollRequestDTO;
 import vacademy.io.admin_core_service.features.learner.service.MultiPackageLearnerEnrollService;
 import vacademy.io.common.auth.dto.learner.LearnerEnrollResponseDTO;
+import vacademy.io.common.exceptions.ForbiddenException;
 
+/**
+ * Public (no login) multi-item checkout: the learner storefront. A MANUAL enrollment skips
+ * payment and forces it PAID, so it is refused here and only accepted on the admin endpoint
+ * ({@link AdminMultiPackageLearnerEnrollController}), which needs an institute admin's login.
+ */
 @RestController
 @RequestMapping("/admin-core-service/v2/learner/enroll")
 public class MultiPackageLearnerEnrollController {
@@ -20,6 +26,9 @@ public class MultiPackageLearnerEnrollController {
     @PostMapping
     public ResponseEntity<LearnerEnrollResponseDTO> enrollMultiPackage(
             @RequestBody MultiPackageLearnerEnrollRequestDTO request) {
+        if ("MANUAL".equalsIgnoreCase(request.getEnrollmentType())) {
+            throw new ForbiddenException("Manual enrollment needs an admin login");
+        }
         return ResponseEntity.ok(multiPackageLearnerEnrollService.enrollMultiPackage(request));
     }
 }

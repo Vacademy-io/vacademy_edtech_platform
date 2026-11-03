@@ -111,6 +111,12 @@ export interface UserPlan {
     enroll_invite: EnrollInvite;
     payment_option: PaymentOption;
     payment_plan_dto: PaymentPlanDto;
+    /**
+     * Copies of the item on this plan. `payment_plan_dto.actual_price` stays the price of ONE
+     * copy, so the line total is actual_price x quantity. Absent on older servers: read it with
+     * getPlanQuantity, which defaults to 1.
+     */
+    quantity?: number;
     // New fields for source and subOrg details
     source?: 'USER' | 'SUB_ORG';
     sub_org_id?: string | null;
