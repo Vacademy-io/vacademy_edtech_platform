@@ -95,7 +95,12 @@ public class LeadReportService {
                         range.zone, scopeCsv, audienceFilter, sourceFilter, excludeDuplicates);
 
         long total = nz(totals != null ? totals.getTotalLeads() : null);
-        long converted = nz(totals != null ? totals.getConvertedLeads() : null);
+        // Converted = admissions in the window (per student x month, exactly as the Admissions,
+        // Sources and Counsellors tabs count them), not the enquiries whose own status reads
+        // CONVERTED — a student usually converts on one enquiry of several, or on an older one.
+        List<AdmissionReportService.AdmissionRow> admissions =
+                filteredAdmissions(instituteId, fromDate, toDate, scopeCsv, audienceFilter, sourceFilter);
+        long converted = admissions.size();
         long lost = nz(totals != null ? totals.getLostLeads() : null);
         long active = nz(totals != null ? totals.getActiveLeads() : null);
         long overdue = nz(totals != null ? totals.getOverdueLeads() : null);
@@ -135,14 +140,28 @@ public class LeadReportService {
                 })
                 .collect(Collectors.toList());
 
-        List<LeadReportSummaryDTO.SourceBreakdown> sourceBreakdown = sourceRows.stream()
+        // Admissions per source (the student's first enquiry), merged onto the lead rows; a source
+        // with admissions but no new lead in the window still gets a row.
+        Map<String, Long> admissionsBySource = new java.util.LinkedHashMap<>();
+        Set<String> admissionSourceFromCampaign = new java.util.HashSet<>();
+        for (AdmissionReportService.AdmissionRow a : admissions) {
+            admissionsBySource.merge(a.source(), 1L, Long::sum);
+            if (a.fromCampaign()) admissionSourceFromCampaign.add(a.source());
+        }
+        List<LeadReportSummaryDTO.SourceBreakdown> sourceBreakdown = new java.util.ArrayList<>(sourceRows.stream()
                 .map(r -> LeadReportSummaryDTO.SourceBreakdown.builder()
                         .sourceType(r.getSourceType())
                         .campaignType(Boolean.TRUE.equals(r.getFromCampaignType()) ? r.getSourceType() : null)
                         .total(nz(r.getTotalCount()))
-                        .converted(nz(r.getConvertedCount()))
+                        .converted(Optional.ofNullable(admissionsBySource.remove(r.getSourceType())).orElse(0L))
                         .build())
-                .collect(Collectors.toList());
+                .collect(Collectors.toList()));
+        admissionsBySource.forEach((source, n) -> sourceBreakdown.add(LeadReportSummaryDTO.SourceBreakdown.builder()
+                .sourceType(source)
+                .campaignType(admissionSourceFromCampaign.contains(source) ? source : null)
+                .total(0)
+                .converted(n)
+                .build()));
 
         List<LeadReportSummaryDTO.TierBreakdown> tierBreakdown = tierRows.stream()
                 .map(r -> LeadReportSummaryDTO.TierBreakdown.builder()
@@ -151,13 +170,18 @@ public class LeadReportService {
                         .build())
                 .collect(Collectors.toList());
 
+        // Daily converted = admissions by enrolment day, so the chart adds up to the KPI.
+        Map<String, Long> admissionsByDay = admissions.stream()
+                .filter(a -> a.day() != null)
+                .collect(Collectors.groupingBy(AdmissionReportService.AdmissionRow::day, Collectors.counting()));
         List<LeadReportSummaryDTO.DailyTrendPoint> trend = fillTrendGaps(trendRows.stream()
                 .map(r -> LeadReportSummaryDTO.DailyTrendPoint.builder()
                         .date(r.getDay() != null ? r.getDay().toString() : null)
                         .submitted(nz(r.getSubmittedCount()))
-                        .converted(nz(r.getConvertedCount()))
+                        .converted(0)
                         .build())
                 .collect(Collectors.toList()), range);
+        trend.forEach(pt -> pt.setConverted(admissionsByDay.getOrDefault(pt.getDate(), 0L)));
 
         return LeadReportSummaryDTO.builder()
                 .fromDate(range.fromLocal)
@@ -319,14 +343,22 @@ public class LeadReportService {
     private Map<String, Long> admissionsByCounsellor(String instituteId, String fromDate, String toDate,
                                                      String scopeCsv, String audienceId, String sourceType) {
         Map<String, Long> out = new java.util.HashMap<>();
-        for (AdmissionReportService.AdmissionRow a : admissionReportService.admissionRows(
-                instituteId, fromDate, toDate, scopeCsv)) {
+        for (AdmissionReportService.AdmissionRow a : filteredAdmissions(
+                instituteId, fromDate, toDate, scopeCsv, audienceId, sourceType)) {
             if (a.counsellorId() == null || a.counsellorId().isBlank()) continue;
-            if (audienceId != null && !audienceId.equals(a.firstAudienceId())) continue;
-            if (sourceType != null && !sourceType.equalsIgnoreCase(a.source())) continue;
             out.merge(a.counsellorId(), 1L, Long::sum);
         }
         return out;
+    }
+
+    /** The window's admission rows, narrowed by the report's campaign and source filters. */
+    private List<AdmissionReportService.AdmissionRow> filteredAdmissions(String instituteId, String fromDate,
+                                                                         String toDate, String scopeCsv,
+                                                                         String audienceId, String sourceType) {
+        return admissionReportService.admissionRows(instituteId, fromDate, toDate, scopeCsv).stream()
+                .filter(a -> audienceId == null || audienceId.equals(a.firstAudienceId()))
+                .filter(a -> sourceType == null || sourceType.equalsIgnoreCase(a.source()))
+                .collect(Collectors.toList());
     }
 
     // ─────────────────────────────────────────────────────────────────────
