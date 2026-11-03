@@ -12,6 +12,10 @@ vi.mock('react-i18next', () => ({
     }),
 }));
 
+vi.mock('@/hooks/use-lead-terminology', () => ({
+    useLeadTerminology: () => ({ campaignType: 'Source' }),
+}));
+
 const counsellor = (id: string, name: string, conversions: number): CounselorRow => ({
     counselor_id: id,
     counselor_name: name,
@@ -39,7 +43,8 @@ const lead = (
     name: string,
     course: string,
     csl: string,
-    enrolledAt: string
+    enrolledAt: string,
+    money: Partial<ConversionLeadRow> = {}
 ): ConversionLeadRow => ({
     enrolment_id: `${user}-${course}`,
     user_id: user,
@@ -54,6 +59,14 @@ const lead = (
     counsellor_name: csl,
     campaign_name: 'Reference',
     source_type: 'Reference',
+    plan_shared: false,
+    fee: null,
+    paid: null,
+    installments: null,
+    installments_paid: null,
+    next_due_amount: null,
+    next_due_date: null,
+    ...money,
 });
 
 const conversions: ConversionReport = {
@@ -61,12 +74,27 @@ const conversions: ConversionReport = {
     by_counsellor: [],
     leads: [
         // A student in two courses is ONE converted lead.
-        lead('u1', 'Dr Riya', 'PGDAM Pune Online', 'c1', '2026-10-05T10:00'),
-        lead('u1', 'Dr Riya', 'B&WSSC', 'c1', '2026-10-05T10:00'),
+        lead('u1', 'Dr Riya', 'PGDAM Pune Online', 'c1', '2026-10-05T10:00', {
+            fee: 50000,
+            paid: 5000,
+            installments: 4,
+            installments_paid: 1,
+            next_due_amount: 10000,
+            next_due_date: '2099-11-23',
+        }),
+        lead('u1', 'Dr Riya', 'B&WSSC', 'c1', '2026-10-05T10:00', {
+            fee: 8000,
+            paid: 1000,
+            installments: 3,
+            installments_paid: 1,
+            next_due_amount: 3500,
+            next_due_date: '2099-11-30',
+        }),
         lead('u2', 'Dr Meera', 'ADCT Offline Pune', 'c1', '2026-10-20T11:00'),
         lead('u3', 'Dr Kavya', 'MMBB', 'c2', '2026-10-21T12:00'),
     ],
     leads_truncated: false,
+    currency: 'INR',
 };
 
 vi.mock('../../-services/get-lead-reports', () => ({
@@ -108,6 +136,13 @@ describe('CounsellorsTab', () => {
         // Riya's two courses sit on her single row.
         expect(within(section).getByText('PGDAM Pune Online, B&WSSC')).toBeTruthy();
         expect(within(section).getAllByRole('row')).toHaveLength(3); // header + 2 students
+        // Riya's two fee plans add up; the next installment is the earliest one due.
+        const riya = within(section).getByText('Dr Riya').closest('tr') as HTMLElement;
+        expect(within(riya).getByText('₹58,000')).toBeTruthy();
+        expect(within(riya).getByText('₹6,000')).toBeTruthy();
+        expect(within(riya).getByText('₹10,000')).toBeTruthy();
+        // Source column is headed by the institute's own name for campaign type.
+        expect(within(section).getByText('Source')).toBeTruthy();
 
         await new Promise((r) => requestAnimationFrame(() => r(null)));
         expect(scrollIntoView).toHaveBeenCalled();

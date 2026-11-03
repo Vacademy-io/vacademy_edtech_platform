@@ -11,6 +11,7 @@ import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { CaretDown, ListBullets, Trophy, Users, WarningCircle, X } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
+import { useLeadTerminology } from '@/hooks/use-lead-terminology';
 import {
     fetchCounselorPerformance,
     type CounselorPerformance,
@@ -36,6 +37,17 @@ import {
     tatMetClass,
     type ReportTabProps,
 } from './report-shared';
+import {
+    EMPTY_FEE,
+    FeeCell,
+    InstallmentsCell,
+    NextInstallmentCell,
+    PaidCell,
+    addFee,
+    feeCsvHeaders,
+    feeCsvValues,
+    type FeeSummary,
+} from './conversion-fee-cells';
 
 interface SelectedCounsellor {
     id: string;
@@ -205,7 +217,10 @@ interface StudentRow {
     contact: string | null;
     courses: string[];
     enrolled_at: string | null;
+    campaign: string | null;
     source: string | null;
+    /** The student's enrolments' fee plans added up. */
+    fee: FeeSummary;
 }
 
 function groupByStudent(rows: ConversionLeadRow[]): StudentRow[] {
@@ -219,10 +234,13 @@ function groupByStudent(rows: ConversionLeadRow[]): StudentRow[] {
                 contact: r.phone ?? r.email,
                 courses: r.course_name ? [r.course_name] : [],
                 enrolled_at: r.enrolled_at,
-                source: r.campaign_name ?? r.source_type,
+                campaign: r.campaign_name,
+                source: r.source_type,
+                fee: addFee(EMPTY_FEE, r),
             });
             continue;
         }
+        cur.fee = addFee(cur.fee, r);
         if (r.course_name && !cur.courses.includes(r.course_name)) cur.courses.push(r.course_name);
         // Keep the first enrolment date of the student.
         if (r.enrolled_at && (!cur.enrolled_at || r.enrolled_at < cur.enrolled_at))
@@ -235,6 +253,9 @@ function groupByStudent(rows: ConversionLeadRow[]): StudentRow[] {
 
 function ConvertedLeads({ params, counsellor, onClose }: ConvertedLeadsProps) {
     const { t } = useTranslation('audienceManagerCounsellorsTab');
+    const { t: tc } = useTranslation('audienceManagerConversionsTab');
+    // What the institute calls the campaign type (I2CAN: "Source") — set in Lead Settings.
+    const { campaignType: sourceLabel } = useLeadTerminology();
     const query = useQuery({
         queryKey: conversionsQueryKey(params),
         queryFn: () => fetchConversions(params),
@@ -250,6 +271,7 @@ function ConvertedLeads({ params, counsellor, onClose }: ConvertedLeadsProps) {
             ),
         [query.data, counsellor.id]
     );
+    const currency = query.data?.currency ?? 'INR';
 
     return (
         <ReportSection
@@ -271,14 +293,18 @@ function ConvertedLeads({ params, counsellor, onClose }: ConvertedLeadsProps) {
                                 t('leads.headers.contact'),
                                 t('leads.headers.courses'),
                                 t('leads.headers.enrolledOn'),
-                                t('leads.headers.source'),
+                                t('leads.headers.campaign'),
+                                sourceLabel,
+                                ...feeCsvHeaders(tc),
                             ],
                             rows: students.map((s) => [
                                 s.lead_name,
                                 s.contact,
                                 s.courses.join(', '),
                                 fmtDay(s.enrolled_at),
+                                s.campaign,
                                 s.source,
+                                ...feeCsvValues(s.fee),
                             ]),
                         })}
                     />
@@ -311,7 +337,16 @@ function ConvertedLeads({ params, counsellor, onClose }: ConvertedLeadsProps) {
                                 <th className="py-3 pr-3">{t('leads.headers.lead')}</th>
                                 <th className="py-3 pr-3">{t('leads.headers.courses')}</th>
                                 <th className="py-3 pr-3">{t('leads.headers.enrolledOn')}</th>
-                                <th className="py-3 pr-3">{t('leads.headers.source')}</th>
+                                <th className="py-3 pr-3">{t('leads.headers.campaign')}</th>
+                                <th className="py-3 pr-3">{sourceLabel}</th>
+                                <th className="py-3 pr-3 text-right">{tc('column.fee')}</th>
+                                <th className="py-3 pr-3 text-right">{tc('column.paid')}</th>
+                                <th className="py-3 pr-3 text-right">
+                                    {tc('column.installments')}
+                                </th>
+                                <th className="py-3 pr-3 text-right">
+                                    {tc('column.nextInstallment')}
+                                </th>
                             </tr>
                         </thead>
                         <tbody>
@@ -338,7 +373,22 @@ function ConvertedLeads({ params, counsellor, onClose }: ConvertedLeadsProps) {
                                         {fmtDay(s.enrolled_at)}
                                     </td>
                                     <td className="py-3 pr-3 text-neutral-800">
+                                        {s.campaign ?? '—'}
+                                    </td>
+                                    <td className="py-3 pr-3 text-neutral-800">
                                         {s.source ?? '—'}
+                                    </td>
+                                    <td className="whitespace-nowrap py-3 pr-3 text-right">
+                                        <FeeCell fee={s.fee} currency={currency} />
+                                    </td>
+                                    <td className="whitespace-nowrap py-3 pr-3 text-right">
+                                        <PaidCell fee={s.fee} currency={currency} />
+                                    </td>
+                                    <td className="py-3 pr-3 text-right">
+                                        <InstallmentsCell fee={s.fee} />
+                                    </td>
+                                    <td className="py-3 pr-3 text-right">
+                                        <NextInstallmentCell fee={s.fee} currency={currency} />
                                     </td>
                                 </tr>
                             ))}

@@ -11,6 +11,7 @@ import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { GraduationCap, ListBullets, UserCheck, Users, X } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
+import { useLeadTerminology } from '@/hooks/use-lead-terminology';
 import {
     conversionsQueryKey,
     fetchConversions,
@@ -30,9 +31,26 @@ import {
     type ReportTabProps,
     fmtDateTime,
 } from './report-shared';
+import {
+    FeeCell,
+    InstallmentsCell,
+    NextInstallmentCell,
+    PaidCell,
+    feeCsvHeaders,
+    feeCsvValues,
+} from './conversion-fee-cells';
 
 type CounsellorSortKey = 'name' | 'converted_leads' | 'enrolments';
-type LeadSortKey = 'lead_name' | 'course_name' | 'enrolled_at' | 'counsellor_name' | 'campaign_name';
+type LeadSortKey =
+    | 'lead_name'
+    | 'course_name'
+    | 'enrolled_at'
+    | 'counsellor_name'
+    | 'campaign_name'
+    | 'source_type'
+    | 'fee'
+    | 'paid'
+    | 'next_due_date';
 
 /** Local key for the "no counsellor" row — user_id is null there. */
 const UNASSIGNED = '__unassigned__';
@@ -47,6 +65,8 @@ export function ConversionsTab({
     counsellorUserId,
 }: ReportTabProps) {
     const { t } = useTranslation('audienceManagerConversionsTab');
+    // What the institute calls the campaign type (I2CAN: "Source") — set in Lead Settings.
+    const { campaignType: sourceLabel } = useLeadTerminology();
     const params = { instituteId, fromDate, toDate, teamId, counsellorUserId };
     const query = useQuery({
         queryKey: conversionsQueryKey(params),
@@ -93,6 +113,7 @@ export function ConversionsTab({
 
     const totals = query.data?.totals ?? { converted_leads: 0, enrolments: 0 };
     const truncated = query.data?.leads_truncated ?? false;
+    const currency = query.data?.currency ?? 'INR';
     const credited = counsellors.filter((r) => r.user_id != null).length;
     const selectedRow = counsellors.find((r) => counsellorKey(r.user_id) === selected);
 
@@ -107,7 +128,7 @@ export function ConversionsTab({
         if (leadSort === k) setLeadDir((d) => (d === 'asc' ? 'desc' : 'asc'));
         else {
             setLeadSort(k);
-            setLeadDir(k === 'enrolled_at' ? 'desc' : 'asc');
+            setLeadDir(k === 'enrolled_at' || k === 'fee' || k === 'paid' ? 'desc' : 'asc');
         }
     };
     const selectCounsellor = (key: string) => {
@@ -261,7 +282,8 @@ export function ConversionsTab({
                                     t('column.enrolmentStatus'),
                                     t('column.counsellor'),
                                     t('column.campaign'),
-                                    t('column.source'),
+                                    sourceLabel,
+                                    ...feeCsvHeaders(t),
                                 ],
                                 rows: leads.map((r) => [
                                     r.lead_name ?? r.user_id,
@@ -273,6 +295,7 @@ export function ConversionsTab({
                                     r.counsellor_id == null ? unassignedLabel : r.counsellor_name,
                                     r.campaign_name,
                                     r.source_type,
+                                    ...feeCsvValues(r),
                                 ]),
                             })}
                         />
@@ -344,6 +367,38 @@ export function ConversionsTab({
                                                 onClick={toggleLead}
                                                 align="left"
                                             />
+                                            <SortableHeader
+                                                label={sourceLabel}
+                                                sortKey="source_type"
+                                                current={leadSort}
+                                                dir={leadDir}
+                                                onClick={toggleLead}
+                                                align="left"
+                                            />
+                                            <SortableHeader
+                                                label={t('column.fee')}
+                                                sortKey="fee"
+                                                current={leadSort}
+                                                dir={leadDir}
+                                                onClick={toggleLead}
+                                            />
+                                            <SortableHeader
+                                                label={t('column.paid')}
+                                                sortKey="paid"
+                                                current={leadSort}
+                                                dir={leadDir}
+                                                onClick={toggleLead}
+                                            />
+                                            <th className="py-2 pr-3 text-right">
+                                                {t('column.installments')}
+                                            </th>
+                                            <SortableHeader
+                                                label={t('column.nextInstallment')}
+                                                sortKey="next_due_date"
+                                                current={leadSort}
+                                                dir={leadDir}
+                                                onClick={toggleLead}
+                                            />
                                         </tr>
                                     </thead>
                                     <tbody>
@@ -381,12 +436,22 @@ export function ConversionsTab({
                                                         : r.counsellor_name ?? r.counsellor_id}
                                                 </td>
                                                 <td className="py-3 pr-3 text-neutral-800">
-                                                    <div>{r.campaign_name ?? '—'}</div>
-                                                    {r.source_type && (
-                                                        <div className="text-xs text-neutral-500">
-                                                            {r.source_type}
-                                                        </div>
-                                                    )}
+                                                    {r.campaign_name ?? '—'}
+                                                </td>
+                                                <td className="py-3 pr-3 text-neutral-800">
+                                                    {r.source_type ?? '—'}
+                                                </td>
+                                                <td className="whitespace-nowrap py-3 pr-3 text-right">
+                                                    <FeeCell fee={r} currency={currency} />
+                                                </td>
+                                                <td className="whitespace-nowrap py-3 pr-3 text-right">
+                                                    <PaidCell fee={r} currency={currency} />
+                                                </td>
+                                                <td className="py-3 pr-3 text-right">
+                                                    <InstallmentsCell fee={r} />
+                                                </td>
+                                                <td className="py-3 pr-3 text-right">
+                                                    <NextInstallmentCell fee={r} currency={currency} />
                                                 </td>
                                             </tr>
                                         ))}

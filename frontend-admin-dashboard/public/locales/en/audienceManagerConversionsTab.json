@@ -12,7 +12,14 @@
         "enrolledAt": "Enrolled on",
         "enrolmentStatus": "Enrolment status",
         "campaign": "Campaign",
-        "source": "Source"
+        "source": "Source",
+        "fee": "Course fee",
+        "paid": "Paid",
+        "balance": "Balance",
+        "installments": "Installments",
+        "installmentsPaid": "Installments paid",
+        "nextInstallment": "Next installment",
+        "nextDueDate": "Next due date"
     },
     "kpi": {
         "convertedSub": "Leads enrolled into a course in this range",
@@ -30,6 +37,14 @@
         "truncated": "Showing the latest {{count}} enrolments. Narrow the date range to see the rest.",
         "showMore": "Show more ({{shown}} of {{total}})",
         "footnote": "A conversion is a lead's enrolment into a course whose \"count enrolment as conversion\" setting is on, dated by the enrolment. Invited, pending and deleted enrolments are not counted."
+    },
+    "fee": {
+        "sharedPlan": "In another course's fee plan",
+        "balance": "{{amount}} left",
+        "installmentsOf": "{{paid}} of {{total}} paid",
+        "fullyPaid": "Fully paid",
+        "dueOn": "Due {{date}}",
+        "overdueSince": "Overdue since {{date}}"
     },
     "empty": {
         "noConversions": "No conversions in this range."
