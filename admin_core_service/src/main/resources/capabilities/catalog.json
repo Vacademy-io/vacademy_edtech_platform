@@ -376,18 +376,20 @@
         {
           "key": "assessments.question_banks",
           "label": "Question banks",
-          "description": "Question banks and question papers.",
+          "description": "Question banks, question papers and the topic-wise question library.",
           "default_on": true,
           "governs": {
             "nav": [
-              "question-banks"
+              "question-banks",
+              "question-library"
             ],
             "widgets": [],
             "quick_actions": [],
             "assistant_groups": [],
             "setup_steps": [],
             "routes": [
-              "/assessment/question-papers"
+              "/assessment/question-papers",
+              "/assessment/question-library"
             ]
           },
           "setting_keys": []
