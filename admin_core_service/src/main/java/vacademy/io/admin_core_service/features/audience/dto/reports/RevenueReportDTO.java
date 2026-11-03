@@ -17,15 +17,12 @@ import java.util.List;
  *     - payment_status = 'PAID', AND
  *     - the paying user is a lead of this institute whose {@code user_lead_profile.conversion_status}
  *       = 'CONVERTED' (the same user the conversion is stamped on), AND
- *     - the payment's {@code created_at} falls in the [from, to) window (institute TZ).
+ *     - the payment's day falls in the [from, to) window (institute TZ): the transaction date typed
+ *       in for a hand-recorded (MANUAL / OFFLINE) payment, else the day it was recorded.
  *
  * Source / counsellor attribution uses the lead profile's denormalized
  * {@code best_source_type} / {@code assigned_counselor_id} — the same identity the rest of the
  * report suite scopes on. Payments from non-lead students never appear here.
- *
- * Alongside the cash view, {@code admissions} / {@code bookedRevenue} count converted leads ENROLLED
- * in the window (institute-TZ enrolled_date) and the full fee on those enrolments' plans, collected
- * or not — the number counsellors are measured on.
  *
  * All amounts are in {@link #currency} (the modal currency across the institute's PAID payments).
  */
@@ -57,10 +54,6 @@ public class RevenueReportDTO {
         private long payments;
         /** revenue / payingLeads — null when payingLeads = 0. */
         private Double avgDealValue;
-        /** Distinct converted leads enrolled in-window. */
-        private long admissions;
-        /** Full fee (all non-cancelled installments) on those in-window enrolments. */
-        private double bookedRevenue;
     }
 
     @Data
@@ -90,8 +83,6 @@ public class RevenueReportDTO {
         private long payingLeads;
         private long payments;
         private Double avgDealValue;
-        private long admissions;
-        private double bookedRevenue;
     }
 
     @Data

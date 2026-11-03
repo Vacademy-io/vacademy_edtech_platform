@@ -158,7 +158,7 @@ public class PipelineReportService {
     /**
      * PAID revenue per source from CONVERTED leads whose payment landed in-window. Same recognition
      * rule as RevenueReportService (payment_status='PAID', conversion_status='CONVERTED', payment
-     * created_at in window); attributed to the student's first enquiry, like every money and
+     * day in window per {@link ReportPaymentSql}); attributed to the student's first enquiry, like every money and
      * admission figure. payment_log carries no institute_id — the user_lead_profile join scopes
      * it to this institute's converted leads.
      */
@@ -179,7 +179,8 @@ public class PipelineReportService {
             WHERE pl.payment_status = 'PAID'
               AND pl.payment_amount IS NOT NULL
               AND ulp.conversion_status = 'CONVERTED'
-              AND pl.created_at >= :fromTs AND pl.created_at < :toTs
+              AND """ + ReportPaymentSql.inWindow("pl") + """
+
               AND (:scopeCsv IS NULL OR COALESCE(lu.user_id, ulp.assigned_counselor_id) = ANY(STRING_TO_ARRAY(:scopeCsv, ',')))
               AND (:audienceId IS NULL OR fe.audience_id = :audienceId)
             GROUP BY 1
@@ -196,7 +197,8 @@ public class PipelineReportService {
 
         MapSqlParameterSource p = baseParams(instituteId, w, scopeCsv, audienceId)
                 .addValue("connectedCsv", joinSet(settings.connectedCallStatuses()))
-                .addValue("interestedCsv", joinSet(settings.interestedStatusKeys()));
+                .addValue("interestedCsv", joinSet(settings.interestedStatusKeys()))
+                .addValue("tz", zoneOf(settings.timezone()).getId());
 
         // Revenue per source (keyed by best_source_type), merged onto the rows below.
         Map<String, Double> revenueBySource = new HashMap<>();
@@ -680,19 +682,22 @@ public class PipelineReportService {
      * Defaults to the last {@value #DEFAULT_RANGE_DAYS} days ending today (institute TZ).
      */
     private Window resolveWindow(String fromDate, String toDate, String tz) {
-        ZoneId zone;
-        try {
-            zone = ZoneId.of(tz);
-        } catch (Exception e) {
-            log.warn("[PipelineReport] Invalid institute timezone '{}', falling back to Asia/Kolkata", tz);
-            zone = ZoneId.of("Asia/Kolkata");
-        }
+        ZoneId zone = zoneOf(tz);
         LocalDate today = LocalDate.now(zone);
         LocalDate to = parseOr(toDate, today);
         LocalDate from = parseOr(fromDate, to.minusDays(DEFAULT_RANGE_DAYS - 1L));
         return new Window(
                 Timestamp.valueOf(from.atStartOfDay(zone).withZoneSameInstant(ZoneOffset.UTC).toLocalDateTime()),
                 Timestamp.valueOf(to.plusDays(1).atStartOfDay(zone).withZoneSameInstant(ZoneOffset.UTC).toLocalDateTime()));
+    }
+
+    private static ZoneId zoneOf(String tz) {
+        try {
+            return ZoneId.of(tz);
+        } catch (Exception e) {
+            log.warn("[PipelineReport] Invalid institute timezone '{}', falling back to Asia/Kolkata", tz);
+            return ZoneId.of("Asia/Kolkata");
+        }
     }
 
     private static LocalDate parseOr(String iso, LocalDate fallback) {
