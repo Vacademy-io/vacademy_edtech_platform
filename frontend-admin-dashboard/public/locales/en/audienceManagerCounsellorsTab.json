@@ -23,8 +23,7 @@
         "loading": "Loading counsellors…",
         "empty": "No counsellor activity in this range.",
         "topPerformer": "Top performer",
-        "viewAdmissions": "Admissions",
-        "viewAdmissionsTitle": "Open the Admissions report for {{name}}",
+        "rowHint": "Click to see this counsellor's converted leads below",
         "headers": {
             "counsellor": "Counsellor",
             "assigned": "Assigned",
@@ -35,6 +34,21 @@
             "tatMet": "TAT met",
             "open": "Open",
             "overdue": "Overdue"
+        }
+    },
+    "leads": {
+        "title": "Converted leads — {{name}}",
+        "count_one": "{{count}} student",
+        "count_other": "{{count}} students",
+        "loading": "Loading converted leads…",
+        "empty": "{{name}} has no converted leads in this range.",
+        "close": "Close",
+        "headers": {
+            "lead": "Lead",
+            "contact": "Contact",
+            "courses": "Courses",
+            "enrolledOn": "Enrolled on",
+            "source": "Campaign / Source"
         }
     }
 }

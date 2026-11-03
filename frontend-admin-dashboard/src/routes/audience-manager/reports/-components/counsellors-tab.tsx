@@ -3,14 +3,13 @@
  *
  * The counsellor performance table, moved out of the old Overview into its
  * own full-width tab. Same data source (GET /v1/reports/counselor-performance),
- * same sortable columns and colour-coded rate cells, and the row drill-through
- * to that counsellor's Recent Leads list.
+ * same sortable columns and colour-coded rate cells. Clicking a counsellor row opens
+ * that counsellor's converted leads right below the table and scrolls to them.
  */
-import { useMemo, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { useNavigate } from '@tanstack/react-router';
 import { useTranslation } from 'react-i18next';
-import { CaretRight, GraduationCap, Trophy, Users, WarningCircle } from '@phosphor-icons/react';
+import { CaretDown, ListBullets, Trophy, Users, WarningCircle, X } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import {
     fetchCounselorPerformance,
@@ -18,6 +17,12 @@ import {
     type CounselorRow,
 } from '../-services/get-lead-reports';
 import {
+    conversionsQueryKey,
+    fetchConversions,
+    type ConversionLeadRow,
+} from '../-services/get-conversion-reports';
+import {
+    EmptyHint,
     ExportWithColumnPickerButton,
     ReportErrorState,
     ReportSection,
@@ -25,14 +30,17 @@ import {
     SortableHeader,
     avatarPalette,
     convRateClass,
+    fmtDay,
     fmtMinutes,
     fmtPct,
     tatMetClass,
     type ReportTabProps,
 } from './report-shared';
 
-/** Where the row drill-through lands. */
-const RECENT_LEADS_ROUTE = '/audience-manager/recent-leads' as const;
+interface SelectedCounsellor {
+    id: string;
+    name: string;
+}
 
 export function CounsellorsTab({
     instituteId,
@@ -41,10 +49,20 @@ export function CounsellorsTab({
     teamId,
     counsellorUserId,
     audienceId,
-    onCounsellorFilter,
 }: ReportTabProps) {
-    const navigate = useNavigate();
     const { t } = useTranslation('audienceManagerCounsellorsTab');
+    const [selected, setSelected] = useState<SelectedCounsellor | null>(null);
+    const leadsRef = useRef<HTMLDivElement>(null);
+
+    const selectCounsellor = (id: string, name: string) => {
+        const selecting = selected?.id !== id;
+        setSelected(selecting ? { id, name } : null);
+        // The converted leads open below the table — take the admin straight to them.
+        if (selecting)
+            requestAnimationFrame(() =>
+                leadsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+            );
+    };
 
     const counsellorQuery = useQuery({
         queryKey: [
@@ -82,84 +100,252 @@ export function CounsellorsTab({
 
     const performance = counsellorQuery.data;
 
+    return (
+        <div className="flex flex-col gap-6">
+            <ReportSection
+                title={t('title')}
+                icon={<Users size={18} />}
+                actions={
+                    <div className="flex flex-wrap items-center gap-3">
+                        {performance && (
+                            <span className="text-xs text-neutral-500">
+                                {t('summary.counsellorCount', {
+                                    count: performance.summary.total_counselors,
+                                })}
+                                {performance.summary.avg_response_minutes != null && (
+                                    <>
+                                        {' '}
+                                        · {t('summary.avgResponse')}{' '}
+                                        <strong className="text-neutral-700">
+                                            {fmtMinutes(performance.summary.avg_response_minutes)}
+                                        </strong>
+                                    </>
+                                )}
+                                {performance.summary.avg_conversion_rate != null && (
+                                    <>
+                                        {' '}
+                                        · {t('summary.avgConversion')}{' '}
+                                        <strong className="text-neutral-700">
+                                            {fmtPct(performance.summary.avg_conversion_rate)}
+                                        </strong>
+                                    </>
+                                )}
+                            </span>
+                        )}
+                        <ExportWithColumnPickerButton
+                            filename={`counsellor-performance_${fromDate}_${toDate}.csv`}
+                            disabled={!performance || performance.rows.length === 0}
+                            getHeadersAndRows={() => ({
+                                headers: [
+                                    t('csv.headers.counsellor'),
+                                    t('csv.headers.assigned'),
+                                    t('csv.headers.responded'),
+                                    t('csv.headers.conversions'),
+                                    t('csv.headers.convRate'),
+                                    t('csv.headers.avgResponse'),
+                                    t('csv.headers.tatMet'),
+                                    t('csv.headers.open'),
+                                    t('csv.headers.overdue'),
+                                ],
+                                rows: (performance?.rows ?? []).map((r) => [
+                                    r.counselor_name,
+                                    r.leads_assigned,
+                                    r.leads_responded,
+                                    r.conversions,
+                                    r.conversion_rate,
+                                    r.avg_response_minutes,
+                                    r.tat_met_rate,
+                                    r.open_leads,
+                                    r.overdue_leads,
+                                ]),
+                            })}
+                        />
+                    </div>
+                }
+            >
+                <CounsellorTable
+                    performance={performance}
+                    loading={false}
+                    selectedId={selected?.id ?? null}
+                    onRowClick={selectCounsellor}
+                />
+            </ReportSection>
+
+            <div ref={leadsRef} className="scroll-mt-4">
+                {selected && (
+                    <ConvertedLeads
+                        params={{ instituteId, fromDate, toDate, teamId, counsellorUserId }}
+                        counsellor={selected}
+                        onClose={() => setSelected(null)}
+                    />
+                )}
+            </div>
+        </div>
+    );
+}
+
+// ── Converted leads of the clicked counsellor ──────────────────────────
+
+interface ConvertedLeadsProps {
+    params: {
+        instituteId: string;
+        fromDate?: string;
+        toDate?: string;
+        teamId?: string;
+        counsellorUserId?: string;
+    };
+    counsellor: SelectedCounsellor;
+    onClose: () => void;
+}
+
+/** One row per student: a student enrolled in 2 courses is one converted lead. */
+interface StudentRow {
+    user_id: string;
+    lead_name: string;
+    contact: string | null;
+    courses: string[];
+    enrolled_at: string | null;
+    source: string | null;
+}
+
+function groupByStudent(rows: ConversionLeadRow[]): StudentRow[] {
+    const byUser = new Map<string, StudentRow>();
+    for (const r of rows) {
+        const cur = byUser.get(r.user_id);
+        if (!cur) {
+            byUser.set(r.user_id, {
+                user_id: r.user_id,
+                lead_name: r.lead_name ?? r.user_id,
+                contact: r.phone ?? r.email,
+                courses: r.course_name ? [r.course_name] : [],
+                enrolled_at: r.enrolled_at,
+                source: r.campaign_name ?? r.source_type,
+            });
+            continue;
+        }
+        if (r.course_name && !cur.courses.includes(r.course_name)) cur.courses.push(r.course_name);
+        // Keep the first enrolment date of the student.
+        if (r.enrolled_at && (!cur.enrolled_at || r.enrolled_at < cur.enrolled_at))
+            cur.enrolled_at = r.enrolled_at;
+    }
+    return [...byUser.values()].sort((a, b) =>
+        (b.enrolled_at ?? '').localeCompare(a.enrolled_at ?? '')
+    );
+}
+
+function ConvertedLeads({ params, counsellor, onClose }: ConvertedLeadsProps) {
+    const { t } = useTranslation('audienceManagerCounsellorsTab');
+    const query = useQuery({
+        queryKey: conversionsQueryKey(params),
+        queryFn: () => fetchConversions(params),
+        enabled: !!params.instituteId,
+        staleTime: 60_000,
+        retry: false,
+    });
+
+    const students = useMemo(
+        () =>
+            groupByStudent(
+                (query.data?.leads ?? []).filter((r) => r.counsellor_id === counsellor.id)
+            ),
+        [query.data, counsellor.id]
+    );
 
     return (
         <ReportSection
-            title={t('title')}
-            icon={<Users size={18} />}
+            title={t('leads.title', { name: counsellor.name })}
+            icon={<ListBullets size={18} />}
             actions={
-                <div className="flex flex-wrap items-center gap-3">
-                    {performance && (
+                <div className="flex items-center gap-3">
+                    {query.isSuccess && (
                         <span className="text-xs text-neutral-500">
-                            {t('summary.counsellorCount', {
-                                count: performance.summary.total_counselors,
-                            })}
-                            {performance.summary.avg_response_minutes != null && (
-                                <>
-                                    {' '}
-                                    · {t('summary.avgResponse')}{' '}
-                                    <strong className="text-neutral-700">
-                                        {fmtMinutes(performance.summary.avg_response_minutes)}
-                                    </strong>
-                                </>
-                            )}
-                            {performance.summary.avg_conversion_rate != null && (
-                                <>
-                                    {' '}
-                                    · {t('summary.avgConversion')}{' '}
-                                    <strong className="text-neutral-700">
-                                        {fmtPct(performance.summary.avg_conversion_rate)}
-                                    </strong>
-                                </>
-                            )}
+                            {t('leads.count', { count: students.length })}
                         </span>
                     )}
                     <ExportWithColumnPickerButton
-                        filename={`counsellor-performance_${fromDate}_${toDate}.csv`}
-                        disabled={!performance || performance.rows.length === 0}
+                        filename={`converted-leads_${counsellor.name}_${params.fromDate}_${params.toDate}.csv`}
+                        disabled={students.length === 0}
                         getHeadersAndRows={() => ({
                             headers: [
-                                t('csv.headers.counsellor'),
-                                t('csv.headers.assigned'),
-                                t('csv.headers.responded'),
-                                t('csv.headers.conversions'),
-                                t('csv.headers.convRate'),
-                                t('csv.headers.avgResponse'),
-                                t('csv.headers.tatMet'),
-                                t('csv.headers.open'),
-                                t('csv.headers.overdue'),
+                                t('leads.headers.lead'),
+                                t('leads.headers.contact'),
+                                t('leads.headers.courses'),
+                                t('leads.headers.enrolledOn'),
+                                t('leads.headers.source'),
                             ],
-                            rows: (performance?.rows ?? []).map((r) => [
-                                r.counselor_name,
-                                r.leads_assigned,
-                                r.leads_responded,
-                                r.conversions,
-                                r.conversion_rate,
-                                r.avg_response_minutes,
-                                r.tat_met_rate,
-                                r.open_leads,
-                                r.overdue_leads,
+                            rows: students.map((s) => [
+                                s.lead_name,
+                                s.contact,
+                                s.courses.join(', '),
+                                fmtDay(s.enrolled_at),
+                                s.source,
                             ]),
                         })}
                     />
+                    <button
+                        type="button"
+                        onClick={onClose}
+                        aria-label={t('leads.close')}
+                        title={t('leads.close')}
+                        className="rounded-md p-1 text-neutral-500 hover:bg-neutral-100 hover:text-neutral-700"
+                    >
+                        <X size={16} />
+                    </button>
                 </div>
             }
         >
-            <CounsellorTable
-                performance={performance}
-                loading={false}
-                onRowClick={(counselorId) =>
-                    navigate({
-                        to: RECENT_LEADS_ROUTE,
-                        search: { counsellor: counselorId },
-                    })
-                }
-                onViewAdmissions={
-                    onCounsellorFilter
-                        ? (id, name) => onCounsellorFilter(id, name, 'admissions')
-                        : undefined
-                }
-            />
+            {query.isLoading ? (
+                <div className="py-8 text-center text-sm text-neutral-400">
+                    {t('leads.loading')}
+                </div>
+            ) : query.isError ? (
+                <ReportErrorState error={query.error} onRetry={() => query.refetch()} />
+            ) : students.length === 0 ? (
+                <EmptyHint message={t('leads.empty', { name: counsellor.name })} />
+            ) : (
+                <div className="overflow-x-auto">
+                    <table className="w-full text-sm">
+                        <thead>
+                            <tr className="whitespace-nowrap border-b border-neutral-200 text-left text-xs font-semibold uppercase tracking-wide text-neutral-600">
+                                <th className="py-3 pr-3">#</th>
+                                <th className="py-3 pr-3">{t('leads.headers.lead')}</th>
+                                <th className="py-3 pr-3">{t('leads.headers.courses')}</th>
+                                <th className="py-3 pr-3">{t('leads.headers.enrolledOn')}</th>
+                                <th className="py-3 pr-3">{t('leads.headers.source')}</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {students.map((s, i) => (
+                                <tr
+                                    key={s.user_id}
+                                    className="border-b border-neutral-100 last:border-0"
+                                >
+                                    <td className="py-3 pr-3 text-neutral-500">{i + 1}</td>
+                                    <td className="min-w-48 py-3 pr-3">
+                                        <div className="font-medium text-neutral-900">
+                                            {s.lead_name}
+                                        </div>
+                                        {s.contact && (
+                                            <div className="text-xs text-neutral-500">
+                                                {s.contact}
+                                            </div>
+                                        )}
+                                    </td>
+                                    <td className="min-w-56 py-3 pr-3 text-neutral-800">
+                                        {s.courses.length ? s.courses.join(', ') : '—'}
+                                    </td>
+                                    <td className="whitespace-nowrap py-3 pr-3 text-neutral-800">
+                                        {fmtDay(s.enrolled_at)}
+                                    </td>
+                                    <td className="py-3 pr-3 text-neutral-800">
+                                        {s.source ?? '—'}
+                                    </td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                </div>
+            )}
         </ReportSection>
     );
 }
@@ -180,17 +366,12 @@ type SortKey =
 interface CounsellorTableProps {
     performance: CounselorPerformance | undefined;
     loading: boolean;
-    /** Drill-through — row click opens that counsellor's Recent Leads. */
-    onRowClick?: (counselorId: string) => void;
-    /** Opens the Admissions report filtered to this counsellor. */
-    onViewAdmissions?: (counselorId: string, name: string) => void;
+    /** The counsellor whose converted leads are open below the table. */
+    selectedId?: string | null;
+    /** Row click opens that counsellor's converted leads below the table. */
+    onRowClick?: (counselorId: string, name: string) => void;
 }
-function CounsellorTable({
-    performance,
-    loading,
-    onRowClick,
-    onViewAdmissions,
-}: CounsellorTableProps) {
+function CounsellorTable({ performance, loading, selectedId, onRowClick }: CounsellorTableProps) {
     const { t } = useTranslation('audienceManagerCounsellorsTab');
     const [sortKey, setSortKey] = useState<SortKey>('leads_assigned');
     const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc');
@@ -225,9 +406,7 @@ function CounsellorTable({
 
     if (loading) {
         return (
-            <div className="py-8 text-center text-sm text-neutral-400">
-                {t('table.loading')}
-            </div>
+            <div className="py-8 text-center text-sm text-neutral-400">{t('table.loading')}</div>
         );
     }
     if (!performance || performance.rows.length === 0) {
@@ -252,7 +431,7 @@ function CounsellorTable({
         <div className="overflow-x-auto">
             <table className="w-full text-sm">
                 <thead>
-                    <tr className="border-b border-neutral-200 text-left text-xs font-semibold uppercase tracking-wide text-neutral-600 whitespace-nowrap">
+                    <tr className="whitespace-nowrap border-b border-neutral-200 text-left text-xs font-semibold uppercase tracking-wide text-neutral-600">
                         <SortableHeader
                             label={t('table.headers.counsellor')}
                             sortKey="counselor_name"
@@ -317,11 +496,11 @@ function CounsellorTable({
                             dir={sortDir}
                             onClick={toggleSort}
                         />
-                        {onViewAdmissions && <th className="py-3 pl-3" />}
                     </tr>
                 </thead>
                 <tbody>
                     {sortedRows.map((r) => {
+                        const isSelected = selectedId === r.counselor_id;
                         const isTop =
                             topRow != null &&
                             r.counselor_id === topRow.counselor_id &&
@@ -332,9 +511,15 @@ function CounsellorTable({
                                 className={cn(
                                     'group border-b border-neutral-100 last:border-0 hover:bg-neutral-50',
                                     isTop && 'bg-amber-50/40',
+                                    isSelected && 'bg-primary-50 hover:bg-primary-50',
                                     onRowClick && 'cursor-pointer'
                                 )}
-                                onClick={onRowClick ? () => onRowClick(r.counselor_id) : undefined}
+                                title={onRowClick ? t('table.rowHint') : undefined}
+                                onClick={
+                                    onRowClick
+                                        ? () => onRowClick(r.counselor_id, r.counselor_name)
+                                        : undefined
+                                }
                             >
                                 <td className="py-3 pr-3">
                                     <div className="flex items-center gap-2">
@@ -350,9 +535,13 @@ function CounsellorTable({
                                             <span className="flex items-center gap-1 font-medium text-neutral-900">
                                                 {r.counselor_name}
                                                 {onRowClick && (
-                                                    <CaretRight
+                                                    <CaretDown
                                                         size={12}
-                                                        className="text-neutral-300 transition-colors group-hover:text-neutral-500"
+                                                        className={cn(
+                                                            'text-neutral-300 transition-transform group-hover:text-neutral-500',
+                                                            isSelected &&
+                                                                'rotate-180 text-primary-500'
+                                                        )}
                                                     />
                                                 )}
                                             </span>
@@ -406,25 +595,6 @@ function CounsellorTable({
                                         <span className="text-neutral-400">0</span>
                                     )}
                                 </td>
-                                {onViewAdmissions && (
-                                    <td className="py-3 pl-3 text-right">
-                                        <button
-                                            type="button"
-                                            title={t('table.viewAdmissionsTitle', {
-                                                name: r.counselor_name,
-                                            })}
-                                            onClick={(e) => {
-                                                // The row itself opens Recent Leads.
-                                                e.stopPropagation();
-                                                onViewAdmissions(r.counselor_id, r.counselor_name);
-                                            }}
-                                            className="inline-flex items-center gap-1 whitespace-nowrap rounded-md border border-neutral-200 bg-white px-2.5 py-1 text-xs font-medium text-primary-600 transition-colors hover:border-primary-300 hover:bg-primary-50"
-                                        >
-                                            <GraduationCap size={14} />
-                                            {t('table.viewAdmissions')}
-                                        </button>
-                                    </td>
-                                )}
                             </tr>
                         );
                     })}
