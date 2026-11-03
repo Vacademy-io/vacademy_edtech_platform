@@ -168,7 +168,13 @@ export const CopyIntakeBatchPanel = ({
                     <h3 className="text-subtitle font-semibold text-neutral-800">
                         {t('panel.title')}
                     </h3>
-                    <p className="text-caption text-neutral-500">{t('panel.subtitle')}</p>
+                    <p className="text-caption text-neutral-500">
+                        {t(
+                            batch?.source === 'CHECK_ONLY'
+                                ? 'panel.subtitleCheckOnly'
+                                : 'panel.subtitle'
+                        )}
+                    </p>
                 </div>
                 <div className="flex shrink-0 items-center gap-1">
                     <MyButton
@@ -209,6 +215,7 @@ export const CopyIntakeBatchPanel = ({
                                     copies: t('panel.copies', { count: b.total_items }),
                                 })}
                                 {b.source === 'SUBMITTED' && ` · ${t('panel.sourceSubmitted')}`}
+                                {b.source === 'CHECK_ONLY' && ` · ${t('panel.sourceCheckOnly')}`}
                             </SelectItem>
                         ))}
                     </SelectContent>
@@ -236,6 +243,7 @@ export const CopyIntakeBatchPanel = ({
                                 key={item.id}
                                 item={item}
                                 submitted={batch.source === 'SUBMITTED'}
+                                checkOnly={batch.source === 'CHECK_ONLY'}
                                 assessmentId={assessmentId}
                                 instituteId={instituteId}
                                 examType={examType}
@@ -252,7 +260,9 @@ export const CopyIntakeBatchPanel = ({
                                 <tr className="border-b border-neutral-200 text-left text-caption uppercase tracking-wide text-neutral-500">
                                     <th className="py-2 pr-3">{t('table.file')}</th>
                                     <th className="py-2 pr-3">{t('table.read')}</th>
-                                    <th className="py-2 pr-3">{t('table.student')}</th>
+                                    {batch.source !== 'CHECK_ONLY' && (
+                                        <th className="py-2 pr-3">{t('table.student')}</th>
+                                    )}
                                     <th className="py-2 pr-3">{t('table.status')}</th>
                                     <th className="py-2 text-right">{t('table.actions')}</th>
                                 </tr>
@@ -263,6 +273,7 @@ export const CopyIntakeBatchPanel = ({
                                         key={item.id}
                                         item={item}
                                         submitted={batch.source === 'SUBMITTED'}
+                                        checkOnly={batch.source === 'CHECK_ONLY'}
                                         assessmentId={assessmentId}
                                         instituteId={instituteId}
                                         examType={examType}
@@ -294,6 +305,7 @@ const BatchSummary = ({ batch, instituteId }: { batch: CopyIntakeBatch; institut
                 ? 'DANGER'
                 : 'INFO';
     const running = !isCopyIntakeSettled(batch.status);
+    const checkOnly = batch.source === 'CHECK_ONLY';
     return (
         <div className="flex flex-col gap-3">
             <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
@@ -312,6 +324,14 @@ const BatchSummary = ({ batch, instituteId }: { batch: CopyIntakeBatch; institut
                 {batch.source === 'SUBMITTED' && (
                     <StatusChip
                         text={t('panel.sourceSubmitted')}
+                        textSize="text-caption"
+                        status="INFO"
+                        showIcon={false}
+                    />
+                )}
+                {batch.source === 'CHECK_ONLY' && (
+                    <StatusChip
+                        text={t('panel.sourceCheckOnly')}
                         textSize="text-caption"
                         status="INFO"
                         showIcon={false}
@@ -338,15 +358,23 @@ const BatchSummary = ({ batch, instituteId }: { batch: CopyIntakeBatch; institut
                     />
                 </div>
             )}
-            <div className="grid grid-cols-5 divide-x divide-neutral-200 rounded-md border border-neutral-200 bg-neutral-50">
+            <div
+                className={cn(
+                    'grid divide-x divide-neutral-200 rounded-md border border-neutral-200 bg-neutral-50',
+                    checkOnly ? 'grid-cols-4' : 'grid-cols-5'
+                )}
+            >
                 <Stat label={t('stats.total')} value={batch.total_items} />
                 <Stat label={t('stats.checked')} value={batch.evaluated} tone="text-success-600" />
                 <Stat label={t('stats.inProgress')} value={batch.in_progress} />
-                <Stat
-                    label={t('stats.needReview')}
-                    value={batch.ambiguous + batch.unmatched}
-                    tone="text-warning-600"
-                />
+                {/* Nothing is matched in a check-only batch, so nothing waits for review. */}
+                {!checkOnly && (
+                    <Stat
+                        label={t('stats.needReview')}
+                        value={batch.ambiguous + batch.unmatched}
+                        tone="text-warning-600"
+                    />
+                )}
                 <Stat label={t('stats.failed')} value={batch.failed} tone="text-danger-600" />
             </div>
             <DownloadCheckedCopiesButton batch={batch} instituteId={instituteId} />
@@ -424,6 +452,8 @@ type ItemContext = {
     item: CopyIntakeItem;
     /** Batch built from the learners' own uploads: no header was read. */
     submitted?: boolean;
+    /** Copies only checked, never matched: no student column, nobody to pick. */
+    checkOnly?: boolean;
     assessmentId: string;
     instituteId: string;
     examType: string;
@@ -525,6 +555,7 @@ const StatusCell = ({ item }: { item: CopyIntakeItem }) => {
 /** The buttons a copy offers (pick / skip / retry / open) and the picker they open. */
 const ItemActions = ({
     item,
+    checkOnly,
     assessmentId,
     instituteId,
     examType,
@@ -588,14 +619,16 @@ const ItemActions = ({
                         >
                             {t('actions.retry')}
                         </MyButton>
-                        <MyButton
-                            type="button"
-                            buttonType="secondary"
-                            scale="small"
-                            onClick={() => setPickerOpen(true)}
-                        >
-                            {t('actions.pickStudent')}
-                        </MyButton>
+                        {!checkOnly && (
+                            <MyButton
+                                type="button"
+                                buttonType="secondary"
+                                scale="small"
+                                onClick={() => setPickerOpen(true)}
+                            >
+                                {t('actions.pickStudent')}
+                            </MyButton>
+                        )}
                     </>
                 )}
                 {item.status === 'COMPLETED' && item.attempt_id && item.process_id && (
@@ -634,9 +667,11 @@ const ItemRow = (ctx: ItemContext) => {
             <td className="py-2 pr-3">
                 <ReadCell item={item} submitted={ctx.submitted} />
             </td>
-            <td className="py-2 pr-3">
-                <StudentCell item={item} />
-            </td>
+            {!ctx.checkOnly && (
+                <td className="py-2 pr-3">
+                    <StudentCell item={item} />
+                </td>
+            )}
             <td className="py-2 pr-3">
                 <StatusCell item={item} />
             </td>
@@ -668,19 +703,21 @@ const ItemCard = (ctx: ItemContext) => {
             </div>
             {/* Side by side, label over value: what the sheet says next to who it went to,
                 so a wrong match is visible at a glance and long names get the full column. */}
-            <dl className="grid grid-cols-2 gap-3 text-sm">
+            <dl className={cn('grid gap-3 text-sm', ctx.checkOnly ? 'grid-cols-1' : 'grid-cols-2')}>
                 <div className="flex min-w-0 flex-col gap-0.5">
                     <dt className="text-caption text-neutral-500">{t('table.read')}</dt>
                     <dd className="min-w-0">
                         <ReadCell item={item} submitted={ctx.submitted} />
                     </dd>
                 </div>
-                <div className="flex min-w-0 flex-col gap-0.5">
-                    <dt className="text-caption text-neutral-500">{t('table.student')}</dt>
-                    <dd className="min-w-0">
-                        <StudentCell item={item} />
-                    </dd>
-                </div>
+                {!ctx.checkOnly && (
+                    <div className="flex min-w-0 flex-col gap-0.5">
+                        <dt className="text-caption text-neutral-500">{t('table.student')}</dt>
+                        <dd className="min-w-0">
+                            <StudentCell item={item} />
+                        </dd>
+                    </div>
+                )}
             </dl>
             <ItemActions {...ctx} />
         </li>

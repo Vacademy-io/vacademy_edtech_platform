@@ -11,6 +11,7 @@ import {
     DEFAULT_ASSESSMENT_SETTINGS,
     DEFAULT_EVALEZY_SETTINGS,
     DEFAULT_REPORT_BRANDING,
+    normalizeStudentMapping,
     ReportBrandingSettings,
 } from '@/types/assessment-settings';
 import { getAssessmentSettings, saveAssessmentSettings } from '@/services/assessment-settings';
@@ -21,6 +22,7 @@ import ResultNotificationTemplatesCard from './ResultNotificationTemplatesCard';
 import ExamExperienceSettingsCard from './ExamExperienceSettingsCard';
 import EvalezySettingsCard from './EvalezySettingsCard';
 import { CommentPlacementPicker } from '@/components/common/ai-copy-check/CommentPlacementPicker';
+import { StudentMappingPicker } from '@/components/common/ai-copy-check/StudentMappingPicker';
 import {
     PenStylePicker,
     normalizePenStyle,
@@ -212,6 +214,22 @@ const AssessmentSettings = () => {
                                 setSettings((prev) => ({
                                     ...prev,
                                     aiCopyCheck: { ...prev.aiCopyCheck, commentPlacement },
+                                }));
+                                setHasChanges(true);
+                            }}
+                        />
+                        {/* Bulk AI check (web + Evalezy): match copies to students, ask, or only check */}
+                        <StudentMappingPicker
+                            value={normalizeStudentMapping(settings.aiCopyCheck?.studentMapping)}
+                            onChange={(studentMapping) => {
+                                setSettings((prev) => ({
+                                    ...prev,
+                                    aiCopyCheck: {
+                                        ...prev.aiCopyCheck,
+                                        commentPlacement:
+                                            prev.aiCopyCheck?.commentPlacement ?? 'INSIDE',
+                                        studentMapping,
+                                    },
                                 }));
                                 setHasChanges(true);
                             }}

@@ -48,6 +48,8 @@
         "retried": "Copie remise en file"
     },
     "panel": {
+        "subtitleCheckOnly": "Chaque copie envoyée et l'avancement de sa correction. Ces copies ne sont liées à aucun élève.",
+        "sourceCheckOnly": "Correction seule",
         "title": "Correction IA en masse",
         "subtitle": "Chaque copie téléversée, l'élève associé et l'avancement de sa correction.",
         "refresh": "Actualiser",
@@ -114,6 +116,40 @@
         "search": "Rechercher par nom, numéro ou e-mail",
         "none": "Aucun élève ne correspond à cette recherche.",
         "registered": "Participant inscrit"
+    },
+    "mapping": {
+        "label": "Associer les copies envoyées aux élèves",
+        "ASK": {
+            "title": "Demander à chaque fois",
+            "description": "Une fenêtre demande avant chaque correction groupée."
+        },
+        "MAP": {
+            "title": "Toujours associer",
+            "description": "Chaque copie est associée à un élève d'après le nom inscrit et enregistrée dans son dossier."
+        },
+        "CHECK_ONLY": {
+            "title": "Corriger seulement",
+            "description": "Aucune association. Les copies sont corrigées et téléchargées en zip ; elles ne sont jamais ajoutées aux soumissions ni aux résultats d'un élève."
+        },
+        "decidedMap": "Les copies seront associées aux élèves (Paramètres → Évaluation).",
+        "decidedCheckOnly": "Les copies seront seulement corrigées, sans association aux élèves (Paramètres → Évaluation)."
+    },
+    "mapChoice": {
+        "title": "Associer les copies aux élèves ?",
+        "noStudents": "Aucun élève n'est lié à cette évaluation : les copies ne peuvent pas être associées.",
+        "intro": "Choisissez ce qui se passe une fois les copies corrigées par l'IA.",
+        "MAP": {
+            "title": "Oui, associer aux élèves",
+            "description": "Chaque copie est associée à un élève d'après le nom inscrit et enregistrée dans son dossier. Les copies non reconnues attendent que vous choisissiez l'élève."
+        },
+        "CHECK_ONLY": {
+            "title": "Non, seulement corriger",
+            "description": "Aucune association. L'IA corrige chaque copie et vous téléchargez les copies corrigées en zip. Elles ne sont ajoutées aux soumissions ni aux résultats d'aucun élève."
+        },
+        "confirmMap_one": "Corriger et associer {{count}} copie",
+        "confirmMap_other": "Corriger et associer {{count}} copies",
+        "confirmCheckOnly_one": "Corriger {{count}} copie",
+        "confirmCheckOnly_other": "Corriger {{count}} copies"
     },
     "placement": {
         "label": "Où placer les commentaires de l'enseignant ?",

@@ -26,6 +26,11 @@ import {
     useCopyCheckSettings,
 } from '@/components/common/ai-copy-check/CopyCheckSettingsFields';
 import { CopyCheckCriteriaPanel } from '@/components/common/ai-copy-check/CopyCheckCriteriaPanel';
+import {
+    decideStudentMapping,
+    useInstituteStudentMapping,
+} from '@/components/common/ai-copy-check/StudentMappingPicker';
+import { MapStudentsChoiceDialog } from './MapStudentsChoiceDialog';
 
 interface PendingFile {
     key: string;
@@ -46,6 +51,10 @@ const MAX_MB = 60;
  * server reads the student's name off every copy, matches it to the
  * assessment's students and queues the AI check. Progress lives in the batch
  * panel; the admin is told by email, bell and toast when it settles.
+ *
+ * Whether the copies are matched to students follows Settings → Assessment:
+ * ask each time (a popup), always match, or only check — "only check" skips the
+ * matching and hands the checked copies back as a zip.
  */
 export const BulkAiCheckDialog = ({
     open,
@@ -67,6 +76,8 @@ export const BulkAiCheckDialog = ({
     const inputRef = useRef<HTMLInputElement>(null);
     const [files, setFiles] = useState<PendingFile[]>([]);
     const [notifyEmail, setNotifyEmail] = useState(true);
+    const [choiceOpen, setChoiceOpen] = useState(false);
+    const studentMapping = useInstituteStudentMapping(open);
     // Preselected from the institute's default (Settings → Assessment); the teacher can change it per batch.
     const [commentPlacement, setCommentPlacement] = useInstituteCommentPlacement(open);
     // Subject, marking instructions and language feedback: the assessment's own, else the institute's.
@@ -150,7 +161,7 @@ export const BulkAiCheckDialog = ({
     const remove = (key: string) => setFiles((prev) => prev.filter((f) => f.key !== key));
 
     const start = useMutation({
-        mutationFn: async () => {
+        mutationFn: async (mapStudents: boolean) => {
             // Upload sequentially in pairs so 200 files do not open 200 sockets.
             const uploaded: { file_id: string; file_name: string; page_count?: number }[] = [];
             const queue = [...files];
@@ -213,7 +224,8 @@ export const BulkAiCheckDialog = ({
                 undefined,
                 notifyEmail,
                 commentPlacement,
-                toCopyCheckConfig(copyCheckSettings)
+                toCopyCheckConfig(copyCheckSettings),
+                mapStudents
             );
         },
         onSuccess: (batch) => {
@@ -373,6 +385,16 @@ export const BulkAiCheckDialog = ({
                     </p>
                 )}
 
+                {studentMapping !== 'ASK' && (
+                    <p className="text-caption text-neutral-500">
+                        {t(
+                            studentMapping === 'MAP'
+                                ? 'mapping.decidedMap'
+                                : 'mapping.decidedCheckOnly'
+                        )}
+                    </p>
+                )}
+
                 <div className="flex justify-end gap-2 border-t border-neutral-200 pt-4">
                     <MyButton
                         type="button"
@@ -388,7 +410,11 @@ export const BulkAiCheckDialog = ({
                         buttonType="primary"
                         scale="medium"
                         disabled={!canStart}
-                        onClick={() => start.mutate()}
+                        onClick={() => {
+                            const decided = decideStudentMapping(studentMapping, true);
+                            if (decided.ask) setChoiceOpen(true);
+                            else start.mutate(decided.mapStudents);
+                        }}
                     >
                         {start.isPending
                             ? t('dialog.starting')
@@ -396,6 +422,15 @@ export const BulkAiCheckDialog = ({
                     </MyButton>
                 </div>
             </div>
+            <MapStudentsChoiceDialog
+                open={choiceOpen}
+                onOpenChange={setChoiceOpen}
+                copies={files.length}
+                onConfirm={(mapStudents) => {
+                    setChoiceOpen(false);
+                    start.mutate(mapStudents);
+                }}
+            />
         </MyDialog>
     );
 };

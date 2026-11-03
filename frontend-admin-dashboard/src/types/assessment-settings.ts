@@ -71,6 +71,14 @@ export interface ExamExperienceSettings {
 export type CommentPlacement = 'INSIDE' | 'OUTSIDE';
 
 /**
+ * What happens to uploaded copies in a bulk AI check (web and Evalezy): ASK = the
+ * teacher chooses each time (the default); MAP = always matched to the
+ * assessment's students; CHECK_ONLY = only checked and returned as a zip, never
+ * matched to a student or shown as a submission.
+ */
+export type StudentMapping = 'ASK' | 'MAP' | 'CHECK_ONLY';
+
+/**
  * Spelling and grammar on AI-checked copies: HIGHLIGHT = each error underlined
  * with its correction and listed in the answer's feedback, no marks deducted.
  */
@@ -96,6 +104,8 @@ export interface AiCopyCheckSettings {
     instructions?: string;
     /** Used when an assessment has made no choice of its own. */
     languageFeedback?: LanguageFeedback;
+    /** Whether uploaded copies are matched to students. Absent = ASK. */
+    studentMapping?: StudentMapping;
 }
 
 /** How the AI checks one assessment's copies, kept on the assessment (snake_case, as sent). */
@@ -235,6 +245,10 @@ export const DEFAULT_ASSESSMENT_SETTINGS: AssessmentSettingsData = {
     assessmentFolders: { enabled: false },
     evalezy: { ...DEFAULT_EVALEZY_SETTINGS },
 };
+
+/** The saved choice, or ASK for anything missing or unknown. */
+export const normalizeStudentMapping = (value: unknown): StudentMapping =>
+    value === 'MAP' || value === 'CHECK_ONLY' ? value : 'ASK';
 
 /** The saved template, or INSIDE for anything missing or unknown. */
 export const normalizeCommentPlacement = (value: unknown): CommentPlacement =>
