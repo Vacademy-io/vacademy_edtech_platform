@@ -27,6 +27,7 @@ import {
     FloppyDisk,
     Image,
     Play,
+    Layout,
     List,
     Stack,
     ArrowCounterClockwise,
@@ -399,6 +400,23 @@ export const CourseSettingsForm: React.FC<CourseSettingsFormProps> = ({
                                     checked={formData.courseInformation.courseMediaEnabled}
                                     onCheckedChange={(value) =>
                                         updateCourseInformation('courseMediaEnabled', value)
+                                    }
+                                />
+                            </div>
+
+                            <div className="flex items-center justify-between">
+                                <Label
+                                    htmlFor="course-page-template"
+                                    className="flex items-center gap-2"
+                                >
+                                    <Layout className="size-4" />
+                                    <span>{t('courseInformation.enableCoursePageTemplate')}</span>
+                                </Label>
+                                <Switch
+                                    id="course-page-template"
+                                    checked={!!formData.courseInformation.coursePageTemplateEnabled}
+                                    onCheckedChange={(value) =>
+                                        updateCourseInformation('coursePageTemplateEnabled', value)
                                     }
                                 />
                             </div>

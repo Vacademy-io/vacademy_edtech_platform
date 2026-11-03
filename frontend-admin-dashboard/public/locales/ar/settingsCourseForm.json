@@ -15,7 +15,8 @@
         "previewImageRequired": "صورة المعاينة مطلوبة",
         "enableBannerImage": "تفعيل صورة البانر",
         "bannerImageRequired": "صورة البانر مطلوبة",
-        "enableCourseMedia": "تفعيل وسائط الدورة"
+        "enableCourseMedia": "تفعيل وسائط الدورة",
+        "enableCoursePageTemplate": "تفعيل محتوى قالب صفحة الدورة"
     },
     "courseStructure": {
         "heading": "إعدادات هيكل الدورة",

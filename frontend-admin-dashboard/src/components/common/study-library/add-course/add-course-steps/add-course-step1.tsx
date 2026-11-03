@@ -1543,6 +1543,9 @@ export const AddCourseStep1 = ({
                                 status={coursePageStatus}
                                 open={coursePageOpen}
                                 onOpenChange={setCoursePageOpen}
+                                showTemplate={
+                                    !!courseSettings?.courseInformation?.coursePageTemplateEnabled
+                                }
                             />
                         </div>
                     </div>

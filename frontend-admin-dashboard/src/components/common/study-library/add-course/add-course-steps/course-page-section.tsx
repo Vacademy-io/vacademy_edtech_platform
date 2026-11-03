@@ -60,6 +60,7 @@ export const CoursePageSection = ({
     status = 'ready',
     open,
     onOpenChange,
+    showTemplate = false,
 }: {
     form: UseFormReturn<Step1Data>;
     /** The institute's word for "course" (naming settings). */
@@ -67,6 +68,11 @@ export const CoursePageSection = ({
     status?: CoursePageStatus;
     open: boolean;
     onOpenChange: (open: boolean) => void;
+    /**
+     * Course settings → "Course page template content". Hidden only hides the fields: the
+     * stored template stays in the form and is saved back unchanged.
+     */
+    showTemplate?: boolean;
 }) => {
     const { fields, append, remove, move, replace } = useFieldArray({
         control: form.control,
@@ -76,6 +82,9 @@ export const CoursePageSection = ({
     const faqValues = useWatch({ control: form.control, name: 'coursePage.faqs' }) ?? [];
     const templateValue = useWatch({ control: form.control, name: 'coursePage.template' });
     const templateCount = countTemplateBlocks(templateValue);
+    // A stored value the form rejects must stay reachable, even with the setting off.
+    const templateHasErrors = !!form.formState.errors.coursePage?.template;
+    const templateVisible = showTemplate || templateHasErrors;
     const [isSuggesting, setIsSuggesting] = useState(false);
 
     const filledCount = faqValues.filter((faq) => !isEmptyFaq(faq)).length;
@@ -165,7 +174,7 @@ export const CoursePageSection = ({
               : [
                     mode ? MODE_LABELS[mode] : null,
                     filledCount > 0 ? `${filledCount} FAQ${filledCount === 1 ? '' : 's'}` : null,
-                    templateCount > 0 ? 'Template content' : null,
+                    templateVisible && templateCount > 0 ? 'Template content' : null,
                 ]
                     .filter(Boolean)
                     .join(' · ');
@@ -399,7 +408,9 @@ export const CoursePageSection = ({
                             </div>
                         </div>
 
-                        <CoursePageTemplateFields form={form} courseTerm={courseTerm} />
+                        {templateVisible && (
+                            <CoursePageTemplateFields form={form} courseTerm={courseTerm} />
+                        )}
                     </div>
                 )}
             </CollapsibleContent>

@@ -15,7 +15,8 @@
         "previewImageRequired": "पूर्वावलोकन छवि आवश्यक है",
         "enableBannerImage": "बैनर छवि सक्षम करें",
         "bannerImageRequired": "बैनर छवि आवश्यक है",
-        "enableCourseMedia": "कोर्स मीडिया सक्षम करें"
+        "enableCourseMedia": "कोर्स मीडिया सक्षम करें",
+        "enableCoursePageTemplate": "कोर्स पेज टेम्पलेट कंटेंट सक्षम करें"
     },
     "courseStructure": {
         "heading": "कोर्स संरचना कॉन्फ़िगरेशन",

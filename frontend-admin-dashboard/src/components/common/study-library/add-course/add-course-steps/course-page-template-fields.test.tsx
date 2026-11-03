@@ -46,7 +46,13 @@ vi.mock('sonner', () => ({ toast: { success: vi.fn(), error: vi.fn() } }));
 
 let formApi: UseFormReturn<Step1Data>;
 
-const Harness = ({ coursePage }: { coursePage?: CoursePageContent }) => {
+const Harness = ({
+    coursePage,
+    showTemplate = true,
+}: {
+    coursePage?: CoursePageContent;
+    showTemplate?: boolean;
+}) => {
     const form = useForm<Step1Data>({
         defaultValues: {
             course: 'Touch Typing',
@@ -60,7 +66,13 @@ const Harness = ({ coursePage }: { coursePage?: CoursePageContent }) => {
     return (
         <QueryClientProvider client={new QueryClient()}>
             <Form {...form}>
-                <CoursePageSection form={form} courseTerm="Course" open={open} onOpenChange={setOpen} />
+                <CoursePageSection
+                    form={form}
+                    courseTerm="Course"
+                    open={open}
+                    onOpenChange={setOpen}
+                    showTemplate={showTemplate}
+                />
             </Form>
         </QueryClientProvider>
     );
@@ -115,6 +127,31 @@ describe('Page template content', () => {
         });
         expect(parseCoursePageJson(payload()).template.tagline).toBe('A calm start');
         expect(screen.getByText('1 FAQ · Template content')).toBeTruthy();
+    });
+
+    it('is hidden when the course setting is off, and stored content is saved back unchanged', () => {
+        const raw = JSON.stringify({
+            v: 1,
+            mode: null,
+            faqs: [{ q: 'Q', a: '<p>A</p>' }],
+            template: { tagline: 'Kept', labels: { about: 'About' } },
+        });
+        render(<Harness coursePage={parseCoursePageJson(raw)} showTemplate={false} />);
+        expect(screen.queryByRole('button', { name: /page template content/i })).toBeNull();
+        expect(screen.queryByText(/Template content/)).toBeNull();
+        expect(screen.getByText('FAQs · 1')).toBeTruthy();
+        expect(payload()).toBe(raw);
+    });
+
+    it('saves headings and button text under labels', () => {
+        render(<Harness />);
+        openTemplate();
+        fireEvent.change(screen.getByLabelText('About heading'), {
+            target: { value: 'About the course' },
+        });
+        expect(JSON.parse(payload() as string).template).toEqual({
+            labels: { about: 'About the course' },
+        });
     });
 
     it('shows stored template content and removes a card', () => {

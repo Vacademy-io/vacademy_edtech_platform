@@ -15,7 +15,8 @@
         "previewImageRequired": "Preview Image Required",
         "enableBannerImage": "Enable Banner Image",
         "bannerImageRequired": "Banner Image Required",
-        "enableCourseMedia": "Enable Course Media"
+        "enableCourseMedia": "Enable Course Media",
+        "enableCoursePageTemplate": "Enable Course Page Template Content"
     },
     "courseStructure": {
         "heading": "Course Structure Configuration",
