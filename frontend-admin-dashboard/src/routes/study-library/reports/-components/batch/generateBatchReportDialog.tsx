@@ -1,11 +1,25 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { toast } from 'sonner';
-import { ChalkboardTeacher, Eye, FilePdf, UsersThree } from '@phosphor-icons/react';
+import {
+    ChalkboardTeacher,
+    EnvelopeSimple,
+    Eye,
+    FilePdf,
+    UsersThree,
+    WhatsappLogo,
+} from '@phosphor-icons/react';
 import { MyDialog } from '@/components/design-system/dialog';
 import { MyButton } from '@/components/design-system/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { DashboardLoader } from '@/components/core/dashboard-loader';
+import {
+    TemplateSearchableSelect,
+    toTemplateOptions,
+} from '@/components/templates/TemplateSearchableSelect';
+import { listTemplates } from '@/routes/communication/whatsapp-templates/-services/template-api';
+import { getInstituteId } from '@/constants/helper';
+import { cn } from '@/lib/utils';
 import {
     BATCH_REPORT_SECTIONS,
     BATCH_REPORT_SECTION_META,
@@ -14,6 +28,7 @@ import {
     getBatchReportTemplateQuery,
     sendBatchReport,
     type BatchReportAudience,
+    type BatchReportChannel,
     type BatchReportSection,
     type BatchSummaryRequest,
 } from '@/services/batch-summary-report';
@@ -35,7 +50,34 @@ export function GenerateBatchReportDialog({
     const [html, setHtml] = useState<string | null>(null);
     const [busy, setBusy] = useState<'preview' | 'pdf' | BatchReportAudience | null>(null);
     const [confirm, setConfirm] = useState<BatchReportAudience | null>(null);
+    const [channel, setChannel] = useState<BatchReportChannel>('EMAIL');
+    const [waTemplate, setWaTemplate] = useState<string | undefined>(undefined);
     const template = useQuery({ ...getBatchReportTemplateQuery(), enabled: open });
+    const instituteId = getInstituteId();
+    const waTemplates = useQuery({
+        queryKey: ['WHATSAPP_TEMPLATES', instituteId],
+        queryFn: () => listTemplates(instituteId ?? '', 'WHATSAPP'),
+        enabled: open && channel === 'WHATSAPP' && !!instituteId,
+        staleTime: 5 * 60_000,
+    });
+    // Approved WhatsApp templates; those with a document header (where the PDF goes) first.
+    const approved = useMemo(
+        () =>
+            (waTemplates.data ?? [])
+                .filter(
+                    (t) =>
+                        (t.channelType ?? 'WHATSAPP') === 'WHATSAPP' &&
+                        (t.status ?? '').toUpperCase() === 'APPROVED'
+                )
+                .sort(
+                    (a, b) =>
+                        Number((b.headerType ?? '').toUpperCase() === 'DOCUMENT') -
+                        Number((a.headerType ?? '').toUpperCase() === 'DOCUMENT')
+                ),
+        [waTemplates.data]
+    );
+    const picked = approved.find((t) => t.name === waTemplate);
+    const pickedHasDocument = (picked?.headerType ?? '').toUpperCase() === 'DOCUMENT';
 
     useEffect(() => {
         if (open && template.data) setSections(template.data.sections);
@@ -45,6 +87,8 @@ export function GenerateBatchReportDialog({
         if (!open) {
             setHtml(null);
             setConfirm(null);
+            setChannel('EMAIL');
+            setWaTemplate(undefined);
         }
     }, [open]);
 
@@ -96,7 +140,14 @@ export function GenerateBatchReportDialog({
         if (!b) return;
         setBusy(audience);
         try {
-            const result = await sendBatchReport({ ...b, audience });
+            const result = await sendBatchReport({
+                ...b,
+                audience,
+                channel,
+                ...(channel === 'WHATSAPP' && picked
+                    ? { template_name: picked.name, language_code: picked.language || 'en' }
+                    : {}),
+            });
             const who = audience === 'TEACHERS' ? 'teacher' : 'parent';
             if (result.sent > 0) {
                 toast.success(`Sent to ${result.sent} ${who}${result.sent === 1 ? '' : 's'}`, {
@@ -189,23 +240,83 @@ export function GenerateBatchReportDialog({
             }
             footer={
                 confirm ? (
-                    <div className="flex w-full flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                        <p className="text-sm text-neutral-600">
-                            {confirm === 'TEACHERS'
-                                ? 'Email this report to every teacher assigned to this batch?'
-                                : 'Email each parent their own child’s report? Learners without a parent email are skipped.'}
-                        </p>
-                        <div className="flex gap-2">
-                            <MyButton
-                                buttonType="secondary"
-                                onClick={() => setConfirm(null)}
-                                disabled={!!busy}
-                            >
-                                Cancel
-                            </MyButton>
-                            <MyButton onClick={() => send(confirm)} disabled={!!busy}>
-                                {busy === confirm ? 'Sending…' : 'Send now'}
-                            </MyButton>
+                    <div className="flex w-full flex-col gap-3">
+                        <div className="flex flex-wrap items-center gap-3">
+                            <span className="text-sm font-medium text-neutral-700">Send by</span>
+                            <div className="flex rounded-lg bg-neutral-100 p-1">
+                                {(
+                                    [
+                                        { key: 'EMAIL', label: 'Email', icon: EnvelopeSimple },
+                                        { key: 'WHATSAPP', label: 'WhatsApp', icon: WhatsappLogo },
+                                    ] as const
+                                ).map(({ key, label, icon: Icon }) => (
+                                    <button
+                                        key={key}
+                                        type="button"
+                                        onClick={() => setChannel(key)}
+                                        className={cn(
+                                            'flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium transition-colors',
+                                            channel === key
+                                                ? 'bg-white text-neutral-800 shadow-sm'
+                                                : 'text-neutral-500 hover:text-neutral-700'
+                                        )}
+                                    >
+                                        <Icon className="size-4" />
+                                        {label}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+                        {channel === 'WHATSAPP' && (
+                            <div className="flex flex-col gap-1">
+                                <span className="text-xs font-medium text-neutral-600">
+                                    Template (the report goes as a PDF in its document header)
+                                </span>
+                                <TemplateSearchableSelect
+                                    options={toTemplateOptions(approved)}
+                                    value={waTemplate}
+                                    onChange={setWaTemplate}
+                                    loading={waTemplates.isLoading}
+                                    portal={false}
+                                    placeholder="Pick an approved WhatsApp template"
+                                    emptyText="No approved WhatsApp templates."
+                                />
+                                {picked && !pickedHasDocument && (
+                                    <span className="text-xs text-warning-600">
+                                        This template has no document header, so WhatsApp will
+                                        not show the PDF. Pick one with a document header.
+                                    </span>
+                                )}
+                            </div>
+                        )}
+                        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                            <p className="text-sm text-neutral-600">
+                                {channel === 'WHATSAPP'
+                                    ? confirm === 'TEACHERS'
+                                        ? 'Send this report on WhatsApp to every teacher assigned to this batch?'
+                                        : 'Send each parent their own child’s report on WhatsApp? Learners without a parent mobile are skipped.'
+                                    : confirm === 'TEACHERS'
+                                      ? 'Email this report to every teacher assigned to this batch?'
+                                      : 'Email each parent their own child’s report? Learners without a parent email are skipped.'}
+                            </p>
+                            <div className="flex gap-2">
+                                <MyButton
+                                    buttonType="secondary"
+                                    onClick={() => setConfirm(null)}
+                                    disabled={!!busy}
+                                >
+                                    Cancel
+                                </MyButton>
+                                <MyButton
+                                    onClick={() => send(confirm)}
+                                    disabled={
+                                        !!busy ||
+                                        (channel === 'WHATSAPP' && (!picked || !pickedHasDocument))
+                                    }
+                                >
+                                    {busy === confirm ? 'Sending…' : 'Send now'}
+                                </MyButton>
+                            </div>
                         </div>
                     </div>
                 ) : (
