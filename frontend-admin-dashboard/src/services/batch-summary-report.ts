@@ -188,6 +188,30 @@ export const fetchBatchSummaryReport = async (
     return data;
 };
 
+export interface BatchDailyTimeRow {
+    date: string;
+    avg_minutes: number | null;
+    active_learners: number;
+    total_minutes: number | null;
+}
+
+/** Learning time per day for the same scope, newest 92 days of the window. */
+export const fetchBatchDailyTime = async (body: BatchSummaryRequest): Promise<BatchDailyTimeRow[]> => {
+    const { data } = await authenticatedAxiosInstance.post<BatchDailyTimeRow[]>(
+        `${BATCH_SUMMARY_REPORT_BASE}/daily-time`,
+        { ...body, sections: undefined }
+    );
+    return data;
+};
+
+export const getBatchDailyTimeQuery = (body: BatchSummaryRequest) =>
+    queryOptions({
+        queryKey: ['BATCH_DAILY_TIME', { ...body, assessment_ids: undefined, sections: undefined }],
+        queryFn: () => fetchBatchDailyTime(body),
+        enabled: !!body.start_date && !!body.end_date,
+        staleTime: 60_000,
+    });
+
 export const getBatchSummaryReportQuery = (body: BatchSummaryRequest) =>
     queryOptions({
         queryKey: ['BATCH_SUMMARY_REPORT', body],

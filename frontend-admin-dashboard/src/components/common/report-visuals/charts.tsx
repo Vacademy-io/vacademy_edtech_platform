@@ -569,3 +569,84 @@ export const HorizontalBars = ({
         ))}
     </ul>
 );
+
+export interface DailyTimePoint {
+    /** yyyy-MM-dd */
+    date: string;
+    minutes: number;
+    /** A comparison line, e.g. the batch average. */
+    compare?: number | null;
+    /** Extra tooltip line, e.g. "12 learners studied". */
+    note?: string;
+}
+
+const dayLabel = (iso: string) => {
+    const d = new Date(`${iso}T00:00:00`);
+    return Number.isNaN(d.getTime())
+        ? iso
+        : d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
+};
+
+/** Minutes per day as bars, with an optional comparison line. */
+export const DailyTimeChart = ({
+    data,
+    brand,
+    valueLabel = 'Minutes',
+    compareLabel,
+    height = 220,
+    animate = true,
+}: {
+    data: DailyTimePoint[];
+    brand: string;
+    valueLabel?: string;
+    compareLabel?: string;
+    height?: number;
+    animate?: boolean;
+}) => (
+    <div style={{ height }}>
+        <ResponsiveContainer width="100%" height="100%">
+            <ComposedChart data={data} margin={{ top: 12, right: 4, left: -18, bottom: 0 }} barCategoryGap={2}>
+                <CartesianGrid vertical={false} stroke={REPORT_COLORS.line} />
+                <XAxis
+                    dataKey="date"
+                    tickFormatter={dayLabel}
+                    tick={AXIS_TICK}
+                    tickLine={false}
+                    axisLine={false}
+                    minTickGap={18}
+                />
+                <YAxis allowDecimals={false} tick={AXIS_TICK} tickLine={false} axisLine={false} />
+                <Tooltip
+                    cursor={{ fill: '#f8fafc' }}
+                    content={({ active, payload }) => {
+                        const p = payload?.[0]?.payload as DailyTimePoint | undefined;
+                        if (!active || !p) return null;
+                        const rows: { label: string; value: string; color?: string }[] = [
+                            { label: valueLabel, value: `${Math.round(p.minutes)} min`, color: brand },
+                        ];
+                        if (compareLabel && p.compare != null) {
+                            rows.push({
+                                label: compareLabel,
+                                value: `${Math.round(p.compare)} min`,
+                                color: REPORT_COLORS.neutral,
+                            });
+                        }
+                        if (p.note) rows.push({ label: p.note, value: '' });
+                        return <TooltipBox title={dayLabel(p.date)} rows={rows} />;
+                    }}
+                />
+                <Bar dataKey="minutes" fill={brand} radius={[3, 3, 0, 0]} isAnimationActive={animate} />
+                {compareLabel && (
+                    <Line
+                        type="monotone"
+                        dataKey="compare"
+                        stroke={REPORT_COLORS.neutral}
+                        strokeWidth={2}
+                        dot={false}
+                        isAnimationActive={animate}
+                    />
+                )}
+            </ComposedChart>
+        </ResponsiveContainer>
+    </div>
+);

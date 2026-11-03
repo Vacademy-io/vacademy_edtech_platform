@@ -11,6 +11,7 @@ import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import { getTerminology } from '@/components/common/layout-container/sidebar/utils';
 import { RoleTerms, SystemTerms } from '@/routes/settings/-components/NamingSettings';
+import { AiEstimateNote } from '@/components/common/report-visuals/ai-estimate';
 
 interface InitiateReportDialogProps {
     onSuccess?: () => void;
@@ -272,6 +273,12 @@ export const InitiateReportDialog = ({
             }
             footer={
                 <>
+                    <AiEstimateNote
+                        instituteId={selectedStudent?.institute_id}
+                        learners={1}
+                        enabled={open}
+                        className="mr-auto"
+                    />
                     <MyButton
                         buttonType="secondary"
                         onClick={() => setOpen(false)}

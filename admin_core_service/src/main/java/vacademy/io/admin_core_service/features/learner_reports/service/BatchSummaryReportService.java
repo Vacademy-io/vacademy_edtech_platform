@@ -53,6 +53,7 @@ import java.sql.Date;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
+import java.sql.Timestamp;
 import java.util.Base64;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -123,6 +124,7 @@ public class BatchSummaryReportService {
     private final FacultySubjectPackageSessionMappingRepository facultyMappingRepository;
     private final AuthService authService;
     private final NotificationService notificationService;
+    private final vacademy.io.admin_core_service.features.learner_tracking.repository.ActivityLogRepository activityLogRepository;
     private final MediaService mediaService;
     private final ObjectMapper objectMapper;
 
@@ -1329,6 +1331,49 @@ public class BatchSummaryReportService {
                 throw new VacademyException(HttpStatus.NOT_FOUND, "Batch not found");
             }
         }
+    }
+
+    /** Days the daily time chart covers at most (the newest days of the window). */
+    private static final int DAILY_TIME_MAX_DAYS = 92;
+
+    /**
+     * Learning time per day for the report scope (all batches, one or several), over the newest
+     * {@value #DAILY_TIME_MAX_DAYS} days of the window, with days without study as zero.
+     */
+    public List<BatchSummaryReportDTO.DailyTimeRow> dailyTime(String instituteId, BatchSummaryReportRequest request) {
+        validate(instituteId, request);
+        LocalDate end = request.getEndDate();
+        LocalDate start = request.getStartDate().isBefore(end.minusDays(DAILY_TIME_MAX_DAYS - 1))
+                ? end.minusDays(DAILY_TIME_MAX_DAYS - 1) : request.getStartDate();
+        List<String> batches = new ArrayList<>(pickedBatches(request));
+        if (StringUtils.hasText(request.getPackageSessionId())) batches = List.of(request.getPackageSessionId());
+        Timestamp from = Timestamp.valueOf(start.atStartOfDay());
+        Timestamp to = Timestamp.valueOf(end.atTime(23, 59, 59));
+        Map<String, Object[]> byDay = new HashMap<>();
+        try {
+            List<Object[]> rows = batches.isEmpty()
+                    ? activityLogRepository.findDailyTimeForInstitute(instituteId, from, to)
+                    : activityLogRepository.findDailyTimeForBatches(batches, from, to);
+            for (Object[] r : rows) {
+                if (r == null || r[0] == null) continue;
+                byDay.put(r[0].toString().substring(0, 10), r);
+            }
+        } catch (Exception e) {
+            log.warn("[batch-summary] daily time failed for institute {}: {}", instituteId, e.getMessage());
+        }
+        List<BatchSummaryReportDTO.DailyTimeRow> out = new ArrayList<>();
+        for (LocalDate d = start; !d.isAfter(end); d = d.plusDays(1)) {
+            Object[] r = byDay.get(d.toString());
+            double totalMin = r == null || r[1] == null ? 0 : ((Number) r[1]).doubleValue() / 60000.0;
+            long learners = r == null || r[2] == null ? 0 : ((Number) r[2]).longValue();
+            out.add(BatchSummaryReportDTO.DailyTimeRow.builder()
+                    .date(d.toString())
+                    .totalMinutes(round1(totalMin))
+                    .activeLearners(learners)
+                    .avgMinutes(learners == 0 ? 0.0 : round1(totalMin / learners))
+                    .build());
+        }
+        return out;
     }
 
     /** The distinct batches of packageSessionIds, in order. */
