@@ -40,6 +40,8 @@ logger = logging.getLogger(__name__)
 TOOL_KEY = "paper_digitise"
 MAX_PDF_BYTES = 25 * 1024 * 1024
 MAX_PAGES = 30
+# Paper + separate answer key + marking scheme together.
+MAX_TOTAL_PAGES = 60
 MAX_ROUNDS = 4  # continuation calls for long papers
 DOWNLOAD_TIMEOUT_SECONDS = 45.0
 SOURCE_TYPE = "QUESTION_PAPER_PDF"
@@ -95,29 +97,36 @@ def _count_pages(content: bytes) -> int:
         doc.close()
 
 
-async def fetch_paper_pdf(url: str) -> PaperPdf:
+QUESTION_PAPER = "question paper"
+
+
+async def fetch_paper_pdf(url: str, label: str = QUESTION_PAPER) -> PaperPdf:
     """Download the attached paper and make sure it is something we can read.
 
     Every failure is a PaperPdfError with a sentence the teacher can act on —
     the description editor accepts any file, so DOCX, images and dead links all
-    arrive here.
+    arrive here. `label` names the document in those sentences ("answer key",
+    "marking scheme"); the question paper's wording is unchanged.
     """
     parsed = urlparse(url or "")
     if parsed.scheme not in ("http", "https") or not parsed.netloc:
-        raise PaperPdfError("The question paper link is not a valid web address.")
+        raise PaperPdfError(f"The {label} link is not a valid web address.")
 
     try:
         async with httpx.AsyncClient(timeout=DOWNLOAD_TIMEOUT_SECONDS, follow_redirects=True) as client:
             async with client.stream("GET", url) as resp:
                 if resp.status_code >= 400:
                     raise PaperPdfError(
+                        f"Could not download the {label} (HTTP {resp.status_code}). "
+                        "Re-attach it and try again."
+                        if label != QUESTION_PAPER else
                         f"Could not download the question paper (HTTP {resp.status_code}). "
                         "Re-attach it in the description and try again."
                     )
                 declared = int(resp.headers.get("content-length") or 0)
                 if declared > MAX_PDF_BYTES:
                     raise PaperPdfError(
-                        f"The question paper is {declared / (1024 * 1024):.0f} MB; "
+                        f"The {label} is {declared / (1024 * 1024):.0f} MB; "
                         f"the limit is {MAX_PDF_BYTES // (1024 * 1024)} MB."
                     )
                 chunks: List[bytes] = []
@@ -126,7 +135,7 @@ async def fetch_paper_pdf(url: str) -> PaperPdf:
                     total += len(chunk)
                     if total > MAX_PDF_BYTES:
                         raise PaperPdfError(
-                            f"The question paper is larger than {MAX_PDF_BYTES // (1024 * 1024)} MB."
+                            f"The {label} is larger than {MAX_PDF_BYTES // (1024 * 1024)} MB."
                         )
                     chunks.append(chunk)
                 content = b"".join(chunks)
@@ -135,14 +144,16 @@ async def fetch_paper_pdf(url: str) -> PaperPdf:
         raise
     except httpx.HTTPError as exc:
         raise PaperPdfError(
-            "Could not download the question paper. Check that the attachment opens in a browser."
+            f"Could not download the {label}. Check that the attachment opens in a browser."
         ) from exc
 
     if not content:
-        raise PaperPdfError("The question paper file is empty.")
+        raise PaperPdfError(f"The {label} file is empty.")
     if not content.startswith(b"%PDF") and content_type != "application/pdf":
         raise PaperPdfError(
             "Only PDF question papers can be digitised. Export the paper as a PDF and attach that."
+            if label == QUESTION_PAPER else
+            f"The {label} must be a PDF. Export it as a PDF and upload that."
         )
 
     pages = await asyncio.to_thread(_count_pages, content)
@@ -150,7 +161,7 @@ async def fetch_paper_pdf(url: str) -> PaperPdf:
         raise PaperPdfError("This PDF has no pages.")
     if pages > MAX_PAGES:
         raise PaperPdfError(
-            f"This PDF has {pages} pages; a question paper of up to {MAX_PAGES} pages can be digitised."
+            f"This PDF has {pages} pages; a {label} of up to {MAX_PAGES} pages can be digitised."
         )
     return PaperPdf(url=url, file_name=file_name_from_url(url), content=content, pages=pages)
 
@@ -165,7 +176,7 @@ The paper, converted from PDF to HTML:
 <paper>
 {paper_html}
 </paper>
-
+{documents}
 {continuation}
 
 Extract EVERY question exactly as printed, in order. Return ONLY this JSON:
@@ -214,9 +225,68 @@ _CONTINUATION = (
 )
 
 
-def _build_prompt(paper_html: str, already: Sequence[str]) -> str:
+# The teacher can upload the answer key and the marking scheme as their own PDFs
+# (or one PDF holding both). They are read alongside the paper - never as
+# questions - and win over anything the model would otherwise work out itself.
+_ANSWER_KEY_BLOCK = """
+The institute's ANSWER KEY for this paper, converted from PDF to HTML. It is NOT part of the paper: never take a question from it.
+<answer_key>
+{html}
+</answer_key>
+"""
+
+_MARKING_SCHEME_BLOCK = """
+The institute's MARKING SCHEME for this paper, converted from PDF to HTML. It is NOT part of the paper: never take a question from it.
+<marking_scheme>
+{html}
+</marking_scheme>
+"""
+
+_KEY_AND_SCHEME_BLOCK = """
+The institute's ANSWER KEY AND MARKING SCHEME for this paper (one document), converted from PDF to HTML. It is NOT part of the paper: never take a question from it.
+<answer_key_and_marking_scheme>
+{html}
+</answer_key_and_marking_scheme>
+"""
+
+_DOCUMENT_RULES = """
+Rules for the document(s) above (they override rules 4 and 5 where they apply):
+A. Match every entry to its question by the printed question number (and section, when numbering restarts). An entry with no matching question is ignored; never create a question from it.
+B. Answers. When the document gives a question's answer, use it - for MCQS/MCQM/TRUE_FALSE as correct_options (map the printed letter/number or option text to the option's preview_id), otherwise as ans - and set answer_source "paper". Only a question it does not cover falls back to rule 5.
+C. Marks. When the paper prints no marks for a question but the marking scheme does, use the scheme's figure and set marks_source "scheme". When both print a figure, the paper's figure stays.
+D. Marking points. When the marking scheme lists value points or steps for a question, copy them as that question's marking_points (one point or step each, in order, short and verbatim) and add "marking_point_marks": [numbers], the marks the scheme gives each point, same order and length as marking_points (leave it [] when the scheme gives no per-point marks). These replace the points you would otherwise write.
+"""
+
+
+def _documents_block(answer_key_html: Optional[str], marking_scheme_html: Optional[str]) -> str:
+    """The extra documents and their rules; "" when there are none (prompt unchanged)."""
+    key = (answer_key_html or "").strip()
+    scheme = (marking_scheme_html or "").strip()
+    if not key and not scheme:
+        return ""
+    if key and scheme and key == scheme:
+        parts = [_KEY_AND_SCHEME_BLOCK.format(html=key)]
+    else:
+        parts = []
+        if key:
+            parts.append(_ANSWER_KEY_BLOCK.format(html=key))
+        if scheme:
+            parts.append(_MARKING_SCHEME_BLOCK.format(html=scheme))
+    return "".join(parts) + _DOCUMENT_RULES
+
+
+def _build_prompt(
+    paper_html: str,
+    already: Sequence[str],
+    answer_key_html: Optional[str] = None,
+    marking_scheme_html: Optional[str] = None,
+) -> str:
     continuation = _CONTINUATION.format(done=", ".join(already)) if already else ""
-    return _PROMPT.format(paper_html=paper_html, continuation=continuation)
+    return _PROMPT.format(
+        paper_html=paper_html,
+        documents=_documents_block(answer_key_html, marking_scheme_html),
+        continuation=continuation,
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -388,6 +458,10 @@ def _coerce_question(q: Dict[str, Any]) -> Dict[str, Any]:
             q[key] = [str(value)]
         elif not isinstance(value, list):
             q[key] = []
+    point_marks = q.get("marking_point_marks")
+    if isinstance(point_marks, (int, float, str)):
+        point_marks = [point_marks]
+    q["marking_point_marks"] = [_num(m) for m in point_marks] if isinstance(point_marks, list) else []
     if isinstance(q.get("ans"), (list, dict)):
         q["ans"] = json.dumps(q["ans"], ensure_ascii=False) if isinstance(q["ans"], dict) else ", ".join(map(str, q["ans"]))
     return q
@@ -475,6 +549,17 @@ def reconcile_marks(
     return warnings
 
 
+def _scheme_point_marks(raw: Dict[str, Any], count: int) -> Optional[List[float]]:
+    """Per-point marks from the marking scheme, when there is one for every point."""
+    marks = raw.get("marking_point_marks") or []
+    if not isinstance(marks, list) or len(marks) != count or count == 0:
+        return None
+    values = [_num(m) for m in marks]
+    if any(v is None for v in values):
+        return None
+    return [float(v) for v in values if v is not None]
+
+
 def marking_rubric(raw: Dict[str, Any]) -> Dict[str, Any]:
     """`evaluation_criteria_json` for the AI checker, from what the paper gives us.
 
@@ -503,6 +588,22 @@ def marking_rubric(raw: Dict[str, Any]) -> Dict[str, Any]:
             "keywords": tags,
             "evaluation_guidelines": guidelines,
         }]
+    elif _scheme_point_marks(raw, len(points)):
+        # The institute's marking scheme gives each point its own marks: keep its
+        # weighting, scaled so the rubric still sums to the question's marks.
+        weights = _scheme_point_marks(raw, len(points)) or []
+        scale = max_marks / sum(weights)
+        shares = [round(w * scale, 2) for w in weights]
+        shares[-1] = round(max_marks - sum(shares[:-1]), 2)
+        rubric = [
+            {
+                "criteria_name": f"Point {i + 1}",
+                "max_marks": shares[i],
+                "keywords": tags if i == len(points) - 1 else [],
+                "evaluation_guidelines": point,
+            }
+            for i, point in enumerate(points)
+        ]
     else:
         share = round(max_marks / len(points), 2)
         rubric = [
@@ -572,6 +673,7 @@ def build_paper(
     pdf_url: str,
     file_name: str,
     expected_total: Optional[float],
+    has_answer_key_document: bool = False,
 ) -> DigitisedPaper:
     """Merge the LLM round(s) into one paper and shape it for the assessment builder."""
     title = ""
@@ -652,6 +754,9 @@ def build_paper(
         )
     if model_answers:
         warnings.append(
+            f"The answer key you uploaded does not cover {model_answers} objective question(s); "
+            "the AI suggested their answers. Verify them — they decide the marks."
+            if has_answer_key_document else
             f"The paper prints no answer key; the AI suggested answers for {model_answers} "
             "objective question(s). Verify them — they decide the marks."
         )
@@ -681,10 +786,26 @@ async def extract_questions(
     pdf_url: str,
     file_name: str,
     expected_total: Optional[float],
+    answer_key_html: Optional[str] = None,
+    marking_scheme_html: Optional[str] = None,
 ) -> DigitisedPaper:
-    """LLM extraction with continuation rounds for long papers, then shaping."""
+    """LLM extraction with continuation rounds for long papers, then shaping.
+
+    `answer_key_html` / `marking_scheme_html` are the teacher's separate
+    documents (the same HTML in both when one PDF holds the two); they ride
+    along in every round so a continuation still sees them.
+    """
     protector = HtmlTagProtector()
     protected = protector.protect(paper_html)
+    # One protector per document: protect() starts a fresh store each call.
+    key_protector = HtmlTagProtector()
+    scheme_protector = HtmlTagProtector()
+    same_document = bool(answer_key_html) and answer_key_html == marking_scheme_html
+    key_protected = key_protector.protect(answer_key_html) if answer_key_html else None
+    scheme_protected = (
+        key_protected if same_document
+        else scheme_protector.protect(marking_scheme_html) if marking_scheme_html else None
+    )
     rounds: List[Dict[str, Any]] = []
     already: List[str] = []
     model_used = ""
@@ -692,11 +813,15 @@ async def extract_questions(
 
     for _ in range(MAX_ROUNDS):
         sanitized, model_used, usage = await llm_json.generate_json(
-            _build_prompt(protected, already), models, label="paper_digitise"
+            _build_prompt(protected, already, key_protected, scheme_protected), models, label="paper_digitise"
         )
         prompt_tokens += int((usage or {}).get("prompt_tokens") or 0)
         completion_tokens += int((usage or {}).get("completion_tokens") or 0)
         restored = protector.restore_in_json(sanitized)
+        if key_protected:
+            restored = key_protector.restore_in_json(restored)
+        if scheme_protected and not same_document:
+            restored = scheme_protector.restore_in_json(restored)
         try:
             data = json.loads(restored)
         except ValueError:
@@ -714,7 +839,8 @@ async def extract_questions(
         if data.get("is_process_completed", True) or not fresh:
             break
 
-    paper = build_paper(rounds, pdf_url=pdf_url, file_name=file_name, expected_total=expected_total)
+    paper = build_paper(rounds, pdf_url=pdf_url, file_name=file_name, expected_total=expected_total,
+                        has_answer_key_document=bool(answer_key_html))
     paper.model = model_used
     paper.prompt_tokens = prompt_tokens
     paper.completion_tokens = completion_tokens
@@ -722,19 +848,38 @@ async def extract_questions(
     return paper
 
 
+async def _to_html(pdf: PaperPdf) -> str:
+    pdf_id = await pdf_questions_service.start_from_bytes(pdf.content, pdf.file_name)
+    return await pdf_questions_service.fetch_or_convert_html(pdf_id, allow_poll=True) or ""
+
+
 async def digitise(
     pdf: PaperPdf,
     models: List[str],
     *,
     expected_total: Optional[float],
+    answer_key: Optional[PaperPdf] = None,
+    marking_scheme: Optional[PaperPdf] = None,
 ) -> DigitisedPaper:
-    """MathPix → HTML → questions. Raises on MathPix/LLM failure."""
-    pdf_id = await pdf_questions_service.start_from_bytes(pdf.content, pdf.file_name)
-    html = await pdf_questions_service.fetch_or_convert_html(pdf_id, allow_poll=True)
+    """MathPix → HTML → questions. Raises on MathPix/LLM failure.
+
+    `answer_key` / `marking_scheme` are the teacher's separate PDFs (the same
+    object for both when one PDF holds the two); each is converted once, in
+    parallel with the paper.
+    """
+    same = answer_key is not None and answer_key is marking_scheme
+    extras = [d for d in (answer_key, None if same else marking_scheme) if d is not None]
+    html, *extra_html = await asyncio.gather(_to_html(pdf), *(_to_html(d) for d in extras))
     if not (html or "").strip():
         raise RuntimeError("The PDF converted to an empty document.")
+    converted = dict(zip((id(d) for d in extras), extra_html))
+    for doc, label in ((answer_key, "answer key"), (marking_scheme, "marking scheme")):
+        if doc is not None and not (converted.get(id(doc)) or "").strip():
+            raise RuntimeError(f"The {label} PDF converted to an empty document.")
     return await extract_questions(
-        html, models, pdf_url=pdf.url, file_name=pdf.file_name, expected_total=expected_total
+        html, models, pdf_url=pdf.url, file_name=pdf.file_name, expected_total=expected_total,
+        answer_key_html=converted.get(id(answer_key)) if answer_key is not None else None,
+        marking_scheme_html=converted.get(id(marking_scheme)) if marking_scheme is not None else None,
     )
 
 
@@ -744,6 +889,7 @@ def tool_params(pages: int) -> Dict[str, Any]:
 
 __all__ = [
     "PaperPdf", "PaperPdfError", "DigitisedPaper", "TOOL_KEY", "MAX_PAGES", "MAX_PDF_BYTES",
+    "MAX_TOTAL_PAGES", "QUESTION_PAPER",
     "fetch_paper_pdf", "digitise", "extract_questions", "build_paper", "reconcile_marks",
     "choice_groups_for", "paper_total",
     "marking_rubric", "tool_params", "file_name_from_url",

@@ -21,7 +21,7 @@
         },
         "manualUploadExam": {
             "title": "Manual Upload Exam",
-            "description": "Students download the question paper, solve offline, and upload answer sheets. Teachers check and assign marks manually."
+            "description": "Upload the question paper (and the answer key / marking scheme). Students solve on paper and upload their copies; the AI or a teacher checks them."
         }
     }
 }

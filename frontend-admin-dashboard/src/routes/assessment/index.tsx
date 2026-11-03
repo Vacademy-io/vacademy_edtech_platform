@@ -2,9 +2,10 @@ import { LayoutContainer } from '@/components/common/layout-container/layout-con
 import { useNavHeadingStore } from '@/stores/layout-container/useNavHeadingStore';
 import { Examination, Mock, Practice, Survey } from '@/svgs';
 import { createFileRoute, useNavigate } from '@tanstack/react-router';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { Helmet } from 'react-helmet';
 import { useTranslation } from 'react-i18next';
+import { QuickOfflineTestDialog } from './-components/offline-test/QuickOfflineTestDialog';
 
 // Route stub for TanStack Router - actual component loaded via index.lazy.tsx
 export const Route = createFileRoute('/assessment/')({});
@@ -13,6 +14,8 @@ function AssessmentPage() {
     const { t } = useTranslation('assessmentIndex');
     const { setNavHeading } = useNavHeadingStore();
     const navigate = useNavigate();
+    // Manual Upload Exam opens the one-screen form; it links to the full wizard.
+    const [offlineOpen, setOfflineOpen] = useState(false);
 
     const handleRedirectRoute = (type: string) => {
         navigate({
@@ -90,7 +93,7 @@ function AssessmentPage() {
                     </p>
                 </div>
                 <div
-                    onClick={() => handleRedirectRoute('MANUAL_UPLOAD_EXAM')}
+                    onClick={() => setOfflineOpen(true)}
                     className="flex cursor-pointer flex-col items-center rounded-xl border bg-neutral-50 p-4 transition-all hover:border-primary-200 hover:shadow-md active:scale-[0.98] sm:p-6 md:p-8"
                 >
                     <Examination className="size-16 sm:size-auto" />
@@ -102,6 +105,7 @@ function AssessmentPage() {
                     </p>
                 </div>
             </div>
+            <QuickOfflineTestDialog open={offlineOpen} onOpenChange={setOfflineOpen} />
         </>
     );
 }

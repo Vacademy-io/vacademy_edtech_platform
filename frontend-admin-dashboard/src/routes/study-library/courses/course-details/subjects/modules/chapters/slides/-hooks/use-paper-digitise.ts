@@ -8,6 +8,7 @@ import {
     startPaperDigitise,
     type DigitisedPaper,
     type PaperDigitiseStart,
+    type PaperExtraDocuments,
 } from '@/services/paper-digitise';
 
 export type DigitiseState =
@@ -44,15 +45,17 @@ export const usePaperDigitise = () => {
 
     /** Kick off a read. Resolves with the job once it exists, null when it could not start. */
     const start = useCallback(
-        async (input: {
-            pdfUrl: string;
-            expectedTotalMarks?: number;
-            title?: string;
-            assessmentId: string;
-            /** Shown in the toast and the bell. */
-            name: string;
-            returnPath?: string;
-        }): Promise<PaperDigitiseStart | null> => {
+        async (
+            input: PaperExtraDocuments & {
+                pdfUrl: string;
+                expectedTotalMarks?: number;
+                title?: string;
+                assessmentId: string;
+                /** Shown in the toast and the bell. */
+                name: string;
+                returnPath?: string;
+            }
+        ): Promise<PaperDigitiseStart | null> => {
             if (starting) return null;
             setStarting(true);
             try {

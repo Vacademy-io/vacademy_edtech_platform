@@ -10,6 +10,8 @@ import { useInstituteDetailsStore } from '@/stores/students/students-list/useIns
 import { cn } from '@/lib/utils';
 import { useAssessmentActionVisibility } from '@/lib/display-settings/assessment-actions';
 import { useTranslation } from 'react-i18next';
+import { useState } from 'react';
+import { QuickOfflineTestDialog } from '@/routes/assessment/-components/offline-test/QuickOfflineTestDialog';
 
 export const ScheduleTestHeaderDescription = ({
     isCourseOutline = false,
@@ -21,6 +23,9 @@ export const ScheduleTestHeaderDescription = ({
     const navigate = useNavigate();
     const { getCourseFromPackage } = useInstituteDetailsStore();
     const { canCreate } = useAssessmentActionVisibility();
+    const [typeDialogOpen, setTypeDialogOpen] = useState(false);
+    // Written paper (copy check) opens the one-screen form, not the wizard.
+    const [offlineOpen, setOfflineOpen] = useState(false);
 
     const handleRedirectRoute = (type: string) => {
         navigate({
@@ -60,7 +65,7 @@ export const ScheduleTestHeaderDescription = ({
                     label={t('assessmentSettingsLabel')}
                 />
                 {canCreate && (
-                    <Dialog>
+                    <Dialog open={typeDialogOpen} onOpenChange={setTypeDialogOpen}>
                         <DialogTrigger
                             disabled={getCourseFromPackage().length === 0}
                             className={cn(
@@ -135,9 +140,29 @@ export const ScheduleTestHeaderDescription = ({
                                         </p>
                                     </div>
                                 </div>
+                                <div className="flex items-center gap-12">
+                                    <div
+                                        onClick={() => {
+                                            setTypeDialogOpen(false);
+                                            setOfflineOpen(true);
+                                        }}
+                                        className="flex size-72 cursor-pointer flex-col items-center rounded-xl border bg-neutral-50 p-8"
+                                    >
+                                        <Examination />
+                                        <h1 className="text-h2 font-semibold">
+                                            {t('examTypes.manualUploadExam.title')}
+                                        </h1>
+                                        <p className="text-center text-sm text-neutral-500">
+                                            {t('examTypes.manualUploadExam.description')}
+                                        </p>
+                                    </div>
+                                </div>
                             </div>
                         </DialogContent>
                     </Dialog>
+                )}
+                {canCreate && (
+                    <QuickOfflineTestDialog open={offlineOpen} onOpenChange={setOfflineOpen} />
                 )}
             </div>
         </div>

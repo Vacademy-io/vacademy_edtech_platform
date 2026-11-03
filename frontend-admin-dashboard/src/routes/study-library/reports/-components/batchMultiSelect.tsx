@@ -84,6 +84,8 @@ interface BatchMultiSelectProps {
     /** Hide the label row (when the caller renders its own). */
     hideLabel?: boolean;
     className?: string;
+    /** Helper text when nothing is selected; defaults to the reports wording. */
+    hint?: string;
 }
 
 /**
@@ -98,6 +100,7 @@ export default function BatchMultiSelect({
     error,
     hideLabel = false,
     className,
+    hint,
 }: BatchMultiSelectProps) {
     const { t } = useTranslation('studyLibraryReportsBatchMultiSelect');
     const options = useBatchOptions();
@@ -131,7 +134,7 @@ export default function BatchMultiSelect({
                                   count: selected.length,
                                   term: batchTerm.toLowerCase(),
                               })
-                            : t('hint', { term: batchTermPlural.toLowerCase() })}
+                            : hint ?? t('hint', { term: batchTermPlural.toLowerCase() })}
                     </span>
                 )}
                 {selected.length > 0 && !disabled && (

@@ -1,0 +1,81 @@
+{
+    "heading": "Written paper (copy check)",
+    "intro": "Students download the question paper, solve it on paper and upload their copy before the end time. Fill this in and the test is created, assigned and published.",
+    "fields": {
+        "name": "Assessment title",
+        "namePlaceholder": "e.g. Class 9 Maths Half Yearly",
+        "start": "Live from",
+        "end": "Live till",
+        "liveHint": "Students can open the test and upload their copy only inside this window.",
+        "duration": "Upload time (minutes)",
+        "durationHint": "Time a student gets to upload the copy after clicking Start Assessment — not the time to write it.",
+        "totalMarks": "Total marks",
+        "totalMarksHint": "With AI checking, the marks are read from the paper; this is used to cross-check them.",
+        "batchHint": "Students of these batches get the test.",
+        "instructions": "Instructions (optional)",
+        "instructionsPlaceholder": "Anything students should know. The question paper is added below automatically."
+    },
+    "slot": {
+        "paper": "Question paper (PDF)",
+        "paperHint": "Students download this paper.",
+        "answerKey": "Answer key (PDF, optional)",
+        "answerKeyHint": "Only for checking — students never see it. Skip it if the paper already prints the answers.",
+        "keyHasScheme": "This PDF also has the marking scheme",
+        "markingScheme": "Marking scheme (PDF, optional)",
+        "markingSchemeHint": "Step-wise marks per question. Only for checking — students never see it.",
+        "choose": "Drop a PDF here or click to choose",
+        "uploading": "Uploading…",
+        "remove": "Remove file"
+    },
+    "check": {
+        "heading": "Who checks the copies?",
+        "ai": {
+            "title": "AI checks",
+            "description": "The paper is read into questions with marks (using the answer key and marking scheme if given). You review them once, then every copy is checked question by question."
+        },
+        "teacher": {
+            "title": "Teacher checks",
+            "description": "Copies are checked by hand. No credits are used.",
+            "later": "You can turn on AI checking later from the test's Submissions tab."
+        }
+    },
+    "ai": {
+        "estimateFailed": "Could not read the uploaded files.",
+        "privateNote": "The answer key and marking scheme are used only to check copies; they are not shown to students.",
+        "uploadPaperFirst": "Upload the question paper to see what reading it costs.",
+        "estimating": "Checking the files…",
+        "cannotRead": "{{reason}} Upload a readable PDF, or choose “Teacher checks”.",
+        "estimateLine_one": "≈{{credits}} credits to read the files ({{count}} page)",
+        "estimateLine_other": "≈{{credits}} credits to read the files ({{count}} pages)",
+        "balance": "balance {{balance}}",
+        "insufficient": "Not enough credits to read these files. Top up, or choose “Teacher checks”.",
+        "howItWorks": "Charged once, when the questions come back. You review them on the Submissions tab; each uploaded copy is then checked at 1 credit per question."
+    },
+    "actions": {
+        "creating": "Creating…",
+        "createAndRead": "Create & read paper (≈{{credits}} credits)",
+        "createAndReadNoEstimate": "Create & read paper",
+        "create": "Create assessment",
+        "cancel": "Cancel",
+        "fullSetup": "Use the full setup instead"
+    },
+    "toasts": {
+        "createFailed": "Could not create the assessment. Please try again.",
+        "created": "Assessment created and published.",
+        "createdReading": "Assessment created and published. Reading the paper in the background (≈{{credits}} credits) — you will get an alert when the questions are ready to review.",
+        "createdReadNotStarted": "Assessment created and published, but the paper could not be read. Try again from the Submissions tab, or check the copies by hand."
+    },
+    "errors": {
+        "nameRequired": "Enter a title",
+        "startRequired": "Pick when the test opens",
+        "endRequired": "Pick when the test closes",
+        "endAfterStart": "The end must be after the start",
+        "durationMin": "Enter at least 1 minute",
+        "marksMin": "Enter at least 1 mark",
+        "batchRequired": "Pick at least one batch",
+        "paperRequired": "Upload the question paper",
+        "notPdf": "Only PDF files can be used here.",
+        "tooBig": "The file is larger than {{mb}} MB.",
+        "uploadFailed": "Upload failed. Please try again."
+    }
+}

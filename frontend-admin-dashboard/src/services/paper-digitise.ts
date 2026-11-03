@@ -27,11 +27,35 @@ export interface CreditEstimate {
     breakdown: Array<{ component: string; detail: string; credits: number }>;
 }
 
+/** A document read with the paper, as the server counted it. */
+export interface PaperDocumentSummary {
+    role:
+        | 'question_paper'
+        | 'answer_key'
+        | 'marking_scheme'
+        | 'answer_key_and_marking_scheme'
+        | string;
+    file_name: string;
+    pages: number;
+}
+
+/**
+ * The answer key / marking scheme as their own PDFs. Leave both out when the
+ * paper prints them; give the same URL for both when one PDF holds the two.
+ */
+export interface PaperExtraDocuments {
+    answerKeyUrl?: string | null;
+    markingSchemeUrl?: string | null;
+}
+
 export interface PaperDigitiseEstimate {
     file_name: string;
+    /** Every page read — the answer key and marking scheme included. */
     pages: number;
     size_bytes: number;
     estimate: CreditEstimate;
+    /** Absent on servers that predate separate documents. */
+    documents?: PaperDocumentSummary[];
 }
 
 export interface PaperDigitiseStart extends PaperDigitiseEstimate {
@@ -43,7 +67,7 @@ export interface DigitisedRawQuestion {
     question_number?: string | number | null;
     section?: string | null;
     marks?: number | null;
-    marks_source?: 'printed' | 'section' | 'split' | 'default' | 'none' | null;
+    marks_source?: 'printed' | 'section' | 'scheme' | 'split' | 'default' | 'none' | null;
     answer_source?: 'paper' | 'model' | 'none' | null;
     question_type?: string | null;
     question?: { type?: string; content?: string } | null;
@@ -105,34 +129,56 @@ export interface PaperDigitiseJob {
     status_message: string | null;
     /** ISO time the read was started; null on older jobs. */
     created_at?: string | null;
+    /** What the read was given, so trying again can send the same documents. */
+    sources?: {
+        pdf_url?: string | null;
+        answer_key_url?: string | null;
+        marking_scheme_url?: string | null;
+    } | null;
     result: DigitisedPaper | null;
 }
 
 export const isJobRunning = (job: PaperDigitiseJob | null | undefined): boolean =>
     Boolean(job) && job!.status !== 'COMPLETED' && job!.status !== 'FAILED' && job!.status !== 'CANCELLED';
 
-export const estimatePaperDigitise = async (pdfUrl: string): Promise<PaperDigitiseEstimate> => {
-    const { data } = await authenticatedAxiosInstance.post<PaperDigitiseEstimate>(`${BASE}/estimate`, {
-        pdf_url: pdfUrl,
-    });
+/** The request fields for the separate documents; nothing at all when there are none. */
+const extraDocumentFields = (extra?: PaperExtraDocuments) => ({
+    ...(extra?.answerKeyUrl ? { answer_key_url: extra.answerKeyUrl } : {}),
+    ...(extra?.markingSchemeUrl ? { marking_scheme_url: extra.markingSchemeUrl } : {}),
+});
+
+export const estimatePaperDigitise = async (
+    pdfUrl: string,
+    extra?: PaperExtraDocuments
+): Promise<PaperDigitiseEstimate> => {
+    const { data } = await authenticatedAxiosInstance.post<PaperDigitiseEstimate>(
+        `${BASE}/estimate`,
+        {
+            pdf_url: pdfUrl,
+            ...extraDocumentFields(extra),
+        }
+    );
     return data;
 };
 
-export const startPaperDigitise = async (input: {
-    pdfUrl: string;
-    expectedTotalMarks?: number;
-    title?: string;
-    /** The test the paper belongs to — lets its page find the read later and the alert point at it. */
-    assessmentId?: string;
-    /** Dashboard path to return to from the alert / toast. */
-    returnPath?: string;
-}): Promise<PaperDigitiseStart> => {
+export const startPaperDigitise = async (
+    input: PaperExtraDocuments & {
+        pdfUrl: string;
+        expectedTotalMarks?: number;
+        title?: string;
+        /** The test the paper belongs to — lets its page find the read later and the alert point at it. */
+        assessmentId?: string;
+        /** Dashboard path to return to from the alert / toast. */
+        returnPath?: string;
+    }
+): Promise<PaperDigitiseStart> => {
     const { data } = await authenticatedAxiosInstance.post<PaperDigitiseStart>(`${BASE}/start`, {
         pdf_url: input.pdfUrl,
         expected_total_marks: input.expectedTotalMarks ?? null,
         title: input.title || null,
         assessment_id: input.assessmentId || null,
         return_path: input.returnPath || null,
+        ...extraDocumentFields(input),
     });
     return data;
 };
