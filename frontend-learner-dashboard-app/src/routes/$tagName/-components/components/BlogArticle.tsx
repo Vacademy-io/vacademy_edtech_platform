@@ -17,6 +17,7 @@ import {
 import { cn } from "@/lib/utils";
 import { BlogService, type BlogPostSummary, type BlogTemplate } from "../../-services/blog-service";
 import { resolveBlogTemplate } from "../../-utils/blog-template";
+import { useBlogPreviewPost } from "../../-utils/blog-preview";
 import {
   blogPlainText,
   sanitizeBlogArticle,
@@ -169,7 +170,11 @@ export const BlogArticle: React.FC<BlogArticleProps> = ({
   const { t } = useTranslation("coursePlayerB");
   const unlocked = useResourceUnlocked(gateAudienceId);
   const locked = !!gateAudienceId && !unlocked;
-  const [post, setPost] = useState<BlogPostSummary | null | undefined>(undefined);
+  const [fetched, setPost] = useState<BlogPostSummary | null | undefined>(undefined);
+  // The blog editor's Preview posts the unsaved draft (a DRAFT is not served
+  // by the public API); it stands in for the fetched post only in preview.
+  const previewPost = useBlogPreviewPost();
+  const post = isPreviewMode && previewPost ? previewPost : fetched;
   const [copied, setCopied] = useState(false);
   const bodyRef = useRef<HTMLDivElement>(null);
 

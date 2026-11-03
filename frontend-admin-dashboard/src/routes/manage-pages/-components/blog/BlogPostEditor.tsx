@@ -6,6 +6,7 @@ import {
     ArrowSquareOut,
     ArrowUp,
     Code,
+    Eye,
     Plus,
     TextAa,
     Trash,
@@ -46,6 +47,12 @@ import {
     replaceInlineImages,
 } from '../../-utils/inline-images';
 import { getPublicUrl, UploadFileInS3 } from '@/services/upload_file';
+import {
+    BlogPreviewDialog,
+    buildBlogPreviewUrl,
+    estimateReadingMinutes,
+    pickPreviewPlacement,
+} from './BlogPreviewDialog';
 import { getUserId } from '@/utils/userDetails';
 import {
     BLOG_MAX_RECOMMENDED_COURSES,
@@ -524,6 +531,7 @@ export const BlogPostEditor = ({ postId, onBack, onCreated, onDirtyChange }: Blo
     const [form, setForm] = useState<FormState>(() => emptyForm(authorDefault));
     const [mode, setMode] = useState<Mode>('visual');
     const [dirty, setDirty] = useState(false);
+    const [previewOpen, setPreviewOpen] = useState(false);
     useEffect(() => {
         onDirtyChange?.(dirty);
     }, [dirty, onDirtyChange]);
@@ -586,6 +594,24 @@ export const BlogPostEditor = ({ postId, onBack, onCreated, onDirtyChange }: Blo
         seo_description: form.seoDescription,
         template: form.template,
         recommended_course_ids: form.recommendedCourseIds.filter(Boolean),
+    });
+
+    // Preview: the unsaved draft on the real site (BlogPreviewDialog).
+    const previewPlacement = pickPreviewPlacement(placements);
+    const previewUrl = previewPlacement
+        ? buildBlogPreviewUrl(
+              getCatalogueSiteUrl(previewPlacement.tagName, instituteDetails?.learner_portal_base_url),
+              previewPlacement,
+              effectiveSlug,
+              instituteDetails?.learner_portal_base_url ? null : instituteId ?? null
+          )
+        : null;
+    const previewPost = () => ({
+        ...payload(),
+        id: post?.id ?? 'preview',
+        slug: effectiveSlug || 'preview',
+        published_at: fromLocalInput(form.publishedAt) ?? post?.published_at ?? new Date().toISOString(),
+        reading_minutes: estimateReadingMinutes(form.contentHtml),
     });
 
     // Same bucket and source as the cover image upload.
@@ -748,6 +774,14 @@ export const BlogPostEditor = ({ postId, onBack, onCreated, onDirtyChange }: Blo
                             Unpublish
                         </MyButton>
                     )}
+                    <MyButton
+                        buttonType="secondary"
+                        scale="small"
+                        disable={!form.contentHtml.trim() || (!instituteDetails && !instituteLoadFailed)}
+                        onClick={() => setPreviewOpen(true)}
+                    >
+                        <Eye className="size-4" /> Preview
+                    </MyButton>
                     <MyButton buttonType="secondary" scale="small" disable={!canSave} onClick={() => saveMutation.mutate(false)}>
                         {status === 'PUBLISHED' ? 'Save changes' : 'Save draft'}
                     </MyButton>
@@ -1046,6 +1080,17 @@ export const BlogPostEditor = ({ postId, onBack, onCreated, onDirtyChange }: Blo
                     </section>
                 </aside>
             </div>
+            {previewOpen && (
+                <BlogPreviewDialog
+                    open
+                    onOpenChange={setPreviewOpen}
+                    frameUrl={previewUrl}
+                    placementLabel={
+                        previewPlacement ? `${previewPlacement.tagName}/${previewPlacement.route || ''}` : ''
+                    }
+                    post={previewPost()}
+                />
+            )}
         </div>
     );
 };
