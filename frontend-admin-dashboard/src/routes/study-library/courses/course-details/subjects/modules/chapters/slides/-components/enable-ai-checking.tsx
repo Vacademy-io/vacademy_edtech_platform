@@ -146,6 +146,15 @@ export const EnableAiChecking = ({
         ? Math.max(0, Math.round((Date.now() - new Date(job.created_at).getTime()) / 60000))
         : null;
     const taskId = job?.task_id ?? null;
+    // The answer key / marking scheme uploaded as their own PDFs when the test was
+    // created: a read started again for the same paper sends them again.
+    const extraDocuments =
+        job?.sources?.pdf_url && job.sources.pdf_url === pdfUrl
+            ? {
+                  answerKeyUrl: job.sources.answer_key_url ?? null,
+                  markingSchemeUrl: job.sources.marking_scheme_url ?? null,
+              }
+            : undefined;
 
     // A read started from this browser moments ago (the create form, or the
     // button above) shows its progress without being asked — once per read.
@@ -181,7 +190,10 @@ export const EnableAiChecking = ({
     const openConfirm = async (url: string) => {
         setStep({ kind: 'confirm', loading: true });
         try {
-            const estimate = await estimatePaperDigitise(url);
+            const estimate = await estimatePaperDigitise(
+                url,
+                url === pdfUrl ? extraDocuments : undefined
+            );
             setStep({ kind: 'confirm', estimate, loading: false });
         } catch (error: unknown) {
             setStep({
@@ -197,6 +209,7 @@ export const EnableAiChecking = ({
         setStep({ kind: 'closed' });
         const started = await start({
             pdfUrl,
+            ...extraDocuments,
             expectedTotalMarks: totalMarks && totalMarks > 0 ? totalMarks : undefined,
             title: assessmentName,
             assessmentId,

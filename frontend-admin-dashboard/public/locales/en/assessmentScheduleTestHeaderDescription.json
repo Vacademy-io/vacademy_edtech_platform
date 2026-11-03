@@ -20,6 +20,10 @@
         "survey": {
             "title": "Survey",
             "description": "A set of questions for feedback or opinions, with no right or wrong answers."
+        },
+        "manualUploadExam": {
+            "title": "Written Paper (Copy Check)",
+            "description": "Upload the question paper (and the answer key / marking scheme). Students solve on paper and upload their copies; the AI or a teacher checks them."
         }
     }
 }

@@ -20,6 +20,10 @@
         "survey": {
             "title": "Sondage",
             "description": "Un ensemble de questions pour recueillir des retours ou des opinions, sans bonnes ou mauvaises réponses."
+        },
+        "manualUploadExam": {
+            "title": "Épreuve écrite (correction de copies)",
+            "description": "Téléversez le sujet (et le corrigé / barème). Les élèves composent sur papier et téléversent leurs copies ; l'IA ou un enseignant les corrige."
         }
     }
 }

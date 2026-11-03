@@ -6,6 +6,10 @@
     GET  /paper-digitise/v1/jobs/for-assessment/{assessment_id}
                                           the newest read started for a test (reading / ready / failed)
 
+The answer key and the marking scheme may come as their own PDFs (`answer_key_url`,
+`marking_scheme_url`, the same URL when one PDF holds both). They are read with the
+paper, never as questions, and their pages are billed with it.
+
 A read takes minutes, so it is started with the test's id and left to run: when it
 settles, the teacher who started it gets a bell alert and the test's own page picks
 the result up from the lookup above — nobody has to keep a dialog open.
@@ -19,6 +23,7 @@ from __future__ import annotations
 
 import json
 import logging
+from dataclasses import dataclass
 from decimal import Decimal
 from typing import Any, Dict, List, Optional
 
@@ -47,6 +52,67 @@ router = APIRouter(prefix="/paper-digitise/v1", tags=["Question paper digitisati
 class EstimateRequest(BaseModel):
     pdf_url: str = Field(..., description="The paper as attached to the test description")
     institute_id: Optional[str] = Field(None, description="INTERNAL callers only")
+    answer_key_url: Optional[str] = Field(
+        None, description="The answer key as its own PDF; omit when the paper prints it"
+    )
+    marking_scheme_url: Optional[str] = Field(
+        None, description="The marking scheme as its own PDF; the same URL as answer_key_url when one PDF holds both"
+    )
+
+
+@dataclass
+class _Documents:
+    paper: paper_digitise.PaperPdf
+    answer_key: Optional[paper_digitise.PaperPdf] = None
+    marking_scheme: Optional[paper_digitise.PaperPdf] = None
+
+    @property
+    def pages(self) -> int:
+        """Pages read (and billed): a PDF given for both key and scheme counts once."""
+        extras = {id(d): d for d in (self.answer_key, self.marking_scheme) if d is not None}
+        return self.paper.pages + sum(d.pages for d in extras.values())
+
+    def summary(self) -> List[Dict[str, Any]]:
+        out = [{"role": "question_paper", "file_name": self.paper.file_name, "pages": self.paper.pages}]
+        if self.answer_key is not None and self.answer_key is self.marking_scheme:
+            out.append({"role": "answer_key_and_marking_scheme", "file_name": self.answer_key.file_name,
+                        "pages": self.answer_key.pages})
+        else:
+            if self.answer_key is not None:
+                out.append({"role": "answer_key", "file_name": self.answer_key.file_name,
+                            "pages": self.answer_key.pages})
+            if self.marking_scheme is not None:
+                out.append({"role": "marking_scheme", "file_name": self.marking_scheme.file_name,
+                            "pages": self.marking_scheme.pages})
+        return out
+
+
+def _extra_url(value: Optional[str], paper_url: str) -> Optional[str]:
+    """A separate document's URL, or None when absent or the paper itself."""
+    url = (value or "").strip()
+    return url if url and url != paper_url.strip() else None
+
+
+async def _fetch_documents(body: EstimateRequest) -> _Documents:
+    """The paper plus the optional answer key / marking scheme; PaperPdfError on any bad one."""
+    paper = await paper_digitise.fetch_paper_pdf(body.pdf_url)
+    key_url = _extra_url(body.answer_key_url, body.pdf_url)
+    scheme_url = _extra_url(body.marking_scheme_url, body.pdf_url)
+    docs = _Documents(paper=paper)
+    if key_url and key_url == scheme_url:
+        both = await paper_digitise.fetch_paper_pdf(key_url, "answer key and marking scheme")
+        docs.answer_key = docs.marking_scheme = both
+    else:
+        if key_url:
+            docs.answer_key = await paper_digitise.fetch_paper_pdf(key_url, "answer key")
+        if scheme_url:
+            docs.marking_scheme = await paper_digitise.fetch_paper_pdf(scheme_url, "marking scheme")
+    if docs.pages > paper_digitise.MAX_TOTAL_PAGES:
+        raise paper_digitise.PaperPdfError(
+            f"The paper, answer key and marking scheme have {docs.pages} pages together; "
+            f"up to {paper_digitise.MAX_TOTAL_PAGES} can be read at once."
+        )
+    return docs
 
 
 class StartRequest(EstimateRequest):
@@ -147,18 +213,21 @@ async def estimate(
     """Fetch + validate the PDF and price the read, before anything is charged."""
     resolved = caller.require_institute(body.institute_id)
     try:
-        pdf = await paper_digitise.fetch_paper_pdf(body.pdf_url)
+        docs = await _fetch_documents(body)
     except paper_digitise.PaperPdfError as exc:
         raise _pdf_or_400(exc) from exc
+    pdf = docs.paper
     est = preflight_tool_credits(
         db, tool_key=paper_digitise.TOOL_KEY,
-        tool_params=paper_digitise.tool_params(pdf.pages), institute_id=resolved,
+        tool_params=paper_digitise.tool_params(docs.pages), institute_id=resolved,
     )
     return {
         "file_name": pdf.file_name,
-        "pages": pdf.pages,
+        # Every page read, the answer key and marking scheme included.
+        "pages": docs.pages,
         "size_bytes": pdf.size_bytes,
         "estimate": est,
+        "documents": docs.summary(),
     }
 
 
@@ -188,10 +257,12 @@ async def start(
         else None
     )
     try:
-        pdf = await paper_digitise.fetch_paper_pdf(body.pdf_url)
+        docs = await _fetch_documents(body)
     except paper_digitise.PaperPdfError as exc:
         raise _pdf_or_400(exc) from exc
-    est = _estimate_or_402(db, pages=pdf.pages, institute_id=resolved)
+    pdf = docs.paper
+    pages = docs.pages
+    est = _estimate_or_402(db, pages=pages, institute_id=resolved)
 
     primary_model, fallback_models = resolve_models(db, QUESTIONS_USE_CASE, body.preferred_model)
     models: List[str] = [primary_model, *fallback_models]
@@ -205,8 +276,11 @@ async def start(
             "model": primary_model,
             "params": {
                 "pdf_url": body.pdf_url,
-                "pages": pdf.pages,
+                "pages": pages,
                 "tool": paper_digitise.TOOL_KEY,
+                # The separate documents, so a read started again uses them too.
+                "answer_key_url": docs.answer_key.url if docs.answer_key else None,
+                "marking_scheme_url": docs.marking_scheme.url if docs.marking_scheme else None,
                 # For the lookup by test and for the alert when the read settles.
                 "assessment_id": body.assessment_id,
                 "started_by": caller.user_id,
@@ -222,7 +296,10 @@ async def start(
 
     async def _work() -> str:
         try:
-            paper = await paper_digitise.digitise(pdf, models, expected_total=expected_total)
+            paper = await paper_digitise.digitise(
+                pdf, models, expected_total=expected_total,
+                answer_key=docs.answer_key, marking_scheme=docs.marking_scheme,
+            )
         except RuntimeError:
             raise  # already worded for the teacher
         except Exception as exc:  # noqa: BLE001
@@ -240,7 +317,7 @@ async def start(
                 "legible; otherwise create the test without AI checking."
             )
         billing = _charge(
-            pages=pdf.pages, paper=paper, institute_id=resolved, user_id=user_id, task_id=task_id,
+            pages=pages, paper=paper, institute_id=resolved, user_id=user_id, task_id=task_id,
         )
         # `questions` in the LLM shape keeps this task readable in the AI Center
         # history (its converter expects that shape); the builder-ready payload
@@ -251,8 +328,9 @@ async def start(
                 "questions": paper.raw_questions,
                 "digitised": {
                     **paper.to_dict(),
-                    "pages": pdf.pages,
+                    "pages": pages,
                     "file_name": pdf.file_name,
+                    "documents": docs.summary(),
                     "estimate": est,
                     **billing,
                 },
@@ -290,12 +368,13 @@ async def start(
 
     ai_task_service.schedule(task_id, _work, on_done=_tell_teacher)
     logger.info("paper_digitise started task=%s pages=%s institute=%s assessment=%s",
-                task_id, pdf.pages, resolved, body.assessment_id)
+                task_id, pages, resolved, body.assessment_id)
     return {
         "task_id": task_id,
         "file_name": pdf.file_name,
-        "pages": pdf.pages,
+        "pages": pages,
         "estimate": est,
+        "documents": docs.summary(),
     }
 
 
@@ -306,10 +385,21 @@ def _job_payload(task: Any) -> Dict[str, Any]:
             result = (json.loads(task.result_json) or {}).get("digitised")
         except Exception:  # noqa: BLE001
             result = None
+    params: Dict[str, Any] = {}
+    try:
+        params = ((json.loads(getattr(task, "dynamic_values_map", None) or "{}") or {}).get("params") or {})
+    except Exception:  # noqa: BLE001
+        params = {}
     return {
         "task_id": task.id,
         "status": task.status,
         "status_message": task.status_message,
+        # What was read, so "try again" can send the same documents.
+        "sources": {
+            "pdf_url": params.get("pdf_url"),
+            "answer_key_url": params.get("answer_key_url"),
+            "marking_scheme_url": params.get("marking_scheme_url"),
+        },
         "created_at": task.created_at.isoformat() if getattr(task, "created_at", None) else None,
         "result": result,
     }
