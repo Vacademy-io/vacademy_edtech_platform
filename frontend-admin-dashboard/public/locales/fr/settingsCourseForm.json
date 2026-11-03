@@ -15,7 +15,8 @@
         "previewImageRequired": "Image d'aperçu obligatoire",
         "enableBannerImage": "Activer l'image de bannière",
         "bannerImageRequired": "Image de bannière obligatoire",
-        "enableCourseMedia": "Activer les médias du cours"
+        "enableCourseMedia": "Activer les médias du cours",
+        "enableCoursePageTemplate": "Activer le contenu du modèle de page de cours"
     },
     "courseStructure": {
         "heading": "Configuration de la structure du cours",
