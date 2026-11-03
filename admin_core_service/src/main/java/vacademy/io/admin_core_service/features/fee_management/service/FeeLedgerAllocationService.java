@@ -22,6 +22,9 @@ import java.util.stream.Collectors;
 @Service
 @Slf4j
 public class FeeLedgerAllocationService {
+    @Autowired
+    private vacademy.io.admin_core_service.features.user_subscription.service.PaymentDateDefaults paymentDateDefaults;
+
 
     @Autowired
     private vacademy.io.admin_core_service.features.offline_payment.service.OfflinePaymentDetailsService offlinePaymentDetailsService;
@@ -178,7 +181,7 @@ public class FeeLedgerAllocationService {
         actualPaymentLog.setUserId(sourceLog.getUserId());
         actualPaymentLog.setVendor(sourceLog.getVendor());
         actualPaymentLog.setVendorId(sourceLog.getVendorId());
-        actualPaymentLog.setDate(new Date());
+        actualPaymentLog.setDate(paymentDateDefaults.defaultFor(sourceLog.getVendor(), sourceLog.getUserPlan()));
         actualPaymentLog.setCurrency(sourceLog.getCurrency());
         actualPaymentLog.setUserPlan(sourceLog.getUserPlan());
         actualPaymentLog.setPaymentAmount(rawAmount);
@@ -315,7 +318,7 @@ public class FeeLedgerAllocationService {
         paymentLog.setUserId(userId);
         paymentLog.setVendor("OFFLINE");
         paymentLog.setDate(details != null && details.paymentDate() != null
-                ? java.sql.Date.valueOf(details.paymentDate()) : new Date());
+                ? java.sql.Date.valueOf(details.paymentDate()) : paymentDateDefaults.today(instituteId));
         paymentLog.setCurrency("INR");
         paymentLog.setPaymentAmount(amount.doubleValue());
         paymentLog = paymentLogRepository.save(paymentLog);
@@ -438,7 +441,7 @@ public class FeeLedgerAllocationService {
         paymentLog.setUserId(userId);
         paymentLog.setVendor("OFFLINE");
         paymentLog.setVendorId(null);
-        paymentLog.setDate(new Date());
+        paymentLog.setDate(paymentDateDefaults.today(instituteId));
         paymentLog.setCurrency("INR");
         paymentLog.setUserPlan(null);
         paymentLog.setPaymentAmount(amount.doubleValue());

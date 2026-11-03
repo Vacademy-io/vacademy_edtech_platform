@@ -103,6 +103,7 @@ public class AdminManualRenewalService {
     private final PackageSessionRepository packageSessionRepository;
     private final StudentSessionRepository studentSessionRepository;
     private final PaymentSettingService paymentSettingService;
+    private final PaymentDateDefaults paymentDateDefaults;
 
     @Transactional(readOnly = true)
     public ManualRenewalPreviewDTO preview(String userPlanId, String instituteId) {
@@ -175,7 +176,7 @@ public class AdminManualRenewalService {
         Date paymentDate = req.getPaymentDate() != null ? req.getPaymentDate()
                 : paymentDetails != null && paymentDetails.paymentDate() != null
                         ? java.sql.Date.valueOf(paymentDetails.paymentDate())
-                        : now;
+                        : paymentDateDefaults.today(instituteId);
 
         String paymentLogId = null;
         if (req.getAmount() > 0) {

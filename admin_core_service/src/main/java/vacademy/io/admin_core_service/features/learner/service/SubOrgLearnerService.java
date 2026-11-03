@@ -76,6 +76,7 @@ import java.util.Calendar;
 public class SubOrgLearnerService {
 
     private final AuthService authService;
+    private final vacademy.io.admin_core_service.features.user_subscription.service.PaymentDateDefaults paymentDateDefaults;
     private final OfflinePaymentDetailsService offlinePaymentDetailsService;
     private final InstituteStudentRepository instituteStudentRepository;
     private final StudentSessionInstituteGroupMappingRepository mappingRepository;
@@ -517,7 +518,8 @@ public class SubOrgLearnerService {
                 ? request.getOfflinePaymentCurrency() : "INR";
         Date paymentDate = request.getOfflinePaymentDate() != null ? request.getOfflinePaymentDate()
                 : paidVia != null && paidVia.paymentDate() != null
-                        ? java.sql.Date.valueOf(paidVia.paymentDate()) : new Date();
+                        ? java.sql.Date.valueOf(paidVia.paymentDate())
+                        : paymentDateDefaults.today(request.getInstituteId());
 
         String paymentLogId;
         try {

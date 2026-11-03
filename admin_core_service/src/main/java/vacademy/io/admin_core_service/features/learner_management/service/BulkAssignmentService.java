@@ -91,6 +91,7 @@ public class BulkAssignmentService {
 
     private final DefaultInviteResolver defaultInviteResolver;
     private final UserPlanService userPlanService;
+    private final vacademy.io.admin_core_service.features.user_subscription.service.PaymentDateDefaults paymentDateDefaults;
     private final StudentSessionRepository studentSessionRepository;
     private final AuthService authService;
     private final LearnerEnrollmentNotificationService learnerEnrollmentNotificationService;
@@ -1007,7 +1008,7 @@ public class BulkAssignmentService {
                 Date paymentDate = perUserPaymentDate != null ? perUserPaymentDate
                         : globalPaymentDate != null ? globalPaymentDate
                         : paidVia != null && paidVia.paymentDate() != null ? java.sql.Date.valueOf(paidVia.paymentDate())
-                        : new Date();
+                        : paymentDateDefaults.today(instituteId);
 
                 String paymentLogId = paymentLogService.createPaymentLog(
                         userId,
@@ -2303,7 +2304,7 @@ public class BulkAssignmentService {
             Date paymentDate = perUserPaymentDate != null ? perUserPaymentDate
                     : globalPaymentDate != null ? globalPaymentDate
                     : paidVia != null && paidVia.paymentDate() != null ? java.sql.Date.valueOf(paidVia.paymentDate())
-                    : new Date();
+                    : paymentDateDefaults.today(instituteId);
             String currency = config.getPaymentPlan() != null && config.getPaymentPlan().getCurrency() != null
                     ? config.getPaymentPlan().getCurrency()
                     : (config.getEnrollInvite() != null && config.getEnrollInvite().getCurrency() != null

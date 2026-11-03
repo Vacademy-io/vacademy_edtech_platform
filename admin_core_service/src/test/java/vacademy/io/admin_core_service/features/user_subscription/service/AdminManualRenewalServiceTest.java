@@ -91,9 +91,12 @@ class AdminManualRenewalServiceTest {
         invitations = mock(PackageSessionLearnerInvitationToPaymentOptionRepository.class);
         packageSessions = mock(PackageSessionRepository.class);
         studentSessions = mock(StudentSessionRepository.class);
+        PaymentDateDefaults paymentDates = mock(PaymentDateDefaults.class);
+        when(paymentDates.today(any())).thenReturn(new java.util.Date());
         service = new AdminManualRenewalService(planRepo, mappingRepo, paymentLogService, paymentLogRepo,
                 offline, ledger, access, timeline, invoices, auth, invitations, packageSessions, studentSessions,
-                new PaymentSettingService(mock(InstituteRepository.class), new ObjectMapper()));
+                new PaymentSettingService(mock(InstituteRepository.class), new ObjectMapper()),
+                paymentDates);
 
         EnrollInvite invite = new EnrollInvite();
         invite.setInstituteId(INST);

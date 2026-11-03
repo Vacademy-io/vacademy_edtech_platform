@@ -6,8 +6,7 @@
  *   GET /admin-core-service/v1/reports/revenue-forecast  (Forecast tab)
  *
  * Revenue counts only PAID payments from CONVERTED leads ("revenue comes after the lead is
- * converted"), attributed to the lead's source/counsellor. Admissions / booked fee count the
- * converted leads enrolled in the window and the full fee on those enrolments. Same instituteId + optional
+ * converted"), attributed to the lead's source/counsellor. Same instituteId + optional
  * fromDate/toDate (yyyy-MM-dd, institute TZ) + teamId/counsellorUserId narrowing as the rest of the
  * suite; every endpoint is RBAC-scoped server-side. All payloads are snake_case.
  */
@@ -39,10 +38,6 @@ export interface RevenueTotals {
     paying_leads: number;
     payments: number;
     avg_deal_value: number | null;
-    /** Converted leads enrolled in the window. */
-    admissions: number;
-    /** Full fee on those enrolments, collected or not. */
-    booked_revenue: number;
 }
 
 export interface RevenueSourceRow {
@@ -60,8 +55,6 @@ export interface RevenueCounsellorRow {
     paying_leads: number;
     payments: number;
     avg_deal_value: number | null;
-    admissions: number;
-    booked_revenue: number;
 }
 
 export interface RevenueDayPoint {

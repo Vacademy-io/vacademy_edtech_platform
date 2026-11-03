@@ -76,6 +76,9 @@ import java.util.*;
 
 @Service
 public class ApplicantService {
+    @Autowired
+    private vacademy.io.admin_core_service.features.user_subscription.service.PaymentDateDefaults paymentDateDefaults;
+
 
         @Autowired
         private ApplicantRepository applicantRepository;
@@ -1594,7 +1597,7 @@ public class ApplicantService {
                         paymentLog.setStatus("SUCCESS"); // Immediate success for manual
                         paymentLog.setPaymentStatus("PAID");
                         paymentLog.setCurrency(requestDTO.getCurrency() != null ? requestDTO.getCurrency() : "INR");
-                        paymentLog.setDate(new java.util.Date());
+                        paymentLog.setDate(paymentDateDefaults.today(instituteId));
 
                         // Store transaction reference and admin details in payment_specific_data
                         java.util.Map<String, Object> paymentData = new java.util.HashMap<>();

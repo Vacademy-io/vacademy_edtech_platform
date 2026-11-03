@@ -81,6 +81,9 @@ import java.util.stream.Collectors;
 @Slf4j
 @Service
 public class InvoiceService {
+    @Autowired
+    private vacademy.io.admin_core_service.features.user_subscription.service.PaymentDateDefaults paymentDateDefaults;
+
 
     @Autowired
     private vacademy.io.admin_core_service.features.offline_payment.service.OfflinePaymentDetailsService offlinePaymentDetailsService;
@@ -5564,7 +5567,8 @@ public class InvoiceService {
                 null,
                 null,
                 paidVia != null && paidVia.paymentDate() != null
-                        ? java.sql.Date.valueOf(paidVia.paymentDate()) : new java.util.Date());
+                        ? java.sql.Date.valueOf(paidVia.paymentDate())
+                        : paymentDateDefaults.today(invoice.getInstituteId()));
 
         // 2. Promote to SUCCESS/PAID + audit metadata
         Map<String, Object> paymentSpecificData = new HashMap<>();

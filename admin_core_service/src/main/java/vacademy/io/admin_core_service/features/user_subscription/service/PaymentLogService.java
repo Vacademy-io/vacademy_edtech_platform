@@ -94,6 +94,9 @@ import vacademy.io.admin_core_service.features.live_activity.enums.LiveActivityC
 @Service
 @Transactional
 public class PaymentLogService {
+    @Autowired
+    private PaymentDateDefaults paymentDateDefaults;
+
 
     /**
      * Derived listing status for a PAYMENT_PENDING log older than
@@ -219,7 +222,7 @@ public class PaymentLogService {
         paymentLog.setPaymentStatus(null);
         paymentLog.setVendor(vendor);
         paymentLog.setVendorId(vendorId);
-        paymentLog.setDate(paymentDate != null ? paymentDate : new Date());
+        paymentLog.setDate(paymentDate != null ? paymentDate : paymentDateDefaults.defaultFor(vendor, userPlan));
         paymentLog.setCurrency(currency);
         paymentLog.setUserPlan(userPlan);
 

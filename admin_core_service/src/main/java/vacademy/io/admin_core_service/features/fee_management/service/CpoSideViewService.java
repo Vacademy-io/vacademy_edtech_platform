@@ -60,6 +60,7 @@ public class CpoSideViewService {
     private final UserPlanRepository userPlanRepository;
     private final StudentFeePaymentRepository studentFeePaymentRepository;
     private final CpoDiscountService cpoDiscountService;
+    private final vacademy.io.admin_core_service.features.user_subscription.service.PaymentDateDefaults paymentDateDefaults;
     private final PaymentLogService paymentLogService;
     private final vacademy.io.admin_core_service.features.user_account.service.UserAccountLedgerService userAccountLedgerService;
     private final PaymentLogRepository paymentLogRepository;
@@ -381,7 +382,7 @@ public class CpoSideViewService {
         Date paymentDate = req.getPaymentDate() != null ? req.getPaymentDate()
                 : paymentDetails != null && paymentDetails.paymentDate() != null
                         ? java.sql.Date.valueOf(paymentDetails.paymentDate())
-                        : new Date();
+                        : paymentDateDefaults.today(instituteId);
 
         String paymentLogId = paymentLogService.createPaymentLog(
                 plan.getUserId(),
