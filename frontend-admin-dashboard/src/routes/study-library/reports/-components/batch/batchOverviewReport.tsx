@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import {
     ArrowDown,
@@ -10,6 +10,7 @@ import {
     WarningCircle,
 } from '@phosphor-icons/react';
 import { DashboardLoader } from '@/components/core/dashboard-loader';
+import { MultiSelect } from '@/components/design-system/multi-select';
 import { cn } from '@/lib/utils';
 import {
     Select,
@@ -557,8 +558,11 @@ export default function BatchOverviewReport({
     const brand = useBrandColor();
     const [picked, setPicked] = useState<string>(ALL);
     const [timeline, setTimeline] = useState<TimelineValue>(DEFAULT_TIMELINE);
+    const [assessmentIds, setAssessmentIds] = useState<string[]>([]);
     const range = resolveTimeline(timeline);
     const batchId = fixedPackageSessionId ?? (picked === ALL ? undefined : picked);
+    // A new batch or window has its own assessments: start again from all of them.
+    useEffect(() => setAssessmentIds([]), [batchId, range?.start, range?.end]);
     const batchLabels = useMemo(
         () => new Map(batchOptions.map((b) => [b.value, b.label])),
         [batchOptions]
@@ -572,16 +576,27 @@ export default function BatchOverviewReport({
             range
                 ? {
                       ...(batchId ? { package_session_id: batchId, batch_name: batchLabel } : {}),
+                      ...(assessmentIds.length > 0 ? { assessment_ids: assessmentIds } : {}),
                       start_date: range.start,
                       end_date: range.end,
                   }
                 : null,
-        [batchId, batchLabel, range?.start, range?.end]
+        [batchId, batchLabel, range?.start, range?.end, assessmentIds]
     );
 
     const { data, isLoading, isError } = useQuery({
         ...getBatchSummaryReportQuery(request ?? { start_date: '', end_date: '' }),
+        placeholderData: (previous) => previous,
     });
+    // Options come from the unfiltered list the report returns, so picking one keeps the rest.
+    const assessmentOptions = useMemo(
+        () =>
+            (data?.available_assessments ?? []).map((a) => ({
+                value: a.assessment_id,
+                label: a.date ? `${a.name ?? 'Assessment'} · ${a.date}` : (a.name ?? 'Assessment'),
+            })),
+        [data?.available_assessments]
+    );
 
     return (
         <div className="flex flex-col gap-5">
@@ -607,6 +622,20 @@ export default function BatchOverviewReport({
                 <div className="flex flex-1 flex-col gap-1 text-xs font-medium text-neutral-600">
                     Timeline
                     <ReportTimelineFilter value={timeline} onChange={setTimeline} />
+                </div>
+                <div className="flex flex-1 flex-col gap-1 text-xs font-medium text-neutral-600">
+                    Assessments
+                    <MultiSelect
+                        options={assessmentOptions}
+                        selected={assessmentIds}
+                        onChange={setAssessmentIds}
+                        checkboxes
+                        disabled={assessmentOptions.length === 0}
+                        placeholder={
+                            assessmentOptions.length === 0 ? 'No assessments' : 'All assessments'
+                        }
+                        className="h-auto min-h-9 py-1 text-sm"
+                    />
                 </div>
                 <div className="md:ml-auto">
                     <GenerateBatchReportDialog request={request} disabled={!data} />

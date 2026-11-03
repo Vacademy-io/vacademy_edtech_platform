@@ -141,15 +141,19 @@ public class BatchSummaryReportService {
         List<String> roster;
         long enrolled;
         boolean truncated = false;
+        Set<String> picked = request.getAssessmentIds() == null ? Set.of()
+                : request.getAssessmentIds().stream().filter(StringUtils::hasText)
+                .collect(java.util.stream.Collectors.toCollection(LinkedHashSet::new));
+        out.assessmentIds(new ArrayList<>(picked));
         List<AssessmentServiceClient.CohortAttempt> attempts;
         if (batchId == null) {
             Set<String> active = new HashSet<>(mappingRepository.findDistinctUserIdsByInstituteAndStatus(instituteId, ACTIVE));
             active.remove(null);
             enrolled = active.size();
-            attempts = assessmentServiceClient.fetchInstituteAttempts(instituteId, start, end).stream()
+            attempts = pickAssessments(assessmentServiceClient.fetchInstituteAttempts(instituteId, start, end).stream()
                     .filter(a -> a.percentage() != null && a.userId() != null && a.assessmentId() != null)
                     .filter(a -> active.contains(a.userId()))
-                    .toList();
+                    .toList(), picked, out);
             roster = new ArrayList<>(new LinkedHashSet<>(attempts.stream()
                     .map(AssessmentServiceClient.CohortAttempt::userId).toList()));
         } else {
@@ -159,10 +163,10 @@ public class BatchSummaryReportService {
             truncated = roster.size() > MAX_LEARNERS;
             if (truncated) roster = new ArrayList<>(roster.subList(0, MAX_LEARNERS));
             enrolled = roster.size();
-            attempts = roster.isEmpty() ? List.of()
+            attempts = pickAssessments(roster.isEmpty() ? List.of()
                     : assessmentServiceClient.fetchCohortAttempts(instituteId, roster, start, end).stream()
                     .filter(a -> a.percentage() != null && a.userId() != null && a.assessmentId() != null)
-                    .toList();
+                    .toList(), picked, out);
         }
         out.enrolledLearners(enrolled).learnersTruncated(truncated);
         Map<String, String> names = learnerNames(roster);
@@ -273,7 +277,8 @@ public class BatchSummaryReportService {
         // Strengths and weaknesses
         try {
             LearningInsightsSection insights =
-                    learningInsightsCollector.collectForUsers(roster, request.getStartDate(), request.getEndDate());
+                    learningInsightsCollector.collectForUsers(roster, request.getStartDate(), request.getEndDate(),
+                            picked.isEmpty() ? null : picked);
             List<BatchSummaryReportDTO.TopicRow> topics = new ArrayList<>();
             if (insights != null && insights.getTopicMastery() != null) {
                 for (LearningInsightsSection.TopicMastery t : insights.getTopicMastery()) {
@@ -301,6 +306,32 @@ public class BatchSummaryReportService {
             addBatchProgress(out, batchId, request, user);
         }
         return out.build();
+    }
+
+    /**
+     * Records every assessment in the window for the picker, newest first, then keeps only the
+     * picked assessments (all of them when none is picked).
+     */
+    private static List<AssessmentServiceClient.CohortAttempt> pickAssessments(
+            List<AssessmentServiceClient.CohortAttempt> attempts, Set<String> picked,
+            BatchSummaryReportDTO.BatchSummaryReportDTOBuilder out) {
+        Map<String, BatchSummaryReportDTO.AssessmentOption> options = new LinkedHashMap<>();
+        for (AssessmentServiceClient.CohortAttempt a : attempts) {
+            String date = a.attemptAt() == null || a.attemptAt().length() < 10 ? a.attemptAt() : a.attemptAt().substring(0, 10);
+            BatchSummaryReportDTO.AssessmentOption o = options.get(a.assessmentId());
+            if (o == null) {
+                options.put(a.assessmentId(), BatchSummaryReportDTO.AssessmentOption.builder()
+                        .assessmentId(a.assessmentId()).name(a.assessmentName()).date(date).build());
+            } else if (date != null && (o.getDate() == null || date.compareTo(o.getDate()) < 0)) {
+                o.setDate(date);
+            }
+        }
+        List<BatchSummaryReportDTO.AssessmentOption> list = new ArrayList<>(options.values());
+        list.sort(Comparator.comparing(BatchSummaryReportDTO.AssessmentOption::getDate,
+                Comparator.nullsLast(Comparator.reverseOrder())));
+        out.availableAssessments(list);
+        if (picked.isEmpty()) return attempts;
+        return attempts.stream().filter(a -> picked.contains(a.assessmentId())).toList();
     }
 
     /** Average score and participation of every batch for the all-batches report, best first. */

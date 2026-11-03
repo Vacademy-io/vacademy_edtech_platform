@@ -25,10 +25,16 @@ public class AcademicsCollector {
     private final SubjectResolver subjectResolver;
 
     public AcademicsSection collect(String userId, String instituteId, LocalDate startDate, LocalDate endDate) {
+        return collect(userId, instituteId, null, startDate, endDate);
+    }
+
+    /** As above, limited to the assessments assigned to {@code batchId} when it is given. */
+    public AcademicsSection collect(String userId, String instituteId, String batchId,
+                                    LocalDate startDate, LocalDate endDate) {
         try {
             AssessmentServiceClient.AssessmentHistoryResponse response =
                     assessmentServiceClient.fetchStudentAssessmentHistory(
-                            userId, instituteId, startDate.toString(), endDate.toString());
+                            userId, instituteId, startDate.toString(), endDate.toString(), batchId);
 
             if (response == null) {
                 log.warn("[AcademicsCollector] Assessment service returned null for userId={}", userId);

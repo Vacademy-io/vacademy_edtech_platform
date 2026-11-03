@@ -59,5 +59,16 @@ public interface AssessmentBatchRegistrationRepository extends JpaRepository<Ass
                                                       @Param("instituteId") String instituteId,
                                                       @Param("statuses") List<String> statuses);
 
+    /**
+     * Assessments assigned to one batch. Scopes the learner report to the picked batch.
+     */
+    @Query("SELECT DISTINCT abr.assessment.id FROM AssessmentBatchRegistration abr " +
+            "WHERE abr.batchId = :batchId " +
+            "AND abr.instituteId = :instituteId " +
+            "AND abr.status IN :statuses")
+    List<String> findAssessmentIdsByBatchAndInstitute(@Param("batchId") String batchId,
+                                                      @Param("instituteId") String instituteId,
+                                                      @Param("statuses") List<String> statuses);
+
     boolean existsByInstituteIdAndAssessmentIdAndBatchId(String instituteId, String assessmentId, String batchId);
 }

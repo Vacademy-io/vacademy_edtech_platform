@@ -73,8 +73,9 @@ public class StudentAnalysisController {
          * The admin side-view Reports tab: one learner's marks by subject, topic mastery (the basis
          * of the strengths / weaknesses it shows), attendance and course progress for a window —
          * the deterministic layer of the comprehensive report, returned synchronously and without
-         * the AI narrative, so it costs no credits. {@code batchId} scopes attendance and progress;
-         * omit it for all of the learner's batches (progress then reports unavailable).
+         * the AI narrative, so it costs no credits. {@code batchId} limits every section to that
+         * batch (assessments assigned to it, its slides, its classes); omit it for all of the
+         * learner's batches (progress then reports unavailable).
          */
         @GetMapping("/snapshot")
         @Operation(summary = "Learner report snapshot", description = "Subject marks, topic mastery, attendance and progress for one learner and window, without AI.")
@@ -105,7 +106,7 @@ public class StudentAnalysisController {
                         return ResponseEntity.notFound().build();
                 }
                 return ResponseEntity.ok(comprehensiveReportAggregator.collect(
-                                userId, instituteId, batch, startDate, endDate, SNAPSHOT_MODULES));
+                                userId, instituteId, batch, startDate, endDate, SNAPSHOT_MODULES, true));
         }
 
         @PostMapping("/initiate")

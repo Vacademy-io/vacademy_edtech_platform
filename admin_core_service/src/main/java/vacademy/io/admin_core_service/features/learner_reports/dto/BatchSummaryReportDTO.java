@@ -54,6 +54,10 @@ public class BatchSummaryReportDTO {
     private long notAssessedLearners;
 
     private List<AssessmentRow> assessments;
+    /** Every assessment attempted in the window, before the assessment filter; for the picker. */
+    private List<AssessmentOption> availableAssessments;
+    /** The assessments the report is limited to; empty when it covers all of them. */
+    private List<String> assessmentIds;
     private List<SubjectScoreRow> subjectScores;
     private List<TopicRow> topics;
     /** Analysed attempts the topic roll-up was built from. */
@@ -68,6 +72,17 @@ public class BatchSummaryReportDTO {
     private Double avgConcentration;
     private List<SubjectRow> subjects;
     private List<ActivityRow> activity;
+
+    @Data
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
+    public static class AssessmentOption {
+        private String assessmentId;
+        private String name;
+        private String date;
+    }
 
     @Data
     @Builder

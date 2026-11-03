@@ -12,6 +12,7 @@ import vacademy.io.admin_core_service.features.student_analysis.dto.comprehensiv
 import java.sql.Timestamp;
 import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -49,12 +50,25 @@ public class LearningInsightsCollector {
     private final ObjectMapper objectMapper;
 
     public LearningInsightsSection collect(String userId, LocalDate startDate, LocalDate endDate) {
+        return collect(userId, startDate, endDate, null);
+    }
+
+    /**
+     * @param sourceIds when not null, only analysed attempts of these sources (the assessments
+     *                  and slides of a picked batch) count; an empty set means nothing does.
+     */
+    public LearningInsightsSection collect(String userId, LocalDate startDate, LocalDate endDate,
+                                           Collection<String> sourceIds) {
+        if (sourceIds != null && sourceIds.isEmpty()) {
+            return LearningInsightsSection.builder().available(false).build();
+        }
         try {
             Timestamp startTs = Timestamp.valueOf(startDate.atStartOfDay());
             Timestamp endTs = Timestamp.valueOf(endDate.atTime(23, 59, 59));
 
-            List<ActivityLog> logs =
-                    activityLogRepository.findAllProcessedLogsForInsights(userId, startTs, endTs);
+            List<ActivityLog> logs = sourceIds == null
+                    ? activityLogRepository.findAllProcessedLogsForInsights(userId, startTs, endTs)
+                    : activityLogRepository.findProcessedLogsForInsightsBySources(userId, sourceIds, startTs, endTs);
 
             if (logs == null || logs.isEmpty()) {
                 return LearningInsightsSection.builder().available(false).build();
@@ -76,14 +90,23 @@ public class LearningInsightsCollector {
      * from the newest {@value #MAX_COHORT_ROWS} analysed attempts in the window.
      */
     public LearningInsightsSection collectForUsers(List<String> userIds, LocalDate startDate, LocalDate endDate) {
-        if (userIds == null || userIds.isEmpty()) {
+        return collectForUsers(userIds, startDate, endDate, null);
+    }
+
+    /** As above; with {@code sourceIds}, only analysed attempts of those assessments count. */
+    public LearningInsightsSection collectForUsers(List<String> userIds, LocalDate startDate, LocalDate endDate,
+                                                   Collection<String> sourceIds) {
+        if (userIds == null || userIds.isEmpty() || (sourceIds != null && sourceIds.isEmpty())) {
             return LearningInsightsSection.builder().available(false).build();
         }
         try {
             Timestamp startTs = Timestamp.valueOf(startDate.atStartOfDay());
             Timestamp endTs = Timestamp.valueOf(endDate.atTime(23, 59, 59));
             List<String[]> rows = new ArrayList<>();
-            for (Object[] r : activityLogRepository.findProcessedJsonForUsers(userIds, startTs, endTs, MAX_COHORT_ROWS)) {
+            List<Object[]> found = sourceIds == null
+                    ? activityLogRepository.findProcessedJsonForUsers(userIds, startTs, endTs, MAX_COHORT_ROWS)
+                    : activityLogRepository.findProcessedJsonForUsersAndSources(userIds, sourceIds, startTs, endTs, MAX_COHORT_ROWS);
+            for (Object[] r : found) {
                 if (r == null || r.length < 2 || r[1] == null) continue;
                 rows.add(new String[]{r[0] == null ? null : r[0].toString(), r[1].toString()});
             }

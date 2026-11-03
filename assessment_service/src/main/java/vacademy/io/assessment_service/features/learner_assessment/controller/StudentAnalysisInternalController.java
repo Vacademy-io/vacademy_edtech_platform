@@ -63,13 +63,14 @@ public class StudentAnalysisInternalController {
             @RequestParam(name = "startDate", required = false)
             @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) Date startDate,
             @RequestParam(name = "endDate", required = false)
-            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) Date endDate) {
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) Date endDate,
+            @RequestParam(name = "batchId", required = false) String batchId) {
 
         log.info("internal/student-analysis/assessment-history: userId={} instituteId={} " +
-                 "startDate={} endDate={}", userId, instituteId, startDate, endDate);
+                 "startDate={} endDate={} batchId={}", userId, instituteId, startDate, endDate, batchId);
 
         StudentAssessmentHistoryResponse response =
-                studentAnalysisInternalService.fetchAssessmentHistory(userId, instituteId, startDate, endDate);
+                studentAnalysisInternalService.fetchAssessmentHistory(userId, instituteId, startDate, endDate, batchId);
 
         return ResponseEntity.ok(response);
     }
