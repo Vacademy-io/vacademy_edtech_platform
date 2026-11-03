@@ -23,8 +23,10 @@ import java.util.List;
 @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
 public class BatchSummaryReportDTO {
 
-    /** Null for the all-batches report. */
+    /** Null for the all-batches report and for several batches. */
     private String packageSessionId;
+    /** The batches of a several-batches report; empty otherwise. */
+    private List<String> packageSessionIds;
     private String batchName;
     private String instituteName;
     /** Institute theme colour (hex) for the report header and charts; null for the default. */

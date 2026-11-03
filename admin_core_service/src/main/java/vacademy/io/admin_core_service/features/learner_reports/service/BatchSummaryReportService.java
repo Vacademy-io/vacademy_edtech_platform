@@ -120,11 +120,21 @@ public class BatchSummaryReportService {
         validate(instituteId, request);
         BatchReportSettingConfig setting = loadSetting(instituteId);
         String batchId = StringUtils.hasText(request.getPackageSessionId()) ? request.getPackageSessionId() : null;
+        // Several batches: their learners together. One picked batch is the single-batch report.
+        List<String> several = batchId != null ? List.of() : pickedBatches(request);
+        if (several.size() == 1) {
+            batchId = several.get(0);
+            several = List.of();
+        }
         Institute institute = institute(instituteId);
 
         BatchSummaryReportDTO.BatchSummaryReportDTOBuilder out = BatchSummaryReportDTO.builder()
                 .packageSessionId(batchId)
-                .batchName(batchId == null ? ALL_BATCHES_LABEL : request.getBatchName())
+                .packageSessionIds(several)
+                .batchName(batchId != null ? request.getBatchName()
+                        : !several.isEmpty() ? (StringUtils.hasText(request.getBatchName())
+                        ? request.getBatchName() : several.size() + " batches")
+                        : ALL_BATCHES_LABEL)
                 .instituteName(institute == null ? null : institute.getInstituteName())
                 .brandColor(institute == null ? null : ThemeColorResolver.resolve(institute.getInstituteThemeCode()))
                 .logoUrl(logoUrl(institute))
@@ -146,7 +156,7 @@ public class BatchSummaryReportService {
                 .collect(java.util.stream.Collectors.toCollection(LinkedHashSet::new));
         out.assessmentIds(new ArrayList<>(picked));
         List<AssessmentServiceClient.CohortAttempt> attempts;
-        if (batchId == null) {
+        if (batchId == null && several.isEmpty()) {
             Set<String> active = new HashSet<>(mappingRepository.findDistinctUserIdsByInstituteAndStatus(instituteId, ACTIVE));
             active.remove(null);
             enrolled = active.size();
@@ -157,8 +167,11 @@ public class BatchSummaryReportService {
             roster = new ArrayList<>(new LinkedHashSet<>(attempts.stream()
                     .map(AssessmentServiceClient.CohortAttempt::userId).toList()));
         } else {
-            roster = new ArrayList<>(new LinkedHashSet<>(
-                    mappingRepository.findDistinctUserIdsByPackageSessionAndStatus(batchId, ACTIVE)));
+            LinkedHashSet<String> members = new LinkedHashSet<>();
+            for (String b : batchId != null ? List.of(batchId) : several) {
+                members.addAll(mappingRepository.findDistinctUserIdsByPackageSessionAndStatus(b, ACTIVE));
+            }
+            roster = new ArrayList<>(members);
             roster.removeIf(id -> !StringUtils.hasText(id));
             truncated = roster.size() > MAX_LEARNERS;
             if (truncated) roster = new ArrayList<>(roster.subList(0, MAX_LEARNERS));
@@ -300,7 +313,7 @@ public class BatchSummaryReportService {
         }
 
         if (batchId == null) {
-            out.batches(compareBatches(instituteId, userAvg));
+            out.batches(compareBatches(instituteId, userAvg, several.isEmpty() ? null : new HashSet<>(several)));
             out.subjects(List.of()).activity(List.of());
         } else {
             addBatchProgress(out, batchId, request, user);
@@ -335,12 +348,15 @@ public class BatchSummaryReportService {
     }
 
     /** Average score and participation of every batch for the all-batches report, best first. */
-    private List<BatchSummaryReportDTO.BatchRow> compareBatches(String instituteId, Map<String, Double> userAvg) {
+    /** @param only when not null, compare just these batches (a several-batches report). */
+    private List<BatchSummaryReportDTO.BatchRow> compareBatches(String instituteId, Map<String, Double> userAvg,
+                                                                Set<String> only) {
         List<BatchSummaryReportDTO.BatchRow> rows = new ArrayList<>();
         try {
             Map<String, List<String>> byBatch = new LinkedHashMap<>();
             for (Object[] pair : mappingRepository.findPackageSessionUserPairsByInstituteAndStatus(instituteId, ACTIVE)) {
                 if (pair == null || pair.length < 2 || pair[0] == null || pair[1] == null) continue;
+                if (only != null && !only.contains(pair[0].toString())) continue;
                 byBatch.computeIfAbsent(pair[0].toString(), k -> new ArrayList<>()).add(pair[1].toString());
             }
             byBatch.forEach((ps, ids) -> {
@@ -1063,12 +1079,20 @@ public class BatchSummaryReportService {
         if (ChronoUnit.DAYS.between(r.getStartDate(), r.getEndDate()) > MAX_RANGE_DAYS) {
             throw new VacademyException(HttpStatus.BAD_REQUEST, "Pick a range of at most " + MAX_RANGE_DAYS + " days");
         }
-        if (StringUtils.hasText(r.getPackageSessionId())) {
-            String owner = packageSessionRepository.findInstituteIdByPackageSessionId(r.getPackageSessionId()).orElse(null);
+        List<String> toCheck = new ArrayList<>(pickedBatches(r));
+        if (StringUtils.hasText(r.getPackageSessionId())) toCheck.add(r.getPackageSessionId());
+        for (String b : toCheck) {
+            String owner = packageSessionRepository.findInstituteIdByPackageSessionId(b).orElse(null);
             if (!instituteId.equals(owner)) {
                 throw new VacademyException(HttpStatus.NOT_FOUND, "Batch not found");
             }
         }
+    }
+
+    /** The distinct batches of packageSessionIds, in order. */
+    private static List<String> pickedBatches(BatchSummaryReportRequest r) {
+        if (r.getPackageSessionIds() == null) return List.of();
+        return r.getPackageSessionIds().stream().filter(StringUtils::hasText).distinct().toList();
     }
 
     public BatchReportSettingConfig loadSetting(String instituteId) {

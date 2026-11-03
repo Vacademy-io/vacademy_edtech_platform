@@ -25,6 +25,9 @@ public class BatchSummaryReportRequest {
     /** Sections to render; null means the institute's saved template. */
     private List<String> sections;
 
+    /** Several batches together; one entry is the same as packageSessionId, none means all batches. */
+    private List<String> packageSessionIds;
+
     /** Limit the report to these assessments; null or empty means every assessment in the window. */
     private List<String> assessmentIds;
 

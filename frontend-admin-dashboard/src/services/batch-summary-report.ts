@@ -71,6 +71,7 @@ export type BatchLearnerBand = 'STRONG' | 'AVERAGE' | 'WEAK' | 'NOT_ASSESSED';
 
 export interface BatchSummaryReport {
     package_session_id: string | null;
+    package_session_ids?: string[] | null;
     batch_name: string | null;
     institute_name: string | null;
     brand_color: string | null;
@@ -152,6 +153,8 @@ export interface BatchSummaryReport {
 export interface BatchSummaryRequest {
     /** Omitted for the all-batches report. */
     package_session_id?: string;
+    /** Several batches together (two or more); omitted for one batch or all batches. */
+    package_session_ids?: string[];
     batch_name?: string;
     start_date: string;
     end_date: string;

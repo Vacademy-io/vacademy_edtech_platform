@@ -230,7 +230,7 @@ export function GenerateBatchReportDialog({
                             buttonType="secondary"
                             onClick={() => setConfirm('TEACHERS')}
                             disabled={noSections || !canSend || !!busy}
-                            title={canSend ? undefined : 'Pick a batch to send'}
+                            title={canSend ? undefined : 'Pick one batch to send'}
                         >
                             <ChalkboardTeacher className="size-4" />
                             Send to teachers
@@ -238,7 +238,7 @@ export function GenerateBatchReportDialog({
                         <MyButton
                             onClick={() => setConfirm('PARENTS')}
                             disabled={noSections || !canSend || !!busy}
-                            title={canSend ? undefined : 'Pick a batch to send'}
+                            title={canSend ? undefined : 'Pick one batch to send'}
                         >
                             <UsersThree className="size-4" />
                             Send to parents
