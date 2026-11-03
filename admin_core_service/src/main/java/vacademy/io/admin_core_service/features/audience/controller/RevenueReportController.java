@@ -10,6 +10,7 @@ import org.springframework.web.bind.annotation.RestController;
 import vacademy.io.admin_core_service.features.audience.dto.reports.AdmissionReportDTO;
 import vacademy.io.admin_core_service.features.audience.dto.reports.CohortAnalysisReportDTO;
 import vacademy.io.admin_core_service.features.audience.dto.reports.RevenueForecastDTO;
+import vacademy.io.admin_core_service.features.audience.dto.reports.RevenuePaymentsDTO;
 import vacademy.io.admin_core_service.features.audience.dto.reports.RevenueReportDTO;
 import vacademy.io.admin_core_service.features.audience.service.AdmissionReportService;
 import vacademy.io.admin_core_service.features.audience.service.RevenueReportService;
@@ -60,6 +61,22 @@ public class RevenueReportController {
             @RequestParam(required = false) String counsellorUserId,
             @RequestAttribute("user") CustomUserDetails user) {
         return ResponseEntity.ok(revenueReportService.getRevenue(
+                instituteId, fromDate, toDate, teamId, counsellorUserId, user.getUserId()));
+    }
+
+    /**
+     * The payments behind the Revenue tab's Collected for the same filters, one row per payment.
+     * Pass a counsellor's id as counsellorUserId to list exactly that counsellor's row.
+     */
+    @GetMapping("/revenue/payments")
+    public ResponseEntity<RevenuePaymentsDTO> getRevenuePayments(
+            @RequestParam String instituteId,
+            @RequestParam(required = false) String fromDate,
+            @RequestParam(required = false) String toDate,
+            @RequestParam(required = false) String teamId,
+            @RequestParam(required = false) String counsellorUserId,
+            @RequestAttribute("user") CustomUserDetails user) {
+        return ResponseEntity.ok(revenueReportService.getRevenuePayments(
                 instituteId, fromDate, toDate, teamId, counsellorUserId, user.getUserId()));
     }
 

@@ -27,6 +27,30 @@
         "title": "Revenue by counsellor",
         "footnote": "Admissions and booked fee follow the enrolment date; Collected follows the payment date, so it also includes installments from earlier admissions."
     },
+    "payments": {
+        "title": "Payments — {{name}}",
+        "rowHint": "Click a counsellor to see the payments behind their amount.",
+        "summary_one": "{{count}} payment · {{amount}}",
+        "summary_other": "{{count}} payments · {{amount}}",
+        "loading": "Loading payments…",
+        "empty": "No payments for {{name}} in this range.",
+        "close": "Close",
+        "total": "Total",
+        "enteredOn": "entered {{date}}",
+        "truncated": "Showing the latest {{shown}} of {{count}} payments. Export or narrow the date range to see all.",
+        "headers": {
+            "date": "Payment date",
+            "student": "Student",
+            "phone": "Phone",
+            "courses": "Course(s)",
+            "amount": "Amount",
+            "mode": "Mode",
+            "reference": "Reference",
+            "receipt": "Receipt no.",
+            "source": "Source",
+            "enteredOn": "Entered on"
+        }
+    },
     "empty": {
         "noRevenue": "No revenue in this range.",
         "noCounsellorRevenue": "No counsellor-attributed revenue in this range."
