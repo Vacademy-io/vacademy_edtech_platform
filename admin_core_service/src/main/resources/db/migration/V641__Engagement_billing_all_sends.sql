@@ -38,5 +38,5 @@ INSERT INTO ai_use_case_catalog
 VALUES ('engagement_decision', 'engagement', 'Engagement AI decisions', NULL, 'decisions', 'engagement',
         '{engagement_decision}', '{}', NULL, 'SCHEDULED', 'SYSTEM', 'TOKENS',
         'AS_TODAY', TRUE, TRUE, FALSE, FALSE,
-        TRUE, 173, 'V640', 'engagement_messages')
+        TRUE, 173, 'V641', 'engagement_messages')
 ON CONFLICT (use_case) DO NOTHING;
