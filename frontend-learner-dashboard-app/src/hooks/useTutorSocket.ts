@@ -3,6 +3,7 @@ import { AI_SERVICE_URL } from "@/constants/urls";
 import { getTokenFromCookie } from "@/lib/auth/sessionUtility";
 import { TokenKey } from "@/constants/auth/tokens";
 import { parseAiUsageLimitBody, type AiUsageLimitBody } from "@/lib/ai-usage-limit";
+import type { TutorLanguage } from "@/services/tutor-api";
 
 export type TutorBoardOp = Record<string, unknown> & { op: string; id?: string; target?: string };
 
@@ -14,7 +15,7 @@ export interface TutorStateEvent {
   concept_title: string | null;
   phase: string;
   progress: { done: number; total: number; percent: number; topic_index: number; topic_count: number };
-  language: "en" | "hi";
+  language: TutorLanguage;
   remediations: number;
 }
 
@@ -277,7 +278,7 @@ export function useTutorSocket(callbacks: Callbacks) {
     sendAsk: (text: string) => send({ type: "ask", text }),
     sendControl: (intent: "repeat" | "skip" | "slower" | "faster" | "doubt" | "pause" | "resume" | "done") =>
       send({ type: "control", intent }),
-    sendConfig: (cfg: { language?: "en" | "hi"; speak?: boolean; pace?: TutorPace; avatar?: boolean }) => send({ type: "config", ...cfg }),
+    sendConfig: (cfg: { language?: TutorLanguage; speak?: boolean; pace?: TutorPace; avatar?: boolean }) => send({ type: "config", ...cfg }),
     sendNextSlide: (slideId: string) => send({ type: "next_slide", slide_id: slideId }),
     sendAudioChunk: (base64: string) => send({ type: "audio_chunk", data: base64 }),
     sendAudioEnd: (mime?: string) => send({ type: "audio_end", mime: mime || "audio/webm" }),

@@ -27,6 +27,7 @@ from ....repositories.chat_message_repository import ChatMessageRepository
 from ....repositories.chat_session_repository import ChatSessionRepository
 from ...platform_settings_service import get_platform_setting
 from ...token_usage_service import TokenUsageService
+from .. import languages as tutor_langs
 from .. import plan_store
 from ..slide_source import list_package_slides, slide_in_package_session
 from .settings import TutorSettings, resolve_settings
@@ -668,7 +669,7 @@ def summary_context(tutor_session_id: str) -> Optional[Dict[str, Any]]:
             return {"tutor_session_id": ts.id, "user_id": ts.user_id, "institute_id": ts.institute_id,
                     "package_session_id": ts.package_session_id, "model": live_model,
                     "teacher": settings.teacher_name or "Asha",
-                    "lang": ts.language if ts.language in ("en", "hi") else settings.course_language,
+                    "lang": ts.language if tutor_langs.is_supported(ts.language) else settings.course_language,
                     "learner_name": learner_name(db, ts.user_id)}
     except Exception:  # noqa: BLE001
         logger.warning("summary_context failed", exc_info=True)
@@ -795,7 +796,8 @@ def start_session(
         lesson = load_lesson(db, target_slide)
         if lesson is None:
             raise LookupError("This slide has no teaching plan yet")
-        lang = language if language in ("en", "hi") else (st.preferred_language if settings.session_language == "learner" and st.preferred_language in ("en", "hi") else settings.course_language)
+        pair = settings.language_pair
+        lang = language if language in pair else (st.preferred_language if settings.session_language == "learner" and st.preferred_language in pair else settings.course_language)
         pointer = resume_position(db, lesson, st)
         resumed = pointer is not None
         if pointer is None:
@@ -876,7 +878,7 @@ def save_pointer(*, user_id: str, package_session_id: str, lesson: LessonPlan, p
                 "slide_title": lesson.slide_title, "updated_at": datetime.utcnow().isoformat(),
             }
             st.progress_json = prog
-            if language in ("en", "hi"):
+            if tutor_langs.is_supported(language):
                 st.preferred_language = language
             if pace:
                 st.pace = pace

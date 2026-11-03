@@ -22,6 +22,7 @@ from ...models.ai_token_usage import RequestType
 from ...models.teaching_plan import TeachingPlan
 from ...constants.model_defaults import GLM_DEFAULT
 from ...schemas.tutor import CompileKbGrounding, MediaTaskOp, SvgPart, TeachingPlanDraft
+from . import languages as tutor_langs
 from ..ai_billing import UC, metering_user, record_llm_billing, record_tool_billing, supported_kwargs
 from ..api_key_resolver import ApiKeyResolver
 from ..chat_llm_client import ChatLLMClient
@@ -213,7 +214,7 @@ class PlanCompiler:
         # SCORM slides drawn as images: read per slide (same switch and price as PDF OCR).
         self.ocr_scorm = bool(ocr_pdfs) and source_text.scorm_ocr_available()
         self.user_id = user_id
-        self.language = language if language in ("en", "hi") else "en"
+        self.language = tutor_langs.normalize(language)
         self.teacher_name = (teacher_name or "Asha")[:60]
         self.force = force
         self.generate_images = generate_images

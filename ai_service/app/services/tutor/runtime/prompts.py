@@ -5,7 +5,7 @@ import json
 import re
 from typing import Any, Dict, List, Optional
 
-LANG_NAMES = {"en": "English", "hi": "Hindi (Devanagari; keep technical terms in English letters)"}
+from ..languages import PROMPT_NAMES as LANG_NAMES  # en, hi, bn, kn
 
 # ── deterministic lines (no model call) ──────────────────────────────────────
 
@@ -103,6 +103,94 @@ T = {
     # The right answer stays on the board when the teacher moves on.
     "answer_note": {"en": "Answer: {expected}", "hi": "उत्तर: {expected}"},
 }
+
+# Bengali and Kannada lines, kept as their own tables so the en/hi entries
+# above stay readable; merged into T below. Same placeholders as English
+# (tests enforce it). Formal "আপনি" / "ನೀವು", matching the Hindi "आप".
+# Placeholders stand alone (no case suffix glued to an English title).
+T_BN = {
+    "greet": "নমস্কার {name}! আমি {teacher}, আজ আমি আপনাকে পড়াব। আমরা {slide} দিয়ে শুরু করছি। চলুন শুরু করি।",
+    "greet_interview": "নমস্কার {name}, আমি {teacher}, আজ আমি আপনার interviewer। ভাবতে ভাবতে বলুন, সময় নিন, আর প্রতিটা উত্তরের পরে আমি feedback দেব। তৈরি?",
+    "greet_practice": "নমস্কার {name}, আমি {teacher}। এটা একটা practice session: আমি একটা পরিস্থিতি দেব, আপনি চেষ্টা করবেন, আর আমরা একসাথে সেটা আরও ভালো করব। শুরু করা যাক।",
+    "resume": "আবার স্বাগত, {name}! গতবার আমরা {slide} পড়ছিলাম। {summary} চলুন, যেখানে থেমেছিলাম সেখান থেকেই শুরু করি।",
+    "resume_summary": "আবার স্বাগত, {name}! আমরা সবে {slide} থেকে {topic} শেষ করেছিলাম। {summary} চলুন, সেখান থেকেই এগোই।",
+    "resume_done": "আবার স্বাগত, {name}! আপনি {slide} আগেই শেষ করেছেন। {summary} চলুন দেখি এরপর কী আছে।",
+    "greet_returning": "আবার স্বাগত, {name}! গতবার আমরা {previous} নিয়ে কাজ করেছিলাম। {summary} আজ আমরা {slide} শুরু করছি। চলুন শুরু করি।",
+    "topic_summary": "বেশ ভালো। {topic} এখানেই শেষ। বোর্ডটা আর একবার দেখে নিন, তারপর আমরা পরের অংশে যাব।",
+    "slide_done": "{slide} শেষ হলো। খুব ভালো, {name}। {weak}",
+    "weak_note": "যে {n}টা বিষয়ে আর একটু অনুশীলন দরকার, সেগুলোতে আমরা আবার ফিরে আসব।",
+    "ask": "{prompt}",
+    "media_task_video": "এখন এই ভিডিওটা দেখুন। সময় নিয়ে দেখুন, আর হয়ে গেলে আমাকে বলবেন।",
+    "media_task_pdf": "এখন এই ডকুমেন্টটা পড়ুন। সময় নিয়ে পড়ুন, আর হয়ে গেলে আমাকে বলবেন।",
+    "skipped": "ঠিক আছে, এগিয়ে যাই।",
+    "next_slide": "এবার চলুন {slide} শুরু করি।",
+    "pause": "ঠিক আছে, আমি অপেক্ষা করছি। তৈরি হলে 'continue' বলবেন।",
+    "credits_end": "আপনার প্রতিষ্ঠানের lesson credit আপাতত শেষ হয়ে গেছে, তাই আমি এখানেই থামছি। আপনার জায়গা save করা আছে; top-up হলে আমরা আবার এগোব।",
+    "idle_end": "অনেকক্ষণ কোনো কথা হয়নি, তাই আমি এখানেই থামছি। যখন খুশি ফিরে আসুন, আমরা সেখান থেকেই শুরু করব।",
+    "away": "মনে হচ্ছে আপনি একটু উঠে গেছেন। আমি এখানেই অপেক্ষা করছি।",
+    "welcome_back": "আবার স্বাগত! চলুন, যেখানে থেমেছিলাম সেখান থেকেই শুরু করি।",
+    "slower": "নিশ্চয়ই, আমি আস্তে বলব।",
+    "faster": "নিশ্চয়ই, একটু তাড়াতাড়ি এগোই।",
+    "fallback_correct": "একদম ঠিক। চলুন এগিয়ে যাই।",
+    "fallback_hint": "পুরোপুরি নয়। বোর্ডটা আবার দেখুন: {hint}। আর একবার চেষ্টা করুন।",
+    "fallback_move_on": "এটা পরের জন্য নোট করে রাখি, আর এগিয়ে যাই। {expected}",
+    "revisit_intro_topic": "এগোনোর আগে, চলুন তাড়াতাড়ি সেই {n}টা বিষয়ে ফিরে যাই যেগুলোতে অসুবিধা হয়েছিল।",
+    "revisit_intro_slide": "শেষ করার আগে, চলুন সেই {n}টা বিষয় আবার দেখি যেগুলোতে আর একটু অনুশীলন দরকার।",
+    "revisit_ask": "{concept} নিয়ে। {prompt}",
+    "revisit_done_topic": "বেশ, আবার ঝালিয়ে নেওয়া হয়ে গেল। চলুন পরের অংশে যাই।",
+    "revisit_done_slide": "আবার ঝালিয়ে নেওয়া হয়ে গেল। লেগে থাকার জন্য খুব ভালো।",
+    "revisit_skipped": "ঠিক আছে, এটা অন্য কোনো দিনের জন্য রেখে দিই।",
+    "nudge_hint": "সময় নিয়ে ভাবুন। একটা ইঙ্গিত দিই: {hint}",
+    "nudge_voice_hint": "বলে উত্তর দিতে Answer button টিপুন, তারপর বলুন — অথবা নিচে type করুন। একটা ইঙ্গিত দিই: {hint}",
+    "nudge_voice_open": "বলে উত্তর দিতে Answer button টিপুন, তারপর বলুন — অথবা নিচে type করুন। চাইলে 'skip'-ও বলতে পারেন।",
+    "nudge_open": "সময় নিয়ে ভাবুন। চাইলে 'skip' বলুন, আমরা পরে এটায় ফিরে আসব।",
+    "predict_intro": "দেখানোর আগে, একটা আন্দাজ করুন: {question}",
+    "predict_ack": "ভালো আন্দাজ। চলুন দেখি।",
+    "answer_note": "উত্তর: {expected}",
+}
+T_KN = {
+    "greet": "ನಮಸ್ಕಾರ {name}! ನಾನು {teacher}, ಇವತ್ತು ನಿಮಗೆ ನಾನು ಪಾಠ ಮಾಡುತ್ತೇನೆ. ಮೊದಲಿಗೆ {slide} ನೋಡೋಣ. ಶುರು ಮಾಡೋಣ.",
+    "greet_interview": "ನಮಸ್ಕಾರ {name}, ನಾನು {teacher}, ಇವತ್ತು ನಾನು ನಿಮ್ಮ interviewer. ಯೋಚಿಸುತ್ತಾ ಮಾತಾಡಿ, ಸಮಯ ತೆಗೆದುಕೊಳ್ಳಿ, ಪ್ರತಿ ಉತ್ತರದ ನಂತರ ನಾನು feedback ಕೊಡುತ್ತೇನೆ. ರೆಡಿನಾ?",
+    "greet_practice": "ನಮಸ್ಕಾರ {name}, ನಾನು {teacher}. ಇದು ಒಂದು practice session: ನಾನು ಒಂದು ಸನ್ನಿವೇಶ ಕೊಡುತ್ತೇನೆ, ನೀವು ಪ್ರಯತ್ನಿಸಿ, ಆಮೇಲೆ ನಾವು ಒಟ್ಟಿಗೆ ಅದನ್ನು ಇನ್ನೂ ಚೆನ್ನಾಗಿ ಮಾಡೋಣ. ಶುರು ಮಾಡೋಣ.",
+    "resume": "ಮತ್ತೆ ಸ್ವಾಗತ, {name}! ಕಳೆದ ಸಲ ನಾವು {slide} ಓದುತ್ತಿದ್ದೆವು. {summary} ನಿಲ್ಲಿಸಿದ್ದಲ್ಲಿಂದಲೇ ಮುಂದುವರಿಸೋಣ.",
+    "resume_summary": "ಮತ್ತೆ ಸ್ವಾಗತ, {name}! {slide} ಪಾಠದಲ್ಲಿ ನಾವು ಈಗಷ್ಟೇ {topic} ಮುಗಿಸಿದ್ದೆವು. {summary} ಅಲ್ಲಿಂದಲೇ ಮುಂದುವರಿಸೋಣ.",
+    "resume_done": "ಮತ್ತೆ ಸ್ವಾಗತ, {name}! ನೀವು {slide} ಈಗಾಗಲೇ ಮುಗಿಸಿದ್ದೀರಿ. {summary} ಮುಂದೆ ಏನಿದೆ ನೋಡೋಣ.",
+    "greet_returning": "ಮತ್ತೆ ಸ್ವಾಗತ, {name}! ಕಳೆದ ಸಲ ನಾವು {previous} ಬಗ್ಗೆ ಕೆಲಸ ಮಾಡಿದ್ದೆವು. {summary} ಇವತ್ತು {slide} ಶುರು ಮಾಡುತ್ತಿದ್ದೇವೆ. ಶುರು ಮಾಡೋಣ.",
+    "topic_summary": "ಚೆನ್ನಾಗಿದೆ. {topic} ಇಲ್ಲಿಗೆ ಮುಗಿಯಿತು. ಬೋರ್ಡ್ ಅನ್ನು ಇನ್ನೊಮ್ಮೆ ನೋಡಿ, ಆಮೇಲೆ ಮುಂದಿನ ಭಾಗಕ್ಕೆ ಹೋಗೋಣ.",
+    "slide_done": "{slide} ಮುಗಿಯಿತು. ತುಂಬಾ ಚೆನ್ನಾಗಿ ಮಾಡಿದಿರಿ, {name}. {weak}",
+    "weak_note": "ಇನ್ನೂ ಸ್ವಲ್ಪ ಅಭ್ಯಾಸ ಬೇಕಿರುವ {n} ವಿಷಯಗಳಿಗೆ ನಾವು ಮತ್ತೆ ಬರೋಣ.",
+    "ask": "{prompt}",
+    "media_task_video": "ದಯವಿಟ್ಟು ಈಗ ಈ ವಿಡಿಯೋ ನೋಡಿ. ಆರಾಮವಾಗಿ ನೋಡಿ, ಮುಗಿದ ಮೇಲೆ ನನಗೆ ಹೇಳಿ.",
+    "media_task_pdf": "ದಯವಿಟ್ಟು ಈಗ ಈ document ಓದಿ. ಆರಾಮವಾಗಿ ಓದಿ, ಮುಗಿದ ಮೇಲೆ ನನಗೆ ಹೇಳಿ.",
+    "skipped": "ಸರಿ, ಮುಂದೆ ಹೋಗೋಣ.",
+    "next_slide": "ಈಗ {slide} ಶುರು ಮಾಡೋಣ.",
+    "pause": "ಸರಿ, ನಾನು ಕಾಯುತ್ತೇನೆ. ರೆಡಿ ಆದಾಗ 'continue' ಅಂತ ಹೇಳಿ.",
+    "credits_end": "ನಿಮ್ಮ ಸಂಸ್ಥೆಯ lesson credits ಸದ್ಯಕ್ಕೆ ಮುಗಿದಿವೆ, ಹಾಗಾಗಿ ನಾನು ಇಲ್ಲಿಗೆ ನಿಲ್ಲಿಸುತ್ತೇನೆ. ನಿಮ್ಮ ಜಾಗ save ಆಗಿದೆ; top-up ಆದ ಮೇಲೆ ಮುಂದುವರಿಸೋಣ.",
+    "idle_end": "ತುಂಬಾ ಹೊತ್ತಿನಿಂದ ಮಾತಿಲ್ಲ, ಹಾಗಾಗಿ ನಾನು ಇಲ್ಲಿಗೆ ನಿಲ್ಲಿಸುತ್ತೇನೆ. ಯಾವಾಗ ಬೇಕಾದರೂ ಮತ್ತೆ ಬನ್ನಿ, ನಿಲ್ಲಿಸಿದ್ದಲ್ಲಿಂದಲೇ ಮುಂದುವರಿಸೋಣ.",
+    "away": "ನೀವು ಸ್ವಲ್ಪ ಹೊರಗೆ ಹೋದಂತಿದೆ. ನಾನು ಇಲ್ಲೇ ಕಾಯುತ್ತಿರುತ್ತೇನೆ.",
+    "welcome_back": "ಮತ್ತೆ ಸ್ವಾಗತ! ನಿಲ್ಲಿಸಿದ್ದಲ್ಲಿಂದಲೇ ಮುಂದುವರಿಸೋಣ.",
+    "slower": "ಖಂಡಿತ, ನಾನು ನಿಧಾನವಾಗಿ ಹೇಳುತ್ತೇನೆ.",
+    "faster": "ಖಂಡಿತ, ಸ್ವಲ್ಪ ವೇಗವಾಗಿ ಹೋಗೋಣ.",
+    "fallback_correct": "ಸರಿಯಾಗಿದೆ. ಮುಂದುವರಿಸೋಣ.",
+    "fallback_hint": "ಪೂರ್ತಿ ಸರಿ ಇಲ್ಲ. ಬೋರ್ಡ್ ಅನ್ನು ಮತ್ತೆ ನೋಡಿ: {hint}. ಇನ್ನೊಮ್ಮೆ ಪ್ರಯತ್ನಿಸಿ.",
+    "fallback_move_on": "ಇದನ್ನು ಆಮೇಲೆಗೆ ನೋಟ್ ಮಾಡಿಕೊಳ್ಳೋಣ, ಮುಂದೆ ಹೋಗೋಣ. {expected}",
+    "revisit_intro_topic": "ಮುಂದೆ ಹೋಗುವ ಮೊದಲು, ಕಷ್ಟ ಆದ {n} ವಿಷಯಗಳಿಗೆ ಬೇಗ ಒಮ್ಮೆ ವಾಪಸ್ ಹೋಗೋಣ.",
+    "revisit_intro_slide": "ಮುಗಿಸುವ ಮೊದಲು, ಇನ್ನೂ ಸ್ವಲ್ಪ ಅಭ್ಯಾಸ ಬೇಕಿರುವ {n} ವಿಷಯಗಳನ್ನು ಮತ್ತೆ ನೋಡೋಣ.",
+    "revisit_ask": "{concept} ಬಗ್ಗೆ. {prompt}",
+    "revisit_done_topic": "ಚೆನ್ನಾಗಿದೆ, ಪುನರಾವರ್ತನೆ ಮುಗಿಯಿತು. ಮುಂದಿನ ಭಾಗಕ್ಕೆ ಹೋಗೋಣ.",
+    "revisit_done_slide": "ಪುನರಾವರ್ತನೆ ಮುಗಿಯಿತು. ಬಿಡದೆ ಪ್ರಯತ್ನಿಸಿದ್ದಕ್ಕೆ ಶಭಾಷ್.",
+    "revisit_skipped": "ಸರಿ, ಇದನ್ನು ಇನ್ನೊಂದು ದಿನಕ್ಕೆ ಬಿಡೋಣ.",
+    "nudge_hint": "ಆರಾಮವಾಗಿ ಯೋಚಿಸಿ. ಒಂದು ಸುಳಿವು: {hint}",
+    "nudge_voice_hint": "ಮಾತಾಡಿ ಉತ್ತರಿಸಲು Answer button ಒತ್ತಿ, ಆಮೇಲೆ ಮಾತಾಡಿ — ಅಥವಾ ಕೆಳಗೆ type ಮಾಡಿ. ಒಂದು ಸುಳಿವು: {hint}",
+    "nudge_voice_open": "ಮಾತಾಡಿ ಉತ್ತರಿಸಲು Answer button ಒತ್ತಿ, ಆಮೇಲೆ ಮಾತಾಡಿ — ಅಥವಾ ಕೆಳಗೆ type ಮಾಡಿ. ಬೇಕಾದರೆ 'skip' ಅಂತಲೂ ಹೇಳಬಹುದು.",
+    "nudge_open": "ಆರಾಮವಾಗಿ ಯೋಚಿಸಿ. ಬೇಕಾದರೆ 'skip' ಅಂತ ಹೇಳಿ, ಇದಕ್ಕೆ ನಾವು ಆಮೇಲೆ ಬರೋಣ.",
+    "predict_intro": "ತೋರಿಸುವ ಮೊದಲು, ಒಂದು ಊಹೆ ಮಾಡಿ: {question}",
+    "predict_ack": "ಒಳ್ಳೆಯ ಊಹೆ. ನೋಡೋಣ.",
+    "answer_note": "ಉತ್ತರ: {expected}",
+}
+for _lang, _table in (("bn", T_BN), ("kn", T_KN)):
+    for _key, _line in _table.items():
+        T[_key][_lang] = _line
 
 
 # ── rolling summary shape ────────────────────────────────────────────────────

@@ -25,6 +25,7 @@ import {
 import { MyButton } from '@/components/design-system/button';
 import { getPackageSettingData, savePackageSettingKey } from '@/services/package-settings';
 import {
+    TUTOR_LANGUAGES,
     TUTOR_MODE_SETTING_KEY,
     TUTOR_TTS_PROVIDERS,
     TUTOR_VOICE_PACES,
@@ -33,15 +34,18 @@ import {
     getTutorOptions,
     getTutorPlans,
     getTutorSlidePlan,
+    isTutorLanguage,
     newCompileRunId,
     putTutorSourceDescription,
     recompileTutorSlide,
+    tutorLanguagePair,
     type TutorCompileEvent,
     type TutorCompileOptions,
     type TutorModeSetting,
     type TutorOptions,
     type TutorPackagePlans,
     type TutorPlanStatus,
+    type TutorLanguage,
     type TutorPlanStatusItem,
 } from '@/services/tutor';
 import { TutorPlanPreviewDialog } from './TutorPlanPreviewDialog';
@@ -50,6 +54,13 @@ import { TutorInsightsCard } from '@/components/common/tutor/TutorInsightsCard';
 import { TeacherPresenceField } from '@/components/common/tutor/TeacherPresenceField';
 import { ModelPicker, VoicePicker } from '@/components/common/tutor/TutorPickers';
 import { useTranslation } from 'react-i18next';
+
+const LANGUAGE_LABEL_KEYS: Record<TutorLanguage, string> = {
+    en: 'settingsCard.languageEnglish',
+    hi: 'settingsCard.languageHindi',
+    bn: 'settingsCard.languageBengali',
+    kn: 'settingsCard.languageKannada',
+};
 
 interface TutorModeTabProps {
     packageId: string;
@@ -230,9 +241,10 @@ export const TutorModeTab: React.FC<TutorModeTabProps> = ({ packageId }) => {
         }),
         [institute]
     );
-    const effectiveLanguage = (setting.languages?.[0] ?? inherited.languages[0] ?? 'en') as
-        | 'en'
-        | 'hi';
+    const rawLanguage = setting.languages?.[0] ?? inherited.languages[0];
+    const effectiveLanguage: TutorLanguage = isTutorLanguage(rawLanguage) ? rawLanguage : 'en';
+    const languageLabel = (lang: string | undefined): string =>
+        t(LANGUAGE_LABEL_KEYS[isTutorLanguage(lang) ? lang : 'en']);
     const effectiveImages = setting.generateImages ?? inherited.generateImages;
 
     const loadSetting = useCallback(async () => {
@@ -469,7 +481,7 @@ export const TutorModeTab: React.FC<TutorModeTabProps> = ({ packageId }) => {
                                     const lang = fromSelect(v);
                                     update(
                                         'languages',
-                                        lang ? [lang, lang === 'en' ? 'hi' : 'en'] : undefined
+                                        isTutorLanguage(lang) ? tutorLanguagePair(lang) : undefined
                                     );
                                 }}
                             >
@@ -479,18 +491,14 @@ export const TutorModeTab: React.FC<TutorModeTabProps> = ({ packageId }) => {
                                 <SelectContent>
                                     <SelectItem value={INHERIT}>
                                         {t('settingsCard.instituteDefaultWithValue', {
-                                            value:
-                                                inherited.languages[0] === 'hi'
-                                                    ? t('settingsCard.languageHindi')
-                                                    : t('settingsCard.languageEnglish'),
+                                            value: languageLabel(inherited.languages[0]),
                                         })}
                                     </SelectItem>
-                                    <SelectItem value="en">
-                                        {t('settingsCard.languageEnglish')}
-                                    </SelectItem>
-                                    <SelectItem value="hi">
-                                        {t('settingsCard.languageHindi')}
-                                    </SelectItem>
+                                    {TUTOR_LANGUAGES.map((lang) => (
+                                        <SelectItem key={lang} value={lang}>
+                                            {languageLabel(lang)}
+                                        </SelectItem>
+                                    ))}
                                 </SelectContent>
                             </Select>
                         </div>

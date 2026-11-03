@@ -25,12 +25,18 @@ logger = logging.getLogger(__name__)
 QUESTION_MAX_TOKENS = 300
 
 
+_RETRY_PREFIX = {"en": "Let's try this once more: ", "hi": "एक बार फिर कोशिश करते हैं: ",
+                 "bn": "আর একবার চেষ্টা করি: ", "kn": "ಇನ್ನೊಮ್ಮೆ ಪ್ರಯತ್ನಿಸೋಣ: "}
+_OWN_WORDS = {"en": "In your own words, what is {title}?", "hi": "अपने शब्दों में बताइए, {title} क्या है?",
+              "bn": "নিজের ভাষায় বলুন, {title} কী?", "kn": "ನಿಮ್ಮದೇ ಮಾತುಗಳಲ್ಲಿ ಹೇಳಿ, {title} ಅಂದರೆ ಏನು?"}
+
+
 def fallback_check(concept: Concept, lang: str) -> Dict[str, Any]:
     """The original check re-asked (or, for a concept that had none, "tell me
     in your own words")."""
     chk = dict(concept.check or {})
     if chk.get("prompt"):
-        prefix = "एक बार फिर कोशिश करते हैं: " if lang == "hi" else "Let's try this once more: "
+        prefix = _RETRY_PREFIX.get(lang, _RETRY_PREFIX["en"])
         return {
             "type": chk.get("type") if chk.get("type") in ("open", "mcq") else "open",
             "prompt": prefix + str(chk["prompt"]), "options": list(chk.get("options") or []),
@@ -38,8 +44,7 @@ def fallback_check(concept: Concept, lang: str) -> Dict[str, Any]:
             "misconceptions": list(chk.get("misconceptions") or []),
             "pass_threshold": chk.get("pass_threshold", 0.7), "fresh": False,
         }
-    q = (f"अपने शब्दों में बताइए, {concept.title} क्या है?" if lang == "hi"
-         else f"In your own words, what is {concept.title}?")
+    q = _OWN_WORDS.get(lang, _OWN_WORDS["en"]).format(title=concept.title)
     return {"type": "open", "prompt": q, "options": [], "expected": (concept.say or "")[:300],
             "rubric": "Credit the core idea in the learner's own words.", "misconceptions": [],
             "pass_threshold": 0.6, "fresh": False}

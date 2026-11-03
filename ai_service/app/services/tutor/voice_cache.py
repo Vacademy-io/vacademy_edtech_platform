@@ -30,6 +30,8 @@ from ...models.ai_token_usage import RequestType
 from ...models.tutor_tts_cache import TutorTtsCache
 from ..ai_billing import UC, metering_user, record_tool_billing
 from ..provider_rates import tts_cost_usd
+from . import languages as tutor_langs
+from .languages import tutor_voice_for
 from .runtime import prompts
 from .runtime.speech import spoken_form, cache_key, effective_pace, tutor_segments
 
@@ -189,7 +191,7 @@ async def warm_plan(
     """Synthesise every line of a compiled plan for each language, once.
     Charges `tutor_voice_prepare` per slide per language only when at least
     one line was actually synthesised (a re-run of a warmed plan is free)."""
-    from ..voice_tts import default_voice_for, sarvam_speaker, smallest_available, synthesize_speech, SARVAM_DEFAULT_FEMALE, SMALLEST_DEFAULT_VOICE
+    from ..voice_tts import sarvam_speaker, smallest_available, synthesize_speech, SARVAM_DEFAULT_FEMALE, SMALLEST_DEFAULT_VOICE
     from . import plan_store
     from ...models.teaching_plan import TeachingPlan
     if provider == "edge" or (provider == "smallest" and not smallest_available()):
@@ -200,14 +202,14 @@ async def warm_plan(
             return {"skipped": "plan missing"}
         view = plan_store.plan_view(db, plan)
     out: Dict[str, Any] = {"languages": {}}
-    stt_lang = {"en": "en-IN", "hi": "hi-IN"}
-    for lang in [x for x in languages if x in ("en", "hi")]:
+    stt_lang = tutor_langs.LOCALES
+    for lang in tutor_langs.filter_supported(languages):
         if provider == "sarvam":
             v = sarvam_speaker(voice, SARVAM_DEFAULT_FEMALE)
         elif provider == "smallest":
             v = (voice or SMALLEST_DEFAULT_VOICE).strip()
         else:
-            v = voice or default_voice_for(provider, stt_lang.get(lang, "en-IN"))
+            v = tutor_voice_for(provider, voice, lang)
         segments: List[str] = []
         for line in spoken_lines(view, lang, course_lang):
             segments.extend(seg for seg, _i, _n in tutor_segments(line))

@@ -13,14 +13,17 @@ from typing import Dict, List
 from ...schemas.tutor import (
     BulletOp, Check, ConceptDraft, HeadingOp, KeyTerm, TeachingPlanDraft, TextOp, TopicDraft,
 )
+from . import languages as tutor_langs
 from .slide_source import SlideSource
 
 _INTRO = {
     "en": "Let's check what you remember from this chapter, {student_name}. I will ask a few quick questions; answer in your own words and we'll see how it goes.",
     "hi": "चलो देखते हैं {student_name}, इस अध्याय से आपको क्या याद है। मैं कुछ छोटे सवाल पूछूँगी; अपने शब्दों में जवाब दीजिए।",
+    "bn": "চলুন দেখি {student_name}, এই অধ্যায় থেকে আপনার কী মনে আছে। আমি কয়েকটা ছোট প্রশ্ন করব; নিজের ভাষায় উত্তর দিন।",
+    "kn": "ಬನ್ನಿ {student_name}, ಈ ಅಧ್ಯಾಯದಿಂದ ನಿಮಗೆ ಏನು ನೆನಪಿದೆ ಅಂತ ನೋಡೋಣ. ನಾನು ಕೆಲವು ಸಣ್ಣ ಪ್ರಶ್ನೆಗಳನ್ನು ಕೇಳುತ್ತೇನೆ; ನಿಮ್ಮದೇ ಮಾತುಗಳಲ್ಲಿ ಉತ್ತರಿಸಿ.",
 }
-_ASK = {"en": "Question {n}: {stem}", "hi": "सवाल {n}: {stem}"}
-_ASK_OPTIONS = {"en": " The options are: {opts}.", "hi": " विकल्प हैं: {opts}।"}
+_ASK = {"en": "Question {n}: {stem}", "hi": "सवाल {n}: {stem}", "bn": "প্রশ্ন {n}: {stem}", "kn": "ಪ್ರಶ್ನೆ {n}: {stem}"}
+_ASK_OPTIONS = {"en": " The options are: {opts}.", "hi": " विकल्प हैं: {opts}।", "bn": " বিকল্পগুলো হলো: {opts}।", "kn": " ಆಯ್ಕೆಗಳು: {opts}."}
 _RUBRIC_MCQ = {"en": "Full credit for choosing: {answer}. No partial credit.", "hi": "सही विकल्प: {answer}। आंशिक अंक नहीं।"}
 _RUBRIC_OPEN = {"en": "Full credit when the answer matches: {answer}. Half credit for the right idea in the wrong words.", "hi": "पूरा अंक जब उत्तर मेल खाए: {answer}। सही विचार पर आधा अंक।"}
 
@@ -35,7 +38,7 @@ def _shorten(text: str, n: int = 140) -> str:
 
 
 def compile_quiz(source: SlideSource, lang: str = "en") -> TeachingPlanDraft:
-    other = "hi" if lang == "en" else "en"
+    other = tutor_langs.second_language(lang)
     topics: List[TopicDraft] = [TopicDraft(
         id="t1",
         title=f"Quick check: {source.title or 'this chapter'}",

@@ -9,11 +9,19 @@ from .plan_validator import (
     MAX_WORDS_PER_CONCEPT,
 )
 
-LANG_NAMES = {"en": "English", "hi": "Hindi (Devanagari script; keep English technical terms in Latin script)"}
+from . import languages as tutor_langs
+
+LANG_NAMES = tutor_langs.PROMPT_NAMES
 
 
 def _other(lang: str) -> str:
-    return "hi" if lang == "en" else "en"
+    return tutor_langs.second_language(lang)
+
+
+def code_mix_rule(lang: str) -> str:
+    """How to write the Indian language(s) of this course's pair; empty for none."""
+    rules = [tutor_langs.CODE_MIX_RULES[x] for x in tutor_langs.pair(lang) if x in tutor_langs.CODE_MIX_RULES]
+    return "; ".join(rules)
 
 
 OPS_REFERENCE = """BOARD OPERATIONS (the only ops you may use; every element op has a unique "id"):
@@ -85,7 +93,7 @@ def plan_schema_text(lang: str) -> str:
 }}"""
 
 
-def rules_text(images_enabled: bool = True) -> str:
+def rules_text(images_enabled: bool = True, lang: str = "en") -> str:
     return f"""RULES (a validator enforces these; violations come back to you for repair):
 1. A TOPIC is one whiteboard. A CONCEPT is one phase of that board: it ADDS a little to the board
    (at most {MAX_HEADINGS_PER_CONCEPT} heading, at most {MAX_VISUALS_PER_CONCEPT} visual, under {MAX_WORDS_PER_CONCEPT} words of new text) while the teacher
@@ -136,9 +144,8 @@ def rules_text(images_enabled: bool = True) -> str:
    ("look at the arrow on the left"). Use {{student_name}} where the teacher would say the learner's name.
    Provide the same narration in the other language under say_i18n — and likewise every other SPOKEN line
    (check prompt, hint, predict, summary_say) under its *_i18n. A learner may switch language mid-lesson.
-   HINDI means Hinglish as an Indian teacher speaks it: Hindi sentences in Devanagari with the technical
-   terms in English letters ("physical assessment physiotherapy plan की नींव है") — never an English
-   sentence, never a pure-Sanskrit translation of a technical term. SPOKEN RHYTHM: one idea per sentence,
+   {code_mix_rule(lang)} — never an English sentence, never a pure-Sanskrit or textbook-formal
+   translation of a technical term. SPOKEN RHYTHM: one idea per sentence,
    under 18 words each; never read a list aloud (say "three things matter here" and name them in prose);
    put a question in its own final sentence.
 8. Ids: topics "t1","t2"...; concepts "t1c1","t1c2"...; elements "t1c1-b1" etc. All unique across the plan.
@@ -199,7 +206,7 @@ def system_prompt(teacher_name: str, lang: str, images_enabled: bool = True, sty
     return (
         style_persona(style, teacher_name) + "\n\n"
         f"Course language: {LANG_NAMES.get(lang, lang)}.\n\n"
-        + OPS_REFERENCE + "\n\n" + rules_text(images_enabled)
+        + OPS_REFERENCE + "\n\n" + rules_text(images_enabled, lang)
     )
 
 

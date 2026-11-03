@@ -21,6 +21,7 @@ from dataclasses import dataclass
 from typing import Any, Dict, List, Optional, Set
 
 from ...schemas.tutor import TeachingPlanDraft, VISUAL_OPS
+from . import languages as tutor_langs
 from .board_ops import iter_element_ops, op_words, ops_to_dicts, validate_ops
 from .svg_check import check_svg_geometry
 
@@ -67,6 +68,12 @@ def is_hinglish(text: str) -> bool:
     total = dev + len(_LATIN.findall(text or ""))
     return total == 0 or dev / total >= MIN_DEVANAGARI_SHARE
 
+
+def _script_error(loc: str, field: str, lang: str) -> str:
+    name = tutor_langs.DISPLAY_NAMES.get(lang, lang)
+    return (f"{loc}: {field}['{lang}'] is not {name} — write it in {name} script with English technical terms "
+            f"in English letters")
+
 # What counts as "this board has something to look at". A derivation board's
 # formula and a comparison table are visual on a whiteboard; demanding an SVG
 # on an algebra board only produces decoration.
@@ -96,7 +103,7 @@ MAX_HEADINGS_PER_CONCEPT = DEFAULT_LIMITS.headings_per_concept
 MAX_VISUALS_PER_CONCEPT = DEFAULT_LIMITS.visuals_per_concept
 MAX_BOARD_WORDS_PER_TOPIC = DEFAULT_LIMITS.board_words_per_topic
 MIN_DESCRIPTION_CHARS = 10
-SUPPORTED_LANGS = ("en", "hi")
+SUPPORTED_LANGS = tutor_langs.SUPPORTED_LANGS
 
 _SENT = re.compile(r"[.!?।](\s|$)")
 
@@ -130,7 +137,7 @@ def validate_plan(
     normalize_plan(plan)
     errors: List[str] = []
     seen_ids: Set[str] = set()
-    other_lang = "hi" if course_lang == "en" else "en"
+    other_lang = tutor_langs.second_language(course_lang)
 
     if not plan.topics:
         errors.append("plan has no topics")
@@ -334,7 +341,7 @@ def soft_errors(plan: TeachingPlanDraft, *, limits: Limits = DEFAULT_LIMITS, sou
         return errors
     total_checks = 0
     quick_checks = 0
-    other = "hi" if (plan.language or "en") == "en" else "en"
+    other = tutor_langs.second_language(plan.language or "en")
 
     def _needs(loc: str, what: str, text: str, i18n: Dict[str, str]) -> None:
         if not (text or "").strip():
@@ -342,16 +349,17 @@ def soft_errors(plan: TeachingPlanDraft, *, limits: Limits = DEFAULT_LIMITS, sou
         alt = (i18n or {}).get(other, "")
         if not alt.strip():
             errors.append(f"{loc}: {what}_i18n['{other}'] is missing (every spoken line is compiled in both languages)")
-        elif other == "hi" and not is_hinglish(alt):
-            errors.append(f"{loc}: {what}_i18n['hi'] is not Hindi — write it as Hinglish in Devanagari with English technical terms")
+        elif not tutor_langs.in_native_script(alt, other):
+            errors.append(_script_error(loc, f"{what}_i18n", other))
 
     for ti, topic in enumerate(plan.topics):
         tloc = f"topics[{ti}]('{topic.title[:30]}')"
         _needs(tloc, "summary_say", topic.summary_say or "", topic.summary_say_i18n)
         for ci, concept in enumerate(topic.concepts):
             cloc = f"{tloc}.concepts[{ci}]('{concept.title[:30]}')"
-            if other == "hi" and (concept.say_i18n or {}).get("hi") and not is_hinglish(concept.say_i18n["hi"]):
-                errors.append(f"{cloc}: say_i18n['hi'] is not Hindi — write it as Hinglish in Devanagari with English technical terms")
+            alt_say = (concept.say_i18n or {}).get(other)
+            if alt_say and not tutor_langs.in_native_script(alt_say, other):
+                errors.append(_script_error(cloc, "say_i18n", other))
             _needs(cloc, "predict", concept.predict or "", concept.predict_i18n)
             if concept.check.type != "none":
                 _needs(cloc, "check.prompt", concept.check.prompt or "", concept.check.prompt_i18n)

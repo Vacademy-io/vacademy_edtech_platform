@@ -7,12 +7,21 @@ import { AI_SERVICE_URL } from "@/constants/urls";
 
 const BASE = `${AI_SERVICE_URL}/tutor/v1`;
 
+/** Tutor course languages (ai_service services/tutor/languages.py). */
+export type TutorLanguage = "en" | "hi" | "bn" | "kn";
+export const isTutorLanguage = (v: unknown): v is TutorLanguage =>
+  v === "en" || v === "hi" || v === "bn" || v === "kn";
+/** Each language in its own script, for the in-lesson switch. */
+export const TUTOR_LANGUAGE_LABEL: Record<TutorLanguage, string> = { en: "English", hi: "हिंदी", bn: "বাংলা", kn: "ಕನ್ನಡ" };
+/** English names, for notices. */
+export const TUTOR_LANGUAGE_NAME: Record<TutorLanguage, string> = { en: "English", hi: "Hindi", bn: "Bengali", kn: "Kannada" };
+
 export interface TutorAvailability {
   enabled: boolean;
   default_on: boolean;
   teacher_name: string;
   teacher_avatar_file_id?: string | null;
-  course_language: "en" | "hi";
+  course_language: TutorLanguage;
   languages: string[];
   session_language: "course" | "learner";
   tts_provider: string;
@@ -47,9 +56,9 @@ export interface TutorStartResponse {
   tutor_session_id: string;
   slide_id: string;
   slide_title?: string;
-  language: "en" | "hi";
+  language: TutorLanguage;
   /** Languages the learner may switch to during the lesson. */
-  languages?: Array<"en" | "hi">;
+  languages?: Array<TutorLanguage>;
   resumed: boolean;
   teacher_name: string;
   teacher_avatar_file_id?: string | null;
@@ -128,7 +137,7 @@ export const startTutorSession = async (params: {
   packageSessionId: string;
   slideId?: string;
   mode: "TEXT" | "VOICE";
-  language?: "en" | "hi";
+  language?: TutorLanguage;
 }): Promise<TutorStartResponse> => {
   const res = await authenticatedAxiosInstance.post<TutorStartResponse>(`${BASE}/sessions`, {
     package_session_id: params.packageSessionId,
@@ -228,7 +237,7 @@ export interface TutorDemoTopic {
   key: string;
   title: string;
   emoji?: string;
-  language?: "en" | "hi";
+  language?: TutorLanguage;
 }
 
 export const getTutorDemoTopics = async (): Promise<{ enabled: boolean; minutes: number; topics: TutorDemoTopic[] }> => {
@@ -239,7 +248,7 @@ export const getTutorDemoTopics = async (): Promise<{ enabled: boolean; minutes:
 export const startTutorDemo = async (params: {
   name: string;
   topicKey: string;
-  language?: "en" | "hi";
+  language?: TutorLanguage;
   mode: "VOICE" | "TEXT";
 }): Promise<{ token: string; minutes: number; boot: TutorStartResponse }> => {
   const res = await guestAxiosInstance.post(`${BASE}/demo/start`, {

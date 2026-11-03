@@ -25,6 +25,7 @@ from ..schemas.tutor import (
     CompileRequest, PackagePlansResponse, PlanStatusItem, RecompileOptions, SourceDescriptionRequest,
 )
 from ..schemas.tutor import CompileKbGrounding, CompileOptions
+from ..services.tutor import languages as tutor_langs
 from ..services.tutor import plan_store
 from ..services.tutor.runtime import state as sm
 from ..services.tutor.runtime import session_service as svc
@@ -165,7 +166,7 @@ def _compiler(db: Session, caller: Caller, package_id: str, p: CompileOptions, *
     except Exception:  # noqa: BLE001
         vp_provider, vp_voice = s.tts_provider or "sarvam", s.tts_voice or ""
     voice_prepare = {"provider": vp_provider, "voice": vp_voice, "base_pace": float(getattr(s, "voice_pace", 1.0) or 1.0),
-                     "languages": [x for x in (s.languages or ["en"]) if x in ("en", "hi")] or ["en"], "course_lang": s.course_language}
+                     "languages": tutor_langs.pair(language), "course_lang": tutor_langs.normalize(language)}
     return PlanCompiler(
         institute_id=caller.institute_id, user_id=caller.user_id, language=language,
         teacher_name=teacher, force=force, generate_images=images, kb_grounding=kb,
@@ -254,7 +255,7 @@ def compile_estimate(
         vp = s.tts_provider or "sarvam"
     out = estimate_compile(db, institute_id=caller.institute_id, slide_ids=slide_ids, language=language,
                            generate_images=images, transcribe_videos=payload.transcribe_videos,
-                           ocr_pdfs=payload.ocr_pdfs, force=payload.force, voice_provider=vp, languages=list(s.languages or ["en"]))
+                           ocr_pdfs=payload.ocr_pdfs, force=payload.force, voice_provider=vp, languages=tutor_langs.pair(language))
     out["package_id"] = payload.package_id
     return out
 
@@ -621,7 +622,7 @@ async def tutor_options(
     voices: Dict[str, List[Dict[str, Any]]] = {"sarvam": sarvam_voice_catalogue(), "google": [], "edge": [], "smallest": []}
     for lang, vid in _EDGE_DEFAULT_VOICES.items():
         voices["edge"].append({"id": vid, "name": vid.split("-")[-1].replace("Neural", ""), "gender": "female", "languages": [lang]})
-    for lang in ("en-IN", "hi-IN"):
+    for lang in tutor_langs.LOCALES.values():
         voices["google"].append({"id": default_voice_for("google", lang), "name": f"Chirp3-HD Achird ({lang})",
                                  "gender": "female", "languages": [lang]})
     if smallest_available():
@@ -653,7 +654,7 @@ async def tutor_options(
 class DemoStartRequest(BaseModel):
     name: str = Field(..., min_length=1, max_length=80)
     topic_key: str = Field(..., min_length=1, max_length=64)
-    language: Optional[str] = Field(default=None, pattern="^(en|hi)$")
+    language: Optional[str] = Field(default=None, pattern="^(en|hi|bn|kn)$")
     mode: str = Field(default="VOICE", pattern="^(VOICE|TEXT)$")
 
 
@@ -714,7 +715,7 @@ def demo_start(payload: DemoStartRequest, request: Request, background: Backgrou
             "slide_id": lesson.slide_id,
             "slide_title": lesson.slide_title,
             "language": boot["language"],
-            "languages": [x for x in (settings.languages or ["en"]) if x in ("en", "hi")] or ["en"],
+            "languages": settings.language_pair,
             "resumed": False,
             "teacher_name": c["teacher_name"] or settings.teacher_name,
             "teacher_avatar_file_id": settings.teacher_avatar_file_id,

@@ -18,6 +18,8 @@ import {
     compileTutorPlans,
     getInstituteTutorDefaults,
     newCompileRunId,
+    tutorLanguageFromName,
+    tutorLanguagePair,
     type TutorModeSetting,
 } from '@/services/tutor';
 import {
@@ -45,11 +47,7 @@ async function startTutorPreparation(courseId: string, t: TFunction): Promise<vo
             () => null
         );
         if (institute?.enabled === false) return; // tutor mode switched off for the institute
-        const language = (sessionStorage.getItem('courseLanguage') || 'English')
-            .toLowerCase()
-            .startsWith('hi')
-            ? 'hi'
-            : 'en';
+        const language = tutorLanguageFromName(sessionStorage.getItem('courseLanguage'));
         let kb: { knowledge_base_id?: string; mode?: 'STRICT' | 'BLENDED' } | null = null;
         try {
             kb = JSON.parse(sessionStorage.getItem('courseKbGrounding') || 'null');
@@ -67,7 +65,7 @@ async function startTutorPreparation(courseId: string, t: TFunction): Promise<vo
                 enabled: true,
                 defaultOn: institute?.defaultOn !== false,
                 generateImages,
-                languages: [language, language === 'en' ? 'hi' : 'en'],
+                languages: tutorLanguagePair(language),
                 kbGrounding,
             },
             'Tutor Mode'

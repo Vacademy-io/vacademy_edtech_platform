@@ -21,8 +21,11 @@ import {
   getTutorChapterSlides,
   getTutorCourseOutline,
   getTutorDemoAvatarToken,
+  isTutorLanguage,
   startTutorSession,
+  TUTOR_LANGUAGE_NAME,
   type TutorChapterSlide,
+  type TutorLanguage,
   type TutorOutlineChapter,
   type TutorStartResponse,
 } from "@/services/tutor-api";
@@ -130,7 +133,7 @@ function TutorPage() {
   speakOnRef.current = speakOn;
   const [micOn, setMicOn] = useState(false);
   const [pace, setPace] = useState<TutorPace>("normal");
-  const [language, setLanguage] = useState<"en" | "hi">("en");
+  const [language, setLanguage] = useState<TutorLanguage>("en");
   // Premium teacher avatar (Spatius): mounted when the course has one and the learner keeps it on.
   // Device reports go to the lesson summary; held until the socket is ready.
   const sendAvatarDiagRef = useRef<((d: AvatarDiag) => void) | null>(null);
@@ -445,7 +448,7 @@ function TutorPage() {
       pendingAvatarDiagRef.current.splice(0).forEach((d) => socket.sendAvatarDiag(d));
       setDisconnected(null);
       if (typeof ev.pace === "string") setPace(ev.pace as TutorPace);
-      if (ev.language === "en" || ev.language === "hi") setLanguage(ev.language);
+      if (isTutorLanguage(ev.language)) setLanguage(ev.language);
       if (Array.isArray(ev.topics)) setTopics(ev.topics as TutorTopicItem[]);
       if (typeof ev.slide_title === "string") setSlideTitle(ev.slide_title);
     },
@@ -456,7 +459,7 @@ function TutorPage() {
     },
     onState: (ev) => {
       setState(ev);
-      if (ev.language === "en" || ev.language === "hi") setLanguage(ev.language);
+      if (isTutorLanguage(ev.language)) setLanguage(ev.language);
       if (ev.phase === "await_answer" || ev.phase === "remediate" || ev.phase === "revisit" || ev.phase === "predict") applyPhase("question");
       else if (ev.phase === "media_task") applyPhase("media");
       else if (ev.phase === "slide_done") applyPhase("done");
@@ -1184,7 +1187,7 @@ function TutorPage() {
               if (l === language) return;
               setLanguage(l);
               socket.sendConfig({ language: l });
-              showNotice(l === "hi" ? "The teacher will continue in Hindi from the next line." : "The teacher will continue in English from the next line.");
+              showNotice(`The teacher will continue in ${TUTOR_LANGUAGE_NAME[l]} from the next line.`);
             }}
             stats={stats}
             activeness={

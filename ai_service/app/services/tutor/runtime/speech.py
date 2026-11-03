@@ -71,6 +71,13 @@ _WORDS = {
            "root": " का वर्गमूल ", "pct": " प्रतिशत", "ge": " से बड़ा या बराबर ", "le": " से छोटा या बराबर ",
            "gives": " से मिलता है ", "isto": " अनुपात ", "mps": " मीटर प्रति सेकंड", "kmph": " किलोमीटर प्रति घंटा",
            "mps2": " मीटर प्रति सेकंड वर्ग"},
+    "bn": {"by": " বাই ", "into": " গুণ ", "div": " ভাগ ", "eq": " সমান ", "neq": " সমান নয় ",
+           "plus": " যোগ ", "minus": " বিয়োগ ", "sq": " এর বর্গ", "cube": " এর ঘন", "pow": " এর ঘাত ",
+           "root": " বর্গমূল ", "pct": " শতাংশ", "ge": " এর থেকে বড় বা সমান ", "le": " এর থেকে ছোট বা সমান ",
+           "gives": " থেকে পাওয়া যায় ", "isto": " অনুপাত ", "mps": " মিটার প্রতি সেকেন্ড", "kmph": " কিলোমিটার প্রতি ঘণ্টা",
+           "mps2": " মিটার প্রতি সেকেন্ড বর্গ"},
+    # Kannada classes read maths aloud in English ("x plus y equals z"), so
+    # kn falls back to the English words.
 }
 _FRACTION = re.compile(r"(?<![\d/.])(\d+)\s*/\s*(\d+)(?![\d/])")
 _RATIO3 = re.compile(r"\b(\d+(?:\s*:\s*\d+){2,})\b")
@@ -121,7 +128,7 @@ def spoken_form(text_: str, lang: str = "en") -> str:
     percentages and the common physics units in words."""
     if not text_:
         return text_
-    w = _WORDS["hi" if str(lang).startswith("hi") else "en"]
+    w = _WORDS.get(str(lang or "en").split("-")[0], _WORDS["en"])
     t = text_
     t = t.replace("m/s²", w["mps2"]).replace("m/s^2", w["mps2"]).replace(" m/s", w["mps"]).replace("km/h", w["kmph"])
     t = _RATIO3.sub(lambda m: w["isto"].join(x.strip() for x in m.group(1).split(":")), t)

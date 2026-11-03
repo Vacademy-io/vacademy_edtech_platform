@@ -53,6 +53,8 @@
         "instituteDefaultWithValue": "Institute default ({{value}})",
         "languageEnglish": "English",
         "languageHindi": "Hindi",
+        "languageBengali": "Bengali",
+        "languageKannada": "Kannada",
         "sessionLanguageLabel": "Session language",
         "sessionLanguageLearnerPref": "learner's preference",
         "sessionLanguageCourse": "course language",

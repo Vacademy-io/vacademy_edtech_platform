@@ -53,6 +53,8 @@
         "instituteDefaultWithValue": "संस्थान डिफ़ॉल्ट ({{value}})",
         "languageEnglish": "अंग्रेज़ी",
         "languageHindi": "हिंदी",
+        "languageBengali": "बंगाली",
+        "languageKannada": "कन्नड़",
         "sessionLanguageLabel": "सत्र भाषा",
         "sessionLanguageLearnerPref": "शिक्षार्थी की पसंद",
         "sessionLanguageCourse": "कोर्स भाषा",

@@ -318,7 +318,7 @@ _RUN_ID = r"^[A-Za-z0-9_.:-]{1,64}$"
 
 class CompileOptions(BaseModel):
     """Options shared by compile and recompile."""
-    language: str = Field(default="en", pattern=r"^(en|hi)$", description="Course language")
+    language: str = Field(default="en", pattern=r"^(en|hi|bn|kn)$", description="Course language")
     teacher_name: str = Field(default="Asha", min_length=1, max_length=60)
     # Let the compiler request AI-generated images (billed per image).
     generate_images: bool = False

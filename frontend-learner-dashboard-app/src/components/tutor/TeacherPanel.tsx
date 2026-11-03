@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { Microphone, PaperPlaneRight, SkipForward, ArrowCounterClockwise, Question, SpeakerHigh, SpeakerSlash, Stop, CheckCircle, Circle, XCircle, Fire, Eye, EyeSlash, ArrowsClockwise, SlidersHorizontal, ArrowsOut, ArrowsIn, Lock } from "@phosphor-icons/react";
 import { TeacherAvatar, useTeacherPhotoUrl } from "./TeacherAvatar";
 import type { TutorPace } from "@/hooks/useTutorSocket";
+import { TUTOR_LANGUAGE_LABEL, type TutorLanguage } from "@/services/tutor-api";
 
 export interface TranscriptLine {
   role: "teacher" | "learner";
@@ -21,7 +22,7 @@ export interface LessonStats {
   best: number;
 }
 
-const LANGUAGE_LABEL: Record<"en" | "hi", string> = { en: "English", hi: "हिंदी" };
+const LANGUAGE_LABEL = TUTOR_LANGUAGE_LABEL;
 
 const PACES: Array<{ id: TutorPace; label: string }> = [
   { id: "slower", label: "Slower" },
@@ -99,9 +100,9 @@ interface TeacherPanelProps {
   locked?: boolean;
   countdown?: string;
   /** The lesson language and the ones the course allows switching to. */
-  language?: "en" | "hi";
-  languages?: Array<"en" | "hi">;
-  onLanguage?: (language: "en" | "hi") => void;
+  language?: TutorLanguage;
+  languages?: Array<TutorLanguage>;
+  onLanguage?: (language: TutorLanguage) => void;
   /** Checks asked / answered right in this slide, and the streak. */
   stats?: LessonStats;
   awaiting: "continue" | "answer" | "done" | null;

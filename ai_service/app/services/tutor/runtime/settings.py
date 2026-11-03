@@ -16,6 +16,7 @@ from sqlalchemy import text
 from sqlalchemy.orm import Session
 
 from ...platform_settings_service import get_platform_setting
+from .. import languages as tutor_langs
 
 logger = logging.getLogger(__name__)
 
@@ -52,7 +53,13 @@ class TutorSettings:
 
     @property
     def course_language(self) -> str:
-        return (self.languages or ["en"])[0] if (self.languages or ["en"])[0] in ("en", "hi") else "en"
+        return tutor_langs.normalize((self.languages or ["en"])[0])
+
+    @property
+    def language_pair(self) -> List[str]:
+        """What plans are compiled in and what a learner may switch between —
+        always derived from the course language so it matches the compile."""
+        return tutor_langs.pair(self.course_language)
 
 
 def _extract(envelope: Any) -> Dict[str, Any]:

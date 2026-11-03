@@ -16,6 +16,7 @@ from typing import Any, Dict, List, Optional
 from sqlalchemy.orm import Session
 
 from ..tool_cost_estimator import ToolCostEstimator
+from . import languages as tutor_langs
 from . import plan_store, source_text
 from .slide_source import load_slide_source, source_kind_label
 
@@ -48,7 +49,7 @@ def estimate_compile(
     ocr_per_page = _credits(est, source_text.OCR_TOOL, {"num_pages": 100}) / 100.0
     voice_price = _credits(est, "tutor_voice_prepare", {})
     # Prepared voice: charged per slide per language, once, unless the voice is the free engine.
-    voice_langs = 0 if (voice_provider or "sarvam") == "edge" else max(1, len([x for x in (languages or ["en"]) if x in ("en", "hi")]))
+    voice_langs = 0 if (voice_provider or "sarvam") == "edge" else max(1, len(tutor_langs.filter_supported(languages or ["en"])))
     can_transcribe = transcribe_videos and source_text.transcription_available()
     can_ocr = ocr_pdfs and source_text.ocr_available()
     can_ocr_scorm = ocr_pdfs and source_text.scorm_ocr_available()

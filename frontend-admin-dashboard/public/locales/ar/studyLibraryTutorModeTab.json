@@ -53,6 +53,8 @@
         "instituteDefaultWithValue": "الإعداد الافتراضي للمؤسسة ({{value}})",
         "languageEnglish": "الإنجليزية",
         "languageHindi": "الهندية",
+        "languageBengali": "البنغالية",
+        "languageKannada": "الكانادية",
         "sessionLanguageLabel": "لغة الجلسة",
         "sessionLanguageLearnerPref": "تفضيل المتعلم",
         "sessionLanguageCourse": "لغة المقرر",

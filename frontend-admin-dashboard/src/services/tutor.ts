@@ -92,8 +92,34 @@ export interface TutorPlanView {
     media: Array<Record<string, unknown>>;
 }
 
+/** Tutor course languages (ai_service services/tutor/languages.py). */
+export const TUTOR_LANGUAGES = ['en', 'hi', 'bn', 'kn'] as const;
+export type TutorLanguage = (typeof TUTOR_LANGUAGES)[number];
+
+export const isTutorLanguage = (v: unknown): v is TutorLanguage =>
+    typeof v === 'string' && (TUTOR_LANGUAGES as readonly string[]).includes(v);
+
+/**
+ * [course language, second language]. Every spoken line is compiled in both so
+ * a learner can switch mid-lesson: English for an Indian-language course,
+ * Hindi for an English course (mirrors languages.pair on the server).
+ */
+export const tutorLanguagePair = (lang: TutorLanguage): [TutorLanguage, TutorLanguage] => [
+    lang,
+    lang === 'en' ? 'hi' : 'en',
+];
+
+/** A course language as the copilot stores it ("Hindi", "Bengali", "bn") → tutor code. */
+export const tutorLanguageFromName = (name: string | null | undefined): TutorLanguage => {
+    const n = (name || '').trim().toLowerCase();
+    if (n.startsWith('hi')) return 'hi';
+    if (n.startsWith('bn') || n.startsWith('ben') || n.startsWith('bangla')) return 'bn';
+    if (n.startsWith('kn') || n.startsWith('kan')) return 'kn';
+    return 'en';
+};
+
 export interface TutorCompileOptions {
-    language?: 'en' | 'hi';
+    language?: TutorLanguage;
     teacher_name?: string;
     generate_images?: boolean;
     kb_grounding?: { knowledge_base_id: string; mode?: 'STRICT' | 'BLENDED' } | null;

@@ -45,12 +45,13 @@ from ..services.tutor.runtime.intents import detect_intent
 from ..services.tutor.runtime import prompts
 from ..services.tutor.runtime.revisit import fresh_check
 from ..services.tutor.runtime.summary import rewrite_rolling_summary
+from ..services.tutor import languages as tutor_langs
 from ..services.tutor import voice_cache
 from ..services.tutor.runtime.settings import TutorSettings, resolve_settings
 from ..services import spatius_service
 from ..services.tutor.slide_source import package_belongs_to_institute
 from ..services.voice_tts import (
-    SARVAM_DEFAULT_FEMALE, SMALLEST_DEFAULT_VOICE, default_voice_for, sarvam_speaker, smallest_available,
+    SARVAM_DEFAULT_FEMALE, SMALLEST_DEFAULT_VOICE, sarvam_speaker, smallest_available,
     synthesize_speech,
 )
 from .voice_agent import MIN_SPEECH_WAV_BYTES, TTS_CHUNK_SIZE, _SENTENCE_END, _transcode_to_wav
@@ -89,7 +90,7 @@ MEDIA_IDLE_SECONDS = 30 * 60
 # a script with the learner's token) can spend.
 MAX_TURNS_PER_MINUTE = 20
 MAX_TURNS_PER_SESSION = 400
-LANG_TO_STT = {"en": "en-IN", "hi": "hi-IN"}
+LANG_TO_STT = tutor_langs.LOCALES
 # Pace, segmentation and cache keys are shared with the voice warm-up (runtime/speech.py).
 from ..services.tutor.runtime.speech import (  # noqa: E402
     DEFINITION_PACE, PACE_MULTIPLIER, PACE_ORDER, TUTOR_SEGMENT_MAX_CHARS, cache_key as _cache_key, spoken_form as _spoken_form, effective_pace,
@@ -160,7 +161,7 @@ class StartSessionRequest(BaseModel):
     package_session_id: str = Field(..., min_length=1, max_length=255)
     slide_id: Optional[str] = Field(default=None, max_length=255)
     mode: str = Field(default="TEXT", pattern=r"^(TEXT|VOICE)$")
-    language: Optional[str] = Field(default=None, pattern=r"^(en|hi)$")
+    language: Optional[str] = Field(default=None, pattern=r"^(en|hi|bn|kn)$")
 
 
 def _batch_access(db: Session, caller: Caller, package_session_id: str) -> None:
@@ -245,7 +246,7 @@ def start_session(
         "slide_title": lesson.slide_title,
         "language": boot["language"],
         # Languages the learner may switch to during the lesson (course setting).
-        "languages": [x for x in (settings.languages or ["en"]) if x in ("en", "hi")] or ["en"],
+        "languages": settings.language_pair,
         "resumed": boot["resumed"],
         "teacher_name": settings.teacher_name,
         "teacher_avatar_file_id": settings.teacher_avatar_file_id,
@@ -360,7 +361,7 @@ async def tutor_socket(websocket: WebSocket, tutor_session_id: str) -> None:
         mode = "voice" if ctx["mode"] == "VOICE" else "text"
         settings: TutorSettings = ctx["settings"]
         state: Dict[str, Any] = ctx["state"]
-        lang = ctx["language"] if ctx["language"] in ("en", "hi") else settings.course_language
+        lang = ctx["language"] if tutor_langs.is_supported(ctx["language"]) else settings.course_language
         display_name = ctx["learner_name"] or ""
         pointer = ctx.get("pointer")
         resumed = pointer is not None
@@ -430,7 +431,7 @@ async def tutor_socket(websocket: WebSocket, tutor_session_id: str) -> None:
             return LANG_TO_STT.get(lang, "en-IN")
 
         def _personalize(text_: str) -> str:
-            return text_.replace("{student_name}", display_name or ("there" if lang == "en" else "दोस्त"))
+            return text_.replace("{student_name}", display_name or tutor_langs.UNNAMED_LEARNER.get(lang, "there"))
 
         def _slide_name() -> str:
             return lesson.slide_title or (lesson.topics[0].title if lesson.topics else "")
@@ -449,7 +450,7 @@ async def tutor_socket(websocket: WebSocket, tutor_session_id: str) -> None:
             elif tts_provider == "smallest":
                 voice = (tts_voice or SMALLEST_DEFAULT_VOICE).strip()
             else:
-                voice = tts_voice or default_voice_for(tts_provider, _lang_stt())
+                voice = tutor_langs.tutor_voice_for(tts_provider, tts_voice, lang)
             for segment, first_idx, n_sent in _tutor_segments(text_):
                 # The sentence(s) this audio segment speaks, with their index
                 # in the narration: the client reveals the board elements
@@ -1326,7 +1327,7 @@ async def tutor_socket(websocket: WebSocket, tutor_session_id: str) -> None:
                     _save()
                     await _send({"type": "pace", "pace": pace})
                 new_lang = msg.get("language")
-                if new_lang in ("en", "hi") and new_lang != lang:
+                if new_lang in settings.language_pair and new_lang != lang:
                     lang = new_lang
                     _save()
                     await _emit_state(pointer.phase)

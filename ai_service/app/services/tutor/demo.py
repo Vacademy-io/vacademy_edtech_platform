@@ -25,6 +25,7 @@ from sqlalchemy.orm import Session
 
 from ...config import get_settings
 from ..platform_settings_service import get_platform_setting
+from . import languages as tutor_langs
 
 logger = logging.getLogger(__name__)
 
@@ -148,7 +149,7 @@ def upsert_topic(db: Session, *, key: str, title: str, source_text: str, emoji: 
         ON CONFLICT (key) DO UPDATE SET title = EXCLUDED.title, emoji = EXCLUDED.emoji, language = EXCLUDED.language,
             sort_order = EXCLUDED.sort_order, source_text = EXCLUDED.source_text, is_active = EXCLUDED.is_active,
             style = EXCLUDED.style, updated_at = now()
-    """), {"k": key[:64], "t": title[:160], "e": emoji, "l": language if language in ("en", "hi") else "en",
+    """), {"k": key[:64], "t": title[:160], "e": emoji, "l": tutor_langs.normalize(language),
            "o": int(sort_order), "s": source_text, "a": bool(is_active), "st": style if style in STYLES else "lesson"})
     db.commit()
 

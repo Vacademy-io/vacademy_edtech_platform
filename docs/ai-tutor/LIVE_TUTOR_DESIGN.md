@@ -682,6 +682,17 @@ so roll-ups and certificates are untouched:
   language; because `say` is compiled in both phase-1 languages, the override switches to the
   other compiled narration with no live model call and the TTS cache still applies (owner
   decision 2026-09-03).
+- **Bengali and Kannada (2026-11-03).** Course language is now one of `en`, `hi`, `bn`, `kn`.
+  Every spoken line is still compiled in exactly two languages, the course language plus one
+  second language: **English for a Hindi, Bengali or Kannada course, Hindi for an English
+  course** (`ai_service/app/services/tutor/languages.py`, `pair()`; mirrored by
+  `tutorLanguagePair` in the admin). The learner's in-lesson switch offers that pair. Bengali
+  and Kannada narration is code-mixed like Hinglish (native script, English technical terms in
+  English letters), and the validator checks the script share. STT and TTS use `bn-IN` /
+  `kn-IN`; a Google or Edge voice picked for Hindi or English is swapped to the matching
+  `bn-IN` / `kn-IN` voice for those lines. Deterministic teacher lines, voice intents and the
+  spoken maths words have Bengali and Kannada versions (Kannada reads maths in English). Not
+  yet possible: an English course whose second language is Bengali or Kannada.
 - **TTS cache from day one**: key `(provider, voice, language, pace, sha256(text))`. Shipped as
   an in-process LRU (300 entries) in `routers/tutor_ws.py`; it empties on every ai_service
   restart. Moving it under the media path is still open. Compiled `say` text is identical across
