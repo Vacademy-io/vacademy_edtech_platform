@@ -157,10 +157,10 @@ describe('RevenueTab daily chart', () => {
             .querySelectorAll('[aria-label="dailyRevenue.barTooltip"]');
         expect(columns).toHaveLength(3);
         expect(screen.queryByText('01/10/2026')).toBeNull();
-        fireEvent.mouseEnter(columns[0]);
+        fireEvent.mouseEnter(columns[0]!);
         expect(screen.getByText('01/10/2026')).toBeTruthy();
         expect(screen.getByText('dailyRevenue.hoverAmount')).toBeTruthy();
-        fireEvent.mouseEnter(columns[1]);
+        fireEvent.mouseEnter(columns[1]!);
         expect(screen.getByText('02/10/2026')).toBeTruthy();
     });
 });
