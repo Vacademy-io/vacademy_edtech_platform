@@ -9,6 +9,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import vacademy.io.admin_core_service.features.audience.dto.reports.CohortAnalysisReportDTO;
 import vacademy.io.admin_core_service.features.audience.dto.reports.RevenueForecastDTO;
+import vacademy.io.admin_core_service.features.audience.dto.reports.RevenuePaymentsDTO;
 import vacademy.io.admin_core_service.features.audience.dto.reports.RevenueReportDTO;
 import vacademy.io.admin_core_service.features.auth_service.service.AuthService;
 import vacademy.io.common.auth.dto.UserDTO;
@@ -307,6 +308,113 @@ public class RevenueReportService {
                 .bySource(bySource)
                 .byCounsellor(byCounsellor)
                 .trend(trend)
+                .build();
+    }
+
+    // ─────────────────────────────────────────────────────────────────────
+    // Revenue payments (drill-down behind a Collected number)
+    // ─────────────────────────────────────────────────────────────────────
+
+    private static final int PAYMENTS_LIMIT = 2000;
+
+    /**
+     * The payment rows behind {@link #PAID_CTE}, with the student, receipt and course. Same CTEs, so
+     * a counsellor-scoped list sums to that counsellor's Collected. Totals are window functions,
+     * computed before the LIMIT, so they cover every match.
+     */
+    private static final String PAYMENTS_SQL = "WITH " + CONV_CTE + ", " + """
+            paid AS (
+                SELECT pl.id, pl.user_id, pl.user_plan_id, c.source_type, c.counsellor_id,
+                       pl.payment_amount, pl.payment_mode, pl.payment_sub_mode, pl.vendor,
+                       pl.payment_reference, pl.created_at,
+                       (pl.created_at AT TIME ZONE 'UTC' AT TIME ZONE :tz)::date AS pay_day
+                FROM payment_log pl
+                JOIN conv c ON c.user_id = pl.user_id
+                WHERE pl.payment_status = 'PAID'
+                  AND pl.payment_amount IS NOT NULL
+                  AND pl.created_at >= :fromTs AND pl.created_at < :toTs
+            ),
+            page AS (
+                SELECT p.*,
+                       SUM(p.payment_amount) OVER () AS total_amount,
+                       COUNT(*) OVER ()              AS total_count
+                FROM paid p
+                ORDER BY p.pay_day DESC, p.created_at DESC, p.id
+                LIMIT :limit
+            )
+            SELECT pg.*,
+                   (pg.created_at AT TIME ZONE 'UTC' AT TIME ZONE :tz)::date AS entry_day,
+                   st.full_name, st.mobile_number,
+                   (SELECT string_agg(DISTINCT i.invoice_number, ', ')
+                      FROM invoice_payment_log_mapping m
+                      JOIN invoice i ON i.id = m.invoice_id
+                     WHERE m.payment_log_id = pg.id) AS receipt,
+                   (SELECT string_agg(DISTINCT pk.package_name, ', ')
+                      FROM student_session_institute_group_mapping s
+                      JOIN package_session ps ON ps.id = s.package_session_id
+                      JOIN package pk ON pk.id = ps.package_id
+                     WHERE s.user_id = pg.user_id
+                       AND s.institute_id = :instituteId
+                       AND s.user_plan_id = pg.user_plan_id) AS courses
+            FROM page pg
+            LEFT JOIN LATERAL (
+                SELECT full_name, mobile_number FROM student
+                WHERE user_id = pg.user_id
+                ORDER BY created_at DESC LIMIT 1
+            ) st ON true
+            ORDER BY pg.pay_day DESC, pg.created_at DESC, pg.id
+            """;
+
+    /**
+     * Every payment counted in the Revenue tab's Collected for the same filters. Pass the clicked
+     * counsellor as {@code counsellorUserId} to get exactly that row's payments (RBAC still applies).
+     */
+    @Transactional(readOnly = true)
+    public RevenuePaymentsDTO getRevenuePayments(String instituteId, String fromDate, String toDate,
+                                                 String teamId, String counsellorUserId, String callerUserId) {
+        LeadReportSettingService.ReportSettings settings = settingService.get(instituteId);
+        ZoneId zone = safeZone(settings.timezone());
+        Window w = resolveWindow(fromDate, toDate, zone);
+        String scopeCsv = scopeResolver.resolveScopeUsersCsv(
+                instituteId, callerUserId, trimToNull(teamId), trimToNull(counsellorUserId));
+        MapSqlParameterSource p = baseParams(instituteId, w, scopeCsv)
+                .addValue("tz", zone.getId())
+                .addValue("limit", PAYMENTS_LIMIT);
+
+        double[] total = {0};
+        long[] count = {0};
+        List<RevenuePaymentsDTO.PaymentRow> rows = jdbc.query(PAYMENTS_SQL, p, (rs, i) -> {
+            total[0] = rs.getDouble("total_amount");
+            count[0] = rs.getLong("total_count");
+            java.sql.Date entry = rs.getDate("entry_day");
+            return RevenuePaymentsDTO.PaymentRow.builder()
+                    .paymentId(rs.getString("id"))
+                    .userId(rs.getString("user_id"))
+                    .studentName(rs.getString("full_name"))
+                    .phone(rs.getString("mobile_number"))
+                    .paymentDate(rs.getDate("pay_day").toLocalDate().toString())
+                    .enteredOn(entry == null ? null : entry.toLocalDate().toString())
+                    .amount(round2(rs.getDouble("payment_amount")))
+                    .paymentMode(Optional.ofNullable(rs.getString("payment_mode")).orElse(rs.getString("vendor")))
+                    .paymentSubMode(rs.getString("payment_sub_mode"))
+                    .paymentReference(rs.getString("payment_reference"))
+                    .receiptNumber(rs.getString("receipt"))
+                    .courses(rs.getString("courses"))
+                    .sourceType(rs.getString("source_type"))
+                    .counsellorId(rs.getString("counsellor_id"))
+                    .build();
+        });
+
+        Map<String, String> names = resolveNames(rows.stream()
+                .map(RevenuePaymentsDTO.PaymentRow::getCounsellorId).filter(id -> id != null).distinct().toList());
+        rows.forEach(r -> r.setCounsellorName(r.getCounsellorId() == null ? null : names.get(r.getCounsellorId())));
+
+        return RevenuePaymentsDTO.builder()
+                .currency(resolveCurrency(instituteId))
+                .total(round2(total[0]))
+                .count(count[0])
+                .truncated(count[0] > rows.size())
+                .payments(rows)
                 .build();
     }
 
