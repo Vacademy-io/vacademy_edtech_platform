@@ -130,28 +130,7 @@ export function RevenueTab({
                 {trend.length === 0 || trend.every((d) => d.revenue === 0) ? (
                     <EmptyHint message={t('empty.noRevenue')} />
                 ) : (
-                    <div className="flex h-40 items-end gap-0.5 overflow-x-auto">
-                        {trend.map((d) => (
-                            <div
-                                key={d.date}
-                                className="group flex h-full flex-1 flex-col items-center gap-1"
-                            >
-                                <div className="relative flex w-full flex-1 items-end">
-                                    <div
-                                        className="w-full rounded-t bg-green-500/80 transition-colors group-hover:bg-green-600"
-                                        style={{
-                                            height: `${Math.max(2, (d.revenue / peakRevenue) * 100)}%`,
-                                        }}
-                                        title={t('dailyRevenue.barTooltip', {
-                                            date: fmtDay(d.date),
-                                            amount: fmtCurrency(d.revenue, currency),
-                                            count: d.payments,
-                                        })}
-                                    />
-                                </div>
-                            </div>
-                        ))}
-                    </div>
+                    <DailyRevenueChart trend={trend} peak={peakRevenue} currency={currency} />
                 )}
                 <p className="text-xs text-neutral-400">{t('dailyRevenue.footnote')}</p>
             </ReportSection>
@@ -541,4 +520,78 @@ function sortRows<T extends RevenueSourceRow | RevenueCounsellorRow, K extends k
         return dir === 'asc' ? s : -s;
     });
     return list;
+}
+
+/**
+ * Daily revenue bars with an instant hover label. The native `title` tooltip waited about a
+ * second and only fired on the bar itself, so a short bar was hard to read; here the whole day
+ * column is the hover target and the date + amount show at once.
+ */
+function DailyRevenueChart({
+    trend,
+    peak,
+    currency,
+}: {
+    trend: { date: string; revenue: number; payments: number }[];
+    peak: number;
+    currency: string;
+}) {
+    const { t } = useTranslation('audienceManagerRevenueTab');
+    const [hovered, setHovered] = useState<number | null>(null);
+    const n = trend.length;
+    return (
+        <div className="relative h-40" onMouseLeave={() => setHovered(null)}>
+            <div className="flex h-full items-end gap-0.5 overflow-x-auto">
+                {trend.map((d, i) => (
+                    <div
+                        key={d.date}
+                        onMouseEnter={() => setHovered(i)}
+                        aria-label={t('dailyRevenue.barTooltip', {
+                            date: fmtDay(d.date),
+                            amount: fmtCurrency(d.revenue, currency),
+                            count: d.payments,
+                        })}
+                        className={cn(
+                            'flex h-full flex-1 cursor-default items-end rounded-sm',
+                            hovered === i && 'bg-neutral-100'
+                        )}
+                    >
+                        {/* Height is data-driven; colour comes from a Tailwind utility class. */}
+                        <div
+                            className={cn(
+                                'w-full rounded-t',
+                                hovered === i ? 'bg-green-600' : 'bg-green-500/80'
+                            )}
+                            style={{ height: `${Math.max(2, (d.revenue / peak) * 100)}%` }}
+                        />
+                    </div>
+                ))}
+            </div>
+            {hovered != null && trend[hovered] && (
+                <div
+                    className={cn(
+                        'pointer-events-none absolute top-0 z-10 whitespace-nowrap rounded-md border border-neutral-200 bg-white px-2.5 py-1.5 text-xs shadow-md',
+                        // Keep the label inside the card at both ends of the range.
+                        hovered < n / 4
+                            ? 'translate-x-0'
+                            : hovered > (n * 3) / 4
+                              ? '-translate-x-full'
+                              : '-translate-x-1/2'
+                    )}
+                    // Horizontal position follows the hovered day — layout, not a colour/spacing token.
+                    style={{ left: `${((hovered + 0.5) / n) * 100}%` }}
+                >
+                    <div className="font-semibold text-neutral-900">
+                        {fmtDay(trend[hovered].date)}
+                    </div>
+                    <div className="tabular-nums text-neutral-700">
+                        {t('dailyRevenue.hoverAmount', {
+                            amount: fmtCurrency(trend[hovered].revenue, currency),
+                            count: trend[hovered].payments,
+                        })}
+                    </div>
+                </div>
+            )}
+        </div>
+    );
 }

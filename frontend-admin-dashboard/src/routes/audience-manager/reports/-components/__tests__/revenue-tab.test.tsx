@@ -45,7 +45,11 @@ const report: RevenueReport = {
             avg_deal_value: 10000,
         },
     ],
-    trend: [],
+    trend: [
+        { date: '2026-10-01', revenue: 1000, payments: 1 },
+        { date: '2026-10-02', revenue: 50000, payments: 3 },
+        { date: '2026-10-03', revenue: 0, payments: 0 },
+    ],
 } as unknown as RevenueReport;
 
 const payment = (
@@ -141,5 +145,22 @@ describe('RevenueTab counsellor payments', () => {
         expect(await screen.findByText('payments.title:Priyanka')).toBeTruthy();
         fireEvent.click(screen.getByText('Priyanka'));
         expect(screen.queryByText('payments.title:Priyanka')).toBeNull();
+    });
+});
+
+describe('RevenueTab daily chart', () => {
+    it('shows the day as soon as a bar column is hovered', async () => {
+        renderTab();
+        // One hover column per day; the mock t returns the key, so the label is the same for all.
+        const columns = (await screen.findByText('dailyRevenue.title'))
+            .closest('section')!
+            .querySelectorAll('[aria-label="dailyRevenue.barTooltip"]');
+        expect(columns).toHaveLength(3);
+        expect(screen.queryByText('01/10/2026')).toBeNull();
+        fireEvent.mouseEnter(columns[0]);
+        expect(screen.getByText('01/10/2026')).toBeTruthy();
+        expect(screen.getByText('dailyRevenue.hoverAmount')).toBeTruthy();
+        fireEvent.mouseEnter(columns[1]);
+        expect(screen.getByText('02/10/2026')).toBeTruthy();
     });
 });

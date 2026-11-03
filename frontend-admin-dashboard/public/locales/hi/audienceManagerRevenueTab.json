@@ -12,6 +12,8 @@
         "title": "दैनिक राजस्व",
         "barTooltip_one": "{{date}}: {{amount}} ({{count}} भुगतान)",
         "barTooltip_other": "{{date}}: {{amount}} ({{count}} भुगतान)",
+        "hoverAmount_one": "{{amount}} · {{count}} भुगतान",
+        "hoverAmount_other": "{{amount}} · {{count}} भुगतान",
         "footnote": "हर भुगतान उसी दिन गिना जाता है जिस दिन वह हुआ (मैनुअल भुगतान के लिए दर्ज की गई लेन-देन तिथि)।"
     },
     "bySource": {
