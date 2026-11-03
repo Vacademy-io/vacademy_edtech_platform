@@ -54,6 +54,7 @@ public class AdmissionReportService {
             enr AS (
                 SELECT s.id, s.user_id, s.user_plan_id, s.created_at, ps.package_id, p.package_name,
                        p.comma_separated_tags,
+                       COALESCE(s.enrolled_date, (s.created_at AT TIME ZONE 'UTC' AT TIME ZONE :tz)::date) AS enr_day,
                        to_char(COALESCE(s.enrolled_date, (s.created_at AT TIME ZONE 'UTC' AT TIME ZONE :tz)::date),
                                'YYYY-MM') AS month
                 FROM student_session_institute_group_mapping s
@@ -95,7 +96,8 @@ public class AdmissionReportService {
                 ORDER BY user_id, month, COALESCE(tag_rank, 2000000), created_at, package_name
             ),
             courses AS (
-                SELECT user_id, month, COUNT(DISTINCT package_id) AS n_courses FROM enr GROUP BY user_id, month
+                SELECT user_id, month, COUNT(DISTINCT package_id) AS n_courses, MIN(enr_day) AS first_day
+                FROM enr GROUP BY user_id, month
             ),
             plans AS (
                 SELECT user_plan_id, MIN(user_id) AS user_id, MIN(month) AS month
@@ -130,7 +132,8 @@ public class AdmissionReportService {
                 WHERE ulp.institute_id = :instituteId
                   AND ulp.user_id IN (SELECT user_id FROM main)
             )
-            SELECT m.user_id, m.month, m.package_id, m.package_name, m.tag, c.n_courses,
+            SELECT m.user_id, m.month, to_char(c.first_day, 'YYYY-MM-DD') AS first_day,
+                   m.package_id, m.package_name, m.tag, c.n_courses,
                    COALESCE(mo.fee, 0)  AS fee,
                    COALESCE(mo.paid, 0) AS paid,
                    ld.source_type, ld.from_campaign, ld.first_audience_id, ld.counsellor_id,
@@ -197,13 +200,13 @@ public class AdmissionReportService {
     record AdmissionRow(String userId, String month, String packageId, String packageName,
                                 String tag, int courses, double fee, double paid,
                                 String source, boolean fromCampaign, String counsellorId, String fieldValue,
-                                String firstAudienceId) {
+                                String firstAudienceId, String day) {
 
         AdmissionRow(String userId, String month, String packageId, String packageName,
                      String tag, int courses, double fee, double paid,
                      String source, boolean fromCampaign, String counsellorId, String fieldValue) {
             this(userId, month, packageId, packageName, tag, courses, fee, paid, source, fromCampaign,
-                    counsellorId, fieldValue, null);
+                    counsellorId, fieldValue, null, null);
         }
     }
 
@@ -404,7 +407,8 @@ public class AdmissionReportService {
                 rs.getBoolean("from_campaign"),
                 rs.getString("counsellor_id"),
                 trimToNull(rs.getString("field_value")),
-                rs.getString("first_audience_id")));
+                rs.getString("first_audience_id"),
+                rs.getString("first_day")));
     }
 
     private ZoneId safeZone(String tz) {

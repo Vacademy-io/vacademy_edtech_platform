@@ -98,7 +98,7 @@ public class PipelineReportService {
     // Source performance
     // ─────────────────────────────────────────────────────────────────────
 
-    private static final String SOURCE_PERFORMANCE_SQL = """
+    private static final String SOURCE_BASE_CTE = """
             WITH base AS (
                 SELECT ar.id,
                        COALESCE(ar.user_id, ar.id) AS person_key,
@@ -131,6 +131,9 @@ public class PipelineReportService {
                   AND ar.submitted_at <  :toTs
                 """ + LEAD_SCOPE_PREDICATES + """
             )
+            """;
+
+    private static final String SOURCE_PERFORMANCE_SQL = SOURCE_BASE_CTE + """
             SELECT b.source_type,
                    BOOL_OR(b.from_campaign_type)                            AS from_campaign_type,
                    COUNT(DISTINCT b.person_key)                             AS leads,
@@ -139,6 +142,17 @@ public class PipelineReportService {
             FROM base b
             GROUP BY b.source_type
             ORDER BY leads DESC, b.source_type
+            """;
+
+    /**
+     * Totals row: each person once, even when they enquired through several sources (summing the
+     * per-source rows counts them once per source).
+     */
+    private static final String SOURCE_TOTALS_SQL = SOURCE_BASE_CTE + """
+            SELECT COUNT(DISTINCT b.person_key)                             AS leads,
+                   COUNT(DISTINCT b.person_key) FILTER (WHERE b.connected)  AS connected_leads,
+                   COUNT(DISTINCT b.person_key) FILTER (WHERE b.interested) AS interested
+            FROM base b
             """;
 
     /**
@@ -229,13 +243,31 @@ public class PipelineReportService {
                 .conversionRate(percentage(won, 0))
                 .revenue(round2(revenueBySource.getOrDefault(sourceType, 0.0)))
                 .build()));
+        // Sources that only collected money in the window (installments of older admissions):
+        // without a row their revenue silently dropped out of the table and its total.
+        Set<String> shown = new HashSet<>();
+        rows.forEach(r -> shown.add(r.getSourceType()));
+        revenueBySource.forEach((sourceType, revenue) -> {
+            if (shown.contains(sourceType) || revenue == null || revenue == 0.0) return;
+            rows.add(SourcePerformanceReportDTO.Row.builder()
+                    .sourceType(sourceType)
+                    .leads(0)
+                    .connectedLeads(0)
+                    .interested(0)
+                    .won(0)
+                    .conversionRate(percentage(0, 0))
+                    .revenue(round2(revenue))
+                    .build());
+        });
 
-        long tLeads = rows.stream().mapToLong(SourcePerformanceReportDTO.Row::getLeads).sum();
+        long[] distinct = jdbc.queryForObject(SOURCE_TOTALS_SQL, p, (rs, i) -> new long[]{
+                rs.getLong("leads"), rs.getLong("connected_leads"), rs.getLong("interested")});
+        long tLeads = distinct != null ? distinct[0] : 0L;
         long tWon = rows.stream().mapToLong(SourcePerformanceReportDTO.Row::getWon).sum();
         SourcePerformanceReportDTO.Row totals = SourcePerformanceReportDTO.Row.builder()
                 .leads(tLeads)
-                .connectedLeads(rows.stream().mapToLong(SourcePerformanceReportDTO.Row::getConnectedLeads).sum())
-                .interested(rows.stream().mapToLong(SourcePerformanceReportDTO.Row::getInterested).sum())
+                .connectedLeads(distinct != null ? distinct[1] : 0L)
+                .interested(distinct != null ? distinct[2] : 0L)
                 .won(tWon)
                 .conversionRate(percentage(tWon, tLeads))
                 .revenue(round2(rows.stream().mapToDouble(SourcePerformanceReportDTO.Row::getRevenue).sum()))
@@ -577,12 +609,9 @@ public class PipelineReportService {
             ) fh ON true
             """;
 
-    /** Funnel cohort: leads submitted in-window vs those of them won in-window. */
+    /** People who enquired in the window (each once) — the funnel conversion denominator. */
     private static final String OVERALL_CONVERSION_SQL = """
-            SELECT COUNT(*) AS leads,
-                   COUNT(*) FILTER (WHERE ulp.conversion_status = 'CONVERTED'
-                                      AND ulp.converted_at >= :fromTs
-                                      AND ulp.converted_at <  :toTs) AS won
+            SELECT COUNT(DISTINCT COALESCE(ar.user_id, ar.id)) AS leads
             """ + LEAD_SCOPE_JOINS + """
             WHERE a.institute_id = :instituteId
               AND ar.submitted_at >= :fromTs
@@ -623,10 +652,13 @@ public class PipelineReportService {
         });
 
         Double medianDaysToConvert = jdbc.queryForObject(MEDIAN_DAYS_TO_CONVERT_SQL, p, Double.class);
-        long[] overallCounts = jdbc.queryForObject(OVERALL_CONVERSION_SQL, p,
-                (rs, i) -> new long[]{rs.getLong("leads"), rs.getLong("won")});
-        long leads = overallCounts != null ? overallCounts[0] : 0L;
-        long won = overallCounts != null ? overallCounts[1] : 0L;
+        Long leadCount = jdbc.queryForObject(OVERALL_CONVERSION_SQL, p, Long.class);
+        long leads = leadCount != null ? leadCount : 0L;
+        // Period-based, like the Sources tab: the window's admissions over the people who enquired.
+        String audienceFilter = trimToNull(audienceId);
+        long won = admissionReportService.admissionRows(instituteId, fromDate, toDate, scopeCsv).stream()
+                .filter(a -> audienceFilter == null || audienceFilter.equals(a.firstAudienceId()))
+                .count();
 
         return FunnelVelocityReportDTO.builder()
                 .stages(stages)
