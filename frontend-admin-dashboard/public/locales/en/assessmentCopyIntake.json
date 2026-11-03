@@ -1,7 +1,7 @@
 {
     "dialog": {
         "title": "Bulk AI check",
-        "intro": "Upload every scanned copy at once. The name written at the top of each sheet is read and matched to a student of this assessment; the copies are then checked one by one in the background. You will get an email and a bell alert when it is done.",
+        "intro": "Upload every scanned copy at once. When you start, you choose: match each copy to a student of this assessment (by the name written on top), or just check them and download the checked copies as a zip. The copies are checked one by one in the background; you will get an email and a bell alert when it is done.",
         "drop": "Drop PDF copies here or click to choose",
         "dropHint": "One file per student · up to {{max}} files · {{mb}} MB each",
         "counting": "Counting pages…",

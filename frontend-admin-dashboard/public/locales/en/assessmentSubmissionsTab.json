@@ -1,4 +1,47 @@
 {
+    "actionMenus": {
+        "ai": {
+            "trigger": "Check with AI",
+            "startSection": "Start a check",
+            "trackSection": "Track & review",
+            "checkSubmitted": {
+                "title": "Check learners' uploaded copies",
+                "description": "AI checks every answer sheet the learners submitted themselves. Nothing to upload."
+            },
+            "upload": {
+                "title": "Upload scanned copies & check",
+                "description": "Upload scanned PDFs. Then choose: match them to learners, or just check them and download a ZIP."
+            },
+            "progress": {
+                "title": "Show bulk check progress",
+                "hideTitle": "Hide bulk check progress",
+                "description": "Running and finished bulk checks, copy by copy."
+            },
+            "results": {
+                "title": "Review AI evaluations",
+                "description": "Open AI-checked copies to see and edit marks question by question."
+            }
+        },
+        "export": {
+            "trigger": "Export",
+            "csv": {
+                "title": "Results sheet (CSV)",
+                "description": "Marks, rank and details of everyone listed, as a spreadsheet."
+            },
+            "csvPending": {
+                "title": "Learner list (CSV)",
+                "description": "Contact details of the learners who have not submitted yet."
+            },
+            "zip": {
+                "title": "Report cards (ZIP)",
+                "description": "One PDF report per learner, bundled in a ZIP."
+            },
+            "aiReport": {
+                "title": "AI class report",
+                "description": "One AI-written analysis of the whole test: weak topics, common mistakes and a plan."
+            }
+        }
+    },
     "tabs": {
         "attempted": "Attempted",
         "ongoing": "Ongoing",

@@ -40,6 +40,12 @@ interface AssessmentExportCsvDialogProps {
     registrationSource: string;
     /** Batch filter in force on screen, so the result sheet matches what is listed. */
     scopedBatches?: Array<{ id: string; name: string }>;
+    /**
+     * Controlled mode: the Submissions "Export" menu opens the dialog itself, so no
+     * trigger button is rendered. Omit both to get the old self-contained button.
+     */
+    open?: boolean;
+    onOpenChange?: (open: boolean) => void;
 }
 
 const labelForCustomField = (field: ResultExportCustomFieldColumn) =>
@@ -64,9 +70,14 @@ export const AssessmentExportCsvDialog = ({
     notAttemptedScope,
     registrationSource,
     scopedBatches = [],
+    open: controlledOpen,
+    onOpenChange,
 }: AssessmentExportCsvDialogProps) => {
     const { t } = useTranslation('assessmentExportCsvDialog');
-    const [open, setOpen] = useState(false);
+    const isControlled = controlledOpen !== undefined;
+    const [uncontrolledOpen, setUncontrolledOpen] = useState(false);
+    const open = isControlled ? controlledOpen : uncontrolledOpen;
+    const setOpen = isControlled ? onOpenChange ?? (() => {}) : setUncontrolledOpen;
     const [selectedBaseColumns, setSelectedBaseColumns] = useState<string[]>([]);
     const [selectedCustomFieldIds, setSelectedCustomFieldIds] = useState<string[]>([]);
     const [isExporting, setIsExporting] = useState(false);
@@ -248,17 +259,19 @@ export const AssessmentExportCsvDialog = ({
             triggerTooltip={t('trigger.tooltip')}
             dialogWidth="max-w-lg"
             trigger={
-                <MyButton
-                    type="button"
-                    scale="small"
-                    buttonType="secondary"
-                    className="!h-10 !min-w-0 gap-1.5 px-3 font-medium"
-                    title={t('trigger.label')}
-                    aria-label={t('trigger.label')}
-                >
-                    <Export size={16} />
-                    {t('trigger.label')}
-                </MyButton>
+                isControlled ? undefined : (
+                    <MyButton
+                        type="button"
+                        scale="small"
+                        buttonType="secondary"
+                        className="!h-10 !min-w-0 gap-1.5 px-3 font-medium"
+                        title={t('trigger.label')}
+                        aria-label={t('trigger.label')}
+                    >
+                        <Export size={16} />
+                        {t('trigger.label')}
+                    </MyButton>
+                )
             }
         >
             <div className="flex flex-col gap-4">

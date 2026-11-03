@@ -1,4 +1,47 @@
 {
+    "actionMenus": {
+        "ai": {
+            "trigger": "Corriger avec l'IA",
+            "startSection": "Lancer une correction",
+            "trackSection": "Suivi et relecture",
+            "checkSubmitted": {
+                "title": "Corriger les copies déposées par les apprenants",
+                "description": "L'IA corrige chaque copie que les apprenants ont déposée eux-mêmes. Rien à téléverser."
+            },
+            "upload": {
+                "title": "Téléverser des copies scannées",
+                "description": "Téléversez vos PDF scannés, puis choisissez : les associer aux apprenants, ou seulement les corriger et télécharger un ZIP."
+            },
+            "progress": {
+                "title": "Afficher la progression",
+                "hideTitle": "Masquer la progression",
+                "description": "Corrections en masse en cours et terminées, copie par copie."
+            },
+            "results": {
+                "title": "Relire les évaluations IA",
+                "description": "Ouvrez les copies corrigées par l'IA pour voir et modifier les notes question par question."
+            }
+        },
+        "export": {
+            "trigger": "Exporter",
+            "csv": {
+                "title": "Feuille de résultats (CSV)",
+                "description": "Notes, rang et informations de chaque personne listée, en tableur."
+            },
+            "csvPending": {
+                "title": "Liste des apprenants (CSV)",
+                "description": "Coordonnées des apprenants qui n'ont pas encore rendu leur copie."
+            },
+            "zip": {
+                "title": "Bulletins (ZIP)",
+                "description": "Un rapport PDF par apprenant, regroupés dans un ZIP."
+            },
+            "aiReport": {
+                "title": "Rapport de classe IA",
+                "description": "Une analyse IA de toute l'évaluation : points faibles, erreurs fréquentes et plan d'action."
+            }
+        }
+    },
     "tabs": {
         "attempted": "Tentés",
         "ongoing": "En cours",
