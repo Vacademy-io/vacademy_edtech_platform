@@ -16,6 +16,7 @@ import {
     courseTokenMediaKeys,
     type CourseTokenSource,
 } from '../../-utils/course-html-tokens';
+import { instructorPhotoIds, usesInstructorsToken } from '../../-utils/course-template-content';
 
 /** Fired for data-vacademy="enrol" on a course page; CourseDetailsPage opens its enrolment flow. */
 export const OPEN_COURSE_ENROLLMENT_EVENT = 'openCourseEnrollment';
@@ -73,6 +74,12 @@ export const HtmlPageSection = ({
     const courseRef = useRef(courseData);
     courseRef.current = courseData;
     const courseId = courseData?.courseId || '';
+    // Only a page that lists instructors re-fills when the list changes (the
+    // "Show All Teachers" setting can land after the course); every other page
+    // keeps '' here and so renders exactly as before.
+    const instructorsKey = usesInstructorsToken(html || '')
+        ? (courseData?.instructors ?? []).map((i) => `${i.name}:${i.profilePicId ?? ''}`).join('|')
+        : '';
 
     useEffect(() => {
         const host = hostRef.current;
@@ -139,17 +146,26 @@ export const HtmlPageSection = ({
         if (!course) {
             render(source);
         } else {
-            const tokens = buildCourseTokens(course);
-            const mediaKeys = courseTokenMediaKeys(source);
-            if (mediaKeys.length === 0) {
-                render(applyCourseTokens(source, tokens));
+            const rawTokens = buildCourseTokens(course);
+            const mediaKeys = courseTokenMediaKeys(source).filter((k) => rawTokens[k]);
+            const photoIds = instructorPhotoIds(source, course.instructors);
+            if (mediaKeys.length === 0 && photoIds.length === 0) {
+                render(applyCourseTokens(source, rawTokens));
             } else {
                 // Media ids → public URLs (direct URLs pass through unchanged).
-                Promise.all(mediaKeys.map((k) => getPublicUrlWithoutLogin(tokens[k]).catch(() => '')))
-                    .then((urls) => {
-                        mediaKeys.forEach((k, i) => { tokens[k] = urls[i] || ''; });
-                        render(applyCourseTokens(source, tokens));
+                const resolve = (id: string) => getPublicUrlWithoutLogin(id).catch(() => '');
+                Promise.all([
+                    Promise.all(mediaKeys.map((k) => resolve(rawTokens[k]))),
+                    Promise.all(photoIds.map(resolve)),
+                ]).then(([urls, photoUrls]) => {
+                    const photos = Object.fromEntries(photoIds.map((id, i) => [id, photoUrls[i] || '']));
+                    const tokens = buildCourseTokens(course, photos);
+                    courseTokenMediaKeys(source).forEach((k) => {
+                        const at = mediaKeys.indexOf(k);
+                        tokens[k] = at >= 0 ? urls[at] || '' : '';
                     });
+                    render(applyCourseTokens(source, tokens));
+                });
             }
         }
         return () => {
@@ -157,7 +173,7 @@ export const HtmlPageSection = ({
             teardown?.();
             setVideoMounts([]);
         };
-    }, [html, css, siteCss, tagName, courseId]);
+    }, [html, css, siteCss, tagName, courseId, instructorsKey]);
 
     return (
         <>

@@ -11,6 +11,9 @@ import {
     parseFaqsFromHtml,
     readCoursePageJsonFromCourseInit,
 } from './course-page-content';
+import { emptyCoursePageTemplate } from './course-page-template';
+
+const noTemplate = emptyCoursePageTemplate();
 
 const manyFaqs = (n: number) => Array.from({ length: n }, (_, i) => ({ q: `Q${i}`, a: `A${i}` }));
 
@@ -24,13 +27,14 @@ describe('parseCoursePageJson', () => {
         expect(parseCoursePageJson(raw)).toEqual({
             mode: 'LIVE',
             faqs: [{ q: 'Is it live?', a: '<p>Yes</p>' }],
+            template: noTemplate,
         });
     });
 
     it.each([null, undefined, '', '   ', '{not json', '[]', '42', 'null', '"text"'])(
         'treats %s as empty without throwing',
         (raw) => {
-            expect(parseCoursePageJson(raw)).toEqual({ mode: null, faqs: [] });
+            expect(parseCoursePageJson(raw)).toEqual({ mode: null, faqs: [], template: noTemplate });
         }
     );
 
@@ -51,6 +55,7 @@ describe('parseCoursePageJson', () => {
                 { q: '', a: '<p>orphan answer</p>' },
                 { q: 'Spaced?', a: '<p>Yes</p>' },
             ],
+            template: noTemplate,
         });
     });
 
@@ -119,7 +124,11 @@ describe('buildCoursePageJson', () => {
     });
 
     it('round-trips through parse', () => {
-        const state = { mode: 'LIVE' as const, faqs: [{ q: 'Q', a: '<p>A</p>' }] };
+        const state = {
+            mode: 'LIVE' as const,
+            faqs: [{ q: 'Q', a: '<p>A</p>' }],
+            template: noTemplate,
+        };
         expect(parseCoursePageJson(buildCoursePageJson(state, loadedEdit))).toEqual(state);
     });
 });

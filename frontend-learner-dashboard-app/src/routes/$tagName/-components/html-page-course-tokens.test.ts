@@ -51,6 +51,65 @@ describe("course tokens (pure)", () => {
     expect(buildCourseTokens({ ...course, price: 0, elevatedPrice: undefined }).price).toBe("");
   });
 
+  it("renders template content, FAQs and instructors from course_page_json + authors", () => {
+    const coursePageJson = JSON.stringify({
+      v: 1, mode: null,
+      faqs: [{ q: "Is it live?", a: "<p>Both <b>live</b> and recorded.</p>" }, { q: "Empty", a: "<p></p>" }],
+      template: {
+        tagline: "Learn <calmly>",
+        short_description: "A short line",
+        framework: { heading: "The method", intro: "Para one\n\nPara two", cards: [
+          { title: "Observe", body: "Look first", points: ["See", "Note"], takeaway: "Pause" },
+          { title: "Act" },
+        ] },
+        learning_experience: { heading: "How you learn", cards: [{ title: "Videos", body: "Short clips" }], callout: "<p>Bonus</p>" },
+        testimonials: [{ quote: "Loved it", name: "A. Learner", details: "Parent", review: "Long review" }, { quote: "No name" }],
+        enrolment: { description: "<p>Join now</p>", image_id: "enrol01" },
+        inclusions: { heading: "Included", items: ["Videos", "Worksheets"] },
+      },
+    });
+    const instructors = [
+      { name: "Dr. One", subtitle: "Psychologist", description: "<p>Bio</p>", profilePicId: "pic1" },
+      { name: "Two", role: "Instructor", description: "<p></p>" },
+    ];
+    const t = buildCourseTokens({ ...course, coursePageJson, instructors }, { pic1: "https://cdn.example/pic1.png" });
+    expect(applyCourseTokens("{{course.tagline}}", t)).toBe("Learn &lt;calmly&gt;");
+    expect(t.short_description).toBe("A short line");
+    expect(t.framework_html).toBe(
+      '<h2>The method</h2><p>Para one</p><p>Para two</p><div class="course-framework-grid">' +
+      '<article class="course-framework-card"><span class="course-card-number">1</span><h3>Observe</h3><p>Look first</p><ul><li>See</li><li>Note</li></ul><p class="course-card-takeaway">Pause</p></article>' +
+      '<article class="course-framework-card"><span class="course-card-number">2</span><h3>Act</h3></article></div>',
+    );
+    expect(t.learning_experience_html).toContain('<article class="course-learning-card"><h3>Videos</h3><p>Short clips</p></article>');
+    expect(t.learning_experience_html).toContain('<div class="course-callout"><p>Bonus</p></div>');
+    // a review without a name is skipped
+    expect(t.testimonials_html).toBe(
+      '<blockquote class="course-testimonial"><p class="course-testimonial-quote">Loved it</p><cite>A. Learner<span>Parent</span></cite><p>Long review</p></blockquote>',
+    );
+    expect(t.enrolment_description).toBe("<p>Join now</p>");
+    expect(t.enrolment_image).toBe("enrol01");
+    expect(t.inclusions_html).toBe("<h3>Included</h3><ul><li>Videos</li><li>Worksheets</li></ul>");
+    // an FAQ with an empty answer is skipped
+    expect(t.faqs_html).toBe('<div class="course-faq-item"><h3>Is it live?</h3><div class="course-faq-answer"><p>Both <b>live</b> and recorded.</p></div></div>');
+    expect(t.instructors_html).toBe(
+      '<article class="course-instructor"><img src="https://cdn.example/pic1.png" alt="Dr. One" loading="lazy"><h3>Dr. One</h3><p class="course-instructor-role">Psychologist</p><div class="course-instructor-bio"><p>Bio</p></div></article>' +
+      '<article class="course-instructor"><h3>Two</h3><p class="course-instructor-role">Instructor</p></article>',
+    );
+    expect(applyCourseTokens("{{course.faqs_html}}", t)).toContain("<b>live</b>");
+  });
+
+  it("leaves every template token empty when the course has no page content", () => {
+    const t = buildCourseTokens({ ...course, coursePageJson: '{"v":1,"faqs":[]}' });
+    for (const k of ["tagline", "short_description", "framework_html", "learning_experience_html", "testimonials_html",
+      "enrolment_description", "enrolment_image", "inclusions_html", "faqs_html", "instructors_html"]) {
+      expect(t[k]).toBe("");
+    }
+    expect(buildCourseTokens({ ...course, coursePageJson: "not json" }).framework_html).toBe("");
+    // heading alone is not a section
+    const headingOnly = JSON.stringify({ template: { framework: { heading: "Only a heading" } } });
+    expect(buildCourseTokens({ ...course, coursePageJson: headingOnly }).framework_html).toBe("");
+  });
+
   it("lists only the media tokens the markup uses", () => {
     expect(courseTokenMediaKeys("<img src='{{course.image}}'> {{course.title}} {{course.image}}")).toEqual(["image"]);
     expect(courseTokenMediaKeys("{{course.title}}")).toEqual([]);
@@ -88,6 +147,30 @@ describe("html details page on a course route", () => {
     (shadow.querySelector("button") as HTMLButtonElement).click();
     window.removeEventListener(OPEN_COURSE_ENROLLMENT_EVENT, listener);
     expect(seen).toEqual(["b91f69a4"]);
+    await act(async () => root.unmount());
+  });
+
+  it("resolves the enrolment image and instructor photos before rendering", async () => {
+    const coursePageJson = JSON.stringify({ template: { enrolment: { image_id: "enrol01" } } });
+    const { root, shadow } = await mount(
+      '{{#course.enrolment_image}}<img class="e" src="{{course.enrolment_image}}" alt="">{{/course.enrolment_image}}<div class="i">{{course.instructors_html}}</div>',
+      { ...course, coursePageJson, instructors: [{ name: "Dr. One", profilePicId: "pic1" }] },
+    );
+    expect(shadow.querySelector("img.e")!.getAttribute("src")).toBe("https://d1om4dxj9e7kkd.cloudfront.net/resolved/enrol01.png");
+    expect(shadow.querySelector(".i img")!.getAttribute("src")).toBe("https://d1om4dxj9e7kkd.cloudfront.net/resolved/pic1.png");
+    expect(shadow.querySelector(".i h3")!.textContent).toBe("Dr. One");
+    await act(async () => root.unmount());
+  });
+
+  it("re-fills the instructor list when it changes after the first render (Show All Teachers lands late)", async () => {
+    const html = '<div class="i">{{course.instructors_html}}</div>';
+    const one = { ...course, instructors: [{ name: "First" }] };
+    const { root, shadow } = await mount(html, one);
+    expect(shadow.querySelectorAll(".i h3")).toHaveLength(1);
+    await act(async () => {
+      root.render(React.createElement(HtmlPageSection, { html, css: "", tagName: "tag", courseData: { ...one, instructors: [{ name: "First" }, { name: "Second" }] } }));
+    });
+    expect(shadow.querySelectorAll(".i h3")).toHaveLength(2);
     await act(async () => root.unmount());
   });
 

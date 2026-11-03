@@ -13,16 +13,31 @@
  * afterwards, so they cannot carry scripts. Unknown tokens render as ''.
  * Image tokens hold media ids until the host resolves them (see
  * courseTokenMediaKeys / resolveCourseMedia in HtmlPageSection).
+ *
+ * Structured tokens (tagline, framework_html, testimonials_html, faqs_html,
+ * instructors_html …) come from the admin's "Course page" content and the
+ * course's authors; their markup is built in course-template-content.ts.
  */
+
+import {
+    courseTemplateContent,
+    renderFaqsHtml,
+    renderInstructorsHtml,
+    type TemplateInstructor,
+} from './course-template-content';
 
 export const COURSE_TOKEN_RE = /\{\{\s*course\.([a-z_]+)\s*\}\}/g;
 /** `{{#course.mrp}} … {{/course.mrp}}` — the block stays only when the token is non-empty. */
 export const COURSE_BLOCK_RE = /\{\{#\s*course\.([a-z_]+)\s*\}\}([\s\S]*?)\{\{\/\s*course\.\1\s*\}\}/g;
 
 /** Tokens whose value is a media id/URL the host must resolve before render. */
-export const COURSE_MEDIA_TOKENS = ['image', 'banner', 'thumbnail'] as const;
+export const COURSE_MEDIA_TOKENS = ['image', 'banner', 'thumbnail', 'enrolment_image'] as const;
 
-const RAW_HTML_TOKENS = new Set(['description_html', 'about_html', 'why_html', 'who_html']);
+const RAW_HTML_TOKENS = new Set([
+    'description_html', 'about_html', 'why_html', 'who_html',
+    'framework_html', 'learning_experience_html', 'testimonials_html', 'instructors_html',
+    'inclusions_html', 'faqs_html', 'enrolment_description',
+]);
 
 const escapeHtml = (s: string): string =>
     s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
@@ -57,12 +72,23 @@ export interface CourseTokenSource {
     previewImage?: string;
     bannerImage?: string;
     thumbnail?: string;
+    /** course_page_json: FAQs + "Page template content". */
+    coursePageJson?: string | null;
+    /** The course's authors (Add Course → Add Authors). */
+    instructors?: ReadonlyArray<TemplateInstructor> | null;
 }
 
 const isPlaceholder = (v: string | undefined): boolean => !v || v.startsWith('/api/placeholder/') || v === 'null';
 
-/** Build the token → value map. Media tokens carry the raw id/URL from courseData. */
-export const buildCourseTokens = (c: CourseTokenSource): Record<string, string> => {
+/**
+ * Build the token → value map. Media tokens carry the raw id/URL from courseData.
+ * `photos` maps author profile-pic ids to resolved URLs for instructors_html.
+ */
+export const buildCourseTokens = (
+    c: CourseTokenSource,
+    photos: Record<string, string> = {},
+): Record<string, string> => {
+    const tpl = courseTemplateContent(c.coursePageJson);
     const price = c.price;
     const mrp = c.elevatedPrice && c.price !== undefined && c.elevatedPrice > c.price ? c.elevatedPrice : undefined;
     const discount = mrp ? Math.round(((mrp - (price ?? 0)) / mrp) * 100) : undefined;
@@ -86,6 +112,16 @@ export const buildCourseTokens = (c: CourseTokenSource): Record<string, string> 
         image: isPlaceholder(c.previewImage) ? (isPlaceholder(c.thumbnail) ? '' : c.thumbnail!) : c.previewImage!,
         banner: isPlaceholder(c.bannerImage) ? '' : c.bannerImage!,
         thumbnail: isPlaceholder(c.thumbnail) ? '' : c.thumbnail!,
+        tagline: tpl.tagline,
+        short_description: tpl.shortDescription,
+        framework_html: tpl.frameworkHtml,
+        learning_experience_html: tpl.learningExperienceHtml,
+        testimonials_html: tpl.testimonialsHtml,
+        enrolment_description: tpl.enrolmentDescription,
+        enrolment_image: tpl.enrolmentImage,
+        inclusions_html: tpl.inclusionsHtml,
+        faqs_html: renderFaqsHtml(c.coursePageJson),
+        instructors_html: renderInstructorsHtml(c.instructors, photos),
     };
 };
 
