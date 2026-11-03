@@ -75,6 +75,30 @@ describe('course_page_json with template', () => {
         ).toBe('');
     });
 
+    it('stores headings and button text under labels and reads them back', () => {
+        const t = emptyCoursePageTemplate();
+        t.labels.about = '  About the course ';
+        t.labels.enrol_button = 'Start the journey';
+        expect(serializeCoursePageTemplate(t)).toEqual({
+            labels: { about: 'About the course', enrol_button: 'Start the journey' },
+        });
+        const json = buildCoursePageJson(
+            { mode: null, faqs: [], template: t },
+            { isEdit: true, storedValueLoaded: true }
+        );
+        const back = parseCoursePageJson(json).template.labels;
+        expect(back.about).toBe('About the course');
+        expect(back.enrol_button).toBe('Start the journey');
+        expect(back.faq).toBe('');
+        // a stored key the form does not know is dropped, not kept
+        expect(
+            parseCoursePageTemplate({ labels: { faq: 'FAQs', other: 'x', about: 3 } }).labels
+        ).toEqual({
+            ...emptyCoursePageTemplate().labels,
+            faq: 'FAQs',
+        });
+    });
+
     it('reads malformed template values as empty', () => {
         expect(parseCoursePageTemplate({ framework: 'x', testimonials: [null, 3] })).toEqual(
             emptyCoursePageTemplate()

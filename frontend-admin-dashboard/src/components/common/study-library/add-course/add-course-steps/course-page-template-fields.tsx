@@ -4,7 +4,7 @@ import { toast } from 'sonner';
 import { ArrowDown, ArrowUp, CaretDown, CircleNotch, Plus, Trash, UploadSimple } from '@phosphor-icons/react';
 import { useQuery } from '@tanstack/react-query';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
-import { FormControl, FormField, FormItem, FormMessage } from '@/components/ui/form';
+import { FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { MyButton } from '@/components/design-system/button';
@@ -13,6 +13,8 @@ import { useFileUpload } from '@/hooks/use-file-upload';
 import { getPublicUrl } from '@/services/upload_file';
 import { getCurrentInstituteId } from '@/lib/auth/instituteUtils';
 import {
+    COURSE_TEMPLATE_LABELS,
+    COURSE_TEMPLATE_LABEL_MAX_LENGTH,
     COURSE_TEMPLATE_MAX_CARDS,
     COURSE_TEMPLATE_MAX_TESTIMONIALS,
     countTemplateBlocks,
@@ -60,6 +62,28 @@ const TextField = ({
                         aria-label={label}
                         placeholder={placeholder ?? label}
                         maxLength={maxLength}
+                        className="h-9 border-neutral-300"
+                    />
+                </FormControl>
+                <FormMessage />
+            </FormItem>
+        )}
+    />
+);
+
+/** A one-line field with its name shown above it (the value hides the placeholder). */
+const LabelledField = ({ form, name, label }: { form: Form; name: Name; label: string }) => (
+    <FormField
+        control={form.control}
+        name={name}
+        render={({ field }) => (
+            <FormItem className="space-y-1">
+                <FormLabel className="text-xs font-normal text-neutral-600">{label}</FormLabel>
+                <FormControl>
+                    <Input
+                        {...field}
+                        value={typeof field.value === 'string' ? field.value : ''}
+                        maxLength={COURSE_TEMPLATE_LABEL_MAX_LENGTH}
                         className="h-9 border-neutral-300"
                     />
                 </FormControl>
@@ -504,6 +528,22 @@ export const CoursePageTemplateFields = ({ form, courseTerm }: { form: Form; cou
                             {sizeError}
                         </p>
                     )}
+                    <Block
+                        title="Headings and buttons"
+                        hint="The words your page template shows around the content. Leave one empty to hide that heading or button."
+                    >
+                        <div className="grid gap-3 sm:grid-cols-2">
+                            {COURSE_TEMPLATE_LABELS.map(({ key, label }) => (
+                                <LabelledField
+                                    key={key}
+                                    form={form}
+                                    name={`coursePage.template.labels.${key}`}
+                                    label={label}
+                                />
+                            ))}
+                        </div>
+                    </Block>
+
                     <Block title="Tagline and short description" hint="Shown below the title.">
                         <TextField
                             form={form}

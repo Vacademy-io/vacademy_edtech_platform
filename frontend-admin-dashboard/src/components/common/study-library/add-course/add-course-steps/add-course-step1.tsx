@@ -50,6 +50,10 @@ import {
     isEmptyFaq,
 } from '../-utils/course-page-content';
 import {
+    COURSE_TEMPLATE_LABELS,
+    COURSE_TEMPLATE_LABEL_MAX_LENGTH,
+    type CourseTemplateLabelKey,
+    emptyCourseTemplateLabels,
     emptyCoursePageTemplate,
     isEmptyFrameworkCard,
     isEmptyLearningCard,
@@ -87,6 +91,16 @@ const coursePageTemplateSchema = z.object({
     ),
     enrolment: z.object({ description: z.string(), imageId: z.string() }),
     inclusions: z.object({ heading: z.string(), items: z.string() }),
+    labels: z
+        .object(
+            Object.fromEntries(
+                COURSE_TEMPLATE_LABELS.map(({ key }) => [
+                    key,
+                    z.string().max(COURSE_TEMPLATE_LABEL_MAX_LENGTH, 'Keep this short'),
+                ])
+            ) as Record<CourseTemplateLabelKey, z.ZodString>
+        )
+        .default(() => emptyCourseTemplateLabels()),
 });
 
 // Step 1 Schema

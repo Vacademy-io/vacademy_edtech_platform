@@ -10,8 +10,11 @@
  *     learning_experience: { heading, intro, cards: [{ title, body }], callout },
  *     testimonials: [{ quote, name, details, review }],
  *     enrolment: { description, image_id },
- *     inclusions: { heading, items: [..] }
+ *     inclusions: { heading, items: [..] },
+ *     labels: { eyebrow, enrol_button, … }   // the page's fixed words: headings, button text
  *   }
+ * Each label becomes `{{course.label_<key>}}` on the public page, so no wording has to be
+ * typed into the template itself.
  * Empty values are left out, so a course that uses none of this stores nothing extra.
  *
  * In the form, list-like fields (`points`, `items`) are one entry per line — a textarea is
@@ -28,6 +31,31 @@ const isBlankHtml = (value: string): boolean =>
 
 export const COURSE_TEMPLATE_MAX_CARDS = 12;
 export const COURSE_TEMPLATE_MAX_TESTIMONIALS = 20;
+export const COURSE_TEMPLATE_LABEL_MAX_LENGTH = 120;
+
+/**
+ * The template's headings and button text, in the order they appear on the page. The key is
+ * the token name (`{{course.label_<key>}}`); keep keys lower-case with underscores.
+ */
+export const COURSE_TEMPLATE_LABELS = [
+    { key: 'eyebrow', label: 'Small line above the title' },
+    { key: 'enrol_button', label: 'Enrol button' },
+    { key: 'explore_button', label: 'Second button (scrolls down the page)' },
+    { key: 'duration', label: 'Duration label' },
+    { key: 'about', label: 'About heading' },
+    { key: 'who', label: 'Who it is for heading' },
+    { key: 'testimonials', label: 'Testimonials heading' },
+    { key: 'instructors', label: 'Instructors heading' },
+    { key: 'enrolment', label: 'Small line above the enrolment title' },
+    { key: 'discount', label: 'Text after the discount %' },
+    { key: 'faq', label: 'FAQ heading' },
+] as const;
+
+export type CourseTemplateLabelKey = (typeof COURSE_TEMPLATE_LABELS)[number]['key'];
+export type CourseTemplateLabels = Record<CourseTemplateLabelKey, string>;
+
+export const emptyCourseTemplateLabels = (): CourseTemplateLabels =>
+    Object.fromEntries(COURSE_TEMPLATE_LABELS.map(({ key }) => [key, ''])) as CourseTemplateLabels;
 
 export interface FrameworkCard {
     title: string;
@@ -58,6 +86,8 @@ export interface CoursePageTemplate {
     enrolment: { description: string; imageId: string };
     /** `items`: one inclusion per line. */
     inclusions: { heading: string; items: string };
+    /** Headings and button text; see COURSE_TEMPLATE_LABELS. */
+    labels: CourseTemplateLabels;
 }
 
 export const emptyFrameworkCard = (): FrameworkCard => ({
@@ -77,6 +107,7 @@ export const emptyCoursePageTemplate = (): CoursePageTemplate => ({
     testimonials: [],
     enrolment: { description: '', imageId: '' },
     inclusions: { heading: '', items: '' },
+    labels: emptyCourseTemplateLabels(),
 });
 
 const str = (v: unknown): string => (typeof v === 'string' ? v : '');
@@ -109,6 +140,7 @@ export const parseCoursePageTemplate = (raw: unknown): CoursePageTemplate => {
     const le = obj(t.learning_experience);
     const en = obj(t.enrolment);
     const inc = obj(t.inclusions);
+    const lab = obj(t.labels);
     return {
         tagline: str(t.tagline),
         shortDescription: str(t.short_description),
@@ -142,6 +174,9 @@ export const parseCoursePageTemplate = (raw: unknown): CoursePageTemplate => {
             .slice(0, COURSE_TEMPLATE_MAX_TESTIMONIALS),
         enrolment: { description: str(en.description), imageId: str(en.image_id) },
         inclusions: { heading: str(inc.heading), items: lines(inc.items) },
+        labels: Object.fromEntries(
+            COURSE_TEMPLATE_LABELS.map(({ key }) => [key, str(lab[key])])
+        ) as CourseTemplateLabels,
     };
 };
 
@@ -208,6 +243,7 @@ export const serializeCoursePageTemplate = (
             heading: t.inclusions?.heading,
             items: toLines(t.inclusions?.items ?? ''),
         },
+        labels: Object.fromEntries(COURSE_TEMPLATE_LABELS.map(({ key }) => [key, t.labels?.[key]])),
     });
     return (value as Record<string, unknown> | undefined) ?? null;
 };
