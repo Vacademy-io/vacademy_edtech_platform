@@ -1,7 +1,7 @@
 {
     "dialog": {
         "title": "Correction IA en masse",
-        "intro": "Téléversez toutes les copies numérisées d'un coup. Le nom écrit en haut de chaque feuille est lu et associé à un élève de cette évaluation ; les copies sont ensuite corrigées une à une en arrière-plan. Vous recevrez un e-mail et une alerte quand ce sera terminé.",
+        "intro": "Téléversez toutes les copies numérisées d'un coup. Au lancement, vous choisissez : associer chaque copie à un élève de cette évaluation (par le nom écrit en haut), ou simplement les corriger et télécharger les copies corrigées dans un zip. Les copies sont corrigées une à une en arrière-plan ; vous recevrez un e-mail et une alerte quand ce sera terminé.",
         "drop": "Déposez les copies PDF ici ou cliquez pour choisir",
         "dropHint": "Un fichier par élève · jusqu'à {{max}} fichiers · {{mb}} Mo chacun",
         "counting": "Comptage des pages…",

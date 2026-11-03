@@ -12,8 +12,14 @@ import { PaperPlaneTilt, WarningCircle } from '@phosphor-icons/react';
 import { RoleTerms, SystemTerms } from '@/routes/settings/-components/NamingSettings';
 import { getTerminology, getTerminologyPlural } from '@/components/common/layout-container/sidebar/utils';
 import { useTranslation } from 'react-i18next';
+import { cn } from '@/lib/utils';
 
-export const AssessmentGlobalLevelReleaseResultAssessment = () => {
+export const AssessmentGlobalLevelReleaseResultAssessment = ({
+    triggerClassName,
+}: {
+    /** Lets the Submissions action row size this button like its neighbours. */
+    triggerClassName?: string;
+} = {}) => {
     const { t } = useTranslation('assessmentGlobalLevelReleaseResult');
     const { assessmentId } = Route.useParams();
     const instituteId = getInstituteId();
@@ -63,7 +69,7 @@ export const AssessmentGlobalLevelReleaseResultAssessment = () => {
                     type="button"
                     scale="small"
                     buttonType="primary"
-                    className="gap-1.5 font-medium"
+                    className={cn('gap-1.5 font-medium', triggerClassName)}
                 >
                     <PaperPlaneTilt size={16} weight="fill" />
                     {t('trigger.releaseResult')}

@@ -26,10 +26,7 @@ import {
     useCopyCheckSettings,
 } from '@/components/common/ai-copy-check/CopyCheckSettingsFields';
 import { CopyCheckCriteriaPanel } from '@/components/common/ai-copy-check/CopyCheckCriteriaPanel';
-import {
-    decideStudentMapping,
-    useInstituteStudentMapping,
-} from '@/components/common/ai-copy-check/StudentMappingPicker';
+import { useInstituteStudentMapping } from '@/components/common/ai-copy-check/StudentMappingPicker';
 import { MapStudentsChoiceDialog } from './MapStudentsChoiceDialog';
 
 interface PendingFile {
@@ -52,9 +49,10 @@ const MAX_MB = 60;
  * assessment's students and queues the AI check. Progress lives in the batch
  * panel; the admin is told by email, bell and toast when it settles.
  *
- * Whether the copies are matched to students follows Settings → Assessment:
- * ask each time (a popup), always match, or only check — "only check" skips the
- * matching and hands the checked copies back as a zip.
+ * Before it starts, a popup always offers both ways: match each copy to a student,
+ * or only check — "only check" skips the matching and hands the checked copies
+ * back as a zip. Settings → Assessment only decides which one is preselected
+ * (admins kept missing the "only check" path when the setting skipped the popup).
  */
 export const BulkAiCheckDialog = ({
     open,
@@ -385,16 +383,6 @@ export const BulkAiCheckDialog = ({
                     </p>
                 )}
 
-                {studentMapping !== 'ASK' && (
-                    <p className="text-caption text-neutral-500">
-                        {t(
-                            studentMapping === 'MAP'
-                                ? 'mapping.decidedMap'
-                                : 'mapping.decidedCheckOnly'
-                        )}
-                    </p>
-                )}
-
                 <div className="flex justify-end gap-2 border-t border-neutral-200 pt-4">
                     <MyButton
                         type="button"
@@ -410,11 +398,7 @@ export const BulkAiCheckDialog = ({
                         buttonType="primary"
                         scale="medium"
                         disabled={!canStart}
-                        onClick={() => {
-                            const decided = decideStudentMapping(studentMapping, true);
-                            if (decided.ask) setChoiceOpen(true);
-                            else start.mutate(decided.mapStudents);
-                        }}
+                        onClick={() => setChoiceOpen(true)}
                     >
                         {start.isPending
                             ? t('dialog.starting')
@@ -426,6 +410,7 @@ export const BulkAiCheckDialog = ({
                 open={choiceOpen}
                 onOpenChange={setChoiceOpen}
                 copies={files.length}
+                defaultChoice={studentMapping === 'CHECK_ONLY' ? 'CHECK_ONLY' : 'MAP'}
                 onConfirm={(mapStudents) => {
                     setChoiceOpen(false);
                     start.mutate(mapStudents);

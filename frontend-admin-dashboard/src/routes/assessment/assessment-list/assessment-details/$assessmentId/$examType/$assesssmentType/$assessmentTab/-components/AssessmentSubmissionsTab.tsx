@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/ban-ts-comment */
 // @ts-nocheck
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { OnChangeFn, RowSelectionState } from '@tanstack/react-table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Separator } from '@/components/ui/separator';
@@ -47,11 +47,11 @@ import {
     ClipboardText,
     Clock,
     Play,
-    Sparkle,
-    UploadSimple,
+    NotePencil,
     User,
     UsersThree,
 } from '@phosphor-icons/react';
+import { AiCheckMenu, ExportMenu } from './SubmissionsActionMenus';
 import { AssessmentDetailsSearchComponent } from './SearchComponent';
 import { useInstituteQuery } from '@/services/student-list-section/getInstituteDetails';
 import { useFilterDataForAssesment } from '@/routes/assessment/assessment-list/-utils.ts/useFiltersData';
@@ -324,6 +324,9 @@ const AssessmentSubmissionsTab = ({ type }: { type: string }) => {
     // its own trigger, scoped to the checked rows).
     const [bulkReportZipOpen, setBulkReportZipOpen] = useState(false);
     const [aiReportOpen, setAiReportOpen] = useState(false);
+    // Opened from the Export menu (the dialogs no longer render their own buttons).
+    const [csvExportOpen, setCsvExportOpen] = useState(false);
+    const [reportZipOpen, setReportZipOpen] = useState(false);
     // Bulk AI check of uploaded copies. The email a finished batch sends links
     // here with ?intake=<batchId>, which opens the panel on that batch.
     const initialIntakeId = useMemo(() => {
@@ -1390,18 +1393,47 @@ const AssessmentSubmissionsTab = ({ type }: { type: string }) => {
     // Card-style sub-tabs. The active one gets a tinted panel plus a short underline bar
     // centred on its bottom edge, so it still reads as a tab and not just a selected card.
     const subTabClass = (value: string) =>
-        `relative flex min-w-0 flex-1 items-center gap-2 rounded-xl border px-3 py-2.5 text-left sm:flex-none !shadow-none transition-colors after:absolute after:bottom-0 after:left-1/2 after:h-1 after:w-16 after:-translate-x-1/2 after:rounded-full ${
+        cn(
+            'relative flex w-full min-w-0 items-center gap-3 rounded-xl border px-4 py-3 text-left !shadow-none transition-colors after:absolute after:bottom-0 after:left-1/2 after:h-1 after:w-16 after:-translate-x-1/2 after:rounded-full',
             selectedTab === value
-                ? 'border-primary-200 !bg-primary-50 text-primary-500 after:bg-primary-500'
-                : 'border-neutral-200 !bg-white text-neutral-700 hover:border-neutral-300 after:bg-transparent'
-        }`;
+                ? 'border-primary-300 !bg-primary-50 text-primary-500 after:bg-primary-500'
+                : 'border-neutral-200 !bg-white text-neutral-700 hover:border-neutral-300 hover:!bg-neutral-50 after:bg-transparent'
+        );
 
     const subTabIconClass = (value: string) =>
-        `flex size-8 shrink-0 items-center justify-center rounded-lg ${
+        cn(
+            'flex size-11 shrink-0 items-center justify-center rounded-lg',
             selectedTab === value
                 ? 'bg-primary-100 text-primary-500'
                 : 'bg-neutral-100 text-neutral-500'
-        }`;
+        );
+
+    const renderSubTab = (
+        value: string,
+        icon: ReactNode,
+        label: string,
+        subtitle: string,
+        count: number
+    ) => (
+        <TabsTrigger value={value} className={subTabClass(value)}>
+            <span className={subTabIconClass(value)}>{icon}</span>
+            <span className="flex min-w-0 flex-1 flex-col items-start gap-0.5">
+                <span className="text-subtitle font-semibold">{label}</span>
+                <span className="w-full truncate text-caption font-regular text-neutral-500">
+                    {subtitle}
+                </span>
+            </span>
+            {/* Plain string, not cn(): tailwind-merge reads the custom text-h2 size as a
+                colour and drops it next to text-primary-500. */}
+            <span
+                className={`shrink-0 text-h2 font-semibold tabular-nums ${
+                    selectedTab === value ? 'text-primary-500' : 'text-neutral-700'
+                }`}
+            >
+                {count}
+            </span>
+        </TabsTrigger>
+    );
 
     if (isParticipantsLoading && !hasLoadedOnce.current) return <DashboardLoader />;
 
@@ -1472,168 +1504,124 @@ const AssessmentSubmissionsTab = ({ type }: { type: string }) => {
                         />
                     </div>
                 )}
-                {/* Sub-tab row: which slice of participants on the left, the actions that
-                    operate on that slice on the right. */}
-                <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2 px-4">
-                    {/* Sub-tabs render as description cards, not pills: the count alone
-                        ("Pending 95") reads as a warning, while "Students who haven't
-                        submitted" says what the number actually means. */}
-                    <TabsList className="flex h-auto flex-wrap items-stretch justify-start gap-2 rounded-none !bg-transparent p-0">
-                        <TabsTrigger value="Attempted" className={subTabClass('Attempted')}>
-                            <span className={subTabIconClass('Attempted')}>
-                                <ClipboardText size={20} />
-                            </span>
-                            <span className="flex flex-col items-start gap-0.5">
-                                <span className="text-subtitle font-semibold">
-                                    {t('tabs.attempted')} ({attemptedCount})
-                                </span>
-                                <span className="text-2xs font-regular text-neutral-500">
-                                    {t('tabs.attemptedSubtitle')}
-                                </span>
-                            </span>
-                        </TabsTrigger>
-                        {assessmentTab !== 'previousTests' && (
-                            <TabsTrigger value="Ongoing" className={subTabClass('Ongoing')}>
-                                <span className={subTabIconClass('Ongoing')}>
-                                    <Play size={20} />
-                                </span>
-                                <span className="flex flex-col items-start gap-0.5">
-                                    <span className="text-subtitle font-semibold">
-                                        {t('tabs.ongoing')} ({ongoingCount})
-                                    </span>
-                                    <span className="text-2xs font-regular text-neutral-500">
-                                        {t('tabs.ongoingSubtitle')}
-                                    </span>
-                                </span>
-                            </TabsTrigger>
+                {/* Sub-tabs: one equal card per slice of participants, full width, with
+                    the count on the right where the eye lands — "Pending 95" alone read
+                    as a warning, the subtitle says what the number means. */}
+                <div className="px-4">
+                    <TabsList
+                        className={cn(
+                            'grid h-auto w-full grid-cols-1 gap-3 rounded-none !bg-transparent p-0',
+                            assessmentTab !== 'previousTests' ? 'sm:grid-cols-3' : 'sm:grid-cols-2'
                         )}
-                        <TabsTrigger value="Pending" className={subTabClass('Pending')}>
-                            <span className={subTabIconClass('Pending')}>
-                                <Clock size={20} />
-                            </span>
-                            <span className="flex flex-col items-start gap-0.5">
-                                <span className="text-subtitle font-semibold">
-                                    {t('tabs.pending')} ({pendingCount})
-                                </span>
-                                <span className="text-2xs font-regular text-neutral-500">
-                                    {t('tabs.pendingSubtitle')}
-                                </span>
-                            </span>
-                        </TabsTrigger>
+                    >
+                        {renderSubTab(
+                            'Attempted',
+                            <ClipboardText size={22} />,
+                            t('tabs.attempted'),
+                            t('tabs.attemptedSubtitle'),
+                            attemptedCount
+                        )}
+                        {assessmentTab !== 'previousTests' &&
+                            renderSubTab(
+                                'Ongoing',
+                                <Play size={22} />,
+                                t('tabs.ongoing'),
+                                t('tabs.ongoingSubtitle'),
+                                ongoingCount
+                            )}
+                        {renderSubTab(
+                            'Pending',
+                            <Clock size={22} />,
+                            t('tabs.pending'),
+                            t('tabs.pendingSubtitle'),
+                            pendingCount
+                        )}
                     </TabsList>
-                    <div className="flex w-full flex-wrap items-center justify-start gap-1.5 sm:w-auto sm:justify-end">
-                        {/* Reevaluate | Release Result | AI Evaluations, per the design.
-                            Release Result is the only solid button — it is the one action
-                            here that publishes something to learners. */}
-                        {selectedTab === 'Attempted' && (
-                            <>
-                                <Dialog>
-                                    <Tooltip>
-                                        <DialogTrigger asChild>
-                                            <TooltipTrigger asChild>
-                                                <MyButton
-                                                    type="button"
-                                                    scale="small"
-                                                    buttonType="secondary"
-                                                    className="gap-1.5 font-medium"
-                                                >
-                                                    <ArrowsClockwise size={16} />
-                                                    {t('buttons.revaluate')}
-                                                </MyButton>
-                                            </TooltipTrigger>
-                                        </DialogTrigger>
-                                        <TooltipContent side="bottom">
-                                            {t('buttons.revaluateTooltip')}
-                                        </TooltipContent>
-                                    </Tooltip>
-                                    <DialogContent className="p-0">
-                                        <h1 className="rounded-t-lg bg-primary-50 p-4 text-primary-500">
-                                            {t('dialogs.revaluate.title')}
-                                        </h1>
-                                        <div className="flex flex-col items-center justify-center gap-4 p-4">
-                                            <AssessmentGlobalLevelRevaluateAssessment />
-                                            <AssessmentGlobalLevelRevaluateQuestionWise />
-                                        </div>
-                                    </DialogContent>
-                                </Dialog>
-                                <AssessmentGlobalLevelReleaseResultAssessment />
+                </div>
+                {/* Action row. It used to hold seven look-alike buttons (four of them about AI
+                    checking), and admins could not tell which to press. Now: every AI copy
+                    check flow sits behind one "Check with AI" menu that says what each option
+                    does, then Reevaluate, then Release Result — the order the work happens in.
+                    Downloads moved into one Export menu on the right. */}
+                <div className="flex flex-wrap items-center gap-2 px-4">
+                    {selectedTab === 'Attempted' && (
+                        <>
+                            <AiCheckMenu
+                                onCheckSubmitted={() => setSubmittedCheckScope([])}
+                                onUploadCopies={() => setBulkCheckOpen(true)}
+                                onToggleProgress={() => setIntakePanelOpen((v) => !v)}
+                                isProgressOpen={intakePanelOpen}
+                                onOpenResults={() =>
+                                    navigate({
+                                        to: '/assessment/evaluation-ai',
+                                        search: { assessmentId },
+                                    })
+                                }
+                            />
+                            <Dialog>
                                 <Tooltip>
-                                    <TooltipTrigger asChild>
-                                        <MyButton
-                                            type="button"
-                                            scale="small"
-                                            buttonType="secondary"
-                                            className="gap-1.5 font-medium"
-                                            onClick={() =>
-                                                navigate({
-                                                    to: '/assessment/evaluation-ai',
-                                                    search: { assessmentId },
-                                                })
-                                            }
-                                        >
-                                            <Sparkle size={16} weight="fill" />
-                                            {t('buttons.aiEvaluations')}
-                                        </MyButton>
-                                    </TooltipTrigger>
+                                    <DialogTrigger asChild>
+                                        <TooltipTrigger asChild>
+                                            <MyButton
+                                                type="button"
+                                                scale="small"
+                                                buttonType="secondary"
+                                                className="!h-9 gap-1.5 px-3 font-medium"
+                                            >
+                                                <ArrowsClockwise size={16} />
+                                                {t('buttons.revaluate')}
+                                            </MyButton>
+                                        </TooltipTrigger>
+                                    </DialogTrigger>
                                     <TooltipContent side="bottom">
-                                        {t('buttons.aiEvaluationsTooltip')}
+                                        {t('buttons.revaluateTooltip')}
                                     </TooltipContent>
                                 </Tooltip>
-                                {/* Copies the learners uploaded themselves: nothing to upload
-                                    or match, just queue them all. The upload dialog next to it
-                                    is for a pile of scanned PDFs the admin has. */}
-                                <Tooltip>
-                                    <TooltipTrigger asChild>
-                                        <MyButton
-                                            type="button"
-                                            scale="small"
-                                            buttonType="primary"
-                                            className="gap-1.5 font-medium"
-                                            onClick={() => setSubmittedCheckScope([])}
-                                        >
-                                            <Sparkle size={16} weight="fill" />
-                                            {t('buttons.checkSubmitted')}
-                                        </MyButton>
-                                    </TooltipTrigger>
-                                    <TooltipContent side="bottom">
-                                        {t('buttons.checkSubmittedTooltip')}
-                                    </TooltipContent>
-                                </Tooltip>
-                                <Tooltip>
-                                    <TooltipTrigger asChild>
-                                        <MyButton
-                                            type="button"
-                                            scale="small"
-                                            buttonType="secondary"
-                                            className="gap-1.5 font-medium"
-                                            onClick={() => setBulkCheckOpen(true)}
-                                        >
-                                            <UploadSimple size={16} />
-                                            {t('buttons.bulkAiCheck')}
-                                        </MyButton>
-                                    </TooltipTrigger>
-                                    <TooltipContent side="bottom">
-                                        {t('buttons.bulkAiCheckTooltip')}
-                                    </TooltipContent>
-                                </Tooltip>
-                                <MyButton
-                                    type="button"
-                                    scale="small"
-                                    buttonType="secondary"
-                                    className="font-medium"
-                                    onClick={() => setIntakePanelOpen((v) => !v)}
-                                >
-                                    {t('buttons.bulkAiBatches')}
-                                </MyButton>
-                            </>
-                        )}
+                                <DialogContent className="p-0">
+                                    <h1 className="rounded-t-lg bg-primary-50 p-4 text-primary-500">
+                                        {t('dialogs.revaluate.title')}
+                                    </h1>
+                                    <div className="flex flex-col items-center justify-center gap-4 p-4">
+                                        <AssessmentGlobalLevelRevaluateAssessment />
+                                        <AssessmentGlobalLevelRevaluateQuestionWise />
+                                    </div>
+                                </DialogContent>
+                            </Dialog>
+                            <AssessmentGlobalLevelReleaseResultAssessment triggerClassName="!h-9 px-3" />
+                        </>
+                    )}
+                    {isOfflineEntryEnabled && (
+                        <MyButton
+                            type="button"
+                            scale="small"
+                            buttonType="secondary"
+                            className="!h-9 gap-1.5 px-3 font-medium"
+                            onClick={() =>
+                                navigate({
+                                    to: '/assessment/assessment-list/offline-entry/$assessmentId',
+                                    params: { assessmentId },
+                                })
+                            }
+                        >
+                            <NotePencil size={16} />
+                            {t('buttons.offlineEntry')}
+                        </MyButton>
+                    )}
+                    <div className="ml-auto flex items-center gap-2">
+                        <ExportMenu
+                            onExportCsv={() => setCsvExportOpen(true)}
+                            onExportZip={() => setReportZipOpen(true)}
+                            onAiReport={() => setAiReportOpen(true)}
+                            isPendingList={selectedTab === 'Pending'}
+                            showReportCards={selectedTab !== 'Pending'}
+                        />
                         <Tooltip>
                             <TooltipTrigger asChild>
                                 <MyButton
                                     type="button"
                                     scale="small"
                                     buttonType="secondary"
-                                    className="!h-10 !min-w-0 px-2.5"
+                                    className="!h-9 !min-w-0 px-2.5"
                                     aria-label={t('buttons.refresh')}
                                     onClick={handleRefreshLeaderboard}
                                 >
@@ -1645,9 +1633,52 @@ const AssessmentSubmissionsTab = ({ type }: { type: string }) => {
                             </TooltipContent>
                         </Tooltip>
                     </div>
+                    {/* Export dialogs, opened from the menu above — no triggers of their own. */}
+                    <AssessmentExportCsvDialog
+                        open={csvExportOpen}
+                        onOpenChange={setCsvExportOpen}
+                        assessmentId={assessmentId}
+                        instituteId={initData?.id}
+                        assessmentType={assesssmentType}
+                        registrationSource={getCurrentRegistrationSource()}
+                        scopedBatches={selectedFilter.batches ?? []}
+                        // On Pending the export is the "never attempted" list, which
+                        // only exists for batch-enrolled learners — Individual and
+                        // External participants already get a real registration row and
+                        // are covered by the result sheet.
+                        notAttempted={
+                            selectedTab === 'Pending' &&
+                            selectedParticipantsTab === 'internal' &&
+                            batchSelectionTab === 'batch'
+                        }
+                        notAttemptedScope={{
+                            batches: (selectedFilter.batches ?? []).map(
+                                (batch: { id: string }) => batch.id
+                            ),
+                            name: searchText,
+                        }}
+                    />
+                    <AssessmentReportZipExportDialog
+                        open={reportZipOpen}
+                        onOpenChange={setReportZipOpen}
+                        assessmentId={assessmentId}
+                        instituteId={instituteId}
+                        selectedFilter={selectedFilter}
+                    />
+                    <Dialog open={aiReportOpen} onOpenChange={setAiReportOpen}>
+                        {aiReportOpen && (
+                            <AiAssessmentReportDialog
+                                assessmentId={assessmentId}
+                                instituteId={instituteId}
+                                assessmentName={assessmentDetailsData?.[0]?.saved_data?.name}
+                                onClose={() => setAiReportOpen(false)}
+                            />
+                        )}
+                    </Dialog>
                 </div>
-                {/* Unified toolbar row: participant toggles + sub-tabs on the left, filters + actions on the right */}
-                <div className="flex flex-wrap items-center justify-between gap-3 border-b border-neutral-100 bg-white px-4 py-3">
+                {/* Filter row: who (participant type, batch/individual) on the left, search
+                    and filters on the right. Nothing on this row acts — it only narrows. */}
+                <div className="flex flex-wrap items-center justify-between gap-3 border-y border-neutral-100 bg-white px-4 py-3">
                     {/* LEFT CLUSTER — participant type + (when internal) batch/individual sub-tabs */}
                     <div className="flex flex-wrap items-center gap-2">
                         {assesssmentType === 'PUBLIC' && (
@@ -1717,12 +1748,7 @@ const AssessmentSubmissionsTab = ({ type }: { type: string }) => {
                         )}
                     </div>
 
-                    {/* RIGHT CLUSTER — search and filters only. The result actions used to
-                        live here too and wrapped onto a third row once the filters grew; they
-                        now sit with the sub-tabs above, which keeps this row purely about
-                        narrowing the list. */}
                     <div className="flex flex-wrap items-center gap-2">
-                        {/* Search takes the full row on a phone, then sits inline. */}
                         <AssessmentDetailsSearchComponent
                             onSearch={handleSearch}
                             searchText={searchText}
@@ -1759,7 +1785,6 @@ const AssessmentSubmissionsTab = ({ type }: { type: string }) => {
                             handleSubmitFilters={handleRefreshLeaderboard}
                             handleResetFilters={handleResetFilters}
                         />
-                        <div className="h-5 w-px bg-neutral-200" />
                         <ManageColumnsPopover
                             compact
                             columns={columnToggles}
@@ -1768,69 +1793,6 @@ const AssessmentSubmissionsTab = ({ type }: { type: string }) => {
                             onReset={handleResetColumns}
                             onReorder={setColumnOrder}
                         />
-                        <AssessmentExportCsvDialog
-                            assessmentId={assessmentId}
-                            instituteId={initData?.id}
-                            assessmentType={assesssmentType}
-                            registrationSource={getCurrentRegistrationSource()}
-                            scopedBatches={selectedFilter.batches ?? []}
-                            // On Pending the export is the "never attempted" list, which
-                            // only exists for batch-enrolled learners — Individual and
-                            // External participants already get a real registration row and
-                            // are covered by the result sheet.
-                            notAttempted={
-                                selectedTab === 'Pending' &&
-                                selectedParticipantsTab === 'internal' &&
-                                batchSelectionTab === 'batch'
-                            }
-                            notAttemptedScope={{
-                                batches: (selectedFilter.batches ?? []).map(
-                                    (batch: { id: string }) => batch.id
-                                ),
-                                name: searchText,
-                            }}
-                        />
-                        <AssessmentReportZipExportDialog
-                            assessmentId={assessmentId}
-                            instituteId={instituteId}
-                            selectedFilter={selectedFilter}
-                        />
-                        <MyButton
-                            type="button"
-                            scale="small"
-                            buttonType="secondary"
-                            className="font-medium"
-                            onClick={() => setAiReportOpen(true)}
-                        >
-                            <Sparkle size={15} weight="fill" />
-                            {t('aiReport.download')}
-                        </MyButton>
-                        <Dialog open={aiReportOpen} onOpenChange={setAiReportOpen}>
-                            {aiReportOpen && (
-                                <AiAssessmentReportDialog
-                                    assessmentId={assessmentId}
-                                    instituteId={instituteId}
-                                    assessmentName={assessmentDetailsData?.[0]?.saved_data?.name}
-                                    onClose={() => setAiReportOpen(false)}
-                                />
-                            )}
-                        </Dialog>
-                        {isOfflineEntryEnabled && (
-                            <MyButton
-                                type="button"
-                                scale="small"
-                                buttonType="primary"
-                                className="font-medium"
-                                onClick={() =>
-                                    navigate({
-                                        to: '/assessment/assessment-list/offline-entry/$assessmentId',
-                                        params: { assessmentId },
-                                    })
-                                }
-                            >
-                                {t('buttons.offlineEntry')}
-                            </MyButton>
-                        )}
                     </div>
                 </div>
                 {/* overflow-x-auto (not overflow-y-auto) — the table is wider than the

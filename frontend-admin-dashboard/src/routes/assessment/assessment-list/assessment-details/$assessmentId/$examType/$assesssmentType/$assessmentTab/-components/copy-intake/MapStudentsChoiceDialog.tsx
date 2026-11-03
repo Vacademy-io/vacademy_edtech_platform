@@ -25,6 +25,7 @@ export const MapStudentsChoiceDialog = ({
     copies,
     onConfirm,
     canMap = true,
+    defaultChoice = 'MAP',
 }: {
     open: boolean;
     onOpenChange: (open: boolean) => void;
@@ -33,19 +34,22 @@ export const MapStudentsChoiceDialog = ({
     onConfirm: (mapStudents: boolean) => void;
     /** False when the assessment has no students to map to: only "just check" is offered. */
     canMap?: boolean;
+    /** Preselected option (the institute's Settings default); both stay selectable. */
+    defaultChoice?: Choice;
 }) => {
     const { t } = useTranslation('assessmentCopyIntake');
-    const [choice, setChoice] = useState<Choice>(canMap ? 'MAP' : 'CHECK_ONLY');
+    const initialChoice: Choice = canMap ? defaultChoice : 'CHECK_ONLY';
+    const [choice, setChoice] = useState<Choice>(initialChoice);
     // One start per opening: a fast double tap must not start (and charge for) two batches.
     const [confirmed, setConfirmed] = useState(false);
 
     // Every time it opens, start from the usual flow (or the only one there is).
     useEffect(() => {
         if (open) {
-            setChoice(canMap ? 'MAP' : 'CHECK_ONLY');
+            setChoice(initialChoice);
             setConfirmed(false);
         }
-    }, [open, canMap]);
+    }, [open, initialChoice]);
 
     return (
         <MyDialog
