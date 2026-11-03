@@ -71,7 +71,11 @@ _STYLE_RE = re.compile(r"<style\b[^>]*>(.*?)</style\s*>", re.I | re.S)
 _LINK_CSS_RE = re.compile(r'<link\b[^>]*rel=["\']?stylesheet["\']?[^>]*>', re.I)
 _HREF_RE = re.compile(r'href=["\']([^"\']+)["\']', re.I)
 _BODY_RE = re.compile(r"<body\b[^>]*>(.*)</body\s*>", re.I | re.S)
-_CSS_IMPORT_RE = re.compile(r"@import\b[^;]*;", re.I)
+# A quoted URL or url(...) is consumed whole first: Google Fonts' `wght@400;500`
+# holds a `;`, and stopping there left `500;...');` whose quote broke the sheet.
+_CSS_IMPORT_RE = re.compile(
+    r"""@import\b(?:\s*(?:url\(\s*(?:"[^"]*"|'[^']*'|[^)]*)\s*\)|"[^"]*"|'[^']*'))?[^;]*(?:;|$)""", re.I
+)
 _CSS_URL_RE = re.compile(r"url\(\s*['\"]?([^'\")]+)['\"]?\s*\)", re.I)
 _BANNED_CSS_RE = re.compile(r"expression\s*\(|(?<![\w-])behavior\s*:|-moz-binding|javascript\s*:", re.I)
 _SRC_RE = re.compile(r'(<img\b[^>]*?\bsrc=["\'])([^"\']*)(["\'])', re.I)

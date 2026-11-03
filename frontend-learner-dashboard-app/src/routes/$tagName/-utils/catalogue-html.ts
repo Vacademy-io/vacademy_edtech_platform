@@ -52,12 +52,12 @@ const ALLOWED_ATTR = [
    bespoke SECTION does, so page mode widens three things and nothing else:
    SVG (AI-authored pages are full of inline icons), the action-hook data
    attributes, and the size caps. Scripts, forms and iframes stay out. */
-const SVG_TAGS = [
+export const SVG_TAGS = [
     'svg', 'path', 'g', 'defs', 'circle', 'ellipse', 'rect', 'line', 'polyline',
     'polygon', 'text', 'tspan', 'title', 'desc', 'use', 'symbol', 'mask',
     'clipPath', 'linearGradient', 'radialGradient', 'stop', 'pattern',
 ];
-const SVG_ATTR = [
+export const SVG_ATTR = [
     'viewBox', 'd', 'fill', 'stroke', 'stroke-width', 'stroke-linecap',
     'stroke-linejoin', 'stroke-dasharray', 'cx', 'cy', 'r', 'rx', 'ry',
     'x', 'y', 'x1', 'y1', 'x2', 'y2', 'points', 'transform', 'opacity',
@@ -99,7 +99,13 @@ const CSS_COMMENT_RE = /\/\*[\s\S]*?\*\//g;
 // palette, so one ghost token silently deleted every colour on the page.
 // Found by reading the parsed CSSOM over CDP: the rule was in textContent
 // and absent from sheet.cssRules.
-const CSS_IMPORT_STMT_RE = /@import\b[^;]*(;|$)/gi;
+// The URL can itself hold a `;` — Google Fonts' `wght@400;500;700` — so a quoted
+// string or url(...) is consumed whole before looking for the statement's `;`.
+// Stopping at the first `;` left `500;700&display=swap');` behind, and its lone
+// quote opened a string that swallowed the rest of the sheet: a pasted blog
+// post rendered with zero rules.
+const CSS_IMPORT_STMT_RE =
+    /@import\b(?:\s*(?:url\(\s*(?:"[^"]*"|'[^']*'|[^)]*)\s*\)|"[^"]*"|'[^']*'))?[^;]*(;|$)/gi;
 const CSS_URL_RE = /url\s*\([^)]*\)/gi;
 // `behavior:` targets the legacy IE binding property. Without a boundary it
 // also matches INSIDE scroll-behavior, overscroll-behavior and
