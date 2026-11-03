@@ -17,6 +17,8 @@
  * Structured tokens (tagline, framework_html, testimonials_html, faqs_html,
  * instructors_html …) come from the admin's "Course page" content and the
  * course's authors; their markup is built in course-template-content.ts.
+ * `label_<key>` tokens are the template's headings and button text, typed per
+ * course in the same place, so a template needs no fixed wording of its own.
  */
 
 import {
@@ -92,7 +94,11 @@ export const buildCourseTokens = (
     const price = c.price;
     const mrp = c.elevatedPrice && c.price !== undefined && c.elevatedPrice > c.price ? c.elevatedPrice : undefined;
     const discount = mrp ? Math.round(((mrp - (price ?? 0)) / mrp) * 100) : undefined;
+    // Label tokens are plain text (escaped) and always prefixed, so none can shadow the
+    // course tokens below.
+    const labels = Object.fromEntries(Object.entries(tpl.labels).map(([k, v]) => [`label_${k}`, v]));
     return {
+        ...labels,
         id: c.courseId || '',
         title: c.title || '',
         description_html: c.about_the_course_html || c.fullDescription || '',

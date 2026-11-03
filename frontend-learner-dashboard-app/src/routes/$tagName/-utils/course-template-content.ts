@@ -15,6 +15,9 @@
  *   inclusions_html           h3, ul
  *   faqs_html                 div.course-faq-item (h3, div.course-faq-answer)
  *
+ * `labels` are the template's own words (headings, button text) the admin types per course;
+ * each becomes `{{course.label_<key>}}`.
+ *
  * Plain text is escaped; rich text (FAQ answers, author bios, callout, enrolment
  * description) is the admin's editor HTML and goes through the page sanitiser with the
  * rest of the page. A section with nothing to show renders '' so `{{#course.x}}` hides it.
@@ -57,6 +60,8 @@ export interface CourseTemplateContent {
   /** media-service id (or URL) — resolved by the host like the other image tokens. */
   enrolmentImage: string;
   inclusionsHtml: string;
+  /** Label key → text, e.g. { about: "About the course" } → {{course.label_about}}. */
+  labels: Record<string, string>;
 }
 
 const EMPTY: CourseTemplateContent = {
@@ -68,6 +73,7 @@ const EMPTY: CourseTemplateContent = {
   enrolmentDescription: "",
   enrolmentImage: "",
   inclusionsHtml: "",
+  labels: {},
 };
 
 const readJson = (raw: unknown): Record<string, unknown> | null => {
@@ -147,6 +153,20 @@ const renderTestimonials = (items: unknown): string =>
     })
     .join("");
 
+// Starts with a letter: token names only, never `__proto__` and the like.
+const LABEL_KEY_RE = /^[a-z][a-z_]{0,39}$/;
+const LABEL_MAX_LENGTH = 120;
+
+const readLabels = (raw: unknown): Record<string, string> => {
+  if (!isObject(raw)) return {};
+  const out: Record<string, string> = {};
+  for (const [key, value] of Object.entries(raw)) {
+    const text = str(value).slice(0, LABEL_MAX_LENGTH);
+    if (LABEL_KEY_RE.test(key) && text) out[key] = text;
+  }
+  return out;
+};
+
 const renderInclusions = (inc: Record<string, unknown>): string => {
   const items = strings(inc.items);
   if (!items.length) return "";
@@ -169,6 +189,7 @@ export const courseTemplateContent = (coursePageJson: unknown): CourseTemplateCo
     enrolmentDescription: richOrEmpty(enrolment.description),
     enrolmentImage: str(enrolment.image_id),
     inclusionsHtml: renderInclusions(isObject(t.inclusions) ? t.inclusions : {}),
+    labels: readLabels(t.labels),
   };
 };
 

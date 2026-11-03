@@ -110,6 +110,25 @@ describe("course tokens (pure)", () => {
     expect(buildCourseTokens({ ...course, coursePageJson: headingOnly }).framework_html).toBe("");
   });
 
+  it("turns the admin's headings and button text into escaped label_* tokens", () => {
+    const coursePageJson = JSON.stringify({
+      template: { labels: { about: "About <this> course", enrol_button: "  Join now ", faq: "", "Bad-Key": "x", _x: "y", title: "Not a course token" } },
+    });
+    const t = buildCourseTokens({ ...course, coursePageJson });
+    expect(t.label_about).toBe("About <this> course");
+    expect(t.label_enrol_button).toBe("Join now");
+    expect(t.label_faq).toBeUndefined();
+    expect(t["label_Bad-Key"]).toBeUndefined();
+    expect(t.label__x).toBeUndefined();
+    // prefixed, so a label can never replace a course token
+    expect(t.label_title).toBe("Not a course token");
+    expect(t.title).toBe(course.title);
+    expect(applyCourseTokens("<h2>{{course.label_about}}</h2><b>{{course.label_faq}}</b>", t)).toBe(
+      "<h2>About &lt;this&gt; course</h2><b></b>",
+    );
+    expect(buildCourseTokens({ ...course }).label_about).toBeUndefined();
+  });
+
   it("lists only the media tokens the markup uses", () => {
     expect(courseTokenMediaKeys("<img src='{{course.image}}'> {{course.title}} {{course.image}}")).toEqual(["image"]);
     expect(courseTokenMediaKeys("{{course.title}}")).toEqual([]);
