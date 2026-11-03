@@ -59,6 +59,7 @@ public class StudentAnalysisController {
         private final ComprehensiveReportAggregator comprehensiveReportAggregator;
         private final InstituteAccessValidator instituteAccessValidator;
         private final StudentSessionInstituteGroupMappingRepository mappingRepository;
+        private final vacademy.io.admin_core_service.features.student_analysis.service.ReportAiEstimateService reportAiEstimateService;
         private final PackageSessionRepository packageSessionRepository;
 
         /** Modules the side-view Reports tab summarises; the AI step never runs for these. */
@@ -77,6 +78,21 @@ public class StudentAnalysisController {
          * batch (assessments assigned to it, its slides, its classes); omit it for all of the
          * learner's batches (progress then reports unavailable).
          */
+        /**
+         * Credits the AI learner report is likely to use: the institute average per report over
+         * the last 90 days (platform average when it has too few), times {@code learners} (the
+         * batch AI analysis runs one report per learner), with the current balance. Read-only.
+         */
+        @GetMapping("/ai-estimate")
+        @Operation(summary = "AI report credit estimate", description = "Average credits per AI learner report times the learner count, with the balance.")
+        public ResponseEntity<java.util.Map<String, Object>> getAiEstimate(
+                        @RequestParam("instituteId") String instituteId,
+                        @RequestParam(value = "learners", defaultValue = "1") int learners,
+                        @RequestAttribute("user") CustomUserDetails userDetails) {
+                instituteAccessValidator.requireStaffAccess(userDetails, instituteId);
+                return ResponseEntity.ok(reportAiEstimateService.estimate(instituteId, learners));
+        }
+
         @GetMapping("/snapshot")
         @Operation(summary = "Learner report snapshot", description = "Subject marks, topic mastery, attendance and progress for one learner and window, without AI.")
         public ResponseEntity<ComprehensiveStudentReport> getSnapshot(

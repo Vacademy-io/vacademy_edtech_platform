@@ -2346,6 +2346,37 @@ public interface ActivityLogRepository extends JpaRepository<ActivityLog, String
             @Param("maxRows") int maxRows);
 
     /**
+     * Learning time per day for every active learner of an institute, as
+     * [day, total_engaged_ms, active_learners] rows. Batch report daily time chart. READ-ONLY.
+     */
+    @Query(value = "SELECT CAST(al.created_at AS date) AS d, " +
+            "SUM(COALESCE(al.engaged_ms, 0)) AS total_ms, COUNT(DISTINCT al.user_id) AS learners " +
+            "FROM activity_log al " +
+            "WHERE al.user_id IN (SELECT DISTINCT m.user_id FROM student_session_institute_group_mapping m " +
+            "  WHERE m.institute_id = :instituteId AND m.status = 'ACTIVE') " +
+            "AND al.slide_id IS NOT NULL AND COALESCE(al.engaged_ms, 0) > 0 " +
+            "AND al.created_at BETWEEN :startDate AND :endDate " +
+            "GROUP BY CAST(al.created_at AS date) ORDER BY 1", nativeQuery = true)
+    List<Object[]> findDailyTimeForInstitute(
+            @Param("instituteId") String instituteId,
+            @Param("startDate") java.sql.Timestamp startDate,
+            @Param("endDate") java.sql.Timestamp endDate);
+
+    /** As findDailyTimeForInstitute, for the active learners of some batches. READ-ONLY. */
+    @Query(value = "SELECT CAST(al.created_at AS date) AS d, " +
+            "SUM(COALESCE(al.engaged_ms, 0)) AS total_ms, COUNT(DISTINCT al.user_id) AS learners " +
+            "FROM activity_log al " +
+            "WHERE al.user_id IN (SELECT DISTINCT m.user_id FROM student_session_institute_group_mapping m " +
+            "  WHERE m.package_session_id IN (:packageSessionIds) AND m.status = 'ACTIVE') " +
+            "AND al.slide_id IS NOT NULL AND COALESCE(al.engaged_ms, 0) > 0 " +
+            "AND al.created_at BETWEEN :startDate AND :endDate " +
+            "GROUP BY CAST(al.created_at AS date) ORDER BY 1", nativeQuery = true)
+    List<Object[]> findDailyTimeForBatches(
+            @Param("packageSessionIds") List<String> packageSessionIds,
+            @Param("startDate") java.sql.Timestamp startDate,
+            @Param("endDate") java.sql.Timestamp endDate);
+
+    /**
      * Processed analysis JSON for a whole cohort within a date range, newest first and capped by
      * maxRows, as [user_id, processed_json] rows. Used by the batch report to roll topic mastery
      * up across a batch and count the learners behind each topic. Only these two columns are
