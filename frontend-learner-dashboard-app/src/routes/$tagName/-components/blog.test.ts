@@ -200,6 +200,56 @@ h2, .pcm :is(p, li){line-height:1.6}
     expect(blogPlainText(pasted)).toBe("Hello");
     expect(sanitizeBlogHtml(pasted)).not.toContain("<style");
   });
+
+  // A real AI-drafted post opened with the usual Google Fonts import. The
+  // `;` inside `wght@400;500` ended the import early, and the leftover quote
+  // swallowed the whole sheet: the post rendered with no styling at all.
+  it("drops a font @import whose URL holds a ';' without losing the rest of the sheet", () => {
+    const { css } = sanitizeBlogArticle(`<style>
+@import url('https://fonts.googleapis.com/css2?family=Marcellus&family=Inter:wght@400;500;600;700;800&display=swap');
+.pcm-ga { font-family:'Inter',sans-serif; color:#1F2937; }
+.pcm-num { display:flex; }
+</style><div class="pcm-ga"><div class="pcm-num">1</div></div>`);
+    expect(css).not.toMatch(/@import|googleapis|display=swap/);
+    expect(css).toContain(".catalogue-blog-article .pcm-ga{ font-family:'Inter',sans-serif; color:#1F2937; }");
+    expect(css).toContain(".catalogue-blog-article .pcm-num{ display:flex; }");
+    const el = document.createElement("style");
+    el.textContent = css;
+    document.head.appendChild(el);
+    expect((el.sheet as CSSStyleSheet).cssRules.length).toBe(2);
+    el.remove();
+  });
+
+  it("drops quoted, unquoted and media-qualified imports whole", () => {
+    const { css } = sanitizeBlogArticle(`<style>
+@import "https://x.test/a;b.css" screen;
+@import url(https://x.test/c?w=400;700);
+@import 'tailwindcss';
+.a{color:red}
+</style><p>x</p>`);
+    expect(css).toBe(".catalogue-blog-article .a{color:red}");
+  });
+});
+
+describe("sanitizeBlogArticle (inline SVG and nav)", () => {
+  it("keeps inline SVG icons and a <nav> contents box", () => {
+    const { html } = sanitizeBlogArticle(
+      '<nav class="pcm-toc" aria-label="Contents"><ol><li><a href="#s1">One</a></li></ol></nav>' +
+        '<svg class="ic" viewBox="0 0 48 48" fill="none"><circle cx="24" cy="24" r="22" fill="#FFF3E6"/>' +
+        '<path d="M24 10v28" stroke="#F97316" stroke-width="2" stroke-linecap="round"/></svg>'
+    );
+    expect(html).toContain('<nav class="pcm-toc" aria-label="Contents">');
+    expect(html).toContain('<svg class="ic" viewBox="0 0 48 48" fill="none">');
+    expect(html).toContain('<circle cx="24" cy="24" r="22" fill="#FFF3E6"></circle>');
+    expect(html).toContain('stroke-linecap="round"');
+  });
+
+  it("still strips script and event handlers hidden in an SVG", () => {
+    const { html } = sanitizeBlogArticle(
+      '<svg viewBox="0 0 10 10" onload="alert(1)"><script>alert(2)</script><a href="javascript:alert(3)"><rect width="5" height="5"/></a></svg>'
+    );
+    expect(html).not.toMatch(/onload|<script|alert|javascript:/);
+  });
 });
 
 describe("blogPostSlugFor", () => {

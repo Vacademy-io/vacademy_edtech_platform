@@ -16,7 +16,7 @@
  * scoped under the article body so it cannot restyle the rest of the site.
  */
 import DOMPurify from "dompurify";
-import { scrubCss, wrapBareColourTokens } from "./catalogue-html";
+import { SVG_ATTR, SVG_TAGS, scrubCss, wrapBareColourTokens } from "./catalogue-html";
 
 const MAX_HTML = 400_000;
 
@@ -157,10 +157,13 @@ const ALLOWED_TAGS = [
   "a", "abbr", "article", "aside", "b", "blockquote", "br", "caption", "cite",
   "code", "dd", "del", "details", "div", "dl", "dt", "em", "figcaption",
   "figure", "footer", "h1", "h2", "h3", "h4", "h5", "h6", "header", "hr", "i",
-  "iframe", "img", "ins", "kbd", "li", "main", "mark", "ol", "p", "pre", "q",
+  "iframe", "img", "ins", "kbd", "li", "main", "mark", "nav", "ol", "p", "pre", "q",
   "s", "section", "small",
   "span", "strong", "sub", "summary", "sup", "table", "tbody", "td", "tfoot",
   "th", "thead", "time", "tr", "u", "ul", "video", "source", "audio",
+  // An AI-drafted post draws its icons as inline SVG (the same set a pasted
+  // page section may use); without these the icons vanished and left gaps.
+  ...SVG_TAGS,
 ];
 
 const ALLOWED_ATTR = [
@@ -170,6 +173,7 @@ const ALLOWED_ATTR = [
   "datetime", "colspan", "rowspan", "scope", "start", "type",
   "controls", "poster", "preload", "muted", "playsinline",
   "allow", "allowfullscreen", "frameborder", "referrerpolicy",
+  ...SVG_ATTR,
 ];
 
 /** Video embeds are the one iframe use an article needs; nothing else gets a frame. */
