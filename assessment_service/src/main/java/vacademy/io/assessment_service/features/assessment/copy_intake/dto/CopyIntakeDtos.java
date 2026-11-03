@@ -31,6 +31,12 @@ public final class CopyIntakeDtos {
         private String commentPlacement;
         /** How the AI checks this paper (subject, instructions, language feedback); null keeps what is set. */
         private CopyCheckConfig.Settings copyCheckConfig;
+        /**
+         * Match each copy to a student (default true). False = only check the copies:
+         * no student list, nothing waits for the admin, the checked copies come back
+         * in the zip and never show up as submissions.
+         */
+        private Boolean mapStudents;
     }
 
     /**

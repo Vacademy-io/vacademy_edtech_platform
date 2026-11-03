@@ -47,3 +47,36 @@ describe('AI copy checking settings', () => {
         expect(toCopyCheckConfig(EMPTY_COPY_CHECK_SETTINGS).language_feedback).toBe('OFF');
     });
 });
+
+describe('Evalezy settings', () => {
+    it('is on with camera and upload for an institute that never saved it', () => {
+        expect(mergeWithDefaults({}).evalezy).toEqual({
+            enabled: true,
+            allowCamera: true,
+            allowUpload: true,
+            scanQuality: 'STANDARD',
+            notifyEmail: true,
+        });
+    });
+
+    it('keeps what the institute turned off and drops unknown values', () => {
+        expect(
+            mergeWithDefaults({
+                evalezy: {
+                    enabled: false,
+                    allowCamera: false,
+                    allowUpload: true,
+                    // a value from a newer/older build must not leak through
+                    scanQuality: 'ULTRA' as never,
+                    notifyEmail: false,
+                },
+            }).evalezy
+        ).toEqual({
+            enabled: false,
+            allowCamera: false,
+            allowUpload: true,
+            scanQuality: 'STANDARD',
+            notifyEmail: false,
+        });
+    });
+});

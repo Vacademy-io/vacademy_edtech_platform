@@ -26,7 +26,7 @@ public interface AssessmentRepository extends CrudRepository<Assessment, String>
             "a.assessment_visibility, a.status, a.registration_close_date, a.registration_open_date, " +
             "a.expected_participants, a.cover_file_id, a.bound_start_time, a.bound_end_time, " +
             "a.created_at, a.updated_at, " +
-            "(SELECT COUNT(*) FROM public.assessment_user_registration ur WHERE ur.assessment_id = a.id) AS user_registrations, " +
+            "(SELECT COUNT(*) FROM public.assessment_user_registration ur WHERE ur.assessment_id = a.id AND ur.source IS DISTINCT FROM 'COPY_CHECK_ONLY') AS user_registrations, " +
             "(SELECT ARRAY_AGG(abr.batch_id) FROM public.assessment_batch_registration abr WHERE abr.assessment_id = a.id) AS batch_ids, " +
             "aim.subject_id, aim.assessment_url, a.source " +
             "FROM public.assessment a " +
@@ -96,7 +96,7 @@ public interface AssessmentRepository extends CrudRepository<Assessment, String>
                    a.assessment_visibility, a.status, a.registration_close_date, a.registration_open_date,\s
                    a.expected_participants, a.cover_file_id, a.bound_start_time, a.bound_end_time,\s
                    a.created_at, a.updated_at,\s
-                   (SELECT COUNT(*) FROM public.assessment_user_registration ur WHERE ur.assessment_id = a.id) AS user_registrations,\s
+                   (SELECT COUNT(*) FROM public.assessment_user_registration ur WHERE ur.assessment_id = a.id AND ur.source IS DISTINCT FROM 'COPY_CHECK_ONLY') AS user_registrations,\s
                    (SELECT ARRAY_AGG(abr.batch_id) FROM public.assessment_batch_registration abr WHERE abr.assessment_id = a.id) AS batch_ids,\s
                    aim.subject_id, aim.assessment_url, a.source\s
             FROM public.assessment a\s
@@ -122,7 +122,7 @@ public interface AssessmentRepository extends CrudRepository<Assessment, String>
                    a.assessment_visibility, a.status, a.registration_close_date, a.registration_open_date,\s
                    a.expected_participants, a.cover_file_id, a.bound_start_time, a.bound_end_time,\s
                    a.created_at, a.updated_at,\s
-                   (SELECT COUNT(*) FROM public.assessment_user_registration ur WHERE ur.assessment_id = a.id) AS user_registrations,\s
+                   (SELECT COUNT(*) FROM public.assessment_user_registration ur WHERE ur.assessment_id = a.id AND ur.source IS DISTINCT FROM 'COPY_CHECK_ONLY') AS user_registrations,\s
                    (SELECT ARRAY_AGG(abr.batch_id) FROM public.assessment_batch_registration abr WHERE abr.assessment_id = a.id) AS batch_ids,\s
                    aim.subject_id, aim.assessment_url, a.source\s
             FROM public.assessment a\s
@@ -153,7 +153,7 @@ public interface AssessmentRepository extends CrudRepository<Assessment, String>
                            a.assessment_visibility, a.status, a.registration_close_date, a.registration_open_date,\s
                            a.expected_participants, a.cover_file_id, a.bound_start_time, a.bound_end_time,\s
                            a.created_at, a.updated_at,\s
-                           (SELECT COUNT(*) FROM public.assessment_user_registration ur WHERE ur.assessment_id = a.id) AS user_registrations,\s
+                           (SELECT COUNT(*) FROM public.assessment_user_registration ur WHERE ur.assessment_id = a.id AND ur.source IS DISTINCT FROM 'COPY_CHECK_ONLY') AS user_registrations,\s
                            (SELECT ARRAY_AGG(abr.batch_id) FROM public.assessment_batch_registration abr WHERE abr.assessment_id = a.id) AS batch_ids,\s
                            aim.subject_id, aim.assessment_url, a.source\s
                     FROM public.assessment a\s
@@ -179,7 +179,7 @@ public interface AssessmentRepository extends CrudRepository<Assessment, String>
                            a.assessment_visibility, a.status, a.registration_close_date, a.registration_open_date,\s
                            a.expected_participants, a.cover_file_id, a.bound_start_time, a.bound_end_time,\s
                            a.created_at, a.updated_at,\s
-                           (SELECT COUNT(*) FROM public.assessment_user_registration ur WHERE ur.assessment_id = a.id) AS user_registrations,\s
+                           (SELECT COUNT(*) FROM public.assessment_user_registration ur WHERE ur.assessment_id = a.id AND ur.source IS DISTINCT FROM 'COPY_CHECK_ONLY') AS user_registrations,\s
                            (SELECT ARRAY_AGG(abr.batch_id) FROM public.assessment_batch_registration abr WHERE abr.assessment_id = a.id) AS batch_ids,\s
                            aim.subject_id, aim.assessment_url, a.source\s
                     FROM public.assessment a\s

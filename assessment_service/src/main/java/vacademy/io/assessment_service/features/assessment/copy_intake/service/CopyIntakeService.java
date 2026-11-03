@@ -30,6 +30,7 @@ import vacademy.io.assessment_service.features.assessment.entity.AiEvaluationPro
 import vacademy.io.assessment_service.features.assessment.entity.Assessment;
 import vacademy.io.assessment_service.features.assessment.entity.AssessmentUserRegistration;
 import vacademy.io.assessment_service.features.assessment.enums.ReleaseResultStatusEnum;
+import vacademy.io.assessment_service.features.assessment.enums.UserRegistrationSources;
 import vacademy.io.assessment_service.features.assessment.manager.AdminOfflineDataEntryManager;
 import vacademy.io.assessment_service.features.assessment.repository.AssessmentBatchRegistrationRepository;
 import vacademy.io.assessment_service.features.assessment.repository.AiEvaluationProcessRepository;
@@ -110,6 +111,16 @@ public class CopyIntakeService {
 
     public static final int MAX_FILES_PER_BATCH = 500;
 
+    /**
+     * Attempt status of a check-only copy. Not ENDED or LIVE on purpose: marks rank,
+     * overview stats, leaderboards, auto-release and the institute pulse all read
+     * ENDED / LIVE attempts only, so a copy nobody owns stays out of them.
+     */
+    public static final String COPY_CHECK_ATTEMPT_STATUS = "COPY_CHECK";
+
+    /** user_id of a check-only copy's registration; unique per copy, never a real user. */
+    static final String COPY_CHECK_USER_PREFIX = "copy-check:";
+
     private static final List<String> ACTIVE_STATUSES = List.of("ACTIVE");
 
     /** Item states in which a copy is, or will be, on a student's record. */
@@ -166,6 +177,7 @@ public class CopyIntakeService {
         aiEvaluationService.requireCreditsForCopies(assessment, instituteId, usable.size());
         rememberCommentPlacement(assessment, request.getCommentPlacement());
         rememberCopyCheckConfig(assessment, request.getCopyCheckConfig());
+        boolean checkOnly = Boolean.FALSE.equals(request.getMapStudents());
 
         AiCopyIntakeBatch batch = batchRepository.save(AiCopyIntakeBatch.builder()
                 .assessmentId(assessment.getId())
@@ -175,7 +187,7 @@ public class CopyIntakeService {
                 .createdByEmail(creatorEmail(user))
                 .preferredModel(request.getPreferredModel())
                 .status(AiCopyIntakeBatch.RUNNING)
-                .source(AiCopyIntakeBatch.SOURCE_UPLOAD)
+                .source(checkOnly ? AiCopyIntakeBatch.SOURCE_CHECK_ONLY : AiCopyIntakeBatch.SOURCE_UPLOAD)
                 .totalItems(usable.size())
                 .notifyEmail(request.getNotifyEmail() == null || request.getNotifyEmail())
                 .build());
@@ -193,8 +205,9 @@ public class CopyIntakeService {
         itemRepository.saveAll(items);
 
         auditClient.record(user, instituteId, "BULK_AI_CHECK", assessmentId,
-                "started AI check of " + items.size() + " uploaded copies for assessment " + assessment.getName(),
-                Map.of("batch_id", batch.getId(), "copies", items.size()));
+                "started AI check of " + items.size() + " uploaded copies for assessment " + assessment.getName()
+                        + (checkOnly ? " (not mapped to students)" : ""),
+                Map.of("batch_id", batch.getId(), "copies", items.size(), "source", batch.getSource()));
         return batch;
     }
 
@@ -456,13 +469,21 @@ public class CopyIntakeService {
             fail(itemId, "media service returned no URL for the uploaded file");
             return;
         }
-        Map<String, Object> reading;
+        Map<String, Object> read;
         try {
-            reading = aiServiceCopyCheckClient.identify(pdfUrl, batch.getInstituteId(), batch.getPreferredModel());
+            read = aiServiceCopyCheckClient.identify(pdfUrl, batch.getInstituteId(), batch.getPreferredModel());
         } catch (Exception e) {
-            fail(itemId, "could not read the copy: " + rootMessage(e));
-            return;
+            if (!batch.isCheckOnly()) {
+                fail(itemId, "could not read the copy: " + rootMessage(e));
+                return;
+            }
+            // Check-only: the name only labels the checked copy; the file name will do.
+            log.warn("[copy-intake] item {}: name not read ({}); checking it under its file name",
+                    itemId, rootMessage(e));
+            read = Map.of();
         }
+        // Check-only copies need no name; an upload that matches students keeps its old handling.
+        final Map<String, Object> reading = read == null && batch.isCheckOnly() ? Map.of() : read;
 
         try {
             tx.executeWithoutResult(status -> place(itemId, batch, reading, candidates));
@@ -492,6 +513,12 @@ public class CopyIntakeService {
         if (item == null || !AiCopyIntakeItem.IDENTIFYING.equals(item.getStatus())) return;
 
         storeReading(item, reading);
+        if (batch.isCheckOnly()) {
+            item.setErrorMessage(null);
+            itemRepository.save(item);
+            placeCheckOnly(item, batch);
+            return;
+        }
 
         // A Devanagari name is matched through its transliteration when the
         // student list is in Latin letters (it always is).
@@ -587,6 +614,84 @@ public class CopyIntakeService {
         queue(item, attempt, batch.getPreferredModel());
     }
 
+    /**
+     * A copy the admin chose not to map: give it a registration and attempt of its
+     * own and queue the check. The AI pipeline needs an attempt (the answer sheet
+     * sits in its attempt_data, the marks and checked copy are written to it), but
+     * this one belongs to nobody, so it is kept out of every participant view:
+     * the registration's source is {@code COPY_CHECK_ONLY} (participant lists read
+     * the three real sources only) and the attempt's status is
+     * {@link #COPY_CHECK_ATTEMPT_STATUS} (stats and releases read ENDED / LIVE).
+     * Must run inside a transaction; throws to roll it back.
+     */
+    private void placeCheckOnly(AiCopyIntakeItem item, AiCopyIntakeBatch batch) {
+        // Retried after the AI check failed: the copy already has its attempt.
+        if (StringUtils.hasText(item.getAttemptId())) {
+            Optional<StudentAttempt> prior = studentAttemptService.getStudentAttemptById(item.getAttemptId());
+            if (prior.isPresent()) {
+                queue(item, prior.get(), batch.getPreferredModel());
+                return;
+            }
+        }
+        // One registration per copy (unique on assessment + user): reuse it if an
+        // earlier try got that far but its attempt is gone.
+        String copyUserId = COPY_CHECK_USER_PREFIX + item.getId();
+        AssessmentUserRegistration reg = registrationRepository
+                .findTopByUserIdAndAssessmentId(copyUserId, batch.getAssessmentId())
+                .orElse(null);
+        if (reg == null) {
+            Assessment assessment = assessmentRepository.findById(batch.getAssessmentId())
+                    .orElseThrow(() -> new VacademyException("Assessment not found"));
+            reg = new AssessmentUserRegistration();
+            reg.setAssessment(assessment);
+            reg.setUserId(copyUserId);
+            reg.setUserEmail("");
+            reg.setUsername("");
+            reg.setParticipantName(checkOnlyLabel(item));
+            reg.setReattemptCount(0);
+            reg.setSource(UserRegistrationSources.COPY_CHECK_ONLY.name());
+            reg.setSourceId(batch.getId());
+            reg.setStatus("ACTIVE");
+            reg.setRegistrationTime(new Date());
+            reg.setInstituteId(batch.getInstituteId());
+            reg = registrationRepository.save(reg);
+        }
+
+        OfflineAttemptCreateResponse created = offlineDataEntryManager
+                .createOfflineAttempt(null, batch.getAssessmentId(), reg.getId(), batch.getInstituteId(), null)
+                .getBody();
+        if (created == null || created.getAttemptId() == null) {
+            throw new VacademyException("attempt was not created");
+        }
+        offlineDataEntryManager.attachOfflineFiles(null, batch.getAssessmentId(), created.getAttemptId(),
+                batch.getInstituteId(), OfflineAttachmentsRequest.builder().studentFileId(item.getFileId()).build());
+
+        StudentAttempt attempt = studentAttemptService.getStudentAttemptById(created.getAttemptId())
+                .orElseThrow(() -> new VacademyException("attempt vanished after creation"));
+        attempt.setStatus(COPY_CHECK_ATTEMPT_STATUS);
+        // No clock: nobody sits this attempt (0 = no deadline for the hourly end sweep).
+        attempt.setMaxTime(0);
+        attempt = studentAttemptService.updateStudentAttempt(attempt);
+        item.setRegistrationId(reg.getId());
+        item.setAttemptId(attempt.getId());
+        queue(item, attempt, batch.getPreferredModel());
+    }
+
+    /**
+     * Name a check-only copy goes by: the name read off it, else its file name.
+     * Capped at participant_name's 255 (a file name may be up to 512).
+     */
+    static String checkOnlyLabel(AiCopyIntakeItem item) {
+        String label = "Copy";
+        if (StringUtils.hasText(item.getExtractedName())) {
+            label = item.getExtractedName().trim();
+        } else if (StringUtils.hasText(item.getFileName())) {
+            String base = item.getFileName().trim().replaceFirst("(?i)\\.pdf$", "").trim();
+            if (StringUtils.hasText(base)) label = base;
+        }
+        return label.length() > 255 ? label.substring(0, 255) : label;
+    }
+
     /** Queue the AI check for an attempt and mark the copy QUEUED. */
     private void queue(AiCopyIntakeItem item, StudentAttempt attempt, String model) {
         String processId = aiEvaluationService.initiateEvaluationForAttempt(attempt, model, true);
@@ -616,6 +721,11 @@ public class CopyIntakeService {
                 .orElseThrow(() -> new VacademyException("Copy not found"));
         AiCopyIntakeBatch batch = batchRepository.findById(item.getBatchId())
                 .orElseThrow(() -> new VacademyException("Batch not found"));
+        // A check-only copy sits on a hidden attempt of its own; mapping it now would
+        // leave that attempt behind. It is retried, never assigned.
+        if (batch.isCheckOnly()) {
+            throw new VacademyException("This copy was uploaded only to be checked; it cannot be assigned to a student");
+        }
         if (!AiCopyIntakeItem.WAITING_FOR_ADMIN.contains(item.getStatus())
                 && !AiCopyIntakeItem.FAILED.equals(item.getStatus())) {
             throw new VacademyException("This copy is not waiting for a decision (" + item.getStatus() + ")");
@@ -681,6 +791,12 @@ public class CopyIntakeService {
         item.setProcessId(null);
         item.setResolvedBy(user.getUserId());
         reopen(batch);
+        if (batch.isCheckOnly() && StringUtils.hasText(item.getAttemptId())) {
+            item.setStatus(AiCopyIntakeItem.MATCHED);
+            itemRepository.save(item);
+            placeCheckOnly(item, batch);
+            return item;
+        }
         if (StringUtils.hasText(item.getAttemptId()) && StringUtils.hasText(item.getMatchedUserId())) {
             item.setStatus(AiCopyIntakeItem.MATCHED);
             itemRepository.save(item);
@@ -936,6 +1052,11 @@ public class CopyIntakeService {
      * of the linked batches. Computed once per batch run, not per copy - the
      * batch learners come from admin-core over HTTP.
      */
+    /** Students a pass over this batch matches against; a check-only batch matches nobody. */
+    public List<Candidate> candidatesFor(AiCopyIntakeBatch batch) {
+        return batch.isCheckOnly() ? List.of() : candidatesFor(batch.getAssessmentId(), batch.getInstituteId());
+    }
+
     public List<Candidate> candidatesFor(String assessmentId, String instituteId) {
         Map<String, Candidate> byUser = new HashMap<>();
         for (AssessmentUserRegistration r : registrationRepository

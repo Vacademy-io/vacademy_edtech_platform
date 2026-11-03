@@ -15,6 +15,7 @@ import { Route as LockedFeatureRouteImport } from "./routes/locked-feature"
 import { Route as ErrorPageRouteImport } from "./routes/error-page"
 import { Route as ChatRouteImport } from "./routes/chat"
 import { Route as AgentChatRouteImport } from "./routes/agent-chat"
+import { Route as EvalezyRouteRouteImport } from "./routes/evalezy/route"
 import { Route as VimIndexRouteImport } from "./routes/vim/index"
 import { Route as VideoApiStudioIndexRouteImport } from "./routes/video-api-studio/index"
 import { Route as StudyLibraryIndexRouteImport } from "./routes/study-library/index"
@@ -42,6 +43,7 @@ import { Route as KnowledgeBaseIndexRouteImport } from "./routes/knowledge-base/
 import { Route as InstructorCopilotIndexRouteImport } from "./routes/instructor-copilot/index"
 import { Route as InstitutePulseIndexRouteImport } from "./routes/institute-pulse/index"
 import { Route as EvaluationIndexRouteImport } from "./routes/evaluation/index"
+import { Route as EvalezyIndexRouteImport } from "./routes/evalezy/index"
 import { Route as EngagementIndexRouteImport } from "./routes/engagement/index"
 import { Route as EngagementEnginesIndexRouteImport } from "./routes/engagement-engines/index"
 import { Route as DashboardIndexRouteImport } from "./routes/dashboard/index"
@@ -63,6 +65,8 @@ import { Route as VimDashboardRouteImport } from "./routes/vim/dashboard"
 import { Route as McpAuthorizeRouteImport } from "./routes/mcp/authorize"
 import { Route as KnowledgeBasePublishRouteImport } from "./routes/knowledge-base/publish"
 import { Route as KnowledgeBaseKbIdRouteImport } from "./routes/knowledge-base/$kbId"
+import { Route as EvalezyNewRouteImport } from "./routes/evalezy/new"
+import { Route as EvalezyAssessmentIdRouteImport } from "./routes/evalezy/$assessmentId"
 import { Route as EngagementEnginesEngineIdRouteImport } from "./routes/engagement-engines/$engineId"
 import { Route as CounsellorsUserIdRouteImport } from "./routes/counsellors/$userId"
 import { Route as WorkflowListIndexRouteImport } from "./routes/workflow/list/index"
@@ -304,6 +308,11 @@ const AgentChatRoute = AgentChatRouteImport.update({
   path: "/agent-chat",
   getParentRoute: () => rootRouteImport,
 } as any).lazy(() => import("./routes/agent-chat.lazy").then((d) => d.Route))
+const EvalezyRouteRoute = EvalezyRouteRouteImport.update({
+  id: "/evalezy",
+  path: "/evalezy",
+  getParentRoute: () => rootRouteImport,
+} as any)
 const VimIndexRoute = VimIndexRouteImport.update({
   id: "/vim/",
   path: "/vim/",
@@ -483,6 +492,11 @@ const EvaluationIndexRoute = EvaluationIndexRouteImport.update({
 } as any).lazy(() =>
   import("./routes/evaluation/index.lazy").then((d) => d.Route),
 )
+const EvalezyIndexRoute = EvalezyIndexRouteImport.update({
+  id: "/",
+  path: "/",
+  getParentRoute: () => EvalezyRouteRoute,
+} as any)
 const EngagementIndexRoute = EngagementIndexRouteImport.update({
   id: "/engagement/",
   path: "/engagement/",
@@ -624,6 +638,16 @@ const KnowledgeBaseKbIdRoute = KnowledgeBaseKbIdRouteImport.update({
 } as any).lazy(() =>
   import("./routes/knowledge-base/$kbId.lazy").then((d) => d.Route),
 )
+const EvalezyNewRoute = EvalezyNewRouteImport.update({
+  id: "/new",
+  path: "/new",
+  getParentRoute: () => EvalezyRouteRoute,
+} as any)
+const EvalezyAssessmentIdRoute = EvalezyAssessmentIdRouteImport.update({
+  id: "/$assessmentId",
+  path: "/$assessmentId",
+  getParentRoute: () => EvalezyRouteRoute,
+} as any)
 const EngagementEnginesEngineIdRoute =
   EngagementEnginesEngineIdRouteImport.update({
     id: "/engagement-engines/$engineId",
@@ -2199,6 +2223,7 @@ const AssessmentAssessmentListAssessmentDetailsAssessmentIdExamTypeAssesssmentTy
   )
 
 export interface FileRoutesByFullPath {
+  "/evalezy": typeof EvalezyRouteRouteWithChildren
   "/agent-chat": typeof AgentChatRoute
   "/chat": typeof ChatRoute
   "/error-page": typeof ErrorPageRoute
@@ -2209,6 +2234,8 @@ export interface FileRoutesByFullPath {
   "/pricing": typeof PricingLazyRoute
   "/counsellors/$userId": typeof CounsellorsUserIdRoute
   "/engagement-engines/$engineId": typeof EngagementEnginesEngineIdRoute
+  "/evalezy/$assessmentId": typeof EvalezyAssessmentIdRoute
+  "/evalezy/new": typeof EvalezyNewRoute
   "/knowledge-base/$kbId": typeof KnowledgeBaseKbIdRoute
   "/knowledge-base/publish": typeof KnowledgeBasePublishRoute
   "/mcp/authorize": typeof McpAuthorizeRoute
@@ -2230,6 +2257,7 @@ export interface FileRoutesByFullPath {
   "/dashboard/": typeof DashboardIndexRoute
   "/engagement-engines/": typeof EngagementEnginesIndexRoute
   "/engagement/": typeof EngagementIndexRoute
+  "/evalezy/": typeof EvalezyIndexRoute
   "/evaluation/": typeof EvaluationIndexRoute
   "/institute-pulse/": typeof InstitutePulseIndexRoute
   "/instructor-copilot/": typeof InstructorCopilotIndexRoute
@@ -2459,6 +2487,8 @@ export interface FileRoutesByTo {
   "/pricing": typeof PricingLazyRoute
   "/counsellors/$userId": typeof CounsellorsUserIdRoute
   "/engagement-engines/$engineId": typeof EngagementEnginesEngineIdRoute
+  "/evalezy/$assessmentId": typeof EvalezyAssessmentIdRoute
+  "/evalezy/new": typeof EvalezyNewRoute
   "/knowledge-base/$kbId": typeof KnowledgeBaseKbIdRoute
   "/knowledge-base/publish": typeof KnowledgeBasePublishRoute
   "/mcp/authorize": typeof McpAuthorizeRoute
@@ -2480,6 +2510,7 @@ export interface FileRoutesByTo {
   "/dashboard": typeof DashboardIndexRoute
   "/engagement-engines": typeof EngagementEnginesIndexRoute
   "/engagement": typeof EngagementIndexRoute
+  "/evalezy": typeof EvalezyIndexRoute
   "/evaluation": typeof EvaluationIndexRoute
   "/institute-pulse": typeof InstitutePulseIndexRoute
   "/instructor-copilot": typeof InstructorCopilotIndexRoute
@@ -2701,6 +2732,7 @@ export interface FileRoutesByTo {
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
+  "/evalezy": typeof EvalezyRouteRouteWithChildren
   "/agent-chat": typeof AgentChatRoute
   "/chat": typeof ChatRoute
   "/error-page": typeof ErrorPageRoute
@@ -2711,6 +2743,8 @@ export interface FileRoutesById {
   "/pricing": typeof PricingLazyRoute
   "/counsellors/$userId": typeof CounsellorsUserIdRoute
   "/engagement-engines/$engineId": typeof EngagementEnginesEngineIdRoute
+  "/evalezy/$assessmentId": typeof EvalezyAssessmentIdRoute
+  "/evalezy/new": typeof EvalezyNewRoute
   "/knowledge-base/$kbId": typeof KnowledgeBaseKbIdRoute
   "/knowledge-base/publish": typeof KnowledgeBasePublishRoute
   "/mcp/authorize": typeof McpAuthorizeRoute
@@ -2732,6 +2766,7 @@ export interface FileRoutesById {
   "/dashboard/": typeof DashboardIndexRoute
   "/engagement-engines/": typeof EngagementEnginesIndexRoute
   "/engagement/": typeof EngagementIndexRoute
+  "/evalezy/": typeof EvalezyIndexRoute
   "/evaluation/": typeof EvaluationIndexRoute
   "/institute-pulse/": typeof InstitutePulseIndexRoute
   "/instructor-copilot/": typeof InstructorCopilotIndexRoute
@@ -2954,6 +2989,7 @@ export interface FileRoutesById {
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
+    | "/evalezy"
     | "/agent-chat"
     | "/chat"
     | "/error-page"
@@ -2964,6 +3000,8 @@ export interface FileRouteTypes {
     | "/pricing"
     | "/counsellors/$userId"
     | "/engagement-engines/$engineId"
+    | "/evalezy/$assessmentId"
+    | "/evalezy/new"
     | "/knowledge-base/$kbId"
     | "/knowledge-base/publish"
     | "/mcp/authorize"
@@ -2985,6 +3023,7 @@ export interface FileRouteTypes {
     | "/dashboard/"
     | "/engagement-engines/"
     | "/engagement/"
+    | "/evalezy/"
     | "/evaluation/"
     | "/institute-pulse/"
     | "/instructor-copilot/"
@@ -3214,6 +3253,8 @@ export interface FileRouteTypes {
     | "/pricing"
     | "/counsellors/$userId"
     | "/engagement-engines/$engineId"
+    | "/evalezy/$assessmentId"
+    | "/evalezy/new"
     | "/knowledge-base/$kbId"
     | "/knowledge-base/publish"
     | "/mcp/authorize"
@@ -3235,6 +3276,7 @@ export interface FileRouteTypes {
     | "/dashboard"
     | "/engagement-engines"
     | "/engagement"
+    | "/evalezy"
     | "/evaluation"
     | "/institute-pulse"
     | "/instructor-copilot"
@@ -3455,6 +3497,7 @@ export interface FileRouteTypes {
     | "/study-library/courses/course-details/subjects/modules/chapters/slides"
   id:
     | "__root__"
+    | "/evalezy"
     | "/agent-chat"
     | "/chat"
     | "/error-page"
@@ -3465,6 +3508,8 @@ export interface FileRouteTypes {
     | "/pricing"
     | "/counsellors/$userId"
     | "/engagement-engines/$engineId"
+    | "/evalezy/$assessmentId"
+    | "/evalezy/new"
     | "/knowledge-base/$kbId"
     | "/knowledge-base/publish"
     | "/mcp/authorize"
@@ -3486,6 +3531,7 @@ export interface FileRouteTypes {
     | "/dashboard/"
     | "/engagement-engines/"
     | "/engagement/"
+    | "/evalezy/"
     | "/evaluation/"
     | "/institute-pulse/"
     | "/instructor-copilot/"
@@ -3707,6 +3753,7 @@ export interface FileRouteTypes {
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
+  EvalezyRouteRoute: typeof EvalezyRouteRouteWithChildren
   AgentChatRoute: typeof AgentChatRoute
   ChatRoute: typeof ChatRoute
   ErrorPageRoute: typeof ErrorPageRoute
@@ -4015,6 +4062,13 @@ declare module "@tanstack/react-router" {
       preLoaderRoute: typeof AgentChatRouteImport
       parentRoute: typeof rootRouteImport
     }
+    "/evalezy": {
+      id: "/evalezy"
+      path: "/evalezy"
+      fullPath: "/evalezy"
+      preLoaderRoute: typeof EvalezyRouteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     "/vim/": {
       id: "/vim/"
       path: "/vim"
@@ -4204,6 +4258,13 @@ declare module "@tanstack/react-router" {
       preLoaderRoute: typeof EvaluationIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    "/evalezy/": {
+      id: "/evalezy/"
+      path: "/"
+      fullPath: "/evalezy/"
+      preLoaderRoute: typeof EvalezyIndexRouteImport
+      parentRoute: typeof EvalezyRouteRoute
+    }
     "/engagement/": {
       id: "/engagement/"
       path: "/engagement"
@@ -4350,6 +4411,20 @@ declare module "@tanstack/react-router" {
       fullPath: "/knowledge-base/$kbId"
       preLoaderRoute: typeof KnowledgeBaseKbIdRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    "/evalezy/new": {
+      id: "/evalezy/new"
+      path: "/new"
+      fullPath: "/evalezy/new"
+      preLoaderRoute: typeof EvalezyNewRouteImport
+      parentRoute: typeof EvalezyRouteRoute
+    }
+    "/evalezy/$assessmentId": {
+      id: "/evalezy/$assessmentId"
+      path: "/$assessmentId"
+      fullPath: "/evalezy/$assessmentId"
+      preLoaderRoute: typeof EvalezyAssessmentIdRouteImport
+      parentRoute: typeof EvalezyRouteRoute
     }
     "/engagement-engines/$engineId": {
       id: "/engagement-engines/$engineId"
@@ -5705,6 +5780,22 @@ declare module "@tanstack/react-router" {
   }
 }
 
+interface EvalezyRouteRouteChildren {
+  EvalezyAssessmentIdRoute: typeof EvalezyAssessmentIdRoute
+  EvalezyNewRoute: typeof EvalezyNewRoute
+  EvalezyIndexRoute: typeof EvalezyIndexRoute
+}
+
+const EvalezyRouteRouteChildren: EvalezyRouteRouteChildren = {
+  EvalezyAssessmentIdRoute: EvalezyAssessmentIdRoute,
+  EvalezyNewRoute: EvalezyNewRoute,
+  EvalezyIndexRoute: EvalezyIndexRoute,
+}
+
+const EvalezyRouteRouteWithChildren = EvalezyRouteRoute._addFileChildren(
+  EvalezyRouteRouteChildren,
+)
+
 interface LearnerInsightsLazyRouteChildren {
   LearnerInsightsIndexRoute: typeof LearnerInsightsIndexRoute
 }
@@ -5717,6 +5808,7 @@ const LearnerInsightsLazyRouteWithChildren =
   LearnerInsightsLazyRoute._addFileChildren(LearnerInsightsLazyRouteChildren)
 
 const rootRouteChildren: RootRouteChildren = {
+  EvalezyRouteRoute: EvalezyRouteRouteWithChildren,
   AgentChatRoute: AgentChatRoute,
   ChatRoute: ChatRoute,
   ErrorPageRoute: ErrorPageRoute,

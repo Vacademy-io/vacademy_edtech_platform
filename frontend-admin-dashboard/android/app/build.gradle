@@ -20,6 +20,10 @@ def flavorSpecs = new JsonSlurper().parse(file("mobile-flavors.json"))
             applicationId: cfg.applicationId,
             appName      : cfg.appName,
             deepLinkHost : cfg.deepLinkHost,
+            // Optional: a separate store listing starts its own version line
+            // (Evalezy 1.0.0 / code 1) instead of inheriting defaultConfig's.
+            versionCode  : cfg.versionCode,
+            versionName  : cfg.versionName,
         ]
     }
 
@@ -80,6 +84,8 @@ android {
                 resValue "string", "app_name", spec.appName
                 resValue "string", "title_activity_main", spec.appName
                 manifestPlaceholders.DEEP_LINK_HOST = spec.deepLinkHost
+                if (spec.versionCode) versionCode spec.versionCode as int
+                if (spec.versionName) versionName spec.versionName
             }
         }
     }
@@ -131,3 +137,8 @@ flavorSpecs.each { spec ->
     }
 }
 apply plugin: 'com.google.gms.google-services'
+// A flavor whose Firebase app is not registered yet (no google-services.json)
+// still builds — without push — instead of failing processXxxGoogleServices.
+googleServices {
+    missingGoogleServicesStrategy = com.google.gms.googleservices.GoogleServicesPlugin.MissingGoogleServicesStrategy.WARN
+}

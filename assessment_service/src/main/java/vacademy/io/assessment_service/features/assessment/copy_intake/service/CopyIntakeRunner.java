@@ -89,7 +89,7 @@ public class CopyIntakeRunner {
             // copies stay PENDING and the sweep tries again in a couple of minutes.
             List<Candidate> candidates;
             try {
-                candidates = service.candidatesFor(batch.getAssessmentId(), batch.getInstituteId());
+                candidates = service.candidatesFor(batch);
             } catch (Exception e) {
                 log.error("[copy-intake] batch {}: student list unavailable: {}", batchId, e.getMessage());
                 service.noteBatchError(batchId, "Could not load the student list (" + e.getMessage()

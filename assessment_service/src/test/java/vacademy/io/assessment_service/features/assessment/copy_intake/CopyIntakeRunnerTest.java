@@ -85,7 +85,7 @@ class CopyIntakeRunnerTest {
         running("batch-1");
         when(service.pendingItems("batch-1")).thenReturn(List.of(pending("i1"), pending("i2"), pending("i3")));
         List<Candidate> students = List.of(Candidate.builder().userId("u").name("Aman").build());
-        when(service.candidatesFor("a-1", "i-1")).thenReturn(students);
+        when(service.candidatesFor(any(AiCopyIntakeBatch.class))).thenReturn(students);
         AtomicInteger reads = new AtomicInteger();
         doAnswer(inv -> {
             reads.incrementAndGet();
@@ -96,7 +96,7 @@ class CopyIntakeRunnerTest {
 
         verify(service, timeout(5000)).finalizeIfDone("batch-1");
         assertThat(reads.get()).isEqualTo(3);
-        verify(service, times(1)).candidatesFor("a-1", "i-1");     // once per pass, not per copy
+        verify(service, times(1)).candidatesFor(any(AiCopyIntakeBatch.class));     // once per pass, not per copy
         verify(service).syncQueuedItems("batch-1");
     }
 
@@ -145,7 +145,7 @@ class CopyIntakeRunnerTest {
     void anUnavailableStudentListLeavesTheCopiesForTheNextPass() {
         running("batch-1");
         when(service.pendingItems("batch-1")).thenReturn(List.of(pending("i1")));
-        when(service.candidatesFor("a-1", "i-1")).thenThrow(new RuntimeException("admin-core 503"));
+        when(service.candidatesFor(any(AiCopyIntakeBatch.class))).thenThrow(new RuntimeException("admin-core 503"));
 
         runner.run("batch-1");
 

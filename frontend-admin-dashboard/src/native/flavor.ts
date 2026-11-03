@@ -24,6 +24,11 @@ export function shouldForceVimShell(): boolean {
     return flavor.forceVimShell;
 }
 
+/** Hold the app inside the `/evalezy` copy-check shell (Evalezy only). */
+export function shouldForceEvalezyShell(): boolean {
+    return flavor.forceEvalezyShell === true;
+}
+
 /** Fixed anchor institute id for branding/theme, or undefined for host-based. */
 export function getFlavorInstituteId(): string | undefined {
     return flavor.instituteId;

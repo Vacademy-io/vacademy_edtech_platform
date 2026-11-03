@@ -9,8 +9,12 @@ import type { CommentPlacement, CopyCheckConfig } from '@/types/assessment-setti
  */
 
 export type CopyIntakeBatchStatus = 'RUNNING' | 'NEEDS_REVIEW' | 'COMPLETED' | 'FAILED';
-/** UPLOAD = PDFs the admin uploaded; SUBMITTED = the learners' own uploads (nothing to match). */
-export type CopyIntakeSource = 'UPLOAD' | 'SUBMITTED';
+/**
+ * UPLOAD = PDFs the admin uploaded, matched to students; SUBMITTED = the learners'
+ * own uploads (nothing to match); CHECK_ONLY = uploaded only to be checked and
+ * downloaded, never matched to a student or shown as a submission.
+ */
+export type CopyIntakeSource = 'UPLOAD' | 'SUBMITTED' | 'CHECK_ONLY';
 export type CopyIntakeItemStatus =
     | 'PENDING'
     | 'IDENTIFYING'
@@ -99,7 +103,9 @@ export const startCopyIntake = async (
     preferredModel?: string,
     notifyEmail = true,
     commentPlacement: CommentPlacement = 'INSIDE',
-    copyCheckConfig?: CopyCheckConfig
+    copyCheckConfig?: CopyCheckConfig,
+    /** false = only check the copies (no student matching); they come back in the zip. */
+    mapStudents = true
 ): Promise<CopyIntakeBatch> => {
     const response = await authenticatedAxiosInstance({
         method: 'POST',
@@ -111,6 +117,7 @@ export const startCopyIntake = async (
             notify_email: notifyEmail,
             comment_placement: commentPlacement,
             copy_check_config: copyCheckConfig,
+            map_students: mapStudents,
         },
     });
     return response.data;

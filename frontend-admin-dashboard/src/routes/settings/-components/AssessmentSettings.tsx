@@ -9,7 +9,9 @@ import { toast } from 'sonner';
 import {
     AssessmentSettingsData,
     DEFAULT_ASSESSMENT_SETTINGS,
+    DEFAULT_EVALEZY_SETTINGS,
     DEFAULT_REPORT_BRANDING,
+    normalizeStudentMapping,
     ReportBrandingSettings,
 } from '@/types/assessment-settings';
 import { getAssessmentSettings, saveAssessmentSettings } from '@/services/assessment-settings';
@@ -18,7 +20,9 @@ import ReportBrandingSettingsSection from './ReportBrandingSettings';
 import ResultNotificationRecipientsCard from './ResultNotificationRecipientsCard';
 import ResultNotificationTemplatesCard from './ResultNotificationTemplatesCard';
 import ExamExperienceSettingsCard from './ExamExperienceSettingsCard';
+import EvalezySettingsCard from './EvalezySettingsCard';
 import { CommentPlacementPicker } from '@/components/common/ai-copy-check/CommentPlacementPicker';
+import { StudentMappingPicker } from '@/components/common/ai-copy-check/StudentMappingPicker';
 import {
     PenStylePicker,
     normalizePenStyle,
@@ -214,6 +218,22 @@ const AssessmentSettings = () => {
                                 setHasChanges(true);
                             }}
                         />
+                        {/* Bulk AI check (web + Evalezy): match copies to students, ask, or only check */}
+                        <StudentMappingPicker
+                            value={normalizeStudentMapping(settings.aiCopyCheck?.studentMapping)}
+                            onChange={(studentMapping) => {
+                                setSettings((prev) => ({
+                                    ...prev,
+                                    aiCopyCheck: {
+                                        ...prev.aiCopyCheck,
+                                        commentPlacement:
+                                            prev.aiCopyCheck?.commentPlacement ?? 'INSIDE',
+                                        studentMapping,
+                                    },
+                                }));
+                                setHasChanges(true);
+                            }}
+                        />
                         {/* The pen every checked copy is drawn with */}
                         <PenStylePicker
                             value={normalizePenStyle(settings.aiCopyCheck?.penStyle)}
@@ -255,6 +275,15 @@ const AssessmentSettings = () => {
                     </div>
                 </CardContent>
             </Card>
+
+            {/* Evalezy: the simple scan → AI check → zip app (evalezy.vacademy.io + mobile app) */}
+            <EvalezySettingsCard
+                settings={settings.evalezy ?? DEFAULT_EVALEZY_SETTINGS}
+                onChange={(evalezy) => {
+                    setSettings((prev) => ({ ...prev, evalezy }));
+                    setHasChanges(true);
+                }}
+            />
 
             {/* Result Notification Recipients (role-wise) */}
             <ResultNotificationRecipientsCard

@@ -235,10 +235,13 @@ export const PaperDigitiseReviewDialog = ({
             }}
             dialogWidth="max-w-4xl"
             footer={
-                <>
+                // Stacked full-width on phones (two long nowrap labels overflow a 360px screen),
+                // side by side from sm up as before.
+                <div className="flex w-full flex-col-reverse gap-2 sm:w-auto sm:flex-row">
                     <MyButton
                         buttonType="secondary"
                         scale="medium"
+                        className="w-full sm:w-auto"
                         disable={busy}
                         onClick={onCreateWithoutAi}
                     >
@@ -247,6 +250,7 @@ export const PaperDigitiseReviewDialog = ({
                     <MyButton
                         buttonType="primary"
                         scale="medium"
+                        className="w-full sm:w-auto"
                         disable={busy || kept.length === 0 || invalid.length > 0}
                         onClick={confirm}
                     >
@@ -256,7 +260,7 @@ export const PaperDigitiseReviewDialog = ({
                               ? primaryLabel(kept.length)
                               : t('review.createWithQuestions', { count: kept.length })}
                     </MyButton>
-                </>
+                </div>
             }
         >
             <div className="flex flex-col gap-4">

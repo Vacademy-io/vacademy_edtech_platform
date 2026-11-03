@@ -48,6 +48,8 @@
         "retried": "Copy queued again"
     },
     "panel": {
+        "subtitleCheckOnly": "Each uploaded copy and where its check is. These copies are not linked to any student.",
+        "sourceCheckOnly": "Only checked",
         "title": "Bulk AI check",
         "subtitle": "Each uploaded copy, who it was matched to, and where its check is.",
         "refresh": "Refresh",
@@ -58,7 +60,11 @@
         "waitingHint_one": "{{count}} copy could not be matched to a student. Pick the student to check it.",
         "waitingHint_other": "{{count}} copies could not be matched to a student. Pick the student for each to check them.",
         "sourceUpload": "Uploaded PDFs",
-        "sourceSubmitted": "Submitted copies"
+        "sourceSubmitted": "Submitted copies",
+        "pickBatch": "Choose a check",
+        "batchLabel": "{{when}} · {{copies}}",
+        "copies_one": "{{count}} copy",
+        "copies_other": "{{count}} copies"
     },
     "stats": {
         "total": "Copies",
@@ -139,6 +145,40 @@
         "starting": "Queuing…",
         "toastStarted_one": "{{count}} submitted copy queued — the check runs in the background",
         "toastStarted_other": "{{count}} submitted copies queued — the checks run in the background"
+    },
+    "mapping": {
+        "label": "Match uploaded copies to students",
+        "ASK": {
+            "title": "Ask each time",
+            "description": "A popup asks before every bulk check."
+        },
+        "MAP": {
+            "title": "Always match",
+            "description": "Each copy is matched to a student by the name on it and saved on their record."
+        },
+        "CHECK_ONLY": {
+            "title": "Only check",
+            "description": "No matching. Copies are checked and downloaded as a zip; they are never added to a student's submissions or results."
+        },
+        "decidedMap": "Copies will be matched to students (Settings → Assessment).",
+        "decidedCheckOnly": "Copies will only be checked, not matched to students (Settings → Assessment)."
+    },
+    "mapChoice": {
+        "title": "Map the copies to students?",
+        "noStudents": "No students are linked to this assessment, so copies can't be matched.",
+        "intro": "Choose what happens after the AI checks these copies.",
+        "MAP": {
+            "title": "Yes, map to students",
+            "description": "Each copy is matched to a student by the name on it and saved on their record. Copies we can't match wait for you to pick the student."
+        },
+        "CHECK_ONLY": {
+            "title": "No, just check them",
+            "description": "No matching. The AI checks every copy and you download the checked copies as a zip. They are not added to any student's submissions or results."
+        },
+        "confirmMap_one": "Check and map {{count}} copy",
+        "confirmMap_other": "Check and map {{count}} copies",
+        "confirmCheckOnly_one": "Check {{count}} copy",
+        "confirmCheckOnly_other": "Check {{count}} copies"
     },
     "placement": {
         "label": "Where should the teacher's comments go?",

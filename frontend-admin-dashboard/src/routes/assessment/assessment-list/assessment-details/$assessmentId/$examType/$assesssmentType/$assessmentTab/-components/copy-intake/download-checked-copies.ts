@@ -1,6 +1,6 @@
 import { BlobReader, BlobWriter, ZipWriter } from '@zip.js/zip.js';
-import { saveAs } from 'file-saver';
 import { getPublicUrls } from '@/services/upload_file';
+import { saveBlob } from '@/lib/save-blob';
 import type { CopyIntakeCheckedCopy } from '../../-services/copy-intake-services';
 
 /** File ids per media lookup: they travel in the query string. */
@@ -87,6 +87,7 @@ export const downloadCheckedCopies = async (
     await Promise.all(Array.from({ length: Math.min(PARALLEL, copies.length) }, work));
 
     const zip = await writer.close();
-    if (added > 0) saveAs(zip, zipName);
+    // Browser download on the web; share sheet in the native apps (a WebView can't download).
+    if (added > 0) await saveBlob(zip, zipName);
     return { added, failed: copies.length - added };
 };

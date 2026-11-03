@@ -7,8 +7,10 @@ import {
     AssessmentSettingsResponse,
     DEFAULT_ASSESSMENT_SETTINGS,
     DEFAULT_REPORT_BRANDING,
+    mergeEvalezySettings,
     mergeExamExperience,
     normalizeCommentPlacement,
+    normalizeStudentMapping,
 } from '@/types/assessment-settings';
 
 const SETTINGS_KEY = 'ASSESSMENT_SETTING';
@@ -54,10 +56,15 @@ export const mergeWithDefaults = (
             ...(settings?.aiCopyCheck?.penStyle && {
                 penStyle: settings.aiCopyCheck.penStyle,
             }),
+            // Kept only when it is a real choice; absent reads as ASK.
+            ...(normalizeStudentMapping(settings?.aiCopyCheck?.studentMapping) !== 'ASK' && {
+                studentMapping: normalizeStudentMapping(settings?.aiCopyCheck?.studentMapping),
+            }),
         },
         assessmentFolders: {
             enabled: settings?.assessmentFolders?.enabled === true,
         },
+        evalezy: mergeEvalezySettings(settings?.evalezy),
     };
 };
 

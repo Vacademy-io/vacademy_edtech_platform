@@ -54,6 +54,7 @@ import { useInstituteDetailsStore } from '@/stores/students/students-list/useIns
 import { installChunkErrorHandler } from '@/lib/chunk-reload';
 import { rememberComponentStack } from '@/lib/error-component-stack';
 import { initNative, isNative, getPlatform, shouldForceVimShell, getFlavor } from '@/native';
+import { isEvalezyMode } from '@/lib/evalezy-mode';
 
 // Recover stale tabs whose cached chunk URLs 404 after a new deploy.
 // Must run before React renders so failures during the first lazy import
@@ -297,6 +298,18 @@ if (!rootElement.innerHTML) {
                 ? await resolveInstituteForDomain(flavor.brandingDomain!, flavor.brandingSubdomain!)
                 : await resolveInstituteForCurrentHost();
             if (!data) {
+                // No institute owns evalezy.vacademy.io or the Evalezy app (any
+                // institute's admin signs in there), so it wears the Evalezy brand.
+                if (isEvalezyMode()) {
+                    titleStore.setGlobalTitle('Evalezy');
+                    // Absolute: the title store's favicon observer compares it with
+                    // link.href (always absolute) and would reset a relative one forever.
+                    titleStore.setGlobalFavicon(
+                        new URL('/evalezy-favicon.svg', window.location.origin).href
+                    );
+                    useInstituteLogoStore.getState().setInstituteLogo?.('/evalezy-logo.svg');
+                    return;
+                }
                 // If no data from API, ensure we have a fallback title
                 titleStore.setGlobalTitle('Admin Dashboard');
                 return;

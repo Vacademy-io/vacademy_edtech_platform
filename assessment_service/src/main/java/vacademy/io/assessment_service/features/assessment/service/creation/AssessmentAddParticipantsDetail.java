@@ -1,5 +1,6 @@
 package vacademy.io.assessment_service.features.assessment.service.creation;
 
+import vacademy.io.assessment_service.features.assessment.enums.UserRegistrationSources;
 import org.hibernate.Hibernate;
 import org.springframework.stereotype.Component;
 import vacademy.io.assessment_service.features.assessment.entity.Assessment;
@@ -30,7 +31,11 @@ public class AssessmentAddParticipantsDetail extends IStep {
 
         Map<String, Object> savedData = new HashMap<>();
         savedData.put(ParticipantsCreationEnum.PRE_BATCH_REGISTRATIONS.name().toLowerCase(), assessment.get().getBatchRegistrations());
-        savedData.put(ParticipantsCreationEnum.PRE_USER_REGISTRATIONS.name().toLowerCase(), assessment.get().getUserRegistrations().size());
+        // Copies checked in a bulk AI check without a student are not participants.
+        long userRegistrations = assessment.get().getUserRegistrations().stream()
+                .filter(r -> !UserRegistrationSources.COPY_CHECK_ONLY.name().equals(r.getSource()))
+                .count();
+        savedData.put(ParticipantsCreationEnum.PRE_USER_REGISTRATIONS.name().toLowerCase(), (int) userRegistrations);
         Hibernate.initialize(assessment.get().getAssessmentCustomFields());
         savedData.put(ParticipantsCreationEnum.REGISTRATION_FORM_FIELDS.name().toLowerCase(), assessment.get().getAssessmentCustomFields());
         savedData.put(ParticipantsCreationEnum.REGISTRATION_OPEN_DATE.name().toLowerCase(), assessment.get().getRegistrationOpenDate());
@@ -40,7 +45,7 @@ public class AssessmentAddParticipantsDetail extends IStep {
 
         if (assessment.get().getRegistrationOpenDate() != null && assessment.get().getRegistrationCloseDate() != null) {
             setStatus(StepStatus.COMPLETED.name());
-        } else if (assessment.get().getUserRegistrations().size() + assessment.get().getBatchRegistrations().size() > 0) {
+        } else if (userRegistrations + assessment.get().getBatchRegistrations().size() > 0) {
             setStatus(StepStatus.COMPLETED.name());
         }
     }

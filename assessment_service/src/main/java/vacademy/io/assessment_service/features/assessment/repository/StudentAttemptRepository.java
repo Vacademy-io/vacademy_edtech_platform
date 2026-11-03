@@ -659,6 +659,7 @@ public interface StudentAttemptRepository extends CrudRepository<StudentAttempt,
             join assessment a on a.id = aur.assessment_id
             where a.id = :assessmentId
             and aur.status not in (:statusList)
+            and aur.source IS DISTINCT FROM 'COPY_CHECK_ONLY'
             """, nativeQuery = true)
     List<StudentAttempt> findAllParticipantsFromAssessmentAndStatusNotIn(@Param("assessmentId") String assessmentId,
                                                                          @Param("statusList") List<String> statusList);
@@ -669,6 +670,7 @@ public interface StudentAttemptRepository extends CrudRepository<StudentAttempt,
             join assessment a on a.id = aur.assessment_id
             where a.id = :assessmentId
             and aur.status not in (:statusList)
+            and aur.source IS DISTINCT FROM 'COPY_CHECK_ONLY'
             and (sa.report_release_status IS NULL OR sa.report_release_status = 'PENDING')
             """, nativeQuery = true)
     List<StudentAttempt> findAllParticipantsFromAssessmentAndStatusNotInAndReportNotReleased(@Param("assessmentId") String assessmentId,
