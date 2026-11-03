@@ -89,6 +89,19 @@ export const exportReportExcel = ({
         [t('export.metric'), t('export.value'), t('export.detail')],
         ...view.kpis.map((k): Cell[] => [k.label, k.value, k.detail ?? '']),
     ];
+    // The money story up front: spend, influenced revenue, ROI and net (the full block has its own sheet).
+    const roiStats = view.model.roi?.stats.slice(0, 4) ?? [];
+    if (roiStats.length > 0 && !partFailed(data.errors, 'roi')) {
+        summary.push(
+            [],
+            [view.model.roi?.title ?? '', '', view.model.roi?.note ?? ''],
+            ...roiStats.map((s): Cell[] => [
+                s.exportLabel ?? s.label,
+                s.value ?? s.text,
+                s.hint ?? '',
+            ])
+        );
+    }
     if (view.banners.length > 0) {
         summary.push([], [t('export.severity.title'), t('export.warning')]);
         view.banners.forEach((b) =>

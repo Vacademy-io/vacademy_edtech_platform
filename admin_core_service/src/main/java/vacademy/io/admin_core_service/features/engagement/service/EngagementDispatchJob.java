@@ -117,7 +117,7 @@ public class EngagementDispatchJob {
         }
         int reconciled = reconcileBilling(now);
         if (sent > 0 || reconciled > 0) {
-            log.info("Auto-dispatch: {} sent, {} unbilled sends reconciled", sent, reconciled);
+            log.info("Auto-dispatch: {} sent, {} message charges settled", sent, reconciled);
         }
     }
 
@@ -378,10 +378,12 @@ public class EngagementDispatchJob {
     /** Charge one credit for a sent message; stamp billed on success. Idempotency key = action id. */
     private void charge(String instituteId, EngagementAction action, Instant now) {
         try {
+            // batch_id = action id, so a send the provider refuses later can be refunded
+            // (EngagementBillingJob) and the refund lands on this charge's usage event.
             boolean ok = creditClient.deductPrecomputed(
                     instituteId, CREDIT_REQUEST_TYPE,
                     "Engagement Engine autonomous " + action.getChannel() + " send",
-                    perMessageCredits, action.getId(), sendMetering(action));
+                    perMessageCredits, action.getId(), sendMetering(action), action.getId());
             if (ok) {
                 actionRepository.markBilled(action.getId(), now);
             } else {
@@ -394,15 +396,19 @@ public class EngagementDispatchJob {
         }
     }
 
-    /** Re-charge SENT autonomous sends whose deduct call was lost (idempotent via action id). */
+    /**
+     * Charge every SENT message that has no charge yet (idempotent via action id): autonomous sends
+     * whose deduct call was lost, and the messages charged only here, a person's approved send from
+     * the inbox and an AI auto-reply. AI calls are billed by AI calling. Rows sent before per-message
+     * billing covered approved sends and replies carry billing_exempt and are skipped.
+     */
     private int reconcileBilling(Instant now) {
         List<EngagementAction> unbilled = actionRepository.findUnbilledSent(batch);
         int fixed = 0;
         for (EngagementAction a : unbilled) {
             try {
                 if (creditClient.deductPrecomputed(a.getInstituteId(), CREDIT_REQUEST_TYPE,
-                        "Engagement Engine autonomous " + a.getChannel() + " send (reconciled)",
-                        perMessageCredits, a.getId(), sendMetering(a))) {
+                        chargeDescription(a), perMessageCredits, a.getId(), sendMetering(a), a.getId())) {
                     actionRepository.markBilled(a.getId(), now);
                     fixed++;
                 }
@@ -411,6 +417,14 @@ public class EngagementDispatchJob {
             }
         }
         return fixed;
+    }
+
+    /** What the credit statement says about one message charge. */
+    static String chargeDescription(EngagementAction a) {
+        String channel = a.getChannel() != null ? a.getChannel() : "message";
+        if ("REPLY".equals(a.getKind())) return "Engagement Engine " + channel + " reply";
+        if ("TASK".equals(a.getKind())) return "Engagement Engine " + channel + " send (approved by a person)";
+        return "Engagement Engine autonomous " + channel + " send";
     }
 
     /** The limit gate for one send. Never throws. */

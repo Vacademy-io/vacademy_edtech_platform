@@ -16,6 +16,7 @@
         "PAUSED": "Mettre en pause",
         "ARCHIVED": "Archiver"
     },
+    "creditsPausedBanner": "Les crédits sont épuisés : ce moteur ne décide plus de la suite. Rien de nouveau n’est rédigé ni envoyé tant que vous n’ajoutez pas de crédits. Les réponses aux personnes qui écrivent partent toujours.",
     "templatesPendingBanner": "Ce moteur envoie des messages sur WhatsApp — approuvez au moins un modèle ci-dessous avant sa mise en ligne.",
     "brief": {
         "title": "Le brief",

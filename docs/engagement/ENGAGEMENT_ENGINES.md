@@ -1048,6 +1048,18 @@ on approval, and can undo it (S9).
   `engagement.wake.enabled` / `bulk-cap` / `bulk-window-minutes` / `jitter-minutes` / `settle-ms`,
   `engagement.ai-call.max-attempts-per-week` (3), `engagement.dispatch.batch` / `delay-ms`.
 
+### 17.10a Billing (2026-11-03, V640)
+
+| What | Charged how |
+|---|---|
+| Every sent message | 1 credit (`engagement.credits.per-message`), use case `engagement_message`: autonomous sends (inline in `EngagementDispatchJob`), and now also a send a person approved in the inbox and an AI auto-reply (its reconciliation pass, within 2 minutes). AI calls stay billed by AI calling. The charge carries `batch_id` = action id. |
+| Every AI decision | `EngagementBillingJob` (2 min) charges the brain's stored tokens through the token-metered deduct, request type and use case `engagement_decision` (V640 seeds its `credit_pricing` row; same floor as the chatbot bucket). A no-op decision is charged: the model was asked. Key `engagement-llm:<action id>`. Switch: `engagement.billing.decisions.enabled`. |
+| A message refused after it was charged | When `EngagementDeliveryCheckJob` moves a charged send to FAILED, `EngagementBillingJob` refunds it through ai_service `POST /credits/v1/refund-usage` (internal token; capped at what that charge took, at most once per key), so usage reports net it out. |
+| Out of credits | The sweep stops asking the model for an institute whose balance is used up (`engagement.credits.pause-decisions-when-empty`, one rule in `EngagementCreditGate`); members stay due. An unreadable balance does not pause. Replies to a person who wrote in are not held. The engine GET returns `creditBalance` and `decisionsPausedNoCredits`, and the engine page shows a banner while paused. |
+| Report freshness | The daily report is cached 3 minutes per institute, engine and period; `GET /reports/daily?fresh=true` (the dashboard Refresh button) builds it again and re-caches it. |
+
+Rows from before V640 carry `billing_exempt` and are never charged later (autonomous sends keep their old reconciliation). Known gap: a refunded FAILED send that a person reopens and sends again is not charged a second time.
+
 ### 17.10 Open items
 
 1. A call that never connects **and never reports anything** (a dialler failure with no queue or call-log

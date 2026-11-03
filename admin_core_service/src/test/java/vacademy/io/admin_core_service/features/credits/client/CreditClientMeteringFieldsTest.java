@@ -204,4 +204,42 @@ class CreditClientMeteringFieldsTest {
         MeteringFields.applyTo(MeteringFields.builder().actorDisplayName("x".repeat(300)).build(), body);
         assertEquals(255, ((String) body.get("actor_display_name")).length());
     }
+
+    // ── batch id on a precomputed charge, and the usage refund ──────────────
+
+    @Test
+    void precomputedDeductWithBatchIdAddsOnlyBatchId() {
+        server.expect(requestTo(DEDUCT))
+                .andExpect(content().json("""
+                        {"institute_id":"inst-1","request_type":"engagement_message","model":"system",
+                         "precomputed_credits":1,"description":"d","idempotency_key":"a-1",
+                         "allow_negative":true,"user_role":"SYSTEM","batch_id":"a-1"}""", true))
+                .andRespond(withSuccess(OK, MediaType.APPLICATION_JSON));
+
+        assertTrue(client.deductPrecomputed("inst-1", "engagement_message", "d", BigDecimal.ONE, "a-1", null, "a-1"));
+        server.verify();
+    }
+
+    @Test
+    void refundUsagePostsTheChargeKeyWithTheInternalToken() {
+        server.expect(requestTo(AI + "/ai-service/credits/v1/refund-usage"))
+                .andExpect(method(HttpMethod.POST))
+                .andExpect(header("X-Internal-Service-Token", "s3cret"))
+                .andExpect(content().json("""
+                        {"institute_id":"inst-1","charge_key":"a-1","credits":1,"description":"Refund"}""", true))
+                .andRespond(withSuccess("{\"success\": true, \"credits_deducted\": 0, \"new_balance\": 0, "
+                        + "\"message\": \"Nothing left to refund for this charge\"}", MediaType.APPLICATION_JSON));
+
+        assertTrue(client.refundUsage("inst-1", "a-1", BigDecimal.ONE, "Refund"));
+        server.verify();
+    }
+
+    @Test
+    void refundUsageNotAcknowledgedIsFalse() {
+        server.expect(requestTo(AI + "/ai-service/credits/v1/refund-usage"))
+                .andRespond(withSuccess("{\"success\": false, \"message\": \"no\"}", MediaType.APPLICATION_JSON));
+
+        assertFalse(client.refundUsage("inst-1", "a-1", BigDecimal.ONE, null));
+        server.verify();
+    }
 }

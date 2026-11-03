@@ -15,6 +15,7 @@
         "PAUSED": "Pause",
         "ARCHIVED": "Archive"
     },
+    "creditsPausedBanner": "Credits are used up, so this engine has stopped deciding what to do next. Nothing new is drafted or sent until you add credits. Replies to people who write in still go out.",
     "templatesPendingBanner": "This engine sends on WhatsApp — approve at least one template below before it can go live.",
     "brief": {
         "title": "The brief",

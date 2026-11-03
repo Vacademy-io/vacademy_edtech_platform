@@ -214,6 +214,19 @@ class CreditDeductResponse(BaseModel):
     message: str
 
 
+class CreditRefundUsageRequest(BaseModel):
+    """Give back an earlier usage charge whose work did not happen (internal).
+
+    `charge_key` names the charge: the batch_id or the idempotency key it was
+    deducted with. The refund is capped at what that charge took and is applied
+    at most once per charge_key.
+    """
+    institute_id: str = Field(..., min_length=1, max_length=255)
+    charge_key: str = Field(..., min_length=1, max_length=255)
+    credits: Decimal = Field(..., gt=0, le=Decimal("1000"))
+    description: Optional[str] = Field(None, max_length=500)
+
+
 # ============================================================================
 # Transaction Schemas
 # ============================================================================

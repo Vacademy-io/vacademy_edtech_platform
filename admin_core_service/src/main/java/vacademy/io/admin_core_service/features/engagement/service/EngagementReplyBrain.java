@@ -93,7 +93,8 @@ public class EngagementReplyBrain {
                     .history(new ArrayList<>(history))
                     .build();
             session.getContext().put(LLMService.CTX_USE_CASE, "engagement");
-            // Auto-replies are free by product decision (EngagementReplyResponder): never token-charged.
+            // LLMService must not charge this call: the reply's tokens are stamped on its action and
+            // charged once by EngagementBillingJob (engagement_decision).
             session.getContext().put(LLMService.CTX_BILLED_BY_CALLER, Boolean.TRUE);
             LLMService.LLMResponse resp = llmService.generateChatCompletion(session);
             usage = usage.plus(resp, pricing);

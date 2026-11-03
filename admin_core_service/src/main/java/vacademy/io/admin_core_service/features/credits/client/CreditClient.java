@@ -548,6 +548,23 @@ public class CreditClient {
             java.math.BigDecimal credits,
             String idempotencyKey,
             MeteringFields metering) {
+        return deductPrecomputed(instituteId, requestType, description, credits, idempotencyKey, metering, null);
+    }
+
+    /**
+     * {@link #deductPrecomputed} with a {@code batchId}: the charge can later be given back
+     * with {@link #refundUsage} under the same key, and the refund then also lands on the
+     * charge's usage event (refunded_credits), so usage reports net it out. A null batchId
+     * sends exactly the body above.
+     */
+    public boolean deductPrecomputed(
+            String instituteId,
+            String requestType,
+            String description,
+            java.math.BigDecimal credits,
+            String idempotencyKey,
+            MeteringFields metering,
+            String batchId) {
         try {
             String url = aiServiceUrl + "/ai-service/credits/v1/deduct";
 
@@ -564,6 +581,7 @@ public class CreditClient {
             body.put("idempotency_key", idempotencyKey);
             body.put("allow_negative", true);
             body.put("user_role", "SYSTEM");
+            if (batchId != null && !batchId.isBlank()) body.put("batch_id", batchId);
             MeteringFields.applyTo(metering, body);
 
             HttpEntity<Map<String, Object>> request = new HttpEntity<>(body, headers);
@@ -588,6 +606,45 @@ public class CreditClient {
         } catch (RestClientException e) {
             log.error("Error in precomputed deduction for institute {} key {}: {}",
                     instituteId, idempotencyKey, e.getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * Give back one earlier usage charge whose work did not happen (e.g. a message the
+     * provider refused after it was billed). {@code chargeKey} is the batch_id or the
+     * idempotency key the charge was deducted with. ai_service caps the refund at what that
+     * charge took, net of earlier refunds for it, so a repeated call gives back nothing.
+     *
+     * @return true when ai_service answered (including "nothing left to refund"); false when
+     *         it could not be reached or refused, so the caller should try again later
+     */
+    public boolean refundUsage(String instituteId, String chargeKey, java.math.BigDecimal credits,
+                               String description) {
+        try {
+            String url = aiServiceUrl + "/ai-service/credits/v1/refund-usage";
+            HttpHeaders headers = buildInternalHeaders();
+            Map<String, Object> body = new java.util.HashMap<>();
+            body.put("institute_id", instituteId);
+            body.put("charge_key", chargeKey);
+            body.put("credits", credits);
+            if (description != null && !description.isBlank()) body.put("description", clampDescription(description));
+
+            @SuppressWarnings("unchecked")
+            ResponseEntity<Map<String, Object>> response = restTemplate.exchange(
+                    url,
+                    HttpMethod.POST,
+                    new HttpEntity<>(body, headers),
+                    (Class<Map<String, Object>>) (Class<?>) Map.class);
+            if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null
+                    && Boolean.TRUE.equals(response.getBody().get("success"))) {
+                return true;
+            }
+            log.warn("Usage refund not applied for institute {} key {}: HTTP {} {}", instituteId, chargeKey,
+                    response.getStatusCode(), response.getBody() != null ? response.getBody().get("message") : null);
+            return false;
+        } catch (RestClientException e) {
+            log.error("Error in usage refund for institute {} key {}: {}", instituteId, chargeKey, e.getMessage());
             return false;
         }
     }

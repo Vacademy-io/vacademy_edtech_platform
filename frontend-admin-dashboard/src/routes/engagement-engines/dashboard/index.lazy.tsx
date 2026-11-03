@@ -12,6 +12,7 @@ import { CrmLink } from '@/routes/dashboard/-components/crm/crm-cards';
 import {
     reportErrorStatus,
     useEngagementDailyReport,
+    useRefreshEngagementDailyReport,
     type DailyReportEngineOption,
 } from '@/services/engagement-daily-report';
 import { DashboardViewSwitch, type DashboardView } from './-components/DashboardViewSwitch';
@@ -91,6 +92,18 @@ function DailyReportView({ viewSwitch }: { viewSwitch: ReactNode }) {
     const [exporting, setExporting] = useState(false);
 
     const q = useEngagementDailyReport(getCurrentInstituteId() ?? '', engineId, urlPeriod, isAdmin);
+    const { refresh, refreshing } = useRefreshEngagementDailyReport(
+        getCurrentInstituteId() ?? '',
+        engineId,
+        urlPeriod
+    );
+    const handleRefresh = async () => {
+        try {
+            await refresh();
+        } catch {
+            toast.error(t('filter.refreshFailed'));
+        }
+    };
     // While another period or engine loads, the previous report stays around so the engine
     // picker keeps its options, but it is not shown as the numbers for the new choice.
     const data = q.isPlaceholderData ? undefined : q.data;
@@ -187,6 +200,8 @@ function DailyReportView({ viewSwitch }: { viewSwitch: ReactNode }) {
                 onExport={handleExport}
                 exporting={exporting}
                 exportDisabled={!data || !view}
+                onRefresh={handleRefresh}
+                refreshing={refreshing}
             />
             <DailyReport
                 data={data}

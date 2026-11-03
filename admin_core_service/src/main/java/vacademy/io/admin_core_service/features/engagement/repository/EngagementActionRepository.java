@@ -291,13 +291,62 @@ public interface EngagementActionRepository extends JpaRepository<EngagementActi
     // to the tiny unbilled backlog (near-empty in steady state, since dispatch charges inline), and
     // ORDER BY dispatched_at ASC drains oldest-first, so an unbounded scan stays cheap. (A partial index
     // on (status, credits_billed_at) WHERE credits_billed_at IS NULL keeps it O(backlog) at scale.)
+    // V640: every SENT message is charged, an autonomous send, a send a person approved in the inbox
+    // and an AI auto-reply. AI calls are billed by AI calling. Rows from before V640 carry
+    // billing_exempt, except autonomous sends, which were always charged.
     @Query(value = """
             SELECT * FROM engagement_action
-             WHERE kind = 'SEND' AND status = 'SENT' AND credits_billed_at IS NULL
+             WHERE status = 'SENT' AND credits_billed_at IS NULL
+               AND COALESCE(channel, '') <> 'AI_CALL'
+               AND (kind = 'SEND' OR billing_exempt = FALSE)
              ORDER BY dispatched_at ASC
              LIMIT :limit
             """, nativeQuery = true)
     List<EngagementAction> findUnbilledSent(@Param("limit") int limit);
+
+    /**
+     * AI decisions not charged yet (V640): rows that carry the brain's token counts, oldest first.
+     * Rows decided before V640 carry billing_exempt and are never charged.
+     */
+    @Query(value = """
+            SELECT * FROM engagement_action
+             WHERE llm_billed_at IS NULL AND billing_exempt = FALSE AND llm_tokens_in IS NOT NULL
+               AND COALESCE(llm_tokens_in, 0) + COALESCE(llm_tokens_out, 0) > 0
+             ORDER BY created_at ASC
+             LIMIT :limit
+            """, nativeQuery = true)
+    List<EngagementAction> findUnbilledDecisions(@Param("limit") int limit);
+
+    /** Stamp an AI decision as charged. */
+    @Modifying
+    @Transactional
+    @Query(value = "UPDATE engagement_action SET llm_billed_at = :now WHERE id = :id AND llm_billed_at IS NULL",
+            nativeQuery = true)
+    int markLlmBilled(@Param("id") String id, @Param("now") Instant now);
+
+    /** Charged messages that ended FAILED (the provider refused them after the charge) and are not refunded yet. */
+    @Query(value = """
+            SELECT * FROM engagement_action
+             WHERE status = 'FAILED' AND credits_billed_at IS NOT NULL AND credits_refunded_at IS NULL
+             ORDER BY updated_at ASC
+             LIMIT :limit
+            """, nativeQuery = true)
+    List<EngagementAction> findChargedFailed(@Param("limit") int limit);
+
+    /** Claim one refund before calling the credits service, so two pods never refund the same row. */
+    @Modifying
+    @Transactional
+    @Query(value = """
+            UPDATE engagement_action SET credits_refunded_at = :now
+             WHERE id = :id AND status = 'FAILED' AND credits_billed_at IS NOT NULL AND credits_refunded_at IS NULL
+            """, nativeQuery = true)
+    int claimRefund(@Param("id") String id, @Param("now") Instant now);
+
+    /** Give a refund claim back when the credits service could not be reached; the next run tries again. */
+    @Modifying
+    @Transactional
+    @Query(value = "UPDATE engagement_action SET credits_refunded_at = NULL WHERE id = :id", nativeQuery = true)
+    int releaseRefund(@Param("id") String id);
 
     /**
      * Circuit-breaker input: how many of an institute's SENT autonomous messages went out UNBILLED.

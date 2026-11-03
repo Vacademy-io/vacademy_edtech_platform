@@ -239,22 +239,88 @@ final class EngagementDailyReportSql {
     // ── costs ────────────────────────────────────────────────────────────────
 
     /**
-     * Engine message credits per engine, channel and local day (per-day range). A row the
+     * Engine credits per engine, kind, channel and local day (per-day range): the message charges
+     * (use case engagement_message, net of refunds for messages Meta later refused) and the AI
+     * decision token charges (engagement_decision, kind DECISION, no channel). A row the
      * credit_transactions backfill wrote has no engine_id; its external_reference_id is the action.
      */
     static final String MESSAGE_CREDITS = """
             SELECT COALESCE(u.context ->> 'engine_id', a.engine_id) AS engine_id,
-                   COALESCE(u.context ->> 'channel', a.channel) AS channel,
+                   CASE WHEN u.use_case = 'engagement_decision' THEN 'DECISION' ELSE 'MESSAGE' END AS kind,
+                   CASE WHEN u.use_case = 'engagement_decision' THEN NULL
+                        ELSE COALESCE(u.context ->> 'channel', a.channel) END AS channel,
                    (u.occurred_at AT TIME ZONE :tz)::date::text AS day,
                    SUM(u.credits_charged - u.refunded_credits) AS credits
             FROM ai_usage_event u
             LEFT JOIN engagement_action a
                    ON u.context ->> 'engine_id' IS NULL AND a.id = u.context ->> 'external_reference_id'
-            WHERE u.institute_id = :instituteId AND u.use_case = 'engagement_message'
+            WHERE u.institute_id = :instituteId
+              AND u.use_case IN ('engagement_message', 'engagement_decision')
               AND u.occurred_at >= (CAST(:dataFrom AS timestamp) AT TIME ZONE 'UTC')
               AND u.occurred_at < (CAST(:to AS timestamp) AT TIME ZONE 'UTC')
               AND COALESCE(u.context ->> 'engine_id', a.engine_id) IN (:engineIds)
-            GROUP BY 1, 2, 3
+            GROUP BY 1, 2, 3, 4
+            """;
+
+    /**
+     * The institute's money per credit: its latest paid credit pack purchase (pre-tax base over the
+     * credits bought), else the list price of the cheapest active pack in INR. One row.
+     */
+    static final String CREDIT_RATE = """
+            SELECT r.source, r.currency, r.rate
+            FROM (
+                SELECT 'PURCHASE' AS source, i.currency, i.base_amount_minor / 100.0 / i.credits AS rate,
+                       1 AS pri, COALESCE(pp.paid_at, pp.updated_at, pp.created_at) AS at, 0 AS amount
+                FROM platform_payment pp
+                JOIN platform_payment_item i ON i.platform_payment_id = pp.id
+                WHERE pp.institute_id = :instituteId AND pp.payment_status = 'PAID'
+                  AND i.credits > 0 AND i.base_amount_minor > 0
+                UNION ALL
+                SELECT 'CATALOG', pr.currency, pr.amount_minor / 100.0 / p.credits, 2, NULL, pr.amount_minor
+                FROM credit_pack p
+                JOIN credit_pack_price pr ON pr.pack_id = p.id
+                WHERE p.is_active AND pr.is_active AND pr.currency = 'INR'
+                  AND p.credits > 0 AND pr.amount_minor > 0
+            ) r
+            ORDER BY r.pri, r.at DESC NULLS LAST, r.amount
+            LIMIT 1
+            """;
+
+    /**
+     * Influenced revenue of the period: PAID payments made in [from, to) by converted leads of this
+     * institute (the Revenue report rule) who are members of the engines and got an engine touch
+     * (a message that went out, or an AI call placed) before paying. One row per engine and
+     * payment, so a payment two engines touched comes twice and the totals count payment ids. A
+     * payment for another institute plan is left out (payment_log has no institute of its own).
+     */
+    static final String INFLUENCED_REVENUE = """
+            WITH members AS (
+                SELECT m.id AS member_id, m.engine_id, m.user_id
+                FROM engagement_member m
+                WHERE m.institute_id = :instituteId AND m.engine_id IN (:engineIds)
+                  AND m.user_id IS NOT NULL
+            ),
+            touched AS (
+                SELECT mb.engine_id, mb.user_id,
+                       MIN(COALESCE(a.dispatched_at, a.completed_at, a.created_at)) AS touched_at
+                FROM members mb
+                JOIN engagement_action a ON a.member_id = mb.member_id
+                WHERE a.status = 'SENT' OR (a.action_type = 'SCHEDULE_AI_CALL' AND a.status = 'DONE')
+                GROUP BY mb.engine_id, mb.user_id
+            )
+            SELECT t.engine_id, pl.id AS payment_id, pl.user_id, pl.payment_amount AS amount,
+                   COALESCE(NULLIF(UPPER(TRIM(pl.currency)), ''), 'INR') AS currency
+            FROM payment_log pl
+            JOIN touched t ON t.user_id = pl.user_id AND t.touched_at < pl.created_at
+            WHERE pl.payment_status = 'PAID' AND pl.payment_amount > 0
+              AND pl.created_at >= :from AND pl.created_at < :to
+              AND EXISTS (SELECT 1 FROM user_lead_profile ulp
+                           WHERE ulp.user_id = pl.user_id AND ulp.institute_id = :instituteId
+                             AND ulp.conversion_status = 'CONVERTED')
+              AND NOT EXISTS (SELECT 1 FROM user_plan up
+                               JOIN payment_option po ON po.id = up.payment_option_id
+                               WHERE up.id = pl.user_plan_id AND po.source = 'INSTITUTE'
+                                 AND po.source_id <> :instituteId)
             """;
 
     /** Balance now, and the institute's net credits over the last 7 days (all features) for the runway. */

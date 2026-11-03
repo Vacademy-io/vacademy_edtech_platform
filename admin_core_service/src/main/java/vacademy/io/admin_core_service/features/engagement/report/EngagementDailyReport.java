@@ -41,6 +41,7 @@ public record EngagementDailyReport(
         NewTemplates newTemplates,
         Outcomes outcomes,
         Costs costs,
+        Roi roi,
         RealCost realCost,
         List<Health> health,
         Map<String, String> errors) {
@@ -85,8 +86,15 @@ public record EngagementDailyReport(
                            Long conversions, Double credits, Long statusChanges) {
     }
 
+    /**
+     * spend: credits x the credit rate, plus this engine's priced WhatsApp messages when in the same
+     * currency (null when the rate is unknown). revenue / payingLeads: the influenced revenue of the
+     * people this engine touched (see {@link Roi}); a person two engines touched counts for both, so
+     * the rows can add up to more than the institute total. roi = revenue / spend.
+     */
     public record EngineRow(String engineId, String name, boolean system, long leadsAdded, long sent, long replies,
-                            double replyRate, long demosBooked, long conversions, double credits, Double costPerReply) {
+                            double replyRate, long demosBooked, long conversions, double credits, Double costPerReply,
+                            Double spend, double revenue, long payingLeads, Double roi) {
     }
 
     public record ListRow(String listId, String name, String kind, long leadsAdded, long newLeads, long existingLeads,
@@ -156,7 +164,31 @@ public record EngagementDailyReport(
     public record Costs(CreditCosts credits, WhatsAppCost whatsapp, AiUsage ai) {
     }
 
-    public record CreditCosts(double messages, double calls, double leadAgent, double total) {
+    /** decisions: the AI's token charges for deciding what to do (every decision, a wait too). */
+    public record CreditCosts(double messages, double decisions, double calls, double leadAgent, double total) {
+    }
+
+    /**
+     * What the engines cost in money and what came back in the period.
+     * <ul>
+     *   <li>creditRate: money per credit at the institute's latest credit pack purchase
+     *   (rateSource PURCHASE), else the list price of the cheapest active pack (CATALOG); null when
+     *   neither could be read. Pre-tax.</li>
+     *   <li>creditSpend = credits x creditRate. whatsappSpend: Meta's charges for the period's
+     *   WhatsApp messages; whatsappIncluded when it is in the rate's currency and so in totalSpend.</li>
+     *   <li>revenue: PAID payments made in the period by converted leads who are engine members and
+     *   got an engine message or AI call before paying ("influenced", not "caused"). Each payment
+     *   once. payments / payingLeads count them. revenueCurrency: the most common one; payments in
+     *   other currencies are left out and counted in otherCurrencyPayments.</li>
+     *   <li>roiMultiple = revenue / totalSpend, net = revenue - totalSpend: null when the spend is
+     *   unknown or zero, or in another currency (currencyMismatch).</li>
+     * </ul>
+     */
+    public record Roi(double credits, Double creditRate, String rateCurrency, String rateSource,
+                      Double creditSpend, Double whatsappSpend, boolean whatsappIncluded, Double totalSpend,
+                      double revenue, String revenueCurrency, long payments, long payingLeads,
+                      long otherCurrencyPayments, Double roiMultiple, Double net, Double costPerPayingLead,
+                      boolean currencyMismatch) {
     }
 
     /** partial: missingRate > 0, so amount is a lower bound (see Money). */
