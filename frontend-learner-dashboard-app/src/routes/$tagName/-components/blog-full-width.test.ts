@@ -33,6 +33,7 @@ import { createRoot, type Root } from "react-dom/client";
 import { BlogComponent } from "./components/BlogComponent";
 import { resolveBlogTemplate } from "../-utils/blog-template";
 import { sanitizeBlogArticle } from "../-utils/blog-html";
+import { isBlogPreviewSearch, setBlogPreviewPost, toBlogPreviewPost } from "../-utils/blog-preview";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 (globalThis as any).IS_REACT_ACT_ENVIRONMENT = true;
@@ -142,5 +143,60 @@ describe("Full width article", () => {
     const el = await renderArticle(DESIGNED, "SIDEBAR_TOC");
     expect(el.querySelector("article.catalogue-blog-full")).toBeNull();
     expect(el.querySelector(".catalogue-blog-toc")).not.toBeNull();
+  });
+});
+
+/**
+ * Blog editor Preview: the admin posts the unsaved draft (BLOG_POST_PREVIEW)
+ * into the framed site; a DRAFT is not served by the public API, so the
+ * article shows the posted draft instead — only in preview mode.
+ */
+describe("Blog editor preview draft", () => {
+  const renderDraft = async (isPreviewMode: boolean) => {
+    post.current = null; // the public API has no such post (it is a draft)
+    setBlogPreviewPost(
+      toBlogPreviewPost({
+        slug: "a-guide",
+        title: "Draft title",
+        content_html: '<style>.d{color:red}</style><div class="d"><h1>Draft heading</h1><script>x()</script></div>',
+        template: "FULL_WIDTH",
+        reading_minutes: "7", // wrong type: dropped
+        tags: ["a", 3],
+      })
+    );
+    host = document.createElement("div");
+    document.body.appendChild(host);
+    root = createRoot(host);
+    await act(async () => {
+      root!.render(
+        React.createElement(BlogComponent, { instituteId: "inst", tagName: "school", pageRoute: "blog", isPreviewMode })
+      );
+    });
+    await act(async () => {
+      await Promise.resolve();
+    });
+    return host;
+  };
+
+  afterEach(() => setBlogPreviewPost(null));
+
+  it("shows the posted draft, sanitised, in preview mode", async () => {
+    const el = await renderDraft(true);
+    expect(el.querySelector(".catalogue-blog-article .d h1")?.textContent).toBe("Draft heading");
+    expect(el.innerHTML).not.toContain("<script");
+    expect(el.querySelector("style")?.textContent).toContain(".catalogue-blog-article .d{color:red}");
+  });
+
+  it("ignores a posted draft outside preview mode", async () => {
+    const el = await renderDraft(false);
+    expect(el.textContent).not.toContain("Draft heading");
+  });
+
+  it("keeps only typed post fields", () => {
+    const p = toBlogPreviewPost({ title: 5, template: "NOPE", tags: ["a", 3], reading_minutes: "7" });
+    expect(p).toMatchObject({ title: "", slug: "preview", template: null, tags: ["a"], reading_minutes: null });
+    expect(toBlogPreviewPost("x")).toBeNull();
+    expect(isBlogPreviewSearch("?preview=true&blogPreview=1")).toBe(true);
+    expect(isBlogPreviewSearch("?preview=true")).toBe(false);
   });
 });

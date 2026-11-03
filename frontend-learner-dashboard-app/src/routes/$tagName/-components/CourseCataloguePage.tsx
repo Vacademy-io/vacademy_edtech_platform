@@ -57,6 +57,7 @@ import {
   readyTargets,
   scrubPreviewConfig,
 } from "../-utils/preview-bridge";
+import { isBlogPreviewSearch, setBlogPreviewPost, toBlogPreviewPost } from "../-utils/blog-preview";
 
 interface CourseCataloguePageProps {
   tagName: string;
@@ -101,7 +102,11 @@ export const CourseCataloguePage: React.FC<CourseCataloguePageProps> = ({
   );
   // The editor's marks (hidden-block strips, per-block frames) belong in the
   // editor's frame; the headless AI preview shoots the page as visitors see it.
-  const previewChrome = isPreviewMode && isFramed();
+  // The blog editor's Preview shows one post as a visitor sees it: no marks.
+  const [isBlogPreview] = useState(
+    () => isPreviewMode && typeof window !== 'undefined' && isBlogPreviewSearch(window.location.search),
+  );
+  const previewChrome = isPreviewMode && isFramed() && !isBlogPreview;
 
   // Site-configured GA4 / Meta Pixel / GTM (Global Settings → Tracking) +
   // first-touch UTM capture for lead attribution. Never from the editor's
@@ -260,6 +265,9 @@ export const CourseCataloguePage: React.FC<CourseCataloguePageProps> = ({
         setPreviewPath(typeof event.data.previewPath === 'string' ? event.data.previewPath : undefined);
         setIsLoading(false);
         setError(null);
+      }
+      if (event.data?.type === 'BLOG_POST_PREVIEW') {
+        setBlogPreviewPost(toBlogPreviewPost(event.data.post));
       }
       if (event.data?.type === 'PREVIEW_INTERACT') {
         setPreviewInteractive(event.data.on === true);

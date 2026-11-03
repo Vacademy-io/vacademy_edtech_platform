@@ -10,6 +10,7 @@
  *   editor → site  CATALOGUE_CONFIG_UPDATE {payload, previewPath?},
  *                  HIGHLIGHT_COMPONENT {componentId}, PREVIEW_INTERACT {on},
  *                  PREVIEW_HELLO (answered with PREVIEW_READY)
+ *   blog editor → site  BLOG_POST_PREVIEW {post} (the unsaved draft; see blog-preview.ts)
  *   site → editor  PREVIEW_READY, COMPONENT_SELECTED {componentId, pageId, parentId?},
  *                  PREVIEW_NAVIGATE {route: string | null, href}
  */
