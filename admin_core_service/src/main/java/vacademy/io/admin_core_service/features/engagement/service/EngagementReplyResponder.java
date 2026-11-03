@@ -363,7 +363,7 @@ public class EngagementReplyResponder {
             // affordability gate + circuit breaker). Gating them would ghost a paying customer's own
             // question when the institute's AI credits run dry. The kill switch (auto_send_killed,
             // honored via findAutoReplyCandidates) is the emergency stop for this path.
-            // Pricing decision 2026-11-03 (V640): a SENT reply IS charged one message credit, after
+            // Pricing decision 2026-11-03 (V641): a SENT reply IS charged one message credit, after
             // the send, by EngagementDispatchJob.reconcileBilling (allow_negative, so it never blocks
             // the reply), and its AI decision tokens by EngagementBillingJob. Do NOT add a credit gate
             // here.

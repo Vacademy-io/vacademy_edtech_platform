@@ -291,8 +291,8 @@ public interface EngagementActionRepository extends JpaRepository<EngagementActi
     // to the tiny unbilled backlog (near-empty in steady state, since dispatch charges inline), and
     // ORDER BY dispatched_at ASC drains oldest-first, so an unbounded scan stays cheap. (A partial index
     // on (status, credits_billed_at) WHERE credits_billed_at IS NULL keeps it O(backlog) at scale.)
-    // V640: every SENT message is charged, an autonomous send, a send a person approved in the inbox
-    // and an AI auto-reply. AI calls are billed by AI calling. Rows from before V640 carry
+    // V641: every SENT message is charged, an autonomous send, a send a person approved in the inbox
+    // and an AI auto-reply. AI calls are billed by AI calling. Rows from before V641 carry
     // billing_exempt, except autonomous sends, which were always charged.
     @Query(value = """
             SELECT * FROM engagement_action
@@ -305,8 +305,8 @@ public interface EngagementActionRepository extends JpaRepository<EngagementActi
     List<EngagementAction> findUnbilledSent(@Param("limit") int limit);
 
     /**
-     * AI decisions not charged yet (V640): rows that carry the brain's token counts, oldest first.
-     * Rows decided before V640 carry billing_exempt and are never charged.
+     * AI decisions not charged yet (V641): rows that carry the brain's token counts, oldest first.
+     * Rows decided before V641 carry billing_exempt and are never charged.
      */
     @Query(value = """
             SELECT * FROM engagement_action
