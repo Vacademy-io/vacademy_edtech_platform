@@ -24,6 +24,7 @@
         "loading": "Chargement des conseillers…",
         "empty": "Aucune activité de conseiller sur cette période.",
         "topPerformer": "Meilleur performeur",
+        "rowHint": "Cliquez pour voir les leads convertis de ce conseiller ci-dessous",
         "headers": {
             "counsellor": "Conseiller",
             "assigned": "Attribués",
@@ -34,6 +35,21 @@
             "tatMet": "TAT respecté",
             "open": "Ouverts",
             "overdue": "En retard"
+        }
+    },
+    "leads": {
+        "title": "Leads convertis — {{name}}",
+        "count_one": "{{count}} étudiant",
+        "count_other": "{{count}} étudiants",
+        "loading": "Chargement des leads convertis…",
+        "empty": "{{name}} n'a aucun lead converti sur cette période.",
+        "close": "Fermer",
+        "headers": {
+            "lead": "Lead",
+            "contact": "Contact",
+            "courses": "Cours",
+            "enrolledOn": "Inscrit le",
+            "source": "Campagne / Source"
         }
     }
 }
