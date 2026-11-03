@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, type ReactNode } from 'react';
 import { FormProvider, useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -125,18 +125,22 @@ export const AssessmentQuestionEditDialog = ({
     );
 };
 
-const QuestionEditor = ({
+/** Exported for the Question Library, which edits a single question with the same editor. */
+export const QuestionEditor = ({
     source,
     examType,
     onCancel,
     onSubmit,
     onSaved,
+    extraFields,
 }: {
     source: QuestionResponse;
     examType?: string;
     onCancel: () => void;
     onSubmit: (updated: unknown[]) => Promise<void>;
     onSaved: (question: MyQuestion) => void;
+    /** Rendered above the save buttons (the library puts its difficulty picker here). */
+    extraFields?: ReactNode;
 }) => {
     const { t } = useTranslation('assessmentStep2SectionInfo');
     const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
@@ -205,6 +209,7 @@ const QuestionEditor = ({
                         showQuestionNumber: false,
                     }}
                 />
+                {extraFields}
                 <div className="flex justify-end gap-2 border-t border-neutral-200 pt-4">
                     <MyButton
                         type="button"
