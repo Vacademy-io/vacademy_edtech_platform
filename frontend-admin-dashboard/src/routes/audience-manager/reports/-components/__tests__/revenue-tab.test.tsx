@@ -73,7 +73,8 @@ const payment = (
 });
 
 const fetchRevenuePayments = vi.fn(
-    (): Promise<RevenuePayments> =>
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    (_params: unknown): Promise<RevenuePayments> =>
         Promise.resolve({
             currency: 'INR',
             total: 15000,
@@ -93,7 +94,7 @@ vi.mock('../../-services/get-revenue-reports', () => ({
         'payments-test',
         p.counsellorUserId,
     ],
-    fetchRevenuePayments: (p: unknown) => fetchRevenuePayments(p as never),
+    fetchRevenuePayments: (p: unknown) => fetchRevenuePayments(p),
 }));
 
 import { RevenueTab } from '../revenue-tab';
