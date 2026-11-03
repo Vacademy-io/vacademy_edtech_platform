@@ -1112,3 +1112,34 @@ for 60 s falls back the same way (the bar creeps through the silent init instead
 drawing, and each lesson's `summary_json.avatar_diag` records tier, renderer, GPU, timings and any
 step-down or fallback.
 
+
+## 17. Natural teaching, step 1 (3 November 2026)
+
+Why: in the 30 days to 3 November, 62 of 92 non-demo sessions (67%) ended before the learner
+answered anything, at a median of 1.0 minute; learners who answered once stayed 3.6 minutes,
+twice or more 6.2. The opening minute was all listening.
+
+A per-course switch, `naturalTeaching` in `TUTOR_MODE_SETTING` (admin: "Conversational teaching
+(beta)"), default off. The arm is frozen on the session at creation (`summary_json.natural`), never
+for demos. With it on:
+
+- **Warm-up.** A fresh first opening of a lesson-style, non-quiz plan that starts by teaching
+  concept 1 gets a short greeting (`greet_short`) and one ungraded question about the first topic
+  (`warmup_ask`). The teacher acknowledges the answer in a sentence or two (`run_warmup_ack`, 5 s
+  timeout, canned `warmup_ack` fallback) and teaches concept 1. Skip, Continue or silence (15 s voice,
+  40 s text, one "tap Answer" coaching line first in voice) move on with `warmup_move_on`. Nothing is
+  saved while the warm-up is open, no attempt is recorded, and the client never counts it. Only clients
+  that send `caps: ["warmup"]` get it.
+- **Bridge.** On a graded answer that advances into a new concept, the decision may return a
+  `bridge` sentence (<= 15 words, no question) that the server appends to the verdict.
+- **Line variety.** `prompts.TV` holds two extra wordings per frequent fixed line in en/hi/bn/kn;
+  `tpl(..., vary=True)` picks one; voice warm-up prepares all of them (`tpl_all`).
+- **Compile.** With the switch on, the first concept of a plan gets at most two sentences and no
+  greeting (soft check). Existing plans change only when recompiled.
+
+Telemetry (summary_json): `natural`, `warmup_eligible` (both arms, once per learner and slide),
+`warmups_offered / answered / skipped / silent`, `warmup_ack_fallbacks`, `warmup_unsupported_client`.
+Compare arms on eligible openings, per (learner, slide, day).
+
+Also fixed for every course: a Continue or barge-in during the opening greeting no longer asks
+concept 1's question before it has been taught.

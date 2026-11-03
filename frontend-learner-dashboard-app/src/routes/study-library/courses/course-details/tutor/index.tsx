@@ -180,12 +180,29 @@ function TutorPage() {
   // first thing the teacher writes after the greeting flips it to the Board.
   const [phoneView, setPhoneView] = useState<"board" | "teacher">(voiceMode ? "teacher" : "board");
   const arrivalViewRef = useRef(voiceMode);
+  // The opening warm-up question is open: phones stay on the Teacher pane until
+  // her reply to it (kind 'warmup_ack') has been spoken, then flip to the Board.
+  const warmupRef = useRef(false);
+  // The warm-up just ended: the next board flips a phone back to the Board pane
+  // when no audio turn will do it (text mode, or the speaker off).
+  const afterWarmupRef = useRef(false);
+  // This session runs natural teaching (the `ready` frame): only then are the
+  // guess question and the warm-up question held for the card. Off, the
+  // transcript behaves exactly as before.
+  const [natural, setNatural] = useState(false);
+  const naturalRef = useRef(false);
   // The open question (spoken + shown in the card); appended to the transcript with the answer.
   const pendingAskRef = useRef<TranscriptLine | null>(null);
   const flushAsk = (answer: string) => {
     const ask = pendingAskRef.current;
     pendingAskRef.current = null;
     setTranscript((prev) => [...prev, ...(ask ? [ask] : []), { role: "learner" as const, text: answer }]);
+  };
+  /** A held question closed with no answer (skipped, continued, silence): it still joins the history, in its place. */
+  const closeHeldAsk = () => {
+    const ask = pendingAskRef.current;
+    pendingAskRef.current = null;
+    if (ask) setTranscript((prev) => [...prev, ask]);
   };
   // Desktop: the outline folds to a thin strip so the board and the teacher get the width.
   const [outlineCollapsed, setOutlineCollapsed] = useState<boolean>(() => {
@@ -375,7 +392,7 @@ function TutorPage() {
         if (typeof seg.endTurn === "number") {
           completeTeacherText(seg.endTurn);
           // Phones: she has greeted the learner face to face; now the board.
-          if (arrivalViewRef.current) {
+          if (arrivalViewRef.current && !warmupRef.current) {
             arrivalViewRef.current = false;
             setPhoneView("board");
           }
@@ -451,6 +468,8 @@ function TutorPage() {
       if (isTutorLanguage(ev.language)) setLanguage(ev.language);
       if (Array.isArray(ev.topics)) setTopics(ev.topics as TutorTopicItem[]);
       if (typeof ev.slide_title === "string") setSlideTitle(ev.slide_title);
+      naturalRef.current = ev.natural === true;
+      setNatural(ev.natural === true);
     },
     onLesson: (ev) => {
       setTopics(ev.topics);
@@ -473,6 +492,15 @@ function TutorPage() {
       if (live) {
         setLiveOps(ops);
         return;
+      }
+      // A board means the warm-up (if any) is over. Phones go back to the
+      // Board for it; with the speaker on, the end of her reply's audio does that.
+      if (ops.length > 0) {
+        warmupRef.current = false;
+        if (afterWarmupRef.current) {
+          afterWarmupRef.current = false;
+          if (!(voiceMode && speakOnRef.current)) setPhoneView("board");
+        }
       }
       // A new concept's elements retire the previous turn's highlights.
       setLiveOps([]);
@@ -501,14 +529,33 @@ function TutorPage() {
       // The question is shown ONCE: while it is open it lives in the check
       // card (with its options); it joins the transcript when the learner
       // answers, so the history still reads as a conversation.
-      if (meta.kind === "ask" || meta.kind === "revisit_ask" || meta.kind === "predict") {
+      // Natural teaching: 'predict' is the teacher's REPLY to a guess, not a
+      // question, so the guess question ('predict_ask') and the warm-up
+      // question are held instead. Off, the held kinds stay as they always were.
+      const held = naturalRef.current
+        ? meta.kind === "ask" || meta.kind === "revisit_ask" || meta.kind === "predict_ask" || meta.kind === "warmup_ask"
+        : meta.kind === "ask" || meta.kind === "revisit_ask" || meta.kind === "predict";
+      if (naturalRef.current) {
+        const heldKind = pendingAskRef.current?.kind;
+        // Her reply ends the warm-up; a new explanation ends an unanswered guess.
+        // An unanswered question joins the history before what follows it.
+        if (meta.kind === "warmup_ack") {
+          warmupRef.current = false;
+          afterWarmupRef.current = true;
+          if (heldKind === "warmup_ask") closeHeldAsk();
+        } else if (heldKind === "predict_ask" && (meta.kind === "teach" || meta.kind === "media_task")) {
+          closeHeldAsk();
+        }
+      }
+      if (held) {
         pendingAskRef.current = { ...line, text };
         return;
       }
       // The bubble fills sentence by sentence as the audio plays (voice mode).
       setTranscript((prev) => [...prev, line]);
       if (!(voiceMode && speakOn)) setPhase("idle");
-      if (meta.kind === "nudge") activeness.markNudged();
+      // The warm-up is ungraded: its coaching line is not a nudge on a question.
+      if (meta.kind === "nudge" && !warmupRef.current) activeness.markNudged();
       // Scoreboard: a verdict on a check, a cleared revisit, a miss.
       const k = meta.kind;
       const score = typeof meta.score === "number" ? meta.score : null;
@@ -571,10 +618,11 @@ function TutorPage() {
       setCheck(ev);
       setAwaiting("answer");
       applyPhase("question");
-      // Revisits re-ask a concept; predictions are guesses; a Repeat or a
-      // reconnect re-sends the same check: none counts as a new question.
+      warmupRef.current = !!ev.warmup;
+      // Revisits re-ask a concept; predictions and the warm-up are guesses; a
+      // Repeat or a reconnect re-sends the same check: none counts as a new question.
       const key = ev.concept_id || "";
-      if (!ev.predict && !ev.revisit && !ev.remediation && key && !askedRef.current.has(key)) {
+      if (!ev.warmup && !ev.predict && !ev.revisit && !ev.remediation && key && !askedRef.current.has(key)) {
         askedRef.current.add(key);
         setStats((s) => ({ ...s, asked: s.asked + 1 }));
       }
@@ -664,7 +712,8 @@ function TutorPage() {
   const activeness = useActiveness({
     active: readyAt !== null && !disconnected && phase !== "connecting" && phase !== "done",
     speaking: phase === "speaking",
-    questionOpen: awaiting === "answer",
+    // The ungraded warm-up is not a question for the activeness meter.
+    questionOpen: awaiting === "answer" && !check?.warmup,
     onPresence: (present) => {
       // Cut off mid-speech: the server is told, so she repeats what was missed.
       const cut = !present && phase === "speaking";
@@ -899,6 +948,8 @@ function TutorPage() {
     setSentence(null);
     setTranscript([]);
     setCheck(null);
+    warmupRef.current = false;
+    afterWarmupRef.current = false;
     setAwaiting(null);
     setLiveOps([]);
     void bootSession();
@@ -938,6 +989,8 @@ function TutorPage() {
     currentSlideRef.current = slideId;
     setTranscript([]);
     setCheck(null);
+    warmupRef.current = false;
+    afterWarmupRef.current = false;
     setAwaiting(null);
     setLiveOps([]);
     socket.sendNextSlide(slideId);
@@ -1151,7 +1204,8 @@ function TutorPage() {
             teacherAvatarFileId={boot?.teacher_avatar_file_id}
             phase={phase}
             transcript={transcript}
-            check={check ? { prompt: check.prompt, options: check.options, check_type: check.check_type, revisit: !!check.revisit, predict: !!check.predict } : null}
+            natural={natural}
+            check={check ? { prompt: check.prompt, options: check.options, check_type: check.check_type, revisit: !!check.revisit, predict: !!check.predict, warmup: !!check.warmup } : null}
             locked={isDemo}
             countdown={demoClock}
             pace={pace}
@@ -1214,7 +1268,9 @@ function TutorPage() {
               socket.sendAnswer(t);
             }}
             onAsk={(t) => {
-              setTranscript((prev) => [...prev, { role: "learner", text: t }]);
+              // During the warm-up a "doubt" is taken as the answer: show the question with it.
+              if (check?.warmup && awaiting === "answer") flushAsk(t);
+              else setTranscript((prev) => [...prev, { role: "learner", text: t }]);
               setPhase("thinking");
               socket.sendAsk(t);
             }}
@@ -1223,7 +1279,8 @@ function TutorPage() {
               socket.sendContinue();
             }}
             onControl={(intent) => {
-              if (intent === "skip") activeness.markSkipped();
+              // Passing on the ungraded warm-up is not skipping a concept.
+              if (intent === "skip" && !(check?.warmup && awaiting === "answer")) activeness.markSkipped();
               setAwaiting(null);
               socket.sendControl(intent);
             }}

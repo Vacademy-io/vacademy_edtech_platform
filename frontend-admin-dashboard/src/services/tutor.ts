@@ -239,6 +239,8 @@ export interface TutorModeSetting {
     strictness?: 'gentle' | 'normal' | 'strict';
     /** Let the compiler generate AI images (about 1 credit each plus tokens; at most 4 per slide). */
     generateImages?: boolean;
+    /** Conversational teaching (beta): short greeting, a warm-up question, varied lines and bridges. Default off. */
+    naturalTeaching?: boolean;
     /** Knowledge base the course was grounded on at creation; recompiles stay grounded. */
     kbGrounding?: { knowledge_base_id: string; mode?: 'STRICT' | 'BLENDED' } | null;
     /** Teacher voice speed, 0.7–1.3 (1 = the engine's natural pace). Learners can still ask for slower/faster. */

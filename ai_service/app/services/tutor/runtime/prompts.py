@@ -2,8 +2,9 @@
 from __future__ import annotations
 
 import json
+import random
 import re
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Tuple
 
 from ..languages import PROMPT_NAMES as LANG_NAMES  # en, hi, bn, kn
 
@@ -102,6 +103,32 @@ T = {
     "predict_ack": {"en": "Good guess. Let's see.", "hi": "अच्छा अंदाज़ा। चलिए देखते हैं।"},
     # The right answer stays on the board when the teacher moves on.
     "answer_note": {"en": "Answer: {expected}", "hi": "उत्तर: {expected}"},
+    # Natural teaching (course setting naturalTeaching): a short greeting with
+    # no "let's begin", because a warm-up question follows it.
+    "greet_short": {
+        "en": "Hi {name}! I'm {teacher}, and today we're looking at {slide}.",
+        "hi": "नमस्ते {name}! मैं {teacher} हूँ, और आज हम {slide} देखेंगे।",
+    },
+    "greet_returning_short": {
+        "en": "Welcome back, {name}! Last time we worked on {previous}. {summary} Today it's {slide}.",
+        "hi": "वापस स्वागत है, {name}! पिछली बार हमने {previous} पर काम किया था। {summary} आज हम {slide} देखेंगे।",
+    },
+    # The warm-up: one open question before the first board, never graded.
+    "warmup_ask": {
+        "en": "Before we start: when you hear {topic}, what comes to mind?",
+        "hi": "शुरू करने से पहले: {topic} सुनकर आपके मन में क्या आता है?",
+    },
+    # Spoken when the model's acknowledgement is unavailable. No placeholders
+    # (here and in warmup_move_on): prepared once, shared by every course.
+    "warmup_ack": {
+        "en": "Thanks for sharing that. Let's see how it connects.",
+        "hi": "बताने के लिए शुक्रिया। चलिए देखते हैं यह कैसे जुड़ता है।",
+    },
+    # Skipped or silent warm-up.
+    "warmup_move_on": {
+        "en": "No problem. Let's dive in.",
+        "hi": "कोई बात नहीं। चलिए शुरू करते हैं।",
+    },
 }
 
 # Bengali and Kannada lines, kept as their own tables so the en/hi entries
@@ -147,6 +174,11 @@ T_BN = {
     "predict_intro": "দেখানোর আগে, একটা আন্দাজ করুন: {question}",
     "predict_ack": "ভালো আন্দাজ। চলুন দেখি।",
     "answer_note": "উত্তর: {expected}",
+    "greet_short": "নমস্কার {name}! আমি {teacher}, আজ আমরা {slide} দেখব।",
+    "greet_returning_short": "আবার স্বাগত, {name}! গতবার আমরা {previous} নিয়ে কাজ করেছিলাম। {summary} আজ আমরা {slide} দেখব।",
+    "warmup_ask": "শুরু করার আগে: {topic} শুনলে আপনার মনে কী আসে?",
+    "warmup_ack": "বলার জন্য ধন্যবাদ। চলুন দেখি এটা কীভাবে মেলে।",
+    "warmup_move_on": "কোনো অসুবিধা নেই। চলুন শুরু করি।",
 }
 T_KN = {
     "greet": "ನಮಸ್ಕಾರ {name}! ನಾನು {teacher}, ಇವತ್ತು ನಿಮಗೆ ನಾನು ಪಾಠ ಮಾಡುತ್ತೇನೆ. ಮೊದಲಿಗೆ {slide} ನೋಡೋಣ. ಶುರು ಮಾಡೋಣ.",
@@ -187,10 +219,168 @@ T_KN = {
     "predict_intro": "ತೋರಿಸುವ ಮೊದಲು, ಒಂದು ಊಹೆ ಮಾಡಿ: {question}",
     "predict_ack": "ಒಳ್ಳೆಯ ಊಹೆ. ನೋಡೋಣ.",
     "answer_note": "ಉತ್ತರ: {expected}",
+    "greet_short": "ನಮಸ್ಕಾರ {name}! ನಾನು {teacher}, ಇವತ್ತು ನಾವು {slide} ನೋಡೋಣ.",
+    "greet_returning_short": "ಮತ್ತೆ ಸ್ವಾಗತ, {name}! ಕಳೆದ ಸಲ ನಾವು {previous} ಬಗ್ಗೆ ಕೆಲಸ ಮಾಡಿದ್ದೆವು. {summary} ಇವತ್ತು {slide} ನೋಡೋಣ.",
+    "warmup_ask": "ಶುರು ಮಾಡುವ ಮೊದಲು: {topic} ಅಂದ ತಕ್ಷಣ ನಿಮಗೆ ಏನು ನೆನಪಾಗುತ್ತದೆ?",
+    "warmup_ack": "ಹೇಳಿದ್ದಕ್ಕೆ ಧನ್ಯವಾದ. ಇದು ಹೇಗೆ ಸೇರುತ್ತದೆ ನೋಡೋಣ.",
+    "warmup_move_on": "ಪರವಾಗಿಲ್ಲ. ಶುರು ಮಾಡೋಣ.",
 }
 for _lang, _table in (("bn", T_BN), ("kn", T_KN)):
     for _key, _line in _table.items():
         T[_key][_lang] = _line
+
+
+# ── line variety (natural teaching) ──────────────────────────────────────────
+# Extra wordings of the most-heard fixed lines, per language. Variant 0 is
+# always T[key][lang] (the line every session hears today); tpl(..., vary=True)
+# picks uniformly among [T[key][lang]] + TV[key][lang]. Same placeholders and
+# register as T (tests enforce it). tpl_all() lists every wording, so the
+# voice warm-up can prepare all of them.
+TV: Dict[str, Dict[str, List[str]]] = {
+    "predict_intro": {
+        "en": ["Quick guess before we look at it: {question}", "Let's see what you think first: {question}"],
+        "hi": ["पहले आप अंदाज़ा लगाइए: {question}", "चलिए पहले एक छोटा सा अंदाज़ा: {question}"],
+        "bn": ["আগে আপনি একটা আন্দাজ করুন: {question}", "চলুন আগে একটা ছোট্ট আন্দাজ: {question}"],
+        "kn": ["ಮೊದಲು ನೀವು ಒಂದು ಊಹೆ ಮಾಡಿ: {question}", "ನೋಡುವ ಮೊದಲು ಒಂದು ಸಣ್ಣ ಊಹೆ: {question}"],
+    },
+    "predict_ack": {
+        "en": ["Nice thinking. Let's find out.", "Interesting. Let's take a look."],
+        "hi": ["बढ़िया सोच। चलिए पता करते हैं।", "दिलचस्प। चलिए देखते हैं।"],
+        "bn": ["ভালো ভেবেছেন। চলুন জেনে নিই।", "আকর্ষণীয় আন্দাজ। চলুন দেখা যাক।"],
+        "kn": ["ಚೆನ್ನಾಗಿ ಯೋಚಿಸಿದ್ದೀರಿ. ತಿಳಿದುಕೊಳ್ಳೋಣ.", "ಆಸಕ್ತಿಕರವಾಗಿದೆ. ನೋಡೋಣ."],
+    },
+    "topic_summary": {
+        "en": ["Nice work. That's {topic} done. Have one more look at the board before we go on.",
+               "And that's {topic}. Glance over the board once more, then we'll carry on."],
+        "hi": ["बढ़िया। {topic} पूरा हो गया। आगे बढ़ने से पहले बोर्ड को एक बार और देख लीजिए।",
+               "तो यह था {topic}। बोर्ड पर एक नज़र और डाल लीजिए, फिर आगे चलते हैं।"],
+        "bn": ["চমৎকার। {topic} শেষ হলো। এগোনোর আগে বোর্ডটা আর একবার দেখে নিন।",
+               "তো এই হলো {topic}। বোর্ডে আর একবার চোখ বুলিয়ে নিন, তারপর এগোই।"],
+        "kn": ["ಚೆನ್ನಾಗಿದೆ. {topic} ಮುಗಿಯಿತು. ಮುಂದೆ ಹೋಗುವ ಮೊದಲು ಬೋರ್ಡ್ ಅನ್ನು ಇನ್ನೊಮ್ಮೆ ನೋಡಿ.",
+               "ಇದು {topic}. ಬೋರ್ಡ್ ಮೇಲೆ ಇನ್ನೊಮ್ಮೆ ಕಣ್ಣಾಡಿಸಿ, ಆಮೇಲೆ ಮುಂದುವರಿಸೋಣ."],
+    },
+    "skipped": {
+        "en": ["No problem, let's keep going.", "Sure, on to the next one."],
+        "hi": ["कोई बात नहीं, आगे चलते हैं।", "ठीक है, अगले पर चलते हैं।"],
+        "bn": ["কোনো অসুবিধা নেই, এগিয়ে চলি।", "ঠিক আছে, পরেরটায় যাই।"],
+        "kn": ["ಪರವಾಗಿಲ್ಲ, ಮುಂದುವರಿಸೋಣ.", "ಸರಿ, ಮುಂದಿನದಕ್ಕೆ ಹೋಗೋಣ."],
+    },
+    "next_slide": {
+        "en": ["Next up: {slide}.", "Let's carry on with {slide}."],
+        "hi": ["आगे है: {slide}।", "चलिए अब {slide} शुरू करते हैं।"],
+        "bn": ["এরপর: {slide}।", "চলুন এবার {slide} নিয়ে এগোই।"],
+        "kn": ["ಮುಂದಿನದು: {slide}.", "ಈಗ {slide} ಕಡೆಗೆ ಹೋಗೋಣ."],
+    },
+    "slower": {
+        "en": ["Of course, I'll slow down.", "No problem, a little slower then."],
+        "hi": ["बिल्कुल, मैं धीरे बोलती हूँ।", "ठीक है, थोड़ा धीरे चलते हैं।"],
+        "bn": ["অবশ্যই, আমি একটু ধীরে বলছি।", "ঠিক আছে, একটু আস্তে এগোই।"],
+        "kn": ["ಖಂಡಿತ, ನಾನು ನಿಧಾನ ಮಾಡುತ್ತೇನೆ.", "ಸರಿ, ಸ್ವಲ್ಪ ನಿಧಾನವಾಗಿ ಹೋಗೋಣ."],
+    },
+    "faster": {
+        "en": ["Of course, let's pick up the pace.", "Okay, a bit quicker then."],
+        "hi": ["बिल्कुल, थोड़ा तेज़ बोलती हूँ।", "ठीक है, रफ़्तार थोड़ी बढ़ाते हैं।"],
+        "bn": ["অবশ্যই, একটু তাড়াতাড়ি বলছি।", "ঠিক আছে, গতিটা একটু বাড়াই।"],
+        "kn": ["ಖಂಡಿತ, ಸ್ವಲ್ಪ ವೇಗವಾಗಿ ಹೇಳುತ್ತೇನೆ.", "ಸರಿ, ಸ್ವಲ್ಪ ಬೇಗ ಹೋಗೋಣ."],
+    },
+    "pause": {
+        "en": ["Sure, take a moment. Say continue whenever you're ready.",
+               "No rush. I'm right here; say continue when you want to go on."],
+        "hi": ["ज़रूर, आराम से। जब तैयार हों, 'continue' कहिए।",
+               "कोई जल्दी नहीं। मैं यहीं हूँ; आगे बढ़ना हो तो 'continue' कहिए।"],
+        "bn": ["নিশ্চয়ই, একটু সময় নিন। তৈরি হলে 'continue' বলবেন।",
+               "কোনো তাড়া নেই। আমি এখানেই আছি; এগোতে চাইলে 'continue' বলবেন।"],
+        "kn": ["ಖಂಡಿತ, ಸ್ವಲ್ಪ ಸಮಯ ತೆಗೆದುಕೊಳ್ಳಿ. ರೆಡಿ ಆದಾಗ 'continue' ಅಂತ ಹೇಳಿ.",
+               "ಅವಸರ ಇಲ್ಲ. ನಾನು ಇಲ್ಲೇ ಇದ್ದೇನೆ; ಮುಂದುವರಿಸಲು 'continue' ಅಂತ ಹೇಳಿ."],
+    },
+    "nudge_hint": {
+        "en": ["No rush. Here's something to help: {hint}", "Think it over. A small hint: {hint}"],
+        "hi": ["कोई जल्दी नहीं। यह मदद करेगा: {hint}", "सोचिए ज़रा। एक छोटा सा संकेत: {hint}"],
+        "bn": ["কোনো তাড়া নেই। এটা একটু সাহায্য করবে: {hint}", "একটু ভেবে দেখুন। ছোট্ট একটা ইঙ্গিত: {hint}"],
+        "kn": ["ಅವಸರ ಇಲ್ಲ. ಇದು ಸಹಾಯ ಮಾಡಬಹುದು: {hint}", "ಸ್ವಲ್ಪ ಯೋಚಿಸಿ. ಒಂದು ಸಣ್ಣ ಸುಳಿವು: {hint}"],
+    },
+    "nudge_open": {
+        "en": ["No rush, think it through. You can also say 'skip' and we'll return to it later.",
+               "Take a moment. If you're stuck, just say 'skip' and we'll come back to it."],
+        "hi": ["कोई जल्दी नहीं, सोचकर बताइए। चाहें तो 'skip' कहिए, हम इस पर बाद में लौटेंगे।",
+               "थोड़ा समय लीजिए। अटक गए हों तो 'skip' कहिए, हम बाद में इस पर आएँगे।"],
+        "bn": ["কোনো তাড়া নেই, ভেবে বলুন। চাইলে 'skip' বলুন, আমরা পরে এটায় ফিরে আসব।",
+               "একটু সময় নিন। আটকে গেলে 'skip' বলুন, পরে আমরা এটায় ফিরব।"],
+        "kn": ["ಅವಸರ ಇಲ್ಲ, ಯೋಚಿಸಿ ಹೇಳಿ. ಬೇಕಾದರೆ 'skip' ಅಂತ ಹೇಳಿ, ಇದಕ್ಕೆ ಆಮೇಲೆ ಬರೋಣ.",
+               "ಸ್ವಲ್ಪ ಸಮಯ ತೆಗೆದುಕೊಳ್ಳಿ. ಕಷ್ಟ ಆದರೆ 'skip' ಅಂತ ಹೇಳಿ, ಆಮೇಲೆ ಇದಕ್ಕೆ ವಾಪಸ್ ಬರೋಣ."],
+    },
+    "nudge_voice_hint": {
+        "en": ["Tap the Answer button and say it out loud, or type it below. A hint: {hint}",
+               "You can speak your answer: tap Answer first, then talk. Or type it below. Here's a hint: {hint}"],
+        "hi": ["Answer button दबाकर बोलिए, या नीचे type कीजिए। एक संकेत: {hint}",
+               "बोलकर जवाब देना हो तो पहले Answer button दबाइए, फिर बोलिए। या नीचे type कीजिए। एक संकेत: {hint}"],
+        "bn": ["Answer button টিপে জোরে বলুন, অথবা নিচে type করুন। একটা ইঙ্গিত: {hint}",
+               "বলে উত্তর দিতে চাইলে আগে Answer button টিপুন, তারপর বলুন। অথবা নিচে type করুন। একটা ইঙ্গিত: {hint}"],
+        "kn": ["Answer button ಒತ್ತಿ ಜೋರಾಗಿ ಹೇಳಿ, ಅಥವಾ ಕೆಳಗೆ type ಮಾಡಿ. ಒಂದು ಸುಳಿವು: {hint}",
+               "ಮಾತಾಡಿ ಉತ್ತರಿಸಬೇಕಾದರೆ ಮೊದಲು Answer button ಒತ್ತಿ, ಆಮೇಲೆ ಮಾತಾಡಿ. ಅಥವಾ ಕೆಳಗೆ type ಮಾಡಿ. ಒಂದು ಸುಳಿವು: {hint}"],
+    },
+    "nudge_voice_open": {
+        "en": ["Tap the Answer button and say it out loud, or type it below. Or say 'skip' to move on.",
+               "You can speak your answer: tap Answer first, then talk. Or type it below, or say 'skip'."],
+        "hi": ["Answer button दबाकर बोलिए, या नीचे type कीजिए। आगे बढ़ना हो तो 'skip' कहिए।",
+               "बोलकर जवाब देना हो तो पहले Answer button दबाइए, फिर बोलिए। या नीचे type कीजिए, या 'skip' कहिए।"],
+        "bn": ["Answer button টিপে জোরে বলুন, অথবা নিচে type করুন। এগোতে চাইলে 'skip' বলুন।",
+               "বলে উত্তর দিতে চাইলে আগে Answer button টিপুন, তারপর বলুন। অথবা নিচে type করুন, কিংবা 'skip' বলুন।"],
+        "kn": ["Answer button ಒತ್ತಿ ಜೋರಾಗಿ ಹೇಳಿ, ಅಥವಾ ಕೆಳಗೆ type ಮಾಡಿ. ಮುಂದೆ ಹೋಗಲು 'skip' ಅಂತ ಹೇಳಿ.",
+               "ಮಾತಾಡಿ ಉತ್ತರಿಸಬೇಕಾದರೆ ಮೊದಲು Answer button ಒತ್ತಿ, ಆಮೇಲೆ ಮಾತಾಡಿ. ಅಥವಾ ಕೆಳಗೆ type ಮಾಡಿ, ಇಲ್ಲವೇ 'skip' ಅಂತ ಹೇಳಿ."],
+    },
+    "revisit_done_topic": {
+        "en": ["Nice, that's the review done. On to the next part.",
+               "Good work going back over that. Let's continue with the next part."],
+        "hi": ["बढ़िया, दोहराव हो गया। अब अगले हिस्से पर चलते हैं।",
+               "उसे दोबारा देखने के लिए शाबाश। चलिए अगले हिस्से पर चलते हैं।"],
+        "bn": ["চমৎকার, ঝালিয়ে নেওয়া হলো। এবার পরের অংশে যাই।",
+               "আবার দেখে নেওয়ার জন্য খুব ভালো। চলুন পরের অংশে এগোই।"],
+        "kn": ["ಚೆನ್ನಾಗಿದೆ, ಪುನರಾವರ್ತನೆ ಆಯ್ತು. ಈಗ ಮುಂದಿನ ಭಾಗಕ್ಕೆ ಹೋಗೋಣ.",
+               "ಅದನ್ನು ಮತ್ತೆ ನೋಡಿದ್ದಕ್ಕೆ ಶಭಾಷ್. ಮುಂದಿನ ಭಾಗದೊಂದಿಗೆ ಮುಂದುವರಿಸೋಣ."],
+    },
+    "revisit_done_slide": {
+        "en": ["That's the review finished. Thanks for sticking with it.", "And that's the revisit done. Great effort today."],
+        "hi": ["दोहराव पूरा हो गया। धैर्य रखने के लिए शुक्रिया।", "तो दोहराव हो गया। आज आपने बहुत अच्छी मेहनत की।"],
+        "bn": ["ঝালিয়ে নেওয়া শেষ। ধৈর্য ধরে থাকার জন্য ধন্যবাদ।", "তো, আবার দেখে নেওয়া হয়ে গেল। আজ আপনি খুব ভালো চেষ্টা করেছেন।"],
+        "kn": ["ಪುನರಾವರ್ತನೆ ಮುಗಿಯಿತು. ತಾಳ್ಮೆಯಿಂದ ಇದ್ದದ್ದಕ್ಕೆ ಧನ್ಯವಾದ.", "ಪುನರಾವರ್ತನೆ ಆಯ್ತು. ಇವತ್ತು ನೀವು ತುಂಬಾ ಚೆನ್ನಾಗಿ ಪ್ರಯತ್ನಿಸಿದಿರಿ."],
+    },
+    "fallback_correct": {
+        "en": ["Exactly. Let's keep going.", "Yes, that's it. On we go."],
+        "hi": ["एकदम सही। चलिए आगे चलते हैं।", "हाँ, यही बात है। आगे बढ़ते हैं।"],
+        "bn": ["ঠিক তাই। চলুন এগোই।", "হ্যাঁ, এটাই। চলুন সামনে যাই।"],
+        "kn": ["ಹೌದು, ಸರಿಯಾಗಿದೆ. ಮುಂದುವರಿಸೋಣ.", "ಅದೇ ಸರಿ. ಮುಂದೆ ಹೋಗೋಣ."],
+    },
+    "welcome_back": {
+        "en": ["There you are! Let's carry on from where we stopped.", "Good to have you back. Let's continue from where we were."],
+        "hi": ["आप आ गए! चलिए जहाँ रुके थे वहीं से शुरू करते हैं।", "आपका फिर से स्वागत है। जहाँ थे वहीं से आगे चलते हैं।"],
+        "bn": ["এই তো আপনি! চলুন, যেখানে থেমেছিলাম সেখান থেকে এগোই।", "ফিরে এসেছেন, ভালো লাগল। চলুন যেখানে ছিলাম সেখান থেকেই শুরু করি।"],
+        "kn": ["ಮತ್ತೆ ಬಂದಿರಿ! ನಿಲ್ಲಿಸಿದ್ದಲ್ಲಿಂದ ಮುಂದುವರಿಸೋಣ.", "ಮತ್ತೆ ಬಂದದ್ದು ಖುಷಿ. ನಾವು ಇದ್ದಲ್ಲಿಂದಲೇ ಮುಂದುವರಿಸೋಣ."],
+    },
+    # The warm-up's own lines.
+    "warmup_ask": {
+        "en": ["Quick question first: what do you already know about {topic}?",
+               "Before we begin, tell me: what does {topic} make you think of?"],
+        "hi": ["पहले एक छोटा सा सवाल: {topic} के बारे में आप पहले से क्या जानते हैं?",
+               "शुरू करने से पहले बताइए: {topic} से आपको क्या याद आता है?"],
+        "bn": ["আগে একটা ছোট্ট প্রশ্ন: {topic} নিয়ে আপনি আগে থেকে কী জানেন?",
+               "শুরুর আগে বলুন তো: {topic} বললে আপনার কী মনে পড়ে?"],
+        "kn": ["ಮೊದಲು ಒಂದು ಸಣ್ಣ ಪ್ರಶ್ನೆ: {topic} ಬಗ್ಗೆ ನಿಮಗೆ ಈಗಾಗಲೇ ಏನು ಗೊತ್ತು?",
+               "ಶುರು ಮಾಡುವ ಮೊದಲು ಹೇಳಿ: {topic} ಕೇಳಿದಾಗ ನಿಮಗೆ ಏನು ಅನಿಸುತ್ತದೆ?"],
+    },
+    "warmup_ack": {
+        "en": ["Good, hold on to that thought.", "I like that. Let's build on it."],
+        "hi": ["बढ़िया, इस बात को ध्यान में रखिए।", "अच्छी बात है। चलिए इसी पर आगे बढ़ते हैं।"],
+        "bn": ["বেশ, কথাটা মনে রাখুন।", "ভালো বলেছেন। চলুন এর ওপর ভিত্তি করে এগোই।"],
+        "kn": ["ಚೆನ್ನಾಗಿದೆ, ಈ ಯೋಚನೆಯನ್ನು ನೆನಪಿಟ್ಟುಕೊಳ್ಳಿ.", "ಒಳ್ಳೆಯ ಮಾತು. ಇದರ ಮೇಲೆಯೇ ಮುಂದುವರಿಸೋಣ."],
+    },
+    "warmup_move_on": {
+        "en": ["That's fine, let's jump right in.", "Okay, let's get started."],
+        "hi": ["ठीक है, सीधे शुरू करते हैं।", "चलिए, शुरुआत करते हैं।"],
+        "bn": ["ঠিক আছে, সোজা শুরু করি।", "চলুন, শুরু করা যাক।"],
+        "kn": ["ಸರಿ, ನೇರವಾಗಿ ಶುರು ಮಾಡೋಣ.", "ಬನ್ನಿ, ಶುರು ಮಾಡೋಣ."],
+    },
+}
 
 
 # ── rolling summary shape ────────────────────────────────────────────────────
@@ -219,8 +409,15 @@ def summary_notes(summary: Optional[str]) -> str:
     return s
 
 
+# What the runtime has always stripped (the off arm keeps it byte for byte).
 _LEADING_GREETING = re.compile(
     r"^\s*(?:hi|hello|hey|namaste|नमस्ते|welcome(?: back)?)[^.!?।]*[.!?।]\s*", re.IGNORECASE)
+# Natural teaching: the Latin words must end there ("History is…" is not
+# "Hi"), and the Bengali / Kannada / Hindi greetings count too; the Indic ones
+# end in a vowel sign, which \b does not treat as a word character.
+_LEADING_GREETING_EXTENDED = re.compile(
+    r"^\s*(?:(?:hi|hello|hey|namaste|welcome(?: back)?)(?![a-z])|नमस्ते|नमस्कार|নমস্কার|হ্যালো|ನಮಸ್ಕಾರ)"
+    r"[^.!?।]*[.!?।]\s*", re.IGNORECASE)
 
 
 _NAME_GREETING = re.compile(r"^\s*(?:hi|hello|hey|namaste|नमस्ते|welcome(?: back)?)[,!]?\s*\{student_name\}[,!]?\s*", re.IGNORECASE)
@@ -237,20 +434,51 @@ def neutralize_name(text_: str) -> str:
     return (t[0].upper() + t[1:]) if t else t
 
 
-def strip_leading_greeting(narration: str) -> str:
+def strip_leading_greeting(narration: str, *, extended: bool = False) -> str:
     """Drop a compiled narration's own opening "Hi {name}, …" sentence when
-    the teacher already greeted (welcome back / next slide)."""
-    out = _LEADING_GREETING.sub("", narration or "", count=1)
+    the teacher already greeted (welcome back / next slide). `extended`
+    (natural teaching only): the stricter, multilingual pattern."""
+    pattern = _LEADING_GREETING_EXTENDED if extended else _LEADING_GREETING
+    out = pattern.sub("", narration or "", count=1)
     return out if out.strip() else narration
 
 
-def tpl(key: str, lang: str, **kw: Any) -> str:
+# Line variety picks with this (tests seed or replace it).
+_rng = random.Random()
+
+
+def _line(key: str, lang: str) -> Tuple[str, str]:
+    """(the language actually used, variant 0) — English when the key has no
+    line in `lang`."""
     table = T[key]
-    text = table.get(lang if lang in table else "en") or table["en"]
+    use = lang if lang in table else "en"
+    return use, (table.get(use) or table["en"])
+
+
+def _render(text: str, kw: Dict[str, Any]) -> str:
     try:
         return text.format(**{k: (v if v is not None else "") for k, v in kw.items()})
     except Exception:  # noqa: BLE001
         return text
+
+
+def _variants(key: str, lang: str) -> List[str]:
+    use, base = _line(key, lang)
+    return [base] + list((TV.get(key) or {}).get(use) or [])
+
+
+def tpl(key: str, lang: str, *, vary: bool = False, **kw: Any) -> str:
+    """A fixed line. `vary` (natural teaching) picks uniformly among its
+    wordings; off, it is always variant 0 — today's line."""
+    text = _line(key, lang)[1]
+    if vary:
+        text = _rng.choice(_variants(key, lang))
+    return _render(text, kw)
+
+
+def tpl_all(key: str, lang: str, **kw: Any) -> List[str]:
+    """Every wording of a fixed line, rendered (variant 0 first)."""
+    return [_render(t, kw) for t in _variants(key, lang)]
 
 
 # ── decision turn ────────────────────────────────────────────────────────────
@@ -277,6 +505,14 @@ informal words is correct: give it full credit even if it is phrased nothing lik
 partly right, credit what is right and name the one missing piece. (The exception is a check whose rubric grades
 the wording itself — e.g. removing hedge or filler words — there the words are the answer.) No markdown."""
 
+# Natural teaching: an optional "bridge" field, requested only when the turn
+# prompt names the NEXT CONCEPT. The server speaks it after `say`, and only
+# when the answer advanced into a new concept.
+BRIDGE_MAX_WORDS = 15
+BRIDGE_SCHEMA = f"""Optional extra field, ONLY with action "advance" and ONLY when a NEXT CONCEPT is given:
+  "bridge": "one short spoken sentence (at most {BRIDGE_MAX_WORDS} words, the session language, no question mark) that leads from what the learner just got right into the NEXT CONCEPT — do not teach it, do not greet, do not repeat `say`"
+Keep `say` as the verdict alone; the bridge is spoken right after it. Leave "bridge" out for every other action."""
+
 
 LIVE_PERSONA = {
     "lesson": "You are {teacher}, a one-to-one teacher speaking to a learner over a shared whiteboard.",
@@ -293,7 +529,7 @@ def greet_key(style: str) -> str:
     return {"interview": "greet_interview", "practice": "greet_practice"}.get(style or "lesson", "greet")
 
 
-def system_prompt(teacher: str, lang: str, strictness: str, style: str = "lesson") -> str:
+def system_prompt(teacher: str, lang: str, strictness: str, style: str = "lesson", *, bridge: bool = False) -> str:
     tone = {
         "gentle": "Very encouraging; accept partial answers generously; never make the learner feel wrong.",
         "strict": "Precise; award credit only for correct, complete answers; correct terminology firmly but kindly.",
@@ -305,6 +541,7 @@ def system_prompt(teacher: str, lang: str, strictness: str, style: str = "lesson
         "You evaluate the learner's answer to the check for the CURRENT concept using its rubric and the listed "
         "misconceptions, and decide what happens next. Keep every spoken line short; the learner is listening, not reading.\n\n"
         + DECISION_SCHEMA
+        + ("\n" + BRIDGE_SCHEMA if bridge else "")
     )
 
 
@@ -355,6 +592,7 @@ def turn_prompt(
     final_attempt: bool = False,
     source_block: Optional[str] = None,
     revisit: bool = False,
+    next_concept: Optional[str] = None,
 ) -> str:
     parts = [
         f"LEARNER: {learner_name or 'the learner'}\n{learner_block}".strip(),
@@ -376,6 +614,8 @@ def turn_prompt(
         ("THIS IS THE LEARNER'S FINAL ATTEMPT ON THIS CHECK. Do NOT re-ask. If the answer is still wrong, use action "
          "\"remediate\" and in `say` give the correct answer in one clear sentence, then say you will move on."
          if final_attempt else ""),
+        (f"NEXT CONCEPT (taught right after an advance; only for the optional \"bridge\"): {next_concept}"
+         if next_concept else ""),
         f"LEARNER NOW SAYS ({mode}): {learner_message.strip()}",
         "Decide. JSON only.",
     ]
@@ -498,3 +738,25 @@ def predict_prompt(*, learner_name: Optional[str], question: str, concept_title:
         "React in 1-2 sentences and hand over to the explanation. Any guess is fine; never grade it. JSON only.",
         PREDICT_SCHEMA,
     ])
+
+
+# ── warm-up acknowledgement (natural teaching) ───────────────────────────────
+
+WARMUP_SCHEMA = """Return ONE JSON object and nothing else:
+{"say": "1-2 short spoken sentences, no question"}"""
+
+
+def warmup_ack_prompt(*, learner_name: Optional[str], question: str, answer: str, topic: str,
+                      first_concept: Optional[str], lang: str) -> str:
+    return "\n\n".join(p for p in [
+        f"LEARNER: {learner_name or 'the learner'}",
+        f"Before the lesson on '{topic}' starts, you asked a warm-up question (never graded): {question}",
+        f"THEIR ANSWER (may be a speech-to-text transcript): {answer.strip()[:300]}",
+        f"THE FIRST BOARD IS ABOUT: {first_concept}" if first_concept else "",
+        f"Reply in {LANG_NAMES.get(lang, lang)}. In 1-2 short spoken sentences: acknowledge their idea warmly by "
+        "paraphrasing it in your own words — do not quote their words back (a spoken answer may be garbled or "
+        "transliterated) — then lead into the first board's topic. If the answer is unclear or off-topic, simply "
+        "thank them and lead in. Never grade or correct it, do not teach the topic yet, do not greet (you already "
+        "did), and do not ask any question. JSON only.",
+        WARMUP_SCHEMA,
+    ] if p)

@@ -127,6 +127,9 @@ class LessonPlan:
     # lesson | interview | practice — set at compile time; drives the greeting
     # and the live persona.
     style: str = "lesson"
+    # The source kind from compile_inputs.kind ("quiz" for quiz plans;
+    # "lesson" when the plan never recorded one).
+    kind: str = "lesson"
 
     def concept_at(self, p: "Pointer") -> Optional[Concept]:
         if 0 <= p.topic < len(self.topics):
@@ -201,6 +204,7 @@ def from_plan_view(view: Dict[str, Any]) -> LessonPlan:
         slide_title=str(view.get("slide_title") or ""),
         kb=view.get("kb") if isinstance(view.get("kb"), dict) and view["kb"].get("knowledge_base_id") else None,
         style=str(view.get("style") or "lesson"),
+        kind=str(view.get("kind") or "lesson"),
     )
 
 

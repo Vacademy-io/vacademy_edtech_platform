@@ -50,6 +50,10 @@ class TutorSettings:
     # (created from the teacher's face photo).
     avatar_provider: str = "none"
     avatar_id: Optional[str] = None
+    # "Natural teaching" (step 1): a spoken warm-up before the first board,
+    # varied fixed lines and a bridge into the next concept. Off by default;
+    # a session freezes the value it started with (summary_json.natural).
+    natural_teaching: bool = False
 
     @property
     def course_language(self) -> str:
@@ -75,6 +79,12 @@ def _extract(envelope: Any) -> Dict[str, Any]:
         return data if isinstance(data, dict) else {}
     except Exception:  # noqa: BLE001
         return {}
+
+
+def _flag(v: Any) -> bool:
+    """A saved boolean, read strictly: the string "false" (a JSON-as-string
+    save) is False, where bool("false") would be True."""
+    return v is True or str(v).strip().lower() == "true"
 
 
 def _apply(s: TutorSettings, d: Dict[str, Any]) -> None:
@@ -104,6 +114,7 @@ def _apply(s: TutorSettings, d: Dict[str, Any]) -> None:
     v = pick("teacherAvatarFileId", "teacher_avatar_file_id"); s.teacher_avatar_file_id = str(v)[:255] if v else s.teacher_avatar_file_id
     v = pick("avatarProvider", "avatar_provider"); s.avatar_provider = str(v) if v in ("none", "spatius") else s.avatar_provider
     v = pick("avatarId", "avatar_id");   s.avatar_id = str(v)[:120] if v else s.avatar_id
+    v = pick("naturalTeaching", "natural_teaching"); s.natural_teaching = _flag(v) if v is not None else s.natural_teaching
     v = pick("kbGrounding", "kb_grounding")
     if isinstance(v, dict) and v.get("knowledge_base_id"):
         s.kb_grounding = {"knowledge_base_id": str(v["knowledge_base_id"]),

@@ -48,6 +48,8 @@
         "aiImagesTooltip": "AI-generated pictures on the whiteboard where a photo teaches better than a diagram. About 1 credit each, at most 4 per slide.",
         "aiImagesLabel": "AI images on boards",
         "instituteDefaultTag": "(institute default)",
+        "naturalTeachingLabel": "Conversational teaching (beta)",
+        "naturalTeachingHelp": "Short greeting, a warm-up question, and the teacher reacts to answers. Applies to new lessons; recompile for shorter openings.",
         "teacherNameLabel": "Teacher name",
         "courseLanguageLabel": "Course language",
         "instituteDefaultWithValue": "Institute default ({{value}})",

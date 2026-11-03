@@ -48,6 +48,8 @@
         "aiImagesTooltip": "Images générées par IA sur le tableau blanc, lorsqu'une photo enseigne mieux qu'un schéma. Environ 1 crédit chacune, 4 au maximum par diapositive.",
         "aiImagesLabel": "Images IA sur les tableaux",
         "instituteDefaultTag": "(valeur par défaut de l'établissement)",
+        "naturalTeachingLabel": "Enseignement conversationnel (bêta)",
+        "naturalTeachingHelp": "Accueil court, une question d'échauffement, et l'enseignant réagit aux réponses. S'applique aux nouvelles leçons ; recompilez pour des introductions plus courtes.",
         "teacherNameLabel": "Nom de l'enseignant",
         "courseLanguageLabel": "Langue du cours",
         "instituteDefaultWithValue": "Valeur par défaut de l'établissement ({{value}})",

@@ -44,6 +44,11 @@ class Limits:
     # board + spoken recap per topic, an example per topic, a mix of quick
     # checks, a hint per check, short open questions. Off for quizzes.
     engagement_rules: bool = True
+    # Natural teaching: the runtime greets and runs a warm-up, so the opening
+    # concept (t1c1) narrates in at most this many sentences and never greets.
+    # Soft, like everything in board_quality_errors.
+    natural_opening: bool = False
+    natural_opening_max_sentences: int = 2
 
 
 DEFAULT_LIMITS = Limits()
@@ -222,6 +227,36 @@ def narration_asks(say: str) -> bool:
     return bool(_TRAILING_Q.search(t)) or bool(_REVEAL_CUES.search(t[-160:]))
 
 
+# A narration that opens by greeting the learner (any supported language).
+_OPENING_GREETING = re.compile(
+    r"^\s*(?:hi|hello|hey|namaste|welcome|नमस्ते|नमस्कार|নমস্কার|হ্যালো|ನಮಸ್ಕಾರ)(?![A-Za-z])", re.IGNORECASE)
+
+
+def opens_with_greeting(say: str) -> bool:
+    return bool(_OPENING_GREETING.search(say or ""))
+
+
+def natural_opening_errors(plan: TeachingPlanDraft, *, limits: Limits = DEFAULT_LIMITS) -> List[str]:
+    """Natural teaching: t1c1 says at most N sentences (every language) and
+    does not greet — the teacher already greeted and asked a warm-up."""
+    if not limits.natural_opening or not plan.topics or not plan.topics[0].concepts:
+        return []
+    c = plan.topics[0].concepts[0]
+    cloc = f"topics[0].concepts[0]('{c.title[:30]}')"
+    errors: List[str] = []
+    cap = limits.natural_opening_max_sentences
+    says = [("say", c.say or "")] + [(f"say_i18n['{k}']", v or "") for k, v in sorted((c.say_i18n or {}).items())]
+    for field_, text_ in says:
+        n = sentence_count(text_)
+        if n > cap:
+            errors.append(f"{cloc}: {field_} has {n} sentences; the opening concept says at most {cap} — the teacher "
+                          f"has already greeted and asked a warm-up question")
+        if opens_with_greeting(text_):
+            errors.append(f"{cloc}: {field_} greets the learner; the teacher has already greeted — start with the idea "
+                          f"on the board")
+    return errors
+
+
 def board_quality_errors(plan: TeachingPlanDraft, *, limits: Limits = DEFAULT_LIMITS) -> List[str]:
     """Board hygiene: how much a board may hold and whether it shows anything.
     Never fatal — see the module docstring."""
@@ -270,6 +305,7 @@ def board_quality_errors(plan: TeachingPlanDraft, *, limits: Limits = DEFAULT_LI
         if topic_words > limits.board_words_per_topic:
             errors.append(f"{tloc}: the topic's whole board is {topic_words} words; a board should fit one screen "
                           f"(<= {limits.board_words_per_topic})")
+    errors.extend(natural_opening_errors(plan, limits=limits))
     if limits.expect_images:
         images = sum(1 for t in plan.topics for c in t.concepts
                      for op in iter_element_ops(ops_to_dicts(c.board_ops)) if op.get("op") == "image")

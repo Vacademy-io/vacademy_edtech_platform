@@ -195,8 +195,13 @@ class PlanCompiler:
         voice_prepare: Optional[Dict[str, Any]] = None,
         metering: Any = None,
         chapter_topics: Optional[Dict[str, List[str]]] = None,
+        natural_teaching: bool = False,
     ) -> None:
         self.institute_id = institute_id
+        # Natural teaching (course setting): the opening concept is short and
+        # does not greet (the runtime greets and runs a warm-up), and the
+        # voice warm-up also prepares the line variants.
+        self.natural_teaching = bool(natural_teaching)
         # Usage-event attribution for every charge of this compile (never
         # changes a charge). Callers with a request pass
         # MeteringContext.from_request; otherwise the authoring user with
@@ -239,6 +244,9 @@ class PlanCompiler:
         base = replace(DEFAULT_LIMITS, expect_images=bool(self.generate_images))
         if getattr(source, "style", "lesson") in ("interview", "practice"):
             return replace(base, engagement_rules=False)
+        if getattr(self, "natural_teaching", False):
+            # Soft only (one quality round): t1c1 is short and does not greet.
+            return replace(base, natural_opening=True)
         return base
 
     # ── public ───────────────────────────────────────────────────────────
@@ -405,6 +413,7 @@ class PlanCompiler:
                         "kb": self.kb_grounding.model_dump() if self.kb_grounding else None,
                         "teacher_name": self.teacher_name, "language": self.language,
                         "generate_images": self.generate_images, "kind": source.kind,
+                        "natural_teaching": bool(getattr(self, "natural_teaching", False)),
                         "style": getattr(source, "style", "lesson"),
                         "compile_run_id": self.compile_run_id,
                         "source_description": description,
@@ -492,7 +501,8 @@ class PlanCompiler:
             provider=str(vp.get("provider") or "sarvam"), voice=str(vp.get("voice") or ""),
             base_pace=float(vp.get("base_pace") or 1.0), languages=list(vp.get("languages") or ["en"]),
             course_lang=str(vp.get("course_lang") or self.language), request_id=self.compile_run_id,
-            **supported_kwargs(warm_plan, {"metering": getattr(self, "metering", None)}),
+            **supported_kwargs(warm_plan, {"metering": getattr(self, "metering", None),
+                                           "natural": bool(vp.get("natural") or getattr(self, "natural_teaching", False))}),
         ))
         _VOICE_TASKS.add(task)
         task.add_done_callback(_VOICE_TASKS.discard)
@@ -565,7 +575,8 @@ class PlanCompiler:
                                source.slide_id, exc)
         kb_block = await self._kb_block(source)
         system = prompts.system_prompt(self.teacher_name, self.language, images_enabled=self.generate_images,
-                                       style=getattr(source, "style", "lesson"))
+                                       style=getattr(source, "style", "lesson"),
+                                       natural=bool(getattr(self, "natural_teaching", False)))
         if source.kind == "scorm":
             # The package's own words (slide text, sections, OCR of image
             # slides) taught on the board; the admin's description when the

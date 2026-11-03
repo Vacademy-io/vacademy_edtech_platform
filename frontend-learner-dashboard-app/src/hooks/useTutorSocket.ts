@@ -29,6 +29,8 @@ export interface TutorCheckEvent {
   revisit?: boolean;
   /** A guess the teacher asks for before the board appears (never graded). */
   predict?: boolean;
+  /** The lesson's opening warm-up question (concept_id null, predict set): never graded or counted. */
+  warmup?: boolean;
 }
 
 /** What a teacher line is: a verdict carries a score, a note the concept it closes. */
@@ -169,7 +171,9 @@ export function useTutorSocket(callbacks: Callbacks) {
       ws.onopen = () => {
         // `hold`: the server sends `ready` but keeps the teacher quiet until
         // `begin` — the face and the audio get to be on screen first.
-        ws.send(JSON.stringify({ type: "auth", token: cbRef.current.getToken?.() || readToken(), hold: true }));
+        // `caps`: this bundle knows the natural-teaching warm-up (card, phone
+        // pane, transcript); bundles without it get the ordinary opening.
+        ws.send(JSON.stringify({ type: "auth", token: cbRef.current.getToken?.() || readToken(), hold: true, caps: ["warmup"] }));
         setConnectionState("connected");
         pingRef.current = setInterval(() => send({ type: "ping" }), 25000);
       };

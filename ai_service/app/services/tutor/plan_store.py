@@ -315,6 +315,12 @@ def plan_view(db: Session, plan: TeachingPlan) -> Dict[str, Any]:
         if isinstance(plan.raw_plan_json, dict) else None,
         "style": (((plan.raw_plan_json or {}).get("compile_inputs") or {}).get("style") or "lesson")
         if isinstance(plan.raw_plan_json, dict) else "lesson",
+        # The slide kind the plan was compiled from (compile_inputs.kind:
+        # document | video | pdf | scorm | quiz …); "lesson" when unrecorded.
+        # Quiz plans are style "lesson" too, so the runtime tells them apart
+        # by this.
+        "kind": (str(((plan.raw_plan_json or {}).get("compile_inputs") or {}).get("kind") or "") or "lesson")
+        if isinstance(plan.raw_plan_json, dict) else "lesson",
         # Board-quality asks the compiler let go (the plan is served anyway).
         "quality_notes": quality_notes_of(plan),
         "topics": [

@@ -686,6 +686,42 @@ def session_owner(tutor_session_id: str) -> Optional[Dict[str, Any]]:
         return {"user_id": ts.user_id, "status": ts.status, "package_session_id": ts.package_session_id}
 
 
+def session_natural(summary_json: Optional[Dict[str, Any]]) -> bool:
+    """The session's frozen natural-teaching arm (summary_json.natural)."""
+    summ = summary_json or {}
+    if summ.get("demo"):
+        return False
+    v = summ.get("natural")
+    return v is True or str(v).strip().lower() in ("1", "true")
+
+
+def warmup_seen_before(db: Session, ts: TutorSession) -> bool:
+    """Did an EARLIER session of this learner open this slide where the
+    natural-teaching warm-up could start (summary_json.warmup_eligible)? The
+    socket then treats this opening as not eligible, in both arms: the
+    warm-up saves no pointer, so a learner who closes (or reconnects) during
+    it opens "fresh" again, while the off arm's learner is already resumed.
+    Counting eligibility once per (learner, slide) keeps the arms comparable."""
+    if not ts.started_slide_id:
+        return False
+    try:
+        row = (db.query(TutorSession.id)
+               .filter(TutorSession.user_id == ts.user_id,
+                       TutorSession.package_session_id == ts.package_session_id,
+                       TutorSession.started_slide_id == ts.started_slide_id,
+                       TutorSession.id != ts.id,
+                       TutorSession.summary_json.has_key("warmup_eligible"))  # noqa: W601 (JSONB ?)
+               .limit(1).first())
+        return row is not None
+    except Exception:  # noqa: BLE001 — telemetry hygiene never blocks a lesson
+        logger.warning("warmup_seen_before failed for %s", ts.id, exc_info=True)
+        try:
+            db.rollback()
+        except Exception:  # noqa: BLE001
+            pass
+        return False
+
+
 def boot_context(tutor_session_id: str) -> Optional[Dict[str, Any]]:
     """Everything the socket needs to open, read in ONE short session that is
     closed before the first model or TTS await: the handler itself never
@@ -703,6 +739,7 @@ def boot_context(tutor_session_id: str) -> Optional[Dict[str, Any]]:
         pointer = resume_position(db, lesson, st) if lesson is not None else None
         previous = previous_slide(st, lesson.slide_id) if lesson is not None else None
         db.commit()
+        warmup_seen = warmup_seen_before(db, ts) if lesson is not None and pointer is None else False
         try:
             tts_provider = settings.tts_provider or str(get_platform_setting("tutor.voice.provider", default="sarvam", db=db) or "sarvam")
             tts_voice = settings.tts_voice or str(get_platform_setting("tutor.voice.voice", default="", db=db) or "")
@@ -727,6 +764,10 @@ def boot_context(tutor_session_id: str) -> Optional[Dict[str, Any]]:
             "max_seconds": (int((ts.summary_json or {}).get("max_minutes") or 0) * 60) or session_max_seconds(db),
             # Public demo: unbilled, short, no premium avatar.
             "demo": bool((ts.summary_json or {}).get("demo")),
+            # Natural teaching, frozen at session creation (pre-feature
+            # sessions have no key = off; a demo is always off).
+            "natural": session_natural(ts.summary_json),
+            "warmup_seen": warmup_seen,
         }
 
 
@@ -813,7 +854,11 @@ def start_session(
             chat_session_id=chat.id, mode=mode, tts_provider=settings.tts_provider, tts_voice=settings.tts_voice,
             language=lang, started_slide_id=target_slide, status="ACTIVE",
             # A public demo carries its own name, length and no-billing flag.
-            summary_json={"turns": 0, **({"demo": True, "learner_name": guest.get("name"), "max_minutes": guest.get("minutes")} if guest else {})},
+            # `natural` is frozen here (never bumped: demo reconnects reuse the
+            # session) so a mid-session admin flip cannot split the session's
+            # behaviour from its telemetry. Public demos never get it.
+            summary_json={"turns": 0, "natural": 1 if (settings.natural_teaching and not guest) else 0,
+                          **({"demo": True, "learner_name": guest.get("name"), "max_minutes": guest.get("minutes")} if guest else {})},
         )
         db.add(ts)
         st.current_slide_id = target_slide
@@ -824,6 +869,7 @@ def start_session(
             "tutor_session_id": ts.id, "chat_session_id": chat.id, "package_id": package_id,
             "package_name": package_name, "settings": settings, "lesson": lesson, "pointer": pointer,
             "resumed": resumed, "language": lang, "learner_name": name, "state": state_dict(st),
+            "natural": bool(ts.summary_json.get("natural")),
         }
 
 

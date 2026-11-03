@@ -1,7 +1,7 @@
 """Live AI Tutor — learner runtime: REST to start/end a session, WebSocket to
 teach (design §6). Builds on the voice-call socket's audio pipeline by import.
 
-Protocol (client → server): auth{token} FIRST, then config{language?,speak?},
+Protocol (client → server): auth{token, hold?, caps?} FIRST, then config{language?,speak?},
 continue, answer{text}, ask{text}, control{intent}, next_slide{slide_id},
 audio_chunk{data}, audio_end{mime}, audio_discard, interrupt, end_session, ping.
 Server → client: ready, lesson (after next_slide), state, board{ops, clear},
@@ -40,7 +40,7 @@ from ..services.sarvam_service import SarvamService, SarvamSTTError
 from ..services.tutor.roles import is_staff, normalize_roles
 from ..services.tutor.runtime import session_service as svc
 from ..services.tutor.runtime import state as sm
-from ..services.tutor.runtime.decision import run_predict, run_turn
+from ..services.tutor.runtime.decision import append_bridge, bridge_target, run_predict, run_turn, run_warmup_ack
 from ..services.tutor.runtime.intents import detect_intent
 from ..services.tutor.runtime import prompts
 from ..services.tutor.runtime.revisit import fresh_check
@@ -85,6 +85,65 @@ def client_holds_opening(auth_frame: dict) -> bool:
     """Does this client want the opening held until it says `begin`?"""
     return isinstance(auth_frame, dict) and auth_frame.get("hold") is True
 
+
+# ── natural teaching: the warm-up (pure helpers) ─────────────────────────────
+
+def warmup_gate(*, fresh: bool, style: Optional[str], plan_kind: Optional[str], step_kind: str,
+                topic_index: int, concept_index: int, is_demo: bool) -> bool:
+    """May this opening start with a warm-up question? A first, fresh open
+    (not a resume) of a lesson-style, non-quiz plan whose first step teaches
+    concept 1 of topic 1 — a plan that opens on a guess or a media task
+    already has its own opener. Never for a demo / guest."""
+    return (fresh and not is_demo and (style or "lesson") == "lesson" and (plan_kind or "lesson") != "quiz"
+            and step_kind == "teach" and topic_index == 0 and concept_index == 0)
+
+
+def warmup_command(text_: str, intent: Optional[str], *, from_control: bool) -> Optional[str]:
+    """During the warm-up, is this a command rather than the answer? Short
+    answers are exactly where the intent patterns fire ("again and again",
+    "slow and fast"), so only a control button or an utterance that is ONE
+    command word counts. Returns repeat / slower / faster / pause / skip, or
+    None: the text is the answer (a doubt included)."""
+    if from_control:
+        if intent in ("repeat", "slower", "faster", "pause"):
+            return intent
+        return "skip" if intent in ("skip", "resume", "done") else None
+    words = (text_ or "").split()
+    if len(words) != 1:
+        return None
+    if words[0].lower().strip(" .!।,") in SHORT_OK:
+        return "skip"
+    if intent in ("repeat", "slower", "faster", "pause"):
+        return intent
+    if intent in ("skip", "resume", "done"):
+        return "skip"
+    return None
+
+
+def warmup_wait_seconds(mode: str) -> float:
+    return float(WARMUP_WAIT_VOICE_SECONDS if mode == "voice" else WARMUP_WAIT_TEXT_SECONDS)
+
+
+def audio_arriving(buffered_bytes: int, last_audio_at: float, now: float) -> bool:
+    """A recording is in progress: never move on under the learner's voice."""
+    return buffered_bytes > 0 or (now - last_audio_at) < AUDIO_ACTIVE_GRACE_SECONDS
+
+
+def client_supports_warmup(auth_frame: dict) -> bool:
+    """Does this client bundle know the warm-up (its card, its phone pane, its
+    transcript)? Bundles cached from before it do not advertise `caps`, and
+    get the ordinary opening even on a natural-teaching course."""
+    caps = auth_frame.get("caps") if isinstance(auth_frame, dict) else None
+    return isinstance(caps, list) and "warmup" in caps
+
+
+def estimated_speech_seconds(text_: str, pace: float = 1.0) -> float:
+    """Roughly how long the client takes to PLAY a line: `_speak` sends audio
+    as fast as the socket takes it, so a silence clock started at send time
+    would be most of the way through before the learner has heard the line."""
+    n = len(" ".join((text_ or "").split()))
+    return n / (SPOKEN_CHARS_PER_SECOND * max(0.5, float(pace or 1.0)))
+
 MEDIA_IDLE_SECONDS = 30 * 60
 # Every learner utterance is one model call; bound what a runaway client (or
 # a script with the learner's token) can spend.
@@ -100,6 +159,20 @@ QUESTION_BEAT_MS = 450
 # Silence recovery: a nudge (hint) after this long on an open question; the
 # idle exit then counts from the nudge.
 NUDGE_SECONDS = 60
+# Natural teaching's warm-up question waits much less than a graded one: it
+# is a one-line opinion, and nothing is lost by moving on.
+WARMUP_WAIT_VOICE_SECONDS = 15
+WARMUP_WAIT_TEXT_SECONDS = 40
+# Microphone audio this recent means the learner is still talking.
+AUDIO_ACTIVE_GRACE_SECONDS = 4.0
+# How often the socket looks at the warm-up clock while it is open.
+WARMUP_POLL_SECONDS = 2.0
+# Spoken rate at pace 1.0 for the playback estimate (≈ 150 words a minute in
+# English; Indic scripts run a little faster per character — a slight
+# over-estimate only makes the warm-up wait a little longer).
+SPOKEN_CHARS_PER_SECOND = 14.0
+# "Okay"-type replies that mean "go on", not an answer.
+SHORT_OK = ("ok", "okay", "yes", "haan", "हाँ", "ji", "जी", "hmm", "sure", "next", "fine")
 SERVER_TTS_PROVIDERS = ("smallest", "sarvam", "google", "edge")
 # Voice lessons are metered per started minute (design §4.8, tool
 # tutor_live_minute); the first minute is charged at open, the next every 60 s.
@@ -342,6 +415,7 @@ async def tutor_socket(websocket: WebSocket, tutor_session_id: str) -> None:
             await _fatal("Authentication required", 4401)
             return
         hold_opening = client_holds_opening(first)
+        warmup_client = client_supports_warmup(first)
         begin_event = asyncio.Event()
 
         # ── 2. load lesson, settings, learner state (one short session) ──
@@ -375,6 +449,27 @@ async def tutor_socket(websocket: WebSocket, tutor_session_id: str) -> None:
         live_model: Optional[str] = ctx.get("live_model")
         max_seconds = int(ctx.get("max_seconds") or SESSION_MAX_SECONDS)
         is_demo = bool(ctx.get("demo"))
+        # Natural teaching: the arm frozen on the session when it was created
+        # (summary_json.natural), never re-resolved here; never for a demo.
+        natural = bool(ctx.get("natural", False)) and not is_demo
+        # This learner already had an opening of this slide that could warm up
+        # (an earlier session): eligibility counts once per (learner, slide)
+        # in both arms, so an abandoned warm-up is not offered (or counted) again.
+        warmup_seen = bool(ctx.get("warmup_seen", False))
+        # The warm-up question in progress (socket-local, never persisted):
+        # {step, question, lang, topic, answers, coached, asked}. While it is
+        # set the pointer stays unsaved, so a refresh simply opens fresh again.
+        # `asked`: the question has gone out (its card is on screen).
+        warmup: Optional[Dict[str, Any]] = None
+        # When the audio sent so far will have finished playing on the client
+        # (an estimate): the warm-up's silence clock starts there.
+        speech_until = 0.0
+        # After the warm-up the teacher has already greeted: the first
+        # concept's own "Hi {name}, …" is dropped once.
+        strip_greeting_once = False
+        # When the last microphone chunk arrived (the warm-up never moves on
+        # under the learner's voice).
+        last_audio_at = 0.0
         # What the learner answered per concept this session; quiz slides
         # write it back as a quiz activity log when the slide is done.
         attempt_log: Dict[str, Dict[str, Any]] = {}
@@ -402,6 +497,10 @@ async def tutor_socket(websocket: WebSocket, tutor_session_id: str) -> None:
         async def _await(what: str) -> None:
             nonlocal awaiting_answer_since, nudged, heard_audio
             awaiting_answer_since = time.time() if what == "answer" else None
+            if warmup is not None and awaiting_answer_since is not None:
+                # The warm-up's short wait counts from when the learner has
+                # HEARD the question, and never runs while they are away.
+                awaiting_answer_since = None if away_since is not None else max(awaiting_answer_since, speech_until)
             nudged = False
             heard_audio = False
             await _send({"type": "await", "what": what})
@@ -498,14 +597,21 @@ async def tutor_socket(websocket: WebSocket, tutor_session_id: str) -> None:
                 await _send({"type": "audio_segment_end"})
 
         async def _say(text_: str, *, reason: str = "complete", meta: Optional[dict] = None, beat: bool = False) -> None:
+            nonlocal speech_until
             text_ = _personalize(text_)
             transcript.append({"role": "teacher", "text": text_})
             svc.append_transcript(chat_session_id, "assistant", text_, meta)
             await _send({"type": "ai_text", "text": text_, "meta": meta or {}})
+            sent_at = time.time()
             if beat and speak_enabled:
                 # A breath before a question, so it lands as a question.
                 await _send({"type": "beat", "ms": QUESTION_BEAT_MS})
             await _speak(text_)
+            if speak_enabled and text_.strip():
+                # The client plays its queue in order: this line ends after the
+                # ones before it, and never before its own audio was sent.
+                played = (QUESTION_BEAT_MS / 1000.0 if beat else 0.0) + estimated_speech_seconds(text_, _effective_pace())
+                speech_until = max(max(sent_at, speech_until) + played, time.time())
             await _send({"type": "audio_end", "reason": reason})
 
         async def _apply_decision_ops(decision: Dict[str, Any], concept: Optional[sm.Concept]) -> None:
@@ -551,6 +657,9 @@ async def tutor_socket(websocket: WebSocket, tutor_session_id: str) -> None:
 
         async def _nudge() -> None:
             """A minute of silence on a question: a hint, not a timeout."""
+            if warmup is not None:
+                await _warmup_silence()
+                return
             open_question = bool(revisit and revisit.get("current")) or (
                 pending is None and pointer.phase in (sm.AWAIT_ANSWER, sm.REMEDIATE, sm.PREDICT))
             if not open_question:
@@ -570,7 +679,8 @@ async def tutor_socket(websocket: WebSocket, tutor_session_id: str) -> None:
             # how to answer, not what to answer — say how first, then the hint.
             how = "voice_" if mode == "voice" and not heard_audio else ""
             nl = _spoken_lang(concept)
-            await _say(prompts.tpl(f"nudge_{how}hint", nl, hint=hint) if hint else prompts.tpl(f"nudge_{how}open", nl),
+            await _say(prompts.tpl(f"nudge_{how}hint", nl, vary=natural, hint=hint) if hint
+                       else prompts.tpl(f"nudge_{how}open", nl, vary=natural),
                        meta={"kind": "nudge"})
             await _send({"type": "await", "what": "answer"})
 
@@ -615,7 +725,7 @@ async def tutor_socket(websocket: WebSocket, tutor_session_id: str) -> None:
             if not revisit["queue"]:
                 stage = revisit["stage"]
                 revisit = None
-                await _say(prompts.tpl("revisit_done_topic" if stage == "topic" else "revisit_done_slide", lang),
+                await _say(prompts.tpl("revisit_done_topic" if stage == "topic" else "revisit_done_slide", lang, vary=natural),
                            meta={"kind": "revisit_done"})
                 if stage == "slide":
                     await _send_slide_done()
@@ -735,7 +845,7 @@ async def tutor_socket(websocket: WebSocket, tutor_session_id: str) -> None:
                 await asyncio.sleep(LIVE_METER_SECONDS)
 
         async def _apply_step(step: sm.Step, *, greeting: Optional[str] = None) -> None:
-            nonlocal pointer, board
+            nonlocal pointer, board, pending, strip_greeting_once
             # Commit the transition BEFORE any await: an interrupted narration
             # must never leave memory one concept ahead of the database.
             pointer = step.pointer
@@ -754,7 +864,7 @@ async def tutor_socket(websocket: WebSocket, tutor_session_id: str) -> None:
                     return
                 await _send({"type": "check", "concept_id": step.concept.id if step.concept else None, "check_type": "predict",
                              "prompt": q, "options": [], "remediation": 0, "predict": True})
-                await _say(prompts.tpl("predict_intro", lang, question=q), meta={"kind": "predict_ask", "concept_id": step.concept.id if step.concept else None}, beat=True)
+                await _say(prompts.tpl("predict_intro", lang, vary=natural, question=q), meta={"kind": "predict_ask", "concept_id": step.concept.id if step.concept else None}, beat=True)
                 await _await("answer")
                 return
             if step.kind in ("teach", "media_task"):
@@ -765,7 +875,12 @@ async def tutor_socket(websocket: WebSocket, tutor_session_id: str) -> None:
                 # The greeting is spoken on its own, BEFORE the board frame:
                 # the board's reveal follows the narration's sentence numbers.
                 if greeting and step.kind == "teach":
+                    # The pointer is already saved at this concept's TEACH phase:
+                    # a barge-in or Continue during the greeting must teach it,
+                    # never jump to its check (after_teach) before it was taught.
+                    pending = (step, None)
                     await _say(greeting, meta={"kind": "greet"})
+                    pending = None
                 board = board + list(step.board_ops)
                 await _send({"type": "board", "clear": False, "ops": step.board_ops, "topic_id": step.topic.id if step.topic else None,
                              "concept_id": step.concept.id if step.concept else None})
@@ -773,9 +888,14 @@ async def tutor_socket(websocket: WebSocket, tutor_session_id: str) -> None:
                 narration = step.concept.narration(lang)
                 # Compiled first concepts often open with their own "Hi {name},
                 # …": when the teacher has a greeting of her own (welcome back,
-                # next slide), drop the narration's, never hers.
-                if greeting:
-                    narration = prompts.strip_leading_greeting(narration)
+                # next slide, the warm-up), drop the narration's, never hers.
+                strip_now = strip_greeting_once and step.kind == "teach"
+                if step.kind == "teach":
+                    strip_greeting_once = False
+                if greeting or strip_now:
+                    # (The extended greeting words are natural teaching's; the
+                    # off arm strips exactly what it always did.)
+                    narration = prompts.strip_leading_greeting(narration, extended=natural)
                 text_ = narration
                 if step.kind == "media_task":
                     kind = next((op.get("kind") for op in step.board_ops if op.get("op") == "media_task"), "video")
@@ -813,7 +933,7 @@ async def tutor_socket(websocket: WebSocket, tutor_session_id: str) -> None:
                     board = board + list(step.board_ops)
                     await _send({"type": "board", "clear": False, "ops": step.board_ops, "topic_id": step.topic.id if step.topic else None})
                 recap = (step.topic.recap(lang, lesson.language) or "") if step.topic else ""
-                await _say(recap or prompts.tpl("topic_summary", lang, topic=step.topic.title if step.topic else ""),
+                await _say(recap or prompts.tpl("topic_summary", lang, vary=natural, topic=step.topic.title if step.topic else ""),
                            meta={"kind": "topic_summary"})
                 cands = _revisit_candidates("topic")
                 if cands:
@@ -831,12 +951,14 @@ async def tutor_socket(websocket: WebSocket, tutor_session_id: str) -> None:
                     await _send_slide_done()
 
         async def _open(*, first: bool) -> None:
-            nonlocal board, opened_once, revisit
+            nonlocal board, opened_once, revisit, pending
             revisit = None
+            # Before opened_once flips: a first, fresh (not resumed) open.
+            fresh = first and not opened_once and not resumed
             # What the teacher says about last time: the model-written line
             # from the previous session's summary, else just the weak count.
             weak_n = len(state.get("weak_concepts_json") or [])
-            summary = (prompts.strip_leading_greeting(ctx.get("resume_line") or "").strip()
+            summary = (prompts.strip_leading_greeting(ctx.get("resume_line") or "", extended=natural).strip()
                        or (prompts.tpl("weak_note", lang, n=weak_n) if weak_n else ""))
             if resumed:
                 # Put back what the topic's earlier concepts drew, so "look at
@@ -861,14 +983,148 @@ async def tutor_socket(websocket: WebSocket, tutor_session_id: str) -> None:
             elif first and not opened_once:
                 greet = prompts.tpl(prompts.greet_key(lesson.style), lang, name=display_name, teacher=teacher, slide=_slide_name())
             else:
-                greet = prompts.tpl("next_slide", lang, slide=_slide_name())
+                greet = prompts.tpl("next_slide", lang, vary=natural, slide=_slide_name())
             opened_once = True
             step = sm.enter(lesson, pointer)
+            eligible = warmup_gate(fresh=fresh and not warmup_seen, style=lesson.style,
+                                   plan_kind=getattr(lesson, "kind", "lesson"), step_kind=step.kind,
+                                   topic_index=step.pointer.topic, concept_index=step.pointer.concept, is_demo=is_demo)
+            if eligible:
+                # Both arms: the comparison is over openings that COULD warm up
+                # (once per learner and slide: see warmup_seen).
+                svc.bump_telemetry(tutor_session_id, warmup_eligible=1)
+            if eligible and natural and not warmup_client:
+                # A bundle cached from before the warm-up: the ordinary opening.
+                svc.bump_telemetry(tutor_session_id, warmup_unsupported_client=1)
+            if eligible and natural and warmup_client:
+                if previous_slide and previous_slide.get("slide_title"):
+                    short = prompts.tpl("greet_returning_short", lang, name=display_name, slide=_slide_name(),
+                                        previous=previous_slide["slide_title"], summary=summary)
+                else:
+                    short = prompts.tpl("greet_short", lang, name=display_name, teacher=teacher, slide=_slide_name())
+                await _start_warmup(step, short)
+                return
             if step.kind in ("topic_summary", "slide_done", "predict"):
                 # Resuming on a summary / a finished slide, or opening on a
                 # guess: say the greeting first, then the step's own line.
+                if step.kind == "predict":
+                    # A fresh pointer sits at TEACH: a Continue during this
+                    # greeting would otherwise ask concept 1's check untaught.
+                    pending = (step, None)
                 await _say(greet, meta={"kind": "greet"})
+                if step.kind == "predict":
+                    pending = None
             await _apply_step(step, greeting=greet if step.kind in ("teach", "media_task") else None)
+
+        async def _start_warmup(step: sm.Step, greeting: str) -> None:
+            """Natural teaching's opener: a short greeting, then one open
+            question about the first topic before any board. Nothing is saved:
+            the pointer stays the fresh in-memory one until the warm-up ends."""
+            nonlocal warmup, awaiting_answer_since, nudged
+            nl = _spoken_lang(step.concept)
+            topic = (lesson.topics[0].title if lesson.topics else "") or _slide_name()
+            question = prompts.tpl("warmup_ask", nl, vary=True, topic=topic)
+            # Set BEFORE the first await: a barge-in on the greeting is routed
+            # by the warm-up (which asks the question first: `asked` is False).
+            warmup = {"step": step, "question": question, "lang": nl, "topic": topic, "answers": [], "coached": False,
+                      "asked": False}
+            # The silence clock runs from now, so a greeting cut off by a stray
+            # tap still gets its question (it cannot fire while the greeting
+            # is being spoken: the task is busy).
+            awaiting_answer_since, nudged = time.time(), False
+            svc.bump_telemetry(tutor_session_id, warmups_offered=1)
+            await _emit_state("warmup", step.concept)
+            await _say(greeting, meta={"kind": "greet"})
+            await _ask_warmup_question()
+
+        async def _ask_warmup_question(*, again: bool = False) -> None:
+            """The warm-up question itself: its card, then the spoken line.
+            `again`: asked afresh (back from away) — earlier words are dropped."""
+            w = warmup
+            if w is None:
+                return
+            if again:
+                w["answers"] = []
+            # Never counted by the client: no concept id, and a guess-style card.
+            await _send({"type": "check", "concept_id": None, "check_type": "open", "prompt": w["question"], "options": [],
+                         "remediation": 0, "predict": True, "warmup": True})
+            w["asked"] = True
+            await _say(w["question"], meta={"kind": "warmup_ask"}, beat=True)
+            await _await("answer")
+
+        def _rearm_warmup_clock() -> None:
+            """An answer attempt ended without an answer (too short, the
+            speech engine failed, a discarded or empty recording): the learner
+            was told to try again, so the silence clock starts over."""
+            nonlocal awaiting_answer_since, nudged
+            if warmup is not None and warmup.get("asked") and away_since is None:
+                awaiting_answer_since, nudged = time.time(), False
+
+        async def _finish_warmup(text_: Optional[str], how: str) -> None:
+            """End the warm-up: acknowledge the answer (one small model call)
+            or move on, then commit concept 1 and teach it. `how`: answered /
+            skipped / silent."""
+            nonlocal warmup, strip_greeting_once, pending, pointer
+            w = warmup
+            if w is None:
+                return
+            step: sm.Step = w["step"]
+            nl = w["lang"]
+            if text_:
+                # Every utterance so far: a second tap that adds words cancels
+                # the first call and answers again with the whole thought.
+                w["answers"].append(text_)
+                ack, usage, fell_back = await run_warmup_ack(
+                    institute_id=institute_id, user_id=user_id, model=live_model, teacher=teacher, lang=nl,
+                    learner_name=display_name or None, question=w["question"], answer=" ".join(w["answers"])[-300:],
+                    topic=w["topic"], first_concept=step.concept.title if step.concept else None,
+                    tutor_session_id=tutor_session_id,
+                )
+                # Not a learner `turn` (that counter decides whether the session
+                # is worth a rolling-summary rewrite, and compares the arms) and
+                # not a decision `fallback`: the warm-up has its own counters.
+                svc.bump_telemetry(tutor_session_id, warmups_answered=1,
+                                   llm_prompt_tokens=usage.get("prompt_tokens", 0),
+                                   llm_completion_tokens=usage.get("completion_tokens", 0),
+                                   warmup_ack_fallbacks=1 if fell_back else 0)
+            else:
+                ack = prompts.tpl("warmup_move_on", nl, vary=True)
+                svc.bump_telemetry(tutor_session_id, **{f"warmups_{'silent' if how == 'silent' else 'skipped'}": 1})
+            # No await between clearing the warm-up and the commit: from here
+            # on a barge-in lands on `pending` and teaches concept 1.
+            warmup = None
+            strip_greeting_once = True
+            if mode == "voice" and speak_enabled:
+                # Concept 1 waits until her reply has PLAYED (the voice client
+                # continues by itself): sent at socket speed, its narration and
+                # check would be open while the learner still hears the reply,
+                # and a word added to the warm-up would be graded as concept 1's
+                # answer. `pending` stays set, so Continue — or anything the
+                # learner says now — teaches concept 1, never grades it.
+                pending = (step, None)
+                pointer = step.pointer
+                _save()
+                await _say(ack, meta={"kind": "warmup_ack"})
+                await _await("continue")
+                return
+            await _commit_then_say(step, None, ack, {"kind": "warmup_ack"})
+
+        async def _warmup_silence() -> None:
+            """No answer to the warm-up: in a voice lesson where no audio has
+            arrived, explain how to answer once; otherwise move on. Never while
+            the learner is away; a question cut off before it went out is asked."""
+            w = warmup
+            if w is None or away_since is not None:
+                return
+            if not w.get("asked"):
+                await _ask_warmup_question()
+                return
+            if mode == "voice" and not heard_audio and not w.get("coached"):
+                w["coached"] = True
+                await _say(prompts.tpl("nudge_voice_open", w["lang"], vary=True), meta={"kind": "nudge"})
+                await _await("answer")
+                return
+            await _finish_warmup(None, "silent")
 
         async def _commit_then_say(step: sm.Step, closed: Optional[sm.Concept], text_: str, meta: dict) -> None:
             """Verdict pattern: the transition is committed first; if the
@@ -903,33 +1159,83 @@ async def tutor_socket(websocket: WebSocket, tutor_session_id: str) -> None:
         async def _handle_doubt(text_: str) -> None:
             await _handle_learner_text(text_, spoken=False, force_doubt=True)
 
-        async def _handle_learner_text(text_: str, *, spoken: bool, force_doubt: bool = False) -> None:
-            """Route a learner utterance: intent → answer → doubt."""
-            nonlocal pointer, pace, lang, pending, state
+        async def _handle_learner_text(text_: str, *, spoken: bool, force_doubt: bool = False,
+                                       from_control: bool = False) -> None:
+            """Route a learner utterance: intent → answer → doubt.
+            `from_control`: the text is a control button's intent word."""
+            nonlocal pointer, pace, lang, pending, state, awaiting_answer_since
             text_ = (text_ or "").strip()
             if not text_:
+                _rearm_warmup_clock()
                 await _send({"type": "audio_end", "reason": "no_speech"})
                 return
             transcript.append({"role": "learner", "text": text_})
             svc.append_transcript(chat_session_id, "user", text_, {"spoken": spoken})
             intent = None if force_doubt else detect_intent(text_)
             phase = pointer.phase
-            short_ok = text_.lower().strip(" .!") in ("ok", "okay", "yes", "haan", "हाँ", "ji", "जी", "hmm", "sure", "next", "fine")
+            short_ok = text_.lower().strip(" .!") in SHORT_OK
 
             # A verdict was interrupted: the learner either wants to go on or
             # has a question about what was just closed.
             if pending is not None:
                 step, closed = pending
-                if intent in ("resume", "skip", "repeat", "done") or (intent is None and short_ok):
+                if closed is not None:
+                    if intent in ("resume", "skip", "repeat", "done") or (intent is None and short_ok):
+                        pending = None
+                        await _apply_step(step)
+                        return
+                    await _answer_doubt(text_, closed, spoken=spoken, what_next="continue")
+                    return
+                # A greeting (or the warm-up's reply) was interrupted before
+                # the concept was taught. "Go on" teaches it now; Skip skips it
+                # as it always did; anything else (pause, pace, a question, a
+                # remark) is handled as usual with `pending` kept, so the next
+                # Continue teaches the concept instead of asking its check.
+                if intent in ("resume", "repeat", "done") or (intent is None and not force_doubt and short_ok):
                     pending = None
                     await _apply_step(step)
                     return
-                if closed is not None:
-                    await _answer_doubt(text_, closed, spoken=spoken, what_next="continue")
+                if intent == "skip" and not force_doubt:
+                    pending = None
+
+            # The warm-up question is open: almost everything is its answer.
+            # Nothing here saves the pointer or records an attempt.
+            if warmup is not None:
+                cmd = None if force_doubt else warmup_command(text_, intent, from_control=from_control)
+                wl = warmup["lang"]
+                if not warmup.get("asked"):
+                    # The learner spoke over the greeting: the question has not
+                    # gone out, so nothing said yet can be its answer. Only the
+                    # Skip button passes on it; everything else gets the question.
+                    if cmd == "skip" and from_control and intent == "skip":
+                        await _finish_warmup(None, "skipped"); return
+                    if cmd in ("slower", "faster"):
+                        pace = _step_pace(pace, -1 if cmd == "slower" else 1)
+                        await _send({"type": "pace", "pace": pace})
+                        await _say(prompts.tpl(cmd, wl, vary=True), meta={"kind": cmd})
+                    elif cmd == "pause":
+                        await _say(prompts.tpl("pause", wl, vary=True), meta={"kind": "pause"})
+                        # Continue asks the question (see _handle_continue).
+                        await _await("continue"); return
+                    await _ask_warmup_question(); return
+                if cmd == "repeat":
+                    await _say(warmup["question"], meta={"kind": "warmup_ask"}, beat=True)
+                    await _await("answer"); return
+                if cmd in ("slower", "faster"):
+                    # Saved with the first concept (a save now would make a refresh "resumed").
+                    pace = _step_pace(pace, -1 if cmd == "slower" else 1)
+                    await _send({"type": "pace", "pace": pace})
+                    await _say(prompts.tpl(cmd, wl, vary=True), meta={"kind": cmd})
+                    await _await("answer"); return
+                if cmd == "pause":
+                    await _say(prompts.tpl("pause", wl, vary=True), meta={"kind": "pause"})
+                    await _await("answer")
+                    # Paused: no silent move-on; "continue" (or an answer) ends it.
+                    awaiting_answer_since = None
                     return
-                pending = None
-                await _apply_step(step)
-                return
+                if cmd == "skip":
+                    await _finish_warmup(None, "skipped"); return
+                await _finish_warmup(text_, "answered"); return
 
             # A revisit question is open (or being prepared): the utterance
             # is about it, never about the summary the pointer sits on.
@@ -959,10 +1265,10 @@ async def tutor_socket(websocket: WebSocket, tutor_session_id: str) -> None:
                     pace = _step_pace(pace, -1 if intent == "slower" else 1)
                     _save()
                     await _send({"type": "pace", "pace": pace})
-                    await _say(prompts.tpl(intent, lang), meta={"kind": intent})
+                    await _say(prompts.tpl(intent, lang, vary=natural), meta={"kind": intent})
                     await _await("answer"); return
                 if intent == "pause":
-                    await _say(prompts.tpl("pause", lang), meta={"kind": "pause"})
+                    await _say(prompts.tpl("pause", lang, vary=natural), meta={"kind": "pause"})
                     await _await("answer"); return
                 await _handle_revisit_answer(text_, spoken=spoken, kind="doubt" if (intent == "doubt" or force_doubt) else "answer")
                 return
@@ -973,14 +1279,14 @@ async def tutor_socket(websocket: WebSocket, tutor_session_id: str) -> None:
                 if concept is None or intent in ("skip", "resume", "done") or (intent is None and short_ok):
                     await _apply_step(sm.after_predict(lesson, pointer)); return
                 if intent == "repeat":
-                    await _say(prompts.tpl("predict_intro", lang, question=concept.predict_text(lang, lesson.language) or ""), meta={"kind": "predict_ask"}, beat=True)
+                    await _say(prompts.tpl("predict_intro", lang, vary=natural, question=concept.predict_text(lang, lesson.language) or ""), meta={"kind": "predict_ask"}, beat=True)
                     await _await("answer"); return
                 if intent == "doubt" or force_doubt:
                     await _answer_doubt(text_, concept, spoken=spoken, what_next="answer"); return
                 if intent not in ("slower", "faster", "pause"):
                     say, usage = await run_predict(institute_id=institute_id, user_id=user_id, model=live_model, teacher=teacher,
                                                    lang=lang, learner_name=display_name or None, concept=concept, answer=text_,
-                                                   tutor_session_id=tutor_session_id)
+                                                   tutor_session_id=tutor_session_id, vary=natural)
                     svc.bump_telemetry(tutor_session_id, turns=1, llm_prompt_tokens=usage.get("prompt_tokens", 0),
                                        llm_completion_tokens=usage.get("completion_tokens", 0))
                     await _say(say, meta={"kind": "predict", "concept_id": concept.id})
@@ -995,18 +1301,18 @@ async def tutor_socket(websocket: WebSocket, tutor_session_id: str) -> None:
                                        concept_id=concept.id, tags=concept.tags, attempt_no=pointer.remediations + 1, answer=text_,
                                        score=None, misconception=None, action="skipped", session_ops=None, note=None)
                     attempt_log.setdefault(concept.id, {"answer": "", "score": None, "correct": False, "action": "skipped"})
-                await _say(prompts.tpl("skipped", lang), meta={"kind": "skip"})
+                await _say(prompts.tpl("skipped", lang, vary=natural), meta={"kind": "skip"})
                 await _apply_step(sm.skip(lesson, pointer)); return
             if intent in ("slower", "faster"):
                 pace = _step_pace(pace, -1 if intent == "slower" else 1)
                 _save()
                 await _send({"type": "pace", "pace": pace})
-                await _say(prompts.tpl(intent, lang), meta={"kind": intent})
+                await _say(prompts.tpl(intent, lang, vary=natural), meta={"kind": intent})
                 await _await("continue" if phase in (sm.TEACH, sm.TOPIC_SUMMARY) else "answer"); return
             if intent == "done" and phase == sm.MEDIA_TASK:
                 await _apply_step(sm.after_teach(lesson, pointer)); return
             if intent == "pause":
-                await _say(prompts.tpl("pause", lang), meta={"kind": "pause"})
+                await _say(prompts.tpl("pause", lang, vary=natural), meta={"kind": "pause"})
                 await _await("answer" if phase in (sm.AWAIT_ANSWER, sm.REMEDIATE, sm.PREDICT) else "continue"); return
             if intent == "resume" or (intent is None and phase in (sm.TEACH, sm.TOPIC_SUMMARY, sm.SLIDE_DONE) and short_ok):
                 await _handle_continue(); return
@@ -1033,12 +1339,15 @@ async def tutor_socket(websocket: WebSocket, tutor_session_id: str) -> None:
             source_block = None
             if kind == "doubt" or pointer.remediations > 0:
                 source_block = await svc.kb_source_block(lesson, institute_id, concept.title, text_)
+            # Natural teaching: name the concept an advance would lead into
+            # (sm.advance is pure), so the verdict can bridge into it.
+            next_concept = bridge_target(sm.advance(lesson, pointer, mark_done=True), lang) if (natural and kind == "answer") else None
             decision, usage = await run_turn(
                 institute_id=institute_id, user_id=user_id, model=live_model, teacher=teacher, lang=lang,
                 strictness=settings.strictness, learner_name=display_name or None, state=state, lesson=lesson,
                 pointer=pointer, board_ops=board, transcript=transcript, learner_message=text_, kind=kind,
                 mode="voice" if spoken else "text", tutor_session_id=tutor_session_id, final_attempt=final_attempt,
-                source_block=source_block,
+                source_block=source_block, next_concept=next_concept,
             )
             svc.bump_telemetry(tutor_session_id, turns=1, llm_prompt_tokens=usage.get("prompt_tokens", 0),
                                llm_completion_tokens=usage.get("completion_tokens", 0), fallbacks=1 if decision.get("fallback") else 0)
@@ -1053,8 +1362,12 @@ async def tutor_socket(websocket: WebSocket, tutor_session_id: str) -> None:
                                        action="advance", session_ops=decision["board_ops"], note=(decision.get("learner_state_delta") or {}).get("note"))
                     state = svc.reload_state(user_id, package_session_id) or state
                     attempt_log[concept.id] = {"answer": text_, "score": score, "correct": True, "action": "advance"}
-                    await _commit_then_say(sm.advance(lesson, pointer, mark_done=True), concept, decision["say"],
-                                           {"kind": "evaluate", "score": score})
+                    step = sm.advance(lesson, pointer, mark_done=True)
+                    say = decision["say"]
+                    if natural:
+                        # Spoken after the verdict, only into a new concept.
+                        say = append_bridge(say, decision.get("bridge"), action=action, next_kind=step.kind)
+                    await _commit_then_say(step, concept, say, {"kind": "evaluate", "score": score})
                 elif action == "remediate":
                     step = sm.remediate(lesson, pointer)
                     weak_now = step.kind != "ask"      # remediation budget exhausted → advanced weak
@@ -1096,6 +1409,16 @@ async def tutor_socket(websocket: WebSocket, tutor_session_id: str) -> None:
                 pending = None
                 await _apply_step(step)
                 return
+            if warmup is not None:
+                # Continue on the warm-up question = "no answer, let's start"
+                # (the fresh pointer sits at TEACH: after_teach would ask
+                # concept 1's check before teaching it). Before the question
+                # went out (a Continue on the greeting) it means "go on": ask it.
+                if not warmup.get("asked"):
+                    await _ask_warmup_question()
+                else:
+                    await _finish_warmup(None, "skipped")
+                return
             if revisit is not None:
                 # Continue during a revisit: re-open the question, or ask the
                 # next one if the last was interrupted while being prepared.
@@ -1122,11 +1445,13 @@ async def tutor_socket(websocket: WebSocket, tutor_session_id: str) -> None:
                 audio, mime, note = await _transcode_to_wav(audio, mime)
                 detail = note
                 if mime == "audio/wav" and len(audio) < MIN_SPEECH_WAV_BYTES:
+                    _rearm_warmup_clock()
                     await _send({"type": "audio_end", "reason": "no_speech", "detail": f"too_short;{note}"})
                     return
                 try:
                     text_ = await sarvam.speech_to_text(audio_bytes=audio, language=_lang_stt(), mime_type=mime)
                 except SarvamSTTError as e:
+                    _rearm_warmup_clock()
                     await _send({"type": "transcript_final", "text": ""})
                     await _send({"type": "error", "message": "I couldn't hear that. Please try again.", "fatal": False})
                     await _send({"type": "audio_end", "reason": "error", "detail": f"stt_http_{e.status or 'err'};{note}"})
@@ -1165,8 +1490,11 @@ async def tutor_socket(websocket: WebSocket, tutor_session_id: str) -> None:
             """Back in front of the camera: pick up the concept they missed."""
             nonlocal paused_for_away
             paused_for_away = False
-            await _say(prompts.tpl("welcome_back", _spoken_lang()), meta={"kind": "welcome_back"})
-            if pending is None and pointer.phase in (sm.TEACH, sm.MEDIA_TASK, sm.PREDICT, sm.AWAIT_ANSWER, sm.REMEDIATE):
+            await _say(prompts.tpl("welcome_back", _spoken_lang(), vary=natural), meta={"kind": "welcome_back"})
+            if warmup is not None:
+                # They stepped away during the warm-up: ask it afresh.
+                await _ask_warmup_question(again=True)
+            elif pending is None and pointer.phase in (sm.TEACH, sm.MEDIA_TASK, sm.PREDICT, sm.AWAIT_ANSWER, sm.REMEDIATE):
                 # They missed (part of) the explanation: the same "say that again"
                 # step the Repeat button uses — the concept, then its question.
                 await _apply_step(sm.repeat(lesson, pointer))
@@ -1199,7 +1527,8 @@ async def tutor_socket(websocket: WebSocket, tutor_session_id: str) -> None:
                      "teacher_name": teacher, "teacher_avatar_file_id": settings.teacher_avatar_file_id,
                      "learner_name": display_name, "slide_id": lesson.slide_id,
                      "slide_title": lesson.slide_title,
-                     "topics": [{"id": t.id, "title": t.title, "concepts": len(t.concepts)} for t in lesson.topics]})
+                     "topics": [{"id": t.id, "title": t.title, "concepts": len(t.concepts)} for t in lesson.topics],
+                     "natural": natural})
         reached_ready = True
 
         async def _opening() -> None:
@@ -1227,17 +1556,27 @@ async def tutor_socket(websocket: WebSocket, tutor_session_id: str) -> None:
             idle_limit = MEDIA_IDLE_SECONDS if pointer.phase == sm.MEDIA_TASK else IDLE_SECONDS
             busy = current_task is not None and not current_task.done()
             timeout = float(idle_limit + 60)
+            # The warm-up waits less than a graded question (natural teaching).
+            nudge_after = warmup_wait_seconds(mode) if warmup is not None else NUDGE_SECONDS
             if awaiting_answer_since and not nudged and not busy:
-                timeout = min(timeout, max(3.0, NUDGE_SECONDS - (time.time() - awaiting_answer_since)))
+                timeout = min(timeout, max(3.0, nudge_after - (time.time() - awaiting_answer_since)))
             elif busy:
                 # A turn is running; look again soon so a question it asks
                 # gets its nudge on time.
                 timeout = 5.0
+            if natural and (warmup is not None or not opened_once):
+                # The warm-up's short wait must not sit behind a long receive
+                # started before it opened (the client pings only every 25 s).
+                timeout = min(timeout, WARMUP_POLL_SECONDS)
             try:
                 raw = await asyncio.wait_for(websocket.receive_text(), timeout=timeout)
             except asyncio.TimeoutError:
                 busy = current_task is not None and not current_task.done()
-                if awaiting_answer_since and not nudged and not busy and time.time() - awaiting_answer_since >= NUDGE_SECONDS - 1:
+                # The warm-up never moves on while the learner is still speaking
+                # (a recording in progress); the idle exit below still applies.
+                talking = warmup is not None and audio_arriving(len(audio_buffer), last_audio_at, time.time())
+                if (awaiting_answer_since and not nudged and not busy and not talking
+                        and time.time() - awaiting_answer_since >= nudge_after - 1):
                     nudged = True
                     last_activity = time.time()
                     _spawn(_nudge())
@@ -1287,8 +1626,14 @@ async def tutor_socket(websocket: WebSocket, tutor_session_id: str) -> None:
                     # to the question as soon as the narration TEXT is sent, while
                     # the learner still hears it for many seconds: `interrupted`
                     # = the device cut the teacher off mid-speech, so it is teaching.
-                    teaching = pointer.phase in (sm.TEACH, sm.TOPIC_SUMMARY) or msg.get("interrupted") is True
-                    if opened_once and revisit is None and teaching:
+                    # The warm-up is an open question (its phase is still TEACH).
+                    teaching = warmup is None and (pointer.phase in (sm.TEACH, sm.TOPIC_SUMMARY) or msg.get("interrupted") is True)
+                    # The warm-up is still being said (greeting, question) or
+                    # answered (the reply's model call): pause it like teaching,
+                    # so it never ends — and concept 1 is never taught — while
+                    # the learner is away; back, they get the question afresh.
+                    warmup_busy = warmup is not None and current_task is not None and not current_task.done()
+                    if opened_once and revisit is None and (teaching or warmup_busy):
                         await _cancel_current()
                         _spawn(_away())
                     else:
@@ -1302,7 +1647,8 @@ async def tutor_socket(websocket: WebSocket, tutor_session_id: str) -> None:
                     if was_teaching:
                         await _cancel_current()
                         _spawn(_welcome_back())
-                    elif pointer.phase in (sm.AWAIT_ANSWER, sm.REMEDIATE, sm.PREDICT) or (revisit and revisit.get("current")):
+                    elif (pointer.phase in (sm.AWAIT_ANSWER, sm.REMEDIATE, sm.PREDICT) or (revisit and revisit.get("current"))
+                          or warmup is not None):
                         awaiting_answer_since, nudged = now, False
                 continue
             last_activity = now
@@ -1324,13 +1670,20 @@ async def tutor_socket(websocket: WebSocket, tutor_session_id: str) -> None:
                 new_pace = msg.get("pace")
                 if isinstance(new_pace, str) and new_pace in PACE_MULTIPLIER and new_pace != pace:
                     pace = new_pace
-                    _save()
+                    # During the warm-up nothing is saved (a refresh would read
+                    # as "resumed"); the first concept's save carries it.
+                    if warmup is None:
+                        _save()
                     await _send({"type": "pace", "pace": pace})
                 new_lang = msg.get("language")
                 if new_lang in settings.language_pair and new_lang != lang:
                     lang = new_lang
-                    _save()
-                    await _emit_state(pointer.phase)
+                    if warmup is None:
+                        _save()
+                        await _emit_state(pointer.phase)
+                    else:
+                        warmup["lang"] = _spoken_lang(warmup["step"].concept)
+                        await _emit_state("warmup", warmup["step"].concept)
                 if isinstance(msg.get("speak"), bool):
                     speak_enabled = msg["speak"] and mode == "voice"
             elif t == "continue":
@@ -1345,11 +1698,13 @@ async def tutor_socket(websocket: WebSocket, tutor_session_id: str) -> None:
             elif t == "control":
                 await _cancel_current()
                 intent = str(msg.get("intent") or "")
-                _spawn(_handle_learner_text(intent if intent in ("repeat", "skip", "slower", "faster", "done", "pause", "resume") else "", spoken=False))
+                _spawn(_handle_learner_text(intent if intent in ("repeat", "skip", "slower", "faster", "done", "pause", "resume") else "",
+                                            spoken=False, from_control=True))
             elif t == "audio_chunk":
                 data = msg.get("data") or ""
                 if data:
                     heard_audio = True
+                    last_audio_at = now
                     try:
                         audio_buffer.extend(base64.b64decode(data))
                     except Exception:  # noqa: BLE001
@@ -1366,8 +1721,12 @@ async def tutor_socket(websocket: WebSocket, tutor_session_id: str) -> None:
                 _spawn(_run_audio_turn(audio, msg.get("mime") or "audio/wav"))
             elif t == "audio_discard":
                 audio_buffer.clear()
+                # "Tap the button and speak when you're ready": a fresh wait.
+                _rearm_warmup_clock()
             elif t == "interrupt":
                 await _cancel_current()
+                # The client stopped her audio: nothing queued is still playing.
+                speech_until = min(speech_until, now)
             elif t == "next_slide":
                 await _cancel_current()
                 sid = str(msg.get("slide_id") or "")
@@ -1378,6 +1737,8 @@ async def tutor_socket(websocket: WebSocket, tutor_session_id: str) -> None:
                     board = []
                     pending = None
                     revisit = None
+                    warmup = None
+                    strip_greeting_once = False
                     revisited.clear()
                     await _send(_lesson_frame())
                     _spawn(_open(first=False))

@@ -16,6 +16,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import re
 import shutil
 import subprocess
 import tempfile
@@ -129,16 +130,63 @@ async def store(key: str, *, provider: str, voice: str, lang: str, pace: str, te
 
 # ── what a plan says ─────────────────────────────────────────────────────────
 
-def spoken_lines(view: Dict[str, Any], lang: str, course_lang: str) -> List[str]:
+# Fixed lines every lesson may say (no learner name in them).
+_FIXED_KEYS = ("revisit_done_topic", "revisit_done_slide", "revisit_skipped", "skipped", "pause", "slower", "faster",
+               "fallback_correct", "predict_ack", "nudge_open", "idle_end", "credits_end", "media_task_video",
+               "media_task_pdf")
+# Natural teaching adds the fixed lines it says on top (the warm-up's
+# fallbacks and the voice-coaching nudge). The model-written warm-up ack is
+# live TTS; only its template fallback can be prepared.
+_NATURAL_FIXED_KEYS = ("nudge_voice_open", "welcome_back", "warmup_move_on", "warmup_ack")
+_UNFILLED = re.compile(r"\{[A-Za-z_]+\}")
+
+
+def _warmup_topic(view: Dict[str, Any]) -> Optional[str]:
+    """topics[0].title when this plan can open with the warm-up (a lesson,
+    not a quiz, whose first concept is taught — not a predict or a media
+    task); None otherwise. The socket asks about the same title."""
+    if (view.get("style") or "lesson") != "lesson" or (view.get("kind") or "lesson") == "quiz":
+        return None
+    topics = view.get("topics") or []
+    if not topics or not (topics[0].get("concepts") or []):
+        return None
+    c0 = topics[0]["concepts"][0]
+    if c0.get("predict") or any((op or {}).get("op") == "media_task" for op in (c0.get("board_ops") or [])):
+        return None
+    return (topics[0].get("title") or "").strip() or None
+
+
+def spoken_lines(view: Dict[str, Any], lang: str, course_lang: str, natural: bool = False) -> List[str]:
     """Every line the teacher will say from a compiled plan in `lang`, plus
     the fixed lines the socket wraps them in. Lines that carry the learner's
-    name are left to the live path."""
+    name are left to the live path.
+
+    With `natural` (the course's naturalTeaching), every template line is
+    prepared in each of its variants (prompts.tpl_all) — the socket picks one
+    at random and only an exact standalone line hits the cache — plus the
+    warm-up question, its fallbacks and the voice-coaching nudges. Without
+    it the list is exactly the single-variant one."""
     lines: List[str] = []
 
     def alt(base: Optional[str], i18n: Optional[Dict[str, str]]) -> Optional[str]:
         if lang != course_lang:
             return ((i18n or {}).get(lang) or "").strip() or None
         return (base or "").strip() or None
+
+    def many(key: str, strict: bool = False, **kw: Any) -> List[str]:
+        if not natural:
+            return [prompts.tpl(key, lang, **kw)]
+        if key not in prompts.T:
+            return []
+        try:
+            got = [ln for ln in prompts.tpl_all(key, lang, **kw) if ln]
+        except Exception:  # noqa: BLE001 — variants are an optimisation, never a failed warm-up
+            logger.warning("voice warm-up: variants of %s unavailable", key, exc_info=True)
+            got = []
+        got = got or [prompts.tpl(key, lang, **kw)]
+        # A fixed line that kept a placeholder it was not given (e.g. a
+        # fallback written with {topic}) is not a line anyone hears.
+        return [ln for ln in got if not _UNFILLED.search(ln)] if strict else got
 
     for t in view.get("topics") or []:
         for c in t.get("concepts") or []:
@@ -151,25 +199,32 @@ def spoken_lines(view: Dict[str, Any], lang: str, course_lang: str) -> List[str]
             if (chk.get("type") or "none") != "none":
                 p = alt(chk.get("prompt"), chk.get("prompt_i18n"))
                 if p:
-                    lines.append(prompts.tpl("ask", lang, prompt=p))
+                    lines.extend(many("ask", prompt=p))
                 h = alt(chk.get("hint"), chk.get("hint_i18n"))
                 if h:
-                    lines.append(prompts.tpl("nudge_hint", lang, hint=h))
+                    lines.extend(many("nudge_hint", hint=h))
+                    if natural:
+                        lines.extend(many("nudge_voice_hint", hint=h))
                 exp = (chk.get("expected") or "").strip()
                 if exp and lang == course_lang:
-                    lines.append(prompts.tpl("fallback_move_on", lang, expected=exp[:160]))
+                    lines.extend(many("fallback_move_on", expected=exp[:160]))
             pr = alt(c.get("predict"), c.get("predict_i18n"))
             if pr:
-                lines.append(prompts.tpl("predict_intro", lang, question=pr))
+                lines.extend(many("predict_intro", question=pr))
         recap = alt(t.get("summary_say"), t.get("summary_say_i18n"))
-        lines.append(recap or prompts.tpl("topic_summary", lang, topic=t.get("title") or ""))
-    # Fixed lines every lesson may say (no learner name in them).
-    for key in ("revisit_done_topic", "revisit_done_slide", "revisit_skipped", "skipped", "pause", "slower", "faster",
-                "fallback_correct", "predict_ack", "nudge_open", "idle_end", "credits_end", "media_task_video", "media_task_pdf"):
-        lines.append(prompts.tpl(key, lang))
+        if recap:
+            lines.append(recap)
+        else:
+            lines.extend(many("topic_summary", topic=t.get("title") or ""))
+    if natural:
+        topic = _warmup_topic(view)
+        if topic:
+            lines.extend(many("warmup_ask", topic=topic))
+    for key in _FIXED_KEYS + (_NATURAL_FIXED_KEYS if natural else ()):
+        lines.extend(many(key, strict=True))
     for n in (1, 2, 3):
-        lines.append(prompts.tpl("revisit_intro_topic", lang, n=n))
-        lines.append(prompts.tpl("revisit_intro_slide", lang, n=n))
+        lines.extend(many("revisit_intro_topic", n=n))
+        lines.extend(many("revisit_intro_slide", n=n))
     # De-duplicate, drop personal lines and empties.
     seen, out = set(), []
     for ln in lines:
@@ -186,7 +241,7 @@ def spoken_lines(view: Dict[str, Any], lang: str, course_lang: str) -> List[str]
 async def warm_plan(
     *, plan_id: str, slide_id: str, institute_id: str, user_id: Optional[str], provider: str, voice: str,
     base_pace: float, languages: Iterable[str], course_lang: str, request_id: Optional[str] = None,
-    metering: Any = None,
+    metering: Any = None, natural: bool = False,
 ) -> Dict[str, Any]:
     """Synthesise every line of a compiled plan for each language, once.
     Charges `tutor_voice_prepare` per slide per language only when at least
@@ -211,7 +266,7 @@ async def warm_plan(
         else:
             v = tutor_voice_for(provider, voice, lang)
         segments: List[str] = []
-        for line in spoken_lines(view, lang, course_lang):
+        for line in spoken_lines(view, lang, course_lang, natural=natural):
             segments.extend(seg for seg, _i, _n in tutor_segments(line))
         todo: List[Tuple[str, str, str]] = []
         for seg in dict.fromkeys(segments):

@@ -462,6 +462,19 @@ export const TutorModeTab: React.FC<TutorModeTabProps> = ({ packageId }) => {
                                 </span>
                             )}
                         </label>
+                        <div className="flex max-w-sm flex-col gap-1">
+                            <label className="flex items-center gap-2 text-sm">
+                                <Switch
+                                    checked={!!setting.naturalTeaching}
+                                    disabled={!setting.enabled}
+                                    onCheckedChange={(v) => update('naturalTeaching', v)}
+                                />
+                                {t('settingsCard.naturalTeachingLabel')}
+                            </label>
+                            <p className="text-xs text-neutral-500">
+                                {t('settingsCard.naturalTeachingHelp')}
+                            </p>
+                        </div>
                     </div>
                     <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
                         <div className="space-y-1">

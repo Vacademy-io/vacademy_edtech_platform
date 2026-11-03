@@ -48,6 +48,8 @@ const Verdict: React.FC<{ line: TranscriptLine }> = ({ line }) => {
 };
 
 const QUESTION_KINDS = new Set(["ask", "revisit_ask", "predict"]);
+// Natural teaching holds the guess and warm-up questions instead ('predict' is the reply to a guess there).
+const NATURAL_QUESTION_KINDS = new Set(["ask", "revisit_ask", "predict_ask", "warmup_ask"]);
 
 /**
  * A question already said, word for word, since the learner last spoke — the
@@ -55,10 +57,10 @@ const QUESTION_KINDS = new Set(["ask", "revisit_ask", "predict"]);
  * once. Only question lines: a re-taught explanation (Repeat, welcome back)
  * is meant to be read again.
  */
-const repeatsEarlierTeacherLine = (lines: TranscriptLine[], i: number): boolean => {
+const repeatsEarlierTeacherLine = (lines: TranscriptLine[], i: number, kinds: Set<string> = QUESTION_KINDS): boolean => {
   const m = lines[i];
   const text = m?.text.trim() ?? "";
-  if (!m || m.role !== "teacher" || !QUESTION_KINDS.has(m.kind ?? "") || text.length < 12) return false;
+  if (!m || m.role !== "teacher" || !kinds.has(m.kind ?? "") || text.length < 12) return false;
   for (let j = i - 1; j >= 0; j -= 1) {
     const prev = lines[j]!;
     if (prev.role === "learner") return false;
@@ -74,7 +76,9 @@ interface TeacherPanelProps {
   teacherAvatarFileId?: string | null;
   phase: TutorPhase;
   transcript: TranscriptLine[];
-  check: { prompt: string | null; options: string[]; check_type: string | null; revisit?: boolean; predict?: boolean } | null;
+  /** The session runs natural teaching (which question kinds are de-duplicated). */
+  natural?: boolean;
+  check: { prompt: string | null; options: string[]; check_type: string | null; revisit?: boolean; predict?: boolean; warmup?: boolean } | null;
   /** The teacher's speaking pace, chosen by the learner. */
   pace?: TutorPace;
   onPace?: (pace: TutorPace) => void;
@@ -140,7 +144,7 @@ const PHASE_LABEL: Record<TutorPhase, string> = {
 
 /** Right rail: the teacher, the conversation, the check, and the controls. */
 export const TeacherPanel: React.FC<TeacherPanelProps> = ({
-  teacherName, teacherAvatarFileId, phase, transcript, check, awaiting, voiceMode, micOn, speakOn,
+  teacherName, teacherAvatarFileId, phase, transcript, natural, check, awaiting, voiceMode, micOn, speakOn,
   onSendText, onAsk, onContinue, onControl, onToggleMic, onToggleSpeak, onInterrupt, onEnd,
   notice, disabled, pace, onPace, stats, language, languages, onLanguage,
   avatarContainerRef, avatarState, onToggleAvatar, avatarError, avatarErrorSoft, onRetryAvatar, avatarPainted, avatarProgress, avatarSupersample = 1, gate, onGateTap, locked, countdown, activeness,
@@ -446,7 +450,7 @@ export const TeacherPanel: React.FC<TeacherPanelProps> = ({
           // own bubble would show the same sentence a second time. The same
           // teacher line twice in a row (a re-asked question) shows once.
           (check && awaiting === "answer" && m.role === "teacher" && m.text.trim() === (check.prompt || "").trim()) ||
-          repeatsEarlierTeacherLine(transcript, i) ||
+          repeatsEarlierTeacherLine(transcript, i, natural ? NATURAL_QUESTION_KINDS : QUESTION_KINDS) ||
           // A turn cut off before any of it was spoken (barge-in, stepped away).
           (m.role === "teacher" && !m.text.trim() && i < transcript.length - 1) ? null : (
           <div key={i} className={`flex ${m.role === "learner" ? "justify-end" : "justify-start"}`}>
@@ -461,7 +465,7 @@ export const TeacherPanel: React.FC<TeacherPanelProps> = ({
         ))}
         {check && awaiting === "answer" && (
           <div className="rounded-xl border border-primary-200 bg-primary-50 p-3">
-            <p className="text-xs font-semibold uppercase text-primary-500">{check.predict ? "Your guess" : check.revisit ? "Quick revisit · one try" : "Question"}</p>
+            <p className="text-xs font-semibold uppercase text-primary-500">{check.warmup ? "Warm-up · no wrong answers" : check.predict ? "Your guess" : check.revisit ? "Quick revisit · one try" : "Question"}</p>
             <p className="mt-1 text-sm text-neutral-900">{check.prompt}</p>
             {check.options.length > 0 && (
               <div className="mt-2 flex flex-col gap-1">
@@ -529,7 +533,7 @@ export const TeacherPanel: React.FC<TeacherPanelProps> = ({
             onKeyDown={(e) => {
               if (e.key === "Enter") submit();
             }}
-            placeholder={askMode ? "Ask your doubt…" : awaiting === "answer" ? (check?.predict ? "Take a guess…" : "Type your answer…") : "Say something or ask…"}
+            placeholder={askMode ? "Ask your doubt…" : awaiting === "answer" ? (check?.warmup ? "Say what comes to mind…" : check?.predict ? "Take a guess…" : "Type your answer…") : "Say something or ask…"}
             className="min-w-0 flex-1 rounded-full border border-neutral-200 px-4 py-2 text-sm outline-none focus:border-primary-400"
           />
           <button type="button" onClick={submit} className="rounded-full bg-primary-500 p-2 text-white" title="Send">

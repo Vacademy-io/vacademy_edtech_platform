@@ -166,13 +166,15 @@ def _compiler(db: Session, caller: Caller, package_id: str, p: CompileOptions, *
     except Exception:  # noqa: BLE001
         vp_provider, vp_voice = s.tts_provider or "sarvam", s.tts_voice or ""
     voice_prepare = {"provider": vp_provider, "voice": vp_voice, "base_pace": float(getattr(s, "voice_pace", 1.0) or 1.0),
-                     "languages": tutor_langs.pair(language), "course_lang": tutor_langs.normalize(language)}
+                     "languages": tutor_langs.pair(language), "course_lang": tutor_langs.normalize(language),
+                     # Natural teaching: also prepare the line variants and the warm-up lines.
+                     "natural": bool(getattr(s, "natural_teaching", False))}
     return PlanCompiler(
         institute_id=caller.institute_id, user_id=caller.user_id, language=language,
         teacher_name=teacher, force=force, generate_images=images, kb_grounding=kb,
         compile_run_id=p.compile_run_id or str(uuid.uuid4()), model_override=s.compile_model,
         transcribe_videos=p.transcribe_videos, ocr_pdfs=p.ocr_pdfs, voice_prepare=voice_prepare,
-        chapter_topics=chapter_topics,
+        chapter_topics=chapter_topics, natural_teaching=bool(getattr(s, "natural_teaching", False)),
     )
 
 
@@ -725,6 +727,8 @@ def demo_start(payload: DemoStartRequest, request: Request, background: Backgrou
             "socket_path": f"/tutor/ws/{boot['tutor_session_id']}",
             # Premium avatar of the demo institute, in voice lessons (unbilled like the rest).
             "avatar": (avatar_info if avatar_info else None),
+            # Natural teaching is never on in the public demo.
+            "natural": False,
         },
     }
 

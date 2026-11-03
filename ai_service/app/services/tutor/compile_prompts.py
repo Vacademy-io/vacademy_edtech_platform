@@ -93,7 +93,21 @@ def plan_schema_text(lang: str) -> str:
 }}"""
 
 
-def rules_text(images_enabled: bool = True, lang: str = "en") -> str:
+# Natural teaching (TUTOR_MODE_SETTING.naturalTeaching): the runtime greets the
+# learner and runs a short spoken warm-up before the first board, so the
+# opening concept must not greet again or carry a long preamble.
+NATURAL_OPENING_RULE = """15. OPENING (overrides rule 7's 2-4 sentences and the schema's "2 to 4" for this ONE concept): the first
+   concept of the FIRST topic (t1c1) has a `say` of AT MOST 2 short sentences, in every language under say_i18n
+   too, and its board ops use say_index 0-1. It does NOT greet the learner — no "hi", "hello", "namaste",
+   "welcome", no {student_name} greeting, no "let's begin" or "today we will learn": the teacher has already
+   greeted and asked a warm-up question, so t1c1 goes straight to the idea on the board."""
+
+
+def rules_text(images_enabled: bool = True, lang: str = "en", natural: bool = False) -> str:
+    return _base_rules(images_enabled, lang) + ("\n" + NATURAL_OPENING_RULE if natural else "")
+
+
+def _base_rules(images_enabled: bool, lang: str) -> str:
     return f"""RULES (a validator enforces these; violations come back to you for repair):
 1. A TOPIC is one whiteboard. A CONCEPT is one phase of that board: it ADDS a little to the board
    (at most {MAX_HEADINGS_PER_CONCEPT} heading, at most {MAX_VISUALS_PER_CONCEPT} visual, under {MAX_WORDS_PER_CONCEPT} words of new text) while the teacher
@@ -202,11 +216,15 @@ def style_persona(style: str, teacher_name: str) -> str:
     return STYLE_PERSONA.get(style or "lesson", STYLE_PERSONA["lesson"]).format(teacher=teacher_name)
 
 
-def system_prompt(teacher_name: str, lang: str, images_enabled: bool = True, style: str = "lesson") -> str:
+def system_prompt(teacher_name: str, lang: str, images_enabled: bool = True, style: str = "lesson",
+                  natural: bool = False) -> str:
+    # The opening rule is for lessons only: interviews and practice already
+    # open with a one- or two-sentence set-up and get no warm-up.
     return (
         style_persona(style, teacher_name) + "\n\n"
         f"Course language: {LANG_NAMES.get(lang, lang)}.\n\n"
-        + OPS_REFERENCE + "\n\n" + rules_text(images_enabled, lang)
+        + OPS_REFERENCE + "\n\n" + rules_text(images_enabled, lang,
+                                               natural=bool(natural) and (style or "lesson") == "lesson")
     )
 
 
