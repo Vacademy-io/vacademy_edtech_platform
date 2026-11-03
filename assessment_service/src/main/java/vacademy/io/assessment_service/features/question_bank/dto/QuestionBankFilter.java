@@ -48,4 +48,10 @@ public class QuestionBankFilter {
 
     /** Questions already in the section being filled — so the picker can hide them. */
     private List<String> excludeQuestionIds = new ArrayList<>();
+
+    /** Question library topics. Questions in any topic below them match too. */
+    private List<String> libraryNodeIds = new ArrayList<>();
+
+    /** Only questions that sit in no question library topic. */
+    private Boolean unsortedOnly;
 }

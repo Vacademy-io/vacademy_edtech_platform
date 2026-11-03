@@ -24,6 +24,10 @@ export interface QuestionBankFilters {
     statuses?: string[];
     /** Already in the section being filled — hidden from the picker. */
     exclude_question_ids?: string[];
+    /** Question Library topics; questions in topics below them match too. */
+    library_node_ids?: string[];
+    /** Only questions that sit in no Question Library topic. */
+    unsorted_only?: boolean;
 }
 
 /** Mirrors assessment_service QuestionDTO for the fields the picker needs. */

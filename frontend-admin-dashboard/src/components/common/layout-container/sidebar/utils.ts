@@ -32,6 +32,7 @@ import {
     SealCheck,
     UserCircle,
     SquaresFour,
+    Stack,
 } from '@phosphor-icons/react';
 import i18next from 'i18next';
 import { StorageKey } from '@/constants/storage/storage';
@@ -1239,6 +1240,13 @@ export const getSidebarItemsData = (): SidebarItemsType[] => [
         title: sidebarT('sidebar:questionsBanksAndPapers'),
         id: 'question-banks',
         to: '/assessment/question-papers',
+        category: 'LMS',
+    },
+    {
+        icon: Stack,
+        title: sidebarT('sidebar:questionLibrary'),
+        id: 'question-library',
+        to: '/assessment/question-library',
         category: 'LMS',
     },
 

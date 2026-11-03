@@ -1774,6 +1774,17 @@
             "ADMIN": true,
             "TEACHER": true
           }
+        },
+        {
+          "id": "evalezy",
+          "label": "Evalezy (scan & check copies)",
+          "route": "/evalezy",
+          "order": 8,
+          "admin_only": false,
+          "default_visible": {
+            "ADMIN": false,
+            "TEACHER": false
+          }
         }
       ]
     },
@@ -1790,11 +1801,23 @@
       "sub_tabs": []
     },
     {
+      "id": "question-library",
+      "label": "Question Library",
+      "category": "LMS",
+      "route": "/assessment/question-library",
+      "order": 36,
+      "default_visible": {
+        "ADMIN": true,
+        "TEACHER": true
+      },
+      "sub_tabs": []
+    },
+    {
       "id": "ai-tools-tab",
       "label": "AI Tools",
       "category": "AI",
       "route": "/ai-center/ai-tools",
-      "order": 36,
+      "order": 37,
       "default_visible": {
         "ADMIN": true,
         "TEACHER": true
@@ -1806,7 +1829,7 @@
       "label": "Knowledge Base",
       "category": "AI",
       "route": "/knowledge-base",
-      "order": 37,
+      "order": 38,
       "default_visible": {
         "ADMIN": true,
         "TEACHER": true
@@ -1818,7 +1841,7 @@
       "label": "Instructor Copilot",
       "category": "AI",
       "route": "/instructor-copilot",
-      "order": 38,
+      "order": 39,
       "default_visible": {
         "ADMIN": true,
         "TEACHER": true
@@ -1830,7 +1853,7 @@
       "label": "AI Course Creator",
       "category": "AI",
       "route": "/study-library/ai-copilot",
-      "order": 39,
+      "order": 40,
       "default_visible": {
         "ADMIN": false,
         "TEACHER": false
@@ -1842,7 +1865,7 @@
       "label": "Vimotion - Content Studio",
       "category": "AI",
       "route": "/video-api-studio/console",
-      "order": 40,
+      "order": 41,
       "default_visible": {
         "ADMIN": true,
         "TEACHER": true
@@ -1854,7 +1877,7 @@
       "label": "Content AI API",
       "category": "AI",
       "route": "/video-api-studio",
-      "order": 41,
+      "order": 42,
       "default_visible": {
         "ADMIN": true,
         "TEACHER": true
@@ -1866,7 +1889,7 @@
       "label": "Access Passes",
       "category": "LMS",
       "route": "/access-passes",
-      "order": 42,
+      "order": 43,
       "default_visible": {
         "ADMIN": true,
         "TEACHER": true

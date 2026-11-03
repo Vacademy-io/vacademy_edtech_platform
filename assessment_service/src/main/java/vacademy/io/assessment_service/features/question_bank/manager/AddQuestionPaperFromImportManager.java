@@ -340,11 +340,14 @@ public class AddQuestionPaperFromImportManager {
         return savedUpdatedQuestions;
     }
 
-    public AddQuestionDTO addPrivateQuestions(CustomUserDetails user, AddQuestionDTO questionRequestBody, boolean isPublicQuestion) throws JsonProcessingException {
+    public AddQuestionDTO addPrivateQuestions(CustomUserDetails user, AddQuestionDTO questionRequestBody, boolean isPublicQuestion, String instituteId) throws JsonProcessingException {
 
         List<Option> options = new ArrayList<>();
         for (int i = 0; i < questionRequestBody.getQuestions().size(); i++) {
             Question question = makeQuestionAndOptionFromImportQuestion(questionRequestBody.getQuestions().get(i), isPublicQuestion, null);
+            if (!isPublicQuestion && instituteId != null) {
+                question.setInstituteId(instituteId);
+            }
             options.addAll(question.getOptions());
             question = questionRepository.save(question);
             questionRequestBody.getQuestions().get(i).setId(question.getId());
@@ -602,7 +605,7 @@ public class AddQuestionPaperFromImportManager {
         question.setExplanationTextData(AssessmentRichTextData.fromDTO(questionRequest.getExplanationText()));
     }
 
-    private void addQuestionEntityTags(List<Question> questions, List<QuestionDTO> questionRequests, String instituteId) {
+    public void addQuestionEntityTags(List<Question> questions, List<QuestionDTO> questionRequests, String instituteId) {
 
         // Replace-on-save: clear existing SUBJECT links for these questions so removals in the UI
         // are respected (no-op for brand-new questions). AI 'TAGS'/'TOPIC' links are left intact.
