@@ -44,9 +44,50 @@ import { CoursePageSection, type CoursePageStatus } from './course-page-section'
 import {
     COURSE_PAGE_MODES,
     emptyCoursePageContent,
+    COURSE_PAGE_JSON_MAX_LENGTH,
+    buildCoursePageJson,
     isBlankHtml,
     isEmptyFaq,
 } from '../-utils/course-page-content';
+import {
+    emptyCoursePageTemplate,
+    isEmptyFrameworkCard,
+    isEmptyLearningCard,
+    isEmptyTestimonial,
+} from '../-utils/course-page-template';
+
+const coursePageTemplateSchema = z.object({
+    tagline: z.string(),
+    shortDescription: z.string(),
+    framework: z.object({
+        heading: z.string(),
+        intro: z.string(),
+        cards: z.array(
+            z.object({
+                title: z.string(),
+                body: z.string(),
+                points: z.string(),
+                takeaway: z.string(),
+            })
+        ),
+    }),
+    learning: z.object({
+        heading: z.string(),
+        intro: z.string(),
+        cards: z.array(z.object({ title: z.string(), body: z.string() })),
+        callout: z.string(),
+    }),
+    testimonials: z.array(
+        z.object({
+            quote: z.string(),
+            name: z.string(),
+            details: z.string(),
+            review: z.string(),
+        })
+    ),
+    enrolment: z.object({ description: z.string(), imageId: z.string() }),
+    inclusions: z.object({ heading: z.string(), items: z.string() }),
+});
 
 // Step 1 Schema
 export const step1Schema = z.object({
@@ -76,8 +117,40 @@ export const step1Schema = z.object({
         .object({
             mode: z.enum(COURSE_PAGE_MODES).nullable(),
             faqs: z.array(z.object({ q: z.string(), a: z.string() })),
+            template: coursePageTemplateSchema.default(() => emptyCoursePageTemplate()),
         })
         .superRefine((value, ctx) => {
+            // Template cards / reviews: untouched ones are dropped, half-filled ones flagged.
+            const need = (path: (string | number)[], message: string) =>
+                ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['template', ...path], message });
+            // The backend rejects course_page_json over its size cap with a 400, which
+            // would fail the WHOLE course save — flag it here instead.
+            const size = buildCoursePageJson(value, { isEdit: false })?.length ?? 0;
+            if (size > COURSE_PAGE_JSON_MAX_LENGTH) {
+                need(
+                    [],
+                    `Page content is too long (${size.toLocaleString()} of ${COURSE_PAGE_JSON_MAX_LENGTH.toLocaleString()} characters). Shorten some cards, reviews or FAQs.`
+                );
+            }
+            value.template?.framework.cards.forEach((card, index) => {
+                if (!isEmptyFrameworkCard(card) && !card.title.trim()) {
+                    need(['framework', 'cards', index, 'title'], 'Add a title, or remove this card');
+                }
+            });
+            value.template?.learning.cards.forEach((card, index) => {
+                if (!isEmptyLearningCard(card) && !card.title.trim()) {
+                    need(['learning', 'cards', index, 'title'], 'Add a title, or remove this card');
+                }
+            });
+            value.template?.testimonials.forEach((review, index) => {
+                if (isEmptyTestimonial(review)) return;
+                if (!review.quote.trim()) {
+                    need(['testimonials', index, 'quote'], 'Add the quote, or remove this review');
+                }
+                if (!review.name.trim()) {
+                    need(['testimonials', index, 'name'], 'Add the reviewer name');
+                }
+            });
             // Untouched rows are dropped on save; a half-filled one is a mistake to flag.
             value.faqs.forEach((faq, index) => {
                 if (isEmptyFaq(faq)) return;
@@ -211,6 +284,12 @@ export const AddCourseStep1 = ({
             // Set the array by its own name so useFieldArray re-reads its rows.
             form.setValue('coursePage.mode', loaded.mode);
             form.setValue('coursePage.faqs', loaded.faqs);
+            const template = loaded.template ?? emptyCoursePageTemplate();
+            form.setValue('coursePage.template', template);
+            // Each card list is a useFieldArray too — set them by name as well.
+            form.setValue('coursePage.template.framework.cards', template.framework.cards);
+            form.setValue('coursePage.template.learning.cards', template.learning.cards);
+            form.setValue('coursePage.template.testimonials', template.testimonials);
         }
         previousCoursePageStatus.current = coursePageStatus;
         // eslint-disable-next-line react-hooks/exhaustive-deps

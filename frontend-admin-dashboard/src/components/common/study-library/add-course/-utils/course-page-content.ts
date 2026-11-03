@@ -1,15 +1,26 @@
 /**
- * Public course-page extras (delivery mode + FAQs) that the Add / Edit Course form collects.
+ * Public course-page extras (delivery mode + FAQs + HTML-template content) that the
+ * Add / Edit Course form collects.
  *
  * Stored by the backend as one opaque string, `course_page_json`:
- *   {"v":1,"mode":"SELF_PACED"|"LIVE"|null,"faqs":[{"q":"…","a":"<p>…</p>"}]}
+ *   {"v":1,"mode":"SELF_PACED"|"LIVE"|null,"faqs":[{"q":"…","a":"<p>…</p>"}],"template":{…}}
+ * `template` is optional — see course-page-template.ts.
  *
  * Update semantics (backend contract): absent / null keeps what is stored, "" clears it.
  * Everything here is pure so the payload rules can be tested without the form.
  */
 
+import {
+    type CoursePageTemplate,
+    emptyCoursePageTemplate,
+    parseCoursePageTemplate,
+    serializeCoursePageTemplate,
+} from './course-page-template';
+
 export const COURSE_PAGE_JSON_VERSION = 1;
 export const COURSE_PAGE_MAX_FAQS = 30;
+/** Backend cap on the stored string (PackagePageContentService.MAX_LENGTH). */
+export const COURSE_PAGE_JSON_MAX_LENGTH = 100_000;
 
 export const COURSE_PAGE_MODES = ['SELF_PACED', 'LIVE'] as const;
 export type CoursePageMode = (typeof COURSE_PAGE_MODES)[number];
@@ -24,9 +35,15 @@ export interface CoursePageFaq {
 export interface CoursePageContent {
     mode: CoursePageMode | null;
     faqs: CoursePageFaq[];
+    /** Content for an HTML course template ({{course.*}} tokens). */
+    template: CoursePageTemplate;
 }
 
-export const emptyCoursePageContent = (): CoursePageContent => ({ mode: null, faqs: [] });
+export const emptyCoursePageContent = (): CoursePageContent => ({
+    mode: null,
+    faqs: [],
+    template: emptyCoursePageTemplate(),
+});
 
 const isMode = (value: unknown): value is CoursePageMode =>
     typeof value === 'string' && (COURSE_PAGE_MODES as readonly string[]).includes(value);
@@ -78,7 +95,7 @@ export const parseCoursePageJson = (raw: unknown): CoursePageContent => {
         return emptyCoursePageContent();
     }
 
-    const record = value as { mode?: unknown; faqs?: unknown };
+    const record = value as { mode?: unknown; faqs?: unknown; template?: unknown };
     const faqs = Array.isArray(record.faqs)
         ? record.faqs
               .filter((item): item is Record<string, unknown> => !!item && typeof item === 'object')
@@ -91,6 +108,7 @@ export const parseCoursePageJson = (raw: unknown): CoursePageContent => {
     return {
         mode: isMode(record.mode) ? record.mode : null,
         faqs: normalizeFaqs(faqs),
+        template: parseCoursePageTemplate(record.template),
     };
 };
 
@@ -113,12 +131,18 @@ export const buildCoursePageJson = (
 
     const mode = isMode(state?.mode) ? state.mode : null;
     const faqs = normalizeFaqs(state?.faqs);
+    const template = serializeCoursePageTemplate(state?.template);
 
-    if (!mode && faqs.length === 0) {
+    if (!mode && faqs.length === 0 && !template) {
         return isEdit ? '' : null;
     }
 
-    return JSON.stringify({ v: COURSE_PAGE_JSON_VERSION, mode, faqs });
+    return JSON.stringify({
+        v: COURSE_PAGE_JSON_VERSION,
+        mode,
+        faqs,
+        ...(template ? { template } : {}),
+    });
 };
 
 /**

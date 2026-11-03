@@ -26,6 +26,8 @@ import {
     parseFaqsFromHtml,
 } from '../-utils/course-page-content';
 import type { Step1Data } from './add-course-step1';
+import { CoursePageTemplateFields } from './course-page-template-fields';
+import { countTemplateBlocks } from '../-utils/course-page-template';
 
 const SUGGESTED_FAQ_COUNT = 5;
 
@@ -72,6 +74,8 @@ export const CoursePageSection = ({
     });
     const mode = useWatch({ control: form.control, name: 'coursePage.mode' }) ?? null;
     const faqValues = useWatch({ control: form.control, name: 'coursePage.faqs' }) ?? [];
+    const templateValue = useWatch({ control: form.control, name: 'coursePage.template' });
+    const templateCount = countTemplateBlocks(templateValue);
     const [isSuggesting, setIsSuggesting] = useState(false);
 
     const filledCount = faqValues.filter((faq) => !isEmptyFaq(faq)).length;
@@ -161,6 +165,7 @@ export const CoursePageSection = ({
               : [
                     mode ? MODE_LABELS[mode] : null,
                     filledCount > 0 ? `${filledCount} FAQ${filledCount === 1 ? '' : 's'}` : null,
+                    templateCount > 0 ? 'Template content' : null,
                 ]
                     .filter(Boolean)
                     .join(' · ');
@@ -393,6 +398,8 @@ export const CoursePageSection = ({
                                 </span>
                             </div>
                         </div>
+
+                        <CoursePageTemplateFields form={form} courseTerm={courseTerm} />
                     </div>
                 )}
             </CollapsibleContent>

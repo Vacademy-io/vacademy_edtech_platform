@@ -41,7 +41,7 @@ const Harness = ({
     coursePage,
     status,
 }: {
-    coursePage?: CoursePageContent;
+    coursePage?: Partial<CoursePageContent>;
     status?: CoursePageStatus;
 }) => {
     const form = useForm<Step1Data>({

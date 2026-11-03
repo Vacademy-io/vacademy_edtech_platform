@@ -1362,6 +1362,23 @@ const CourseDetailsPageContent: React.FC<CourseDetailsPageContentProps> = ({
       courseData && siteLocale.dict ? localizeCourseDisplay(courseData, siteT) : courseData,
     [courseData, siteLocale.dict, siteT],
   );
+  // What an html details page ({{course.*}} tokens) reads: the display copy, with
+  // {{course.instructors_html}} limited to the authors the standard page shows
+  // (Student Display "Show All Teachers"). Memoised so the page keeps a stable object.
+  const tokenCourseData = useMemo(() => {
+    if (!displayCourseData) return displayCourseData;
+    const authors = visibleCourseAuthors(
+      displayCourseData.instructors || [],
+      showInstructors,
+      displayCourseData.instructor,
+    ).map((a) => ({
+      ...a,
+      name: siteT(a.name),
+      subtitle: a.subtitle ? siteT(a.subtitle) : a.subtitle,
+      description: a.description ? siteT(a.description) : a.description,
+    }));
+    return { ...displayCourseData, instructors: authors };
+  }, [displayCourseData, showInstructors, siteT]);
 
   const hydrateSiteCart = useSiteCartStore((s) => s.hydrate);
   const addToSiteCart = useSiteCartStore((s) => s.add);
@@ -2073,7 +2090,9 @@ const CourseDetailsPageContent: React.FC<CourseDetailsPageContentProps> = ({
                     globalSettings={catalogueData.globalSettings}
                     instituteId={instituteId}
                     tagName={tagName}
-                    courseData={submitsCourse ? courseData : displayCourseData}
+                    courseData={
+                      submitsCourse ? courseData : fillsTokens ? tokenCourseData : displayCourseData
+                    }
                   />
                 );
               })}
