@@ -43,7 +43,8 @@ public interface InstitutePulseRepository extends JpaRepository<StudentAttempt, 
                    AND a.bound_start_time <= now()
                    AND a.bound_end_time   >= now()
                    AND EXISTS (SELECT 1 FROM assessment_user_registration r
-                               WHERE r.assessment_id = a.id AND r.institute_id = :instituteId)
+                               WHERE r.assessment_id = a.id AND r.institute_id = :instituteId
+                                 AND r.source IS DISTINCT FROM 'COPY_CHECK_ONLY')
                    AND (:batchId = '' OR EXISTS (
                            SELECT 1 FROM assessment_batch_registration abr
                            WHERE abr.assessment_id = a.id AND abr.batch_id = :batchId))
@@ -89,7 +90,8 @@ public interface InstitutePulseRepository extends JpaRepository<StudentAttempt, 
                   AND a.bound_start_time <= now()
                   AND a.bound_end_time   >= now()
                   AND EXISTS (SELECT 1 FROM assessment_user_registration r
-                              WHERE r.assessment_id = a.id AND r.institute_id = :instituteId)
+                              WHERE r.assessment_id = a.id AND r.institute_id = :instituteId
+                                AND r.source IS DISTINCT FROM 'COPY_CHECK_ONLY')
                   AND (:batchId = '' OR EXISTS (
                           SELECT 1 FROM assessment_batch_registration abr
                           WHERE abr.assessment_id = a.id AND abr.batch_id = :batchId))
@@ -118,6 +120,7 @@ public interface InstitutePulseRepository extends JpaRepository<StudentAttempt, 
                     JOIN assessment_user_registration aur ON aur.assessment_id = p.id
                     LEFT JOIN student_attempt sa ON sa.registration_id = aur.id
                 WHERE aur.institute_id = :instituteId
+                  AND aur.source IS DISTINCT FROM 'COPY_CHECK_ONLY'
                 GROUP BY p.id, p.name, p.bound_start_time, p.bound_end_time, aur.id
             ) per_registration
             GROUP BY assessmentId, assessmentName, startEpoch, endEpoch
@@ -262,7 +265,8 @@ public interface InstitutePulseRepository extends JpaRepository<StudentAttempt, 
                   AND a.bound_end_time < now()
                   AND a.bound_end_time > :endedSince
                   AND EXISTS (SELECT 1 FROM assessment_user_registration r
-                              WHERE r.assessment_id = a.id AND r.institute_id = :instituteId)
+                              WHERE r.assessment_id = a.id AND r.institute_id = :instituteId
+                                AND r.source IS DISTINCT FROM 'COPY_CHECK_ONLY')
                   AND (:batchId = '' OR EXISTS (
                           SELECT 1 FROM assessment_batch_registration abr
                           WHERE abr.assessment_id = a.id AND abr.batch_id = :batchId))

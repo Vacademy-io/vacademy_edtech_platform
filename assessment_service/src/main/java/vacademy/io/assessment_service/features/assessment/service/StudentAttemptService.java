@@ -1,5 +1,6 @@
 package vacademy.io.assessment_service.features.assessment.service;
 
+import vacademy.io.assessment_service.features.assessment.copy_intake.service.CopyIntakeService;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
@@ -739,7 +740,10 @@ public class StudentAttemptService {
     }
 
     public List<StudentAttempt> getAllLiveAttempt() {
-        return studentAttemptRepository.findByStatusNotIn(List.of(AssessmentAttemptEnum.ENDED.name()));
+        // A copy checked in a bulk AI check without a student (COPY_CHECK) is not an
+        // attempt anyone is sitting: the hourly sweep must never end it on time.
+        return studentAttemptRepository.findByStatusNotIn(
+                List.of(AssessmentAttemptEnum.ENDED.name(), CopyIntakeService.COPY_CHECK_ATTEMPT_STATUS));
     }
 
     /**

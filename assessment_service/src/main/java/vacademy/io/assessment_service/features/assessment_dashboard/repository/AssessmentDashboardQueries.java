@@ -148,6 +148,7 @@ public class AssessmentDashboardQueries {
             WHERE aur.assessment_id IN (:ids)
               AND aur.institute_id = :instituteId
               AND COALESCE(aur.status, 'ACTIVE') <> 'DELETED'
+              AND aur.source IS DISTINCT FROM 'COPY_CHECK_ONLY'
             """;
 
     /** Every registration of the tests, with its attempts (one row per attempt, or one bare row). */

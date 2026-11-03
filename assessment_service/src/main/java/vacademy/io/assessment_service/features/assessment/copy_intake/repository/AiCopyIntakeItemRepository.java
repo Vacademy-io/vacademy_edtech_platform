@@ -29,8 +29,9 @@ public interface AiCopyIntakeItemRepository extends JpaRepository<AiCopyIntakeIt
     /**
      * Every copy in the batch whose AI check finished with a checked copy, in upload
      * order. Reads only these columns: an attempt row also carries the full answer JSON.
+     * A check-only copy has no matched student, so it is named by the name read off it.
      */
-    @Query("SELECT i.id AS itemId, i.fileName AS fileName, i.matchedName AS studentName,"
+    @Query("SELECT i.id AS itemId, i.fileName AS fileName, COALESCE(i.matchedName, i.extractedName) AS studentName,"
             + " i.extractedRoll AS roll, a.evaluatedFileId AS evaluatedFileId"
             + " FROM AiCopyIntakeItem i, StudentAttempt a WHERE i.batchId = :batchId AND i.status = :status"
             + " AND a.id = i.attemptId AND a.evaluatedFileId IS NOT NULL ORDER BY i.createdAt")

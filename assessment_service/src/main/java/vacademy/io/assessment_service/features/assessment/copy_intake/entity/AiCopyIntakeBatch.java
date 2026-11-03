@@ -27,6 +27,12 @@ public class AiCopyIntakeBatch {
     public static final String SOURCE_UPLOAD = "UPLOAD";
     /** Copies the learners submitted on their own attempts; nothing to identify. */
     public static final String SOURCE_SUBMITTED = "SUBMITTED";
+    /**
+     * PDFs the admin uploaded only to get them checked: no student is matched.
+     * Each copy is graded on a hidden attempt of its own (see
+     * {@code CopyIntakeService#placeCheckOnly}) and comes back in the zip.
+     */
+    public static final String SOURCE_CHECK_ONLY = "CHECK_ONLY";
 
     @Id
     @UuidGenerator
@@ -54,13 +60,17 @@ public class AiCopyIntakeBatch {
     @Column(name = "status", nullable = false)
     private String status;
 
-    /** {@link #SOURCE_UPLOAD} or {@link #SOURCE_SUBMITTED}. See V49. */
+    /** {@link #SOURCE_UPLOAD}, {@link #SOURCE_SUBMITTED} or {@link #SOURCE_CHECK_ONLY}. See V49. */
     @Builder.Default
     @Column(name = "source", nullable = false)
     private String source = SOURCE_UPLOAD;
 
     public boolean isFromSubmissions() {
         return SOURCE_SUBMITTED.equals(source);
+    }
+
+    public boolean isCheckOnly() {
+        return SOURCE_CHECK_ONLY.equals(source);
     }
 
     /** Copies in the upload. Everything else is counted from the items. */

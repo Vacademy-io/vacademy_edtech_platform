@@ -525,8 +525,11 @@ public class AssessmentParticipantsManager {
         if (assessmentOptional.isEmpty()) {
             return ResponseEntity.ok().body(List.of());
         }
+        // A copy uploaded to a bulk AI check without a student is not a participant.
         List<AssessmentUserRegistration> assessmentUserRegistrations = assessmentOptional.get().getUserRegistrations()
-                .stream().toList();
+                .stream()
+                .filter(r -> !UserRegistrationSources.COPY_CHECK_ONLY.name().equals(r.getSource()))
+                .toList();
         return ResponseEntity.ok(assessmentUserRegistrations);
     }
 
