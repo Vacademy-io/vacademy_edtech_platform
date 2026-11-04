@@ -57,6 +57,7 @@ import { CohortTab } from './cohort-tab';
 import { ForecastTab } from './forecast-tab';
 import { CustomReportTab } from './custom-report-tab';
 import { ReportTabSkeleton, type ReportTabProps } from './report-shared';
+import { ReportLeadSheetProvider } from './report-lead-sheet';
 import { useCallIntelligenceEnabled } from '@/components/shared/leads';
 
 // Inter-agent contract: the Calling tab module lives at exactly this path and
@@ -330,70 +331,73 @@ export function LeadReportsPage() {
                 </div>
             )}
 
-            <Tabs value={activeTab} onValueChange={setActiveTab} className="min-w-0">
-                <TabsContent value="overview">
-                    <OverviewTab {...tabProps} />
-                </TabsContent>
-                <TabsContent value="sources">
-                    <SourcesTab {...tabProps} />
-                </TabsContent>
-                <TabsContent value="utm">
-                    <UtmTab {...tabProps} />
-                </TabsContent>
-                <TabsContent value="calling">
-                    <Suspense fallback={<ReportTabSkeleton />}>
-                        <CallingTab {...tabProps} />
-                    </Suspense>
-                </TabsContent>
-                <TabsContent value="lead-calls">
-                    <Suspense fallback={<ReportTabSkeleton />}>
-                        <LeadCallsTab {...tabProps} />
-                    </Suspense>
-                </TabsContent>
-                {callIntelligenceEnabled && (
-                    <TabsContent value="call-intelligence">
+            {/* Student names in report lists open the lead side sheet. */}
+            <ReportLeadSheetProvider>
+                <Tabs value={activeTab} onValueChange={setActiveTab} className="min-w-0">
+                    <TabsContent value="overview">
+                        <OverviewTab {...tabProps} />
+                    </TabsContent>
+                    <TabsContent value="sources">
+                        <SourcesTab {...tabProps} />
+                    </TabsContent>
+                    <TabsContent value="utm">
+                        <UtmTab {...tabProps} />
+                    </TabsContent>
+                    <TabsContent value="calling">
                         <Suspense fallback={<ReportTabSkeleton />}>
-                            <CrmIntelligenceReportTab {...tabProps} />
+                            <CallingTab {...tabProps} />
                         </Suspense>
                     </TabsContent>
-                )}
-                <TabsContent value="funnel">
-                    <FunnelTab {...tabProps} />
-                </TabsContent>
-                <TabsContent value="dispositions">
-                    <DispositionsTab {...tabProps} />
-                </TabsContent>
-                <TabsContent value="activity">
-                    <ActivityTab {...tabProps} />
-                </TabsContent>
-                <TabsContent value="followups">
-                    <FollowupsTab {...tabProps} />
-                </TabsContent>
-                <TabsContent value="counsellors">
-                    <CounsellorsTab {...tabProps} />
-                </TabsContent>
-                <TabsContent value="conversions">
-                    <ConversionsTab {...tabProps} />
-                </TabsContent>
-                <TabsContent value="manager">
-                    <ManagerTab {...tabProps} />
-                </TabsContent>
-                <TabsContent value="revenue">
-                    <RevenueTab {...tabProps} />
-                </TabsContent>
-                <TabsContent value="admissions">
-                    <AdmissionsTab {...tabProps} />
-                </TabsContent>
-                <TabsContent value="cohort">
-                    <CohortTab {...tabProps} />
-                </TabsContent>
-                <TabsContent value="forecast">
-                    <ForecastTab {...tabProps} />
-                </TabsContent>
-                <TabsContent value="custom">
-                    <CustomReportTab {...tabProps} />
-                </TabsContent>
-            </Tabs>
+                    <TabsContent value="lead-calls">
+                        <Suspense fallback={<ReportTabSkeleton />}>
+                            <LeadCallsTab {...tabProps} />
+                        </Suspense>
+                    </TabsContent>
+                    {callIntelligenceEnabled && (
+                        <TabsContent value="call-intelligence">
+                            <Suspense fallback={<ReportTabSkeleton />}>
+                                <CrmIntelligenceReportTab {...tabProps} />
+                            </Suspense>
+                        </TabsContent>
+                    )}
+                    <TabsContent value="funnel">
+                        <FunnelTab {...tabProps} />
+                    </TabsContent>
+                    <TabsContent value="dispositions">
+                        <DispositionsTab {...tabProps} />
+                    </TabsContent>
+                    <TabsContent value="activity">
+                        <ActivityTab {...tabProps} />
+                    </TabsContent>
+                    <TabsContent value="followups">
+                        <FollowupsTab {...tabProps} />
+                    </TabsContent>
+                    <TabsContent value="counsellors">
+                        <CounsellorsTab {...tabProps} />
+                    </TabsContent>
+                    <TabsContent value="conversions">
+                        <ConversionsTab {...tabProps} />
+                    </TabsContent>
+                    <TabsContent value="manager">
+                        <ManagerTab {...tabProps} />
+                    </TabsContent>
+                    <TabsContent value="revenue">
+                        <RevenueTab {...tabProps} />
+                    </TabsContent>
+                    <TabsContent value="admissions">
+                        <AdmissionsTab {...tabProps} />
+                    </TabsContent>
+                    <TabsContent value="cohort">
+                        <CohortTab {...tabProps} />
+                    </TabsContent>
+                    <TabsContent value="forecast">
+                        <ForecastTab {...tabProps} />
+                    </TabsContent>
+                    <TabsContent value="custom">
+                        <CustomReportTab {...tabProps} />
+                    </TabsContent>
+                </Tabs>
+            </ReportLeadSheetProvider>
         </div>
     );
 }

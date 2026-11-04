@@ -17,6 +17,7 @@ import {
     X,
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
+import { ReportLeadName } from './report-lead-name';
 import {
     fetchRevenue,
     fetchRevenuePayments,
@@ -446,14 +447,14 @@ function CounsellorPayments({ params, counsellor, onClose }: CounsellorPaymentsP
                                         )}
                                     </td>
                                     <td className="min-w-48 py-3 pr-3">
-                                        <div className="font-medium text-neutral-900">
-                                            {r.student_name ?? r.user_id}
-                                        </div>
-                                        {r.phone && (
-                                            <div className="text-xs text-neutral-500">
-                                                {r.phone}
-                                            </div>
-                                        )}
+                                        <ReportLeadName
+                                            lead={{
+                                                userId: r.user_id,
+                                                name: r.student_name,
+                                                phone: r.phone,
+                                            }}
+                                            contact={r.phone}
+                                        />
                                     </td>
                                     <td className="min-w-56 py-3 pr-3 text-neutral-800">
                                         {r.courses ?? '—'}

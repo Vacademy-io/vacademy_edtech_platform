@@ -12,6 +12,7 @@ import { useTranslation } from 'react-i18next';
 import { GraduationCap, ListBullets, UserCheck, Users, X } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import { useLeadTerminology } from '@/hooks/use-lead-terminology';
+import { ReportLeadName } from './report-lead-name';
 import {
     conversionsQueryKey,
     fetchConversions,
@@ -408,14 +409,15 @@ export function ConversionsTab({
                                                 className="border-b border-neutral-100 align-top last:border-0 hover:bg-neutral-50"
                                             >
                                                 <td className="min-w-48 py-3 pr-3">
-                                                    <div className="font-medium text-neutral-900">
-                                                        {r.lead_name ?? r.user_id}
-                                                    </div>
-                                                    {(r.phone || r.email) && (
-                                                        <div className="text-xs text-neutral-500">
-                                                            {r.phone ?? r.email}
-                                                        </div>
-                                                    )}
+                                                    <ReportLeadName
+                                                        lead={{
+                                                            userId: r.user_id,
+                                                            name: r.lead_name,
+                                                            phone: r.phone,
+                                                            email: r.email,
+                                                        }}
+                                                        contact={r.phone ?? r.email}
+                                                    />
                                                 </td>
                                                 <td className="min-w-56 py-3 pr-3 text-neutral-800">
                                                     {r.course_name ?? '—'}

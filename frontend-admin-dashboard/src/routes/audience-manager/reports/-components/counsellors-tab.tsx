@@ -12,6 +12,7 @@ import { useTranslation } from 'react-i18next';
 import { CaretDown, ListBullets, Trophy, Users, WarningCircle, X } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import { useLeadTerminology } from '@/hooks/use-lead-terminology';
+import { ReportLeadName } from './report-lead-name';
 import {
     fetchCounselorPerformance,
     type CounselorPerformance,
@@ -215,6 +216,8 @@ interface StudentRow {
     user_id: string;
     lead_name: string;
     contact: string | null;
+    phone: string | null;
+    email: string | null;
     courses: string[];
     enrolled_at: string | null;
     campaign: string | null;
@@ -232,6 +235,8 @@ function groupByStudent(rows: ConversionLeadRow[]): StudentRow[] {
                 user_id: r.user_id,
                 lead_name: r.lead_name ?? r.user_id,
                 contact: r.phone ?? r.email,
+                phone: r.phone,
+                email: r.email,
                 courses: r.course_name ? [r.course_name] : [],
                 enrolled_at: r.enrolled_at,
                 campaign: r.campaign_name,
@@ -357,14 +362,15 @@ function ConvertedLeads({ params, counsellor, onClose }: ConvertedLeadsProps) {
                                 >
                                     <td className="py-3 pr-3 text-neutral-500">{i + 1}</td>
                                     <td className="min-w-48 py-3 pr-3">
-                                        <div className="font-medium text-neutral-900">
-                                            {s.lead_name}
-                                        </div>
-                                        {s.contact && (
-                                            <div className="text-xs text-neutral-500">
-                                                {s.contact}
-                                            </div>
-                                        )}
+                                        <ReportLeadName
+                                            lead={{
+                                                userId: s.user_id,
+                                                name: s.lead_name,
+                                                phone: s.phone,
+                                                email: s.email,
+                                            }}
+                                            contact={s.contact}
+                                        />
                                     </td>
                                     <td className="min-w-56 py-3 pr-3 text-neutral-800">
                                         {s.courses.length ? s.courses.join(', ') : '—'}
