@@ -1072,6 +1072,15 @@ function CreateEnginePage() {
                                     onChange={(agentPool) => toggleChannel(c, { agentPool })}
                                 />
                             )}
+                            {c === 'AI_CALL' && cfg.enabled && (
+                                <ChannelOption
+                                    title={t('channels.firstTouchCallTitle')}
+                                    hint={t('channels.firstTouchCallHint')}
+                                    ariaLabel={t('channels.firstTouchCallTitle')}
+                                    checked={cfg.firstTouchCall !== false}
+                                    onChange={(v) => toggleChannel(c, { firstTouchCall: v })}
+                                />
+                            )}
                             {c === 'AI_CALL' && !cfg.enabled && (
                                 <p className="text-neutral-500">
                                     <span className="text-caption">{t('channels.callNote')}</span>
