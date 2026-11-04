@@ -887,7 +887,7 @@ class CreditService:
         return response
 
     def get_trial_status(self, institute_id: str) -> Dict[str, Any]:
-        """A self sign-up's trial: its product is in platform_product, tagged FREE_TRIAL with an end
+        """A self sign-up's trial: its product has settings (ai_platform_settings, key product.<key>), tagged FREE_TRIAL with an end
         date. Every other institute is simply not on one. Closing sign-up does not end running or
         lapsed trials. Credits bought or granted, or a live plan, end it for good. Never in the way of AI: any failure here reads as no trial, inside a savepoint so the caller's
         transaction survives."""
@@ -904,7 +904,8 @@ class CreditService:
                                          AND t.transaction_type IN ('PURCHASE', 'ADMIN_GRANT')) AS purchased
                         FROM institutes i
                         WHERE i.id = :institute_id
-                          AND i.product IN (SELECT p.product_key FROM platform_product p)
+                          AND i.product IN (SELECT substr(s.setting_key, 9) FROM ai_platform_settings s
+                                            WHERE s.setting_key LIKE 'product.%')
                           AND i.lead_tag = 'FREE_TRIAL'
                           AND i.demo_expires_at IS NOT NULL
                     """),

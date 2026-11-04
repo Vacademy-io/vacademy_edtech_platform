@@ -1,23 +1,40 @@
 package vacademy.io.admin_core_service.features.product_config.service;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
-import vacademy.io.admin_core_service.features.product_config.entity.PlatformProduct;
-import vacademy.io.admin_core_service.features.product_config.repository.PlatformProductRepository;
 import vacademy.io.common.exceptions.VacademyException;
 import vacademy.io.common.product.ProductConfigDTO;
 
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.sql.Timestamp;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.regex.Pattern;
 
+/**
+ * A product's settings: one row of ai_platform_settings, key product.&lt;product_key&gt;, value JSON.
+ * Which product an institute belongs to is institutes.product.
+ */
 @Service
 @RequiredArgsConstructor
 public class PlatformProductService {
+
+    static final String KEY_PREFIX = "product.";
+
+    private static final String SELECT =
+            "SELECT setting_key, setting_value::text AS value, updated_by, updated_at FROM ai_platform_settings ";
+    private static final String UPDATE =
+            "UPDATE ai_platform_settings SET setting_value = ?::jsonb, updated_by = ?, updated_at = now() "
+                    + "WHERE setting_key = ?";
 
     private static final Pattern EMAIL = Pattern.compile("^[^@\\s<>\"]+@[^@\\s<>\"]+\\.[^@\\s<>\"]{2,}$");
     /** No line breaks or address punctuation: this goes into a mail header. */
@@ -26,37 +43,42 @@ public class PlatformProductService {
     private static final Pattern HOSTS = Pattern.compile("^[a-z0-9.-]+(\\s*,\\s*[a-z0-9.-]+)*$");
     private static final Pattern PATH = Pattern.compile("^/[A-Za-z0-9/_-]*$");
 
-    private final PlatformProductRepository repository;
+    private final JdbcTemplate jdbcTemplate;
+    private final ObjectMapper mapper = new ObjectMapper();
 
     public List<ProductConfigDTO> list() {
-        return repository.findAll().stream().map(PlatformProductService::toDto).toList();
+        return jdbcTemplate.query(SELECT + "WHERE setting_key LIKE 'product.%' ORDER BY setting_key",
+                (rs, n) -> toDto(rs));
     }
 
     public ProductConfigDTO get(String productKey) {
-        return repository.findById(productKey.toLowerCase(Locale.ROOT)).map(PlatformProductService::toDto)
+        return jdbcTemplate.query(SELECT + "WHERE setting_key = ?", (rs, n) -> toDto(rs), keyOf(productKey))
+                .stream().findFirst()
                 .orElseThrow(() -> new VacademyException(HttpStatus.NOT_FOUND, "No such product"));
     }
 
     @Transactional
     public ProductConfigDTO update(String productKey, ProductConfigDTO body, String actor) {
-        PlatformProduct row = repository.findById(productKey.toLowerCase(Locale.ROOT))
-                .orElseThrow(() -> new VacademyException(HttpStatus.NOT_FOUND, "No such product"));
         validate(body);
-        row.setDisplayName(body.getDisplayName().trim());
-        row.setFromEmail(body.getFromEmail().trim().toLowerCase(Locale.ROOT));
-        row.setFromName(body.getFromName().trim());
-        row.setWebsiteUrl(emptyToNull(body.getWebsiteUrl()));
-        row.setContactEmail(emptyToNull(body.getContactEmail()));
-        row.setThemeColor(emptyToNull(body.getThemeColor()));
-        row.setLogoUrl(emptyToNull(body.getLogoUrl()));
-        row.setAppPath(body.getAppPath().trim());
-        row.setLoginUrl(emptyToNull(body.getLoginUrl()));
-        row.setTrialDays(body.getTrialDays());
-        row.setSelfSignupEnabled(Boolean.TRUE.equals(body.getSelfSignupEnabled()));
-        row.setReturnHosts(emptyToNull(body.getReturnHosts()));
-        row.setUpdatedBy(actor);
-        row.setUpdatedAt(new Timestamp(System.currentTimeMillis()));
-        return toDto(repository.save(row));
+        String key = keyOf(productKey);
+        // Only the settings themselves: the key and who-changed-it have their own columns.
+        Map<String, Object> row = new LinkedHashMap<>();
+        row.put("display_name", body.getDisplayName().trim());
+        row.put("from_email", body.getFromEmail().trim().toLowerCase(Locale.ROOT));
+        row.put("from_name", body.getFromName().trim());
+        row.put("website_url", emptyToNull(body.getWebsiteUrl()));
+        row.put("contact_email", emptyToNull(body.getContactEmail()));
+        row.put("theme_color", emptyToNull(body.getThemeColor()));
+        row.put("logo_url", emptyToNull(body.getLogoUrl()));
+        row.put("app_path", body.getAppPath().trim());
+        row.put("login_url", emptyToNull(body.getLoginUrl()));
+        row.put("trial_days", body.getTrialDays());
+        row.put("self_signup_enabled", Boolean.TRUE.equals(body.getSelfSignupEnabled()));
+        row.put("return_hosts", emptyToNull(body.getReturnHosts()));
+        if (jdbcTemplate.update(UPDATE, toJson(row), actor, key) == 0) {
+            throw new VacademyException(HttpStatus.NOT_FOUND, "No such product");
+        }
+        return get(productKey);
     }
 
     static void validate(ProductConfigDTO b) {
@@ -88,19 +110,33 @@ public class PlatformProductService {
         }
     }
 
+    private static String keyOf(String productKey) {
+        return KEY_PREFIX + productKey.toLowerCase(Locale.ROOT);
+    }
+
     private static String emptyToNull(String v) {
         return StringUtils.hasText(v) ? v.trim() : null;
     }
 
-    static ProductConfigDTO toDto(PlatformProduct p) {
-        return ProductConfigDTO.builder()
-                .productKey(p.getProductKey()).displayName(p.getDisplayName())
-                .fromEmail(p.getFromEmail()).fromName(p.getFromName())
-                .websiteUrl(p.getWebsiteUrl()).contactEmail(p.getContactEmail())
-                .themeColor(p.getThemeColor()).logoUrl(p.getLogoUrl()).appPath(p.getAppPath()).loginUrl(p.getLoginUrl())
-                .trialDays(p.getTrialDays()).selfSignupEnabled(p.getSelfSignupEnabled())
-                .returnHosts(p.getReturnHosts()).updatedBy(p.getUpdatedBy())
-                .updatedAt(p.getUpdatedAt() == null ? null : p.getUpdatedAt().toInstant().toString())
-                .build();
+    private String toJson(Map<String, Object> row) {
+        try {
+            return mapper.writeValueAsString(row);
+        } catch (JsonProcessingException e) {
+            throw new VacademyException(HttpStatus.INTERNAL_SERVER_ERROR, "Could not save the product");
+        }
+    }
+
+    private ProductConfigDTO toDto(ResultSet rs) throws SQLException {
+        ProductConfigDTO dto;
+        try {
+            dto = mapper.readValue(rs.getString("value"), ProductConfigDTO.class);
+        } catch (JsonProcessingException e) {
+            throw new SQLException("Bad settings for " + rs.getString("setting_key"), e);
+        }
+        dto.setProductKey(rs.getString("setting_key").substring(KEY_PREFIX.length()));
+        dto.setUpdatedBy(rs.getString("updated_by"));
+        Timestamp at = rs.getTimestamp("updated_at");
+        dto.setUpdatedAt(at == null ? null : at.toInstant().toString());
+        return dto;
     }
 }

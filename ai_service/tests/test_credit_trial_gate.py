@@ -55,7 +55,7 @@ def test_only_products_with_open_signup_are_looked_at():
     svc = _service(None)
     svc.get_trial_status("i")
     sql = str(svc.db.execute.call_args.args[0])
-    assert "FROM platform_product p" in sql and "'FREE_TRIAL'" in sql
+    assert "FROM ai_platform_settings s" in sql and "'FREE_TRIAL'" in sql
     assert "self_signup_enabled" not in sql, "closing sign-up must not lift lapsed trials"
     assert "evalezy" not in sql
 
