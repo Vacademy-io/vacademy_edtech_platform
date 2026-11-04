@@ -82,6 +82,8 @@ public class EngagementCrmActionService {
 
     /** Who an autonomous action is recorded as (approvedBy / doneBy). */
     public static final String SYSTEM_ACTOR = "ENGAGEMENT_ENGINE";
+    private static final int WAITING_CALLS_PER_RUN = 20;
+    private static final String OUT_OF_CREDITS = "out of AI credits (or the balance could not be read)";
     public static final String OUTCOME_AUTO = "AUTO";
 
     private Map<String, EngagementActionHandler> handlers;
@@ -225,9 +227,46 @@ public class EngagementCrmActionService {
             } catch (Exception ignored) {
                 // unknown balance: the call waits for a person (C-6: hold it, never switch channel silently)
             }
-            if (balance == null || balance <= 0) return "out of AI credits (or the balance could not be read)";
+            if (balance == null || balance <= 0) return OUT_OF_CREDITS;
         }
         return null;
+    }
+
+    /**
+     * Graduation applies to the AI calls already waiting, as it does to waiting message drafts: once an
+     * engine set to auto has had first_n calls approved, the older tasks run too, a few each run. Every
+     * check of a new call applies. A task one of them stops keeps the reason and stays for a person.
+     *
+     * @param holdOf a counsellor or do-not-automate hold on this member, null when there is none
+     * @return how many ran or were scheduled
+     */
+    public int runWaitingCalls(EngagementEngine engine, java.util.function.Function<EngagementMember, String> holdOf,
+                               Instant now) {
+        String type = EngagementActionTypes.SCHEDULE_AI_CALL;
+        if (Boolean.TRUE.equals(engine.getAutoSendKilled())) return 0;
+        if (!autoActions(engine).contains(type) || !graduated(engine, type)) return 0;
+        int ran = 0;
+        for (EngagementAction task : actionRepository.findWaitingCallTasks(engine.getId(), now, WAITING_CALLS_PER_RUN)) {
+            try {
+                Loaded l = load(task);
+                String hold = holdOf != null ? holdOf.apply(l.member()) : null;
+                String refused = !"ACTIVE".equals(l.member().getStatus()) ? "this person is no longer active in the engine"
+                        : validateProposal(engine, l.member(), l.phone(), type, params(task));
+                if (refused == null) refused = autonomyBlock(engine, l.member(), type, hold, false, false);
+                // Credits come back, and that is about the institute, not this person: try again next run.
+                if (OUT_OF_CREDITS.equals(refused)) return ran;
+                if (refused != null) {
+                    task.setErrorMessage("Not run automatically: " + refused);
+                    actionRepository.save(task);
+                    continue;
+                }
+                EngagementAction after = tryAutonomous(task, engine, l.member(), l.phone(), hold, false, false);
+                if (after != null && (!"TASK".equals(after.getKind()) || "DONE".equals(after.getStatus()))) ran++;
+            } catch (Exception e) {
+                log.warn("Waiting AI call {} not run: {}", task.getId(), e.getMessage());
+            }
+        }
+        return ran;
     }
 
     /**

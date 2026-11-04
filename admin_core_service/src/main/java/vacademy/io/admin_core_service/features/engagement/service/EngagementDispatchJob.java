@@ -106,6 +106,11 @@ public class EngagementDispatchJob {
         } catch (Exception e) {
             log.error("Promoting graduated tasks failed: {}", e.getMessage());
         }
+        try {
+            runWaitingCalls(now);
+        } catch (Exception e) {
+            log.error("Running waiting AI calls failed: {}", e.getMessage());
+        }
         List<EngagementAction> due = actionRepository.findDueAutoSends(now, batch);
         int sent = 0;
         for (EngagementAction action : due) {
@@ -156,6 +161,19 @@ public class EngagementDispatchJob {
             }
         }
         return promoted;
+    }
+
+    private void runWaitingCalls(Instant now) {
+        if (crmActions == null) return;
+        for (EngagementEngine engine : engineRepository.findByStatus("ACTIVE")) {
+            try {
+                int ran = crmActions.runWaitingCalls(engine,
+                        member -> coordination != null ? coordination.sendHold(member, now) : null, now);
+                if (ran > 0) log.info("Engine {}: {} waiting AI call(s) ran (graduated)", engine.getId(), ran);
+            } catch (Exception e) {
+                log.warn("Waiting AI calls of engine {} not run: {}", engine.getId(), e.getMessage());
+            }
+        }
     }
 
     private boolean dispatchOne(EngagementAction action, Instant now) {

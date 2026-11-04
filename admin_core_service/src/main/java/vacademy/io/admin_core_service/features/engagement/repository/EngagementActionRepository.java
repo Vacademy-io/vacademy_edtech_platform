@@ -537,6 +537,18 @@ public interface EngagementActionRepository extends JpaRepository<EngagementActi
             """, nativeQuery = true)
     long countPendingActions(@Param("memberId") String memberId);
 
+    /** AI call tasks still waiting for an approval, oldest first. One a run refused carries the reason. */
+    @Query(value = """
+            SELECT * FROM engagement_action
+             WHERE engine_id = :engineId AND kind = 'TASK' AND status = 'OPEN'
+               AND action_type = 'SCHEDULE_AI_CALL' AND error_message IS NULL
+               AND (expires_at IS NULL OR expires_at > :now)
+             ORDER BY created_at
+             LIMIT :limit
+            """, nativeQuery = true)
+    List<EngagementAction> findWaitingCallTasks(@Param("engineId") String engineId, @Param("now") Instant now,
+                                                @Param("limit") int limit);
+
     /** Members of this institute with an unsent email the engine drafted (a person's reply is not one). */
     @Query(value = """
             SELECT DISTINCT member_id FROM engagement_action
