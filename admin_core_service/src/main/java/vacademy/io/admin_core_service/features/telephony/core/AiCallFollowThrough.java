@@ -63,6 +63,11 @@ public class AiCallFollowThrough {
     /** What every follow-up this class creates starts with, so the engine can find and close its own. */
     static final String FOLLOWUP_PREFIX = "AI callback:";
 
+    /** "Today" with no time: soon enough for today, and calling hours still decide when it dials. */
+    private static final java.time.Duration SAME_DAY_DELAY = java.time.Duration.ofHours(2);
+    private static final java.util.regex.Pattern SAME_DAY_ONLY = java.util.regex.Pattern.compile(
+            "(?iU)^\\W*(?:today|today itself|later today|aaj|aaj hi|aaj hee|आज|आज ही)\\W*$");
+
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     public void afterCall(AiCallResult r, String responseId, String userId, String instituteId) {
@@ -108,6 +113,11 @@ public class AiCallFollowThrough {
 
     // ------------------------------------------------------------------ the callback
 
+    /** The person asked for today and gave no time, which the time reader cannot place on a clock. */
+    static boolean isSameDayWithoutTime(String text) {
+        return text != null && SAME_DAY_ONLY.matcher(text).matches();
+    }
+
     static boolean wantsCallback(AiCallResult r) {
         if (Boolean.TRUE.equals(r.getCallback()) || r.getCallbackAt() != null) return true;
         if (r.getCallbackTimeText() != null && !r.getCallbackTimeText().isBlank()) return true;
@@ -120,6 +130,7 @@ public class AiCallFollowThrough {
         ZoneId zone = zoneOf(instituteId);
         Instant calledAt = r.getCallStart() != null ? r.getCallStart() : Instant.now();
         Instant at = r.getCallbackAt() != null ? r.getCallbackAt()
+                : isSameDayWithoutTime(r.getCallbackTimeText()) ? calledAt.plus(SAME_DAY_DELAY)
                 : resolve(instituteId, r.getCallbackTimeText(), calledAt, zone);
         String who = r.getCustomerName() == null || r.getCustomerName().isBlank() ? "The lead" : r.getCustomerName();
         String phone = r.getPhoneNumber() == null ? "" : r.getPhoneNumber();
