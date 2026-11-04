@@ -64,6 +64,26 @@ export interface AdminFlavor {
     instituteId?: string;
     /** OTA delivery mechanism for this flavor. */
     ota: OtaMode;
+    /**
+     * Capacitor `webDir` this flavor syncs into the native project. Defaults to
+     * `'dist'` (the main admin build) when omitted. The classroom panel app ships
+     * its own slim bundle from `dist-panel/`.
+     */
+    webDir?: string;
+    /**
+     * Whether the PrivacyScreen plugin is enabled (Android FLAG_SECURE + iOS
+     * app-switcher blur). Defaults to `true` when omitted. Classroom panels turn
+     * it off: FLAG_SECURE blocks screenshots, casting and OEM annotate overlays.
+     */
+    privacyScreen?: boolean;
+    /**
+     * Classroom interactive-panel / Android TV mode. Defaults to `false`. When
+     * true the native config appends `VacademyClassroom` to the WebView UA; the
+     * Android side keys its panel behaviour (WebView gate, immersive, keep-screen-on,
+     * PanelDevice plugin) off the per-flavor `panel_mode` resValue generated from
+     * android/app/mobile-flavors.json, not off this field.
+     */
+    panelMode?: boolean;
 }
 
 export const ADMIN_FLAVORS = {
@@ -100,6 +120,22 @@ export const ADMIN_FLAVORS = {
         appName: 'Vimotion',
         forceVimShell: true,
         ota: 'capgo',
+    },
+    // Teacher app for classroom interactive flat panels (Android 9-11, frozen
+    // system WebView) and Android TV. Ships the slim panel bundle (dist-panel/,
+    // built by scripts/panel/build-panel.mjs), not the admin portal. No
+    // brandingDomain: the panel bundle does its own branding.
+    // TODO(classroom OTA): ota 'none' until strict-target OTA ids exist for
+    // io.vacademy.classroom (publish-ota.sh only knows the admin app).
+    'vacademy-classroom': {
+        key: 'vacademy-classroom',
+        appId: 'io.vacademy.classroom',
+        appName: 'Vacademy Classroom',
+        forceVimShell: false,
+        ota: 'none',
+        webDir: 'dist-panel',
+        privacyScreen: false,
+        panelMode: true,
     },
     // Add a white-label admin app for another institute by appending an entry
     // here (key = kebab-case slug). The type below + isAdminFlavorKey pick it up

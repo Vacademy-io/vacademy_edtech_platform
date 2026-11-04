@@ -11,5 +11,14 @@
     "deepLinkHost": "evalezy.vacademy.io",
     "versionCode": 1,
     "versionName": "1.0.0"
+  },
+  "vacademy-classroom": {
+    "applicationId": "io.vacademy.classroom",
+    "appName": "Vacademy Classroom",
+    "deepLinkHost": "classroom.vacademy.io",
+    "panelMode": true,
+    "minWebViewMajor": 66,
+    "versionName": "0.1.0",
+    "versionCode": 1
   }
 }

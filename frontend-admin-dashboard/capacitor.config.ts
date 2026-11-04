@@ -33,7 +33,9 @@ const otaPluginConfig =
 const config: CapacitorConfig = {
     appId: flavor.appId,
     appName: flavor.appName,
-    webDir: 'dist',
+    // Per-flavor web bundle: the admin portal ships dist/, the classroom panel
+    // app ships its slim dist-panel/ bundle. Unset → 'dist' (admin/vimotion).
+    webDir: flavor.webDir ?? 'dist',
     server: {
         // Serve the WebView from https://localhost on BOTH platforms. iOS defaults
         // to the custom capacitor:// scheme, where js-cookie/document.cookie writes
@@ -57,6 +59,11 @@ const config: CapacitorConfig = {
     },
     android: {
         allowMixedContent: false,
+        // Classroom panel app: tag the WebView UA (" VacademyClassroom") so the
+        // panel bundle can show it in Diagnostics. JS never gates on it.
+        // minWebViewVersion stays at Capacitor's default: MainActivity's own
+        // panel gate (R.bool.panel_mode) runs before the bridge loads.
+        ...(flavor.panelMode ? { appendUserAgent: 'VacademyClassroom' } : {}),
     },
     plugins: {
         // Patch document.cookie to the native cookie store. Required for iOS:
@@ -96,7 +103,9 @@ const config: CapacitorConfig = {
         PrivacyScreen: {
             // Blur app contents in iOS app switcher + Android recent apps so
             // institute data never appears in the OS task screenshot.
-            enable: true,
+            // Classroom panels opt out (privacyScreen:false): FLAG_SECURE would
+            // block screenshots, casting/mirroring and OEM annotate overlays.
+            enable: flavor.privacyScreen !== false,
             imageName: 'Splash',
             preventScreenshots: false,
         },

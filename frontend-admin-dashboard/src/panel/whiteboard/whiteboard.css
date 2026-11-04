@@ -1,0 +1,32 @@
+/*
+ * Panel whiteboard: hide Excalidraw's own (small, desktop-sized) chrome. The
+ * panel draws its own 10-foot toolbar (PanelWhiteboardToolbar) and drives the
+ * editor through the imperative API. Scoped to .panel-whiteboard so the admin
+ * app's Excalidraw is untouched (this file only ships in the panel bundle).
+ *
+ * Hidden: top toolbar + main menu + selected-shape panel (.App-menu_top),
+ * desktop footer (zoom/undo/help), the mobile layout bars, the "exit zen mode"
+ * and "scroll back to content" buttons, the library/sidebar trigger and toasts.
+ * Kept: canvases, text editor, dialogs (error messages).
+ */
+.panel-whiteboard .excalidraw .App-menu_top,
+.panel-whiteboard .excalidraw .layer-ui__wrapper__footer,
+.panel-whiteboard .excalidraw .App-top-bar,
+.panel-whiteboard .excalidraw .App-bottom-bar,
+.panel-whiteboard .excalidraw .disable-zen-mode,
+.panel-whiteboard .excalidraw .scroll-back-to-content,
+.panel-whiteboard .excalidraw .default-sidebar-trigger,
+.panel-whiteboard .excalidraw .sidebar-trigger,
+.panel-whiteboard .excalidraw .Toast {
+    display: none;
+}
+
+/* Fill the stage (physical offsets: `inset` is Chrome 87). */
+.panel-whiteboard-canvas {
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    z-index: 0;
+}

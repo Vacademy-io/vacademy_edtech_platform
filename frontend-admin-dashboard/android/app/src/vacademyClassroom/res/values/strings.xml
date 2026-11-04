@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <!-- Overrides src/main/res/values/strings.xml for the classroom bundle id
+         (app_name / title_activity_main come from mobile-flavors.json resValues). -->
+    <string name="package_name">io.vacademy.classroom</string>
+    <string name="custom_url_scheme">io.vacademy.classroom</string>
+</resources>

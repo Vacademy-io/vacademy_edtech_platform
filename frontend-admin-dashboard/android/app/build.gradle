@@ -24,6 +24,13 @@ def flavorSpecs = new JsonSlurper().parse(file("mobile-flavors.json"))
             // (Evalezy 1.0.0 / code 1) instead of inheriting defaultConfig's.
             versionCode  : cfg.versionCode,
             versionName  : cfg.versionName,
+            // Classroom panel app (optional; absent → admin behaviour). panelMode
+            // drives R.bool.panel_mode (WebView gate, immersive, keep-screen-on,
+            // PanelDevice plugin in MainActivity); minWebViewMajor drives
+            // R.integer.panel_min_webview_major (must equal PANEL_MIN_CHROME in
+            // src/panel/config.ts and MIN in panel.html).
+            panelMode      : cfg.panelMode == true,
+            minWebViewMajor: (cfg.minWebViewMajor ?: 0) as int,
         ]
     }
 
@@ -86,6 +93,10 @@ android {
                 manifestPlaceholders.DEEP_LINK_HOST = spec.deepLinkHost
                 if (spec.versionCode) versionCode spec.versionCode as int
                 if (spec.versionName) versionName spec.versionName
+                // Generated for EVERY flavor so the shared MainActivity can read
+                // them; flavors without panelMode get false / 0 (admin unchanged).
+                resValue "bool", "panel_mode", spec.panelMode ? "true" : "false"
+                resValue "integer", "panel_min_webview_major", "${spec.minWebViewMajor}"
             }
         }
     }
@@ -141,4 +152,45 @@ apply plugin: 'com.google.gms.google-services'
 // still builds — without push — instead of failing processXxxGoogleServices.
 googleServices {
     missingGoogleServicesStrategy = com.google.gms.googleservices.GoogleServicesPlugin.MissingGoogleServicesStrategy.WARN
+}
+
+// --- Synced-assets guard -----------------------------------------------------
+// `cap sync android` writes ONE flavor's web bundle + capacitor.config.json into
+// the SHARED main source set (src/main/assets), so the last sync wins for every
+// Gradle flavor. Fail any build whose synced appId differs from the variant's
+// applicationId, so the admin APK can never ship the classroom bundle (or the
+// reverse). Missing config → warning only (fresh checkout before any sync).
+// Strict only when the requested Gradle tasks NAME the variant's flavor
+// (assembleVacademyClassroomDebug, cap run --flavor=…, Android Studio's selected
+// variant). Flavorless aggregate tasks (assembleDebug, build, lint, test, and the
+// unflavored `cap run android`) build every flavor, and only the synced one can
+// match, so for the others they WARN instead of failing (review finding REG-2).
+// Those aggregate tasks therefore verify only the synced flavor's APK.
+android.applicationVariants.all { v ->
+    def guard = tasks.register("verify${v.name.capitalize()}CapConfig") {
+        group = 'verification'
+        description = "Checks that the synced capacitor.config.json belongs to ${v.applicationId}."
+        def configFile = file('src/main/assets/capacitor.config.json')
+        def expectedId = v.applicationId
+        def variantName = v.name
+        def flavorKey = (v.flavorName ?: '').toLowerCase()
+        def requested = flavorKey && gradle.startParameter.taskNames.any { it.toLowerCase().contains(flavorKey) }
+        doLast {
+            if (!configFile.exists()) {
+                logger.warn("capacitor.config.json missing — run cap sync for the ${variantName} flavor")
+                return
+            }
+            def syncedId = new JsonSlurper().parse(configFile).appId
+            if (syncedId != expectedId) {
+                def message = "Synced web assets are for ${syncedId}, not ${expectedId}. " +
+                    "Run VITE_CAP_FLAVOR=<flavor> cap sync android first."
+                if (requested) throw new GradleException(message)
+                logger.warn("WARNING: ${variantName}: ${message} (not failing: this flavor was not " +
+                    "requested by name, so its APK must not be shipped from this build)")
+                return
+            }
+            logger.lifecycle("Synced capacitor.config.json appId ${syncedId} matches ${variantName}.")
+        }
+    }
+    v.preBuildProvider.configure { dependsOn guard }
 }

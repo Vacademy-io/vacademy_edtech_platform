@@ -774,6 +774,10 @@ export interface ExcalidrawImperativeAPI {
   history: {
     clear: InstanceType<typeof App>["resetHistory"];
   };
+  /** Vacademy addition: same as the Undo button / Ctrl+Z (no-op when nothing to undo). */
+  undo: () => void;
+  /** Vacademy addition: same as the Redo button / Ctrl+Shift+Z. */
+  redo: () => void;
   getSceneElements: InstanceType<typeof App>["getSceneElements"];
   getAppState: () => InstanceType<typeof App>["state"];
   getFiles: () => InstanceType<typeof App>["files"];

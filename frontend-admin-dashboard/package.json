@@ -64,7 +64,14 @@
         "android:assemble:evalezy:debug": "cd android && ./gradlew assembleEvalezyDebug",
         "android:assemble:evalezy:release": "cd android && ./gradlew assembleEvalezyRelease",
         "android:bundle:evalezy:release": "cd android && ./gradlew bundleEvalezyRelease",
-        "ota:publish:evalezy": "cross-env VITE_CAP_FLAVOR=evalezy TARGET_APP_IDS=io.evalezy.app bash scripts/publish-ota.sh"
+        "ota:publish:evalezy": "cross-env VITE_CAP_FLAVOR=evalezy TARGET_APP_IDS=io.evalezy.app bash scripts/publish-ota.sh",
+        "build:panel": "node scripts/panel/build-panel.mjs",
+        "dev:panel": "vite -c vite.panel.config.ts",
+        "verify:panel": "node scripts/panel/verify-panel-dist.mjs",
+        "cap:sync:vacademy-classroom": "pnpm run build:panel && cross-env VITE_CAP_FLAVOR=vacademy-classroom cap sync android",
+        "cap:sync:vacademy-classroom:fast": "cross-env VITE_CAP_FLAVOR=vacademy-classroom cap sync android",
+        "android:assemble:vacademy-classroom:debug": "cd android && ./gradlew assembleVacademyClassroomDebug",
+        "android:assemble:vacademy-classroom:release": "cd android && ./gradlew assembleVacademyClassroomRelease"
     },
     "dependencies": {
         "@amplitude/analytics-browser": "^2.19.0",

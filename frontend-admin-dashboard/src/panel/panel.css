@@ -1,0 +1,144 @@
+/*
+ * Vacademy Classroom panel-only CSS (imported after @/index.css by main.tsx).
+ *
+ * 10-foot scale: every rem-based design token (spacing, radius, and the type
+ * scale, which tailwind.panel.config.mjs re-expresses in rem: the admin text-h1 …
+ * text-caption tokens are px) grows with the root font size, so the same Tailwind
+ * classes read from across a classroom. A 1920x930 CSS panel gets 20px. Android TV
+ * (960x540 CSS) stays 16px.
+ *
+ * Chrome 66 rules: never `inset` (use top/right/bottom/left), no aspect-ratio,
+ * no clamp()/min()/max(), no logical properties, no flex `gap`.
+ */
+html.panel-root {
+    font-size: 16px;
+}
+
+@media (min-width: 1280px) {
+    html.panel-root {
+        font-size: 18px;
+    }
+}
+
+@media (min-width: 1600px) {
+    html.panel-root {
+        font-size: 20px;
+    }
+}
+
+@media (min-width: 2560px) {
+    html.panel-root {
+        font-size: 28px;
+    }
+}
+
+html.panel-root body {
+    overscroll-behavior: none;
+    touch-action: manipulation;
+    -webkit-user-select: none;
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+    background-color: hsl(var(--background));
+    color: hsl(var(--foreground));
+}
+
+/* Inputs must stay selectable/editable even though the shell is not. */
+html.panel-root input,
+html.panel-root textarea {
+    -webkit-user-select: text;
+    user-select: text;
+}
+
+/* Full-screen stage. Physical offsets only: `inset` is Chrome 87. */
+.panel-stage {
+    position: fixed;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    background-color: hsl(var(--background));
+}
+
+/* Scrollable body under a PanelTopBar. */
+.panel-stage-body {
+    position: relative;
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
+/* Area that must receive raw pointer events (whiteboard, multi-touch test). */
+.panel-touch-surface {
+    touch-action: none;
+}
+
+/*
+ * ui/button's base class forces `[&_svg]:size-4`, so every phosphor icon inside a
+ * MyButton rendered at 1rem whatever its size prop. On the panel, honour the
+ * phosphor size prop instead, in rem so icons scale with the 10-foot root font
+ * (size={32} -> 2rem, the same mapping the whiteboard's [&_svg]:size-8 uses).
+ * Phosphor icons are matched by their 256x256 viewBox; other SVGs keep size-4.
+ */
+html.panel-root button svg[viewBox="0 0 256 256"][width="20"] {
+    width: 1.25rem;
+    height: 1.25rem;
+}
+html.panel-root button svg[viewBox="0 0 256 256"][width="24"] {
+    width: 1.5rem;
+    height: 1.5rem;
+}
+html.panel-root button svg[viewBox="0 0 256 256"][width="28"] {
+    width: 1.75rem;
+    height: 1.75rem;
+}
+html.panel-root button svg[viewBox="0 0 256 256"][width="32"] {
+    width: 2rem;
+    height: 2rem;
+}
+html.panel-root button svg[viewBox="0 0 256 256"][width="36"] {
+    width: 2.25rem;
+    height: 2.25rem;
+}
+html.panel-root button svg[viewBox="0 0 256 256"][width="40"] {
+    width: 2.5rem;
+    height: 2.5rem;
+}
+html.panel-root button svg[viewBox="0 0 256 256"][width="48"] {
+    width: 3rem;
+    height: 3rem;
+}
+html.panel-root button svg[viewBox="0 0 256 256"][width="56"] {
+    width: 3.5rem;
+    height: 3.5rem;
+}
+html.panel-root button svg[viewBox="0 0 256 256"][width="64"] {
+    width: 4rem;
+    height: 4rem;
+}
+html.panel-root button svg[viewBox="0 0 256 256"][width="72"] {
+    width: 4.5rem;
+    height: 4.5rem;
+}
+html.panel-root button svg[viewBox="0 0 256 256"][width="80"] {
+    width: 5rem;
+    height: 5rem;
+}
+
+/*
+ * Visible D-pad / keyboard focus (review finding ux10ft-4). ui/button's base class
+ * has `focus-visible:outline-none` and no ring, so on Android TV (WebView 91+) a
+ * focused MyButton looked exactly like an unfocused one. Rem-sized for 10 feet;
+ * !important beats the utility. Chrome 66 does not know :focus-visible and drops
+ * this rule, which is fine: there the browser's default focus outline still shows.
+ * Every selector carries :focus-visible, so the list is never "mixed".
+ */
+html.panel-root button:focus-visible,
+html.panel-root [role='button']:focus-visible,
+html.panel-root a:focus-visible {
+    outline: 0.1875rem solid hsl(var(--primary-500)) !important;
+    outline-offset: 0.125rem;
+}
