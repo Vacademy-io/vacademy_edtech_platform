@@ -1042,6 +1042,13 @@ class ToolCostEstimator:
                 result["current_balance"] = float(current)
                 result["balance_after"] = float(current - estimated)
                 result["sufficient"] = current >= estimated
+                # A lapsed trial has nothing to spend, whatever is left of its free credits. Reported
+                # as a zero balance because some gates (copy checks) compare the balance themselves.
+                if CreditService(self.db).get_trial_status(institute_id)["expired"]:
+                    result["current_balance"] = 0.0
+                    result["balance_after"] = float(-estimated)
+                    result["sufficient"] = False
+                    result["trial_expired"] = True
         return result
 
     @staticmethod

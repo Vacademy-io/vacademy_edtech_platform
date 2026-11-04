@@ -1,3 +1,4 @@
+import { isInEvalezyShell } from '@/lib/evalezy-mode';
 import { useState, type ReactNode } from 'react';
 import { FormProvider, useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -42,11 +43,19 @@ export const AssessmentQuestionEditDialog = ({
     questionId,
     examType,
     onSaved,
+    triggerLabel,
+    triggerClassName,
+    answerKeyOptional,
 }: {
     assessmentId: string;
     sectionId: string;
     questionId: string;
     examType?: string;
+    /** A labelled button in place of the icon, for screens with room for one. */
+    triggerLabel?: string;
+    triggerClassName?: string;
+    /** A paper read from photos often has no answer key; its questions can still be fixed. */
+    answerKeyOptional?: boolean;
     /** Called with the question as saved, so the caller can refresh its own row. */
     onSaved?: (question: MyQuestion) => void;
 }) => {
@@ -73,11 +82,13 @@ export const AssessmentQuestionEditDialog = ({
                 type="button"
                 buttonType="secondary"
                 scale="small"
-                layoutVariant="icon"
+                {...(triggerLabel ? {} : { layoutVariant: 'icon' as const })}
+                className={triggerClassName}
                 aria-label={t('table.editQuestion')}
                 onClick={() => setOpen(true)}
             >
                 <PencilSimpleLine size={16} />
+                {triggerLabel}
             </MyButton>
             <MyDialog
                 heading={t('table.editQuestion')}
@@ -100,6 +111,7 @@ export const AssessmentQuestionEditDialog = ({
                         key={source.id ?? questionId}
                         source={source}
                         examType={examType}
+                        answerKeyOptional={answerKeyOptional}
                         onCancel={() => setOpen(false)}
                         onSubmit={async (updated) => {
                             await editAssessmentQuestions({
@@ -129,6 +141,7 @@ export const AssessmentQuestionEditDialog = ({
 export const QuestionEditor = ({
     source,
     examType,
+    answerKeyOptional,
     onCancel,
     onSubmit,
     onSaved,
@@ -136,6 +149,7 @@ export const QuestionEditor = ({
 }: {
     source: QuestionResponse;
     examType?: string;
+    answerKeyOptional?: boolean;
     onCancel: () => void;
     onSubmit: (updated: unknown[]) => Promise<void>;
     onSaved: (question: MyQuestion) => void;
@@ -145,7 +159,10 @@ export const QuestionEditor = ({
     const { t } = useTranslation('assessmentStep2SectionInfo');
     const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
     const form = useForm<QuestionPaperForm>({
-        resolver: zodResolver(uploadQuestionPaperFormSchema(examType)),
+        // The schema's only exam-type rule is the one requiring an answer key: SURVEY turns it off.
+        resolver: zodResolver(
+            uploadQuestionPaperFormSchema(answerKeyOptional ? 'SURVEY' : examType)
+        ),
         mode: 'onChange',
         defaultValues: {
             questionPaperId: '',
@@ -210,7 +227,14 @@ export const QuestionEditor = ({
                     }}
                 />
                 {extraFields}
-                <div className="flex justify-end gap-2 border-t border-neutral-200 pt-4">
+                {/* Pinned to the dialog's bottom edge: on a phone the editors run to several screens. */}
+                <div
+                    className={
+                        isInEvalezyShell()
+                            ? 'sticky bottom-0 z-10 flex justify-end gap-2 border-t border-neutral-200 bg-white py-3'
+                            : 'flex justify-end gap-2 border-t border-neutral-200 pt-4'
+                    }
+                >
                     <MyButton
                         type="button"
                         buttonType="secondary"

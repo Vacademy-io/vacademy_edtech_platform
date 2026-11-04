@@ -1,3 +1,4 @@
+import { isInEvalezyShell } from '@/lib/evalezy-mode';
 import { useState, useMemo, useEffect } from 'react';
 import {
     useAiCreditsQuery,
@@ -27,6 +28,7 @@ import { useTranslation } from 'react-i18next';
 import { useUsageConfigQuery } from '@/services/ai-credits/usage-v2';
 import {
     usePlatformInvoicesQuery,
+    consumeTopUpReturnId,
     downloadInvoicePdf,
     type PlatformInvoiceSummary,
 } from '@/services/ai-credits/credit-pack-services';
@@ -118,7 +120,7 @@ const txTypeConfig: Record<
 };
 
 // ─── Overview Tab ──────────────────────────────────
-function OverviewTab({ storefrontVisible = false }: { storefrontVisible?: boolean }) {
+export function OverviewTab({ storefrontVisible = false }: { storefrontVisible?: boolean }) {
     const { data: credits, isLoading: isCreditsLoading } = useAiCreditsQuery(true);
     const { data: forecast, isLoading: isForecastLoading } = useAiUsageForecastQuery(true);
     const { data: analytics, isLoading: isAnalyticsLoading } = useAiUsageAnalyticsQuery(7, true);
@@ -129,9 +131,13 @@ function OverviewTab({ storefrontVisible = false }: { storefrontVisible?: boolea
         true
     );
 
-    const totalCredits = parseFloat(credits?.total_credits || '0');
     const usedCredits = parseFloat(credits?.used_credits || '0');
     const currentBalance = parseFloat(credits?.current_balance || '0');
+    // In the Evalezy shell, used + left: a balance credited without a ledger entry leaves
+    // total_credits behind ("757 / 100", "2808% consumed" on a healthy balance).
+    const totalCredits = isInEvalezyShell()
+        ? usedCredits + currentBalance
+        : parseFloat(credits?.total_credits || '0');
     const usagePercent = totalCredits > 0 ? (usedCredits / totalCredits) * 100 : 0;
     const nudgePlans =
         storefrontVisible &&
@@ -307,7 +313,7 @@ function OverviewTab({ storefrontVisible = false }: { storefrontVisible?: boolea
 }
 
 // ─── Transactions Tab ──────────────────────────────
-function TransactionsTab() {
+export function TransactionsTab() {
     const [page, setPage] = useState(1);
     const { data, isLoading } = useAiTransactionsQuery(page, 8, undefined, true);
 
@@ -417,7 +423,7 @@ function TransactionsTab() {
 }
 
 // ─── Analytics Tab ─────────────────────────────────
-function AnalyticsTab() {
+export function AnalyticsTab() {
     const [days, setDays] = useState(30);
     const { data: analytics, isLoading } = useAiUsageAnalyticsQuery(days, true);
 
@@ -579,7 +585,7 @@ function DailyUsageChart({ data }: { data: { date: string; total_credits: number
 // ─── Billing Tab ───────────────────────────────────
 // Credit-pack invoices exactly as before; with the plan storefront on, AI plan
 // invoices and every credit note (from the plans facade) are listed below them.
-function BillingTab({ storefrontVisible = false }: { storefrontVisible?: boolean }) {
+export function BillingTab({ storefrontVisible = false }: { storefrontVisible?: boolean }) {
     return (
         <div className="space-y-3">
             <PackInvoiceList />
@@ -801,30 +807,13 @@ export function AiCreditsPanel({
     // flight so v1 and v2 never both fire their requests.
     const usageConfigPending = isOpen && !!instituteId && usageConfig.isPending;
 
-    // Returning from Razorpay's hosted payment lands on …?topup_pp=<id>.
-    // Reopen the top-up modal straight into its polling/confirmation state, then
-    // scrub the payment params from the URL so a refresh can't re-trigger it.
+    // Returning from Razorpay's hosted payment: reopen the top-up modal straight
+    // into its polling/confirmation state.
     useEffect(() => {
-        if (typeof window === 'undefined') return;
-        const params = new URLSearchParams(window.location.search);
-        const pp = params.get('topup_pp');
+        const pp = consumeTopUpReturnId();
         if (!pp) return;
         setResumePaymentId(pp);
         setTopUpOpen(true);
-        [
-            'topup_pp',
-            'razorpay_payment_id',
-            'razorpay_payment_link_id',
-            'razorpay_payment_link_reference_id',
-            'razorpay_payment_link_status',
-            'razorpay_signature',
-        ].forEach((k) => params.delete(k));
-        const qs = params.toString();
-        window.history.replaceState(
-            {},
-            '',
-            `${window.location.pathname}${qs ? `?${qs}` : ''}${window.location.hash}`
-        );
     }, []);
 
     if (!credits || isError) return null;

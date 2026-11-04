@@ -1,5 +1,6 @@
 package vacademy.io.auth_service.feature.auth.service;
 
+import vacademy.io.common.product.ProductConfigDTO;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -141,6 +142,12 @@ public class AuthService {
 
     @Transactional
     public User createUser(RegisterRequest registerRequest, Set<UserRole> roles) {
+        return createUser(registerRequest, roles, null);
+    }
+
+    /** @param ownProduct set by a self sign-up only: never read from a request body */
+    @Transactional
+    public User createUser(RegisterRequest registerRequest, Set<UserRole> roles, ProductConfigDTO ownProduct) {
         boolean isAlreadyPresent = false;
         // cleanIdentifier() first: an email pasted with an invisible character (ZWSP,
         // BOM, NBSP) would otherwise be stored verbatim AND used as the dedupe key,
@@ -175,7 +182,7 @@ public class AuthService {
         if (isAlreadyPresent) {
             sendKeepingCredentialsWelcomeMailToUser(user, registerRequest.getInstitute().getId(), roles);
         } else {
-            sendWelcomeMailToUser(user, registerRequest.getInstitute().getId(), roles);
+            sendWelcomeMailToUser(user, registerRequest.getInstitute().getId(), roles, ownProduct);
         }
         return user;
     }
@@ -471,6 +478,11 @@ public class AuthService {
     }
 
     public void sendWelcomeMailToUser(User user, String instituteId, Set<UserRole> roles) {
+        sendWelcomeMailToUser(user, instituteId, roles, null);
+    }
+
+    /** @param ownProduct a product with its own settings: its welcome goes out from its address */
+    public void sendWelcomeMailToUser(User user, String instituteId, Set<UserRole> roles, ProductConfigDTO ownProduct) {
         InstituteInfoDTO instituteInfoDTO = null;
         boolean isLearner = isLearnerRecipient(user, instituteId, roles);
         String instituteName = "Vacademy"; // Default fallback
@@ -493,11 +505,24 @@ public class AuthService {
                 loginUrl = instituteInfoDTO.getAdminPortalUrl();
             }
         }
+        if (ownProduct != null && StringUtils.hasText(ownProduct.getLoginUrl())) {
+            loginUrl = ownProduct.getLoginUrl();
+        }
         GenericEmailRequest genericEmailRequest = new GenericEmailRequest();
         genericEmailRequest.setTo(user.getEmail());
         genericEmailRequest.setBody(NotificationEmailBody.createWelcomeEmailBody(instituteName, user.getFullName(),
                 user.getUsername(), user.getPassword(), normalizePortalUrl(loginUrl), theme));
         genericEmailRequest.setSubject("Welcome to " + instituteName);
+        if (ownProduct != null) {
+            // A self sign-up has already created the institute: a mail outage must not undo the account.
+            try {
+                notificationService.sendGenericHtmlMailAs(genericEmailRequest, instituteId,
+                        ownProduct.getFromEmail(), ownProduct.getFromName());
+            } catch (Exception e) {
+                log.warn("Welcome mail failed for self sign-up in institute {}: {}", instituteId, e.getMessage());
+            }
+            return;
+        }
         notificationService.sendGenericHtmlMailViaUnified(genericEmailRequest, instituteId);
     }
 

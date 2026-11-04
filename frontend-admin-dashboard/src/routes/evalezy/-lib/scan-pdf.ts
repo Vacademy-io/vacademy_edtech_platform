@@ -24,6 +24,16 @@ export interface ScanPage {
     height: number;
 }
 
+/** The list with one item moved a place earlier (-1) or later (+1); unchanged at either end. */
+export const movePage = <T>(items: T[], index: number, delta: -1 | 1): T[] => {
+    const target = index + delta;
+    if (index < 0 || index >= items.length || target < 0 || target >= items.length) return items;
+    const next = items.slice();
+    const [moved] = next.splice(index, 1);
+    next.splice(target, 0, moved as T);
+    return next;
+};
+
 let pageSeq = 0;
 const nextId = () => `p${Date.now().toString(36)}${(pageSeq++).toString(36)}`;
 

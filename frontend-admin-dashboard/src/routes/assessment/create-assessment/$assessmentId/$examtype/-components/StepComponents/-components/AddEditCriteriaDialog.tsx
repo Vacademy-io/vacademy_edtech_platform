@@ -35,7 +35,8 @@ interface AddEditCriteriaDialogProps {
     question: QuestionData;
     existingCriteria?: CriteriaJson;
     open: boolean;
-    onSave: (criteria: CriteriaJson, source: CriteriaSource) => void;
+    /** Return a promise when saving to the server: it reports the result and a failed save keeps the editor open. */
+    onSave: (criteria: CriteriaJson, source: CriteriaSource) => void | Promise<unknown>;
     onClose: () => void;
 }
 
@@ -54,6 +55,7 @@ export const AddEditCriteriaDialog = ({
         existingCriteria?.criteria || [{ name: '', description: '', max_marks: 0 }]
     );
     const [saveAsTemplate, setSaveAsTemplate] = useState<boolean>(false);
+    const [saving, setSaving] = useState(false);
 
     // Generate AI Criteria Mutation
     const generateMutation = useMutation({
@@ -142,7 +144,18 @@ export const AddEditCriteriaDialog = ({
         }
 
         if (criteriaToSave) {
-            onSave(criteriaToSave, source);
+            const pending = onSave(criteriaToSave, source);
+            if (pending) {
+                setSaving(true);
+                try {
+                    await pending;
+                } catch {
+                    setSaving(false);
+                    return;
+                }
+                onClose();
+                return;
+            }
             onClose();
             toast.success(t('toasts.criteriaSaved'));
         } else {
@@ -178,7 +191,13 @@ export const AddEditCriteriaDialog = ({
                     <MyButton type="button" scale="large" buttonType="secondary" onClick={onClose}>
                         {t('footer.cancel')}
                     </MyButton>
-                    <MyButton type="button" scale="large" buttonType="primary" onClick={handleSave}>
+                    <MyButton
+                        type="button"
+                        scale="large"
+                        buttonType="primary"
+                        disabled={saving}
+                        onClick={handleSave}
+                    >
                         {t('footer.save')}
                     </MyButton>
                 </>

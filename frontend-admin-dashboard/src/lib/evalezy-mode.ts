@@ -20,6 +20,15 @@ export const isEvalezyHost = (hostname?: string): boolean => {
 
 export const isEvalezyMode = (): boolean => shouldForceEvalezyShell() || isEvalezyHost();
 
+/**
+ * On a screen of the Evalezy shell, including one opened from the portal's sidebar.
+ * For shared components whose phone-first behaviour must not reach the portal's own screens.
+ */
+export const isInEvalezyShell = (pathname?: string): boolean => {
+    const path = pathname ?? (typeof window !== 'undefined' ? window.location.pathname : '');
+    return isEvalezyMode() || path === EVALEZY_HOME || path.startsWith(`${EVALEZY_HOME}/`);
+};
+
 /** Portal pages an Evalezy user may still open (the shell links to them). */
 const ALLOWED_PREFIXES = [
     EVALEZY_HOME,

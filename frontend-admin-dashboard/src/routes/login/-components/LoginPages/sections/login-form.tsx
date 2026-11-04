@@ -1,3 +1,4 @@
+import { isEvalezyMode } from '@/lib/evalezy-mode';
 import { getActiveRoleDisplaySettingsKey } from '@/lib/auth/instituteUtils';
 import { getInstituteId } from '@/constants/helper';
 import { hasFacultyAssignedPermission } from '@/lib/auth/facultyAccessUtils';
@@ -505,6 +506,10 @@ export function LoginForm() {
     }, []);
 
     const handleNavigateSignup = () => {
+        if (isEvalezyMode()) {
+            navigate({ to: '/signup/start', search: { product: 'evalezy' } });
+            return;
+        }
         navigate({ to: '/signup' });
     };
 

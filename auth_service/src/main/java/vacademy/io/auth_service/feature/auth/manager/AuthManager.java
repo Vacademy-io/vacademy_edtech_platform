@@ -1,5 +1,7 @@
 package vacademy.io.auth_service.feature.auth.manager;
 
+import vacademy.io.common.core.internal_api_wrapper.ProductConfigClient;
+import vacademy.io.common.product.ProductConfigDTO;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -54,6 +56,9 @@ import static vacademy.io.auth_service.feature.auth.constants.AuthConstants.ADMI
 
 @Component
 public class AuthManager {
+
+    @Autowired
+    private ProductConfigClient productConfigClient;
 
     /**
      * Every WhatsApp OTP template on the platform stores the same settings: one
@@ -123,6 +128,11 @@ public class AuthManager {
     private static final org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(AuthManager.class);
 
     public JwtResponseDto registerRootUser(RegisterRequest registerRequest) {
+        return registerRootUser(registerRequest, null);
+    }
+
+    /** @param ownProduct set by a self sign-up only: its welcome mail goes out under that product */
+    public JwtResponseDto registerRootUser(RegisterRequest registerRequest, ProductConfigDTO ownProduct) {
         if (Objects.isNull(registerRequest))
             throw new VacademyException("Invalid Request");
 
@@ -187,7 +197,7 @@ public class AuthManager {
 
             userRoleSet.add(userRole);
         });
-        User newUser = authService.createUser(registerRequest, userRoleSet);
+        User newUser = authService.createUser(registerRequest, userRoleSet, ownProduct);
         oAuth2VendorToUserDetailService.verifyEmail(registerRequest.getSubjectId(), registerRequest.getVendorId(),
                 registerRequest.getEmail());
         // Generate a refresh token
@@ -328,7 +338,7 @@ public class AuthManager {
         if (user.isEmpty()) {
             throw new UsernameNotFoundException("invalid user request..!!");
         } else {
-            notificationService.sendOtp(makeOtp(authRequestDTO.getEmail()),
+            notificationService.sendOtp(makeOtp(authRequestDTO.getEmail(), authRequestDTO.getProduct()),
                     resolveInstituteIdForMail(authRequestDTO));
             return "OTP sent to " + authRequestDTO.getEmail();
         }
@@ -364,6 +374,14 @@ public class AuthManager {
     private EmailOTPRequest makeOtp(String email) {
         return EmailOTPRequest.builder().to(email).service("auth-service").subject("OTP Verification")
                 .name("User").build();
+    }
+
+    private EmailOTPRequest makeOtp(String email, String product) {
+        return productConfigClient.get(product)
+                .map(own -> EmailOTPRequest.builder().to(email).service("auth-service")
+                        .subject("Your " + own.getDisplayName() + " verification code")
+                        .name("there").product(own.getProductKey()).build())
+                .orElseGet(() -> makeOtp(email));
     }
 
     public JwtResponseDto loginViaOtp(AuthRequestDto authRequestDTO) {

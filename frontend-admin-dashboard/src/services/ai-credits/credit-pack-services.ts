@@ -1,6 +1,8 @@
+import { isInEvalezyShell } from '@/lib/evalezy-mode';
 import authenticatedAxiosInstance from '@/lib/auth/axiosInstance';
 import { BASE_URL } from '@/constants/urls';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { saveBlob } from '@/lib/save-blob';
 
 const API_BASE = `${BASE_URL}/admin-core-service/credits/packs`;
 
@@ -133,7 +135,8 @@ export async function fetchCreditPacks(instituteId: string): Promise<CreditPack[
 export interface PurchaseCreditPackInput {
     instituteId: string;
     packId: string;
-    returnUrl: string;
+    /** Where the payment page sends the browser back to; none = Razorpay's own confirmation page. */
+    returnUrl?: string;
     /** 15-char GSTIN; '' clears a previously saved one; undefined leaves it untouched. */
     buyerGstin?: string;
     /** 2-digit GST state code; derived from the GSTIN prefix server-side when omitted. */
@@ -183,13 +186,17 @@ export async function fetchPlatformInvoices(
 /**
  * Download an invoice PDF. The endpoint needs the auth header, so we fetch
  * the bytes via axios and trigger a save from an object URL instead of a
- * plain <a href>.
+ * plain <a href>. saveBlob in the Evalezy app: a WebView cannot download a blob.
  */
 export async function downloadInvoicePdf(invoiceId: string, fileName?: string): Promise<void> {
     const response = await authenticatedAxiosInstance.get<Blob>(
         `${API_BASE}/invoices/${encodeURIComponent(invoiceId)}/pdf`,
         { responseType: 'blob' }
     );
+    if (isInEvalezyShell()) {
+        await saveBlob(response.data, fileName ?? `${invoiceId}.pdf`);
+        return;
+    }
     const url = URL.createObjectURL(response.data);
     const a = document.createElement('a');
     a.href = url;
@@ -199,6 +206,32 @@ export async function downloadInvoicePdf(invoiceId: string, fileName?: string): 
     a.remove();
     // Give the browser a tick to start the download before revoking.
     setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+/**
+ * Returning from Razorpay's hosted payment lands on …?topup_pp=<id>. Gives that id
+ * and scrubs the payment params from the URL so a refresh can't re-trigger it.
+ */
+export function consumeTopUpReturnId(): string | null {
+    if (typeof window === 'undefined') return null;
+    const params = new URLSearchParams(window.location.search);
+    const paymentId = params.get('topup_pp');
+    if (!paymentId) return null;
+    [
+        'topup_pp',
+        'razorpay_payment_id',
+        'razorpay_payment_link_id',
+        'razorpay_payment_link_reference_id',
+        'razorpay_payment_link_status',
+        'razorpay_signature',
+    ].forEach((k) => params.delete(k));
+    const qs = params.toString();
+    window.history.replaceState(
+        {},
+        '',
+        `${window.location.pathname}${qs ? `?${qs}` : ''}${window.location.hash}`
+    );
+    return paymentId;
 }
 
 export async function fetchOrderStatus(platformPaymentId: string): Promise<CreditPackOrderStatus> {

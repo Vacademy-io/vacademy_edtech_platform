@@ -1,3 +1,4 @@
+import { isInEvalezyShell } from '@/lib/evalezy-mode';
 import { FormControl, FormField, FormItem, FormMessage } from '@/components/ui/form';
 import { MyButton } from '@/components/design-system/button';
 import { RichTextEditor } from '@/components/editor/RichTextEditor';
@@ -83,6 +84,8 @@ export const AnswerOptionsEditor = ({
     const watched = useWatch({ control, name: basePath }) as OptionValue[] | undefined;
     const options: OptionValue[] = watched ?? (getValues(basePath) as OptionValue[]) ?? [];
     const canRemove = options.length > 2;
+    // The portal's option rows stay exactly as they were.
+    const inShell = isInEvalezyShell();
 
     // Group-level issues ("must have exactly one option selected") land on the
     // array itself, which nothing used to render — the question just silently
@@ -172,6 +175,7 @@ export const AnswerOptionsEditor = ({
                             key={optionIndex}
                             className={cn(
                                 'group flex items-start gap-3 rounded-lg border p-3 transition-colors',
+                                inShell && 'flex-wrap sm:flex-nowrap',
                                 isCorrect
                                     ? 'border-success-400 bg-success-50'
                                     : 'border-neutral-200 bg-neutral-50 hover:border-neutral-300 hover:bg-white'
@@ -214,14 +218,23 @@ export const AnswerOptionsEditor = ({
                                 control={control}
                                 name={`${basePath}.${optionIndex}.name`}
                                 render={({ field }) => (
-                                    <FormItem className="min-w-0 flex-1">
+                                    // On a phone the text takes its own row: beside the letter
+                                    // it is too narrow for a formula or for the toolbar.
+                                    <FormItem
+                                        className={
+                                            inShell
+                                                ? 'order-last min-w-0 basis-full sm:order-none sm:flex-1'
+                                                : 'min-w-0 flex-1'
+                                        }
+                                    >
                                         <FormControl>
                                             <RichTextEditor
                                                 value={field.value}
                                                 onBlur={field.onBlur}
                                                 onChange={field.onChange}
                                                 minHeight={28}
-                                                hideToolbar
+                                                hideToolbar={!inShell}
+                                                toolbarOnFocus={inShell}
                                                 borderless
                                                 enableModalCompose={enableOptionModalCompose}
                                                 placeholder={t('answerOptions.optionPlaceholder', {
@@ -236,7 +249,12 @@ export const AnswerOptionsEditor = ({
                             {canRemove && (
                                 <button
                                     type="button"
-                                    className="mt-1 shrink-0 rounded-sm p-0.5 text-neutral-400 opacity-0 transition-opacity hover:text-danger-500 focus-visible:opacity-100 group-hover:opacity-100"
+                                    // A phone has no hover, so the button has to stay visible there.
+                                    className={
+                                        inShell
+                                            ? 'ml-auto mt-1 shrink-0 rounded-sm p-0.5 text-neutral-400 transition-opacity hover:text-danger-500 focus-visible:opacity-100 group-hover:opacity-100 sm:ml-0 sm:opacity-0'
+                                            : 'mt-1 shrink-0 rounded-sm p-0.5 text-neutral-400 opacity-0 transition-opacity hover:text-danger-500 focus-visible:opacity-100 group-hover:opacity-100'
+                                    }
                                     onClick={() => handleRemoveOption(optionIndex)}
                                     aria-label={t('answerOptions.removeOption.ariaLabel', {
                                         letter: letter.toUpperCase(),

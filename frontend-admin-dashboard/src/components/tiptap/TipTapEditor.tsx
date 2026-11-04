@@ -1,5 +1,6 @@
 /* eslint-disable */
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { isInEvalezyShell } from '@/lib/evalezy-mode';
+import { useCallback, useEffect, useRef, useState, type MouseEvent as ReactMouseEvent } from 'react';
 import { EditorContent, useEditor, ReactNodeViewRenderer, NodeViewWrapper } from '@tiptap/react';
 import { createPortal } from 'react-dom';
 import { Node, mergeAttributes } from '@tiptap/core';
@@ -16,6 +17,17 @@ import {
   TextUnderline,
   ListNumbers,
   ListBullets,
+  HighlighterCircle,
+  Quotes,
+  CodeSimple,
+  Minus,
+  TextAlignLeft,
+  TextAlignCenter,
+  TextAlignRight,
+  MathOperations,
+  Plus,
+  ArrowCounterClockwise,
+  ArrowClockwise,
 } from '@phosphor-icons/react';
 import TextStyle from '@tiptap/extension-text-style';
 import Color from '@tiptap/extension-color';
@@ -50,6 +62,9 @@ type TipTapEditorProps = {
   addTableRow?: { nonce: number };
   // Optional: hide the toolbar entirely (compact / inline use). Editor still accepts input.
   hideToolbar?: boolean;
+  // Optional: show the toolbar only while this editor is in use, for screens that
+  // stack several editors (answer options). Ignored when hideToolbar.
+  toolbarOnFocus?: boolean;
   // Optional: render a slim, Slack-style toolbar (text formatting + lists + code
   // only) instead of the full media/table/math toolbar. Ignored when hideToolbar.
   minimalToolbar?: boolean;
@@ -59,6 +74,19 @@ type TipTapEditorProps = {
   // Optional: drop the editor's own border/background so the surrounding card
   // reads as the input (used by answer-option rows).
   borderless?: boolean;
+};
+
+const TOOL_BUTTON =
+  'flex size-9 shrink-0 items-center justify-center rounded hover:bg-neutral-100 disabled:opacity-50 sm:size-8';
+const TOOL_GROUP = 'flex shrink-0 items-center gap-1';
+const TOOL_DIVIDER = 'mx-1 h-6 w-px shrink-0 bg-neutral-200';
+
+/**
+ * A tapped tool must not take focus from the text: it would lose the selection the tool
+ * acts on and drop a phone's keyboard. Inputs (the colour swatch, table size) still need it.
+ */
+const keepEditorFocus = (event: ReactMouseEvent) => {
+  if (!(event.target instanceof HTMLInputElement)) event.preventDefault();
 };
 
 /**
@@ -111,11 +139,15 @@ export function TipTapEditor({
   editable = true,
   addTableRow,
   hideToolbar = false,
+  toolbarOnFocus = false,
   minimalToolbar = false,
   stickyToolbar = false,
   borderless = false,
 }: TipTapEditorProps) {
   const [isRecording, setIsRecording] = useState(false);
+  const [isInUse, setIsInUse] = useState(false);
+  // Everything phone-first in this editor is for the Evalezy shell; the portal behaves as before.
+  const inShell = isInEvalezyShell();
   const [showLinkModal, setShowLinkModal] = useState(false);
   const [linkUrl, setLinkUrl] = useState('');
   const [linkText, setLinkText] = useState('');
@@ -126,17 +158,29 @@ export function TipTapEditor({
   const [mediaMenuPos, setMediaMenuPos] = useState<{ top: number; left: number } | null>(null);
   const wrapperRef = useRef<HTMLDivElement | null>(null);
 
+  // A closed modal takes the focus with it and no blur follows, so a tap elsewhere has to end it too.
+  useEffect(() => {
+    if (!toolbarOnFocus || !isInUse) return;
+    const onDown = (event: PointerEvent) => {
+      if (!wrapperRef.current?.contains(event.target as globalThis.Node | null)) setIsInUse(false);
+    };
+    document.addEventListener('pointerdown', onDown);
+    return () => document.removeEventListener('pointerdown', onDown);
+  }, [toolbarOnFocus, isInUse]);
+
   useEffect(() => {
     if (!showMediaMenu) return;
     const onDown = (e: MouseEvent) => {
       const target = e.target as unknown as HTMLElement | null;
+      // The + button toggles the menu itself: closing here too would reopen it on the click.
+      if (inShell && mediaButtonRef.current && target && mediaButtonRef.current.contains(target)) return;
       if (mediaMenuRef.current && target && !mediaMenuRef.current.contains(target)) {
         setShowMediaMenu(false);
       }
     };
     document.addEventListener('mousedown', onDown);
     return () => document.removeEventListener('mousedown', onDown);
-  }, [showMediaMenu]);
+  }, [showMediaMenu, inShell]);
 
   // Adjust menu position to keep it within viewport (flip up / clamp horizontally)
   useEffect(() => {
@@ -1032,12 +1076,20 @@ export function TipTapEditor({
   const canUndo = !!editor?.can().undo();
   const canRedo = !!editor?.can().redo();
   const isInTable = !!editor?.isActive('table');
+  // In the shell these modals sit inside the question form and must not submit it.
+  const modalButtonType = inShell ? ('button' as const) : undefined;
+  const toolbarShown =
+    !toolbarOnFocus || isInUse || showMediaMenu || showMathModal || showLinkModal;
 
   return (
     <div
       ref={wrapperRef}
       className={`${borderless ? '' : 'rounded-md border bg-white shadow-sm'} ${className || ''}`.trim()}
       style={{ width: '100%', maxHeight: 'inherit', minHeight: 'inherit' }}
+      onFocusCapture={() => { if (toolbarOnFocus) setIsInUse(true); }}
+      onBlurCapture={(event) => {
+        if (toolbarOnFocus && !event.currentTarget.contains(event.relatedTarget as globalThis.Node | null)) setIsInUse(false);
+      }}
     >
       {editable && !hideToolbar && minimalToolbar && (
         <div className="flex flex-wrap items-center gap-0.5 border-b p-1.5 text-neutral-600">
@@ -1049,7 +1101,112 @@ export function TipTapEditor({
           <button type="button" title="Bullet List" aria-label="Bullet List" onClick={() => editor?.chain().focus().toggleBulletList().run()} className={`rounded p-1.5 hover:bg-neutral-100 ${editor?.isActive('bulletList') ? 'bg-neutral-200 text-neutral-900' : ''}`}><ListBullets className="size-4" /></button>
         </div>
       )}
-      {editable && !hideToolbar && !minimalToolbar && (
+      {/* The Evalezy shell's phone toolbar; the portal keeps its own below. */}
+      {editable && !hideToolbar && !minimalToolbar && inShell && toolbarShown && (
+        <div
+          onMouseDown={keepEditorFocus}
+          className={`flex flex-nowrap items-center gap-1 overflow-x-auto border-b p-1 text-sm text-neutral-700 sm:flex-wrap sm:p-2 ${stickyToolbar ? 'sticky top-0 z-10 rounded-t-md bg-white' : ''}`}
+        >
+          <div className={TOOL_GROUP}>
+            <button type="button" title="Bold" onClick={() => editor?.chain().focus().toggleBold().run()} className={`${TOOL_BUTTON} ${editor?.isActive('bold') ? 'bg-neutral-200' : ''}`}><TextB size={16} weight="bold" /></button>
+            <button type="button" title="Italic" onClick={() => editor?.chain().focus().toggleItalic().run()} className={`${TOOL_BUTTON} ${editor?.isActive('italic') ? 'bg-neutral-200' : ''}`}><TextItalic size={16} weight="bold" /></button>
+            <button type="button" title="Underline" onClick={() => editor?.chain().focus().toggleUnderline().run()} className={`${TOOL_BUTTON} ${editor?.isActive('underline') ? 'bg-neutral-200' : ''}`}><TextUnderline size={16} weight="bold" /></button>
+            <button type="button" title="Math" onClick={() => { setMathLatex(''); setMathMode('inline'); setShowMathModal(true); }} className={TOOL_BUTTON}><MathOperations size={16} weight="bold" /></button>
+            <button type="button" title="Highlight" onClick={() => editor?.chain().focus().toggleHighlight().run()} className={`${TOOL_BUTTON} ${editor?.isActive('highlight') ? 'bg-neutral-200' : ''}`}><HighlighterCircle size={16} /></button>
+          </div>
+          <div className={TOOL_DIVIDER} />
+          <div className={TOOL_GROUP}>
+            <button type="button" title="Bullet List" onClick={() => editor?.chain().focus().toggleBulletList().run()} className={`${TOOL_BUTTON} ${editor?.isActive('bulletList') ? 'bg-neutral-200' : ''}`}><ListBullets size={16} /></button>
+            <button type="button" title="Ordered List" onClick={() => editor?.chain().focus().toggleOrderedList().run()} className={`${TOOL_BUTTON} ${editor?.isActive('orderedList') ? 'bg-neutral-200' : ''}`}><ListNumbers size={16} /></button>
+            <button type="button" title="Blockquote" onClick={() => editor?.chain().focus().toggleBlockquote().run()} className={`${TOOL_BUTTON} ${editor?.isActive('blockquote') ? 'bg-neutral-200' : ''}`}><Quotes size={16} /></button>
+            <button type="button" title="Code Block" onClick={() => editor?.chain().focus().toggleCodeBlock().run()} className={`${TOOL_BUTTON} ${editor?.isActive('codeBlock') ? 'bg-neutral-200' : ''}`}><CodeSimple size={16} /></button>
+            <button type="button" title="Horizontal Rule" onClick={() => editor?.chain().focus().setHorizontalRule().run()} className={TOOL_BUTTON}><Minus size={16} /></button>
+          </div>
+          <div className={TOOL_DIVIDER} />
+          <div className={TOOL_GROUP}>
+            <button type="button" title="Align Left" onClick={() => editor?.chain().focus().setTextAlign('left').run()} className={TOOL_BUTTON}><TextAlignLeft size={16} /></button>
+            <button type="button" title="Align Center" onClick={() => editor?.chain().focus().setTextAlign('center').run()} className={TOOL_BUTTON}><TextAlignCenter size={16} /></button>
+            <button type="button" title="Align Right" onClick={() => editor?.chain().focus().setTextAlign('right').run()} className={TOOL_BUTTON}><TextAlignRight size={16} /></button>
+          </div>
+          <div className={TOOL_DIVIDER} />
+          <div className={TOOL_GROUP}>
+            <div className="ml-0">
+              <button
+                type="button"
+                title="More tools"
+                ref={mediaButtonRef}
+                onClick={() => {
+                  const btn = mediaButtonRef.current;
+                  if (btn) {
+                    const rect = btn.getBoundingClientRect();
+                    setMediaMenuPos({ top: rect.bottom + 6, left: rect.left });
+                  }
+                  setShowMediaMenu((p) => !p);
+                }}
+                className={TOOL_BUTTON}
+              ><Plus size={16} />
+              </button>
+              {showMediaMenu && mediaMenuPos && createPortal(
+                <div
+                  ref={mediaMenuRef}
+                  className="w-56 rounded border bg-white p-2 shadow"
+                  style={{ position: 'fixed', top: mediaMenuPos.top, left: mediaMenuPos.left, zIndex: 2147483647, pointerEvents: 'auto' }}
+                  onMouseDown={(e) => { e.stopPropagation(); if (inShell) keepEditorFocus(e); }}
+                >
+                  <div className="mb-1 text-xs font-medium text-neutral-600">Insert</div>
+                  <button type="button" className="w-full rounded px-3 py-2 text-left text-sm hover:bg-neutral-100" onClick={() => { setShowMediaMenu(false); insertLink(); }}>Link…</button>
+                  <button type="button" className="w-full rounded px-3 py-2 text-left text-sm hover:bg-neutral-100" onClick={() => { setShowMediaMenu(false); onInsertImage(); }}>Image</button>
+                  <button type="button" className="w-full rounded px-3 py-2 text-left text-sm hover:bg-neutral-100" onClick={() => { setShowMediaMenu(false); editor?.chain().focus().insertContent({ type: 'drawing', attrs: { width: 600, height: 300 } }).run(); }}>Drawing</button>
+                  <button type="button" className="w-full rounded px-3 py-2 text-left text-sm hover:bg-neutral-100" onClick={() => { setShowMediaMenu(false); onAttachFile(); }}>File</button>
+                  <button
+                    type="button"
+                    className="w-full rounded px-3 py-2 text-left text-sm hover:bg-neutral-100"
+                    onClick={() => { setShowMediaMenu(false); onRecordAudio(); }}
+                  >{isRecording ? 'Stop recording' : 'Audio (Record)'}
+                  </button>
+                  <button type="button" className="w-full rounded px-3 py-2 text-left text-sm hover:bg-neutral-100" onClick={() => { setShowMediaMenu(false); setMathLatex(''); setMathMode('inline'); setShowMathModal(true); }}>Math…</button>
+                  <div className="mt-2 border-t pt-2">
+                    <div className="mb-1 text-xs font-medium text-neutral-600">Table</div>
+                    <div className="mb-2 flex items-center gap-2 px-1">
+                      <input type="number" min={1} defaultValue={3} id="menuRowsInput" className="w-16 rounded border px-2 py-1 text-sm" />
+                      <input type="number" min={1} defaultValue={3} id="menuColsInput" className="w-16 rounded border px-2 py-1 text-sm" />
+                      <button type="button" className="rounded bg-neutral-100 px-2 py-1 text-sm hover:bg-neutral-200" onClick={() => {
+                        const rows = Number((document.getElementById('menuRowsInput') as HTMLInputElement)?.value || 3);
+                        const cols = Number((document.getElementById('menuColsInput') as HTMLInputElement)?.value || 3);
+                        editor?.chain().focus().insertTable({ rows, cols, withHeaderRow: true }).run();
+                        setShowMediaMenu(false);
+                      }}>Add</button>
+                    </div>
+                  </div>
+                </div>,
+                document.body
+              )}
+            </div>
+            {isRecording && (
+              <div className="ml-2 flex items-center gap-2">
+                <span className="text-xs text-red-600">● Recording…</span>
+                <button
+                  type="button"
+                  title="Stop recording"
+                  onClick={onRecordAudio}
+                  className="rounded bg-red-600 px-2 py-1 text-xs text-white hover:bg-red-700"
+                >Stop
+                </button>
+              </div>
+            )}
+            <div className="ml-1 flex shrink-0 items-center gap-1">
+              <span className="hidden text-xs text-neutral-500 sm:inline">Color</span>
+              <input type="color" title="Color" aria-label="Color" onChange={(e) => editor?.chain().focus().setColor(e.target.value).run()} className="size-6 cursor-pointer rounded border p-0" />
+            </div>
+
+          </div>
+          <span className="ml-auto flex shrink-0 gap-1">
+            <button type="button" title="Undo" disabled={!canUndo} onClick={() => editor?.chain().focus().undo().run()} className={TOOL_BUTTON}><ArrowCounterClockwise size={16} /></button>
+            <button type="button" title="Redo" disabled={!canRedo} onClick={() => editor?.chain().focus().redo().run()} className={TOOL_BUTTON}><ArrowClockwise size={16} /></button>
+          </span>
+        </div>
+      )}
+      {editable && !hideToolbar && !minimalToolbar && !inShell && (
         <div className={`flex flex-wrap items-center gap-1 overflow-x-auto border-b p-2 text-sm ${stickyToolbar ? 'sticky top-0 z-10 rounded-t-md bg-white' : ''}`}>
           <div className="flex items-center gap-1">
             <button type="button" title="Bold" onClick={() => editor?.chain().focus().toggleBold().run()} className={`rounded px-2 py-1 hover:bg-neutral-100 ${editor?.isActive('bold') ? 'bg-neutral-200' : ''}`}>B</button>
@@ -1164,11 +1321,11 @@ export function TipTapEditor({
             <div className="mb-3 flex items-center justify-between">
               <div className="text-sm font-medium">Insert Math</div>
               <div className="flex items-center gap-2 text-xs">
-                <button className={`rounded px-2 py-1 ${mathMode === 'inline' ? 'bg-neutral-200' : 'hover:bg-neutral-100'}`} onClick={() => setMathMode('inline')}>Inline</button>
-                <button className={`rounded px-2 py-1 ${mathMode === 'block' ? 'bg-neutral-200' : 'hover:bg-neutral-100'}`} onClick={() => setMathMode('block')}>Block</button>
+                <button type={modalButtonType} className={`rounded px-2 py-1 ${mathMode === 'inline' ? 'bg-neutral-200' : 'hover:bg-neutral-100'}`} onClick={() => setMathMode('inline')}>Inline</button>
+                <button type={modalButtonType} className={`rounded px-2 py-1 ${mathMode === 'block' ? 'bg-neutral-200' : 'hover:bg-neutral-100'}`} onClick={() => setMathMode('block')}>Block</button>
               </div>
             </div>
-            <div className="mb-3 grid max-h-48 grid-cols-8 gap-1 overflow-auto text-sm">
+            <div className={inShell ? 'mb-3 grid max-h-48 grid-cols-6 gap-1 overflow-auto text-sm sm:grid-cols-8' : 'mb-3 grid max-h-48 grid-cols-8 gap-1 overflow-auto text-sm'}>
               {[
                 // Greek letters
                 { t: 'α', v: '\\alpha' },
@@ -1265,8 +1422,9 @@ export function TipTapEditor({
               />
             </div>
             <div className="flex justify-end gap-2">
-              <button className="rounded px-3 py-1 text-sm hover:bg-neutral-100" onClick={() => setShowMathModal(false)}>Cancel</button>
+              <button type={modalButtonType} className="rounded px-3 py-1 text-sm hover:bg-neutral-100" onClick={() => { setShowMathModal(false); if (inShell) editor?.commands.focus(); }}>Cancel</button>
               <button
+                type={modalButtonType}
                 className="rounded bg-neutral-100 px-3 py-1 text-sm hover:bg-neutral-200"
                 onClick={() => {
                   if (!editor || !mathLatex.trim()) { setShowMathModal(false); return; }
@@ -1294,6 +1452,7 @@ export function TipTapEditor({
                 placeholder="https://..."
                 value={linkUrl}
                 onChange={(e) => setLinkUrl(e.target.value)}
+                onKeyDown={(e) => { if (inShell && e.key === 'Enter') e.preventDefault(); }}
               />
             </div>
             <div className="mb-3">
@@ -1303,14 +1462,17 @@ export function TipTapEditor({
                 placeholder="Link text"
                 value={linkText}
                 onChange={(e) => setLinkText(e.target.value)}
+                onKeyDown={(e) => { if (inShell && e.key === 'Enter') e.preventDefault(); }}
               />
             </div>
             <div className="flex justify-end gap-2">
               <button
+                type={modalButtonType}
                 className="rounded px-3 py-1 text-sm hover:bg-neutral-100"
-                onClick={() => setShowLinkModal(false)}
+                onClick={() => { setShowLinkModal(false); if (inShell) editor?.commands.focus(); }}
               >Cancel</button>
               <button
+                type={modalButtonType}
                 className="rounded bg-neutral-100 px-3 py-1 text-sm hover:bg-neutral-200"
                 onClick={() => {
                   if (!editor || !linkUrl) { setShowLinkModal(false); return; }
@@ -1332,6 +1494,7 @@ export function TipTapEditor({
                 }}
               >Apply</button>
               <button
+                type={modalButtonType}
                 className="rounded bg-red-100 px-3 py-1 text-sm text-red-700 hover:bg-red-200"
                 onClick={() => {
                   editor?.chain().focus().unsetLink().run();

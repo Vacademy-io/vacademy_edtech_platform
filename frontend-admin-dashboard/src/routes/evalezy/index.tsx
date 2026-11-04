@@ -1,12 +1,14 @@
 import { useEffect, useState } from 'react';
 import { createFileRoute, Link, useNavigate } from '@tanstack/react-router';
-import { useInfiniteQuery } from '@tanstack/react-query';
+import { keepPreviousData, useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { CalendarBlank, CaretRight, ClipboardText, Plus, Users } from '@phosphor-icons/react';
 import { MyInput } from '@/components/design-system/input';
 import { MyButton } from '@/components/design-system/button';
+import { MyPagination } from '@/components/design-system/pagination';
 import { DashboardLoader } from '@/components/core/dashboard-loader';
 import { getInstituteId } from '@/constants/helper';
+import { cn } from '@/lib/utils';
 import { getAssessmentListWithFilters } from '@/routes/assessment/assessment-list/-services/assessment-services';
 import type { TestContent } from '@/types/assessments/schedule-test-list';
 
@@ -14,12 +16,13 @@ export const Route = createFileRoute('/evalezy/')({
     component: EvalezyHome,
 });
 
-const PAGE_SIZE = 20;
+const PAGE_SIZE = 10;
 
 interface AssessmentPage {
     content: TestContent[];
     last: boolean;
     total_elements: number;
+    total_pages: number;
 }
 
 /**
@@ -34,16 +37,20 @@ function EvalezyHome() {
     const instituteId = getInstituteId();
     const [search, setSearch] = useState('');
     const [term, setTerm] = useState('');
+    const [page, setPage] = useState(0);
     useEffect(() => {
-        const timer = setTimeout(() => setTerm(search.trim()), 350);
+        const timer = setTimeout(() => {
+            setTerm(search.trim());
+            // Page 4 of the whole list means nothing for a new search.
+            setPage(0);
+        }, 350);
         return () => clearTimeout(timer);
     }, [search]);
 
-    const query = useInfiniteQuery({
-        queryKey: ['EVALEZY_ASSESSMENTS', instituteId, term],
-        initialPageParam: 0,
-        queryFn: ({ pageParam }) =>
-            getAssessmentListWithFilters(pageParam, PAGE_SIZE, instituteId, {
+    const query = useQuery({
+        queryKey: ['EVALEZY_ASSESSMENTS', instituteId, term, page],
+        queryFn: () =>
+            getAssessmentListWithFilters(page, PAGE_SIZE, instituteId, {
                 name: term,
                 batch_ids: [],
                 subjects_ids: [],
@@ -57,10 +64,22 @@ function EvalezyHome() {
                 access_statuses: [],
                 evaluation_types: [{ id: 'MANUAL', name: 'MANUAL' }],
             }) as Promise<AssessmentPage>,
-        getNextPageParam: (last, pages) => (last?.last ? undefined : pages.length),
+        // The current page stays up until the next one arrives, so the list does not jump.
+        placeholderData: keepPreviousData,
         enabled: !!instituteId,
     });
-    const assessments = query.data?.pages.flatMap((p) => p?.content ?? []) ?? [];
+    const assessments = query.data?.content ?? [];
+    const totalPages = query.data?.total_pages ?? 0;
+
+    // The list can shrink under an open page (a test deleted elsewhere).
+    useEffect(() => {
+        if (totalPages > 0 && page >= totalPages) setPage(totalPages - 1);
+    }, [page, totalPages]);
+
+    const goToPage = (next: number) => {
+        setPage(next);
+        window.scrollTo({ top: 0 });
+    };
 
     return (
         <div className="flex flex-col gap-4">
@@ -125,7 +144,12 @@ function EvalezyHome() {
                     )}
                 </div>
             ) : (
-                <ul className="flex flex-col gap-2">
+                <ul
+                    className={cn(
+                        'flex flex-col gap-2 transition-opacity',
+                        query.isPlaceholderData && 'opacity-60'
+                    )}
+                >
                     {assessments.map((a) => (
                         <li key={a.assessment_id}>
                             <Link
@@ -162,16 +186,15 @@ function EvalezyHome() {
                 </ul>
             )}
 
-            {query.hasNextPage && (
-                <MyButton
-                    type="button"
-                    buttonType="secondary"
-                    scale="medium"
-                    disabled={query.isFetchingNextPage}
-                    onClick={() => void query.fetchNextPage()}
-                >
-                    {query.isFetchingNextPage ? t('common.loading') : t('home.more')}
-                </MyButton>
+            {!query.isError && totalPages > 1 && (
+                <MyPagination
+                    currentPage={page}
+                    totalPages={totalPages}
+                    onPageChange={goToPage}
+                    totalElements={query.data?.total_elements}
+                    pageSize={PAGE_SIZE}
+                    compactOnPhone
+                />
             )}
         </div>
     );

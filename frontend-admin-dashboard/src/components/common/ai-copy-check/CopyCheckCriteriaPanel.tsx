@@ -1,3 +1,4 @@
+import { isInEvalezyShell } from '@/lib/evalezy-mode';
 import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
@@ -51,6 +52,24 @@ const errorMessage = (error: unknown, fallback: string): string => {
     return data?.message || fallback;
 };
 
+/** Saves rubrics for some questions, with the toasts and the refetch every editor wants. */
+export const useSaveCopyCheckCriteria = (assessmentId: string, rubricVersion?: number | null) => {
+    const { t } = useTranslation('assessmentCopyIntake');
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: (rubrics: Parameters<typeof saveCopyCheckCriteria>[1]) =>
+            saveCopyCheckCriteria(assessmentId, rubrics, rubricVersion),
+        onSuccess: (_version, rubrics) => {
+            toast.success(t('criteria.saved', { count: Object.keys(rubrics).length }));
+            queryClient.invalidateQueries({ queryKey: [COPY_CHECK_CRITERIA_KEY, assessmentId] });
+        },
+        onError: (error) => {
+            toast.error(errorMessage(error, t('criteria.saveFailed')));
+            queryClient.invalidateQueries({ queryKey: [COPY_CHECK_CRITERIA_KEY, assessmentId] });
+        },
+    });
+};
+
 /**
  * Every question of the paper with the criteria the AI checks it by, and an editor for
  * each. A saved change is used for every copy checked from then on.
@@ -67,7 +86,6 @@ export const CopyCheckCriteriaDialog = ({
     subject?: string;
 }) => {
     const { t } = useTranslation('assessmentCopyIntake');
-    const queryClient = useQueryClient();
     const [editing, setEditing] = useState<CopyCheckCriteriaQuestion | null>(null);
     const query = useQuery({
         queryKey: [COPY_CHECK_CRITERIA_KEY, assessmentId],
@@ -82,18 +100,7 @@ export const CopyCheckCriteriaDialog = ({
         return c;
     }, [questions]);
 
-    const save = useMutation({
-        mutationFn: (rubrics: Parameters<typeof saveCopyCheckCriteria>[1]) =>
-            saveCopyCheckCriteria(assessmentId, rubrics, query.data?.rubric_version),
-        onSuccess: (_version, rubrics) => {
-            toast.success(t('criteria.saved', { count: Object.keys(rubrics).length }));
-            queryClient.invalidateQueries({ queryKey: [COPY_CHECK_CRITERIA_KEY, assessmentId] });
-        },
-        onError: (error) => {
-            toast.error(errorMessage(error, t('criteria.saveFailed')));
-            queryClient.invalidateQueries({ queryKey: [COPY_CHECK_CRITERIA_KEY, assessmentId] });
-        },
-    });
+    const save = useSaveCopyCheckCriteria(assessmentId, query.data?.rubric_version);
 
     const applyQuestionCriteria = () => {
         const rubrics: Record<string, NonNullable<ReturnType<typeof toRubric>>> = {};
@@ -107,9 +114,13 @@ export const CopyCheckCriteriaDialog = ({
     };
 
     const onSaveOne = (q: CopyCheckCriteriaQuestion, criteria: CriteriaJson) => {
-        save.mutate({
+        const rubrics = {
             [q.question_id]: criteriaToCopyCheckRubric(criteria, q.max_marks, q.rubric),
-        });
+        };
+        // In the Evalezy shell a failed save keeps the editor open; the portal's closes at once.
+        if (isInEvalezyShell()) return save.mutateAsync(rubrics);
+        save.mutate(rubrics);
+        return undefined;
     };
 
     return (

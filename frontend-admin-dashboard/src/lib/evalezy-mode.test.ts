@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { evalezyPathFor, isEvalezyHost } from './evalezy-mode';
+import { evalezyPathFor, isEvalezyHost, isInEvalezyShell } from './evalezy-mode';
 
 describe('isEvalezyHost', () => {
     it('is the evalezy host and nothing else', () => {
@@ -9,6 +9,15 @@ describe('isEvalezyHost', () => {
         // a client whose own name merely contains the word is not Evalezy
         expect(isEvalezyHost('evalezyacademy.com')).toBe(false);
         expect(isEvalezyHost('admin.evalezy.com')).toBe(false);
+    });
+});
+
+describe('isInEvalezyShell', () => {
+    it('is the shell screens and not the portal around them', () => {
+        expect(isInEvalezyShell('/evalezy')).toBe(true);
+        expect(isInEvalezyShell('/evalezy/abc')).toBe(true);
+        expect(isInEvalezyShell('/assessment/question-library')).toBe(false);
+        expect(isInEvalezyShell('/evalezy-reports')).toBe(false);
     });
 });
 

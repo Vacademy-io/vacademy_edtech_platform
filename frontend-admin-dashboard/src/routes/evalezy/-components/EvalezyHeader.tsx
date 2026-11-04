@@ -1,23 +1,29 @@
 import { useTranslation } from 'react-i18next';
 import { useQueryClient } from '@tanstack/react-query';
 import { Link, useNavigate } from '@tanstack/react-router';
-import { DotsThreeVertical, SignOut, SquaresFour } from '@phosphor-icons/react';
+import { DotsThreeVertical, SignOut, Sparkle, SquaresFour, UserCircle } from '@phosphor-icons/react';
 import { MyDropdown } from '@/components/design-system/dropdown';
 import { removeCookiesAndLogout } from '@/lib/auth/sessionUtility';
 import { isEvalezyMode } from '@/lib/evalezy-mode';
+import { cn } from '@/lib/utils';
+import { useAiCreditsQuery } from '@/services/ai-credits/get-ai-credits';
+import { formatCredits, formatCreditsShort } from '../-lib/format-credits';
 
 /**
- * The Evalezy top bar: the Evalezy mark (home), the institute the admin is
- * signed into, and a menu with sign out. Opened from the full portal (sidebar
- * entry), the menu also leads back to the portal.
+ * The Evalezy top bar: the Evalezy mark (home), the AI credits left, and a menu with
+ * the profile (the signed-in user and institute), AI credits and sign out. Opened from
+ * the full portal (sidebar entry), the menu also leads back to the portal.
  */
-export const EvalezyHeader = ({ instituteName }: { instituteName?: string | null }) => {
+export const EvalezyHeader = () => {
     const { t } = useTranslation('evalezy');
     const navigate = useNavigate();
     const queryClient = useQueryClient();
     const inPortal = !isEvalezyMode();
+    const { data: credits } = useAiCreditsQuery(true);
 
     const menu = [
+        { label: t('profile.view'), value: 'profile', icon: <UserCircle size={16} /> },
+        { label: t('credits.title'), value: 'credits', icon: <Sparkle size={16} /> },
         ...(inPortal
             ? [
                   {
@@ -31,6 +37,14 @@ export const EvalezyHeader = ({ instituteName }: { instituteName?: string | null
     ];
 
     const onSelect = (value: string) => {
+        if (value === 'profile') {
+            void navigate({ to: '/evalezy/profile' });
+            return;
+        }
+        if (value === 'credits') {
+            void navigate({ to: '/evalezy/credits' });
+            return;
+        }
         if (value === 'portal') {
             void navigate({ to: '/dashboard' });
             return;
@@ -49,10 +63,23 @@ export const EvalezyHeader = ({ instituteName }: { instituteName?: string | null
                     <img src="/evalezy-logo.svg" alt="Evalezy" className="h-7 w-auto" />
                 </Link>
                 <div className="flex min-w-0 items-center gap-1">
-                    {instituteName && (
-                        <span className="truncate text-caption text-neutral-500">
-                            {instituteName}
-                        </span>
+                    {credits && (
+                        <Link
+                            to="/evalezy/credits"
+                            aria-label={`${t('credits.title')}: ${formatCredits(credits.current_balance)}`}
+                            className={cn(
+                                'flex shrink-0 items-center gap-1 rounded-full border px-2 py-1 text-caption',
+                                credits.is_low_balance
+                                    ? 'border-warning-300 bg-warning-50 text-warning-700'
+                                    : 'border-purple-200 bg-purple-50 text-purple-700'
+                            )}
+                        >
+                            <Sparkle size={12} weight="fill" />
+                            <span className="font-medium">{t('credits.chipLabel')}</span>
+                            <span className="font-bold">
+                                {formatCreditsShort(credits.current_balance)}
+                            </span>
+                        </Link>
                     )}
                     {/* MyDropdown's trigger is itself the button; the child is only its face. */}
                     <MyDropdown dropdownList={menu} onSelect={(value) => onSelect(String(value))}>

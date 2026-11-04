@@ -12,6 +12,7 @@ This service handles:
 import logging
 from datetime import datetime, timedelta
 from decimal import Decimal, ROUND_HALF_UP
+from math import ceil
 from typing import Any, Optional, List, Dict
 from uuid import uuid4
 
@@ -885,6 +886,43 @@ class CreditService:
                               ctx=metering, estimate_credits=estimated_cost, reserve=False)
         return response
 
+    def get_trial_status(self, institute_id: str) -> Dict[str, Any]:
+        """A self sign-up's trial: its product is in platform_product, tagged FREE_TRIAL with an end
+        date. Every other institute is simply not on one. Closing sign-up does not end running or
+        lapsed trials. Credits bought or granted, or a live plan, end it for good. Never in the way of AI: any failure here reads as no trial, inside a savepoint so the caller's
+        transaction survives."""
+        no_trial = {"is_trial": False, "expired": False, "days_left": None, "ends_at": None}
+        if _plan_live(institute_id):
+            return no_trial
+        try:
+            with self.db.begin_nested():
+                row = self.db.execute(
+                    text("""
+                        SELECT i.demo_expires_at,
+                               EXISTS (SELECT 1 FROM credit_transactions t
+                                       WHERE t.institute_id = i.id
+                                         AND t.transaction_type IN ('PURCHASE', 'ADMIN_GRANT')) AS purchased
+                        FROM institutes i
+                        WHERE i.id = :institute_id
+                          AND i.product IN (SELECT p.product_key FROM platform_product p)
+                          AND i.lead_tag = 'FREE_TRIAL'
+                          AND i.demo_expires_at IS NOT NULL
+                    """),
+                    {"institute_id": institute_id},
+                ).fetchone()
+        except Exception as exc:
+            logger.warning("Could not read the trial of institute %s: %s", institute_id, exc)
+            return no_trial
+        if not row or row.purchased:
+            return no_trial
+        seconds_left = (row.demo_expires_at - datetime.utcnow()).total_seconds()
+        return {
+            "is_trial": True,
+            "expired": seconds_left <= 0,
+            "days_left": max(0, ceil(seconds_left / 86400)),
+            "ends_at": row.demo_expires_at.isoformat(),
+        }
+
     def check_credits(self, request: CreditCheckRequest, *, trust_actor_fields: bool = True) -> CreditCheckResponse:
         """Check if institute has sufficient credits for an operation.
 
@@ -893,6 +931,16 @@ class CreditService:
         reads the verified user and roles of the HTTP request instead. Only a
         caller holding the internal service token may name another actor.
         Today's credit answer is the same either way."""
+        trial = self.get_trial_status(request.institute_id)
+        if trial["expired"]:
+            balance = self.get_balance(request.institute_id)
+            return CreditCheckResponse(
+                has_sufficient_credits=False,
+                current_balance=balance.current_balance if balance else Decimal("0"),
+                estimated_cost=Decimal("0"),
+                balance_after=balance.current_balance if balance else Decimal("0"),
+                message="Your free trial has ended. Recharge credits to continue.",
+            )
         if _plan_live(request.institute_id):
             covered = self._plan_covered_check(request, trust_actor_fields=trust_actor_fields)
             if covered is not None:
@@ -2279,7 +2327,7 @@ class CreditService:
             top_models=top_models,
         )
 
-    def get_usage_forecast(self, institute_id: str) -> UsageForecastResponse:
+    def get_usage_forecast(self, institute_id: str, per_calendar_day: bool = False) -> UsageForecastResponse:
         """Get usage forecast and projected credit burndown."""
         balance = self.get_balance(institute_id)
         if not balance:
@@ -2296,7 +2344,8 @@ class CreditService:
         thirty_days_ago = datetime.utcnow() - timedelta(days=30)
         usage_query = text("""
             SELECT COALESCE(SUM(ABS(amount)), 0) as total_usage,
-                   COUNT(DISTINCT DATE(created_at)) as days_with_usage
+                   COUNT(DISTINCT DATE(created_at)) as days_with_usage,
+                   MIN(created_at) as first_usage
             FROM credit_transactions
             WHERE institute_id = :institute_id
             AND transaction_type = 'USAGE_DEDUCTION'
@@ -2310,6 +2359,11 @@ class CreditService:
         
         total_usage = row.total_usage or Decimal("0")
         days_with_usage = row.days_with_usage or 1
+        # Evalezy asks for calendar days since the first use in the window. Dividing by only the
+        # days that had usage overstates the burn for anyone who does not use AI daily: 11 active
+        # days out of 27 read as 151 credits a day, and a month of credits as "5 days left".
+        if per_calendar_day:
+            days_with_usage = (datetime.utcnow() - row.first_usage).days + 1 if row.first_usage else 1
         
         # Calculate average
         avg_daily = (total_usage / Decimal(str(max(days_with_usage, 1)))).quantize(Decimal("0.01"))

@@ -9,7 +9,6 @@ import {
     CaretDown,
     CaretUp,
     Coins,
-    ListChecks,
     Sparkle,
     UploadSimple,
     WarningCircle,
@@ -53,7 +52,9 @@ import {
 import { MapStudentsChoiceDialog } from '@/routes/assessment/assessment-list/assessment-details/$assessmentId/$examType/$assesssmentType/$assessmentTab/-components/copy-intake/MapStudentsChoiceDialog';
 import { CameraScanner } from './-components/CameraScanner';
 import { CopyTray, draftPageCount, type DraftCopy } from './-components/CopyTray';
+import { PaperQuestionsCard } from './-components/PaperQuestionsCard';
 import { useEvalezySettings } from './-hooks/useEvalezySettings';
+import type { PaperSection } from './-lib/paper-questions';
 import { scanPagesToPdfFile, toScanPage, type ScanPage } from './-lib/scan-pdf';
 
 export const Route = createFileRoute('/evalezy/$assessmentId')({
@@ -96,11 +97,20 @@ function EvalezyAssessmentPage() {
 
     const details = useQuery(getAssessmentDetails({ assessmentId, instituteId, type: 'EXAM' }));
     const saved = details.data?.[0]?.saved_data;
-    const sectionIds = ((details.data?.[1]?.saved_data?.sections ?? []) as Array<{ id?: string }>)
+    const paperSections = useMemo(
+        () => (details.data?.[1]?.saved_data?.sections ?? []) as PaperSection[],
+        [details.data]
+    );
+    const sectionIds = paperSections
         .map((s) => s?.id)
         .filter(Boolean)
         .join(',');
-    const { data: sectionQuestions, isLoading: loadingQuestions } = useQuery({
+    const {
+        data: sectionQuestions,
+        isLoading: loadingQuestions,
+        isError: questionsFailed,
+        refetch: refetchQuestions,
+    } = useQuery({
         ...getQuestionDataForSection({ assessmentId, sectionIds }),
         enabled: Boolean(assessmentId && sectionIds),
     });
@@ -410,12 +420,6 @@ function EvalezyAssessmentPage() {
                     {t('assessment.back')}
                 </Link>
                 <h1 className="text-h3 font-semibold text-neutral-800">{saved.name}</h1>
-                {questionsPerCopy > 0 && (
-                    <p className="flex items-center gap-1 text-caption text-neutral-500">
-                        <ListChecks size={14} />
-                        {t('assessment.questions', { count: questionsPerCopy })}
-                    </p>
-                )}
             </div>
 
             {noPaper && (
@@ -435,6 +439,21 @@ function EvalezyAssessmentPage() {
                 framed
                 onEnabled={() => void queryClient.invalidateQueries()}
             />
+
+            {/* What is on the paper: questions, marks, and the criteria to edit. */}
+            {!placeholderOnly && Boolean(sectionIds) && (
+                <PaperQuestionsCard
+                    assessmentId={assessmentId}
+                    sections={paperSections}
+                    questionsBySection={sectionQuestions}
+                    loading={loadingQuestions}
+                    failed={questionsFailed}
+                    onRetry={() => void refetchQuestions()}
+                    paperTotalMarks={paperTotalMarks}
+                    subject={copyCheckSettings.subject}
+                    disabled={sending}
+                />
+            )}
 
             {placeholderOnly ? (
                 <p className="flex items-start gap-2 rounded-lg border border-neutral-200 bg-white p-3 text-body text-neutral-600">
@@ -588,6 +607,11 @@ function EvalezyAssessmentPage() {
                             className="w-full"
                             disabled={!canSend}
                             onClick={() => {
+                                // No students on the test: nothing to match, so just check.
+                                if (!hasStudents) {
+                                    send.mutate(false);
+                                    return;
+                                }
                                 const decided = decideStudentMapping(studentMapping, hasStudents);
                                 if (decided.ask) setChoiceOpen(true);
                                 else send.mutate(decided.mapStudents);
@@ -602,14 +626,18 @@ function EvalezyAssessmentPage() {
                                   })
                                 : t('assessment.send', { count: copies.length })}
                         </MyButton>
-                        {studentMapping !== 'ASK' && (
+                        {!hasStudents ? (
                             <p className="text-caption text-neutral-500">
-                                {studentMapping === 'CHECK_ONLY'
-                                    ? tIntake('mapping.decidedCheckOnly')
-                                    : hasStudents
-                                      ? tIntake('mapping.decidedMap')
-                                      : tIntake('mapChoice.noStudents')}
+                                {t('assessment.checkOnlyNote')}
                             </p>
+                        ) : (
+                            studentMapping !== 'ASK' && (
+                                <p className="text-caption text-neutral-500">
+                                    {studentMapping === 'CHECK_ONLY'
+                                        ? tIntake('mapping.decidedCheckOnly')
+                                        : tIntake('mapping.decidedMap')}
+                                </p>
+                            )
                         )}
                     </div>
                 </section>

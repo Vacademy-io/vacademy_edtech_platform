@@ -1,6 +1,7 @@
 import { CheckCircle } from '@phosphor-icons/react';
 import { useTranslation } from 'react-i18next';
 import { cn } from '@/lib/utils';
+import { MathHtml } from '@/routes/knowledge-base/-components/paper/MathHtml';
 
 export interface QuestionOptionView {
     id?: string;
@@ -51,9 +52,12 @@ export const optionsFromQuestionData = (q: {
 export const QuestionOptionsList = ({
     options,
     className,
+    typesetMath = false,
 }: {
     options?: QuestionOptionView[] | null;
     className?: string;
+    /** Typeset $...$ from a read paper. Off by default: elsewhere a $ can be just a price. */
+    typesetMath?: boolean;
 }) => {
     const { t } = useTranslation('assessmentStep2SectionInfo');
     if (!options?.length) return null;
@@ -72,10 +76,17 @@ export const QuestionOptionsList = ({
                     <span className="mt-px shrink-0 text-caption font-semibold">
                         ({String.fromCharCode(97 + idx)})
                     </span>
-                    <span
-                        className="custom-html-content min-w-0 flex-1 [&>p]:m-0"
-                        dangerouslySetInnerHTML={{ __html: opt.name }}
-                    />
+                    {typesetMath ? (
+                        <MathHtml
+                            html={opt.name}
+                            className="custom-html-content min-w-0 flex-1 [&>p]:m-0"
+                        />
+                    ) : (
+                        <span
+                            className="custom-html-content min-w-0 flex-1 [&>p]:m-0"
+                            dangerouslySetInnerHTML={{ __html: opt.name }}
+                        />
+                    )}
                     {opt.isCorrect && (
                         <CheckCircle
                             size={16}
