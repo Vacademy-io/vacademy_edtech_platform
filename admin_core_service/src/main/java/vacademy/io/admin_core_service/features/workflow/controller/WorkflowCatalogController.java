@@ -211,6 +211,9 @@ public class WorkflowCatalogController {
         eventMeta.put("SEND_LEARNER_CREDENTIALS", new String[]{"Send Learner Credentials", "Fires when credentials need to be sent to learners", "Notification", "PACKAGE_SESSION"});
         eventMeta.put("SUB_ORG_MEMBER_ENROLLMENT", new String[]{"Sub-Org Member Enrollment", "Fires when a member is enrolled in a sub-organization", "Enrollment", "PACKAGE_SESSION"});
         eventMeta.put("SUB_ORG_MEMBER_TERMINATION", new String[]{"Sub-Org Member Termination", "Fires when a member is removed from a sub-organization", "Enrollment", "PACKAGE_SESSION"});
+        eventMeta.put("SUB_ORG_ADMIN_TERMINATED", new String[]{"Sub-Org Admin Terminated", "Fires when someone ends a sub-org admin's access. Not fired on expiry", "Enrollment", "PACKAGE_SESSION"});
+        eventMeta.put("SUB_ORG_STAFF_REMOVED", new String[]{"Sub-Org Staff Removed", "Fires when a single non-admin member is removed from a sub-org. Not fired on expiry", "Enrollment", "PACKAGE_SESSION"});
+        eventMeta.put("SUB_ORG_STAFF_CASCADE_TERMINATED", new String[]{"Sub-Org Staff Terminated With Admin", "Fires for each member removed because their sub-org admin left", "Enrollment", "PACKAGE_SESSION"});
         eventMeta.put("AUDIENCE_LEAD_SUBMISSION", new String[]{"Audience Lead Submission", "Fires when a new lead is submitted via audience form", "CRM", "AUDIENCE"});
         eventMeta.put("INSTALLMENT_DUE_REMINDER", new String[]{"Installment Due Reminder", "Fires when a fee installment is approaching its due date", "Fee Management", "INSTITUTE"});
         // Live Session

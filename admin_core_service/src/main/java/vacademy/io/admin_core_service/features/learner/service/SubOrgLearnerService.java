@@ -86,6 +86,7 @@ public class SubOrgLearnerService {
     private final CustomFieldValuesRepository customFieldValuesRepository;
     private final InstituteCustomFieldRepository instituteCustomFieldRepository;
     private final WorkflowTriggerService workflowTriggerService;
+    private final vacademy.io.admin_core_service.features.suborg.service.SubOrgExitService subOrgExitService;
     private final UserPlanRepository userPlanRepository;
     private final EnrollInviteRepository enrollInviteRepository;
     private final StudentSubOrgRepository studentSubOrgRepository;
@@ -932,6 +933,9 @@ public class SubOrgLearnerService {
         // chosen date; HARD (default) terminates immediately. Blank mode => HARD so
         // pre-existing callers are unaffected.
         boolean soft = "SOFT".equalsIgnoreCase(request.getMode());
+        Map<String, vacademy.io.admin_core_service.features.suborg.service.SubOrgExitService.Membership> memberships =
+                captureSubOrgMemberships(request);
+        String actorUserId = userDetails != null ? userDetails.getUserId() : null;
         if (soft) {
             java.sql.Timestamp accessTill = parseAccessTillDate(request.getAccessTillDate());
             if (accessTill == null) {
@@ -946,6 +950,9 @@ public class SubOrgLearnerService {
 
             // No termination workflow for SOFT — access continues until the cut-off.
             log.info("Soft-cancelled {} learners (access until {})", softCount, accessTill);
+            runAfterCommit(() -> memberships.forEach((userId, membership) -> subOrgExitService.onSoftCancel(
+                    userId, request.getPackageSessionId(), request.getInstituteId(),
+                    actorUserId, membership, accessTill)));
 
             return SubOrgTerminateResponseDTO.builder()
                     .terminatedCount(softCount)
@@ -963,6 +970,9 @@ public class SubOrgLearnerService {
 
         triggerTerminationWorkflow(request.getUserIds(), request.getInstituteId(), request.getPackageSessionId(),
                 userDetails);
+        runAfterCommit(() -> memberships.forEach((userId, membership) -> subOrgExitService.onHardExit(
+                userId, request.getPackageSessionId(), request.getInstituteId(),
+                actorUserId, membership)));
 
         log.info("Successfully terminated {} learners", terminatedCount);
 
@@ -970,6 +980,33 @@ public class SubOrgLearnerService {
                 .terminatedCount(terminatedCount)
                 .message("Successfully terminated " + terminatedCount + " learner(s)")
                 .build();
+    }
+
+    /** Who is leaving this sub-org, read before the write. People active elsewhere are left out. */
+    private Map<String, vacademy.io.admin_core_service.features.suborg.service.SubOrgExitService.Membership>
+            captureSubOrgMemberships(SubOrgTerminateRequestDTO request) {
+        Map<String, vacademy.io.admin_core_service.features.suborg.service.SubOrgExitService.Membership> memberships =
+                new HashMap<>();
+        for (String userId : request.getUserIds()) {
+            subOrgExitService.captureMembership(userId, request.getPackageSessionId(), request.getInstituteId())
+                    .filter(membership -> request.getSubOrgId().equals(membership.subOrgId()))
+                    .ifPresent(membership -> memberships.put(userId, membership));
+        }
+        return memberships;
+    }
+
+    private void runAfterCommit(Runnable action) {
+        if (org.springframework.transaction.support.TransactionSynchronizationManager.isSynchronizationActive()) {
+            org.springframework.transaction.support.TransactionSynchronizationManager.registerSynchronization(
+                    new org.springframework.transaction.support.TransactionSynchronization() {
+                        @Override
+                        public void afterCommit() {
+                            action.run();
+                        }
+                    });
+        } else {
+            action.run();
+        }
     }
 
     /**

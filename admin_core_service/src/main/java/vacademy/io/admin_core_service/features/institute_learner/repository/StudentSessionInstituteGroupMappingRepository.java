@@ -1111,6 +1111,72 @@ public interface StudentSessionInstituteGroupMappingRepository
   List<String> findActiveAdminUserIdsBySubOrg(@Param("subOrgId") String subOrgId);
 
   /**
+   * A person and their active place in a sub-org for one course. Membership matches the roster:
+   * the mapping stamp wins, else the invite their plan came from.
+   */
+  @Query(value = """
+      SELECT COALESCE(ssigm.sub_org_id, ei.sub_org_id) AS subOrgId,
+             ssigm.comma_separated_org_roles AS orgRoles,
+             COALESCE(ssigm.expiry_date, up.end_date) AS accessEnd
+      FROM student_session_institute_group_mapping ssigm
+      LEFT JOIN user_plan up ON up.id = ssigm.user_plan_id
+      LEFT JOIN enroll_invite ei ON ei.id = up.enroll_invite_id
+      WHERE ssigm.user_id = :userId
+        AND ssigm.package_session_id = :packageSessionId
+        AND ssigm.institute_id = :instituteId
+        AND ssigm.status = 'ACTIVE'
+        AND COALESCE(ssigm.sub_org_id, ei.sub_org_id) IS NOT NULL
+      ORDER BY ssigm.created_at DESC
+      LIMIT 1
+      """, nativeQuery = true)
+  Optional<SubOrgMembershipSnapshot> findActiveSubOrgMembership(
+      @Param("userId") String userId,
+      @Param("packageSessionId") String packageSessionId,
+      @Param("instituteId") String instituteId);
+
+  /** Projection for {@link #findActiveSubOrgMembership}. */
+  interface SubOrgMembershipSnapshot {
+    String getSubOrgId();
+
+    String getOrgRoles();
+
+    java.util.Date getAccessEnd();
+  }
+
+  /** Active admins of this sub-org and course, other than the one leaving. Also matches ROOT_ADMIN. */
+  @Query(value = """
+      SELECT COUNT(*)
+      FROM student_session_institute_group_mapping ssigm
+      WHERE ssigm.sub_org_id = :subOrgId
+        AND ssigm.package_session_id = :packageSessionId
+        AND ssigm.status = 'ACTIVE'
+        AND ssigm.comma_separated_org_roles LIKE '%ADMIN%'
+        AND ssigm.user_id <> :excludedUserId
+      """, nativeQuery = true)
+  long countOtherActiveSubOrgAdmins(
+      @Param("subOrgId") String subOrgId,
+      @Param("packageSessionId") String packageSessionId,
+      @Param("excludedUserId") String excludedUserId);
+
+  /** Everyone active in this sub-org and course who is not an admin. Same membership as the roster. */
+  @Query(value = """
+      SELECT DISTINCT ssigm.user_id
+      FROM student_session_institute_group_mapping ssigm
+      LEFT JOIN user_plan up ON up.id = ssigm.user_plan_id
+      LEFT JOIN enroll_invite ei ON ei.id = up.enroll_invite_id
+      WHERE ssigm.package_session_id = :packageSessionId
+        AND ssigm.institute_id = :instituteId
+        AND ssigm.status = 'ACTIVE'
+        AND (ssigm.comma_separated_org_roles IS NULL
+             OR ssigm.comma_separated_org_roles NOT LIKE '%ADMIN%')
+        AND COALESCE(ssigm.sub_org_id, ei.sub_org_id) = :subOrgId
+      """, nativeQuery = true)
+  List<String> findActiveNonAdminUserIdsOfSubOrg(
+      @Param("subOrgId") String subOrgId,
+      @Param("packageSessionId") String packageSessionId,
+      @Param("instituteId") String instituteId);
+
+  /**
    * Sub-organizations that already have members inside one package session, with the spawned
    * institute's own contact details and a distinct member count.
    *
