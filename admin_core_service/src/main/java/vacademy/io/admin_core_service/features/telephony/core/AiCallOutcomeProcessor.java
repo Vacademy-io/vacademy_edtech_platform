@@ -36,6 +36,8 @@ import vacademy.io.admin_core_service.features.telephony.persistence.repository.
 import vacademy.io.admin_core_service.features.telephony.spi.dto.CallSubjectType;
 import vacademy.io.admin_core_service.features.telephony.spi.dto.NormalizedCallEvent;
 
+import vacademy.io.admin_core_service.features.engagement.service.EngagementCallOutcomeService;
+
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -137,6 +139,12 @@ public class AiCallOutcomeProcessor {
     @Autowired
     @Lazy
     private AiCallActionService aiCallActionService;
+
+    // @Lazy, matching every other field here. What the engine that placed the call does with its
+    // outcome: tell the team about a hot lead, or take a refusal out of the engine.
+    @Autowired
+    @Lazy
+    private EngagementCallOutcomeService engagementCallOutcome;
 
     private record Lead(String responseId, String userId, String audienceId, String instituteId) {}
 
@@ -490,6 +498,15 @@ public class AiCallOutcomeProcessor {
             } catch (Exception ex) {
                 log.warn("ai-call: follow-through failed for result {} (non-fatal): {}",
                         rRef.getId(), ex.getMessage());
+            }
+            // Before the wake, so an engine that looks next already sees the exit or the follow-up.
+            // A call WE broke says nothing about the lead (see isUntrustworthyCall).
+            try {
+                if (engagementCallOutcome != null && !isUntrustworthyCall(rRef)) {
+                    engagementCallOutcome.onCallEnded(rRef, leadRef.responseId(), leadRef.userId(), instRef);
+                }
+            } catch (Exception ex) {
+                log.warn("ai-call: engine outcome failed for result {} (non-fatal): {}", rRef.getId(), ex.getMessage());
             }
             // The call's outcome is in: the lead's engagement engines look within minutes (B4)
             // rather than at their next scheduled look, days away.
@@ -885,12 +902,8 @@ public class AiCallOutcomeProcessor {
                             + "— falling back to a name match", disposition, mapped, lead.instituteId());
         }
 
-        LeadStatus match = leadStatusRepo
-                .findByInstituteIdAndIsActiveTrueOrderByDisplayOrderAsc(lead.instituteId())
-                .stream()
-                .filter(s -> norm.equals(normalizeKey(s.getStatusKey())) || norm.equals(normalizeKey(s.getLabel())))
-                .findFirst()
-                .orElse(null);
+        LeadStatus match = statusForDisposition(
+                leadStatusRepo.findByInstituteIdAndIsActiveTrueOrderByDisplayOrderAsc(lead.instituteId()), disposition);
         if (match == null) {
             log.info("ai-call status: no lead-status matches disposition '{}' for institute {} — leaving as-is",
                     disposition, lead.instituteId());
@@ -899,6 +912,25 @@ public class AiCallOutcomeProcessor {
         leadStatusService.changeLeadStatus(lead.responseId(), match.getId(), null, "AI_CALLING");
         log.info("ai-call status: lead {} -> {} (matched disposition '{}')",
                 lead.userId(), match.getStatusKey(), disposition);
+    }
+
+    /**
+     * The institute's status named like this disposition. Most catalogs have no "Demo booked" status:
+     * someone who agreed to a demo is at least interested, and leaving them on New would read as if
+     * the call achieved nothing. Null when nothing fits.
+     */
+    static LeadStatus statusForDisposition(List<LeadStatus> statuses, String disposition) {
+        String norm = normalizeKey(disposition);
+        LeadStatus exact = statuses.stream()
+                .filter(s -> norm.equals(normalizeKey(s.getStatusKey())) || norm.equals(normalizeKey(s.getLabel())))
+                .findFirst()
+                .orElse(null);
+        if (exact != null) return exact;
+        if (EngagementCallOutcomeService.verdict(disposition) != EngagementCallOutcomeService.Verdict.BOOKED) return null;
+        return statuses.stream()
+                .filter(s -> "INTERESTED".equals(normalizeKey(s.getStatusKey())))
+                .findFirst()
+                .orElse(null);
     }
 
     /**
@@ -921,7 +953,7 @@ public class AiCallOutcomeProcessor {
     }
 
     /** Upper-case alphanumerics only, so "Call Back" / "CALL_BACK" / "Callback" all match. */
-    private String normalizeKey(String s) {
+    private static String normalizeKey(String s) {
         return s == null ? "" : s.replaceAll("[^A-Za-z0-9]", "").toUpperCase();
     }
 

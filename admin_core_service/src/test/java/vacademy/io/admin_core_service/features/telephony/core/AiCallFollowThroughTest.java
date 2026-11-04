@@ -106,6 +106,30 @@ class AiCallFollowThroughTest {
     }
 
     @Test
+    @DisplayName("today with no time: an AI call two hours after this one and a same-day follow-up, no LLM")
+    void todayWithoutTime() {
+        AiCallResult r = result();
+        r.setCallback(true);
+        r.setCallbackTimeText("Today");
+        ft.afterCall(r, "resp1", "user1", "inst1");
+        var at = ArgumentCaptor.forClass(Instant.class);
+        verify(queue).enqueueAt(any(), at.capture(), any(), any());
+        assertEquals(callAt.plus(java.time.Duration.ofHours(2)), at.getValue());
+        verifyNoInteractions(llm);
+    }
+
+    @Test
+    @DisplayName("only a bare today skips the time reader: this evening still goes through it")
+    void sameDayOnlyWhenBare() {
+        for (String bare : new String[]{"Today", " aaj ", "aaj hi", "today itself", "\u0906\u091c"}) {
+            assertTrue(AiCallFollowThrough.isSameDayWithoutTime(bare), bare);
+        }
+        for (String timed : new String[]{"today evening", "aaj shaam", "\u0906\u091c \u0936\u093e\u092e", "after one hour", "tomorrow", "", null}) {
+            assertFalse(AiCallFollowThrough.isSameDayWithoutTime(timed), String.valueOf(timed));
+        }
+    }
+
+    @Test
     @DisplayName("an exact callback time is scheduled as given")
     void exactTime() {
         AiCallResult r = result();

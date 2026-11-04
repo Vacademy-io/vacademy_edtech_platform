@@ -75,6 +75,10 @@ public class EngagementDecisionService {
     @Autowired(required = false)
     private EngagementEmailTemplateCatalog emailCatalog;
 
+    /** The bounce blocklist; optional in unit tests. */
+    @Autowired(required = false)
+    private EngagementEmailSuppression emailSuppression;
+
     @Value("${engagement.recent-window-days:14}")
     private int recentWindowDays;
 
@@ -90,6 +94,11 @@ public class EngagementDecisionService {
     @Value("${engagement.schedule.max-hours:168}")
     private int maxScheduleHours;
 
+    private static final Duration UNREACHABLE_RECHECK = Duration.ofDays(7);
+    static final String BOUNCED_ONLY_CHANNEL_NOTE = "This person's email address bounced and email is this engine's"
+            + " only channel, so nothing was decided. Looking again in 7 days.";
+    static final String NO_EMAIL_ONLY_CHANNEL_NOTE = "This person has no email address and email is this engine's"
+            + " only channel, so nothing was decided. Looking again in 7 days.";
     private static final int MAX_DRAFT_CHARS = 4000;
     private static final int MAX_SUBJECT_CHARS = 150;
     private static final Set<String> VALID_CHANNELS = Set.of("WHATSAPP", "EMAIL", "IN_APP", "AI_CALL");
@@ -108,6 +117,7 @@ public class EngagementDecisionService {
         }
 
         List<Subject> subjects = contactResolver.resolve(members);
+        if (emailSuppression != null) emailSuppression.markBounced(subjects);
         Map<String, Subject> subjectByMember = new java.util.HashMap<>();
         subjects.forEach(s -> subjectByMember.put(s.getMemberId(), s));
 
@@ -247,6 +257,15 @@ public class EngagementDecisionService {
             return false;
         }
 
+        // 1d-2. One open action per person: a draft or call still waiting for a person or its time
+        // is what happens next. Deciding again only stacks a second one on top (two approvals, two
+        // calls), so look again after a gate sleep. Someone who wrote in still gets an answer.
+        if (!hasUnansweredReply(bundle, member) && actionRepository.countPendingActions(member.getId()) > 0) {
+            memberRepository.recordGateSleep(member.getId(), member.getWakeFingerprint(), now,
+                    now.plus(Duration.ofHours(Math.max(engine.getCadenceHours() / 4, 6))));
+            return false;
+        }
+
         // 1e. HARD RULE: with the AI call channel on, the first thing done for a person is an AI call,
         // decided here and not left to the model. A person with no phone, a wrong number or no call
         // left this week falls through to the usual decision (another channel).
@@ -261,6 +280,23 @@ public class EngagementDecisionService {
                         now.plus(Duration.ofHours(Math.max(engine.getCadenceHours(), 1))));
                 return true;
             }
+        }
+
+        // 1f. Email is this engine's only way to act and this person cannot get email: nothing the model
+        // could decide would reach them. No LLM; look again weekly in case an address appears or is unblocked.
+        if (emailOnlyAndUnreachable(enabledChannels, menu, subject)) {
+            EngagementAction parked = new EngagementAction();
+            parked.setEngineId(engine.getId());
+            parked.setMemberId(member.getId());
+            parked.setInstituteId(engine.getInstituteId());
+            parked.setPromptVersionId(prompt.getId());
+            parked.setKind("NO_OP");
+            parked.setStatus("DONE");
+            parked.setRationale(subject.isEmailUndeliverable() ? BOUNCED_ONLY_CHANNEL_NOTE : NO_EMAIL_ONLY_CHANNEL_NOTE);
+            actionRepository.save(parked);
+            memberRepository.recordDecision(member.getId(), now, member.getWakeFingerprint(),
+                    member.getConsecutiveNoOps(), heldLease, now.plus(UNREACHABLE_RECHECK));
+            return false;
         }
 
         // 2. Deterministic wake gate — zero tokens for most members.
@@ -281,7 +317,8 @@ public class EngagementDecisionService {
         }
 
         // 3. The LLM.
-        Map<String, String> blocks = withCoordination(coordinated, withWhyNow(member, bundle.renderFor(member.getId())));
+        Map<String, String> blocks = withEmailUnavailable(subject,
+                withCoordination(coordinated, withWhyNow(member, bundle.renderFor(member.getId()))));
         // An engine that only messages keeps exactly today's call (and prompt).
         EngagementBrainClient.Decision d = menu == null || menu.isEmpty()
                 ? brain.decide(engine, prompt.getCompiledText(), blocks, now, enabledChannels, whatsappTemplates)
@@ -353,7 +390,9 @@ public class EngagementDecisionService {
         if (!channelAllowed) {
             log.warn("Engine {}: brain chose disabled channel '{}' — recording NO_OP", engine.getId(), chosenChannel);
         }
-        if ("ACT".equalsIgnoreCase(d.decision()) && channelAllowed
+        // The prompt says so, but a model that ignores it must not get an email nobody can receive.
+        boolean emailUnavailable = "EMAIL".equals(chosenChannel) && cannotGetEmail(subject);
+        if ("ACT".equalsIgnoreCase(d.decision()) && channelAllowed && !emailUnavailable
                 && d.draftBody() != null && !d.draftBody().isBlank()) {
             // Cap the schedule horizon: an unbounded scheduleInHours lets the brain place a send days
             // or weeks out, which (a) drifts far from the context it was decided on and (b) breaks the
@@ -426,7 +465,10 @@ public class EngagementDecisionService {
             noOp.setPromptVersionId(prompt.getId());
             noOp.setKind("NO_OP");
             noOp.setStatus("DONE");
-            noOp.setRationale(cap(d.rationale()));
+            noOp.setRationale(cap(emailUnavailable
+                    ? "Chose EMAIL, not drafted: " + (subject.isEmailUndeliverable() ? "this address bounced. "
+                            : "no email address on file. ") + nullToEmpty(d.rationale())
+                    : d.rationale()));
             // Deciding to wait costs tokens too; the daily report shows it.
             EngagementLlmUsage.applyTo(d.usage(), noOp);
             actionRepository.save(noOp);
@@ -776,6 +818,30 @@ public class EngagementDecisionService {
                 + " draft, not to the lead; prefer helping the counsellor over a new message.");
         out.putAll(blocks);
         return out;
+    }
+
+    /** Tells the brain this person cannot be emailed, ahead of everything it reads about them. */
+    static Map<String, String> withEmailUnavailable(Subject subject, Map<String, String> blocks) {
+        if (!cannotGetEmail(subject)) return blocks;
+        Map<String, String> out = new java.util.LinkedHashMap<>();
+        out.put("emailUnavailable", (subject.isEmailUndeliverable()
+                ? "This person's email address bounced. Emails shown as sent to them were not received."
+                : "This person has no email address on file.")
+                + " Do NOT choose EMAIL. Use another enabled channel, or WAIT if there is none.");
+        out.putAll(blocks);
+        return out;
+    }
+
+    /** No address that can receive mail. A null subject is unknown, so it is left to the send-time check. */
+    static boolean cannotGetEmail(Subject subject) {
+        return subject != null && (subject.isEmailUndeliverable() || subject.getEmail() == null || subject.getEmail().isBlank());
+    }
+
+    /** True when email is all this engine can do and this person cannot receive it. */
+    static boolean emailOnlyAndUnreachable(Set<String> enabledChannels, EngagementBrainClient.ActionMenu menu, Subject subject) {
+        return cannotGetEmail(subject)
+                && enabledChannels.size() == 1 && enabledChannels.contains("EMAIL")
+                && (menu == null || menu.actions() == null || menu.actions().isEmpty());
     }
 
     /** A note, call outcome, status change... (B4) landed after the last decision began. */

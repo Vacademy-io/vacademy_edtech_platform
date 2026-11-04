@@ -113,6 +113,7 @@ public interface EngagementActionRepository extends JpaRepository<EngagementActi
                AND (channel <> 'WHATSAPP' OR template_name IS NOT NULL)
                AND (channel <> 'EMAIL' OR :emailNeedsTemplate = FALSE OR template_name IS NOT NULL)
                AND (draft_body IS NOT NULL OR template_name IS NOT NULL)
+               AND error_message IS NULL
             """, nativeQuery = true)
     int promoteTasksToAutoSends(@Param("engineId") String engineId, @Param("channel") String channel,
                                 @Param("emailNeedsTemplate") boolean emailNeedsTemplate,
@@ -528,6 +529,45 @@ public interface EngagementActionRepository extends JpaRepository<EngagementActi
             """, nativeQuery = true)
     int cancelOpenForMembers(@Param("memberIds") List<String> memberIds, @Param("reason") String reason,
                              @Param("now") Instant now, @Param("keepAiCallPromises") boolean keepAiCallPromises);
+
+    /** What is still waiting to happen for this person: drafts, approvals, scheduled calls. Not replies. */
+    @Query(value = """
+            SELECT count(*) FROM engagement_action
+             WHERE member_id = :memberId AND kind IN ('TASK', 'SEND') AND status IN ('OPEN', 'ACKED')
+            """, nativeQuery = true)
+    long countPendingActions(@Param("memberId") String memberId);
+
+    /** AI call tasks still waiting for an approval, oldest first. One a run refused carries the reason. */
+    @Query(value = """
+            SELECT * FROM engagement_action
+             WHERE engine_id = :engineId AND kind = 'TASK' AND status = 'OPEN'
+               AND action_type = 'SCHEDULE_AI_CALL' AND error_message IS NULL
+               AND (expires_at IS NULL OR expires_at > :now)
+             ORDER BY created_at
+             LIMIT :limit
+            """, nativeQuery = true)
+    List<EngagementAction> findWaitingCallTasks(@Param("engineId") String engineId, @Param("now") Instant now,
+                                                @Param("limit") int limit);
+
+    /** Members of this institute with an unsent email the engine drafted (a person's reply is not one). */
+    @Query(value = """
+            SELECT DISTINCT member_id FROM engagement_action
+             WHERE institute_id = :instituteId AND channel = 'EMAIL'
+               AND kind IN ('TASK', 'SEND') AND status IN ('OPEN', 'ACKED')
+            """, nativeQuery = true)
+    List<String> memberIdsWithUnsentEmails(@Param("instituteId") String instituteId);
+
+    /** Those unsent emails become EXPIRED with the reason: their address cannot receive them. */
+    @Modifying
+    @Transactional
+    @Query(value = """
+            UPDATE engagement_action
+               SET status = 'EXPIRED', error_message = :reason, updated_at = :now
+             WHERE member_id IN (:memberIds) AND channel = 'EMAIL'
+               AND kind IN ('TASK', 'SEND') AND status IN ('OPEN', 'ACKED')
+            """, nativeQuery = true)
+    int cancelUnsentEmails(@Param("memberIds") List<String> memberIds, @Param("reason") String reason,
+                           @Param("now") Instant now);
 
     /**
      * B6: at-most-once claim of a CRM action task for approval (OPEN/ACKED TASK → DISPATCHING), so

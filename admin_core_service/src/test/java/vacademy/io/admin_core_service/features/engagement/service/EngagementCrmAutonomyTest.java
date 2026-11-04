@@ -310,4 +310,69 @@ class EngagementCrmAutonomyTest {
         assertFalse(status.graduated());
         assertEquals(2, status.approved());
     }
+
+    @Test
+    @DisplayName("waiting AI calls run once the engine graduated: refusals keep their reason and stay")
+    void waitingCallsRun() {
+        EngagementAction ok = task(EngagementActionTypes.SCHEDULE_AI_CALL);
+        when(actions.findWaitingCallTasks(eq("e1"), any(), org.mockito.ArgumentMatchers.anyInt())).thenReturn(List.of(ok));
+
+        assertEquals(1, service.runWaitingCalls(engine, m -> null, Instant.now()));
+        assertEquals("DONE", ok.getStatus());
+        assertEquals("AUTO", ok.getOutcome());
+        verify(call).execute(any(), anyMap(), any());
+    }
+
+    @Test
+    @DisplayName("a counsellor hold on the person leaves the call for a person, with the reason, and is not retried")
+    void waitingCallRespectsHold() {
+        EngagementAction held = task(EngagementActionTypes.SCHEDULE_AI_CALL);
+        when(actions.findWaitingCallTasks(eq("e1"), any(), org.mockito.ArgumentMatchers.anyInt())).thenReturn(List.of(held));
+
+        assertEquals(0, service.runWaitingCalls(engine, m -> EngagementCoordinationService.HOLD_HUMAN_TOUCH, Instant.now()));
+        assertEquals("OPEN", held.getStatus());
+        assertTrue(held.getErrorMessage().startsWith("Not run automatically"), held.getErrorMessage());
+        verify(call, never()).execute(any(), anyMap(), any());
+    }
+
+    @Test
+    @DisplayName("an engine not graduated, or not set to auto, never touches its waiting calls")
+    void waitingCallsWaitForGraduation() {
+        when(actions.countApprovedCrmActions("e1", EngagementActionTypes.SCHEDULE_AI_CALL)).thenReturn(0L);
+        assertEquals(0, service.runWaitingCalls(engine, m -> null, Instant.now()));
+        verify(actions, never()).findWaitingCallTasks(any(), any(), org.mockito.ArgumentMatchers.anyInt());
+
+        EngagementEngine manual = engine("{\"actions\":[\"SCHEDULE_AI_CALL\"]}");
+        assertEquals(0, service.runWaitingCalls(manual, m -> null, Instant.now()));
+        verify(actions, never()).findWaitingCallTasks(any(), any(), org.mockito.ArgumentMatchers.anyInt());
+    }
+
+    @Test
+    @DisplayName("no credits or the kill switch stop the run without marking the task: it runs when they are back")
+    void waitingCallTemporaryStops() {
+        EngagementAction waiting = task(EngagementActionTypes.SCHEDULE_AI_CALL);
+        when(actions.findWaitingCallTasks(eq("e1"), any(), org.mockito.ArgumentMatchers.anyInt())).thenReturn(List.of(waiting));
+
+        when(credits.readBalance(INST)).thenReturn(Optional.of(0.0));
+        assertEquals(0, service.runWaitingCalls(engine, m -> null, Instant.now()));
+        assertNull(waiting.getErrorMessage());
+
+        when(credits.readBalance(INST)).thenReturn(Optional.of(100.0));
+        engine.setAutoSendKilled(true);
+        assertEquals(0, service.runWaitingCalls(engine, m -> null, Instant.now()));
+        assertNull(waiting.getErrorMessage());
+        verify(call, never()).execute(any(), anyMap(), any());
+    }
+
+    @Test
+    @DisplayName("a person no longer active gets a reason, so the task cannot sit at the head of the queue")
+    void waitingCallOfExitedMember() {
+        EngagementAction waiting = task(EngagementActionTypes.SCHEDULE_AI_CALL);
+        when(actions.findWaitingCallTasks(eq("e1"), any(), org.mockito.ArgumentMatchers.anyInt())).thenReturn(List.of(waiting));
+        member.setStatus("EXITED");
+
+        assertEquals(0, service.runWaitingCalls(engine, m -> null, Instant.now()));
+        assertTrue(waiting.getErrorMessage().contains("no longer active"), waiting.getErrorMessage());
+        verify(call, never()).execute(any(), anyMap(), any());
+    }
 }

@@ -40,6 +40,25 @@ class EngagementInboundEmailTest {
     }
 
     @Test
+    @DisplayName("newPart: a reply flattened to one line still loses the quoted thread and its unsubscribe line")
+    void newPartCutsFlattenedThread() {
+        assertEquals("Sorry, it\u2019s teams", EmailReplyText.newPart("Sorry, it\u2019s teams&nbsp; Get Outlook for iOS From: Sales "
+                + "&lt;sales@academy.test&gt; Sent: Saturday, October 31, 2026 10:02 AM To: lead@academy.test "
+                + "Subject: Batches Hi there. Don't want these? Unsubscribe ."));
+        assertEquals("Thanks", EmailReplyText.newPart("Thanks From: Sales <s@v.ai> Date: Sat 31 Oct To: lead@academy.test Subject: Hi"));
+        assertEquals("Got it.", EmailReplyText.newPart("Got it. On Wed, 4 Nov 2026, 10:28 am , <sales@academy.test> wrote: > Test"));
+        assertEquals("ok", EmailReplyText.newPart("ok Sent from my iPhone"));
+    }
+
+    @Test
+    @DisplayName("newPart: ordinary sentences with those words survive")
+    void newPartKeepsOrdinarySentences() {
+        String text = "On Monday I got a message from: my team. Sent to the owner, who wrote: please call.";
+        assertEquals(text, EmailReplyText.newPart(text));
+        assertEquals("The file was sent from my colleague", EmailReplyText.newPart("The file was sent from my colleague"));
+    }
+
+    @Test
     @DisplayName("inbound-since: email rows only with includeEmail, carrying sender, subject, new text and Message-ID")
     void inboundSinceAddsEmails() {
         NotificationLogRepository repo = mock(NotificationLogRepository.class);

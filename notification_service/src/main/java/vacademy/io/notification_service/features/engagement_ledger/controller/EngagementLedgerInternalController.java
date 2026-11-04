@@ -34,7 +34,11 @@ import java.util.Map;
 @Slf4j
 public class EngagementLedgerInternalController {
 
+    /** Addresses one blocked-emails call may ask about: the caller pages a bigger cohort. */
+    static final int MAX_BLOCKED_EMAILS_LOOKUP = 1000;
+
     private final EngagementLedgerService engagementLedgerService;
+    private final vacademy.io.notification_service.features.bounced_emails.service.BouncedEmailService bouncedEmailService;
     private final vacademy.io.notification_service.features.chatbot_flow.service.WhatsAppInboxService whatsAppInboxService;
 
     /**
@@ -120,5 +124,16 @@ public class EngagementLedgerInternalController {
             log.warn("delivery-failures-since rejected: {}", e.getMessage());
             return ResponseEntity.badRequest().build();
         }
+    }
+
+    /** Which of these addresses are on the bounce blocklist. Body {emails: [...]} → {blocked: [lowercase]}. */
+    @PostMapping("/blocked-emails")
+    public ResponseEntity<Map<String, List<String>>> blockedEmails(@RequestBody Map<String, List<String>> body) {
+        List<String> emails = body == null ? null : body.get("emails");
+        if (emails == null || emails.size() > MAX_BLOCKED_EMAILS_LOOKUP) {
+            log.warn("blocked-emails rejected: {} addresses", emails == null ? "no" : emails.size());
+            return ResponseEntity.badRequest().build();
+        }
+        return ResponseEntity.ok(Map.of("blocked", bouncedEmailService.filterBlockedEmails(emails)));
     }
 }

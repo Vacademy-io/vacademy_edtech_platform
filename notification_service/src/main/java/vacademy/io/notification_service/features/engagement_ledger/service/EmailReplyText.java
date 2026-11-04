@@ -1,5 +1,7 @@
 package vacademy.io.notification_service.features.engagement_ledger.service;
 
+import org.springframework.web.util.HtmlUtils;
+
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -24,14 +26,29 @@ final class EmailReplyText {
             + "|--[ \\t]*$"
             + ")");
 
+    /**
+     * The same markers when an html-only reply was flattened to one line, so nothing starts a line:
+     * "Sorry, it's teams Get Outlook for iOS From: Us <a@b> Sent: Saturday To: them". Stricter than
+     * QUOTE_START because they match mid-sentence: a person may well write "from: " or "on Monday".
+     */
+    private static final Pattern INLINE_QUOTE_START = Pattern.compile(
+            "(?i)\\bget outlook for (?:ios|android)\\b"
+            + "|\\bsent from my (?:iphone|ipad|android|samsung|galaxy|mobile)\\b"
+            + "|\\bfrom:\\s[^\\n]{1,200}?\\s(?:sent|date):\\s[^\\n]{1,120}?\\sto:\\s"
+            + "|\\bon\\s[^\\n]{0,200}?\\d[^\\n]{0,200}?@[^\\n]{0,120}?\\bwrote:");
+
     private EmailReplyText() {
     }
 
     static String newPart(String body) {
         if (body == null) return null;
-        String text = body.replace("\r\n", "\n").replace('\r', '\n');
+        // Html-only bodies keep their entities at ingest; "&lt;a@b&gt;" must read as an address here.
+        String text = HtmlUtils.htmlUnescape(body).replace('\u00A0', ' ')
+                .replace("\r\n", "\n").replace('\r', '\n');
         Matcher m = QUOTE_START.matcher(text);
         if (m.find()) text = text.substring(0, m.start());
+        Matcher inline = INLINE_QUOTE_START.matcher(text);
+        if (inline.find()) text = text.substring(0, inline.start());
         text = text.strip();
         if (text.length() > MAX_CHARS) text = text.substring(0, MAX_CHARS);
         return text.isEmpty() ? null : text;

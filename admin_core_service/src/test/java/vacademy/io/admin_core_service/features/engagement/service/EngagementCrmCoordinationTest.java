@@ -374,7 +374,7 @@ class EngagementCrmCoordinationTest {
             when(prompts.findTopByEngineIdAndStatusOrderByVersionDesc("e1", "ACTIVE")).thenReturn(Optional.of(prompt));
             member = member("m1", "e1", null, "ar1");
             when(members.findById("m1")).thenAnswer(inv -> Optional.of(member));
-            when(contacts.resolve(anyList())).thenReturn(List.of(Subject.builder().memberId("m1").build()));
+            when(contacts.resolve(anyList())).thenReturn(List.of(Subject.builder().memberId("m1").email("lead@test.local").build()));
             when(registry.hydrate(any(), anyList(), anyList())).thenReturn(new DataPointRegistry.CohortBundle(List.of(), Map.of()));
             when(gate.optedOutUserIds(anyString(), anyList())).thenReturn(Set.of());
             when(gate.preDecision(any(), any())).thenReturn(PolicyGate.Verdict.PROCEED);

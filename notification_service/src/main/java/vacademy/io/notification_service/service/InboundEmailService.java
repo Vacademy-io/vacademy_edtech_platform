@@ -14,10 +14,13 @@ import jakarta.mail.Session;
 import jakarta.mail.internet.InternetAddress;
 import jakarta.mail.internet.MimeMessage;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
+import vacademy.io.notification_service.features.bounced_emails.service.BounceNoticeRecipients;
+import vacademy.io.notification_service.features.bounced_emails.service.BouncedEmailService;
 import vacademy.io.notification_service.features.email_inbox.service.InboundMimeParts;
 import vacademy.io.notification_service.features.notification_log.entity.EmailAddressMapping;
 import vacademy.io.notification_service.features.notification_log.entity.NotificationLog;
@@ -43,11 +46,16 @@ public class InboundEmailService {
 
     private static final int MAX_INBOUND_PER_MINUTE = 10;
     private static final int MAX_BODY_BYTES = 65536; // 64 KB
+    private static final Duration BOUNCE_NOTICE_WINDOW = Duration.ofDays(7);
 
     private final AmazonS3 inboundS3Client;
     private final NotificationLogRepository notificationLogRepository;
     private final EmailAddressMappingRepository emailAddressMappingRepository;
     private final ObjectMapper objectMapper;
+
+    /** The blocklist a bounce notice feeds; field-injected so the constructor stays as it was. */
+    @Autowired(required = false)
+    private BouncedEmailService bouncedEmailService;
 
     @Value("${aws.s3.inbound-email-bucket}")
     private String inboundBucket;
@@ -93,6 +101,10 @@ public class InboundEmailService {
                 log.info("Duplicate inbound email messageId={}, skipping", messageId);
                 return;
             }
+
+            // 3b. A bounce notice blocks its recipient. Before the rate limit: a batch send can bounce
+            // more than the limit allows from this one sender, and each notice names a different address.
+            recordBounceNotice(fromAddress, body, messageId);
 
             // 4. Rate limit per sender
             if (fromAddress != null && isRateLimited(fromAddress)) {
@@ -193,6 +205,32 @@ public class InboundEmailService {
             }
         } catch (Exception e) {
             log.error("Error processing inbound email {}/{}: {}", bucket, key, e.getMessage(), e);
+        }
+    }
+
+    /**
+     * SES mails a bounce notice even when its bounce event never reaches us (seen on prod: the mail
+     * came, the event did not, and the address kept getting email). Only an address we recently
+     * mailed is blocked, so a forged notice cannot block an arbitrary address. Never fails the ingest.
+     */
+    void recordBounceNotice(String fromAddress, String body, String messageId) {
+        if (bouncedEmailService == null) return;
+        try {
+            for (String recipient : BounceNoticeRecipients.parse(fromAddress, body)) {
+                if (bouncedEmailService.isEmailBlocked(recipient)) continue;
+                Optional<NotificationLog> sent = notificationLogRepository
+                        .findTopByChannelIdAndNotificationTypeOrderByNotificationDateDesc(recipient, "EMAIL");
+                if (sent.isEmpty() || sent.get().getNotificationDate() == null
+                        || sent.get().getNotificationDate().isBefore(Instant.now().minus(BOUNCE_NOTICE_WINDOW))) {
+                    log.warn("Bounce notice for an address not mailed recently, ignored: {}", recipient);
+                    continue;
+                }
+                bouncedEmailService.addBouncedEmail(recipient, BounceNoticeRecipients.BOUNCE_TYPE,
+                        BounceNoticeRecipients.BOUNCE_SUB_TYPE, "From the bounce notice email", messageId,
+                        sent.get().getId());
+            }
+        } catch (Exception e) {
+            log.warn("Could not record bounce notice {}: {}", messageId, e.getMessage());
         }
     }
 

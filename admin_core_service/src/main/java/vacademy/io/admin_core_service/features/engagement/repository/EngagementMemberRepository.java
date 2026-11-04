@@ -69,9 +69,12 @@ public interface EngagementMemberRepository extends JpaRepository<EngagementMemb
                     (((hashtext(:engineId || '|' || COALESCE(:userId, :audienceResponseId, :id)) % 100) + 100) % 100) < :holdoutPct)
             ON CONFLICT (engine_id, COALESCE(user_id, ''), COALESCE(audience_response_id, ''))
             DO UPDATE SET
-                status = CASE WHEN engagement_member.status = 'EXITED' THEN 'ACTIVE'
+                status = CASE WHEN engagement_member.status = 'EXITED'
+                                   AND engagement_member.memory_json->>'leftAfterCall' IS NULL THEN 'ACTIVE'
                               ELSE engagement_member.status END,
-                next_action_at = CASE WHEN engagement_member.status = 'EXITED' THEN EXCLUDED.next_action_at
+                next_action_at = CASE WHEN engagement_member.status = 'EXITED'
+                                           AND engagement_member.memory_json->>'leftAfterCall' IS NULL
+                                      THEN EXCLUDED.next_action_at
                                       ELSE engagement_member.next_action_at END,
                 memory_json = jsonb_set(COALESCE(engagement_member.memory_json, cast('{}' as jsonb)),
                                         '{reconcileRun}', to_jsonb(CAST(:runId AS text))),
@@ -104,6 +107,22 @@ public interface EngagementMemberRepository extends JpaRepository<EngagementMemb
             """, nativeQuery = true)
     int exitNotStampedBy(@Param("engineId") String engineId, @Param("runId") String runId,
                          @Param("runStartedAt") Instant runStartedAt);
+
+    /**
+     * The person turned this engine down on its AI call. Marked in memory_json, which the enrol upsert
+     * above checks: a plain EXITED comes back at the nightly reconcile while the lead is in the audience,
+     * and the lead row must not change, since the same lead may still suit another engine of the institute.
+     */
+    @Modifying
+    @Transactional
+    @Query(value = """
+            UPDATE engagement_member
+               SET status = 'EXITED', updated_at = :now,
+                   memory_json = jsonb_set(COALESCE(memory_json, cast('{}' as jsonb)), '{leftAfterCall}',
+                                           to_jsonb(CAST(:outcome AS text)))
+             WHERE id IN (:ids) AND status IN ('ACTIVE', 'PAUSED')
+            """, nativeQuery = true)
+    int exitAfterCall(@Param("ids") List<String> ids, @Param("outcome") String outcome, @Param("now") Instant now);
 
     long countByEngineIdAndStatus(String engineId, String status);
 

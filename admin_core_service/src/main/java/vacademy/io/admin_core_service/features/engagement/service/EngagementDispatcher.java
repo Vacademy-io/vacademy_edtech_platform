@@ -92,6 +92,10 @@ public class EngagementDispatcher {
     @Autowired(required = false)
     private EngagementEmailTemplateCatalog emailCatalog;
 
+    /** The bounce blocklist; optional so a context without it still starts. */
+    @Autowired(required = false)
+    private EngagementEmailSuppression emailSuppression;
+
     /**
      * Dispatch an action that has ALREADY been claimed (status DISPATCHING). {@code editedBody}
      * (nullable) is the human's edit — recorded as sent_body so an EDITED-vs-ACCEPTED label is
@@ -249,6 +253,9 @@ public class EngagementDispatcher {
     private void sendEmail(EngagementAction action, Subject subject, String body) {
         if (subject.getEmail() == null || subject.getEmail().isBlank()) {
             throw new SendRejectedException("No email address on file for this person");
+        }
+        if (emailSuppression != null && emailSuppression.isBlocked(subject.getEmail())) {
+            throw new SendRejectedException(EngagementEmailSuppression.BOUNCED_REASON);
         }
         Map<String, String> vars = parseVariables(action.getVariablesJson());
         String subjectLine = vars.get(VAR_SUBJECT);
