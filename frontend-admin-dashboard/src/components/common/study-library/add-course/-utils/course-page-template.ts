@@ -42,11 +42,13 @@ export const COURSE_TEMPLATE_LABELS = [
     { key: 'enrol_button', label: 'Enrol button' },
     { key: 'explore_button', label: 'Second button (scrolls down the page)' },
     { key: 'duration', label: 'Duration label' },
+    { key: 'highlights', label: 'Highlights heading' },
     { key: 'about', label: 'About heading' },
     { key: 'who', label: 'Who it is for heading' },
     { key: 'testimonials', label: 'Testimonials heading' },
     { key: 'instructors', label: 'Instructors heading' },
     { key: 'enrolment', label: 'Small line above the enrolment title' },
+    { key: 'original_price', label: 'Text before the original price' },
     { key: 'discount', label: 'Text after the discount %' },
     { key: 'faq', label: 'FAQ heading' },
 ] as const;
