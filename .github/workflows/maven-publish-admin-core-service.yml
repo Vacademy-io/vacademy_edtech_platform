@@ -26,6 +26,16 @@ jobs:
         with:
           ref: ${{ github.event.inputs.branch || github.ref }}
 
+      # Stop before building an image every new pod would crash-loop on. A manually built branch
+      # may predate the check.
+      - name: Check Flyway migrations
+        run: |
+          if [ -f .github/scripts/check-flyway-migrations.sh ]; then
+            bash .github/scripts/check-flyway-migrations.sh
+          else
+            echo "This branch predates the migration check; skipping."
+          fi
+
       - name: Setup Java
         uses: actions/setup-java@v3
         with:
