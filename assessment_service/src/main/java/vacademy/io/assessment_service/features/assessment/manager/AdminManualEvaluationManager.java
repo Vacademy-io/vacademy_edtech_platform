@@ -26,6 +26,7 @@ import vacademy.io.assessment_service.features.assessment.repository.AssessmentS
 import vacademy.io.assessment_service.features.assessment.repository.EvaluationDraftRepository;
 import vacademy.io.assessment_service.features.assessment.repository.EvaluationLogsRepository;
 import vacademy.io.assessment_service.features.assessment.repository.SectionRepository;
+import vacademy.io.assessment_service.features.assessment.copy_intake.service.CopyIntakeService;
 import vacademy.io.assessment_service.features.assessment.service.StudentAttemptService;
 import vacademy.io.assessment_service.features.learner_assessment.entity.QuestionWiseMarks;
 import vacademy.io.assessment_service.features.learner_assessment.enums.AssessmentAttemptEnum;
@@ -444,13 +445,21 @@ public class AdminManualEvaluationManager {
     }
 
     public ResponseEntity<String> getAttemptData(CustomUserDetails userDetails, String attemptId, boolean markEvaluating) {
-        try {
-            Optional<StudentAttempt> attemptOptional = studentAttemptService.getStudentAttemptById(attemptId);
-            if (attemptOptional.isEmpty()) throw new VacademyException("Attempt Not Found");
+        // Business rejections are thrown OUTSIDE the try so their status reaches the
+        // caller: an attempt not yet submitted is a 4xx, not a server failure.
+        Optional<StudentAttempt> attemptOptional = studentAttemptService.getStudentAttemptById(attemptId);
+        if (attemptOptional.isEmpty()) throw new VacademyException(HttpStatus.NOT_FOUND, "Attempt Not Found");
 
-            if (!attemptOptional.get().getStatus().equals(AssessmentAttemptEnum.ENDED.name())) {
-                throw new VacademyException("Attempt is LIVE or PREVIEW");
-            }
+        // A copy checked in a bulk AI check without a student stays on COPY_CHECK for
+        // good, never ENDED, and its answer sheet is read the same way.
+        String status = attemptOptional.get().getStatus();
+        if (!AssessmentAttemptEnum.ENDED.name().equals(status)
+                && !CopyIntakeService.COPY_CHECK_ATTEMPT_STATUS.equals(status)) {
+            throw new VacademyException(HttpStatus.BAD_REQUEST,
+                    "This attempt has not been submitted yet (" + status + ").");
+        }
+
+        try {
             // NULL attempt_data (offline data-entry attempts) is not an error here —
             // resolution just falls through to the evaluated_file_id column below.
             String fileId = null;
