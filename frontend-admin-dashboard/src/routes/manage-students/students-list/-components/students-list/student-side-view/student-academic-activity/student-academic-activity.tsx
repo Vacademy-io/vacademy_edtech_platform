@@ -134,7 +134,11 @@ const LivePulse = ({ pulse }: { pulse: LearnerPulse }) => {
 const RecentlyRead = ({ pulse }: { pulse: LearnerPulse }) => (
     <ProfileSectionCard icon={BookOpenText} heading="What they read lately">
         {pulse.recent.length === 0 ? (
-            <ProfileEmpty title="Nothing read yet" hint={`No course content opened in ${DAYS} days.`} />
+            <ProfileEmpty
+                icon={BookOpenText}
+                title="Nothing read yet"
+                hint={`No course content opened in ${DAYS} days.`}
+            />
         ) : (
             <ul className="flex flex-col divide-y divide-neutral-100">
                 {pulse.recent.map((s) => {
@@ -177,7 +181,7 @@ const CourseProgress = ({ userId, instituteId }: { userId: string; instituteId: 
             {isLoading ? (
                 <ProfileSkeleton blocks={2} />
             ) : courses.length === 0 ? (
-                <ProfileEmpty title="No courses in progress" />
+                <ProfileEmpty icon={Books} title="No courses in progress" />
             ) : (
                 <ul className="flex flex-col gap-2.5">
                     {courses.map((c) => (
@@ -212,7 +216,7 @@ const LiveClasses = ({ userId }: { userId: string }) => {
             {isLoading ? (
                 <ProfileSkeleton blocks={2} />
             ) : !data || data.total_classes === 0 ? (
-                <ProfileEmpty title="No live classes in this period" />
+                <ProfileEmpty icon={VideoCamera} title="No live classes in this period" />
             ) : (
                 <div className="flex flex-col gap-2">
                     <div className="grid grid-cols-3 gap-2 text-center">
@@ -308,9 +312,17 @@ const AiChats = ({ userId }: { userId: string }) => {
             {isLoading ? (
                 <ProfileSkeleton blocks={2} />
             ) : isError ? (
-                <ProfileEmpty title="Chats are not available" hint="Only staff of this institute can view them." />
+                <ProfileEmpty
+                    icon={ChatsCircle}
+                    title="Chats are not available"
+                    hint="Only staff of this institute can view them."
+                />
             ) : rows.length === 0 ? (
-                <ProfileEmpty title="No AI tutor chats" hint="Prompts and answers show up here." />
+                <ProfileEmpty
+                    icon={ChatsCircle}
+                    title="No AI tutor chats"
+                    hint="Prompts and answers show up here."
+                />
             ) : (
                 <ul className="flex flex-col divide-y divide-neutral-100">
                     {rows.map((c) => (
@@ -371,7 +383,7 @@ export const StudentAcademicActivity = ({
                     <RecentlyRead pulse={pulse.data} />
                 </>
             ) : (
-                <ProfileEmpty title="Live pulse is not available" />
+                <ProfileEmpty icon={Lightning} title="Live pulse is not available" />
             )}
             <CourseProgress userId={userId} instituteId={instituteId} />
             <LiveClasses userId={userId} />

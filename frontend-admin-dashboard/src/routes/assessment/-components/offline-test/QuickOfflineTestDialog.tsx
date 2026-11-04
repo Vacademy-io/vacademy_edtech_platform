@@ -59,7 +59,9 @@ const buildSchema = (t: TFunction) =>
             totalMarks: z.coerce.number().min(1, t('errors.marksMin')),
             batchIds: z.array(z.string()).min(1, t('errors.batchRequired')),
             description: z.string(),
-            paper: pdfSchema.refine((value) => value !== null, t('errors.paperRequired')),
+            // Explicit boolean: an inferred type guard would make the form value non-null, but the
+            // form starts with no paper.
+            paper: pdfSchema.refine((value): boolean => value !== null, t('errors.paperRequired')),
             checkMode: z.enum(['AI', 'TEACHER']),
             answerKey: pdfSchema,
             keyHasScheme: z.boolean(),
