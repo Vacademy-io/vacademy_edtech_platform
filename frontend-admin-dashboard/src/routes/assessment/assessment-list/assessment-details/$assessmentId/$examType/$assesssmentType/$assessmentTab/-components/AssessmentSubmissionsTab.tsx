@@ -163,12 +163,15 @@ const ATTEMPTED_COLUMN_WIDTH_TRIM: Record<string, string> = {
     // pinned cells: scrolling sideways piled "Details", "Name" and "Attempt Date" into
     // one unreadable smear.
     //
-    // Pin only the two columns that earn it — identity on the left, the row menu on the
-    // right — and lift both above the body cells' own z-10.
-    checkbox: 'min-w-[40px]', // design-lint-ignore: pixel column widths, matching table-layout.tsx
+    // Pin only what earns it — the select box and identity on the left, the row menu on the
+    // right — and lift them above the body cells' own z-10. The table is far wider than the
+    // page, so an unpinned select box scrolled away and admins could not find row selection.
+    // Name sits at left-10 because the select box is exactly 40px wide. Phones keep Name
+    // alone: Name, select box and row menu together would be wider than the screen.
+    checkbox: 'min-w-[40px] sm:sticky sm:left-0 sm:z-20', // design-lint-ignore: pixel column widths, matching table-layout.tsx
     details: 'min-w-[40px]', // design-lint-ignore: pixel column widths, matching table-layout.tsx
     serial: 'min-w-[44px]', // design-lint-ignore: pixel column widths, matching table-layout.tsx
-    full_name: 'min-w-[220px] sticky left-0 z-20', // design-lint-ignore: pixel column widths, matching table-layout.tsx
+    full_name: 'min-w-[220px] sticky left-0 z-20 sm:left-10', // design-lint-ignore: pixel column widths, matching table-layout.tsx
     options: 'min-w-[92px] sticky right-0 z-20', // design-lint-ignore: pixel column widths, matching table-layout.tsx
     package_session_id: 'min-w-[180px]', // design-lint-ignore: pixel column widths, matching table-layout.tsx
     attempt_date: 'min-w-[140px]', // design-lint-ignore: pixel column widths, matching table-layout.tsx
@@ -340,6 +343,13 @@ const AssessmentSubmissionsTab = ({ type }: { type: string }) => {
     // "Check submitted copies": null = closed; [] = every submitted copy on the
     // assessment (toolbar button); ids = the checked rows (bulk-actions menu).
     const [submittedCheckScope, setSubmittedCheckScope] = useState<string[] | null>(null);
+    // Opens that dialog with "also re-check the checked copies" ticked: the admin asked for a
+    // re-check, or picked the rows themselves, so a checked copy is not left out.
+    const [submittedCheckRecheck, setSubmittedCheckRecheck] = useState(false);
+    const openSubmittedCheck = (scope: string[], recheck: boolean) => {
+        setSubmittedCheckRecheck(recheck);
+        setSubmittedCheckScope(scope);
+    };
     const [intakePanelOpen, setIntakePanelOpen] = useState(Boolean(initialIntakeId));
     const [intakeBatchId, setIntakeBatchId] = useState<string | null>(initialIntakeId);
     // Linked batches live on step 3 (index 2) of the details payload, same as
@@ -1469,6 +1479,7 @@ const AssessmentSubmissionsTab = ({ type }: { type: string }) => {
                         instituteId={instituteId}
                         questionsPerCopy={questionsPerCopy}
                         attemptIds={submittedCheckScope}
+                        defaultIncludeChecked={submittedCheckRecheck}
                         onStarted={(batch) => {
                             setIntakeBatchId(batch.id);
                             setIntakePanelOpen(true);
@@ -1547,7 +1558,8 @@ const AssessmentSubmissionsTab = ({ type }: { type: string }) => {
                     {selectedTab === 'Attempted' && (
                         <>
                             <AiCheckMenu
-                                onCheckSubmitted={() => setSubmittedCheckScope([])}
+                                onCheckSubmitted={() => openSubmittedCheck([], false)}
+                                onRecheckSubmitted={() => openSubmittedCheck([], true)}
                                 onUploadCopies={() => setBulkCheckOpen(true)}
                                 onToggleProgress={() => setIntakePanelOpen((v) => !v)}
                                 isProgressOpen={intakePanelOpen}
@@ -1885,10 +1897,11 @@ const AssessmentSubmissionsTab = ({ type }: { type: string }) => {
                             onCheckWithAi={
                                 isManualEvaluation
                                     ? () =>
-                                          setSubmittedCheckScope(
+                                          openSubmittedCheck(
                                               getSelectedStudents()
                                                   .map((student) => student.attempt_id)
-                                                  .filter((id): id is string => !!id)
+                                                  .filter((id): id is string => !!id),
+                                              true
                                           )
                                     : undefined
                             }

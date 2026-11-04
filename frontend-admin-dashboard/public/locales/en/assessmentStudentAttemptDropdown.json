@@ -14,15 +14,8 @@
             "confirmMessagePrefix": "Are you sure you want to release result for"
         },
         "evaluateWithAI": {
-            "title": "Evaluate Assessment with AI",
-            "evaluatingLabel": "Evaluating",
-            "reEvaluationWarningPart1": "This attempt has already been evaluated. Re-evaluating will move it back to",
-            "reEvaluationWarningPart2": "until the new result is ready.",
-            "selectModelLabel": "Select AI Model",
-            "selectModelPlaceholder": "Select a model",
-            "chooseModelPrefix": "Choose the AI model to evaluate",
-            "chooseModelSuffix": "’s submission",
-            "rubricInfo": "For any question without a rubric, the AI generates grading criteria the first time and reuses them for every student, so everyone is graded the same way. Set rubrics on the assessment for full control over how marks are awarded.",
+            "recheckTitle": "Re-check this copy with AI?",
+            "recheckMessage": "{{name}}'s copy has already been checked or is being evaluated. A new check replaces its current marks, including any changes a teacher made, and it shows as Evaluating until the new result is ready.",
             "estimatedCostLabel": "Estimated cost:",
             "creditsCount_one": "{{count}} credit",
             "creditsCount_other": "{{count}} credits",
@@ -30,7 +23,7 @@
             "balance_other": "Balance: {{count}}",
             "insufficientCredits": "Not enough credits for this evaluation. Add credits to your institute to continue.",
             "starting": "Starting...",
-            "start": "Start"
+            "recheckConfirm": "Re-check"
         },
         "revaluateEntireAssessment": {
             "title": "Revaluate Entire Assessment",

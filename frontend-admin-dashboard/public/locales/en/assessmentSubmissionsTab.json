@@ -8,6 +8,10 @@
                 "title": "Check learners' uploaded copies",
                 "description": "AI checks every answer sheet the learners submitted themselves. Nothing to upload."
             },
+            "recheckSubmitted": {
+                "title": "Re-check all submitted copies",
+                "description": "AI checks every submitted copy again, including those already checked. The new marks replace the old ones."
+            },
             "upload": {
                 "title": "Upload scanned copies & check",
                 "description": "Upload scanned PDFs. Then choose: match them to learners, or just check them and download a ZIP."

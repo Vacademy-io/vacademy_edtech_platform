@@ -8,6 +8,10 @@
                 "title": "Corriger les copies déposées par les apprenants",
                 "description": "L'IA corrige chaque copie que les apprenants ont déposée eux-mêmes. Rien à téléverser."
             },
+            "recheckSubmitted": {
+                "title": "Recorriger toutes les copies déposées",
+                "description": "L’IA corrige à nouveau chaque copie déposée, y compris celles déjà corrigées. Les nouvelles notes remplacent les anciennes."
+            },
             "upload": {
                 "title": "Téléverser des copies scannées",
                 "description": "Téléversez vos PDF scannés, puis choisissez : les associer aux apprenants, ou seulement les corriger et télécharger un ZIP."

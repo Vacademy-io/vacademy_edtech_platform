@@ -132,7 +132,7 @@
         "alreadyChecked_one": "{{count}} already checked by AI",
         "alreadyChecked_other": "{{count}} already checked by AI",
         "skipped": "Left as they are",
-        "willRecheck": "Will be checked again — the new marks replace the old ones",
+        "willRecheck": "Will be checked again — the new marks replace the old ones, including any changes a teacher made",
         "inProgress_one": "{{count}} being checked right now",
         "inProgress_other": "{{count}} being checked right now",
         "notTwice": "Not queued a second time",
