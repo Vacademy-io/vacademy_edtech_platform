@@ -40,7 +40,12 @@ public class EngagementSystemTemplates {
                 "Hi {{1}}, your meeting with {{2}} is confirmed for {{3}}. Join here: {{4}}. "
                         + "If you need another time, just reply to this message.",
                 List.of("name", "institute", "meeting_time", "meeting_link"),
-                List.of("Asha", "{institute}", "Fri 30 Oct, 10:00 AM IST", "https://meet.google.com/abc-defg-hij"));
+                List.of("Asha", "{institute}", "Fri 30 Oct, 10:00 AM IST", "https://meet.google.com/abc-defg-hij")),
+        /** To the institute's own team: a meeting was scheduled with a lead. */
+        STAFF_MEETING_ALERT("SYS:STAFF_MEETING_ALERT", "staff_meeting_alert",
+                "Hi {{1}}, a meeting has been scheduled with {{2}} on {{3}} for {{4}}. Please open the lead and be ready for the call.",
+                List.of("staff_name", "lead_name", "lead_phone", "meeting_time"),
+                List.of("Riya", "Asha", "+91 98765 43210", "Fri 30 Oct, 10:00 AM IST"));
 
         public final String purpose, baseName, body;
         public final List<String> variables, samples;
@@ -103,6 +108,14 @@ public class EngagementSystemTemplates {
      * for an institute that runs an engagement engine on WhatsApp (a live engine, not the system one).
      * An institute that merely has WhatsApp configured never gets a template made behind its back.
      */
+    /** True when the institute runs at least one live engagement engine (the system one does not count). */
+    public boolean runsLiveEngine(String instituteId) {
+        for (EngagementEngine e : engineRepository.findByInstituteIdOrderByCreatedAtDesc(instituteId)) {
+            if (!e.isSystemManaged() && ("ACTIVE".equals(e.getStatus()) || "DRY_RUN".equals(e.getStatus()))) return true;
+        }
+        return false;
+    }
+
     boolean usesEngineOnWhatsapp(String instituteId) {
         for (EngagementEngine e : engineRepository.findByInstituteIdOrderByCreatedAtDesc(instituteId)) {
             if (e.isSystemManaged()) continue;

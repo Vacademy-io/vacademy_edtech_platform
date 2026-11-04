@@ -70,6 +70,11 @@ public class EngagementTemplateProposalService {
     @org.springframework.beans.factory.annotation.Autowired(required = false)
     private EngagementTemplateReuseMatcher reuseMatcher;
 
+    /** Tells the team when Meta rejects or disables a template; absent in unit tests. */
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    @org.springframework.context.annotation.Lazy
+    private EngagementPointsOfContact pointsOfContact;
+
     // ----- proposal generation -----
 
     /** AI proposes a first batch (round 1) for the engine. Moves a DRAFT WhatsApp engine to TEMPLATES_PENDING. */
@@ -525,6 +530,7 @@ public class EngagementTemplateProposalService {
                 if (proposalRepository.reconcileFromMeta(p.getId(), toStatus, metaCategory, rejection, now) == 1) {
                     changed++;
                     retireReplacedIfApproved(p, toStatus);
+                    if ("META_REJECTED".equals(toStatus)) alertTemplateProblem(p, "rejected", rejection);
                 }
             } catch (Exception e) {
                 log.warn("Template sync: reconcile failed for proposal {}: {}", p.getId(), e.getMessage());
@@ -569,7 +575,9 @@ public class EngagementTemplateProposalService {
                         ? (textOrNull(t, "rejectionReason") != null ? textOrNull(t, "rejectionReason")
                                 : "Meta " + metaStatus.toLowerCase() + " this template; it is no longer sent.")
                         : null;
-                changed += proposalRepository.reconcileApprovedFromMeta(p.getId(), toStatus, reason, now);
+                int moved = proposalRepository.reconcileApprovedFromMeta(p.getId(), toStatus, reason, now);
+                changed += moved;
+                if (moved == 1 && "META_DISABLED".equals(toStatus)) alertTemplateProblem(p, "disabled", reason);
             } catch (Exception e) {
                 log.warn("Approved-template sync failed for proposal {}: {}", p.getId(), e.getMessage());
             }
@@ -605,7 +613,33 @@ public class EngagementTemplateProposalService {
                 metaCategory, rejection, Instant.now());
         EngagementTemplateProposal row = requireProposal(id, instituteId);
         retireReplacedIfApproved(row, row.getStatus());
+        if ("META_REJECTED".equals(row.getStatus())) alertTemplateProblem(row, "rejected", rejection);
         return row;
+    }
+
+    /**
+     * Tells the admins (email and bell) that Meta rejected or disabled a WhatsApp template, with the engine it
+     * belongs to and Meta's reason, so a rejected template does not sit unnoticed while the engine waits
+     * on it. Called once per change of state (the status updates are guarded, so a repeat is a no-op).
+     */
+    private void alertTemplateProblem(EngagementTemplateProposal p, String what, String reason) {
+        if (pointsOfContact == null) return;
+        try {
+            EngagementEngine engine = p.getEngineId() == null ? null : engineRepository.findById(p.getEngineId()).orElse(null);
+            boolean shared = p.getPurpose() != null && p.getPurpose().startsWith("SYS:");
+            String where = shared ? "the institute's shared \"" + p.getName() + "\" template (used for thank-you and meeting messages)"
+                    : "the \"" + p.getName() + "\" template of the engine \"" + (engine == null ? "" : engine.getName()) + "\"";
+            String why = reason == null || reason.isBlank() ? "Meta gave no reason." : reason;
+            String title = "WhatsApp template " + what + ": " + p.getName();
+            String body = "<p>Meta " + what + " " + EngagementPointsOfContact.esc(where) + ".</p><p><b>Meta's reason:</b> "
+                    + EngagementPointsOfContact.esc(why) + "</p><p>"
+                    + (shared ? "Messages that need it go by email only until it is fixed."
+                              : "The engine will not send it. Open the engine, edit the template or ask for new options, and submit it again.")
+                    + "</p>";
+            pointsOfContact.alert(p.getInstituteId(), null, title, body, "ENGAGEMENT_TEMPLATE", p.getId());
+        } catch (Exception e) {
+            log.warn("Template {}: could not tell the team it was {}: {}", p.getId(), what, e.getMessage());
+        }
     }
 
     private Map<String, Object> buildTemplateDto(EngagementTemplateProposal p, String actorId) {

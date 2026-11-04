@@ -399,7 +399,9 @@ public class PublicBookingService {
                 .build();
         BookingInstanceDTO created;
         try {
-            created = meetingBookingService.createBooking(booking, hostPrincipal(page));
+            // The reschedule sends its own "rescheduled" alert below, not a second "scheduled" one.
+            created = MeetingBookingService.withoutStaffAlert(
+                    () -> meetingBookingService.createBooking(booking, hostPrincipal(page)));
         } catch (Exception e) {
             old.setStatus(previousStatus);
             bookingInstanceRepository.save(old);
@@ -412,7 +414,15 @@ public class PublicBookingService {
         BookingInstance replacement = bookingInstanceRepository.findById(created.getId())
                 .orElseThrow(() -> new VacademyException("Booking not found after reschedule"));
         replacement.setRescheduleOfInstanceId(old.getId());
-        return bookingInstanceRepository.save(replacement);
+        BookingInstance saved = bookingInstanceRepository.save(replacement);
+        try {
+            java.time.ZoneId zone = java.time.ZoneId.of(page.getTimezone() == null ? "Asia/Kolkata" : page.getTimezone());
+            meetingBookingService.alertStaffAboutMeeting(saved, page.getTitle(), zone, "rescheduled",
+                    old.getScheduledStartUtc() == null ? null : old.getScheduledStartUtc().toInstant());
+        } catch (Exception e) {
+            log.warn("Reschedule {}: staff alert skipped: {}", saved.getId(), e.getMessage());
+        }
+        return saved;
     }
 
     // ---------- helpers ----------

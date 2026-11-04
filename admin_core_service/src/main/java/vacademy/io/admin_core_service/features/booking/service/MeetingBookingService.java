@@ -167,8 +167,64 @@ public class MeetingBookingService {
         mentorshipNotificationService.notifyBooking(instance.getInstituteId(), instance.getHostUserId(),
                 instance.getInviteeUserId(), instance.getInviteeEmail(), instance.getInviteePhone(),
                 instance.getInviteeName(), title, formatWhen(instance, zone), false);
+        if (!Boolean.TRUE.equals(STAFF_ALERT_SUPPRESSED.get())) {
+            alertStaffAboutMeeting(instance, title, zone, "scheduled", null);
+        }
 
         return toDTO(instance, Map.of(), page != null ? page.getTitle() : null);
+    }
+
+    /** Set by a reschedule, which sends its own "rescheduled" alert instead of a "scheduled" one. */
+    private static final ThreadLocal<Boolean> STAFF_ALERT_SUPPRESSED = new ThreadLocal<>();
+
+    public static <T> T withoutStaffAlert(java.util.function.Supplier<T> work) {
+        STAFF_ALERT_SUPPRESSED.set(Boolean.TRUE);
+        try {
+            return work.get();
+        } finally {
+            STAFF_ALERT_SUPPRESSED.remove();
+        }
+    }
+
+    @org.springframework.beans.factory.annotation.Autowired
+    @org.springframework.context.annotation.Lazy
+    private vacademy.io.admin_core_service.features.engagement.service.EngagementPointsOfContact pointsOfContact;
+
+    /**
+     * Tells the institute's team a meeting with a lead was scheduled or moved: the admins, the lead's
+     * counsellor and the meeting's host, by email, bell and (shared template permitting) WhatsApp. Only for
+     * a lead's meeting at an institute that runs an engagement engine, so a school's ordinary booking page
+     * never mails its admins.
+     */
+    public void alertStaffAboutMeeting(BookingInstance instance, String title, ZoneId zone, String what, java.time.Instant previousStart) {
+        try {
+            if (instance.getAudienceResponseId() == null
+                    || !systemTemplates.runsLiveEngine(instance.getInstituteId())) return;
+            String lead = firstNonBlank(instance.getInviteeName(), "A lead", null);
+            String phone = firstNonBlank(instance.getInviteePhone(), "no phone", null);
+            String when = formatWhen(instance, zone);
+            java.util.function.UnaryOperator<String> e = vacademy.io.admin_core_service.features.engagement.service.EngagementPointsOfContact::esc;
+            String was = previousStart == null ? "" : " It was on " + e.apply(formatWhen(previousStart, zone)) + ".";
+            String body = "<p>A meeting with <b>" + e.apply(lead) + "</b> (" + e.apply(phone)
+                    + (instance.getInviteeEmail() == null ? "" : ", " + e.apply(instance.getInviteeEmail())) + ") was " + what
+                    + " for <b>" + e.apply(when) + "</b>." + was
+                    + (instance.getMeetLink() == null ? "" : " Meeting link: " + e.apply(instance.getMeetLink()))
+                    + "</p><p>Please open the lead in the CRM and be ready for the call.</p>";
+            java.util.Map<String, String> wa = new java.util.LinkedHashMap<>();
+            wa.put("lead_name", lead);
+            wa.put("lead_phone", phone);
+            wa.put("meeting_time", when);
+            pointsOfContact.alertAbout(instance.getInstituteId(), instance.getInviteeUserId(),
+                    java.util.Collections.singletonList(instance.getHostUserId()),
+                    "Meeting " + what + " with " + lead, body, "MEETING_" + what.toUpperCase(), instance.getId(), wa);
+        } catch (Exception ex) {
+            log.warn("Booking {}: staff alert failed: {}", instance.getId(), ex.getMessage());
+        }
+    }
+
+    private static String formatWhen(java.time.Instant at, ZoneId zone) {
+        return java.time.format.DateTimeFormatter.ofPattern("EEE, dd MMM yyyy 'at' HH:mm", java.util.Locale.ENGLISH)
+                .format(at.atZone(zone)) + " (" + zone.getId() + ")";
     }
 
     private BookingInstance persistBooking(MeetingBookingRequestDTO request, CustomUserDetails user,

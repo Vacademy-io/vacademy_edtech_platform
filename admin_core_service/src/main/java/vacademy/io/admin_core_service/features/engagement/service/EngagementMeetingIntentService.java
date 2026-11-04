@@ -73,6 +73,14 @@ public class EngagementMeetingIntentService {
             "(?i)(cancel|can'?t make it|cannot make it|won'?t be able to (?:join|attend|make)"
             + "|not able to (?:join|attend)|call off|nahi aa paunga|nahi aa paungi|nahi ho payega)");
 
+    /** Asking for a person: "I want to talk to a counsellor", "kisi se baat karni hai", "connect me to your team". */
+    static final Pattern WANTS_PERSON = Pattern.compile(
+            "(?i)(?:talk|speak|connect|chat|call|baat)\\b.{0,25}\\b(?:counsell?or|advis[oe]r|human|real person|someone|somebody|executive"
+            + "|sales (?:team|person)|your team|manager|representative|person)"
+            + "|(?:counsell?or|advis[oe]r|executive|manager|sales (?:team|person)|representative)\\b.{0,25}\\b(?:se|ko)\\b.{0,25}\\b(?:baat|bat|call|connect|milna|milwa)"
+            + "|\\b(?:kisi|koi)\\b.{0,15}\\b(?:se|ko)\\b.{0,15}\\b(?:baat|call)"
+            + "|\\b(?:someone|somebody|anyone|a person|a human|an executive)\\b.{0,20}\\b(?:call|contact|reach|phone|talk|speak|ring)");
+
     /** Asking for a meeting: "book the demo for tomorrow 10 am", "yes, schedule it on Monday". */
     static final Pattern BOOK = Pattern.compile(
             "(?i)((book|schedule|fix|set ?up|arrange|plan|keep|rakh)\\b.{0,30}\\b(demo|meeting|call|session|slot)"
@@ -94,6 +102,7 @@ public class EngagementMeetingIntentService {
     @Autowired @Lazy private MeetingBookingService meetingBookingService;
     @Autowired @Lazy private AudienceResponseRepository audienceResponseRepository;
     @Autowired @Lazy private EngagementDispatcher dispatcher;
+    @Autowired @Lazy private EngagementPointsOfContact pointsOfContact;
 
     private final ObjectMapper objectMapper = new ObjectMapper();
 
@@ -283,6 +292,41 @@ public class EngagementMeetingIntentService {
         } catch (Exception e) {
             return null;
         }
+    }
+
+    /**
+     * The lead asks to speak to a person. The team is told at once (email and bell, to the admins and the
+     * lead's counsellor), a task waits in the inbox, and the lead is told in their own language that
+     * someone will be in touch: no time is promised.
+     *
+     * @return true when the reply asked for a person and has been dealt with
+     */
+    public boolean handoff(EngagementEngine engine, String memberId, String userId, String responseId,
+                           String channel, String replyText) {
+        String text = newPart(replyText);
+        if (engine == null || text.isBlank() || !WANTS_PERSON.matcher(text).find()) return false;
+        AudienceResponse lead = responseId == null ? null : audienceResponseRepository.findById(responseId).orElse(null);
+        String name = lead != null && lead.getParentName() != null && !lead.getParentName().isBlank() ? lead.getParentName() : "A lead";
+        String phone = lead != null && lead.getParentMobile() != null ? lead.getParentMobile() : "";
+        String email = lead != null && lead.getParentEmail() != null ? lead.getParentEmail() : "";
+        String via = "EMAIL".equals(channel) ? "email" : "WhatsApp";
+        java.util.function.UnaryOperator<String> e = EngagementPointsOfContact::esc;
+        String body = "<p><b>" + e.apply(name) + "</b> (" + e.apply(phone) + (email.isEmpty() ? "" : ", " + e.apply(email))
+                + ") asked on " + via + " to speak to a person.</p><p><i>\"" + e.apply(text.length() > 400 ? text.substring(0, 400) + "…" : text)
+                + "\"</i></p><p>Please contact them. The engine told them someone will be in touch.</p>";
+        recordFor(engine, memberId, channel, "OPEN", 92, "Wants to talk to a person (via " + via + "). The team was alerted and the lead was "
+                + "told someone will be in touch; contact them. Their message: " + text, null);
+        try {
+            pointsOfContact.alert(engine.getInstituteId(), userId, "Wants to talk to a person: " + name, body, "HANDOFF", memberId);
+        } catch (Exception ex) {
+            log.warn("Handoff alert for member {} failed: {}", memberId, ex.getMessage());
+        }
+        String ack = compose(engine.getInstituteId(), channel,
+                "Thank them and say a member of the team will be in touch with them shortly. Promise no time.",
+                "They asked to speak to a person.", text,
+                "Thank you for your message. A member of our team will be in touch with you shortly.");
+        sendFor(engine, memberId, channel, ack, "Re: your message", 70, "Told the lead someone will be in touch.");
+        return true;
     }
 
     static String bookingPageIdOf(EngagementEngine engine) {

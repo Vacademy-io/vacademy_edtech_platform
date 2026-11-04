@@ -239,9 +239,13 @@ public class EngagementReplyResponder {
                     outcomeService.exitNotInterested(instituteId, reached, "WHATSAPP", replyText, now);
             if (left.stream().anyMatch(m -> m.getMemberId().equals(cand.getMemberId()))) return true;
         }
-        // Asking for a meeting: the engine books it on its booking page (or offers free slots).
+        // Asking for a person, or for a meeting: the team is told / the engine books it on its booking page.
         if (meetingIntents != null) {
             EngagementMember asking = memberRepository.findById(cand.getMemberId()).orElse(null);
+            if (asking != null && handedOff(engine, asking.getId(), asking.getUserId(),
+                    asking.getAudienceResponseId(), "WHATSAPP", replyText)) {
+                return true;
+            }
             if (asking != null && bookedFromReply(engine, asking.getId(), asking.getUserId(),
                     asking.getAudienceResponseId(), "WHATSAPP", replyText)) {
                 return true;
@@ -533,6 +537,10 @@ public class EngagementReplyResponder {
 
         // Asking for a meeting: the engine books it on its booking page (or offers free slots).
         EngagementEngine askingEngine = meetingIntents == null ? null : engineRepository.findById(target.getEngineId()).orElse(null);
+        if (askingEngine != null && handedOff(askingEngine, target.getMemberId(), target.getUserId(),
+                target.getAudienceResponseId(), "EMAIL", body)) {
+            return true;
+        }
         if (askingEngine != null && bookedFromReply(askingEngine, target.getMemberId(), target.getUserId(),
                 target.getAudienceResponseId(), "EMAIL", body)) {
             return true;
@@ -567,6 +575,16 @@ public class EngagementReplyResponder {
         } catch (RuntimeException e) {
             // Never lose the reply: the normal handling below still sees it.
             log.warn("Meeting reply handling failed in institute {}: {}", instituteId, e.getMessage());
+            return false;
+        }
+    }
+
+    private boolean handedOff(EngagementEngine engine, String memberId, String userId, String responseId,
+                              String channel, String text) {
+        try {
+            return meetingIntents.handoff(engine, memberId, userId, responseId, channel, text);
+        } catch (RuntimeException e) {
+            log.warn("Handoff on a {} reply failed for member {}: {}", channel, memberId, e.getMessage());
             return false;
         }
     }
