@@ -12,7 +12,9 @@ import org.springframework.web.util.HtmlUtils;
 import vacademy.io.admin_core_service.features.auth_service.service.AuthService;
 import vacademy.io.admin_core_service.features.faculty.entity.FacultySubjectPackageSessionMapping;
 import vacademy.io.admin_core_service.features.faculty.repository.FacultySubjectPackageSessionMappingRepository;
+import vacademy.io.admin_core_service.features.institute.entity.Template;
 import vacademy.io.admin_core_service.features.institute.repository.InstituteRepository;
+import vacademy.io.admin_core_service.features.institute.repository.TemplateRepository;
 import vacademy.io.admin_core_service.features.media_service.service.MediaService;
 import vacademy.io.admin_core_service.features.institute.service.setting.InstituteSettingService;
 import vacademy.io.admin_core_service.features.institute_learner.entity.Student;
@@ -26,6 +28,9 @@ import vacademy.io.admin_core_service.features.learner_reports.dto.LearnerActivi
 import vacademy.io.admin_core_service.features.learner_reports.dto.ProgressReportDTO;
 import vacademy.io.admin_core_service.features.learner_reports.dto.ReportFilterDTO;
 import vacademy.io.admin_core_service.features.learner_reports.dto.SubjectProgressDTO;
+import vacademy.io.admin_core_service.features.notification.dto.UnifiedSendRequest;
+import vacademy.io.admin_core_service.features.notification.dto.UnifiedSendResponse;
+import vacademy.io.admin_core_service.features.notification.util.PhoneCountryUtil;
 import vacademy.io.admin_core_service.features.notification_service.service.NotificationService;
 import vacademy.io.admin_core_service.features.packages.repository.PackageSessionRepository;
 import vacademy.io.admin_core_service.features.student_analysis.client.AssessmentServiceClient;
@@ -39,6 +44,8 @@ import vacademy.io.common.exceptions.VacademyException;
 import vacademy.io.common.institute.entity.Institute;
 import vacademy.io.common.notification.dto.AttachmentNotificationDTO;
 import vacademy.io.common.notification.dto.AttachmentUsersDTO;
+import vacademy.io.common.media.dto.FileDetailsDTO;
+import vacademy.io.common.media.dto.InMemoryMultipartFile;
 
 import java.io.ByteArrayOutputStream;
 import java.nio.charset.StandardCharsets;
@@ -90,6 +97,11 @@ public class BatchSummaryReportService {
     private static final DateTimeFormatter DATE_LABEL = DateTimeFormatter.ofPattern("d MMM yyyy", Locale.ENGLISH);
     private static final DateTimeFormatter SHORT_DATE = DateTimeFormatter.ofPattern("d MMM", Locale.ENGLISH);
 
+    public static final String CHANNEL_EMAIL = "EMAIL";
+    public static final String CHANNEL_WHATSAPP = "WHATSAPP";
+    /** Above this many recipients the WhatsApp send is queued as a batch (inline sends time out). */
+    private static final int ASYNC_SEND_THRESHOLD = 10;
+
     public static final String AUDIENCE_TEACHERS = "TEACHERS";
     public static final String AUDIENCE_PARENTS = "PARENTS";
 
@@ -105,6 +117,7 @@ public class BatchSummaryReportService {
     private final StudentSessionInstituteGroupMappingRepository mappingRepository;
     private final PackageSessionRepository packageSessionRepository;
     private final InstituteRepository instituteRepository;
+    private final TemplateRepository templateRepository;
     private final InstituteSettingService instituteSettingService;
     private final InstituteStudentRepository studentRepository;
     private final FacultySubjectPackageSessionMappingRepository facultyMappingRepository;
@@ -939,15 +952,237 @@ public class BatchSummaryReportService {
         if (!StringUtils.hasText(request.getPackageSessionId())) {
             throw new VacademyException(HttpStatus.BAD_REQUEST, "Pick a batch to send the report");
         }
+        String channel = request.getChannel() == null ? CHANNEL_EMAIL : request.getChannel().trim().toUpperCase(Locale.ROOT);
+        if (!CHANNEL_EMAIL.equals(channel) && !CHANNEL_WHATSAPP.equals(channel)) {
+            throw new VacademyException(HttpStatus.BAD_REQUEST, "channel must be EMAIL or WHATSAPP");
+        }
+        if (CHANNEL_WHATSAPP.equals(channel) && !StringUtils.hasText(request.getTemplateName())) {
+            throw new VacademyException(HttpStatus.BAD_REQUEST, "Pick a WhatsApp template");
+        }
+        Template emailTemplate = CHANNEL_EMAIL.equals(channel) ? emailTemplate(instituteId, request) : null;
         BatchSummaryReportDTO report = summarize(instituteId, request, user);
+        if (CHANNEL_WHATSAPP.equals(channel)) {
+            return AUDIENCE_TEACHERS.equals(audience)
+                    ? whatsAppTeachers(instituteId, report, request)
+                    : whatsAppParents(instituteId, report, request);
+        }
         String subjectSuffix = joinNonBlank(" · ", report.getBatchName(), dateLabel(report));
         return AUDIENCE_TEACHERS.equals(audience)
-                ? sendToTeachers(instituteId, report, subjectSuffix)
-                : sendToParents(instituteId, report, subjectSuffix);
+                ? sendToTeachers(instituteId, report, subjectSuffix, emailTemplate)
+                : sendToParents(instituteId, report, subjectSuffix, emailTemplate);
+    }
+
+    /** The picked email template, checked against the institute; null when none was picked. */
+    private Template emailTemplate(String instituteId, BatchSummaryReportRequest request) {
+        if (!StringUtils.hasText(request.getEmailTemplateId())) return null;
+        Template template = templateRepository.findById(request.getEmailTemplateId())
+                .filter(t -> instituteId.equals(t.getInstituteId()) && CHANNEL_EMAIL.equalsIgnoreCase(t.getType()))
+                .orElseThrow(() -> new VacademyException(HttpStatus.NOT_FOUND, "Email template not found"));
+        if (!StringUtils.hasText(template.getContent())) {
+            throw new VacademyException(HttpStatus.BAD_REQUEST, "This email template has no content");
+        }
+        return template;
+    }
+
+    // ── WhatsApp: the picked template, the report PDF as its document header ────
+
+    private BatchSummaryReportDTO.SendResult whatsAppTeachers(String instituteId, BatchSummaryReportDTO report,
+                                                              BatchSummaryReportRequest request) {
+        List<String> teacherIds = facultyMappingRepository
+                .findRealTeachersByPackageSessionId(report.getPackageSessionId()).stream()
+                .map(FacultySubjectPackageSessionMapping::getUserId)
+                .filter(StringUtils::hasText)
+                .distinct()
+                .toList();
+        List<String> notes = new ArrayList<>();
+        if (teacherIds.isEmpty()) {
+            notes.add("No teachers are assigned to this batch.");
+            return BatchSummaryReportDTO.SendResult.builder().audience(AUDIENCE_TEACHERS).notes(notes).build();
+        }
+        boolean india = defaultsToIndia(instituteId);
+        String pdfUrl = uploadPdf(toPdf(renderHtml(report, null), report.getPackageSessionId()),
+                fileName(report.getBatchName(), "batch-report"));
+        if (pdfUrl == null) {
+            notes.add("The report PDF could not be uploaded, so nothing was sent.");
+            return BatchSummaryReportDTO.SendResult.builder().audience(AUDIENCE_TEACHERS)
+                    .skipped(teacherIds.size()).notes(notes).build();
+        }
+        List<UnifiedSendRequest.Recipient> recipients = new ArrayList<>();
+        int noPhone = 0;
+        for (UserDTO teacher : authService.getUsersFromAuthServiceByUserIds(teacherIds)) {
+            String phone = teacher == null ? null : PhoneCountryUtil.normalizePhone(teacher.getMobileNumber(), india);
+            if (!StringUtils.hasText(phone)) {
+                noPhone++;
+                continue;
+            }
+            recipients.add(UnifiedSendRequest.Recipient.builder()
+                    .phone(phone)
+                    .userId(teacher.getId())
+                    .name(teacher.getFullName())
+                    .variables(templateVariables(report, null, teacher.getFullName(), pdfUrl))
+                    .build());
+        }
+        if (noPhone > 0) notes.add(noPhone + " teacher(s) have no mobile number.");
+        return whatsAppSend(instituteId, report, request, recipients, AUDIENCE_TEACHERS, noPhone, notes);
+    }
+
+    private BatchSummaryReportDTO.SendResult whatsAppParents(String instituteId, BatchSummaryReportDTO report,
+                                                             BatchSummaryReportRequest request) {
+        List<BatchSummaryReportDTO.LearnerRow> learners = nonNull(report.getLearners());
+        Map<String, Student> students = new LinkedHashMap<>();
+        List<String> ids = learners.stream().map(BatchSummaryReportDTO.LearnerRow::getUserId)
+                .filter(Objects::nonNull).toList();
+        if (!ids.isEmpty()) {
+            for (Student s : studentRepository.findByUserIdIn(ids)) {
+                // A learner can have several student rows; keep the one that carries a parent mobile.
+                Student existing = students.get(s.getUserId());
+                if (existing == null || parentMobiles(existing).isEmpty()) students.put(s.getUserId(), s);
+            }
+        }
+        boolean india = defaultsToIndia(instituteId);
+        List<UnifiedSendRequest.Recipient> recipients = new ArrayList<>();
+        int noPhone = 0, failed = 0;
+        for (BatchSummaryReportDTO.LearnerRow learner : learners) {
+            Student student = students.get(learner.getUserId());
+            Set<String> phones = new LinkedHashSet<>();
+            if (student != null) {
+                for (String raw : parentMobiles(student)) {
+                    String phone = PhoneCountryUtil.normalizePhone(raw, india);
+                    if (StringUtils.hasText(phone)) phones.add(phone);
+                }
+            }
+            if (phones.isEmpty()) {
+                noPhone++;
+                continue;
+            }
+            String pdfUrl;
+            try {
+                pdfUrl = uploadPdf(toPdf(renderHtml(report, learner), report.getPackageSessionId()),
+                        fileName(learner.getFullName(), "progress-report"));
+            } catch (Exception e) {
+                pdfUrl = null;
+            }
+            if (pdfUrl == null) {
+                failed++;
+                continue;
+            }
+            for (String phone : phones) {
+                recipients.add(UnifiedSendRequest.Recipient.builder()
+                        .phone(phone)
+                        .userId(learner.getUserId())
+                        .name(learner.getFullName())
+                        .variables(templateVariables(report, learner, learner.getFullName(), pdfUrl))
+                        .build());
+            }
+        }
+        List<String> notes = new ArrayList<>();
+        if (noPhone > 0) notes.add(noPhone + " learner(s) have no parent mobile number on their profile.");
+        if (failed > 0) notes.add(failed + " report PDF(s) could not be prepared.");
+        if (report.isLearnersTruncated()) notes.add("Only the first " + MAX_LEARNERS + " learners were included.");
+        return whatsAppSend(instituteId, report, request, recipients, AUDIENCE_PARENTS, noPhone + failed, notes);
+    }
+
+    private BatchSummaryReportDTO.SendResult whatsAppSend(String instituteId, BatchSummaryReportDTO report,
+                                                          BatchSummaryReportRequest request,
+                                                          List<UnifiedSendRequest.Recipient> recipients,
+                                                          String audience, int skipped, List<String> notes) {
+        if (recipients.isEmpty()) {
+            return BatchSummaryReportDTO.SendResult.builder().audience(audience).skipped(skipped).notes(notes).build();
+        }
+        UnifiedSendRequest send = UnifiedSendRequest.builder()
+                .instituteId(instituteId)
+                .channel(CHANNEL_WHATSAPP)
+                .templateName(request.getTemplateName().trim())
+                .languageCode(StringUtils.hasText(request.getLanguageCode()) ? request.getLanguageCode() : "en")
+                .recipients(recipients)
+                .options(UnifiedSendRequest.SendOptions.builder()
+                        .headerType("document")
+                        .source("BATCH_REPORT")
+                        .sourceId(report.getPackageSessionId())
+                        .build())
+                .forceAsync(recipients.size() > ASYNC_SEND_THRESHOLD)
+                .build();
+        try {
+            UnifiedSendResponse response = notificationService.sendUnified(send);
+            int accepted = response == null ? 0 : response.getAccepted();
+            int rejected = response == null ? recipients.size() : response.getFailed();
+            if (response != null && "PROCESSING".equalsIgnoreCase(response.getStatus())) {
+                accepted = recipients.size();
+                rejected = 0;
+                notes.add("Queued for delivery; messages go out over the next few minutes.");
+            }
+            if (rejected > 0) notes.add(rejected + " WhatsApp message(s) were rejected by the provider.");
+            return BatchSummaryReportDTO.SendResult.builder()
+                    .audience(audience).sent(accepted).skipped(skipped + rejected).notes(notes).build();
+        } catch (Exception e) {
+            log.warn("[batch-summary] WhatsApp send failed: {}", e.getMessage());
+            notes.add("WhatsApp send failed: " + e.getMessage());
+            return BatchSummaryReportDTO.SendResult.builder()
+                    .audience(audience).skipped(skipped + recipients.size()).notes(notes).build();
+        }
+    }
+
+    /**
+     * Values for the template body. Templates name their own variables, so the common names are
+     * all filled; the notification service uses the ones the template declares. _headerUrl puts
+     * this recipient PDF in the document header.
+     */
+    private Map<String, String> templateVariables(BatchSummaryReportDTO report, BatchSummaryReportDTO.LearnerRow learner,
+                                                  String recipientName, String pdfUrl) {
+        Map<String, String> v = new HashMap<>();
+        String name = recipientName == null ? "" : recipientName;
+        String learnerName = learner == null ? "" : nullToEmpty(learner.getFullName());
+        String score = learner != null && learner.getAvgScore() != null ? Math.round(learner.getAvgScore()) + "%"
+                : report.getAvgScore() != null ? Math.round(report.getAvgScore()) + "%" : "";
+        v.put("name", name);
+        v.put("learner_name", learnerName);
+        v.put("student_name", learnerName);
+        v.put("batch_name", nullToEmpty(report.getBatchName()));
+        v.put("institute_name", nullToEmpty(report.getInstituteName()));
+        v.put("period", dateLabel(report));
+        v.put("date_range", dateLabel(report));
+        v.put("avg_score", score);
+        v.put("score", score);
+        if (pdfUrl != null) v.put("_headerUrl", pdfUrl);
+        return v;
+    }
+
+    /** Uploads the PDF and returns a public link WhatsApp can fetch; null on failure. */
+    private String uploadPdf(byte[] pdf, String fileName) {
+        try {
+            FileDetailsDTO file = mediaService.uploadFileV2(new InMemoryMultipartFile(fileName, fileName, "application/pdf", pdf));
+            if (file == null || !StringUtils.hasText(file.getId())) return null;
+            String url = mediaService.getFilePublicUrlByIdWithoutExpiry(file.getId());
+            return StringUtils.hasText(url) ? url : file.getUrl();
+        } catch (Exception e) {
+            log.warn("[batch-summary] PDF upload failed for {}: {}", fileName, e.getMessage());
+            return null;
+        }
+    }
+
+    private boolean defaultsToIndia(String instituteId) {
+        try {
+            return PhoneCountryUtil.defaultsToIndia(instituteRepository.findById(instituteId)
+                    .map(Institute::getCountry).orElse(null));
+        } catch (Exception e) {
+            return true;
+        }
+    }
+
+    private static Set<String> parentMobiles(Student s) {
+        Set<String> out = new LinkedHashSet<>();
+        for (String m : new String[]{s.getParentsMobileNumber(), s.getParentToMotherMobileNumber(), s.getGuardianMobile()}) {
+            if (StringUtils.hasText(m)) out.add(m.trim());
+        }
+        return out;
+    }
+
+    private static String nullToEmpty(String s) {
+        return s == null ? "" : s;
     }
 
     private BatchSummaryReportDTO.SendResult sendToTeachers(String instituteId, BatchSummaryReportDTO report,
-                                                            String subjectSuffix) {
+                                                            String subjectSuffix, Template template) {
         List<String> teacherIds = facultyMappingRepository
                 .findRealTeachersByPackageSessionId(report.getPackageSessionId()).stream()
                 .map(FacultySubjectPackageSessionMapping::getUserId)
@@ -960,8 +1195,9 @@ public class BatchSummaryReportService {
             return BatchSummaryReportDTO.SendResult.builder().audience(AUDIENCE_TEACHERS).notes(notes).build();
         }
         byte[] pdf = toPdf(renderHtml(report, null), report.getPackageSessionId());
-        String body = emailBody(report, null);
-        String subject = "Batch report: " + subjectSuffix;
+        String body = template != null ? template.getContent() : emailBody(report, null);
+        String subject = template != null && StringUtils.hasText(template.getSubject())
+                ? template.getSubject() : "Batch report: " + subjectSuffix;
         String fileName = fileName(report.getBatchName(), "batch-report");
         int sent = 0, skipped = 0;
         for (UserDTO teacher : authService.getUsersFromAuthServiceByUserIds(teacherIds)) {
@@ -969,7 +1205,8 @@ public class BatchSummaryReportService {
                 skipped++;
                 continue;
             }
-            if (sendEmail(teacher.getEmail(), teacher.getId(), subject, body, pdf, fileName, instituteId, report)) sent++;
+            Map<String, String> vars = templateVariables(report, null, teacher.getFullName(), null);
+            if (sendEmail(teacher.getEmail(), teacher.getId(), subject, body, pdf, fileName, instituteId, report, vars)) sent++;
             else skipped++;
         }
         if (skipped > 0) notes.add(skipped + " teacher(s) could not be emailed (no email address or the send failed).");
@@ -978,7 +1215,7 @@ public class BatchSummaryReportService {
     }
 
     private BatchSummaryReportDTO.SendResult sendToParents(String instituteId, BatchSummaryReportDTO report,
-                                                           String subjectSuffix) {
+                                                           String subjectSuffix, Template template) {
         List<BatchSummaryReportDTO.LearnerRow> learners = nonNull(report.getLearners());
         Map<String, Student> students = new LinkedHashMap<>();
         List<String> ids = learners.stream().map(BatchSummaryReportDTO.LearnerRow::getUserId)
@@ -1005,12 +1242,14 @@ public class BatchSummaryReportService {
                 failed++;
                 continue;
             }
-            String body = emailBody(report, learner);
-            String subject = "Progress report for " + learner.getFullName() + ": " + subjectSuffix;
+            String body = template != null ? template.getContent() : emailBody(report, learner);
+            String subject = template != null && StringUtils.hasText(template.getSubject())
+                    ? template.getSubject() : "Progress report for " + learner.getFullName() + ": " + subjectSuffix;
+            Map<String, String> vars = templateVariables(report, learner, learner.getFullName(), null);
             String fileName = fileName(learner.getFullName(), "progress-report");
             boolean any = false;
             for (String email : emails) {
-                any |= sendEmail(email, null, subject, body, pdf, fileName, instituteId, report);
+                any |= sendEmail(email, null, subject, body, pdf, fileName, instituteId, report, vars);
             }
             if (any) sent++;
             else failed++;
@@ -1024,7 +1263,7 @@ public class BatchSummaryReportService {
     }
 
     private boolean sendEmail(String to, String userId, String subject, String body, byte[] pdf, String fileName,
-                              String instituteId, BatchSummaryReportDTO report) {
+                              String instituteId, BatchSummaryReportDTO report, Map<String, String> variables) {
         try {
             AttachmentUsersDTO.AttachmentDTO attachment = new AttachmentUsersDTO.AttachmentDTO();
             attachment.setAttachmentName(fileName);
@@ -1032,9 +1271,11 @@ public class BatchSummaryReportService {
             AttachmentUsersDTO recipient = new AttachmentUsersDTO();
             recipient.setChannelId(to);
             recipient.setUserId(userId);
-            recipient.setPlaceholders(Map.of("email", to));
+            Map<String, String> placeholders = new HashMap<>(variables);
+            placeholders.put("email", to);
+            recipient.setPlaceholders(placeholders);
             recipient.setAttachments(List.of(attachment));
-            notificationService.sendAttachmentEmailViaUnified(List.of(AttachmentNotificationDTO.builder()
+            UnifiedSendResponse response = notificationService.sendAttachmentEmailViaUnified(List.of(AttachmentNotificationDTO.builder()
                     .subject(subject)
                     .body(body)
                     .notificationType("EMAIL")
@@ -1044,7 +1285,8 @@ public class BatchSummaryReportService {
                     .attachmentName(fileName)
                     .users(List.of(recipient))
                     .build()), instituteId);
-            return true;
+            // A blocked, unsubscribed or failed recipient comes back as not accepted.
+            return response != null && response.getAccepted() > 0;
         } catch (Exception e) {
             log.warn("[batch-summary] email to {} failed: {}", to, e.getMessage());
             return false;

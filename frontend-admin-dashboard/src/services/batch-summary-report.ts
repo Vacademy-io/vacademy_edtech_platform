@@ -164,6 +164,7 @@ export interface BatchSummaryRequest {
 }
 
 export type BatchReportAudience = 'TEACHERS' | 'PARENTS';
+export type BatchReportChannel = 'EMAIL' | 'WHATSAPP';
 
 export interface BatchReportSendResult {
     audience: BatchReportAudience;
@@ -215,7 +216,15 @@ export const downloadBatchReportPdf = async (body: BatchSummaryRequest): Promise
 };
 
 export const sendBatchReport = async (
-    body: BatchSummaryRequest & { audience: BatchReportAudience }
+    body: BatchSummaryRequest & {
+        audience: BatchReportAudience;
+        channel?: BatchReportChannel;
+        /** Email: an institute email template; omitted means the default report email. */
+        email_template_id?: string;
+        /** WhatsApp: an approved template; the report PDF is sent as its document header. */
+        template_name?: string;
+        language_code?: string;
+    }
 ): Promise<BatchReportSendResult> => {
     const { data } = await authenticatedAxiosInstance.post<BatchReportSendResult>(
         `${BATCH_SUMMARY_REPORT_BASE}/send`,

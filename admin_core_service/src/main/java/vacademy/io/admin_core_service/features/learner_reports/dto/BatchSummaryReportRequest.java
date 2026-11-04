@@ -33,4 +33,16 @@ public class BatchSummaryReportRequest {
 
     /** For /send: TEACHERS or PARENTS. */
     private String audience;
+
+    /** For /send: EMAIL (default) or WHATSAPP. */
+    private String channel;
+
+    /** For a WhatsApp send: the approved template; the report PDF goes in its document header. */
+    private String templateName;
+
+    /** For an email send: the institute email template to use; null means the default report email. */
+    private String emailTemplateId;
+
+    /** For a WhatsApp send: the template language, en by default. */
+    private String languageCode;
 }
