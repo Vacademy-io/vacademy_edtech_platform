@@ -22,7 +22,7 @@ import java.util.regex.Pattern;
 /**
  * What an engine does with the outcome of its AI call. A demo the person agreed to or clear interest
  * reaches the team straight away, by email, bell alert and a CRM follow-up, because the agent told them
- * someone would confirm.
+ * someone would confirm. A refusal or a wrong number takes them out of that engine.
  *
  * <p>Only leads in an engine that calls with this agent: a bulk campaign of thousands of calls keeps
  * its own workflow and does not email the team per call. Every step is best effort.
@@ -32,9 +32,11 @@ import java.util.regex.Pattern;
 @RequiredArgsConstructor
 public class EngagementCallOutcomeService {
 
-    public enum Verdict { BOOKED, INTERESTED, NONE }
+    public enum Verdict { BOOKED, INTERESTED, TURNED_DOWN, NONE }
 
     /** Agent vocabularies vary, so these match a normalized label (as the voice bot's analyser does). */
+    private static final Pattern TURNED_DOWN =
+            Pattern.compile("notinterested|wrongnumber|notrelevant|donotcall|wrongperson");
     private static final Pattern NEGATED = Pattern.compile("not|cancel|declin|reject|noshow|lost");
     private static final Pattern BOOKED = Pattern.compile("book|schedul|appointment|demo|meeting");
     private static final int MAX_ANSWERS = 10;
@@ -44,6 +46,7 @@ public class EngagementCallOutcomeService {
     private final EngagementReplyMemberQueries memberQueries;
     private final EngagementEngineRepository engineRepository;
     private final EngagementMemberRepository memberRepository;
+    private final EngagementLeadOutcomeService outcomeService;
     private final EngagementTeamAlertService teamAlert;
     private final AiCallResultRepository resultRepository;
 
@@ -55,6 +58,7 @@ public class EngagementCallOutcomeService {
     public static Verdict verdict(String disposition) {
         String d = disposition == null ? "" : disposition.replaceAll("[^A-Za-z0-9]", "").toLowerCase(Locale.ROOT);
         if (d.isEmpty()) return Verdict.NONE;
+        if (TURNED_DOWN.matcher(d).find()) return Verdict.TURNED_DOWN;
         if (NEGATED.matcher(d).find()) return Verdict.NONE;
         if (BOOKED.matcher(d).find()) return Verdict.BOOKED;
         return d.contains("interested") ? Verdict.INTERESTED : Verdict.NONE;
@@ -68,6 +72,10 @@ public class EngagementCallOutcomeService {
         if (live.isEmpty()) return;
 
         Instant now = Instant.now();
+        if (verdict == Verdict.TURNED_DOWN) {
+            outcomeService.exitAfterCall(instituteId, live, r.getDisposition(), now);
+            return;
+        }
         boolean booked = verdict == Verdict.BOOKED;
         // The analyser reads "already booked" as nothing left to do, but nobody has confirmed it yet.
         if (booked && "SKIP".equals(r.getFollowUp())) {

@@ -161,6 +161,36 @@ public class EngagementLeadOutcomeService {
         return leaving;
     }
 
+    // ==================== Turned down on the AI call ====================
+
+    /**
+     * The person refused, or was the wrong person, on this engine's AI call. The members leave, their
+     * pending rows are cancelled and the nightly reconcile will not bring them back. The lead status is
+     * the outcome processor's job, and other engines of the institute are not touched. A learner engine
+     * keeps its learners, as for a refusal by message.
+     *
+     * @return how many members left
+     */
+    public int exitAfterCall(String instituteId, List<? extends LiveMember> members, String disposition, Instant now) {
+        List<LiveMember> leaving = membersEndedByLeadOutcome(members);
+        if (leaving.isEmpty()) return 0;
+        List<String> ids = leaving.stream().map(LiveMember::getMemberId).toList();
+        int left = memberRepository.exitAfterCall(ids, disposition, now);
+        actionRepository.cancelOpenForMembers(ids,
+                "Cancelled: the AI call ended as " + disposition + ".", now, false);
+        LiveMember first = leaving.get(0);
+        EngagementAction note = new EngagementAction();
+        note.setEngineId(first.getEngineId());
+        note.setMemberId(first.getMemberId());
+        note.setInstituteId(instituteId);
+        note.setKind("NO_OP");
+        note.setStatus("DONE");
+        note.setRationale(cap("The AI call ended as " + disposition + ": left the engine, nothing more is sent."));
+        actionRepository.save(note);
+        log.info("Call outcome {} for member {}: {} membership(s) left", disposition, first.getMemberId(), left);
+        return left;
+    }
+
     // ==================== Converted ====================
 
     /**

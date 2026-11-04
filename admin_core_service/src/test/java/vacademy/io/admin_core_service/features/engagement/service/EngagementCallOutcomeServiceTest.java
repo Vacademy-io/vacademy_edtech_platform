@@ -24,10 +24,11 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
-/** A hot AI call reaches the team now, only for an engine's own agent. */
+/** A hot AI call reaches the team now; a refusal leaves the engine. Both only for an engine's own agent. */
 class EngagementCallOutcomeServiceTest {
 
     private EngagementReplyMemberQueries queries;
+    private EngagementLeadOutcomeService outcomes;
     private EngagementTeamAlertService alerts;
     private AiCallResultRepository results;
     private AiCallFollowThrough followThrough;
@@ -39,12 +40,13 @@ class EngagementCallOutcomeServiceTest {
     @BeforeEach
     void setUp() {
         queries = mock(EngagementReplyMemberQueries.class);
+        outcomes = mock(EngagementLeadOutcomeService.class);
         alerts = mock(EngagementTeamAlertService.class);
         results = mock(AiCallResultRepository.class);
         followThrough = mock(AiCallFollowThrough.class);
         EngagementEngineRepository engines = mock(EngagementEngineRepository.class);
         EngagementMemberRepository members = mock(EngagementMemberRepository.class);
-        service = new EngagementCallOutcomeService(queries, engines, members, alerts, results);
+        service = new EngagementCallOutcomeService(queries, engines, members, outcomes, alerts, results);
         ReflectionTestUtils.setField(service, "followThrough", followThrough);
         engine.setId("e1");
         engine.setName("Engine One");
@@ -75,14 +77,17 @@ class EngagementCallOutcomeServiceTest {
     }
 
     @Test
-    @DisplayName("labels: any agent's wording for a booking or interest; a negative is never hot")
+    @DisplayName("labels: any agent's wording for a booking, interest or refusal; a negative is never hot")
     void readsLabels() {
         assertEquals(Verdict.BOOKED, EngagementCallOutcomeService.verdict("Demo_Booked"));
         assertEquals(Verdict.BOOKED, EngagementCallOutcomeService.verdict("Counselling_Scheduled"));
         assertEquals(Verdict.BOOKED, EngagementCallOutcomeService.verdict("meeting fixed"));
         assertEquals(Verdict.INTERESTED, EngagementCallOutcomeService.verdict("Interested"));
         assertEquals(Verdict.INTERESTED, EngagementCallOutcomeService.verdict("Likely_Interested"));
-        assertEquals(Verdict.NONE, EngagementCallOutcomeService.verdict("Not_Interested"));
+        assertEquals(Verdict.TURNED_DOWN, EngagementCallOutcomeService.verdict("Not_Interested"));
+        assertEquals(Verdict.TURNED_DOWN, EngagementCallOutcomeService.verdict("Wrong_Number"));
+        assertEquals(Verdict.TURNED_DOWN, EngagementCallOutcomeService.verdict("Not_Relevant"));
+        assertEquals(Verdict.TURNED_DOWN, EngagementCallOutcomeService.verdict("Do_Not_Call"));
         assertEquals(Verdict.NONE, EngagementCallOutcomeService.verdict("Demo_Cancelled"));
         assertEquals(Verdict.NONE, EngagementCallOutcomeService.verdict("Meeting_Declined"));
         assertEquals(Verdict.NONE, EngagementCallOutcomeService.verdict("Incomplete_Call"));
@@ -104,6 +109,7 @@ class EngagementCallOutcomeServiceTest {
         assertFalse(detail.getValue().contains("not to be called"), detail.getValue());
         verify(followThrough).createHotLeadFollowup(any(), eq("r1"), eq("u1"), eq("i1"), any(), contains("Confirm it"));
         verify(results).updateFollowUp(eq("res1"), eq("CALL"), startsWith("Confirm the demo"));
+        verifyNoInteractions(outcomes);
     }
 
     @Test
@@ -117,13 +123,24 @@ class EngagementCallOutcomeServiceTest {
     }
 
     @Test
+    @DisplayName("a refusal or wrong number leaves the engine and alerts nobody")
+    void refusalLeaves() {
+        service.onCallEnded(call("Not_Interested", "SKIP"), "r1", "u1", "i1");
+        service.onCallEnded(call("Wrong_Number", "SKIP"), "r1", "u1", "i1");
+
+        verify(outcomes).exitAfterCall(eq("i1"), eq(List.of(live)), eq("Not_Interested"), any());
+        verify(outcomes).exitAfterCall(eq("i1"), eq(List.of(live)), eq("Wrong_Number"), any());
+        verifyNoInteractions(alerts);
+    }
+
+    @Test
     @DisplayName("a lead not in this agent's engine (a bulk campaign) sends no email and changes nothing")
     void outsideAnEngineDoesNothing() {
         when(queries.findLiveMembersOfLeadForAgent(any(), any(), any(), any())).thenReturn(List.of());
 
         service.onCallEnded(call("Demo_Booked", "SKIP"), "r1", "u1", "i1");
 
-        verifyNoInteractions(alerts, followThrough, results);
+        verifyNoInteractions(alerts, outcomes, followThrough, results);
     }
 
     @Test
@@ -131,7 +148,7 @@ class EngagementCallOutcomeServiceTest {
     void ordinaryOutcomeIsCheap() {
         service.onCallEnded(call("Incomplete", "SKIP"), "r1", "u1", "i1");
 
-        verifyNoInteractions(queries, alerts, followThrough, results);
+        verifyNoInteractions(queries, alerts, outcomes, followThrough, results);
     }
 
     @Test
