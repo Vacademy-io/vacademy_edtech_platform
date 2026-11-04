@@ -166,6 +166,10 @@ public class EngagementReplyResponder {
     @Autowired(required = false)
     private EngagementTeamAlertService teamAlertService;
 
+    /** The institute's senders, to answer an email from the address it came in to; optional like the rest. */
+    @Autowired(required = false)
+    private EngagementChannelReadiness channelReadiness;
+
     /** A callback request becomes an AI call proposal; both optional like the rest. */
     @Autowired(required = false)
     @org.springframework.context.annotation.Lazy
@@ -551,6 +555,15 @@ public class EngagementReplyResponder {
      */
     public boolean handleEmailReply(String instituteId, String email, String subject, String text,
                                     String messageId) {
+        return handleEmailReply(instituteId, email, subject, text, messageId, null, null);
+    }
+
+    /**
+     * @param repliedToActionId the engine action that sent the email this answers, when known
+     * @param mailbox           the institute address the reply came in to, when known
+     */
+    public boolean handleEmailReply(String instituteId, String email, String subject, String text,
+                                    String messageId, String repliedToActionId, String mailbox) {
         if (messageId == null || messageId.isBlank() || replyMemberQueries == null) return false;
         String from = email != null ? email.trim().toLowerCase(Locale.ROOT) : "";
         if (from.isEmpty() || !from.contains("@")) return false;
@@ -566,7 +579,7 @@ public class EngagementReplyResponder {
         Instant now = Instant.now();
         if (memberRepository.claimHandledReply(instituteId, replyKey(messageId), now) == 0) return false;
 
-        EngagementReplyMemberQueries.LiveMember target = live.get(0);
+        EngagementReplyMemberQueries.LiveMember target = emailReplyTarget(instituteId, live, repliedToActionId, mailbox);
         EngagementAction note = new EngagementAction();
         note.setInstituteId(instituteId);
         note.setKind("REPLY");
@@ -598,7 +611,7 @@ public class EngagementReplyResponder {
                 left.forEach(m -> gone.add(m.getMemberId()));
                 live = live.stream().filter(m -> !gone.contains(m.getMemberId())).toList();
                 if (live.isEmpty()) return true;
-                target = live.get(0);
+                target = emailReplyTarget(instituteId, live, repliedToActionId, mailbox);
             }
         }
 
@@ -615,7 +628,7 @@ public class EngagementReplyResponder {
         note.setEngineId(target.getEngineId());
         note.setMemberId(target.getMemberId());
         note.setPriority(BigDecimal.valueOf(label != null ? 85 : 75));
-        note.setVariablesJson(subjectVariables(topic));
+        note.setVariablesJson(emailAnswerVariables(topic, messageId, answeringSender(instituteId, target, mailbox)));
         note.setRationale(cap("Replied by email" + (label != null ? " (" + label + ")" : "")
                 + ". Answer them by email; the engine sends nothing new until its next check. Their message: "
                 + body));
@@ -664,10 +677,78 @@ public class EngagementReplyResponder {
         }
     }
 
-    private static String subjectVariables(String topic) {
+    /**
+     * Which engine an email answers: the one that sent the email it replies to, else the one sending
+     * from the mailbox it came in to. One person can be in several engines, and each sends from its
+     * own address: the most recently decided one may never have written to them.
+     */
+    private EngagementReplyMemberQueries.LiveMember emailReplyTarget(
+            String instituteId, List<EngagementReplyMemberQueries.LiveMember> live,
+            String repliedToActionId, String mailbox) {
+        if (repliedToActionId != null && !repliedToActionId.isBlank()) {
+            String engineId = actionRepository.findById(repliedToActionId)
+                    .filter(a -> instituteId.equals(a.getInstituteId()))
+                    .map(EngagementAction::getEngineId)
+                    .orElse(null);
+            for (EngagementReplyMemberQueries.LiveMember m : live) {
+                if (m.getEngineId().equals(engineId)) return m;
+            }
+        }
+        String mailboxSender = verifiedSenderOf(instituteId, mailbox, null);
+        if (mailboxSender != null) {
+            for (EngagementReplyMemberQueries.LiveMember m : live) {
+                if (mailboxSender.equals(emailTypeOfEngine(m.getEngineId()))) return m;
+            }
+        }
+        return live.get(0);
+    }
+
+    /**
+     * The sender node to answer from when it is not the engine's own: the engine may send from another
+     * address now, or the reply may have matched no engine by address. Null means use the engine's sender.
+     */
+    private String answeringSender(String instituteId, EngagementReplyMemberQueries.LiveMember target, String mailbox) {
+        String own = emailTypeOfEngine(target.getEngineId());
+        String sender = verifiedSenderOf(instituteId, mailbox, own);
+        return sender == null || sender.equals(own) ? null : sender;
+    }
+
+    /** The verified sender node with this address, the preferred one if it has it; null when there is none. */
+    private String verifiedSenderOf(String instituteId, String mailbox, String preferred) {
+        if (channelReadiness == null || mailbox == null || mailbox.isBlank()) return null;
         try {
-            return JSON.writeValueAsString(java.util.Map.of(EngagementDispatcher.VAR_SUBJECT,
-                    topic.isEmpty() ? "Re: your message" : "Re: " + topic));
+            String first = null;
+            for (EngagementChannelReadiness.EmailSender s : channelReadiness.emailSenders(instituteId)) {
+                if (!s.verified() || s.email() == null || !mailbox.trim().equalsIgnoreCase(s.email().trim())) continue;
+                if (s.type().equals(preferred)) return preferred;
+                if (first == null) first = s.type();
+            }
+            return first;
+        } catch (Exception e) {
+            log.warn("Could not read the email senders of institute {}: {}", instituteId, e.getMessage());
+            return null;
+        }
+    }
+
+    private String emailTypeOfEngine(String engineId) {
+        return engineRepository.findById(engineId).map(engine -> {
+            try {
+                String type = JSON.readTree(engine.getChannels() == null ? "{}" : engine.getChannels())
+                        .path("EMAIL").path("emailType").asText("");
+                return type.isBlank() ? EngagementDispatcher.DEFAULT_EMAIL_TYPE : type;
+            } catch (Exception e) {
+                return null;
+            }
+        }).orElse(null);
+    }
+
+    private static String emailAnswerVariables(String topic, String messageId, String answeringSender) {
+        java.util.Map<String, String> vars = new java.util.HashMap<>();
+        vars.put(EngagementDispatcher.VAR_SUBJECT, topic.isEmpty() ? "Re: your message" : "Re: " + topic);
+        vars.put(EngagementDispatcher.VAR_IN_REPLY_TO, messageId);
+        if (answeringSender != null) vars.put(EngagementDispatcher.VAR_REPLY_EMAIL_TYPE, answeringSender);
+        try {
+            return JSON.writeValueAsString(vars);
         } catch (Exception e) {
             return null;
         }

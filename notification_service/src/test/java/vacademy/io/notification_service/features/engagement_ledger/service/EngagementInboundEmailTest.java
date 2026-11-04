@@ -69,6 +69,8 @@ class EngagementInboundEmailTest {
         when(row.getPayload()).thenReturn("{\"body\":\"Unsubscribe me\\n\\nOn Mon, X wrote:\\n> hi\"}");
         when(row.getReceivedAt()).thenReturn(Timestamp.from(Instant.parse("2026-10-29T06:00:00Z")));
         when(row.getMessageId()).thenReturn("<m1@mail>");
+        when(row.getMailbox()).thenReturn("sales@academy.test");
+        when(row.getRepliedToActionId()).thenReturn("action1");
         NotificationLogRepository.InboundEmailRow noId = mock(NotificationLogRepository.InboundEmailRow.class);
         when(noId.getFromAddress()).thenReturn("b@example.com");
         when(repo.findInboundEmailsSince(eq("i1"), any())).thenReturn(List.of(row, noId));
@@ -81,6 +83,8 @@ class EngagementInboundEmailTest {
         assertEquals("Re: Course details", m.get("subject"));
         assertEquals("Unsubscribe me", m.get("text"));
         assertEquals("<m1@mail>", m.get("wamid"));
+        assertEquals("sales@academy.test", m.get("mailbox"));
+        assertEquals("action1", m.get("repliedToActionId"));
         assertTrue(String.valueOf(m.get("receivedAt")).startsWith("2026-10-29T06:00"));
 
         service.inboundSince("i1", Instant.now());

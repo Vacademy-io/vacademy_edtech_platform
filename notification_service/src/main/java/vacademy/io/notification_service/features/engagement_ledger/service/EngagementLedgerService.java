@@ -105,6 +105,8 @@ public class EngagementLedgerService {
                 m.put("text", EmailReplyText.newPart(payloadBody(row.getPayload())));
                 m.put("receivedAt", row.getReceivedAt() != null ? row.getReceivedAt().toInstant().toString() : null);
                 m.put("wamid", row.getMessageId());
+                m.put("mailbox", row.getMailbox());
+                m.put("repliedToActionId", row.getRepliedToActionId());
                 out.add(m);
             }
         }

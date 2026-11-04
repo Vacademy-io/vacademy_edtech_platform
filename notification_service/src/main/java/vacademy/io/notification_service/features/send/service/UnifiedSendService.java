@@ -559,12 +559,15 @@ public class UnifiedSendService implements SendChannelRouter {
                     // Engine sends carry attribution: source → notification_log.source,
                     // sourceId → correlation_id (action id), userId → user attribution
                     // (guard against callers that pass an email address as userId).
-                    outcome = emailService.sendHtmlEmail(email, subject,
-                            ENGAGEMENT_ENGINE_SOURCE, body,
-                            request.getInstituteId(), opts.getFromEmail(), opts.getFromName(), emailType,
-                            opts.getSourceId(),
-                            userId != null && !userId.contains("@") ? userId : null,
-                            finalCopyRecipients, finalCopyMode);
+                    String engineUserId = userId != null && !userId.contains("@") ? userId : null;
+                    outcome = opts.getInReplyTo() != null
+                            ? emailService.sendHtmlEmailReply(email, subject, ENGAGEMENT_ENGINE_SOURCE, body,
+                                    request.getInstituteId(), opts.getFromEmail(), opts.getFromName(), emailType,
+                                    opts.getSourceId(), engineUserId, finalCopyRecipients, finalCopyMode,
+                                    opts.getInReplyTo())
+                            : emailService.sendHtmlEmail(email, subject, ENGAGEMENT_ENGINE_SOURCE, body,
+                                    request.getInstituteId(), opts.getFromEmail(), opts.getFromName(), emailType,
+                                    opts.getSourceId(), engineUserId, finalCopyRecipients, finalCopyMode);
                 } else {
                     outcome = emailService.sendHtmlEmail(email, subject, plainLogSource, body,
                             request.getInstituteId(), opts.getFromEmail(), opts.getFromName(), emailType,

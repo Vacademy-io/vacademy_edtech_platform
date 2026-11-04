@@ -1296,6 +1296,10 @@ public interface NotificationLogRepository extends JpaRepository<NotificationLog
         String getPayload();
         java.sql.Timestamp getReceivedAt();
         String getMessageId();
+        /** The institute mailbox the reply came in to. */
+        String getMailbox();
+        /** The engine action that sent the email this replies to; null when it answers no engine email. */
+        String getRepliedToActionId();
     }
 
     /**
@@ -1305,13 +1309,17 @@ public interface NotificationLogRepository extends JpaRepository<NotificationLog
      * subject); source_id is the Message-ID the sweep dedups on.
      */
     @Query(value = """
-            SELECT channel_id AS "fromAddress", body AS "subject", message_payload AS "payload",
-                   notification_date AS "receivedAt", source_id AS "messageId"
-            FROM notification_log
-            WHERE institute_id = :instituteId
-              AND notification_type = 'INBOUND_EMAIL'
-              AND notification_date >= :since
-            ORDER BY notification_date
+            SELECT nl.channel_id AS "fromAddress", nl.body AS "subject", nl.message_payload AS "payload",
+                   nl.notification_date AS "receivedAt", nl.source_id AS "messageId",
+                   nl.sender_business_channel_id AS "mailbox", parent.correlation_id AS "repliedToActionId"
+            FROM notification_log nl
+            LEFT JOIN notification_log parent
+                   ON parent.id = nl.source AND parent.notification_type = 'EMAIL'
+                  AND parent.source = 'ENGAGEMENT_ENGINE'
+            WHERE nl.institute_id = :instituteId
+              AND nl.notification_type = 'INBOUND_EMAIL'
+              AND nl.notification_date >= :since
+            ORDER BY nl.notification_date
             LIMIT 200
             """, nativeQuery = true)
     List<InboundEmailRow> findInboundEmailsSince(@Param("instituteId") String instituteId,
