@@ -188,7 +188,42 @@
         "savedAsVersion_one": "Saved as a new version. The {{count}} test that used it is unchanged.",
         "savedAsVersion_other": "Saved as a new version. The {{count}} tests that used it are unchanged."
     },
+    "readOnly": {
+        "description": "Ready-made questions and papers, topic-wise. Add them from the Add Questions step of any test. Your edits stay in your test.",
+        "allHint": "Every question available in the library",
+        "emptyTitle": "Nothing here yet",
+        "emptyHint": "New questions and papers will appear here as they are added."
+    },
+    "papers": {
+        "title": "Question papers",
+        "loadFailed": "Could not load question papers.",
+        "remove": "Remove paper from this topic"
+    },
+    "pick": {
+        "cardTitle": "Pick From Question Library",
+        "cardHint": "Ready-made questions and papers, topic-wise",
+        "dialogTitle": "Question Library — {{name}}",
+        "questions": "Questions",
+        "papers": "Whole papers",
+        "topic": "Topic",
+        "chooseTopic": "Choose a topic…",
+        "loadFailed": "Could not load the Question Library.",
+        "noQuestions": "No questions match",
+        "noPapers": "No papers here yet",
+        "emptyHint": "Try another topic or filter.",
+        "selectQuestions": "Select questions to add",
+        "selectPaper": "Select a paper to add",
+        "addPaper": "Add this paper",
+        "adding": "Adding…",
+        "addQuestions_one": "Add {{count}} question",
+        "addQuestions_other": "Add {{count}} questions",
+        "alreadyInSection_one": "{{count}} question is already in this section",
+        "alreadyInSection_other": "{{count}} questions are already in this section",
+        "someFailed_one": "{{count}} question could not be added",
+        "someFailed_other": "{{count}} questions could not be added"
+    },
     "toasts": {
+        "paperRemoved": "“{{name}}” taken off this topic",
         "failed": "Something went wrong. Please try again.",
         "topicCreated": "“{{name}}” created",
         "topicRenamed": "Renamed to “{{name}}”",

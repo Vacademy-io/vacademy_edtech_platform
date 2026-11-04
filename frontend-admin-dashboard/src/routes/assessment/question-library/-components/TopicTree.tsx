@@ -36,6 +36,8 @@ interface TopicTreeProps {
     maxDepth: number;
     onAddTopic: () => void;
     onAction: (action: TopicAction, node: LibraryTreeNode, siblings: LibraryTreeNode[]) => void;
+    /** Browsing only: no topic actions and no "not in a topic" row. */
+    readOnly?: boolean;
 }
 
 /** Left panel: All questions, Unsorted, then the topic tree with live counts. */
@@ -49,6 +51,7 @@ export const TopicTree = ({
     maxDepth,
     onAddTopic,
     onAction,
+    readOnly = false,
 }: TopicTreeProps) => {
     const { t } = useTranslation('assessmentQuestionLibrary');
     const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
@@ -142,17 +145,19 @@ export const TopicTree = ({
                             {node.question_count}
                         </span>
                     </button>
-                    <MyDropdown
-                        dropdownList={actions}
-                        handleChange={(value) => onAction(value as TopicAction, node, siblings)}
-                    >
-                        <span
-                            className="flex size-7 items-center justify-center rounded-sm text-neutral-500 hover:bg-neutral-100"
-                            aria-label={t('tree.actions')}
+                    {!readOnly && (
+                        <MyDropdown
+                            dropdownList={actions}
+                            handleChange={(value) => onAction(value as TopicAction, node, siblings)}
                         >
-                            <DotsThreeVertical size={18} weight="bold" />
-                        </span>
-                    </MyDropdown>
+                            <span
+                                className="flex size-7 items-center justify-center rounded-sm text-neutral-500 hover:bg-neutral-100"
+                                aria-label={t('tree.actions')}
+                            >
+                                <DotsThreeVertical size={18} weight="bold" />
+                            </span>
+                        </MyDropdown>
+                    )}
                 </div>
                 {hasChildren && isOpen && (
                     <ul>{node.children.map((child, i) => renderNode(child, node.children, i))}</ul>
@@ -167,20 +172,23 @@ export const TopicTree = ({
                 <span className="text-subtitle font-semibold text-neutral-700">
                     {t('tree.title')}
                 </span>
-                <MyButton
-                    type="button"
-                    buttonType="secondary"
-                    scale="small"
-                    className="gap-1"
-                    onClick={onAddTopic}
-                >
-                    <Plus size={14} />
-                    {t('tree.addTopic')}
-                </MyButton>
+                {!readOnly && (
+                    <MyButton
+                        type="button"
+                        buttonType="secondary"
+                        scale="small"
+                        className="gap-1"
+                        onClick={onAddTopic}
+                    >
+                        <Plus size={14} />
+                        {t('tree.addTopic')}
+                    </MyButton>
+                )}
             </div>
             <div className="flex flex-col gap-1">
                 {fixedRow(ALL_QUESTIONS, <Stack size={16} />, t('tree.all'), totalQuestions)}
-                {fixedRow(UNSORTED, <Tray size={16} />, t('tree.unsorted'), unsortedQuestions)}
+                {!readOnly &&
+                    fixedRow(UNSORTED, <Tray size={16} />, t('tree.unsorted'), unsortedQuestions)}
             </div>
             <div className="border-t border-neutral-100" />
             {loading ? (
@@ -193,7 +201,9 @@ export const TopicTree = ({
                 <div className="flex flex-col items-center gap-2 px-3 py-6 text-center">
                     <FolderSimple size={28} className="text-neutral-300" />
                     <p className="text-body text-neutral-600">{t('tree.emptyTitle')}</p>
-                    <p className="text-caption text-neutral-500">{t('tree.emptyHint')}</p>
+                    <p className="text-caption text-neutral-500">
+                        {readOnly ? t('readOnly.emptyHint') : t('tree.emptyHint')}
+                    </p>
                 </div>
             ) : (
                 <ul className="flex flex-col">

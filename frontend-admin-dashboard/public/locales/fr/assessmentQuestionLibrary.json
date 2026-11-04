@@ -188,7 +188,42 @@
         "savedAsVersion_one": "Enregistrée comme nouvelle version. Le test qui l’utilisait ({{count}}) est inchangé.",
         "savedAsVersion_other": "Enregistrée comme nouvelle version. Les {{count}} tests qui l’utilisaient sont inchangés."
     },
+    "readOnly": {
+        "description": "Des questions et des sujets prêts à l'emploi, classés par thème. Ajoutez-les depuis l'étape d'ajout de questions de n'importe quelle évaluation. Vos modifications restent dans votre évaluation.",
+        "allHint": "Toutes les questions disponibles dans la bibliothèque",
+        "emptyTitle": "Rien pour le moment",
+        "emptyHint": "Les nouvelles questions et les nouveaux sujets apparaîtront ici dès leur ajout."
+    },
+    "papers": {
+        "title": "Sujets",
+        "loadFailed": "Impossible de charger les sujets.",
+        "remove": "Retirer le sujet de ce thème"
+    },
+    "pick": {
+        "cardTitle": "Choisir dans la bibliothèque de questions",
+        "cardHint": "Des questions et des sujets prêts à l'emploi, par thème",
+        "dialogTitle": "Bibliothèque de questions — {{name}}",
+        "questions": "Questions",
+        "papers": "Sujets complets",
+        "topic": "Thème",
+        "chooseTopic": "Choisir un thème…",
+        "loadFailed": "Impossible de charger la bibliothèque de questions.",
+        "noQuestions": "Aucune question ne correspond",
+        "noPapers": "Aucun sujet pour le moment",
+        "emptyHint": "Essayez un autre thème ou un autre filtre.",
+        "selectQuestions": "Sélectionnez des questions à ajouter",
+        "selectPaper": "Sélectionnez un sujet à ajouter",
+        "addPaper": "Ajouter ce sujet",
+        "adding": "Ajout en cours…",
+        "addQuestions_one": "Ajouter {{count}} question",
+        "addQuestions_other": "Ajouter {{count}} questions",
+        "alreadyInSection_one": "{{count}} question est déjà dans cette section",
+        "alreadyInSection_other": "{{count}} questions sont déjà dans cette section",
+        "someFailed_one": "{{count}} question n'a pas pu être ajoutée",
+        "someFailed_other": "{{count}} questions n'ont pas pu être ajoutées"
+    },
     "toasts": {
+        "paperRemoved": "« {{name}} » retiré de ce thème",
         "failed": "Une erreur est survenue. Réessayez.",
         "topicCreated": "« {{name}} » créé",
         "topicRenamed": "Renommé en « {{name}} »",
