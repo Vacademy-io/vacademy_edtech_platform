@@ -11,8 +11,7 @@ import {
     DownloadSimple,
 } from '@phosphor-icons/react';
 import { useStudentSidebar } from '@/routes/manage-students/students-list/-context/selected-student-sidebar-context';
-import { useEffect, useMemo, useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import { buildOverviewData, OverviewDetailsType, OverviewFieldKey, OverviewSectionKey } from './overview';
@@ -33,11 +32,6 @@ import { StudentAttribution } from '../student-attribution/student-attribution';
 import { StudentReferral } from '../student-referral/student-referral';
 import { OverviewRemarks } from './overview-remarks';
 import { OverviewHeader } from './overview-header';
-import { useLeadProfiles } from '@/hooks/use-lead-profiles';
-import { useLearnerPackagesQuery } from '@/routes/manage-students/students-list/-services/getLearnerPackages';
-import { fetchUserAccountSummary, fetchUserInvoices } from '@/services/invoice-service';
-import { getSystemFieldColumnVisibility } from '@/components/design-system/utils/constants/system-field-columns';
-import { fallbackCurrency } from '@/utils/institute-currency';
 import { OverviewOtherContacts } from './overview-other-contacts';
 
 /**
@@ -61,59 +55,6 @@ export const StudentOverview = ({ isSubmissionTab }: { isSubmissionTab?: boolean
     const { data: studentDetails, isLoading, isError, error } = useGetStudentDetails(userId || '');
 
     const { getDetailsFromPackageSessionId, instituteDetails } = useInstituteDetailsStore();
-
-    // Header tiles. Each uses the same query as its own tab, so the numbers agree
-    // and opening Overview reuses the cached result.
-    const { profiles: leadProfiles } = useLeadProfiles(
-        userId ? [userId] : [],
-        !!userId,
-        instituteDetails?.id
-    );
-    const leadScore = userId ? leadProfiles[userId]?.best_score : undefined;
-
-    const { data: progressPackages } = useLearnerPackagesQuery({
-        instituteId: instituteDetails?.id || '',
-        userId: userId || '',
-        page: 0,
-        size: 10,
-        type: 'PROGRESS',
-    });
-    const progressPercent = useMemo(() => {
-        const packages = progressPackages?.content;
-        if (!packages || packages.length === 0) return undefined;
-        return packages.reduce((sum, p) => sum + (p.percentage_completed || 0), 0) / packages.length;
-    }, [progressPackages]);
-
-    const { data: accountSummary } = useQuery({
-        queryKey: ['user-account-summary', userId, instituteDetails?.id],
-        queryFn: () => fetchUserAccountSummary(userId || '', instituteDetails?.id ?? ''),
-        staleTime: 60000,
-        enabled: !!userId && !!instituteDetails?.id,
-    });
-    const { data: invoices } = useQuery({
-        queryKey: ['user-invoices', userId],
-        queryFn: () => fetchUserInvoices(userId || ''),
-        staleTime: 60000,
-        enabled: !!userId,
-    });
-    // Same rule as the Payment History tab: the ledger when it has rows, else the invoices.
-    const outstanding = useMemo(() => {
-        if (accountSummary && (accountSummary.total_accrued > 0 || accountSummary.total_paid > 0)) {
-            return { amount: accountSummary.balance, currency: accountSummary.currency };
-        }
-        const billable = (invoices ?? []).filter(
-            (inv) =>
-                !['REJECTED', 'CANCELLED', 'CANCELED', 'VOID'].includes(
-                    String(inv.status || '').toUpperCase()
-                )
-        );
-        if (billable.length === 0) return undefined;
-        const unpaid = billable.filter((inv) => String(inv.status || '').toUpperCase() !== 'PAID');
-        return {
-            amount: unpaid.reduce((sum, inv) => sum + (inv.total_amount ?? 0), 0),
-            currency: billable[0]?.currency || fallbackCurrency(),
-        };
-    }, [accountSummary, invoices]);
     const { getCredentials } = useStudentCredentialsStore();
     const [password, setPassword] = useState(
         getCredentials(isSubmissionTab ? selectedStudent?.id || '' : selectedStudent?.user_id || '')
@@ -359,29 +300,19 @@ export const StudentOverview = ({ isSubmissionTab }: { isSubmissionTab?: boolean
                 )}
             </div>
 
-            {/* Overview header: health-stat tiles, with Remarks + Call inside it. The
-                academic-staff loop (call the learner, note the outcome) lives at the top
-                so it is reachable without scrolling past the profile sections. */}
-            <OverviewHeader
-                student={selectedStudent}
-                attendancePercent={
-                    getSystemFieldColumnVisibility()['attendance_percent'] !== false &&
-                    typeof selectedStudent?.attendance_percent === 'number'
-                        ? selectedStudent.attendance_percent
-                        : undefined
-                }
-                progressPercent={progressPercent}
-                outstandingAmount={outstanding?.amount}
-                outstandingCurrency={outstanding?.currency}
-                leadScore={typeof leadScore === 'number' ? leadScore : undefined}
-            >
-                <OverviewRemarks
-                    userId={userId}
-                    userName={selectedStudent?.full_name}
-                    phone={selectedStudent?.mobile_number || studentDetails?.mobile_number}
-                    leadResponseId={leadResponseId}
-                />
-            </OverviewHeader>
+            {/* Overview header, with Remarks + Call inside it. The academic-staff loop (call
+                the learner, note the outcome) lives at the top so it is reachable without
+                scrolling past the profile sections. */}
+            {userId && (
+                <OverviewHeader>
+                    <OverviewRemarks
+                        userId={userId}
+                        userName={selectedStudent?.full_name}
+                        phone={selectedStudent?.mobile_number || studentDetails?.mobile_number}
+                        leadResponseId={leadResponseId}
+                    />
+                </OverviewHeader>
+            )}
 
             {/* Detail sections — clean label/value cards (General Details,
                 Contact Information, Location Details, Parent/Guardian's Details, …).
