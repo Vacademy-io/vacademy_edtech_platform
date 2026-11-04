@@ -4,8 +4,11 @@ import { format, formatDistanceToNowStrict, subDays } from 'date-fns';
 import {
     BookOpenText,
     Books,
+    CalendarDots,
     CaretDown,
+    ChartBar,
     ChatsCircle,
+    Exam,
     FilePdf,
     Lightning,
     Question,
@@ -14,20 +17,30 @@ import {
     VideoCamera,
     type Icon as PhosphorIcon,
 } from '@phosphor-icons/react';
+import { getTerminologyPlural } from '@/components/common/layout-container/sidebar/utils';
 import { BASE_URL } from '@/constants/urls';
+import { ContentTerms, SystemTerms } from '@/routes/settings/-components/NamingSettings';
 import authenticatedAxiosInstance from '@/lib/auth/axiosInstance';
 import { cn } from '@/lib/utils';
 import { useLearnerPackagesQuery } from '@/routes/manage-students/students-list/-services/getLearnerPackages';
+import { DailyTimeChart, HorizontalBars } from '@/components/common/report-visuals/charts';
+import { REPORT_COLORS, minutesLabel, pct, scoreColor, useBrandColor } from '@/components/common/report-visuals/palette';
 import { getLearnerLiveSessionsQuery } from '@/services/learner-live-sessions';
+import {
+    getLearnerDailyTimeQuery,
+    getStudentReportSnapshotQuery,
+} from '@/services/student-report-snapshot';
 import {
     useConversationMessagesQuery,
     useUserConversationsQuery,
 } from '@/routes/settings/-services/ai-usage-service';
+import { ALL_BATCHES, BatchPicker } from '../BatchPicker';
 import { ProfileEmpty, ProfileSectionCard, ProfileSkeleton } from '../profile-ui';
+import { StudentGamification } from '../student-gamification/student-gamification';
 
 /**
  * Academic Activity: what the learner is doing right now (live pulse), what they read lately,
- * course progress, live classes and their AI tutor chats, on one tab.
+ * course progress, live classes, points and badges and their AI tutor chats, on one tab.
  */
 
 interface PulseSlide {
@@ -57,7 +70,49 @@ const fetchLearnerPulse = async (userId: string, instituteId: string): Promise<L
     return data;
 };
 
+interface LearnerInsights {
+    total_minutes?: number;
+    active_days?: number;
+    slides_opened?: number;
+    visits?: number;
+    week_minutes?: number;
+    previous_week_minutes?: number;
+    content_mix: { type: string | null; minutes: number; slides: number }[];
+    /** weekday: Monday is 1. hour: 0 to 23, institute time. */
+    rhythm: { weekday: number; hour: number; minutes: number }[];
+}
+
+const fetchLearnerInsights = async (userId: string, instituteId: string): Promise<LearnerInsights> => {
+    const { data } = await authenticatedAxiosInstance.get<LearnerInsights>(
+        `${BASE_URL}/admin-core-service/course-pulse/learner/insights`,
+        { params: { userId, instituteId } }
+    );
+    return data;
+};
+
 const DAYS = 30;
+const WEEKDAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+/** Three-hour bands across the day. */
+const HOUR_BANDS = [0, 3, 6, 9, 12, 15, 18, 21];
+const bandLabel = (h: number) => `${h % 12 === 0 ? 12 : h % 12}${h < 12 ? 'am' : 'pm'}`;
+
+const CONTENT_LABEL: Record<string, string> = {
+    VIDEO: 'Videos',
+    DOCUMENT: 'Documents',
+    QUESTION: 'Questions',
+    QUIZ: 'Quizzes',
+    ASSIGNMENT: 'Assignments',
+    AUDIO: 'Audio',
+    HTML_VIDEO: 'Videos',
+    SCORM: 'Interactive lessons',
+};
+
+const contentLabel = (type: string | null) => {
+    const key = (type ?? '').toUpperCase();
+    if (CONTENT_LABEL[key]) return CONTENT_LABEL[key] as string;
+    if (!key) return 'Other';
+    return key.charAt(0) + key.slice(1).toLowerCase().replace(/_/g, ' ');
+};
 
 const ago = (iso: string | number | null | undefined) => {
     if (iso == null) return '';
@@ -168,14 +223,222 @@ const RecentlyRead = ({ pulse }: { pulse: LearnerPulse }) => (
     </ProfileSectionCard>
 );
 
-const CourseProgress = ({ userId, instituteId }: { userId: string; instituteId: string }) => {
+const ThisMonth = ({ data }: { data: LearnerInsights }) => {
+    const week = data.week_minutes ?? 0;
+    const previous = data.previous_week_minutes ?? 0;
+    const change = previous > 0 ? Math.round(((week - previous) / previous) * 100) : null;
+    return (
+        <ProfileSectionCard icon={ChartBar} heading={`Last ${DAYS} days`}>
+            <div className="grid grid-cols-2 gap-2 text-center md:grid-cols-4">
+                {[
+                    { v: minutesLabel(data.total_minutes ?? 0), l: 'Time learning' },
+                    { v: `${data.active_days ?? 0}`, l: 'Active days' },
+                    { v: `${data.slides_opened ?? 0}`, l: 'Slides opened' },
+                    {
+                        v: minutesLabel(week),
+                        l:
+                            change == null
+                                ? 'Last 7 days'
+                                : `Last 7 days, ${change >= 0 ? '+' : ''}${change}%`,
+                    },
+                ].map((x) => (
+                    <div key={x.l} className="rounded-lg bg-neutral-50 px-2 py-2">
+                        <div className="text-base font-bold text-neutral-800">{x.v}</div>
+                        <div className="text-2xs text-neutral-500">{x.l}</div>
+                    </div>
+                ))}
+            </div>
+        </ProfileSectionCard>
+    );
+};
+
+const DailyTime = ({
+    userId,
+    packageSessionIds,
+    brand,
+}: {
+    userId: string;
+    packageSessionIds: string[];
+    brand: string;
+}) => {
+    const [range] = useState(() => ({
+        startDate: format(subDays(new Date(), DAYS), 'yyyy-MM-dd'),
+        endDate: format(new Date(), 'yyyy-MM-dd'),
+    }));
+    const { data, isLoading } = useQuery(getLearnerDailyTimeQuery({ userId, packageSessionIds, ...range }));
+    const points = (data ?? []).map((d) => ({
+        date: String(d.activity_date).slice(0, 10),
+        minutes: (d.time_spent_by_user_millis ?? 0) / 60000,
+        compare: d.avg_time_spent_by_batch_millis != null ? d.avg_time_spent_by_batch_millis / 60000 : null,
+    }));
+    return (
+        <ProfileSectionCard icon={CalendarDots} heading="Time spent each day">
+            {isLoading ? (
+                <ProfileSkeleton blocks={1} />
+            ) : points.every((p) => p.minutes === 0) ? (
+                <ProfileEmpty icon={CalendarDots} title="No learning time in this period" />
+            ) : (
+                <DailyTimeChart
+                    data={points}
+                    brand={brand}
+                    valueLabel="This learner"
+                    compareLabel="Batch average"
+                    height={170}
+                />
+            )}
+        </ProfileSectionCard>
+    );
+};
+
+const ContentMix = ({ data, brand }: { data: LearnerInsights; brand: string }) => {
+    const max = Math.max(1, ...data.content_mix.map((m) => m.minutes));
+    return (
+        <ProfileSectionCard icon={BookOpenText} heading="What they spend time on">
+            {data.content_mix.length === 0 ? (
+                <ProfileEmpty icon={BookOpenText} title="No content opened in this period" />
+            ) : (
+                <HorizontalBars
+                    color={brand}
+                    max={max}
+                    rows={data.content_mix.map((m) => ({
+                        key: m.type ?? 'other',
+                        label: contentLabel(m.type),
+                        value: m.minutes,
+                        display: minutesLabel(m.minutes),
+                        sub: `${m.slides} slide${m.slides === 1 ? '' : 's'}`,
+                    }))}
+                />
+            )}
+        </ProfileSectionCard>
+    );
+};
+
+/** When they study: weekdays against three-hour bands, darker means more time. */
+const StudyRhythm = ({ data, brand }: { data: LearnerInsights; brand: string }) => {
+    const cells = new Map<string, number>();
+    for (const r of data.rhythm) {
+        const band = Math.floor(r.hour / 3) * 3;
+        const key = `${r.weekday}-${band}`;
+        cells.set(key, (cells.get(key) ?? 0) + r.minutes);
+    }
+    const max = Math.max(1, ...cells.values());
+    let peak: { weekday: number; band: number; minutes: number } | null = null;
+    cells.forEach((minutes, key) => {
+        if (peak == null || minutes > peak.minutes) {
+            const [weekday, band] = key.split('-').map(Number);
+            peak = { weekday: weekday ?? 1, band: band ?? 0, minutes };
+        }
+    });
+    const best = peak as { weekday: number; band: number; minutes: number } | null;
+    return (
+        <ProfileSectionCard icon={CalendarDots} heading="When they study">
+            {cells.size === 0 ? (
+                <ProfileEmpty icon={CalendarDots} title="No study time in this period" />
+            ) : (
+                <div className="flex flex-col gap-2">
+                    {best && (
+                        <span className="text-sm font-semibold text-neutral-800">
+                            Most often {WEEKDAYS[best.weekday - 1]} around {bandLabel(best.band)}
+                        </span>
+                    )}
+                    <div className="grid grid-cols-[2rem_repeat(8,minmax(0,1fr))] gap-1 text-2xs text-neutral-500">
+                        <span />
+                        {HOUR_BANDS.map((h) => (
+                            <span key={h} className="truncate text-center">
+                                {bandLabel(h)}
+                            </span>
+                        ))}
+                        {WEEKDAYS.flatMap((day, i) => [
+                            <span key={day} className="self-center">
+                                {day}
+                            </span>,
+                            ...HOUR_BANDS.map((h) => {
+                                const minutes = cells.get(`${i + 1}-${h}`) ?? 0;
+                                return (
+                                    <span
+                                        key={`${day}-${h}`}
+                                        title={`${day} ${bandLabel(h)}: ${minutesLabel(minutes)}`}
+                                        className="h-5 rounded-sm"
+                                        style={{
+                                            background: minutes > 0 ? brand : REPORT_COLORS.line,
+                                            opacity: minutes > 0 ? 0.25 + 0.75 * (minutes / max) : 1,
+                                        }}
+                                    />
+                                );
+                            }),
+                        ])}
+                    </div>
+                </div>
+            )}
+        </ProfileSectionCard>
+    );
+};
+
+const RecentTests = ({
+    userId,
+    instituteId,
+    batchId,
+}: {
+    userId: string;
+    instituteId: string;
+    batchId?: string;
+}) => {
+    const [range] = useState(() => ({
+        startDate: format(subDays(new Date(), DAYS), 'yyyy-MM-dd'),
+        endDate: format(new Date(), 'yyyy-MM-dd'),
+    }));
+    const { data, isLoading } = useQuery(getStudentReportSnapshotQuery({ userId, instituteId, batchId, ...range }));
+    const tests = [...(data?.academics?.assessments ?? [])]
+        .sort((a, b) => (b.date ?? '').localeCompare(a.date ?? ''))
+        .slice(0, 6);
+    return (
+        <ProfileSectionCard icon={Exam} heading={`Assessments, last ${DAYS} days`}>
+            {isLoading ? (
+                <ProfileSkeleton blocks={2} />
+            ) : tests.length === 0 ? (
+                <ProfileEmpty icon={Exam} title="No assessments in this period" />
+            ) : (
+                <ul className="flex flex-col divide-y divide-neutral-100">
+                    {tests.map((t) => (
+                        <li key={t.assessment_id} className="flex items-center gap-2 py-1.5">
+                            <div className="flex min-w-0 flex-1 flex-col">
+                                <span className="truncate text-sm text-neutral-800" title={t.name ?? ''}>
+                                    {t.name ?? 'Assessment'}
+                                </span>
+                                <span className="truncate text-xs text-neutral-500">
+                                    {[t.date, t.rank != null ? `Rank ${t.rank}` : null].filter(Boolean).join(' · ')}
+                                </span>
+                            </div>
+                            <span
+                                className="shrink-0 text-sm font-bold"
+                                style={{ color: scoreColor(t.percentage) }}
+                            >
+                                {pct(t.percentage)}
+                            </span>
+                        </li>
+                    ))}
+                </ul>
+            )}
+        </ProfileSectionCard>
+    );
+};
+
+const CourseProgress = ({
+    userId,
+    instituteId,
+    batchId,
+}: {
+    userId: string;
+    instituteId: string;
+    batchId?: string;
+}) => {
     const { data, isLoading } = useLearnerPackagesQuery({
         instituteId,
         userId,
         type: 'PROGRESS',
         size: 20,
     });
-    const courses = data?.content ?? [];
+    const courses = (data?.content ?? []).filter((c) => !batchId || c.package_session_id === batchId);
     return (
         <ProfileSectionCard icon={Books} heading="Course progress">
             {isLoading ? (
@@ -362,10 +625,23 @@ const AiChats = ({ userId }: { userId: string }) => {
 export const StudentAcademicActivity = ({
     userId,
     instituteId,
+    packageSessionIds = [],
 }: {
     userId: string;
     instituteId: string;
+    /** The learner batches: the batch picker and the batch average on the daily time chart. */
+    packageSessionIds?: string[];
 }) => {
+    const brand = useBrandColor();
+    const [picked, setPicked] = useState(ALL_BATCHES);
+    const selected = packageSessionIds.includes(picked) ? picked : ALL_BATCHES;
+    const batchId = selected === ALL_BATCHES ? undefined : selected;
+    const insights = useQuery({
+        queryKey: ['LEARNER_ACADEMIC_INSIGHTS', userId, instituteId],
+        queryFn: () => fetchLearnerInsights(userId, instituteId),
+        enabled: !!userId && !!instituteId,
+        staleTime: 5 * 60_000,
+    });
     const pulse = useQuery({
         queryKey: ['LEARNER_PULSE', userId, instituteId],
         queryFn: () => fetchLearnerPulse(userId, instituteId),
@@ -375,6 +651,12 @@ export const StudentAcademicActivity = ({
     });
     return (
         <div className="flex flex-col gap-3">
+            <BatchPicker
+                packageSessionIds={packageSessionIds}
+                value={selected}
+                onChange={setPicked}
+                allLabel={`All ${getTerminologyPlural(ContentTerms.Batch, SystemTerms.Batch).toLowerCase()}`}
+            />
             {pulse.isLoading ? (
                 <ProfileSkeleton blocks={2} />
             ) : pulse.data ? (
@@ -385,8 +667,25 @@ export const StudentAcademicActivity = ({
             ) : (
                 <ProfileEmpty icon={Lightning} title="Live pulse is not available" />
             )}
-            <CourseProgress userId={userId} instituteId={instituteId} />
+            {insights.data && <ThisMonth data={insights.data} />}
+            {packageSessionIds.length > 0 && (
+                <DailyTime
+                    userId={userId}
+                    packageSessionIds={batchId ? [batchId] : packageSessionIds}
+                    brand={brand}
+                />
+            )}
+            <CourseProgress userId={userId} instituteId={instituteId} batchId={batchId} />
+            {insights.data && <ContentMix data={insights.data} brand={brand} />}
+            {insights.data && <StudyRhythm data={insights.data} brand={brand} />}
+            <RecentTests userId={userId} instituteId={instituteId} batchId={batchId} />
             <LiveClasses userId={userId} />
+            <StudentGamification
+                userId={userId}
+                instituteId={instituteId}
+                packageSessionIds={packageSessionIds}
+                defaultBatch={packageSessionIds.length === 1 ? packageSessionIds[0] : selected}
+            />
             <AiChats userId={userId} />
         </div>
     );

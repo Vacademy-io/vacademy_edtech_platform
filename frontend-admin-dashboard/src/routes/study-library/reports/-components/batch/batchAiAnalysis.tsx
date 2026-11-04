@@ -35,6 +35,8 @@ import {
     FileCsv,
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
+import { AiEstimateNote } from '@/components/common/report-visuals/ai-estimate';
+import { getInstituteId } from '@/constants/helper';
 import dayjs from 'dayjs';
 
 // All v2 report modules — batch runs always include everything.
@@ -489,6 +491,13 @@ export default function BatchAiAnalysis({ fixedPackageSessionId }: BatchAiAnalys
                             </div>
                         </div>
                     )}
+
+                    <AiEstimateNote
+                        instituteId={getInstituteId()}
+                        learners={rows.length > 0 ? rows.length : 1}
+                        perLearner={rows.length === 0}
+                        className="w-fit"
+                    />
 
                     {(errors.startDate || errors.endDate) && (
                         <div className="rounded-md border border-danger-200 bg-danger-50 p-3">

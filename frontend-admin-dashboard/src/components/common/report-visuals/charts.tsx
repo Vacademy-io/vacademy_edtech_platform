@@ -569,3 +569,183 @@ export const HorizontalBars = ({
         ))}
     </ul>
 );
+
+export interface DailyTimePoint {
+    /** yyyy-MM-dd */
+    date: string;
+    minutes: number;
+    /** A comparison line, e.g. the batch average. */
+    compare?: number | null;
+    /** Extra tooltip line, e.g. "12 learners studied". */
+    note?: string;
+}
+
+const dayLabel = (iso: string) => {
+    const d = new Date(`${iso}T00:00:00`);
+    return Number.isNaN(d.getTime())
+        ? iso
+        : d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
+};
+
+/** Minutes per day as bars, with an optional comparison line. */
+export const DailyTimeChart = ({
+    data,
+    brand,
+    valueLabel = 'Minutes',
+    compareLabel,
+    height = 220,
+    animate = true,
+}: {
+    data: DailyTimePoint[];
+    brand: string;
+    valueLabel?: string;
+    compareLabel?: string;
+    height?: number;
+    animate?: boolean;
+}) => (
+    <div style={{ height }}>
+        <ResponsiveContainer width="100%" height="100%">
+            <ComposedChart data={data} margin={{ top: 12, right: 4, left: -18, bottom: 0 }} barCategoryGap={2}>
+                <CartesianGrid vertical={false} stroke={REPORT_COLORS.line} />
+                <XAxis
+                    dataKey="date"
+                    tickFormatter={dayLabel}
+                    tick={AXIS_TICK}
+                    tickLine={false}
+                    axisLine={false}
+                    minTickGap={18}
+                />
+                <YAxis allowDecimals={false} tick={AXIS_TICK} tickLine={false} axisLine={false} />
+                <Tooltip
+                    cursor={{ fill: '#f8fafc' }}
+                    content={({ active, payload }) => {
+                        const p = payload?.[0]?.payload as DailyTimePoint | undefined;
+                        if (!active || !p) return null;
+                        const rows: { label: string; value: string; color?: string }[] = [
+                            { label: valueLabel, value: `${Math.round(p.minutes)} min`, color: brand },
+                        ];
+                        if (compareLabel && p.compare != null) {
+                            rows.push({
+                                label: compareLabel,
+                                value: `${Math.round(p.compare)} min`,
+                                color: REPORT_COLORS.neutral,
+                            });
+                        }
+                        if (p.note) rows.push({ label: p.note, value: '' });
+                        return <TooltipBox title={dayLabel(p.date)} rows={rows} />;
+                    }}
+                />
+                <Bar dataKey="minutes" fill={brand} radius={[3, 3, 0, 0]} isAnimationActive={animate} />
+                {compareLabel && (
+                    <Line
+                        type="monotone"
+                        dataKey="compare"
+                        stroke={REPORT_COLORS.neutral}
+                        strokeWidth={2}
+                        dot={false}
+                        isAnimationActive={animate}
+                    />
+                )}
+            </ComposedChart>
+        </ResponsiveContainer>
+    </div>
+);
+
+export interface PeriodPoint {
+    key: string;
+    label: string;
+    /** Tooltip heading; the label when absent. */
+    title?: string;
+    value: number | null;
+    /** Tooltip value; the value with its suffix when absent. */
+    display?: string;
+}
+
+/** One measure per period as bars or a line, small enough to sit in a grid of its neighbours. */
+export const PeriodChart = ({
+    data,
+    brand,
+    valueLabel,
+    kind = 'bar',
+    suffix = '',
+    max,
+    height = 130,
+    animate = true,
+}: {
+    data: PeriodPoint[];
+    brand: string;
+    valueLabel: string;
+    kind?: 'bar' | 'line';
+    suffix?: string;
+    max?: number;
+    height?: number;
+    animate?: boolean;
+}) => {
+    if (data.every((d) => !d.value)) {
+        return (
+            <div
+                className="flex items-center justify-center text-xs text-neutral-400"
+                style={{ height }}
+            >
+                Nothing yet
+            </div>
+        );
+    }
+    return (
+        <div style={{ height }}>
+            <ResponsiveContainer width="100%" height="100%">
+                <ComposedChart data={data} margin={{ top: 8, right: 6, left: -22, bottom: 0 }} barCategoryGap={2}>
+                    <CartesianGrid vertical={false} stroke={REPORT_COLORS.line} />
+                    <XAxis
+                        dataKey="label"
+                        tick={AXIS_TICK}
+                        tickLine={false}
+                        axisLine={false}
+                        minTickGap={14}
+                    />
+                    <YAxis
+                        allowDecimals={false}
+                        domain={max != null ? [0, max] : undefined}
+                        tick={AXIS_TICK}
+                        tickLine={false}
+                        axisLine={false}
+                    />
+                    <Tooltip
+                        cursor={{ fill: '#f8fafc' }}
+                        content={({ active, payload }) => {
+                            const p = payload?.[0]?.payload as PeriodPoint | undefined;
+                            if (!active || !p) return null;
+                            return (
+                                <TooltipBox
+                                    title={p.title ?? p.label}
+                                    rows={[
+                                        {
+                                            label: valueLabel,
+                                            value:
+                                                p.display ??
+                                                (p.value == null ? '—' : `${p.value.toLocaleString()}${suffix}`),
+                                            color: brand,
+                                        },
+                                    ]}
+                                />
+                            );
+                        }}
+                    />
+                    {kind === 'bar' ? (
+                        <Bar dataKey="value" fill={brand} radius={[3, 3, 0, 0]} isAnimationActive={animate} />
+                    ) : (
+                        <Line
+                            type="monotone"
+                            dataKey="value"
+                            stroke={brand}
+                            strokeWidth={2}
+                            connectNulls
+                            dot={{ r: 3, fill: brand, strokeWidth: 0 }}
+                            isAnimationActive={animate}
+                        />
+                    )}
+                </ComposedChart>
+            </ResponsiveContainer>
+        </div>
+    );
+};

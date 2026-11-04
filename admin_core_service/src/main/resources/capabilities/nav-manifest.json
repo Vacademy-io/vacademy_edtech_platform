@@ -1618,11 +1618,23 @@
       "sub_tabs": []
     },
     {
+      "id": "gamification-points",
+      "label": "Gamification and Points",
+      "category": "LMS",
+      "route": "/study-library/gamification",
+      "order": 31,
+      "default_visible": {
+        "ADMIN": true,
+        "TEACHER": true
+      },
+      "sub_tabs": []
+    },
+    {
       "id": "learning-engagement",
       "label": "Learning Engagement",
       "category": "LMS",
       "route": null,
-      "order": 31,
+      "order": 32,
       "default_visible": {
         "ADMIN": true,
         "TEACHER": true
@@ -1668,7 +1680,7 @@
       "label": "Doubt Management",
       "category": "LMS",
       "route": "/study-library/doubt-management",
-      "order": 32,
+      "order": 33,
       "default_visible": {
         "ADMIN": true,
         "TEACHER": true
@@ -1680,7 +1692,7 @@
       "label": "Student AI",
       "category": "LMS",
       "route": "/study-library/student-ai",
-      "order": 33,
+      "order": 34,
       "default_visible": {
         "ADMIN": true,
         "TEACHER": true
@@ -1692,7 +1704,7 @@
       "label": "Assessments and Tests",
       "category": "LMS",
       "route": null,
-      "order": 34,
+      "order": 35,
       "default_visible": {
         "ADMIN": true,
         "TEACHER": true
@@ -1793,7 +1805,7 @@
       "label": "Questions Banks and Papers",
       "category": "LMS",
       "route": "/assessment/question-papers",
-      "order": 35,
+      "order": 36,
       "default_visible": {
         "ADMIN": true,
         "TEACHER": true
@@ -1805,7 +1817,7 @@
       "label": "Question Library",
       "category": "LMS",
       "route": "/assessment/question-library",
-      "order": 36,
+      "order": 37,
       "default_visible": {
         "ADMIN": true,
         "TEACHER": true
@@ -1817,7 +1829,7 @@
       "label": "AI Tools",
       "category": "AI",
       "route": "/ai-center/ai-tools",
-      "order": 37,
+      "order": 38,
       "default_visible": {
         "ADMIN": true,
         "TEACHER": true
@@ -1829,7 +1841,7 @@
       "label": "Knowledge Base",
       "category": "AI",
       "route": "/knowledge-base",
-      "order": 38,
+      "order": 39,
       "default_visible": {
         "ADMIN": true,
         "TEACHER": true
@@ -1841,7 +1853,7 @@
       "label": "Instructor Copilot",
       "category": "AI",
       "route": "/instructor-copilot",
-      "order": 39,
+      "order": 40,
       "default_visible": {
         "ADMIN": true,
         "TEACHER": true
@@ -1853,7 +1865,7 @@
       "label": "AI Course Creator",
       "category": "AI",
       "route": "/study-library/ai-copilot",
-      "order": 40,
+      "order": 41,
       "default_visible": {
         "ADMIN": false,
         "TEACHER": false
@@ -1865,7 +1877,7 @@
       "label": "Vimotion - Content Studio",
       "category": "AI",
       "route": "/video-api-studio/console",
-      "order": 41,
+      "order": 42,
       "default_visible": {
         "ADMIN": true,
         "TEACHER": true
@@ -1877,7 +1889,7 @@
       "label": "Content AI API",
       "category": "AI",
       "route": "/video-api-studio",
-      "order": 42,
+      "order": 43,
       "default_visible": {
         "ADMIN": true,
         "TEACHER": true
@@ -1889,7 +1901,7 @@
       "label": "Access Passes",
       "category": "LMS",
       "route": "/access-passes",
-      "order": 43,
+      "order": 44,
       "default_visible": {
         "ADMIN": true,
         "TEACHER": true

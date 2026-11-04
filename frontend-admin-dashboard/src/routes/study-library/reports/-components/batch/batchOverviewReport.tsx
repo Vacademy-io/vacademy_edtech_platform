@@ -31,6 +31,7 @@ import {
 } from '@/components/common/report-visuals/blocks';
 import {
     CompareBarChart,
+    DailyTimeChart,
     DonutChart,
     HorizontalBars,
     ScoreHistogram,
@@ -50,12 +51,15 @@ import {
     useBrandColor,
 } from '@/components/common/report-visuals/palette';
 import {
+    getBatchDailyTimeQuery,
     getBatchSummaryReportQuery,
+    type BatchDailyTimeRow,
     type BatchSummaryReport,
     type BatchSummaryRequest,
 } from '@/services/batch-summary-report';
 import { useBatchOptions } from '../batchMultiSelect';
 import { BatchComparison } from './batchComparison';
+import { BatchPointsBlock, BatchTimelineBlock } from './batchTimeline';
 import { GenerateBatchReportDialog } from './generateBatchReportDialog';
 
 const STRONG_FROM = 60;
@@ -71,6 +75,38 @@ const Empty = ({ brand, text }: { brand: string; text: string }) => (
     </div>
 );
 
+/** Average learning time per day of the learners who studied, and how many did. */
+const DailyTimeBlock = ({ brand, rows }: { brand: string; rows: BatchDailyTimeRow[] | undefined }) => {
+    const data = (rows ?? []).map((r) => ({
+        date: r.date,
+        minutes: r.avg_minutes ?? 0,
+        note: `${r.active_learners} learner${r.active_learners === 1 ? '' : 's'} studied`,
+    }));
+    const studied = (rows ?? []).filter((r) => r.active_learners > 0);
+    const avg =
+        studied.length > 0
+            ? studied.reduce((s, r) => s + (r.avg_minutes ?? 0), 0) / studied.length
+            : null;
+    return (
+        <ReportBlock
+            brand={brand}
+            tag="Daily time spent"
+            title={
+                avg != null
+                    ? `${minutesLabel(avg)} a day on average`
+                    : 'No learning time recorded in these dates'
+            }
+            lede="Average minutes per learner who studied, each day."
+        >
+            {studied.length > 0 ? (
+                <DailyTimeChart data={data} brand={brand} valueLabel="Average per learner" />
+            ) : (
+                <Empty brand={brand} text="Time appears once learners open their course content." />
+            )}
+        </ReportBlock>
+    );
+};
+
 const headlineFor = (r: BatchSummaryReport) => {
     if (r.enrolled_learners === 0) return 'No learners yet';
     if (r.avg_score == null) return 'No assessment attempts in these dates';
@@ -83,10 +119,12 @@ const BatchOverviewBody = ({
     data,
     brand,
     batchLabels,
+    dailyTime,
 }: {
     data: BatchSummaryReport;
     brand: string;
     batchLabels: Map<string, string>;
+    dailyTime: BatchDailyTimeRow[] | undefined;
 }) => {
     const single = !!data.package_session_id;
     const scored = useMemo(() => data.learners.filter((l) => l.avg_score != null), [data]);
@@ -220,6 +258,12 @@ const BatchOverviewBody = ({
                     />
                 )}
             </div>
+
+            {data.timeline && <BatchTimelineBlock timeline={data.timeline} brand={brand} />}
+
+            <DailyTimeBlock brand={brand} rows={dailyTime} />
+
+            {data.gamification && <BatchPointsBlock gamification={data.gamification} brand={brand} />}
 
             <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
                 <ReportBlock
@@ -589,6 +633,9 @@ export default function BatchOverviewReport({
         ...getBatchSummaryReportQuery(request ?? { start_date: '', end_date: '' }),
         placeholderData: (previous) => previous,
     });
+    const dailyTime = useQuery({
+        ...getBatchDailyTimeQuery(request ?? { start_date: '', end_date: '' }),
+    });
     // Options come from the unfiltered list the report returns, so picking one keeps the rest.
     const assessmentOptions = useMemo(
         () =>
@@ -649,7 +696,12 @@ export default function BatchOverviewReport({
                     Couldn&apos;t load this report.
                 </p>
             ) : (
-                <BatchOverviewBody data={data} brand={brand} batchLabels={batchLabels} />
+                <BatchOverviewBody
+                    data={data}
+                    brand={brand}
+                    batchLabels={batchLabels}
+                    dailyTime={dailyTime.data}
+                />
             )}
         </div>
     );

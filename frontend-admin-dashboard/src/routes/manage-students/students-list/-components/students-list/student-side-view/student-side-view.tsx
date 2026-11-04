@@ -876,6 +876,13 @@ export const StudentSidebar = ({
                                 <StudentAcademicActivity
                                     userId={selectedStudent.user_id}
                                     instituteId={selectedStudent.institute_id}
+                                    packageSessionIds={
+                                        selectedStudent.all_package_session_ids?.length
+                                        ? selectedStudent.all_package_session_ids
+                                        : selectedStudent.package_session_id
+                                          ? [selectedStudent.package_session_id]
+                                          : []
+                                    }
                                 />
                             )}
                         {category === 'parent' &&

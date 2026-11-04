@@ -29,6 +29,7 @@ import {
     SidebarStateType,
     SidebarItemsType,
 } from '../../../../types/layout-container/layout-container-types';
+import { placeGamificationAfterReports } from './helper';
 import { getSidebarItemsData, withSystemDefaults } from './utils';
 import { useNamingSettingsVersion } from '@/hooks/useNamingSettingsVersion';
 import './scrollbarStyle.css';
@@ -457,13 +458,14 @@ export const MySidebar = ({ sidebarComponent }: { sidebarComponent?: React.React
     // their dashboard as before.
     // It always heads the LMS section: a role whose sidebar order was saved before the
     // tab existed would otherwise rank it after every saved tab.
-    const finalSidebarItems =
+    const finalSidebarItems = placeGamificationAfterReports(
         !isCallerSubOrgAdmin() && entitledItems.some((item) => item.id === 'leads' && !item.locked)
             ? [
                   ...entitledItems.filter((item) => item.id === 'lms-dashboard'),
                   ...entitledItems.filter((item) => item.id !== 'lms-dashboard'),
               ]
-            : entitledItems.filter((item) => item.id !== 'lms-dashboard');
+            : entitledItems.filter((item) => item.id !== 'lms-dashboard')
+    );
     // MANAGED: the rail categories with anything left to show (the rail draws only
     // these). A string so the category sync below re-runs only when it changes.
     const availableCategoriesKey = entitlement.managed

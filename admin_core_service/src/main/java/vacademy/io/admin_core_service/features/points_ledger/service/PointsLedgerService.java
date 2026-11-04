@@ -11,6 +11,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
 import vacademy.io.admin_core_service.features.institute.service.InstituteTimezoneService;
 import vacademy.io.admin_core_service.features.points_ledger.dto.PointsBreakdownItemDTO;
+import vacademy.io.admin_core_service.features.points_ledger.dto.PointsHistoryDTO;
 import vacademy.io.admin_core_service.features.points_ledger.dto.PointsSummaryDTO;
 import vacademy.io.admin_core_service.features.points_ledger.entity.PointsLedger;
 import vacademy.io.admin_core_service.features.points_ledger.entity.PointsSourceType;
@@ -23,6 +24,7 @@ import java.time.ZoneId;
 import java.time.temporal.TemporalAdjusters;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -49,7 +51,13 @@ public class PointsLedgerService {
             PointsSourceType.ENGAGEMENT_STREAK.name(), "Streak bonus",
             PointsSourceType.ASSESSMENT.name(), "Assessments",
             PointsSourceType.ACTIVITY.name(), "Learning activity",
-            PointsSourceType.MANUAL.name(), "Awarded by your institute");
+            PointsSourceType.MANUAL.name(), "Awarded by your institute",
+            PointsSourceType.AI_TUTOR_QUIZ.name(), "AI tutor quizzes");
+
+    /** The label a points source is shown under. */
+    public static String sourceLabel(String sourceType) {
+        return SOURCE_LABELS.getOrDefault(sourceType, sourceType);
+    }
 
     private final PointsLedgerRepository pointsLedgerRepository;
     private final InstituteTimezoneService instituteTimezoneService;
@@ -215,6 +223,46 @@ public class PointsLedgerService {
             dto.setLast7Days(streak.last7Days());
         }
         return dto;
+    }
+
+    private static final int HISTORY_WEEKS = 12;
+    private static final int ACTIVE_DAYS_SHOWN = 182;
+
+    /**
+     * Staff view of one learner: the latest awards, points per week for the last 12 weeks (empty
+     * weeks included) and the days they were active in the last six months. Not one read-only
+     * transaction, for the reason given on {@link #getSummary}.
+     */
+    public PointsHistoryDTO getHistory(String instituteId, String userId) {
+        ZoneId zone = instituteTimezoneService.getZone(instituteId);
+        LocalDate today = LocalDate.now(zone);
+
+        List<PointsHistoryDTO.Award> recent = new ArrayList<>();
+        for (PointsLedger row : pointsLedgerRepository.findTop40ByInstituteIdAndUserIdOrderByAwardedAtDesc(instituteId, userId)) {
+            recent.add(new PointsHistoryDTO.Award(row.getId(), row.getSourceType(),
+                    SOURCE_LABELS.getOrDefault(row.getSourceType(), row.getSourceType()),
+                    row.getPoints() == null ? 0 : row.getPoints(), row.getReason(), row.getAwardedAt()));
+        }
+
+        LocalDate firstWeek = today.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY)).minusWeeks(HISTORY_WEEKS - 1L);
+        Map<String, Long> byWeek = new HashMap<>();
+        for (Object[] row : pointsLedgerRepository.weeklyPointsForUser(instituteId, userId, zone.getId(), toTimestamp(firstWeek, zone))) {
+            if (row[0] != null) byWeek.put(row[0].toString().substring(0, 10), row[1] == null ? 0L : ((Number) row[1]).longValue());
+        }
+        List<PointsHistoryDTO.Week> weeks = new ArrayList<>();
+        for (LocalDate week = firstWeek; !week.isAfter(today); week = week.plusWeeks(1)) {
+            weeks.add(new PointsHistoryDTO.Week(week.toString(), byWeek.getOrDefault(week.toString(), 0L)));
+        }
+
+        Set<LocalDate> active = loadActiveDays(instituteId, userId, zone, today);
+        List<String> activeDays = new ArrayList<>();
+        if (active != null) {
+            LocalDate from = today.minusDays(ACTIVE_DAYS_SHOWN);
+            new TreeSet<>(active).forEach(d -> {
+                if (!d.isBefore(from) && !d.isAfter(today)) activeDays.add(d.toString());
+            });
+        }
+        return new PointsHistoryDTO(recent, weeks, activeDays, today.toString());
     }
 
     // ── Streak ───────────────────────────────────────────────────────────────

@@ -142,4 +142,32 @@ public interface CreditUsageRepository extends Repository<AiTokenUsage, UUID> {
                                    @Param("fromTs") Timestamp fromTs,
                                    @Param("toTs") Timestamp toTs,
                                    Pageable pageable);
+
+    // Cost of past runs of one feature for one institute, for the before-you-run estimate.
+    // A run is one learner in one hour (a report makes several AI calls within minutes).
+    // list_credits is what the run would debit, so plan-covered runs still count.
+    // Object[]{runs, avg_credits_per_run}.
+    @Query(value = "WITH runs AS ( " +
+            "  SELECT e.subject_user_id, date_trunc('hour', e.occurred_at) AS h, SUM(e.list_credits) AS c " +
+            "  FROM ai_usage_event e " +
+            "  WHERE e.institute_id = :instituteId AND e.use_case = :useCase " +
+            "    AND e.subject_user_id IS NOT NULL AND e.occurred_at >= :since " +
+            "  GROUP BY e.subject_user_id, date_trunc('hour', e.occurred_at) " +
+            ") SELECT COUNT(*), AVG(c) FROM runs",
+            nativeQuery = true)
+    List<Object[]> findRunCostForInstitute(@Param("instituteId") String instituteId,
+                                           @Param("useCase") String useCase,
+                                           @Param("since") Timestamp since);
+
+    // Same across every institute, when one institute has too few runs of its own.
+    @Query(value = "WITH runs AS ( " +
+            "  SELECT e.subject_user_id, date_trunc('hour', e.occurred_at) AS h, SUM(e.list_credits) AS c " +
+            "  FROM ai_usage_event e " +
+            "  WHERE e.use_case = :useCase " +
+            "    AND e.subject_user_id IS NOT NULL AND e.occurred_at >= :since " +
+            "  GROUP BY e.subject_user_id, date_trunc('hour', e.occurred_at) " +
+            ") SELECT COUNT(*), AVG(c) FROM runs",
+            nativeQuery = true)
+    List<Object[]> findRunCostForPlatform(@Param("useCase") String useCase,
+                                          @Param("since") Timestamp since);
 }

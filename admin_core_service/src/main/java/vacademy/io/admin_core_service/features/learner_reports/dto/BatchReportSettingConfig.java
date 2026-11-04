@@ -22,6 +22,7 @@ public class BatchReportSettingConfig {
     /** Every section, in render order. */
     public static final List<String> ALL_SECTIONS = List.of(
             BatchReportSection.OVERVIEW,
+            BatchReportSection.TIMELINE,
             BatchReportSection.RESULTS,
             BatchReportSection.ASSESSMENTS,
             BatchReportSection.STRENGTHS,
@@ -29,7 +30,8 @@ public class BatchReportSettingConfig {
             BatchReportSection.TOP_PERFORMERS,
             BatchReportSection.NEEDS_ATTENTION,
             BatchReportSection.LEARNER_RESULTS,
-            BatchReportSection.ACTIVITY);
+            BatchReportSection.ACTIVITY,
+            BatchReportSection.POINTS_BADGES);
 
     /** Section keys to render; null or empty means every section. */
     private List<String> sections = new ArrayList<>();
@@ -58,10 +60,14 @@ public class BatchReportSettingConfig {
         public static final String NEEDS_ATTENTION = "NEEDS_ATTENTION";
         public static final String LEARNER_RESULTS = "LEARNER_RESULTS";
         public static final String ACTIVITY = "ACTIVITY";
+        /** Learners, time, scores, attendance, points and badges for each day, week or month. */
+        public static final String TIMELINE = "TIMELINE";
+        /** Points earned, badges awarded and the top earners. */
+        public static final String POINTS_BADGES = "POINTS_BADGES";
 
         /** Sections that name other learners — never part of a copy sent to one parent. */
         public static final List<String> NAMES_LEARNERS =
-                List.of(TOP_PERFORMERS, NEEDS_ATTENTION, LEARNER_RESULTS, ACTIVITY);
+                List.of(TOP_PERFORMERS, NEEDS_ATTENTION, LEARNER_RESULTS, ACTIVITY, POINTS_BADGES);
 
         private BatchReportSection() {
         }

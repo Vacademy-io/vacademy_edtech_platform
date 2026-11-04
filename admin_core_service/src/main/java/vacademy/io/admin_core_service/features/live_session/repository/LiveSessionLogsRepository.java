@@ -296,4 +296,46 @@ public interface LiveSessionLogsRepository extends JpaRepository<LiveSessionLogs
     List<LiveSessionLogs> findAttendanceLogsForScheduleIdsAndUser(
             @Param("scheduleIds") List<String> scheduleIds,
             @Param("userId") String userId);
+
+    /**
+     * Each class of some batches between two dates, as
+     * [meeting_date, schedule_id, title, learners_expected, learners_present] rows. Only
+     * learners active in those batches count. Batch report timeline. READ-ONLY.
+     */
+    @Query(value = """
+            SELECT ss.meeting_date,
+                   ss.id,
+                   ls.title,
+                   (SELECT COUNT(DISTINCT m.user_id)
+                      FROM live_session_participants lsp
+                      JOIN student_session_institute_group_mapping m ON m.package_session_id = lsp.source_id AND m.status = 'ACTIVE'
+                     WHERE lsp.session_id = ls.id
+                       AND lsp.source_type = 'BATCH'
+                       AND lsp.source_id IN (:packageSessionIds)),
+                   (SELECT COUNT(DISTINCT lsl.user_source_id)
+                      FROM live_session_logs lsl
+                     WHERE lsl.schedule_id = ss.id
+                       AND lsl.user_source_type = 'USER'
+                       AND lsl.log_type = 'ATTENDANCE_RECORDED'
+                       AND lsl.status = 'PRESENT'
+                       AND lsl.user_source_id IN (SELECT m2.user_id FROM student_session_institute_group_mapping m2
+                                                   WHERE m2.package_session_id IN (:packageSessionIds)
+                                                     AND m2.status = 'ACTIVE'))
+            FROM session_schedules ss
+            JOIN live_session ls ON ls.id = ss.session_id
+            WHERE ss.meeting_date BETWEEN :startDate AND :endDate
+              AND ls.status IS DISTINCT FROM 'DELETED'
+              AND ss.status IS DISTINCT FROM 'DELETED'
+              AND EXISTS (SELECT 1 FROM live_session_participants p
+                           WHERE p.session_id = ls.id
+                             AND p.source_type = 'BATCH'
+                             AND p.source_id IN (:packageSessionIds))
+            ORDER BY ss.meeting_date, ss.start_time
+            LIMIT :maxRows
+            """, nativeQuery = true)
+    List<Object[]> findClassAttendanceForBatches(
+            @Param("packageSessionIds") List<String> packageSessionIds,
+            @Param("startDate") java.time.LocalDate startDate,
+            @Param("endDate") java.time.LocalDate endDate,
+            @Param("maxRows") int maxRows);
 }

@@ -20,6 +20,7 @@ import java.util.Map;
  * Learning Reports → Batch → Overview.
  *
  *   POST /summary   the basic report for a batch, or all batches when no batch is given
+ *   POST /daily-time learning time per day for the same scope (newest 92 days of the window)
  *   POST /preview   the generated report as HTML, rendered with the institute's template
  *   POST /pdf       the same document as a PDF
  *   POST /send      email it to the batch's teachers, or each parent their own child's copy
@@ -43,6 +44,14 @@ public class BatchSummaryReportController {
                                                          @RequestAttribute("user") CustomUserDetails user) {
         String instituteId = staffInstitute(http, user);
         return ResponseEntity.ok(batchSummaryReportService.summarize(instituteId, request, user));
+    }
+
+    @PostMapping("/daily-time")
+    public ResponseEntity<java.util.List<BatchSummaryReportDTO.DailyTimeRow>> dailyTime(HttpServletRequest http,
+                                                                            @RequestBody BatchSummaryReportRequest request,
+                                                                            @RequestAttribute("user") CustomUserDetails user) {
+        String instituteId = staffInstitute(http, user);
+        return ResponseEntity.ok(batchSummaryReportService.dailyTime(instituteId, request));
     }
 
     @PostMapping("/preview")
