@@ -6,6 +6,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
+import vacademy.io.admin_core_service.features.packages.enums.ChargePackageType;
 import vacademy.io.admin_core_service.features.common.enums.StatusEnum;
 import vacademy.io.admin_core_service.features.course_settings.service.PackageSettingService;
 import vacademy.io.admin_core_service.features.enroll_invite.entity.EnrollInvite;
@@ -40,9 +41,6 @@ public class RepeatPurchasePolicyService {
     /** Group under COURSE_SETTING.data that holds checkout / storefront behaviour flags. */
     private static final String COMMERCE_GROUP = "commerce";
     private static final String ALLOW_REPEAT_PURCHASE = "allowRepeatPurchase";
-
-    /** Package types that are a charge on an order, never a thing the learner owns. */
-    private static final Set<String> CHARGE_PACKAGE_TYPES = Set.of("DELIVERY_CHARGE", "SECURITY_DEPOSIT");
 
     private final PackageSessionLearnerInvitationToPaymentOptionRepository inviteSessionRepository;
     private final PackageSessionRepository packageSessionRepository;
@@ -118,7 +116,7 @@ public class RepeatPurchasePolicyService {
     }
 
     private boolean isCharge(StockInfoProjection session) {
-        return session.getPackageType() != null && CHARGE_PACKAGE_TYPES.contains(session.getPackageType());
+        return ChargePackageType.isCharge(session.getPackageType());
     }
 
     /** The invite's ACTIVE package sessions, with their package id and type. */
