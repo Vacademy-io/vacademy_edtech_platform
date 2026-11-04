@@ -224,18 +224,14 @@ public class ShortLinkIntegrationService {
     }
 
     public void updateShortLink(String source, String sourceId, String newDestinationUrl) {
-        String encodedUrl;
-        try {
-            encodedUrl = java.net.URLEncoder.encode(newDestinationUrl, java.nio.charset.StandardCharsets.UTF_8);
-        } catch (Exception e) {
-            encodedUrl = newDestinationUrl;
-        }
-        String route = "/media-service/internal/v1/short-link/update?source=" + source
-                + "&sourceId=" + sourceId
-                + "&newDestinationUrl=" + encodedUrl;
+        String route = "/media-service/internal/v1/short-link/update?source=" + encodeQueryValue(source)
+                + "&sourceId=" + encodeQueryValue(sourceId)
+                + "&newDestinationUrl=" + encodeQueryValue(newDestinationUrl);
 
         try {
-            internalClientUtils.makeHmacRequest(
+            // The route is already encoded. The plain makeHmacRequest encodes it again,
+            // which stores a destination with no scheme and breaks the short link.
+            internalClientUtils.makeHmacRequestWithEncodedRoute(
                     clientName,
                     HttpMethod.PUT.name(),
                     mediaServiceBaseUrl,
@@ -245,6 +241,10 @@ public class ShortLinkIntegrationService {
             throw new VacademyException(
                     "Error communicating with media service for short link update: " + e.getMessage());
         }
+    }
+
+    private static String encodeQueryValue(String value) {
+        return java.net.URLEncoder.encode(value, java.nio.charset.StandardCharsets.UTF_8);
     }
 
     public void deleteShortLink(String source, String sourceId) {
