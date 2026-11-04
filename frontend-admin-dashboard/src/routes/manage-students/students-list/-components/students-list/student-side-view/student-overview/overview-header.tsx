@@ -1,15 +1,19 @@
 import { StatusChips } from '@/components/design-system/chips';
 import { StudentTable } from '@/types/student-table-types';
 import { cn } from '@/lib/utils';
+import { getCurrencySymbol } from '@/constants/currencies';
 import {
     GraduationCap,
     Clock,
     Exam,
     Wallet,
     Target,
+    SquaresFour,
     type Icon as PhosphorIcon,
 } from '@phosphor-icons/react';
+import type { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
+import { ProfileSectionCard } from '../profile-ui';
 
 interface OverviewHeaderProps {
     student: StudentTable | null;
@@ -19,15 +23,19 @@ interface OverviewHeaderProps {
     progressPercent?: number;
     /** Tests attempted/total. Pass undefined to render "—". */
     testsAttempted?: { attempted: number; total: number };
-    /** Outstanding amount in INR. Pass undefined to render "—". */
+    /** Outstanding amount. Pass undefined to skip the tile. */
     outstandingAmount?: number;
+    /** Currency of outstandingAmount. */
+    outstandingCurrency?: string;
     /** Lead score 0–100. Pass undefined to skip the tile. */
     leadScore?: number;
+    /** Rendered inside the header, under the tiles: the remarks. */
+    children?: ReactNode;
 }
 
 /**
- * Overview Header — the 4-tile health-stat strip that sits near the top of
- * every learner's Overview tab, per the design handoff's OverviewSection.
+ * Overview Header — the 4-tile health-stat strip and the learner's remarks, at
+ * the top of every learner's Overview tab, per the design handoff's OverviewSection.
  *
  * The earlier "CURRENTLY ENROLLED" band has been dropped: it duplicated
  * data already surfaced by Continue Learning (course + level + session)
@@ -44,7 +52,9 @@ export const OverviewHeader = ({
     progressPercent,
     testsAttempted,
     outstandingAmount,
+    outstandingCurrency,
     leadScore,
+    children,
 }: OverviewHeaderProps) => {
     const { t } = useTranslation('manageStudentsOverviewHeader');
 
@@ -112,13 +122,11 @@ export const OverviewHeader = ({
         });
     }
     if (outstandingAmount != null) {
+        const currencySymbol = outstandingCurrency ? getCurrencySymbol(outstandingCurrency) : '';
         tiles.push({
             label: t('tiles.outstanding.label'),
             icon: Wallet,
-            value:
-                outstandingAmount > 0
-                    ? `₹${outstandingAmount.toLocaleString('en-IN')}`
-                    : '₹0',
+            value: `${currencySymbol}${outstandingAmount.toLocaleString()}`,
             tone: outstandingAmount > 0 ? 'danger' : 'success',
             hint:
                 outstandingAmount > 0
@@ -146,32 +154,39 @@ export const OverviewHeader = ({
         });
     }
 
-    if (tiles.length === 0) return null;
-
     // Flat health-stat strip per handoff OverviewSection: a single grid of
     // bordered tiles, no outer hero band. The tile count adapts so partially-
-    // loaded data still looks intentional rather than ragged.
+    // loaded data still looks intentional rather than ragged. The side view is
+    // narrow at any viewport width, so four tiles stay on two rows.
     return (
-        <div
-            className={cn(
-                'grid gap-3',
-                tiles.length === 1 && 'grid-cols-1',
-                tiles.length === 2 && 'grid-cols-2',
-                tiles.length === 3 && 'grid-cols-3',
-                tiles.length >= 4 && 'grid-cols-2 md:grid-cols-4'
-            )}
+        <ProfileSectionCard
+            icon={SquaresFour}
+            heading={t('heading')}
+            bodyClassName="flex flex-col gap-3 pt-1"
         >
-            {tiles.map((t) => (
-                <StatTile
-                    key={t.label}
-                    label={t.label}
-                    icon={t.icon}
-                    value={t.value}
-                    tone={t.tone}
-                    hint={t.hint}
-                />
-            ))}
-        </div>
+            {tiles.length > 0 && (
+                <div
+                    className={cn(
+                        'grid gap-3',
+                        tiles.length === 1 && 'grid-cols-1',
+                        tiles.length === 3 && 'grid-cols-3',
+                        (tiles.length === 2 || tiles.length >= 4) && 'grid-cols-2'
+                    )}
+                >
+                    {tiles.map((tile) => (
+                        <StatTile
+                            key={tile.label}
+                            label={tile.label}
+                            icon={tile.icon}
+                            value={tile.value}
+                            tone={tile.tone}
+                            hint={tile.hint}
+                        />
+                    ))}
+                </div>
+            )}
+            {children}
+        </ProfileSectionCard>
     );
 };
 
