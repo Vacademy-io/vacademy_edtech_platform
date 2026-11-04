@@ -199,6 +199,14 @@ export const PaymentPlanCreator: React.FC<PaymentPlanCreatorProps> = ({
             return;
         }
 
+        // No interval means no plan is sent, and the option then blocks every enrolment.
+        if (
+            planData.type === PaymentPlans.SUBSCRIPTION &&
+            !(planData.config?.subscription?.customIntervals?.length > 0)
+        ) {
+            return;
+        }
+
         // CPO plans carry raw form data — no API transformation needed here
         if (planData.type === PaymentPlans.CPO) {
             const cpoForm = planData.config?.cpoForm as CPOForm | undefined;

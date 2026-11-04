@@ -219,6 +219,11 @@ export const SubscriptionPlanConfiguration: React.FC<SubscriptionPlanConfigurati
                     </div>
 
                     <div className="space-y-3">
+                        {customIntervals.length === 0 && (
+                            <p className="rounded-md border border-warning-200 bg-warning-50 p-3 text-caption text-warning-700">
+                                {t('pricingIntervals.emptyHint')}
+                            </p>
+                        )}
                         {customIntervals.map((interval, idx) => (
                             <div key={idx} className="space-y-4 rounded-lg border p-4">
                                 <div className="grid flex-1 grid-cols-3 gap-3">

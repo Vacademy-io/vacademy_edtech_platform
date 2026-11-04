@@ -7,6 +7,7 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.http.HttpStatus;
 import org.springframework.test.util.ReflectionTestUtils;
 import vacademy.io.admin_core_service.features.auth_service.service.AuthService;
 import vacademy.io.admin_core_service.features.user_subscription.dto.PaymentOptionDTO;
@@ -27,6 +28,7 @@ import java.util.Optional;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyList;
@@ -145,6 +147,44 @@ class PaymentOptionServiceSaveTest {
         // fullPayload=true: the Settings save resends every field, so a null validity is
         // "no expiry" and must be written, unlike the partial PUT dialog.
         verify(paymentPlanService).editPaymentPlans(eq(List.of(storedPlan)), eq(edit.getPaymentPlans()), eq(stored), eq(true));
+    }
+
+    @Test
+    @DisplayName("create: a SUBSCRIPTION with no intervals is rejected instead of saved plan-less")
+    void createPricedOptionWithoutPlansIsRejected() {
+        // Exactly what Settings sent for EduStream on 2026-09-15: every course pointed at
+        // the saved option then failed enrolment with "No active PaymentPlan found".
+        PaymentOptionDTO dto = PaymentOptionDTO.builder()
+                .id("plan_1789457156405")
+                .name("EduStream Paid Plan")
+                .type("SUBSCRIPTION")
+                .status("ACTIVE")
+                .paymentPlans(List.of())
+                .build();
+
+        VacademyException ex = assertThrows(VacademyException.class, () -> service.savePaymentOption(dto, user("admin-1")));
+
+        assertEquals(HttpStatus.BAD_REQUEST, ex.getStatus());
+        verify(paymentOptionRepository, never()).save(any(PaymentOption.class));
+    }
+
+    @Test
+    @DisplayName("edit: an empty plan list on a priced option is rejected before any plan is retired")
+    void editPricedOptionToNoPlansIsRejected() {
+        PaymentOption stored = new PaymentOption();
+        stored.setId("po-1");
+        stored.setName("Monthly");
+        stored.setType("SUBSCRIPTION");
+        when(paymentOptionRepository.findById("po-1")).thenReturn(Optional.of(stored));
+
+        PaymentOptionDTO edit = PaymentOptionDTO.builder()
+                .id("po-1").name("Monthly").type("SUBSCRIPTION").paymentPlans(List.of()).build();
+
+        assertThrows(VacademyException.class, () -> service.editPaymentOption(edit));
+
+        verify(paymentPlanService, never()).editPaymentPlans(anyList(), anyList(), any(PaymentOption.class), anyBoolean());
+        verify(paymentOptionRepository, never()).save(any(PaymentOption.class));
+        assertEquals("Monthly", stored.getName());
     }
 
     @Test

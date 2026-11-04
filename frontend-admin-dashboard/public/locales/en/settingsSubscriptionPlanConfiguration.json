@@ -9,6 +9,7 @@
     "pricingIntervals": {
         "heading": "Pricing Intervals",
         "addButton": "Add Interval",
+        "emptyHint": "Add at least one interval with a price to continue. A subscription with no interval has nothing to sell, so learners cannot enrol through it.",
         "interval": {
             "titleLabel": "Title",
             "titlePlaceholder": "e.g. Basic Plan",

@@ -2,6 +2,7 @@ package vacademy.io.admin_core_service.features.user_subscription.service;
 
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import vacademy.io.admin_core_service.features.auth_service.service.AuthService;
 import vacademy.io.admin_core_service.features.common.enums.StatusEnum;
@@ -34,6 +35,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 
 @Slf4j
 @Service
@@ -45,6 +47,16 @@ public class PaymentOptionService {
      * {@code types=['CPO']}.
      */
     private static final List<String> DEFAULT_EXCLUDE_TYPES = List.of(PaymentOptionType.CPO.name());
+
+    /**
+     * Option types sold at a price, which enrolment can only resolve through a plan. FREE
+     * is excluded (a plan is minted for it on create) and so is CPO (its mirror carries a
+     * synthetic plan from {@link #findOrCreateMirrorForCpo}).
+     */
+    private static final Set<String> PRICED_TYPES = Set.of(
+            PaymentOptionType.SUBSCRIPTION.name(),
+            PaymentOptionType.ONE_TIME.name(),
+            PaymentOptionType.DONATION.name());
 
     @Autowired
     private PaymentOptionRepository paymentOptionRepository;
@@ -106,10 +118,26 @@ public class PaymentOptionService {
             freePlan.setCurrency("INR");
             paymentOption.getPaymentPlans().add(freePlan);
         }
+        requirePlanForPricedOption(paymentOption.getType(), paymentOption.getName(), paymentOption.getPaymentPlans());
 
         PaymentOption saved = paymentOptionRepository.save(paymentOption);
         syncRegionalPrices(saved);
         return saved.mapToPaymentOptionDTO();
+    }
+
+    /**
+     * A priced option saved with no plan is accepted but unusable: every enrolment through
+     * an invite that points at it fails in DefaultInviteResolver.resolvePaymentPlan with
+     * "No active PaymentPlan found", and nothing in the admin UI shows why. The Settings
+     * page could send exactly that — a SUBSCRIPTION with zero intervals.
+     */
+    private static void requirePlanForPricedOption(String type, String name, List<?> plans) {
+        if (type == null || !PRICED_TYPES.contains(type.toUpperCase())) return;
+        if (plans != null && !plans.isEmpty()) return;
+        throw new VacademyException(HttpStatus.BAD_REQUEST,
+                "Payment option \"" + name + "\" has no price. Add at least one "
+                        + (PaymentOptionType.SUBSCRIPTION.name().equalsIgnoreCase(type) ? "subscription interval" : "price")
+                        + " before saving, otherwise courses using it cannot enrol learners.");
     }
 
     // -------------------------------------------------------------------------
@@ -313,6 +341,12 @@ public class PaymentOptionService {
      */
     private PaymentOptionDTO editPaymentOption(PaymentOptionDTO paymentOptionDTO, boolean fullPayload) {
         PaymentOption paymentOption = findById(paymentOptionDTO.getId());
+        // Checked before anything is touched: editPaymentPlans retires every stored plan the
+        // payload does not resend, so an empty list would strip a live option of its prices.
+        requirePlanForPricedOption(
+                paymentOptionDTO.getType() != null ? paymentOptionDTO.getType() : paymentOption.getType(),
+                paymentOptionDTO.getName() != null ? paymentOptionDTO.getName() : paymentOption.getName(),
+                paymentOptionDTO.getPaymentPlans());
         paymentOption.setName(paymentOptionDTO.getName());
         paymentOption.setType(paymentOptionDTO.getType());
         paymentOption.setPaymentOptionMetadataJson(paymentOptionDTO.getPaymentOptionMetadataJson());
