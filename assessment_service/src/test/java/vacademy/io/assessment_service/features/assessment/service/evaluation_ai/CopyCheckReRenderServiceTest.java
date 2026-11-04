@@ -97,7 +97,7 @@ class CopyCheckReRenderServiceTest {
         when(ai.reRender(any())).thenReturn(reply);
 
         CopyCheckReRenderService.Result result = service.reRender("p1", "inst-1",
-                Map.of("ink", "blue", "size", "LARGE", "font", "KALAM"), null, "teacher-1");
+                Map.of("ink", "blue", "size", "LARGE", "font", "DAWNING_OF_A_NEW_DAY"), null, "teacher-1");
 
         @SuppressWarnings("unchecked")
         ArgumentCaptor<Map<String, Object>> sent = ArgumentCaptor.forClass(Map.class);

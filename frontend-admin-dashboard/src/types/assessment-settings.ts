@@ -84,16 +84,33 @@ export type StudentMapping = 'ASK' | 'MAP' | 'CHECK_ONLY';
  */
 export type LanguageFeedback = 'HIGHLIGHT' | 'OFF';
 
-/** Ink, handwriting and size of the AI's pen on checked copies (ai_service pen_style.py). */
-export type PenInk = 'RED' | 'BLUE' | 'GREEN' | 'BLACK' | 'PURPLE';
-export type PenFont = 'KALAM' | 'PATRICK_HAND' | 'ARCHITECTS_DAUGHTER';
+/** Ink, darkness, handwriting and size of the AI's pen on checked copies (ai_service pen_style.py). */
+export type PenInkName = 'RED' | 'BLUE' | 'GREEN' | 'BLACK' | 'PURPLE';
+/** A named ink, or a "#rrggbb" the teacher picked. */
+export type PenInk = PenInkName | `#${string}`;
+export type PenFont =
+    | 'DAWNING_OF_A_NEW_DAY'
+    | 'COVERED_BY_YOUR_GRACE'
+    | 'OVER_THE_RAINBOW'
+    | 'CAVEAT'
+    | 'CEDARVILLE_CURSIVE'
+    | 'KALAM'
+    | 'PATRICK_HAND'
+    | 'ARCHITECTS_DAUGHTER';
 export type PenSize = 'SMALL' | 'MEDIUM' | 'LARGE';
 export interface PenStyle {
     ink: PenInk;
     font: PenFont;
     size: PenSize;
+    /** 0 lightest .. 100 darkest; 50 leaves the ink as it is. */
+    darkness: number;
 }
-export const DEFAULT_PEN_STYLE: PenStyle = { ink: 'RED', font: 'KALAM', size: 'MEDIUM' };
+export const DEFAULT_PEN_STYLE: PenStyle = {
+    ink: 'RED',
+    font: 'DAWNING_OF_A_NEW_DAY',
+    size: 'MEDIUM',
+    darkness: 50,
+};
 
 export interface AiCopyCheckSettings {
     /** The template preselected when copies are sent for AI checking. */

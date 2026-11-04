@@ -13,16 +13,33 @@
             "PURPLE": "بنفسجي"
         },
         "fonts": {
-            "KALAM": "Kalam",
-            "PATRICK_HAND": "Patrick Hand",
-            "ARCHITECTS_DAUGHTER": "Architects Daughter"
+            "DAWNING_OF_A_NEW_DAY": "المعلم (افتراضي)",
+            "COVERED_BY_YOUR_GRACE": "طبيعي",
+            "OVER_THE_RAINBOW": "مخربش",
+            "CAVEAT": "سريع",
+            "CEDARVILLE_CURSIVE": "متصل",
+            "KALAM": "كلاسيكي (Kalam)",
+            "PATRICK_HAND": "كلاسيكي (Patrick Hand)",
+            "ARCHITECTS_DAUGHTER": "كلاسيكي (Architects Daughter)"
         },
         "sizes": {
             "SMALL": "صغير",
             "MEDIUM": "متوسط",
             "LARGE": "كبير"
         },
-        "sample": "عمل جيد · 4/5"
+        "sample": "عمل جيد · 4/5",
+        "customInk": "مخصص",
+        "darkness": "درجة الغمق",
+        "darknessLight": "فاتح",
+        "darknessDark": "غامق",
+        "saveHint": "تستخدم الأوراق هذا القلم بعد حفظ هذه الإعدادات.",
+        "previewButton": "شاهد كيف ستبدو",
+        "previewTitle": "كيف ستبدو الورقة المصححة",
+        "previewNote": "صفحة نموذجية مرسومة بنفس طريقة الورقة المصححة الحقيقية. تأتي الملاحظات على الأوراق الحقيقية من التصحيح بالذكاء الاصطناعي.",
+        "previewLoading": "جارٍ رسم الصفحة…",
+        "previewError": "تعذر رسم المعاينة.",
+        "previewRetry": "حاول مرة أخرى",
+        "previewAlt": "صفحة إجابة نموذجية مصححة بالقلم المختار"
     },
     "redraw": {
         "button": "تحديث الورقة المصححة",

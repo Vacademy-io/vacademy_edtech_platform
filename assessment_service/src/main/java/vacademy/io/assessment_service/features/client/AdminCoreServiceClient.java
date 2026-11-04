@@ -610,8 +610,8 @@ public class AdminCoreServiceClient {
     /**
      * The institute's default AI checking settings, {@code ASSESSMENT_SETTING.aiCopyCheck}
      * as saved (instructions, languageFeedback, ...); an empty map when the institute set
-     * none or admin-core could not be asked. Cached like the template above, failures
-     * included, so admin-core is asked once per institute per 5 minutes.
+     * none, null when admin-core could not be asked. Cached for 5 minutes per institute,
+     * but a failure is not: a blip must not drop an institute's instructions for 5 minutes.
      */
     @Cacheable(value = "aiCopyCheckDefaults", key = "#instituteId", unless = "#result == null")
     public Map<String, Object> getAiCopyCheckDefaults(String instituteId) {
@@ -621,21 +621,42 @@ public class AdminCoreServiceClient {
                     + "/setting?settingKey=ASSESSMENT_SETTING";
             ResponseEntity<String> response = internalClientUtils.makeHmacRequest(
                     clientName, "GET", adminCoreServiceBaseUrl, route, null);
-            if (response.getStatusCode() != HttpStatus.OK) return Map.of();
-            String body = response.getBody();
-            if (body == null || body.isBlank() || "null".equals(body.trim())) return Map.of();
-            Map<String, Object> settingData = objectMapper.readValue(body, Map.class);
-            Object copyCheck = settingData == null ? null : settingData.get("aiCopyCheck");
-            if (copyCheck instanceof Map) {
-                Map<String, Object> out = new java.util.HashMap<>();
-                ((Map<?, ?>) copyCheck).forEach((k, v) -> out.put(String.valueOf(k), v));
-                return out;
-            }
-            return Map.of();
+            if (response.getStatusCode() != HttpStatus.OK) return null;
+            return copyCheckSection(response.getBody());
         } catch (Exception e) {
             log.warn("Failed to fetch AI copy-check defaults for institute {}: {}", instituteId, e.getMessage());
-            return Map.of();
+            return null;
         }
+    }
+
+    /**
+     * The pen saved in {@code ASSESSMENT_SETTING.aiCopyCheck.penStyle}, read fresh, null when
+     * the institute saved none. Not cached: a copy is written in the pen the admin has set
+     * right now, not the one from a few minutes ago. Throws when admin-core could not be
+     * asked, because "no pen saved" and "could not find out" must not look the same.
+     */
+    public Object readAiCopyPenStyle(String instituteId) throws Exception {
+        String route = "/admin-core-service/internal/institute/v1/" + instituteId
+                + "/setting?settingKey=ASSESSMENT_SETTING";
+        ResponseEntity<String> response = internalClientUtils.makeHmacRequest(
+                clientName, "GET", adminCoreServiceBaseUrl, route, null);
+        if (response.getStatusCode() != HttpStatus.OK) {
+            throw new IllegalStateException("admin-core answered " + response.getStatusCode());
+        }
+        return copyCheckSection(response.getBody()).get("penStyle");
+    }
+
+    @SuppressWarnings("unchecked")
+    private Map<String, Object> copyCheckSection(String body) throws Exception {
+        if (body == null || body.isBlank() || "null".equals(body.trim())) return Map.of();
+        Map<String, Object> settingData = objectMapper.readValue(body, Map.class);
+        Object copyCheck = settingData == null ? null : settingData.get("aiCopyCheck");
+        if (copyCheck instanceof Map) {
+            Map<String, Object> out = new java.util.HashMap<>();
+            ((Map<?, ?>) copyCheck).forEach((k, v) -> out.put(String.valueOf(k), v));
+            return out;
+        }
+        return Map.of();
     }
 
     /**

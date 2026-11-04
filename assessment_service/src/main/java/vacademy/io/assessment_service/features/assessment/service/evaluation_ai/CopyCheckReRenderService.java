@@ -72,6 +72,16 @@ public class CopyCheckReRenderService {
      *                           the copy was first drawn with
      * @param commentPlacement   INSIDE / OUTSIDE; null keeps the copy's template
      */
+    /** A sample page marked with this pen, as a PNG, for the pen settings. */
+    public byte[] penPreview(Map<String, Object> penStyle) {
+        try {
+            return aiServiceClient.penPreview(CopyPenStyle.clean(penStyle));
+        } catch (Exception e) {
+            log.error("[copy-check] pen preview failed: {}", e.getMessage());
+            throw new VacademyException(HttpStatus.BAD_GATEWAY, "Could not draw the preview. Please try again.");
+        }
+    }
+
     public Result reRender(String processId, String instituteId, Map<String, Object> penStyle,
                            String commentPlacement, String userId) {
         TransactionTemplate read = new TransactionTemplate(transactionManager);

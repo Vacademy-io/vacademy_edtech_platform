@@ -1,11 +1,35 @@
 import { describe, expect, it } from 'vitest';
 import { mergeWithDefaults } from '@/services/assessment-settings';
+import { normalizePenStyle } from '@/components/common/ai-copy-check/PenStylePicker';
 import {
     EMPTY_COPY_CHECK_SETTINGS,
     toCopyCheckConfig,
 } from '@/components/common/ai-copy-check/CopyCheckSettingsFields';
 
 describe('AI copy checking settings', () => {
+    it('keeps every part of the pen the admin saved', () => {
+        const penStyle = {
+            ink: '#6a1fa0',
+            font: 'CEDARVILLE_CURSIVE',
+            size: 'LARGE',
+            darkness: 70,
+        } as const;
+        const merged = mergeWithDefaults({
+            aiCopyCheck: { commentPlacement: 'INSIDE', penStyle },
+        });
+        expect(merged.aiCopyCheck?.penStyle).toEqual(penStyle);
+        expect(normalizePenStyle(merged.aiCopyCheck?.penStyle)).toEqual(penStyle);
+    });
+
+    it('shows an institute with no saved pen the pen its copies really get', () => {
+        expect(normalizePenStyle(undefined)).toEqual({
+            ink: 'RED',
+            font: 'DAWNING_OF_A_NEW_DAY',
+            size: 'MEDIUM',
+            darkness: 50,
+        });
+    });
+
     it('keeps the institute defaults when settings are loaded', () => {
         const merged = mergeWithDefaults({
             aiCopyCheck: {

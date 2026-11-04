@@ -385,38 +385,49 @@ public class CopyCheckOrchestratorService {
         }
     }
 
+    /** The pen each institute was last seen with; empty = it saved none. See penStyleFor. */
+    private static final Map<String, Map<String, Object>> LAST_KNOWN_PEN = new java.util.concurrent.ConcurrentHashMap<>();
+
     /**
      * The institute's pen for checked copies ({@code ASSESSMENT_SETTING.aiCopyCheck.penStyle}),
-     * or null for the usual red pen. Copies only; partner API traffic never takes the
-     * dashboard's institute default. Same cached admin-core read as the AI checking
-     * defaults; a slow or failed lookup means the usual pen, never a failed check.
+     * or null for the usual pen. Copies only; partner API traffic never takes the dashboard's
+     * institute default.
+     *
+     * <p>Read fresh for every copy, so a copy is written in the pen set at that moment. When
+     * admin-core is slow or down the copy takes the pen this pod last saw for the institute,
+     * not the usual one: the admin chose that pen, and a blip must not silently swap it. Only
+     * a pod that has never seen the institute falls back to the usual pen, and it says so in
+     * the log. A failed lookup never fails the check.
      */
-    /**
-     * The pen lookup reads the same cached admin-core answer the AI checking defaults
-     * just fetched, so it is normally instant. When admin-core is slow that first read
-     * has already waited; a pen is cosmetic, so this one waits briefly and the copy
-     * gets the usual pen rather than adding seconds to every dispatch.
-     */
-    private static final long PEN_LOOKUP_WAIT_MS = 500;
-
     Map<String, Object> penStyleFor(CopyCheckGradeRequestDto request, DispatchFacts facts) {
         if (!"COPY".equals(request.getAnswerMode()) || facts.apiTraffic() || adminCoreServiceClient == null) {
             return null;
         }
         AdminCoreServiceClient client = adminCoreServiceClient;
+        String instituteId = facts.instituteId();
         try {
-            Map<String, Object> defaults = CompletableFuture
-                    .supplyAsync(() -> client.getAiCopyCheckDefaults(facts.instituteId()), TEMPLATE_LOOKUP)
-                    .get(PEN_LOOKUP_WAIT_MS, TimeUnit.MILLISECONDS);
-            return defaults == null ? null : CopyPenStyle.clean(defaults.get("penStyle"));
+            Object saved = CompletableFuture.supplyAsync(() -> {
+                try {
+                    return client.readAiCopyPenStyle(instituteId);
+                } catch (Exception e) {
+                    throw new java.util.concurrent.CompletionException(e);
+                }
+            }, TEMPLATE_LOOKUP).get(TEMPLATE_LOOKUP_WAIT_MS, TimeUnit.MILLISECONDS);
+            Map<String, Object> pen = CopyPenStyle.clean(saved);
+            LAST_KNOWN_PEN.put(instituteId, pen == null ? Map.of() : pen);
+            return pen;
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
-            return null;
         } catch (Exception e) {
-            log.info("[copy-check] institute pen lookup for {} not back in time; usual pen ({})",
-                    facts.instituteId(), e.getClass().getSimpleName());
+            log.warn("[copy-check] could not read the pen of institute {} ({}); using the last one seen",
+                    instituteId, e.getClass().getSimpleName());
+        }
+        Map<String, Object> last = LAST_KNOWN_PEN.get(instituteId);
+        if (last == null) {
+            log.warn("[copy-check] no pen known for institute {}; this copy gets the usual pen", instituteId);
             return null;
         }
+        return last.isEmpty() ? null : last;
     }
 
     /** What dispatch reads about a claimed row in its first, short transaction. */
