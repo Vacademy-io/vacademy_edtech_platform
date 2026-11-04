@@ -902,12 +902,8 @@ public class AiCallOutcomeProcessor {
                             + "— falling back to a name match", disposition, mapped, lead.instituteId());
         }
 
-        LeadStatus match = leadStatusRepo
-                .findByInstituteIdAndIsActiveTrueOrderByDisplayOrderAsc(lead.instituteId())
-                .stream()
-                .filter(s -> norm.equals(normalizeKey(s.getStatusKey())) || norm.equals(normalizeKey(s.getLabel())))
-                .findFirst()
-                .orElse(null);
+        LeadStatus match = statusForDisposition(
+                leadStatusRepo.findByInstituteIdAndIsActiveTrueOrderByDisplayOrderAsc(lead.instituteId()), disposition);
         if (match == null) {
             log.info("ai-call status: no lead-status matches disposition '{}' for institute {} — leaving as-is",
                     disposition, lead.instituteId());
@@ -916,6 +912,25 @@ public class AiCallOutcomeProcessor {
         leadStatusService.changeLeadStatus(lead.responseId(), match.getId(), null, "AI_CALLING");
         log.info("ai-call status: lead {} -> {} (matched disposition '{}')",
                 lead.userId(), match.getStatusKey(), disposition);
+    }
+
+    /**
+     * The institute's status named like this disposition. Most catalogs have no "Demo booked" status:
+     * someone who agreed to a demo is at least interested, and leaving them on New would read as if
+     * the call achieved nothing. Null when nothing fits.
+     */
+    static LeadStatus statusForDisposition(List<LeadStatus> statuses, String disposition) {
+        String norm = normalizeKey(disposition);
+        LeadStatus exact = statuses.stream()
+                .filter(s -> norm.equals(normalizeKey(s.getStatusKey())) || norm.equals(normalizeKey(s.getLabel())))
+                .findFirst()
+                .orElse(null);
+        if (exact != null) return exact;
+        if (EngagementCallOutcomeService.verdict(disposition) != EngagementCallOutcomeService.Verdict.BOOKED) return null;
+        return statuses.stream()
+                .filter(s -> "INTERESTED".equals(normalizeKey(s.getStatusKey())))
+                .findFirst()
+                .orElse(null);
     }
 
     /**
@@ -938,7 +953,7 @@ public class AiCallOutcomeProcessor {
     }
 
     /** Upper-case alphanumerics only, so "Call Back" / "CALL_BACK" / "Callback" all match. */
-    private String normalizeKey(String s) {
+    private static String normalizeKey(String s) {
         return s == null ? "" : s.replaceAll("[^A-Za-z0-9]", "").toUpperCase();
     }
 
