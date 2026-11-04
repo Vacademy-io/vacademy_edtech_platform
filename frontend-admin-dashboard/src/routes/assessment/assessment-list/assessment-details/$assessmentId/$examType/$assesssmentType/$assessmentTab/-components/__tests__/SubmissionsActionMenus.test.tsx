@@ -15,6 +15,7 @@ const openMenu = (triggerLabel: string) => {
 
 const aiHandlers = () => ({
     onCheckSubmitted: vi.fn(),
+    onRecheckSubmitted: vi.fn(),
     onUploadCopies: vi.fn(),
     onToggleProgress: vi.fn(),
     onOpenResults: vi.fn(),
@@ -23,6 +24,7 @@ const aiHandlers = () => ({
 describe('AiCheckMenu', () => {
     it.each([
         ['actionMenus.ai.checkSubmitted.title', 'onCheckSubmitted'],
+        ['actionMenus.ai.recheckSubmitted.title', 'onRecheckSubmitted'],
         ['actionMenus.ai.upload.title', 'onUploadCopies'],
         ['actionMenus.ai.progress.title', 'onToggleProgress'],
         ['actionMenus.ai.results.title', 'onOpenResults'],

@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
+    ArrowsClockwise,
     CaretDown,
     ChartBar,
     Export,
@@ -73,8 +74,14 @@ const SectionLabel = ({ children }: { children: ReactNode }) => (
     </DropdownMenuLabel>
 );
 
+// Scrolls inside the room it has: on a short window this menu opened off-screen and its
+// first option, the one most admins came for, could not be reached.
+const AI_MENU_CONTENT_CLASS =
+    'max-h-[var(--radix-dropdown-menu-content-available-height)] w-80 overflow-y-auto p-1.5'; // design-lint-ignore: Radix's own available-height variable, no token exists for it
+
 interface AiCheckMenuProps {
     onCheckSubmitted: () => void;
+    onRecheckSubmitted: () => void;
     onUploadCopies: () => void;
     onToggleProgress: () => void;
     isProgressOpen: boolean;
@@ -84,6 +91,7 @@ interface AiCheckMenuProps {
 /** Everything AI copy checking does, behind one button, grouped as start → track. */
 export const AiCheckMenu = ({
     onCheckSubmitted,
+    onRecheckSubmitted,
     onUploadCopies,
     onToggleProgress,
     isProgressOpen,
@@ -104,13 +112,19 @@ export const AiCheckMenu = ({
                     <CaretDown size={14} />
                 </MyButton>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="start" className="w-80 p-1.5">
+            <DropdownMenuContent align="start" collisionPadding={8} className={AI_MENU_CONTENT_CLASS}>
                 <SectionLabel>{t('actionMenus.ai.startSection')}</SectionLabel>
                 <MenuRow
                     icon={<UserFocus size={18} />}
                     title={t('actionMenus.ai.checkSubmitted.title')}
                     description={t('actionMenus.ai.checkSubmitted.description')}
                     onSelect={onCheckSubmitted}
+                />
+                <MenuRow
+                    icon={<ArrowsClockwise size={18} />}
+                    title={t('actionMenus.ai.recheckSubmitted.title')}
+                    description={t('actionMenus.ai.recheckSubmitted.description')}
+                    onSelect={onRecheckSubmitted}
                 />
                 <MenuRow
                     icon={<UploadSimple size={18} />}

@@ -14,15 +14,8 @@
             "confirmMessagePrefix": "Voulez-vous vraiment publier le résultat pour"
         },
         "evaluateWithAI": {
-            "title": "Évaluer l’évaluation avec l’IA",
-            "evaluatingLabel": "En cours d’évaluation",
-            "reEvaluationWarningPart1": "Cette tentative a déjà été évaluée. La réévaluer la fera repasser à l’état",
-            "reEvaluationWarningPart2": "jusqu’à ce que le nouveau résultat soit prêt.",
-            "selectModelLabel": "Sélectionner le modèle d’IA",
-            "selectModelPlaceholder": "Sélectionner un modèle",
-            "chooseModelPrefix": "Choisissez le modèle d’IA pour évaluer la soumission de",
-            "chooseModelSuffix": "",
-            "rubricInfo": "Pour toute question sans grille de notation, l’IA génère des critères de notation la première fois et les réutilise pour chaque étudiant, afin que tout le monde soit noté de la même façon. Définissez des grilles de notation sur l’évaluation pour garder un contrôle total sur l’attribution des notes.",
+            "recheckTitle": "Recorriger cette copie avec l’IA ?",
+            "recheckMessage": "La copie de {{name}} est déjà corrigée ou en cours d’évaluation. Une nouvelle correction remplace ses notes actuelles, y compris les modifications d’un enseignant, et elle s’affiche « En cours d’évaluation » jusqu’à ce que le nouveau résultat soit prêt.",
             "estimatedCostLabel": "Coût estimé :",
             "creditsCount_one": "{{count}} crédit",
             "creditsCount_many": "{{count}} crédits",
@@ -32,7 +25,7 @@
             "balance_other": "Solde : {{count}}",
             "insufficientCredits": "Crédits insuffisants pour cette évaluation. Ajoutez des crédits à votre établissement pour continuer.",
             "starting": "Démarrage...",
-            "start": "Démarrer"
+            "recheckConfirm": "Recorriger"
         },
         "revaluateEntireAssessment": {
             "title": "Réévaluer l’ensemble de l’évaluation",

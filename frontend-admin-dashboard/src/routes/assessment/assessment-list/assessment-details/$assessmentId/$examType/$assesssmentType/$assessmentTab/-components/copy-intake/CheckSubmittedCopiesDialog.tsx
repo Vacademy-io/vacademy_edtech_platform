@@ -52,6 +52,7 @@ export const CheckSubmittedCopiesDialog = ({
     instituteId,
     questionsPerCopy,
     attemptIds,
+    defaultIncludeChecked = false,
     onStarted,
 }: {
     open: boolean;
@@ -62,10 +63,12 @@ export const CheckSubmittedCopiesDialog = ({
     questionsPerCopy: number;
     /** Checked rows of the submissions table; undefined/empty = every submitted copy. */
     attemptIds?: string[];
+    /** Start with "also re-check the copies already checked" ticked. */
+    defaultIncludeChecked?: boolean;
     onStarted: (batch: CopyIntakeBatch) => void;
 }) => {
     const { t } = useTranslation('assessmentCopyIntake');
-    const [includeChecked, setIncludeChecked] = useState(false);
+    const [includeChecked, setIncludeChecked] = useState(defaultIncludeChecked);
     const [notifyEmail, setNotifyEmail] = useState(true);
     // Preselected from the institute's default (Settings → Assessment); the teacher can change it per batch.
     const [commentPlacement, setCommentPlacement] = useInstituteCommentPlacement(open);

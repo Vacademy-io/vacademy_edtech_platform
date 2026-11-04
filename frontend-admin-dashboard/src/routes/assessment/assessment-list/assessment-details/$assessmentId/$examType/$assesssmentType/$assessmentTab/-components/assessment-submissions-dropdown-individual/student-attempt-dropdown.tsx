@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from '@tanstack/react-router';
 import {
@@ -11,7 +11,7 @@ import {
     DropdownMenuSubContent,
 } from '@/components/ui/dropdown-menu';
 import { MyButton } from '@/components/design-system/button';
-import { DotsThree, WarningCircle, Info, Coins } from '@phosphor-icons/react';
+import { DotsThree, WarningCircle, Coins } from '@phosphor-icons/react';
 import { useToolCostPreview } from '@/components/common/ai-credits/useToolCostPreview';
 import { AssessmentRevaluateStudentInterface } from '@/types/assessments/assessment-overview';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
@@ -32,25 +32,14 @@ import { Route } from '../..';
 import { getInstituteId } from '@/constants/helper';
 import { toast } from 'sonner';
 import { SelectedReleaseResultFilterInterface } from '../AssessmentSubmissionsTab';
-import { getAssessmentDetails } from '@/routes/assessment/create-assessment/$assessmentId/$examtype/-services/assessment-services';
+import {
+    getAssessmentDetails,
+    getQuestionDataForSection,
+} from '@/routes/assessment/create-assessment/$assessmentId/$examtype/-services/assessment-services';
 import {
     storeEvaluationDataInStorage,
     triggerAIEvaluation,
 } from '../../-services/ai-evaluation-services';
-import {
-    PLATFORM_DEFAULT_MODEL,
-    buildModelDisplayNames,
-    pickableEvaluationModels,
-    toPreferredModel,
-} from '@/routes/ai-center/-types/ai-models';
-import { useAIModelsList } from '@/hooks/useAiModels';
-import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from '@/components/ui/select';
 import { stashEvalReturnUrl } from '@/routes/evaluation/evaluation-tool/-utils/eval-return';
 import { UploadAnswerSheetDialog } from '@/routes/evaluation/evaluate/$assessmentId/$attemptId/$examType/-components/UploadAnswerSheetDialog';
 import { ProctoringReviewDialog } from './ProctoringReviewDialog';
@@ -205,152 +194,112 @@ const ReleaseResultComponent = ({
     );
 };
 
-const StudentEvaluateWithAIComponent = ({
-    student,
-    onClose,
-    assessmentData,
-    isReEvaluation,
-}: {
-    student: AssessmentRevaluateStudentInterface;
-    onClose: () => void;
-    assessmentData: any;
-    isReEvaluation?: boolean;
-}) => {
-    const { t } = useTranslation(['assessmentStudentAttemptDropdown', 'aiCenterAiModels']);
+/**
+ * Starts the AI check on one attempt and opens its progress page. No model is
+ * sent, so the platform's "evaluation" default decides; teachers do not pick one.
+ * A refusal (a released result, a paper with no questions) toasts the server's reason.
+ */
+const useStartAiCheck = (student: AssessmentRevaluateStudentInterface, assessmentData: any) => {
+    const { t } = useTranslation('assessmentStudentAttemptDropdown');
     const { assessmentId } = Route.useParams();
-    const instituteId = getInstituteId();
     const navigate = useNavigate();
-    // Starts on "Platform default", which sends NO preferred_model, so the
-    // super-admin's evaluation use-case default decides. A model is sent only
-    // when the teacher picks one: whatever this picker sends overrides the
-    // pipeline's own default (an ultra-tier default here once billed one copy
-    // 133.62 credits against a 10-credit estimate).
-    const [selectedModel, setSelectedModel] = useState<string>(PLATFORM_DEFAULT_MODEL);
-    const modelDisplayNames = buildModelDisplayNames(t);
-    // Active registry models only; until (or unless) that list loads the
-    // static picker list stands, so the choices never disappear.
-    const { data: registryModels } = useAIModelsList();
-    const pickerModelIds = useMemo(
-        () =>
-            pickableEvaluationModels(
-                registryModels?.models
-                    ? new Set(registryModels.models.map((m) => m.model_id))
-                    : undefined
-            ),
-        [registryModels]
-    );
+    const toastId = `ai-check-${student.attempt_id}`;
 
-    // Credit cost preview for this evaluation (per graded question).
-    const numQuestions: number = (assessmentData?.[1]?.saved_data?.sections ?? []).reduce(
-        (sum: number, section: any) => sum + (section?.questions?.length || 0),
-        0
-    );
-    const cost = useToolCostPreview('copy_check_evaluation', { num_questions: numQuestions });
-
-    // Trigger AI evaluation mutation
-    const triggerEvaluationMutation = useMutation({
-        mutationFn: ({
-            attempt_ids,
-            preferred_model,
-        }: {
-            attempt_ids: string[];
-            preferred_model?: string;
-        }) => triggerAIEvaluation(attempt_ids, preferred_model),
+    return useMutation({
+        mutationFn: () => triggerAIEvaluation([student.attempt_id]),
+        onMutate: () => {
+            toast.loading(t('dialogs.evaluateWithAI.starting'), { id: toastId });
+        },
         onSuccess: (processIds) => {
+            // The server skips an attempt it cannot queue and returns no process for it.
+            const processId = processIds[0];
+            if (!processId) {
+                toast.error(t('toasts.evaluationError'), { id: toastId });
+                return;
+            }
             toast.success(t('toasts.evaluationStarted'), {
+                id: toastId,
                 className: 'success-toast',
                 duration: 4000,
             });
-
-            console.log('sections', assessmentData?.[1]?.saved_data?.sections);
             storeEvaluationDataInStorage({
-                processId: processIds[0] ?? '',
+                processId,
                 attemptId: student.attempt_id,
-                assessmentId: assessmentId,
+                assessmentId,
                 sectionIds:
                     assessmentData?.[1]?.saved_data?.sections?.map((section: any) => section.id) ||
                     [],
             });
-            onClose();
-
-            // Navigate to the evaluation progress page
             navigate({
                 to: '/assessment/evaluation-ai/$attemptId/$processId',
-                params: {
-                    attemptId: student.attempt_id,
-                    processId: processIds[0] ?? '',
-                },
+                params: { attemptId: student.attempt_id, processId },
             });
         },
         onError: (error: unknown) => {
             console.error('Failed to trigger AI evaluation:', error);
-            toast.error(t('toasts.evaluationError'));
+            const body = (error as { response?: { data?: { ex?: string; message?: string } } })
+                ?.response?.data;
+            toast.error(body?.ex || body?.message || t('toasts.evaluationError'), { id: toastId });
         },
     });
+};
 
-    const handleEvaluateWithAIStudent = () => {
-        triggerEvaluationMutation.mutate({
-            attempt_ids: [student.attempt_id],
-            preferred_model: toPreferredModel(selectedModel),
-        });
-    };
+/**
+ * What one AI check of this paper costs against the institute's balance. The dashboard's
+ * server side only quotes (credit-check.dashboard-enforced=false in prod), so this is the
+ * one thing stopping a check the institute cannot pay for. The check is billed per
+ * question, and the saved sections carry no questions, so they come from the per-section
+ * query (same count as the bulk quote). `enabled` keeps a row from fetching until its
+ * menu is open.
+ */
+const useAiCheckCost = (assessmentData: any, enabled: boolean) => {
+    const { assessmentId } = Route.useParams();
+    const sectionIds: string = (assessmentData?.[1]?.saved_data?.sections ?? [])
+        .map((section: any) => section?.id)
+        .filter(Boolean)
+        .join(',');
+    const { data: sectionQuestions, isLoading: questionsLoading } = useQuery({
+        ...getQuestionDataForSection({ assessmentId, sectionIds }),
+        enabled: enabled && Boolean(assessmentId && sectionIds),
+    });
+    const numQuestions: number = Object.values(
+        (sectionQuestions ?? {}) as Record<string, unknown[] | undefined>
+    ).reduce((sum, questions) => sum + (questions?.length ?? 0), 0);
+    const cost = useToolCostPreview(
+        'copy_check_evaluation',
+        { num_questions: numQuestions },
+        enabled && numQuestions > 0
+    );
+    return { ...cost, numQuestions, isLoading: questionsLoading || cost.isLoading };
+};
+
+/** A copy already checked or under evaluation: a new check costs credits and replaces its marks. */
+const ReCheckWithAIConfirm = ({
+    student,
+    cost,
+    isStarting,
+    onConfirm,
+    onClose,
+}: {
+    student: AssessmentRevaluateStudentInterface;
+    cost: ReturnType<typeof useAiCheckCost>;
+    isStarting: boolean;
+    onConfirm: () => void;
+    onClose: () => void;
+}) => {
+    const { t } = useTranslation('assessmentStudentAttemptDropdown');
 
     return (
         <DialogContent className="flex flex-col gap-4 p-0">
             <h1 className="rounded-md bg-primary-50 p-4 text-primary-500">
-                {t('dialogs.evaluateWithAI.title')}
+                {t('dialogs.evaluateWithAI.recheckTitle')}
             </h1>
             <div className="flex flex-col gap-4 p-4">
-                {isReEvaluation && (
-                    <div className="flex items-start gap-2 rounded-md bg-danger-50 p-3 text-danger-600">
-                        <WarningCircle size={18} className="mt-0.5 shrink-0" />
-                        <p className="text-sm">
-                            {t('dialogs.evaluateWithAI.reEvaluationWarningPart1')}{' '}
-                            <span className="font-semibold">
-                                {t('dialogs.evaluateWithAI.evaluatingLabel')}
-                            </span>{' '}
-                            {t('dialogs.evaluateWithAI.reEvaluationWarningPart2')}
-                        </p>
-                    </div>
-                )}
-                <div className="flex flex-col gap-2">
-                    <label className="text-sm font-medium text-neutral-700">
-                        {t('dialogs.evaluateWithAI.selectModelLabel')}
-                    </label>
-                    <Select value={selectedModel} onValueChange={setSelectedModel}>
-                        <SelectTrigger className="w-full">
-                            <SelectValue placeholder={t('dialogs.evaluateWithAI.selectModelPlaceholder')} />
-                        </SelectTrigger>
-                        <SelectContent>
-                            <SelectItem value={PLATFORM_DEFAULT_MODEL}>
-                                {t('platformDefault.name', { ns: 'aiCenterAiModels' })} -{' '}
-                                {t('platformDefault.description', { ns: 'aiCenterAiModels' })}
-                            </SelectItem>
-                            {pickerModelIds.map((modelId) => {
-                                const info = modelDisplayNames[modelId];
-                                return (
-                                    <SelectItem key={modelId} value={modelId}>
-                                        {info ? `${info.name} - ${info.description}` : modelId}
-                                    </SelectItem>
-                                );
-                            })}
-                        </SelectContent>
-                    </Select>
-                    <p className="text-xs text-neutral-500">
-                        {t('dialogs.evaluateWithAI.chooseModelPrefix')}{' '}
-                        <span className="font-semibold text-primary-600">
-                            {student.full_name}
-                        </span>
-                        {t('dialogs.evaluateWithAI.chooseModelSuffix')}
-                    </p>
-                </div>
+                <p className="text-sm text-neutral-700">
+                    {t('dialogs.evaluateWithAI.recheckMessage', { name: student.full_name })}
+                </p>
 
-                <div className="flex items-start gap-2 rounded-md bg-primary-50 p-3 text-xs text-primary-700">
-                    <Info size={16} className="mt-0.5 shrink-0" />
-                    <p>{t('dialogs.evaluateWithAI.rubricInfo')}</p>
-                </div>
-
-                {numQuestions > 0 && cost.credits != null && (
+                {cost.numQuestions > 0 && cost.credits != null && (
                     <div className="flex items-center justify-between rounded-md border border-neutral-200 bg-neutral-50 p-3">
                         <div className="flex items-center gap-2 text-sm text-neutral-700">
                             <Coins size={16} className="text-primary-500" />
@@ -385,19 +334,19 @@ const StudentEvaluateWithAIComponent = ({
                         type="button"
                         buttonType="secondary"
                         onClick={onClose}
-                        disabled={triggerEvaluationMutation.isPending}
+                        disabled={isStarting}
                     >
                         {t('dialogs.cancel')}
                     </MyButton>
                     <MyButton
                         type="button"
                         buttonType="primary"
-                        onClick={handleEvaluateWithAIStudent}
-                        disabled={triggerEvaluationMutation.isPending || cost.sufficient === false}
+                        onClick={onConfirm}
+                        disabled={isStarting || cost.sufficient === false}
                     >
-                        {triggerEvaluationMutation.isPending
+                        {isStarting
                             ? t('dialogs.evaluateWithAI.starting')
-                            : t('dialogs.evaluateWithAI.start')}
+                            : t('dialogs.evaluateWithAI.recheckConfirm')}
                     </MyButton>
                 </div>
             </div>
@@ -536,6 +485,8 @@ const StudentAttemptDropdown = ({ student }: { student: AssessmentRevaluateStude
         setOpenDialog(true);
         setSelectedOption(value);
     };
+
+    const startAiCheck = useStartAiCheck(student, assessmentData);
 
     // Fetch the report detail for this attempt, resolve the evaluated copy's
     // public URL and open it. The evaluated_file_id lives on the report detail,
@@ -685,6 +636,25 @@ const StudentAttemptDropdown = ({ student }: { student: AssessmentRevaluateStude
     const isEvaluationPending = evaluationStatus === 'PENDING';
     const isEvaluated = isEvaluatedStatus(evaluationStatus);
 
+    const aiCheckCost = useAiCheckCost(
+        assessmentData,
+        isManualEvaluation && (menuOpen || openDialog)
+    );
+
+    // A pending copy starts in one click. Anything else asks first, whichever menu label it
+    // sits under ("Revaluate"): a teacher's half-marked copy is EVALUATING, not COMPLETED.
+    const handleCheckWithAi = () => {
+        if (!isEvaluationPending) {
+            handleProvideReattempt('Evaluate with AI');
+            return;
+        }
+        if (aiCheckCost.sufficient === false) {
+            toast.error(t('dialogs.evaluateWithAI.insufficientCredits'));
+            return;
+        }
+        startAiCheck.mutate();
+    };
+
     // For manual assessments the menu depends on whether the attempt has a
     // submitted answer sheet and an evaluated copy. Both live behind detail
     // endpoints (not on the table row), so fetch them lazily on menu open.
@@ -807,7 +777,8 @@ const StudentAttemptDropdown = ({ student }: { student: AssessmentRevaluateStude
                                     </DropdownMenuItem>
                                     <DropdownMenuItem
                                         className="cursor-pointer"
-                                        onClick={() => handleProvideReattempt('Evaluate with AI')}
+                                        disabled={startAiCheck.isPending || aiCheckCost.isLoading}
+                                        onClick={handleCheckWithAi}
                                     >
                                         {t('dropdown.evaluateWithAI')}
                                     </DropdownMenuItem>
@@ -935,11 +906,16 @@ const StudentAttemptDropdown = ({ student }: { student: AssessmentRevaluateStude
                     />
                 )}
                 {selectedOption === 'Evaluate with AI' && (
-                    <StudentEvaluateWithAIComponent
+                    <ReCheckWithAIConfirm
                         student={student}
+                        cost={aiCheckCost}
+                        isStarting={startAiCheck.isPending}
+                        onConfirm={() =>
+                            startAiCheck.mutate(undefined, {
+                                onSettled: () => setOpenDialog(false),
+                            })
+                        }
                         onClose={() => setOpenDialog(false)}
-                        assessmentData={assessmentData}
-                        isReEvaluation={!isEvaluationPending}
                     />
                 )}
             </Dialog>
