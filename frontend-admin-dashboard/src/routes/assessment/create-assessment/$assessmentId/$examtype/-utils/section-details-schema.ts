@@ -47,6 +47,8 @@ const sectionDetailsSchema = z.object({
             adaptive_marking_for_each_question: z.array(
                 z.object({
                     questionId: z.string().optional(),
+                    // Added from the Question Library: has its own row before the test is saved.
+                    libraryCopy: z.boolean().optional(),
                     questionName: z.string(),
                     questionType: z.string(),
                     questionMark: z.string(),

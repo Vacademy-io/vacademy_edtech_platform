@@ -1,19 +1,22 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import authenticatedAxiosInstance from '@/lib/auth/axiosInstance';
 import { BASE_URL } from '@/constants/urls';
+import type { QuestionResponse } from '@/types/assessments/question-paper-template';
 import type {
     QuestionBankFilters,
     QuestionBankQuestion,
 } from '@/routes/assessment/question-papers/-utils/question-bank-services';
 
 /**
- * Question Library: the institute's questions organised in a topic tree.
+ * Question Library: the questions and papers the platform provides, in a topic tree.
+ * One institute manages it (LibraryTree.can_manage); every other one reads and copies.
  * Backend: assessment_service QuestionLibraryController.
  */
 const LIBRARY_BASE = `${BASE_URL}/assessment-service/question-library/v1`;
 
 export const LIBRARY_TREE_KEY = 'QUESTION_LIBRARY_TREE';
 export const LIBRARY_QUESTIONS_KEY = 'QUESTION_LIBRARY_QUESTIONS';
+export const LIBRARY_PAPERS_KEY = 'QUESTION_LIBRARY_PAPERS';
 export const LIBRARY_TAGS_KEY = 'QUESTION_LIBRARY_SUBJECT_TAGS';
 
 export interface LibraryNode {
@@ -44,6 +47,30 @@ export interface LibraryTree {
     nodes: LibraryNode[];
     summary: LibrarySummary;
     max_depth: number;
+    /** True for staff of the institute that owns the library. Everyone else reads and copies. */
+    can_manage: boolean;
+}
+
+/** A whole question paper kept under a topic. */
+export interface LibraryPaper {
+    id: string;
+    title: string;
+    node_id: string;
+    question_count: number;
+}
+
+export interface LibraryCopiedQuestion {
+    source_question_id: string;
+    question_id: string;
+    question_type?: string | null;
+    text?: string | null;
+}
+
+export interface LibraryCopyResult {
+    copied: LibraryCopiedQuestion[];
+    /** Skipped because the section already has a copy of them. */
+    already_in_section: number;
+    failed: number;
 }
 
 export interface LibraryQuestion {
@@ -242,6 +269,47 @@ export const addPaperToLibraryNode = (
     body: { question_paper_id: string; node_id: string }
 ) => post<LibraryActionResult>('/papers/add-to-node', instituteId, body);
 
+export const removeLibraryPaper = (
+    instituteId: string,
+    body: { question_paper_id: string; node_id: string }
+) => post<LibraryActionResult>('/papers/remove', instituteId, body);
+
+export const fetchLibraryPapers = async (instituteId: string, nodeId?: string) => {
+    const { data } = await authenticatedAxiosInstance.get<LibraryPaper[]>(
+        `${LIBRARY_BASE}/papers`,
+        {
+            params: { instituteId, nodeId },
+        }
+    );
+    return data;
+};
+
+/**
+ * Copies picked questions, or one whole paper, into the caller's institute. A test links
+ * to the returned copies, never to the library rows, so editing them stays in that test.
+ */
+export const copyLibraryQuestions = (
+    instituteId: string,
+    body: {
+        question_ids?: string[];
+        question_paper_id?: string;
+        exclude_question_ids?: string[];
+    }
+) => post<LibraryCopyResult>('/questions/copy', instituteId, body);
+
+/** One of this institute's copies. Its test may not have been saved yet. */
+export const fetchLibraryCopy = async (instituteId: string, questionId: string) => {
+    const { data } = await authenticatedAxiosInstance.get<QuestionResponse>(
+        `${LIBRARY_BASE}/copies`,
+        { params: { instituteId, questionId } }
+    );
+    return data;
+};
+
+/** Saves an edit to one of this institute's copies. The server refuses anything else. */
+export const editLibraryCopy = (instituteId: string, question: unknown) =>
+    post<boolean>('/copies/edit', instituteId, question);
+
 export const fetchLibrarySubjectTags = async (instituteId: string) => {
     const { data } = await authenticatedAxiosInstance.get<LibrarySubjectTag[]>(
         `${LIBRARY_BASE}/subject-tags`,
@@ -278,6 +346,13 @@ export const useLibraryQuestions = (
         placeholderData: (previous) => previous,
     });
 
+export const useLibraryPapers = (instituteId: string | undefined, nodeId?: string) =>
+    useQuery({
+        queryKey: [LIBRARY_PAPERS_KEY, instituteId, nodeId],
+        queryFn: () => fetchLibraryPapers(instituteId as string, nodeId),
+        enabled: !!instituteId,
+    });
+
 export const useLibrarySubjectTags = (instituteId: string | undefined, enabled: boolean) =>
     useQuery({
         queryKey: [LIBRARY_TAGS_KEY, instituteId],
@@ -303,6 +378,7 @@ export const useLibraryRefresh = () => {
     return () => {
         queryClient.invalidateQueries({ queryKey: [LIBRARY_TREE_KEY] });
         queryClient.invalidateQueries({ queryKey: [LIBRARY_QUESTIONS_KEY] });
+        queryClient.invalidateQueries({ queryKey: [LIBRARY_PAPERS_KEY] });
     };
 };
 

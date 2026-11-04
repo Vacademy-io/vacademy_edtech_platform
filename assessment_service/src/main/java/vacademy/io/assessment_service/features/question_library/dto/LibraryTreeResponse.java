@@ -20,4 +20,6 @@ public class LibraryTreeResponse {
     private LibrarySummaryDto summary;
     /** Deepest level a topic may sit at. */
     private Integer maxDepth;
+    /** True for staff of the owner institute. Everyone else only reads and copies. */
+    private Boolean canManage;
 }
