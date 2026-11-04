@@ -11,6 +11,7 @@ import vacademy.io.admin_core_service.features.institute.service.InstitutePaymen
 import vacademy.io.admin_core_service.features.payments.enums.WebHookStatus;
 import vacademy.io.admin_core_service.features.payments.util.WebHookErrorUtils;
 import vacademy.io.admin_core_service.features.user_subscription.entity.PaymentLog;
+import vacademy.io.admin_core_service.features.user_subscription.enums.PaymentOptionType;
 import vacademy.io.admin_core_service.features.user_subscription.repository.PaymentLogRepository;
 import vacademy.io.admin_core_service.features.user_subscription.service.PaymentLogService;
 import vacademy.io.admin_core_service.features.user_subscription.service.UserInstitutePaymentGatewayMappingService;
@@ -39,8 +40,11 @@ import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import org.springframework.util.StringUtils;
 import vacademy.io.admin_core_service.features.user_subscription.entity.UserPlan;
 
@@ -865,7 +869,7 @@ public class RazorpayWebHookService {
             if (!StringUtils.hasText(razorpayPaymentId)) {
                 return;
             }
-            Optional<PaymentLog> plOpt = paymentLogRepository.findById(orderId);
+            Optional<PaymentLog> plOpt = findGatewayLog(orderId);
             if (plOpt.isEmpty() || plOpt.get().getUserPlan() == null) {
                 return;
             }
@@ -898,12 +902,20 @@ public class RazorpayWebHookService {
     private void persistRazorpayMandate(String orderId, String userId, String instituteId,
             String tokenId, String customerId) {
         try {
-            Optional<PaymentLog> plOpt = paymentLogRepository.findById(orderId);
+            Optional<PaymentLog> plOpt = findGatewayLog(orderId);
             if (plOpt.isEmpty() || plOpt.get().getUserPlan() == null) {
                 log.debug("No user plan for orderId {} — skipping mandate persist", orderId);
                 return;
             }
             PaymentLog paymentLog = plOpt.get();
+            // A card saved while buying a book is not auto-pay on that book. A mandate row makes
+            // the plan read as "Stop auto-pay" on the learner's screens, and only a plan that can
+            // renew has any use for one. The saved card itself is already stored above.
+            if (!canRenewByMandate(paymentLog.getUserPlan())) {
+                log.info("Plan {} does not renew — keeping the saved card, not recording a mandate",
+                        paymentLog.getUserPlan().getId());
+                return;
+            }
             String userPlanId = paymentLog.getUserPlan().getId();
             // The cap and currency the mandate was registered with live on the originating
             // request. Without them the renewal charge has no local ceiling to enforce.
@@ -940,9 +952,55 @@ public class RazorpayWebHookService {
         }
     }
 
+    private boolean canRenewByMandate(UserPlan userPlan) {
+        return Boolean.TRUE.equals(userPlan.getAutoRenewalEnabled())
+                || (userPlan.getPaymentOption() != null
+                        && PaymentOptionType.SUBSCRIPTION.name().equalsIgnoreCase(userPlan.getPaymentOption().getType()));
+    }
+
+    /**
+     * Every payment log of the order a webhook names. A single checkout's order id is its log id.
+     * A cart's is the shared "MP…" id, which is no log's id: its logs carry it in
+     * payment_specific_data, which is how the PAID update finds them too.
+     */
+    private List<PaymentLog> findOrderLogs(String orderId) {
+        Optional<PaymentLog> byId = paymentLogRepository.findById(orderId);
+        if (byId.isPresent()) {
+            return List.of(byId.get());
+        }
+        List<PaymentLog> logs = paymentLogRepository.findAllByOrderIdInOriginalRequest(orderId);
+        return logs.isEmpty() ? paymentLogRepository.findAllByOrderIdInJson(orderId) : logs;
+    }
+
+    /**
+     * The log the gateway actually charged. Each line of a cart holds a copy of the gateway log's
+     * payment_specific_data, childPaymentLogIds included, so the gateway log is the one no log
+     * lists as a child.
+     */
+    Optional<PaymentLog> findGatewayLog(String orderId) {
+        List<PaymentLog> logs = findOrderLogs(orderId);
+        Set<String> childIds = new HashSet<>();
+        logs.forEach(paymentLog -> childIds.addAll(childLogIds(paymentLog)));
+        return logs.stream().filter(paymentLog -> !childIds.contains(paymentLog.getId())).findFirst();
+    }
+
+    private Set<String> childLogIds(PaymentLog paymentLog) {
+        Set<String> ids = new HashSet<>();
+        if (!StringUtils.hasText(paymentLog.getPaymentSpecificData())) {
+            return ids;
+        }
+        try {
+            objectMapper.readTree(paymentLog.getPaymentSpecificData()).path("childPaymentLogIds")
+                    .forEach(id -> ids.add(id.asText()));
+        } catch (Exception e) {
+            log.debug("Could not read child logs of payment log {}: {}", paymentLog.getId(), e.getMessage());
+        }
+        return ids;
+    }
+
     private String getUserIdFromPaymentLog(String orderId) {
         try {
-            Optional<PaymentLog> paymentLogOptional = paymentLogRepository.findById(orderId);
+            Optional<PaymentLog> paymentLogOptional = findGatewayLog(orderId);
 
             if (paymentLogOptional.isPresent()) {
                 String userId = paymentLogOptional.get().getUserId();
@@ -1166,9 +1224,10 @@ public class RazorpayWebHookService {
         }
 
         try {
-            // Get existing payment log
-            Optional<PaymentLog> paymentLogOptional = paymentLogRepository.findById(orderId);
-            if (!paymentLogOptional.isPresent()) {
+            // Every log of the order, not just the gateway's: the confirmation email reads the link
+            // from whichever log it handles first, and a cart's logs share this data by design.
+            List<PaymentLog> orderLogs = findOrderLogs(orderId);
+            if (orderLogs.isEmpty()) {
                 log.error("Payment log not found for orderId: {}", orderId);
                 SentryLogger.logError(new IllegalStateException("Payment log not found"),
                         "Payment log not found when storing Razorpay invoice URL", Map.of(
@@ -1178,39 +1237,39 @@ public class RazorpayWebHookService {
                 return;
             }
 
-            PaymentLog paymentLog = paymentLogOptional.get();
+            for (PaymentLog paymentLog : orderLogs) {
+                // Parse existing payment_specific_data
+                Map<String, Object> paymentData = JsonUtil.fromJson(
+                        paymentLog.getPaymentSpecificData(),
+                        Map.class);
 
-            // Parse existing payment_specific_data
-            Map<String, Object> paymentData = JsonUtil.fromJson(
-                    paymentLog.getPaymentSpecificData(),
-                    Map.class);
+                if (paymentData == null) {
+                    paymentData = new HashMap<>();
+                }
 
-            if (paymentData == null) {
-                paymentData = new HashMap<>();
+                // Navigate to response.response_data (create if doesn't exist)
+                Map<String, Object> response = (Map<String, Object>) paymentData.get("response");
+                if (response == null) {
+                    response = new HashMap<>();
+                    paymentData.put("response", response);
+                }
+
+                Map<String, Object> responseData = (Map<String, Object>) response.get("response_data");
+                if (responseData == null) {
+                    responseData = new HashMap<>();
+                    response.put("response_data", responseData);
+                }
+
+                // Add invoice URL (same field name as Stripe uses for consistency)
+                responseData.put("receiptUrl", invoiceUrl);
+                responseData.put("invoiceUrl", invoiceUrl); // Keep both for flexibility
+
+                log.debug("Storing invoice URL in payment_specific_data: {}", invoiceUrl);
+
+                // Save back to database
+                paymentLog.setPaymentSpecificData(JsonUtil.toJson(paymentData));
+                paymentLogRepository.save(paymentLog);
             }
-
-            // Navigate to response.response_data (create if doesn't exist)
-            Map<String, Object> response = (Map<String, Object>) paymentData.get("response");
-            if (response == null) {
-                response = new HashMap<>();
-                paymentData.put("response", response);
-            }
-
-            Map<String, Object> responseData = (Map<String, Object>) response.get("response_data");
-            if (responseData == null) {
-                responseData = new HashMap<>();
-                response.put("response_data", responseData);
-            }
-
-            // Add invoice URL (same field name as Stripe uses for consistency)
-            responseData.put("receiptUrl", invoiceUrl);
-            responseData.put("invoiceUrl", invoiceUrl); // Keep both for flexibility
-
-            log.debug("Storing invoice URL in payment_specific_data: {}", invoiceUrl);
-
-            // Save back to database
-            paymentLog.setPaymentSpecificData(JsonUtil.toJson(paymentData));
-            paymentLogRepository.save(paymentLog);
 
             log.info("Invoice URL stored successfully for orderId: {}", orderId);
 

@@ -28,6 +28,7 @@ import vacademy.io.common.payment.enums.PaymentType;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -246,9 +247,10 @@ public class ComplexPaymentOptionOperation implements PaymentOptionOperationStra
             // (mirrors FREE strategy semantics for a "nothing to pay right now" CPO).
             log.info("CPO dues are zero for userPlan={}. Skipping gateway, activating UserPlan directly.",
                     userPlan.getId());
+            Map<String, Object> paidExtras = new HashMap<>(extraData);
+            paidExtras.put("FORCE_PAID_STATUS", Boolean.TRUE);
             paymentResponseDTO = paymentService.handlePaymentWithoutGateway(
-                    user, enrollDTO, instituteId, enrollInvite, userPlan,
-                    Map.of("FORCE_PAID_STATUS", true));
+                    user, enrollDTO, instituteId, enrollInvite, userPlan, paidExtras);
             userPlanService.applyOperationsOnFirstPayment(userPlan);
         } else if (isSkipPayment(extraData)) {
             log.info("Skipping CPO payment initiation for user={} (multi-package child or manual)", user.getId());

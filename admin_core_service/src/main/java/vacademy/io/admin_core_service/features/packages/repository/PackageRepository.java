@@ -406,6 +406,7 @@ public interface PackageRepository extends JpaRepository<PackageEntity, String> 
                 AND (:#{#levelIds == null || #levelIds.isEmpty()} = true OR l.id IN (:levelIds))
                 AND (:#{#packageStatus == null || #packageStatus.isEmpty()} = true OR p.status IN (:packageStatus))
                 AND (:#{#packageTypes == null || #packageTypes.isEmpty()} = true OR p.package_type IN (:packageTypes))
+                AND (:excludeChargePackages = false OR p.package_type IS NULL OR p.package_type NOT IN ('DELIVERY_CHARGE', 'SECURITY_DEPOSIT'))
                 AND (:#{#packageSessionStatus == null || #packageSessionStatus.isEmpty()} = true OR ps.status IN (:packageSessionStatus))
                 AND (
                     :#{#facultyIds == null || #facultyIds.isEmpty()} = true
@@ -462,6 +463,7 @@ public interface PackageRepository extends JpaRepository<PackageEntity, String> 
                                 AND (:#{#levelIds == null || #levelIds.isEmpty()} = true OR l.id IN (:levelIds))
                                 AND (:#{#packageStatus == null || #packageStatus.isEmpty()} = true OR p.status IN (:packageStatus))
                         AND (:#{#packageTypes == null || #packageTypes.isEmpty()} = true OR p.package_type IN (:packageTypes))
+                        AND (:excludeChargePackages = false OR p.package_type IS NULL OR p.package_type NOT IN ('DELIVERY_CHARGE', 'SECURITY_DEPOSIT'))
                                 AND (:#{#packageSessionStatus == null || #packageSessionStatus.isEmpty()} = true OR ps.status IN (:packageSessionStatus))
                                 AND (
                                     :#{#facultyIds == null || #facultyIds.isEmpty()} = true
@@ -505,6 +507,7 @@ public interface PackageRepository extends JpaRepository<PackageEntity, String> 
             @Param("slideStatusList") List<String> slideStatusList,
             @Param("chapterPackageStatusList") List<String> chapterPackageStatusList,
             @Param("mappingStatuses") List<String> mappingStatuses,
+            @Param("excludeChargePackages") boolean excludeChargePackages,
             Pageable pageable);
 
     // to do: here I have hard coded the rating of course
@@ -616,6 +619,7 @@ public interface PackageRepository extends JpaRepository<PackageEntity, String> 
                 (CAST(:instituteId AS text) IS NULL OR pi.institute_id = :instituteId)
                 AND (:#{#packageStatus == null || #packageStatus.isEmpty()} = true OR p.status IN (:packageStatus))
                 AND (:#{#packageTypes == null || #packageTypes.isEmpty()} = true OR p.package_type IN (:packageTypes))
+                AND (:excludeChargePackages = false OR p.package_type IS NULL OR p.package_type NOT IN ('DELIVERY_CHARGE', 'SECURITY_DEPOSIT'))
                 AND (:#{#packageSessionStatus == null || #packageSessionStatus.isEmpty()} = true OR ps.status IN (:packageSessionStatus))
                 AND (
                     CAST(:name AS text) IS NULL OR
@@ -661,6 +665,7 @@ public interface PackageRepository extends JpaRepository<PackageEntity, String> 
                                 (CAST(:instituteId AS text) IS NULL OR pi.institute_id = :instituteId)
                                 AND (:#{#packageStatus == null || #packageStatus.isEmpty()} = true OR p.status IN (:packageStatus))
                         AND (:#{#packageTypes == null || #packageTypes.isEmpty()} = true OR p.package_type IN (:packageTypes))
+                        AND (:excludeChargePackages = false OR p.package_type IS NULL OR p.package_type NOT IN ('DELIVERY_CHARGE', 'SECURITY_DEPOSIT'))
                                 AND (:#{#packageSessionStatus == null || #packageSessionStatus.isEmpty()} = true OR ps.status IN (:packageSessionStatus))
                                 AND (
                                     CAST(:name AS text) IS NULL OR
@@ -691,6 +696,7 @@ public interface PackageRepository extends JpaRepository<PackageEntity, String> 
             @Param("slideStatusList") List<String> slideStatusList,
             @Param("chapterPackageStatusList") List<String> chapterPackageStatusList,
             @Param("mappingStatuses") List<String> mappingStatuses,
+            @Param("excludeChargePackages") boolean excludeChargePackages,
             Pageable pageable);
 
     // to do: here I have hard coded the rating of course
@@ -1955,6 +1961,7 @@ public interface PackageRepository extends JpaRepository<PackageEntity, String> 
                 AND (:#{#levelIds == null || #levelIds.isEmpty()} = true OR l.id IN (:levelIds))
                 AND (:#{#packageStatus == null || #packageStatus.isEmpty()} = true OR p.status IN (:packageStatus))
                     AND (:#{#packageTypes == null || #packageTypes.isEmpty()} = true OR p.package_type IN (:packageTypes))
+                    AND (:excludeChargePackages = false OR p.package_type IS NULL OR p.package_type NOT IN ('DELIVERY_CHARGE', 'SECURITY_DEPOSIT'))
                 AND (:#{#packageSessionStatus == null || #packageSessionStatus.isEmpty()} = true OR ps.status IN (:packageSessionStatus))
                 AND (
                     :#{#facultyIds == null || #facultyIds.isEmpty()} = true
@@ -2010,6 +2017,7 @@ public interface PackageRepository extends JpaRepository<PackageEntity, String> 
                             AND (:#{#levelIds == null || #levelIds.isEmpty()} = true OR l.id IN (:levelIds))
                             AND (:#{#packageStatus == null || #packageStatus.isEmpty()} = true OR p.status IN (:packageStatus))
                             AND (:#{#packageTypes == null || #packageTypes.isEmpty()} = true OR p.package_type IN (:packageTypes))
+                            AND (:excludeChargePackages = false OR p.package_type IS NULL OR p.package_type NOT IN ('DELIVERY_CHARGE', 'SECURITY_DEPOSIT'))
                             AND (:#{#packageSessionStatus == null || #packageSessionStatus.isEmpty()} = true OR ps.status IN (:packageSessionStatus))
                             AND (
                                 :#{#facultyIds == null || #facultyIds.isEmpty()} = true
@@ -2051,6 +2059,7 @@ public interface PackageRepository extends JpaRepository<PackageEntity, String> 
             @Param("questionStatusList") List<String> questionStatusList,
             @Param("slideStatusList") List<String> slideStatusList,
             @Param("chapterPackageStatusList") List<String> chapterPackageStatusList,
+            @Param("excludeChargePackages") boolean excludeChargePackages,
             Pageable pageable);
 
     @Query(value = """
@@ -2100,6 +2109,7 @@ public interface PackageRepository extends JpaRepository<PackageEntity, String> 
                     OR ssigm.status = 'INACTIVE'
                 )
                 AND (:instituteId IS NULL OR pi.institute_id = :instituteId)
+                AND (:excludeChargePackages = false OR p.package_type IS NULL OR p.package_type NOT IN ('DELIVERY_CHARGE', 'SECURITY_DEPOSIT'))
                 AND (:#{#levelIds == null || #levelIds.isEmpty()} = true OR dest_l.id IN (:levelIds))
             GROUP BY
                 p.id, p.package_name, p.thumbnail_file_id, p.is_course_published_to_catalaouge,
@@ -2124,6 +2134,7 @@ public interface PackageRepository extends JpaRepository<PackageEntity, String> 
                             OR ssigm.status = 'INACTIVE'
                         )
                         AND (:instituteId IS NULL OR pi.institute_id = :instituteId)
+                        AND (:excludeChargePackages = false OR p.package_type IS NULL OR p.package_type NOT IN ('DELIVERY_CHARGE', 'SECURITY_DEPOSIT'))
                         AND (:#{#levelIds == null || #levelIds.isEmpty()} = true OR dest_l.id IN (:levelIds))
                     GROUP BY dest_ps.id
                 ) AS count_subquery
@@ -2133,6 +2144,7 @@ public interface PackageRepository extends JpaRepository<PackageEntity, String> 
             @Param("instituteId") String instituteId,
             @Param("levelIds") List<String> levelIds,
             @Param("learnerOperations") List<String> learnerOperations,
+            @Param("excludeChargePackages") boolean excludeChargePackages,
             Pageable pageable);
 
     @Query(value = """
@@ -2270,6 +2282,7 @@ public interface PackageRepository extends JpaRepository<PackageEntity, String> 
               (CAST(:instituteId AS text) IS NULL OR pi.institute_id = :instituteId)
               AND (:#{#packageStatus == null || #packageStatus.isEmpty()} = true OR p.status IN (:packageStatus))
                     AND (:#{#packageTypes == null || #packageTypes.isEmpty()} = true OR p.package_type IN (:packageTypes))
+                    AND (:excludeChargePackages = false OR p.package_type IS NULL OR p.package_type NOT IN ('DELIVERY_CHARGE', 'SECURITY_DEPOSIT'))
               AND (:#{#packageSessionStatus == null || #packageSessionStatus.isEmpty()} = true OR ps.status IN (:packageSessionStatus))
               AND (
                   CAST(:name AS text) IS NULL OR
@@ -2308,6 +2321,7 @@ public interface PackageRepository extends JpaRepository<PackageEntity, String> 
                       (CAST(:instituteId AS text) IS NULL OR pi.institute_id = :instituteId)
                       AND (:#{#packageStatus == null || #packageStatus.isEmpty()} = true OR p.status IN (:packageStatus))
                             AND (:#{#packageTypes == null || #packageTypes.isEmpty()} = true OR p.package_type IN (:packageTypes))
+                            AND (:excludeChargePackages = false OR p.package_type IS NULL OR p.package_type NOT IN ('DELIVERY_CHARGE', 'SECURITY_DEPOSIT'))
                       AND (:#{#packageSessionStatus == null || #packageSessionStatus.isEmpty()} = true OR ps.status IN (:packageSessionStatus))
                       AND (
                           CAST(:name AS text) IS NULL OR
@@ -2335,6 +2349,7 @@ public interface PackageRepository extends JpaRepository<PackageEntity, String> 
             @Param("questionStatusList") List<String> questionStatusList,
             @Param("slideStatusList") List<String> slideStatusList,
             @Param("chapterPackageStatusList") List<String> chapterPackageStatusList,
+            @Param("excludeChargePackages") boolean excludeChargePackages,
             Pageable pageable);
 
     @Query(value = """
@@ -2445,6 +2460,7 @@ public interface PackageRepository extends JpaRepository<PackageEntity, String> 
                 AND (:#{#sessionIds == null || #sessionIds.isEmpty()} = true OR ps.session_id IN (:sessionIds))
                 AND (:#{#packageStatus == null || #packageStatus.isEmpty()} = true OR p.status IN (:packageStatus))
                 AND (:#{#packageTypes == null || #packageTypes.isEmpty()} = true OR p.package_type IN (:packageTypes))
+                AND (:excludeChargePackages = false OR p.package_type IS NULL OR p.package_type NOT IN ('DELIVERY_CHARGE', 'SECURITY_DEPOSIT'))
                 AND (:#{#packageSessionStatus == null || #packageSessionStatus.isEmpty()} = true OR ps.status IN (:packageSessionStatus))
                 AND (
                     :#{#facultyIds == null || #facultyIds.isEmpty()} = true
@@ -2489,6 +2505,7 @@ public interface PackageRepository extends JpaRepository<PackageEntity, String> 
                             AND (:#{#sessionIds == null || #sessionIds.isEmpty()} = true OR ps.session_id IN (:sessionIds))
                             AND (:#{#packageStatus == null || #packageStatus.isEmpty()} = true OR p.status IN (:packageStatus))
                     AND (:#{#packageTypes == null || #packageTypes.isEmpty()} = true OR p.package_type IN (:packageTypes))
+                    AND (:excludeChargePackages = false OR p.package_type IS NULL OR p.package_type NOT IN ('DELIVERY_CHARGE', 'SECURITY_DEPOSIT'))
                             AND (:#{#packageSessionStatus == null || #packageSessionStatus.isEmpty()} = true OR ps.status IN (:packageSessionStatus))
                             AND (
                                 :#{#facultyIds == null || #facultyIds.isEmpty()} = true
@@ -2529,6 +2546,7 @@ public interface PackageRepository extends JpaRepository<PackageEntity, String> 
             @Param("questionStatusList") List<String> questionStatusList,
             @Param("slideStatusList") List<String> slideStatusList,
             @Param("chapterPackageStatusList") List<String> chapterPackageStatusList,
+            @Param("excludeChargePackages") boolean excludeChargePackages,
             Pageable pageable);
 
     @Query(value = """
@@ -2634,6 +2652,7 @@ public interface PackageRepository extends JpaRepository<PackageEntity, String> 
                 AND (CAST(:instituteId AS text) IS NULL OR pi.institute_id = :instituteId)
                 AND (:#{#packageStatus == null || #packageStatus.isEmpty()} = true OR p.status IN (:packageStatus))
                 AND (:#{#packageTypes == null || #packageTypes.isEmpty()} = true OR p.package_type IN (:packageTypes))
+                AND (:excludeChargePackages = false OR p.package_type IS NULL OR p.package_type NOT IN ('DELIVERY_CHARGE', 'SECURITY_DEPOSIT'))
                 AND (:#{#packageSessionStatus == null || #packageSessionStatus.isEmpty()} = true OR ps.status IN (:packageSessionStatus))
                 AND (
                     CAST(:name AS text) IS NULL OR
@@ -2668,6 +2687,7 @@ public interface PackageRepository extends JpaRepository<PackageEntity, String> 
                                 AND (CAST(:instituteId AS text) IS NULL OR pi.institute_id = :instituteId)
                                 AND (:#{#packageStatus == null || #packageStatus.isEmpty()} = true OR p.status IN (:packageStatus))
                     AND (:#{#packageTypes == null || #packageTypes.isEmpty()} = true OR p.package_type IN (:packageTypes))
+                    AND (:excludeChargePackages = false OR p.package_type IS NULL OR p.package_type NOT IN ('DELIVERY_CHARGE', 'SECURITY_DEPOSIT'))
                                 AND (:#{#packageSessionStatus == null || #packageSessionStatus.isEmpty()} = true OR ps.status IN (:packageSessionStatus))
                                 AND (
                                     CAST(:name AS text) IS NULL OR
@@ -2694,6 +2714,7 @@ public interface PackageRepository extends JpaRepository<PackageEntity, String> 
             @Param("questionStatusList") List<String> questionStatusList,
             @Param("slideStatusList") List<String> slideStatusList,
             @Param("chapterPackageStatusList") List<String> chapterPackageStatusList,
+            @Param("excludeChargePackages") boolean excludeChargePackages,
             Pageable pageable);
 
     @Query(value = """

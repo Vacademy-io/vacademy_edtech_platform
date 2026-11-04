@@ -14,6 +14,7 @@ import vacademy.io.admin_core_service.features.payments.manager.PaymentServiceFa
 import vacademy.io.admin_core_service.features.payments.manager.PaymentServiceStrategy;
 import vacademy.io.admin_core_service.features.payments.manager.PhonePePaymentManager;
 import vacademy.io.admin_core_service.features.user_subscription.entity.AppliedCouponDiscount;
+import vacademy.io.admin_core_service.features.user_subscription.entity.PaymentLog;
 import vacademy.io.admin_core_service.features.user_subscription.entity.PaymentLogLineItem;
 import vacademy.io.admin_core_service.features.user_subscription.entity.PaymentPlan;
 import vacademy.io.admin_core_service.features.user_subscription.entity.UserInstitutePaymentGatewayMapping;
@@ -329,11 +330,22 @@ public class PaymentService {
 
                 PaymentInitiationRequestDTO request = enrollDTO.getPaymentInitiationRequest();
 
+                // A line of a multi-item order is not charged on its own: the money went through
+                // the order's gateway log, so that log's gateway is this line's too, whatever this
+                // line's invite is set to.
+                String vendor = enrollInvite.getVendor();
+                String vendorId = enrollInvite.getVendorId();
+                PaymentLog parentLog = findParentLog(extraData);
+                if (parentLog != null && StringUtils.hasText(parentLog.getVendor())) {
+                        vendor = parentLog.getVendor();
+                        vendorId = parentLog.getVendorId();
+                }
+
                 String paymentLogId = createPaymentLogHelper(
                                 user.getId(),
                                 request.getAmount(),
-                                enrollInvite.getVendor(),
-                                enrollInvite.getVendorId(),
+                                vendor,
+                                vendorId,
                                 resolvePaymentCurrency(request, enrollInvite, userPlan),
                                 userPlan,
                                 request.getOrderId());
@@ -764,6 +776,13 @@ public class PaymentService {
                                 currency,
                                 userPlan,
                                 orderId);
+        }
+
+        private PaymentLog findParentLog(Map<String, Object> extraData) {
+                if (!(extraData.get("PARENT_PAYMENT_LOG_ID") instanceof String parentLogId)) {
+                        return null;
+                }
+                return paymentLogRepository.findById(parentLogId).orElse(null);
         }
 
         /**

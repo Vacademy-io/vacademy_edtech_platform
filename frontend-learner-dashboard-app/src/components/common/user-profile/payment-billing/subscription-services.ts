@@ -46,6 +46,8 @@ export interface Subscription {
   support_email?: string | null;
   /** SUBSCRIPTION | ONE_TIME | FREE | DONATION | CPO. Absent on older backends. */
   payment_option_type?: string | null;
+  /** A MEMBERSHIP package or a SUBSCRIPTION option, not a one-time purchase or a charge. Absent on older backends. */
+  membership?: boolean;
   /**
    * This plan row was never a membership — an abandoned or failed first checkout. The server
    * refuses to renew it (a renewal extends existing access, and there is none), so offer

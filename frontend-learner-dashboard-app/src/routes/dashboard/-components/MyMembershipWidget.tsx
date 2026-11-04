@@ -176,7 +176,10 @@ export const MyMembershipWidget: React.FC<MyMembershipWidgetProps> = ({ classNam
 
     // No UserPlan rows (or the endpoint is unavailable): fall back to the
     // enrolled-packages view so institutes that don't use plans keep a widget.
-    if (isError || subscriptions.length === 0) {
+    // The server already leaves purchases and charges out; an older one sends no flag, so a row
+    // without it is kept.
+    const memberships = subscriptions.filter((sub) => sub.membership !== false);
+    if (isError || memberships.length === 0) {
         return <EnrolledMembershipPackages className={className} />;
     }
 
@@ -184,7 +187,7 @@ export const MyMembershipWidget: React.FC<MyMembershipWidgetProps> = ({ classNam
         <Card className={cn("border border-border shadow-sm bg-card", "cp-card", className)}>
             <MembershipCardHeader isCleanerPlay={isCleanerPlay} t={t} />
             <CardContent className="p-card pt-0 space-y-3">
-                {subscriptions.map((sub) => {
+                {memberships.map((sub) => {
                     const accessUntil = formatDate(sub.end_date);
                     const nextCharge = formatDate(sub.next_charge_at);
                     const autopayOn = sub.has_active_mandate && sub.status !== "CANCELED";
