@@ -33,7 +33,7 @@ const MEDAL_TONE: Record<number, string> = {
     3: 'text-warning-700',
 };
 
-function RankCell({ rank }: { rank: number | null }) {
+export function RankCell({ rank }: { rank: number | null }) {
     if (rank != null && rank >= 1 && rank <= 3) {
         return <Medal weight="fill" className={cn('size-5', MEDAL_TONE[rank])} />;
     }
@@ -127,7 +127,7 @@ function BadgesStatsPanel() {
 }
 
 /** The learner's earned badge icons (up to 3) + an overflow count. */
-function BadgeIcons({ entry, size = 22 }: { entry: LeaderboardEntry; size?: number }) {
+export function BadgeIcons({ entry, size = 22 }: { entry: LeaderboardEntry; size?: number }) {
     const shown = entry.badges?.slice(0, 3) ?? [];
     if (entry.badgeCount <= 0) return null;
     return (
@@ -312,7 +312,7 @@ export default function LeaderboardReports() {
 
     const { data: instituteLeaderboard, isLoading: instituteLoading } = useQuery({
         queryKey: ['admin-institute-leaderboard'],
-        queryFn: getInstituteLeaderboardAdmin,
+        queryFn: () => getInstituteLeaderboardAdmin(),
         enabled: view === 'institute',
         staleTime: 60 * 1000,
     });
