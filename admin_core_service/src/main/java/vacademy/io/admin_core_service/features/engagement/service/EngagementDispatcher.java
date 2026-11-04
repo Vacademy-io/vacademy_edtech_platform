@@ -63,6 +63,10 @@ public class EngagementDispatcher {
     public static final String VAR_ASSET_IDS = "_assetIds";
     /** B6: the approved email template version a template-only email was drafted on (A3 catalog). */
     public static final String VAR_EMAIL_TEMPLATE = "_emailTemplateId";
+    /** An email answer: the sender node of the address the person wrote to, when not the engine's own. */
+    public static final String VAR_REPLY_EMAIL_TYPE = "_replyEmailType";
+    /** An email answer: the Message-ID of the person's email, so ours joins their thread. */
+    public static final String VAR_IN_REPLY_TO = "_inReplyTo";
 
     /** The sender every engine email used before channels.EMAIL.emailType existed. */
     static final String DEFAULT_EMAIL_TYPE = "UTILITY_EMAIL";
@@ -289,6 +293,7 @@ public class EngagementDispatcher {
                         .emailSubject(subjectLine != null && !subjectLine.isBlank() ? subjectLine : deriveSubject(body))
                         .emailBody(html)  // the draft is plain text (or the template's own HTML)
                         .emailType(emailTypeFor(action))
+                        .inReplyTo(vars.get(VAR_IN_REPLY_TO))
                         .source(SOURCE)          // → notification_log.source
                         .sourceId(action.getId()) // → correlation_id (Phase 0)
                         .build())
@@ -492,6 +497,10 @@ public class EngagementDispatcher {
      * unsubscribe footer and a daily cap. Unset → the transactional sender, as before.
      */
     private String emailTypeFor(EngagementAction action) {
+        // An answer leaves from the address the person wrote to, whatever the engine sends from today.
+        String answeringFrom = "REPLY".equalsIgnoreCase(action.getKind())
+                ? parseVariables(action.getVariablesJson()).get(VAR_REPLY_EMAIL_TYPE) : null;
+        if (answeringFrom != null && !answeringFrom.isBlank()) return answeringFrom;
         EngagementEngine engine = action.getEngineId() == null ? null
                 : engineRepository.findById(action.getEngineId()).orElse(null);
         if (engine == null || engine.getChannels() == null) return DEFAULT_EMAIL_TYPE;

@@ -526,6 +526,20 @@ public class EmailService {
         }
     }
 
+    private static final java.util.regex.Pattern THREAD_MESSAGE_ID = java.util.regex.Pattern.compile("^<[^\\s<>]{1,500}>$");
+
+    /**
+     * Joins the email to the thread of the Message-ID it answers. That id came in on a stranger's
+     * email, so anything but one well-formed id is dropped: a line break in it would be a new header.
+     */
+    static void applyReplyHeaders(MimeMessage message, String inReplyTo) throws MessagingException {
+        if (inReplyTo == null) return;
+        String id = inReplyTo.trim();
+        if (!THREAD_MESSAGE_ID.matcher(id).matches()) return;
+        message.setHeader("In-Reply-To", id);
+        message.setHeader("References", id);
+    }
+
     /** The Message-ID (and so the source_id of the EMAIL row) of a stamped message. */
     public static String messageIdOf(String ref) {
         return "<" + ref + "@notification-service>";
@@ -854,7 +868,19 @@ public class EmailService {
             String customFromEmail, String customFromName, String emailType,
             String correlationId, String userId, List<String> cc, String ccMode) {
         return doSendHtml(to, subject, service, body, instituteId, customFromEmail, customFromName, emailType,
-                correlationId, userId, cc, ccMode, false);
+                correlationId, userId, cc, ccMode, false, null);
+    }
+
+    /**
+     * An answer to an email: as the widest overload, joined to that thread. A send deferred by the
+     * sender's daily cap goes out later without the thread headers (deferred_email has no column for
+     * them), so it arrives as a new conversation with the same subject.
+     */
+    public SendOutcome sendHtmlEmailReply(String to, String subject, String service, String body, String instituteId,
+            String customFromEmail, String customFromName, String emailType,
+            String correlationId, String userId, List<String> cc, String ccMode, String inReplyTo) {
+        return doSendHtml(to, subject, service, body, instituteId, customFromEmail, customFromName, emailType,
+                correlationId, userId, cc, ccMode, false, inReplyTo);
     }
 
     /**
@@ -864,7 +890,7 @@ public class EmailService {
     public SendOutcome sendDeferred(DeferredEmail d, List<String> cc) {
         return doSendHtml(d.getToEmail(), d.getSubject(), d.getService(), d.getBody(), d.getInstituteId(),
                 d.getCustomFromEmail(), d.getCustomFromName(), d.getEmailType(), d.getCorrelationId(), d.getUserId(),
-                cc, d.getCcMode(), true);
+                cc, d.getCcMode(), true, null);
     }
 
     /** True when this recipient opted out and the sender/type honours opt-outs. */
@@ -922,7 +948,8 @@ public class EmailService {
 
     private SendOutcome doSendHtml(String to, String subject, String service, String body, String instituteId,
             String customFromEmail, String customFromName, String emailType,
-            String correlationId, String userId, List<String> cc, String ccMode, boolean fromQueue) {
+            String correlationId, String userId, List<String> cc, String ccMode, boolean fromQueue,
+            String inReplyTo) {
         try {
             // Check if email is blocked (domain blocklist or bounced email blocklist)
             if (isEmailBlocked(to)) {
@@ -1003,6 +1030,7 @@ public class EmailService {
                         message.setHeader("X-SES-CONFIGURATION-SET", sesConfigurationSet);
                     }
                     stampMessageRef(message, includeSesHeader);
+                    applyReplyHeaders(message, inReplyTo);
                     // RFC 8058 one-click unsubscribe headers for commercial mail
                     if (unsubApplies) {
                         unsubscribeMailer.addHeaders(message, instituteId, to);

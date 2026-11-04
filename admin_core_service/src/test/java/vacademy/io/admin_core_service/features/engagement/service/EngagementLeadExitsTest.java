@@ -291,6 +291,108 @@ class EngagementLeadExitsTest {
                     && a.getRationale().contains("stop-mention")));
         }
 
+        private EngagementEngine emailEngine(String id, String emailType) {
+            EngagementEngine e = new EngagementEngine();
+            e.setId(id);
+            e.setInstituteId(INST);
+            e.setChannels("{\"EMAIL\":{\"enabled\":true" + (emailType != null ? ",\"emailType\":\"" + emailType + "\"" : "") + "}}");
+            when(engines.findById(id)).thenReturn(java.util.Optional.of(e));
+            return e;
+        }
+
+        private void senders(EngagementChannelReadiness.EmailSender... senders) {
+            EngagementChannelReadiness readiness = mock(EngagementChannelReadiness.class);
+            when(readiness.emailSenders(INST)).thenReturn(List.of(senders));
+            ReflectionTestUtils.setField(responder, "channelReadiness", readiness);
+        }
+
+        private void answerSavedOn(String engineId, String memberId) {
+            verify(actions).save(argThat((EngagementAction a) -> "REPLY".equals(a.getKind())
+                    && engineId.equals(a.getEngineId()) && memberId.equals(a.getMemberId())));
+        }
+
+        @Test
+        @DisplayName("a person in two engines: the answer goes on the engine that sent the email they replied to")
+        void replyLandsOnTheEngineThatEmailed() {
+            emailEngine("eA", "SENDER_A");
+            emailEngine("eB", "SENDER_B");
+            // eA decided most recently, so it comes first; the email they answered came from eB.
+            List<LiveMember> found = List.of(live("mA", "eA", null, "ar1"), live("mB", "eB", null, "ar1"));
+            when(replyQueries.findLiveMembersByEmail(INST, "asha@example.com")).thenReturn(found);
+            EngagementAction sent = new EngagementAction();
+            sent.setInstituteId(INST);
+            sent.setEngineId("eB");
+            when(actions.findById("sent1")).thenReturn(java.util.Optional.of(sent));
+
+            assertTrue(responder.handleEmailReply(INST, "asha@example.com", "Re: Course", "Tell me more", "<m1@mail>", "sent1", null));
+
+            answerSavedOn("eB", "mB");
+        }
+
+        @Test
+        @DisplayName("no link to the sent email: the mailbox it came in to picks the engine")
+        void mailboxPicksTheEngine() {
+            emailEngine("eA", "SENDER_A");
+            emailEngine("eB", "SENDER_B");
+            senders(new EngagementChannelReadiness.EmailSender("SENDER_A", "a@academy.test", null, true),
+                    new EngagementChannelReadiness.EmailSender("SENDER_B", "b@academy.test", "B", true));
+            List<LiveMember> found = List.of(live("mA", "eA", null, "ar1"), live("mB", "eB", null, "ar1"));
+            when(replyQueries.findLiveMembersByEmail(INST, "asha@example.com")).thenReturn(found);
+
+            assertTrue(responder.handleEmailReply(INST, "asha@example.com", "Re: Course", "Tell me more", "<m2@mail>", null, "B@Academy.test"));
+
+            answerSavedOn("eB", "mB");
+        }
+
+        @Test
+        @DisplayName("another institute's action id is ignored, and nothing known keeps the old order")
+        void unknownLinkKeepsTheOldOrder() {
+            emailEngine("eA", "SENDER_A");
+            List<LiveMember> found = List.of(live("mA", "eA", null, "ar1"), live("mB", "eB", null, "ar1"));
+            when(replyQueries.findLiveMembersByEmail(INST, "asha@example.com")).thenReturn(found);
+            EngagementAction foreign = new EngagementAction();
+            foreign.setInstituteId("other");
+            foreign.setEngineId("eB");
+            when(actions.findById("foreign")).thenReturn(java.util.Optional.of(foreign));
+
+            assertTrue(responder.handleEmailReply(INST, "asha@example.com", "Re: Course", "Tell me more", "<m3@mail>", "foreign", null));
+
+            answerSavedOn("eA", "mA");
+        }
+
+        @Test
+        @DisplayName("the answer pins the address they wrote to when the engine now sends from another, and carries their id")
+        void answerPinsTheMailboxSender() {
+            emailEngine("eA", "SENDER_NEW");
+            senders(new EngagementChannelReadiness.EmailSender("SENDER_OLD", "old@academy.test", null, true),
+                    new EngagementChannelReadiness.EmailSender("SENDER_NEW", "new@academy.test", null, true));
+            List<LiveMember> found = List.of(live("mA", "eA", null, "ar1"));
+            when(replyQueries.findLiveMembersByEmail(INST, "asha@example.com")).thenReturn(found);
+
+            assertTrue(responder.handleEmailReply(INST, "asha@example.com", "Re: Course", "Hi", "<m4@mail>", null, "old@academy.test"));
+
+            verify(actions).save(argThat((EngagementAction a) -> a.getVariablesJson() != null
+                    && a.getVariablesJson().contains("\"_replyEmailType\":\"SENDER_OLD\"")
+                    && a.getVariablesJson().contains("\"_inReplyTo\":\"<m4@mail>\"")
+                    && a.getVariablesJson().contains("Re: Course")));
+        }
+
+        @Test
+        @DisplayName("same address as the engine, or an unverified sender: no pin, the engine's sender stays")
+        void noPinWhenNotNeeded() {
+            emailEngine("eA", "SENDER_A");
+            senders(new EngagementChannelReadiness.EmailSender("SENDER_A", "a@academy.test", null, true),
+                    new EngagementChannelReadiness.EmailSender("SENDER_OFF", "off@academy.test", null, false));
+            List<LiveMember> found = List.of(live("mA", "eA", null, "ar1"));
+            when(replyQueries.findLiveMembersByEmail(INST, "asha@example.com")).thenReturn(found);
+
+            assertTrue(responder.handleEmailReply(INST, "asha@example.com", "Re: Course", "Hi", "<m5@mail>", null, "a@academy.test"));
+            assertTrue(responder.handleEmailReply(INST, "asha@example.com", "Re: Course", "Hi", "<m6@mail>", null, "off@academy.test"));
+
+            verify(actions, never()).save(argThat((EngagementAction a) -> a.getVariablesJson() != null
+                    && a.getVariablesJson().contains("_replyEmailType")));
+        }
+
         @Test
         @DisplayName("an email reply tells the team, as an escalated WhatsApp reply does")
         void emailReplyAlertsTeam() {
@@ -381,10 +483,15 @@ class EngagementLeadExitsTest {
         when(clients.inboundSince(eq(INST), org.mockito.ArgumentMatchers.anyLong()))
                 .thenReturn(new com.fasterxml.jackson.databind.ObjectMapper().readTree(
                         "[{\"channel\":\"EMAIL\",\"email\":\"asha@example.com\",\"subject\":\"Re: Hi\","
-                                + "\"text\":\"stop\",\"wamid\":\"<m1@mail>\"}]"));
+                                + "\"text\":\"stop\",\"wamid\":\"<m1@mail>\","
+                                + "\"repliedToActionId\":\"action1\",\"mailbox\":\"sales@academy.test\"},"
+                                + "{\"channel\":\"EMAIL\",\"email\":\"ravi@example.com\",\"subject\":\"Re: Hi\","
+                                + "\"text\":\"ok\",\"wamid\":\"<m2@mail>\"}]"));
 
         job.sweep();
-        verify(responder).handleEmailReply(INST, "asha@example.com", "Re: Hi", "stop", "<m1@mail>");
+        verify(responder).handleEmailReply(INST, "asha@example.com", "Re: Hi", "stop", "<m1@mail>", "action1", "sales@academy.test");
+        // An older notification-service sends neither field: the engine keeps its old choice.
+        verify(responder).handleEmailReply(INST, "ravi@example.com", "Re: Hi", "ok", "<m2@mail>", null, null);
         verify(responder, never()).handleReply(any(), any(), any(), any());
         verify(members, never()).promoteByPhones(any(), any(), any(), any());
     }

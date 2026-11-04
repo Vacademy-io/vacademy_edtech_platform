@@ -102,7 +102,8 @@ public class EngagementReplyJob {
                             // An email reply: no WhatsApp window, no auto-reply; read on its own.
                             if (replyResponder.handleEmailReply(instituteId, reply.path("email").asText(null),
                                     reply.path("subject").asText(null), reply.path("text").asText(null),
-                                    reply.path("wamid").asText(null))) {
+                                    reply.path("wamid").asText(null),
+                                    reply.path("repliedToActionId").asText(null), reply.path("mailbox").asText(null))) {
                                 answered++;
                             }
                             continue;

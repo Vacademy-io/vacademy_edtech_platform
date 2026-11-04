@@ -69,6 +69,8 @@ public class UnifiedSendRequest {
         private String fromEmail;
         @JsonProperty("fromName")
         private String fromName;
+        /** The Message-ID this email answers, so it joins that thread in the recipient's inbox. */
+        private String inReplyTo;
         private String headerType;
         private String headerUrl;
         private Map<String, String> buttonUrlParams;
