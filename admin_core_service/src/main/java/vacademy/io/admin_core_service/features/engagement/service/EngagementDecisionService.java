@@ -257,6 +257,15 @@ public class EngagementDecisionService {
             return false;
         }
 
+        // 1d-2. One open action per person: a draft or call still waiting for a person or its time
+        // is what happens next. Deciding again only stacks a second one on top (two approvals, two
+        // calls), so look again after a gate sleep. Someone who wrote in still gets an answer.
+        if (!hasUnansweredReply(bundle, member) && actionRepository.countPendingActions(member.getId()) > 0) {
+            memberRepository.recordGateSleep(member.getId(), member.getWakeFingerprint(), now,
+                    now.plus(Duration.ofHours(Math.max(engine.getCadenceHours() / 4, 6))));
+            return false;
+        }
+
         // 1e. HARD RULE: with the AI call channel on, the first thing done for a person is an AI call,
         // decided here and not left to the model. A person with no phone, a wrong number or no call
         // left this week falls through to the usual decision (another channel).

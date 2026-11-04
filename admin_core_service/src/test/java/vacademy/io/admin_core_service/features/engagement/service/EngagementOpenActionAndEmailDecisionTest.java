@@ -91,6 +91,19 @@ class EngagementOpenActionAndEmailDecisionTest {
     }
 
     @Test
+    @DisplayName("a person with an action still waiting gets no second one, and no LLM call")
+    void pendingActionBlocksANewOne() {
+        subject("a@test.local");
+        when(actions.countPendingActions("m1")).thenReturn(1L);
+
+        service.decideCohort(engine, List.of(member));
+
+        verifyNoInteractions(brain);
+        verify(actions, never()).save(any());
+        verify(members).recordGateSleep(eq("m1"), any(), any(), any());
+    }
+
+    @Test
     @DisplayName("nothing waiting: the decision goes on and drafts the email as before")
     void nothingPendingDecides() {
         subject("a@test.local");

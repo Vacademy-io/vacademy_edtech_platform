@@ -530,6 +530,13 @@ public interface EngagementActionRepository extends JpaRepository<EngagementActi
     int cancelOpenForMembers(@Param("memberIds") List<String> memberIds, @Param("reason") String reason,
                              @Param("now") Instant now, @Param("keepAiCallPromises") boolean keepAiCallPromises);
 
+    /** What is still waiting to happen for this person: drafts, approvals, scheduled calls. Not replies. */
+    @Query(value = """
+            SELECT count(*) FROM engagement_action
+             WHERE member_id = :memberId AND kind IN ('TASK', 'SEND') AND status IN ('OPEN', 'ACKED')
+            """, nativeQuery = true)
+    long countPendingActions(@Param("memberId") String memberId);
+
     /** Members of this institute with an unsent email the engine drafted (a person's reply is not one). */
     @Query(value = """
             SELECT DISTINCT member_id FROM engagement_action
