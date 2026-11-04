@@ -32,6 +32,23 @@
         "cancel": "Cancel",
         "restore": "Move back to inbox"
     },
+    "bulk": {
+        "selectPage": "Select all on this page",
+        "selectRow": "Select {{name}}",
+        "notApprovable": "Only actions waiting for approval can be selected. Messages are reviewed and sent one at a time.",
+        "selected": "Selected: {{count}}",
+        "selectAll": "Select all {{count}} approvals",
+        "selectingAll": "Selecting…",
+        "selectFailed": "Couldn't select all the approvals. Try again.",
+        "clear": "Clear",
+        "approve": "Approve ({{count}})",
+        "approving": "Approving {{done}} of {{total}}…",
+        "confirmTitle": "Approve the selected actions ({{count}})?",
+        "confirmText": "They run straight away. AI calls go to the calling queue, reach leads in calling hours and use AI credits. Notes, follow-ups and status changes are saved at once.",
+        "approvedToast": "Approved: {{count}}",
+        "failedToast": "Not done: {{count}}. They stay in the inbox with the reason. The first one: {{reason}}",
+        "unknownReason": "The action failed."
+    },
     "sendDialog": {
         "heading": "Review & send",
         "fixedTemplateNotice": "This is a fixed Meta-approved WhatsApp template. The text can't be edited — only its variables. This is exactly what will be sent:",

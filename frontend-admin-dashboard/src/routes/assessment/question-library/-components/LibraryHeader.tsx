@@ -106,6 +106,7 @@ export const LibraryHeader = ({
     onImportTags,
     onShowUnsorted,
     onOpenTopic,
+    readOnly = false,
 }: {
     summary?: LibrarySummary;
     nodes: LibraryNode[];
@@ -115,6 +116,8 @@ export const LibraryHeader = ({
     onImportTags: () => void;
     onShowUnsorted: () => void;
     onOpenTopic: (id: string) => void;
+    /** Browsing only: no write buttons, and no stats about how the library is filed. */
+    readOnly?: boolean;
 }) => {
     const { t } = useTranslation('assessmentQuestionLibrary');
     const total = summary?.total_questions ?? 0;
@@ -139,44 +142,51 @@ export const LibraryHeader = ({
                     </span>
                     <h1 className="text-h2-semibold text-neutral-700">{t('header.title')}</h1>
                     <p className="max-w-2xl text-body text-neutral-600">
-                        {t('header.description')}
+                        {readOnly ? t('readOnly.description') : t('header.description')}
                     </p>
                 </div>
-                <div className="flex flex-wrap gap-2">
-                    <MyButton
-                        type="button"
-                        buttonType="secondary"
-                        scale="medium"
-                        className="gap-2"
-                        onClick={onImportTags}
-                    >
-                        <Tag size={16} />
-                        {t('header.importTags')}
-                    </MyButton>
-                    <MyButton
-                        type="button"
-                        buttonType="secondary"
-                        scale="medium"
-                        className="gap-2"
-                        onClick={onImportPaper}
-                    >
-                        <Files size={16} />
-                        {t('header.importPaper')}
-                    </MyButton>
-                    <MyButton
-                        type="button"
-                        buttonType="primary"
-                        scale="medium"
-                        className="gap-2"
-                        onClick={onNewTopic}
-                    >
-                        <Plus size={16} />
-                        {t('header.newTopic')}
-                    </MyButton>
-                </div>
+                {!readOnly && (
+                    <div className="flex flex-wrap gap-2">
+                        <MyButton
+                            type="button"
+                            buttonType="secondary"
+                            scale="medium"
+                            className="gap-2"
+                            onClick={onImportTags}
+                        >
+                            <Tag size={16} />
+                            {t('header.importTags')}
+                        </MyButton>
+                        <MyButton
+                            type="button"
+                            buttonType="secondary"
+                            scale="medium"
+                            className="gap-2"
+                            onClick={onImportPaper}
+                        >
+                            <Files size={16} />
+                            {t('header.importPaper')}
+                        </MyButton>
+                        <MyButton
+                            type="button"
+                            buttonType="primary"
+                            scale="medium"
+                            className="gap-2"
+                            onClick={onNewTopic}
+                        >
+                            <Plus size={16} />
+                            {t('header.newTopic')}
+                        </MyButton>
+                    </div>
+                )}
             </section>
 
-            <section className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+            <section
+                className={cn(
+                    'grid grid-cols-1 gap-4 sm:grid-cols-2',
+                    readOnly ? 'xl:grid-cols-3' : 'xl:grid-cols-4'
+                )}
+            >
                 <StatCard
                     loading={loading}
                     icon={<Stack size={18} />}
@@ -211,26 +221,28 @@ export const LibraryHeader = ({
                             : t('stats.noTopicsYet')
                     }
                 />
-                <StatCard
-                    loading={loading}
-                    icon={<Tray size={18} />}
-                    iconClassName="bg-warning-50 text-warning-600"
-                    label={t('stats.sorted')}
-                    value={`${sortedShare}%`}
-                    hint={
-                        unsorted > 0 ? (
-                            <button
-                                type="button"
-                                onClick={onShowUnsorted}
-                                className="font-semibold text-warning-600 underline-offset-2 hover:underline"
-                            >
-                                {t('stats.unsortedLink', { count: unsorted })}
-                            </button>
-                        ) : (
-                            t('stats.allSorted')
-                        )
-                    }
-                />
+                {!readOnly && (
+                    <StatCard
+                        loading={loading}
+                        icon={<Tray size={18} />}
+                        iconClassName="bg-warning-50 text-warning-600"
+                        label={t('stats.sorted')}
+                        value={`${sortedShare}%`}
+                        hint={
+                            unsorted > 0 ? (
+                                <button
+                                    type="button"
+                                    onClick={onShowUnsorted}
+                                    className="font-semibold text-warning-600 underline-offset-2 hover:underline"
+                                >
+                                    {t('stats.unsortedLink', { count: unsorted })}
+                                </button>
+                            ) : (
+                                t('stats.allSorted')
+                            )
+                        }
+                    />
+                )}
                 <StatCard
                     loading={loading}
                     icon={<ChartBar size={18} />}
@@ -241,7 +253,7 @@ export const LibraryHeader = ({
                 </StatCard>
             </section>
 
-            {!loading && thinnest.length > 0 && thinnest[0]!.question_count < 10 && (
+            {!readOnly && !loading && thinnest.length > 0 && thinnest[0]!.question_count < 10 && (
                 <section className="flex flex-col gap-2 rounded-lg border border-warning-200 bg-warning-50 p-4 sm:flex-row sm:items-center">
                     <span className="flex items-center gap-2 text-body font-semibold text-neutral-700">
                         <Lightbulb size={18} className="text-warning-600" />

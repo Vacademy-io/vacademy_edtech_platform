@@ -46,6 +46,8 @@ public interface QuestionRepository extends JpaRepository<Question, String> {
                     + "AND (:unsortedFlag IS NULL OR NOT EXISTS ("
                     + "    SELECT 1 FROM question_library_mapping lu WHERE lu.question_id = q.id)) "
                     + "AND NOT EXISTS (SELECT 1 FROM question_library_version qv WHERE qv.old_question_id = q.id) "
+                    // A copy picked from the Question Library belongs to one test, not to the bank.
+                    + "AND q.source_type IS DISTINCT FROM 'LIBRARY_COPY' "
                     + "AND (:name IS NULL OR EXISTS ("
                     + "    SELECT 1 FROM assessment_rich_text_data t "
                     + "    WHERE t.id = q.text_id AND t.content ILIKE CONCAT('%', :name, '%')))";

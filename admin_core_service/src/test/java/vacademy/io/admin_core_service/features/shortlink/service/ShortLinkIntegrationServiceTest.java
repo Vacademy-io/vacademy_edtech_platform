@@ -4,13 +4,19 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.test.util.ReflectionTestUtils;
+import org.springframework.web.util.UriComponentsBuilder;
 import vacademy.io.common.core.internal_api_wrapper.InternalClientUtils;
+
+import java.net.URI;
+import java.net.URLDecoder;
+import java.nio.charset.StandardCharsets;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
@@ -106,5 +112,29 @@ class ShortLinkIntegrationServiceTest {
 
         verify(internalClientUtils, times(0))
                 .makeHmacRequest(anyString(), anyString(), anyString(), anyString(), any());
+    }
+
+    @Test
+    @DisplayName("updating a short link encodes the destination exactly once")
+    void updateEncodesDestinationOnce() {
+        String destination = "https://learner.example.com/invite?instituteId=i-1&inviteCode=abc";
+
+        service.updateShortLink("ENROLL_INVITE", "invite-1", destination);
+
+        ArgumentCaptor<String> route = ArgumentCaptor.forClass(String.class);
+        verify(internalClientUtils).makeHmacRequestWithEncodedRoute(
+                anyString(), anyString(), anyString(), route.capture(), any());
+        verify(internalClientUtils, times(0))
+                .makeHmacRequest(anyString(), anyString(), anyString(), anyString(), any());
+
+        URI uri = UriComponentsBuilder.fromHttpUrl("http://media-service:8075" + route.getValue())
+                .build(true)
+                .toUri();
+        assertEquals(
+                "source=ENROLL_INVITE&sourceId=invite-1&newDestinationUrl="
+                        + "https%3A%2F%2Flearner.example.com%2Finvite%3FinstituteId%3Di-1%26inviteCode%3Dabc",
+                uri.getRawQuery());
+        String received = UriComponentsBuilder.fromUri(uri).build().getQueryParams().getFirst("newDestinationUrl");
+        assertEquals(destination, URLDecoder.decode(received, StandardCharsets.UTF_8));
     }
 }

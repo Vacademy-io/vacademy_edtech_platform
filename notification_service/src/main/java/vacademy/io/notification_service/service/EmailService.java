@@ -54,6 +54,8 @@ import vacademy.io.notification_service.features.email_sending_controls.service.
 public class EmailService {
 
     private static final Logger logger = LoggerFactory.getLogger(EmailService.class);
+    /** SES message tag naming the message an event belongs to; see {@link #stampMessageRef}. */
+    public static final String SES_TAG_MESSAGE_REF = "vacademy_message_ref";
     private final JavaMailSender mailSender;
     private final EmailDispatcher emailDispatcher;
     @Value("${app.ses.sender.email}")
@@ -511,6 +513,25 @@ public class EmailService {
     }
 
     /**
+     * Sets the Message-ID we keep in notification_log.source_id, and hands the same reference to SES
+     * as a message tag. SES overwrites the Message-ID header when it sends, but returns the tag on
+     * every event of the message, so an event can find its EMAIL row instead of guessing it from the
+     * recipient and the time. Saving the row can't carry an id of ours: its id is generated.
+     */
+    static void stampMessageRef(MimeMessage message, boolean includeSesHeader) throws MessagingException {
+        String ref = UUID.randomUUID().toString();
+        message.setHeader("Message-ID", messageIdOf(ref));
+        if (includeSesHeader) {
+            message.setHeader("X-SES-MESSAGE-TAGS", SES_TAG_MESSAGE_REF + "=" + ref);
+        }
+    }
+
+    /** The Message-ID (and so the source_id of the EMAIL row) of a stamped message. */
+    public static String messageIdOf(String ref) {
+        return "<" + ref + "@notification-service>";
+    }
+
+    /**
      * Determines if SES Configuration Set header should be included for email tracking.
      * 
      * The header is included if:
@@ -557,9 +578,11 @@ public class EmailService {
             message.setText(text);
 
             // Add SES configuration set header for event tracking
-            if (shouldIncludeSesConfigurationHeader(instituteId)) {
+            boolean includeSesHeader = shouldIncludeSesConfigurationHeader(instituteId);
+            if (includeSesHeader) {
                 message.setHeader("X-SES-CONFIGURATION-SET", sesConfigurationSet);
             }
+            stampMessageRef(message, includeSesHeader);
 
             mailSenderToUse.send(message);
             logger.info("Email sent successfully to {} using {}", to,
@@ -979,6 +1002,7 @@ public class EmailService {
                     if (includeSesHeader) {
                         message.setHeader("X-SES-CONFIGURATION-SET", sesConfigurationSet);
                     }
+                    stampMessageRef(message, includeSesHeader);
                     // RFC 8058 one-click unsubscribe headers for commercial mail
                     if (unsubApplies) {
                         unsubscribeMailer.addHeaders(message, instituteId, to);
@@ -1071,6 +1095,7 @@ public class EmailService {
                     if (includeSesHeader) {
                         message.setHeader("X-SES-CONFIGURATION-SET", sesConfigurationSet);
                     }
+                    stampMessageRef(message, includeSesHeader);
 
                     MimeMultipart multipart = new MimeMultipart();
 

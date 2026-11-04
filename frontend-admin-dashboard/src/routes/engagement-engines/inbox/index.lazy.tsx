@@ -6,6 +6,7 @@ import { Helmet } from 'react-helmet';
 import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { TFunction } from 'i18next';
+import { toast } from 'sonner';
 import {
     ArrowCounterClockwise,
     ArrowLeft,
@@ -30,6 +31,7 @@ import { MyButton } from '@/components/design-system/button';
 import { MyDialog } from '@/components/design-system/dialog';
 import { MyPagination } from '@/components/design-system/pagination';
 import { Card } from '@/components/ui/card';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -43,8 +45,10 @@ import {
 import { QuickViews, type QuickView } from '@/components/shared/crm-enhance';
 import { cn } from '@/lib/utils';
 import { ToneBadge } from '../-components/ToneBadge';
+import { BulkApproveBar } from './-components/BulkApproveBar';
 import { ActiveFilters, InboxFilterControls } from './-components/InboxFilters';
 import { TaskOutcomeBadges, TaskOutcomeDetail } from './-components/TaskOutcome';
+import { canApproveTask } from './-utils/bulk-approve';
 import { hasBeenDispatched } from './-utils/outcome';
 import {
     hasInboxFilters,
@@ -66,7 +70,9 @@ import {
 } from '../-components/engine-ui';
 import { buildActionStatusMeta, buildChannelMeta, type InboxFilterKey } from '../-constants';
 import { useEngines, useTaskAction, useTaskOutcomes, useTaskPeople, useTasks } from '../-hooks';
+import { useBulkApproveCrmTasks } from '../-hooks/actions';
 import { useAssets } from '../-hooks/assets';
+import { listApprovableTaskIds } from '../-services/actions';
 import { formatDateTime, safeParse } from '../-utils';
 import type { EngagementAction, TaskListFilters, TaskOutcome, TaskPerson } from '../-types';
 
@@ -125,6 +131,8 @@ function personTitle(p?: TaskPerson): string | undefined {
 }
 
 const PAGE_SIZE = 20;
+
+const NO_IDS: ReadonlySet<string> = new Set();
 
 type SortKey = 'priority' | 'oldest' | 'newest';
 
@@ -205,6 +213,14 @@ function TaskInboxPage() {
     const [pageState, setPageState] = useState({ page: 0, key: pageKey });
     const page = pageState.key === pageKey ? pageState.page : 0;
     const setPage = (next: number) => setPageState({ page: next, key: pageKey });
+    // The ticked approvals survive paging, but belong to one tab + filter set like the page number.
+    const [selection, setSelection] = useState<{ ids: ReadonlySet<string>; key: string }>({
+        ids: NO_IDS,
+        key: pageKey,
+    });
+    const selectedIds = selection.key === pageKey ? selection.ids : NO_IDS;
+    const setSelectedIds = (ids: ReadonlySet<string>) => setSelection({ ids, key: pageKey });
+    const [selectingAll, setSelectingAll] = useState(false);
     const [sending, setSending] = useState<EngagementAction | null>(null);
     const [selectedId, setSelectedId] = useState<string | null>(null);
     const [search, setSearch] = useState('');
@@ -262,6 +278,7 @@ function TaskInboxPage() {
     });
 
     const action = useTaskAction();
+    const bulkApprove = useBulkApproveCrmTasks();
     const tasks = data?.content ?? [];
     const { data: people } = useTaskPeople(tasks.map((task) => task.memberId));
     const personOf = (task: EngagementAction) => people?.[task.memberId];
@@ -312,6 +329,40 @@ function TaskInboxPage() {
           )
         : matching;
     const current = visible.find((task) => task.id === selectedId) ?? visible[0];
+
+    const approvableOnPage = visible.filter(canApproveTask);
+    const allOnPageSelected =
+        approvableOnPage.length > 0 && approvableOnPage.every((task) => selectedIds.has(task.id));
+    const showBulkBar = approvableOnPage.length > 0 || selectedIds.size > 0;
+    // Every page can be selected only by what the server filters: the search box covers this page
+    // alone, and with an outcome filter the tabs carry no counts.
+    const approvalsTotal = q
+        ? undefined
+        : counts[FILTERS.findIndex((f) => f.key === 'approvals')]?.data?.totalElements;
+
+    const toggleTask = (id: string, on: boolean) => {
+        const next = new Set(selectedIds);
+        if (on) next.add(id);
+        else next.delete(id);
+        setSelectedIds(next);
+    };
+    const togglePage = (on: boolean) => {
+        const next = new Set(selectedIds);
+        approvableOnPage.forEach((task) => (on ? next.add(task.id) : next.delete(task.id)));
+        setSelectedIds(next);
+    };
+    const selectAllApprovals = async () => {
+        setSelectingAll(true);
+        try {
+            setSelectedIds(
+                new Set(await listApprovableTaskIds(instituteId, serverFilters('approvals', false)))
+            );
+        } catch {
+            toast.error(t('bulk.selectFailed'));
+        } finally {
+            setSelectingAll(false);
+        }
+    };
 
     const views: QuickView[] = FILTERS.map((f, i) => ({
         key: f.key,
@@ -482,6 +533,31 @@ function TaskInboxPage() {
                 {!isLoading && !isError && visible.length > 0 && (
                     <div className="grid items-start gap-4 lg:grid-cols-5">
                         <Card className="flex flex-col overflow-hidden rounded-xl border-neutral-200 shadow-sm lg:col-span-2">
+                            {showBulkBar && (
+                                <BulkApproveBar
+                                    selectedCount={selectedIds.size}
+                                    allOnPageSelected={allOnPageSelected}
+                                    canTogglePage={approvableOnPage.length > 0}
+                                    selectableTotal={approvalsTotal}
+                                    selectingAll={selectingAll}
+                                    running={
+                                        bulkApprove.isPending
+                                            ? {
+                                                  done: bulkApprove.done,
+                                                  total: bulkApprove.variables?.length ?? 0,
+                                              }
+                                            : null
+                                    }
+                                    onTogglePage={togglePage}
+                                    onSelectAll={selectAllApprovals}
+                                    onClear={() => setSelectedIds(NO_IDS)}
+                                    onApprove={() =>
+                                        bulkApprove.mutate([...selectedIds], {
+                                            onSuccess: () => setSelectedIds(NO_IDS),
+                                        })
+                                    }
+                                />
+                            )}
                             <div className="flex max-h-screen flex-col divide-y divide-neutral-100 overflow-y-auto">
                                 {visible.map((task) => (
                                     <TaskRow
@@ -493,6 +569,18 @@ function TaskInboxPage() {
                                         outcomeLoading={outcomesLoading}
                                         active={current?.id === task.id}
                                         onSelect={() => setSelectedId(task.id)}
+                                        selection={
+                                            showBulkBar
+                                                ? {
+                                                      checked: selectedIds.has(task.id),
+                                                      disabled:
+                                                          !canApproveTask(task) ||
+                                                          bulkApprove.isPending ||
+                                                          selectingAll,
+                                                      onChange: (on) => toggleTask(task.id, on),
+                                                  }
+                                                : undefined
+                                        }
                                     />
                                 ))}
                             </div>
@@ -505,7 +593,7 @@ function TaskInboxPage() {
                                 engineName={engineNames[current.engineId]}
                                 outcome={outcomeOf(current)}
                                 outcomeLoading={outcomesLoading}
-                                busy={action.isPending}
+                                busy={action.isPending || bulkApprove.isPending}
                                 onOpenEngine={() =>
                                     navigate({
                                         to: '/engagement-engines/$engineId',
@@ -572,6 +660,7 @@ function TaskRow({
     outcomeLoading,
     active,
     onSelect,
+    selection,
 }: {
     task: EngagementAction;
     person?: TaskPerson;
@@ -580,6 +669,8 @@ function TaskRow({
     outcomeLoading: boolean;
     active: boolean;
     onSelect: () => void;
+    /** The row's checkbox for bulk approval; absent when the list has nothing to approve. */
+    selection?: { checked: boolean; disabled: boolean; onChange: (on: boolean) => void };
 }) {
     const { t } = useTranslation('engagementEnginesInboxIndex');
     const { t: tConstants } = useTranslation('engagementEnginesConstants');
@@ -593,74 +684,92 @@ function TaskRow({
         !waited && typeof task.priority === 'number' ? priorityLevel(task.priority) : null;
     const who = personTitle(person);
     return (
-        <button
-            type="button"
-            onClick={onSelect}
-            aria-current={active ? 'true' : undefined}
+        <div
             className={cn(
-                'flex w-full items-start gap-3 border-s-2 p-3 text-left transition-colors',
+                'flex w-full items-start border-s-2 transition-colors',
                 active
                     ? 'border-s-primary-500 bg-primary-50'
                     : 'border-s-transparent hover:bg-neutral-50'
             )}
         >
-            <IconTile
-                icon={ChannelIcon}
-                size="sm"
-                tint={task.channel ? CHANNEL_TINT[task.channel] : undefined}
-            />
-            <span className="flex min-w-0 flex-1 flex-col gap-1">
-                <span className="flex items-center gap-2">
-                    <span className="min-w-0 flex-1 truncate font-semibold text-neutral-900">
-                        <span className="text-body">{who ?? engineName ?? t('kind.task')}</span>
+            {/* Beside the row's button, not in it: a checkbox is a button too, and they can't nest. */}
+            {selection && (
+                <span className="flex shrink-0 ps-3 pt-5">
+                    <Checkbox
+                        checked={selection.checked}
+                        disabled={selection.disabled}
+                        onCheckedChange={(v) => selection.onChange(v === true)}
+                        aria-label={t('bulk.selectRow', {
+                            name: who ?? engineName ?? t('kind.task'),
+                        })}
+                        title={canApproveTask(task) ? undefined : t('bulk.notApprovable')}
+                    />
+                </span>
+            )}
+            <button
+                type="button"
+                onClick={onSelect}
+                aria-current={active ? 'true' : undefined}
+                className="flex min-w-0 flex-1 items-start gap-3 p-3 text-left"
+            >
+                <IconTile
+                    icon={ChannelIcon}
+                    size="sm"
+                    tint={task.channel ? CHANNEL_TINT[task.channel] : undefined}
+                />
+                <span className="flex min-w-0 flex-1 flex-col gap-1">
+                    <span className="flex items-center gap-2">
+                        <span className="min-w-0 flex-1 truncate font-semibold text-neutral-900">
+                            <span className="text-body">{who ?? engineName ?? t('kind.task')}</span>
+                        </span>
+                        {level && level !== 'low' && (
+                            <span
+                                className={cn(
+                                    'shrink-0 rounded-full px-1.5 py-0.5 font-semibold',
+                                    level === 'high'
+                                        ? 'bg-danger-50 text-danger-600'
+                                        : 'bg-warning-50 text-warning-700'
+                                )}
+                            >
+                                <span className="text-caption">{t(`priorityLevel.${level}`)}</span>
+                            </span>
+                        )}
                     </span>
-                    {level && level !== 'low' && (
-                        <span
-                            className={cn(
-                                'shrink-0 rounded-full px-1.5 py-0.5 font-semibold',
-                                level === 'high'
-                                    ? 'bg-danger-50 text-danger-600'
-                                    : 'bg-warning-50 text-warning-700'
-                            )}
-                        >
-                            <span className="text-caption">{t(`priorityLevel.${level}`)}</span>
+                    {who && engineName && (
+                        <span className="truncate text-neutral-500">
+                            <span className="text-caption">{engineName}</span>
                         </span>
                     )}
-                </span>
-                {who && engineName && (
-                    <span className="truncate text-neutral-500">
-                        <span className="text-caption">{engineName}</span>
+                    <span className="flex flex-wrap items-center gap-1.5">
+                        {isCrmAction(task.actionType) ? (
+                            <CrmActionChip type={task.actionType} />
+                        ) : (
+                            <KindChip kind={task.kind} />
+                        )}
+                        {/* A waited decision is "Done" only in the database; it is not a status to show. */}
+                        {!waited && <ToneBadge label={statusMeta.label} tone={statusMeta.tone} />}
+                        <span className="ms-auto text-neutral-400">
+                            <span className="text-caption">{ageText(task.createdAt, t)}</span>
+                        </span>
                     </span>
-                )}
-                <span className="flex flex-wrap items-center gap-1.5">
-                    {isCrmAction(task.actionType) ? (
-                        <CrmActionChip type={task.actionType} />
+                    {waited ? (
+                        // Why the engine held off is what this tab is for, so it gets the room.
+                        <span className="line-clamp-4 text-neutral-800">
+                            <span className="text-body">{task.rationale || t('detail.noReason')}</span>
+                        </span>
                     ) : (
-                        <KindChip kind={task.kind} />
+                        (task.rationale || task.draftBody) && (
+                            <span className="line-clamp-2 text-neutral-500">
+                                <span className="text-caption">{task.rationale || task.draftBody}</span>
+                            </span>
+                        )
                     )}
-                    {/* A waited decision is "Done" only in the database; it is not a status to show. */}
-                    {!waited && <ToneBadge label={statusMeta.label} tone={statusMeta.tone} />}
-                    <span className="ms-auto text-neutral-400">
-                        <span className="text-caption">{ageText(task.createdAt, t)}</span>
-                    </span>
+                    {hasBeenDispatched(task) && (
+                        <TaskOutcomeBadges task={task} outcome={outcome} loading={outcomeLoading} />
+                    )}
                 </span>
-                {waited ? (
-                    // Why the engine held off is what this tab is for, so it gets the room.
-                    <span className="line-clamp-4 text-neutral-800">
-                        <span className="text-body">{task.rationale || t('detail.noReason')}</span>
-                    </span>
-                ) : (
-                    (task.rationale || task.draftBody) && (
-                        <span className="line-clamp-2 text-neutral-500">
-                            <span className="text-caption">{task.rationale || task.draftBody}</span>
-                        </span>
-                    )
-                )}
-                {hasBeenDispatched(task) && (
-                    <TaskOutcomeBadges task={task} outcome={outcome} loading={outcomeLoading} />
-                )}
-            </span>
-        </button>
+            </button>
+        </div>
     );
 }
 

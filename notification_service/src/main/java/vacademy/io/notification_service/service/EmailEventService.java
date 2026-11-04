@@ -14,6 +14,7 @@ import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -44,8 +45,11 @@ public class EmailEventService {
             
             // Process all SES events (back to original working behavior)
             
-            // Find original notification log ID
-            String originalLogId = findOriginalNotificationLogId(recipient, timestamp);
+            // Find original notification log ID: the message's own tag says, else guess
+            String originalLogId = findTaggedNotificationLogId(sesEvent);
+            if (originalLogId == null) {
+                originalLogId = findOriginalNotificationLogId(recipient, timestamp);
+            }
             log.debug("Original log ID found: {} for recipient: {}", originalLogId, recipient);
             
             // Use atomic operation to prevent race conditions
@@ -432,6 +436,23 @@ public class EmailEventService {
         }
     }
     
+    /**
+     * The EMAIL row of this event's message, from the tag EmailService put on it. Null for a message
+     * without the tag (OTP mail, anything sent before the tag existed) or whose row isn't saved yet;
+     * those are left to the recipient-and-time guess, which picks the latest email to that address
+     * and so loses a later event of an earlier email.
+     */
+    private String findTaggedNotificationLogId(SesEventDTO sesEvent) {
+        Map<String, String[]> tags = sesEvent.getMail() != null ? sesEvent.getMail().getTags() : null;
+        String[] ref = tags != null ? tags.get(EmailService.SES_TAG_MESSAGE_REF) : null;
+        if (ref == null || ref.length == 0) {
+            return null;
+        }
+        List<NotificationLog> rows = notificationLogRepository
+                .findBySourceIdAndNotificationType(EmailService.messageIdOf(ref[0]), "EMAIL");
+        return rows.isEmpty() ? null : rows.get(0).getId();
+    }
+
     private String findOriginalNotificationLogId(String recipient, String timestamp) {
         try {
             // Parse the event timestamp as UTC Instant (SES timestamps are always UTC).

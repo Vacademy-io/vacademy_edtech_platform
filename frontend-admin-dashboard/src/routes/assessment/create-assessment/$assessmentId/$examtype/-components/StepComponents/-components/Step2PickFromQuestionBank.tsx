@@ -22,12 +22,6 @@ import {
     describeMerge,
     mergeSectionQuestions,
 } from '@/routes/assessment/question-papers/-utils/merge-section-questions';
-import {
-    buildTree,
-    flattenTree,
-    nodePath,
-    useLibraryTree,
-} from '@/routes/assessment/question-library/-services/question-library-services';
 import sectionDetailsSchema from '../../../-utils/section-details-schema';
 import { calculateTotalMarks } from '../../../-utils/helper';
 
@@ -63,7 +57,8 @@ const errorMessage = (error: unknown, fallback: string): string => {
  * addressable through the paper that happened to contain them.
  *
  * This is the reuse path: filter the bank by knowledge base, topic, difficulty and type,
- * and link what comes back. No generation, no credits.
+ * and link what comes back. No generation, no credits. Questions copied from the Question
+ * Library have their own picker and never show here: see Step2PickFromQuestionLibrary.
  */
 const Step2PickFromQuestionBank = ({
     form,
@@ -76,7 +71,6 @@ const Step2PickFromQuestionBank = ({
     const [search, setSearch] = useState('');
     const [appliedSearch, setAppliedSearch] = useState('');
     const [kbId, setKbId] = useState<string>('');
-    const [topicId, setTopicId] = useState<string>('');
     const [difficulty, setDifficulty] = useState<string>('');
     const [questionType, setQuestionType] = useState<string>('');
     const [page, setPage] = useState(0);
@@ -92,17 +86,6 @@ const Step2PickFromQuestionBank = ({
     const knowledgeBases = useMemo(() => ownOnly(allKnowledgeBases), [allKnowledgeBases]);
     const curriculumBases = useMemo(() => curriculumOnly(allKnowledgeBases), [allKnowledgeBases]);
     const instituteId = getInstituteId();
-    // Question Library topics. Fetched only once the dialog is open.
-    const libraryTree = useLibraryTree(open ? instituteId ?? undefined : undefined);
-    const libraryNodes = useMemo(() => libraryTree.data?.nodes ?? [], [libraryTree.data]);
-    const topicOptions = useMemo(
-        () =>
-            flattenTree(buildTree(libraryNodes)).map((node) => ({
-                label: `${nodePath(node.id, libraryNodes)} (${node.question_count})`,
-                value: node.id,
-            })),
-        [libraryNodes]
-    );
 
     const sectionName = form.getValues(`section.${index}.sectionName`) || `Section ${index + 1}`;
 
@@ -128,7 +111,6 @@ const Step2PickFromQuestionBank = ({
                 {
                     name: appliedSearch || undefined,
                     kb_ids: kbId ? [kbId] : undefined,
-                    library_node_ids: topicId ? [topicId] : undefined,
                     difficulties: difficulty ? [difficulty] : undefined,
                     question_types: questionType ? [questionType] : undefined,
                     exclude_question_ids: alreadyInSection.length ? alreadyInSection : undefined,
@@ -153,7 +135,7 @@ const Step2PickFromQuestionBank = ({
         if (!open) return;
         load();
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [open, page, appliedSearch, kbId, topicId, difficulty, questionType]);
+    }, [open, page, appliedSearch, kbId, difficulty, questionType]);
 
     const close = (next: boolean) => {
         setOpen(next);
@@ -161,7 +143,6 @@ const Step2PickFromQuestionBank = ({
             setSearch('');
             setAppliedSearch('');
             setKbId('');
-            setTopicId('');
             setDifficulty('');
             setQuestionType('');
             setPage(0);
@@ -298,28 +279,6 @@ const Step2PickFromQuestionBank = ({
                             Search
                         </MyButton>
                     </div>
-
-                    {topicOptions.length > 0 && (
-                        <div className="flex flex-col gap-1">
-                            <p className="text-caption text-neutral-500">Question Library topic</p>
-                            <div className="flex flex-wrap items-center gap-2">
-                                {chip('Any', '', topicId === '', () => {
-                                    setPage(0);
-                                    setTopicId('');
-                                })}
-                                <MyDropdown
-                                    currentValue={topicId ? nodePath(topicId, libraryNodes) : ''}
-                                    placeholder="Choose a topic…"
-                                    dropdownList={topicOptions}
-                                    handleChange={(v) => {
-                                        setPage(0);
-                                        setTopicId(v);
-                                    }}
-                                    contentClassName="max-h-72 overflow-y-auto"
-                                />
-                            </div>
-                        </div>
-                    )}
 
                     {(knowledgeBases.length > 0 || curriculumBases.length > 0) && (
                         <div className="flex flex-col gap-1">

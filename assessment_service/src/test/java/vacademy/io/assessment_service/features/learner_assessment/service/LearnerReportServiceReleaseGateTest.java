@@ -59,6 +59,14 @@ class LearnerReportServiceReleaseGateTest {
     }
 
     @Test
+    void aHeldResultIsARefusalNotAServerFailure() {
+        // A 5xx here goes to Sentry as an error every time a learner opens a held report.
+        assertThatThrownBy(() -> access(attempt("NO_AUTO_RELEASE", null)))
+                .isInstanceOfSatisfying(VacademyException.class,
+                        e -> assertThat(e.getStatus()).isEqualTo(org.springframework.http.HttpStatus.FORBIDDEN));
+    }
+
+    @Test
     void aReleasedManualResultIsServed() {
         access(attempt("MANUAL", "RELEASED"));
     }

@@ -62,6 +62,7 @@ import { calculateAveragePenalty } from '@/routes/assessment/assessment-list/ass
 import Step2GenerateQuestionsFromAI from './-components/Step2GenerateQuestionsFromAI';
 import Step2CreateFromKnowledgeBase from './-components/Step2CreateFromKnowledgeBase';
 import Step2PickFromQuestionBank from './-components/Step2PickFromQuestionBank';
+import Step2PickFromQuestionLibrary from './-components/Step2PickFromQuestionLibrary';
 import { CriteriaStatusBadge } from './-components/CriteriaStatusBadge';
 import { CriteriaPreviewDialog } from './-components/CriteriaPreviewDialog';
 import { AddEditCriteriaDialog } from './-components/AddEditCriteriaDialog';
@@ -79,6 +80,7 @@ import { MyQuestion } from '@/types/assessments/question-paper-form';
 import QuestionSelectorDialog from '@/routes/assessment/question-papers/-components/QuestionSelectorDialog';
 import Step2UploadFromSheet from './-components/Step2UploadFromSheet';
 import { AssessmentQuestionEditDialog } from './-components/AssessmentQuestionEditDialog';
+import { LibraryCopyEditDialog } from './-components/LibraryCopyEditDialog';
 import { QuestionOptionsList } from '@/components/common/assessment/question-options-list';
 
 // The row's option list after an edit, from the editor's own shape: each type
@@ -331,6 +333,24 @@ export const Step2SectionInfo = ({
 
     const { setValue, getValues, control, watch } = form;
     const allSections = getValues('section');
+    const hasLibraryCopies = (allSections?.[index]?.adaptive_marking_for_each_question ?? []).some(
+        (question) => question.libraryCopy
+    );
+
+    const refreshEditedRow = (idx: number, saved: MyQuestion) => {
+        setValue(
+            `section.${index}.adaptive_marking_for_each_question.${idx}.questionName`,
+            saved.questionName
+        );
+        setValue(
+            `section.${index}.adaptive_marking_for_each_question.${idx}.questionType`,
+            saved.questionType
+        );
+        setValue(
+            `section.${index}.adaptive_marking_for_each_question.${idx}.options`,
+            optionsOfSavedQuestion(saved)
+        );
+    };
 
     const handleDeleteSection = (e: React.MouseEvent, index: number) => {
         e.stopPropagation();
@@ -892,6 +912,7 @@ export const Step2SectionInfo = ({
                     />
                     <Step2CreateFromKnowledgeBase form={form} index={index} />
                     <Step2PickFromQuestionBank form={form} index={index} />
+                    <Step2PickFromQuestionLibrary form={form} index={index} />
                     <div className="relative overflow-hidden rounded-xl">
                         <Step2GenerateQuestionsFromAI form={form} index={index} />
                         <BorderBeam
@@ -1429,7 +1450,7 @@ export const Step2SectionInfo = ({
                                     {examtype !== 'SURVEY' && (
                                         <TableHead>{t('table.headers.criteria')}</TableHead>
                                     )}
-                                    {assessmentId !== 'defaultId' && (
+                                    {(assessmentId !== 'defaultId' || hasLibraryCopies) && (
                                         <TableHead>
                                             <span className="sr-only">
                                                 {t('table.editQuestion')}
@@ -1608,11 +1629,25 @@ export const Step2SectionInfo = ({
                                                             />
                                                         </TableCell>
                                                     )}
-                                                    {assessmentId !== 'defaultId' && (
+                                                    {(assessmentId !== 'defaultId' ||
+                                                        hasLibraryCopies) && (
                                                         <TableCell>
-                                                            {/* Saved assessments only: a new one has no
-                                                                question rows on the server to edit yet. */}
-                                                            {question.questionId && (
+                                                            {/* A library copy has its own row from the moment
+                                                                it is added. Anything else needs a saved
+                                                                assessment: a new one has no question rows
+                                                                on the server to edit yet. */}
+                                                            {question.questionId &&
+                                                            question.libraryCopy ? (
+                                                                <LibraryCopyEditDialog
+                                                                    questionId={question.questionId}
+                                                                    assessmentId={assessmentId}
+                                                                    examType={examtype}
+                                                                    onSaved={(saved) =>
+                                                                        refreshEditedRow(idx, saved)
+                                                                    }
+                                                                />
+                                                            ) : question.questionId &&
+                                                              assessmentId !== 'defaultId' ? (
                                                                 <AssessmentQuestionEditDialog
                                                                     assessmentId={assessmentId}
                                                                     sectionId={form.getValues(
@@ -1620,24 +1655,11 @@ export const Step2SectionInfo = ({
                                                                     )}
                                                                     questionId={question.questionId}
                                                                     examType={examtype}
-                                                                    onSaved={(saved) => {
-                                                                        setValue(
-                                                                            `section.${index}.adaptive_marking_for_each_question.${idx}.questionName`,
-                                                                            saved.questionName
-                                                                        );
-                                                                        setValue(
-                                                                            `section.${index}.adaptive_marking_for_each_question.${idx}.questionType`,
-                                                                            saved.questionType
-                                                                        );
-                                                                        setValue(
-                                                                            `section.${index}.adaptive_marking_for_each_question.${idx}.options`,
-                                                                            optionsOfSavedQuestion(
-                                                                                saved
-                                                                            )
-                                                                        );
-                                                                    }}
+                                                                    onSaved={(saved) =>
+                                                                        refreshEditedRow(idx, saved)
+                                                                    }
                                                                 />
-                                                            )}
+                                                            ) : null}
                                                         </TableCell>
                                                     )}
                                                 </TableRow>

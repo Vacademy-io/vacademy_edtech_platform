@@ -57,9 +57,11 @@ export const LibraryQuestionCard = ({
     index: number;
     nodes: LibraryNode[];
     checked: boolean;
-    onCheck: () => void;
-    onEdit: () => void;
-    onAddToTopic: () => void;
+    /** Leave out for a card that cannot be selected. */
+    onCheck?: () => void;
+    /** Leave out, with onAddToTopic, for a card that cannot be changed. */
+    onEdit?: () => void;
+    onAddToTopic?: () => void;
     /** Present only while a topic is selected. */
     onRemoveFromTopic?: () => void;
 }) => {
@@ -82,12 +84,14 @@ export const LibraryQuestionCard = ({
                 checked ? 'border-primary-400 bg-primary-50' : 'border-neutral-200'
             )}
         >
-            <Checkbox
-                checked={checked}
-                onCheckedChange={onCheck}
-                className="mt-1"
-                aria-label={t('list.select')}
-            />
+            {onCheck && (
+                <Checkbox
+                    checked={checked}
+                    onCheckedChange={onCheck}
+                    className="mt-1"
+                    aria-label={t('list.select')}
+                />
+            )}
             <div className="flex min-w-0 flex-1 flex-col gap-3">
                 <div className="flex items-start gap-2">
                     <span className="mt-0.5 text-caption font-semibold text-neutral-400">
@@ -103,26 +107,30 @@ export const LibraryQuestionCard = ({
                         }}
                     />
                     <div className="flex shrink-0 items-center gap-1">
-                        <MyButton
-                            type="button"
-                            buttonType="secondary"
-                            scale="small"
-                            layoutVariant="icon"
-                            aria-label={t('list.edit')}
-                            onClick={onEdit}
-                        >
-                            <PencilSimpleLine size={16} />
-                        </MyButton>
-                        <MyButton
-                            type="button"
-                            buttonType="secondary"
-                            scale="small"
-                            layoutVariant="icon"
-                            aria-label={t('list.addToTopic')}
-                            onClick={onAddToTopic}
-                        >
-                            <FolderPlus size={16} />
-                        </MyButton>
+                        {onEdit && (
+                            <MyButton
+                                type="button"
+                                buttonType="secondary"
+                                scale="small"
+                                layoutVariant="icon"
+                                aria-label={t('list.edit')}
+                                onClick={onEdit}
+                            >
+                                <PencilSimpleLine size={16} />
+                            </MyButton>
+                        )}
+                        {onAddToTopic && (
+                            <MyButton
+                                type="button"
+                                buttonType="secondary"
+                                scale="small"
+                                layoutVariant="icon"
+                                aria-label={t('list.addToTopic')}
+                                onClick={onAddToTopic}
+                            >
+                                <FolderPlus size={16} />
+                            </MyButton>
+                        )}
                         {onRemoveFromTopic && (
                             <MyButton
                                 type="button"

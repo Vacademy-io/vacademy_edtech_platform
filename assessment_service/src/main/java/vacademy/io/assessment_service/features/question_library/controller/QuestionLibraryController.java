@@ -8,6 +8,8 @@ import vacademy.io.assessment_service.features.assessment_folder.service.Assessm
 import vacademy.io.assessment_service.features.question_bank.dto.QuestionBankFilter;
 import vacademy.io.assessment_service.features.question_core.dto.QuestionDTO;
 import vacademy.io.assessment_service.features.question_library.dto.*;
+import vacademy.io.assessment_service.features.question_library.service.QuestionLibraryAccess;
+import vacademy.io.assessment_service.features.question_library.service.QuestionLibraryCopyService;
 import vacademy.io.assessment_service.features.question_library.service.QuestionLibraryEditService;
 import vacademy.io.assessment_service.features.question_library.service.QuestionLibraryService;
 import vacademy.io.common.auth.model.CustomUserDetails;
@@ -18,10 +20,11 @@ import static vacademy.io.common.core.constants.PageConstants.DEFAULT_PAGE_NUMBE
 import static vacademy.io.common.core.constants.PageConstants.DEFAULT_PAGE_SIZE;
 
 /**
- * Question Library: the institute's questions organised by topic.
+ * Question Library: the questions and papers the platform provides, organised by topic.
  * <p>
  * Every call is staff-only and pinned to the caller's active institute (the clientId
- * header), with the same guard as assessment folders.
+ * header), with the same guard as assessment folders. Reading and copying are open to any
+ * institute. Everything that changes the library is limited to its owner institute.
  */
 @RestController
 @RequestMapping("/assessment-service/question-library/v1")
@@ -34,7 +37,18 @@ public class QuestionLibraryController {
     private QuestionLibraryEditService editService;
 
     @Autowired
+    private QuestionLibraryCopyService copyService;
+
+    @Autowired
+    private QuestionLibraryAccess libraryAccess;
+
+    @Autowired
     private AssessmentFolderAccessGuard accessGuard;
+
+    private void requireManager(CustomUserDetails user, String clientId, String instituteId) {
+        accessGuard.requireStaff(user, clientId, instituteId);
+        libraryAccess.requireOwner(instituteId);
+    }
 
     @GetMapping("/tree")
     public ResponseEntity<LibraryTreeResponse> tree(@RequestAttribute("user") CustomUserDetails user,
@@ -49,7 +63,7 @@ public class QuestionLibraryController {
                                                      @RequestHeader(value = "clientId", required = false) String clientId,
                                                      @RequestParam("instituteId") String instituteId,
                                                      @RequestBody LibraryNodeRequest request) {
-        accessGuard.requireStaff(user, clientId, instituteId);
+        requireManager(user, clientId, instituteId);
         return ResponseEntity.ok(libraryService.createNode(user, instituteId, request));
     }
 
@@ -59,7 +73,7 @@ public class QuestionLibraryController {
                                              @RequestParam("instituteId") String instituteId,
                                              @RequestParam("nodeId") String nodeId,
                                              @RequestBody LibraryNodeRequest request) {
-        accessGuard.requireStaff(user, clientId, instituteId);
+        requireManager(user, clientId, instituteId);
         return ResponseEntity.ok(libraryService.updateNode(instituteId, nodeId, request));
     }
 
@@ -68,7 +82,7 @@ public class QuestionLibraryController {
                                            @RequestHeader(value = "clientId", required = false) String clientId,
                                            @RequestParam("instituteId") String instituteId,
                                            @RequestBody MoveLibraryNodeRequest request) {
-        accessGuard.requireStaff(user, clientId, instituteId);
+        requireManager(user, clientId, instituteId);
         return ResponseEntity.ok(libraryService.moveNode(instituteId, request));
     }
 
@@ -77,7 +91,7 @@ public class QuestionLibraryController {
                                                @RequestHeader(value = "clientId", required = false) String clientId,
                                                @RequestParam("instituteId") String instituteId,
                                                @RequestBody ReorderLibraryNodesRequest request) {
-        accessGuard.requireStaff(user, clientId, instituteId);
+        requireManager(user, clientId, instituteId);
         return ResponseEntity.ok(libraryService.reorderNodes(instituteId, request));
     }
 
@@ -86,7 +100,7 @@ public class QuestionLibraryController {
                                                             @RequestHeader(value = "clientId", required = false) String clientId,
                                                             @RequestParam("instituteId") String instituteId,
                                                             @RequestParam("nodeId") String nodeId) {
-        accessGuard.requireStaff(user, clientId, instituteId);
+        requireManager(user, clientId, instituteId);
         return ResponseEntity.ok(libraryService.deleteNode(instituteId, nodeId));
     }
 
@@ -107,7 +121,7 @@ public class QuestionLibraryController {
                                                                  @RequestHeader(value = "clientId", required = false) String clientId,
                                                                  @RequestParam("instituteId") String instituteId,
                                                                  @RequestBody AssignLibraryQuestionsRequest request) {
-        accessGuard.requireStaff(user, clientId, instituteId);
+        requireManager(user, clientId, instituteId);
         return ResponseEntity.ok(libraryService.assignQuestions(instituteId, request));
     }
 
@@ -116,7 +130,7 @@ public class QuestionLibraryController {
                                                                  @RequestHeader(value = "clientId", required = false) String clientId,
                                                                  @RequestParam("instituteId") String instituteId,
                                                                  @RequestBody RemoveLibraryQuestionsRequest request) {
-        accessGuard.requireStaff(user, clientId, instituteId);
+        requireManager(user, clientId, instituteId);
         return ResponseEntity.ok(libraryService.removeQuestions(instituteId, request));
     }
 
@@ -126,7 +140,7 @@ public class QuestionLibraryController {
                                                                     @RequestHeader(value = "clientId", required = false) String clientId,
                                                                     @RequestParam("instituteId") String instituteId,
                                                                     @RequestBody QuestionDTO question) {
-        accessGuard.requireStaff(user, clientId, instituteId);
+        requireManager(user, clientId, instituteId);
         return ResponseEntity.ok(editService.edit(user, instituteId, question));
     }
 
@@ -135,15 +149,64 @@ public class QuestionLibraryController {
                                                                 @RequestHeader(value = "clientId", required = false) String clientId,
                                                                 @RequestParam("instituteId") String instituteId,
                                                                 @RequestBody AddPaperToLibraryNodeRequest request) {
-        accessGuard.requireStaff(user, clientId, instituteId);
+        requireManager(user, clientId, instituteId);
         return ResponseEntity.ok(libraryService.addPaperToNode(instituteId, request));
+    }
+
+    @PostMapping("/papers/remove")
+    public ResponseEntity<LibraryActionResponse> removePaper(@RequestAttribute("user") CustomUserDetails user,
+                                                             @RequestHeader(value = "clientId", required = false) String clientId,
+                                                             @RequestParam("instituteId") String instituteId,
+                                                             @RequestBody AddPaperToLibraryNodeRequest request) {
+        requireManager(user, clientId, instituteId);
+        return ResponseEntity.ok(libraryService.removePaperFromNode(instituteId, request));
+    }
+
+    /** Whole papers on a topic and the topics below it, or on the whole library. */
+    @GetMapping("/papers")
+    public ResponseEntity<List<LibraryPaperDto>> papers(@RequestAttribute("user") CustomUserDetails user,
+                                                        @RequestHeader(value = "clientId", required = false) String clientId,
+                                                        @RequestParam("instituteId") String instituteId,
+                                                        @RequestParam(value = "nodeId", required = false) String nodeId) {
+        accessGuard.requireStaff(user, clientId, instituteId);
+        return ResponseEntity.ok(libraryService.listPapers(nodeId));
+    }
+
+    /** Copies the picked questions, or a whole paper, into the caller's institute for one test. */
+    @PostMapping("/questions/copy")
+    public ResponseEntity<LibraryCopyResponse> copyQuestions(@RequestAttribute("user") CustomUserDetails user,
+                                                             @RequestHeader(value = "clientId", required = false) String clientId,
+                                                             @RequestParam("instituteId") String instituteId,
+                                                             @RequestBody CopyLibraryQuestionsRequest request) {
+        accessGuard.requireStaff(user, clientId, instituteId);
+        return ResponseEntity.ok(copyService.copy(instituteId, request));
+    }
+
+    /** The caller's own copy, for editing it before its test has been saved. */
+    @GetMapping("/copies")
+    public ResponseEntity<QuestionDTO> getCopy(@RequestAttribute("user") CustomUserDetails user,
+                                               @RequestHeader(value = "clientId", required = false) String clientId,
+                                               @RequestParam("instituteId") String instituteId,
+                                               @RequestParam("questionId") String questionId) {
+        accessGuard.requireStaff(user, clientId, instituteId);
+        return ResponseEntity.ok(copyService.getCopy(instituteId, questionId));
+    }
+
+    /** Edits the caller's own copy. Only copies pass: the library itself cannot be reached here. */
+    @PostMapping("/copies/edit")
+    public ResponseEntity<Boolean> editCopy(@RequestAttribute("user") CustomUserDetails user,
+                                            @RequestHeader(value = "clientId", required = false) String clientId,
+                                            @RequestParam("instituteId") String instituteId,
+                                            @RequestBody QuestionDTO question) {
+        accessGuard.requireStaff(user, clientId, instituteId);
+        return ResponseEntity.ok(copyService.editCopy(instituteId, question));
     }
 
     @GetMapping("/subject-tags")
     public ResponseEntity<List<LibrarySubjectTagDto>> subjectTags(@RequestAttribute("user") CustomUserDetails user,
                                                                   @RequestHeader(value = "clientId", required = false) String clientId,
                                                                   @RequestParam("instituteId") String instituteId) {
-        accessGuard.requireStaff(user, clientId, instituteId);
+        requireManager(user, clientId, instituteId);
         return ResponseEntity.ok(libraryService.listSubjectTags(instituteId));
     }
 
@@ -152,7 +215,7 @@ public class QuestionLibraryController {
                                                                    @RequestHeader(value = "clientId", required = false) String clientId,
                                                                    @RequestParam("instituteId") String instituteId,
                                                                    @RequestBody ImportLibraryTagsRequest request) {
-        accessGuard.requireStaff(user, clientId, instituteId);
+        requireManager(user, clientId, instituteId);
         return ResponseEntity.ok(libraryService.importSubjectTags(user, instituteId, request));
     }
 }

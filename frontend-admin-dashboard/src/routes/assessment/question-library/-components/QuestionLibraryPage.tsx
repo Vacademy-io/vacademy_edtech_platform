@@ -30,6 +30,7 @@ import {
     libraryErrorMessage,
     moveLibraryNode,
     nodePath,
+    removeLibraryPaper,
     removeLibraryQuestions,
     reorderLibraryNodes,
     subtreeIds,
@@ -60,6 +61,7 @@ import {
 import { AddPaperToTopicDialog, ImportTagsDialog } from './ImportDialogs';
 import { LibraryQuestionCard } from './LibraryQuestionCard';
 import { LibraryQuestionEditDialog } from './LibraryQuestionEditDialog';
+import { LibraryPapersPanel } from './LibraryPapersPanel';
 
 type TopicForm =
     | { mode: 'create'; parent: LibraryNode | null }
@@ -82,6 +84,8 @@ export const QuestionLibraryPage = () => {
     const nodes = useMemo(() => tree.data?.nodes ?? [], [tree.data]);
     const roots = useMemo(() => buildTree(nodes), [nodes]);
     const maxDepth = tree.data?.max_depth ?? 4;
+    // Read-only until the server says otherwise, so write buttons never flash at a reader.
+    const readOnly = !tree.data?.can_manage;
 
     const [selected, setSelected] = useState<string>(ALL_QUESTIONS);
     const [search, setSearch] = useState('');
@@ -279,6 +283,7 @@ export const QuestionLibraryPage = () => {
                 onImportTags={() => setTagsOpen(true)}
                 onShowUnsorted={() => select(UNSORTED)}
                 onOpenTopic={select}
+                readOnly={readOnly}
             />
 
             {tree.isError && (
@@ -305,6 +310,7 @@ export const QuestionLibraryPage = () => {
                         onAction={(action, node, siblings) =>
                             void onTopicAction(action, node, siblings)
                         }
+                        readOnly={readOnly}
                     />
                 </div>
 
@@ -327,13 +333,15 @@ export const QuestionLibraryPage = () => {
                                 </div>
                             ) : (
                                 <span className="text-caption text-neutral-500">
-                                    {selected === UNSORTED
-                                        ? t('scope.unsortedHint')
-                                        : t('scope.allHint')}
+                                    {readOnly
+                                        ? t('readOnly.allHint')
+                                        : selected === UNSORTED
+                                          ? t('scope.unsortedHint')
+                                          : t('scope.allHint')}
                                 </span>
                             )}
                         </div>
-                        {selectedNode && (
+                        {selectedNode && !readOnly && (
                             <div className="flex flex-wrap gap-2">
                                 {selectedNode.depth < maxDepth && (
                                     <MyButton
@@ -360,6 +368,22 @@ export const QuestionLibraryPage = () => {
                             </div>
                         )}
                     </div>
+
+                    <LibraryPapersPanel
+                        instituteId={instituteId}
+                        nodeId={selectedNode?.id}
+                        readOnly={readOnly}
+                        onRemove={(paper) =>
+                            void run(
+                                () =>
+                                    removeLibraryPaper(instituteId, {
+                                        question_paper_id: paper.id,
+                                        node_id: paper.node_id,
+                                    }),
+                                () => t('toasts.paperRemoved', { name: paper.title })
+                            )
+                        }
+                    />
 
                     {/* Filters */}
                     <div className="flex flex-col gap-3 rounded-lg border border-neutral-200 bg-white p-4">
@@ -444,7 +468,7 @@ export const QuestionLibraryPage = () => {
                     </div>
 
                     {/* Bulk bar */}
-                    {rows.length > 0 && (
+                    {!readOnly && rows.length > 0 && (
                         <div
                             className={cn(
                                 'flex flex-wrap items-center gap-3 rounded-lg border px-4 py-2',
@@ -557,20 +581,24 @@ export const QuestionLibraryPage = () => {
                             <p className="text-subtitle font-semibold text-neutral-600">
                                 {hasFilters
                                     ? t('empty.filtered')
-                                    : selectedNode
-                                      ? t('empty.topic')
-                                      : selected === UNSORTED
-                                        ? t('empty.unsorted')
-                                        : t('empty.all')}
+                                    : readOnly
+                                      ? t('readOnly.emptyTitle')
+                                      : selectedNode
+                                        ? t('empty.topic')
+                                        : selected === UNSORTED
+                                          ? t('empty.unsorted')
+                                          : t('empty.all')}
                             </p>
                             <p className="max-w-md text-caption text-neutral-500">
                                 {hasFilters
                                     ? t('empty.filteredHint')
-                                    : selectedNode
-                                      ? t('empty.topicHint')
-                                      : t('empty.allHint')}
+                                    : readOnly
+                                      ? t('readOnly.emptyHint')
+                                      : selectedNode
+                                        ? t('empty.topicHint')
+                                        : t('empty.allHint')}
                             </p>
-                            {selectedNode && !hasFilters && (
+                            {selectedNode && !hasFilters && !readOnly && (
                                 <div className="flex flex-wrap justify-center gap-2">
                                     <MyButton
                                         buttonType="secondary"
@@ -603,16 +631,20 @@ export const QuestionLibraryPage = () => {
                                     index={page * PAGE_SIZE + i + 1}
                                     nodes={nodes}
                                     checked={checked.has(row.question.id)}
-                                    onCheck={() => toggleChecked(row.question.id)}
-                                    onEdit={() => setEditing(row)}
-                                    onAddToTopic={() =>
-                                        setPicker({ questionIds: [row.question.id], mode: 'ADD' })
-                                    }
-                                    onRemoveFromTopic={
-                                        selectedNode
-                                            ? () => void removeFromTopic([row.question.id])
-                                            : undefined
-                                    }
+                                    {...(readOnly
+                                        ? {}
+                                        : {
+                                              onCheck: () => toggleChecked(row.question.id),
+                                              onEdit: () => setEditing(row),
+                                              onAddToTopic: () =>
+                                                  setPicker({
+                                                      questionIds: [row.question.id],
+                                                      mode: 'ADD',
+                                                  }),
+                                              onRemoveFromTopic: selectedNode
+                                                  ? () => void removeFromTopic([row.question.id])
+                                                  : undefined,
+                                          })}
                                 />
                             ))}
                             {(questions.data?.total_pages ?? 0) > 1 && (

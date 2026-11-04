@@ -28,6 +28,7 @@ import vacademy.io.assessment_service.features.assessment.repository.SectionRepo
 import vacademy.io.assessment_service.features.assessment.service.assessment_get.AssessmentService;
 import vacademy.io.assessment_service.features.assessment.service.bulk_entry_services.QuestionAssessmentSectionMappingService;
 import vacademy.io.assessment_service.features.question_core.entity.Question;
+import vacademy.io.assessment_service.features.question_library.service.QuestionLibraryCopyService;
 import vacademy.io.assessment_service.features.rich_text.entity.AssessmentRichTextData;
 import vacademy.io.assessment_service.features.rich_text.enums.TextType;
 import vacademy.io.common.auth.model.CustomUserDetails;
@@ -289,13 +290,22 @@ public class AssessmentLinkQuestionsManager {
         }
         List<String> sectionIds = assessmentOptional.get().getSections().stream().map(Section::getId).toList();
         if (sectionIds.isEmpty() || updatedQuestions == null || updatedQuestions.isEmpty()) return false;
-        Set<String> allowed = new HashSet<>();
+        Map<String, Question> allowed = new HashMap<>();
         for (QuestionAssessmentSectionMapping mapping : questionAssessmentSectionMappingService.getQuestionAssessmentSectionMappingBySectionIds(sectionIds)) {
-            allowed.add(mapping.getQuestion().getId());
+            allowed.put(mapping.getQuestion().getId(), mapping.getQuestion());
         }
         List<QuestionDTO> permitted = updatedQuestions.stream()
-                .filter(q -> q.getId() != null && allowed.contains(q.getId()))
+                .filter(q -> q.getId() != null && allowed.containsKey(q.getId()))
                 .toList();
+        // A question copied from the Question Library: its edit must stay on its own rows.
+        for (QuestionDTO edit : permitted) {
+            Question own = allowed.get(edit.getId());
+            if (QuestionLibraryCopyService.SOURCE_TYPE.equals(own.getSourceType())) {
+                QuestionLibraryCopyService.pinToOwnRows(own, edit);
+                edit.setSourceType(null);
+                edit.setSourceMeta(null);
+            }
+        }
         if (permitted.isEmpty()) return false;
         try {
             addQuestionPaperFromImportManager.updateQuestionsInPlace(permitted, instituteId);

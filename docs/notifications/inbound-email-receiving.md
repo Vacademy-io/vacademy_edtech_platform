@@ -33,7 +33,7 @@ SqsInboundEmailListener  →  InboundEmailService
     │   2. Dedup on Message-ID
     │   3. Rate-limit per sender (Guava cache, 10/min)
     │   4. Look up institute via email_address_mapping (To address)
-    │   5. Reply linking: In-Reply-To → original outbound EMAIL log
+    │   5. Reply linking: In-Reply-To → original outbound EMAIL log (see Edge Cases: SES overwrites Message-ID)
     │   6. userId fallback: most recent outbound email to sender
     │
     ▼
@@ -351,6 +351,8 @@ Once `INBOUND_EMAIL_ENABLED=true`:
 | Spam / unmapped recipient       | Discarded — only emails to addresses in `email_address_mapping` are stored                           |
 | Duplicate SQS delivery          | Dedup on `source_id = Message-ID`; second delivery skipped                                           |
 | No `In-Reply-To` header         | Stored standalone; `source = null`, `userId` resolved from most recent outbound email to the sender  |
+| Sent through SES                | SES overwrites `Message-ID`, so In-Reply-To carries SES's id, not `source_id`. It is found on the message's `EMAIL_EVENT` rows (`source_id` = SES id, `source` = the EMAIL row). `EmailService.stampMessageRef` tags each message so its events land on the right EMAIL row |
+| In-Reply-To matches nothing     | Latest email from the mailbox it was sent to, to this sender. For a mailbox no institute owns, the latest email to this sender |
 | Multiple To/CC recipients       | First match in `email_address_mapping` wins; one log entry per inbound email                         |
 | Body > 64 KB                    | Truncated with `[TRUNCATED]` marker; full body still stored in `messagePayload` JSON up to the limit |
 | HTML-only body                  | Tags stripped for the `body` field; raw HTML preserved in `messagePayload`                           |
