@@ -242,6 +242,7 @@ def question_runs(blocks: Sequence[str]) -> List[List[int]]:
     is longer. A paper that never restarts keeps its first run whatever
     line sits above it.
     """
+    from .paper_numbering import reads_as_instructions
     from .paper_outline import is_section_heading
 
     texts = [_text_of(b) for b in blocks]
@@ -275,6 +276,10 @@ def question_runs(blocks: Sequence[str]) -> List[List[int]]:
             # A "Q" marker on any other number out of sequence (a misread
             # "Q77", a stray "Q 30 …" in a table) only opens a candidate
             # under the current run, dropped as soon as that run resumes.
+            # With no heading to say so, the run's own sentences can ("Attempt all
+            # 30 questions", "Part A contains 20 questions").
+            if n == 1 and open_runs and not open_runs[-1]["instructions"]:
+                open_runs[-1]["instructions"] = reads_as_instructions([texts[j] for j in open_runs[-1]["idx"]])
             restart = n == 1 and (explicit or heading_since_start or not open_runs or open_runs[-1]["instructions"])
             if restart:
                 open_runs.clear()
@@ -1512,8 +1517,14 @@ async def extract_from_html(
     in the summary for the preview, which builds the assessment accordingly.
     Unasked (a scanned file, whose sections are unknown at upload) a paper
     with sections is split."""
+    from .paper_numbering import restore_list_numbers
     from .paper_outline import apply_outline, outline_of_blocks
 
+    # A numbered instructions list above the questions: MathPix numbers both as
+    # one list, so the paper's own numbers go back first.
+    html, renumbered = restore_list_numbers(html or "")
+    if renumbered:
+        logger.info("extract-questions: restored %d printed question number(s)", renumbered)
     # MathPix serves figures from its own CDN and purges them; a stored
     # question must point at our copy (cached HTML from before this was
     # done at conversion still carries vendor URLs).

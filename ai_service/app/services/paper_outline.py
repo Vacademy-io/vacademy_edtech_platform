@@ -19,6 +19,7 @@ from __future__ import annotations
 import re
 from typing import Any, Dict, List, Optional, Sequence
 
+from .paper_numbering import declared_split, restore_list_numbers
 from .question_extract_service import (
     _OPTION_LINE,
     _question_no,
@@ -501,6 +502,19 @@ def outline_of_blocks(blocks: Sequence[str], key_at: Optional[int]) -> Dict[str,
                 sections.append(sec)
     if len(sections) < 2:
         sections = []
+    # 4. The instructions' own split ("Part 'A' contains 20 questions and each
+    # carries 'Five marks'"), when the paper heads its parts no better than that.
+    declared = declared_split("".join(body))
+    for row in declared:
+        by_label.setdefault(row["label"], {"marks": row["marks"], "negative_marks": None})
+    if (not sections and declared and len(numbers) == len(set(numbers))
+            and sum(row["count"] for row in declared) == len(numbers)):
+        position = 0
+        for row in declared:
+            sec = _section_shell(row["name"], "instructions", row["label"])
+            sec["numbers"] = numbers[position:position + row["count"]]
+            position += row["count"]
+            sections.append(sec)
 
     # Marks per section: its own instruction, else the general instructions'
     # line about it ("Section A … 1 mark each"), else the paper's scheme.
@@ -555,7 +569,7 @@ def outline_of_blocks(blocks: Sequence[str], key_at: Optional[int]) -> Dict[str,
 
 
 def outline_of_html(html: str) -> Dict[str, Any]:
-    blocks = split_blocks(html or "")
+    blocks = split_blocks(restore_list_numbers(html or "")[0])
     return outline_of_blocks(blocks, find_answer_key(blocks))
 
 
