@@ -2,6 +2,7 @@ package vacademy.io.admin_core_service.features.user_subscription.service;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
@@ -123,6 +124,7 @@ public class AdminManualRenewalService {
                 .build();
     }
 
+    @CacheEvict(value = { "userPlanById", "userPlanWithPaymentLogs", "membershipDetails" }, allEntries = true)
     @Transactional
     public ManualRenewalResultDTO renew(String userPlanId, String instituteId,
                                         ManualRenewalRequestDTO req, CustomUserDetails admin) {
@@ -296,6 +298,7 @@ public class AdminManualRenewalService {
      * to, why), a learner_access_log row per access row, and the admin activity log entry the
      * controller writes.
      */
+    @CacheEvict(value = { "userPlanById", "userPlanWithPaymentLogs", "membershipDetails" }, allEntries = true)
     @Transactional
     public ManualRenewalResultDTO changeEndDate(String userPlanId, String instituteId,
                                                 ChangePlanEndDateRequestDTO req, CustomUserDetails admin) {

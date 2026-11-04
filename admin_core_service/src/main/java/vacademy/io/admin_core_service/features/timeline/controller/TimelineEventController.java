@@ -124,6 +124,21 @@ public class TimelineEventController {
         }
 
         /**
+         * Remarks for the learner Overview card: notes on the learner plus manual renewals,
+         * end date changes and remarks on their memberships, newest first.
+         * GET /admin-core-service/timeline/v1/student/{studentUserId}/remarks
+         */
+        @GetMapping("/student/{studentUserId}/remarks")
+        public ResponseEntity<Page<TimelineEventDTO>> getStudentRemarks(
+                        @PathVariable String studentUserId,
+                        @RequestParam(defaultValue = "0") int page,
+                        @RequestParam(defaultValue = "20") int size) {
+
+                Pageable pageable = PageRequest.of(page, size);
+                return ResponseEntity.ok(timelineEventService.getStudentRemarks(studentUserId, pageable));
+        }
+
+        /**
          * Batch fetch the latest cross-stage note + count per student.
          * POST /admin-core-service/timeline/v1/student/latest-notes-batch
          * Body: ["userId1", "userId2", ...]

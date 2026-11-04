@@ -28,6 +28,7 @@ import {
     PLAN_REMARKS_QUERY_KEY,
     getManualRenewalPreview,
     recordManualRenewal,
+    type ManualRenewalResult,
 } from '@/services/user-plan';
 import { PlanRemarksPanel } from './plan-remarks';
 import { useInstituteDefaultCurrency } from '@/services/payment-setting';
@@ -39,7 +40,7 @@ interface ManualRenewalDialogProps {
     instituteId: string;
     planLabel?: string;
     /** Called after the renewal lands, so the caller can refresh its plan list. */
-    onRenewed: () => void;
+    onRenewed: (result: ManualRenewalResult) => void;
 }
 
 const toInputDate = (iso?: string | null): string => {
@@ -122,7 +123,7 @@ export const ManualRenewalDialog = ({
             queryClient.invalidateQueries({
                 queryKey: [MANUAL_RENEWAL_PREVIEW_QUERY_KEY, userPlanId],
             });
-            onRenewed();
+            onRenewed(result);
             onOpenChange(false);
         },
         onError: (err: any) => {
