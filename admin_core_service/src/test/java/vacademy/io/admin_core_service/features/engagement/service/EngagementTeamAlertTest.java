@@ -98,9 +98,9 @@ class EngagementTeamAlertTest {
         var stranger = assertThrows(java.lang.reflect.InvocationTargetException.class,
                 () -> m.invoke(service, List.of("stranger"), "inst"));
         assertTrue(stranger.getCause().getMessage().contains("stranger"));
-        // One contact only: they are alerted and their Google account books the engine's meetings.
-        var tooMany = assertThrows(java.lang.reflect.InvocationTargetException.class,
+        // Several contacts are fine, but each must be staff here: one bad id refuses the whole list.
+        var mixed = assertThrows(java.lang.reflect.InvocationTargetException.class,
                 () -> m.invoke(service, List.of("staff", "learner"), "inst"));
-        assertTrue(tooMany.getCause().getMessage().contains("one team member"));
+        assertTrue(mixed.getCause().getMessage().contains("learner"));
     }
 }
