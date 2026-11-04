@@ -225,10 +225,10 @@
     },
     "team": {
         "title": "Who to alert and book meetings with",
-        "hint": "Alerted (in-app and email) when the agent can't handle a reply or lacks requested material. Meetings use their Google account from My Schedule, else the institute default. The lead's counsellor is always told too.",
+        "hint": "Alerted (in-app and email) when the agent can't handle a reply or lacks requested material. Meetings use the first person's Google account from My Schedule, else the institute default. The lead's counsellor is always told too.",
         "searchPlaceholder": "Search team members",
         "empty": "No team members found",
-        "note": "Pick one person.",
+        "note": "Pick one or more people. All of them are alerted. Meetings use the first person you pick.",
         "loadFailed": "Couldn't load your team. Try again in a moment."
     },
     "aiCall": {

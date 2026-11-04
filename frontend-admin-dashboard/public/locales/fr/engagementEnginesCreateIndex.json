@@ -196,10 +196,10 @@
     },
     "team": {
         "title": "Qui alerter et avec qui planifier les réunions",
-        "hint": "Quand l'agent ne peut pas traiter une réponse seul, ou qu'on lui demande un document qu'il n'a pas, cette personne reçoit une alerte système et un e-mail. Les réunions que l'agent planifie utilisent son compte Google si elle l'a connecté dans Mon agenda, sinon le compte Google par défaut de l'établissement. Le conseiller du prospect est toujours prévenu aussi.",
+        "hint": "Quand l'agent ne peut pas traiter une réponse seul, ou qu'on lui demande un document qu'il n'a pas, ces personnes reçoivent une alerte système et un e-mail. Les réunions que l'agent planifie utilisent le compte Google de la première personne choisie si elle l'a connecté dans Mon agenda, sinon le compte Google par défaut de l'établissement. Le conseiller du prospect est toujours prévenu aussi.",
         "searchPlaceholder": "Rechercher des membres de l'équipe",
         "empty": "Aucun membre de l'équipe trouvé",
-        "note": "Choisissez une personne.",
+        "note": "Choisissez une ou plusieurs personnes. Toutes sont alertées. Les réunions utilisent la première personne choisie.",
         "loadFailed": "Impossible de charger votre équipe. Réessayez dans un instant."
     }
 }

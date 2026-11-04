@@ -118,6 +118,7 @@
         "change": "Change",
         "fallback": "Nobody is picked. The engine's creator is told.",
         "fallbackCreator": "Nobody is picked, so {{name}} (who created this engine) is told.",
-        "counsellorNote": "Each lead's own counsellor is told as well. Alerts go as a bell alert and an email."
+        "counsellorNote": "Each lead's own counsellor is told as well. Alerts go as a bell alert and an email.",
+        "meetingOwner": "Meetings use this person's account"
     }
 }

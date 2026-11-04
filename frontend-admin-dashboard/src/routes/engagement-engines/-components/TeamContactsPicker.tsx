@@ -4,10 +4,10 @@ import { fetchEligibleOrgUsers } from '@/routes/manage-institute/teams/-services
 import { CheckList, type CheckOption } from './CheckList';
 
 /**
- * Pick the ONE team member an engine alerts (bell alert and email) whenever it needs a person: an
+ * Pick the team members an engine alerts (bell alert and email) whenever it needs a person: an
  * escalated reply, or a request for an asset it does not hold. The lead's own counsellor is told
- * as well. The meetings the engine books use this person's Google account when they have
- * connected one in My Schedule, else the institute default.
+ * as well. The meetings the engine books use the FIRST person's Google account when they have
+ * connected one in My Schedule, else the institute default, so the pick order matters.
  */
 export function TeamContactsPicker({
     instituteId,
@@ -42,7 +42,6 @@ export function TeamContactsPicker({
                 options={options}
                 selected={selected}
                 onChange={onChange}
-                single
                 searchPlaceholder={t('team.searchPlaceholder')}
                 emptyText={t('team.empty')}
                 loading={isLoading}
