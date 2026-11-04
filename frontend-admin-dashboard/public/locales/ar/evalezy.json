@@ -24,6 +24,7 @@
         "resend": "إعادة إرسال الرمز",
         "resendIn": "إعادة الإرسال خلال {{seconds}} ث",
         "fullName": "اسمك",
+        "phone": "رقم الهاتف",
         "username": "اختر اسم مستخدم",
         "password": "اختر كلمة مرور",
         "instituteName": "اسم المؤسسة",

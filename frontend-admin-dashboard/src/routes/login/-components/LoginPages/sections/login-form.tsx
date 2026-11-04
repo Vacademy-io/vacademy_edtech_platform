@@ -1,4 +1,5 @@
-import { isEvalezyMode } from '@/lib/evalezy-mode';
+import { isEvalezyMode, loginLogo } from '@/lib/evalezy-mode';
+import { fetchSignupConfig, startGoogleSignup } from '@/routes/signup/-services/self-signup';
 import { getActiveRoleDisplaySettingsKey } from '@/lib/auth/instituteUtils';
 import { getInstituteId } from '@/constants/helper';
 import { hasFacultyAssignedPermission } from '@/lib/auth/facultyAccessUtils';
@@ -69,7 +70,8 @@ const isHandledLoginError = (error?: string): boolean =>
 function resolveAuthProviderFlags(branding: Partial<DomainResolveResponse> | null | undefined) {
     return {
         allowGoogleAuth: branding?.allowGoogleAuth !== false,
-        allowGithubAuth: branding?.allowGithubAuth !== false,
+        // Evalezy signs in with Google, email or a username only.
+        allowGithubAuth: !isEvalezyMode() && branding?.allowGithubAuth !== false,
         allowEmailOtpAuth: branding?.allowEmailOtpAuth !== false,
         allowUsernamePasswordAuth: branding?.allowUsernamePasswordAuth !== false,
         allowPhoneAuth: branding?.allowPhoneAuth === true,
@@ -81,7 +83,7 @@ export function LoginForm() {
     const queryClient = useQueryClient();
     const { hasSeenAnimation, setHasSeenAnimation } = useAnimationStore();
     const navigate = useNavigate();
-    const { instituteLogo } = useInstituteLogoStore();
+    const instituteLogo = loginLogo(useInstituteLogoStore().instituteLogo);
     // Branding must be STATE, not a bare localStorage read: logout wipes
     // localStorage (clearWebStorage) and the router then redirects to /login
     // CLIENT-SIDE, so index.tsx's bootstrap never re-runs and this read returns
@@ -505,6 +507,22 @@ export function LoginForm() {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
+    const continueWithGoogle = async () => {
+        // On Evalezy the same button serves a new teacher too: Google comes back to the sign-up
+        // screen, which signs an existing account in and asks a new one for the rest. An app's
+        // WebView has no way back from there, and neither does a closed sign-up.
+        if (isEvalezyMode() && !isNative()) {
+            try {
+                const { product } = await fetchSignupConfig('evalezy');
+                startGoogleSignup({ product, source: 'login' });
+                return;
+            } catch {
+                // Sign-up closed or not answering: this stays a plain login.
+            }
+        }
+        handleOAuthLogin('google', { isSignup: false });
+    };
+
     const handleNavigateSignup = () => {
         if (isEvalezyMode()) {
             navigate({ to: '/signup/start', search: { product: 'evalezy' } });
@@ -626,7 +644,7 @@ export function LoginForm() {
                                                 action: 'login',
                                                 timestamp: new Date().toISOString(),
                                             });
-                                            handleOAuthLogin('google', { isSignup: false });
+                                            void continueWithGoogle();
                                         }}
                                         type="button"
                                     >
@@ -811,7 +829,7 @@ export function LoginForm() {
                                                         >
                                                             {mutation.isPending ? t('loggingIn') : t('login')}
                                                         </MyButton>
-                                                        {allowSignup && (
+                                                        {(allowSignup || isEvalezyMode()) && (
                                                             <p className="text-xs text-neutral-700">
                                                                 {t('noAccount')}&nbsp;&nbsp;
                                                                 <span

@@ -516,7 +516,7 @@ export function EmailLogin({
                 </div>
             )}
 
-            {allowSignup && (
+            {(allowSignup || isEvalezyMode()) && (
                 <div className="mt-4 text-center">
                     <p className="text-sm">
                         {t('noAccount')}&nbsp;&nbsp;

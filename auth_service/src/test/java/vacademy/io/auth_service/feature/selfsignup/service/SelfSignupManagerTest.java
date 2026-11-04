@@ -67,6 +67,7 @@ class SelfSignupManagerTest {
         r.setSignupToken("good");
         r.setProduct("evalezy");
         r.setFullName("A Teacher");
+        r.setPhone("+91 98765-43210");
         r.setUsername("ateacher");
         r.setPassword("longenough1");
         r.setInstituteName("Sunrise School");
@@ -132,10 +133,22 @@ class SelfSignupManagerTest {
         RegisterRequest sent = reg.getValue();
         assertEquals("teacher@school.in", sent.getEmail());
         assertEquals("ateacher", sent.getUserName());
+        assertEquals("919876543210", sent.getMobileNumber());
+        assertEquals("919876543210", sent.getInstitute().getPhone());
         assertEquals("evalezy", sent.getInstitute().getProduct());
         assertEquals("FREE_TRIAL", sent.getInstitute().getLeadTag());
         assertEquals(List.of("1"), sent.getInstitute().getModuleRequestIds());
         assertEndsInDays(3, sent);
+    }
+
+    @Test
+    void aMissingOrBadPhoneCreatesNothing() {
+        for (String bad : new String[] {null, "", "12345", "1234567890123456"}) {
+            SelfSignupRequest r = valid();
+            r.setPhone(bad);
+            assertThrows(VacademyException.class, () -> manager.signup(r, "1.1.1.1"), String.valueOf(bad));
+        }
+        verify(authManager, never()).registerRootUser(any(), any());
     }
 
     @Test

@@ -8,9 +8,11 @@ import { useTranslation } from 'react-i18next';
 import { CheckCircle, EnvelopeSimple, GoogleLogo } from '@phosphor-icons/react';
 import { MyButton } from '@/components/design-system/button';
 import { MyInput } from '@/components/design-system/input';
+import PhoneInputField from '@/components/design-system/phone-input-field';
 import SelectField from '@/components/design-system/select-field';
 import { FormControl, FormField, FormItem } from '@/components/ui/form';
 import { handleLoginFlow } from '@/lib/auth/loginFlowHandler';
+import { phoneSchema } from '@/lib/phone-validation';
 import { isNative } from '@/native/platform';
 import { INDIAN_GST_STATES } from '@/services/ai-credits/credit-pack-services';
 import { DashboardLoader } from '@/components/core/dashboard-loader';
@@ -325,6 +327,7 @@ const DetailsForm = ({
         () =>
             z.object({
                 fullName: z.string().trim().min(1, t('signup.required')),
+                phone: phoneSchema({ required: true, label: t('signup.phone') }),
                 username: viaGoogle
                     ? z.string().optional()
                     : z
@@ -347,6 +350,7 @@ const DetailsForm = ({
         resolver: zodResolver(schema),
         defaultValues: {
             fullName: googleName ?? '',
+            phone: '',
             username: email ? email.split('@')[0]?.replace(/[^A-Za-z0-9._-]/g, '') : '',
             password: '',
             instituteName: '',
@@ -362,6 +366,7 @@ const DetailsForm = ({
             completeSignup(context, {
                 signup_token: signupToken,
                 full_name: values.fullName,
+                phone: values.phone ?? '',
                 username: viaGoogle ? undefined : values.username,
                 password: viaGoogle ? undefined : values.password,
                 institute_name: values.instituteName,
@@ -409,7 +414,25 @@ const DetailsForm = ({
                     create.mutate(values);
                 })}
             >
+                {email && (
+                    <MyInput
+                        label={t('signup.email')}
+                        inputType="email"
+                        input={email}
+                        onChangeFunction={() => undefined}
+                        disabled
+                        className="w-full sm:w-full"
+                    />
+                )}
                 {textField('fullName', t('signup.fullName'))}
+                <PhoneInputField
+                    label={t('signup.phone')}
+                    name="phone"
+                    placeholder={t('signup.phone')}
+                    control={form.control}
+                    required
+                    validate={false}
+                />
                 {!viaGoogle && textField('username', t('signup.username'))}
                 {!viaGoogle && textField('password', t('signup.password'), 'password')}
                 {textField('instituteName', t('signup.instituteName'))}
