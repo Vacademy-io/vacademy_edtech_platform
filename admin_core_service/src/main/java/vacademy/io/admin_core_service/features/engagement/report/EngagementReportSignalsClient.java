@@ -11,9 +11,11 @@ import org.springframework.stereotype.Component;
 import vacademy.io.common.core.internal_api_wrapper.InternalClientUtils;
 
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * What happened to the engines' messages after they left: delivery, opens, bounces, WhatsApp
@@ -50,21 +52,43 @@ public class EngagementReportSignalsClient {
      * One action's message, as notification_service saw it. Times are epoch ms. subject is the email
      * subject actually sent (EMAIL only). templateCategory comes upper case (MARKETING),
      * pricingCategory in Meta's lower case. An action with no outgoing notification row (in-app,
-     * tasks) is simply absent from the response: no signal, not a failure.
+     * tasks) is simply absent from the response: no signal, not a failure. sender is the address an
+     * email went from (EMAIL only); null when unknown, which counts as reachable.
      */
     public record Signal(String channel, String recipient, Long sentAt, String subject,
                          String deliveryStatus, String deliveryErrorCode, String provider,
                          String templateName, String templateLanguage, String templateCategory,
                          String pricingType, String pricingCategory, Boolean pricingBillable, String pricingModel,
                          boolean delivered, boolean opened, boolean clicked, boolean bounced, boolean complained,
-                         boolean emailTracked, Long firstReplyAt) {
+                         boolean emailTracked, Long firstReplyAt, String sender) {
+
+        public Signal(String channel, String recipient, Long sentAt, String subject,
+                      String deliveryStatus, String deliveryErrorCode, String provider,
+                      String templateName, String templateLanguage, String templateCategory,
+                      String pricingType, String pricingCategory, Boolean pricingBillable, String pricingModel,
+                      boolean delivered, boolean opened, boolean clicked, boolean bounced, boolean complained,
+                      boolean emailTracked, Long firstReplyAt) {
+            this(channel, recipient, sentAt, subject, deliveryStatus, deliveryErrorCode, provider, templateName,
+                    templateLanguage, templateCategory, pricingType, pricingCategory, pricingBillable, pricingModel,
+                    delivered, opened, clicked, bounced, complained, emailTracked, firstReplyAt, null);
+        }
     }
 
-    public record Signals(boolean inboundEmailEnabled, Map<String, Signal> byActionId) {
+    /**
+     * unreachableSenders: senders whose replies cannot reach us. A server that does not send the
+     * field yet (rolling deploy) means none.
+     */
+    public record Signals(boolean inboundEmailEnabled, Map<String, Signal> byActionId,
+                          Set<String> unreachableSenders) {
+
+        public Signals(boolean inboundEmailEnabled, Map<String, Signal> byActionId) {
+            this(inboundEmailEnabled, byActionId, Set.of());
+        }
     }
 
     public Signals fetch(String instituteId, List<String> actionIds, int replyWindowHours) {
         Map<String, Signal> out = new HashMap<>();
+        Set<String> unreachable = new HashSet<>();
         boolean inboundEmail = false;
         for (int i = 0; i < actionIds.size(); i += CHUNK) {
             List<String> chunk = actionIds.subList(i, Math.min(actionIds.size(), i + CHUNK));
@@ -74,6 +98,9 @@ public class EngagementReportSignalsClient {
             body.put("replyWindowHours", replyWindowHours);
             JsonNode root = post(body);
             inboundEmail |= root.path("inboundEmailEnabled").asBoolean(false);
+            root.path("unreachableSenders").forEach(sender -> {
+                if (sender.isTextual() && !sender.asText().isBlank()) unreachable.add(sender.asText());
+            });
             JsonNode actions = root.path("actions");
             Iterator<Map.Entry<String, JsonNode>> fields = actions.fields();
             while (fields.hasNext()) {
@@ -81,7 +108,7 @@ public class EngagementReportSignalsClient {
                 out.put(f.getKey(), parse(f.getValue()));
             }
         }
-        return new Signals(inboundEmail, out);
+        return new Signals(inboundEmail, out, unreachable);
     }
 
     private static Signal parse(JsonNode n) {
@@ -94,7 +121,7 @@ public class EngagementReportSignalsClient {
                 ev.path("delivered").asBoolean(false), ev.path("opened").asBoolean(false),
                 ev.path("clicked").asBoolean(false), ev.path("bounced").asBoolean(false),
                 ev.path("complained").asBoolean(false),
-                n.path("emailTracked").asBoolean(false), epoch(n, "firstReplyAt"));
+                n.path("emailTracked").asBoolean(false), epoch(n, "firstReplyAt"), text(n, "sender"));
     }
 
     private static String text(JsonNode n, String field) {

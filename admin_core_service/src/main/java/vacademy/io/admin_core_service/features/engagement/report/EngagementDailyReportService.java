@@ -259,7 +259,7 @@ public class EngagementDailyReportService {
         return LocalDateTime.ofInstant(i, ZoneOffset.UTC);
     }
 
-    private static MapSqlParameterSource params(String instituteId, List<String> engineIds, Window w, String connectedCsv) {
+    static MapSqlParameterSource params(String instituteId, List<String> engineIds, Window w, String connectedCsv) {
         return new MapSqlParameterSource()
                 .addValue("instituteId", instituteId)
                 .addValue("engineIds", engineIds)
@@ -274,7 +274,7 @@ public class EngagementDailyReportService {
                 .addValue("connectedCsv", connectedCsv);
     }
 
-    private static String connectedCsv(LeadReportSettingService.ReportSettings settings) {
+    static String connectedCsv(LeadReportSettingService.ReportSettings settings) {
         Set<String> statuses = settings != null ? settings.connectedCallStatuses() : null;
         if (statuses == null || statuses.isEmpty()) return "COMPLETED";
         return String.join(",", statuses);
@@ -694,6 +694,7 @@ public class EngagementDailyReportService {
         long emailDelivered = 0, emailOpened = 0, emailClicked = 0, emailBounced = 0, emailComplained = 0;
         long waDelivered = 0, waRead = 0, waReplied = 0, waDispatchFailed = 0;
         boolean anyEmailTracked = false, anyWaObservable = false;
+        Set<String> emailSenders = new HashSet<>();
         long repliesInPeriod = 0;
         // WhatsApp pricing (design §3.5)
         Map<String, CategoryAcc> categories = new LinkedHashMap<>();
@@ -760,6 +761,7 @@ public class EngagementDailyReportService {
                 case "EMAIL" -> {
                     if (g == null) break;
                     anyEmailTracked |= g.emailTracked();
+                    emailSenders.add(g.sender());
                     boolean delivered = g.delivered() || g.opened() || g.clicked();
                     if (delivered) {
                         ch.delivered++;
@@ -977,7 +979,8 @@ public class EngagementDailyReportService {
         channels.forEach((c, a) -> channelRows.add(new ChannelRow(c, a.sent, a.delivered, a.read, a.replied, a.failed,
                 rate(a.replied, a.sent), round2(a.credits))));
         boolean emailTracked = signalsOk && (email.sent == 0 || anyEmailTracked);
-        boolean repliesTracked = signalsOk && d.signals.inboundEmailEnabled();
+        boolean repliesTracked = signalsOk && EngagementDiagnosisRules.repliesTracked(
+                d.signals.inboundEmailEnabled(), emailSenders, d.signals.unreachableSenders());
         Email emailBlock = new Email(email.sent, emailDelivered, emailOpened, emailClicked, emailBounced,
                 emailComplained, rate(emailBounced, email.sent), emailTracked, repliesTracked);
         boolean waTracked = signalsOk && (wa.sent == 0 || anyWaObservable);
@@ -1058,28 +1061,33 @@ public class EngagementDailyReportService {
         // ── health (codes and values; the dashboard writes the copy) ──
         List<Health> health = new ArrayList<>();
         double bounceRate = rate(emailBounced, email.sent);
-        if (emailTracked && email.sent >= 20 && bounceRate >= 0.10) {
+        // The thresholds live with the diagnosis rules, so the banners and the diagnosis cannot disagree.
+        if (emailTracked && email.sent >= EngagementDiagnosisRules.EMAIL_MIN_SENT
+                && bounceRate >= EngagementDiagnosisRules.EMAIL_BOUNCE_CRITICAL) {
             health.add(new Health("EMAIL_BOUNCE_HIGH", "critical", bounceRate, null));
-        } else if (emailTracked && email.sent >= 20 && bounceRate >= 0.05) {
+        } else if (emailTracked && email.sent >= EngagementDiagnosisRules.EMAIL_MIN_SENT
+                && bounceRate >= EngagementDiagnosisRules.EMAIL_BOUNCE_RATE) {
             health.add(new Health("EMAIL_BOUNCE_HIGH", "warning", bounceRate, null));
         }
         // Any spam complaint is worth seeing; it is critical from 0.1% of the emails sent (mailbox
         // providers' bulk-sender line), so one complaint in a long, busy period reads as a warning.
         if (emailComplained > 0) {
             health.add(new Health("EMAIL_COMPLAINTS",
-                    rate(emailComplained, email.sent) >= 0.001 ? "critical" : "warning", emailComplained, null));
+                    rate(emailComplained, email.sent) >= EngagementDiagnosisRules.EMAIL_COMPLAINT_CRITICAL
+                            ? "critical" : "warning", emailComplained, null));
         }
         // Out of every WhatsApp tried in the period: wa.failed also counts the ones rejected at
         // dispatch, which never reach wa.sent, so over sent alone the ratio could pass 100%.
         long waAttempted = wa.sent + waDispatchFailed;
         double waFailRate = Math.min(1.0, rate(wa.failed, waAttempted));
-        if (waAttempted >= 20 && waFailRate >= 0.10) {
+        if (waAttempted >= EngagementDiagnosisRules.WHATSAPP_MIN_TRIED
+                && waFailRate >= EngagementDiagnosisRules.WHATSAPP_FAILED_RATE) {
             health.add(new Health("WHATSAPP_FAILED_HIGH", "warning", waFailRate, null));
         }
         if (optOuts > 0) health.add(new Health("OPT_OUTS", "info", optOuts, null));
-        if (runway != null && runway < 2) {
+        if (runway != null && runway < EngagementDiagnosisRules.CREDITS_RUNWAY_CRITICAL) {
             health.add(new Health("CREDITS_LOW", "critical", runway, null));
-        } else if (runway != null && runway < 7) {
+        } else if (runway != null && runway < EngagementDiagnosisRules.CREDITS_RUNWAY_DAYS) {
             health.add(new Health("CREDITS_LOW", "warning", runway, null));
         }
         if (signalsOk && email.sent > 0 && !anyEmailTracked) {
