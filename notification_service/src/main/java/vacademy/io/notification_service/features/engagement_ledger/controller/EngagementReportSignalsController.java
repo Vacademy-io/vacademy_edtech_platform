@@ -26,7 +26,8 @@ public class EngagementReportSignalsController {
 
     /**
      * Delivery, reply and pricing signals per engine action. Body {instituteId, actionIds (≤ 2000),
-     * replyWindowHours (default 72, clamped 1..168)} → {inboundEmailEnabled, actions: {actionId → …}}.
+     * replyWindowHours (default 72, clamped 1..168)} → {inboundEmailEnabled, unreachableSenders,
+     * actions: {actionId → …}}.
      * Times are epoch millis. 400 when instituteId or actionIds is missing or there are too many ids.
      */
     @PostMapping("/report-signals")

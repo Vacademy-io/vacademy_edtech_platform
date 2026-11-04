@@ -35,7 +35,8 @@ public class EngagementReportSignalsDao {
     public record OutgoingRow(String id, String correlationId, String notificationType, String channelId,
                               Instant sentAt, String deliveryStatus, String deliveryErrorCode,
                               boolean sendFailed, String messagePayload, Boolean pricingBillable,
-                              String pricingType, String pricingCategory, String pricingModel) {
+                              String pricingType, String pricingCategory, String pricingModel,
+                              String sender) {
     }
 
     public record InboundRow(String channelId, Instant receivedAt) {
@@ -63,7 +64,8 @@ public class EngagementReportSignalsDao {
                        (notification_type = 'WHATSAPP_MESSAGE_OUTGOING'
                             AND body LIKE '%| Status: FAILED |%') AS send_failed,
                        message_payload,
-                       pricing_billable, pricing_type, pricing_category, pricing_model
+                       pricing_billable, pricing_type, pricing_category, pricing_model,
+                       sender_business_channel_id
                   FROM notification_log
                  WHERE institute_id = :instituteId
                    AND correlation_id IN (:ids)
@@ -85,7 +87,8 @@ public class EngagementReportSignalsDao {
                     rs.getObject("pricing_billable", Boolean.class),
                     rs.getString("pricing_type"),
                     rs.getString("pricing_category"),
-                    rs.getString("pricing_model"))));
+                    rs.getString("pricing_model"),
+                    rs.getString("sender_business_channel_id"))));
         }
         return out;
     }

@@ -5,6 +5,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -20,6 +21,12 @@ public class ReportSignalsResponse {
 
     /** False while aws.inbound.email.enabled is off: email replies are then not observable at all. */
     private boolean inboundEmailEnabled;
+
+    /**
+     * Senders of this call's emails whose replies cannot reach us: their domain's lowest-preference
+     * MX is not SES inbound. A sender whose lookup failed is not listed.
+     */
+    private List<String> unreachableSenders;
 
     /** action id (echoed from the request) → signals. */
     private Map<String, ActionSignals> actions;
@@ -65,6 +72,8 @@ public class ReportSignalsResponse {
         private Long firstReplyAt;
         /** Email only: the subject line from the send payload, which the report groups email by in place of a template name. */
         private String subject;
+        /** Email only: the address it was sent from; null when the row did not record one. */
+        private String sender;
     }
 
     @Data
