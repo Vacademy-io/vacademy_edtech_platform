@@ -73,6 +73,8 @@ public class SubscriptionDTO {
      * null when neither is known.
      */
     private String paymentOptionType;
+    /** A MEMBERSHIP package or a SUBSCRIPTION option, as opposed to a one-time purchase or a charge. */
+    private boolean membership;
 
     /**
      * This plan row was never a membership: no enrolment was ever created against it and no

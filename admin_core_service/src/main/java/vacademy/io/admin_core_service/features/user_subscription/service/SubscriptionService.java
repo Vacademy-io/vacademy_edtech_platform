@@ -7,6 +7,8 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 import vacademy.io.admin_core_service.features.regional_pricing.service.RegionalPriceLock;
 import vacademy.io.admin_core_service.features.common.util.JsonUtil;
+import vacademy.io.admin_core_service.features.enroll_invite.repository.PackageSessionLearnerInvitationToPaymentOptionRepository;
+import vacademy.io.admin_core_service.features.packages.enums.ChargePackageType;
 import vacademy.io.admin_core_service.features.user_subscription.util.PlanValidityResolver;
 import vacademy.io.admin_core_service.features.institute.service.InstitutePaymentGatewayMappingService;
 import vacademy.io.admin_core_service.features.institute.service.InstitutePaymentGatewayMappingService.VendorInfo;
@@ -18,10 +20,12 @@ import vacademy.io.admin_core_service.features.user_subscription.dto.MandateInfo
 import vacademy.io.admin_core_service.features.user_subscription.dto.SubscriptionDTO;
 import vacademy.io.admin_core_service.features.user_subscription.entity.UserPlan;
 import vacademy.io.admin_core_service.features.user_subscription.enums.PaymentLogStatusEnum;
+import vacademy.io.admin_core_service.features.user_subscription.enums.PaymentOptionType;
 import vacademy.io.admin_core_service.features.user_subscription.enums.UserPlanStatusEnum;
 import vacademy.io.admin_core_service.features.user_subscription.repository.UserPlanRepository;
 import vacademy.io.admin_core_service.features.workflow.enums.WorkflowTriggerEvent;
 import vacademy.io.admin_core_service.features.workflow.service.WorkflowTriggerService;
+import vacademy.io.common.exceptions.InvalidRequestException;
 import vacademy.io.common.exceptions.VacademyException;
 import vacademy.io.common.payment.dto.EwayRequestDTO;
 import vacademy.io.common.payment.dto.PaymentInitiationRequestDTO;
@@ -46,6 +50,7 @@ import java.util.Map;
 public class SubscriptionService {
 
     private final UserPlanRepository userPlanRepository;
+    private final PackageSessionLearnerInvitationToPaymentOptionRepository inviteSessionRepository;
     private final UserInstitutePaymentGatewayMappingService mandateService;
     private final StudentSessionInstituteGroupMappingRepository mappingRepository;
     private final WorkflowTriggerService workflowTriggerService;
@@ -86,13 +91,30 @@ public class SubscriptionService {
 
     public List<SubscriptionDTO> listSubscriptions(String userId, String instituteId) {
         List<UserPlan> plans = userPlanRepository.findAllByUserIdAndInstituteIdAndStatusIn(
-                userId, instituteId, VISIBLE_STATUSES);
+                userId, instituteId, VISIBLE_STATUSES).stream().filter(this::isMembership).toList();
         plans = collapseUnfinishedSignups(plans);
         // Read the institute's gateways ONCE for the whole list, not once per plan: this is
         // the learner's entire membership list and the mapping is the same for every row.
         List<VendorInfo> activeGateways = institutePaymentGatewayMappingService
                 .getAllVendorsForInstitute(instituteId);
         return plans.stream().map(p -> toDto(p, userId, instituteId, activeGateways)).toList();
+    }
+
+    /**
+     * A user_plan row is written for every checkout, so a bought book or a delivery charge is one
+     * too. A membership is a MEMBERSHIP package (ReadOnRent sells those on ONE_TIME options, so the
+     * option alone cannot decide) or a SUBSCRIPTION option. A charge is never one, whatever option
+     * it is sold on.
+     */
+    private boolean isMembership(UserPlan plan) {
+        List<String> packageTypes = plan.getEnrollInvite() != null
+                ? inviteSessionRepository.findPackageTypesByEnrollInviteId(plan.getEnrollInvite().getId())
+                : List.of();
+        if (!packageTypes.isEmpty() && packageTypes.stream().allMatch(ChargePackageType::isCharge)) {
+            return false;
+        }
+        return packageTypes.stream().anyMatch(type -> type != null && "MEMBERSHIP".equalsIgnoreCase(type.trim()))
+                || PaymentOptionType.SUBSCRIPTION.name().equals(resolvePaymentOptionType(plan));
     }
 
     /**
@@ -213,7 +235,10 @@ public class SubscriptionService {
         // course with no payment plan) used to show "Pay to continue", and pressing it came back
         // 510 "Subscription has no payable plan price" -- the same check initiateRenewalPayment
         // makes, applied here so the button is never offered for a payment that cannot start.
-        boolean canRenewManually = !unfinishedSignup && renewalDue && renewalGateway != null
+        // ...and only on a membership: a one-time purchase never has a mandate, so every condition
+        // above holds for a bought book, and pressing the button would charge for it again.
+        boolean membership = isMembership(plan);
+        boolean canRenewManually = membership && !unfinishedSignup && renewalDue && renewalGateway != null
                 && hasPayablePrice(plan);
         String currency = RegionalPriceLock
                 .currency(plan, mandate != null && mandate.getCurrency() != null
@@ -244,6 +269,7 @@ public class SubscriptionService {
                 .planValidityDays(PlanValidityResolver.resolveValidityDays(plan))
                 .supportEmail(resolveSupportEmail(instituteId).orElse(null))
                 .paymentOptionType(resolvePaymentOptionType(plan))
+                .membership(membership)
                 .vendorId(plan.getEnrollInvite() != null ? plan.getEnrollInvite().getVendorId() : null)
                 .canRenewManually(canRenewManually)
                 .canCompleteEnrollment(unfinishedSignup)
@@ -477,6 +503,9 @@ public class SubscriptionService {
         if (isUnfinishedSignup(plan)) {
             throw new VacademyException("This membership was never activated — please complete "
                     + "your enrollment instead of renewing");
+        }
+        if (!isMembership(plan)) {
+            throw new InvalidRequestException("This purchase is not a membership, so it cannot be renewed");
         }
         // A booked downgrade takes effect at exactly this renewal, so the learner must be
         // quoted the plan they are moving TO — billing them the old price here would take
