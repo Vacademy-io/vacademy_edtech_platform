@@ -255,6 +255,34 @@ class EngagementAdaptiveSendTimeTest {
         }
 
         @Test
+        @DisplayName("they wrote in and the answer waits for a person: the team is told what they said")
+        void replyWaitingAlertsTheTeam() throws Exception {
+            EngagementTeamAlertService alerts = mock(EngagementTeamAlertService.class);
+            ReflectionTestUtils.setField(service, "teamAlertService", alerts);
+            JsonNode ledger = OM.readTree("{\"whatsapp\":{\"lastReplyAt\":\"" + Instant.now().minusSeconds(60)
+                    + "\",\"lastReplyText\":\"Kab hai?\"}}");
+            DataPointProvider ledgerProvider = mock(DataPointProvider.class);
+            when(ledgerProvider.key()).thenReturn("ledger");
+            when(ledgerProvider.render(any())).thenReturn("LEDGER");
+            when(registry.hydrate(any(), anyList(), anyList())).thenReturn(
+                    new DataPointRegistry.CohortBundle(List.of(ledgerProvider), Map.of("ledger", Map.of("m1", ledger))));
+
+            EngagementAction a = decide();
+
+            assertEquals("TASK", a.getKind());
+            verify(alerts).notifyEscalated(eq(engine), eq(member), any(), org.mockito.ArgumentMatchers.contains("wrote back"), eq("Kab hai?"));
+        }
+
+        @Test
+        @DisplayName("a person who wrote earlier still counts as replied after the ledger hides a later bot message")
+        void earlierPersonStillCounts() {
+            DataPointRegistry.CohortBundle noReply = new DataPointRegistry.CohortBundle(List.of(), Map.of());
+            assertEquals(false, ReflectionTestUtils.invokeMethod(service, "everReplied", noReply, member));
+            member.setWindowOpenUntil(Instant.now().minusSeconds(86400));
+            assertEquals(true, ReflectionTestUtils.invokeMethod(service, "everReplied", noReply, member));
+        }
+
+        @Test
         @DisplayName("a person who writes back goes back to the engine's own schedule")
         void repliedSincePreferenceSet() throws Exception {
             member.setMemoryJson("{\"sendPref\":{\"hour\":16,\"since\":\"" + sentAt(2, 12) + "\"}}");

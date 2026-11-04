@@ -83,6 +83,9 @@ public class EngagementDecisionService {
     @Autowired(required = false)
     private EngagementUpdateService updateService;
 
+    @Autowired(required = false)
+    private EngagementTeamAlertService teamAlertService;
+
     @Value("${engagement.recent-window-days:14}")
     private int recentWindowDays;
 
@@ -475,6 +478,11 @@ public class EngagementDecisionService {
             action.setStatus(dryRun ? "SIMULATED" : "OPEN");
             EngagementLlmUsage.applyTo(d.usage(), action);
             actionRepository.save(action);
+            // They wrote in and it waits for a person: tell the team now, not when they next open the inbox.
+            if (timing == PolicyGate.SendTiming.REPLY && !dryRun && !autoSend && teamAlertService != null) {
+                teamAlertService.notifyEscalated(engine, member, action,
+                        "they wrote back and the engine left the answer to a person", lastReplyText(bundle, member));
+            }
 
             member.setConsecutiveNoOps((short) 0);
         } else {
@@ -525,6 +533,9 @@ public class EngagementDecisionService {
      * Once someone replies, a human owns the conversation: the engine still drafts, but as a task.
      */
     private boolean everReplied(DataPointRegistry.CohortBundle bundle, EngagementMember m) {
+        // The ledger shows only the latest reply, and hides it when a bot wrote it: a person who wrote
+        // earlier has this window from then, because a bot's message no longer opens it.
+        if (m.getWindowOpenUntil() != null) return true;
         JsonNode ledger = bundle.payloadsFor(m.getId()).get("ledger");
         if (ledger == null) return false;
         for (String ch : List.of("whatsapp", "email")) {
@@ -909,6 +920,11 @@ public class EngagementDecisionService {
             return PolicyGate.SendTiming.ANYTIME;
         }
         return PolicyGate.SendTiming.PLANNED;
+    }
+
+    private String lastReplyText(DataPointRegistry.CohortBundle bundle, EngagementMember m) {
+        JsonNode ledger = bundle.payloadsFor(m.getId()).get("ledger");
+        return ledger == null ? null : ledger.path("whatsapp").path("lastReplyText").asText(null);
     }
 
     private boolean hasUnansweredReply(DataPointRegistry.CohortBundle bundle, EngagementMember m) {
