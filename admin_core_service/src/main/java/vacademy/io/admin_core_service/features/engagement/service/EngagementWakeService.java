@@ -59,6 +59,8 @@ public class EngagementWakeService {
     public static final String PAYMENT = "PAYMENT";
     public static final String AI_CALL = "AI_CALL";
     public static final String CALL_ANALYZED = "CALL_ANALYZED";
+    /** The admin posted an update or offer on the engine. */
+    public static final String UPDATE_POSTED = "UPDATE_POSTED";
     /** Not a wake: a lead that just landed is enrolled into the engines targeting its list. */
     public static final String NEW_LEAD = "NEW_LEAD";
     /** Not a wake (L7): a lead moved to another list leaves the old list's engines, joins the new one's. */

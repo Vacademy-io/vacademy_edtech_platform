@@ -530,6 +530,26 @@ public interface EngagementActionRepository extends JpaRepository<EngagementActi
     int cancelOpenForMembers(@Param("memberIds") List<String> memberIds, @Param("reason") String reason,
                              @Param("now") Instant now, @Param("keepAiCallPromises") boolean keepAiCallPromises);
 
+    /** The updates this person already has, sent or on the way. */
+    @Query(value = """
+            SELECT DISTINCT variables_json->>'_updateId' FROM engagement_action
+             WHERE member_id = :memberId AND variables_json->>'_updateId' IS NOT NULL
+               AND status NOT IN ('EXPIRED', 'DISMISSED', 'FAILED')
+            """, nativeQuery = true)
+    List<String> updateIdsOfMember(@Param("memberId") String memberId);
+
+    /** An update ended: what was drafted or scheduled for it must not go out. */
+    @Modifying
+    @Transactional
+    @Query(value = """
+            UPDATE engagement_action
+               SET status = 'EXPIRED', error_message = :reason, updated_at = :now
+             WHERE engine_id = :engineId AND variables_json->>'_updateId' = :updateId
+               AND kind IN ('TASK', 'SEND') AND status IN ('OPEN', 'ACKED')
+            """, nativeQuery = true)
+    int cancelActionsOfUpdate(@Param("engineId") String engineId, @Param("updateId") String updateId,
+                              @Param("reason") String reason, @Param("now") Instant now);
+
     /** What is still waiting to happen for this person: drafts, approvals, scheduled calls. Not replies. */
     @Query(value = """
             SELECT count(*) FROM engagement_action

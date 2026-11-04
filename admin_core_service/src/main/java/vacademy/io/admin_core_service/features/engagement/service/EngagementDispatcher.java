@@ -63,6 +63,8 @@ public class EngagementDispatcher {
     public static final String VAR_ASSET_IDS = "_assetIds";
     /** B6: the approved email template version a template-only email was drafted on (A3 catalog). */
     public static final String VAR_EMAIL_TEMPLATE = "_emailTemplateId";
+    /** The admin's time-boxed update this message shares: once it ends, this must not go out. */
+    public static final String VAR_UPDATE_ID = "_updateId";
     /** An email answer: the sender node of the address the person wrote to, when not the engine's own. */
     public static final String VAR_REPLY_EMAIL_TYPE = "_replyEmailType";
     /** An email answer: the Message-ID of the person's email, so ours joins their thread. */
@@ -91,6 +93,10 @@ public class EngagementDispatcher {
     /** The engine's assets, for the attachments of a REPLY; optional so a context without it still starts. */
     @Autowired(required = false)
     private EngagementAssetService assetService;
+
+    /** Time-boxed updates and offers; optional so a context without it still starts. */
+    @Autowired(required = false)
+    private EngagementUpdateService updateService;
 
     /** The templates track's renderer (A3); optional so a context without it still starts. */
     @Autowired(required = false)
@@ -147,6 +153,11 @@ public class EngagementDispatcher {
                     && EngagementDispatchJob.leadNotSendableReason(leadBlock, action) != null) {
                 throw new SendRejectedException(
                         "This lead has opted out or was removed in the CRM, so nothing was sent.");
+            }
+            // Approved or scheduled before the offer ended: too late now, whoever presses send.
+            String updateId = parseVariables(action.getVariablesJson()).get(VAR_UPDATE_ID);
+            if (updateId != null && updateService != null && !updateService.isLive(updateId, Instant.now())) {
+                throw new SendRejectedException("This offer or update has ended, so nothing was sent.");
             }
             Subject subject = contactResolver.resolve(List.of(member)).get(0);
 

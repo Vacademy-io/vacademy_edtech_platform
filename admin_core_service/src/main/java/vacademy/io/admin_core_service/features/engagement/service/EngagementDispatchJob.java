@@ -78,6 +78,10 @@ public class EngagementDispatchJob {
     @Autowired(required = false)
     private EngagementCrmActionService crmActions;
 
+    /** Optional so the job's tests that do not exercise updates keep their constructor. */
+    @Autowired(required = false)
+    private EngagementUpdateService updateService;
+
     @Value("${engagement.dispatch.batch:100}")
     private int batch;
 
@@ -176,6 +180,17 @@ public class EngagementDispatchJob {
         }
     }
 
+    private boolean updateHasEnded(EngagementAction action, Instant now) {
+        if (updateService == null || action.getVariablesJson() == null) return false;
+        try {
+            String updateId = objectMapper.readTree(action.getVariablesJson())
+                    .path(EngagementDispatcher.VAR_UPDATE_ID).asText(null);
+            return updateId != null && !updateService.isLive(updateId, now);
+        } catch (Exception e) {
+            return false; // unreadable variables: the dispatcher re-reads them and refuses or fails visibly
+        }
+    }
+
     private boolean dispatchOne(EngagementAction action, Instant now) {
         String instituteId = action.getInstituteId();
         EngagementEngine engine = engineRepository.findById(action.getEngineId()).orElse(null);
@@ -216,6 +231,12 @@ public class EngagementDispatchJob {
                 policyGate.leadBlock(instituteId, member.getAudienceResponseId()), engine, member), action);
         if (leadGone != null) {
             actionRepository.withdrawDueSend(action.getId(), leadGone, now);
+            return false;
+        }
+        // Before autonomy: a message about an offer that has ended goes nowhere, not to the inbox as a
+        // draft nobody may send.
+        if (updateHasEnded(action, now)) {
+            actionRepository.withdrawDueSend(action.getId(), EngagementUpdateService.ENDED_REASON, now);
             return false;
         }
         // B6: an approved AI call that waited for the time the lead asked for (C-1). A person
