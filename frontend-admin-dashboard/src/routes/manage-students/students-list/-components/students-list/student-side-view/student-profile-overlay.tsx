@@ -69,6 +69,7 @@ import { StudentFullHistory } from './student-full-history/student-full-history'
 import { StudentParentProfile } from './student-parent/student-parent-profile';
 import { StudentOnboardingProfile } from './student-onboarding/student-onboarding-profile';
 import { StudentLiveSessions } from './student-live-sessions/student-live-sessions';
+import { StudentAcademicActivity } from './student-academic-activity/student-academic-activity';
 
 type SectionId = StudentSideViewTabId | 'subOrg';
 
@@ -98,6 +99,7 @@ const DEFAULT_ORDER: StudentSideViewTabId[] = [
     'parent',
     'onboarding',
     'liveSession',
+    'academicActivity',
 ];
 
 function orderedVisibleSectionIds(settings: StudentSideViewSettings): StudentSideViewTabId[] {
@@ -305,6 +307,13 @@ export const StudentProfileOverlay = () => {
                                   ? [selectedStudent.package_session_id]
                                   : []
                         }
+                    />
+                );
+            case 'academicActivity':
+                return (
+                    <StudentAcademicActivity
+                        userId={selectedStudent.user_id || selectedStudent.id}
+                        instituteId={selectedStudent.institute_id}
                     />
                 );
             case 'subOrg':

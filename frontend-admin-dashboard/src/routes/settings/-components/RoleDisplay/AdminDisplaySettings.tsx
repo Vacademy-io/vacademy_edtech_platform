@@ -98,6 +98,7 @@ const STUDENT_SIDE_VIEW_DEFAULTS: StudentSideViewSettings = {
     workflowsTab: false,
     parentTab: false,
     liveSessionTab: true,
+    academicActivityTab: true,
     onboardingTab: false,
 };
 
@@ -253,6 +254,11 @@ export default function AdminDisplaySettings({ onDirtyChange }: RoleDisplayPanel
             key: 'liveSessionTab',
             label: t('studentSideView.liveSessionTab'),
             defaultValue: STUDENT_SIDE_VIEW_DEFAULTS.liveSessionTab ?? false,
+        },
+        {
+            key: 'academicActivityTab',
+            label: t('studentSideView.academicActivityTab'),
+            defaultValue: STUDENT_SIDE_VIEW_DEFAULTS.academicActivityTab ?? false,
         },
     ];
 

@@ -27,6 +27,7 @@ export const VISIBILITY_KEY_TO_TAB_ID: Record<StudentSideViewVisibilityKey, Stud
         parentTab: 'parent',
         onboardingTab: 'onboarding',
         liveSessionTab: 'liveSession',
+        academicActivityTab: 'academicActivity',
     };
 
 // Reverse lookup: tab id → visibility flag.
@@ -61,4 +62,5 @@ export const STUDENT_SIDE_VIEW_TAB_LABELS: Record<StudentSideViewTabId, string> 
     parent: 'Guardian',
     onboarding: 'Onboarding',
     liveSession: 'Live Sessions',
+    academicActivity: 'Academic Activity',
 };

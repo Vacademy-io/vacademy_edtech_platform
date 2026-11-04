@@ -788,6 +788,7 @@ export function mergeDisplayWithDefaults(
         parentTab: false,
         onboardingTab: false,
         liveSessionTab: false,
+        academicActivityTab: false,
         allowResendMessage: true,
     };
     merged.studentSideView = {
@@ -821,6 +822,10 @@ export function mergeDisplayWithDefaults(
             incoming?.studentSideView?.onboardingTab ?? defStudentSideView.onboardingTab ?? false,
         liveSessionTab:
             incoming?.studentSideView?.liveSessionTab ?? defStudentSideView.liveSessionTab ?? false,
+        academicActivityTab:
+            incoming?.studentSideView?.academicActivityTab ??
+            defStudentSideView.academicActivityTab ??
+            false,
         // Resend on the Notifications tab. The role's own default decides what a
         // blob that pre-dates this flag gets (on for admin, off for the rest) —
         // a literal here would hand every role the same answer.

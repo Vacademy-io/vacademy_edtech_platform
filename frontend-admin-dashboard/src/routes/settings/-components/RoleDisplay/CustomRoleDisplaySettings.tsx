@@ -110,6 +110,7 @@ const STUDENT_SIDE_VIEW_DEFAULTS: StudentSideViewSettings = {
     workflowsTab: false,
     parentTab: false,
     liveSessionTab: false,
+    academicActivityTab: false,
     onboardingTab: false,
 };
 
@@ -226,6 +227,11 @@ const buildStudentSideViewOptions = (
         key: 'liveSessionTab',
         label: t('studentSideView.liveSessionTab'),
         defaultValue: STUDENT_SIDE_VIEW_DEFAULTS.liveSessionTab ?? false,
+    },
+    {
+        key: 'academicActivityTab',
+        label: t('studentSideView.academicActivityTab'),
+        defaultValue: STUDENT_SIDE_VIEW_DEFAULTS.academicActivityTab ?? false,
     },
 ];
 

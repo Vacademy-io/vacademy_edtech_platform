@@ -179,7 +179,8 @@
         "workflowsTab": "Workflows Tab",
         "parentTab": "Guardian Tab",
         "onboardingTab": "Onboarding Tab",
-        "liveSessionTab": "Live Sessions Tab"
+        "liveSessionTab": "Live Sessions Tab",
+        "academicActivityTab": "Academic Activity Tab"
     },
     "learnerManagementOptions": {
         "allowPortalAccess": "Allow Learner Portal Access",

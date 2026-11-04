@@ -144,7 +144,8 @@
         "workflowsTab": "تبويب سير العمل",
         "parentTab": "تبويب ولي الأمر",
         "onboardingTab": "تبويب التهيئة",
-        "liveSessionTab": "علامة تبويب الجلسات المباشرة"
+        "liveSessionTab": "علامة تبويب الجلسات المباشرة",
+        "academicActivityTab": "علامة تبويب النشاط الأكاديمي"
     },
     "learnerManagement": {
         "title": "إدارة المتعلمين",

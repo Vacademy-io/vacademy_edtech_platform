@@ -207,4 +207,34 @@ public interface PulseRepository extends JpaRepository<ActivityLog, String> {
     List<FeedEventProjection> getFeed(@Param("batchId") String batchId,
                                       @Param("sinceCutoff") Instant sinceCutoff,
                                       @Param("limitCount") int limitCount);
+
+    /**
+     * One learner, latest slides first: each slide once, with when it was last seen, engaged time,
+     * visits and the furthest percentage watched, since a cutoff. Learner Academic Activity tab.
+     * Row: [slide_id, title, source_type, chapter_name, last_seen_at, engaged_ms, visits, max_percent].
+     */
+    @Query(value = """
+            SELECT s.id,
+                   s.title,
+                   s.source_type,
+                   (SELECT c.chapter_name FROM chapter_to_slides cts
+                        JOIN chapter c ON c.id = cts.chapter_id
+                        WHERE cts.slide_id = s.id AND cts.status <> 'DELETED'
+                        LIMIT 1),
+                   MAX(COALESCE(al.last_seen_at, CAST(al.created_at AS timestamptz))) AS seen,
+                   SUM(COALESCE(al.engaged_ms, 0)),
+                   COUNT(*),
+                   MAX(al.percentage_watched)
+            FROM activity_log al
+                JOIN slide s ON s.id = al.slide_id
+            WHERE al.user_id = :userId
+              AND al.slide_id IS NOT NULL
+              AND al.created_at >= :since
+            GROUP BY s.id, s.title, s.source_type
+            ORDER BY seen DESC
+            LIMIT :maxRows
+            """, nativeQuery = true)
+    List<Object[]> getLearnerRecentSlides(@Param("userId") String userId,
+                                          @Param("since") java.sql.Timestamp since,
+                                          @Param("maxRows") int maxRows);
 }
