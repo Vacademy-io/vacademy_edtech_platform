@@ -94,8 +94,10 @@ public class EngagementDecisionService {
     @Value("${engagement.schedule.max-hours:168}")
     private int maxScheduleHours;
 
-    private static final Duration BOUNCED_RECHECK = Duration.ofDays(7);
+    private static final Duration UNREACHABLE_RECHECK = Duration.ofDays(7);
     static final String BOUNCED_ONLY_CHANNEL_NOTE = "This person's email address bounced and email is this engine's"
+            + " only channel, so nothing was decided. Looking again in 7 days.";
+    static final String NO_EMAIL_ONLY_CHANNEL_NOTE = "This person has no email address and email is this engine's"
             + " only channel, so nothing was decided. Looking again in 7 days.";
     private static final int MAX_DRAFT_CHARS = 4000;
     private static final int MAX_SUBJECT_CHARS = 150;
@@ -271,9 +273,9 @@ public class EngagementDecisionService {
             }
         }
 
-        // 1f. Email is this engine's only way to act and this person's address bounced: nothing the
-        // model could decide would reach them. No LLM; look again weekly in case the address is unblocked.
-        if (emailOnlyAndBounced(enabledChannels, menu, subject)) {
+        // 1f. Email is this engine's only way to act and this person cannot get email: nothing the model
+        // could decide would reach them. No LLM; look again weekly in case an address appears or is unblocked.
+        if (emailOnlyAndUnreachable(enabledChannels, menu, subject)) {
             EngagementAction parked = new EngagementAction();
             parked.setEngineId(engine.getId());
             parked.setMemberId(member.getId());
@@ -281,10 +283,10 @@ public class EngagementDecisionService {
             parked.setPromptVersionId(prompt.getId());
             parked.setKind("NO_OP");
             parked.setStatus("DONE");
-            parked.setRationale(BOUNCED_ONLY_CHANNEL_NOTE);
+            parked.setRationale(subject.isEmailUndeliverable() ? BOUNCED_ONLY_CHANNEL_NOTE : NO_EMAIL_ONLY_CHANNEL_NOTE);
             actionRepository.save(parked);
             memberRepository.recordDecision(member.getId(), now, member.getWakeFingerprint(),
-                    member.getConsecutiveNoOps(), heldLease, now.plus(BOUNCED_RECHECK));
+                    member.getConsecutiveNoOps(), heldLease, now.plus(UNREACHABLE_RECHECK));
             return false;
         }
 
@@ -306,7 +308,7 @@ public class EngagementDecisionService {
         }
 
         // 3. The LLM.
-        Map<String, String> blocks = withBouncedEmail(subject,
+        Map<String, String> blocks = withEmailUnavailable(subject,
                 withCoordination(coordinated, withWhyNow(member, bundle.renderFor(member.getId()))));
         // An engine that only messages keeps exactly today's call (and prompt).
         EngagementBrainClient.Decision d = menu == null || menu.isEmpty()
@@ -380,8 +382,8 @@ public class EngagementDecisionService {
             log.warn("Engine {}: brain chose disabled channel '{}' — recording NO_OP", engine.getId(), chosenChannel);
         }
         // The prompt says so, but a model that ignores it must not get an email nobody can receive.
-        boolean bouncedEmailChosen = "EMAIL".equals(chosenChannel) && subject != null && subject.isEmailUndeliverable();
-        if ("ACT".equalsIgnoreCase(d.decision()) && channelAllowed && !bouncedEmailChosen
+        boolean emailUnavailable = "EMAIL".equals(chosenChannel) && cannotGetEmail(subject);
+        if ("ACT".equalsIgnoreCase(d.decision()) && channelAllowed && !emailUnavailable
                 && d.draftBody() != null && !d.draftBody().isBlank()) {
             // Cap the schedule horizon: an unbounded scheduleInHours lets the brain place a send days
             // or weeks out, which (a) drifts far from the context it was decided on and (b) breaks the
@@ -454,8 +456,10 @@ public class EngagementDecisionService {
             noOp.setPromptVersionId(prompt.getId());
             noOp.setKind("NO_OP");
             noOp.setStatus("DONE");
-            noOp.setRationale(cap(bouncedEmailChosen
-                    ? "Chose EMAIL, not drafted: this address bounced. " + nullToEmpty(d.rationale()) : d.rationale()));
+            noOp.setRationale(cap(emailUnavailable
+                    ? "Chose EMAIL, not drafted: " + (subject.isEmailUndeliverable() ? "this address bounced. "
+                            : "no email address on file. ") + nullToEmpty(d.rationale())
+                    : d.rationale()));
             // Deciding to wait costs tokens too; the daily report shows it.
             EngagementLlmUsage.applyTo(d.usage(), noOp);
             actionRepository.save(noOp);
@@ -808,18 +812,25 @@ public class EngagementDecisionService {
     }
 
     /** Tells the brain this person cannot be emailed, ahead of everything it reads about them. */
-    static Map<String, String> withBouncedEmail(Subject subject, Map<String, String> blocks) {
-        if (subject == null || !subject.isEmailUndeliverable()) return blocks;
+    static Map<String, String> withEmailUnavailable(Subject subject, Map<String, String> blocks) {
+        if (!cannotGetEmail(subject)) return blocks;
         Map<String, String> out = new java.util.LinkedHashMap<>();
-        out.put("emailBounced", "This person's email address bounced. Do NOT choose EMAIL. Use another enabled"
-                + " channel, or WAIT if there is none. Emails shown as sent to them were not received.");
+        out.put("emailUnavailable", (subject.isEmailUndeliverable()
+                ? "This person's email address bounced. Emails shown as sent to them were not received."
+                : "This person has no email address on file.")
+                + " Do NOT choose EMAIL. Use another enabled channel, or WAIT if there is none.");
         out.putAll(blocks);
         return out;
     }
 
-    /** True when email is all this engine can do and this person's address cannot receive it. */
-    static boolean emailOnlyAndBounced(Set<String> enabledChannels, EngagementBrainClient.ActionMenu menu, Subject subject) {
-        return subject != null && subject.isEmailUndeliverable()
+    /** No address that can receive mail. A null subject is unknown, so it is left to the send-time check. */
+    static boolean cannotGetEmail(Subject subject) {
+        return subject != null && (subject.isEmailUndeliverable() || subject.getEmail() == null || subject.getEmail().isBlank());
+    }
+
+    /** True when email is all this engine can do and this person cannot receive it. */
+    static boolean emailOnlyAndUnreachable(Set<String> enabledChannels, EngagementBrainClient.ActionMenu menu, Subject subject) {
+        return cannotGetEmail(subject)
                 && enabledChannels.size() == 1 && enabledChannels.contains("EMAIL")
                 && (menu == null || menu.actions() == null || menu.actions().isEmpty());
     }

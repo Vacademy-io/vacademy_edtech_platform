@@ -159,11 +159,11 @@ class EngagementBouncedEmailTest {
         var menuWithActions = new EngagementBrainClient.ActionMenu(List.of("ADD_NOTE"), List.of(), null);
         var emptyMenu = new EngagementBrainClient.ActionMenu(List.of(), List.of(), null);
 
-        assertTrue(EngagementDecisionService.emailOnlyAndBounced(Set.of("EMAIL"), emptyMenu, bounced));
-        assertTrue(EngagementDecisionService.emailOnlyAndBounced(Set.of("EMAIL"), null, bounced));
-        assertFalse(EngagementDecisionService.emailOnlyAndBounced(Set.of("EMAIL", "AI_CALL"), emptyMenu, bounced));
-        assertFalse(EngagementDecisionService.emailOnlyAndBounced(Set.of("EMAIL"), menuWithActions, bounced));
-        assertFalse(EngagementDecisionService.emailOnlyAndBounced(Set.of("EMAIL"), emptyMenu, subject("m2", "a@test.local")));
+        assertTrue(EngagementDecisionService.emailOnlyAndUnreachable(Set.of("EMAIL"), emptyMenu, bounced));
+        assertTrue(EngagementDecisionService.emailOnlyAndUnreachable(Set.of("EMAIL"), null, bounced));
+        assertFalse(EngagementDecisionService.emailOnlyAndUnreachable(Set.of("EMAIL", "AI_CALL"), emptyMenu, bounced));
+        assertFalse(EngagementDecisionService.emailOnlyAndUnreachable(Set.of("EMAIL"), menuWithActions, bounced));
+        assertFalse(EngagementDecisionService.emailOnlyAndUnreachable(Set.of("EMAIL"), emptyMenu, subject("m2", "a@test.local")));
     }
 
     @Test
@@ -173,13 +173,13 @@ class EngagementBouncedEmailTest {
         bounced.setEmailUndeliverable(true);
         Map<String, String> blocks = Map.of("profile", "{}");
 
-        Map<String, String> told = EngagementDecisionService.withBouncedEmail(bounced, blocks);
-        assertEquals("emailBounced", told.keySet().iterator().next());
-        assertTrue(told.get("emailBounced").contains("Do NOT choose EMAIL"));
+        Map<String, String> told = EngagementDecisionService.withEmailUnavailable(bounced, blocks);
+        assertEquals("emailUnavailable", told.keySet().iterator().next());
+        assertTrue(told.get("emailUnavailable").contains("Do NOT choose EMAIL"));
         assertEquals("{}", told.get("profile"));
 
-        assertSame(blocks, EngagementDecisionService.withBouncedEmail(subject("m2", "a@test.local"), blocks));
-        assertSame(blocks, EngagementDecisionService.withBouncedEmail(null, blocks));
+        assertSame(blocks, EngagementDecisionService.withEmailUnavailable(subject("m2", "a@test.local"), blocks));
+        assertSame(blocks, EngagementDecisionService.withEmailUnavailable(null, blocks));
     }
 
     @Test
@@ -189,6 +189,34 @@ class EngagementBouncedEmailTest {
                 String.class, String.class, boolean.class, Instant.class, Instant.class);
         String sql = promote.getAnnotation(org.springframework.data.jpa.repository.Query.class).value();
         assertTrue(sql.contains("error_message IS NULL"), sql);
+    }
+
+    @Test
+    @DisplayName("the sweep also cancels unsent emails of people with no address, with its own reason")
+    void sweepCancelsNoAddress() throws Exception {
+        EngagementActionRepository actions = mock(EngagementActionRepository.class);
+        ContactResolver contacts = mock(ContactResolver.class);
+        when(actions.memberIdsWithUnsentEmails("i1")).thenReturn(List.of("m1", "m2"));
+        when(contacts.resolve(any())).thenReturn(List.of(subject("m1", null), subject("m2", "live@test.local")));
+        when(actions.cancelUnsentEmails(any(), any(), any())).thenReturn(1);
+        var job = new EngagementBouncedEmailJob(mock(EngagementMemberRepository.class), actions, contacts, suppressionBlocking());
+
+        assertEquals(1, job.sweepInstitute("i1", Instant.now()));
+        verify(actions).cancelUnsentEmails(eq(List.of("m1")), eq(EngagementBouncedEmailJob.NO_ADDRESS_REASON), any());
+    }
+
+    @Test
+    @DisplayName("no address counts like a bounce for the decision; a null subject stays unknown")
+    void noAddressIsUnreachable() {
+        var none = new EngagementBrainClient.ActionMenu(List.of(), List.of(), null);
+        assertTrue(EngagementDecisionService.cannotGetEmail(subject("m1", null)));
+        assertTrue(EngagementDecisionService.cannotGetEmail(subject("m1", " ")));
+        assertFalse(EngagementDecisionService.cannotGetEmail(subject("m1", "a@test.local")));
+        assertFalse(EngagementDecisionService.cannotGetEmail(null));
+        assertTrue(EngagementDecisionService.emailOnlyAndUnreachable(Set.of("EMAIL"), none, subject("m1", null)));
+        assertFalse(EngagementDecisionService.emailOnlyAndUnreachable(Set.of("EMAIL", "WHATSAPP"), none, subject("m1", null)));
+        assertTrue(EngagementDecisionService.withEmailUnavailable(subject("m1", null), Map.of())
+                .get("emailUnavailable").contains("no email address"));
     }
 
 }

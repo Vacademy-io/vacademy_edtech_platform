@@ -120,7 +120,7 @@ class EngagementCrmWakeTest {
             member.setLastDecidedAt(Instant.now().minus(Duration.ofHours(10)));
             member.setWakeFingerprint(service.quantizedFingerprint(Map.of()));
             when(members.findById("m1")).thenAnswer(inv -> Optional.of(member));
-            when(contacts.resolve(anyList())).thenReturn(List.of(Subject.builder().memberId("m1").userId("u1").build()));
+            when(contacts.resolve(anyList())).thenReturn(List.of(Subject.builder().memberId("m1").userId("u1").email("lead@test.local").build()));
             when(registry.hydrate(any(), anyList(), anyList())).thenReturn(new DataPointRegistry.CohortBundle(List.of(), Map.of()));
             when(gate.optedOutUserIds(anyString(), anyList())).thenReturn(Set.of());
             when(gate.preDecision(any(), any())).thenReturn(PolicyGate.Verdict.PROCEED);
@@ -264,7 +264,7 @@ class EngagementCrmWakeTest {
             when(provider.key()).thenReturn("crm_timeline");
             when(registry.hydrate(any(), anyList(), anyList())).thenReturn(new DataPointRegistry.CohortBundle(
                     List.of(provider), Map.of("crm_timeline", Map.of("m1", timeline))));
-            when(contacts.resolve(anyList())).thenReturn(List.of(Subject.builder().memberId("m1").userId("u1").build()));
+            when(contacts.resolve(anyList())).thenReturn(List.of(Subject.builder().memberId("m1").userId("u1").email("lead@test.local").build()));
             when(gate.optedOutUserIds(anyString(), anyList())).thenReturn(Set.of());
             when(gate.preDecision(any(), any())).thenReturn(PolicyGate.Verdict.PROCEED);
 

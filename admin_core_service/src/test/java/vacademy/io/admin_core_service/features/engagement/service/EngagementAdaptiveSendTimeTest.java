@@ -170,7 +170,7 @@ class EngagementAdaptiveSendTimeTest {
             member.setNextActionAt(Instant.now());
             member.setLastDecidedAt(Instant.now().minusSeconds(86400));
             when(members.findById("m1")).thenAnswer(inv -> Optional.of(member));
-            when(contacts.resolve(anyList())).thenReturn(List.of(Subject.builder().memberId("m1").userId("u1").build()));
+            when(contacts.resolve(anyList())).thenReturn(List.of(Subject.builder().memberId("m1").userId("u1").email("lead@test.local").build()));
             when(registry.hydrate(any(), anyList(), anyList())).thenReturn(new DataPointRegistry.CohortBundle(List.of(), Map.of()));
             when(gate.optedOutUserIds(anyString(), anyList())).thenReturn(Set.of());
             when(gate.preDecision(any(), any())).thenReturn(PolicyGate.Verdict.PROCEED);
