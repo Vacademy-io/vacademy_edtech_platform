@@ -521,6 +521,17 @@ public class EngagementReplyResponder {
         }
     }
 
+    /** The task is the durable record; people are told now, as for an escalated WhatsApp reply. */
+    private void alertEmailReply(EngagementReplyMemberQueries.LiveMember target, EngagementAction task,
+                                 String label, String body) {
+        if (teamAlertService == null) return;
+        var engine = engineRepository.findById(target.getEngineId()).orElse(null);
+        var member = memberRepository.findById(target.getMemberId()).orElse(null);
+        if (engine == null || member == null) return;
+        teamAlertService.notifyEscalated(engine, member, task,
+                "they replied by email" + (label != null ? " (" + label + ")" : ""), body);
+    }
+
     /**
      * One inbound email (design: email replies are read like WhatsApp ones). There is no email
      * auto-reply, so a person always answers, except for the two clear cases:
@@ -601,11 +612,12 @@ public class EngagementReplyResponder {
         note.setRationale(cap("Replied by email" + (label != null ? " (" + label + ")" : "")
                 + ". Answer them by email; the engine sends nothing new until its next check. Their message: "
                 + body));
-        actionRepository.save(note);
+        EngagementAction savedNote = actionRepository.save(note);
         for (EngagementReplyMemberQueries.LiveMember m : live) {
             long cadence = m.getCadenceHours() != null ? Math.max(m.getCadenceHours(), 1) : 72;
             memberRepository.markReplyHandled(m.getMemberId(), now, now.plus(Duration.ofHours(cadence)));
         }
+        alertEmailReply(target, savedNote != null ? savedNote : note, label, body);
         return true;
     }
 

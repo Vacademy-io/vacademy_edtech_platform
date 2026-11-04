@@ -292,6 +292,25 @@ class EngagementLeadExitsTest {
         }
 
         @Test
+        @DisplayName("an email reply tells the team, as an escalated WhatsApp reply does")
+        void emailReplyAlertsTeam() {
+            EngagementTeamAlertService alerts = mock(EngagementTeamAlertService.class);
+            ReflectionTestUtils.setField(responder, "teamAlertService", alerts);
+            EngagementEngine engine = new EngagementEngine();
+            engine.setId(LEAD_ENGINE);
+            EngagementMember member = new EngagementMember();
+            member.setId("m1");
+            when(engines.findById(LEAD_ENGINE)).thenReturn(java.util.Optional.of(engine));
+            when(members.findById("m1")).thenReturn(java.util.Optional.of(member));
+            List<LiveMember> found = List.of(live("m1", LEAD_ENGINE, null, "ar1"));
+            when(replyQueries.findLiveMembersByEmail(INST, "asha@example.com")).thenReturn(found);
+
+            assertTrue(responder.handleEmailReply(INST, "asha@example.com", "Re: Course", "Please set up a session", "<a@mail>"));
+
+            verify(alerts).notifyEscalated(eq(engine), eq(member), any(), org.mockito.ArgumentMatchers.contains("replied by email"), eq("Please set up a session"));
+        }
+
+        @Test
         @DisplayName("T17: an email reply becomes an email REPLY task with a Re: subject; members held")
         void emailReplyTask() {
             List<LiveMember> found = List.of(live("m1", LEAD_ENGINE, null, "ar1"));
