@@ -6,14 +6,14 @@
  * course's authors. A template cannot loop, so the cards / reviews / FAQs / instructors
  * are rendered here into fixed markup the template's CSS styles:
  *
- *   framework_html            h2, p…, div.course-framework-grid >
- *                               article.course-framework-card (span.course-card-number, h3, p, ul, p.course-card-takeaway)
- *   learning_experience_html  h2, p…, div.course-learning-grid > article.course-learning-card (h3, p),
- *                               div.course-callout
- *   testimonials_html         blockquote.course-testimonial (p.course-testimonial-quote, cite > span, p…)
- *   instructors_html          article.course-instructor (img, h3, p.course-instructor-role, div.course-instructor-bio)
+ *   framework_html            h2, p…, div.tc-framework-grid >
+ *                               article.tc-framework-card (span.tc-card-number, h3, p, ul, p.tc-card-takeaway)
+ *   learning_experience_html  h2, p…, div.tc-learning-grid > article.tc-learning-card (h3, p),
+ *                               div.tc-callout
+ *   testimonials_html         blockquote.tc-testimonial (p.tc-testimonial-quote, cite > span, p…)
+ *   instructors_html          article.tc-instructor (img, h3, p.tc-instructor-role, div.tc-instructor-bio)
  *   inclusions_html           h3, ul
- *   faqs_html                 div.course-faq-item (h3, div.course-faq-answer)
+ *   faqs_html                 div.tc-faq-item (h3, div.tc-faq-answer)
  *
  * `labels` are the template's own words (headings, button text) the admin types per course;
  * each becomes `{{course.label_<key>}}`.
@@ -96,11 +96,11 @@ const renderFramework = (fw: Record<string, unknown>): string => {
       const takeaway = str(c.takeaway);
       if (!title && !body && !points.length && !takeaway) return "";
       return (
-        `<article class="course-framework-card"><span class="course-card-number">${i + 1}</span>` +
+        `<article class="tc-framework-card"><span class="tc-card-number">${i + 1}</span>` +
         (title ? `<h3>${esc(title)}</h3>` : "") +
         paragraphs(body) +
         ul(points) +
-        (takeaway ? `<p class="course-card-takeaway">${esc(takeaway)}</p>` : "") +
+        (takeaway ? `<p class="tc-card-takeaway">${esc(takeaway)}</p>` : "") +
         `</article>`
       );
     })
@@ -111,7 +111,7 @@ const renderFramework = (fw: Record<string, unknown>): string => {
   return (
     (heading ? `<h2>${esc(heading)}</h2>` : "") +
     intro +
-    (cards.length ? `<div class="course-framework-grid">${cards.join("")}</div>` : "")
+    (cards.length ? `<div class="tc-framework-grid">${cards.join("")}</div>` : "")
   );
 };
 
@@ -121,7 +121,7 @@ const renderLearning = (le: Record<string, unknown>): string => {
       const title = str(c.title);
       const body = str(c.body);
       if (!title && !body) return "";
-      return `<article class="course-learning-card">${title ? `<h3>${esc(title)}</h3>` : ""}${paragraphs(body)}</article>`;
+      return `<article class="tc-learning-card">${title ? `<h3>${esc(title)}</h3>` : ""}${paragraphs(body)}</article>`;
     })
     .filter(Boolean);
   const intro = paragraphs(str(le.intro));
@@ -131,8 +131,8 @@ const renderLearning = (le: Record<string, unknown>): string => {
   return (
     (heading ? `<h2>${esc(heading)}</h2>` : "") +
     intro +
-    (cards.length ? `<div class="course-learning-grid">${cards.join("")}</div>` : "") +
-    (callout ? `<div class="course-callout">${callout}</div>` : "")
+    (cards.length ? `<div class="tc-learning-grid">${cards.join("")}</div>` : "") +
+    (callout ? `<div class="tc-callout">${callout}</div>` : "")
   );
 };
 
@@ -144,8 +144,8 @@ const renderTestimonials = (items: unknown): string =>
       if (!quote || !name) return "";
       const details = str(r.details);
       return (
-        `<blockquote class="course-testimonial">` +
-        `<p class="course-testimonial-quote">${esc(quote)}</p>` +
+        `<blockquote class="tc-testimonial">` +
+        `<p class="tc-testimonial-quote">${esc(quote)}</p>` +
         `<cite>${esc(name)}${details ? `<span>${esc(details)}</span>` : ""}</cite>` +
         paragraphs(str(r.review)) +
         `</blockquote>`
@@ -201,7 +201,7 @@ export const renderFaqsHtml = (coursePageJson: unknown): string => {
       const q = str(f.q);
       const a = richOrEmpty(f.a);
       if (!q || !a) return "";
-      return `<div class="course-faq-item"><h3>${esc(q)}</h3><div class="course-faq-answer">${a}</div></div>`;
+      return `<div class="tc-faq-item"><h3>${esc(q)}</h3><div class="tc-faq-answer">${a}</div></div>`;
     })
     .join("");
 };
@@ -229,11 +229,11 @@ export const renderInstructorsHtml = (
       const role = str(inst.subtitle) || str(inst.role);
       const bio = richOrEmpty(inst.description);
       return (
-        `<article class="course-instructor">` +
+        `<article class="tc-instructor">` +
         (photo ? `<img src="${esc(photo)}" alt="${esc(name)}" loading="lazy">` : "") +
         `<h3>${esc(name)}</h3>` +
-        (role ? `<p class="course-instructor-role">${esc(role)}</p>` : "") +
-        (bio ? `<div class="course-instructor-bio">${bio}</div>` : "") +
+        (role ? `<p class="tc-instructor-role">${esc(role)}</p>` : "") +
+        (bio ? `<div class="tc-instructor-bio">${bio}</div>` : "") +
         `</article>`
       );
     })

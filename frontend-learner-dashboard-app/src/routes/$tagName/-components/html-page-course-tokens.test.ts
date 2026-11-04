@@ -76,24 +76,24 @@ describe("course tokens (pure)", () => {
     expect(applyCourseTokens("{{course.tagline}}", t)).toBe("Learn &lt;calmly&gt;");
     expect(t.short_description).toBe("A short line");
     expect(t.framework_html).toBe(
-      '<h2>The method</h2><p>Para one</p><p>Para two</p><div class="course-framework-grid">' +
-      '<article class="course-framework-card"><span class="course-card-number">1</span><h3>Observe</h3><p>Look first</p><ul><li>See</li><li>Note</li></ul><p class="course-card-takeaway">Pause</p></article>' +
-      '<article class="course-framework-card"><span class="course-card-number">2</span><h3>Act</h3></article></div>',
+      '<h2>The method</h2><p>Para one</p><p>Para two</p><div class="tc-framework-grid">' +
+      '<article class="tc-framework-card"><span class="tc-card-number">1</span><h3>Observe</h3><p>Look first</p><ul><li>See</li><li>Note</li></ul><p class="tc-card-takeaway">Pause</p></article>' +
+      '<article class="tc-framework-card"><span class="tc-card-number">2</span><h3>Act</h3></article></div>',
     );
-    expect(t.learning_experience_html).toContain('<article class="course-learning-card"><h3>Videos</h3><p>Short clips</p></article>');
-    expect(t.learning_experience_html).toContain('<div class="course-callout"><p>Bonus</p></div>');
+    expect(t.learning_experience_html).toContain('<article class="tc-learning-card"><h3>Videos</h3><p>Short clips</p></article>');
+    expect(t.learning_experience_html).toContain('<div class="tc-callout"><p>Bonus</p></div>');
     // a review without a name is skipped
     expect(t.testimonials_html).toBe(
-      '<blockquote class="course-testimonial"><p class="course-testimonial-quote">Loved it</p><cite>A. Learner<span>Parent</span></cite><p>Long review</p></blockquote>',
+      '<blockquote class="tc-testimonial"><p class="tc-testimonial-quote">Loved it</p><cite>A. Learner<span>Parent</span></cite><p>Long review</p></blockquote>',
     );
     expect(t.enrolment_description).toBe("<p>Join now</p>");
     expect(t.enrolment_image).toBe("enrol01");
     expect(t.inclusions_html).toBe("<h3>Included</h3><ul><li>Videos</li><li>Worksheets</li></ul>");
     // an FAQ with an empty answer is skipped
-    expect(t.faqs_html).toBe('<div class="course-faq-item"><h3>Is it live?</h3><div class="course-faq-answer"><p>Both <b>live</b> and recorded.</p></div></div>');
+    expect(t.faqs_html).toBe('<div class="tc-faq-item"><h3>Is it live?</h3><div class="tc-faq-answer"><p>Both <b>live</b> and recorded.</p></div></div>');
     expect(t.instructors_html).toBe(
-      '<article class="course-instructor"><img src="https://cdn.example/pic1.png" alt="Dr. One" loading="lazy"><h3>Dr. One</h3><p class="course-instructor-role">Psychologist</p><div class="course-instructor-bio"><p>Bio</p></div></article>' +
-      '<article class="course-instructor"><h3>Two</h3><p class="course-instructor-role">Instructor</p></article>',
+      '<article class="tc-instructor"><img src="https://cdn.example/pic1.png" alt="Dr. One" loading="lazy"><h3>Dr. One</h3><p class="tc-instructor-role">Psychologist</p><div class="tc-instructor-bio"><p>Bio</p></div></article>' +
+      '<article class="tc-instructor"><h3>Two</h3><p class="tc-instructor-role">Instructor</p></article>',
     );
     expect(applyCourseTokens("{{course.faqs_html}}", t)).toContain("<b>live</b>");
   });
