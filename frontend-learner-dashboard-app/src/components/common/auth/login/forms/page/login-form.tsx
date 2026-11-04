@@ -25,6 +25,7 @@ import { useTheme } from "@/providers/theme/theme-provider";
 import { fetchAndStoreInstituteDetails } from "@/services/fetchAndStoreInstituteDetails";
 import { fetchAndStoreStudentDetails } from "@/services/studentDetails";
 import { hydrateParentSession } from "@/lib/auth/detect-user-role";
+import { readArrivalTokens } from "@/lib/auth/arrival-tokens";
 import {
   pickOtpLoginMethod,
   readOtpLoginHandoff,
@@ -335,8 +336,7 @@ export function LoginForm({
   useEffect(() => {
     // CRITICAL: Check for popup FIRST, before anything else
     const urlParams = new URLSearchParams(window.location.search);
-    const accessToken = urlParams.get("accessToken");
-    const refreshToken = urlParams.get("refreshToken");
+    const { accessToken, refreshToken } = readArrivalTokens();
 
     // If this page is loaded inside an OAuth popup, do NOT complete login here.
     // Instead, broadcast tokens to the opener and close the popup to avoid duplicate app instances.

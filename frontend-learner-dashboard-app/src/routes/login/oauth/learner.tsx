@@ -12,6 +12,7 @@ import { fetchAndStoreStudentDetails } from "@/services/studentDetails";
 import { useTheme } from "@/providers/theme/theme-provider";
 import { DashboardLoader } from "@/components/core/dashboard-loader";
 import { createFileRoute } from "@tanstack/react-router";
+import { readArrivalTokens } from "@/lib/auth/arrival-tokens";
 import { getStudentDisplaySettings } from "@/services/student-display-settings";
 import { identifyUser } from "@/lib/analytics";
 
@@ -110,8 +111,7 @@ const handleOAuthCallback = async (
   setPrimaryColor: (color: string) => void
 ) => {
   const urlParams = new URLSearchParams(window.location.search);
-  const accessToken = urlParams.get("accessToken");
-  const refreshToken = urlParams.get("refreshToken");
+  const { accessToken, refreshToken } = readArrivalTokens();
   const error = urlParams.get("error");
   const state = urlParams.get("state");
    

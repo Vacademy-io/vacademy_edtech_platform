@@ -14,37 +14,29 @@
 
 /audience-response
   X-Content-Type-Options: nosniff
-  Referrer-Policy: strict-origin-when-cross-origin
 
 /audience-response/*
   X-Content-Type-Options: nosniff
-  Referrer-Policy: strict-origin-when-cross-origin
 
 /live-class-guest/embed
   X-Content-Type-Options: nosniff
-  Referrer-Policy: strict-origin-when-cross-origin
 
 /live-class-guest/embed/*
   X-Content-Type-Options: nosniff
-  Referrer-Policy: strict-origin-when-cross-origin
 
 /learner-invitation-response
   X-Content-Type-Options: nosniff
-  Referrer-Policy: strict-origin-when-cross-origin
 
 /learner-invitation-response/*
   X-Content-Type-Options: nosniff
-  Referrer-Policy: strict-origin-when-cross-origin
 
 # Site Assistant iframe, injected by /site-assistant.js on institutes' own
 # websites. Must stay frameable: never add X-Frame-Options / frame-ancestors.
 /site-assistant-embed
   X-Content-Type-Options: nosniff
-  Referrer-Policy: strict-origin-when-cross-origin
 
 /site-assistant-embed/*
   X-Content-Type-Options: nosniff
-  Referrer-Policy: strict-origin-when-cross-origin
 
 # ============================================
 # ALL OTHER ROUTES - Basic security headers only
@@ -53,10 +45,16 @@
 # to avoid conflicts with embeddable routes.
 # If you need iframe protection on specific routes, add them individually above.
 
+# Referrer-Policy is set only here. A value on another rule is joined with this
+# one and browsers use the last value, so a rule above this one cannot change it.
+# strict-origin sends the origin alone, on same-origin requests too. Third-party
+# players need that origin: YouTube answers Error 153 when there is no Referer.
+# Do not use no-referrer on login paths: a policy lasts for the life of the
+# document, and login moves into the app without a reload.
 /*
   X-Content-Type-Options: nosniff
   X-XSS-Protection: 1; mode=block
-  Referrer-Policy: no-referrer-when-downgrade
+  Referrer-Policy: strict-origin
 
 # ============================================
 # STATIC ASSET CACHING

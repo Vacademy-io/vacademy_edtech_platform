@@ -68,6 +68,7 @@ import { RevokedDeviceDialog } from "@/components/common/offline/revoked-device-
 import { useLiveTestStore } from "@/stores/live-test-store";
 import { resolveUiSkin } from "@/utils/institute-theme-roles";
 import { matchesCataloguePost } from "@/lib/catalogue-post-route";
+import { clearArrivalTokens, readArrivalTokens } from "@/lib/auth/arrival-tokens";
 import {
   installStudentPreviewBridge,
   notifyStudentPreviewRoute,
@@ -920,8 +921,8 @@ export const Route = createRootRouteWithContext<{
       location.search ||
       "";
     const urlParams = new URLSearchParams(searchString);
-    const urlAccessToken = urlParams.get("accessToken");
-    const urlRefreshToken = urlParams.get("refreshToken");
+    const { accessToken: urlAccessToken, refreshToken: urlRefreshToken } =
+      readArrivalTokens(location.pathname);
     const redirectPath = urlParams.get("redirect");
 
     if (urlAccessToken && urlRefreshToken) {
@@ -982,6 +983,8 @@ export const Route = createRootRouteWithContext<{
           // Full page redirect so the next load sees auth state and no token params in URL
           const origin =
             typeof window !== "undefined" ? window.location.origin : "";
+          // The redirect below re-runs this beforeLoad, possibly on this same path.
+          clearArrivalTokens();
           window.location.replace(`${origin}${targetPath}`);
           throw redirect({ to: targetPath as never });
         } else {

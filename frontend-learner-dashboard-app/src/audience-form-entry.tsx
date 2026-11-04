@@ -14,6 +14,9 @@
 // file does not touch. Keep the provider stack in step with main.tsx and the
 // root-route effects in step with __root.tsx (splash, primary colour).
 
+// First: picks up the sign-in hand-off from the inline script in index.html. This
+// page has no sign-in of its own to use it for, so it is dropped below.
+import { clearArrivalTokens } from "@/lib/auth/arrival-tokens";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import * as Sentry from "@sentry/react";
 import {
@@ -43,6 +46,8 @@ import { useInstituteDetailsStore } from "@/stores/study-library/useInstituteDet
 import { Route as AudienceResponseRoute } from "./routes/audience-response/index";
 import { handleGetAudienceCampaign } from "./routes/audience-response/-services/audience-campaign-services";
 import { handleGetPublicInstituteDetails } from "./components/common/enroll-by-invite/-services/enroll-invite-services";
+
+clearArrivalTokens();
 
 installChunkErrorHandler();
 

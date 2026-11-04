@@ -8,6 +8,7 @@ import { getPublicStudentDisplaySettings } from "@/services/student-display-sett
 import { getTokenFromStorage } from "@/lib/auth/sessionUtility";
 import { TokenKey } from "@/constants/auth/tokens";
 import { navigateAfterLogin } from "@/lib/auth/post-login-redirect";
+import { hasArrivalTokens } from "@/lib/auth/arrival-tokens";
 import { getCachedRootCatalogueTag } from "@/services/domain-routing";
 import { CatalogueTagContext } from "../$tagName/-components/CatalogueTagContext";
 
@@ -44,7 +45,9 @@ function RouteComponent() {
   const signupModalRef = useRef<AuthModalRef>(null);
   const navigate = useNavigate();
   const domainRouting = useDomainRouting();
-  const [keepPage] = useState(() => needsFullPage(window.location.search));
+  const [keepPage] = useState(
+    () => needsFullPage(window.location.search) || hasArrivalTokens(),
+  );
   // null = still deciding; the institute's signup.loginPageAsModal picks the view.
   const [modalView, setModalView] = useState<boolean | null>(
     keepPage ? false : null,
