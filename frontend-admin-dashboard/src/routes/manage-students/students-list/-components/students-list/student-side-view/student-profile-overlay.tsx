@@ -70,7 +70,6 @@ import { StudentParentProfile } from './student-parent/student-parent-profile';
 import { StudentOnboardingProfile } from './student-onboarding/student-onboarding-profile';
 import { StudentLiveSessions } from './student-live-sessions/student-live-sessions';
 import { StudentAcademicActivity } from './student-academic-activity/student-academic-activity';
-import { StudentGamification } from './student-gamification/student-gamification';
 
 type SectionId = StudentSideViewTabId | 'subOrg';
 
@@ -101,7 +100,6 @@ const DEFAULT_ORDER: StudentSideViewTabId[] = [
     'onboarding',
     'liveSession',
     'academicActivity',
-    'gamification',
 ];
 
 function orderedVisibleSectionIds(settings: StudentSideViewSettings): StudentSideViewTabId[] {
@@ -314,20 +312,6 @@ export const StudentProfileOverlay = () => {
             case 'academicActivity':
                 return (
                     <StudentAcademicActivity
-                        userId={selectedStudent.user_id || selectedStudent.id}
-                        instituteId={selectedStudent.institute_id}
-                        packageSessionIds={
-                            selectedStudent.all_package_session_ids?.length
-                                ? selectedStudent.all_package_session_ids
-                                : selectedStudent.package_session_id
-                                  ? [selectedStudent.package_session_id]
-                                  : []
-                        }
-                    />
-                );
-            case 'gamification':
-                return (
-                    <StudentGamification
                         userId={selectedStudent.user_id || selectedStudent.id}
                         instituteId={selectedStudent.institute_id}
                         packageSessionIds={

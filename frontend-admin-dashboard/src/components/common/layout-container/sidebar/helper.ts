@@ -429,3 +429,16 @@ export function pickActiveSidebarLink(
     }
     return best;
 }
+
+/**
+ * Gamification and Points always follows Learning Reports: a role whose sidebar order was
+ * saved before the tab existed would otherwise rank it from its default slot.
+ */
+export function placeGamificationAfterReports<T extends { id: string }>(items: T[]): T[] {
+    const tab = items.find((item) => item.id === 'gamification-points');
+    if (!tab) return items;
+    const rest = items.filter((item) => item !== tab);
+    const reportsAt = rest.findIndex((item) => item.id === 'learning-reports');
+    if (reportsAt < 0) return items;
+    return [...rest.slice(0, reportsAt + 1), tab, ...rest.slice(reportsAt + 1)];
+}

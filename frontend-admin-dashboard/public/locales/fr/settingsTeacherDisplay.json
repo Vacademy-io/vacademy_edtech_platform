@@ -180,8 +180,7 @@
         "parentTab": "Onglet Tuteur",
         "onboardingTab": "Onglet Intégration",
         "liveSessionTab": "Onglet Sessions en direct",
-        "academicActivityTab": "Onglet Activité académique",
-        "gamificationTab": "Onglet Gamification et badges"
+        "academicActivityTab": "Onglet Activité académique"
     },
     "learnerManagementOptions": {
         "allowPortalAccess": "Autoriser l'accès au portail apprenant",

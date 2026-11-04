@@ -225,6 +225,7 @@
           "governs": {
             "nav": [
               "learning-reports",
+              "gamification-points",
               "institute-pulse",
               "lms-dashboard"
             ],

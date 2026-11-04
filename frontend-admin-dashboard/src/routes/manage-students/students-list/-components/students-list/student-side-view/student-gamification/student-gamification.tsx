@@ -37,8 +37,9 @@ import { ALL_BATCHES, BatchPicker } from '../BatchPicker';
 import { ProfileEmpty, ProfileError, ProfileSectionCard, ProfileSkeleton } from '../profile-ui';
 
 /**
- * Gamification and Badges: the learner's level, points, streak, active days, badges and where
- * they stand on the leaderboard. Read-only; awarding stays on the Badges tab.
+ * The learner's level, points, streak, active days, badges and where they stand on the
+ * leaderboard. Read-only; awarding stays on the Badges tab. Shown inside Academic Activity and
+ * when a learner is opened from Gamification and Points.
  */
 
 const LEADERBOARD_ROWS = 10;
@@ -437,13 +438,15 @@ const LeaderRow = ({
 const LeaderboardCard = ({
     userId,
     packageSessionIds,
+    defaultBatch,
     onRank,
 }: {
     userId: string;
     packageSessionIds: string[];
+    defaultBatch?: string;
     onRank: (label: string) => void;
 }) => {
-    const [scope, setScope] = useState<string>(packageSessionIds[0] ?? ALL_BATCHES);
+    const [scope, setScope] = useState<string>(defaultBatch ?? packageSessionIds[0] ?? ALL_BATCHES);
     const [metric, setMetric] = useState<LeaderboardMetric>('POINTS');
     const [period, setPeriod] = useState<LeaderboardWindow>('ALL');
     const effectiveWindow = metric === 'POINTS' ? period : 'ALL';
@@ -568,10 +571,13 @@ export const StudentGamification = ({
     userId,
     instituteId,
     packageSessionIds,
+    defaultBatch,
 }: {
     userId: string;
     instituteId: string;
     packageSessionIds: string[];
+    /** The batch the leaderboard opens on. */
+    defaultBatch?: string;
 }) => {
     const brand = useBrandColor();
     const [rank, setRank] = useState('—');
@@ -614,8 +620,10 @@ export const StudentGamification = ({
                 summary={summary.data}
             />
             <LeaderboardCard
+                key={defaultBatch}
                 userId={userId}
                 packageSessionIds={packageSessionIds}
+                defaultBatch={defaultBatch}
                 onRank={setRank}
             />
             <StreakCard

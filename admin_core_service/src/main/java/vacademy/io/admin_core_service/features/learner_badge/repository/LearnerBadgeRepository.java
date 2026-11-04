@@ -80,4 +80,37 @@ public interface LearnerBadgeRepository extends JpaRepository<LearnerBadge, Stri
                                        @Param("packageSessionIds") List<String> packageSessionIds,
                                        @Param("startDate") java.sql.Timestamp startDate,
                                        @Param("endDate") java.sql.Timestamp endDate);
+
+    /** Learners holding a badge earned in the window, for the active learners of some batches. */
+    @Query(value = """
+            SELECT COUNT(DISTINCT lb.user_id)
+            FROM learner_badge lb
+            WHERE lb.institute_id = :instituteId
+              AND lb.status = 'ACTIVE'
+              AND lb.awarded_at BETWEEN :startDate AND :endDate
+              AND lb.user_id IN (SELECT m.user_id FROM student_session_institute_group_mapping m
+                                  WHERE m.package_session_id IN (:packageSessionIds) AND m.status = 'ACTIVE')
+            """, nativeQuery = true)
+    long countLearnersWithBadgeForBatches(@Param("instituteId") String instituteId,
+                                          @Param("packageSessionIds") List<String> packageSessionIds,
+                                          @Param("startDate") java.sql.Timestamp startDate,
+                                          @Param("endDate") java.sql.Timestamp endDate);
+
+    /** Rows: [user_id, badge_name, badge_icon, awarded_at], newest first, for some batches. */
+    @Query(value = """
+            SELECT lb.user_id, lb.badge_name, lb.badge_icon, lb.awarded_at
+            FROM learner_badge lb
+            WHERE lb.institute_id = :instituteId
+              AND lb.status = 'ACTIVE'
+              AND lb.awarded_at BETWEEN :startDate AND :endDate
+              AND lb.user_id IN (SELECT m.user_id FROM student_session_institute_group_mapping m
+                                  WHERE m.package_session_id IN (:packageSessionIds) AND m.status = 'ACTIVE')
+            ORDER BY lb.awarded_at DESC
+            LIMIT :maxResults
+            """, nativeQuery = true)
+    List<Object[]> recentBadgesForBatches(@Param("instituteId") String instituteId,
+                                          @Param("packageSessionIds") List<String> packageSessionIds,
+                                          @Param("startDate") java.sql.Timestamp startDate,
+                                          @Param("endDate") java.sql.Timestamp endDate,
+                                          @Param("maxResults") int maxResults);
 }

@@ -145,8 +145,7 @@
         "parentTab": "تبويب ولي الأمر",
         "onboardingTab": "تبويب التهيئة",
         "liveSessionTab": "علامة تبويب الجلسات المباشرة",
-        "academicActivityTab": "علامة تبويب النشاط الأكاديمي",
-        "gamificationTab": "علامة تبويب التلعيب والشارات"
+        "academicActivityTab": "علامة تبويب النشاط الأكاديمي"
     },
     "learnerManagement": {
         "title": "إدارة المتعلمين",

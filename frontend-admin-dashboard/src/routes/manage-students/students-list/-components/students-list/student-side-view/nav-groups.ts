@@ -20,7 +20,6 @@ import {
     Robot,
     VideoCamera,
     Pulse,
-    Medal,
     type Icon as PhosphorIcon,
 } from '@phosphor-icons/react';
 import type { TFunction } from 'i18next';
@@ -103,8 +102,6 @@ export const SECTION_REGISTRY: readonly SectionMeta[] = [
     { id: 'liveSession', label: 'Live Sessions', icon: VideoCamera, group: 'Learning' },
     // Live pulse, recent reading, course progress, live classes and AI tutor chats.
     { id: 'academicActivity', label: 'Academic Activity', icon: Pulse, group: 'Learning' },
-    // Level, points, streak, badges and leaderboard rank. Awarding stays on Badges.
-    { id: 'gamification', label: 'Gamification & Badges', icon: Medal, group: 'Learning' },
 
     // Finance — "Are they paid up?"
     { id: 'paymentHistory', label: 'Payment History', icon: Wallet, group: 'Finance' },

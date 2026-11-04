@@ -54,6 +54,11 @@ public class PointsLedgerService {
             PointsSourceType.MANUAL.name(), "Awarded by your institute",
             PointsSourceType.AI_TUTOR_QUIZ.name(), "AI tutor quizzes");
 
+    /** The label a points source is shown under. */
+    public static String sourceLabel(String sourceType) {
+        return SOURCE_LABELS.getOrDefault(sourceType, sourceType);
+    }
+
     private final PointsLedgerRepository pointsLedgerRepository;
     private final InstituteTimezoneService instituteTimezoneService;
 

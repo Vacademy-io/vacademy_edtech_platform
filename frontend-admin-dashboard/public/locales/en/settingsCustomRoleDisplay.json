@@ -145,8 +145,7 @@
         "parentTab": "Guardian Tab",
         "onboardingTab": "Onboarding Tab",
         "liveSessionTab": "Live Sessions Tab",
-        "academicActivityTab": "Academic Activity Tab",
-        "gamificationTab": "Gamification & Badges Tab"
+        "academicActivityTab": "Academic Activity Tab"
     },
     "learnerManagement": {
         "title": "Learner Management",

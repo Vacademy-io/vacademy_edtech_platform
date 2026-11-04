@@ -2,6 +2,7 @@ package vacademy.io.admin_core_service.features.points_ledger.controller;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -11,11 +12,15 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import vacademy.io.admin_core_service.core.security.InstituteAccessValidator;
 import vacademy.io.admin_core_service.features.points_ledger.dto.PointsHistoryDTO;
+import vacademy.io.admin_core_service.features.points_ledger.dto.PointsOverviewDTO;
 import vacademy.io.admin_core_service.features.points_ledger.dto.PointsSummaryDTO;
 import vacademy.io.admin_core_service.features.points_ledger.job.PointsAccrualJob;
 import vacademy.io.admin_core_service.features.points_ledger.service.PointsLedgerService;
+import vacademy.io.admin_core_service.features.points_ledger.service.PointsOverviewService;
 import vacademy.io.common.auth.model.CustomUserDetails;
 
+import java.time.LocalDate;
+import java.util.List;
 import java.util.Map;
 
 @RestController
@@ -25,6 +30,7 @@ import java.util.Map;
 public class PointsController {
 
     private final PointsLedgerService pointsLedgerService;
+    private final PointsOverviewService pointsOverviewService;
     private final PointsAccrualJob pointsAccrualJob;
     private final InstituteAccessValidator instituteAccessValidator;
 
@@ -93,5 +99,17 @@ public class PointsController {
             @RequestAttribute("user") CustomUserDetails user) {
         instituteAccessValidator.requireStaffAccess(user, instituteId);
         return ResponseEntity.ok(pointsLedgerService.getHistory(instituteId, userId));
+    }
+
+    /** Staff: points and badges earned across some batches, or every batch when none are passed. */
+    @GetMapping("/v1/overview")
+    public ResponseEntity<PointsOverviewDTO> overview(
+            @RequestParam String instituteId,
+            @RequestParam(required = false) List<String> packageSessionIds,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate,
+            @RequestAttribute("user") CustomUserDetails user) {
+        instituteAccessValidator.requireStaffAccess(user, instituteId);
+        return ResponseEntity.ok(pointsOverviewService.getOverview(instituteId, packageSessionIds, startDate, endDate));
     }
 }

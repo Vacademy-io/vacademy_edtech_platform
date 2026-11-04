@@ -11,6 +11,7 @@ import {
     Video,
     CalendarCheck,
     ChartBar,
+    Medal,
     Pulse,
     Lightning,
     Question,
@@ -1145,6 +1146,13 @@ export const getSidebarItemsData = (): SidebarItemsType[] => [
         title: sidebarT('sidebar:learningReports'),
         id: 'learning-reports',
         to: '/study-library/reports',
+        category: 'LMS',
+    },
+    {
+        icon: Medal,
+        title: sidebarT('sidebar:gamificationPoints'),
+        id: 'gamification-points',
+        to: '/study-library/gamification',
         category: 'LMS',
     },
     {

@@ -17,7 +17,9 @@ import {
     VideoCamera,
     type Icon as PhosphorIcon,
 } from '@phosphor-icons/react';
+import { getTerminologyPlural } from '@/components/common/layout-container/sidebar/utils';
 import { BASE_URL } from '@/constants/urls';
+import { ContentTerms, SystemTerms } from '@/routes/settings/-components/NamingSettings';
 import authenticatedAxiosInstance from '@/lib/auth/axiosInstance';
 import { cn } from '@/lib/utils';
 import { useLearnerPackagesQuery } from '@/routes/manage-students/students-list/-services/getLearnerPackages';
@@ -32,11 +34,13 @@ import {
     useConversationMessagesQuery,
     useUserConversationsQuery,
 } from '@/routes/settings/-services/ai-usage-service';
+import { ALL_BATCHES, BatchPicker } from '../BatchPicker';
 import { ProfileEmpty, ProfileSectionCard, ProfileSkeleton } from '../profile-ui';
+import { StudentGamification } from '../student-gamification/student-gamification';
 
 /**
  * Academic Activity: what the learner is doing right now (live pulse), what they read lately,
- * course progress, live classes and their AI tutor chats, on one tab.
+ * course progress, live classes, points and badges and their AI tutor chats, on one tab.
  */
 
 interface PulseSlide {
@@ -370,12 +374,20 @@ const StudyRhythm = ({ data, brand }: { data: LearnerInsights; brand: string }) 
     );
 };
 
-const RecentTests = ({ userId, instituteId }: { userId: string; instituteId: string }) => {
+const RecentTests = ({
+    userId,
+    instituteId,
+    batchId,
+}: {
+    userId: string;
+    instituteId: string;
+    batchId?: string;
+}) => {
     const [range] = useState(() => ({
         startDate: format(subDays(new Date(), DAYS), 'yyyy-MM-dd'),
         endDate: format(new Date(), 'yyyy-MM-dd'),
     }));
-    const { data, isLoading } = useQuery(getStudentReportSnapshotQuery({ userId, instituteId, ...range }));
+    const { data, isLoading } = useQuery(getStudentReportSnapshotQuery({ userId, instituteId, batchId, ...range }));
     const tests = [...(data?.academics?.assessments ?? [])]
         .sort((a, b) => (b.date ?? '').localeCompare(a.date ?? ''))
         .slice(0, 6);
@@ -411,14 +423,22 @@ const RecentTests = ({ userId, instituteId }: { userId: string; instituteId: str
     );
 };
 
-const CourseProgress = ({ userId, instituteId }: { userId: string; instituteId: string }) => {
+const CourseProgress = ({
+    userId,
+    instituteId,
+    batchId,
+}: {
+    userId: string;
+    instituteId: string;
+    batchId?: string;
+}) => {
     const { data, isLoading } = useLearnerPackagesQuery({
         instituteId,
         userId,
         type: 'PROGRESS',
         size: 20,
     });
-    const courses = data?.content ?? [];
+    const courses = (data?.content ?? []).filter((c) => !batchId || c.package_session_id === batchId);
     return (
         <ProfileSectionCard icon={Books} heading="Course progress">
             {isLoading ? (
@@ -609,10 +629,13 @@ export const StudentAcademicActivity = ({
 }: {
     userId: string;
     instituteId: string;
-    /** The learner batches, for the batch average on the daily time chart. */
+    /** The learner batches: the batch picker and the batch average on the daily time chart. */
     packageSessionIds?: string[];
 }) => {
     const brand = useBrandColor();
+    const [picked, setPicked] = useState(ALL_BATCHES);
+    const selected = packageSessionIds.includes(picked) ? picked : ALL_BATCHES;
+    const batchId = selected === ALL_BATCHES ? undefined : selected;
     const insights = useQuery({
         queryKey: ['LEARNER_ACADEMIC_INSIGHTS', userId, instituteId],
         queryFn: () => fetchLearnerInsights(userId, instituteId),
@@ -628,6 +651,12 @@ export const StudentAcademicActivity = ({
     });
     return (
         <div className="flex flex-col gap-3">
+            <BatchPicker
+                packageSessionIds={packageSessionIds}
+                value={selected}
+                onChange={setPicked}
+                allLabel={`All ${getTerminologyPlural(ContentTerms.Batch, SystemTerms.Batch).toLowerCase()}`}
+            />
             {pulse.isLoading ? (
                 <ProfileSkeleton blocks={2} />
             ) : pulse.data ? (
@@ -640,13 +669,23 @@ export const StudentAcademicActivity = ({
             )}
             {insights.data && <ThisMonth data={insights.data} />}
             {packageSessionIds.length > 0 && (
-                <DailyTime userId={userId} packageSessionIds={packageSessionIds} brand={brand} />
+                <DailyTime
+                    userId={userId}
+                    packageSessionIds={batchId ? [batchId] : packageSessionIds}
+                    brand={brand}
+                />
             )}
-            <CourseProgress userId={userId} instituteId={instituteId} />
+            <CourseProgress userId={userId} instituteId={instituteId} batchId={batchId} />
             {insights.data && <ContentMix data={insights.data} brand={brand} />}
             {insights.data && <StudyRhythm data={insights.data} brand={brand} />}
-            <RecentTests userId={userId} instituteId={instituteId} />
+            <RecentTests userId={userId} instituteId={instituteId} batchId={batchId} />
             <LiveClasses userId={userId} />
+            <StudentGamification
+                userId={userId}
+                instituteId={instituteId}
+                packageSessionIds={packageSessionIds}
+                defaultBatch={packageSessionIds.length === 1 ? packageSessionIds[0] : selected}
+            />
             <AiChats userId={userId} />
         </div>
     );

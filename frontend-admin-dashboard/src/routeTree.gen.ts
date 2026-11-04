@@ -82,6 +82,7 @@ import { Route as TemplatesCreateIndexRouteImport } from "./routes/templates/cre
 import { Route as StudyLibraryVoltIndexRouteImport } from "./routes/study-library/volt/index"
 import { Route as StudyLibraryStudentAiIndexRouteImport } from "./routes/study-library/student-ai/index"
 import { Route as StudyLibraryReportsIndexRouteImport } from "./routes/study-library/reports/index"
+import { Route as StudyLibraryGamificationIndexRouteImport } from "./routes/study-library/gamification/index"
 import { Route as StudyLibraryLiveSessionIndexRouteImport } from "./routes/study-library/live-session/index"
 import { Route as StudyLibraryDoubtManagementIndexRouteImport } from "./routes/study-library/doubt-management/index"
 import { Route as StudyLibraryCoursesIndexRouteImport } from "./routes/study-library/courses/index"
@@ -752,6 +753,14 @@ const StudyLibraryReportsIndexRoute =
     getParentRoute: () => rootRouteImport,
   } as any).lazy(() =>
     import("./routes/study-library/reports/index.lazy").then((d) => d.Route),
+  )
+const StudyLibraryGamificationIndexRoute =
+  StudyLibraryGamificationIndexRouteImport.update({
+    id: "/study-library/gamification/",
+    path: "/study-library/gamification/",
+    getParentRoute: () => rootRouteImport,
+  } as any).lazy(() =>
+    import("./routes/study-library/gamification/index.lazy").then((d) => d.Route),
   )
 const StudyLibraryLiveSessionIndexRoute =
   StudyLibraryLiveSessionIndexRouteImport.update({
@@ -2401,6 +2410,7 @@ export interface FileRoutesByFullPath {
   "/study-library/doubt-management/": typeof StudyLibraryDoubtManagementIndexRoute
   "/study-library/live-session/": typeof StudyLibraryLiveSessionIndexRoute
   "/study-library/reports/": typeof StudyLibraryReportsIndexRoute
+  "/study-library/gamification/": typeof StudyLibraryGamificationIndexRoute
   "/study-library/student-ai/": typeof StudyLibraryStudentAiIndexRoute
   "/study-library/volt/": typeof StudyLibraryVoltIndexRoute
   "/templates/create/": typeof TemplatesCreateIndexRoute
@@ -2655,6 +2665,7 @@ export interface FileRoutesByTo {
   "/study-library/doubt-management": typeof StudyLibraryDoubtManagementIndexRoute
   "/study-library/live-session": typeof StudyLibraryLiveSessionIndexRoute
   "/study-library/reports": typeof StudyLibraryReportsIndexRoute
+  "/study-library/gamification": typeof StudyLibraryGamificationIndexRoute
   "/study-library/student-ai": typeof StudyLibraryStudentAiIndexRoute
   "/study-library/volt": typeof StudyLibraryVoltIndexRoute
   "/templates/create": typeof TemplatesCreateIndexRoute
@@ -2912,6 +2923,7 @@ export interface FileRoutesById {
   "/study-library/doubt-management/": typeof StudyLibraryDoubtManagementIndexRoute
   "/study-library/live-session/": typeof StudyLibraryLiveSessionIndexRoute
   "/study-library/reports/": typeof StudyLibraryReportsIndexRoute
+  "/study-library/gamification/": typeof StudyLibraryGamificationIndexRoute
   "/study-library/student-ai/": typeof StudyLibraryStudentAiIndexRoute
   "/study-library/volt/": typeof StudyLibraryVoltIndexRoute
   "/templates/create/": typeof TemplatesCreateIndexRoute
@@ -3170,6 +3182,7 @@ export interface FileRouteTypes {
     | "/study-library/doubt-management/"
     | "/study-library/live-session/"
     | "/study-library/reports/"
+    | "/study-library/gamification/"
     | "/study-library/student-ai/"
     | "/study-library/volt/"
     | "/templates/create/"
@@ -3424,6 +3437,7 @@ export interface FileRouteTypes {
     | "/study-library/doubt-management"
     | "/study-library/live-session"
     | "/study-library/reports"
+    | "/study-library/gamification"
     | "/study-library/student-ai"
     | "/study-library/volt"
     | "/templates/create"
@@ -3680,6 +3694,7 @@ export interface FileRouteTypes {
     | "/study-library/doubt-management/"
     | "/study-library/live-session/"
     | "/study-library/reports/"
+    | "/study-library/gamification/"
     | "/study-library/student-ai/"
     | "/study-library/volt/"
     | "/templates/create/"
@@ -3933,6 +3948,7 @@ export interface RootRouteChildren {
   StudyLibraryDoubtManagementIndexRoute: typeof StudyLibraryDoubtManagementIndexRoute
   StudyLibraryLiveSessionIndexRoute: typeof StudyLibraryLiveSessionIndexRoute
   StudyLibraryReportsIndexRoute: typeof StudyLibraryReportsIndexRoute
+  StudyLibraryGamificationIndexRoute: typeof StudyLibraryGamificationIndexRoute
   StudyLibraryStudentAiIndexRoute: typeof StudyLibraryStudentAiIndexRoute
   StudyLibraryVoltIndexRoute: typeof StudyLibraryVoltIndexRoute
   TemplatesCreateIndexRoute: typeof TemplatesCreateIndexRoute
@@ -4547,6 +4563,13 @@ declare module "@tanstack/react-router" {
       path: "/study-library/reports"
       fullPath: "/study-library/reports/"
       preLoaderRoute: typeof StudyLibraryReportsIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    "/study-library/gamification/": {
+      id: "/study-library/gamification/"
+      path: "/study-library/gamification"
+      fullPath: "/study-library/gamification/"
+      preLoaderRoute: typeof StudyLibraryGamificationIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     "/study-library/live-session/": {
@@ -6012,6 +6035,7 @@ const rootRouteChildren: RootRouteChildren = {
   StudyLibraryDoubtManagementIndexRoute: StudyLibraryDoubtManagementIndexRoute,
   StudyLibraryLiveSessionIndexRoute: StudyLibraryLiveSessionIndexRoute,
   StudyLibraryReportsIndexRoute: StudyLibraryReportsIndexRoute,
+  StudyLibraryGamificationIndexRoute: StudyLibraryGamificationIndexRoute,
   StudyLibraryStudentAiIndexRoute: StudyLibraryStudentAiIndexRoute,
   StudyLibraryVoltIndexRoute: StudyLibraryVoltIndexRoute,
   TemplatesCreateIndexRoute: TemplatesCreateIndexRoute,

@@ -33,7 +33,6 @@ import { StudentFullHistory } from './student-full-history/student-full-history'
 import { StudentWorkflows } from './student-workflows/student-workflows';
 import { StudentLiveSessions } from './student-live-sessions/student-live-sessions';
 import { StudentAcademicActivity } from './student-academic-activity/student-academic-activity';
-import { StudentGamification } from './student-gamification/student-gamification';
 import { StudentParentProfile } from './student-parent/student-parent-profile';
 import { StudentOnboardingProfile } from './student-onboarding/student-onboarding-profile';
 import { LeadFormResponseCard } from '@/routes/audience-manager/list/-components/campaign-users/lead-form-response-card';
@@ -102,7 +101,6 @@ function orderedVisibleTabIds(settings: StudentSideViewSettings): StudentSideVie
         'onboarding',
         'liveSession',
         'academicActivity',
-        'gamification',
     ];
     const orders = settings.tabOrders ?? {};
     return all
@@ -876,22 +874,6 @@ export const StudentSidebar = ({
                             !isEnrollRequestStudentList &&
                             selectedStudent?.user_id && (
                                 <StudentAcademicActivity
-                                    userId={selectedStudent.user_id}
-                                    instituteId={selectedStudent.institute_id}
-                                    packageSessionIds={
-                                        selectedStudent.all_package_session_ids?.length
-                                        ? selectedStudent.all_package_session_ids
-                                        : selectedStudent.package_session_id
-                                          ? [selectedStudent.package_session_id]
-                                          : []
-                                    }
-                                />
-                            )}
-                        {category === 'gamification' &&
-                            tabSettings?.gamificationTab &&
-                            !isEnrollRequestStudentList &&
-                            selectedStudent?.user_id && (
-                                <StudentGamification
                                     userId={selectedStudent.user_id}
                                     instituteId={selectedStudent.institute_id}
                                     packageSessionIds={

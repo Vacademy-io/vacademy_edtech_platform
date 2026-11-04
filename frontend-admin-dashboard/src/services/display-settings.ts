@@ -18,8 +18,7 @@ const CACHE_EXPIRY_HOURS = 24;
 // Bump to discard every cached blob on the next load. 2: the sidebar started
 // honouring adminOnly entries for non-admin roles, and caches written before then
 // still carry the old seeded `visible: true` on them.
-// 3: the Gamification & Badges tab flag, so the tab shows without waiting out the 24 hours.
-const CACHE_VERSION = 3;
+const CACHE_VERSION = 2;
 const LEGACY_ADMIN_KEY = StorageKey.ADMIN_DISPLAY_SETTINGS;
 const LEGACY_TEACHER_KEY = StorageKey.TEACHER_DISPLAY_SETTINGS;
 
@@ -790,7 +789,6 @@ export function mergeDisplayWithDefaults(
         onboardingTab: false,
         liveSessionTab: false,
         academicActivityTab: false,
-        gamificationTab: false,
         allowResendMessage: true,
     };
     merged.studentSideView = {
@@ -827,10 +825,6 @@ export function mergeDisplayWithDefaults(
         academicActivityTab:
             incoming?.studentSideView?.academicActivityTab ??
             defStudentSideView.academicActivityTab ??
-            false,
-        gamificationTab:
-            incoming?.studentSideView?.gamificationTab ??
-            defStudentSideView.gamificationTab ??
             false,
         // Resend on the Notifications tab. The role's own default decides what a
         // blob that pre-dates this flag gets (on for admin, off for the rest) —

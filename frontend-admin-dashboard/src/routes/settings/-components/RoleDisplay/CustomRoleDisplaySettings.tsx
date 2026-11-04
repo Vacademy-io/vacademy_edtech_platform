@@ -111,7 +111,6 @@ const STUDENT_SIDE_VIEW_DEFAULTS: StudentSideViewSettings = {
     parentTab: false,
     liveSessionTab: false,
     academicActivityTab: false,
-    gamificationTab: false,
     onboardingTab: false,
 };
 
@@ -233,11 +232,6 @@ const buildStudentSideViewOptions = (
         key: 'academicActivityTab',
         label: t('studentSideView.academicActivityTab'),
         defaultValue: STUDENT_SIDE_VIEW_DEFAULTS.academicActivityTab ?? false,
-    },
-    {
-        key: 'gamificationTab',
-        label: t('studentSideView.gamificationTab'),
-        defaultValue: STUDENT_SIDE_VIEW_DEFAULTS.gamificationTab ?? false,
     },
 ];
 

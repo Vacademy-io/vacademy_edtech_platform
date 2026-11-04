@@ -140,6 +140,22 @@ public interface PointsLedgerRepository extends JpaRepository<PointsLedger, Stri
                                      @Param("startDate") Timestamp startDate,
                                      @Param("endDate") Timestamp endDate);
 
+    /** Rows: [source_type, points], highest first, for the active learners of some batches. */
+    @Query(value = """
+            SELECT p.source_type, COALESCE(SUM(p.points), 0)
+            FROM points_ledger p
+            WHERE p.institute_id = :instituteId
+              AND p.awarded_at BETWEEN :startDate AND :endDate
+              AND p.user_id IN (SELECT m.user_id FROM student_session_institute_group_mapping m
+                                 WHERE m.package_session_id IN (:packageSessionIds) AND m.status = 'ACTIVE')
+            GROUP BY p.source_type
+            ORDER BY 2 DESC
+            """, nativeQuery = true)
+    List<Object[]> pointsBySourceForBatches(@Param("instituteId") String instituteId,
+                                            @Param("packageSessionIds") List<String> packageSessionIds,
+                                            @Param("startDate") Timestamp startDate,
+                                            @Param("endDate") Timestamp endDate);
+
     /** Every award tied to one source row — used when reversing an item's points. */
     List<PointsLedger> findBySourceTypeAndSourceId(String sourceType, String sourceId);
 }
