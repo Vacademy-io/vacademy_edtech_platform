@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import {
     ArrowDown,
@@ -10,14 +10,8 @@ import {
     WarningCircle,
 } from '@phosphor-icons/react';
 import { DashboardLoader } from '@/components/core/dashboard-loader';
+import { MultiSelect } from '@/components/design-system/multi-select';
 import { cn } from '@/lib/utils';
-import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from '@/components/ui/select';
 import {
     DEFAULT_TIMELINE,
     ReportTimelineFilter,
@@ -64,7 +58,6 @@ import { useBatchOptions } from '../batchMultiSelect';
 import { BatchComparison } from './batchComparison';
 import { GenerateBatchReportDialog } from './generateBatchReportDialog';
 
-const ALL = '__all__';
 const STRONG_FROM = 60;
 /** A drop of this many points since the earlier assessments flags a learner as slipping. */
 const SLIPPING_BY = 10;
@@ -555,10 +548,15 @@ export default function BatchOverviewReport({
 }) {
     const batchOptions = useBatchOptions();
     const brand = useBrandColor();
-    const [picked, setPicked] = useState<string>(ALL);
+    // No batch picked means all batches; one is the single-batch report; more are combined.
+    const [picked, setPicked] = useState<string[]>([]);
     const [timeline, setTimeline] = useState<TimelineValue>(DEFAULT_TIMELINE);
+    const [assessmentIds, setAssessmentIds] = useState<string[]>([]);
     const range = resolveTimeline(timeline);
-    const batchId = fixedPackageSessionId ?? (picked === ALL ? undefined : picked);
+    const batchId = fixedPackageSessionId ?? (picked.length === 1 ? picked[0] : undefined);
+    const several = !fixedPackageSessionId && picked.length > 1 ? picked : [];
+    // A new batch or window has its own assessments: start again from all of them.
+    useEffect(() => setAssessmentIds([]), [batchId, several.join(), range?.start, range?.end]);
     const batchLabels = useMemo(
         () => new Map(batchOptions.map((b) => [b.value, b.label])),
         [batchOptions]
@@ -572,41 +570,68 @@ export default function BatchOverviewReport({
             range
                 ? {
                       ...(batchId ? { package_session_id: batchId, batch_name: batchLabel } : {}),
+                      ...(several.length > 0
+                          ? {
+                                package_session_ids: several,
+                                batch_name: `${several.length} ${batchesTerm.toLowerCase()}`,
+                            }
+                          : {}),
+                      ...(assessmentIds.length > 0 ? { assessment_ids: assessmentIds } : {}),
                       start_date: range.start,
                       end_date: range.end,
                   }
                 : null,
-        [batchId, batchLabel, range?.start, range?.end]
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+        [batchId, batchLabel, several.join(), batchesTerm, range?.start, range?.end, assessmentIds]
     );
 
     const { data, isLoading, isError } = useQuery({
         ...getBatchSummaryReportQuery(request ?? { start_date: '', end_date: '' }),
+        placeholderData: (previous) => previous,
     });
+    // Options come from the unfiltered list the report returns, so picking one keeps the rest.
+    const assessmentOptions = useMemo(
+        () =>
+            (data?.available_assessments ?? []).map((a) => ({
+                value: a.assessment_id,
+                label: a.date ? `${a.name ?? 'Assessment'} · ${a.date}` : (a.name ?? 'Assessment'),
+            })),
+        [data?.available_assessments]
+    );
 
     return (
         <div className="flex flex-col gap-5">
             <div className="flex flex-col gap-3 rounded-xl border border-neutral-200 bg-white p-4 md:flex-row md:items-end">
                 {!fixedPackageSessionId && (
-                    <label className="flex flex-1 flex-col gap-1 text-xs font-medium text-neutral-600">
+                    <div className="flex flex-1 flex-col gap-1 text-xs font-medium text-neutral-600">
                         {batchTerm}
-                        <Select value={picked} onValueChange={setPicked}>
-                            <SelectTrigger className="h-9 w-full text-sm">
-                                <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value={ALL}>All {batchesTerm.toLowerCase()}</SelectItem>
-                                {batchOptions.map((b) => (
-                                    <SelectItem key={b.value} value={b.value}>
-                                        {b.label}
-                                    </SelectItem>
-                                ))}
-                            </SelectContent>
-                        </Select>
-                    </label>
+                        <MultiSelect
+                            options={batchOptions}
+                            selected={picked}
+                            onChange={setPicked}
+                            checkboxes
+                            placeholder={`All ${batchesTerm.toLowerCase()}`}
+                            className="h-auto min-h-9 py-1 text-sm"
+                        />
+                    </div>
                 )}
                 <div className="flex flex-1 flex-col gap-1 text-xs font-medium text-neutral-600">
                     Timeline
                     <ReportTimelineFilter value={timeline} onChange={setTimeline} />
+                </div>
+                <div className="flex flex-1 flex-col gap-1 text-xs font-medium text-neutral-600">
+                    Assessments
+                    <MultiSelect
+                        options={assessmentOptions}
+                        selected={assessmentIds}
+                        onChange={setAssessmentIds}
+                        checkboxes
+                        disabled={assessmentOptions.length === 0}
+                        placeholder={
+                            assessmentOptions.length === 0 ? 'No assessments' : 'All assessments'
+                        }
+                        className="h-auto min-h-9 py-1 text-sm"
+                    />
                 </div>
                 <div className="md:ml-auto">
                     <GenerateBatchReportDialog request={request} disabled={!data} />

@@ -10,6 +10,7 @@ import org.springframework.stereotype.Service;
 import vacademy.io.assessment_service.features.assessment.dto.admin_get_dto.response.CohortAssessmentAttemptProjection;
 import vacademy.io.assessment_service.features.assessment.dto.admin_get_dto.response.StudentAttemptHistoryProjection;
 import vacademy.io.assessment_service.features.assessment.dto.admin_get_dto.response.UserAssessmentHistorySummaryProjection;
+import vacademy.io.assessment_service.features.assessment.repository.AssessmentBatchRegistrationRepository;
 import vacademy.io.assessment_service.features.assessment.repository.StudentAttemptRepository;
 import vacademy.io.assessment_service.features.learner_assessment.dto.SectionComparisonDto;
 import vacademy.io.assessment_service.features.learner_assessment.dto.StudentComparisonDto;
@@ -75,6 +76,12 @@ public class StudentAnalysisInternalService {
     @Autowired
     private StudentAttemptRepository studentAttemptRepository;
 
+    @Autowired
+    private AssessmentBatchRegistrationRepository assessmentBatchRegistrationRepository;
+
+    /** Rows read before the batch filter, so a batch still gets its full cap after filtering. */
+    private static final int MAX_ROWS_BEFORE_BATCH_FILTER = 1000;
+
     /**
      * Self-injection to benefit from Spring's @Cacheable proxy on
      * {@link LearnerReportService#buildComparisonData}.
@@ -94,6 +101,15 @@ public class StudentAnalysisInternalService {
      */
     public StudentAssessmentHistoryResponse fetchAssessmentHistory(
             String userId, String instituteId, Date startDate, Date endDate) {
+        return fetchAssessmentHistory(userId, instituteId, startDate, endDate, null);
+    }
+
+    /**
+     * As {@link #fetchAssessmentHistory(String, String, Date, Date)}, limited to the assessments
+     * assigned to {@code batchId} when it is given.
+     */
+    public StudentAssessmentHistoryResponse fetchAssessmentHistory(
+            String userId, String instituteId, Date startDate, Date endDate, String batchId) {
 
         // `endDate` arrives via @DateTimeFormat(ISO.DATE), so "2026-06-30" materialises as
         // 2026-06-30T00:00:00 and the query's `created_at <= :endDate` then excluded EVERY attempt
@@ -102,10 +118,16 @@ public class StudentAnalysisInternalService {
         Date inclusiveEnd = endOfDay(endDate);
 
         // Fetch at most MAX+1 rows so we can detect truncation without fetching everything
+        boolean scoped = batchId != null && !batchId.isBlank();
         List<StudentAttemptHistoryProjection> rows = studentAttemptRepository
                 .findAssessmentHistoryForUserInDateRange(
                         userId, instituteId, startDate, inclusiveEnd,
-                        PageRequest.of(0, MAX_ASSESSMENTS_PER_REPORT + 1));
+                        PageRequest.of(0, scoped ? MAX_ROWS_BEFORE_BATCH_FILTER : MAX_ASSESSMENTS_PER_REPORT + 1));
+        if (scoped) {
+            Set<String> batchAssessments = new java.util.HashSet<>(assessmentBatchRegistrationRepository
+                    .findAssessmentIdsByBatchAndInstitute(batchId, instituteId, List.of("ACTIVE")));
+            rows = rows.stream().filter(r -> batchAssessments.contains(r.getAssessmentId())).toList();
+        }
 
         boolean truncated = rows.size() > MAX_ASSESSMENTS_PER_REPORT;
         if (truncated) {

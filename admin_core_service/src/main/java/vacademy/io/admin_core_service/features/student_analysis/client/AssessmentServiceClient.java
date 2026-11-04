@@ -50,13 +50,20 @@ public class AssessmentServiceClient {
      */
     public AssessmentHistoryResponse fetchStudentAssessmentHistory(
             String userId, String instituteId, String startDate, String endDate) {
+        return fetchStudentAssessmentHistory(userId, instituteId, startDate, endDate, null);
+    }
+
+    /** As above, limited to the assessments assigned to {@code batchId} when it is given. */
+    public AssessmentHistoryResponse fetchStudentAssessmentHistory(
+            String userId, String instituteId, String startDate, String endDate, String batchId) {
 
         try {
             String route = "/assessment-service/internal/student-analysis/assessment-history"
                     + "?userId=" + userId
                     + "&instituteId=" + instituteId
                     + "&startDate=" + startDate
-                    + "&endDate=" + endDate;
+                    + "&endDate=" + endDate
+                    + (batchId != null && !batchId.isBlank() ? "&batchId=" + batchId : "");
 
             log.info("[AssessmentServiceClient] Fetching assessment history for user={} institute={} [{} - {}]",
                     userId, instituteId, startDate, endDate);

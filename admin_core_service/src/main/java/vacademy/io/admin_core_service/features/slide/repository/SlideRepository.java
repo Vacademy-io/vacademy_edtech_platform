@@ -49,6 +49,22 @@ public interface SlideRepository extends JpaRepository<Slide, String> {
             """, nativeQuery = true)
     Integer countAssignmentSlidesForPackageSession(@Param("packageSessionId") String packageSessionId);
 
+    /**
+     * Every slide reachable from a package session (chapter mapping, then chapter_to_slides),
+     * anything not deleted. Scopes the learner report marks and topics to a picked batch. READ-ONLY.
+     */
+    @Query(value = """
+            SELECT DISTINCT cs.slide_id
+            FROM chapter_package_session_mapping cpsm
+            JOIN chapter c ON c.id = cpsm.chapter_id
+            JOIN chapter_to_slides cs ON cs.chapter_id = c.id
+            WHERE cpsm.package_session_id = :packageSessionId
+              AND cpsm.status <> 'DELETED'
+              AND c.status <> 'DELETED'
+              AND cs.status <> 'DELETED'
+            """, nativeQuery = true)
+    List<String> findSlideIdsForPackageSession(@Param("packageSessionId") String packageSessionId);
+
     @Query(value = """
             SELECT s.id AS slideId,
                    s.title AS slideTitle,

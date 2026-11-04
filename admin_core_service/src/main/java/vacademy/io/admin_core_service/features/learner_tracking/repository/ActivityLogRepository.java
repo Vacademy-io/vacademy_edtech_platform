@@ -2310,6 +2310,42 @@ public interface ActivityLogRepository extends JpaRepository<ActivityLog, String
             @Param("endDate") java.sql.Timestamp endDate);
 
     /**
+     * As findAllProcessedLogsForInsights, limited to logs whose source is one of sourceIds
+     * (assessment ids and slide ids of one batch). Scopes the learner report to a picked batch.
+     */
+    @Query(value = "SELECT * FROM activity_log " +
+            "WHERE user_id = :userId " +
+            "AND status = 'processed' " +
+            "AND source_id IN (:sourceIds) " +
+            "AND created_at BETWEEN :startDate AND :endDate " +
+            "ORDER BY created_at DESC " +
+            "LIMIT 50", nativeQuery = true)
+    List<ActivityLog> findProcessedLogsForInsightsBySources(
+            @Param("userId") String userId,
+            @Param("sourceIds") java.util.Collection<String> sourceIds,
+            @Param("startDate") java.sql.Timestamp startDate,
+            @Param("endDate") java.sql.Timestamp endDate);
+
+    /**
+     * As findProcessedJsonForUsers, limited to logs whose source is one of sourceIds (the
+     * assessments picked in the batch report), as [user_id, processed_json] rows.
+     */
+    @Query(value = "SELECT user_id, processed_json FROM activity_log " +
+            "WHERE user_id IN (:userIds) " +
+            "AND status = 'processed' " +
+            "AND processed_json IS NOT NULL " +
+            "AND source_id IN (:sourceIds) " +
+            "AND created_at BETWEEN :startDate AND :endDate " +
+            "ORDER BY created_at DESC " +
+            "LIMIT :maxRows", nativeQuery = true)
+    List<Object[]> findProcessedJsonForUsersAndSources(
+            @Param("userIds") List<String> userIds,
+            @Param("sourceIds") java.util.Collection<String> sourceIds,
+            @Param("startDate") java.sql.Timestamp startDate,
+            @Param("endDate") java.sql.Timestamp endDate,
+            @Param("maxRows") int maxRows);
+
+    /**
      * Processed analysis JSON for a whole cohort within a date range, newest first and capped by
      * maxRows, as [user_id, processed_json] rows. Used by the batch report to roll topic mastery
      * up across a batch and count the learners behind each topic. Only these two columns are

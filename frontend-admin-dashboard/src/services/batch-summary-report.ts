@@ -71,6 +71,7 @@ export type BatchLearnerBand = 'STRONG' | 'AVERAGE' | 'WEAK' | 'NOT_ASSESSED';
 
 export interface BatchSummaryReport {
     package_session_id: string | null;
+    package_session_ids?: string[] | null;
     batch_name: string | null;
     institute_name: string | null;
     brand_color: string | null;
@@ -136,6 +137,9 @@ export interface BatchSummaryReport {
         avg_time_minutes: number | null;
         modules: number;
     }[] | null;
+    /** Every assessment attempted in the window, for the assessment picker. */
+    available_assessments?: { assessment_id: string; name: string | null; date: string | null }[] | null;
+    assessment_ids?: string[] | null;
     activity: {
         rank: number | null;
         user_id: string;
@@ -149,10 +153,14 @@ export interface BatchSummaryReport {
 export interface BatchSummaryRequest {
     /** Omitted for the all-batches report. */
     package_session_id?: string;
+    /** Several batches together (two or more); omitted for one batch or all batches. */
+    package_session_ids?: string[];
     batch_name?: string;
     start_date: string;
     end_date: string;
     sections?: BatchReportSection[];
+    /** Limit the report to these assessments; omitted means all of them. */
+    assessment_ids?: string[];
 }
 
 export type BatchReportAudience = 'TEACHERS' | 'PARENTS';
