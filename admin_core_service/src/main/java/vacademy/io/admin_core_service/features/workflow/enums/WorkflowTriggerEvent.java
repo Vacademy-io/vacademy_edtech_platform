@@ -7,6 +7,10 @@ public enum WorkflowTriggerEvent {
     SEND_LEARNER_CREDENTIALS,
     SUB_ORG_MEMBER_ENROLLMENT,
     SUB_ORG_MEMBER_TERMINATION,
+    // Why someone left a sub-org, fired alongside the events above. Keyed by eventId = packageSessionId.
+    SUB_ORG_ADMIN_TERMINATED,
+    SUB_ORG_STAFF_REMOVED,
+    SUB_ORG_STAFF_CASCADE_TERMINATED,
 
     // Existing - Audience / CRM
     AUDIENCE_LEAD_SUBMISSION,

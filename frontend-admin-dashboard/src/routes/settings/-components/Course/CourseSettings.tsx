@@ -8,6 +8,7 @@ import { CourseSettingsData } from '@/types/course-settings';
 import { useCourseSettings } from '@/hooks/useCourseSettings';
 import UserIdentifierSettings from '../UserIdentifierSettings';
 import TerminationReasonSettings from '../TerminationReasonSettings';
+import SubOrgAdminExitCascadeSettings from '../SubOrgAdminExitCascadeSettings';
 import { TutorModeDefaultsCard } from './TutorModeDefaultsCard';
 import { TutorInsightsCard } from '@/components/common/tutor/TutorInsightsCard';
 
@@ -100,6 +101,7 @@ const CourseSettings = () => {
             <TutorInsightsCard />
             <UserIdentifierSettings />
             <TerminationReasonSettings />
+            <SubOrgAdminExitCascadeSettings />
         </div>
     );
 };

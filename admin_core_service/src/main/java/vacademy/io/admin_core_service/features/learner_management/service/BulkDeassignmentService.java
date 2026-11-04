@@ -14,6 +14,7 @@ import vacademy.io.admin_core_service.features.institute_learner.repository.Stud
 import vacademy.io.admin_core_service.features.learner_management.dto.*;
 import vacademy.io.admin_core_service.features.packages.service.PackageSessionService;
 import vacademy.io.admin_core_service.features.stock_hold.service.StockHoldService;
+import vacademy.io.admin_core_service.features.suborg.service.SubOrgExitService;
 import vacademy.io.admin_core_service.features.user_subscription.entity.UserPlan;
 import vacademy.io.admin_core_service.features.user_subscription.repository.UserPlanRepository;
 import vacademy.io.admin_core_service.features.user_subscription.service.PaymentDeletionService;
@@ -53,6 +54,7 @@ public class BulkDeassignmentService {
     private final CourseRemovalHistoryService courseRemovalHistoryService;
     private final StockHoldService stockHoldService;
     private final UserPlanRepository userPlanRepository;
+    private final SubOrgExitService subOrgExitService;
 
     private static final String MODE_SOFT = "SOFT";
     private static final String MODE_HARD = "HARD";
@@ -127,11 +129,25 @@ public class BulkDeassignmentService {
 
         for (String packageSessionId : request.getPackageSessionIds()) {
             for (String userId : allUserIds) {
+                // Read first: a hard terminate on a plan deletes the mapping that says who they were.
+                Optional<SubOrgExitService.Membership> subOrgMembership = dryRun
+                        ? Optional.empty()
+                        : subOrgExitService.captureMembership(userId, packageSessionId, request.getInstituteId());
                 BulkDeassignResponseDTO.DeassignResultItemDTO result = processDeassignment(userId, userMap,
                         packageSessionId,
                         request.getInstituteId(), mode, accessTillDate, dryRun, historyByUser.get(userId),
                         adminUserId);
                 results.add(result);
+
+                if (subOrgMembership.isPresent() && "SUCCESS".equals(result.getStatus())) {
+                    if (MODE_HARD.equals(mode)) {
+                        subOrgExitService.onHardExit(userId, packageSessionId, request.getInstituteId(),
+                                adminUserId, subOrgMembership.get());
+                    } else {
+                        subOrgExitService.onSoftCancel(userId, packageSessionId, request.getInstituteId(),
+                                adminUserId, subOrgMembership.get(), accessTillDate);
+                    }
+                }
 
                 if (!dryRun && MODE_HARD.equals(mode) && "SUCCESS".equals(result.getStatus())) {
                     terminatedPackageSessionsByUser
@@ -165,6 +181,30 @@ public class BulkDeassignmentService {
         terminatedPackageSessionsByUser.forEach((userId, packageSessionIds) ->
                 learnerTerminationWorkflowHelper.fireTerminationWorkflows(
                         userId, packageSessionIds, instituteId, adminUserId));
+    }
+
+    /**
+     * Hard-terminates people leaving because their sub-org admin left. Same removal as a hard
+     * de-assign, LEARNER_TERMINATION included, but it does not report them as individually removed.
+     */
+    public List<BulkDeassignResponseDTO.DeassignResultItemDTO> terminateForSubOrgExit(
+            List<String> userIds, String packageSessionId, String instituteId, String actorUserId) {
+        if (CollectionUtils.isEmpty(userIds)) {
+            return List.of();
+        }
+        Map<String, UserDTO> userMap = fetchUserDetails(new LinkedHashSet<>(userIds));
+        List<BulkDeassignResponseDTO.DeassignResultItemDTO> results = new ArrayList<>();
+        Map<String, List<String>> terminated = new LinkedHashMap<>();
+        for (String userId : userIds) {
+            BulkDeassignResponseDTO.DeassignResultItemDTO result = processDeassignment(userId, userMap,
+                    packageSessionId, instituteId, MODE_HARD, null, false, null, actorUserId);
+            results.add(result);
+            if ("SUCCESS".equals(result.getStatus())) {
+                terminated.put(userId, List.of(packageSessionId));
+            }
+        }
+        fireTerminationWorkflows(terminated, instituteId, actorUserId);
+        return results;
     }
 
     // ========================= PRIVATE METHODS =========================

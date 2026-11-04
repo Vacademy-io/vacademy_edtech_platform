@@ -1,0 +1,19 @@
+{
+    "loading": "Loading...",
+    "header": {
+        "title": "{{term}} admin leaving",
+        "description": "Choose what happens to a {{term}}'s members when its admin's access is ended."
+    },
+    "enabled": {
+        "label": "Remove members when the admin leaves",
+        "description": "When a person ends the access of the last active admin of a {{term}}, its other members in that course lose access too: straight away on a hard terminate, or on the last access date on a soft cancel. Expired memberships are not affected."
+    },
+    "saveButton": {
+        "saving": "Saving...",
+        "save": "Save Changes"
+    },
+    "toasts": {
+        "saveSuccess": "Setting saved",
+        "saveError": "Failed to save setting"
+    }
+}
