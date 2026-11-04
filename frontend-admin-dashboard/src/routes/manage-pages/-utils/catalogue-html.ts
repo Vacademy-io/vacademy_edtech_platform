@@ -52,12 +52,12 @@ const ALLOWED_ATTR = [
    bespoke SECTION does, so page mode widens three things and nothing else:
    SVG (AI-authored pages are full of inline icons), the action-hook data
    attributes, and the size caps. Scripts, forms and iframes stay out. */
-const SVG_TAGS = [
+export const SVG_TAGS = [
     'svg', 'path', 'g', 'defs', 'circle', 'ellipse', 'rect', 'line', 'polyline',
     'polygon', 'text', 'tspan', 'title', 'desc', 'use', 'symbol', 'mask',
     'clipPath', 'linearGradient', 'radialGradient', 'stop', 'pattern',
 ];
-const SVG_ATTR = [
+export const SVG_ATTR = [
     'viewBox', 'd', 'fill', 'stroke', 'stroke-width', 'stroke-linecap',
     'stroke-linejoin', 'stroke-dasharray', 'cx', 'cy', 'r', 'rx', 'ry',
     'x', 'y', 'x1', 'y1', 'x2', 'y2', 'points', 'transform', 'opacity',
