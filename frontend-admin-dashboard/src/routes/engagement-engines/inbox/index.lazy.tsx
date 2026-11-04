@@ -214,7 +214,12 @@ function TaskInboxPage() {
 
     // Labels come from t, so the list is built every render (not memoised).
     const FILTERS = buildFilters(t);
-    const statuses = FILTERS.find((f) => f.key === activeKey)?.statuses ?? 'OPEN,ACKED';
+    // A call scheduled through an approved task ends as DONE, not SENT, and the report counts those
+    // calls too, so the Sent tab of the calls channel reads both.
+    const statusesOf = (f: { key: InboxFilterKey; statuses: string }) =>
+        f.key === 'sent' && filters.channel === 'AI_CALL' ? 'SENT,DONE' : f.statuses;
+    const activeFilter = FILTERS.find((f) => f.key === activeKey);
+    const statuses = activeFilter ? statusesOf(activeFilter) : 'OPEN,ACKED';
     // What the server is asked for. Waited is NO_OP and approvals CRM by definition; the rest of
     // the tabs take the kind from the select.
     const serverFilters = (tab: InboxFilterKey, withOutcome: boolean): TaskListFilters => ({
@@ -248,8 +253,8 @@ function TaskInboxPage() {
         queries: FILTERS.map((f) => {
             const tabFilters = serverFilters(f.key, false);
             return {
-                queryKey: ['engagementTasks', instituteId, f.statuses, 0, 1, tabFilters],
-                queryFn: () => listTasks(instituteId, f.statuses, 0, 1, tabFilters),
+                queryKey: ['engagementTasks', instituteId, statusesOf(f), 0, 1, tabFilters],
+                queryFn: () => listTasks(instituteId, statusesOf(f), 0, 1, tabFilters),
                 enabled: !!instituteId && !filters.outcome,
                 staleTime: 60 * 1000,
             };
