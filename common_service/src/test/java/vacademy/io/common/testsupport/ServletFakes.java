@@ -54,6 +54,7 @@ public final class ServletFakes {
                     new Class<?>[] { HttpServletRequest.class },
                     (p, m, args) -> switch (m.getName()) {
                         case "getRequestURI" -> uri;
+                        case "getRequestURL" -> new StringBuffer(uri);
                         case "getMethod" -> method;
                         case "getQueryString" -> queryString;
                         case "getHeader" -> headers.get((String) args[0]);

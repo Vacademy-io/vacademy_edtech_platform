@@ -115,7 +115,12 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(VacademyException.class)
     public ResponseEntity<ErrorInfo> handleExceptionForOthers(HttpServletRequest req, VacademyException ex) {
-        log.error("Vacademy Error: {} Stack Trace: {}", ex, ex.getStackTrace());
+        // A 4xx is a rule refusing the request, not a failure; error logs become Sentry issues.
+        if (ex.getStatus().is4xxClientError()) {
+            log.info("Request refused ({}): {}", ex.getStatus().value(), ex.getMessage());
+        } else {
+            log.error("Vacademy Error: {} Stack Trace: {}", ex, ex.getStackTrace());
+        }
         return ResponseEntity.status(ex.getStatus()).body(new ErrorInfo(req.getRequestURL().toString(), ex.getLocalizedMessage(), String.valueOf(ex.getStatus()), new Date()));
     }
 
