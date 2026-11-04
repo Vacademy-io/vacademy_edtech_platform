@@ -219,4 +219,16 @@ class EngagementBouncedEmailTest {
                 .get("emailUnavailable").contains("no email address"));
     }
 
+    @Test
+    @DisplayName("addresses a website template prints are not addresses; real ones and free mail are")
+    void templateAddresses() {
+        assertTrue(ContactResolver.isTemplateAddress("filler@godaddy.com"));
+        assertTrue(ContactResolver.isTemplateAddress("Contact@MySite.com"));
+        assertTrue(ContactResolver.isTemplateAddress("info@example.com"));
+        assertTrue(ContactResolver.isTemplateAddress("yourname@realschool.in"));
+        assertFalse(ContactResolver.isTemplateAddress("info@academy-one.test"));
+        assertFalse(ContactResolver.isTemplateAddress("admissions@company-school.in"));
+        assertFalse(ContactResolver.isTemplateAddress("someacademy@gmail.com"));
+        assertFalse(ContactResolver.isTemplateAddress("not-an-address"));
+    }
 }
