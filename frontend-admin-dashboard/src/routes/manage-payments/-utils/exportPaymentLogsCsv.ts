@@ -1,4 +1,5 @@
 import Papa from 'papaparse';
+import { paymentCourseNames, paymentShares } from './paymentGroup';
 import { readRecordedPaymentDetails } from '@/services/offline-payment-modes';
 import { fetchPaymentLogs } from '@/services/payment-logs';
 import type { PaymentLogEntry, PaymentLogsRequest } from '@/types/payment-logs';
@@ -67,6 +68,10 @@ const toCsvTimestamp = (log: PaymentLogEntry['payment_log']): string => {
 
 const toCsvRow = (entry: PaymentLogEntry): Record<string, string | number> => {
     const { payment_log: log, user_plan: plan, user } = entry;
+    // One payment for several courses (package payment / multi-course checkout) is one line: its
+    // total under Amount, every course named, and the per-course shares in the last column.
+    const shares = paymentShares(entry);
+    const courseNames = paymentCourseNames(entry);
     return {
         'Date & Time': toCsvTimestamp(log),
         'User Name': user?.full_name ?? '',
@@ -82,13 +87,23 @@ const toCsvRow = (entry: PaymentLogEntry): Record<string, string | number> => {
         'Payment Reference': log?.payment_reference ?? '',
         'Plan Status': plan?.status ?? '',
         'Payment Type': derivePaymentTypeLabel(entry),
-        'Course / Membership': plan?.enroll_invite?.name ?? '',
+        'Course / Membership':
+            courseNames.length > 1 ? courseNames.join(' + ') : (plan?.enroll_invite?.name ?? ''),
         // Copies on the plan; blank for invoice rows, which have no plan behind them.
         Quantity: plan ? getPlanQuantity(plan) : '',
         'Invite Code': plan?.enroll_invite?.invite_code ?? '',
         Organization: plan?.source === 'SUB_ORG' ? (plan?.sub_org_details?.name ?? '') : '',
         'Payment Plan': plan?.payment_plan_dto?.name ?? '',
         'Transaction ID': log?.transaction_id ?? '',
+        'Course Split':
+            shares.length > 1
+                ? shares
+                      .map(
+                          (line) =>
+                              `${line?.user_plan?.enroll_invite?.name ?? '-'}: ${line?.payment_log?.payment_amount ?? ''}`
+                      )
+                      .join('; ')
+                : '',
     };
 };
 

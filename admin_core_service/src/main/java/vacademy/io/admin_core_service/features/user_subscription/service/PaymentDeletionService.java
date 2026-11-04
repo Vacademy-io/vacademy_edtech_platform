@@ -231,19 +231,149 @@ public class PaymentDeletionService {
             throw new VacademyException(TURNED_OFF_MESSAGE);
         }
         try {
-            return removePayment(paymentLogId, instituteId, userId);
+            return removePayment(paymentLogId, instituteId, userId, true);
         } catch (VacademyException e) {
             recordBlocked("PAYMENT", paymentLogId, instituteId, userId, e.getMessage(), 400);
             throw e;
         }
     }
 
-    private Map<String, Object> removePayment(String paymentLogId, String instituteId, String userId) {
+    /**
+     * Removes a payment. A payment stored per course (an admission package payment, a multi-course
+     * checkout: payment_log.payment_group_id) is one payment with one receipt, so every row of it
+     * goes together, and its shared receipt with the last of them: deleting one course's share alone
+     * would leave the others voided against a receipt that no longer exists. Every row is checked
+     * before anything changes.
+     *
+     * @param wholePayment false for one row alone: removing one course's payment history goes through
+     *                     that course's rows only, and must never reach a course the learner keeps
+     *                     (its own checks decide what may go together, see {@link #previewPlanHistory})
+     */
+    private Map<String, Object> removePayment(String paymentLogId, String instituteId, String userId,
+                                              boolean wholePayment) {
         paymentVoidService.assertNotSubOrgAdmin(userId);
         Map<String, Object> snapshot = paymentAuditSnapshot(paymentLogId);
 
         PaymentLog paymentLog = paymentLogRepository.findById(paymentLogId)
                 .orElseThrow(() -> new VacademyException("Payment not found: " + paymentLogId));
+        String groupId = paymentLog.getPaymentGroupId();
+        List<PaymentLog> rows = wholePayment ? rowsOfPayment(paymentLog) : new ArrayList<>(List.of(paymentLog));
+        for (PaymentLog row : rows) {
+            assertDeletable(row);
+        }
+
+        // 1. Rows that still count are voided first — this also checks the institute and puts the
+        //    installments, invoices and ledger right (the void takes every paid row of the payment
+        //    at once). Rows already voided are checked here instead.
+        for (PaymentLog row : rows) {
+            if ("PAID".equalsIgnoreCase(row.getPaymentStatus())) {
+                if (wholePayment) {
+                    paymentVoidService.voidPayment(row.getId(), instituteId, "Deleted permanently", userId);
+                } else {
+                    paymentVoidService.voidSingleRow(row.getId(), instituteId, "Deleted permanently", userId);
+                }
+            } else {
+                paymentVoidService.assertBelongsToInstitute(row, instituteId);
+            }
+        }
+
+        // 2. Work out which invoices go with it: one generated FROM this payment that no other
+        //    payment shares. A bill it had settled stays — the void already reopened it.
+        entityManager.flush();
+        java.util.Set<String> rowIds = new java.util.LinkedHashSet<>();
+        rows.forEach(r -> rowIds.add(r.getId()));
+        List<String> invoicesToDelete = new ArrayList<>();
+        List<String> deletedInvoices = new ArrayList<>();
+        for (String rowId : rowIds) {
+            for (InvoicePaymentLogMapping mapping : invoicePaymentLogMappingRepository.findAllByPaymentLogId(rowId)) {
+                Invoice invoice = mapping.getInvoice();
+                if (invoice == null || isBill(invoice.getSource()) || invoicesToDelete.contains(invoice.getId())) {
+                    continue;
+                }
+                boolean shared = invoicePaymentLogMappingRepository.findByInvoiceId(invoice.getId()).stream()
+                        .anyMatch(m -> m.getPaymentLog() != null && !rowIds.contains(m.getPaymentLog().getId()));
+                if (!shared) {
+                    invoicesToDelete.add(invoice.getId());
+                    deletedInvoices.add(invoice.getInvoiceNumber() != null ? invoice.getInvoiceNumber() : invoice.getId());
+                }
+            }
+        }
+        Double amount = null;
+        for (PaymentLog row : rows) {
+            if (row.getPaymentAmount() != null) amount = (amount == null ? 0d : amount) + row.getPaymentAmount();
+        }
+        String currency = paymentLog.getCurrency();
+
+        // 3. Remove the rows with plain SQL, children before parents. Deleting through JPA would
+        //    trip UserPlan.paymentLogs (CascadeType.ALL): a loaded plan re-saves the payment.
+        //    Everything the void changed was flushed above, so nothing pending is lost.
+        //    The ledger credit and the reversal the void posted net to zero; both go.
+        for (String rowId : rowIds) {
+            execute("DELETE FROM user_account_ledger WHERE reference_id = ?1 "
+                    + "AND event_type IN ('CREDIT_PAYMENT', 'CREDIT_REVERSAL')", rowId);
+            execute("DELETE FROM student_fee_allocation_ledger WHERE payment_log_id = ?1", rowId);
+            execute("DELETE FROM payment_log_line_item WHERE payment_log_id = ?1", rowId);
+            execute("DELETE FROM invoice_payment_log_mapping WHERE payment_log_id = ?1", rowId);
+        }
+        for (String invoiceId : invoicesToDelete) {
+            removeInvoiceRows(invoiceId);
+        }
+        for (String rowId : rowIds) {
+            int removed = execute("DELETE FROM payment_log WHERE id = ?1", rowId);
+            if (removed != 1) {
+                throw new VacademyException("Payment could not be deleted, nothing was changed");
+            }
+        }
+        // A checkout's parent row is kept, but once none of its course rows are left nothing would
+        // stop reports counting its total again, for money that was just deleted.
+        if (StringUtils.hasText(groupId)) {
+            execute("UPDATE payment_log SET payment_status = 'VOIDED', status = 'VOIDED' "
+                    + "WHERE id = ?1 AND user_plan_id IS NULL AND payment_status = 'PAID' "
+                    + "AND NOT EXISTS (SELECT 1 FROM payment_log c WHERE c.payment_group_id = ?1 "
+                    + "AND c.id <> ?1 AND c.user_plan_id IS NOT NULL)", groupId);
+        }
+        // Drop the managed copies of rows that no longer exist.
+        entityManager.clear();
+
+        snapshot.put("invoices_deleted", deletedInvoices);
+        if (rowIds.size() > 1) {
+            snapshot.put("payment_rows_deleted", new ArrayList<>(rowIds));
+        }
+        recordDeleted("PAYMENT", paymentLogId, instituteId, userId,
+                "permanently deleted payment of " + amount + " " + (currency != null ? currency : "")
+                        + (rowIds.size() > 1 ? " (" + rowIds.size() + " course shares)" : "")
+                        + (deletedInvoices.isEmpty() ? "" : " and invoice(s) " + String.join(", ", deletedInvoices)),
+                snapshot);
+        log.info("[PaymentDelete] paymentLog={} rows={} amount={} institute={} deletedBy={} invoicesDeleted={}",
+                paymentLogId, rowIds, amount, instituteId, userId, deletedInvoices);
+        Map<String, Object> result = new LinkedHashMap<>();
+        result.put("payment_log_id", paymentLogId);
+        result.put("amount", amount);
+        result.put("currency", currency);
+        result.put("invoices_deleted", deletedInvoices);
+        result.put("payments_deleted", rowIds.size());
+        return result;
+    }
+
+    /**
+     * {@code paymentLog} plus the other course rows of the same payment when it was stored per
+     * course (V642), requested row first. Rows that never counted (pending, failed) are not part of
+     * what the admin sees as this payment and are left alone, and so is a checkout's planless parent:
+     * it holds no installment or ledger effect of its own.
+     */
+    private List<PaymentLog> rowsOfPayment(PaymentLog paymentLog) {
+        List<PaymentLog> rows = new ArrayList<>();
+        rows.add(paymentLog);
+        if (StringUtils.hasText(paymentLog.getPaymentGroupId())) {
+            for (PaymentLog sibling : paymentLogRepository.findByPaymentGroupIdOrderByCreatedAtAsc(
+                    paymentLog.getPaymentGroupId())) {
+                if (PaymentVoidService.isDeletedWith(paymentLog, sibling)) rows.add(sibling);
+            }
+        }
+        return rows;
+    }
+
+    private void assertDeletable(PaymentLog paymentLog) {
         String vendor = paymentLog.getVendor() != null ? paymentLog.getVendor().trim().toUpperCase() : "";
         if (!DELETABLE_VENDORS.contains(vendor)) {
             throw new VacademyException("Only offline or manually recorded payments can be deleted. "
@@ -254,70 +384,12 @@ public class PaymentDeletionService {
             throw new VacademyException("Only a paid or voided payment can be deleted (status: "
                     + paymentLog.getPaymentStatus() + ")");
         }
-        if (countReferences("session_guest_registrations", "payment_log_id", paymentLogId) > 0
-                || countReferences("user_plan_change_request", "payment_log_id", paymentLogId) > 0) {
+        String id = paymentLog.getId();
+        if (countReferences("session_guest_registrations", "payment_log_id", id) > 0
+                || countReferences("user_plan_change_request", "payment_log_id", id) > 0) {
             throw new VacademyException("This payment is linked to a live-class registration or a plan "
                     + "change and cannot be deleted. Void it instead.");
         }
-
-        // 1. A payment that still counts is voided first — this also checks the institute and puts
-        //    the installments, invoices and ledger right. A voided one is checked here instead.
-        if ("PAID".equals(status)) {
-            paymentVoidService.voidPayment(paymentLogId, instituteId, "Deleted permanently", userId);
-        } else {
-            paymentVoidService.assertBelongsToInstitute(paymentLog, instituteId);
-        }
-
-        // 2. Work out which invoices go with it: one generated FROM this payment that no other
-        //    payment shares. A bill it had settled stays — the void already reopened it.
-        entityManager.flush();
-        List<String> invoicesToDelete = new ArrayList<>();
-        List<String> deletedInvoices = new ArrayList<>();
-        for (InvoicePaymentLogMapping mapping : invoicePaymentLogMappingRepository.findAllByPaymentLogId(paymentLogId)) {
-            Invoice invoice = mapping.getInvoice();
-            if (invoice == null || isBill(invoice.getSource())) continue;
-            boolean shared = invoicePaymentLogMappingRepository.findByInvoiceId(invoice.getId()).stream()
-                    .anyMatch(m -> m.getPaymentLog() != null && !paymentLogId.equals(m.getPaymentLog().getId()));
-            if (!shared) {
-                invoicesToDelete.add(invoice.getId());
-                deletedInvoices.add(invoice.getInvoiceNumber() != null ? invoice.getInvoiceNumber() : invoice.getId());
-            }
-        }
-        Object amount = paymentLog.getPaymentAmount();
-        String currency = paymentLog.getCurrency();
-
-        // 3. Remove the rows with plain SQL, children before parents. Deleting through JPA would
-        //    trip UserPlan.paymentLogs (CascadeType.ALL): a loaded plan re-saves the payment.
-        //    Everything the void changed was flushed above, so nothing pending is lost.
-        //    The ledger credit and the reversal the void posted net to zero; both go.
-        execute("DELETE FROM user_account_ledger WHERE reference_id = ?1 "
-                + "AND event_type IN ('CREDIT_PAYMENT', 'CREDIT_REVERSAL')", paymentLogId);
-        execute("DELETE FROM student_fee_allocation_ledger WHERE payment_log_id = ?1", paymentLogId);
-        execute("DELETE FROM payment_log_line_item WHERE payment_log_id = ?1", paymentLogId);
-        execute("DELETE FROM invoice_payment_log_mapping WHERE payment_log_id = ?1", paymentLogId);
-        for (String invoiceId : invoicesToDelete) {
-            removeInvoiceRows(invoiceId);
-        }
-        int removed = execute("DELETE FROM payment_log WHERE id = ?1", paymentLogId);
-        if (removed != 1) {
-            throw new VacademyException("Payment could not be deleted, nothing was changed");
-        }
-        // Drop the managed copies of rows that no longer exist.
-        entityManager.clear();
-
-        snapshot.put("invoices_deleted", deletedInvoices);
-        recordDeleted("PAYMENT", paymentLogId, instituteId, userId,
-                "permanently deleted payment of " + amount + " " + (currency != null ? currency : "")
-                        + (deletedInvoices.isEmpty() ? "" : " and invoice(s) " + String.join(", ", deletedInvoices)),
-                snapshot);
-        log.info("[PaymentDelete] paymentLog={} amount={} institute={} deletedBy={} invoicesDeleted={}",
-                paymentLogId, amount, instituteId, userId, deletedInvoices);
-        Map<String, Object> result = new LinkedHashMap<>();
-        result.put("payment_log_id", paymentLogId);
-        result.put("amount", amount);
-        result.put("currency", currency);
-        result.put("invoices_deleted", deletedInvoices);
-        return result;
     }
 
     // ------------------------------------------------------------------ invoice
@@ -595,7 +667,7 @@ public class PaymentDeletionService {
         List<?> settled = entityManager.createNativeQuery(REMOVABLE_PAYMENTS)
                 .setParameter(1, userPlanId).getResultList();
         for (Object id : settled) {
-            removePayment(String.valueOf(id), instituteId, userId);
+            removePayment(String.valueOf(id), instituteId, userId, false);
         }
 
         // 2. Invoices of this enrolment that are still there, then the payments that never

@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { paymentCourseNames } from '../-utils/paymentGroup';
 import { useQueries, useQuery, useQueryClient, type UseQueryResult } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { formatDistanceToNow } from 'date-fns';
@@ -500,7 +501,8 @@ function PaymentHistory({
                 {entries.map((entry) => {
                     const log = entry.payment_log;
                     const meta = paymentStatusMeta(entryPaymentStatus(entry));
-                    const detail = [entry.user_plan?.enroll_invite?.name, log?.transaction_id]
+                    const courses = paymentCourseNames(entry).join(' + ');
+                    const detail = [courses || entry.user_plan?.enroll_invite?.name, log?.transaction_id]
                         .filter(Boolean)
                         .join(' · ');
                     const body = (
@@ -603,6 +605,8 @@ export function DueLearnerDetailSheet({
             fetchPaymentLogs(0, PAYMENTS_SHOWN, {
                 user_id: learner!.user_id,
                 package_session_ids: filters?.package_session_ids,
+                // A package payment is one payment here too, not one line per course.
+                group_payments: true,
             }),
         enabled: open && Boolean(learner?.user_id),
         staleTime: 60_000,

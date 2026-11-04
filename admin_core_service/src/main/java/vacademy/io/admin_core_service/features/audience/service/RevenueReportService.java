@@ -12,6 +12,7 @@ import vacademy.io.admin_core_service.features.audience.dto.reports.RevenueForec
 import vacademy.io.admin_core_service.features.audience.dto.reports.RevenuePaymentsDTO;
 import vacademy.io.admin_core_service.features.audience.dto.reports.RevenueReportDTO;
 import vacademy.io.admin_core_service.features.auth_service.service.AuthService;
+import vacademy.io.admin_core_service.features.user_subscription.repository.PaymentGroupSql;
 import vacademy.io.common.auth.dto.UserDTO;
 
 import java.sql.Timestamp;
@@ -104,16 +105,23 @@ public class RevenueReportService {
      * PAID payments in-window from the scoped converted leads. payment_amount NOT NULL keeps
      * SUM/COUNT aligned. The window and {@code pay_day} follow {@link ReportPaymentSql}: a hand-recorded
      * payment counts on its transaction date, not on the day it was entered.
+     *
+     * <p>One row per payment_log row, but a payment stored per course (admission package, multi-course
+     * checkout) is several rows: money is the SUM of the rows, and "payments" counts
+     * {@code pay_key} once ({@link PaymentGroupSql}). A checkout's planless parent row repeats its
+     * courses' money and is left out.
      */
     private static final String PAID_CTE = """
             paid AS (
                 SELECT c.user_id, c.source_type, c.counsellor_id,
-                       pl.payment_amount, """ + ReportPaymentSql.paymentDay("pl") + """
+                       pl.payment_amount,""" + PaymentGroupSql.GROUP_KEY_PL + """
+                    AS pay_key,""" + ReportPaymentSql.paymentDay("pl") + """
                     AS pay_day
                 FROM payment_log pl
                 JOIN conv c ON c.user_id = pl.user_id
                 WHERE pl.payment_status = 'PAID'
                   AND pl.payment_amount IS NOT NULL
+                  AND""" + PaymentGroupSql.NOT_ORDER_PARENT_PL + """
                   AND """ + ReportPaymentSql.inWindow("pl") + """
 
             )
@@ -122,7 +130,7 @@ public class RevenueReportService {
     private static final String REVENUE_TOTALS_SQL = "WITH " + CONV_CTE + ", " + PAID_CTE + """
             SELECT COALESCE(SUM(payment_amount), 0) AS revenue,
                    COUNT(DISTINCT user_id)          AS paying_leads,
-                   COUNT(*)                         AS payments
+                   COUNT(DISTINCT pay_key)          AS payments
             FROM paid
             """;
 
@@ -130,7 +138,7 @@ public class RevenueReportService {
             SELECT source_type,
                    COALESCE(SUM(payment_amount), 0) AS revenue,
                    COUNT(DISTINCT user_id)          AS paying_leads,
-                   COUNT(*)                         AS payments
+                   COUNT(DISTINCT pay_key)          AS payments
             FROM paid
             GROUP BY source_type
             ORDER BY revenue DESC, source_type
@@ -140,7 +148,7 @@ public class RevenueReportService {
             SELECT paid.counsellor_id              AS user_id,
                    COALESCE(SUM(paid.payment_amount), 0) AS revenue,
                    COUNT(DISTINCT paid.user_id)    AS paying_leads,
-                   COUNT(*)                        AS payments
+                   COUNT(DISTINCT paid.pay_key)    AS payments
             FROM paid
             WHERE paid.counsellor_id IS NOT NULL
             GROUP BY paid.counsellor_id
@@ -150,7 +158,7 @@ public class RevenueReportService {
     private static final String REVENUE_TREND_SQL = "WITH " + CONV_CTE + ", " + PAID_CTE + """
             SELECT pay_day AS day,
                    COALESCE(SUM(payment_amount), 0) AS revenue,
-                   COUNT(*)                         AS payments
+                   COUNT(DISTINCT pay_key)          AS payments
             FROM paid
             GROUP BY 1
             ORDER BY 1
@@ -248,27 +256,43 @@ public class RevenueReportService {
      * The payment rows behind {@link #PAID_CTE}, with the student, receipt and course. Same CTEs, so
      * a counsellor-scoped list sums to that counsellor's Collected. Totals are window functions,
      * computed before the LIMIT, so they cover every match.
+     * One row per payment: the per-course rows of one payment (admission package, multi-course
+     * checkout) come back as a single row with their amounts summed, every receipt number and every
+     * course, so the count here matches the Payments figure of the tab.
      */
     private static final String PAYMENTS_SQL = "WITH " + CONV_CTE + ", " + """
             paid AS (
                 SELECT pl.id, pl.user_id, pl.user_plan_id, c.source_type, c.counsellor_id,
                        pl.payment_amount, pl.payment_mode, pl.payment_sub_mode, pl.vendor,
-                       pl.payment_reference, pl.created_at,
+                       pl.payment_reference, pl.created_at,""" + PaymentGroupSql.GROUP_KEY_PL + """
+                    AS pay_key,
                        """ + ReportPaymentSql.paymentDay("pl") + """
                     AS pay_day
                 FROM payment_log pl
                 JOIN conv c ON c.user_id = pl.user_id
                 WHERE pl.payment_status = 'PAID'
                   AND pl.payment_amount IS NOT NULL
+                  AND""" + PaymentGroupSql.NOT_ORDER_PARENT_PL + """
                   AND """ + ReportPaymentSql.inWindow("pl") + """
 
             ),
-            page AS (
-                SELECT p.*,
-                       SUM(p.payment_amount) OVER () AS total_amount,
-                       COUNT(*) OVER ()              AS total_count
+            grouped AS (
+                SELECT DISTINCT ON (p.pay_key)
+                       p.pay_key, p.id, p.user_id, p.source_type, p.counsellor_id,
+                       p.payment_mode, p.payment_sub_mode, p.vendor, p.payment_reference,
+                       p.created_at, p.pay_day,
+                       SUM(p.payment_amount) OVER (PARTITION BY p.pay_key) AS payment_amount,
+                       ARRAY_AGG(p.id) OVER (PARTITION BY p.pay_key)           AS log_ids,
+                       ARRAY_AGG(p.user_plan_id) OVER (PARTITION BY p.pay_key) AS plan_ids
                 FROM paid p
-                ORDER BY p.pay_day DESC, p.created_at DESC, p.id
+                ORDER BY p.pay_key, p.created_at, p.id
+            ),
+            page AS (
+                SELECT g.*,
+                       SUM(g.payment_amount) OVER () AS total_amount,
+                       COUNT(*) OVER ()              AS total_count
+                FROM grouped g
+                ORDER BY g.pay_day DESC, g.created_at DESC, g.id
                 LIMIT :limit
             )
             SELECT pg.*,
@@ -277,14 +301,14 @@ public class RevenueReportService {
                    (SELECT string_agg(DISTINCT i.invoice_number, ', ')
                       FROM invoice_payment_log_mapping m
                       JOIN invoice i ON i.id = m.invoice_id
-                     WHERE m.payment_log_id = pg.id) AS receipt,
+                     WHERE m.payment_log_id = ANY(pg.log_ids)) AS receipt,
                    (SELECT string_agg(DISTINCT pk.package_name, ', ')
                       FROM student_session_institute_group_mapping s
                       JOIN package_session ps ON ps.id = s.package_session_id
                       JOIN package pk ON pk.id = ps.package_id
                      WHERE s.user_id = pg.user_id
                        AND s.institute_id = :instituteId
-                       AND s.user_plan_id = pg.user_plan_id) AS courses
+                       AND s.user_plan_id = ANY(pg.plan_ids)) AS courses
             FROM page pg
             LEFT JOIN LATERAL (
                 SELECT full_name, mobile_number FROM student
@@ -391,6 +415,7 @@ public class RevenueReportService {
                 SELECT pl.user_id, SUM(pl.payment_amount) AS revenue
                 FROM payment_log pl
                 WHERE pl.payment_status = 'PAID' AND pl.payment_amount IS NOT NULL
+                  AND""" + PaymentGroupSql.NOT_ORDER_PARENT_PL + """
                 GROUP BY pl.user_id
             )
             SELECT to_char((l.acq AT TIME ZONE 'UTC' AT TIME ZONE :tz), 'YYYY-MM') AS cohort,

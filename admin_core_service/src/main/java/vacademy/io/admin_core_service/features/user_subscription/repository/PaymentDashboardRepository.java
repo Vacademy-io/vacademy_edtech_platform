@@ -49,6 +49,8 @@ public interface PaymentDashboardRepository extends JpaRepository<UserPlan, Stri
         String PAID_ROWS_CTE = """
                 WITH paid_rows AS (
                   SELECT pl.id AS log_id,
+                         """ + PaymentGroupSql.GROUP_KEY_PL + """
+                           AS pay_key,
                          pl.payment_amount AS amount,
                          """ + PaymentLogRepository.PAID_AT + """
                            AS paid_at,
@@ -74,6 +76,7 @@ public interface PaymentDashboardRepository extends JpaRepository<UserPlan, Stri
                        LIMIT 1
                     ) inv ON true
                    WHERE pl.payment_status = 'PAID'
+                     AND""" + PaymentGroupSql.NOT_ORDER_PARENT_PL + """
                      AND """ + PaymentLogRepository.PAID_AT + """
                        >= :startDate
                      AND """ + PaymentLogRepository.PAID_AT + """
@@ -115,17 +118,17 @@ public interface PaymentDashboardRepository extends JpaRepository<UserPlan, Stri
          */
         @Query(value = PAID_ROWS_CTE + SESSION_WEIGHTS_CTE + """
                 SELECT 'TOTAL' AS dimension, CAST(NULL AS varchar) AS bucketKey,
-                       COALESCE(SUM(amount), 0) AS amount, COUNT(*) AS payments,
+                       COALESCE(SUM(amount), 0) AS amount, COUNT(DISTINCT pay_key) AS payments,
                        COUNT(DISTINCT payer_id) AS payers
                   FROM paid_rows
                 UNION ALL
-                SELECT 'SOURCE', source_kind, SUM(amount), COUNT(*), COUNT(DISTINCT payer_id)
+                SELECT 'SOURCE', source_kind, SUM(amount), COUNT(DISTINCT pay_key), COUNT(DISTINCT payer_id)
                   FROM paid_rows GROUP BY source_kind
                 UNION ALL
-                SELECT 'METHOD', method, SUM(amount), COUNT(*), COUNT(DISTINCT payer_id)
+                SELECT 'METHOD', method, SUM(amount), COUNT(DISTINCT pay_key), COUNT(DISTINCT payer_id)
                   FROM paid_rows GROUP BY method
                 UNION ALL
-                SELECT 'BATCH', sw.package_session_id, SUM(r.amount * COALESCE(sw.w, 1)), COUNT(*),
+                SELECT 'BATCH', sw.package_session_id, SUM(r.amount * COALESCE(sw.w, 1)), COUNT(DISTINCT r.pay_key),
                        COUNT(DISTINCT r.payer_id)
                   FROM paid_rows r
                   LEFT JOIN session_weights sw ON sw.enroll_invite_id = r.enroll_invite_id
@@ -141,7 +144,7 @@ public interface PaymentDashboardRepository extends JpaRepository<UserPlan, Stri
         /** Collected per calendar month (yyyy-MM) in the admin's time zone. */
         @Query(value = PAID_ROWS_CTE + """
                 SELECT TO_CHAR(paid_at AT TIME ZONE 'UTC' AT TIME ZONE :timeZone, 'YYYY-MM') AS bucket,
-                       SUM(amount) AS amount, COUNT(*) AS payments, COUNT(DISTINCT payer_id) AS payers
+                       SUM(amount) AS amount, COUNT(DISTINCT pay_key) AS payments, COUNT(DISTINCT payer_id) AS payers
                   FROM paid_rows
                  GROUP BY 1
                  ORDER BY 1
@@ -157,7 +160,7 @@ public interface PaymentDashboardRepository extends JpaRepository<UserPlan, Stri
         /** Collected per calendar day (yyyy-MM-dd) in the admin's time zone. */
         @Query(value = PAID_ROWS_CTE + """
                 SELECT TO_CHAR(paid_at AT TIME ZONE 'UTC' AT TIME ZONE :timeZone, 'YYYY-MM-DD') AS bucket,
-                       SUM(amount) AS amount, COUNT(*) AS payments, COUNT(DISTINCT payer_id) AS payers
+                       SUM(amount) AS amount, COUNT(DISTINCT pay_key) AS payments, COUNT(DISTINCT payer_id) AS payers
                   FROM paid_rows
                  GROUP BY 1
                  ORDER BY 1

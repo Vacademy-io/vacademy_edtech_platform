@@ -200,6 +200,9 @@ export function TransactionsView() {
     const requestFilters: Omit<PaymentLogsRequest, 'institute_id'> = useMemo(() => {
         const filters: Omit<PaymentLogsRequest, 'institute_id'> = {
             sort_columns: { createdAt: 'DESC' },
+            // One row and one count per payment: a package payment or a multi-course checkout is
+            // stored per course, and listing those shares as separate payments doubled them here.
+            group_payments: true,
         };
         if (startDate) filters.start_date_in_utc = startDate;
         if (endDate) filters.end_date_in_utc = endDate;

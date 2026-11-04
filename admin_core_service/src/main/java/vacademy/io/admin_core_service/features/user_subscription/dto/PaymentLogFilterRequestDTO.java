@@ -86,5 +86,14 @@ public class PaymentLogFilterRequestDTO {
      * keeps those columns hidden.
      */
     private Boolean includePlanDates;
+
+    /**
+     * List and count payments rather than payment_log rows: the per-course rows of one payment
+     * (an admission package payment, a multi-course checkout; payment_log.payment_group_id) come
+     * back as one row whose payment_amount is the payment's total, with each course's share in
+     * group_lines. Off unless asked for, so every other caller (the learner app's orders, exports,
+     * widgets) keeps receiving one row per payment_log exactly as before.
+     */
+    private Boolean groupPayments;
 }
 

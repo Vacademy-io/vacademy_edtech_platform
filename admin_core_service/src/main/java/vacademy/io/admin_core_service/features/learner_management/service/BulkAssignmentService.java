@@ -404,6 +404,16 @@ public class BulkAssignmentService {
                         log.error("Could not save admission package for user {}: {}", userId, e.getMessage(), e);
                     }
                     List<String> logs = logsByUser != null ? logsByUser.get(userId) : null;
+                    // The money taken at admission was recorded per course: its rows are one
+                    // payment. A failure here only leaves them ungrouped, never the enrolment.
+                    if (logs != null && logs.size() > 1) {
+                        try {
+                            paymentLogService.assignPaymentGroup(java.util.UUID.randomUUID().toString(), logs);
+                        } catch (Exception e) {
+                            log.error("Could not group admission payment logs {} for user {}: {}",
+                                    logs, userId, e.getMessage(), e);
+                        }
+                    }
                     if (generateInvoiceOnManualEnroll && logs != null && !logs.isEmpty()) {
                         invoiceService.generateCombinedInvoiceAfterCommit(logs, request.getInstituteId());
                     }

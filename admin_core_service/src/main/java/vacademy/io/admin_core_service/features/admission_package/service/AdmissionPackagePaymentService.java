@@ -58,6 +58,13 @@ public class AdmissionPackagePaymentService {
     private final FeeBillCancellationService feeBillCancellationService;
     private final FeeBillCancellationRepository feeBillCancellationRepository;
 
+    /**
+     * Marks a package payment's per-course rows as one payment (V642). Field-injected and
+     * optional so the constructor stays as it is; without it the rows are simply not grouped.
+     */
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    private vacademy.io.admin_core_service.features.user_subscription.service.PaymentLogService paymentLogService;
+
     /** A package with its courses and each course's live fee bills, in package order. */
     private record Loaded(AdmissionPackage pkg, List<AdmissionPackageCourse> courses, List<UserPlan> plans,
                           List<List<StudentFeePayment>> bills) {
@@ -129,6 +136,10 @@ public class AdmissionPackagePaymentService {
                     .build();
             paymentLogIds.add(cpoSideViewService.recordOfflinePaymentLog(
                     loaded.courses().get(i).getUserPlanId(), part, adminUserId));
+        }
+        // One payment from the learner, recorded per course: its rows show and count as one.
+        if (paymentLogService != null && paymentLogIds.size() > 1) {
+            paymentLogService.assignPaymentGroup(java.util.UUID.randomUUID().toString(), paymentLogIds);
         }
         if (req.isGenerateInvoice()) {
             invoiceService.generateCombinedInvoiceAfterCommit(paymentLogIds, loaded.pkg().getInstituteId());

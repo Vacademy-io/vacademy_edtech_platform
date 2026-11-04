@@ -1,6 +1,12 @@
 import { describe, expect, it, vi } from 'vitest';
-import { fireEvent, render, screen } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+
+const mockFetchRows = vi.hoisted(() => vi.fn());
+vi.mock('@/services/payment-logs', async (importOriginal) => ({
+    ...(await importOriginal<typeof import('@/services/payment-logs')>()),
+    fetchPaymentRows: mockFetchRows,
+}));
 
 vi.mock('react-i18next', () => ({
     useTranslation: () => ({ t: (key: string) => key }),
@@ -82,7 +88,59 @@ describe('what can be deleted', () => {
 });
 
 describe('confirmation', () => {
-    it('cannot be confirmed until DELETE is typed', () => {
+    it('says a payment stored per course goes whole, and waits for the server to say so', async () => {
+        let answer: (rows: unknown) => void = () => undefined;
+        mockFetchRows.mockReturnValue(new Promise((resolve) => (answer = resolve)));
+        render(
+            <QueryClientProvider client={new QueryClient()}>
+                <PermanentDeleteDialog
+                    target={{ kind: 'payment', id: 'pl-1', label: '₹3,000' }}
+                    onOpenChange={() => undefined}
+                />
+            </QueryClientProvider>
+        );
+        const confirm = screen.getByRole('button', { name: 'permanentDelete.confirm' });
+        fireEvent.change(screen.getByPlaceholderText('DELETE'), { target: { value: 'delete' } });
+        expect(confirm.hasAttribute('disabled')).toBe(true);
+        expect(screen.queryByText('permanentDelete.payment.split')).toBeNull();
+
+        answer({ void_rows: 2, void_amount: 5000, delete_rows: 2, delete_amount: 5000, currency: 'INR' });
+
+        await waitFor(() => expect(screen.getByText('permanentDelete.payment.split')).toBeTruthy());
+        expect(confirm.hasAttribute('disabled')).toBe(false);
+    });
+
+    it('still works when the server cannot say (older server): the delete itself applies the rule', async () => {
+        mockFetchRows.mockRejectedValue(new Error('404'));
+        render(
+            <QueryClientProvider client={new QueryClient()}>
+                <PermanentDeleteDialog
+                    target={{ kind: 'payment', id: 'pl-1', label: '₹3,000' }}
+                    onOpenChange={() => undefined}
+                />
+            </QueryClientProvider>
+        );
+        const confirm = screen.getByRole('button', { name: 'permanentDelete.confirm' });
+        fireEvent.change(screen.getByPlaceholderText('DELETE'), { target: { value: 'delete' } });
+        await waitFor(() => expect(confirm.hasAttribute('disabled')).toBe(false));
+        expect(screen.queryByText('permanentDelete.payment.split')).toBeNull();
+    });
+
+    it('never asks about an invoice', () => {
+        mockFetchRows.mockClear();
+        render(
+            <QueryClientProvider client={new QueryClient()}>
+                <PermanentDeleteDialog
+                    target={{ kind: 'invoice', id: 'inv-1', label: 'INV-1' }}
+                    onOpenChange={() => undefined}
+                />
+            </QueryClientProvider>
+        );
+        expect(mockFetchRows).not.toHaveBeenCalled();
+    });
+
+    it('cannot be confirmed until DELETE is typed', async () => {
+        mockFetchRows.mockResolvedValue({ void_rows: 1, void_amount: 100, delete_rows: 1, delete_amount: 100, currency: 'INR' });
         render(
             <QueryClientProvider client={new QueryClient()}>
                 <PermanentDeleteDialog
@@ -95,6 +153,6 @@ describe('confirmation', () => {
         expect(confirm.hasAttribute('disabled')).toBe(true);
 
         fireEvent.change(screen.getByPlaceholderText('DELETE'), { target: { value: 'delete' } });
-        expect(confirm.hasAttribute('disabled')).toBe(false);
+        await waitFor(() => expect(confirm.hasAttribute('disabled')).toBe(false));
     });
 });

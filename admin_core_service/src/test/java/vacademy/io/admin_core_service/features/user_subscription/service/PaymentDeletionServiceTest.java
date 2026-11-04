@@ -287,6 +287,74 @@ class PaymentDeletionServiceTest {
         assertTrue(row.getValue().getBeforePayload().contains("\"vendor\":\"MANUAL\""));
     }
 
+    private PaymentLog row(String id, String group, String status, boolean withPlan) {
+        PaymentLog pl = new PaymentLog();
+        pl.setId(id);
+        pl.setVendor("MANUAL");
+        pl.setPaymentStatus(status);
+        pl.setPaymentAmount(1000d);
+        pl.setCurrency("INR");
+        pl.setPaymentGroupId(group);
+        if (withPlan) pl.setUserPlan(new vacademy.io.admin_core_service.features.user_subscription.entity.UserPlan());
+        return pl;
+    }
+
+    @Test
+    @DisplayName("deleting one course's share of a payment removes every course row, and retires a parent left alone")
+    void deletesTheWholePayment() {
+        admin(true);
+        PaymentLog a = row("a", "order", "PAID", true);
+        PaymentLog b = row("b", "order", "VOIDED", true);
+        PaymentLog parent = row("order", "order", "PAID", false);
+        PaymentLog failed = row("f", "order", "FAILED", true);
+        when(paymentLogRepository.findById("a")).thenReturn(Optional.of(a));
+        when(paymentLogRepository.findByPaymentGroupIdOrderByCreatedAtAsc("order"))
+                .thenReturn(List.of(parent, a, b, failed));
+
+        Map<String, Object> result = service.deletePayment("a", INST, USER);
+
+        verify(voidService).voidPayment(eq("a"), eq(INST), anyString(), eq(USER));
+        verify(voidService, never()).voidPayment(eq("order"), anyString(), any(), any());
+        assertEquals(2, result.get("payments_deleted"));
+        assertEquals(2000d, result.get("amount"));
+        // the rows the admin sees go; the parent and a failed attempt do not
+        assertEquals(2L, executedSql.stream().filter(sql -> sql.startsWith("DELETE FROM payment_log WHERE id")).count());
+        assertTrue(executedSql.stream().anyMatch(sql -> sql.startsWith("UPDATE payment_log SET payment_status = 'VOIDED'")),
+                "a parent with no course rows left must not keep counting as money");
+    }
+
+    @Test
+    @DisplayName("regression: removing one course's history takes only its own row, never a course the learner keeps")
+    void planHistoryRemovesOnlyItsOwnRow() {
+        PaymentLog a = row("a", "g", "PAID", true);
+        PaymentLog kept = row("b", "g", "PAID", true);
+        when(paymentLogRepository.findById("a")).thenReturn(Optional.of(a));
+        when(paymentLogRepository.findByPaymentGroupIdOrderByCreatedAtAsc("g")).thenReturn(List.of(a, kept));
+
+        ReflectionTestUtils.invokeMethod(service, "removePayment", "a", INST, USER, false);
+
+        verify(voidService).voidSingleRow(eq("a"), eq(INST), anyString(), eq(USER));
+        verify(voidService, never()).voidPayment(anyString(), anyString(), any(), any());
+        assertEquals(1L, executedSql.stream().filter(sql -> sql.startsWith("DELETE FROM payment_log WHERE id")).count());
+        assertEquals("PAID", kept.getPaymentStatus());
+    }
+
+    @Test
+    @DisplayName("refuses the whole payment, changing nothing, when one share cannot be deleted")
+    void deleteIsAllOrNothing() {
+        admin(true);
+        PaymentLog a = row("a", "g", "PAID", true);
+        PaymentLog gateway = row("b", "g", "PAID", true);
+        gateway.setVendor("RAZORPAY");
+        when(paymentLogRepository.findById("a")).thenReturn(Optional.of(a));
+        when(paymentLogRepository.findByPaymentGroupIdOrderByCreatedAtAsc("g")).thenReturn(List.of(a, gateway));
+
+        assertThrows(vacademy.io.common.exceptions.VacademyException.class, () -> service.deletePayment("a", INST, USER));
+
+        verify(voidService, never()).voidPayment(anyString(), anyString(), any(), any());
+        assertTrue(executedSql.stream().noneMatch(sql -> sql.startsWith("DELETE FROM payment_log")));
+    }
+
     @Test
     @DisplayName("regression: a receipt invoice with NO source is deleted with its payment (was an NPE)")
     void receiptWithNullSourceIsDeleted() {

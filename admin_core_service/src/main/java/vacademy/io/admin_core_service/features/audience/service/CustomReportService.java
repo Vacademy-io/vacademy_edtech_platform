@@ -1,5 +1,6 @@
 package vacademy.io.admin_core_service.features.audience.service;
 
+import vacademy.io.admin_core_service.features.user_subscription.repository.PaymentGroupSql;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -147,6 +148,7 @@ public class CustomReportService {
                 SELECT pl.user_id, SUM(pl.payment_amount) AS revenue
                 FROM payment_log pl
                 WHERE pl.payment_status = 'PAID' AND pl.payment_amount IS NOT NULL
+                  AND""" + PaymentGroupSql.NOT_ORDER_PARENT_PL + """
                 GROUP BY pl.user_id
             ) rev ON rev.user_id = ulp.user_id
             """ + SOURCE_JOINS + """

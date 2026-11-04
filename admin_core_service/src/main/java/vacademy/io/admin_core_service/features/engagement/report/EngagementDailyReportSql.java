@@ -313,6 +313,9 @@ final class EngagementDailyReportSql {
             FROM payment_log pl
             JOIN touched t ON t.user_id = pl.user_id AND t.touched_at < pl.created_at
             WHERE pl.payment_status = 'PAID' AND pl.payment_amount > 0
+              AND"""
+            + vacademy.io.admin_core_service.features.user_subscription.repository.PaymentGroupSql.NOT_ORDER_PARENT_PL
+            + """
               AND pl.created_at >= :from AND pl.created_at < :to
               AND EXISTS (SELECT 1 FROM user_lead_profile ulp
                            WHERE ulp.user_id = pl.user_id AND ulp.institute_id = :instituteId

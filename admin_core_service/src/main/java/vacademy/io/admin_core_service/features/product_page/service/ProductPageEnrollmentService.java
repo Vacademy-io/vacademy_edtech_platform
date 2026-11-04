@@ -698,6 +698,7 @@ public class ProductPageEnrollmentService {
 
         // ── Enroll per invite (shared by Phase 2 + non-Razorpay paid flows) ──
         List<String> enrolledSessionIds = new ArrayList<>();
+        List<String> lineLogIds = new ArrayList<>();
         for (ProductPageSelectedMappingDTO sel : request.getSelectedMappings()) {
             ProductPageInviteMapping mapping = selectedMappings.stream()
                     .filter(m -> m.getPsInvitePaymentOption().getId().equals(sel.getPsInvitePaymentOptionId()))
@@ -754,6 +755,9 @@ public class ProductPageEnrollmentService {
                 recordBasketAdjustment(enrollResp.getPaymentResponse().getOrderId(),
                         regional.listPrice(sel.getPsInvitePaymentOptionId(), plan), charged,
                         allocation.ruleFor(sel.getPsInvitePaymentOptionId()));
+                if (StringUtils.hasText(enrollResp.getPaymentResponse().getOrderId())) {
+                    lineLogIds.add(enrollResp.getPaymentResponse().getOrderId());
+                }
             }
 
             if (parentPaymentLogId != null) {
@@ -769,6 +773,15 @@ public class ProductPageEnrollmentService {
 
         if (parentPaymentLogId != null && discountAmount > 0 && request.getCouponCode() != null) {
             createLineItem(parentPaymentLogId, "COUPON:" + request.getCouponCode(), -(int) Math.round(discountAmount));
+        }
+
+        // One checkout, one payment: the parent log and the per-course logs above are its rows
+        // (see provisionPendingEnrollments).
+        if (parentPaymentLogId != null && !lineLogIds.isEmpty()) {
+            List<String> members = new ArrayList<>();
+            members.add(parentPaymentLogId);
+            members.addAll(lineLogIds);
+            paymentLogService.assignPaymentGroup(parentPaymentLogId, members);
         }
 
         boolean sendCredentialsNow = isRazorpayPhase2 || isGatewayPaidSync;
@@ -1022,6 +1035,13 @@ public class ProductPageEnrollmentService {
                 parentLog.setPaymentSpecificData(JsonUtil.toJson(data));
                 paymentLogRepository.save(parentLog);
             });
+            // One checkout, one payment: the parent (gateway total, no plan) and its
+            // per-course children are its rows. Money reports count the children and skip
+            // the parent; listings show the order once.
+            List<String> members = new ArrayList<>();
+            members.add(parentPaymentLogId);
+            members.addAll(childPaymentLogIds);
+            paymentLogService.assignPaymentGroup(parentPaymentLogId, members);
         }
 
         return enrolledSessionIds;
