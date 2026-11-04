@@ -110,6 +110,9 @@ export const EnableAiChecking = ({
     // Bank ids already saved for this exact set — a retry after the adopt call
     // failed must not file the same paper into the bank twice.
     const savedRef = useRef<{ key: string; ids: string[] } | null>(null);
+    // The read just started here. Until the lookup returns it, `job` is still the
+    // previous read, whose result must not open as if it were this one's.
+    const startedTaskRef = useRef<string | null>(null);
     const instituteId = getInstituteId() ?? '';
     // How the AI will check the sheets, set in the review: this test's own settings,
     // else the institute's defaults.
@@ -173,6 +176,7 @@ export const EnableAiChecking = ({
     // Still watching when it settles: straight into the review (or the reason).
     useEffect(() => {
         if (!progressOpen || reading || !job) return;
+        if (startedTaskRef.current && job.task_id !== startedTaskRef.current) return;
         if (ready) {
             setProgressOpen(false);
             attach(ready);
@@ -216,7 +220,10 @@ export const EnableAiChecking = ({
             name: assessmentName || t('retrofit.thisTest'),
             returnPath: `${window.location.pathname}${window.location.search}`,
         });
-        if (started) setProgressOpen(true);
+        if (started) {
+            startedTaskRef.current = started.task_id;
+            setProgressOpen(true);
+        }
     };
 
     const adopt = async (
@@ -388,9 +395,19 @@ export const EnableAiChecking = ({
                         </span>
                     </div>
                     {ready ? (
-                        <MyButton buttonType="primary" scale="small" onClick={() => attach(ready)}>
-                            <span className="text-xs">{t('background.reviewButton')}</span>
-                        </MyButton>
+                        <div className="flex shrink-0 flex-wrap justify-end gap-2">
+                            <MyButton
+                                buttonType="secondary"
+                                scale="small"
+                                disable={pdfs.length === 0 || starting}
+                                onClick={() => void openConfirm(pdfUrl)}
+                            >
+                                <span className="text-xs">{t('background.readAgainButton')}</span>
+                            </MyButton>
+                            <MyButton buttonType="primary" scale="small" onClick={() => attach(ready)}>
+                                <span className="text-xs">{t('background.reviewButton')}</span>
+                            </MyButton>
+                        </div>
                     ) : reading ? (
                         <MyButton buttonType="secondary" scale="small" onClick={() => setProgressOpen(true)}>
                             <span className="text-xs">{t('background.viewProgress')}</span>

@@ -32,7 +32,7 @@ from urllib.parse import unquote, urlparse
 import httpx
 
 from ..utils.html_tags import HtmlTagProtector
-from . import llm_json, pdf_questions_service
+from . import llm_json, paper_numbering, pdf_questions_service
 from .question_format import format_questions
 
 logger = logging.getLogger(__name__)
@@ -207,14 +207,14 @@ Extract EVERY question exactly as printed, in order. Return ONLY this JSON:
 }}
 
 Rules:
-1. Verbatim. Copy the wording, numbers, units and sub-parts as printed. Do not paraphrase, merge, split or "improve" questions. Instructions, headers, section titles and the marking-scheme lines are NOT questions.
+1. Verbatim. Copy the wording, numbers, units and sub-parts as printed. Do not paraphrase, merge, split or "improve" questions. Instructions, headers, section titles and the marking-scheme lines are NOT questions. A numbered list of instructions above the first question is not a question either, and its numbers do not count: question_number is the question's own printed number.
 2. Sub-parts. "3 (a)…(b)…" printed with ONE mark figure is ONE question containing both parts. Sub-parts printed with their OWN marks are separate questions numbered "3(a)", "3(b)".
 3. "OR" choices. Keep both alternatives inside ONE question, prefixed "Either … OR …", and add a note.
-4. Marks. Use the figure printed next to the question ("[5]", "(2 marks)", "2M"). If none, use the section's "each carries N marks" and set marks_source "section". A section header written as "(8 × 1 = 8 Marks)", "8 questions × 1 mark" or "5 x 2 = 10" means COUNT × MARKS-EACH = TOTAL: marks_each is the SECOND number (1, 1, 2 here), never the count and never the total. A block printed as ONE numbered question but made of several scored items (match-the-following pairs, a set of fill-in-the-blanks, "4 × 1") carries the SUM of its items' marks. If nothing is printed anywhere, marks = null and marks_source "none" — never guess a number.
+4. Marks. Use the figure printed next to the question ("[5]", "(2 marks)", "2M"). If none, use the section's "each carries N marks" and set marks_source "section". Instructions such as "Part A contains 20 questions, 5 marks each; Part B contains 10 questions, 10 marks each" set each part's size and marks: the first 20 questions in print order are Part A and the next 10 are Part B, even when a part has no heading of its own. A section header written as "(8 × 1 = 8 Marks)", "8 questions × 1 mark" or "5 x 2 = 10" means COUNT × MARKS-EACH = TOTAL: marks_each is the SECOND number (1, 1, 2 here), never the count and never the total. A block printed as ONE numbered question but made of several scored items (match-the-following pairs, a set of fill-in-the-blanks, "4 × 1") carries the SUM of its items' marks. If nothing is printed anywhere, marks = null and marks_source "none" — never guess a number.
 5. Answers. If the paper prints an answer key, use it and set answer_source "paper". Otherwise, for MCQS/MCQM/TRUE_FALSE/ONE_WORD/NUMERIC give your best answer with answer_source "model" (the teacher will verify). For LONG_ANSWER leave ans empty unless printed, but ALWAYS fill marking_points with what a full-mark answer must contain.
 6. Types. Single correct option → MCQS; "choose all that apply" → MCQM; true/false → TRUE_FALSE; a numeric result → NUMERIC; a word/phrase → ONE_WORD; everything else (explain, describe, prove, draw, solve with steps) → LONG_ANSWER. For TRUE_FALSE always give options [{{"preview_id":"1","content":"True"}},{{"preview_id":"2","content":"False"}}] and correct_options ["1"] or ["2"]. If an answer cannot be determined (a table or figure is missing), leave it empty and set answer_source "none" — never write "model" for an empty answer.
-7. Keep every <img …> tag and every <!--DS_TAG:…--> comment exactly where it appears in the source.
-8. If the numbering restarts inside a section (a second passage or part printed 1, 2, 3… again), give that block its own section name — the printed heading if there is one ("Passage II", "Part B"), else "<Section> · Block 2" — so no two questions share the same section AND number.
+7. Keep every <img …> tag and every <!--DS_TAG:…--> comment exactly where it appears in the source. A DS_TAG comment is a figure the teacher can see and you cannot: do not report it as missing; say in a note that the answer needs the figure.
+8. If the numbering restarts inside a section (a second passage or part printed 1, 2, 3… again), give that block its own section name — the printed heading if there is one ("Passage II", "Part B"), else "<Section> · Block 2" — so no two questions share the same section AND number. Questions starting at 1 after a numbered instructions list are not a restart, and a new page is not a section: a block belongs to the part the paper's instructions and headings put it in, and never takes the marks of a part printed after it.
 9. Valid JSON only. No markdown fences, no commentary outside the JSON.
 10. Internal choice. When a section lets the student answer only SOME of its questions ("Answer any FOUR of the following", "Attempt any 4", "Do any two", "any 3 out of 5"), set that section's "attempt" to how many must be answered (4 here) - in the field, not only in a note - and still list EVERY printed question of the section. A header such as "(4 × 3M = 12)" on such a section means attempt 4, marks_each 3, total_marks 12 (the total counts only the attempted questions; question_count is then the number to attempt, 4, not the number printed). "attempt" is null when every question of the section must be answered. An "Either … OR …" inside one question is rule 3, not this.
 """
@@ -549,6 +549,104 @@ def reconcile_marks(
     return warnings
 
 
+def hold_to_declared_split(
+    raw_questions: List[Dict[str, Any]],
+    sections: List[Dict[str, Any]],
+    declared: Sequence[Dict[str, Any]],
+) -> Dict[str, Any]:
+    """Hold the questions to the parts the paper's instructions declare.
+
+    "Part A contains 20 questions of 5 marks, Part B 10 of 10" is what the paper
+    says about itself, so it beats a model's reading of the headings. When the
+    questions read are as many as the parts declare but sit in the wrong parts,
+    they are put back in print order: section and marks follow, except marks
+    printed at the question or given by the marking scheme. A question count
+    that differs is only reported, since the parts cannot be placed safely then
+    (sub-parts with their own marks, a question that was missed).
+
+    Returns {"sections", "warnings", "stale_sections"}; `raw_questions` is
+    changed in place.
+    """
+    unchanged: Dict[str, Any] = {"sections": sections, "warnings": [], "stale_sections": []}
+    if len(declared) < 2 or not raw_questions:
+        return unchanged
+    # "Answer any four" makes the printed count and the declared one differ by design.
+    if any(_attempt(s.get("attempt")) for s in sections):
+        return unchanged
+    summary = ", ".join(f"{row['name']} {row['count']} × {row['marks']:g}" for row in declared)
+    expected = sum(row["count"] for row in declared)
+    if len(raw_questions) != expected:
+        return {**unchanged, "warnings": [
+            f"The paper's instructions list {expected} questions ({summary}) but {len(raw_questions)} were read. "
+            "Check that none is missing or counted twice."
+        ]}
+
+    def fits(question: Dict[str, Any], row: Dict[str, Any]) -> bool:
+        if question.get("marks_source") in ("printed", "scheme"):
+            return True
+        marks = _num(question.get("marks"))
+        return marks is not None and abs(marks - row["marks"]) <= 0.01
+
+    # Already right, whatever order the parts are printed in.
+    by_label: Dict[str, List[Dict[str, Any]]] = {}
+    for q in raw_questions:
+        by_label.setdefault(paper_numbering.section_label(q.get("section")) or "", []).append(q)
+    if all(
+        len(by_label.get(row["label"], [])) == row["count"]
+        and all(fits(q, row) for q in by_label[row["label"]])
+        for row in declared
+    ):
+        return unchanged
+
+    known_names = {
+        paper_numbering.section_label(s.get("name")): str(s.get("name"))
+        for s in sections if "·" not in str(s.get("name") or "")
+    }
+    corrected = 0
+    placed: List[Dict[str, Any]] = []
+    position = 0
+    for row in declared:
+        name = known_names.get(row["label"]) or row["name"]
+        for q in raw_questions[position:position + row["count"]]:
+            if q.get("section") != name or not fits(q, row):
+                corrected += 1
+            q["section"] = name
+            if q.get("marks_source") not in ("printed", "scheme"):
+                q["marks"] = row["marks"]
+                q["marks_source"] = "section"
+        position += row["count"]
+        previous = next((s for s in sections if str(s.get("name")) == name), {})
+        placed.append({
+            **previous,
+            "name": name,
+            "marks_each": row["marks"],
+            "question_count": float(row["count"]),
+            "total_marks": row["marks"] * row["count"],
+        })
+
+    # Two questions with one number in one part: the numbers cannot be the
+    # printed ones either, so they follow the order of the paper.
+    seen = set()
+    repeated = False
+    for q in raw_questions:
+        key = (q.get("section"), str(q.get("question_number") or "").strip())
+        repeated = repeated or key in seen
+        seen.add(key)
+    if repeated:
+        for i, q in enumerate(raw_questions, start=1):
+            q["question_number"] = str(i)
+
+    names = {row["name"] for row in placed}
+    return {
+        "sections": placed,
+        "warnings": [
+            f"The paper's instructions set out {summary}. {corrected} question(s) did not match and were "
+            "moved to fit. Check the sections and marks."
+        ],
+        "stale_sections": [str(s.get("name")) for s in sections if str(s.get("name")) not in names],
+    }
+
+
 def _scheme_point_marks(raw: Dict[str, Any], count: int) -> Optional[List[float]]:
     """Per-point marks from the marking scheme, when there is one for every point."""
     marks = raw.get("marking_point_marks") or []
@@ -674,8 +772,12 @@ def build_paper(
     file_name: str,
     expected_total: Optional[float],
     has_answer_key_document: bool = False,
+    declared: Sequence[Dict[str, Any]] = (),
 ) -> DigitisedPaper:
-    """Merge the LLM round(s) into one paper and shape it for the assessment builder."""
+    """Merge the LLM round(s) into one paper and shape it for the assessment builder.
+
+    `declared` is the split of parts the paper's instructions state, if any.
+    """
     title = ""
     total_marks: Optional[float] = None
     duration: Optional[int] = None
@@ -713,8 +815,13 @@ def build_paper(
             seen.add(key)
             raw_questions.append(q)
 
-    warnings = reconcile_marks(raw_questions, sections, total_marks, expected_total,
-                               choice_groups_for(raw_questions, sections))
+    held = hold_to_declared_split(raw_questions, sections, declared)
+    sections = held["sections"]
+    # A model's note about a block that no longer exists would only confuse.
+    notes = [n for n in notes if not any(name in n for name in held["stale_sections"])]
+
+    warnings = held["warnings"] + reconcile_marks(raw_questions, sections, total_marks, expected_total,
+                                                  choice_groups_for(raw_questions, sections))
 
     formatted: List[Dict[str, Any]] = []
     kept: List[Dict[str, Any]] = []
@@ -795,6 +902,10 @@ async def extract_questions(
     documents (the same HTML in both when one PDF holds the two); they ride
     along in every round so a continuation still sees them.
     """
+    paper_html, renumbered = paper_numbering.restore_list_numbers(paper_html)
+    if renumbered:
+        logger.info("paper_digitise: restored %d printed question number(s) in %s", renumbered, file_name)
+    declared = paper_numbering.declared_split(paper_html)
     protector = HtmlTagProtector()
     protected = protector.protect(paper_html)
     # One protector per document: protect() starts a fresh store each call.
@@ -840,7 +951,7 @@ async def extract_questions(
             break
 
     paper = build_paper(rounds, pdf_url=pdf_url, file_name=file_name, expected_total=expected_total,
-                        has_answer_key_document=bool(answer_key_html))
+                        has_answer_key_document=bool(answer_key_html), declared=declared)
     paper.model = model_used
     paper.prompt_tokens = prompt_tokens
     paper.completion_tokens = completion_tokens
