@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { PDFDocument } from 'pdf-lib';
-import { buildCopyPdf } from './scan-pdf';
+import { buildCopyPdf, movePage } from './scan-pdf';
 
 // A real 4x2 JPEG: pdf-lib reads the size from the file, so a fake would not embed.
 const JPEG_4X2 = Uint8Array.from(
@@ -26,5 +26,17 @@ describe('buildCopyPdf', () => {
 
     it('refuses an empty copy instead of uploading a blank PDF', async () => {
         await expect(buildCopyPdf([])).rejects.toThrow();
+    });
+});
+
+describe('movePage', () => {
+    it('moves a page a place either way', () => {
+        expect(movePage(['a', 'b', 'c'], 1, -1)).toEqual(['b', 'a', 'c']);
+        expect(movePage(['a', 'b', 'c'], 1, 1)).toEqual(['a', 'c', 'b']);
+    });
+
+    it('stays put at either end', () => {
+        expect(movePage(['a', 'b'], 0, -1)).toEqual(['a', 'b']);
+        expect(movePage(['a', 'b'], 1, 1)).toEqual(['a', 'b']);
     });
 });

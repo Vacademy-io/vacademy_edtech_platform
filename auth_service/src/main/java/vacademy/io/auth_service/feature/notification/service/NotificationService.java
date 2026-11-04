@@ -187,6 +187,25 @@ public class NotificationService {
                 .build());
     }
 
+    /** The same send under a product's own address, for the mail its self sign-up triggers. */
+    public UnifiedSendResponse sendGenericHtmlMailAs(GenericEmailRequest request, String instituteId,
+            String fromEmail, String fromName) {
+        return sendUnified(UnifiedSendRequest.builder()
+                .instituteId(instituteId != null ? instituteId : "")
+                .channel("EMAIL")
+                .recipients(List.of(UnifiedSendRequest.Recipient.builder()
+                        .email(request.getTo()).build()))
+                .options(UnifiedSendRequest.SendOptions.builder()
+                        .emailSubject(request.getSubject())
+                        .emailBody(request.getBody())
+                        .emailType("UTILITY_EMAIL")
+                        .fromEmail(fromEmail)
+                        .fromName(fromName)
+                        .source("auth-service")
+                        .build())
+                .build());
+    }
+
     /**
      * Bridge: GenericEmailRequest → unified send, returns Boolean for callers that check result.
      */

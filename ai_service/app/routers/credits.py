@@ -177,6 +177,21 @@ def _authorize_credit_adjustment(
 # ============================================================================
 
 @router.get(
+    "/institutes/{institute_id}/trial",
+    summary="The institute's self sign-up trial, if it has one",
+)
+def get_trial_status(
+    institute_id: str,
+    service: CreditService = Depends(get_credit_service),
+    current_user: Optional[dict] = Depends(get_optional_user),
+    x_internal_service_token: Optional[str] = Header(None),
+    authorization: Optional[str] = Header(None),
+):
+    _require_user_or_internal(current_user, x_internal_service_token, institute_id, authorization)
+    return service.get_trial_status(institute_id)
+
+
+@router.get(
     "/institutes/{institute_id}/balance",
     response_model=CreditBalanceResponse,
     summary="Get institute credit balance",
@@ -560,10 +575,11 @@ def get_usage_forecast(
     service: CreditService = Depends(get_credit_service),
     current_user: Optional[dict] = Depends(get_current_user),
     authorization: Optional[str] = Header(None),
+    per_calendar_day: bool = False,
 ):
     """Get usage forecast for an institute."""
     require_institute_member(authorization, institute_id)
-    return service.get_usage_forecast(institute_id)
+    return service.get_usage_forecast(institute_id, per_calendar_day=per_calendar_day)
 
 
 # ============================================================================

@@ -19,9 +19,12 @@ type CameraState = 'starting' | 'live' | 'unavailable';
 export const CameraScanner = ({
     scanQuality,
     onDone,
+    singleDocument = false,
 }: {
     scanQuality: EvalezyScanQuality;
     onDone: (copies: ScanPage[][]) => void;
+    /** One document's pages (the question paper): no "Next student". */
+    singleDocument?: boolean;
 }) => {
     const { t } = useTranslation('evalezy');
     const videoRef = useRef<HTMLVideoElement>(null);
@@ -152,7 +155,9 @@ export const CameraScanner = ({
             <div className="flex items-center justify-between gap-3 bg-white px-4 py-3">
                 <div className="flex min-w-0 flex-col">
                     <span className="text-subtitle font-semibold text-neutral-800">
-                        {t('scanner.copy', { number: copyNumber })}
+                        {singleDocument
+                            ? t('scanner.paperTitle')
+                            : t('scanner.copy', { number: copyNumber })}
                     </span>
                     <span className="text-caption text-neutral-500">
                         {t('scanner.pages', { count: current.length })}
@@ -237,7 +242,11 @@ export const CameraScanner = ({
                 )}
 
                 <p className="text-center text-caption text-neutral-500">
-                    {busy > 0 ? t('scanner.saving') : t('scanner.hint')}
+                    {busy > 0
+                        ? t('scanner.saving')
+                        : singleDocument
+                          ? t('scanner.paperHint')
+                          : t('scanner.hint')}
                 </p>
                 {/* Equal side columns keep the shutter centred; on a 360px phone a third of the
                     row is narrower than "Next student", so that button may wrap instead of
@@ -256,17 +265,19 @@ export const CameraScanner = ({
                         </button>
                     </div>
                     <div className="flex min-w-0 flex-1 justify-end">
-                        <MyButton
-                            type="button"
-                            buttonType="secondary"
-                            scale="medium"
-                            className="h-auto min-h-10 whitespace-normal py-1.5 text-center leading-tight"
-                            disabled={current.length === 0}
-                            onClick={nextStudent}
-                        >
-                            <UserPlus size={18} />
-                            {t('scanner.nextStudent')}
-                        </MyButton>
+                        {!singleDocument && (
+                            <MyButton
+                                type="button"
+                                buttonType="secondary"
+                                scale="medium"
+                                className="h-auto min-h-10 whitespace-normal py-1.5 text-center leading-tight"
+                                disabled={current.length === 0}
+                                onClick={nextStudent}
+                            >
+                                <UserPlus size={18} />
+                                {t('scanner.nextStudent')}
+                            </MyButton>
+                        )}
                     </div>
                 </div>
             </div>

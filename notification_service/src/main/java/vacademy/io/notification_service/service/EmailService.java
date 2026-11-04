@@ -1,5 +1,6 @@
 package vacademy.io.notification_service.service;
 
+import vacademy.io.notification_service.features.email_otp.service.OtpBrand;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.activation.DataHandler;
@@ -621,6 +622,11 @@ public class EmailService {
     }
 
     public void sendEmailOtp(String to, String subject, String service, String name, String otp, String instituteId) {
+        sendEmailOtp(to, subject, service, name, otp, instituteId, null);
+    }
+
+    public void sendEmailOtp(String to, String subject, String service, String name, String otp, String instituteId,
+            OtpBrand brand) {
         try {
             // Check if email is blocked (domain blocklist or bounced email blocklist)
             if (isEmailBlocked(to)) {
@@ -628,19 +634,24 @@ public class EmailService {
                 return;
             }
 
-            AbstractMap.SimpleEntry<JavaMailSender, String> config = getMailSenderConfig(instituteId);
+            // A branded product's OTP does not read the institute: it may not exist yet, and its
+            // own sender must not win. Sent the way an SES-verified custom sender is.
+            AbstractMap.SimpleEntry<JavaMailSender, String> config = brand != null
+                    ? new AbstractMap.SimpleEntry<>(StringUtils.hasText(verifiedSenderSmtpUsername)
+                            ? createVerifiedSenderMailSender() : mailSender, brand.from())
+                    : getMailSenderConfig(instituteId);
             JavaMailSender mailSenderToUse = config.getKey();
             String fromToUse = config.getValue();
             InstituteInfoDTO instituteInfoDTO = null;
 
-            if (instituteId != null && StringUtils.hasText(instituteId))
+            if (brand == null && instituteId != null && StringUtils.hasText(instituteId))
                 instituteInfoDTO = internalService.getInstituteByInstituteId(instituteId);
 
             // default vacademy theme
             name = name == null ? "User" : name;
-            String instituteTheme = "#ED7424";
-            String instituteName = "Vacademy";
-            String instituteUrl = "https://dash.vacademy.io";
+            String instituteTheme = brand != null ? brand.theme() : "#ED7424";
+            String instituteName = brand != null ? brand.name() : "Vacademy";
+            String instituteUrl = brand != null ? brand.url() : "https://dash.vacademy.io";
             if (instituteInfoDTO != null) {
 
                 instituteTheme = instituteInfoDTO.getInstituteThemeCode() != null

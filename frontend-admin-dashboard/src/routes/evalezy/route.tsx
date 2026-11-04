@@ -5,6 +5,7 @@ import { Prohibit } from '@phosphor-icons/react';
 import { DashboardLoader } from '@/components/core/dashboard-loader';
 import { useInstituteQuery } from '@/services/student-list-section/getInstituteDetails';
 import { EvalezyHeader } from './-components/EvalezyHeader';
+import { TrialBanner } from './-components/TrialBanner';
 import { useEvalezySettings } from './-hooks/useEvalezySettings';
 
 export const Route = createFileRoute('/evalezy')({
@@ -18,7 +19,8 @@ export const Route = createFileRoute('/evalezy')({
  */
 function EvalezyLayout() {
     const { t } = useTranslation('evalezy');
-    const { data: institute } = useQuery(useInstituteQuery());
+    // Also sets the institute store, naming and theme the screens below rely on.
+    useQuery(useInstituteQuery());
     const { settings, isLoading } = useEvalezySettings();
 
     return (
@@ -26,7 +28,8 @@ function EvalezyLayout() {
         // what is left. min-w-0: this sits in the portal's flex wrapper, and without it
         // long nowrap titles widen the page and the WebView zooms the whole app out.
         <div className="min-h-screen-safe flex w-full min-w-0 flex-col bg-neutral-50">
-            <EvalezyHeader instituteName={institute?.institute_name} />
+            <EvalezyHeader />
+            <TrialBanner />
             <main className="mx-auto flex w-full max-w-3xl flex-1 flex-col p-4 sm:py-6">
                 {isLoading ? (
                     <DashboardLoader />

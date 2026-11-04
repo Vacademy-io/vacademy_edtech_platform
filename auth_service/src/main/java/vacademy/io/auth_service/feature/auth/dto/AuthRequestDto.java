@@ -19,6 +19,8 @@ public class AuthRequestDto {
     private String password;
     private String clientName;
     private String instituteId;
+    /** Set by a product's own login screen so its OTP mail goes out under its name. */
+    private String product;
     // Learner login pages only: the institute their domain routes to. When present, the account
     // must belong to it (see LearnerPortalAccessGuard). Absent = no portal scoping, as before.
     private String portalInstituteId;

@@ -1,10 +1,11 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { createFileRoute, Link, useNavigate } from '@tanstack/react-router';
 import { useMutation } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import {
     ArrowLeft,
+    Camera,
     CircleNotch,
     Coins,
     FilePdf,
@@ -30,6 +31,8 @@ import {
     type PaperDigitiseEstimate,
 } from '@/services/paper-digitise';
 import { cn } from '@/lib/utils';
+import { CameraScanner } from './-components/CameraScanner';
+import { PaperPagesTray } from './-components/PaperPagesTray';
 import { createCopyCheckAssessment } from './-lib/create-assessment';
 import { scanPagesToPdfFile, toScanPage, type ScanPage } from './-lib/scan-pdf';
 import { useEvalezySettings } from './-hooks/useEvalezySettings';
@@ -53,7 +56,8 @@ interface Paper {
 
 /**
  * New assessment in the Evalezy app: name, total marks and the question paper
- * (a PDF, or photos of it that become one PDF). Create makes a published,
+ * (a PDF, or photos of it, picked or taken here, that become one PDF once their
+ * order has been checked). Create makes a published,
  * hand-checked test with the paper attached and starts the paper read; the
  * assessment page then shows the read and its review ("Enable AI checking"),
  * after which copies can be checked.
@@ -72,6 +76,12 @@ function EvalezyNewAssessmentPage() {
     const [marks, setMarks] = useState('');
     const [paper, setPaper] = useState<Paper | null>(null);
     const [preparing, setPreparing] = useState(false);
+    // Photos of the paper, in page order, until the teacher confirms them.
+    const [pages, setPages] = useState<ScanPage[]>([]);
+    const [scannerOpen, setScannerOpen] = useState(false);
+    const pagesRef = useRef(pages);
+    pagesRef.current = pages;
+    useEffect(() => () => pagesRef.current.forEach((p) => URL.revokeObjectURL(p.url)), []);
     // Only the newest pick may write its upload result back.
     const pickSeq = useRef(0);
 
@@ -144,19 +154,38 @@ function EvalezyNewAssessmentPage() {
             toast.error(t('create.notSupported'));
             return;
         }
-        // Photos picked together are the paper's pages, in the order picked.
+        // Photos join the paper's pages in the order picked; the tray lets the teacher fix it.
         setPreparing(true);
-        const pages: ScanPage[] = [];
+        const added: ScanPage[] = [];
         try {
-            for (const photo of photos) pages.push(await toScanPage(photo, settings.scanQuality));
+            for (const photo of photos) added.push(await toScanPage(photo, settings.scanQuality));
+            setPages((prev) => [...prev, ...added]);
+        } catch {
+            added.forEach((p) => URL.revokeObjectURL(p.url));
+            toast.error(t('create.photosFailed'));
+        } finally {
+            setPreparing(false);
+        }
+    };
+
+    /** The checked pages become one PDF. They stay here so the teacher can come back to them. */
+    const usePages = async () => {
+        setPreparing(true);
+        try {
             const file = await scanPagesToPdfFile(pages, t('create.paperFileName'));
             await takePaper(file, pages.length);
         } catch {
             toast.error(t('create.photosFailed'));
         } finally {
-            pages.forEach((p) => URL.revokeObjectURL(p.url));
             setPreparing(false);
         }
+    };
+
+    const clearPaper = () => {
+        pickSeq.current++;
+        setPaper(null);
+        pages.forEach((p) => URL.revokeObjectURL(p.url));
+        setPages([]);
     };
 
     const create = useMutation({
@@ -252,7 +281,7 @@ function EvalezyNewAssessmentPage() {
                         ref={inputRef}
                         type="file"
                         multiple
-                        accept="application/pdf,image/*"
+                        accept={pages.length > 0 ? 'image/*' : 'application/pdf,image/*'}
                         className="hidden"
                         onChange={(e) => {
                             const files = Array.from(e.target.files ?? []);
@@ -260,21 +289,49 @@ function EvalezyNewAssessmentPage() {
                             void onPick(files);
                         }}
                     />
-                    {!paper && !preparing ? (
-                        <button
-                            type="button"
-                            disabled={busy}
-                            onClick={() => inputRef.current?.click()}
-                            className="flex flex-col items-center gap-2 rounded-lg border-2 border-dashed border-neutral-300 bg-neutral-50 px-4 py-6 text-center transition-colors hover:border-primary-400 hover:bg-primary-50"
-                        >
-                            <UploadSimple size={28} className="text-primary-500" />
-                            <span className="text-subtitle font-semibold text-neutral-800">
-                                {t('create.paperPick')}
-                            </span>
-                            <span className="text-caption text-neutral-500">
-                                {t('create.paperHint')}
-                            </span>
-                        </button>
+                    {!paper && !preparing && pages.length > 0 ? (
+                        <PaperPagesTray
+                            pages={pages}
+                            maxPages={MAX_PAPER_PAGES}
+                            allowCamera={settings.allowCamera}
+                            onChange={setPages}
+                            onTakeMore={() => setScannerOpen(true)}
+                            onPickMore={() => inputRef.current?.click()}
+                            onConfirm={() => void usePages()}
+                        />
+                    ) : !paper && !preparing ? (
+                        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                            {settings.allowCamera && (
+                                <button
+                                    type="button"
+                                    disabled={busy}
+                                    onClick={() => setScannerOpen(true)}
+                                    className="flex flex-col items-center gap-2 rounded-lg border-2 border-primary-200 bg-primary-50 px-4 py-6 text-center transition-colors hover:border-primary-400"
+                                >
+                                    <Camera size={28} className="text-primary-500" />
+                                    <span className="text-subtitle font-semibold text-neutral-800">
+                                        {t('create.paperScan')}
+                                    </span>
+                                    <span className="text-caption text-neutral-500">
+                                        {t('create.paperScanHint')}
+                                    </span>
+                                </button>
+                            )}
+                            <button
+                                type="button"
+                                disabled={busy}
+                                onClick={() => inputRef.current?.click()}
+                                className="flex flex-col items-center gap-2 rounded-lg border-2 border-dashed border-neutral-300 bg-neutral-50 px-4 py-6 text-center transition-colors hover:border-primary-400 hover:bg-primary-50"
+                            >
+                                <UploadSimple size={28} className="text-primary-500" />
+                                <span className="text-subtitle font-semibold text-neutral-800">
+                                    {t('create.paperPick')}
+                                </span>
+                                <span className="text-caption text-neutral-500">
+                                    {t('create.paperHint')}
+                                </span>
+                            </button>
+                        </div>
                     ) : preparing ? (
                         <div className="flex items-center gap-2 rounded-lg border border-neutral-200 p-3 text-body text-neutral-600">
                             <CircleNotch size={18} className="animate-spin text-primary-500" />
@@ -310,10 +367,7 @@ function EvalezyNewAssessmentPage() {
                                         scale="small"
                                         layoutVariant="icon"
                                         aria-label={t('create.removePaper')}
-                                        onClick={() => {
-                                            pickSeq.current++;
-                                            setPaper(null);
-                                        }}
+                                        onClick={clearPaper}
                                     >
                                         <Trash size={16} />
                                     </MyButton>
@@ -321,6 +375,20 @@ function EvalezyNewAssessmentPage() {
                             </div>
                             {paper.state === 'error' && (
                                 <p className="text-caption text-danger-700">{paper.error}</p>
+                            )}
+                            {pages.length > 0 && !busy && paper.state !== 'uploading' && (
+                                <MyButton
+                                    type="button"
+                                    buttonType="secondary"
+                                    scale="small"
+                                    className="h-9 w-full sm:w-fit"
+                                    onClick={() => {
+                                        pickSeq.current++;
+                                        setPaper(null);
+                                    }}
+                                >
+                                    {t('create.editPages')}
+                                </MyButton>
                             )}
                             {tooLong && (
                                 <p className="text-caption text-danger-700">
@@ -372,6 +440,17 @@ function EvalezyNewAssessmentPage() {
                     {busy ? t('create.creating') : t('create.submit')}
                 </MyButton>
             </section>
+
+            {scannerOpen && (
+                <CameraScanner
+                    singleDocument
+                    scanQuality={settings.scanQuality}
+                    onDone={(scanned) => {
+                        setScannerOpen(false);
+                        setPages((prev) => [...prev, ...scanned.flat()]);
+                    }}
+                />
+            )}
         </div>
     );
 }

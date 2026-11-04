@@ -13,6 +13,7 @@ vi.mock('@/components/common/ai-credits/TopUpModal', () => ({ TopUpModal: () => 
 vi.mock('@/services/ai-credits/credit-pack-services', () => ({
     usePlatformInvoicesQuery: () => ({ data: [], isLoading: false, isError: false }),
     downloadInvoicePdf: vi.fn(),
+    consumeTopUpReturnId: () => null,
 }));
 
 const v1Calls = { transactions: 0, analytics: 0 };

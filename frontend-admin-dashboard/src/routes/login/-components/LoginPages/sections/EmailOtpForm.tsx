@@ -1,3 +1,4 @@
+import { isEvalezyMode } from '@/lib/evalezy-mode';
 import React, { useState, useRef, useEffect } from 'react';
 import { z } from 'zod';
 import { useForm } from 'react-hook-form';
@@ -114,7 +115,12 @@ export function EmailLogin({
             const instituteId = getCachedInstituteBranding()?.instituteId;
             return axios.post(
                 REQUEST_OTP,
-                { email, client_name: 'ADMIN', ...(instituteId && { institute_id: instituteId }) },
+                {
+                    email,
+                    client_name: 'ADMIN',
+                    ...(instituteId && { institute_id: instituteId }),
+                    ...(isEvalezyMode() && { product: 'evalezy' }),
+                },
                 {
                     headers: {
                         'Content-Type': 'application/json',
@@ -516,7 +522,11 @@ export function EmailLogin({
                         {t('noAccount')}&nbsp;&nbsp;
                         <span
                             className="cursor-pointer text-primary-500"
-                            onClick={() => navigate({ to: '/signup' })}
+                            onClick={() =>
+                                isEvalezyMode()
+                                    ? navigate({ to: '/signup/start', search: { product: 'evalezy' } })
+                                    : navigate({ to: '/signup' })
+                            }
                         >
                             {t('createOne')}
                         </span>

@@ -62,10 +62,13 @@ import { Route as AccessPassesIndexRouteImport } from "./routes/access-passes/in
 import { Route as VimWaitlistRouteImport } from "./routes/vim/waitlist"
 import { Route as VimLoginRouteImport } from "./routes/vim/login"
 import { Route as VimDashboardRouteImport } from "./routes/vim/dashboard"
+import { Route as SignupStartRouteImport } from "./routes/signup/start"
 import { Route as McpAuthorizeRouteImport } from "./routes/mcp/authorize"
 import { Route as KnowledgeBasePublishRouteImport } from "./routes/knowledge-base/publish"
 import { Route as KnowledgeBaseKbIdRouteImport } from "./routes/knowledge-base/$kbId"
+import { Route as EvalezyProfileRouteImport } from "./routes/evalezy/profile"
 import { Route as EvalezyNewRouteImport } from "./routes/evalezy/new"
+import { Route as EvalezyCreditsRouteImport } from "./routes/evalezy/credits"
 import { Route as EvalezyAssessmentIdRouteImport } from "./routes/evalezy/$assessmentId"
 import { Route as EngagementEnginesEngineIdRouteImport } from "./routes/engagement-engines/$engineId"
 import { Route as CounsellorsUserIdRouteImport } from "./routes/counsellors/$userId"
@@ -82,8 +85,8 @@ import { Route as TemplatesCreateIndexRouteImport } from "./routes/templates/cre
 import { Route as StudyLibraryVoltIndexRouteImport } from "./routes/study-library/volt/index"
 import { Route as StudyLibraryStudentAiIndexRouteImport } from "./routes/study-library/student-ai/index"
 import { Route as StudyLibraryReportsIndexRouteImport } from "./routes/study-library/reports/index"
-import { Route as StudyLibraryGamificationIndexRouteImport } from "./routes/study-library/gamification/index"
 import { Route as StudyLibraryLiveSessionIndexRouteImport } from "./routes/study-library/live-session/index"
+import { Route as StudyLibraryGamificationIndexRouteImport } from "./routes/study-library/gamification/index"
 import { Route as StudyLibraryDoubtManagementIndexRouteImport } from "./routes/study-library/doubt-management/index"
 import { Route as StudyLibraryCoursesIndexRouteImport } from "./routes/study-library/courses/index"
 import { Route as StudyLibraryBulkContentUploadingIndexRouteImport } from "./routes/study-library/bulk-content-uploading/index"
@@ -621,6 +624,11 @@ const VimDashboardRoute = VimDashboardRouteImport.update({
   path: "/vim/dashboard",
   getParentRoute: () => rootRouteImport,
 } as any)
+const SignupStartRoute = SignupStartRouteImport.update({
+  id: "/signup/start",
+  path: "/signup/start",
+  getParentRoute: () => rootRouteImport,
+} as any)
 const McpAuthorizeRoute = McpAuthorizeRouteImport.update({
   id: "/mcp/authorize",
   path: "/mcp/authorize",
@@ -640,9 +648,19 @@ const KnowledgeBaseKbIdRoute = KnowledgeBaseKbIdRouteImport.update({
 } as any).lazy(() =>
   import("./routes/knowledge-base/$kbId.lazy").then((d) => d.Route),
 )
+const EvalezyProfileRoute = EvalezyProfileRouteImport.update({
+  id: "/profile",
+  path: "/profile",
+  getParentRoute: () => EvalezyRouteRoute,
+} as any)
 const EvalezyNewRoute = EvalezyNewRouteImport.update({
   id: "/new",
   path: "/new",
+  getParentRoute: () => EvalezyRouteRoute,
+} as any)
+const EvalezyCreditsRoute = EvalezyCreditsRouteImport.update({
+  id: "/credits",
+  path: "/credits",
   getParentRoute: () => EvalezyRouteRoute,
 } as any)
 const EvalezyAssessmentIdRoute = EvalezyAssessmentIdRouteImport.update({
@@ -754,14 +772,6 @@ const StudyLibraryReportsIndexRoute =
   } as any).lazy(() =>
     import("./routes/study-library/reports/index.lazy").then((d) => d.Route),
   )
-const StudyLibraryGamificationIndexRoute =
-  StudyLibraryGamificationIndexRouteImport.update({
-    id: "/study-library/gamification/",
-    path: "/study-library/gamification/",
-    getParentRoute: () => rootRouteImport,
-  } as any).lazy(() =>
-    import("./routes/study-library/gamification/index.lazy").then((d) => d.Route),
-  )
 const StudyLibraryLiveSessionIndexRoute =
   StudyLibraryLiveSessionIndexRouteImport.update({
     id: "/study-library/live-session/",
@@ -769,6 +779,16 @@ const StudyLibraryLiveSessionIndexRoute =
     getParentRoute: () => rootRouteImport,
   } as any).lazy(() =>
     import("./routes/study-library/live-session/index.lazy").then(
+      (d) => d.Route,
+    ),
+  )
+const StudyLibraryGamificationIndexRoute =
+  StudyLibraryGamificationIndexRouteImport.update({
+    id: "/study-library/gamification/",
+    path: "/study-library/gamification/",
+    getParentRoute: () => rootRouteImport,
+  } as any).lazy(() =>
+    import("./routes/study-library/gamification/index.lazy").then(
       (d) => d.Route,
     ),
   )
@@ -2255,10 +2275,13 @@ export interface FileRoutesByFullPath {
   "/counsellors/$userId": typeof CounsellorsUserIdRoute
   "/engagement-engines/$engineId": typeof EngagementEnginesEngineIdRoute
   "/evalezy/$assessmentId": typeof EvalezyAssessmentIdRoute
+  "/evalezy/credits": typeof EvalezyCreditsRoute
   "/evalezy/new": typeof EvalezyNewRoute
+  "/evalezy/profile": typeof EvalezyProfileRoute
   "/knowledge-base/$kbId": typeof KnowledgeBaseKbIdRoute
   "/knowledge-base/publish": typeof KnowledgeBasePublishRoute
   "/mcp/authorize": typeof McpAuthorizeRoute
+  "/signup/start": typeof SignupStartRoute
   "/vim/dashboard": typeof VimDashboardRoute
   "/vim/login": typeof VimLoginRoute
   "/vim/waitlist": typeof VimWaitlistRoute
@@ -2408,9 +2431,9 @@ export interface FileRoutesByFullPath {
   "/study-library/bulk-content-uploading/": typeof StudyLibraryBulkContentUploadingIndexRoute
   "/study-library/courses/": typeof StudyLibraryCoursesIndexRoute
   "/study-library/doubt-management/": typeof StudyLibraryDoubtManagementIndexRoute
+  "/study-library/gamification/": typeof StudyLibraryGamificationIndexRoute
   "/study-library/live-session/": typeof StudyLibraryLiveSessionIndexRoute
   "/study-library/reports/": typeof StudyLibraryReportsIndexRoute
-  "/study-library/gamification/": typeof StudyLibraryGamificationIndexRoute
   "/study-library/student-ai/": typeof StudyLibraryStudentAiIndexRoute
   "/study-library/volt/": typeof StudyLibraryVoltIndexRoute
   "/templates/create/": typeof TemplatesCreateIndexRoute
@@ -2510,10 +2533,13 @@ export interface FileRoutesByTo {
   "/counsellors/$userId": typeof CounsellorsUserIdRoute
   "/engagement-engines/$engineId": typeof EngagementEnginesEngineIdRoute
   "/evalezy/$assessmentId": typeof EvalezyAssessmentIdRoute
+  "/evalezy/credits": typeof EvalezyCreditsRoute
   "/evalezy/new": typeof EvalezyNewRoute
+  "/evalezy/profile": typeof EvalezyProfileRoute
   "/knowledge-base/$kbId": typeof KnowledgeBaseKbIdRoute
   "/knowledge-base/publish": typeof KnowledgeBasePublishRoute
   "/mcp/authorize": typeof McpAuthorizeRoute
+  "/signup/start": typeof SignupStartRoute
   "/vim/dashboard": typeof VimDashboardRoute
   "/vim/login": typeof VimLoginRoute
   "/vim/waitlist": typeof VimWaitlistRoute
@@ -2663,9 +2689,9 @@ export interface FileRoutesByTo {
   "/study-library/bulk-content-uploading": typeof StudyLibraryBulkContentUploadingIndexRoute
   "/study-library/courses": typeof StudyLibraryCoursesIndexRoute
   "/study-library/doubt-management": typeof StudyLibraryDoubtManagementIndexRoute
+  "/study-library/gamification": typeof StudyLibraryGamificationIndexRoute
   "/study-library/live-session": typeof StudyLibraryLiveSessionIndexRoute
   "/study-library/reports": typeof StudyLibraryReportsIndexRoute
-  "/study-library/gamification": typeof StudyLibraryGamificationIndexRoute
   "/study-library/student-ai": typeof StudyLibraryStudentAiIndexRoute
   "/study-library/volt": typeof StudyLibraryVoltIndexRoute
   "/templates/create": typeof TemplatesCreateIndexRoute
@@ -2768,10 +2794,13 @@ export interface FileRoutesById {
   "/counsellors/$userId": typeof CounsellorsUserIdRoute
   "/engagement-engines/$engineId": typeof EngagementEnginesEngineIdRoute
   "/evalezy/$assessmentId": typeof EvalezyAssessmentIdRoute
+  "/evalezy/credits": typeof EvalezyCreditsRoute
   "/evalezy/new": typeof EvalezyNewRoute
+  "/evalezy/profile": typeof EvalezyProfileRoute
   "/knowledge-base/$kbId": typeof KnowledgeBaseKbIdRoute
   "/knowledge-base/publish": typeof KnowledgeBasePublishRoute
   "/mcp/authorize": typeof McpAuthorizeRoute
+  "/signup/start": typeof SignupStartRoute
   "/vim/dashboard": typeof VimDashboardRoute
   "/vim/login": typeof VimLoginRoute
   "/vim/waitlist": typeof VimWaitlistRoute
@@ -2921,9 +2950,9 @@ export interface FileRoutesById {
   "/study-library/bulk-content-uploading/": typeof StudyLibraryBulkContentUploadingIndexRoute
   "/study-library/courses/": typeof StudyLibraryCoursesIndexRoute
   "/study-library/doubt-management/": typeof StudyLibraryDoubtManagementIndexRoute
+  "/study-library/gamification/": typeof StudyLibraryGamificationIndexRoute
   "/study-library/live-session/": typeof StudyLibraryLiveSessionIndexRoute
   "/study-library/reports/": typeof StudyLibraryReportsIndexRoute
-  "/study-library/gamification/": typeof StudyLibraryGamificationIndexRoute
   "/study-library/student-ai/": typeof StudyLibraryStudentAiIndexRoute
   "/study-library/volt/": typeof StudyLibraryVoltIndexRoute
   "/templates/create/": typeof TemplatesCreateIndexRoute
@@ -3027,10 +3056,13 @@ export interface FileRouteTypes {
     | "/counsellors/$userId"
     | "/engagement-engines/$engineId"
     | "/evalezy/$assessmentId"
+    | "/evalezy/credits"
     | "/evalezy/new"
+    | "/evalezy/profile"
     | "/knowledge-base/$kbId"
     | "/knowledge-base/publish"
     | "/mcp/authorize"
+    | "/signup/start"
     | "/vim/dashboard"
     | "/vim/login"
     | "/vim/waitlist"
@@ -3180,9 +3212,9 @@ export interface FileRouteTypes {
     | "/study-library/bulk-content-uploading/"
     | "/study-library/courses/"
     | "/study-library/doubt-management/"
+    | "/study-library/gamification/"
     | "/study-library/live-session/"
     | "/study-library/reports/"
-    | "/study-library/gamification/"
     | "/study-library/student-ai/"
     | "/study-library/volt/"
     | "/templates/create/"
@@ -3282,10 +3314,13 @@ export interface FileRouteTypes {
     | "/counsellors/$userId"
     | "/engagement-engines/$engineId"
     | "/evalezy/$assessmentId"
+    | "/evalezy/credits"
     | "/evalezy/new"
+    | "/evalezy/profile"
     | "/knowledge-base/$kbId"
     | "/knowledge-base/publish"
     | "/mcp/authorize"
+    | "/signup/start"
     | "/vim/dashboard"
     | "/vim/login"
     | "/vim/waitlist"
@@ -3435,9 +3470,9 @@ export interface FileRouteTypes {
     | "/study-library/bulk-content-uploading"
     | "/study-library/courses"
     | "/study-library/doubt-management"
+    | "/study-library/gamification"
     | "/study-library/live-session"
     | "/study-library/reports"
-    | "/study-library/gamification"
     | "/study-library/student-ai"
     | "/study-library/volt"
     | "/templates/create"
@@ -3539,10 +3574,13 @@ export interface FileRouteTypes {
     | "/counsellors/$userId"
     | "/engagement-engines/$engineId"
     | "/evalezy/$assessmentId"
+    | "/evalezy/credits"
     | "/evalezy/new"
+    | "/evalezy/profile"
     | "/knowledge-base/$kbId"
     | "/knowledge-base/publish"
     | "/mcp/authorize"
+    | "/signup/start"
     | "/vim/dashboard"
     | "/vim/login"
     | "/vim/waitlist"
@@ -3692,9 +3730,9 @@ export interface FileRouteTypes {
     | "/study-library/bulk-content-uploading/"
     | "/study-library/courses/"
     | "/study-library/doubt-management/"
+    | "/study-library/gamification/"
     | "/study-library/live-session/"
     | "/study-library/reports/"
-    | "/study-library/gamification/"
     | "/study-library/student-ai/"
     | "/study-library/volt/"
     | "/templates/create/"
@@ -3799,6 +3837,7 @@ export interface RootRouteChildren {
   KnowledgeBaseKbIdRoute: typeof KnowledgeBaseKbIdRoute
   KnowledgeBasePublishRoute: typeof KnowledgeBasePublishRoute
   McpAuthorizeRoute: typeof McpAuthorizeRoute
+  SignupStartRoute: typeof SignupStartRoute
   VimDashboardRoute: typeof VimDashboardRoute
   VimLoginRoute: typeof VimLoginRoute
   VimWaitlistRoute: typeof VimWaitlistRoute
@@ -3946,9 +3985,9 @@ export interface RootRouteChildren {
   StudyLibraryBulkContentUploadingIndexRoute: typeof StudyLibraryBulkContentUploadingIndexRoute
   StudyLibraryCoursesIndexRoute: typeof StudyLibraryCoursesIndexRoute
   StudyLibraryDoubtManagementIndexRoute: typeof StudyLibraryDoubtManagementIndexRoute
+  StudyLibraryGamificationIndexRoute: typeof StudyLibraryGamificationIndexRoute
   StudyLibraryLiveSessionIndexRoute: typeof StudyLibraryLiveSessionIndexRoute
   StudyLibraryReportsIndexRoute: typeof StudyLibraryReportsIndexRoute
-  StudyLibraryGamificationIndexRoute: typeof StudyLibraryGamificationIndexRoute
   StudyLibraryStudentAiIndexRoute: typeof StudyLibraryStudentAiIndexRoute
   StudyLibraryVoltIndexRoute: typeof StudyLibraryVoltIndexRoute
   TemplatesCreateIndexRoute: typeof TemplatesCreateIndexRoute
@@ -4425,6 +4464,13 @@ declare module "@tanstack/react-router" {
       preLoaderRoute: typeof VimDashboardRouteImport
       parentRoute: typeof rootRouteImport
     }
+    "/signup/start": {
+      id: "/signup/start"
+      path: "/signup/start"
+      fullPath: "/signup/start"
+      preLoaderRoute: typeof SignupStartRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     "/mcp/authorize": {
       id: "/mcp/authorize"
       path: "/mcp/authorize"
@@ -4446,11 +4492,25 @@ declare module "@tanstack/react-router" {
       preLoaderRoute: typeof KnowledgeBaseKbIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    "/evalezy/profile": {
+      id: "/evalezy/profile"
+      path: "/profile"
+      fullPath: "/evalezy/profile"
+      preLoaderRoute: typeof EvalezyProfileRouteImport
+      parentRoute: typeof EvalezyRouteRoute
+    }
     "/evalezy/new": {
       id: "/evalezy/new"
       path: "/new"
       fullPath: "/evalezy/new"
       preLoaderRoute: typeof EvalezyNewRouteImport
+      parentRoute: typeof EvalezyRouteRoute
+    }
+    "/evalezy/credits": {
+      id: "/evalezy/credits"
+      path: "/credits"
+      fullPath: "/evalezy/credits"
+      preLoaderRoute: typeof EvalezyCreditsRouteImport
       parentRoute: typeof EvalezyRouteRoute
     }
     "/evalezy/$assessmentId": {
@@ -4565,18 +4625,18 @@ declare module "@tanstack/react-router" {
       preLoaderRoute: typeof StudyLibraryReportsIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
-    "/study-library/gamification/": {
-      id: "/study-library/gamification/"
-      path: "/study-library/gamification"
-      fullPath: "/study-library/gamification/"
-      preLoaderRoute: typeof StudyLibraryGamificationIndexRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     "/study-library/live-session/": {
       id: "/study-library/live-session/"
       path: "/study-library/live-session"
       fullPath: "/study-library/live-session/"
       preLoaderRoute: typeof StudyLibraryLiveSessionIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    "/study-library/gamification/": {
+      id: "/study-library/gamification/"
+      path: "/study-library/gamification"
+      fullPath: "/study-library/gamification/"
+      preLoaderRoute: typeof StudyLibraryGamificationIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     "/study-library/doubt-management/": {
@@ -5830,13 +5890,17 @@ declare module "@tanstack/react-router" {
 
 interface EvalezyRouteRouteChildren {
   EvalezyAssessmentIdRoute: typeof EvalezyAssessmentIdRoute
+  EvalezyCreditsRoute: typeof EvalezyCreditsRoute
   EvalezyNewRoute: typeof EvalezyNewRoute
+  EvalezyProfileRoute: typeof EvalezyProfileRoute
   EvalezyIndexRoute: typeof EvalezyIndexRoute
 }
 
 const EvalezyRouteRouteChildren: EvalezyRouteRouteChildren = {
   EvalezyAssessmentIdRoute: EvalezyAssessmentIdRoute,
+  EvalezyCreditsRoute: EvalezyCreditsRoute,
   EvalezyNewRoute: EvalezyNewRoute,
+  EvalezyProfileRoute: EvalezyProfileRoute,
   EvalezyIndexRoute: EvalezyIndexRoute,
 }
 
@@ -5870,6 +5934,7 @@ const rootRouteChildren: RootRouteChildren = {
   KnowledgeBaseKbIdRoute: KnowledgeBaseKbIdRoute,
   KnowledgeBasePublishRoute: KnowledgeBasePublishRoute,
   McpAuthorizeRoute: McpAuthorizeRoute,
+  SignupStartRoute: SignupStartRoute,
   VimDashboardRoute: VimDashboardRoute,
   VimLoginRoute: VimLoginRoute,
   VimWaitlistRoute: VimWaitlistRoute,
@@ -6033,9 +6098,9 @@ const rootRouteChildren: RootRouteChildren = {
     StudyLibraryBulkContentUploadingIndexRoute,
   StudyLibraryCoursesIndexRoute: StudyLibraryCoursesIndexRoute,
   StudyLibraryDoubtManagementIndexRoute: StudyLibraryDoubtManagementIndexRoute,
+  StudyLibraryGamificationIndexRoute: StudyLibraryGamificationIndexRoute,
   StudyLibraryLiveSessionIndexRoute: StudyLibraryLiveSessionIndexRoute,
   StudyLibraryReportsIndexRoute: StudyLibraryReportsIndexRoute,
-  StudyLibraryGamificationIndexRoute: StudyLibraryGamificationIndexRoute,
   StudyLibraryStudentAiIndexRoute: StudyLibraryStudentAiIndexRoute,
   StudyLibraryVoltIndexRoute: StudyLibraryVoltIndexRoute,
   TemplatesCreateIndexRoute: TemplatesCreateIndexRoute,

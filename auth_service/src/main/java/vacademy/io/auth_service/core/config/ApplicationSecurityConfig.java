@@ -90,6 +90,9 @@ public class ApplicationSecurityConfig {
             "/auth-service/v1/verify-generic-whatsapp-otp",
             "/auth-service/v1/verify-generic-whatsapp-otp-login",
 
+            // Self sign-up (Evalezy): OTP, Google proof and the trial workspace
+            "/auth-service/v1/self-signup/**",
+
             // Vimotion onboarding (sister product) — public signup flow
             "/auth-service/v1/vimotion/request-signup-otp",
             "/auth-service/v1/vimotion/verify-signup-otp",

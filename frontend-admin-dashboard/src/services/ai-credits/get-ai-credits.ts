@@ -1,3 +1,4 @@
+import { isInEvalezyShell } from '@/lib/evalezy-mode';
 import authenticatedAxiosInstance from '@/lib/auth/axiosInstance';
 import { getCurrentInstituteId } from '@/lib/auth/instituteUtils';
 import { AI_SERVICE_BASE_URL } from '@/constants/urls';
@@ -211,7 +212,10 @@ export const fetchAiUsageForecast = async (): Promise<UsageForecast> => {
     const INSTITUTE_ID = getCurrentInstituteId();
 
     const response = await authenticatedAxiosInstance.get<UsageForecast>(
-        `${AI_SERVICE_BASE_URL}/credits/v1/institutes/${INSTITUTE_ID}/forecast`
+        // Evalezy reads a true daily average; the portal keeps its active-days figure.
+        `${AI_SERVICE_BASE_URL}/credits/v1/institutes/${INSTITUTE_ID}/forecast${
+            isInEvalezyShell() ? '?per_calendar_day=true' : ''
+        }`
     );
     return response.data;
 };

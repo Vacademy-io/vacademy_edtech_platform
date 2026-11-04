@@ -32,6 +32,8 @@ interface PaginationProps {
     onPageSizeChange?: (size: number) => void;
     /** Choices offered by the selector. */
     pageSizeOptions?: number[];
+    /** Arrows without words and tighter numbers below sm, so a long list fits one phone row. */
+    compactOnPhone?: boolean;
 }
 
 /**
@@ -65,6 +67,7 @@ export function MyPagination({
     pageSize,
     onPageSizeChange,
     pageSizeOptions = [10, 25, 50, 100],
+    compactOnPhone = false,
 }: PaginationProps) {
     const [pageInput, setPageInput] = useState('');
     const [submittedPage, setSubmittedPage] = useState('');
@@ -137,10 +140,16 @@ export function MyPagination({
                 </div>
             )}
             <div className="flex flex-wrap items-center gap-6">
-                <Pagination className="mx-0 w-fit">
-                    <PaginationContent className="w-fit">
+                <Pagination className={cn('mx-0 w-fit', compactOnPhone && 'max-w-full')}>
+                    <PaginationContent
+                        className={cn(
+                            'w-fit',
+                            compactOnPhone && 'flex-wrap gap-0.5 sm:flex-nowrap sm:gap-1'
+                        )}
+                    >
                         <PaginationItem>
                             <PaginationPrevious
+                                compactOnPhone={compactOnPhone}
                                 onClick={handlePreviousPage}
                                 className={
                                     currentPage === 0
@@ -153,7 +162,9 @@ export function MyPagination({
                         {buildPageItems(currentPage, totalPages).map((item, index) =>
                             item === 'ellipsis' ? (
                                 <PaginationItem key={`ellipsis-${index}`}>
-                                    <PaginationEllipsis />
+                                    <PaginationEllipsis
+                                        className={compactOnPhone ? 'w-6 sm:w-9' : undefined}
+                                    />
                                 </PaginationItem>
                             ) : (
                                 <PaginationItem key={item}>
@@ -170,6 +181,7 @@ export function MyPagination({
 
                         <PaginationItem>
                             <PaginationNext
+                                compactOnPhone={compactOnPhone}
                                 onClick={handleNextPage}
                                 className={
                                     currentPage === totalPages - 1

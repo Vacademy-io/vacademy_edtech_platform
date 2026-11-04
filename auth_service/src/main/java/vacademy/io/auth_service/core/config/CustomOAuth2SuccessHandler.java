@@ -1,5 +1,8 @@
 package vacademy.io.auth_service.core.config;
 
+import vacademy.io.common.core.internal_api_wrapper.ProductConfigClient;
+import vacademy.io.common.product.ProductConfigDTO;
+import vacademy.io.auth_service.feature.selfsignup.service.SelfSignupTokenService;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
@@ -34,6 +37,12 @@ public class CustomOAuth2SuccessHandler implements AuthenticationSuccessHandler 
 
     @Autowired
     private OAuth2VendorToUserDetailService oAuth2VendorToUserDetailService;
+
+    @Autowired
+    private SelfSignupTokenService selfSignupTokenService;
+
+    @Autowired
+    private ProductConfigClient productConfigClient;
 
     // Removed unused InstitutePolicyService field
 
@@ -220,6 +229,16 @@ public class CustomOAuth2SuccessHandler implements AuthenticationSuccessHandler 
         if (!"learner".equalsIgnoreCase(userType)) {
             log.debug("Processing admin signup flow");
 
+            // Self sign-up: a Google account that already has a workspace just signs in.
+            if (selfSignupProduct(encodedState) != null) {
+                JwtResponseDto existing = getTokenByUserTypeAndUserEmail(userType, userInfo.name, email,
+                        userInfo.instituteId, userInfo.sub, userInfo.providerId);
+                if (existing != null) {
+                    redirectWithTokens(response, redirectUrl, existing);
+                    return;
+                }
+            }
+
             returnUserDataToFrontend(response, redirectUrl, userInfo, encodedState, isEmailVerified, false);
             oAuth2VendorToUserDetailService.saveOrUpdateOAuth2VendorToUserDetail(userInfo.providerId, email, userInfo.sub);
             log.info("Saved/Updated OAuth vendor details for admin user: {}", email);
@@ -353,7 +372,51 @@ public class CustomOAuth2SuccessHandler implements AuthenticationSuccessHandler 
         log.debug("Frontend redirect URL prepared, will redirect with {} params", hasError ? "error=true" : "no error");
 
         log.info("Redirecting to frontend with user data: {}", redirectWithParams);
+        redirectWithParams += selfSignupTokenParam(redirectUrl, encodedState, email, userInfo);
         response.sendRedirect(redirectWithParams);
+    }
+
+    /** The product a self sign-up names in its OAuth state, or null for every other flow. */
+    private ProductConfigDTO selfSignupProduct(String encodedState) {
+        if (encodedState == null || encodedState.isBlank()) {
+            return null;
+        }
+        try {
+            String json = new String(Base64.getDecoder().decode(encodedState), StandardCharsets.UTF_8);
+            String product = new ObjectMapper().readTree(json).path("product").asText(null);
+            return productConfigClient.get(product).filter(ProductConfigDTO::isSignupOpen).orElse(null);
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    /**
+     * Proof of the Google-verified email for the self sign-up form. Only for an address Google itself
+     * marks verified, and only sent to our own hosts: the OAuth state's return URL is caller-supplied.
+     */
+    private String selfSignupTokenParam(String redirectUrl, String encodedState, String email, UserInfo userInfo) {
+        ProductConfigDTO product = selfSignupProduct(encodedState);
+        if (!userInfo.emailVerifiedByProvider() || email == null || product == null
+                || !isOwnHost(redirectUrl, product)) {
+            return "";
+        }
+        String token = selfSignupTokenService.issue(email, SelfSignupTokenService.METHOD_GOOGLE, userInfo.name,
+                userInfo.sub, userInfo.providerId);
+        return "&signupToken=" + URLEncoder.encode(token, StandardCharsets.UTF_8);
+    }
+
+    /** Loopback for local runs; everything else comes from the product's own settings. */
+    static boolean isOwnHost(String url, ProductConfigDTO product) {
+        try {
+            String host = java.net.URI.create(url).getHost();
+            if (host == null) {
+                return false;
+            }
+            String h = host.toLowerCase();
+            return h.equals("localhost") || h.equals("127.0.0.1") || product.allowsReturnTo(h);
+        } catch (IllegalArgumentException e) {
+            return false;
+        }
     }
 
     private UserInfo extractUserInfo(Map<String, Object> attributes, String provider, HttpServletResponse response,
@@ -388,11 +451,12 @@ public class CustomOAuth2SuccessHandler implements AuthenticationSuccessHandler 
                 sendErrorRedirect(response, redirectUrl, "unsupported_provider");
                 return null;
         }
-        return new UserInfo(email, name, picture, provider, sub, instituteId);
+        return new UserInfo(email, name, picture, provider, sub, instituteId,
+                "google".equals(provider) && "true".equalsIgnoreCase(String.valueOf(attributes.get("email_verified"))));
     }
 
-    private record UserInfo(String email, String name, String picture, String providerId, String sub,
-                            String instituteId) {
+    private record UserInfo(String email, String name, String picture, String providerId, String sub, String instituteId,
+            boolean emailVerifiedByProvider) {
     }
 
     private void redirectWithTokens(HttpServletResponse response, String redirectUrl, JwtResponseDto jwtResponseDto)
