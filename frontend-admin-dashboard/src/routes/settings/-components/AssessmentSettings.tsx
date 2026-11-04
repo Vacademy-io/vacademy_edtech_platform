@@ -236,6 +236,7 @@ const AssessmentSettings = () => {
                         />
                         {/* The pen every checked copy is drawn with */}
                         <PenStylePicker
+                            saveHint
                             value={normalizePenStyle(settings.aiCopyCheck?.penStyle)}
                             onChange={(penStyle) => {
                                 setSettings((prev) => ({

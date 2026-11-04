@@ -185,6 +185,18 @@ public class AiEvaluationController {
                 return ResponseEntity.ok("Question evaluation updated");
         }
 
+        /** A fixed sample page marked with this pen, as a PNG. No model runs and nothing is billed. */
+        @PostMapping(value = "/pen-preview", produces = org.springframework.http.MediaType.IMAGE_PNG_VALUE)
+        public ResponseEntity<byte[]> penPreview(
+                        @RequestAttribute("user") CustomUserDetails user,
+                        @RequestBody(required = false) Map<String, Object> body) {
+                accessValidator.requireStaffRole(user);
+                Object pen = body == null ? null : body.get("pen_style");
+                @SuppressWarnings("unchecked")
+                Map<String, Object> penStyle = pen instanceof Map ? (Map<String, Object>) pen : null;
+                return ResponseEntity.ok(reRenderService.penPreview(penStyle));
+        }
+
         /**
          * Teacher review: re-draw the AI checked copy with every correction made on the
          * review page (marks, remarks, removed / rewritten pen notes), optionally in another

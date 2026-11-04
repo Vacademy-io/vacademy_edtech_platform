@@ -13,16 +13,33 @@
             "PURPLE": "Purple"
         },
         "fonts": {
-            "KALAM": "Kalam",
-            "PATRICK_HAND": "Patrick Hand",
-            "ARCHITECTS_DAUGHTER": "Architects Daughter"
+            "DAWNING_OF_A_NEW_DAY": "Teacher (default)",
+            "COVERED_BY_YOUR_GRACE": "Natural",
+            "OVER_THE_RAINBOW": "Scrawled",
+            "CAVEAT": "Quick",
+            "CEDARVILLE_CURSIVE": "Cursive",
+            "KALAM": "Classic (Kalam)",
+            "PATRICK_HAND": "Classic (Patrick Hand)",
+            "ARCHITECTS_DAUGHTER": "Classic (Architects Daughter)"
         },
         "sizes": {
             "SMALL": "Small",
             "MEDIUM": "Medium",
             "LARGE": "Large"
         },
-        "sample": "Good work · 4/5"
+        "sample": "Good work · 4/5",
+        "customInk": "Custom",
+        "darkness": "How dark",
+        "darknessLight": "Light",
+        "darknessDark": "Dark",
+        "saveHint": "Copies use this pen once you save these settings.",
+        "previewButton": "See how it will look",
+        "previewTitle": "How a checked copy will look",
+        "previewNote": "A sample page, drawn the same way as a real checked copy. Remarks on real copies come from the AI check.",
+        "previewLoading": "Drawing the page…",
+        "previewError": "Could not draw the preview.",
+        "previewRetry": "Try again",
+        "previewAlt": "Sample answer page marked with the chosen pen"
     },
     "redraw": {
         "button": "Update checked copy",

@@ -13,16 +13,33 @@
             "PURPLE": "Violet"
         },
         "fonts": {
-            "KALAM": "Kalam",
-            "PATRICK_HAND": "Patrick Hand",
-            "ARCHITECTS_DAUGHTER": "Architects Daughter"
+            "DAWNING_OF_A_NEW_DAY": "Enseignant (par défaut)",
+            "COVERED_BY_YOUR_GRACE": "Naturelle",
+            "OVER_THE_RAINBOW": "Griffonnée",
+            "CAVEAT": "Rapide",
+            "CEDARVILLE_CURSIVE": "Cursive",
+            "KALAM": "Classique (Kalam)",
+            "PATRICK_HAND": "Classique (Patrick Hand)",
+            "ARCHITECTS_DAUGHTER": "Classique (Architects Daughter)"
         },
         "sizes": {
             "SMALL": "Petite",
             "MEDIUM": "Moyenne",
             "LARGE": "Grande"
         },
-        "sample": "Bon travail · 4/5"
+        "sample": "Bon travail · 4/5",
+        "customInk": "Personnalisée",
+        "darkness": "Intensité",
+        "darknessLight": "Clair",
+        "darknessDark": "Foncé",
+        "saveHint": "Les copies utilisent ce stylo une fois ces paramètres enregistrés.",
+        "previewButton": "Voir le rendu",
+        "previewTitle": "Rendu d’une copie corrigée",
+        "previewNote": "Une page d’exemple, dessinée comme une vraie copie corrigée. Sur les vraies copies, les remarques viennent de la correction par l’IA.",
+        "previewLoading": "Dessin de la page…",
+        "previewError": "Impossible de dessiner l’aperçu.",
+        "previewRetry": "Réessayer",
+        "previewAlt": "Page de réponse d’exemple corrigée avec le stylo choisi"
     },
     "redraw": {
         "button": "Mettre à jour la copie corrigée",

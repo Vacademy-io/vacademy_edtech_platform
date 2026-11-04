@@ -103,6 +103,11 @@ module.exports = {
                 'hand-kalam': ['Kalam', 'cursive'],
                 'hand-patrick': ['"Patrick Hand"', 'cursive'],
                 'hand-architects': ['"Architects Daughter"', 'cursive'],
+                'hand-dawning': ['"Dawning of a New Day"', 'cursive'],
+                'hand-covered': ['"Covered By Your Grace"', 'cursive'],
+                'hand-rainbow': ['"Over the Rainbow"', 'cursive'],
+                'hand-caveat': ['Caveat', 'cursive'],
+                'hand-cedarville': ['"Cedarville Cursive"', 'cursive'],
             },
             fontSize: {
                 h1: [

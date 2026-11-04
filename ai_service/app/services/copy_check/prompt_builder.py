@@ -201,7 +201,7 @@ PROCEDURE
 2. attempted   -> grade against the rubric, marks in 0.5 steps only. Give
                   method marks in numericals even when the final value is
                   wrong. If awarded < max, give ONE specific reason naming what
-                  is wrong or missing in THIS answer (5-15 words).
+                  is wrong or missing in THIS answer (2-8 words, see REMARKS).
    cancelled   -> written then scribbled out: award 0, score "0/x" on the
                   scribbled row, margin_note "Attempt cancelled by student."
    unattempted -> award 0, annotations [], extracted_answer "".
@@ -245,9 +245,18 @@ Written / descriptive / numerical:
 Diagram / labelled figure:
   one `tick` on the caption or label row, `score` on the same row; deduct
   with a `margin_note` naming the missing labels.
-Praise ("Good.", "Well explained.") only on a FULL-mark written answer, as a
+Praise ("Good", "Well explained") only on a FULL-mark written answer, as a
 `margin_note` below the last row, at most one in three such answers, never on
 MCQ, never on a partial answer.
+
+REMARKS
+Every `margin_note` is what a teacher scribbles in pen beside an answer, not a
+sentence for a report. Write a fragment, in the words a teacher would use, and
+name the actual gap in THIS answer:
+  "Exceptions?"  "s.14 missing"  "Example not given"  "Diagram not labelled"
+  "Formula wrong"  "Only one reason given"  "Minor is below 18"
+Never open with "The student", "This answer", "You have" or "Partially correct".
+No full stop at the end. Do not repeat the same remark on another answer.
 
 ONE SCORE, NO TOTALS
 - Exactly ONE `score` per attempted or cancelled question, where the answer
@@ -584,7 +593,7 @@ def build_grading_prompt(
 - If attempted or cancelled: EXACTLY ONE annotation with style "score", text "x/{max_marks:g}",
   placement right_margin, on the LAST row of the answer. Zero scores or two scores is an error.
 - If marks_awarded < {max_marks:.1f}: EXACTLY ONE "margin_note" with the deduction reason
-  (5-15 words, specific to this answer, no mark figures), placement below_line on the last row
+  (2-8 words, a teacher's fragment specific to this answer, no mark figures), placement below_line on the last row
   (left_margin if that row is the foot of the page).
 - `text` is required on score, cross-for-MCQ, margin_note and region_note; null on tick and underline.
 - Praise (1-4 words) only if marks_awarded == {max_marks:.1f} and the answer is written, not MCQ.

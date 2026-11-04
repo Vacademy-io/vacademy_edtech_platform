@@ -38,7 +38,7 @@ def _scan() -> tuple[bytes, dict, list]:
 def test_pen_style_parse_defaults_to_none():
     assert pen_style.parse(None) is None
     assert pen_style.parse({}) is None
-    assert pen_style.parse({"ink": "RED", "font": "KALAM", "size": "MEDIUM"}) is None
+    assert pen_style.parse({"ink": "RED", "font": "DAWNING_OF_A_NEW_DAY", "size": "MEDIUM", "darkness": 50}) is None
     assert pen_style.parse({"ink": "nonsense", "font": "?", "size": "HUGE"}) is None
 
 

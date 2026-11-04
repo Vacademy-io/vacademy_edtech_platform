@@ -25,3 +25,13 @@ redistributed with this service.
 
 `COPY_CHECK_HANDWRITING_FONT` still overrides the prose face if a deployment
 wants its own hand.
+
+## Handwriting an institute can choose
+
+Same licence, unmodified files from google/fonts, each with its own notice:
+
+- `DawningofaNewDay.ttf` (`OFL-DawningofaNewDay.txt`) - the default hand on a checked copy: joined up, redrawn as one round pen line
+- `CoveredByYourGrace.ttf` (`OFL-CoveredByYourGrace.txt`) - a firm, heavier hand
+- `OvertheRainbow.ttf` (`OFL-OvertheRainbow.txt`) - a looser, scrawled hand
+- `Caveat.ttf` (`OFL-Caveat.txt`) - quick, narrow hand
+- `Cedarville-Cursive.ttf` (`OFL-CedarvilleCursive.txt`) - joined-up hand

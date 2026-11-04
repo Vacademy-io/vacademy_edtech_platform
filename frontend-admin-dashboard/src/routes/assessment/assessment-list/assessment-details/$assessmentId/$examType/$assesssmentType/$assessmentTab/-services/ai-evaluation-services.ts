@@ -314,10 +314,28 @@ export interface RegenerateCopyResponse {
  * (marks, remarks, pen notes), optionally in another pen / remarks layout.
  * `pen_style` omitted = the pen the copy was checked with.
  */
+/**
+ * A sample page marked with this pen, drawn by the same renderer as a real checked
+ * copy. No model runs and nothing is billed.
+ */
+export const getPenPreview = async (
+    penStyle: { ink: string; font: string; size: string; darkness: number },
+    signal?: AbortSignal
+): Promise<Blob> => {
+    const response = await authenticatedAxiosInstance({
+        method: 'POST',
+        url: `${BASE_URL}/assessment-service/assessment/evaluation-ai/pen-preview`,
+        data: { pen_style: penStyle },
+        responseType: 'blob',
+        signal,
+    });
+    return response.data;
+};
+
 export const regenerateCheckedCopy = async (
     processId: string,
     payload: {
-        pen_style?: { ink: string; font: string; size: string };
+        pen_style?: { ink: string; font: string; size: string; darkness: number };
         comment_placement?: 'INSIDE' | 'OUTSIDE';
     }
 ): Promise<RegenerateCopyResponse> => {

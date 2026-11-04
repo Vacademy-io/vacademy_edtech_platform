@@ -137,6 +137,8 @@ _HW_FONTSIZE = 12.5
 # measured at 40dpi so a cell is ~1.8pt and sub-cell overshoot is noise.
 _PAPER_TOL = 1.0
 _MAX_NOTE_CHARS = 110
+# The last tick drawn (cx, cy, size in points), for the point marks beside it.
+_LAST_TICK_BOX: list = [None]
 # Below this the mark is not trustworthy enough to release unreviewed.
 _REVIEW_CONFIDENCE = 0.60
 _NOTE_SEARCH_RADIUS = 130.0
@@ -294,6 +296,13 @@ _ORDER_OPENERS = (
     "mention that", "mention", "name the", "name", "include", "note that",
     "note", "write", "specify",
 )
+
+
+def _pen_remark(note: str) -> str:
+    """A remark as it goes on the copy: a teacher's fragment, without the full stop
+    a typed sentence ends in. Two sentences keep the stop between them."""
+    voiced = _teacher_voice(note).rstrip()
+    return voiced[:-1].rstrip() if voiced.endswith(".") and not voiced.endswith("..") else voiced
 
 
 def _teacher_voice(note: str) -> str:
@@ -768,17 +777,17 @@ def _pen_text_overlay(page: Any, origin: Any, text: str, size: float,
         # Kalam carries a small x-height, so at the size the placement ladder
         # chose for the old face it reads a shade too small beside the
         # student's hand. The guide asks for notes ~1.1x the line height.
-        px = max(6, int(round(size * S * 1.18 * _ps.scale())))
+        px = pen.fitted_px(max(6, int(round(size * S * 1.18 * _ps.scale()))))
         font = ImageFont.truetype(pen.font_path, px)
         # Shrink until the line fits before the limit the caller set; the
         # caller has already wrapped, so this rarely runs more than once.
         for _ in range(6):
-            est_pt = font.getlength(text) * 1.12 / S
+            est_pt = pen.text_width(text, px) / S
             if max_x is None or origin.x + est_pt <= max_x or px <= 8:
                 break
             px = int(px * 0.92)
             font = ImageFont.truetype(pen.font_path, px)
-        est_w = int(font.getlength(text) * 1.3) + 4 * px
+        est_w = int(pen.text_width(text, px) * 1.2) + 4 * px
         est_h = 4 * px
         layer = Image.new("RGBA", (est_w, est_h), (0, 0, 0, 0))
         # Pen.text takes the TOP-left of the text (PIL's convention), not the
@@ -806,10 +815,12 @@ def _pen_mark_overlay(page: Any, style: str, cx: float, cy: float, size: float) 
         h = size * S * _ps.scale()
         layer = Image.new("RGBA", (int(h * 4), int(h * 4)), (0, 0, 0, 0))
         if style == "tick":
-            # vertex sits low-left in the box, the tail climbs to the right
-            pen.tick(layer, (h * 1.4, h * 2.6), h * 0.95)
+            # vertex sits low-left in the box, the tail climbs to the right.
+            # Only ever smaller than the box the placement cleared. A hand makes
+            # a quick small tick and a bigger one on the same page.
+            pen.tick(layer, (h * 1.4, h * 2.6), h * pen.rng.uniform(0.70, 0.95))
         else:
-            pen.cross(layer, (h * 2.0, h * 2.0), h * 0.85)
+            pen.cross(layer, (h * 2.0, h * 2.0), h * pen.rng.uniform(0.68, 0.85))
         # layer (h*1.4, h*2.6) / (h*2, h*2) correspond to the box's own
         # anchor points; map the layer origin so they coincide.
         if style == "tick":
@@ -1159,6 +1170,9 @@ def _draw_tick_or_cross(page, style, cx, cy, size, colour, rng, rect,
     if _PLACED[0] is not None:
         _PLACED[0].append(fitz.Rect(cx, max(cy, rect.y0 - 0.5),
                                     cx + size, min(cy + size, rect.y1 + 0.5)))
+
+    if style == "tick":
+        _LAST_TICK_BOX[0] = (cx, cy, size)
 
     if _PEN[0] is not None and _pen_mark_overlay(page, style, cx, cy, size) is not None:
         return
@@ -2959,7 +2973,10 @@ def _place_by_contract(page: Any, rect: Any, style: str, note: str, position: Op
     ink_b = own[1] if own else min(rect.x1, ink_a + 0.6 * sheet.width)
     is_score = style in ("score", "total")
     k = _page_k(page) if style in ("score", "total") else _note_k(page)
-    size = max(11.0, min(24.0 * k, h * (1.4 if is_score else 1.1)))
+    # A remark at about the student's own size, the way it is scribbled beside the
+    # answer: at 1.1 x the row (and _pen_text_overlay's 1.18 on top) remarks stood
+    # taller than the writing they were about and read as captions.
+    size = max(11.0, min(24.0 * k, h * (1.4 if is_score else 0.8)))
     base_y = rect.y0 + rect.height * 0.5 + size * 0.35
     notes = list(_PLACED[0] or [])
 
@@ -3012,6 +3029,19 @@ def _place_by_contract(page: Any, rect: Any, style: str, note: str, position: Op
                 edge = min(edge, min(ahead) - 6.0)
         if position == "right_margin_same_line":
             x0 = edge - page_w * 0.07 - width
+            if is_score:
+                # Marks do not fall in a ruled column. A little in from the guide's
+                # spot, and not on the same height, as long as that is clear paper;
+                # clear() below still decides, and the guide's spot is the fallback.
+                wander = _hand_rng("score-wander", note, round(rect.y0, 1))
+                moved = fitz.Rect(x0 - wander.uniform(0.0, page_w * 0.035) - 1.0,
+                                  base_y + wander.uniform(-size * 0.14, size * 0.14) - size * 0.85,
+                                  0.0, 0.0)
+                moved.x1 = moved.x0 + width + 2.0
+                moved.y1 = moved.y0 + size * 1.2
+                if clear(moved) and (not own or moved.x0 + 1.0 >= start):
+                    x0 = moved.x0 + 1.0
+                    base_y = moved.y0 + size * 0.85
         else:
             x0 = start
         # Keep clear of the row's writing - but only when that writing was
@@ -3281,7 +3311,7 @@ def _place_note(page: Any, rect: Any, style: str, note: str,
     import fitz
 
     note_right = (sheet.x1 - 4.0) if sheet else (page.rect.width - _SCORE_GUTTER)
-    note = _teacher_voice(_latin1(note).strip())
+    note = _pen_remark(_latin1(note).strip())
     if not note:
         return None
     # A pen note is short by nature, and a long one cannot fit an interline gap
@@ -3789,6 +3819,54 @@ def _digit_pen(page: Any) -> tuple:
         except Exception:
             logger.debug("digit font registration failed", exc_info=True)
     return _pen(page)[0], _pen(page)[2]
+
+
+def _write_point_marks(doc: Any, ticks: list, use_page: Any) -> None:
+    """"+1" beside a question's ticks, the way a teacher counts points.
+
+    `ticks` is [(verdict, page_id, page_no, (cx, cy, size)), ...]. Written only when
+    they add up to exactly the question's mark, and for all of its ticks or none:
+    "+1 +1" beside a 3/3 would tell the student the copy disagrees with itself.
+    """
+    import fitz
+
+    by_verdict: dict[int, list] = {}
+    for tick in ticks:
+        by_verdict.setdefault(id(tick[0]), []).append(tick)
+    for group in by_verdict.values():
+        verdict = group[0][0]
+        try:
+            marks = float(verdict.get("marks_awarded") or 0)
+        except (TypeError, ValueError):
+            continue
+        if verdict.get("counted") is False or marks < 2 or marks != int(marks) or len(group) != int(marks):
+            continue
+        spots, taken = [], []
+        for _, page_id, page_no, (cx, cy, size) in group:
+            use_page(page_id, page_no)
+            pen_size = max(11.0, size * 0.5)
+            width = _pen_text_width("+1", pen_size)
+            baseline = cy + size * 0.72
+            spot = None
+            # Past the tail of the tick, else before its short arm.
+            for x0 in (cx + size * 1.3, cx - width - 2.0):
+                box = fitz.Rect(x0 - 1.0, baseline - pen_size * 0.85, x0 + width + 1.0, baseline + pen_size * 0.3)
+                if (_on_paper(_PAPER[0], box) and (_CLIP[0] is None or _CLIP[0].contains(box))
+                        and _ink_under(_INK_MAP[0], box) <= 0.03
+                        and not any(box.intersects(o) for o in list(_PLACED[0] or []) + taken)):
+                    spot = (page_id, page_no, x0, baseline, pen_size, box)
+                    taken.append(box)
+                    break
+            if spot is None:
+                spots = None
+                break
+            spots.append(spot)
+        for page_id, page_no, x0, baseline, pen_size, box in spots or []:
+            use_page(page_id, page_no)
+            rng = _hand_rng("point", page_no, round(x0, 1), round(baseline, 1))
+            _pen_text(doc[page_no], fitz.Point(x0, baseline), "+1", pen_size, _ps.colour(_NOTE_TEXT), rng,
+                      slant=rng.uniform(-3.0, 3.0))
+            _PLACED[0].append(box)
 
 
 def _draw_score_badge(page: Any, centre: Any, awarded: float, out_of: Optional[float] = None,
@@ -4578,6 +4656,8 @@ def build_annotated_pdf(
     drawn_rules: dict = {}
     # Language corrections, drawn last of all (see the loop).
     language_queue: list = []
+    # Every tick drawn, with its question, for the point marks after the loop.
+    tick_log: list = []
     # page_no -> the per-question score rings drawn, for the corrections to avoid.
     score_rings: dict = {}
     # Scarce space goes to the marks the student most needs. A richer marking
@@ -4931,8 +5011,11 @@ def build_annotated_pdf(
                     placed = _place_note(page, rect, style, note, page_boxes, sheet_r,
                                          allow_cut=not is_reason)
 
+            _LAST_TICK_BOX[0] = None
             _draw_mark(page, rect, style, paper.get(page_id),
                        has_note=placed is not None)
+            if style == "tick" and _LAST_TICK_BOX[0] is not None:
+                tick_log.append((verdict, page_id, page_no, _LAST_TICK_BOX[0]))
             if note and placed is None and is_reason:
                 unwritten.append((verdict, note, page_no, rect))
             if style in ("underline", "strike", "strikethrough", "circle", "tick", "cross"):
@@ -4965,20 +5048,25 @@ def build_annotated_pdf(
     _place_question_scores(doc, placements, verdicts, paper, order, occupied, drawn_rules,
                            written=scores_written, rings=score_rings)
 
+    def use_page(pid: str, pno: int) -> None:
+        _CLIP[0] = paper.get(pid)
+        _SHADE[0] = shade_by_page.get(pid)
+        _INK_MAP[0] = ink_maps.get(pid)
+        _PAPER[0] = paper_rows.get(pid)
+        _PLACED[0] = occupied.setdefault(pid + ":notes", [])
+        _LINE_H[0] = line_h_by_page.get(pid)
+        _INK_SPAN[0] = None
+        _ROW_SLOPE[0] = 0.0
+        _MARGIN_X[0] = (content.get(pno, doc[pno].rect).x1
+                        if margin_ratio > 0.0 else None)
+
     if unwritten:
-        def use_page(pid: str, pno: int) -> None:
-            _CLIP[0] = paper.get(pid)
-            _SHADE[0] = shade_by_page.get(pid)
-            _INK_MAP[0] = ink_maps.get(pid)
-            _PAPER[0] = paper_rows.get(pid)
-            _PLACED[0] = occupied.setdefault(pid + ":notes", [])
-            _LINE_H[0] = line_h_by_page.get(pid)
-            _INK_SPAN[0] = None
-            _ROW_SLOPE[0] = 0.0
-            _MARGIN_X[0] = (content.get(pno, doc[pno].rect).x1
-                            if margin_ratio > 0.0 else None)
         drawn += _write_unwritten_reasons(doc, unwritten, order, paper, content,
                                           occupied, use_page)
+
+    # After the remarks and scores, so these only ever take paper left over.
+    if tick_log:
+        _write_point_marks(doc, tick_log, use_page)
 
     if language_queue:
         # Reading order, so the margin numbers run down each page.

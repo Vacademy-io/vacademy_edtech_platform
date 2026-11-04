@@ -56,7 +56,7 @@ public class CopyCheckGradeRequestDto {
 
     /**
      * The teacher's pen on the checked copy, from the institute's
-     * {@code ASSESSMENT_SETTING.aiCopyCheck.penStyle}: {@code {ink, font, size}}.
+     * {@code ASSESSMENT_SETTING.aiCopyCheck.penStyle}: {@code {ink, font, size, darkness}}.
      * Null (nothing set) keeps the usual red pen and the request unchanged.
      */
     @JsonProperty("pen_style")

@@ -13,16 +13,33 @@
             "PURPLE": "बैंगनी"
         },
         "fonts": {
-            "KALAM": "Kalam",
-            "PATRICK_HAND": "Patrick Hand",
-            "ARCHITECTS_DAUGHTER": "Architects Daughter"
+            "DAWNING_OF_A_NEW_DAY": "शिक्षक (डिफ़ॉल्ट)",
+            "COVERED_BY_YOUR_GRACE": "प्राकृतिक",
+            "OVER_THE_RAINBOW": "घसीट",
+            "CAVEAT": "तेज़",
+            "CEDARVILLE_CURSIVE": "कर्सिव",
+            "KALAM": "क्लासिक (Kalam)",
+            "PATRICK_HAND": "क्लासिक (Patrick Hand)",
+            "ARCHITECTS_DAUGHTER": "क्लासिक (Architects Daughter)"
         },
         "sizes": {
             "SMALL": "छोटा",
             "MEDIUM": "मध्यम",
             "LARGE": "बड़ा"
         },
-        "sample": "अच्छा काम · 4/5"
+        "sample": "अच्छा काम · 4/5",
+        "customInk": "अपना रंग",
+        "darkness": "कितना गहरा",
+        "darknessLight": "हल्का",
+        "darknessDark": "गहरा",
+        "saveHint": "इन सेटिंग्स को सेव करने के बाद कॉपियाँ इसी पेन से जाँची जाएँगी।",
+        "previewButton": "देखें कैसा दिखेगा",
+        "previewTitle": "जाँची गई कॉपी कैसी दिखेगी",
+        "previewNote": "यह एक नमूना पेज है, जो असली जाँची गई कॉपी की तरह ही बना है। असली कॉपियों पर टिप्पणियाँ AI जाँच से आती हैं।",
+        "previewLoading": "पेज बन रहा है…",
+        "previewError": "पूर्वावलोकन नहीं बन सका।",
+        "previewRetry": "फिर से कोशिश करें",
+        "previewAlt": "चुने गए पेन से जाँचा गया नमूना उत्तर पेज"
     },
     "redraw": {
         "button": "जाँची गई कॉपी अपडेट करें",

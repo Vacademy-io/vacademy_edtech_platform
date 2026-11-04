@@ -155,6 +155,31 @@ public class AiServiceCopyCheckClient {
     }
 
     /**
+     * A fixed sample page marked with this pen, as a PNG ({@code POST /copy-check/pen-preview}).
+     * No model runs and nothing is billed.
+     */
+    public byte[] penPreview(Map<String, Object> penStyle) {
+        Map<String, Object> body = new java.util.HashMap<>();
+        body.put("pen_style", penStyle);
+        byte[] png = webClient.mutate()
+                .codecs(c -> c.defaultCodecs().maxInMemorySize(4 * 1024 * 1024))
+                .build()
+                .post()
+                .uri("/copy-check/pen-preview")
+                .header("X-Internal-Service-Token", internalToken)
+                .accept(MediaType.IMAGE_PNG)
+                .bodyValue(body)
+                .retrieve()
+                .bodyToMono(byte[].class)
+                .timeout(Duration.ofSeconds(30))
+                .block();
+        if (png == null || png.length == 0) {
+            throw new IllegalStateException("ai_service returned no preview");
+        }
+        return png;
+    }
+
+    /**
      * What ai_service read from a PDF without grading it (contract C4,
      * {@code POST /copy-check/inspect}): its page count (null when unknown), whether it
      * is encrypted, and why it could not be read ({@code unparseable},

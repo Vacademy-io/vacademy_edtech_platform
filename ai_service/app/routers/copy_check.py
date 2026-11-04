@@ -3,6 +3,7 @@
                                        pods via copy_check_job, 429 when this pod is full)
   - POST /copy-check/inspect          (page count / encryption of an uploaded PDF)
   - POST /copy-check/re-render        (re-draw a checked copy with a teacher's corrections)
+  - POST /copy-check/pen-preview      (a sample page marked with a chosen pen, as a PNG)
   - POST /copy-check/{job_id}/cancel
   - GET  /copy-check/{job_id}/status
   - GET  /copy-check/rubric/{assessment_id}
@@ -27,7 +28,7 @@ import logging
 from datetime import datetime
 from typing import Optional
 
-from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException
+from fastapi import APIRouter, BackgroundTasks, Body, Depends, HTTPException, Response
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
@@ -57,7 +58,7 @@ from ..schemas.copy_check import (
     UpsertQuestionAnswerRequest,
     UpsertRubricRequest,
 )
-from ..services.copy_check import cancellation, job_guard, re_render, upload_inspect
+from ..services.copy_check import cancellation, job_guard, pen_preview, re_render, upload_inspect
 from ..services.copy_check.orchestrator import _new_job_id, grade_copy, run
 
 logger = logging.getLogger(__name__)
@@ -426,6 +427,21 @@ async def delete_question_answer(
     if not deleted:
         raise HTTPException(status_code=404, detail="Question answer not found")
     return {"assessment_id": assessment_id, "question_id": question_id, "deleted": True}
+
+
+@router.post(
+    "/pen-preview",
+    dependencies=[Depends(require_internal_service_token)],
+)
+async def pen_preview_page(pen_style: Optional[dict] = Body(default=None, embed=True)):
+    """A fixed sample page marked with this pen, as a PNG. No model runs and nothing
+    is billed. 502 when drawing failed."""
+    try:
+        png = await pen_preview.render_preview(pen_style)
+    except Exception:
+        logger.exception("copy-check pen preview failed")
+        raise HTTPException(status_code=502, detail="Could not draw the preview")
+    return Response(content=png, media_type="image/png")
 
 
 @router.post(
