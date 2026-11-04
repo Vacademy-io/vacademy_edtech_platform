@@ -46,7 +46,8 @@ public class EngagementReplyBrain {
     private EngagementLlmPricing pricing;
 
     /**
-     * action = ANSWER | ESCALATE; reply is the drafted text (a suggestion when escalated).
+     * action = ANSWER | ESCALATE | IGNORE; reply is the drafted text (a suggestion when escalated).
+     * IGNORE means no person wrote the message: nothing is sent and nobody is told.
      * assetIds: assets to send along with the reply (unvalidated — the caller resolves them
      * against the engine's own assets). requestedMaterial: what the person asked for when
      * escalationType is "missing_material". usage = tokens + price of the call(s) behind it;
@@ -64,6 +65,7 @@ public class EngagementReplyBrain {
         }
 
         public boolean isAnswer() { return "ANSWER".equalsIgnoreCase(action); }
+        public boolean isAutomated() { return "IGNORE".equalsIgnoreCase(action); }
         public boolean isMissingMaterial() { return "missing_material".equalsIgnoreCase(escalationType); }
     }
 
@@ -176,6 +178,10 @@ public class EngagementReplyBrain {
               date, availability, or policy. If you're not sure, escalate.
             - ANGER: the person is upset, frustrated, complaining, or threatening to leave.
             - MONEY: anything about payment, fees, refunds, discounts, pricing, or billing.
+            IGNORE (send nothing, tell nobody) ONLY when no person wrote the message: a WhatsApp Business
+            greeting or away message, an auto-responder, a numbered menu, a broadcast advert, a one-time
+            code or system notice, or a scam forward. A short or clumsy message from a person ("hi", "ok",
+            "kaun", "details bhejo") is NOT automated. If you are not sure a machine wrote it, ESCALATE.
             Otherwise ANSWER: a warm, concise reply in %s, grounded ONLY in the brief. Never invent
             facts, prices, dates, or links. Keep it short and human. When you ANSWER, still write the
             reply exactly as it should be sent. When you ESCALATE, write your best suggested reply so
@@ -187,7 +193,7 @@ public class EngagementReplyBrain {
 
             OUTPUT: exactly one JSON object, no prose, no markdown fences:
             {
-              "action": "ANSWER" | "ESCALATE",
+              "action": "ANSWER" | "ESCALATE" | "IGNORE",
               "reply": "<the message to send (ANSWER) or a suggested draft for the human (ESCALATE)>",
               "reason": "<one line: why you answered, or why you escalated — shown to staff>",
               "escalationType": "uncertainty" | "anger" | "money" | "missing_material" | "other" | null,

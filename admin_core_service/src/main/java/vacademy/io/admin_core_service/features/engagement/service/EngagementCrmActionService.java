@@ -415,16 +415,27 @@ public class EngagementCrmActionService {
         }
     }
 
+    /** On unless the admin turned it off, so an engine set up before this setting existed keeps its behaviour. */
+    boolean firstTouchIsCall(EngagementEngine engine) {
+        try {
+            return objectMapper.readTree(engine.getChannels()).path("AI_CALL").path("firstTouchCall").asBoolean(true);
+        } catch (Exception e) {
+            return true;
+        }
+    }
+
     /**
-     * HARD RULE: an engine with the AI call channel on reaches a person for the first time with an AI
-     * call. Proposes it now as an inbox task (or runs it on its own when allowed). Null when the call
+     * An engine with the AI call channel on reaches a person for the first time with an AI call, unless
+     * the admin turned that off ({@code channels.AI_CALL.firstTouchCall = false}) to let the brief decide.
+     * Proposes it now as an inbox task (or runs it on its own when allowed). Null when the call
      * cannot be placed (AI calls not allowed, no phone, wrong number, weekly limit): the caller then
      * decides as usual, since a person who cannot be called can only be reached another way.
      */
     public EngagementAction proposeFirstTouchCall(EngagementEngine engine, EngagementMember member, String phone,
                                                   String hold, boolean dryRun) {
         try {
-            if (!aiCallChannelOn(engine) || !allowedActions(engine).contains(EngagementActionTypes.SCHEDULE_AI_CALL)) {
+            if (!aiCallChannelOn(engine) || !firstTouchIsCall(engine)
+                    || !allowedActions(engine).contains(EngagementActionTypes.SCHEDULE_AI_CALL)) {
                 return null;
             }
             Map<String, String> params = new LinkedHashMap<>();

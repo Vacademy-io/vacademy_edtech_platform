@@ -25,6 +25,8 @@ export interface ChannelConfig {
     coldOutreach?: boolean;
     /** AI_CALL only: ids of the AI agents the engine calls with, in turn. */
     agentPool?: string[];
+    /** AI call channel: false lets the brief pick the first channel instead of always calling first. */
+    firstTouchCall?: boolean;
 }
 
 export type ChannelsConfig = Partial<Record<ChannelKey, ChannelConfig>>;

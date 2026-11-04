@@ -312,6 +312,25 @@ public class EngagementReplyResponder {
                     "Auto-reply unavailable — please answer manually.", "other");
         }
 
+        // No person wrote it: nothing to answer and nobody to tell. Kept as a closed record, which also
+        // carries the tokens this decision used.
+        if (decision.isAutomated()) {
+            EngagementAction ignored = new EngagementAction();
+            ignored.setEngineId(engine.getId());
+            ignored.setMemberId(cand.getMemberId());
+            ignored.setInstituteId(instituteId);
+            ignored.setPromptVersionId(prompt != null ? prompt.getId() : null);
+            ignored.setKind("NO_OP");
+            ignored.setStatus("DONE");
+            ignored.setRationale(cap("Automated message, nothing sent: " + decision.reason()
+                    + " Their message: " + replyText));
+            EngagementLlmUsage.applyTo(decision.usage(), ignored);
+            actionRepository.save(ignored);
+            long cadenceHours = engine.getCadenceHours() != null ? Math.max(engine.getCadenceHours(), 1) : 72;
+            memberRepository.markReplyHandled(cand.getMemberId(), now, now.plus(Duration.ofHours(cadenceHours)));
+            return true;
+        }
+
         // Deterministic server-side backstops — they override an ANSWER verdict, never trust it alone.
         if (decision.isAnswer()) {
             String override = escalationOverride(replyText, decision.reply(), groundTruth);
@@ -503,11 +522,13 @@ public class EngagementReplyResponder {
                         + "drafts nothing new for them until its next check. Their message: " + replyText
                 : "Escalated (stop-mention): they may be asking to stop or saying they are not "
                         + "interested. Read it before anyone messages them again. Their message: " + replyText));
-        actionRepository.save(note);
+        EngagementAction savedNote = actionRepository.save(note);
         if (callback) {
             proposeCallbackCall(engineRepository.findById(target.getEngineId()).orElse(null),
                     target.getMemberId(), replyText, now);
         }
+        alertReplyWaiting(target, savedNote != null ? savedNote : note,
+                callback ? "they asked to be called back" : "they may be asking to stop or are not interested", replyText);
         for (EngagementReplyMemberQueries.LiveMember m : live) {
             long cadence = m.getCadenceHours() != null ? Math.max(m.getCadenceHours(), 1) : 72;
             memberRepository.markReplyHandled(m.getMemberId(), now, now.plus(Duration.ofHours(cadence)));
@@ -532,14 +553,13 @@ public class EngagementReplyResponder {
     }
 
     /** The task is the durable record; people are told now, as for an escalated WhatsApp reply. */
-    private void alertEmailReply(EngagementReplyMemberQueries.LiveMember target, EngagementAction task,
-                                 String label, String body) {
+    private void alertReplyWaiting(EngagementReplyMemberQueries.LiveMember target, EngagementAction task,
+                                   String reason, String body) {
         if (teamAlertService == null) return;
         var engine = engineRepository.findById(target.getEngineId()).orElse(null);
         var member = memberRepository.findById(target.getMemberId()).orElse(null);
         if (engine == null || member == null) return;
-        teamAlertService.notifyEscalated(engine, member, task,
-                "they replied by email" + (label != null ? " (" + label + ")" : ""), body);
+        teamAlertService.notifyEscalated(engine, member, task, reason, body);
     }
 
     /**
@@ -570,6 +590,10 @@ public class EngagementReplyResponder {
         String topic = subject != null ? subject.replaceAll("(?i)^\\s*((re|fwd?|aw)\\s*:\\s*)+", "").trim() : "";
         String body = text != null && !text.isBlank() ? text.trim() : topic;
         if (body.isEmpty()) return false;
+        if (EngagementAutomatedReply.isAutomatedEmail(from, subject, body)) {
+            ignoreAutomatedEmail(instituteId, from, messageId);
+            return false;
+        }
 
         // Before the member lookup: a booked meeting usually ended the person's membership.
         if (handledAsMeetingReply(instituteId, "EMAIL", null, from, body, replyKey(messageId))) return true;
@@ -637,8 +661,25 @@ public class EngagementReplyResponder {
             long cadence = m.getCadenceHours() != null ? Math.max(m.getCadenceHours(), 1) : 72;
             memberRepository.markReplyHandled(m.getMemberId(), now, now.plus(Duration.ofHours(cadence)));
         }
-        alertEmailReply(target, savedNote != null ? savedNote : note, label, body);
+        alertReplyWaiting(target, savedNote != null ? savedNote : note,
+                "they replied by email" + (label != null ? " (" + label + ")" : ""), body);
         return true;
+    }
+
+    /**
+     * An out-of-office or a delivery notice: no task and no alert. The members are marked handled, or the
+     * sweep would read the ledger's new email reply as someone waiting for an answer.
+     */
+    private void ignoreAutomatedEmail(String instituteId, String from, String messageId) {
+        List<EngagementReplyMemberQueries.LiveMember> live = replyMemberQueries.findLiveMembersByEmail(instituteId, from);
+        if (live.isEmpty()) return;
+        Instant now = Instant.now();
+        if (memberRepository.claimHandledReply(instituteId, replyKey(messageId), now) == 0) return;
+        for (EngagementReplyMemberQueries.LiveMember m : live) {
+            long cadence = m.getCadenceHours() != null ? Math.max(m.getCadenceHours(), 1) : 72;
+            memberRepository.markReplyHandled(m.getMemberId(), now, now.plus(Duration.ofHours(cadence)));
+        }
+        log.info("Automated email ignored for {} member(s) in institute {}", live.size(), instituteId);
     }
 
     /** The handled-reply key of a message: Message-IDs can outgrow the 255-char key column. */

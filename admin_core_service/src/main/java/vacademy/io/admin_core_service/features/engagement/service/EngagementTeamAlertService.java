@@ -54,7 +54,7 @@ public class EngagementTeamAlertService {
     /** Any reply the engine hands to a person: why, and what they said. */
     public void notifyEscalated(EngagementEngine engine, EngagementMember member, EngagementAction task,
                                 String reason, String theirMessage) {
-        notifyHumanNeeded(engine, member, task, personLabel(member) + " needs a reply from you",
+        notifyHumanNeeded(engine, member, task, personLabel(member) + " is waiting for your reply",
                 "wrote to the engine \"" + engine.getName() + "\" and it needs a person: " + reason
                         + (theirMessage != null && !theirMessage.isBlank() ? "\nTheir message: " + theirMessage : "")
                         + "\n\nOpen the Engagement inbox to answer.");
@@ -73,8 +73,7 @@ public class EngagementTeamAlertService {
                 return;
             }
             Subject who = contactResolver.resolve(List.of(member)).get(0);
-            String body = personLabel(who) + (who.getPhone() != null && who.getName() != null ? " (" + who.getPhone() + ")" : "")
-                    + " " + detail;
+            String body = withContact(who) + " " + detail;
             sendAlert(engine, recipients, headline, body, "ENGAGEMENT_ACTION", task.getId());
             sendEmail(engine, recipients, headline, body);
         } catch (Exception e) {
@@ -108,6 +107,15 @@ public class EngagementTeamAlertService {
         return who.getPhone() != null ? who.getPhone() : "A lead";
     }
 
+    /** The name with how to reach them: the phone, or the email for someone who only has that. */
+    private static String withContact(Subject who) {
+        String label = personLabel(who);
+        boolean named = who.getName() != null && !who.getName().isBlank();
+        if (!named && who.getPhone() != null) return label; // the label already is the phone
+        String contact = who.getPhone() != null ? who.getPhone() : who.getEmail();
+        return contact != null && !contact.isBlank() ? label + " (" + contact + ")" : label;
+    }
+
     /** What an AI call produced needs a person now (a booked demo, a hot lead): same people, same channels. */
     public void notifyCallOutcome(EngagementEngine engine, EngagementMember member, String callResultId,
                                   String headline, String detail) {
@@ -118,8 +126,7 @@ public class EngagementTeamAlertService {
                 return;
             }
             Subject who = contactResolver.resolve(List.of(member)).get(0);
-            String body = personLabel(who) + (who.getPhone() != null && who.getName() != null ? " (" + who.getPhone() + ")" : "")
-                    + " " + detail;
+            String body = withContact(who) + " " + detail;
             sendAlert(engine, recipients, headline, body, "AI_CALL_RESULT", callResultId);
             sendEmail(engine, recipients, headline, body);
         } catch (Exception e) {

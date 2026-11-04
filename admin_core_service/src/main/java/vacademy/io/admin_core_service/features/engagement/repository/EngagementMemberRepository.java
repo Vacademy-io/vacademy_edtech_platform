@@ -336,6 +336,22 @@ public interface EngagementMemberRepository extends JpaRepository<EngagementMemb
     int wake(@Param("ids") List<String> ids, @Param("now") Instant now, @Param("wakeAt") Instant wakeAt,
              @Param("reason") String reason, @Param("human") boolean human, @Param("hot") boolean hot);
 
+    /**
+     * Everyone active in an engine is looked at again, spread over a window so a list of thousands is
+     * not decided in one sweep. Moves a next look forward, never back.
+     */
+    @Modifying
+    @Transactional
+    @Query(value = """
+            UPDATE engagement_member
+               SET woken_at = :now, wake_reason = :reason, updated_at = :now,
+                   next_action_at = LEAST(next_action_at,
+                       CAST(:now AS timestamp) + (random() * :windowSeconds) * INTERVAL '1 second')
+             WHERE engine_id = :engineId AND status = 'ACTIVE' AND is_holdout = false
+            """, nativeQuery = true)
+    int wakeEngineMembers(@Param("engineId") String engineId, @Param("now") Instant now,
+                          @Param("reason") String reason, @Param("windowSeconds") int windowSeconds);
+
     /** Failure backoff after a decision threw: only the retry clock and the failure count. */
     @Modifying
     @Transactional

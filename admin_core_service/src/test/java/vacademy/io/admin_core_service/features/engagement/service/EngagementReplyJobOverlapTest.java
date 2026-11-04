@@ -39,6 +39,27 @@ class EngagementReplyJobOverlapTest {
     }
 
     @Test
+    @DisplayName("a bot's greeting wakes nobody and reaches nothing; the person next to it does")
+    void automatedRepliesAreDropped() throws Exception {
+        EngagementInternalClients clients = mock(EngagementInternalClients.class);
+        EngagementMemberRepository members = mock(EngagementMemberRepository.class);
+        EngagementReplyResponder responder = mock(EngagementReplyResponder.class);
+        EngagementReplyJob job = new EngagementReplyJob(clients, members, responder);
+
+        when(members.institutesWithLiveEngines()).thenReturn(List.of("i1"));
+        when(clients.inboundSince(eq("i1"), anyLong())).thenReturn(new com.fasterxml.jackson.databind.ObjectMapper().readTree("""
+                [{"phone":"9000000001","wamid":"w.bot","text":"Thank you for contacting ABC! Please let us know how we can help you."},
+                 {"phone":"9000000002","wamid":"w.person","text":"hi"}]
+                """));
+
+        job.sweep();
+
+        verify(members).promoteByPhones(eq("i1"), eq(List.of("9000000002")), any(), any());
+        verify(responder, never()).handleReply(anyString(), eq("9000000001"), anyString(), anyString());
+        verify(responder).handleReply(eq("i1"), eq("9000000002"), eq("hi"), eq("w.person"));
+    }
+
+    @Test
     @DisplayName("an already handled message is not promoted again; a new one is")
     void handledRepliesAreNotPromotedAgain() {
         EngagementInternalClients clients = mock(EngagementInternalClients.class);

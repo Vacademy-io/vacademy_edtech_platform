@@ -79,6 +79,13 @@ public class EngagementDecisionService {
     @Autowired(required = false)
     private EngagementEmailSuppression emailSuppression;
 
+    /** Time-boxed updates and offers the admin fed this engine; optional in unit tests. */
+    @Autowired(required = false)
+    private EngagementUpdateService updateService;
+
+    @Autowired(required = false)
+    private EngagementTeamAlertService teamAlertService;
+
     @Value("${engagement.recent-window-days:14}")
     private int recentWindowDays;
 
@@ -150,6 +157,11 @@ public class EngagementDecisionService {
         Set<String> enabledChannels = parseEnabledChannels(engine);
         List<EngagementBrainClient.TemplateOption> whatsappTemplates =
                 enabledChannels.contains("WHATSAPP") ? loadApprovedTemplates(engine) : List.of();
+        EngagementUpdateService.LiveUpdates updates = updateService != null
+                ? updateService.forDecision(engine.getId(), Instant.now()) : EngagementUpdateService.LiveUpdates.NONE;
+        if (!updates.hiddenTemplates().isEmpty()) {
+            whatsappTemplates = whatsappTemplates.stream().filter(t -> !updates.hiddenTemplates().contains(t.name())).toList();
+        }
         Map<String, EngagementBrainClient.TemplateOption> templatesByName = new java.util.HashMap<>();
         whatsappTemplates.forEach(t -> templatesByName.put(t.name(), t));
 
@@ -165,7 +177,7 @@ public class EngagementDecisionService {
                 decisions += decideOne(engine, prompt, member, bundle, optedOut, blockedLeads, dryRun,
                         enabledChannels, whatsappTemplates, templatesByName,
                         EngagementCoordinationService.of(coordinated, member.getId()), menu,
-                        subjectByMember.get(member.getId())) ? 1 : 0;
+                        subjectByMember.get(member.getId()), updates) ? 1 : 0;
             } catch (Exception e) {
                 // Decision failed AFTER we claimed a lease. Push it out with exponential backoff
                 // so an LLM/provider outage doesn't re-hammer every 15 min (the lease alone would
@@ -186,7 +198,8 @@ public class EngagementDecisionService {
                               List<EngagementBrainClient.TemplateOption> whatsappTemplates,
                               Map<String, EngagementBrainClient.TemplateOption> templatesByName,
                               EngagementCoordinationService.Verdict coordinated,
-                              EngagementBrainClient.ActionMenu menu, Subject subject) {
+                              EngagementBrainClient.ActionMenu menu, Subject subject,
+                              EngagementUpdateService.LiveUpdates updates) {
         Instant now = Instant.now();
 
         // 0. Lease re-check: a serial cohort can outrun its 15-min lease; if another pod has
@@ -266,9 +279,10 @@ public class EngagementDecisionService {
             return false;
         }
 
-        // 1e. HARD RULE: with the AI call channel on, the first thing done for a person is an AI call,
-        // decided here and not left to the model. A person with no phone, a wrong number or no call
-        // left this week falls through to the usual decision (another channel).
+        // 1e. With the AI call channel on, the first thing done for a person is an AI call, decided here
+        // and not left to the model, unless the admin turned this off so the brief picks the channel.
+        // A person with no phone, a wrong number or no call left this week falls through to the usual
+        // decision (another channel).
         if (crmActions != null && !hasUnansweredReply(bundle, member)
                 && actionRepository.countTouches(member.getId()) == 0) {
             String phone = subject != null ? subject.getPhone() : null;
@@ -317,12 +331,15 @@ public class EngagementDecisionService {
         }
 
         // 3. The LLM.
-        Map<String, String> blocks = withEmailUnavailable(subject,
-                withCoordination(coordinated, withWhyNow(member, bundle.renderFor(member.getId()))));
+        java.util.Set<String> updatesAlreadySent = updates.live().isEmpty()
+                ? java.util.Set.of() : new java.util.HashSet<>(actionRepository.updateIdsOfMember(member.getId()));
+        Map<String, String> blocks = withUpdatesAlreadySent(updatesAlreadySent, withEmailUnavailable(subject,
+                withCoordination(coordinated, withWhyNow(member, bundle.renderFor(member.getId())))));
+        String brief = EngagementUpdateService.briefWith(prompt.getCompiledText(), updates.live());
         // An engine that only messages keeps exactly today's call (and prompt).
         EngagementBrainClient.Decision d = menu == null || menu.isEmpty()
-                ? brain.decide(engine, prompt.getCompiledText(), blocks, now, enabledChannels, whatsappTemplates)
-                : brain.decide(engine, prompt.getCompiledText(), blocks, now, enabledChannels, whatsappTemplates, menu);
+                ? brain.decide(engine, brief, blocks, now, enabledChannels, whatsappTemplates)
+                : brain.decide(engine, brief, blocks, now, enabledChannels, whatsappTemplates, menu);
 
         // 3b. B6: a CRM action (follow-up, note, escalation, status, AI call) becomes an inbox task
         // a person approves, after the server checks it (allow-list, the action's own rules). WAIT is
@@ -392,7 +409,10 @@ public class EngagementDecisionService {
         }
         // The prompt says so, but a model that ignores it must not get an email nobody can receive.
         boolean emailUnavailable = "EMAIL".equals(chosenChannel) && cannotGetEmail(subject);
-        if ("ACT".equalsIgnoreCase(d.decision()) && channelAllowed && !emailUnavailable
+        // The same offer twice is the one thing "one per person" rules out, whatever the model thinks.
+        String updateId = updates.resolve(d.templateName(), d.updateId());
+        boolean updateAlreadySent = updateId != null && updatesAlreadySent.contains(updateId);
+        if ("ACT".equalsIgnoreCase(d.decision()) && channelAllowed && !emailUnavailable && !updateAlreadySent
                 && d.draftBody() != null && !d.draftBody().isBlank()) {
             // Cap the schedule horizon: an unbounded scheduleInHours lets the brain place a send days
             // or weeks out, which (a) drifts far from the context it was decided on and (b) breaks the
@@ -435,6 +455,9 @@ public class EngagementDecisionService {
                 action.setVariablesJson(writeJson(Map.of(EngagementDispatcher.VAR_SUBJECT,
                         oneLine(d.subject(), MAX_SUBJECT_CHARS))));
             }
+            // Ties the message to its update: when that ends, this is cancelled and cannot be sent.
+            if (updateId != null) action.setVariablesJson(withVariable(action.getVariablesJson(),
+                    EngagementDispatcher.VAR_UPDATE_ID, updateId));
             // Phase 2 — AUTONOMOUS vs COPILOT. Auto-send (kind=SEND; the dispatch job fires it when
             // due) only when ALL hold: the channel's `auto` intent is set, the engine isn't killed,
             // it has GRADUATED (>= first_n human-approved sends), the draft is actually sendable
@@ -455,6 +478,11 @@ public class EngagementDecisionService {
             action.setStatus(dryRun ? "SIMULATED" : "OPEN");
             EngagementLlmUsage.applyTo(d.usage(), action);
             actionRepository.save(action);
+            // They wrote in and it waits for a person: tell the team now, not when they next open the inbox.
+            if (timing == PolicyGate.SendTiming.REPLY && !dryRun && !autoSend && teamAlertService != null) {
+                teamAlertService.notifyEscalated(engine, member, action,
+                        "they wrote back and the engine left the answer to a person", lastReplyText(bundle, member));
+            }
 
             member.setConsecutiveNoOps((short) 0);
         } else {
@@ -465,7 +493,9 @@ public class EngagementDecisionService {
             noOp.setPromptVersionId(prompt.getId());
             noOp.setKind("NO_OP");
             noOp.setStatus("DONE");
-            noOp.setRationale(cap(emailUnavailable
+            noOp.setRationale(cap(updateAlreadySent
+                    ? "Not drafted: this person already has this update. " + nullToEmpty(d.rationale())
+                    : emailUnavailable
                     ? "Chose EMAIL, not drafted: " + (subject.isEmailUndeliverable() ? "this address bounced. "
                             : "no email address on file. ") + nullToEmpty(d.rationale())
                     : d.rationale()));
@@ -503,6 +533,9 @@ public class EngagementDecisionService {
      * Once someone replies, a human owns the conversation: the engine still drafts, but as a task.
      */
     private boolean everReplied(DataPointRegistry.CohortBundle bundle, EngagementMember m) {
+        // The ledger shows only the latest reply, and hides it when a bot wrote it: a person who wrote
+        // earlier has this window from then, because a bot's message no longer opens it.
+        if (m.getWindowOpenUntil() != null) return true;
         JsonNode ledger = bundle.payloadsFor(m.getId()).get("ledger");
         if (ledger == null) return false;
         for (String ch : List.of("whatsapp", "email")) {
@@ -798,6 +831,7 @@ public class EngagementDecisionService {
             case EngagementWakeService.HUMAN_CALL -> "a counsellor called this lead";
             case EngagementWakeService.AI_CALL -> "an AI call with this lead just ended";
             case EngagementWakeService.CALL_ANALYZED -> "the analysis of a call with this lead is in";
+            case EngagementWakeService.UPDATE_POSTED -> "the admin posted a new update or offer on this engine";
             case EngagementWakeService.FOLLOWUP -> "a counsellor scheduled or closed a follow-up";
             case EngagementWakeService.FOLLOWUP_OVERDUE -> "a follow-up promised to this lead is overdue";
             case EngagementWakeService.STATUS -> "the lead's status changed";
@@ -818,6 +852,29 @@ public class EngagementDecisionService {
                 + " draft, not to the lead; prefer helping the counsellor over a new message.");
         out.putAll(blocks);
         return out;
+    }
+
+    /** So the model does not spend the turn on an offer this person already has. */
+    static Map<String, String> withUpdatesAlreadySent(java.util.Set<String> sent, Map<String, String> blocks) {
+        if (sent.isEmpty()) return blocks;
+        Map<String, String> out = new java.util.LinkedHashMap<>();
+        out.put("updatesSent", "This person already has these updates, do not send them again: "
+                + String.join(", ", new java.util.TreeSet<>(sent)));
+        out.putAll(blocks);
+        return out;
+    }
+
+    private String withVariable(String json, String key, String value) {
+        try {
+            com.fasterxml.jackson.databind.node.ObjectNode vars = json == null || json.isBlank()
+                    ? objectMapper.createObjectNode()
+                    : (com.fasterxml.jackson.databind.node.ObjectNode) objectMapper.readTree(json);
+            vars.put(key, value);
+            return objectMapper.writeValueAsString(vars);
+        } catch (Exception e) {
+            log.warn("Could not tie an action to update {}: {}", value, e.getMessage());
+            return json;
+        }
     }
 
     /** Tells the brain this person cannot be emailed, ahead of everything it reads about them. */
@@ -863,6 +920,11 @@ public class EngagementDecisionService {
             return PolicyGate.SendTiming.ANYTIME;
         }
         return PolicyGate.SendTiming.PLANNED;
+    }
+
+    private String lastReplyText(DataPointRegistry.CohortBundle bundle, EngagementMember m) {
+        JsonNode ledger = bundle.payloadsFor(m.getId()).get("ledger");
+        return ledger == null ? null : ledger.path("whatsapp").path("lastReplyText").asText(null);
     }
 
     private boolean hasUnansweredReply(DataPointRegistry.CohortBundle bundle, EngagementMember m) {

@@ -77,6 +77,8 @@ public class EngagementReplyJob {
                 // members due again: that would undo a hold (a "not interested" reply) or re-wake someone
                 // a human is answering.
                 replies = withoutHandled(instituteId, replies);
+                // Before the promotion below: a bot's greeting must not wake anyone or open a reply window.
+                replies = withoutAutomatedWhatsApp(instituteId, replies);
                 if (replies.isEmpty()) continue;
                 // Batch all this institute's reply phones into ONE promotion (avoids 2 unindexable
                 // full scans of student + audience_response PER reply every 2 minutes). This MUST run
@@ -134,6 +136,23 @@ public class EngagementReplyJob {
         } catch (Exception e) {
             log.warn("Handled-reply prune failed: {}", e.getMessage());
         }
+    }
+
+    /** Emails stay: the responder reads them, because their members must be marked as handled. */
+    private JsonNode withoutAutomatedWhatsApp(String instituteId, JsonNode replies) {
+        com.fasterxml.jackson.databind.node.ArrayNode out =
+                com.fasterxml.jackson.databind.node.JsonNodeFactory.instance.arrayNode();
+        for (JsonNode r : replies) {
+            if ("EMAIL".equals(r.path("channel").asText(""))
+                    || !EngagementAutomatedReply.isAutomated(r.path("text").asText(null))) {
+                out.add(r);
+            }
+        }
+        if (out.size() < replies.size()) {
+            log.info("Reply sweep: ignored {} automated WhatsApp message(s) in institute {}",
+                    replies.size() - out.size(), instituteId);
+        }
+        return out;
     }
 
     private JsonNode withoutHandled(String instituteId, JsonNode replies) {

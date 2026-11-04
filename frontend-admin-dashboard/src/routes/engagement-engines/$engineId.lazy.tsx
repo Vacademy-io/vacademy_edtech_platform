@@ -58,6 +58,7 @@ import { ToneBadge } from './-components/ToneBadge';
 import { TemplateNegotiation } from './-components/TemplateNegotiation';
 import { EmailTemplatesPanel } from './-components/EmailTemplatesPanel';
 import { AssetsPanel } from './-components/AssetsPanel';
+import { EngineUpdatesCard } from './-components/EngineUpdatesCard';
 import { CrmActionsPanel } from './-components/CrmActionsPanel';
 import { UpcomingAiCallsCard } from './-components/UpcomingAiCallsCard';
 import { useDeleteEngine } from './-hooks/engine-edit';
@@ -550,6 +551,15 @@ function EngineDetailPage() {
                             </span>
                         </div>
                     </SectionCard>
+
+                    {!engine.systemManaged && (
+                        <EngineUpdatesCard
+                            engineId={engine.id}
+                            instituteId={engine.instituteId}
+                            canEdit={canChange}
+                            className="lg:col-span-3"
+                        />
+                    )}
                 </div>
 
                 <AlertDialog open={confirmArchive} onOpenChange={setConfirmArchive}>

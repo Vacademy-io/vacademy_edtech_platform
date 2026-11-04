@@ -61,6 +61,8 @@
         "autoReplyTitle": "Auto-reply",
         "autoReplyHint": "AI answers replies within 24h. Money, anger, stop requests or doubt come to you.",
         "callNote": "Calls leads with an AI agent from the pool you pick.",
+        "firstTouchCallTitle": "Always start with an AI call",
+        "firstTouchCallHint": "On: the first contact with everyone is an AI call. Off: your brief decides who gets a call, an email or a WhatsApp first.",
         "whatsappNote": "Needs Meta-approved templates, proposed by the AI after you create the engine."
     },
     "audience": {

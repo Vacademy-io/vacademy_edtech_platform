@@ -120,5 +120,34 @@
         "fallbackCreator": "Nobody is picked, so {{name}} (who created this engine) is told.",
         "counsellorNote": "Each lead's own counsellor is told as well. Alerts go as a bell alert and an email.",
         "meetingOwner": "Meetings use this person's account"
+    },
+    "updates": {
+        "title": "Updates and offers",
+        "subtitle": "Festival wishes or offers for a set time. Everyone in this engine's list is considered when it starts, and nothing goes out after it ends.",
+        "add": "Add update",
+        "empty": "No updates yet.",
+        "end": "End now",
+        "dates": "{{start}} to {{end}}",
+        "templateLabel": "WhatsApp: {{name}}",
+        "state": {
+            "live": "Live",
+            "scheduled": "Scheduled",
+            "ended": "Ended"
+        },
+        "dialogHeading": "Add an update or offer",
+        "dialogHint": "The agent decides who it fits and how to say it. Each person gets it once, within the engine's contact limits and quiet hours. Anything waiting for approval is cancelled when it ends.",
+        "message": "What should people be told?",
+        "messagePlaceholder": "e.g. Diwali offer: 20% off the annual plan until 10 November.",
+        "start": "Starts (empty = now)",
+        "endDate": "Ends",
+        "template": "WhatsApp template",
+        "noTemplate": "No WhatsApp, other channels only",
+        "templateHint": "WhatsApp needs a Meta-approved template that says this. It is only used while this update is live.",
+        "cancel": "Cancel",
+        "save": "Add update",
+        "saving": "Adding...",
+        "added": "Update added",
+        "endedToast": "Update ended",
+        "saveFailed": "Couldn't save this update. Try again."
     }
 }

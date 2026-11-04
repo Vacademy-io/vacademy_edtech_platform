@@ -375,4 +375,18 @@ class EngagementCrmAutonomyTest {
         assertTrue(waiting.getErrorMessage().contains("no longer active"), waiting.getErrorMessage());
         verify(call, never()).execute(any(), anyMap(), any());
     }
+
+    @Test
+    @DisplayName("first touch is an AI call by default; with the setting off the brief decides")
+    void firstTouchFollowsTheSetting() {
+        when(call.validate(any(), anyMap())).thenReturn(null);
+        when(actions.save(any())).thenAnswer(inv -> inv.getArgument(0));
+        EngagementEngine on = engine("{\"AI_CALL\":{\"enabled\":true,\"agentPool\":[\"a1\"]}}");
+        assertTrue(service.firstTouchIsCall(on));
+        assertNotNull(service.proposeFirstTouchCall(on, member, "9876543210", null, false));
+
+        EngagementEngine off = engine("{\"AI_CALL\":{\"enabled\":true,\"agentPool\":[\"a1\"],\"firstTouchCall\":false}}");
+        assertFalse(service.firstTouchIsCall(off));
+        assertNull(service.proposeFirstTouchCall(off, member, "9876543210", null, false));
+    }
 }

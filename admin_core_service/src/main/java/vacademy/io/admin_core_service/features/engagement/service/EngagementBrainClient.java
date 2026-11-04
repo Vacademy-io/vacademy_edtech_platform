@@ -63,8 +63,18 @@ public class EngagementBrainClient {
             Integer tokensOut,
             String subject,         // EMAIL only: the subject line (null → derived from the draft)
             Map<String, String> actionParams, // B6 CRM actions: dueInHours, statusKey, note, reason
-            EngagementLlmUsage usage // tokens + price of the call(s) behind this decision; null in tests
+            EngagementLlmUsage usage, // tokens + price of the call(s) behind this decision; null in tests
+            String updateId         // the admin's update this message shares, when it shares one
     ) {
+        public Decision(String decision, String actionType, String channel, String draftBody,
+                        String templateName, Map<String, String> variables, String rationale,
+                        double priority, Integer scheduleInHours, Integer nextCheckHours,
+                        Integer tokensIn, Integer tokensOut, String subject, Map<String, String> actionParams,
+                        EngagementLlmUsage usage) {
+            this(decision, actionType, channel, draftBody, templateName, variables, rationale, priority,
+                    scheduleInHours, nextCheckHours, tokensIn, tokensOut, subject, actionParams, usage, null);
+        }
+
         public Decision(String decision, String actionType, String channel, String draftBody,
                         String templateName, Map<String, String> variables, String rationale,
                         double priority, Integer scheduleInHours, Integer nextCheckHours,
@@ -161,7 +171,8 @@ public class EngagementBrainClient {
                         usage.tokensIn(), usage.tokensOut(),
                         n.hasNonNull("subject") ? n.get("subject").asText() : null,
                         readStringMap(n.get("action")),
-                        usage);
+                        usage,
+                        n.hasNonNull("updateId") ? n.get("updateId").asText() : null);
             } catch (Exception parseError) {
                 if (attempt == MAX_ATTEMPTS) {
                     throw new IllegalStateException("Engagement brain emitted unparseable JSON twice", parseError);
@@ -225,6 +236,7 @@ public class EngagementBrainClient {
               "variables": { "<variableName>": "<value grounded in this person's data>", ... } \
             "// REQUIRED when channel is WHATSAPP: one entry for EVERY variable the chosen template \
             declares, no more" | null,
+              "updateId": "<the updateId of the admin's update this message shares>" | null,
               "rationale": "<one or two sentences: why this, why now — shown to the human>",
               "priority": <0-100, how much this matters vs other tasks today>,
               "scheduleInHours": <int, when to act; 0 = now> | null,
