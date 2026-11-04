@@ -64,6 +64,13 @@ export function EngineContactsCard({
                                             {u.full_name || u.email || u.username}
                                         </span>
                                     </span>
+                                    {pickedIds.length > 1 && u.id === pickedIds[0] && (
+                                        <span className="text-neutral-500">
+                                            <span className="text-caption">
+                                                {t('contacts.meetingOwner')}
+                                            </span>
+                                        </span>
+                                    )}
                                     {u.roles?.length ? (
                                         <span className="text-neutral-500">
                                             <span className="text-caption">

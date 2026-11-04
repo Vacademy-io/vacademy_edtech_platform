@@ -437,8 +437,7 @@ function CreateEnginePage() {
         setFirstTouch(qh.firstTouch === 'SCHEDULED' ? 'SCHEDULED' : 'IMMEDIATE');
         setHoldoutPct(String(e.holdoutPct ?? 0));
         setFirstN(e.firstN != null ? String(e.firstN) : '');
-        // One contact now; an older engine with several keeps its first.
-        setNotifyUserIds(safeParse<string[]>(e.notifyUserIds, []).slice(0, 1));
+        setNotifyUserIds(safeParse<string[]>(e.notifyUserIds, []));
         setAdvancedOpen((e.holdoutPct ?? 0) > 0 || e.firstN != null);
         setBrief('');
         setPrefilledFor(e.id);
