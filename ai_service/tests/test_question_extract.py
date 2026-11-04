@@ -318,3 +318,19 @@ def test_markdown_escapes_in_prose_are_dropped_but_math_is_left_alone():
     q = {"question": {"content": "Growth?"}, "options": [{"content": "20\\%"}], "exp": "1.2 \\% more"}
     qe.unescape_question_prose(q)
     assert q["options"][0]["content"] == "20%" and q["exp"] == "1.2 % more" and "passage" not in q
+
+
+def test_a_list_that_reads_as_instructions_is_dropped_when_questions_restart_at_one():
+    blocks = [_p("1. Attempt all questions on the answer sheet."), _p("2. Use of calculator is prohibited."),
+              _p("3. The question paper can be retained by candidates."),
+              _p("1. Find x."), _p("2. Find y."), _p("3. Find z."), _p("4. Find w.")]
+    runs = qe.question_runs(blocks)
+    assert [[qe._text_of(blocks[i]) for i in run] for run in runs] == [
+        ["1. Find x.", "2. Find y.", "3. Find z.", "4. Find w."],
+    ]
+
+
+def test_questions_that_mention_an_instruction_word_once_keep_their_statements_nested():
+    blocks = [_p("1. How many candidates passed?"), _p("2. Find y."), _p("3. Find z."), _p("4. Which is true?"),
+              _p("1) It is odd."), _p("2) It is even."), _p("5. Find w.")]
+    assert [qe._question_no(blocks[i]) for i in qe.question_runs(blocks)[0]] == ["1", "2", "3", "4", "5"]

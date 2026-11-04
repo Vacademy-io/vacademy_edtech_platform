@@ -482,3 +482,73 @@ def test_a_time_under_the_first_section_heading_is_that_sections_not_the_papers(
     # Not every section timed: the paper keeps what it read.
     untimed = html.replace(_p("Time: 45 minutes"), "")
     assert outline_of_html(untimed)["duration_minutes"] == 30
+
+
+# A numbered instructions list above the questions, with no heading to name it,
+# as MathPix returns it: printed 1-2 read as 7-8, the next page opens at its own 3.
+_NUMBERED_INSTRUCTIONS = [
+    "Attempt all 6 questions. Write your answers on the answer sheet.",
+    "Part 'A' contains 4 questions and each question in this part carries 'Five marks'.",
+    "Part 'B' contains 2 questions and each question in this part carries 'Ten marks'.",
+    "Use of Calculator is Prohibited.",
+    "Take pi as 22/7",
+    "The question paper can be retained by the candidates.",
+]
+
+
+def _div(number, text):
+    return f'<div class="question">{number}. {text}</div>'
+
+
+def _drifted_paper():
+    return "".join(
+        [_div(i, text) for i, text in enumerate(_NUMBERED_INSTRUCTIONS, start=1)]
+        + [_div(7, "Find x."), _div(8, "Find y."), "<h2>Institute</h2>", _div(3, "Find z."), _div(4, "Find w."),
+           "<p>Section - B</p>", _div(5, "Prove it."), _div(6, "Draw it.")]
+    )
+
+
+def test_a_numbered_instructions_list_with_no_heading_is_not_questions():
+    o = outline_of_html(_drifted_paper())
+    assert o["question_count"] == 6
+    assert [(s["name"], s["from"], s["to"], s["count"], s["marks"]) for s in o["sections"]] == [
+        ("Part A", 1, 4, 4, 5.0), ("Part B", 5, 6, 2, 10.0),
+    ]
+
+
+def test_the_declared_split_gives_each_question_its_section_and_marks():
+    o = outline_of_html(_drifted_paper())
+    qs = [{"question_number": str(i), "question": {"content": "x"}} for i in range(1, 7)]
+    apply_outline(qs, o)
+    assert [(q["section"], q["marks"]) for q in qs] == [("Part A", 5.0)] * 4 + [("Part B", 10.0)] * 2
+
+
+def test_headings_stay_ahead_of_the_declared_split_but_take_its_marks():
+    html = (
+        _p("1. Attempt all questions on the answer sheet.")
+        + _p("2. Part 'A' contains 2 questions and each carries 'Five marks'.")
+        + _p("3. Part 'B' contains 1 question and each carries 'Ten marks'.")
+        + _p("Part A") + _p("1. Find x.") + _p("2. Find y.")
+        + _p("Part B") + _p("3. Prove it.")
+    )
+    o = outline_of_html(html)
+    assert [(s["name"], s["source"], s["marks"]) for s in o["sections"]] == [
+        ("Part A", "heading", 5.0), ("Part B", "heading", 10.0),
+    ]
+
+
+def test_a_declared_split_that_does_not_fit_the_questions_makes_no_sections():
+    html = (
+        _p("1. Attempt all questions on the answer sheet.")
+        + _p("2. Part 'A' contains 20 questions and each carries 'Five marks'.")
+        + _p("3. Part 'B' contains 10 questions and each carries 'Ten marks'.")
+        + "".join(_p(f"{i}. Find number {i}.") for i in range(1, 6))
+    )
+    o = outline_of_html(html)
+    assert o["question_count"] == 5 and o["sections"] == []
+
+
+def test_short_real_questions_before_a_fresh_one_are_still_statements_not_instructions():
+    # "1) 2)" inside question 3 must not read as a restart of the paper.
+    html = _p("1. Find x.") + _p("2. Find y.") + _p("3. Which is true?") + _p("1) It is odd.") + _p("2) It is even.") + _p("4. Find z.")
+    assert outline_of_html(html)["question_count"] == 4

@@ -18,7 +18,7 @@ nothing is changed.
 from __future__ import annotations
 
 import re
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Sequence, Tuple
 
 from .docx_numbering import _HTML_NO
 from .question_extract_service import _text_of, split_blocks
@@ -57,6 +57,15 @@ def _instruction_list_length(lines: List[Tuple[int, str]]) -> int:
     if [n for n, _ in window[:length]] != list(range(1, length + 1)):
         return 0
     return length
+
+
+def reads_as_instructions(texts: Sequence[str]) -> bool:
+    """Whether a whole run of numbered lines is an instructions list by what it
+    says, for a paper with no "General Instructions" heading above it."""
+    if not 2 <= len(texts) <= _LIST_MAX:
+        return False
+    reads = [bool(_INSTRUCTION.search(text)) for text in texts]
+    return (reads[0] or reads[1]) and sum(reads) / len(reads) >= _MIN_INSTRUCTION_SHARE
 
 
 def restore_list_numbers(html: str) -> Tuple[str, int]:
@@ -156,4 +165,4 @@ def declared_split(html: str) -> List[Dict[str, Any]]:
     return rows if len(rows) >= 2 else []
 
 
-__all__ = ["restore_list_numbers", "declared_split", "section_label"]
+__all__ = ["restore_list_numbers", "reads_as_instructions", "declared_split", "section_label"]
