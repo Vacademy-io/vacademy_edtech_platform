@@ -80,6 +80,12 @@ public class EngagementReplyResponder {
             + "|(?:message|messages|msg|msgs|sms) (?:mat|band|na) (?:karo|kijiye|bhejo|bhejiye)"
             + "|mat bhejo|band karo|band kar do)(?:$|[^\\p{L}])");
 
+    /**
+     * The unsubscribe line of our own cold emails. A reply can still carry it when the client quoted
+     * our mail in a way EmailReplyText could not cut, and it must not read as the person opting out.
+     */
+    static final Pattern OWN_UNSUBSCRIBE_LINE = Pattern.compile("(?i)don['\u2019]?t want these\\?\\s*unsubscribe");
+
     /** Mentions stopping or disinterest without an explicit opt-out: a human reads it, never the bot. */
     static final Pattern STOP_MENTION = Pattern.compile(
             "(?i)(?:^|[^\\p{L}])(stop|stopped|not interested|no interest|leave me|spam"
@@ -570,7 +576,8 @@ public class EngagementReplyResponder {
         note.setScheduledFor(now);
         note.setExpiresAt(now.plus(Duration.ofHours(taskExpireHours)));
 
-        if (OPT_OUT.matcher(body).find() || (!topic.isEmpty() && OPT_OUT.matcher(topic).find())) {
+        String theirWords = OWN_UNSUBSCRIBE_LINE.matcher(body).replaceAll(" ");
+        if (OPT_OUT.matcher(theirWords).find() || (!topic.isEmpty() && OPT_OUT.matcher(topic).find())) {
             int stopped = memberRepository.optOutMembers(live.stream().map(m -> m.getMemberId()).toList(), now);
             if (outcomeService != null) outcomeService.mirrorOptOut(instituteId, live, "EMAIL", body);
             note.setEngineId(target.getEngineId());
