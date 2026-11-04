@@ -49,6 +49,8 @@ public class SelfSignupManager {
     private static final int MIN_PASSWORD_LENGTH = 8;
     private static final Pattern EMAIL = Pattern.compile("^[^@\\s]+@[^@\\s]+\\.[^@\\s]{2,}$");
     private static final Pattern USERNAME = Pattern.compile("^[A-Za-z0-9._-]{4,40}$");
+    private static final int MIN_PHONE_DIGITS = 10;
+    private static final int MAX_PHONE_DIGITS = 15;
     private static final Set<String> INSTITUTE_TYPES =
             Set.of("school", "coaching", "college", "university", "company", "other");
 
@@ -118,6 +120,7 @@ public class SelfSignupManager {
         if (!StringUtils.hasText(fullName)) {
             throw new VacademyException(HttpStatus.BAD_REQUEST, "Your name is required");
         }
+        String phone = requirePhone(request.getPhone());
         String instituteName = StringUtils.hasText(request.getInstituteName())
                 ? request.getInstituteName().trim() : fullName;
         String type = request.getInstituteType() == null
@@ -152,6 +155,7 @@ public class SelfSignupManager {
         InstituteInfoDTO institute = new InstituteInfoDTO();
         institute.setInstituteName(instituteName);
         institute.setEmail(email);
+        institute.setPhone(phone);
         institute.setType(type);
         institute.setCity(emptyToNull(request.getCity()));
         institute.setState(emptyToNull(request.getState()));
@@ -165,6 +169,7 @@ public class SelfSignupManager {
         register.setFullName(fullName);
         register.setUserName(username);
         register.setEmail(email);
+        register.setMobileNumber(phone);
         register.setPassword(password);
         register.setInstitute(institute);
         register.setSubjectId(emptyToNull(proof.get("subject_id", String.class)));
@@ -189,6 +194,15 @@ public class SelfSignupManager {
             throw new VacademyException(HttpStatus.BAD_REQUEST, "Enter a valid email address");
         }
         return value;
+    }
+
+    /** Digits with the country code, the way user phone numbers are stored. */
+    private String requirePhone(String phone) {
+        String digits = phone == null ? "" : phone.replaceAll("[^0-9]", "");
+        if (digits.length() < MIN_PHONE_DIGITS || digits.length() > MAX_PHONE_DIGITS) {
+            throw new VacademyException(HttpStatus.BAD_REQUEST, "Enter a valid phone number");
+        }
+        return digits;
     }
 
     private String requireUsername(String username) {

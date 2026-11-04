@@ -24,6 +24,7 @@
         "resend": "Renvoyer le code",
         "resendIn": "Renvoyer dans {{seconds}} s",
         "fullName": "Votre nom",
+        "phone": "Numéro de téléphone",
         "username": "Choisissez un identifiant",
         "password": "Choisissez un mot de passe",
         "instituteName": "Nom de l’établissement",

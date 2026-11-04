@@ -27,6 +27,7 @@ export const fetchSignupConfig = async (product: string): Promise<SignupProductC
 export interface SelfSignupDetails {
     signup_token: string;
     full_name: string;
+    phone: string;
     username?: string;
     password?: string;
     institute_name: string;

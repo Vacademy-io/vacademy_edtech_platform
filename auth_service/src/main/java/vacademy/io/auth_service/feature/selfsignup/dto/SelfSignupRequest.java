@@ -11,6 +11,8 @@ public class SelfSignupRequest {
     private String product;
 
     private String fullName;
+    /** With the country code. Not verified: the email is what was proven. */
+    private String phone;
     /** Required for an email sign-up; a Google sign-up signs in with Google. */
     private String username;
     private String password;

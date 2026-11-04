@@ -168,6 +168,7 @@ public class AuthService {
                     .fullName(registerRequest.getFullName())
                     .username(registerRequest.getUserName())
                     .email(normalizedEmail)
+                    .mobileNumber(registerRequest.getMobileNumber())
                     .password(registerRequest.getPassword())
                     .isRootUser(true)
                     .build();
