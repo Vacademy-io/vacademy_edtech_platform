@@ -1,6 +1,5 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import type { UseFormReturn } from 'react-hook-form';
 import Step2PickFromQuestionLibrary from './Step2PickFromQuestionLibrary';
 
 const api = vi.hoisted(() => ({
@@ -86,7 +85,7 @@ const makeForm = () => {
             path.endsWith('.adaptive_marking_for_each_question') ? [] : undefined,
         setValue,
         trigger: vi.fn(),
-    } as unknown as UseFormReturn<never>;
+    } as never;
     return { form, setValue };
 };
 
