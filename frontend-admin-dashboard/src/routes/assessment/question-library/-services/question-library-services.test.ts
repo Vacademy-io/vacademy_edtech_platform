@@ -1,8 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import {
     buildTree,
+    filterTree,
     flattenTree,
     nodePath,
+    pageTotals,
     subtreeHeight,
     subtreeIds,
     type LibraryNode,
@@ -68,5 +70,50 @@ describe('question library tree helpers', () => {
     it('treats a node whose parent is missing as a root instead of dropping it', () => {
         const roots = buildTree([node('orphan', 'gone', 'Orphan')]);
         expect(roots.map((r) => r.id)).toEqual(['orphan']);
+    });
+});
+
+describe('filterTree', () => {
+    const roots = buildTree([
+        node('ncert', null, 'NCERT'),
+        node('c10', 'ncert', 'Class 10'),
+        node('sci', 'c10', 'Science'),
+        node('chem', 'sci', 'Chemical Reactions'),
+        node('life', 'sci', 'Life Processes'),
+        node('upsc', null, 'UPSC'),
+    ]);
+
+    it('returns everything for an empty search', () => {
+        expect(filterTree(roots, '  ')).toBe(roots);
+    });
+
+    it('keeps the folders that lead to a match and drops the rest', () => {
+        const result = filterTree(roots, 'chemical');
+        expect(result.map((n) => n.name)).toEqual(['NCERT']);
+        const science = result[0]!.children[0]!.children[0]!;
+        expect(science.children.map((n) => n.name)).toEqual(['Chemical Reactions']);
+    });
+
+    it('keeps everything inside a folder whose own name matches', () => {
+        const result = filterTree(roots, 'science');
+        expect(result[0]!.children[0]!.children[0]!.children).toHaveLength(2);
+    });
+
+    it('returns nothing when no name matches', () => {
+        expect(filterTree(roots, 'zzz')).toEqual([]);
+    });
+});
+
+describe('pageTotals', () => {
+    it('reads either spelling of the page envelope', () => {
+        expect(pageTotals({ content: [], total_elements: 3, total_pages: 1 })).toEqual({
+            elements: 3,
+            pages: 1,
+        });
+        expect(pageTotals({ content: [], totalElements: 30, totalPages: 2 })).toEqual({
+            elements: 30,
+            pages: 2,
+        });
+        expect(pageTotals(undefined)).toEqual({ elements: 0, pages: 0 });
     });
 });

@@ -10,6 +10,8 @@ import vacademy.io.assessment_service.features.question_bank.manager.GetQuestion
 import vacademy.io.assessment_service.features.question_bank.manager.GetQuestionPaperManager;
 import vacademy.io.assessment_service.features.question_bank.repository.QuestionPaperRepository;
 import vacademy.io.assessment_service.features.question_core.dto.QuestionDTO;
+import vacademy.io.assessment_service.features.question_core.entity.Question;
+import vacademy.io.assessment_service.features.question_core.repository.QuestionRepository;
 import vacademy.io.assessment_service.features.question_library.dto.*;
 import vacademy.io.assessment_service.features.question_library.entity.QuestionLibraryNode;
 import vacademy.io.assessment_service.features.question_library.repository.QuestionLibraryNodeRepository;
@@ -40,6 +42,9 @@ public class QuestionLibraryService {
     private static final int MAX_QUESTIONS_PER_CALL = 500;
     private static final int MAX_NAME_LENGTH = 255;
     private static final String MODE_MOVE = "MOVE";
+    private static final List<String> PICK_LEVELS = List.of("EASY", "MEDIUM", "HARD");
+    /** Keeps one random pick within what the copy endpoint accepts in one call (500). */
+    private static final int MAX_PICK_PER_LEVEL = 150;
 
     @Autowired
     private QuestionLibraryAccess access;
@@ -58,6 +63,9 @@ public class QuestionLibraryService {
 
     @Autowired
     private QuestionPaperRepository questionPaperRepository;
+
+    @Autowired
+    private QuestionRepository questionRepository;
 
     // ---------------------------------------------------------------- tree
 
@@ -432,7 +440,75 @@ public class QuestionLibraryService {
         Page<QuestionDTO> page = questionBankManager.getQuestions(user, scoped, owner, pageNo, pageSize);
         List<QuestionDTO> questions = page.getContent();
         if (questions.isEmpty()) return page.map(q -> LibraryQuestionDto.builder().question(q).build());
+        Map<String, LibraryQuestionDto> rows = toRows(owner, manager, questions).stream()
+                .collect(Collectors.toMap(row -> row.getQuestion().getId(), row -> row));
+        return page.map(q -> rows.get(q.getId()));
+    }
 
+    /**
+     * Random questions per difficulty from the given topics, for building a test quickly.
+     * Nothing is written and nothing is copied: the caller shows these first, and adding
+     * them goes through the copy endpoint. Only questions placed on a topic can come back.
+     */
+    @Transactional(readOnly = true)
+    public LibraryRandomPickResponse randomPick(String instituteId, LibraryRandomPickRequest request) {
+        LibraryRandomPickRequest safe = request == null ? new LibraryRandomPickRequest() : request;
+        Map<String, Long> available = new LinkedHashMap<>();
+        PICK_LEVELS.forEach(level -> available.put(level, 0L));
+        String owner = access.ownerInstituteId();
+        String nodeIdsCsv = owner == null ? null : pickNodesCsv(owner, safe.getLibraryNodeIds());
+        if (nodeIdsCsv == null) {
+            return LibraryRandomPickResponse.builder().available(available).questions(List.of()).build();
+        }
+        String typesCsv = csvOrNull(safe.getQuestionTypes());
+        String excludeCsv = sourcesInSectionCsv(safe.getExcludeQuestionIds());
+        for (Object[] row : nodeRepository.countPickableByDifficulty(owner, nodeIdsCsv, typesCsv, excludeCsv)) {
+            if (row[0] != null && available.containsKey(row[0])) available.put((String) row[0], toLong(row[1]));
+        }
+        Map<String, Integer> wanted = Map.of("EASY", clampPick(safe.getEasy()), "MEDIUM", clampPick(safe.getMedium()), "HARD", clampPick(safe.getHard()));
+        List<String> ids = new ArrayList<>();
+        for (String level : PICK_LEVELS) {
+            int limit = wanted.get(level);
+            if (limit > 0) ids.addAll(nodeRepository.pickRandomQuestionIds(owner, nodeIdsCsv, typesCsv, excludeCsv, level, limit));
+        }
+        return LibraryRandomPickResponse.builder()
+                .available(available)
+                .questions(ids.isEmpty() ? List.of() : toRows(owner, access.isOwner(instituteId), loadInOrder(ids)))
+                .build();
+    }
+
+    private String pickNodesCsv(String owner, List<String> requested) {
+        List<String> nodeIds = requested == null || requested.isEmpty()
+                ? treeResolver.activeNodes(owner).stream().map(QuestionLibraryNode::getId).toList()
+                : treeResolver.withDescendants(owner, requested);
+        return nodeIds.isEmpty() ? null : String.join(",", nodeIds);
+    }
+
+    private static int clampPick(Integer count) {
+        return count == null ? 0 : Math.max(0, Math.min(count, MAX_PICK_PER_LEVEL));
+    }
+
+    private static String csvOrNull(List<String> values) {
+        if (values == null) return null;
+        String csv = values.stream()
+                .filter(v -> v != null && !v.isBlank() && !v.contains(","))
+                .collect(Collectors.joining(","));
+        return csv.isEmpty() ? null : csv;
+    }
+
+    /** The section holds copies, so what must be skipped is the library questions they came from. */
+    private String sourcesInSectionCsv(List<String> questionIdsInSection) {
+        String csv = csvOrNull(questionIdsInSection);
+        return csv == null ? null : csvOrNull(nodeRepository.findLibrarySourcesOfCopies(csv));
+    }
+
+    private List<QuestionDTO> loadInOrder(List<String> ids) {
+        Map<String, QuestionDTO> byId = questionRepository.findAllById(ids).stream()
+                .collect(Collectors.toMap(Question::getId, q -> new QuestionDTO(q, true)));
+        return ids.stream().map(byId::get).filter(Objects::nonNull).toList();
+    }
+
+    private List<LibraryQuestionDto> toRows(String owner, boolean manager, List<QuestionDTO> questions) {
         // Without the saved subject tags the editor would send an empty list back and
         // the save would wipe them (tags are replace-on-save).
         questionPaperManager.attachSubjectTags(questions);
@@ -456,11 +532,11 @@ public class QuestionLibraryService {
                 q.setSourceMeta(null);
             });
         }
-        return page.map(q -> LibraryQuestionDto.builder()
+        return questions.stream().map(q -> LibraryQuestionDto.builder()
                 .question(q)
                 .nodeIds(nodesByQuestion.getOrDefault(q.getId(), new ArrayList<>()))
                 .assessmentCount(usage.getOrDefault(q.getId(), 0L))
-                .build());
+                .build()).toList();
     }
 
     /**

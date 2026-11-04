@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type KeyboardEvent } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import {
@@ -6,15 +6,12 @@ import {
     Books,
     FolderMinus,
     FolderPlus,
-    MagnifyingGlass,
     Plus,
     Files,
     WarningCircle,
     X,
 } from '@phosphor-icons/react';
 import { MyButton } from '@/components/design-system/button';
-import { MyDropdown } from '@/components/design-system/dropdown';
-import { MyInput } from '@/components/design-system/input';
 import { MyPagination } from '@/components/design-system/pagination';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -31,6 +28,7 @@ import {
     libraryErrorMessage,
     moveLibraryNode,
     nodePath,
+    pageTotals,
     removeLibraryPaper,
     removeLibraryQuestions,
     reorderLibraryNodes,
@@ -44,13 +42,7 @@ import {
     type LibraryQuestion,
     type LibraryTreeNode,
 } from '../-services/question-library-services';
-import {
-    ALL_QUESTIONS,
-    DIFFICULTIES,
-    PAGE_SIZE,
-    QUESTION_TYPES,
-    UNSORTED,
-} from './library-constants';
+import { ALL_QUESTIONS, PAGE_SIZE, UNSORTED } from './library-constants';
 import { DifficultyBar, LibraryComingSoon, LibraryHeader } from './LibraryHeader';
 import { TopicTree, type TopicAction } from './TopicTree';
 import {
@@ -60,6 +52,7 @@ import {
     TopicPickerDialog,
 } from './TopicDialogs';
 import { AddPaperToTopicDialog, ImportTagsDialog } from './ImportDialogs';
+import { LibraryFilterBar } from './LibraryFilterBar';
 import { LibraryQuestionCard } from './LibraryQuestionCard';
 import { LibraryQuestionEditDialog } from './LibraryQuestionEditDialog';
 import { LibraryPapersPanel } from './LibraryPapersPanel';
@@ -68,9 +61,6 @@ type TopicForm =
     | { mode: 'create'; parent: LibraryNode | null }
     | { mode: 'rename'; node: LibraryNode }
     | null;
-
-/** Dropdown value for "no filter": an empty value would read as nothing selected. */
-const ANY = '__any__';
 
 /** Which questions a topic picker applies to, and how. */
 type PickerJob = { questionIds: string[]; mode: 'ADD' | 'MOVE' } | null;
@@ -128,6 +118,7 @@ export const QuestionLibraryPage = () => {
     );
     const questions = useLibraryQuestions(instituteId, filters, page, PAGE_SIZE);
     const rows = questions.data?.content ?? [];
+    const totals = pageTotals(questions.data);
 
     const resetPaging = () => {
         setPage(0);
@@ -311,6 +302,7 @@ export const QuestionLibraryPage = () => {
                             void onTopicAction(action, node, siblings)
                         }
                         readOnly={readOnly}
+                        searchable
                     />
                 </div>
 
@@ -373,84 +365,25 @@ export const QuestionLibraryPage = () => {
                             )}
                         </div>
 
-                        <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
-                            <div className="flex min-w-0 flex-1 items-center gap-2 sm:min-w-60">
-                                <div className="min-w-0 flex-1">
-                                    <MyInput
-                                        inputType="text"
-                                        inputPlaceholder={t('filters.search')}
-                                        input={search}
-                                        onChangeFunction={(e) => setSearch(e.target.value)}
-                                        onKeyDown={(e: KeyboardEvent<HTMLInputElement>) => {
-                                            if (e.key === 'Enter') {
-                                                resetPaging();
-                                                setAppliedSearch(search.trim());
-                                            }
-                                        }}
-                                        className="sm:w-full"
-                                    />
-                                </div>
-                                <MyButton
-                                    buttonType="secondary"
-                                    scale="medium"
-                                    layoutVariant="icon"
-                                    aria-label={t('filters.searchButton')}
-                                    onClick={() => {
-                                        resetPaging();
-                                        setAppliedSearch(search.trim());
-                                    }}
-                                >
-                                    <MagnifyingGlass size={16} />
-                                </MyButton>
-                            </div>
-                            <MyDropdown
-                                currentValue={
-                                    difficulty
-                                        ? t(`difficulty.${difficulty}`)
-                                        : t('filters.difficulty')
-                                }
-                                dropdownList={[
-                                    { label: t('filters.any'), value: ANY },
-                                    ...DIFFICULTIES.map((level) => ({
-                                        label: t(`difficulty.${level}`),
-                                        value: level,
-                                    })),
-                                ]}
-                                handleChange={(value) => {
-                                    resetPaging();
-                                    setDifficulty(value === ANY ? '' : value);
-                                }}
-                                className="w-full text-body sm:w-40"
-                            />
-                            <MyDropdown
-                                currentValue={
-                                    questionType ? t(`types.${questionType}`) : t('filters.type')
-                                }
-                                dropdownList={[
-                                    { label: t('filters.any'), value: ANY },
-                                    ...QUESTION_TYPES.map((type) => ({
-                                        label: t(`types.${type}`),
-                                        value: type,
-                                    })),
-                                ]}
-                                handleChange={(value) => {
-                                    resetPaging();
-                                    setQuestionType(value === ANY ? '' : value);
-                                }}
-                                className="w-full text-body sm:w-44"
-                            />
-                            {hasFilters && (
-                                <MyButton
-                                    buttonType="text"
-                                    scale="medium"
-                                    className="gap-1 sm:min-w-0"
-                                    onClick={clearFilters}
-                                >
-                                    <X size={14} />
-                                    {t('filters.clear')}
-                                </MyButton>
-                            )}
-                        </div>
+                        <LibraryFilterBar
+                            search={search}
+                            onSearchChange={setSearch}
+                            onSearchApply={() => {
+                                resetPaging();
+                                setAppliedSearch(search.trim());
+                            }}
+                            difficulty={difficulty}
+                            onDifficultyChange={(value) => {
+                                resetPaging();
+                                setDifficulty(value);
+                            }}
+                            questionType={questionType}
+                            onQuestionTypeChange={(value) => {
+                                resetPaging();
+                                setQuestionType(value);
+                            }}
+                            onClear={hasFilters ? clearFilters : undefined}
+                        />
                     </div>
 
                     <LibraryPapersPanel
@@ -551,7 +484,7 @@ export const QuestionLibraryPage = () => {
                                 </div>
                             )}
                             <span className="ml-auto text-caption text-neutral-500">
-                                {t('list.total', { count: questions.data?.total_elements ?? 0 })}
+                                {t('list.total', { count: totals.elements })}
                             </span>
                         </div>
                     )}
@@ -649,11 +582,11 @@ export const QuestionLibraryPage = () => {
                                           })}
                                 />
                             ))}
-                            {(questions.data?.total_pages ?? 0) > 1 && (
+                            {totals.pages > 1 && (
                                 <MyPagination
                                     currentPage={page}
-                                    totalPages={questions.data?.total_pages ?? 0}
-                                    totalElements={questions.data?.total_elements}
+                                    totalPages={totals.pages}
+                                    totalElements={totals.elements}
                                     pageSize={PAGE_SIZE}
                                     onPageChange={(next) => {
                                         setPage(next);

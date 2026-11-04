@@ -182,6 +182,16 @@ public class QuestionLibraryController {
         return ResponseEntity.ok(copyService.copy(instituteId, request));
     }
 
+    /** Random questions per difficulty. Reads only; adding them goes through /questions/copy. */
+    @PostMapping("/questions/random-pick")
+    public ResponseEntity<LibraryRandomPickResponse> randomPick(@RequestAttribute("user") CustomUserDetails user,
+                                                                @RequestHeader(value = "clientId", required = false) String clientId,
+                                                                @RequestParam("instituteId") String instituteId,
+                                                                @RequestBody(required = false) LibraryRandomPickRequest request) {
+        accessGuard.requireStaff(user, clientId, instituteId);
+        return ResponseEntity.ok(libraryService.randomPick(instituteId, request));
+    }
+
     /** The caller's own copy, for editing it before its test has been saved. */
     @GetMapping("/copies")
     public ResponseEntity<QuestionDTO> getCopy(@RequestAttribute("user") CustomUserDetails user,

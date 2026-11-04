@@ -17,6 +17,7 @@ const LIBRARY_BASE = `${BASE_URL}/assessment-service/question-library/v1`;
 export const LIBRARY_TREE_KEY = 'QUESTION_LIBRARY_TREE';
 export const LIBRARY_QUESTIONS_KEY = 'QUESTION_LIBRARY_QUESTIONS';
 export const LIBRARY_PAPERS_KEY = 'QUESTION_LIBRARY_PAPERS';
+export const LIBRARY_AVAILABILITY_KEY = 'QUESTION_LIBRARY_AVAILABILITY';
 export const LIBRARY_TAGS_KEY = 'QUESTION_LIBRARY_SUBJECT_TAGS';
 
 export interface LibraryNode {
@@ -83,7 +84,25 @@ export interface LibraryQuestionPage {
     content: LibraryQuestion[];
     total_elements?: number;
     total_pages?: number;
+    /** A Spring Page may name its envelope either way: see pageTotals. */
+    totalElements?: number;
+    totalPages?: number;
     number?: number;
+}
+
+export interface LibraryRandomPickBody {
+    library_node_ids?: string[];
+    question_types?: string[];
+    exclude_question_ids?: string[];
+    easy?: number;
+    medium?: number;
+    hard?: number;
+}
+
+export interface LibraryRandomPickResult {
+    /** EASY, MEDIUM and HARD, always all three. */
+    available: Record<string, number>;
+    questions: LibraryQuestion[];
 }
 
 /** The bank filter; library_node_ids / unsorted_only live on it so the assessment picker can use them too. */
@@ -128,6 +147,23 @@ export const buildTree = (nodes: LibraryNode[]): LibraryTreeNode[] => {
     sort(roots);
     return roots;
 };
+
+/** The topics whose name matches, with the folders that lead to them. A matching folder keeps all it holds. */
+export const filterTree = (roots: LibraryTreeNode[], query: string): LibraryTreeNode[] => {
+    const needle = query.trim().toLowerCase();
+    if (!needle) return roots;
+    return roots.flatMap((node) => {
+        if (node.name.toLowerCase().includes(needle)) return [node];
+        const children = filterTree(node.children, needle);
+        return children.length ? [{ ...node, children }] : [];
+    });
+};
+
+/** Totals of a question page, whichever way the envelope spells them. */
+export const pageTotals = (page: LibraryQuestionPage | undefined) => ({
+    elements: page?.total_elements ?? page?.totalElements ?? 0,
+    pages: page?.total_pages ?? page?.totalPages ?? 0,
+});
 
 /** "Physics › Mechanics › Friction" for a node id. */
 export const nodePath = (nodeId: string, nodes: LibraryNode[]): string => {
@@ -297,6 +333,10 @@ export const copyLibraryQuestions = (
     }
 ) => post<LibraryCopyResult>('/questions/copy', instituteId, body);
 
+/** Random questions per difficulty. Reads only: adding them still goes through the copy call. */
+export const randomPickLibraryQuestions = (instituteId: string, body: LibraryRandomPickBody) =>
+    post<LibraryRandomPickResult>('/questions/random-pick', instituteId, body);
+
 /** One of this institute's copies. Its test may not have been saved yet. */
 export const fetchLibraryCopy = async (instituteId: string, questionId: string) => {
     const { data } = await authenticatedAxiosInstance.get<QuestionResponse>(
@@ -350,6 +390,17 @@ export const useLibraryPapers = (instituteId: string | undefined, nodeId?: strin
     useQuery({
         queryKey: [LIBRARY_PAPERS_KEY, instituteId, nodeId],
         queryFn: () => fetchLibraryPapers(instituteId as string, nodeId),
+        enabled: !!instituteId,
+    });
+
+/** How many questions random pick can offer per difficulty. */
+export const useLibraryAvailability = (
+    instituteId: string | undefined,
+    body: LibraryRandomPickBody
+) =>
+    useQuery({
+        queryKey: [LIBRARY_AVAILABILITY_KEY, instituteId, body],
+        queryFn: () => randomPickLibraryQuestions(instituteId as string, body),
         enabled: !!instituteId,
     });
 

@@ -33,6 +33,8 @@ import vacademy.io.assessment_service.features.question_core.repository.OptionRe
 import vacademy.io.assessment_service.features.question_core.repository.QuestionRepository;
 import vacademy.io.assessment_service.features.question_library.dto.CopyLibraryQuestionsRequest;
 import vacademy.io.assessment_service.features.question_library.dto.LibraryCopyResponse;
+import vacademy.io.assessment_service.features.question_library.dto.LibraryRandomPickRequest;
+import vacademy.io.assessment_service.features.question_library.dto.LibraryRandomPickResponse;
 import vacademy.io.assessment_service.features.question_library.repository.QuestionLibraryNodeRepository;
 import vacademy.io.common.exceptions.VacademyException;
 
@@ -350,6 +352,91 @@ class QuestionLibraryCopyPersistenceTest {
                 .isInstanceOf(VacademyException.class);
         sync();
         assertLibraryUntouched();
+    }
+
+    private void libraryQuestion(String id, String difficulty, String type, String parentText) {
+        jdbc.update("""
+                INSERT INTO question (id, text_id, parent_rich_text_id, question_response_type, question_type, access_level, status, institute_id, difficulty)
+                VALUES (?, 'zz-t', ?, 'OPTION', ?, 'PRIVATE', 'ACTIVE', ?, ?)
+                """, id, parentText, type, OWNER, difficulty);
+        jdbc.update("INSERT INTO question_library_mapping (node_id, question_id, institute_id) VALUES ('zz-node', ?, ?)", id, OWNER);
+    }
+
+    private QuestionLibraryService pickService() {
+        QuestionLibraryAccess access = new QuestionLibraryAccess();
+        ReflectionTestUtils.setField(access, "ownerInstituteId", OWNER);
+        QuestionLibraryTreeResolver resolver = new QuestionLibraryTreeResolver();
+        ReflectionTestUtils.setField(resolver, "nodeRepository", nodeRepository);
+        QuestionLibraryService library = new QuestionLibraryService();
+        ReflectionTestUtils.setField(library, "access", access);
+        ReflectionTestUtils.setField(library, "nodeRepository", nodeRepository);
+        ReflectionTestUtils.setField(library, "treeResolver", resolver);
+        ReflectionTestUtils.setField(library, "questionRepository", questionRepository);
+        ReflectionTestUtils.setField(library, "questionPaperManager", mock(GetQuestionPaperManager.class));
+        return library;
+    }
+
+    private void seedPickPool() {
+        rich("zz-parent", "<p>A passage</p>");
+        for (int i = 0; i < 6; i++) libraryQuestion("zz-easy-" + i, "EASY", "MCQS", null);
+        for (int i = 0; i < 2; i++) libraryQuestion("zz-hard-" + i, "HARD", "MCQS", null);
+        libraryQuestion("zz-numeric", "EASY", "NUMERIC", null);
+        libraryQuestion("zz-passage", "EASY", "MCQS", "zz-parent");
+        // On no topic: never offered, even though it is the owner's own.
+        jdbc.update("""
+                INSERT INTO question (id, text_id, question_response_type, question_type, access_level, status, institute_id, difficulty)
+                VALUES ('zz-private', 'zz-t', 'OPTION', 'MCQS', 'PRIVATE', 'ACTIVE', ?, 'EASY')
+                """, OWNER);
+    }
+
+    private static List<String> idsOf(LibraryRandomPickResponse response) {
+        return response.getQuestions().stream().map(row -> row.getQuestion().getId()).toList();
+    }
+
+    @Test
+    void randomPickReportsWhatIsAvailableAndWritesNothing() {
+        seedPickPool();
+        int questionsBefore = jdbc.queryForObject("SELECT COUNT(*) FROM question", Integer.class);
+
+        LibraryRandomPickResponse response = pickService().randomPick(CLIENT, new LibraryRandomPickRequest());
+
+        // Six easy MCQs plus the numeric. The passage question and the unplaced one do not count.
+        assertThat(response.getAvailable()).containsEntry("EASY", 7L).containsEntry("MEDIUM", 0L).containsEntry("HARD", 3L);
+        assertThat(response.getQuestions()).isEmpty();
+        assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM question", Integer.class)).isEqualTo(questionsBefore);
+    }
+
+    @Test
+    void randomPickTakesTheAskedCountOfEachDifficulty() {
+        seedPickPool();
+        LibraryRandomPickRequest request = LibraryRandomPickRequest.builder()
+                .questionTypes(List.of("MCQS"))
+                .libraryNodeIds(List.of("zz-node"))
+                .excludeQuestionIds(List.of())
+                .easy(3).hard(5).build();
+
+        LibraryRandomPickResponse response = pickService().randomPick(CLIENT, request);
+
+        List<String> ids = idsOf(response);
+        assertThat(ids).hasSize(3 + 3).doesNotHaveDuplicates()
+                .doesNotContain("zz-numeric", "zz-passage", "zz-private");
+        // Hard asked for 5, only 3 exist (the seed question plus two): it never invents more.
+        assertThat(ids.stream().filter(id -> id.startsWith("zz-easy")).count()).isEqualTo(3);
+        assertThat(response.getQuestions().get(0).getQuestion().getSourceMeta()).isNull();
+    }
+
+    @Test
+    void randomPickSkipsWhatTheSectionAlreadyHasACopyOf() {
+        String copy = pick(CLIENT);
+
+        LibraryRandomPickRequest request = LibraryRandomPickRequest.builder()
+                .libraryNodeIds(List.of())
+                .questionTypes(List.of())
+                .excludeQuestionIds(List.of(copy))
+                .hard(5).build();
+        LibraryRandomPickResponse response = pickService().randomPick(CLIENT, request);
+
+        assertThat(idsOf(response)).doesNotContain(LIB);
     }
 
     @Test

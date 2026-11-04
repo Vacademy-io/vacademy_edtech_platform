@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from 'react';
+import { useMemo, useState, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
     ArrowDown,
@@ -16,9 +16,10 @@ import {
 } from '@phosphor-icons/react';
 import { MyButton } from '@/components/design-system/button';
 import { MyDropdown } from '@/components/design-system/dropdown';
+import { MyInput } from '@/components/design-system/input';
 import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
-import type { LibraryTreeNode } from '../-services/question-library-services';
+import { filterTree, type LibraryTreeNode } from '../-services/question-library-services';
 import { ALL_QUESTIONS, UNSORTED } from './library-constants';
 
 /** Indent per tree level (depth 1..4). */
@@ -38,6 +39,10 @@ interface TopicTreeProps {
     onAction: (action: TopicAction, node: LibraryTreeNode, siblings: LibraryTreeNode[]) => void;
     /** Browsing only: no topic actions and no "not in a topic" row. */
     readOnly?: boolean;
+    /** Adds a search box over the topics. */
+    searchable?: boolean;
+    /** Scrolls the topics inside the panel, for use in a dialog. */
+    scrollBody?: boolean;
 }
 
 /** Left panel: All questions, Unsorted, then the topic tree with live counts. */
@@ -52,9 +57,14 @@ export const TopicTree = ({
     onAddTopic,
     onAction,
     readOnly = false,
+    searchable = false,
+    scrollBody = false,
 }: TopicTreeProps) => {
     const { t } = useTranslation('assessmentQuestionLibrary');
     const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
+    const [query, setQuery] = useState('');
+    const searching = query.trim().length > 0;
+    const visibleRoots = useMemo(() => filterTree(roots, query), [roots, query]);
 
     const toggle = (id: string) =>
         setCollapsed((prev) => {
@@ -83,7 +93,8 @@ export const TopicTree = ({
 
     const renderNode = (node: LibraryTreeNode, siblings: LibraryTreeNode[], index: number) => {
         const hasChildren = node.children.length > 0;
-        const isOpen = !collapsed.has(node.id);
+        // A search result must be visible, whatever was collapsed before it.
+        const isOpen = searching || !collapsed.has(node.id);
         const actions = [
             ...(node.depth < maxDepth
                 ? [{ label: t('tree.addSubtopic'), value: 'addChild', icon: <Plus size={16} /> }]
@@ -185,6 +196,15 @@ export const TopicTree = ({
                     </MyButton>
                 )}
             </div>
+            {searchable && roots.length > 0 && (
+                <MyInput
+                    inputType="text"
+                    inputPlaceholder={t('picker.search')}
+                    input={query}
+                    onChangeFunction={(e) => setQuery(e.target.value)}
+                    className="sm:w-full"
+                />
+            )}
             <div className="flex flex-col gap-1">
                 {fixedRow(ALL_QUESTIONS, <Stack size={16} />, t('tree.all'), totalQuestions)}
                 {!readOnly &&
@@ -205,9 +225,13 @@ export const TopicTree = ({
                         {readOnly ? t('readOnly.emptyHint') : t('tree.emptyHint')}
                     </p>
                 </div>
+            ) : visibleRoots.length === 0 ? (
+                <p className="px-3 py-4 text-center text-caption text-neutral-500">
+                    {t('picker.noMatch')}
+                </p>
             ) : (
-                <ul className="flex flex-col">
-                    {roots.map((node, i) => renderNode(node, roots, i))}
+                <ul className={cn('flex flex-col', scrollBody && 'max-h-96 overflow-y-auto')}>
+                    {visibleRoots.map((node, i) => renderNode(node, visibleRoots, i))}
                 </ul>
             )}
         </aside>
