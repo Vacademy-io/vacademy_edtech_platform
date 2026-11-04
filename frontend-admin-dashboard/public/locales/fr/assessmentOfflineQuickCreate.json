@@ -49,7 +49,7 @@
         "estimateLine_other": "≈{{credits}} crédits pour lire les fichiers ({{count}} pages)",
         "balance": "solde {{balance}}",
         "insufficient": "Crédits insuffisants pour lire ces fichiers. Rechargez, ou choisissez « L'enseignant corrige ».",
-        "howItWorks": "Débité une fois, quand les questions sont prêtes. Vous les vérifiez dans l'onglet Soumissions ; chaque copie est ensuite corrigée à 1 crédit par question."
+        "howItWorks": "Débité une fois, quand les questions sont prêtes. Vous les vérifiez dans l'onglet Soumissions ; chaque copie est ensuite facturée à la page."
     },
     "actions": {
         "creating": "Création…",

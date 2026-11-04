@@ -375,6 +375,19 @@ export const useToolPricingQuery = (enabled = true) => {
  * instantly as inputs change without a network round-trip. MUST stay in sync with
  * ai_service/app/services/tool_cost_estimator.py (and the V321 seed).
  */
+/** Credits per page on a per-page rate row, or null when the row does not price pages. */
+export const perPageCredits = (row: ToolPricingRow | null | undefined): number | null =>
+    row?.unit_field === 'pages' ? Number(row.per_unit_credits) || 0 : null;
+
+/**
+ * What a credit history row says. A charge's description ends with the tool and rate it used,
+ * kept for reconciliation; a copy check from before descriptions named the copy reads as one.
+ */
+export const creditHistoryText = (description: string | null | undefined): string => {
+    const text = (description ?? '').replace(/\s*\[[a-z0-9_]+; rate [^\]]*\]\s*$/, '');
+    return /^evaluation using /.test(text) ? 'AI evaluation' : text;
+};
+
 export const computeToolCredits = (
     row: ToolPricingRow | undefined,
     params: ToolParams

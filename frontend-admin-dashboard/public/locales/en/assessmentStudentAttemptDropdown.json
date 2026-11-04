@@ -17,6 +17,8 @@
             "recheckTitle": "Re-check this copy with AI?",
             "recheckMessage": "{{name}}'s copy has already been checked or is being evaluated. A new check replaces its current marks, including any changes a teacher made, and it shows as Evaluating until the new result is ready.",
             "estimatedCostLabel": "Estimated cost:",
+            "creditsPerPage_one": "{{count}} credit per page",
+            "creditsPerPage_other": "{{count}} credits per page",
             "creditsCount_one": "{{count}} credit",
             "creditsCount_other": "{{count}} credits",
             "balance_one": "Balance: {{count}}",

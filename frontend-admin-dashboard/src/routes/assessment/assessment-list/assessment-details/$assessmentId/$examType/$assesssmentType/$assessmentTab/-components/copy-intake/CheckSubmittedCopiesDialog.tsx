@@ -50,7 +50,6 @@ export const CheckSubmittedCopiesDialog = ({
     onOpenChange,
     assessmentId,
     instituteId,
-    questionsPerCopy,
     attemptIds,
     defaultIncludeChecked = false,
     onStarted,
@@ -60,7 +59,6 @@ export const CheckSubmittedCopiesDialog = ({
     assessmentId: string;
     instituteId: string;
     /** Questions on the paper — the unit the AI check is billed in. */
-    questionsPerCopy: number;
     /** Checked rows of the submissions table; undefined/empty = every submitted copy. */
     attemptIds?: string[];
     /** Start with "also re-check the copies already checked" ticked. */
@@ -91,10 +89,11 @@ export const CheckSubmittedCopiesDialog = ({
     const p = preview.data;
     const toCheck = p?.to_check ?? 0;
 
-    // Same charge the orchestrator records per completed copy, once per copy.
+    // The pages of a submitted copy are counted when it is read, so the screen shows
+    // the rate, and the balance check uses the minimum: one page a copy.
     const cost = useToolCostPreview(
         'copy_check_evaluation',
-        { num_questions: questionsPerCopy },
+        { num_pages: 1 },
         open && toCheck > 0,
         Math.max(toCheck, 1)
     );
@@ -110,7 +109,12 @@ export const CheckSubmittedCopiesDialog = ({
                   ? t('dialog.unitPage')
                   : null;
         if (!unit) return null;
-        return t(flat > 0 ? 'dialog.rate' : 'dialog.rateNoBase', { flat, perUnit, unit });
+        return t(flat > 0 ? 'dialog.rate' : 'dialog.rateNoBase', {
+            flat,
+            perUnit,
+            unit,
+            count: perUnit,
+        });
     }, [cost.rate, t]);
 
     const start = useMutation({
@@ -234,11 +238,7 @@ export const CheckSubmittedCopiesDialog = ({
                             ? t('submitted.costEmpty')
                             : cost.credits == null
                               ? t('dialog.counting')
-                              : t('dialog.cost', {
-                                    count: toCheck,
-                                    questions: questionsPerCopy,
-                                    credits: cost.credits,
-                                })}
+                              : t('submitted.cost', { count: toCheck })}
                     </span>
                     {cost.currentBalance != null && (
                         <span className="text-caption text-neutral-500">

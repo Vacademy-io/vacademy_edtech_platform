@@ -361,11 +361,13 @@ def record_llm_billing(
 # enqueue.
 # ============================================================================
 
-def _charge_description(rt_str: str, model: str, tool_key: str, rate_source: Optional[str]) -> str:
-    """credit_transactions.description: the old "<request_type> using <model>"
-    plus the tool and the price it used, for reconciliation (spec 10.3/10.5)."""
-    desc = f"{rt_str} using {model} [{tool_key}; rate {rate_source or 'default'}]"
-    return desc[:500]
+def _charge_description(rt_str: str, model: str, tool_key: str, rate_source: Optional[str],
+                        label: Optional[str] = None) -> str:
+    """credit_transactions.description: what was charged for (`label`, else the
+    old "<request_type> using <model>") plus the tool and the price it used, for
+    reconciliation (spec 10.3/10.5). The bracket always survives a long label."""
+    suffix = f" [{tool_key}; rate {rate_source or 'default'}]"
+    return f"{(label or f'{rt_str} using {model}')[:500 - len(suffix)]}{suffix}"
 
 
 def charge_tool(
@@ -391,6 +393,7 @@ def charge_tool(
     use_case: Optional[str] = None,
     metering: Any = None,
     usage_context: Optional[dict] = None,
+    description_label: Optional[str] = None,
 ) -> Decimal:
     """Deduct max(parametric, actual × usage_markup) for a metered tool, or
     exactly the parametric quote when the resolved row is fixed-price.
@@ -409,6 +412,8 @@ def charge_tool(
 
     use_case / metering / usage_context: optional usage-event attribution
     (metering_kwargs); they never change the charge or the ledger row.
+    description_label: what the customer reads in the credit history for this
+    charge; never changes the amount.
 
     Records an ai_token_usage row + a credit_transactions deduction. Returns the
     amount charged. Raises on hard DB errors (callers wrap as best-effort).
@@ -433,7 +438,7 @@ def charge_tool(
     parametric = Decimal(str(estimate["estimated_credits"]))
     fixed_price = bool(estimate.get("fixed_price"))
     charge = parametric if fixed_price else max(parametric, actual)
-    description = _charge_description(rt_str, model, tool_key, estimate.get("rate_source"))
+    description = _charge_description(rt_str, model, tool_key, estimate.get("rate_source"), description_label)
 
     meter = (metering_kwargs(use_case, metering, usage_context, tool_key=tool_key)
              if (use_case or metering is not None or usage_context) else {})
@@ -506,6 +511,7 @@ def record_tool_billing(
     use_case: Optional[str] = None,
     metering: Any = None,
     usage_context: Optional[dict] = None,
+    description_label: Optional[str] = None,
 ) -> None:
     """Best-effort tool charge on a fresh session. Swallows all errors — the
     work has already happened, so a billing failure must not fail the response.
@@ -537,6 +543,7 @@ def record_tool_billing(
                 use_case=use_case,
                 metering=metering,
                 usage_context=usage_context,
+                description_label=description_label,
             )
     except Exception as exc:  # noqa: BLE001
         logger.warning("Tool billing failed (tool=%s, request_id=%s): %s", tool_key, request_id, exc)

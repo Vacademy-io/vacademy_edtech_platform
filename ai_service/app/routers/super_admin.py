@@ -626,7 +626,7 @@ TOOL_LABELS = {
     "tutor_avatar_minute": "Live AI Tutor: teacher avatar (premium), per lesson minute on top of the live minute",
     "tutor_voice_clone": "Live AI Tutor: clone a teacher's voice (one-time, per voice)",
     "tutor_avatar_create": "Live AI Tutor: create a custom teacher avatar (one-time, per avatar)",
-    "copy_check_evaluation": "AI evaluation — dashboard (per question)",
+    "copy_check_evaluation": "AI evaluation — dashboard (per page)",
     "copy_check_evaluation_api": "AI evaluation — API partners (fixed price)",
 }
 

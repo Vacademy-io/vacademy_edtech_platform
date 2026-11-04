@@ -85,7 +85,7 @@ class AiEvaluationCreditGateTest {
                 quotes(quote("3", "100"));
                 committed("0");
 
-                gate.reserve("inst-1", List.of(AiEvaluationCharge.dashboard(10)), BigDecimal.ZERO, Mode.DASHBOARD);
+                gate.reserve("inst-1", List.of(AiEvaluationCharge.dashboardHandwritten(10)), BigDecimal.ZERO, Mode.DASHBOARD);
 
                 ArgumentCaptor<SqlParameterSource> params = ArgumentCaptor.forClass(SqlParameterSource.class);
                 verify(jdbc).queryForObject(eq(AiEvaluationCreditGate.LOCK_SQL), params.capture(), eq(Integer.class));
@@ -152,17 +152,17 @@ class AiEvaluationCreditGateTest {
         void copiesThatFitAreReservedAtTheirQuoteAndOnePriceIsQuotedOnce() throws Exception {
                 quotes(quote("3", "100"));
                 committed("40");
-                AiEvaluationCharge charge = AiEvaluationCharge.dashboard(10);
+                AiEvaluationCharge charge = AiEvaluationCharge.dashboardHandwritten(10);
 
                 List<Reservation> reserved = gate.reserve("inst-1", List.of(charge, charge, charge), BigDecimal.ZERO,
                                 Mode.DASHBOARD);
 
                 assertThat(reserved).hasSize(3).allSatisfy(r -> assertThat(r.quotedCredits()).isEqualByComparingTo("3"));
-                verify(client, times(1)).estimate(eq("copy_check_evaluation"), eq(Map.of("num_questions", 10)),
+                verify(client, times(1)).estimate(eq("copy_check_evaluation"), eq(Map.of("num_pages", 10)),
                                 eq("inst-1"), any(Duration.class));
                 Map<?, ?> snapshot = json.readValue(reserved.get(0).rateSnapshotJson(), Map.class);
                 assertThat(snapshot.get("tool_key")).isEqualTo("copy_check_evaluation");
-                assertThat(snapshot.get("quote_params")).isEqualTo(Map.of("num_questions", 10));
+                assertThat(snapshot.get("quote_params")).isEqualTo(Map.of("num_pages", 10));
                 assertThat(snapshot.containsKey("credit_limit")).isFalse();
         }
 
@@ -171,12 +171,12 @@ class AiEvaluationCreditGateTest {
                 quotes(quote("3", "10"));
                 committed("4");
                 // 10 - 4 = 6 available, 2 x 3 = 6 required: fits.
-                assertThat(gate.reserve("inst-1", List.of(AiEvaluationCharge.dashboard(1), AiEvaluationCharge.dashboard(1)),
+                assertThat(gate.reserve("inst-1", List.of(AiEvaluationCharge.dashboardHandwritten(1), AiEvaluationCharge.dashboardHandwritten(1)),
                                 BigDecimal.ZERO, Mode.DASHBOARD)).hasSize(2);
 
                 committed("5");
                 assertThatThrownBy(() -> gate.reserve("inst-1",
-                                List.of(AiEvaluationCharge.dashboard(1), AiEvaluationCharge.dashboard(1)),
+                                List.of(AiEvaluationCharge.dashboardHandwritten(1), AiEvaluationCharge.dashboardHandwritten(1)),
                                 BigDecimal.ZERO, Mode.DASHBOARD))
                                 .isInstanceOfSatisfying(InsufficientCreditsException.class, e -> {
                                         assertThat(e.getStatus().value()).isEqualTo(402);
@@ -209,7 +209,7 @@ class AiEvaluationCreditGateTest {
         void theDashboardFailsOpenWhenTheCreditServiceCannotAnswer() {
                 quotes(ToolEstimate.unreachable("401 Unauthorized"));
 
-                List<Reservation> reserved = gate.reserve("inst-1", List.of(AiEvaluationCharge.dashboard(10)),
+                List<Reservation> reserved = gate.reserve("inst-1", List.of(AiEvaluationCharge.dashboardHandwritten(10)),
                                 BigDecimal.ZERO, Mode.DASHBOARD);
 
                 assertThat(reserved).hasSize(1);
@@ -236,7 +236,7 @@ class AiEvaluationCreditGateTest {
                 quotes(quote("3", null));
                 committed("0");
 
-                assertThat(gate.reserve("inst-1", List.of(AiEvaluationCharge.dashboard(10)), BigDecimal.ZERO,
+                assertThat(gate.reserve("inst-1", List.of(AiEvaluationCharge.dashboardHandwritten(10)), BigDecimal.ZERO,
                                 Mode.DASHBOARD)).hasSize(1);
                 assertThatThrownBy(() -> gate.reserve("inst-1", List.of(AiEvaluationCharge.apiTyped(3)), BigDecimal.ZERO,
                                 Mode.API)).isInstanceOf(InsufficientCreditsException.class);
@@ -250,7 +250,7 @@ class AiEvaluationCreditGateTest {
                 TransactionSynchronizationManager.setActualTransactionActive(false);
                 quotes(quote("3", "100"));
 
-                assertThatThrownBy(() -> gate.reserve("inst-1", List.of(AiEvaluationCharge.dashboard(10)),
+                assertThatThrownBy(() -> gate.reserve("inst-1", List.of(AiEvaluationCharge.dashboardHandwritten(10)),
                                 BigDecimal.ZERO, Mode.DASHBOARD)).isInstanceOf(IllegalStateException.class);
         }
 
@@ -266,15 +266,15 @@ class AiEvaluationCreditGateTest {
                 quotes(quote("3", "0"));
                 committed("0");
 
-                List<Reservation> reserved = relaxed.reserve("inst-1", List.of(AiEvaluationCharge.dashboard(10)),
+                List<Reservation> reserved = relaxed.reserve("inst-1", List.of(AiEvaluationCharge.dashboardHandwritten(10)),
                                 BigDecimal.ZERO, Mode.DASHBOARD);
                 assertThat(reserved.get(0).quotedCredits()).isEqualByComparingTo("3");
-                assertThat(relaxed.checkAtDispatch("inst-1", new BigDecimal("3"), null, AiEvaluationCharge.dashboard(10),
+                assertThat(relaxed.checkAtDispatch("inst-1", new BigDecimal("3"), null, AiEvaluationCharge.dashboardHandwritten(10),
                                 false).verdict()).isEqualTo(DispatchVerdict.PROCEED);
 
                 assertThatThrownBy(() -> relaxed.reserve("inst-1", List.of(AiEvaluationCharge.apiHandwritten(3)),
                                 BigDecimal.ZERO, Mode.API)).isInstanceOf(InsufficientCreditsException.class);
-                assertThat(relaxed.checkAtDispatch("inst-1", new BigDecimal("3"), null, AiEvaluationCharge.dashboard(10),
+                assertThat(relaxed.checkAtDispatch("inst-1", new BigDecimal("3"), null, AiEvaluationCharge.dashboardHandwritten(10),
                                 true).verdict()).isEqualTo(DispatchVerdict.INSUFFICIENT);
         }
 
@@ -309,13 +309,13 @@ class AiEvaluationCreditGateTest {
         void atDispatchABalanceThatNoLongerCoversTheQuoteFailsIt() throws Exception {
                 quotes(quote("3", "2"));
                 String snapshot = json.writeValueAsString(Map.of("tool_key", "copy_check_evaluation",
-                                "quote_params", Map.of("num_questions", 10)));
+                                "quote_params", Map.of("num_pages", 10)));
 
                 DispatchCheck check = gate.checkAtDispatch("inst-1", new BigDecimal("3"), snapshot, null, false);
 
                 assertThat(check.verdict()).isEqualTo(DispatchVerdict.INSUFFICIENT);
                 assertThat(check.newQuote()).isNull();
-                verify(client).estimate(eq("copy_check_evaluation"), eq(Map.of("num_questions", 10)), eq("inst-1"),
+                verify(client).estimate(eq("copy_check_evaluation"), eq(Map.of("num_pages", 10)), eq("inst-1"),
                                 any(Duration.class));
         }
 
@@ -333,9 +333,9 @@ class AiEvaluationCreditGateTest {
         void atDispatchAnUnreachableCreditServiceSendsADashboardCopyAndRequeuesAnApiOne() {
                 quotes(ToolEstimate.unreachable("503"));
 
-                assertThat(gate.checkAtDispatch("inst-1", BigDecimal.ONE, null, AiEvaluationCharge.dashboard(1), false)
+                assertThat(gate.checkAtDispatch("inst-1", BigDecimal.ONE, null, AiEvaluationCharge.dashboardHandwritten(1), false)
                                 .verdict()).isEqualTo(DispatchVerdict.PROCEED);
-                assertThat(gate.checkAtDispatch("inst-1", BigDecimal.ONE, null, AiEvaluationCharge.dashboard(1), true)
+                assertThat(gate.checkAtDispatch("inst-1", BigDecimal.ONE, null, AiEvaluationCharge.dashboardHandwritten(1), true)
                                 .verdict()).isEqualTo(DispatchVerdict.UNAVAILABLE);
         }
 
@@ -343,12 +343,12 @@ class AiEvaluationCreditGateTest {
         void aRowQueuedWithoutAQuoteIsPricedAtDispatchAndTheQuoteHandedBack() {
                 quotes(quote("5", "100"));
 
-                DispatchCheck check = gate.checkAtDispatch("inst-1", null, null, AiEvaluationCharge.dashboard(20), false);
+                DispatchCheck check = gate.checkAtDispatch("inst-1", null, null, AiEvaluationCharge.dashboardHandwritten(20), false);
 
                 assertThat(check.verdict()).isEqualTo(DispatchVerdict.PROCEED);
                 assertThat(check.newQuote()).isNotNull();
                 assertThat(check.newQuote().quotedCredits()).isEqualByComparingTo("5");
-                assertThat(check.newQuote().rateSnapshotJson()).contains("\"num_questions\":20");
+                assertThat(check.newQuote().rateSnapshotJson()).contains("\"num_pages\":20");
         }
 
         @Test

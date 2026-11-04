@@ -180,16 +180,26 @@ def test_typed_rate_follows_the_override():
 
 
 def test_typed_rule_needs_typed_per_answer_on_the_row():
-    # The dashboard key has no typed_per_answer: answer_mode changes nothing.
-    est = _est(FakeDB(global_missing=True), "copy_check_evaluation",
-               {"answer_mode": "TYPED", "num_questions": 10, "num_answers": 2})
+    # A row with no typed_per_answer: answer_mode changes nothing.
+    db = FakeDB(global_rows=[g_row("copy_check_evaluation", 1, Decimal("0.2"), "questions")])
+    est = _est(db, "copy_check_evaluation", {"answer_mode": "TYPED", "num_questions": 10, "num_answers": 2})
     assert est["estimated_credits"] == 3      # 1 + 10 x 0.2
 
 
-def test_dashboard_key_is_unchanged():
-    est = _est(FakeDB(global_missing=True), "copy_check_evaluation", {"num_questions": 64})
-    assert est["estimated_credits"] == 14     # ceil(1 + 12.8)
-    assert est["fixed_price"] is False and est["rate_source"] == "default"
+def test_dashboard_key_is_one_credit_per_page_fixed_price():
+    est = _est(FakeDB(global_missing=True), "copy_check_evaluation", {"num_pages": 6})
+    assert est["estimated_credits"] == 6
+    assert est["fixed_price"] is True and est["rate_source"] == "default"
+
+
+def test_dashboard_key_prices_a_typed_attempt_per_answer():
+    est = _est(FakeDB(global_missing=True), "copy_check_evaluation", {"answer_mode": "TYPED", "num_answers": 4})
+    assert est["estimated_credits"] == 4
+
+
+def test_dashboard_page_rate_comes_from_the_row_not_the_code():
+    row = g_row("copy_check_evaluation", 0, Decimal("2"), "pages")
+    assert _est(FakeDB(global_rows=[row]), "copy_check_evaluation", {"num_pages": 6})["estimated_credits"] == 12
 
 
 # ── rate snapshot ───────────────────────────────────────────────────────────
@@ -225,7 +235,8 @@ def test_unknown_tool_still_raises():
 def test_estimate_with_balance_prices_at_the_institute_rate(monkeypatch):
     credit_mod = sys.modules["app.services.credit_service"]
     monkeypatch.setattr(credit_mod, "CreditService", lambda db: SimpleNamespace(
-        get_balance=lambda iid: SimpleNamespace(current_balance=Decimal("10"))), raising=False)
+        get_balance=lambda iid: SimpleNamespace(current_balance=Decimal("10")),
+        get_trial_status=lambda iid: {"expired": False}), raising=False)
     db = FakeDB(overrides=[o_row(COPY_CHECK_API_TOOL_KEY, per_unit=Decimal("0.5"))])
     res = ToolCostEstimator(db).estimate_with_balance(COPY_CHECK_API_TOOL_KEY, {"num_pages": 12}, INST)
     assert res["estimated_credits"] == 6 and res["sufficient"] is True and res["balance_after"] == 4
@@ -271,14 +282,34 @@ def test_api_charge_is_the_quote_without_token_overage(ledger):
     assert "copy_check_evaluation_api" in d["description"] and "rate default" in d["description"]
 
 
-def test_dashboard_charge_keeps_max_of_quote_and_actual(ledger):
-    charged = _charge(FakeDB(global_missing=True), "copy_check_evaluation", {"num_questions": 10})
+def test_dashboard_charge_is_the_page_quote_without_token_overage(ledger):
+    charged = _charge(FakeDB(global_missing=True), "copy_check_evaluation", {"num_pages": 6})
+    assert charged == Decimal("6")                        # actual 50 ignored
+
+
+def test_a_row_without_fixed_price_keeps_max_of_quote_and_actual(ledger):
+    db = FakeDB(global_rows=[g_row("copy_check_evaluation", 1, Decimal("0.2"), "questions")])
+    charged = _charge(db, "copy_check_evaluation", {"num_questions": 10})
     assert charged == Decimal("50")
     assert ledger["deduct"][0]["description"].startswith("evaluation using glm")
 
 
+def test_description_label_replaces_the_text_and_keeps_the_rate_bracket(ledger):
+    _charge(FakeDB(global_missing=True), "copy_check_evaluation", {"num_pages": 6},
+            description_label="AI evaluation · Test · Rahul · 6 pages")
+    desc = ledger["deduct"][0]["description"]
+    assert desc == "AI evaluation · Test · Rahul · 6 pages [copy_check_evaluation; rate default]"
+
+
+def test_a_long_description_label_never_loses_the_rate_bracket(ledger):
+    _charge(FakeDB(global_missing=True), "copy_check_evaluation", {"num_pages": 6}, description_label="x" * 900)
+    desc = ledger["deduct"][0]["description"]
+    assert len(desc) <= 500 and desc.endswith("[copy_check_evaluation; rate default]")
+
+
 def test_no_token_overage_override_charges_the_quote(ledger):
-    db = FakeDB(overrides=[o_row("copy_check_evaluation", no_token_overage=True, id="ov-9")])
+    db = FakeDB(global_rows=[g_row("copy_check_evaluation", 1, Decimal("0.2"), "questions")],
+                overrides=[o_row("copy_check_evaluation", no_token_overage=True, id="ov-9")])
     charged = _charge(db, "copy_check_evaluation", {"num_questions": 10})
     assert charged == Decimal("3")
     assert "rate override:ov-9" in ledger["deduct"][0]["description"]
@@ -376,7 +407,8 @@ def test_estimate_returns_a_replayable_rate_snapshot():
 
 
 def test_no_token_overage_survives_the_snapshot(ledger):
-    db = FakeDB(overrides=[o_row("copy_check_evaluation", no_token_overage=True, id="ov-9")])
+    db = FakeDB(global_rows=[g_row("copy_check_evaluation", 1, Decimal("0.2"), "questions")],
+                overrides=[o_row("copy_check_evaluation", no_token_overage=True, id="ov-9")])
     snap = _est(db, "copy_check_evaluation", {"num_questions": 10}, institute_id=INST)["rate_snapshot"]
     assert snap["params"]["no_token_overage"] is True
     charged = _charge(FakeDB(global_missing=True), "copy_check_evaluation", {"num_questions": 10},

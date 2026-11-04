@@ -193,8 +193,7 @@ def test_copy_check_api_charge_is_an_api_key_actor():
     dfields = ai_billing.metering_kwargs(dash["use_case"], dash["metering"], dash["usage_context"])
     assert dfields["surface"] == "ADMIN_APP" and dfields["actor_kind"] == "UNKNOWN"
     # The plan (legacy ledger args) is untouched by the metering kwargs.
-    plan = orchestrator.charge_plan({"billing_actor": "apikey:key-9", "page_count": 3}, typed=False,
-                                    num_questions=4)
+    plan = orchestrator.charge_plan({"billing_actor": "apikey:key-9", "page_count": 3}, typed=False)
     assert plan["user_role"] == "API_KEY" and not (set(plan) & set(api))
 
 

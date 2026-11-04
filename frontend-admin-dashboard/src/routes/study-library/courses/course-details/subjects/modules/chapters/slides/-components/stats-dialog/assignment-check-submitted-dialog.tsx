@@ -63,10 +63,11 @@ export const AssignmentCheckSubmittedDialog = ({
     const toCheck = p?.to_check ?? 0;
     const withCopy = p ? p.submissions - p.no_files : 0;
 
-    // The whole assignment is one question; each copy is charged on its own.
+    // Each copy is charged on its own pages, counted when it is read, so the screen
+    // shows the rate, and the balance check uses the minimum: one page a copy.
     const cost = useToolCostPreview(
         'copy_check_evaluation',
-        { num_questions: 1 },
+        { num_pages: 1 },
         open && toCheck > 0,
         Math.max(toCheck, 1)
     );
@@ -226,7 +227,7 @@ export const AssignmentCheckSubmittedDialog = ({
                             ? 'No copies to check.'
                             : cost.credits == null
                               ? 'Working out the cost...'
-                              : `${toCheck} ${plural(toCheck, 'copy', 'copies')} · about ${cost.credits} credits`}
+                              : `${toCheck} ${plural(toCheck, 'copy', 'copies')} · charged per page`}
                     </span>
                     {cost.currentBalance != null && (
                         <span className="text-caption text-neutral-500">

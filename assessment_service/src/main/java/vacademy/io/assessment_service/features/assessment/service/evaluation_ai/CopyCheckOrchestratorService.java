@@ -493,12 +493,12 @@ public class CopyCheckOrchestratorService {
             return null;
         }
         try {
-            boolean typed = typedAnswerEvaluation.isTypedAttempt(process.getStudentAttempt(), assessmentOf(process));
+            if (!typedAnswerEvaluation.isTypedAttempt(process.getStudentAttempt(), assessmentOf(process))) {
+                return AiEvaluationCharge.dashboardHandwritten(process.getPageCount());
+            }
             List<QuestionWiseMarks> rows = questionWiseMarksRepository.findByStudentAttemptId(attemptId);
-            long count = rows.stream()
-                    .filter(m -> !typed || TypedAnswerEvaluation.isAiGraded(m.getQuestion()))
-                    .count();
-            return AiEvaluationCharge.dashboard((int) count);
+            long count = rows.stream().filter(m -> TypedAnswerEvaluation.isAiGraded(m.getQuestion())).count();
+            return AiEvaluationCharge.dashboardTyped((int) count);
         } catch (Exception e) {
             log.warn("[copy-check] could not price process {}: {}", process.getId(), e.getMessage());
             return null;

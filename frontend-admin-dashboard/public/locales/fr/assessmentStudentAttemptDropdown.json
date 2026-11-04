@@ -17,6 +17,8 @@
             "recheckTitle": "Recorriger cette copie avec l’IA ?",
             "recheckMessage": "La copie de {{name}} est déjà corrigée ou en cours d’évaluation. Une nouvelle correction remplace ses notes actuelles, y compris les modifications d’un enseignant, et elle s’affiche « En cours d’évaluation » jusqu’à ce que le nouveau résultat soit prêt.",
             "estimatedCostLabel": "Coût estimé :",
+            "creditsPerPage_one": "{{count}} crédit par page",
+            "creditsPerPage_other": "{{count}} crédits par page",
             "creditsCount_one": "{{count}} crédit",
             "creditsCount_many": "{{count}} crédits",
             "creditsCount_other": "{{count}} crédits",

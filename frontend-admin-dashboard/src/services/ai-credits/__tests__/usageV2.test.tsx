@@ -18,6 +18,7 @@ vi.mock('@/services/ai-credits/credit-pack-services', () => ({
 
 const v1Calls = { transactions: 0, analytics: 0 };
 vi.mock('@/services/ai-credits/get-ai-credits', () => ({
+    creditHistoryText: (description: string | null | undefined) => description ?? '',
     useAiCreditsQuery: () => ({
         data: {
             institute_id: 'inst-a',

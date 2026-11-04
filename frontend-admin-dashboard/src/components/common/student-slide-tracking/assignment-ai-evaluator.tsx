@@ -4,6 +4,7 @@ import { toast } from 'sonner';
 import { Eye, Sparkle, Spinner, WarningCircle } from '@phosphor-icons/react';
 import { MyButton } from '@/components/design-system/button';
 import { useToolCostPreview } from '@/components/common/ai-credits/useToolCostPreview';
+import { perPageCredits } from '@/services/ai-credits/get-ai-credits';
 import { getPublicUrl } from '@/services/upload_file';
 import {
     AssignmentAiEvaluation,
@@ -34,8 +35,10 @@ export const AssignmentAiEvaluator = ({
     onApply: (evaluation: AssignmentAiEvaluation) => void;
 }) => {
     const queryClient = useQueryClient();
-    // The whole assignment is graded as one question.
-    const cost = useToolCostPreview('copy_check_evaluation', { num_questions: 1 });
+    // The pages are counted when the copy is read, so the button shows the rate,
+    // and the balance check uses the minimum: one page.
+    const cost = useToolCostPreview('copy_check_evaluation', { num_pages: 1 });
+    const creditsPerPage = perPageCredits(cost.rate);
     const queryKey = ['ASSIGNMENT_AI_EVALUATION', trackedId];
 
     const { data: evaluation } = useQuery({
@@ -180,9 +183,9 @@ export const AssignmentAiEvaluator = ({
                     <Sparkle size={14} weight="fill" />
                 )}
                 {isDone ? 'Evaluate again with AI' : 'Evaluate with AI'}
-                {cost.credits != null && (
+                {creditsPerPage != null && (
                     <span className="text-caption text-neutral-500">
-                        (~{cost.credits} credits)
+                        ({creditsPerPage} {creditsPerPage === 1 ? 'credit' : 'credits'} per page)
                     </span>
                 )}
             </MyButton>

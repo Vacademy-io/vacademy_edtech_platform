@@ -271,9 +271,11 @@ function EvalezyAssessmentPage() {
             )
         );
 
+    const pageTotal = copies.reduce((sum, c) => sum + draftPageCount(c), 0);
+    // Each copy's pages, charged once per copy, so a flat base on the rate card applies to each.
     const cost = useToolCostPreview(
         'copy_check_evaluation',
-        { num_questions: questionsPerCopy },
+        { num_pages: copies.length > 0 ? pageTotal / copies.length : 0 },
         copies.length > 0 && questionsPerCopy > 0,
         copies.length
     );
@@ -407,7 +409,6 @@ function EvalezyAssessmentPage() {
         !placeholderOnly &&
         questionsPerCopy > 0 &&
         cost.sufficient !== false;
-    const pageTotal = copies.reduce((sum, c) => sum + draftPageCount(c), 0);
 
     return (
         <div className="flex flex-col gap-4">
@@ -586,6 +587,7 @@ function EvalezyAssessmentPage() {
                                     ? t('assessment.costPending')
                                     : t('assessment.cost', {
                                           count: copies.length,
+                                          pages: t('tray.pages', { count: pageTotal }),
                                           credits: cost.credits,
                                       })}
                             </span>

@@ -89,6 +89,14 @@ public class CopyCheckGradeRequestDto {
     @JsonProperty("page_count")
     private Integer pageCount;
 
+    /** For the credit history line only; never sent to a model. */
+    @JsonProperty("assessment_name")
+    private String assessmentName;
+
+    /** For the credit history line only; never sent to a model. */
+    @JsonProperty("student_name")
+    private String studentName;
+
     /** {level, subject, instructions, answer_language} for the grader persona. */
     @JsonProperty("exam_context")
     private Map<String, Object> examContext;

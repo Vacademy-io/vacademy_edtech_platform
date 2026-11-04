@@ -7,9 +7,12 @@ import java.util.Map;
  * estimator reads (AI_EVALUATION_PUBLIC_API.md 10.1).
  *
  * <ul>
- *   <li>Dashboard: {@code copy_check_evaluation}, per question on the paper
- *       ({@code num_questions}); charged {@code max(quote, actual)} by ai_service,
- *       unchanged.</li>
+ *   <li>Dashboard, handwritten: {@code copy_check_evaluation}, per page
+ *       ({@code num_pages}); fixed price. The pages are often known only once the
+ *       copy is read, so the quote at accept can be a minimum of one page;
+ *       ai_service charges the pages it read.</li>
+ *   <li>Dashboard, typed: {@code copy_check_evaluation}, per long answer
+ *       ({@code answer_mode = TYPED}, {@code num_answers}); fixed price.</li>
  *   <li>Partner API, handwritten: {@code copy_check_evaluation_api}, per page
  *       ({@code num_pages}); fixed price.</li>
  *   <li>Partner API, typed: {@code copy_check_evaluation_api}, per non-blank long
@@ -27,9 +30,16 @@ public record AiEvaluationCharge(String toolKey, Map<String, Object> params) {
                 params = params == null ? Map.of() : Map.copyOf(params);
         }
 
-        /** A dashboard copy: every question on the paper is billed (decision, 1 Oct). */
-        public static AiEvaluationCharge dashboard(int questions) {
-                return new AiEvaluationCharge(DASHBOARD_TOOL_KEY, Map.of("num_questions", Math.max(0, questions)));
+        /** A dashboard copy: every page is billed; at least one page when the count is not known yet. */
+        public static AiEvaluationCharge dashboardHandwritten(Integer pages) {
+                return new AiEvaluationCharge(DASHBOARD_TOOL_KEY,
+                                Map.of("num_pages", pages == null ? 1 : Math.max(1, pages)));
+        }
+
+        /** A dashboard online attempt: every written answer the AI grades is billed. */
+        public static AiEvaluationCharge dashboardTyped(int answers) {
+                return new AiEvaluationCharge(DASHBOARD_TOOL_KEY,
+                                Map.of("answer_mode", "TYPED", "num_answers", Math.max(0, answers)));
         }
 
         /** A partner's handwritten copy: every page is billed. */

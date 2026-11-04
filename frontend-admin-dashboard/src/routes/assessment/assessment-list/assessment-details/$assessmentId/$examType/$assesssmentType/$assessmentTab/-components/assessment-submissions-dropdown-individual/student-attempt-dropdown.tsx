@@ -13,6 +13,7 @@ import {
 import { MyButton } from '@/components/design-system/button';
 import { DotsThree, WarningCircle, Coins } from '@phosphor-icons/react';
 import { useToolCostPreview } from '@/components/common/ai-credits/useToolCostPreview';
+import { perPageCredits } from '@/services/ai-credits/get-ai-credits';
 import { AssessmentRevaluateStudentInterface } from '@/types/assessments/assessment-overview';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { StudentRevaluateQuestionWiseComponent } from './student-revaluate-question-wise-component';
@@ -34,7 +35,6 @@ import { toast } from 'sonner';
 import { SelectedReleaseResultFilterInterface } from '../AssessmentSubmissionsTab';
 import {
     getAssessmentDetails,
-    getQuestionDataForSection,
 } from '@/routes/assessment/create-assessment/$assessmentId/$examtype/-services/assessment-services';
 import {
     storeEvaluationDataInStorage,
@@ -252,25 +252,11 @@ const useStartAiCheck = (student: AssessmentRevaluateStudentInterface, assessmen
  * query (same count as the bulk quote). `enabled` keeps a row from fetching until its
  * menu is open.
  */
-const useAiCheckCost = (assessmentData: any, enabled: boolean) => {
-    const { assessmentId } = Route.useParams();
-    const sectionIds: string = (assessmentData?.[1]?.saved_data?.sections ?? [])
-        .map((section: any) => section?.id)
-        .filter(Boolean)
-        .join(',');
-    const { data: sectionQuestions, isLoading: questionsLoading } = useQuery({
-        ...getQuestionDataForSection({ assessmentId, sectionIds }),
-        enabled: enabled && Boolean(assessmentId && sectionIds),
-    });
-    const numQuestions: number = Object.values(
-        (sectionQuestions ?? {}) as Record<string, unknown[] | undefined>
-    ).reduce((sum, questions) => sum + (questions?.length ?? 0), 0);
-    const cost = useToolCostPreview(
-        'copy_check_evaluation',
-        { num_questions: numQuestions },
-        enabled && numQuestions > 0
-    );
-    return { ...cost, numQuestions, isLoading: questionsLoading || cost.isLoading };
+const useAiCheckCost = (enabled: boolean) => {
+    // The pages are counted when the copy is read, so the screen shows the rate,
+    // and the balance check uses the minimum: one page.
+    const cost = useToolCostPreview('copy_check_evaluation', { num_pages: 1 }, enabled);
+    return { ...cost, creditsPerPage: perPageCredits(cost.rate) };
 };
 
 /** A copy already checked or under evaluation: a new check costs credits and replaces its marks. */
@@ -299,15 +285,15 @@ const ReCheckWithAIConfirm = ({
                     {t('dialogs.evaluateWithAI.recheckMessage', { name: student.full_name })}
                 </p>
 
-                {cost.numQuestions > 0 && cost.credits != null && (
+                {cost.creditsPerPage != null && (
                     <div className="flex items-center justify-between rounded-md border border-neutral-200 bg-neutral-50 p-3">
                         <div className="flex items-center gap-2 text-sm text-neutral-700">
                             <Coins size={16} className="text-primary-500" />
                             <span>
                                 {t('dialogs.evaluateWithAI.estimatedCostLabel')}{' '}
                                 <span className="font-semibold text-neutral-900">
-                                    {t('dialogs.evaluateWithAI.creditsCount', {
-                                        count: cost.credits,
+                                    {t('dialogs.evaluateWithAI.creditsPerPage', {
+                                        count: cost.creditsPerPage,
                                     })}
                                 </span>
                             </span>
@@ -636,10 +622,7 @@ const StudentAttemptDropdown = ({ student }: { student: AssessmentRevaluateStude
     const isEvaluationPending = evaluationStatus === 'PENDING';
     const isEvaluated = isEvaluatedStatus(evaluationStatus);
 
-    const aiCheckCost = useAiCheckCost(
-        assessmentData,
-        isManualEvaluation && (menuOpen || openDialog)
-    );
+    const aiCheckCost = useAiCheckCost(isManualEvaluation && (menuOpen || openDialog));
 
     // A pending copy starts in one click. Anything else asks first, whichever menu label it
     // sits under ("Revaluate"): a teacher's half-marked copy is EVALUATING, not COMPLETED.

@@ -128,6 +128,10 @@ class CopyCheckGradeRequest(BaseModel):
     # Pages of the uploaded copy as counted at upload (/copy-check/inspect);
     # the per-page API price is charged on it.
     page_count: Optional[int] = Field(None, ge=0)
+    # Only for the credit history line ("which copy was this charge for"). Never
+    # sent to a model. No length limit here: a long name must not refuse a copy.
+    assessment_name: Optional[str] = None
+    student_name: Optional[str] = None
     # Internal choice (spec 7.2, T1.36). Totals and enforcement count only the
     # chosen questions; each question callback carries `counted`.
     choice_groups: Optional[list[ChoiceGroup]] = None

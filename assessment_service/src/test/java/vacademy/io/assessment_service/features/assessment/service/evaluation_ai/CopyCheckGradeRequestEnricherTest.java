@@ -62,6 +62,33 @@ class CopyCheckGradeRequestEnricherTest {
         }
 
         @Test
+        void theCopysNamesGoOutForTheCreditHistory() {
+                process.getAssessment().setName("Class 9 Science");
+                vacademy.io.assessment_service.features.assessment.entity.AssessmentUserRegistration registration =
+                                new vacademy.io.assessment_service.features.assessment.entity.AssessmentUserRegistration();
+                registration.setParticipantName("Rahul Sharma");
+                vacademy.io.assessment_service.features.assessment.entity.StudentAttempt attempt =
+                                new vacademy.io.assessment_service.features.assessment.entity.StudentAttempt();
+                attempt.setRegistration(registration);
+                process.setStudentAttempt(attempt);
+                CopyCheckGradeRequestDto request = new CopyCheckGradeRequestDto();
+
+                enricher.enrich(process, request);
+
+                org.assertj.core.api.Assertions.assertThat(request.getAssessmentName()).isEqualTo("Class 9 Science");
+                org.assertj.core.api.Assertions.assertThat(request.getStudentName()).isEqualTo("Rahul Sharma");
+        }
+
+        @Test
+        void aCopyWithNoStudentStillGoesOut() {
+                CopyCheckGradeRequestDto request = new CopyCheckGradeRequestDto();
+
+                enricher.enrich(process, request);
+
+                org.assertj.core.api.Assertions.assertThat(request.getStudentName()).isNull();
+        }
+
+        @Test
         void noMappingSendsNothing() {
                 when(mappings.findByAssessmentIdAndInstituteId("a1", "inst-1")).thenReturn(Optional.empty());
                 assertThat(enricher.subjectFor(process)).isNull();
