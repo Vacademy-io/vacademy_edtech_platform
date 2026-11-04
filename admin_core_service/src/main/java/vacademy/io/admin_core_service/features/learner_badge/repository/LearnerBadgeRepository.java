@@ -46,4 +46,38 @@ public interface LearnerBadgeRepository extends JpaRepository<LearnerBadge, Stri
     /** Number of distinct learners holding at least one active badge in the institute. */
     @Query("SELECT COUNT(DISTINCT lb.userId) FROM LearnerBadge lb WHERE lb.instituteId = :instituteId AND lb.status = 'ACTIVE'")
     long countDistinctLearnersWithActiveBadge(@Param("instituteId") String instituteId);
+
+    /** Rows: [period_start, badges] awarded to the active learners of some batches. Batch report timeline. */
+    @Query(value = """
+            SELECT CAST(date_trunc(CAST(:unit AS text), lb.awarded_at) AS date), COUNT(*)
+            FROM learner_badge lb
+            WHERE lb.institute_id = :instituteId
+              AND lb.status = 'ACTIVE'
+              AND lb.awarded_at BETWEEN :startDate AND :endDate
+              AND lb.user_id IN (SELECT m.user_id FROM student_session_institute_group_mapping m
+                                  WHERE m.package_session_id IN (:packageSessionIds) AND m.status = 'ACTIVE')
+            GROUP BY 1 ORDER BY 1
+            """, nativeQuery = true)
+    List<Object[]> badgesByPeriodForBatches(@Param("unit") String unit,
+                                            @Param("instituteId") String instituteId,
+                                            @Param("packageSessionIds") List<String> packageSessionIds,
+                                            @Param("startDate") java.sql.Timestamp startDate,
+                                            @Param("endDate") java.sql.Timestamp endDate);
+
+    /** Rows: [badge_name, badge_icon, awards, learners], most awarded first, for some batches. */
+    @Query(value = """
+            SELECT lb.badge_name, lb.badge_icon, COUNT(*), COUNT(DISTINCT lb.user_id)
+            FROM learner_badge lb
+            WHERE lb.institute_id = :instituteId
+              AND lb.status = 'ACTIVE'
+              AND lb.awarded_at BETWEEN :startDate AND :endDate
+              AND lb.user_id IN (SELECT m.user_id FROM student_session_institute_group_mapping m
+                                  WHERE m.package_session_id IN (:packageSessionIds) AND m.status = 'ACTIVE')
+            GROUP BY lb.badge_name, lb.badge_icon
+            ORDER BY 3 DESC
+            """, nativeQuery = true)
+    List<Object[]> topBadgesForBatches(@Param("instituteId") String instituteId,
+                                       @Param("packageSessionIds") List<String> packageSessionIds,
+                                       @Param("startDate") java.sql.Timestamp startDate,
+                                       @Param("endDate") java.sql.Timestamp endDate);
 }

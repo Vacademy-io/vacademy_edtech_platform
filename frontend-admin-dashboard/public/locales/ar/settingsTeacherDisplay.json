@@ -180,7 +180,8 @@
         "parentTab": "علامة تبويب ولي الأمر",
         "onboardingTab": "علامة تبويب التهيئة",
         "liveSessionTab": "علامة تبويب الجلسات المباشرة",
-        "academicActivityTab": "علامة تبويب النشاط الأكاديمي"
+        "academicActivityTab": "علامة تبويب النشاط الأكاديمي",
+        "gamificationTab": "علامة تبويب التلعيب والشارات"
     },
     "learnerManagementOptions": {
         "allowPortalAccess": "السماح بالوصول إلى بوابة المتعلم",

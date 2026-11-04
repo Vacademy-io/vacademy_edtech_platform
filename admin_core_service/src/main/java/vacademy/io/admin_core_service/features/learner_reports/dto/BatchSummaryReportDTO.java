@@ -75,6 +75,102 @@ public class BatchSummaryReportDTO {
     private List<SubjectRow> subjects;
     private List<ActivityRow> activity;
 
+    /** How the report scope moved over the window. */
+    private Timeline timeline;
+    /** Points and badges earned in the window. */
+    private Gamification gamification;
+
+    @Data
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
+    public static class Timeline {
+        /** DAY, WEEK or MONTH, by the length of the window. */
+        private String granularity;
+        private List<TimelinePeriod> periods;
+        /** Assessments and classes in date order, newest last. */
+        private List<TimelineEvent> events;
+    }
+
+    @Data
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
+    public static class TimelinePeriod {
+        /** First day of the period inside the window (yyyy-MM-dd). */
+        private String start;
+        /** Last day of the period inside the window (yyyy-MM-dd). */
+        private String end;
+        private long activeLearners;
+        private Double totalMinutes;
+        /** Per learner who studied in the period. */
+        private Double avgMinutes;
+        private long slidesOpened;
+        private int assessments;
+        private int attempts;
+        /** Average of the attempts in the period; null when there were none. */
+        private Double avgScore;
+        private int classesHeld;
+        /** Learners present over learners expected; null when no class was held. */
+        private Double attendancePct;
+        private long points;
+        private long badges;
+    }
+
+    @Data
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
+    public static class TimelineEvent {
+        /** yyyy-MM-dd. */
+        private String date;
+        /** ASSESSMENT or LIVE_CLASS. */
+        private String type;
+        private String title;
+        /** Average score of an assessment, or attendance of a class, as a %. */
+        private Double value;
+        private String detail;
+    }
+
+    @Data
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
+    public static class Gamification {
+        private long totalPoints;
+        private long learnersEarning;
+        private long badgesAwarded;
+        private List<EarnerRow> topEarners;
+        private List<BadgeRow> topBadges;
+    }
+
+    @Data
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
+    public static class EarnerRow {
+        private String userId;
+        private String fullName;
+        private long points;
+    }
+
+    @Data
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
+    public static class BadgeRow {
+        private String name;
+        private String icon;
+        private long awards;
+        private long learners;
+    }
+
     @Data
     @Builder
     @NoArgsConstructor

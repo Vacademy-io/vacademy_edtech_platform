@@ -145,7 +145,8 @@
         "parentTab": "अभिभावक टैब",
         "onboardingTab": "ऑनबोर्डिंग टैब",
         "liveSessionTab": "लाइव सत्र टैब",
-        "academicActivityTab": "शैक्षणिक गतिविधि टैब"
+        "academicActivityTab": "शैक्षणिक गतिविधि टैब",
+        "gamificationTab": "गेमिफ़िकेशन और बैज टैब"
     },
     "learnerManagement": {
         "title": "शिक्षार्थी प्रबंधन",

@@ -10,6 +10,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import vacademy.io.admin_core_service.core.security.InstituteAccessValidator;
+import vacademy.io.admin_core_service.features.points_ledger.dto.PointsHistoryDTO;
 import vacademy.io.admin_core_service.features.points_ledger.dto.PointsSummaryDTO;
 import vacademy.io.admin_core_service.features.points_ledger.job.PointsAccrualJob;
 import vacademy.io.admin_core_service.features.points_ledger.service.PointsLedgerService;
@@ -82,5 +83,15 @@ public class PointsController {
             @RequestAttribute("user") CustomUserDetails user) {
         instituteAccessValidator.requireStaffAccess(user, instituteId);
         return ResponseEntity.ok(pointsLedgerService.getSummary(instituteId, userId));
+    }
+
+    /** Staff: one learner's recent awards, points per week and active days (student detail view). */
+    @GetMapping("/v1/learner/history")
+    public ResponseEntity<PointsHistoryDTO> learnerHistory(
+            @RequestParam String instituteId,
+            @RequestParam String userId,
+            @RequestAttribute("user") CustomUserDetails user) {
+        instituteAccessValidator.requireStaffAccess(user, instituteId);
+        return ResponseEntity.ok(pointsLedgerService.getHistory(instituteId, userId));
     }
 }

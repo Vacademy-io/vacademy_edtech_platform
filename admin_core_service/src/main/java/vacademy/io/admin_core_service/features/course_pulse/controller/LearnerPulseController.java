@@ -38,4 +38,15 @@ public class LearnerPulseController {
         }
         return ResponseEntity.ok(learnerPulseService.learnerPulse(userId));
     }
+
+    @GetMapping("/learner/insights")
+    public ResponseEntity<Map<String, Object>> insights(@RequestParam("userId") String userId,
+                                                        @RequestParam("instituteId") String instituteId,
+                                                        @RequestAttribute("user") CustomUserDetails user) {
+        instituteAccessValidator.requireStaffAccess(user, instituteId);
+        if (mappingRepository.findLatestPackageSessionIdByUserIdAndInstituteId(userId, instituteId).isEmpty()) {
+            return ResponseEntity.notFound().build();
+        }
+        return ResponseEntity.ok(learnerPulseService.learnerInsights(userId, instituteId));
+    }
 }

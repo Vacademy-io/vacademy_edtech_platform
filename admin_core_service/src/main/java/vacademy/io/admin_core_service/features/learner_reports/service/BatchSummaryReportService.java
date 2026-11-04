@@ -27,12 +27,15 @@ import vacademy.io.admin_core_service.features.learner_reports.dto.BatchSummaryR
 import vacademy.io.admin_core_service.features.learner_reports.dto.LearnerActivityDataProjection;
 import vacademy.io.admin_core_service.features.learner_reports.dto.ProgressReportDTO;
 import vacademy.io.admin_core_service.features.learner_reports.dto.ReportFilterDTO;
+import vacademy.io.admin_core_service.features.learner_badge.repository.LearnerBadgeRepository;
 import vacademy.io.admin_core_service.features.learner_reports.dto.SubjectProgressDTO;
+import vacademy.io.admin_core_service.features.live_session.repository.LiveSessionLogsRepository;
 import vacademy.io.admin_core_service.features.notification.dto.UnifiedSendRequest;
 import vacademy.io.admin_core_service.features.notification.dto.UnifiedSendResponse;
 import vacademy.io.admin_core_service.features.notification.util.PhoneCountryUtil;
 import vacademy.io.admin_core_service.features.notification_service.service.NotificationService;
 import vacademy.io.admin_core_service.features.packages.repository.PackageSessionRepository;
+import vacademy.io.admin_core_service.features.points_ledger.repository.PointsLedgerRepository;
 import vacademy.io.admin_core_service.features.student_analysis.client.AssessmentServiceClient;
 import vacademy.io.admin_core_service.features.student_analysis.dto.comprehensive.LearningInsightsSection;
 import vacademy.io.admin_core_service.features.student_analysis.service.aggregation.SubjectResolver;
@@ -50,6 +53,7 @@ import vacademy.io.common.media.dto.InMemoryMultipartFile;
 import java.io.ByteArrayOutputStream;
 import java.nio.charset.StandardCharsets;
 import java.sql.Date;
+import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
@@ -125,6 +129,9 @@ public class BatchSummaryReportService {
     private final AuthService authService;
     private final NotificationService notificationService;
     private final vacademy.io.admin_core_service.features.learner_tracking.repository.ActivityLogRepository activityLogRepository;
+    private final PointsLedgerRepository pointsLedgerRepository;
+    private final LearnerBadgeRepository learnerBadgeRepository;
+    private final LiveSessionLogsRepository liveSessionLogsRepository;
     private final MediaService mediaService;
     private final ObjectMapper objectMapper;
 
@@ -327,6 +334,17 @@ public class BatchSummaryReportService {
             out.topics(List.of());
         }
 
+        List<String> scope = batchId != null ? List.of(batchId) : several;
+        if (scope.isEmpty()) {
+            try {
+                scope = mappingRepository.findDistinctPackageSessionIdsByInstituteAndStatus(instituteId, ACTIVE, MAX_SCOPE_BATCHES);
+            } catch (Exception e) {
+                log.warn("[batch-summary] batches of institute {} failed: {}", instituteId, e.getMessage());
+            }
+        }
+        out.timeline(timeline(instituteId, scope, attempts, request.getStartDate(), request.getEndDate()));
+        out.gamification(gamification(instituteId, scope, request.getStartDate(), request.getEndDate()));
+
         if (batchId == null) {
             out.batches(compareBatches(instituteId, userAvg, several.isEmpty() ? null : new HashSet<>(several)));
             out.subjects(List.of()).activity(List.of());
@@ -334,6 +352,206 @@ public class BatchSummaryReportService {
             addBatchProgress(out, batchId, request, user);
         }
         return out.build();
+    }
+
+    private static final int MAX_SCOPE_BATCHES = 5000;
+    private static final int TIMELINE_DAILY_UP_TO_DAYS = 14;
+    private static final int TIMELINE_WEEKLY_UP_TO_DAYS = 120;
+    private static final int TIMELINE_MAX_CLASSES = 500;
+    private static final int TIMELINE_MAX_EVENTS = 60;
+    private static final int TOP_EARNERS = 10;
+    private static final int TOP_BADGES = 8;
+
+    /**
+     * The window cut into days (up to two weeks), weeks (up to four months) or months, with
+     * learning, assessments, classes, points and badges for each period. Each source is read on
+     * its own, so one failure leaves only its own figures empty.
+     */
+    private BatchSummaryReportDTO.Timeline timeline(String instituteId, List<String> batches,
+                                                    List<AssessmentServiceClient.CohortAttempt> attempts,
+                                                    LocalDate start, LocalDate end) {
+        long days = java.time.temporal.ChronoUnit.DAYS.between(start, end) + 1;
+        String unit = days <= TIMELINE_DAILY_UP_TO_DAYS ? "day" : days <= TIMELINE_WEEKLY_UP_TO_DAYS ? "week" : "month";
+
+        Map<LocalDate, BatchSummaryReportDTO.TimelinePeriod> periods = new java.util.TreeMap<>();
+        for (LocalDate d = start; !d.isAfter(end); d = d.plusDays(1)) {
+            LocalDate key = periodStart(d, unit);
+            BatchSummaryReportDTO.TimelinePeriod period = periods.computeIfAbsent(key,
+                    k -> BatchSummaryReportDTO.TimelinePeriod.builder().totalMinutes(0.0).build());
+            if (period.getStart() == null) period.setStart(d.toString());
+            period.setEnd(d.toString());
+        }
+
+        List<BatchSummaryReportDTO.TimelineEvent> events = new ArrayList<>();
+        Timestamp from = Timestamp.valueOf(start.atStartOfDay());
+        Timestamp to = Timestamp.valueOf(end.atTime(23, 59, 59));
+        if (!batches.isEmpty()) {
+            try {
+                for (Object[] r : activityLogRepository.findLearningByPeriodForBatches(unit, batches, from, to)) {
+                    BatchSummaryReportDTO.TimelinePeriod period = periods.get(rowDate(r[0]));
+                    if (period == null) continue;
+                    long learners = longOf(r[2]);
+                    double minutes = doubleOf(r[1]) / 60000.0;
+                    period.setTotalMinutes(round1(minutes));
+                    period.setActiveLearners(learners);
+                    period.setAvgMinutes(learners == 0 ? null : round1(minutes / learners));
+                    period.setSlidesOpened(longOf(r[3]));
+                }
+            } catch (Exception e) {
+                log.warn("[batch-summary] timeline learning failed for institute {}: {}", instituteId, e.getMessage());
+            }
+            try {
+                addClasses(periods, events, liveSessionLogsRepository.findClassAttendanceForBatches(
+                        batches, start, end.isAfter(LocalDate.now()) ? LocalDate.now() : end, TIMELINE_MAX_CLASSES), unit);
+            } catch (Exception e) {
+                log.warn("[batch-summary] timeline classes failed for institute {}: {}", instituteId, e.getMessage());
+            }
+            try {
+                for (Object[] r : pointsLedgerRepository.pointsByPeriodForBatches(unit, instituteId, batches, from, to)) {
+                    BatchSummaryReportDTO.TimelinePeriod period = periods.get(rowDate(r[0]));
+                    if (period != null) period.setPoints(longOf(r[1]));
+                }
+                for (Object[] r : learnerBadgeRepository.badgesByPeriodForBatches(unit, instituteId, batches, from, to)) {
+                    BatchSummaryReportDTO.TimelinePeriod period = periods.get(rowDate(r[0]));
+                    if (period != null) period.setBadges(longOf(r[1]));
+                }
+            } catch (Exception e) {
+                log.warn("[batch-summary] timeline points failed for institute {}: {}", instituteId, e.getMessage());
+            }
+        }
+        addAttempts(periods, events, attempts, unit);
+
+        events.sort(Comparator.comparing(BatchSummaryReportDTO.TimelineEvent::getDate));
+        return BatchSummaryReportDTO.Timeline.builder()
+                .granularity(unit.toUpperCase(Locale.ROOT))
+                .periods(new ArrayList<>(periods.values()))
+                .events(events.size() > TIMELINE_MAX_EVENTS
+                        ? new ArrayList<>(events.subList(events.size() - TIMELINE_MAX_EVENTS, events.size())) : events)
+                .build();
+    }
+
+    private static void addClasses(Map<LocalDate, BatchSummaryReportDTO.TimelinePeriod> periods,
+                                   List<BatchSummaryReportDTO.TimelineEvent> events, List<Object[]> classes, String unit) {
+        Map<LocalDate, long[]> byPeriod = new HashMap<>(); // period -> [classes, expected, present]
+        for (Object[] r : classes) {
+            LocalDate date = rowDate(r[0]);
+            if (date == null) continue;
+            long expected = longOf(r[3]);
+            long present = longOf(r[4]);
+            long[] acc = byPeriod.computeIfAbsent(periodStart(date, unit), k -> new long[3]);
+            acc[0]++;
+            acc[1] += expected;
+            acc[2] += present;
+            events.add(BatchSummaryReportDTO.TimelineEvent.builder()
+                    .date(date.toString())
+                    .type("LIVE_CLASS")
+                    .title(r[2] == null ? "Live class" : r[2].toString())
+                    .value(expected == 0 ? null : round1(Math.min(100.0, present * 100.0 / expected)))
+                    .detail(present + " of " + expected + " attended")
+                    .build());
+        }
+        byPeriod.forEach((key, acc) -> {
+            BatchSummaryReportDTO.TimelinePeriod period = periods.get(key);
+            if (period == null) return;
+            period.setClassesHeld((int) acc[0]);
+            period.setAttendancePct(acc[1] == 0 ? null : round1(Math.min(100.0, acc[2] * 100.0 / acc[1])));
+        });
+    }
+
+    private static void addAttempts(Map<LocalDate, BatchSummaryReportDTO.TimelinePeriod> periods,
+                                    List<BatchSummaryReportDTO.TimelineEvent> events,
+                                    List<AssessmentServiceClient.CohortAttempt> attempts, String unit) {
+        Map<LocalDate, List<AssessmentServiceClient.CohortAttempt>> byPeriod = new HashMap<>();
+        Map<String, List<AssessmentServiceClient.CohortAttempt>> byAssessment = new LinkedHashMap<>();
+        for (AssessmentServiceClient.CohortAttempt a : attempts) {
+            byAssessment.computeIfAbsent(a.assessmentId(), k -> new ArrayList<>()).add(a);
+            LocalDate date = rowDate(a.attemptAt());
+            if (date != null) byPeriod.computeIfAbsent(periodStart(date, unit), k -> new ArrayList<>()).add(a);
+        }
+        byPeriod.forEach((key, rows) -> {
+            BatchSummaryReportDTO.TimelinePeriod period = periods.get(key);
+            if (period == null) return;
+            period.setAttempts(rows.size());
+            period.setAssessments((int) rows.stream().map(AssessmentServiceClient.CohortAttempt::assessmentId).distinct().count());
+            period.setAvgScore(round1(rows.stream().mapToDouble(AssessmentServiceClient.CohortAttempt::percentage).average().orElse(0)));
+        });
+        byAssessment.values().forEach(rows -> {
+            LocalDate first = rows.stream().map(a -> rowDate(a.attemptAt())).filter(Objects::nonNull)
+                    .min(Comparator.naturalOrder()).orElse(null);
+            if (first == null) return;
+            events.add(BatchSummaryReportDTO.TimelineEvent.builder()
+                    .date(first.toString())
+                    .type("ASSESSMENT")
+                    .title(rows.get(0).assessmentName() == null ? "Assessment" : rows.get(0).assessmentName())
+                    .value(round1(rows.stream().mapToDouble(AssessmentServiceClient.CohortAttempt::percentage).average().orElse(0)))
+                    .detail(rows.size() + (rows.size() == 1 ? " attempt" : " attempts"))
+                    .build());
+        });
+    }
+
+    /** Points and badges earned by the scope in the window; zeros when the source fails. */
+    private BatchSummaryReportDTO.Gamification gamification(String instituteId, List<String> batches,
+                                                            LocalDate start, LocalDate end) {
+        BatchSummaryReportDTO.Gamification.GamificationBuilder out = BatchSummaryReportDTO.Gamification.builder()
+                .topEarners(List.of()).topBadges(List.of());
+        if (batches.isEmpty()) return out.build();
+        Timestamp from = Timestamp.valueOf(start.atStartOfDay());
+        Timestamp to = Timestamp.valueOf(end.atTime(23, 59, 59));
+        try {
+            List<Object[]> earners = pointsLedgerRepository.earnersForBatches(instituteId, batches, from, to);
+            out.learnersEarning(earners.size())
+                    .totalPoints(earners.stream().mapToLong(r -> longOf(r[1])).sum());
+            List<Object[]> top = earners.subList(0, Math.min(TOP_EARNERS, earners.size()));
+            Map<String, String> names = learnerNames(top.stream().map(r -> r[0].toString()).toList());
+            out.topEarners(top.stream().map(r -> BatchSummaryReportDTO.EarnerRow.builder()
+                    .userId(r[0].toString())
+                    .fullName(names.getOrDefault(r[0].toString(), "Learner"))
+                    .points(longOf(r[1]))
+                    .build()).toList());
+        } catch (Exception e) {
+            log.warn("[batch-summary] points failed for institute {}: {}", instituteId, e.getMessage());
+        }
+        try {
+            List<Object[]> badges = learnerBadgeRepository.topBadgesForBatches(instituteId, batches, from, to);
+            out.badgesAwarded(badges.stream().mapToLong(r -> longOf(r[2])).sum());
+            out.topBadges(badges.stream().limit(TOP_BADGES).map(r -> BatchSummaryReportDTO.BadgeRow.builder()
+                    .name(r[0] == null ? "Badge" : r[0].toString())
+                    .icon(r[1] == null ? null : r[1].toString())
+                    .awards(longOf(r[2]))
+                    .learners(longOf(r[3]))
+                    .build()).toList());
+        } catch (Exception e) {
+            log.warn("[batch-summary] badges failed for institute {}: {}", instituteId, e.getMessage());
+        }
+        return out.build();
+    }
+
+    /** The day, the Monday of its week or the first of its month, matching Postgres date_trunc. */
+    private static LocalDate periodStart(LocalDate date, String unit) {
+        return switch (unit) {
+            case "week" -> date.with(java.time.temporal.TemporalAdjusters.previousOrSame(java.time.DayOfWeek.MONDAY));
+            case "month" -> date.withDayOfMonth(1);
+            default -> date;
+        };
+    }
+
+    private static LocalDate rowDate(Object value) {
+        if (value == null) return null;
+        String s = value.toString();
+        if (s.length() < 10) return null;
+        try {
+            return LocalDate.parse(s.substring(0, 10));
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    private static long longOf(Object value) {
+        return value == null ? 0 : ((Number) value).longValue();
+    }
+
+    private static double doubleOf(Object value) {
+        return value == null ? 0 : ((Number) value).doubleValue();
     }
 
     /**
@@ -547,6 +765,8 @@ public class BatchSummaryReportService {
                 case BatchReportSection.LEARNER_RESULTS -> appendLearnerTable(h, "All learners",
                         "Every learner with their average assessment score.", nonNull(r.getLearners()), r);
                 case BatchReportSection.ACTIVITY -> appendActivity(h, r, brand);
+                case BatchReportSection.TIMELINE -> appendTimeline(h, r);
+                case BatchReportSection.POINTS_BADGES -> appendPointsBadges(h, r, brand);
                 default -> {
                 }
             }
@@ -791,6 +1011,61 @@ public class BatchSummaryReportService {
         }
         h.append(block("Most active", esc(rows.get(0).getFullName()) + " spent the most time learning",
                 "Time spent learning in the selected dates.", bars.toString()));
+    }
+
+    private void appendTimeline(StringBuilder h, BatchSummaryReportDTO r) {
+        BatchSummaryReportDTO.Timeline timeline = r.getTimeline();
+        if (timeline == null || nonNull(timeline.getPeriods()).isEmpty()) return;
+        List<BatchSummaryReportDTO.TimelinePeriod> periods = timeline.getPeriods();
+        boolean anyPoints = periods.stream().anyMatch(p -> p.getPoints() != 0 || p.getBadges() != 0);
+        StringBuilder t = new StringBuilder("<table class=\"grid\"><tr><th>")
+                .append("DAY".equals(timeline.getGranularity()) ? "Day" : "WEEK".equals(timeline.getGranularity()) ? "Week" : "Month")
+                .append("</th><th class=\"num\">Learners active</th><th class=\"num\">Time learning</th>")
+                .append("<th class=\"num\">Average score</th><th class=\"num\">Class attendance</th>");
+        if (anyPoints) t.append("<th class=\"num\">Points</th><th class=\"num\">Badges</th>");
+        t.append("</tr>");
+        double totalMinutes = 0;
+        for (BatchSummaryReportDTO.TimelinePeriod p : periods) {
+            totalMinutes += p.getTotalMinutes() == null ? 0 : p.getTotalMinutes();
+            t.append("<tr><td>").append(esc(shortDate(p.getStart())));
+            if (!p.getStart().equals(p.getEnd())) t.append(" to ").append(esc(shortDate(p.getEnd())));
+            t.append("</td><td class=\"num\">").append(p.getActiveLearners())
+                    .append("</td><td class=\"num\">").append(esc(minutes(p.getTotalMinutes())))
+                    .append("</td><td class=\"num\">").append(p.getAttempts() == 0 ? "—" : pct(p.getAvgScore()))
+                    .append("</td><td class=\"num\">").append(p.getClassesHeld() == 0 ? "—" : pct(p.getAttendancePct()))
+                    .append("</td>");
+            if (anyPoints) {
+                t.append("<td class=\"num\">").append(p.getPoints()).append("</td><td class=\"num\">")
+                        .append(p.getBadges()).append("</td>");
+            }
+            t.append("</tr>");
+        }
+        t.append("</table>");
+        h.append(block("Timeline progress", esc(minutes(totalMinutes)) + " of learning in these dates",
+                "How the batch moved over the selected dates.", t.toString()));
+    }
+
+    private void appendPointsBadges(StringBuilder h, BatchSummaryReportDTO r, String brand) {
+        BatchSummaryReportDTO.Gamification g = r.getGamification();
+        if (g == null || (g.getTotalPoints() == 0 && g.getBadgesAwarded() == 0)) return;
+        StringBuilder body = new StringBuilder();
+        List<BatchSummaryReportDTO.EarnerRow> earners = nonNull(g.getTopEarners());
+        double max = earners.stream().mapToDouble(BatchSummaryReportDTO.EarnerRow::getPoints).max().orElse(1);
+        for (BatchSummaryReportDTO.EarnerRow e : earners) {
+            body.append(bar(e.getFullName(), "<b>" + e.getPoints() + " pts</b>", (double) e.getPoints(), Math.max(max, 1), brand));
+        }
+        List<BatchSummaryReportDTO.BadgeRow> badges = nonNull(g.getTopBadges());
+        if (!badges.isEmpty()) {
+            body.append("<table class=\"grid\"><tr><th>Badge</th><th class=\"num\">Awarded</th></tr>");
+            for (BatchSummaryReportDTO.BadgeRow b : badges) {
+                body.append("<tr><td>").append(esc(b.getName())).append("</td><td class=\"num\">")
+                        .append(b.getAwards()).append("</td></tr>");
+            }
+            body.append("</table>");
+        }
+        h.append(block("Points and badges",
+                g.getTotalPoints() + " points and " + g.getBadgesAwarded() + (g.getBadgesAwarded() == 1 ? " badge" : " badges"),
+                "Earned in the selected dates.", body.toString()));
     }
 
     // ── document pieces ──

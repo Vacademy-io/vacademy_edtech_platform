@@ -313,6 +313,8 @@ const ADMIN_DEFAULTS_BASE: Omit<DisplaySettingsData, 'sidebar'> = {
         liveSessionTab: true,
         // Read-only, like Live Sessions.
         academicActivityTab: true,
+        // Read-only, like Academic Activity.
+        gamificationTab: true,
         // Default rendering order. Tabs render left-to-right by ascending number.
         // The keys match `StudentSideViewTabId` and the side-view's category strings.
         tabOrders: {
@@ -337,6 +339,7 @@ const ADMIN_DEFAULTS_BASE: Omit<DisplaySettingsData, 'sidebar'> = {
             workflows: 19,
             liveSession: 20,
             academicActivity: 21,
+            gamification: 12.5,
         },
         defaultTab: 'overview',
     },

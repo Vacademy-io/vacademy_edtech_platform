@@ -5,6 +5,7 @@ import authenticatedAxiosInstance from '@/lib/auth/axiosInstance';
 /** Section keys of the generated batch report (backend BatchReportSettingConfig). */
 export const BATCH_REPORT_SECTIONS = [
     'OVERVIEW',
+    'TIMELINE',
     'RESULTS',
     'ASSESSMENTS',
     'STRENGTHS',
@@ -13,6 +14,7 @@ export const BATCH_REPORT_SECTIONS = [
     'NEEDS_ATTENTION',
     'LEARNER_RESULTS',
     'ACTIVITY',
+    'POINTS_BADGES',
 ] as const;
 export type BatchReportSection = (typeof BATCH_REPORT_SECTIONS)[number];
 
@@ -23,6 +25,11 @@ export const BATCH_REPORT_SECTION_META: Record<
     OVERVIEW: {
         label: 'Overview',
         description: 'Learners, participation, assessments held and course completion.',
+        namesLearners: false,
+    },
+    TIMELINE: {
+        label: 'Timeline progress',
+        description: 'Learners active, time, scores, attendance, points and badges over the dates.',
         namesLearners: false,
     },
     RESULTS: {
@@ -65,7 +72,50 @@ export const BATCH_REPORT_SECTION_META: Record<
         description: 'Top ten by time spent learning (one batch only).',
         namesLearners: true,
     },
+    POINTS_BADGES: {
+        label: 'Points and badges',
+        description: 'Points earned, badges awarded and the top earners.',
+        namesLearners: true,
+    },
 };
+
+export interface BatchTimelinePeriod {
+    /** First day of the period inside the dates (yyyy-MM-dd). */
+    start: string;
+    end: string;
+    active_learners: number;
+    total_minutes: number | null;
+    avg_minutes: number | null;
+    slides_opened: number;
+    assessments: number;
+    attempts: number;
+    avg_score: number | null;
+    classes_held: number;
+    attendance_pct: number | null;
+    points: number;
+    badges: number;
+}
+
+export interface BatchTimeline {
+    granularity: 'DAY' | 'WEEK' | 'MONTH';
+    periods: BatchTimelinePeriod[];
+    /** In date order, oldest first. */
+    events: {
+        date: string;
+        type: 'ASSESSMENT' | 'LIVE_CLASS';
+        title: string;
+        value: number | null;
+        detail: string | null;
+    }[];
+}
+
+export interface BatchGamification {
+    total_points: number;
+    learners_earning: number;
+    badges_awarded: number;
+    top_earners: { user_id: string; full_name: string; points: number }[] | null;
+    top_badges: { name: string; icon: string | null; awards: number; learners: number }[] | null;
+}
 
 export type BatchLearnerBand = 'STRONG' | 'AVERAGE' | 'WEAK' | 'NOT_ASSESSED';
 
@@ -148,6 +198,8 @@ export interface BatchSummaryReport {
         daily_avg_minutes: number | null;
         avg_concentration: number | null;
     }[] | null;
+    timeline?: BatchTimeline | null;
+    gamification?: BatchGamification | null;
 }
 
 export interface BatchSummaryRequest {

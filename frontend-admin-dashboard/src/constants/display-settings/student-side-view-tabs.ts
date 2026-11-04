@@ -28,6 +28,7 @@ export const VISIBILITY_KEY_TO_TAB_ID: Record<StudentSideViewVisibilityKey, Stud
         onboardingTab: 'onboarding',
         liveSessionTab: 'liveSession',
         academicActivityTab: 'academicActivity',
+        gamificationTab: 'gamification',
     };
 
 // Reverse lookup: tab id → visibility flag.
@@ -63,4 +64,5 @@ export const STUDENT_SIDE_VIEW_TAB_LABELS: Record<StudentSideViewTabId, string> 
     onboarding: 'Onboarding',
     liveSession: 'Live Sessions',
     academicActivity: 'Academic Activity',
+    gamification: 'Gamification & Badges',
 };

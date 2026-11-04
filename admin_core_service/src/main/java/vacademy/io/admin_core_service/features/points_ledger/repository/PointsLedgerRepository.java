@@ -88,6 +88,58 @@ public interface PointsLedgerRepository extends JpaRepository<PointsLedger, Stri
                                    @Param("userIds") List<String> userIds,
                                    @Param("since") Timestamp since);
 
+    /** The latest awards of one learner, for the staff points history. */
+    List<PointsLedger> findTop40ByInstituteIdAndUserIdOrderByAwardedAtDesc(String instituteId, String userId);
+
+    /** Rows: [week_start, points] for one learner since a date, weeks in the institute timezone. */
+    @Query(value = """
+            SELECT CAST(date_trunc('week', p.awarded_at AT TIME ZONE 'UTC' AT TIME ZONE :zone) AS date),
+                   COALESCE(SUM(p.points), 0)
+            FROM points_ledger p
+            WHERE p.institute_id = :instituteId
+              AND p.user_id = :userId
+              AND p.awarded_at >= :since
+            GROUP BY 1 ORDER BY 1
+            """, nativeQuery = true)
+    List<Object[]> weeklyPointsForUser(@Param("instituteId") String instituteId,
+                                       @Param("userId") String userId,
+                                       @Param("zone") String zone,
+                                       @Param("since") Timestamp since);
+
+    /** Rows: [period_start, points] for the active learners of some batches. Batch report timeline. */
+    @Query(value = """
+            SELECT CAST(date_trunc(CAST(:unit AS text), p.awarded_at) AS date),
+                   COALESCE(SUM(p.points), 0)
+            FROM points_ledger p
+            WHERE p.institute_id = :instituteId
+              AND p.awarded_at BETWEEN :startDate AND :endDate
+              AND p.user_id IN (SELECT m.user_id FROM student_session_institute_group_mapping m
+                                 WHERE m.package_session_id IN (:packageSessionIds) AND m.status = 'ACTIVE')
+            GROUP BY 1 ORDER BY 1
+            """, nativeQuery = true)
+    List<Object[]> pointsByPeriodForBatches(@Param("unit") String unit,
+                                            @Param("instituteId") String instituteId,
+                                            @Param("packageSessionIds") List<String> packageSessionIds,
+                                            @Param("startDate") Timestamp startDate,
+                                            @Param("endDate") Timestamp endDate);
+
+    /** Rows: [user_id, points], highest first, for the active learners of some batches. */
+    @Query(value = """
+            SELECT p.user_id, SUM(p.points)
+            FROM points_ledger p
+            WHERE p.institute_id = :instituteId
+              AND p.awarded_at BETWEEN :startDate AND :endDate
+              AND p.user_id IN (SELECT m.user_id FROM student_session_institute_group_mapping m
+                                 WHERE m.package_session_id IN (:packageSessionIds) AND m.status = 'ACTIVE')
+            GROUP BY p.user_id
+            HAVING SUM(p.points) > 0
+            ORDER BY 2 DESC
+            """, nativeQuery = true)
+    List<Object[]> earnersForBatches(@Param("instituteId") String instituteId,
+                                     @Param("packageSessionIds") List<String> packageSessionIds,
+                                     @Param("startDate") Timestamp startDate,
+                                     @Param("endDate") Timestamp endDate);
+
     /** Every award tied to one source row — used when reversing an item's points. */
     List<PointsLedger> findBySourceTypeAndSourceId(String sourceType, String sourceId);
 }

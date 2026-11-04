@@ -20,6 +20,7 @@ import {
     TopicsBlock,
     TrendBlock,
 } from './LearnerReportBlocks';
+import { LearnerJourneyBlock, LearnerPointsBlock } from './LearnerJourneyBlocks';
 import { LearnerReportDialog } from './LearnerReportDocument';
 
 /**
@@ -114,6 +115,8 @@ export const StudentReportSnapshot = ({
             <LearnerTiles {...props} narrow />
             <SubjectsBlock {...props} />
             <TrendBlock {...props} />
+            <LearnerJourneyBlock userId={userId} brand={brand} range={range} snapshot={data} />
+            <LearnerPointsBlock userId={userId} instituteId={instituteId} brand={brand} />
             <ReportBlock
                 brand={brand}
                 tag="Daily time spent"

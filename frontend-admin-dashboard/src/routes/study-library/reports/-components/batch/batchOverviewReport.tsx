@@ -59,6 +59,7 @@ import {
 } from '@/services/batch-summary-report';
 import { useBatchOptions } from '../batchMultiSelect';
 import { BatchComparison } from './batchComparison';
+import { BatchPointsBlock, BatchTimelineBlock } from './batchTimeline';
 import { GenerateBatchReportDialog } from './generateBatchReportDialog';
 
 const STRONG_FROM = 60;
@@ -258,7 +259,11 @@ const BatchOverviewBody = ({
                 )}
             </div>
 
+            {data.timeline && <BatchTimelineBlock timeline={data.timeline} brand={brand} />}
+
             <DailyTimeBlock brand={brand} rows={dailyTime} />
+
+            {data.gamification && <BatchPointsBlock gamification={data.gamification} brand={brand} />}
 
             <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
                 <ReportBlock

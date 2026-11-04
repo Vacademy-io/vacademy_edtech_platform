@@ -303,6 +303,8 @@ const TEACHER_DEFAULTS_BASE: Omit<DisplaySettingsData, 'sidebar'> = {
         liveSessionTab: true,
         // Read-only, like Live Sessions.
         academicActivityTab: true,
+        // Read-only, like Academic Activity.
+        gamificationTab: true,
         tabOrders: {
             overview: 1,
             courses: 2,
@@ -325,6 +327,7 @@ const TEACHER_DEFAULTS_BASE: Omit<DisplaySettingsData, 'sidebar'> = {
             workflows: 19,
             liveSession: 20,
             academicActivity: 21,
+            gamification: 12.5,
         },
         defaultTab: 'overview',
     },

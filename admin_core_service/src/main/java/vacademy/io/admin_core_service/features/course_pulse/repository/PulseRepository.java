@@ -237,4 +237,60 @@ public interface PulseRepository extends JpaRepository<ActivityLog, String> {
     List<Object[]> getLearnerRecentSlides(@Param("userId") String userId,
                                           @Param("since") java.sql.Timestamp since,
                                           @Param("maxRows") int maxRows);
+
+    /**
+     * One learner since a cutoff, as one row: [engaged_ms, active_days, slides_opened, visits,
+     * engaged_ms in the last seven days, engaged_ms in the seven days before]. Academic Activity tab.
+     */
+    @Query(value = """
+            SELECT COALESCE(SUM(COALESCE(al.engaged_ms, 0)), 0),
+                   COUNT(DISTINCT DATE(al.created_at AT TIME ZONE 'UTC' AT TIME ZONE :zone)),
+                   COUNT(DISTINCT al.slide_id),
+                   COUNT(*),
+                   COALESCE(SUM(COALESCE(al.engaged_ms, 0)) FILTER (WHERE al.created_at >= :weekAgo), 0),
+                   COALESCE(SUM(COALESCE(al.engaged_ms, 0))
+                            FILTER (WHERE al.created_at >= :twoWeeksAgo AND al.created_at < :weekAgo), 0)
+            FROM activity_log al
+            WHERE al.user_id = :userId
+              AND al.slide_id IS NOT NULL
+              AND al.created_at >= :since
+            """, nativeQuery = true)
+    List<Object[]> getLearnerTotals(@Param("userId") String userId,
+                                    @Param("zone") String zone,
+                                    @Param("since") java.sql.Timestamp since,
+                                    @Param("weekAgo") java.sql.Timestamp weekAgo,
+                                    @Param("twoWeeksAgo") java.sql.Timestamp twoWeeksAgo);
+
+    /** One learner since a cutoff: [slide_source_type, engaged_ms, slides_opened] rows, most time first. */
+    @Query(value = """
+            SELECT s.source_type, SUM(COALESCE(al.engaged_ms, 0)), COUNT(DISTINCT s.id)
+            FROM activity_log al
+                JOIN slide s ON s.id = al.slide_id
+            WHERE al.user_id = :userId
+              AND al.slide_id IS NOT NULL
+              AND al.created_at >= :since
+            GROUP BY s.source_type
+            ORDER BY 2 DESC
+            """, nativeQuery = true)
+    List<Object[]> getLearnerContentMix(@Param("userId") String userId,
+                                        @Param("since") java.sql.Timestamp since);
+
+    /**
+     * One learner since a cutoff, by local weekday and hour: [iso_weekday, hour, engaged_ms] rows.
+     * Monday is 1. Study rhythm on the Academic Activity tab.
+     */
+    @Query(value = """
+            SELECT CAST(EXTRACT(ISODOW FROM al.created_at AT TIME ZONE 'UTC' AT TIME ZONE :zone) AS int),
+                   CAST(EXTRACT(HOUR FROM al.created_at AT TIME ZONE 'UTC' AT TIME ZONE :zone) AS int),
+                   SUM(COALESCE(al.engaged_ms, 0))
+            FROM activity_log al
+            WHERE al.user_id = :userId
+              AND al.slide_id IS NOT NULL
+              AND COALESCE(al.engaged_ms, 0) > 0
+              AND al.created_at >= :since
+            GROUP BY 1, 2
+            """, nativeQuery = true)
+    List<Object[]> getLearnerRhythm(@Param("userId") String userId,
+                                    @Param("zone") String zone,
+                                    @Param("since") java.sql.Timestamp since);
 }
