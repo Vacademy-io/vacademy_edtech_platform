@@ -80,6 +80,19 @@ public class BatchSummaryReportDTO {
     @NoArgsConstructor
     @AllArgsConstructor
     @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
+    public static class DailyTimeRow {
+        private String date;
+        /** Average minutes per learner who studied that day. */
+        private Double avgMinutes;
+        private long activeLearners;
+        private Double totalMinutes;
+    }
+
+    @Data
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
     public static class AssessmentOption {
         private String assessmentId;
         private String name;

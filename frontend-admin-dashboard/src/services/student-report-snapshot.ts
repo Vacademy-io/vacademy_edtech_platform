@@ -1,5 +1,5 @@
 import { queryOptions } from '@tanstack/react-query';
-import { STUDENT_ANALYSIS_BASE } from '@/constants/urls';
+import { BASE_URL, STUDENT_ANALYSIS_BASE } from '@/constants/urls';
 import authenticatedAxiosInstance from '@/lib/auth/axiosInstance';
 
 /**
@@ -153,5 +153,50 @@ export const getStudentReportSnapshotQuery = (params: {
         queryKey: ['STUDENT_REPORT_SNAPSHOT', params],
         queryFn: () => fetchStudentReportSnapshot(params),
         enabled: !!params.userId && !!params.instituteId && !!params.startDate && !!params.endDate,
+        staleTime: 60_000,
+    });
+
+export interface LearnerDailyTime {
+    activity_date: string;
+    time_spent_by_user_millis: number | null;
+    avg_time_spent_by_batch_millis: number | null;
+}
+
+const nextDay = (iso: string) => {
+    const d = new Date(`${iso}T00:00:00Z`);
+    d.setUTCDate(d.getUTCDate() + 1);
+    return d.toISOString().slice(0, 10);
+};
+
+/** The learner minutes per day and the batch average, over their batches. */
+export const fetchLearnerDailyTime = async (params: {
+    userId: string;
+    packageSessionIds: string[];
+    startDate: string;
+    endDate: string;
+}): Promise<LearnerDailyTime[]> => {
+    const { data } = await authenticatedAxiosInstance.post<LearnerDailyTime[]>(
+        `${BASE_URL}/admin-core-service/learner-tracking/activity-log/learner/v1/daily-time-spent`,
+        {
+            user_id: params.userId,
+            package_session_ids: params.packageSessionIds,
+            start_date: params.startDate,
+            // The end is exclusive at midnight, so ask up to the next day and drop it below.
+            end_date: nextDay(params.endDate),
+        }
+    );
+    return (data ?? []).filter((d) => String(d.activity_date).slice(0, 10) <= params.endDate);
+};
+
+export const getLearnerDailyTimeQuery = (params: {
+    userId: string;
+    packageSessionIds: string[];
+    startDate: string;
+    endDate: string;
+}) =>
+    queryOptions({
+        queryKey: ['LEARNER_DAILY_TIME', params],
+        queryFn: () => fetchLearnerDailyTime(params),
+        enabled: !!params.userId && params.packageSessionIds.length > 0 && !!params.startDate,
         staleTime: 60_000,
     });
