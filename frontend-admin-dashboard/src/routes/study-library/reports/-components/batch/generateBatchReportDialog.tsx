@@ -18,6 +18,7 @@ import {
     toTemplateOptions,
 } from '@/components/templates/TemplateSearchableSelect';
 import { listTemplates } from '@/routes/communication/whatsapp-templates/-services/template-api';
+import { getMessageTemplatesByType } from '@/services/message-template-service';
 import { getInstituteId } from '@/constants/helper';
 import { cn } from '@/lib/utils';
 import {
@@ -32,6 +33,8 @@ import {
     type BatchReportSection,
     type BatchSummaryRequest,
 } from '@/services/batch-summary-report';
+
+const DEFAULT_EMAIL = '__default__';
 
 /**
  * Generate a batch report from the institute's template (Settings → Batch reports). The
@@ -52,12 +55,19 @@ export function GenerateBatchReportDialog({
     const [confirm, setConfirm] = useState<BatchReportAudience | null>(null);
     const [channel, setChannel] = useState<BatchReportChannel>('EMAIL');
     const [waTemplate, setWaTemplate] = useState<string | undefined>(undefined);
+    const [emailTemplate, setEmailTemplate] = useState<string>(DEFAULT_EMAIL);
     const template = useQuery({ ...getBatchReportTemplateQuery(), enabled: open });
     const instituteId = getInstituteId();
     const waTemplates = useQuery({
         queryKey: ['WHATSAPP_TEMPLATES', instituteId],
         queryFn: () => listTemplates(instituteId ?? '', 'WHATSAPP'),
         enabled: open && channel === 'WHATSAPP' && !!instituteId,
+        staleTime: 5 * 60_000,
+    });
+    const emailTemplates = useQuery({
+        queryKey: ['EMAIL_TEMPLATES', instituteId],
+        queryFn: () => getMessageTemplatesByType('EMAIL'),
+        enabled: open && !!confirm && channel === 'EMAIL',
         staleTime: 5 * 60_000,
     });
     // Approved WhatsApp templates; those with a document header (where the PDF goes) first.
@@ -89,6 +99,7 @@ export function GenerateBatchReportDialog({
             setConfirm(null);
             setChannel('EMAIL');
             setWaTemplate(undefined);
+            setEmailTemplate(DEFAULT_EMAIL);
         }
     }, [open]);
 
@@ -146,6 +157,9 @@ export function GenerateBatchReportDialog({
                 channel,
                 ...(channel === 'WHATSAPP' && picked
                     ? { template_name: picked.name, language_code: picked.language || 'en' }
+                    : {}),
+                ...(channel === 'EMAIL' && emailTemplate !== DEFAULT_EMAIL
+                    ? { email_template_id: emailTemplate }
                     : {}),
             });
             const who = audience === 'TEACHERS' ? 'teacher' : 'parent';
@@ -267,6 +281,25 @@ export function GenerateBatchReportDialog({
                                 ))}
                             </div>
                         </div>
+                        {channel === 'EMAIL' && (
+                            <div className="flex flex-col gap-1">
+                                <span className="text-xs font-medium text-neutral-600">
+                                    Template (the report is attached as a PDF)
+                                </span>
+                                <TemplateSearchableSelect
+                                    options={toTemplateOptions(emailTemplates.data ?? [], 'id')}
+                                    value={emailTemplate}
+                                    onChange={setEmailTemplate}
+                                    loading={emailTemplates.isLoading}
+                                    portal={false}
+                                    noneOption={{
+                                        value: DEFAULT_EMAIL,
+                                        label: 'Default report email',
+                                    }}
+                                    emptyText="No email templates."
+                                />
+                            </div>
+                        )}
                         {channel === 'WHATSAPP' && (
                             <div className="flex flex-col gap-1">
                                 <span className="text-xs font-medium text-neutral-600">

@@ -211,6 +211,8 @@ export const sendBatchReport = async (
     body: BatchSummaryRequest & {
         audience: BatchReportAudience;
         channel?: BatchReportChannel;
+        /** Email: an institute email template; omitted means the default report email. */
+        email_template_id?: string;
         /** WhatsApp: an approved template; the report PDF is sent as its document header. */
         template_name?: string;
         language_code?: string;

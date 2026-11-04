@@ -12,7 +12,9 @@ import org.springframework.web.util.HtmlUtils;
 import vacademy.io.admin_core_service.features.auth_service.service.AuthService;
 import vacademy.io.admin_core_service.features.faculty.entity.FacultySubjectPackageSessionMapping;
 import vacademy.io.admin_core_service.features.faculty.repository.FacultySubjectPackageSessionMappingRepository;
+import vacademy.io.admin_core_service.features.institute.entity.Template;
 import vacademy.io.admin_core_service.features.institute.repository.InstituteRepository;
+import vacademy.io.admin_core_service.features.institute.repository.TemplateRepository;
 import vacademy.io.admin_core_service.features.media_service.service.MediaService;
 import vacademy.io.admin_core_service.features.institute.service.setting.InstituteSettingService;
 import vacademy.io.admin_core_service.features.institute_learner.entity.Student;
@@ -115,6 +117,7 @@ public class BatchSummaryReportService {
     private final StudentSessionInstituteGroupMappingRepository mappingRepository;
     private final PackageSessionRepository packageSessionRepository;
     private final InstituteRepository instituteRepository;
+    private final TemplateRepository templateRepository;
     private final InstituteSettingService instituteSettingService;
     private final InstituteStudentRepository studentRepository;
     private final FacultySubjectPackageSessionMappingRepository facultyMappingRepository;
@@ -909,6 +912,7 @@ public class BatchSummaryReportService {
         if (CHANNEL_WHATSAPP.equals(channel) && !StringUtils.hasText(request.getTemplateName())) {
             throw new VacademyException(HttpStatus.BAD_REQUEST, "Pick a WhatsApp template");
         }
+        Template emailTemplate = CHANNEL_EMAIL.equals(channel) ? emailTemplate(instituteId, request) : null;
         BatchSummaryReportDTO report = summarize(instituteId, request, user);
         if (CHANNEL_WHATSAPP.equals(channel)) {
             return AUDIENCE_TEACHERS.equals(audience)
@@ -917,8 +921,20 @@ public class BatchSummaryReportService {
         }
         String subjectSuffix = joinNonBlank(" · ", report.getBatchName(), dateLabel(report));
         return AUDIENCE_TEACHERS.equals(audience)
-                ? sendToTeachers(instituteId, report, subjectSuffix)
-                : sendToParents(instituteId, report, subjectSuffix);
+                ? sendToTeachers(instituteId, report, subjectSuffix, emailTemplate)
+                : sendToParents(instituteId, report, subjectSuffix, emailTemplate);
+    }
+
+    /** The picked email template, checked against the institute; null when none was picked. */
+    private Template emailTemplate(String instituteId, BatchSummaryReportRequest request) {
+        if (!StringUtils.hasText(request.getEmailTemplateId())) return null;
+        Template template = templateRepository.findById(request.getEmailTemplateId())
+                .filter(t -> instituteId.equals(t.getInstituteId()) && CHANNEL_EMAIL.equalsIgnoreCase(t.getType()))
+                .orElseThrow(() -> new VacademyException(HttpStatus.NOT_FOUND, "Email template not found"));
+        if (!StringUtils.hasText(template.getContent())) {
+            throw new VacademyException(HttpStatus.BAD_REQUEST, "This email template has no content");
+        }
+        return template;
     }
 
     // ── WhatsApp: the picked template, the report PDF as its document header ────
@@ -1080,7 +1096,7 @@ public class BatchSummaryReportService {
         v.put("date_range", dateLabel(report));
         v.put("avg_score", score);
         v.put("score", score);
-        v.put("_headerUrl", pdfUrl);
+        if (pdfUrl != null) v.put("_headerUrl", pdfUrl);
         return v;
     }
 
@@ -1119,7 +1135,7 @@ public class BatchSummaryReportService {
     }
 
     private BatchSummaryReportDTO.SendResult sendToTeachers(String instituteId, BatchSummaryReportDTO report,
-                                                            String subjectSuffix) {
+                                                            String subjectSuffix, Template template) {
         List<String> teacherIds = facultyMappingRepository
                 .findRealTeachersByPackageSessionId(report.getPackageSessionId()).stream()
                 .map(FacultySubjectPackageSessionMapping::getUserId)
@@ -1132,8 +1148,9 @@ public class BatchSummaryReportService {
             return BatchSummaryReportDTO.SendResult.builder().audience(AUDIENCE_TEACHERS).notes(notes).build();
         }
         byte[] pdf = toPdf(renderHtml(report, null), report.getPackageSessionId());
-        String body = emailBody(report, null);
-        String subject = "Batch report: " + subjectSuffix;
+        String body = template != null ? template.getContent() : emailBody(report, null);
+        String subject = template != null && StringUtils.hasText(template.getSubject())
+                ? template.getSubject() : "Batch report: " + subjectSuffix;
         String fileName = fileName(report.getBatchName(), "batch-report");
         int sent = 0, skipped = 0;
         for (UserDTO teacher : authService.getUsersFromAuthServiceByUserIds(teacherIds)) {
@@ -1141,7 +1158,8 @@ public class BatchSummaryReportService {
                 skipped++;
                 continue;
             }
-            if (sendEmail(teacher.getEmail(), teacher.getId(), subject, body, pdf, fileName, instituteId, report)) sent++;
+            Map<String, String> vars = templateVariables(report, null, teacher.getFullName(), null);
+            if (sendEmail(teacher.getEmail(), teacher.getId(), subject, body, pdf, fileName, instituteId, report, vars)) sent++;
             else skipped++;
         }
         if (skipped > 0) notes.add(skipped + " teacher(s) could not be emailed (no email address or the send failed).");
@@ -1150,7 +1168,7 @@ public class BatchSummaryReportService {
     }
 
     private BatchSummaryReportDTO.SendResult sendToParents(String instituteId, BatchSummaryReportDTO report,
-                                                           String subjectSuffix) {
+                                                           String subjectSuffix, Template template) {
         List<BatchSummaryReportDTO.LearnerRow> learners = nonNull(report.getLearners());
         Map<String, Student> students = new LinkedHashMap<>();
         List<String> ids = learners.stream().map(BatchSummaryReportDTO.LearnerRow::getUserId)
@@ -1177,12 +1195,14 @@ public class BatchSummaryReportService {
                 failed++;
                 continue;
             }
-            String body = emailBody(report, learner);
-            String subject = "Progress report for " + learner.getFullName() + ": " + subjectSuffix;
+            String body = template != null ? template.getContent() : emailBody(report, learner);
+            String subject = template != null && StringUtils.hasText(template.getSubject())
+                    ? template.getSubject() : "Progress report for " + learner.getFullName() + ": " + subjectSuffix;
+            Map<String, String> vars = templateVariables(report, learner, learner.getFullName(), null);
             String fileName = fileName(learner.getFullName(), "progress-report");
             boolean any = false;
             for (String email : emails) {
-                any |= sendEmail(email, null, subject, body, pdf, fileName, instituteId, report);
+                any |= sendEmail(email, null, subject, body, pdf, fileName, instituteId, report, vars);
             }
             if (any) sent++;
             else failed++;
@@ -1196,7 +1216,7 @@ public class BatchSummaryReportService {
     }
 
     private boolean sendEmail(String to, String userId, String subject, String body, byte[] pdf, String fileName,
-                              String instituteId, BatchSummaryReportDTO report) {
+                              String instituteId, BatchSummaryReportDTO report, Map<String, String> variables) {
         try {
             AttachmentUsersDTO.AttachmentDTO attachment = new AttachmentUsersDTO.AttachmentDTO();
             attachment.setAttachmentName(fileName);
@@ -1204,9 +1224,11 @@ public class BatchSummaryReportService {
             AttachmentUsersDTO recipient = new AttachmentUsersDTO();
             recipient.setChannelId(to);
             recipient.setUserId(userId);
-            recipient.setPlaceholders(Map.of("email", to));
+            Map<String, String> placeholders = new HashMap<>(variables);
+            placeholders.put("email", to);
+            recipient.setPlaceholders(placeholders);
             recipient.setAttachments(List.of(attachment));
-            notificationService.sendAttachmentEmailViaUnified(List.of(AttachmentNotificationDTO.builder()
+            UnifiedSendResponse response = notificationService.sendAttachmentEmailViaUnified(List.of(AttachmentNotificationDTO.builder()
                     .subject(subject)
                     .body(body)
                     .notificationType("EMAIL")
@@ -1216,7 +1238,8 @@ public class BatchSummaryReportService {
                     .attachmentName(fileName)
                     .users(List.of(recipient))
                     .build()), instituteId);
-            return true;
+            // A blocked, unsubscribed or failed recipient comes back as not accepted.
+            return response != null && response.getAccepted() > 0;
         } catch (Exception e) {
             log.warn("[batch-summary] email to {} failed: {}", to, e.getMessage());
             return false;
