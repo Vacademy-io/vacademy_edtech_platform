@@ -128,7 +128,7 @@ interface NumberColumnOptions<R> {
     link?: (row: R) => ReportLinkTarget | null;
 }
 
-const numberColumn = <R,>(
+export const numberColumn = <R,>(
     ctx: ReportCtx,
     id: string,
     header: string,
@@ -160,7 +160,7 @@ const numberColumn = <R,>(
     };
 };
 
-const textColumn = <R,>(
+export const textColumn = <R,>(
     id: string,
     header: string,
     text: (row: R) => string,

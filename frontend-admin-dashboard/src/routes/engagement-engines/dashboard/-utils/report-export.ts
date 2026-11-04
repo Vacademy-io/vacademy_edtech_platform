@@ -31,7 +31,7 @@ export const exportPeriodText = (data: EngagementDailyReport, t: TFunction): str
 };
 
 /** Excel sheet names: 31 characters at most, none of  \ / ? * [ ] :  and no repeats. */
-const sheetNamer = () => {
+export const sheetNamer = () => {
     const used = new Set<string>();
     return (name: string) => {
         const base =

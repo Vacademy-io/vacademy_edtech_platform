@@ -3,7 +3,8 @@
     "subtitle_range": "A report for each engine: what it did, what it cost and what came back in this period.",
     "viewSwitch": {
         "label": "Dashboard view",
-        "daily": "Daily report",
+        "daily": "Daily",
+        "weekly": "Weekly",
         "overview": "Overview"
     },
     "noActivity": "No activity on this day",
@@ -810,5 +811,411 @@
             "capped": "Downloaded the first {{shown}} of {{total}} rows."
         },
         "openFailed": "Couldn’t open this lead’s profile."
+    },
+    "diagnosis": {
+        "title": "What needs attention",
+        "subtitle": "Only what is clearly broken, and what to change. The full report is under “All numbers”.",
+        "problemsLabel": "Problems",
+        "stagesLabel": "Status of each step",
+        "gapsLabel": "What the report cannot see",
+        "severity": {
+            "critical": "Critical",
+            "warning": "Warning"
+        },
+        "stage": {
+            "LEADS": "Leads",
+            "CALLING": "Calling",
+            "WHATSAPP": "WhatsApp",
+            "EMAIL": "Email",
+            "ENGINE": "Engine"
+        },
+        "stageStatus": {
+            "PROBLEM": "Needs attention",
+            "PROBLEM_count_one": "1 problem",
+            "PROBLEM_count_other": "{{count}} problems",
+            "UNAVAILABLE": "Couldn’t load",
+            "NO_ACTIVITY": "Nothing sent",
+            "NO_ACTIVITY_LEADS": "No leads added",
+            "NO_ACTIVITY_CALLING": "No calls placed",
+            "NO_ACTIVITY_WHATSAPP": "Nothing sent",
+            "NO_ACTIVITY_EMAIL": "Nothing sent",
+            "NO_ACTIVITY_ENGINE": "No activity",
+            "NOT_ENOUGH_DATA": "Not enough data yet",
+            "OK": "Normal",
+            "UNKNOWN": "Status unknown"
+        },
+        "noProblems": {
+            "calm": {
+                "title": "No problems on this day",
+                "title_today": "No problems today",
+                "title_day": "No problems on this day",
+                "title_week": "No problems this week",
+                "text": "Nothing is clearly broken. Here are the headline numbers."
+            },
+            "quiet": {
+                "title": "Nothing to flag",
+                "text": "Too little happened to judge. See each step below.",
+                "text_week": "Too little happened this week to judge. See each step below."
+            },
+            "incomplete": {
+                "title": "No problems found, but some checks didn’t run",
+                "text": "Don’t treat this as all clear. See which steps couldn’t load below, then try again."
+            }
+        },
+        "problem": {
+            "LEADS_MISSING_CONTACT": {
+                "title": "Leads arrive without contact details",
+                "evidence": "{{neither}} of {{added}} new leads have no phone and no email. {{noPhone}} have no phone.",
+                "advice": "Tighten what the Lead Agent or source must collect before a lead is delivered."
+            },
+            "LEAD_AGENT_NOT_DELIVERING": {
+                "title": "A Lead Agent delivered no leads",
+                "evidence": "{{name}}: found {{discovered}}, rejected {{rejected}}, {{review}} waiting for review.",
+                "advice": "Check the agent’s search and scoring: it found leads but delivered none, or found none."
+            },
+            "LEAD_SOURCE_WEAK": {
+                "title": "Lead source “{{name}}” gets few replies",
+                "evidence": "{{responseRate}} replied, against {{overallRate}} overall. {{leads}} leads.",
+                "advice": "Review or pause this source and put the effort on better ones."
+            },
+            "CALLS_NOT_GOING_OUT": {
+                "title": "Calls are queued but not dialled",
+                "evidence": "{{notDialled}} not dialled, {{placed}} placed.",
+                "advice": "Check the AI calling setup and credits: calls are queued but not being dialled."
+            },
+            "CONNECT_RATE_LOW": {
+                "title": "Fewer calls are being answered",
+                "evidence": "{{connected}} of {{placed}} calls were answered ({{rate}}). The 7 days before: {{baselineRate}}.",
+                "advice": "Check the number’s reputation, the list and the calling hours."
+            },
+            "SHORT_CALLS": {
+                "title": "Many calls end within 20 seconds",
+                "evidence": "{{under20s}} of {{connected}} answered calls were under 20 seconds ({{share}}).",
+                "advice": "People hang up early: change the opening line of the pitch and check the targeting."
+            },
+            "CALL_HOUR_WEAK": {
+                "title": "Calls at {{hour}} are rarely answered",
+                "evidence": "{{connectRate}} of {{placed}} calls were answered, against {{overallRate}} overall. Best hour: {{bestHour}}, {{bestRate}}.",
+                "advice": "Move calls out of this hour, towards the best one shown."
+            },
+            "OBJECTION_RECURRING": {
+                "title": "Callers keep raising “{{name}}”",
+                "evidence": "It came up in {{count}} of {{analysed}} analysed calls.",
+                "advice": "Answer this objection in the pitch."
+            },
+            "WHATSAPP_FAILED_HIGH": {
+                "title": "WhatsApp messages are failing",
+                "evidence": "{{failed}} of {{tried}} messages failed ({{rate}}).",
+                "advice": "Act on the biggest reason shown: fix the list, the template or the billing."
+            },
+            "TEMPLATE_UNDERPERFORMING": {
+                "title": "WhatsApp template “{{name}}” gets few replies",
+                "evidence": "{{replyRate}} replied on {{sent}} sends, against {{channelRate}} for WhatsApp.",
+                "advice": "Rewrite this template’s opening and call to action, or replace it with the best one."
+            },
+            "EMAIL_BOUNCE_HIGH": {
+                "title": "Many emails are bouncing",
+                "evidence": "{{bounced}} of {{sent}} emails bounced ({{rate}}).",
+                "advice": "Clean the list before sending more: high bounces damage the domain’s reputation."
+            },
+            "EMAIL_COMPLAINTS": {
+                "title": "People are marking emails as spam",
+                "evidence_one": "1 spam complaint on {{sent}} emails.",
+                "evidence_other": "{{complained}} spam complaints on {{sent}} emails.",
+                "advice": "People marked this as spam: check who is being emailed and how often."
+            },
+            "SUBJECT_UNDERPERFORMING": {
+                "title": "Email subject “{{name}}” gets few replies",
+                "evidence": "{{replyRate}} replied on {{sent}} sends, against {{channelRate}} for email.",
+                "advice": "Test a different subject line and opening for this email."
+            },
+            "ENGINE_ACTIONS_FAILING": {
+                "title": "The engine’s actions are failing",
+                "evidence": "{{failed}} of {{decisions}} actions failed ({{rate}}).",
+                "advice": "Fix the top error shown: these leads got no message."
+            },
+            "DOUBLE_CONTACT": {
+                "title": "People are messaged twice in a day",
+                "evidence_one": "1 of {{contacted}} people contacted got two messages on one channel in a day.",
+                "evidence_other": "{{people}} of {{contacted}} people contacted got two messages on one channel in a day.",
+                "advice": "Check the cadence: these people were messaged twice in a day."
+            },
+            "SENT_AFTER_REPLY": {
+                "title": "Messages go out after a reply",
+                "evidence_one": "1 message was sent after the person had replied.",
+                "evidence_other": "{{sends}} messages were sent after the person had replied.",
+                "advice": "The engine kept sending after a reply. Check how it handles replies."
+            },
+            "CREDITS_LOW": {
+                "title": "Credits are running low",
+                "evidence": "At this pace they run out in {{runway}}.",
+                "advice": "Top up credits: sends stop when they run out."
+            },
+            "MEMBERS_STUCK": {
+                "title": "Leads are waiting with no next step",
+                "evidence_one": "1 person is more than 48 hours past their next action.",
+                "evidence_other": "{{members}} people are more than 48 hours past their next action.",
+                "advice": "These leads have no next step: check why the engine isn’t picking them up."
+            },
+            "unknown": {
+                "title": "Needs a look: {{name}}",
+                "advice": "Check the figures for this period to find out why."
+            }
+        },
+        "breakdown": {
+            "lead": "Most common:"
+        },
+        "names": {
+            "more": "{{list}} and {{count}} more"
+        },
+        "more_one": "1 more problem not shown.",
+        "more_other": "{{count}} more problems not shown.",
+        "link": {
+            "leads": "See the leads",
+            "people": "See the people",
+            "calls": "See the calls",
+            "messages": "See the messages",
+            "generic": "See the details"
+        },
+        "gap": {
+            "EMAIL_REPLIES_NOT_TRACKED": "Email replies can’t be seen for {{names}}, so a reply count of 0 may not be real.",
+            "EMAIL_TRACKING_OFF": "Email delivery isn’t tracked for your sender, so bounces and spam complaints can’t be seen.",
+            "WHATSAPP_TRACKING_OFF": "WhatsApp delivery isn’t tracked for your provider, so failures after sending can’t be seen.",
+            "CALL_ANALYSIS_EMPTY": "Calls were answered but none have been analysed yet, so call insights are empty.",
+            "unknown": "Some figures may be incomplete.",
+            "TOO_MANY": "This period has too many messages to read delivery and replies for, so those parts can’t be judged. Try one engine.",
+            "PARTIAL": "Some parts of this report couldn’t be read. They’re marked, and they aren’t counted as zero.",
+            "EMAIL_REPLIES_NOT_TRACKED_ALL": "Email replies can’t be seen for these emails, so a reply count of 0 may not be real."
+        },
+        "whatsappReason": {
+            "NOT_ON_WHATSAPP": "Not on WhatsApp",
+            "MARKETING_LIMIT": "Marketing message limit reached",
+            "USER_STOPPED_MARKETING": "Stopped marketing messages",
+            "OUTSIDE_24H_WINDOW": "Outside the 24-hour window",
+            "TEMPLATE_PROBLEM": "Template problem",
+            "PAYMENT_ISSUE": "Payment issue",
+            "RATE_LIMITED": "Sending too fast",
+            "REJECTED_AT_SEND": "Rejected before sending",
+            "OTHER": "Other"
+        },
+        "allNumbers": {
+            "title": "All numbers",
+            "show": "Headline numbers, charts and tables for this day",
+            "hide": "Hide the full report",
+            "failed": "Couldn’t load the numbers. Open to try again."
+        },
+        "needs": {
+            "more": "Needs more data",
+            "sends_one": "Needs {{count}} send",
+            "sends_other": "Needs {{count}} sends",
+            "leads_one": "Needs {{count}} lead",
+            "leads_other": "Needs {{count}} leads",
+            "calls_one": "Needs {{count}} call",
+            "calls_other": "Needs {{count}} calls"
+        },
+        "verdict": {
+            "best": "Best",
+            "worst": "Worst",
+            "ok": "OK",
+            "weak": "Weak"
+        },
+        "week": {
+            "last7": "Last 7 days",
+            "previous": "Previous week",
+            "next": "Next week",
+            "change": "Change week: {{label}}",
+            "pick": "Pick the last day of the week",
+            "hint": "Shows the 7 days ending on that day. Reports cover the last 90 days, up to today.",
+            "numbersFailed": "Couldn’t load the numbers for this week."
+        },
+        "weekly": {
+            "pageSubtitle": "Where the chain from lead to demo is breaking over 7 days, and what to change.",
+            "title": "What to change this week",
+            "subtitle": "Problems found over these 7 days, worst first, with what to do.",
+            "section": {
+                "LEADS": "Where leads came from, and which sources get a response (a reply or an answered call).",
+                "CALLING": "When calls are answered, how long they last and what callers say.",
+                "WHATSAPP": "Why messages fail, and which templates get replies.",
+                "EMAIL": "Which subject lines get replies.",
+                "ENGINE": "Checks on how the engine behaves, and how each change to its instructions did."
+            },
+            "empty": {
+                "LEADS": "No leads came in this week.",
+                "CALLING": "No calls were placed this week.",
+                "WHATSAPP": "No WhatsApp messages were sent this week.",
+                "EMAIL": "No emails were sent this week.",
+                "ENGINE": "Nothing to show for the engine this week."
+            },
+            "col": {
+                "status": "Status",
+                "verdict": "Verdict",
+                "sent": "Sent",
+                "delivered": "Delivered",
+                "read": "Read",
+                "replied": "Replied",
+                "clicked": "Clicked",
+                "bounced": "Bounced",
+                "replyRate": "Reply rate",
+                "clickRate": "Click rate"
+            },
+            "sources": {
+                "title": "Lead sources",
+                "subtitle": "Where leads came from. A source needs enough leads before it is judged.",
+                "other": "Other (not from a Lead Agent)",
+                "col": {
+                    "source": "Source",
+                    "leads": "Leads",
+                    "contacted": "Contacted",
+                    "responded": "Responded",
+                    "demos": "Demos booked",
+                    "contactRate": "Contact rate",
+                    "responseRate": "Response rate"
+                }
+            },
+            "hours": {
+                "title": "Calls by hour",
+                "subtitle": "Share of calls answered at each hour. Pale bars have too few calls to compare.",
+                "chartAria": "Bar chart of the share of calls answered at each hour of the day. The table below has the same figures.",
+                "tooltip": "{{connected}} of {{placed}} calls answered ({{rate}})",
+                "col": {
+                    "hour": "Hour",
+                    "placed": "Calls",
+                    "connected": "Answered",
+                    "connectRate": "Answer rate"
+                }
+            },
+            "lengths": {
+                "title": "Call length",
+                "subtitle": "How long answered calls lasted.",
+                "under20s": "Under 20 seconds",
+                "s20to60": "20 to 60 seconds",
+                "over60": "Over 60 seconds",
+                "empty": "No calls were answered this week.",
+                "col": {
+                    "length": "Length",
+                    "calls": "Calls",
+                    "share": "Share of answered calls"
+                }
+            },
+            "insights": {
+                "title": "What callers said",
+                "subtitle": "From the calls that were analysed.",
+                "analysed": "Calls analysed",
+                "positive": "Positive",
+                "neutral": "Neutral",
+                "negative": "Negative",
+                "likely": "Likely to convert",
+                "likelyHint": "Analysed calls with a high chance of converting.",
+                "outcomes": "How the calls ended",
+                "objections": "Top objections",
+                "objectionsSubtitle": "What callers pushed back on, most common first.",
+                "empty": "No calls have been analysed yet.",
+                "noObjections": "No objections came up.",
+                "col": {
+                    "outcome": "Outcome",
+                    "calls": "Calls",
+                    "share": "Share of analysed calls",
+                    "objection": "Objection"
+                }
+            },
+            "failures": {
+                "title": "Why WhatsApp messages failed",
+                "subtitle": "From the error Meta gave for each failed message.",
+                "empty": "No WhatsApp messages failed this week.",
+                "col": {
+                    "reason": "Reason",
+                    "code": "Meta code",
+                    "messages": "Messages",
+                    "share": "Share of failures"
+                }
+            },
+            "templates": {
+                "title": "WhatsApp templates",
+                "subtitle": "A template needs enough sends before it is compared. The best and worst are marked.",
+                "empty": "No templates were sent this week.",
+                "col": {
+                    "template": "Template"
+                }
+            },
+            "subjects": {
+                "title": "Email subjects",
+                "subtitle": "A subject needs enough sends before it is compared. The best and worst are marked.",
+                "col": {
+                    "subject": "Subject"
+                }
+            },
+            "checks": {
+                "title": "Engine checks",
+                "subtitle": "Things the engine should not do. Zero is what you want.",
+                "doubleContact": {
+                    "label": "Messaged twice",
+                    "hint": "People who got two sends on one channel in one day.",
+                    "exportLabel": "People messaged twice in a day"
+                },
+                "sentAfterReply": {
+                    "label": "Sent after a reply",
+                    "hint": "Messages sent to someone after they had already replied.",
+                    "exportLabel": "Sent after a reply"
+                },
+                "stuckMembers": {
+                    "label": "No next step",
+                    "hint": "People on running engines whose next action is over 48 hours late.",
+                    "exportLabel": "Leads with no next step"
+                }
+            },
+            "prompts": {
+                "title": "Changes to the engine’s instructions",
+                "subtitle": "What was changed and how that version did. A version needs enough sends before it is judged.",
+                "empty": "No version of an engine’s instructions sent anything this week.",
+                "versionLabel": "v{{version}}",
+                "col": {
+                    "engine": "Engine",
+                    "version": "Version",
+                    "changedAt": "Changed",
+                    "source": "By",
+                    "change": "What changed",
+                    "demos": "Demos booked"
+                },
+                "source": {
+                    "ADMIN": "Admin"
+                }
+            }
+        },
+        "sheet": {
+            "sources": "Lead sources",
+            "callHours": "Calls by hour",
+            "callLengths": "Call length",
+            "callInsights": "Call insights",
+            "callOutcomes": "Call outcomes",
+            "objections": "Objections",
+            "whatsappFailures": "WhatsApp failures",
+            "whatsappTemplates": "WhatsApp templates",
+            "emailSubjects": "Email subjects",
+            "engineChecks": "Engine checks",
+            "promptChanges": "Prompt changes"
+        },
+        "export": {
+            "titleWeekly": "Engagement weekly report · {{period}}",
+            "severity": "Severity",
+            "stage": "Step",
+            "problem": "Problem",
+            "evidence": "What we saw",
+            "advice": "What to do",
+            "status": "Status",
+            "note": "Note",
+            "problems": {
+                "title": "Problems",
+                "sheet": "Problems"
+            },
+            "stages": {
+                "title": "Status of each step",
+                "sheet": "Steps"
+            },
+            "gaps": {
+                "title": "What the report cannot see",
+                "sheet": "Gaps"
+            },
+            "cornerLabel": "WEEKLY REPORT"
+        }
     }
 }

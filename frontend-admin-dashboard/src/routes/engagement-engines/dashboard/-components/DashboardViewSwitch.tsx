@@ -1,11 +1,14 @@
 import { useTranslation } from 'react-i18next';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import type { DashboardView } from '../-utils/dashboard-search';
 
-export type DashboardView = 'daily' | 'overview';
+export type { DashboardView };
+
+const VIEWS: DashboardView[] = ['daily', 'weekly', 'overview'];
 
 /**
- * Daily report | Overview switch in the Engagement Dashboard header. The choice lives in the
- * URL (?view=overview; no param = the daily report), so either view can be shared.
+ * Daily | Weekly | Overview switch in the Engagement Dashboard header. The choice lives in the
+ * URL (?view=weekly or ?view=overview; no param = the daily report), so any view can be shared.
  */
 export function DashboardViewSwitch({
     value,
@@ -18,15 +21,14 @@ export function DashboardViewSwitch({
     return (
         <Tabs
             value={value}
-            onValueChange={(next) => onChange(next === 'overview' ? 'overview' : 'daily')}
+            onValueChange={(next) => onChange(VIEWS.find((v) => v === next) ?? 'daily')}
         >
             <TabsList aria-label={t('viewSwitch.label')}>
-                <TabsTrigger value="daily">
-                    <span className="text-caption">{t('viewSwitch.daily')}</span>
-                </TabsTrigger>
-                <TabsTrigger value="overview">
-                    <span className="text-caption">{t('viewSwitch.overview')}</span>
-                </TabsTrigger>
+                {VIEWS.map((view) => (
+                    <TabsTrigger key={view} value={view}>
+                        <span className="text-caption">{t(`viewSwitch.${view}`)}</span>
+                    </TabsTrigger>
+                ))}
             </TabsList>
         </Tabs>
     );

@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useMemo, type ReactNode } from 'react';
 import { ArrowClockwise, CaretDown, DownloadSimple, FilePdf, FileXls } from '@phosphor-icons/react';
 import { useTranslation } from 'react-i18next';
 import { MyButton } from '@/components/design-system/button';
@@ -36,6 +36,8 @@ interface ReportFilterBarProps {
     minDate: string;
     maxDate: string;
     onPeriodChange: (period: ReportPeriod) => void;
+    /** Replaces the day / range picker (the weekly view picks a week instead). */
+    periodControl?: ReactNode;
     onExport: (kind: ExportKind) => void;
     exporting: boolean;
     exportDisabled: boolean;
@@ -55,6 +57,7 @@ export function ReportFilterBar({
     minDate,
     maxDate,
     onPeriodChange,
+    periodControl,
     onExport,
     exporting,
     exportDisabled,
@@ -100,7 +103,14 @@ export function ReportFilterBar({
                     triggerClassName="h-9"
                 />
             </div>
-            <PeriodPicker value={period} onChange={onPeriodChange} min={minDate} max={maxDate} />
+            {periodControl ?? (
+                <PeriodPicker
+                    value={period}
+                    onChange={onPeriodChange}
+                    min={minDate}
+                    max={maxDate}
+                />
+            )}
             <div className="flex items-center gap-2 sm:ms-auto">
                 {onRefresh && (
                     <MyButton

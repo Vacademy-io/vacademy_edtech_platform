@@ -27,7 +27,9 @@ export type ReportPart =
     | 'costs'
     | 'whatsappCost'
     | 'realCost'
-    | 'roi';
+    | 'roi'
+    // Not a report query: the tables built from the diagnosis response (the weekly page).
+    | 'diagnosis';
 
 const PART_DEPS: Record<ReportPart, string[]> = {
     funnel: ['outreach', 'calls', 'delivery', 'replies', 'demos', 'conversions'],
@@ -50,6 +52,8 @@ const PART_DEPS: Record<ReportPart, string[]> = {
     realCost: ['costs', 'calls', 'lists', 'runs'],
     // Spend (credits at the credit rate, WhatsApp charges) against the influenced revenue.
     roi: ['costs', 'calls', 'lists', 'creditRate', 'revenue', 'outreach', 'delivery'],
+    // Fails with its stage, which the diagnosis page reads from the stage statuses.
+    diagnosis: [],
 };
 
 const KPI_DEPS: Record<string, string[]> = {
