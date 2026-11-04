@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
-import { ArrowsClockwise, ChatText } from '@phosphor-icons/react';
+import { ArrowsClockwise, CalendarCheck, ChatText } from '@phosphor-icons/react';
 import { format } from 'date-fns';
 import { MyButton } from '@/components/design-system/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -26,12 +26,13 @@ const formatWhen = (iso: string): string => {
 const RemarkRow = ({ remark }: { remark: PlanRemark }) => {
     const { t } = useTranslation('manageStudentsPlanDetails');
     const isRenewal = remark.action_type === 'MANUAL_RENEWAL';
-    const Icon = isRenewal ? ArrowsClockwise : ChatText;
+    const isEndDateChange = remark.action_type === 'END_DATE_CHANGE';
+    const Icon = isRenewal ? ArrowsClockwise : isEndDateChange ? CalendarCheck : ChatText;
     return (
         <li className="flex gap-2 rounded-md border border-neutral-100 bg-neutral-50 p-2.5">
             <Icon className="mt-0.5 size-4 shrink-0 text-neutral-500" />
             <div className="min-w-0 flex-1 space-y-0.5">
-                {isRenewal && (
+                {(isRenewal || isEndDateChange) && (
                     <p className="text-xs font-semibold text-neutral-800">{remark.title}</p>
                 )}
                 {remark.description && (
@@ -78,6 +79,7 @@ export const PlanRemarksPanel = ({
         onSuccess: () => {
             setDraft('');
             queryClient.invalidateQueries({ queryKey: [PLAN_REMARKS_QUERY_KEY, userPlanId] });
+            queryClient.invalidateQueries({ queryKey: ['overview-remarks'] });
         },
         onError: (err: any) => {
             toast.error(err?.response?.data?.message || t('remarks.saveFailed'));

@@ -233,6 +233,29 @@ public interface TimelineEventRepository extends JpaRepository<TimelineEvent, St
     Page<TimelineEvent> findForInstituteByTypeAndTypeId(@Param("type") String type,
             @Param("typeId") String typeId, @Param("instituteId") String instituteId, Pageable pageable);
 
+    /**
+     * The learner remarks card: notes keyed to the learner plus the remarks on their memberships
+     * (manual renewals, end date changes, plan remarks), which are keyed to the plan and carry
+     * the learner in student_user_id. Both arms sit on an existing index.
+     */
+    @Query("""
+            SELECT e FROM TimelineEvent e
+            WHERE ((e.type = 'STUDENT' AND e.typeId = :studentUserId)
+                OR (e.type = 'USER_PLAN' AND e.studentUserId = :studentUserId))
+            ORDER BY e.createdAt DESC
+            """)
+    Page<TimelineEvent> findStudentRemarks(@Param("studentUserId") String studentUserId, Pageable pageable);
+
+    @Query("""
+            SELECT e FROM TimelineEvent e
+            WHERE ((e.type = 'STUDENT' AND e.typeId = :studentUserId)
+                OR (e.type = 'USER_PLAN' AND e.studentUserId = :studentUserId))
+              AND (e.instituteId IS NULL OR e.instituteId = :instituteId)
+            ORDER BY e.createdAt DESC
+            """)
+    Page<TimelineEvent> findStudentRemarksForInstitute(@Param("studentUserId") String studentUserId,
+            @Param("instituteId") String instituteId, Pageable pageable);
+
     @Query("""
             SELECT e FROM TimelineEvent e
             WHERE e.type = :type AND e.typeId = :typeId

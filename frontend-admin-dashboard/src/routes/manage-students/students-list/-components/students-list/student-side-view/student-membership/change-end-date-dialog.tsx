@@ -19,6 +19,7 @@ import {
     MANUAL_RENEWAL_PREVIEW_QUERY_KEY,
     PLAN_REMARKS_QUERY_KEY,
     changePlanEndDate,
+    type ManualRenewalResult,
 } from '@/services/user-plan';
 import { PlanRemarksPanel } from './plan-remarks';
 
@@ -31,7 +32,7 @@ interface ChangeEndDateDialogProps {
     currentEndDate?: string | null;
     planLabel?: string;
     /** Called after the change lands, so the caller can refresh its plan list. */
-    onChanged: () => void;
+    onChanged: (result: ManualRenewalResult) => void;
 }
 
 const toInputDate = (iso?: string | null): string => {
@@ -85,7 +86,7 @@ export const ChangeEndDateDialog = ({
             queryClient.invalidateQueries({
                 queryKey: [MANUAL_RENEWAL_PREVIEW_QUERY_KEY, userPlanId],
             });
-            onChanged();
+            onChanged(result);
             onOpenChange(false);
         },
         onError: (err: any) => {

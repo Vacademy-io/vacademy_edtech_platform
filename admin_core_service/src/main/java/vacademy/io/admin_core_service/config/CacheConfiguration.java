@@ -109,9 +109,6 @@ public class CacheConfiguration {
                 CaffeineCache userPlanById = new CaffeineCache(
                                 "userPlanById",
                                 caffeineCache2mBuilder().build());
-                CaffeineCache userPlansByUser = new CaffeineCache(
-                                "userPlansByUser",
-                                caffeineCache2mBuilder().build());
                 CaffeineCache userPlanWithPaymentLogs = new CaffeineCache(
                                 "userPlanWithPaymentLogs",
                                 caffeineCache2mBuilder().build());
@@ -230,7 +227,6 @@ public class CacheConfiguration {
                                 planningLogsList,
                                 membershipDetails,
                                 userPlanById,
-                                userPlansByUser,
                                 userPlanWithPaymentLogs,
                                 executionLogs,
                                 nodeLogs,

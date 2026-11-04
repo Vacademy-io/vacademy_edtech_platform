@@ -242,8 +242,9 @@ flagged as switchable. But:
 - **the access window is left alone** — no money changed hands, so extending or truncating
   what the learner already paid for would be arbitrary. The new price bills at the next renewal.
 - `reason` is persisted on the request row for audit
-- the caches `userPlanById`, `userPlansByUser`, `userPlanWithPaymentLogs`, `membershipDetails`
-  are evicted, or the side-view would keep showing the plan they just left
+- the caches `userPlanById`, `userPlanWithPaymentLogs`, `membershipDetails` are evicted, or
+  those reads would keep showing the plan they just left (the side-view's plan listing is not
+  cached, because an eviction only reaches the pod that took the write)
 
 The membership card itself now leads with the **payment plan** name; the course is the
 subtitle and the payment option a muted chip.

@@ -184,6 +184,15 @@ public class TimelineEventService {
         }
 
         @Transactional(readOnly = true)
+        public Page<TimelineEventDTO> getStudentRemarks(String studentUserId, Pageable pageable) {
+                String instituteId = requestInstituteId();
+                return (instituteId == null
+                                ? timelineEventRepository.findStudentRemarks(studentUserId, pageable)
+                                : timelineEventRepository.findStudentRemarksForInstitute(studentUserId, instituteId, pageable))
+                                .map(this::mapToDTO);
+        }
+
+        @Transactional(readOnly = true)
         public Page<TimelineEventDTO> getTimelineEventsWithPinnedFirst(String type, String typeId, Pageable pageable) {
                 String instituteId = requestInstituteId();
                 return (instituteId == null

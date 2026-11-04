@@ -4,6 +4,8 @@ import { useTranslation } from 'react-i18next';
 import dayjs from 'dayjs';
 import { toast } from 'sonner';
 import {
+    ArrowsClockwise,
+    ChatText,
     NotePencil,
     Phone,
     CalendarCheck,
@@ -11,9 +13,10 @@ import {
     type Icon as PhosphorIcon,
 } from '@phosphor-icons/react';
 import authenticatedAxiosInstance from '@/lib/auth/axiosInstance';
-import { CREATE_TIMELINE_EVENT, GET_TIMELINE_EVENTS } from '@/constants/urls';
+import { CREATE_TIMELINE_EVENT, GET_STUDENT_REMARKS } from '@/constants/urls';
 import { parseHtmlToString } from '@/lib/utils';
 import { invalidateLeadCaches } from '@/hooks/use-invalidate-lead-caches';
+import { useGetUserBasicDetails } from '@/services/get_user_basic_details';
 import { MyButton } from '@/components/design-system/button';
 import { Textarea } from '@/components/ui/textarea';
 import { ContactCallButton } from '@/components/shared/telephony/contact-call-button';
@@ -24,6 +27,7 @@ const REMARKS_PAGE_SIZE = 5;
 interface RemarkEvent {
     id: string;
     action_type: string;
+    actor_id: string | null;
     actor_name: string | null;
     title: string | null;
     description: string | null;
@@ -36,10 +40,11 @@ interface RemarksPage {
 }
 
 // Same STUDENT-scoped events the Lead Profile / Full History tabs list, so a
-// remark left here shows up there too (and vice versa).
+// remark left here shows up there too (and vice versa), plus the remarks left on
+// the learner's memberships in the Membership tab.
 async function fetchRemarks(userId: string): Promise<RemarksPage> {
-    const response = await authenticatedAxiosInstance.get<RemarksPage>(GET_TIMELINE_EVENTS, {
-        params: { type: 'STUDENT', typeId: userId, page: 0, size: REMARKS_PAGE_SIZE },
+    const response = await authenticatedAxiosInstance.get<RemarksPage>(GET_STUDENT_REMARKS(userId), {
+        params: { page: 0, size: REMARKS_PAGE_SIZE },
     });
     return response.data;
 }
@@ -49,7 +54,13 @@ const ACTION_ICONS: Record<string, PhosphorIcon> = {
     CALL_LOG: Phone,
     FOLLOW_UP: CalendarCheck,
     MEETING: Buildings,
+    MANUAL_RENEWAL: ArrowsClockwise,
+    END_DATE_CHANGE: CalendarCheck,
+    PLAN_REMARK: ChatText,
 };
+
+/** Their title says what happened (amount, new date); the description is why. */
+const ACTIONS_WITH_TITLE = new Set(['MANUAL_RENEWAL', 'END_DATE_CHANGE']);
 
 /**
  * Remarks card — the Overview tab's "call the learner, then write down what was
@@ -57,7 +68,8 @@ const ACTION_ICONS: Record<string, PhosphorIcon> = {
  * low rating → open the learner → call → remark) without leaving the sheet.
  *
  * Remarks are STUDENT timeline NOTE events keyed by user_id, the same rows the
- * Lead Profile tab's note form writes, so nothing here is a second store.
+ * Lead Profile tab's note form writes, plus the USER_PLAN events the Membership
+ * tab writes, so nothing here is a second store.
  */
 export const OverviewRemarks = ({
     userId,
@@ -103,9 +115,15 @@ export const OverviewRemarks = ({
         onError: () => toast.error(t('toast.failed')),
     });
 
+    const remarks = remarksQuery.data?.content ?? [];
+    // The timeline stores the login username; show the admin's name, falling back to it.
+    const actorIds = Array.from(
+        new Set(remarks.map((remark) => remark.actor_id).filter((id): id is string => !!id))
+    ).sort();
+    const { data: actors } = useGetUserBasicDetails(actorIds);
+
     if (!enabled) return null;
 
-    const remarks = remarksQuery.data?.content ?? [];
     const canSubmit = text.trim().length > 0 && !addRemark.isPending;
 
     return (
@@ -163,6 +181,11 @@ export const OverviewRemarks = ({
                             const Icon = ACTION_ICONS[remark.action_type] ?? NotePencil;
                             // Rich-text composers store HTML; render everything as text here.
                             const body = parseHtmlToString(remark.description ?? '').trim();
+                            const showTitle =
+                                ACTIONS_WITH_TITLE.has(remark.action_type) && !!remark.title;
+                            const actorName =
+                                actors?.find((actor) => actor.id === remark.actor_id)?.name ||
+                                remark.actor_name;
                             return (
                                 <li
                                     key={remark.id}
@@ -172,12 +195,19 @@ export const OverviewRemarks = ({
                                         <Icon className="size-3.5" weight="duotone" />
                                     </span>
                                     <div className="flex min-w-0 flex-1 flex-col gap-0.5">
-                                        <p className="whitespace-pre-line break-words text-caption text-card-foreground">
-                                            {body || remark.title || t('noteTitle')}
-                                        </p>
+                                        {showTitle && (
+                                            <p className="break-words text-caption font-medium text-card-foreground">
+                                                {remark.title}
+                                            </p>
+                                        )}
+                                        {(body || !showTitle) && (
+                                            <p className="whitespace-pre-line break-words text-caption text-card-foreground">
+                                                {body || remark.title || t('noteTitle')}
+                                            </p>
+                                        )}
                                         <span className="text-2xs text-muted-foreground">
                                             {[
-                                                remark.actor_name,
+                                                actorName,
                                                 dayjs(remark.created_at).format(
                                                     'DD MMM YYYY, HH:mm'
                                                 ),

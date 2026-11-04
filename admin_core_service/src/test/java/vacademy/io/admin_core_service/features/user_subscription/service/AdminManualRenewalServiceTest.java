@@ -130,6 +130,31 @@ class AdminManualRenewalServiceTest {
         when(admin.getUsername()).thenReturn("finance");
     }
 
+    @Test
+    @DisplayName("The side-view's plan listing is uncached: an eviction only reaches one pod")
+    void planListingIsNotCached() {
+        java.lang.reflect.Method read = java.util.Arrays.stream(UserPlanService.class.getDeclaredMethods())
+                .filter(m -> m.getName().equals("getUserPlansByUserIdAndInstituteId"))
+                .findFirst().orElseThrow();
+        assertFalse(read.isAnnotationPresent(org.springframework.cache.annotation.Cacheable.class));
+    }
+
+    @Test
+    @DisplayName("A renewal and an end-date change clear the cached plan lookups")
+    void renewalAndEndDateChangeEvictPlanCaches() {
+        for (String name : List.of("renew", "changeEndDate")) {
+            java.lang.reflect.Method write = java.util.Arrays.stream(AdminManualRenewalService.class.getDeclaredMethods())
+                    .filter(m -> m.getName().equals(name))
+                    .findFirst().orElseThrow();
+            org.springframework.cache.annotation.CacheEvict evict =
+                    write.getAnnotation(org.springframework.cache.annotation.CacheEvict.class);
+            assertNotNull(evict, name);
+            assertTrue(evict.allEntries(), name);
+            assertTrue(List.of(evict.value()).containsAll(
+                    List.of("userPlanById", "userPlanWithPaymentLogs", "membershipDetails")), name);
+        }
+    }
+
     @AfterEach
     void tearDown() {
         if (TransactionSynchronizationManager.isSynchronizationActive()) {

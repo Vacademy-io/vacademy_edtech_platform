@@ -1340,7 +1340,12 @@ public class UserPlanService {
         return paymentLogDTOs;
     }
 
-    @Cacheable(value = "userPlansByUser", key = "#userPlanFilterDTO.userId + ':' + #userPlanFilterDTO.instituteId + ':' + #pageNo + ':' + #pageSize + ':' + #userPlanFilterDTO.statuses + ':' + #userPlanFilterDTO.sortColumns")
+    /**
+     * Deliberately not cached. This backs the side-view membership tab, which re-reads it right
+     * after an admin renews a plan or moves its end date. The caches here are per pod, so an
+     * eviction only clears the replica that took the write and the others kept serving the old
+     * date until the TTL ran out. One learner's plans are cheap to read.
+     */
     @Transactional(readOnly = true)
     public Page<UserPlanDTO> getUserPlansByUserIdAndInstituteId(int pageNo, int pageSize,
             UserPlanFilterDTO userPlanFilterDTO) {
@@ -1548,8 +1553,7 @@ public class UserPlanService {
                 .build();
     }
 
-    @CacheEvict(value = { "userPlanById", "userPlansByUser", "userPlanWithPaymentLogs",
-            "membershipDetails" }, allEntries = true)
+    @CacheEvict(value = { "userPlanById", "userPlanWithPaymentLogs", "membershipDetails" }, allEntries = true)
     public void updateUserPlanStatuses(List<String> userPlanIds, String status) {
         if (CollectionUtils.isEmpty(userPlanIds)) {
             throw new IllegalArgumentException("User plan ids must not be empty.");
@@ -1592,12 +1596,11 @@ public class UserPlanService {
      * (see {@code PlanChangeService.adminApplyChange}); the new price bills at the next
      * renewal.
      *
-     * <p>Evicts the same caches as a bulk status change — the side-view membership card,
-     * the plan listing and the membership roster all read through them, and a stale entry
-     * would show the learner on the plan they just left.
+     * <p>Evicts the same caches as a bulk status change — the plan lookups and the membership
+     * roster read through them, and a stale entry would show the learner on the plan they
+     * just left.
      */
-    @CacheEvict(value = { "userPlanById", "userPlansByUser", "userPlanWithPaymentLogs",
-            "membershipDetails" }, allEntries = true)
+    @CacheEvict(value = { "userPlanById", "userPlanWithPaymentLogs", "membershipDetails" }, allEntries = true)
     public UserPlanDTO adminChangePlan(String userPlanId, String instituteId,
             vacademy.io.admin_core_service.features.plan_change.dto.PlanChangeRequestDTO request,
             vacademy.io.common.auth.model.CustomUserDetails adminDetails) {

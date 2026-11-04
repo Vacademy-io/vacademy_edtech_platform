@@ -19,9 +19,9 @@ import {
     CalendarCheck,
     Package,
 } from '@phosphor-icons/react';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
-import { getUserPlans, UserPlan } from '@/services/user-plan';
+import { getUserPlans, UserPlan, type ManualRenewalResult } from '@/services/user-plan';
 import { getInstituteId } from '@/constants/helper';
 import { ChangePlanDialog } from '../student-membership/change-plan-dialog';
 import { ManualRenewalDialog } from '../student-membership/manual-renewal-dialog';
@@ -79,6 +79,18 @@ const isCpoPlan = (plan: UserPlan): boolean =>
 
 /** Memberships that have lapsed but can be brought back with a manual renewal. */
 const LAPSED_STATUSES = ['EXPIRED', 'CANCELED', 'PAYMENT_FAILED'];
+
+/** Everything else in the side view that shows a membership, its dates or its payments. */
+const QUERIES_SHOWING_MEMBERSHIP = [
+    'students',
+    'GET_LEARNER_PACKAGES',
+    'user-plans',
+    'learner-plans-for-cancel-badge',
+    'overview-remarks',
+    'user-account-ledger',
+    'user-account-summary',
+    'user-invoices',
+];
 
 /** payment_plan_dto.actual_price is the price of ONE copy. */
 const getPlanUnitPrice = (plan: UserPlan): number => plan.payment_plan_dto?.actual_price || 0;
@@ -731,21 +743,33 @@ const StudentPlanDetails = ({ userId, instituteId }: StudentPlanDetailsProps) =>
         [filteredPackageSessionId, filteredEnrollmentStatus]
     );
 
+    const latestLoadRef = useRef(0);
+
     const loadActivePlans = useCallback(async () => {
         if (!userId) return;
+        // Only the newest load may land: one started before a renewal must not put the old
+        // date back over the result, nor a slow one for the previous learner over this one.
+        const loadId = ++latestLoadRef.current;
         try {
             setIsLoadingActive(true);
-            const [response, lapsed] = await Promise.all([
-                getUserPlans(1, 50, ['ACTIVE'], userId, instituteId),
-                // Lapsed memberships stay visible so an admin can renew them by hand.
-                getUserPlans(1, 20, LAPSED_STATUSES, userId, instituteId).catch(() => null),
-            ]);
-            setActivePlans(response.content || []);
-            setLapsedPlans(lapsed?.content || []);
+            // /user-plan/all ignores the status filter and returns every status, so split the
+            // plans here. Otherwise a renewed plan stays listed under Lapsed.
+            const response = await getUserPlans(
+                1,
+                50,
+                ['ACTIVE', ...LAPSED_STATUSES],
+                userId,
+                instituteId
+            );
+            if (loadId !== latestLoadRef.current) return;
+            const plans = response.content || [];
+            setActivePlans(plans.filter((plan) => !LAPSED_STATUSES.includes(plan.status)));
+            // Lapsed memberships stay visible so an admin can renew them by hand.
+            setLapsedPlans(plans.filter((plan) => LAPSED_STATUSES.includes(plan.status)));
         } catch (error) {
             console.error('Error loading active plans:', error);
         } finally {
-            setIsLoadingActive(false);
+            if (loadId === latestLoadRef.current) setIsLoadingActive(false);
         }
     }, [userId, instituteId]);
 
@@ -753,24 +777,33 @@ const StudentPlanDetails = ({ userId, instituteId }: StudentPlanDetailsProps) =>
         loadActivePlans();
     }, [loadActivePlans]);
 
-    // A manual renewal reactivates every access row linked to the plan, but the course
-    // badge reads the students-list row loaded before it (selectedStudent.status), so it
-    // kept saying "Course Inactive" next to a plan that was now Active. Mirror the
-    // reactivation into the open learner and refetch the list so the row catches up too.
-    const handleRenewed = useCallback(
-        (renewedPlan: UserPlan | null) => {
+    // A manual renewal or an end date change reactivates every access row linked to the plan
+    // and moves its expiry, but the course badge reads the students-list row loaded before it
+    // (selectedStudent), so it kept saying "Course Inactive" next to a plan that was now
+    // Active. Mirror the change into the open learner and refetch what else shows it.
+    const handleMembershipUpdated = useCallback(
+        (updatedPlan: UserPlan | null, result: ManualRenewalResult) => {
             loadActivePlans();
             if (
-                renewedPlan &&
+                updatedPlan &&
                 selectedStudent &&
-                selectedStudent.status !== 'ACTIVE' &&
-                getFirstPolicy(renewedPlan)?.package_session_id ===
+                // The server leaves terminated access rows alone, so they do not move.
+                selectedStudent.status !== 'TERMINATED' &&
+                getFirstPolicy(updatedPlan)?.package_session_id ===
                     selectedStudent.package_session_id
             ) {
-                setSelectedStudent({ ...selectedStudent, status: 'ACTIVE' }, { openOverlay: false });
+                setSelectedStudent(
+                    {
+                        ...selectedStudent,
+                        status: 'ACTIVE',
+                        expiry_date: new Date(result.new_end_date).getTime(),
+                    },
+                    { openOverlay: false }
+                );
             }
-            queryClient.invalidateQueries({ queryKey: ['students'] });
-            queryClient.invalidateQueries({ queryKey: ['GET_LEARNER_PACKAGES'] });
+            QUERIES_SHOWING_MEMBERSHIP.forEach((key) =>
+                queryClient.invalidateQueries({ queryKey: [key] })
+            );
         },
         [loadActivePlans, selectedStudent, setSelectedStudent, queryClient]
     );
@@ -893,7 +926,7 @@ const StudentPlanDetails = ({ userId, instituteId }: StudentPlanDetailsProps) =>
                 userPlanId={planToRenew?.id ?? null}
                 instituteId={resolvedInstituteId}
                 planLabel={planToRenew ? getCourseLabel(planToRenew, t) : undefined}
-                onRenewed={() => handleRenewed(planToRenew)}
+                onRenewed={(result) => handleMembershipUpdated(planToRenew, result)}
             />
 
             <ChangeEndDateDialog
@@ -905,7 +938,7 @@ const StudentPlanDetails = ({ userId, instituteId }: StudentPlanDetailsProps) =>
                 instituteId={resolvedInstituteId}
                 currentEndDate={planForEndDate?.end_date ?? null}
                 planLabel={planForEndDate ? getCourseLabel(planForEndDate, t) : undefined}
-                onChanged={loadActivePlans}
+                onChanged={(result) => handleMembershipUpdated(planForEndDate, result)}
             />
 
             <PlanRemarksDialog
