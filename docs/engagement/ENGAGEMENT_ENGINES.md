@@ -19,6 +19,8 @@
 > **Updated 2026-10-31 — see §17.** The week of 2026-10-24 → 10-31 added CRM awareness, CRM actions, AI
 > calling inside the engine, send schedules, template reuse, meeting booking from replies, the daily
 > report and a reworked admin UI. Decisions **D14** and **D24** below are amended there.
+> **Updated 2026-11-05 — see §17.10b.** The first-touch AI call is now a setting, offers and updates
+> have end dates, replies no person wrote are ignored, and bounced addresses stop getting email.
 > Grounded in a verified 10-area recon, three competing architectures, three adversarial red-team
 > passes, and a 24-question founder interview (§0.1). Every class/table/endpoint named here was
 > read in source. Where the recon was wrong, this doc says so (Appendix).
@@ -677,6 +679,7 @@ and the risk boundary is coherent: **the user started the conversation.**
 | **Can do** | Answer + share links from the prompt. |
 | **Cannot do (yet)** | Book meetings, update CRM, register for batches → **emitted as tasks** (D24), with a handler registry so they become real actions later without touching the core. |
 | **Window** | `member.window_open_until`; outside it, template-only. |
+| **Not a person** | A greeting, away message, menu, one-time code or scam forward gets no answer, no task and no alert, and does not count as the person replying. §17.10b. |
 
 ```java
 public interface EngagementActionHandler {          // mirrors NodeHandlerRegistry
@@ -705,7 +708,7 @@ when to send it**; that description is what the agent matches a request against.
 | **Attachment fails** | The text has already gone, so the action stays `SENT`; the failure is written to `error_message` and `rationale` so the counsellor can send it by hand. |
 | **Not found** | The brain returns `ESCALATE` with `escalationType=missing_material` and `requestedMaterial`. An `ANSWER` that names ids that do not resolve is turned into the same thing. An OPEN task (priority 90, above other escalations) holds a drafted holding reply, and `EngagementMaterialAlertService` tells the lead's counsellor (the engine's creator if the lead has none) by **bell alert and email**. Each channel is best-effort and independent. |
 | **Link guard** | URLs of assets count as grounded, like links in the brief. The holding reply is never auto-sent: a person sends it. |
-| **Team alerts** | `EngagementTeamAlertService` tells people whenever the engine hands a reply to a person: any escalation, a missing asset, an auto-send that failed. Recipients: the team members picked on the engine (`engagement_engine.notify_user_ids`, V626, max 10, each checked to hold a non-student role at the institute via `AuthService.getInstituteRoles`) **plus** the lead's own counsellor, de-duplicated; the engine's creator only if there is neither. Channels: bell alert and email, sent independently and best-effort. |
+| **Team alerts** | `EngagementTeamAlertService` tells people whenever the engine hands a reply to a person: any escalation, a missing asset, an auto-send that failed. Recipients: the team members picked on the engine (`engagement_engine.notify_user_ids`, V626, max 10, each checked to hold a non-student role at the institute via `AuthService.getInstituteRoles`) **plus** the lead's own counsellor, de-duplicated; the engine's creator only if there is neither. Channels: bell alert and email, sent independently and best-effort. Since 2026-11-05 the alert reads "X is waiting for your reply" and carries the phone, or the email for someone who only has that. Engines without auto-reply alert too (§17.10b). |
 | **Limits** | https URLs only (Meta fetches them), 50 items per engine, media types `document|image|video|audio|link`. |
 
 ---
@@ -897,7 +900,7 @@ on approval, and can undo it (S9).
 
 ### 17.3 AI calling inside the engine (D14 amended)
 
-1. **First touch is an AI call (hard rule, 2026-10-30).** With the AI call channel on, a person's first
+1. **First touch is an AI call by default (hard rule 2026-10-30, a setting since 2026-11-05).** With the AI call channel on, a person's first
    touch is an AI call, decided in `EngagementDecisionService` (step 1e, before the wake gate and before
    any LLM call), not left to the model. `EngagementCrmActionService.proposeFirstTouchCall` proposes it as
    an inbox task, or runs it through `tryAutonomous`. If the call cannot be placed (no phone, wrong number,
@@ -906,6 +909,8 @@ on approval, and can undo it (S9).
    (`TOUCH_PREDICATE`, `961b1d2723`) shared with the upcoming-calls card: no-ops, dry runs, expired
    drafts and dismissed message drafts are not touches; reply drafts, internal CRM tasks and a dismissed
    AI call are. An unanswered reply skips the rule so the reply is handled first.
+   `channels.AI_CALL.firstTouchCall: false` turns the rule off (`firstTouchIsCall`, default on), and the
+   model then picks the first channel from the brief.
 2. **The prompt knows what AI_CALL means.** It is not a message channel. The model is told to choose
    `actionType SCHEDULE_AI_CALL` (also for a first touch when the brief says so), never `channel AI_CALL`
    with a draft; if it does anyway, the decision step converts it into the call action
@@ -1039,14 +1044,17 @@ on approval, and can undo it (S9).
 
 - **admin_core migrations:** V616 email templates; V617/V618 WhatsApp template sources, headers, versions,
   queue; V623 CRM wake stamps; V624 do-not-automate; V625 engagement assets; V626 notify contacts; V627
-  template reuse; V630 assets ensure; V631 action LLM cost; V632 WhatsApp rate card.
+  template reuse; V630 assets ensure; V631 action LLM cost; V632 WhatsApp rate card; V641 billing;
+  V645 updates and offers.
 - **New endpoints (admin_core, JWT):** `/engines/{id}/actions` (GET/PUT), `/engines/{id}/upcoming-calls`,
   `/engines/channel-readiness`, `/engines/email-senders`, `/brief/lead-agents`, `/brief/generate`, task
-  list filters. **Internal (HMAC):** notification_service `delivery-failures-since`, `report-signals`;
+  list filters, `/engines/{id}/updates` (GET, POST) and `/engines/{id}/updates/{updateId}/end` (POST).
+  **Internal (HMAC):** notification_service `delivery-failures-since`, `report-signals`, `blocked-emails`;
   admin_core `…/internal/…/call-analyzed`.
 - **Properties:** `engagement.autonomy.first-n` (5), `engagement.task.expire-hours` (72),
   `engagement.wake.enabled` / `bulk-cap` / `bulk-window-minutes` / `jitter-minutes` / `settle-ms`,
-  `engagement.ai-call.max-attempts-per-week` (3), `engagement.dispatch.batch` / `delay-ms`.
+  `engagement.ai-call.max-attempts-per-week` (3), `engagement.dispatch.batch` / `delay-ms`,
+  `engagement.updates.delay-ms` (5 minutes).
 
 ### 17.10a Billing (2026-11-03, V641)
 
@@ -1060,6 +1068,63 @@ on approval, and can undo it (S9).
 
 Rows from before V641 carry `billing_exempt` and are never charged later (autonomous sends keep their old reconciliation). Known gap: a refunded FAILED send that a person reopens and sends again is not charged a second time.
 
+### 17.10b Lead flow fixes, offers and bot replies (2026-11-04 → 11-05)
+
+**Updates and offers (V645, table `engagement_update`).** A dated message an admin posts under the brief,
+for what is true only for a while: a festival, an offer, a new batch.
+
+| Aspect | Decision |
+|---|---|
+| **Creating one** | Message up to 1,000 characters and a required end date; the start defaults to now. An optional WhatsApp template must already be approved for that engine. |
+| **Who gets it** | Only that engine's own members. When it starts, `EngagementUpdateJob` wakes them with `UPDATE_POSTED`, spread over two hours so the LLM decisions do not all land at once. |
+| **How it is used** | While live it is added to the brief as a fact (`briefWith`). The model reports the `updateId` it used, which is stored as `_updateId` on the action. One message per person per update: a second becomes a NO_OP. |
+| **WhatsApp** | Only through the update's own template. An update with no template goes by another channel. A template tied to an update is hidden from the model before it starts and after it ends. |
+| **After the end** | `closeEnded` cancels open drafts and scheduled sends. `EngagementDispatchJob` withdraws a due send before the autonomy check, so it does not land in the inbox as a draft nobody may send. `EngagementDispatcher` refuses a person pressing send. "End now" does the same at once. |
+| **Not a broadcast** | Each person still passes the normal decision and gates: contact limit, send time, consent. Reach is not guaranteed, and a festival message that must reach everyone on a date is an announcement, not an update. |
+
+**Replies no person wrote.** WhatsApp Business greetings, away messages, menus, one-time codes and scam
+forwards used to count as the lead replying: the engine answered them, woke the member, and then treated
+them as replied, which stopped auto-sends to them.
+
+| Layer | What it does |
+|---|---|
+| Patterns (`EngagementAutomatedReply`) | Deliberately narrow, because ignoring a real person is the expensive mistake. `EngagementReplyJob` drops matches before `promoteByPhones`, so a bot wakes nobody and opens no window. `LedgerDataPointProvider` hides them, so the wake, the inbox-only rule, the send-time rule and the prompt all see no reply. |
+| Reply brain | Can now answer `IGNORE`, only when no person wrote it; when unsure it must `ESCALATE`. Nothing is sent, nobody is told, and a `NO_OP` / `DONE` action keeps the rationale and the tokens. |
+| Email | The sender (`no-reply@`, `mailer-daemon@`) and the raw subject ("Automatic reply", "Out of office", "Undeliverable") decide. No task and no alert; members are marked handled so the sweep does not read it as someone waiting. The body is judged by its opening only, because our own mail can stay quoted further down. |
+| Consent | A message that asks to stop or says not interested is never automated. "Reply STOP to unsubscribe" inside a bot's message is an instruction, not someone asking to stop. |
+
+`everReplied` also reads `window_open_until`: the ledger shows only the latest reply and hides it when a
+bot wrote it, so a person who wrote earlier still counts through the window they opened.
+
+**Reply routing (`f50f1be868`).** An email reply goes on the engine that sent the email it answers, else
+the engine sending from that mailbox, else the most recently decided one. The answer leaves from the
+address the person wrote to, and `In-Reply-To` / `References` keep it in their thread.
+
+**Team alerts.**
+
+- Up to 10 contacts per engine (`c119d457a4`).
+- An email reply alerts the team (`d8f3dae554`).
+- A booked demo or clear interest on an AI call sends an email and a bell alert, and makes a CRM follow-up
+  due at once (`5a5e242b4c`). Scoped to leads in an engine using that agent, so bulk campaigns stay quiet.
+- On an engine without auto-reply, a callback request, a stop mention and a reply the sweep drafted for a
+  person alert the team too.
+
+**Who gets no message.**
+
+- A bounced address (`fbd701ac6d`): `EngagementEmailSuppression` reads notification_service's blocklist,
+  which stays the only source of truth, so unblocking an address there makes it usable again. A bounce
+  notice email also blocks its recipient when we mailed them in the last 7 days. A sweep cancels unsent
+  emails to addresses that bounced later.
+- A placeholder or site-template address (`71f0784d7a`, `bc32f1dcb1`): choosing EMAIL becomes a NO_OP with
+  the reason, and an email-only engine parks the person without an LLM call.
+- Our own unsubscribe footer in a flattened quoted thread no longer opts anyone out (`b23612ba29`).
+- A refusal on an AI call (not interested, wrong number, not relevant, do not call) exits that engine only
+  and cancels its pending actions, because one institute can sell several products (`d1a712f7db`).
+
+**Fewer duplicates.** A person with a draft or call pending sleeps without an LLM call, so they cannot
+hold two approvals of one type; someone who wrote in still gets an answer (`7246edc559`). AI call tasks
+waiting from before an engine graduated now run a few per dispatch run (`8437b76e15`).
+
 ### 17.10 Open items
 
 1. A call that never connects **and never reports anything** (a dialler failure with no queue or call-log
@@ -1070,6 +1135,16 @@ Rows from before V641 carry `billing_exempt` and are never charged later (autono
 4. Drafts promoted on graduation are not re-checked for staleness beyond the 72-hour expiry.
 5. The inbox search is page-local; making it server-side needs a backend search over drafts and people.
 6. New UI strings added this week exist in English only unless a commit says en/hi/fr/ar.
+7. A bot only the reply brain caught, or an automated email, still counts as replied, so that person's
+   drafts wait in the inbox. Nothing wrong is sent; auto-sends to them just stop.
+8. Members a bot reached before 2026-11-05 keep their open window, so they stay inbox-only until their
+   data is corrected.
+9. Scam links on ordinary domains are left to the reply brain. Engines without auto-reply have no brain
+   on this path, so such a message can reach the team as an alert.
+10. The real model's `IGNORE` verdict has only been tested with a stubbed model locally; watch the
+    `Automated message` NO_OP rows after deploy.
+11. Call outcomes are read by matching patterns on the normalized label (`EngagementCallOutcomeService`).
+    An agent label none of them matches (`Send_Info`, `Referred`, `DNC`) gets no alert or exit.
 
 ---
 
