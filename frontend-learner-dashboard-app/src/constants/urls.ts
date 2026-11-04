@@ -85,6 +85,8 @@ export const PEYMENT_LOG_STATUS_URL = `${BASE_URL}/admin-core-service/open/v1/pa
 // POST ?paymentLogId=<id> → { released: n }. No login: puts back the stock held for an unpaid
 // order when the learner closes the gateway window (holds also expire on their own after 30 min).
 export const STOCK_HOLD_RELEASE_URL = `${BASE_URL}/admin-core-service/open/v1/stock-hold/release`;
+// POST [packageSessionId, ...] → { packageSessionId: copiesLeft }; a session with no stock limit is absent. No login.
+export const STOCK_AVAILABILITY_URL = `${BASE_URL}/admin-core-service/open/v1/stock-hold/availability`;
 export const GET_PAYMENT_GATEWAY_DETAILS_URL = `${BASE_URL}/admin-core-service/open/v1/institute/payment-setting/payment-gateway-details`;
 export const ENROLLMENT_INVITE_URL = `${BASE_URL}/admin-core-service/open/learner/enroll-invite`;
 // learner/v1/enroll + Cashfree status – localhost:8072 in dev, BASE_URL in production (override via VITE_ENROLL_API_BASE_URL)

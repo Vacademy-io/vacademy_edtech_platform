@@ -26,6 +26,7 @@ import {
   isPendingOrderStale,
   pollPaymentOutcome,
 } from "../../-utils/payment-confirmation";
+import { checkCartStock, copiesLeftForLine, StockShortages } from "../../-utils/cart-stock-check";
 
 /** Orders whose payment check is under way, so each is checked (and redirected from) once. */
 const orderChecksInFlight = new Set<string>();
@@ -59,7 +60,18 @@ interface CartItemCardProps {
   onQuantityChange: (enrollInviteId: string, quantity: number) => void;
   onRemove: (enrollInviteId: string) => void;
   quantityMin: number;
+  /** Copies left, when the cart wants more of this line than that. */
+  stockLeft?: number;
 }
+
+const StockWarning: React.FC<{ left: number }> = ({ left }) => {
+  const { t } = useTranslation("coursePlayerB");
+  return (
+    <p className="mt-1 text-xs font-medium text-red-600" role="alert">
+      {left > 0 ? t("cart.stockOnlyLeft", { left }) : t("cart.stockSoldOut")}
+    </p>
+  );
+};
 
 const CartItemCard: React.FC<CartItemCardProps> = ({
   item,
@@ -73,6 +85,7 @@ const CartItemCard: React.FC<CartItemCardProps> = ({
   onQuantityChange,
   onRemove,
   quantityMin,
+  stockLeft,
 }) => {
   const { t } = useTranslation("coursePlayerB");
   const [currentImageUrl, setCurrentImageUrl] = useState<string | null>(imageUrl || null);
@@ -151,6 +164,8 @@ const CartItemCard: React.FC<CartItemCardProps> = ({
             </div>
           )}
         </div>
+
+        {stockLeft !== undefined && <StockWarning left={stockLeft} />}
 
         {/* Controls Row */}
         <div className="flex items-center justify-between mt-2 pt-2 border-t border-gray-100 sm:border-t-0 sm:pt-0">
@@ -383,6 +398,8 @@ export const CartComponent: React.FC<CartComponentProps> = ({
   const [membershipPlans, setMembershipPlans] = useState<MembershipPlan[]>([]);
   const [isLoadingPlans, setIsLoadingPlans] = useState(false);
   const [isCheckoutFormOpen, setIsCheckoutFormOpen] = useState(false);
+  const [isCheckingStock, setIsCheckingStock] = useState(false);
+  const [stockShortages, setStockShortages] = useState<StockShortages>({});
   const [paymentMessage, setPaymentMessage] = useState<{ type: 'success' | 'error' | 'info'; text: string } | null>(null);
 
 
@@ -644,6 +661,31 @@ export const CartComponent: React.FC<CartComponentProps> = ({
     window.dispatchEvent(new CustomEvent('cartUpdated'));
   };
 
+  // Tell the learner about a stock problem here, on the cart, rather than after they have filled
+  // in the checkout form and verified their phone. The server still decides at payment, because
+  // someone else can buy the last copy after this check.
+  const openCheckoutIfInStock = async () => {
+    if (isPreviewMode) {
+      setIsCheckoutFormOpen(true);
+      return;
+    }
+    setIsCheckingStock(true);
+    const shortages = await checkCartStock(items);
+    setIsCheckingStock(false);
+    setStockShortages(shortages);
+    const firstShort = items.find((item) => copiesLeftForLine(item, items, shortages) !== undefined);
+    if (firstShort) {
+      const left = copiesLeftForLine(firstShort, items, shortages) as number;
+      toast.error(
+        left > 0
+          ? t("cart.stockOnlyLeftOf", { left, title: firstShort.title })
+          : t("cart.stockSoldOutOf", { title: firstShort.title }),
+      );
+      return;
+    }
+    setIsCheckoutFormOpen(true);
+  };
+
   const padding = styles.padding || "10px";
   const roundedEdges = styles.roundedEdges ? "rounded-catalogue-md" : "";
   const backgroundColor = styles.backgroundColor || "white";
@@ -757,6 +799,9 @@ export const CartComponent: React.FC<CartComponentProps> = ({
                         {item.title}
                       </h3>
                     )}
+                    {copiesLeftForLine(item, items, stockShortages) !== undefined && (
+                      <StockWarning left={copiesLeftForLine(item, items, stockShortages) as number} />
+                    )}
                   </div>
                 </div>
               ))}
@@ -825,8 +870,9 @@ export const CartComponent: React.FC<CartComponentProps> = ({
                   }
 
                   console.log("[CartComponent] Proceeding to checkout (Rent) with items:", items, "Plan:", membershipPlan);
-                  setIsCheckoutFormOpen(true);
+                  void openCheckoutIfInStock();
                 }}
+                disabled={isCheckingStock}
                 className="w-full bg-primary-400 hover:bg-primary-500 active:bg-primary-500 text-white font-semibold text-sm sm:text-base py-2.5 sm:py-3 rounded-catalogue-md shadow-md transition-all duration-200 active:scale-[0.98]"
                 size="lg"
               >
@@ -871,6 +917,7 @@ export const CartComponent: React.FC<CartComponentProps> = ({
           onQuantityChange={handleQuantityChange}
           onRemove={handleRemove}
           quantityMin={quantityMin}
+          stockLeft={copiesLeftForLine(item, items, stockShortages)}
         />
       ))}
 
@@ -897,8 +944,9 @@ export const CartComponent: React.FC<CartComponentProps> = ({
           <Button
             onClick={() => {
               console.log("[CartComponent] Proceeding to checkout (Buy) with items:", items, "charges:", resolvedAdditionalCharges);
-              setIsCheckoutFormOpen(true);
+              void openCheckoutIfInStock();
             }}
+            disabled={isCheckingStock}
             className="w-full bg-primary-400 hover:bg-primary-500 active:bg-primary-500 text-white font-semibold text-sm sm:text-base py-2.5 sm:py-3 rounded-catalogue-md shadow-md transition-all duration-200 active:scale-[0.98]"
             size="lg"
           >
