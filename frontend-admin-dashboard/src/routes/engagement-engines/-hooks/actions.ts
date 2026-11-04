@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
@@ -11,6 +12,7 @@ import {
     setLeadAutomation,
     undoCrmTask,
 } from '../-services/actions';
+import { approveInTurn } from '../inbox/-utils/bulk-approve';
 import type { CrmActionSetting } from '../-types/actions';
 
 /** A VacademyException body carries its text in `ex`. */
@@ -46,6 +48,35 @@ export const useCrmTaskAction = () => {
             toast.error(errMsg(e, vars.verb === 'undo' ? t('inbox.undoFailed') : t('inbox.approveFailed')));
         },
     });
+};
+
+/** Approve the selected CRM action tasks, one after another, with a single report at the end. */
+export const useBulkApproveCrmTasks = () => {
+    const { t } = useTranslation('engagementEnginesInboxIndex');
+    const qc = useQueryClient();
+    const instituteId = getInstituteId() || '';
+    const [done, setDone] = useState(0);
+    const mutation = useMutation({
+        mutationFn: (ids: string[]) => {
+            setDone(0);
+            return approveInTurn(ids, (id) => approveCrmTask(id, instituteId), setDone);
+        },
+        onSuccess: ({ approved, failures }) => {
+            qc.invalidateQueries({ queryKey: ['engagementTasks'] });
+            qc.invalidateQueries({ queryKey: ['engagementEngineActions'] });
+            qc.invalidateQueries({ queryKey: ['engagementUpcomingCalls'] });
+            if (approved > 0) toast.success(t('bulk.approvedToast', { count: approved }));
+            if (failures.length > 0) {
+                toast.error(
+                    t('bulk.failedToast', {
+                        count: failures.length,
+                        reason: errMsg(failures[0], t('bulk.unknownReason')),
+                    })
+                );
+            }
+        },
+    });
+    return { ...mutation, done };
 };
 
 export const useEngineActions = (engineId: string) => {
