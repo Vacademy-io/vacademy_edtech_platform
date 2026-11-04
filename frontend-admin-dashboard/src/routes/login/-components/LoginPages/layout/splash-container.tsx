@@ -1,3 +1,4 @@
+import { loginLogo } from '@/lib/evalezy-mode';
 import { motion } from 'framer-motion';
 import { LanguageDropdown } from '../../../../../components/common/localization/language-dropdown';
 import { SplashScreenProps } from '@/routes/login/-types/loginTypes';
@@ -9,7 +10,8 @@ import { useTranslation } from 'react-i18next';
 
 export const SplashScreen = ({ children, isAnimationEnabled }: SplashScreenProps) => {
     const { t } = useTranslation('loginSplashContainer');
-    const { instituteLogo, brandingDisplay } = useInstituteLogoStore();
+    const { instituteLogo: storedLogo, brandingDisplay } = useInstituteLogoStore();
+    const instituteLogo = loginLogo(storedLogo);
     const [animationDone, setAnimationDone] = useState(!isAnimationEnabled);
     const animationTimeout = useRef<NodeJS.Timeout | null>(null);
 

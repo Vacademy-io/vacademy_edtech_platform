@@ -1,3 +1,4 @@
+import { loginLogo } from '@/lib/evalezy-mode';
 import { FormContainerProps } from '@/routes/login/-types/loginTypes';
 import LoginImage from '@/assets/svgs/login-image.svg';
 import useInstituteLogoStore from '../../../../../components/common/layout-container/sidebar/institutelogo-global-zustand';
@@ -5,7 +6,8 @@ import { useTranslation } from 'react-i18next';
 
 export function FormContainer({ children }: FormContainerProps) {
     const { t } = useTranslation('loginFormContainer');
-    const { instituteLogo, brandingDisplay } = useInstituteLogoStore();
+    const { instituteLogo: storedLogo, brandingDisplay } = useInstituteLogoStore();
+    const instituteLogo = loginLogo(storedLogo);
 
     const hasCustomDims =
         brandingDisplay.logoWidthPx != null || brandingDisplay.logoHeightPx != null;

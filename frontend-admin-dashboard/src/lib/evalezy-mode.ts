@@ -20,6 +20,10 @@ export const isEvalezyHost = (hostname?: string): boolean => {
 
 export const isEvalezyMode = (): boolean => shouldForceEvalezyShell() || isEvalezyHost();
 
+/** No institute owns the Evalezy login, so it always wears the Evalezy logo. */
+export const loginLogo = (instituteLogo: string): string =>
+    isEvalezyMode() ? '/evalezy-logo.svg' : instituteLogo;
+
 /**
  * On a screen of the Evalezy shell, including one opened from the portal's sidebar.
  * For shared components whose phone-first behaviour must not reach the portal's own screens.

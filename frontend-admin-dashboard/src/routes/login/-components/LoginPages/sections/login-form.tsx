@@ -1,4 +1,4 @@
-import { isEvalezyMode } from '@/lib/evalezy-mode';
+import { isEvalezyMode, loginLogo } from '@/lib/evalezy-mode';
 import { fetchSignupConfig, startGoogleSignup } from '@/routes/signup/-services/self-signup';
 import { getActiveRoleDisplaySettingsKey } from '@/lib/auth/instituteUtils';
 import { getInstituteId } from '@/constants/helper';
@@ -83,7 +83,7 @@ export function LoginForm() {
     const queryClient = useQueryClient();
     const { hasSeenAnimation, setHasSeenAnimation } = useAnimationStore();
     const navigate = useNavigate();
-    const { instituteLogo } = useInstituteLogoStore();
+    const instituteLogo = loginLogo(useInstituteLogoStore().instituteLogo);
     // Branding must be STATE, not a bare localStorage read: logout wipes
     // localStorage (clearWebStorage) and the router then redirects to /login
     // CLIENT-SIDE, so index.tsx's bootstrap never re-runs and this read returns
