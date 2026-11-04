@@ -16,6 +16,7 @@ import vacademy.io.admin_core_service.features.invoice.repository.InvoicePayment
 import vacademy.io.admin_core_service.features.invoice.service.InvoiceService;
 import vacademy.io.admin_core_service.features.user_account.service.UserAccountLedgerService;
 import vacademy.io.admin_core_service.features.user_account.repository.UserAccountLedgerRepository;
+import vacademy.io.admin_core_service.features.user_subscription.dto.PaymentRowsDTO;
 import vacademy.io.admin_core_service.features.user_subscription.dto.PaymentVoidResultDTO;
 import vacademy.io.admin_core_service.features.user_subscription.entity.PaymentLog;
 import vacademy.io.admin_core_service.features.user_subscription.entity.UserPlan;
@@ -71,6 +72,13 @@ public class PaymentVoidService {
     private final FacultySubjectPackageSessionMappingRepository facultyMappingRepository;
     private final UserAccountLedgerRepository userAccountLedgerRepository;
 
+    /**
+     * Voids a payment. A payment stored per course (an admission package payment, a multi-course
+     * checkout: payment_log.payment_group_id) is one payment with one receipt, so voiding any of its
+     * rows voids every paid row of it, in this one transaction: voiding one course's share alone
+     * would void the shared receipt while the other shares stayed paid against it. The result adds
+     * up what was undone across the rows.
+     */
     @Transactional
     public PaymentVoidResultDTO voidPayment(String paymentLogId, String instituteId,
                                             String reason, String voidedBy) {
@@ -82,6 +90,124 @@ public class PaymentVoidService {
         PaymentLog paymentLog = paymentLogRepository.findById(paymentLogId)
                 .orElseThrow(() -> new VacademyException("Payment not found: " + paymentLogId));
 
+        List<PaymentLog> rows = rowsToVoid(paymentLog);
+        // Check every row before touching any, so a refusal leaves the whole payment as it was.
+        for (PaymentLog row : rows) {
+            assertVoidable(row);
+            assertBelongsToInstitute(row, instituteId);
+        }
+        PaymentVoidResultDTO total = null;
+        for (PaymentLog row : rows) {
+            PaymentVoidResultDTO one = voidOne(row, instituteId, reason, voidedBy);
+            if (total == null) {
+                total = one;
+                total.setPaymentLogId(paymentLogId);
+                continue;
+            }
+            total.setAmount(sum(total.getAmount(), one.getAmount()));
+            total.setInstallmentsReopened(total.getInstallmentsReopened() + one.getInstallmentsReopened());
+            total.setInvoicesUpdated(total.getInvoicesUpdated() + one.getInvoicesUpdated());
+            total.setCreditReversed(nz(total.getCreditReversed()).add(nz(one.getCreditReversed())));
+        }
+        if (total != null) {
+            total.setPaymentsVoided(rows.size());
+        }
+        return total;
+    }
+
+    /**
+     * Voids this one payment_log row and no other, whatever payment it is part of. For a caller
+     * that decides itself which rows go: removing one course's payment history must not touch the
+     * share of a course the learner keeps.
+     */
+    @Transactional
+    public PaymentVoidResultDTO voidSingleRow(String paymentLogId, String instituteId,
+                                              String reason, String voidedBy) {
+        if (!StringUtils.hasText(instituteId)) {
+            throw new VacademyException("instituteId is required");
+        }
+        assertNotSubOrgAdmin(voidedBy);
+        PaymentLog paymentLog = paymentLogRepository.findById(paymentLogId)
+                .orElseThrow(() -> new VacademyException("Payment not found: " + paymentLogId));
+        assertVoidable(paymentLog);
+        assertBelongsToInstitute(paymentLog, instituteId);
+        PaymentVoidResultDTO result = voidOne(paymentLog, instituteId, reason, voidedBy);
+        result.setPaymentsVoided(1);
+        return result;
+    }
+
+    /**
+     * {@code paymentLog} and, when it is one course's row of a payment stored per course, the
+     * payment's other course rows that are still PAID. Rows already voided (or never paid) are left
+     * as they are. The requested row comes first, so it is the one checked and reported on first.
+     *
+     * <p>A checkout's planless parent row is not one of them: it posted no ledger credit and paid no
+     * installment, so there is nothing of it to undo, and with no plan its institute cannot be
+     * resolved. It stays as it is and reports skip it because its voided children hold its money
+     * (PaymentGroupSql).
+     */
+    public List<PaymentLog> rowsToVoid(PaymentLog paymentLog) {
+        List<PaymentLog> rows = new java.util.ArrayList<>();
+        rows.add(paymentLog);
+        if (StringUtils.hasText(paymentLog.getPaymentGroupId())) {
+            for (PaymentLog sibling : paymentLogRepository.findByPaymentGroupIdOrderByCreatedAtAsc(
+                    paymentLog.getPaymentGroupId())) {
+                if (sibling.getId().equals(paymentLog.getId())) continue;
+                if (sibling.getUserPlan() == null) continue;
+                if (!"PAID".equalsIgnoreCase(sibling.getPaymentStatus())) continue;
+                rows.add(sibling);
+            }
+        }
+        return rows;
+    }
+
+    /**
+     * What a void or a delete of this payment would take with it, so the confirmation can say so
+     * before the admin agrees. Asked of the server because the screens cannot always know: a learner
+     * ledger line or a filtered Manage Payments row shows only one course's share.
+     */
+    public PaymentRowsDTO describeRows(String paymentLogId, String instituteId) {
+        PaymentLog paymentLog = paymentLogRepository.findById(paymentLogId)
+                .orElseThrow(() -> new VacademyException("Payment not found: " + paymentLogId));
+        assertBelongsToInstitute(paymentLog, instituteId);
+        List<PaymentLog> voiding = rowsToVoid(paymentLog);
+        List<PaymentLog> deleting = new java.util.ArrayList<>();
+        deleting.add(paymentLog);
+        if (StringUtils.hasText(paymentLog.getPaymentGroupId())) {
+            for (PaymentLog sibling : paymentLogRepository.findByPaymentGroupIdOrderByCreatedAtAsc(
+                    paymentLog.getPaymentGroupId())) {
+                if (isDeletedWith(paymentLog, sibling)) deleting.add(sibling);
+            }
+        }
+        return PaymentRowsDTO.builder()
+                .voidRows(voiding.size())
+                .voidAmount(total(voiding))
+                .deleteRows(deleting.size())
+                .deleteAmount(total(deleting))
+                .currency(paymentLog.getCurrency())
+                .build();
+    }
+
+    /**
+     * Whether {@code sibling} goes when {@code paymentLog}'s payment is deleted: its other course
+     * rows that were paid or voided. Pending and failed attempts never counted as this payment,
+     * and a checkout's planless parent stays (see {@link #rowsToVoid}).
+     */
+    public static boolean isDeletedWith(PaymentLog paymentLog, PaymentLog sibling) {
+        if (sibling.getId().equals(paymentLog.getId()) || sibling.getUserPlan() == null) return false;
+        String status = sibling.getPaymentStatus() != null ? sibling.getPaymentStatus().toUpperCase() : "";
+        return "PAID".equals(status) || VOIDED.equals(status);
+    }
+
+    private static Double total(List<PaymentLog> rows) {
+        Double sum = null;
+        for (PaymentLog row : rows) {
+            sum = sum(sum, row.getPaymentAmount());
+        }
+        return sum;
+    }
+
+    private void assertVoidable(PaymentLog paymentLog) {
         String vendor = paymentLog.getVendor() != null ? paymentLog.getVendor().trim().toUpperCase() : "";
         if (!VOIDABLE_VENDORS.contains(vendor)) {
             throw new VacademyException("Only offline or manually recorded payments can be voided. "
@@ -94,6 +220,20 @@ public class PaymentVoidService {
             throw new VacademyException("Only a paid payment can be voided (status: "
                     + paymentLog.getPaymentStatus() + ")");
         }
+    }
+
+    private static Double sum(Double a, Double b) {
+        if (a == null) return b;
+        if (b == null) return a;
+        return a + b;
+    }
+
+    /** Voids one payment_log row: everything {@link #voidPayment} describes, for that row alone. */
+    private PaymentVoidResultDTO voidOne(PaymentLog paymentLog, String instituteId,
+                                         String reason, String voidedBy) {
+        String paymentLogId = paymentLog.getId();
+
+        assertVoidable(paymentLog);
 
         List<StudentFeeAllocationLedger> allocations = allocationRepository.findByPaymentLogId(paymentLogId);
         assertBelongsToInstitute(paymentLog, instituteId);

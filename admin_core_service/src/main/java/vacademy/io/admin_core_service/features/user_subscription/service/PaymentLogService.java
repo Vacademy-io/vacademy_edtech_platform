@@ -1745,7 +1745,24 @@ public class PaymentLogService {
      */
     public PaymentLogSummaryResponseDTO getPaymentLogSummary(PaymentLogFilterRequestDTO filterDTO) {
         ResolvedPaymentFilters f = resolvePaymentFilters(filterDTO);
-        List<PaymentStatusTotalProjection> rows = paymentLogRepository.aggregateCombinedPaymentLogs(
+        // Grouped: the per-course rows of one payment count once (same sums), matching the grouped list.
+        List<PaymentStatusTotalProjection> rows = Boolean.TRUE.equals(filterDTO.getGroupPayments())
+                ? paymentLogRepository.aggregateCombinedPaymentGroups(
+                f.instituteId(), f.startDate(), f.endDate(),
+                f.paymentStatusesBound(), f.noPaymentStatusFilter(),
+                f.userPlanStatusesBound(), f.noUserPlanStatusFilter(),
+                f.sourcesBound(), f.noSourceFilter(),
+                f.enrollInviteIdsBound(), f.noEnrollInviteFilter(),
+                f.packageSessionIdsBound(), f.noPackageSessionFilter(),
+                f.userId(), f.includeInvoiceLogs(), f.includeInvoiceLogs(),
+                f.noPaymentTypeFilter(), f.typeSubOrgAdmin(), f.typeSubOrgLearner(),
+                f.typeLiveClass(), f.typeCourse(), f.typeCpo(),
+                f.typeEnrollInvite(), f.typeUserInvoice(),
+                f.noSearchFilter(), f.noSearchUserIds(),
+                f.searchUserIdsBound(), f.searchNumeric(), f.searchString(), f.searchPhoneDigits(),
+                f.paymentPlanNamesBound(), f.noPaymentPlanFilter(),
+                f.paymentModesBound(), f.noPaymentModeFilter(), abandonedAfterHours)
+                : paymentLogRepository.aggregateCombinedPaymentLogs(
                 f.instituteId(), f.startDate(), f.endDate(),
                 f.paymentStatusesBound(), f.noPaymentStatusFilter(),
                 f.userPlanStatusesBound(), f.noUserPlanStatusFilter(),
@@ -1824,6 +1841,10 @@ public class PaymentLogService {
         // Use unsorted pageable — ORDER BY is hardcoded in the native query (created_at DESC)
         Pageable pageable = PageRequest.of(pageNo, pageSize);
 
+        if (Boolean.TRUE.equals(filterDTO.getGroupPayments())) {
+            return getPaymentGroupsForInstitute(filterDTO, f, pageable);
+        }
+
         Page<CombinedPaymentRowProjection> idsPage = paymentLogRepository.findCombinedPaymentLogIdsPaginated(
                 f.instituteId(), f.startDate(), f.endDate(),
                 f.paymentStatusesBound(), f.noPaymentStatusFilter(),
@@ -1886,6 +1907,145 @@ public class PaymentLogService {
                 .collect(Collectors.toList());
 
         return new PageImpl<>(content, pageable, idsPage.getTotalElements());
+    }
+
+    /**
+     * The grouped listing: one row per payment. A payment stored per course (admission package,
+     * multi-course checkout) arrives as its earliest row plus the ids of all its rows that matched the
+     * filters; each row is loaded and mapped exactly as in the ungrouped listing, then the payment's
+     * row carries them in {@code groupLines} and their summed amount as its own payment_amount, so
+     * the amount shown is the money the learner paid and still adds up to the Collected card.
+     */
+    private Page<PaymentLogWithUserPlanDTO> getPaymentGroupsForInstitute(PaymentLogFilterRequestDTO filterDTO,
+            ResolvedPaymentFilters f, Pageable pageable) {
+        Page<vacademy.io.admin_core_service.features.user_subscription.dto.CombinedPaymentGroupRowProjection> page =
+                paymentLogRepository.findCombinedPaymentGroupsPaginated(
+                f.instituteId(), f.startDate(), f.endDate(),
+                f.paymentStatusesBound(), f.noPaymentStatusFilter(),
+                f.userPlanStatusesBound(), f.noUserPlanStatusFilter(),
+                f.sourcesBound(), f.noSourceFilter(),
+                f.enrollInviteIdsBound(), f.noEnrollInviteFilter(),
+                f.packageSessionIdsBound(), f.noPackageSessionFilter(),
+                f.userId(), f.includeInvoiceLogs(), f.includeInvoiceLogs(),
+                f.noPaymentTypeFilter(), f.typeSubOrgAdmin(), f.typeSubOrgLearner(),
+                f.typeLiveClass(), f.typeCourse(), f.typeCpo(),
+                f.typeEnrollInvite(), f.typeUserInvoice(),
+                f.noSearchFilter(), f.noSearchUserIds(),
+                f.searchUserIdsBound(), f.searchNumeric(), f.searchString(), f.searchPhoneDigits(),
+                f.paymentPlanNamesBound(), f.noPaymentPlanFilter(),
+                f.paymentModesBound(), f.noPaymentModeFilter(), abandonedAfterHours,
+                f.noBucketFilter(), f.bucketPaid(), f.bucketPending(),
+                f.bucketAbandoned(), f.bucketFailed(),
+                pageable);
+
+        List<vacademy.io.admin_core_service.features.user_subscription.dto.CombinedPaymentGroupRowProjection> rows =
+                page.getContent();
+        // Every payment_log row of the page's payments; an invoice row is only ever itself.
+        Map<String, List<String>> membersByRow = new LinkedHashMap<>();
+        Set<String> paymentLogIds = new LinkedHashSet<>();
+        List<String> unpaidInvoiceIds = new ArrayList<>();
+        for (var r : rows) {
+            if (ROW_TYPE_INVOICE.equals(r.getRowType())) {
+                unpaidInvoiceIds.add(r.getRowId());
+                continue;
+            }
+            List<String> members = new ArrayList<>();
+            if (StringUtils.hasText(r.getMemberIds())) {
+                for (String id : r.getMemberIds().split(",")) {
+                    if (StringUtils.hasText(id)) members.add(id.trim());
+                }
+            }
+            if (!members.contains(r.getRowId())) members.add(0, r.getRowId());
+            membersByRow.put(r.getRowId(), members);
+            paymentLogIds.addAll(members);
+        }
+
+        List<PaymentLog> paymentLogs = paymentLogIds.isEmpty()
+                ? Collections.emptyList()
+                : paymentLogRepository.findPaymentLogsWithRelationshipsByIds(new ArrayList<>(paymentLogIds));
+        List<Invoice> unpaidInvoices = unpaidInvoiceIds.isEmpty()
+                ? Collections.emptyList()
+                : invoiceRepository.findAllById(unpaidInvoiceIds);
+
+        Set<String> allUserIds = new HashSet<>();
+        paymentLogs.forEach(pl -> {
+            if (pl.getUserId() != null) allUserIds.add(pl.getUserId());
+        });
+        unpaidInvoices.forEach(inv -> {
+            if (inv.getUserId() != null) allUserIds.add(inv.getUserId());
+        });
+        Map<String, UserDTO> userMap = fetchUsersByIds(allUserIds);
+        Map<String, Institute> instituteMap = fetchInstitutes(paymentLogs);
+
+        Map<String, PaymentLogWithUserPlanDTO> byLogId = new HashMap<>();
+        paymentLogs.forEach(pl -> byLogId.put(pl.getId(), mapEntityToDTO(pl, userMap, instituteMap)));
+        Map<String, PaymentLogWithUserPlanDTO> byInvoiceId = new HashMap<>();
+        unpaidInvoices.forEach(inv -> byInvoiceId.put(inv.getId(), mapUnpaidInvoiceToDTO(inv, userMap)));
+        if (Boolean.TRUE.equals(filterDTO.getIncludePlanDates())) {
+            List<PaymentLogWithUserPlanDTO> all = new ArrayList<>(byLogId.values());
+            all.addAll(byInvoiceId.values());
+            attachPlanDates(all);
+        }
+
+        List<PaymentLogWithUserPlanDTO> content = new ArrayList<>();
+        for (var r : rows) {
+            if (ROW_TYPE_INVOICE.equals(r.getRowType())) {
+                PaymentLogWithUserPlanDTO dto = byInvoiceId.get(r.getRowId());
+                if (dto != null) content.add(dto);
+                continue;
+            }
+            List<PaymentLogWithUserPlanDTO> lines = membersByRow.getOrDefault(r.getRowId(), List.of()).stream()
+                    .map(byLogId::get)
+                    .filter(Objects::nonNull)
+                    .collect(Collectors.toList());
+            PaymentLogWithUserPlanDTO head = byLogId.get(r.getRowId());
+            if (head == null) {
+                if (lines.isEmpty()) continue;
+                head = lines.get(0);
+            }
+            content.add(toPaymentRow(head, lines));
+        }
+        return new PageImpl<>(content, pageable, page.getTotalElements());
+    }
+
+    /**
+     * The row shown for one payment: {@code head} (its earliest row) standing for the whole payment.
+     * With more than one line its payment_amount becomes the lines' total; the lines keep their own.
+     * A copy is made so a line never carries itself, and the head's own line keeps its own amount.
+     */
+    static PaymentLogWithUserPlanDTO toPaymentRow(PaymentLogWithUserPlanDTO head,
+            List<PaymentLogWithUserPlanDTO> lines) {
+        PaymentLogWithUserPlanDTO row = PaymentLogWithUserPlanDTO.builder()
+                .paymentLog(head.getPaymentLog())
+                .userPlan(head.getUserPlan())
+                .currentPaymentStatus(head.getCurrentPaymentStatus())
+                .user(head.getUser())
+                .invoice(head.getInvoice())
+                .enrolledDate(head.getEnrolledDate())
+                .nextDueOn(head.getNextDueOn())
+                .groupLines(lines.isEmpty() ? List.of(head) : lines)
+                .build();
+        if (lines.size() > 1 && head.getPaymentLog() != null) {
+            PaymentLogDTO total = copyOf(head.getPaymentLog());
+            boolean anyAmount = false;
+            double sum = 0d;
+            for (PaymentLogWithUserPlanDTO line : lines) {
+                Double amount = line.getPaymentLog() != null ? line.getPaymentLog().getPaymentAmount() : null;
+                if (amount != null) {
+                    sum += amount;
+                    anyAmount = true;
+                }
+            }
+            total.setPaymentAmount(anyAmount ? Math.round(sum * 100d) / 100d : null);
+            row.setPaymentLog(total);
+        }
+        return row;
+    }
+
+    private static PaymentLogDTO copyOf(PaymentLogDTO src) {
+        PaymentLogDTO c = new PaymentLogDTO();
+        org.springframework.beans.BeanUtils.copyProperties(src, c);
+        return c;
     }
 
     /**
@@ -2219,12 +2379,29 @@ public class PaymentLogService {
                 .orElseThrow(() -> new VacademyException(
                         "Payment log not found with ID: " + dto.getPaymentLogId()));
 
+        String previousTrackingId = paymentLog.getTrackingId();
+
         // Set tracking fields (nullable — tracking info may not be available yet)
         paymentLog.setTrackingId(StringUtils.hasText(dto.getTrackingId()) ? dto.getTrackingId().trim() : null);
         paymentLog.setTrackingSource(StringUtils.hasText(dto.getTrackingSource()) ? dto.getTrackingSource().trim() : null);
         paymentLog.setOrderStatus(validatedStatus.name());
 
         paymentLogRepository.save(paymentLog);
+
+        // One order stored per course (V642) ships as one: its other rows follow, unless one was
+        // given a tracking number of its own (a parcel sent separately), which is kept.
+        if (StringUtils.hasText(paymentLog.getPaymentGroupId())) {
+            for (PaymentLog sibling : paymentLogRepository.findByPaymentGroupIdOrderByCreatedAtAsc(
+                    paymentLog.getPaymentGroupId())) {
+                if (sibling.getId().equals(paymentLog.getId())) continue;
+                String own = sibling.getTrackingId();
+                if (StringUtils.hasText(own) && !own.equals(previousTrackingId)) continue;
+                sibling.setTrackingId(paymentLog.getTrackingId());
+                sibling.setTrackingSource(paymentLog.getTrackingSource());
+                sibling.setOrderStatus(paymentLog.getOrderStatus());
+                paymentLogRepository.save(sibling);
+            }
+        }
 
         log.info("Updated tracking info for payment log ID={}: trackingId={}, trackingSource={}, orderStatus={}",
                 dto.getPaymentLogId(), dto.getTrackingId(), dto.getTrackingSource(), validatedStatus.name());
@@ -2296,6 +2473,45 @@ public class PaymentLogService {
         }
     }
 
+    /**
+     * Marks {@code logIds} as the rows of one payment (payment_log.payment_group_id, V642), so
+     * screens show and count them once. Fewer than two distinct rows is not a group and is left
+     * alone. A row that already belongs to a different group keeps it: one row is never in two
+     * payments. Runs on the managed entities, so a caller's transaction that saves the same rows
+     * again later does not write the old null back over the group.
+     *
+     * @return the rows that now carry {@code groupId}
+     */
+    @Transactional
+    public int assignPaymentGroup(String groupId, java.util.Collection<String> logIds) {
+        if (!StringUtils.hasText(groupId) || logIds == null) {
+            return 0;
+        }
+        java.util.Set<String> ids = new java.util.LinkedHashSet<>();
+        for (String id : logIds) {
+            if (StringUtils.hasText(id)) ids.add(id);
+        }
+        if (ids.size() < 2) {
+            return 0;
+        }
+        int grouped = 0;
+        for (PaymentLog pl : paymentLogRepository.findAllById(ids)) {
+            if (groupId.equals(pl.getPaymentGroupId())) {
+                grouped++;
+                continue;
+            }
+            if (StringUtils.hasText(pl.getPaymentGroupId())) {
+                log.warn("Payment log {} already belongs to payment group {}; not moving it to {}",
+                        pl.getId(), pl.getPaymentGroupId(), groupId);
+                continue;
+            }
+            pl.setPaymentGroupId(groupId);
+            paymentLogRepository.save(pl);
+            grouped++;
+        }
+        return grouped;
+    }
+
     @Transactional
     public void addChildLogsToPayment(String parentId, List<String> childIds) {
         PaymentLog parentLog = paymentLogRepository.findById(parentId)
@@ -2325,6 +2541,12 @@ public class PaymentLogService {
                 paymentLogRepository.saveAndFlush(childLog);
             });
         }
+
+        // One checkout, one payment: the parent and its children are its rows.
+        List<String> members = new ArrayList<>();
+        members.add(parentId);
+        members.addAll(childIds);
+        assignPaymentGroup(parentId, members);
     }
 
     /**

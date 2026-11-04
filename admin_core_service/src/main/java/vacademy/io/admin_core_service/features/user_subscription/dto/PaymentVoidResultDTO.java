@@ -25,4 +25,9 @@ public class PaymentVoidResultDTO {
     private int invoicesUpdated;
     /** Amount taken back out of the learner's "total paid". */
     private BigDecimal creditReversed;
+    /**
+     * Rows voided: 1, or every paid course share of a payment stored per course (an admission
+     * package payment, a multi-course checkout), which is voided as a whole.
+     */
+    private int paymentsVoided;
 }

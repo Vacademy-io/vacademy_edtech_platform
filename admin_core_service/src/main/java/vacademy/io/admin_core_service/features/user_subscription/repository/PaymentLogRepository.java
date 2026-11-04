@@ -9,6 +9,7 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 import vacademy.io.admin_core_service.features.user_subscription.dto.PaymentLogWithUserPlanProjection;
 import vacademy.io.admin_core_service.features.user_subscription.dto.CombinedPaymentRowProjection;
+import vacademy.io.admin_core_service.features.user_subscription.dto.CombinedPaymentGroupRowProjection;
 import vacademy.io.admin_core_service.features.user_subscription.dto.PaymentStatusTotalProjection;
 import vacademy.io.admin_core_service.features.user_subscription.dto.CollectionSummaryProjection;
 import vacademy.io.admin_core_service.features.user_subscription.entity.PaymentLog;
@@ -33,6 +34,9 @@ public interface PaymentLogRepository extends JpaRepository<PaymentLog, String> 
 
   @Query("SELECT pl FROM PaymentLog pl WHERE pl.userPlan.id = :userPlanId ORDER BY pl.createdAt DESC")
   List<PaymentLog> findByUserPlanIdOrderByCreatedAtDesc(@Param("userPlanId") String userPlanId);
+
+  /** Every row of one payment stored per course (V642), oldest first. */
+  List<PaymentLog> findByPaymentGroupIdOrderByCreatedAtAsc(String paymentGroupId);
 
   @Query("SELECT CASE WHEN COUNT(pl) > 0 THEN true ELSE false END FROM PaymentLog pl "
       + "WHERE pl.userPlan.id = :userPlanId AND pl.paymentStatus = :paymentStatus")
@@ -249,7 +253,8 @@ public interface PaymentLogRepository extends JpaRepository<PaymentLog, String> 
                    '')) AS row_currency,
                CASE WHEN up.status IS NULL THEN true
                     WHEN UPPER(TRIM(up.status)) IN ('ACTIVE', 'PENDING_FOR_PAYMENT') THEN true
-                    ELSE false END AS due_eligible
+                    ELSE false END AS due_eligible,
+               COALESCE(pl.payment_group_id, pl.id) AS group_key
         FROM payment_log pl
         JOIN user_plan up ON pl.user_plan_id = up.id
         JOIN enroll_invite ei ON up.enroll_invite_id = ei.id
@@ -345,7 +350,8 @@ public interface PaymentLogRepository extends JpaRepository<PaymentLog, String> 
                    '')) AS row_currency,
                CASE WHEN iup.status IS NULL THEN true
                     WHEN UPPER(TRIM(iup.status)) IN ('ACTIVE', 'PENDING_FOR_PAYMENT') THEN true
-                    ELSE false END AS due_eligible
+                    ELSE false END AS due_eligible,
+               COALESCE(pl.payment_group_id, pl.id) AS group_key
         FROM payment_log pl
         LEFT JOIN user_plan iup ON pl.user_plan_id = iup.id
         LEFT JOIN enroll_invite iei ON iup.enroll_invite_id = iei.id
@@ -397,7 +403,8 @@ public interface PaymentLogRepository extends JpaRepository<PaymentLog, String> 
                i.total_amount AS row_amount,
                UPPER(COALESCE(CASE WHEN i.currency ~ '^[A-Za-z]{3}$' THEN i.currency END, ''))
                  AS row_currency,
-               true AS due_eligible
+               true AS due_eligible,
+               i.id AS group_key
         FROM invoice i
         WHERE :includeUnpaidInvoices = true
           AND :noPaymentPlanFilter = true
@@ -498,6 +505,133 @@ public interface PaymentLogRepository extends JpaRepository<PaymentLog, String> 
       Pageable pageable);
 
   /**
+   * What makes rows one entry of the grouped listing: the same payment (group_key), the same status,
+   * and, only where a tab tells them apart (an unfinished payment is Pending on a live enrolment and
+   * Abandoned on an ended one), the same due eligibility. The tabs, their counts and the list then
+   * split a payment the same way, so every tab count equals the rows that tab shows.
+   */
+  String PAYMENT_GROUP_PARTITION = " combined.group_key, combined.row_status,"
+      + " CASE WHEN combined.row_status IN ('PAID', 'FAILED', 'RETRIED', 'CANCELLED', 'ABANDONED')"
+      + " THEN true ELSE combined.due_eligible END ";
+
+  /**
+   * {@link #findCombinedPaymentLogIdsPaginated}, one row per <b>payment</b> instead of one per
+   * payment_log row: the per-course rows of one payment (payment_log.payment_group_id, V642) come
+   * back as their earliest row, with every row of that payment that passed the same filters in
+   * {@code memberIds} (comma-separated, oldest first). A row stands alone when it has no group.
+   *
+   * <p>The rows of a payment are kept apart by status, so a payment with one course share voided
+   * shows its paid part and its voided part separately, each under its own tab, and a paid amount
+   * never mixes with a voided one. Pages and counts are over payments.
+   */
+  @Query(value = "SELECT g.rowId AS rowId, g.rowType AS rowType, g.memberIds AS memberIds FROM ("
+      + " SELECT DISTINCT ON (" + PAYMENT_GROUP_PARTITION + ")"
+      + " combined.id AS rowId, combined.row_type AS rowType, combined.created_at AS createdAt,"
+      + " STRING_AGG(combined.id, ',') OVER (PARTITION BY " + PAYMENT_GROUP_PARTITION
+      + " ORDER BY combined.created_at, combined.id"
+      + " ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) AS memberIds"
+      + " FROM (" + COMBINED_PAYMENT_ROWS + ") combined WHERE " + BUCKET_PREDICATE
+      + " ORDER BY " + PAYMENT_GROUP_PARTITION + ", combined.created_at, combined.id"
+      + " ) g ORDER BY g.createdAt DESC, g.rowId",
+      countQuery = "SELECT COUNT(*) FROM (SELECT DISTINCT " + PAYMENT_GROUP_PARTITION + " FROM ("
+          + COMBINED_PAYMENT_ROWS + ") combined WHERE " + BUCKET_PREDICATE + ") g",
+      nativeQuery = true)
+  Page<CombinedPaymentGroupRowProjection> findCombinedPaymentGroupsPaginated(
+      @Param("instituteId") String instituteId,
+      @Param("startDate") LocalDateTime startDate,
+      @Param("endDate") LocalDateTime endDate,
+      @Param("paymentStatuses") List<String> paymentStatuses,
+      @Param("noPaymentStatusFilter") boolean noPaymentStatusFilter,
+      @Param("userPlanStatuses") List<String> userPlanStatuses,
+      @Param("noUserPlanStatusFilter") boolean noUserPlanStatusFilter,
+      @Param("sources") List<String> sources,
+      @Param("noSourceFilter") boolean noSourceFilter,
+      @Param("enrollInviteIds") List<String> enrollInviteIds,
+      @Param("noEnrollInviteFilter") boolean noEnrollInviteFilter,
+      @Param("packageSessionIds") List<String> packageSessionIds,
+      @Param("noPackageSessionFilter") boolean noPackageSessionFilter,
+      @Param("userId") String userId,
+      @Param("includeInvoiceLogs") boolean includeInvoiceLogs,
+      @Param("includeUnpaidInvoices") boolean includeUnpaidInvoices,
+      @Param("noPaymentTypeFilter") boolean noPaymentTypeFilter,
+      @Param("typeSubOrgAdmin") boolean typeSubOrgAdmin,
+      @Param("typeSubOrgLearner") boolean typeSubOrgLearner,
+      @Param("typeLiveClass") boolean typeLiveClass,
+      @Param("typeCourse") boolean typeCourse,
+      @Param("typeCpo") boolean typeCpo,
+      @Param("typeEnrollInvite") boolean typeEnrollInvite,
+      @Param("typeUserInvoice") boolean typeUserInvoice,
+      @Param("noSearchFilter") boolean noSearchFilter,
+      @Param("noSearchUserIds") boolean noSearchUserIds,
+      @Param("searchUserIds") List<String> searchUserIds,
+      @Param("searchNumeric") boolean searchNumeric,
+      @Param("searchString") String searchString,
+      @Param("searchPhoneDigits") String searchPhoneDigits,
+      @Param("paymentPlanNames") List<String> paymentPlanNames,
+      @Param("noPaymentPlanFilter") boolean noPaymentPlanFilter,
+      @Param("paymentModes") List<String> paymentModes,
+      @Param("noPaymentModeFilter") boolean noPaymentModeFilter,
+      @Param("abandonedAfterHours") long abandonedAfterHours,
+      @Param("noBucketFilter") boolean noBucketFilter,
+      @Param("bucketPaid") boolean bucketPaid,
+      @Param("bucketPending") boolean bucketPending,
+      @Param("bucketAbandoned") boolean bucketAbandoned,
+      @Param("bucketFailed") boolean bucketFailed,
+      Pageable pageable);
+
+  /**
+   * {@link #aggregateCombinedPaymentLogs} counting payments instead of payment_log rows: the
+   * per-course rows of one payment count once, on its earliest row, split exactly the way
+   * {@link #findCombinedPaymentGroupsPaginated} lists them ({@link #PAYMENT_GROUP_PARTITION}).
+   * Amounts are the same sums.
+   */
+  @Query(value = "SELECT c.row_status AS status, c.row_currency AS currency,"
+      + " c.due_eligible AS dueEligible, COUNT(*) FILTER (WHERE c.entry_rank = 1) AS rowCount,"
+      + " COALESCE(SUM(c.row_amount), 0) AS totalAmount FROM ("
+      + " SELECT combined.row_status, combined.row_currency, combined.due_eligible, combined.row_amount,"
+      + " ROW_NUMBER() OVER (PARTITION BY " + PAYMENT_GROUP_PARTITION
+      + " ORDER BY combined.created_at, combined.id) AS entry_rank"
+      + " FROM (" + COMBINED_PAYMENT_ROWS + ") combined) c"
+      + " GROUP BY c.row_status, c.row_currency, c.due_eligible",
+      nativeQuery = true)
+  List<PaymentStatusTotalProjection> aggregateCombinedPaymentGroups(
+      @Param("instituteId") String instituteId,
+      @Param("startDate") LocalDateTime startDate,
+      @Param("endDate") LocalDateTime endDate,
+      @Param("paymentStatuses") List<String> paymentStatuses,
+      @Param("noPaymentStatusFilter") boolean noPaymentStatusFilter,
+      @Param("userPlanStatuses") List<String> userPlanStatuses,
+      @Param("noUserPlanStatusFilter") boolean noUserPlanStatusFilter,
+      @Param("sources") List<String> sources,
+      @Param("noSourceFilter") boolean noSourceFilter,
+      @Param("enrollInviteIds") List<String> enrollInviteIds,
+      @Param("noEnrollInviteFilter") boolean noEnrollInviteFilter,
+      @Param("packageSessionIds") List<String> packageSessionIds,
+      @Param("noPackageSessionFilter") boolean noPackageSessionFilter,
+      @Param("userId") String userId,
+      @Param("includeInvoiceLogs") boolean includeInvoiceLogs,
+      @Param("includeUnpaidInvoices") boolean includeUnpaidInvoices,
+      @Param("noPaymentTypeFilter") boolean noPaymentTypeFilter,
+      @Param("typeSubOrgAdmin") boolean typeSubOrgAdmin,
+      @Param("typeSubOrgLearner") boolean typeSubOrgLearner,
+      @Param("typeLiveClass") boolean typeLiveClass,
+      @Param("typeCourse") boolean typeCourse,
+      @Param("typeCpo") boolean typeCpo,
+      @Param("typeEnrollInvite") boolean typeEnrollInvite,
+      @Param("typeUserInvoice") boolean typeUserInvoice,
+      @Param("noSearchFilter") boolean noSearchFilter,
+      @Param("noSearchUserIds") boolean noSearchUserIds,
+      @Param("searchUserIds") List<String> searchUserIds,
+      @Param("searchNumeric") boolean searchNumeric,
+      @Param("searchString") String searchString,
+      @Param("searchPhoneDigits") String searchPhoneDigits,
+      @Param("paymentPlanNames") List<String> paymentPlanNames,
+      @Param("noPaymentPlanFilter") boolean noPaymentPlanFilter,
+      @Param("paymentModes") List<String> paymentModes,
+      @Param("noPaymentModeFilter") boolean noPaymentModeFilter,
+      @Param("abandonedAfterHours") long abandonedAfterHours);
+
+  /**
    * Per-status totals for exactly the rows {@link #findCombinedPaymentLogIdsPaginated} would
    * return, so the Manage Payments tiles and tab counts describe the whole filtered set without
    * the page having to download it. Takes the same arguments as the list — anything that narrows
@@ -583,7 +717,7 @@ public interface PaymentLogRepository extends JpaRepository<PaymentLog, String> 
       SELECT TO_CHAR(""" + PAID_AT + """
         AT TIME ZONE 'UTC' AT TIME ZONE :timeZone, 'YYYY-MM-DD') AS day,
              SUM(pl.payment_amount) AS amount,
-             COUNT(*) AS cnt,
+             COUNT(DISTINCT COALESCE(pl.payment_group_id, pl.id)) AS cnt,
              MAX(UPPER(COALESCE(NULLIF(TRIM(pl.currency), ''),
                                 NULLIF(TRIM(pp.currency), ''),
                                 NULLIF(TRIM(ei.currency), '')))) AS currency

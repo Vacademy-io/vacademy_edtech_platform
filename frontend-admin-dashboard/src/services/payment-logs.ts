@@ -454,6 +454,11 @@ export interface PaymentVoidResult {
     installments_reopened: number;
     invoices_updated: number;
     credit_reversed: number | null;
+    /**
+     * Rows voided: more than one when the payment was stored per course (an admission package
+     * payment, a multi-course checkout) — those are voided together. Absent on older servers.
+     */
+    payments_voided?: number;
 }
 
 /** Vendors whose payments were entered by an admin — the only ones that can be voided. */
@@ -469,6 +474,31 @@ export const isVoidablePayment = (
 ): boolean =>
     VOIDABLE_VENDORS.has((vendor || '').trim().toUpperCase()) &&
     (paymentStatus || '').toUpperCase() === 'PAID';
+
+/** What voiding or deleting a payment would take with it. Mirrors PaymentRowsDTO. */
+export interface PaymentRows {
+    void_rows: number;
+    void_amount: number | null;
+    delete_rows: number;
+    delete_amount: number | null;
+    currency: string | null;
+}
+
+/**
+ * Asked before a void or delete is confirmed: a payment stored per course goes as a whole, and the
+ * screen may be showing only one course's share of it (a ledger line, a filtered row).
+ */
+export const fetchPaymentRows = async (paymentLogId: string): Promise<PaymentRows> => {
+    const instituteId = getCurrentInstituteId();
+    if (!instituteId) {
+        throw new Error('Institute ID not found');
+    }
+    const response = await authenticatedAxiosInstance.get<PaymentRows>(
+        `${PAYMENT_LOGS_URL}/${encodeURIComponent(paymentLogId)}/rows`,
+        { params: { instituteId } }
+    );
+    return response.data;
+};
 
 /**
  * Voids a payment recorded by mistake. The server puts back everything it moved — instalments,

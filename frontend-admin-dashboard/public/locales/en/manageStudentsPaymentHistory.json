@@ -106,12 +106,14 @@
         "dialog": {
             "title": "Void this {{amount}} payment?",
             "description": "Use this for a payment that was recorded by mistake. The amount goes back onto the learner's balance and installments, its invoice is cancelled, and it stops counting as collected. The payment stays in the history, marked as voided. This cannot be undone.",
+            "splitNote": "This payment covers {{count}} course entries recorded together, with one receipt. All of them are voided together.",
             "reasonLabel": "Reason (optional)",
             "reasonPlaceholder": "e.g. Entered twice",
             "keep": "Keep payment",
             "confirm": "Void payment"
         },
         "successToast": "Payment voided — {{amount}} is back on the learner's balance",
+        "successToastSplit": "Payment voided — {{amount}} across {{count}} course entries is back on the learner's balance",
         "errorToast": "Could not void this payment"
     },
     "permanentDelete": {
@@ -122,6 +124,7 @@
         "whatHappens": "What happens",
         "payment": {
             "removed": "The payment record is removed for good.",
+            "split": "This payment covers {{count}} course entries recorded together; all of them, and their shared receipt, are deleted together.",
             "balance": "If it still counts, the amount goes back onto the learner's balance and installments.",
             "invoice": "The receipt invoice generated for it is deleted, and its number is freed for the next invoice."
         },

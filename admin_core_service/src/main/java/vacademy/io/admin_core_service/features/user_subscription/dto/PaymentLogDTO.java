@@ -36,4 +36,7 @@ public class PaymentLogDTO {
     private String paymentReference;
     private String paymentDetailsJson;
     private String recordedByUserId;
+
+    /** Rows of one payment stored per course share this (V642); null for a payment on its own. */
+    private String paymentGroupId;
 }

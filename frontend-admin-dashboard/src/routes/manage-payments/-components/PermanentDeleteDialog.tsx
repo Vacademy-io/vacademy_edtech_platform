@@ -7,7 +7,7 @@ import {
     Trash,
     WarningCircle,
 } from '@phosphor-icons/react';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import {
@@ -21,7 +21,8 @@ import {
     AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { MyInput } from '@/components/design-system/input';
-import { deletePaymentLog, serverErrorMessage } from '@/services/payment-logs';
+import { deletePaymentLog, fetchPaymentRows, serverErrorMessage } from '@/services/payment-logs';
+import { formatMoney } from '@/utils/payment-currency';
 import { deleteInvoicePermanently } from '@/services/invoice-service';
 import { getCurrentInstituteId } from '@/lib/auth/instituteUtils';
 import { cn } from '@/lib/utils';
@@ -120,9 +121,25 @@ export function PermanentDeleteDialog({
     };
 
     const isPayment = target?.kind === 'payment';
-    const confirmed = typed.trim().toUpperCase() === CONFIRM_WORD;
+    // A payment stored per course goes as a whole, and the screen that opened this may know only one
+    // course's share, so the server says what the delete takes. If it cannot say, the dialog still
+    // works as it always did: the server applies the same rule on the delete itself.
+    const { data: rows, isFetching: rowsLoading } = useQuery({
+        queryKey: ['payment-log-rows', target?.id],
+        queryFn: () => fetchPaymentRows(target!.id),
+        enabled: isPayment && !!target?.id,
+        staleTime: 0,
+        gcTime: 0,
+        retry: false,
+    });
+    const rowCount = isPayment ? (rows?.delete_rows ?? 1) : 1;
+    const title =
+        rowCount > 1 && rows?.delete_amount != null && rows.currency
+            ? formatMoney(rows.delete_amount, rows.currency, { maximumFractionDigits: 2 })
+            : (target?.label ?? '');
+    const confirmed = typed.trim().toUpperCase() === CONFIRM_WORD && !rowsLoading;
     const submit = () => {
-        if (target && confirmed && !mutation.isPending) mutation.mutate(target);
+        if (target && confirmed && !mutation.isPending) mutation.mutate({ ...target, label: title });
     };
     const iconProps = { size: 16, weight: 'duotone' as const };
 
@@ -136,7 +153,7 @@ export function PermanentDeleteDialog({
                     <div className="flex min-w-0 flex-col gap-1">
                         <AlertDialogTitle className="text-h3 font-semibold text-neutral-800">
                             {isPayment
-                                ? t('permanentDelete.paymentTitle', { label: target?.label ?? '' })
+                                ? t('permanentDelete.paymentTitle', { label: title })
                                 : t('permanentDelete.invoiceTitle', { label: target?.label ?? '' })}
                         </AlertDialogTitle>
                         <AlertDialogDescription className="text-caption font-medium text-danger-600">
@@ -155,6 +172,11 @@ export function PermanentDeleteDialog({
                                 <Consequence icon={<Trash {...iconProps} />}>
                                     {t('permanentDelete.payment.removed')}
                                 </Consequence>
+                                {rowCount > 1 && (
+                                    <Consequence icon={<Trash {...iconProps} />}>
+                                        {t('permanentDelete.payment.split', { count: rowCount })}
+                                    </Consequence>
+                                )}
                                 <Consequence icon={<ArrowCounterClockwise {...iconProps} />}>
                                     {t('permanentDelete.payment.balance')}
                                 </Consequence>

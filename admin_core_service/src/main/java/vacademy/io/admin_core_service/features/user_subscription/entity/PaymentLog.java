@@ -117,6 +117,14 @@ public class PaymentLog {
     @Column(name = "recorded_by_user_id")
     private String recordedByUserId;
 
+    /**
+     * Shared by every row of one payment that was stored per course (an admission package
+     * payment split between its courses, a multi-course checkout); null for a payment on its
+     * own. Screens group on COALESCE(payment_group_id, id). See V642.
+     */
+    @Column(name = "payment_group_id")
+    private String paymentGroupId;
+
     public PaymentLogDTO mapToDTO() {
         PaymentLogDTO paymentLogDTO = new PaymentLogDTO();
         paymentLogDTO.setId(id);
@@ -140,6 +148,7 @@ public class PaymentLog {
         paymentLogDTO.setPaymentReference(paymentReference);
         paymentLogDTO.setPaymentDetailsJson(paymentDetailsJson);
         paymentLogDTO.setRecordedByUserId(recordedByUserId);
+        paymentLogDTO.setPaymentGroupId(paymentGroupId);
 
         // Safely parse transactionId if possible
         if (paymentSpecificData != null) {

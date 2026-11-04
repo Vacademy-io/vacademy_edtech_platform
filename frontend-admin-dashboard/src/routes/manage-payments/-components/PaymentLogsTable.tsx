@@ -1,4 +1,5 @@
 import { useMemo, useState, useCallback, createContext, useContext } from 'react';
+import { paymentCourseNames, paymentShares } from '../-utils/paymentGroup';
 import { readRecordedPaymentDetails } from '@/services/offline-payment-modes';
 import { ColumnDef } from '@tanstack/react-table';
 import { MyTable, TableData } from '@/components/design-system/table';
@@ -763,6 +764,9 @@ export function PaymentLogsTable({
                 cell: ({ row }) => {
                     const amount = row.original?.payment_log?.payment_amount || 0;
                     const currency = resolveEntryCurrency(row.original);
+                    // A package payment / multi-course checkout: one payment, its total here,
+                    // the per-course split in the detail sheet.
+                    const shares = paymentShares(row.original);
                     return (
                         <div>
                             <div className="font-bold tabular-nums text-neutral-800">
@@ -770,6 +774,19 @@ export function PaymentLogsTable({
                             </div>
                             <div className="text-xs text-neutral-500">
                                 {derivePaymentTypeLabel(row.original)}
+                                {shares.length > 1 && (
+                                    <span
+                                        className="ml-1 whitespace-nowrap font-medium text-primary-600"
+                                        title={shares
+                                            .map(
+                                                (line) =>
+                                                    `${line?.user_plan?.enroll_invite?.name || '-'}: ${formatCurrency(line?.payment_log?.payment_amount || 0, currency)}`
+                                            )
+                                            .join('\n')}
+                                    >
+                                        · split over {shares.length}
+                                    </span>
+                                )}
                             </div>
                         </div>
                     );
@@ -815,14 +832,26 @@ export function PaymentLogsTable({
             {
                 id: 'enroll_invite',
                 header: `${getTerminology(ContentTerms.Course, SystemTerms.Course)}/Membership`,
-                accessorFn: (row) => row?.user_plan?.enroll_invite?.name || '',
+                accessorFn: (row) =>
+                    paymentCourseNames(row).join(', ') || row?.user_plan?.enroll_invite?.name || '',
                 cell: ({ row }) => {
                     const userPlan = row.original?.user_plan;
                     const enrollInvite = userPlan?.enroll_invite;
+                    // One payment for several courses lists the first and says how many more.
+                    const courseNames = paymentCourseNames(row.original);
+                    const moreCourses = courseNames.length > 1 ? courseNames.length - 1 : 0;
                     return (
                         <div className="space-y-1">
-                            <div className="font-medium text-neutral-700">
+                            <div
+                                className="font-medium text-neutral-700"
+                                title={moreCourses > 0 ? courseNames.join('\n') : undefined}
+                            >
                                 {enrollInvite?.name || '-'}
+                                {moreCourses > 0 && (
+                                    <span className="ml-1 whitespace-nowrap rounded-full bg-primary-50 px-1.5 py-0.5 text-2xs font-semibold text-primary-600">
+                                        +{moreCourses} more
+                                    </span>
+                                )}
                                 {/* Always shown, "× 1" included. Invoice rows have no plan, so no quantity. */}
                                 {userPlan && (
                                     <span className="ml-1 whitespace-nowrap font-normal tabular-nums text-neutral-500">

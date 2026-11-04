@@ -55,11 +55,17 @@ public interface CrmIncentiveRevenueRepository extends Repository<PayrollAdjustm
     String PAID_CTE = """
             paid AS (
                 SELECT c.user_id, c.source_type, c.counsellor_id,
-                       pl.payment_amount, pl.created_at
+                       pl.payment_amount, pl.created_at,"""
+            + vacademy.io.admin_core_service.features.user_subscription.repository.PaymentGroupSql.GROUP_KEY_PL
+            + """
+                       AS pay_key
                 FROM payment_log pl
                 JOIN conv c ON c.user_id = pl.user_id
                 WHERE pl.payment_status = 'PAID'
                   AND pl.payment_amount IS NOT NULL
+                  AND"""
+            + vacademy.io.admin_core_service.features.user_subscription.repository.PaymentGroupSql.NOT_ORDER_PARENT_PL
+            + """
                   AND pl.created_at >= :fromTs AND pl.created_at < :toTs
             )
             """;
@@ -69,7 +75,7 @@ public interface CrmIncentiveRevenueRepository extends Repository<PayrollAdjustm
             SELECT paid.counsellor_id                    AS counsellorId,
                    COALESCE(SUM(paid.payment_amount), 0) AS revenue,
                    COUNT(DISTINCT paid.user_id)          AS payingLeads,
-                   COUNT(*)                              AS payments
+                   COUNT(DISTINCT paid.pay_key)          AS payments
             FROM paid
             WHERE paid.counsellor_id IS NOT NULL
             GROUP BY paid.counsellor_id

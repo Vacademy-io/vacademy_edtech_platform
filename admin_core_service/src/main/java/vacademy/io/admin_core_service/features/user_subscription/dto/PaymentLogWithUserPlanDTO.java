@@ -10,6 +10,7 @@ import vacademy.io.admin_core_service.features.invoice.dto.PaymentLogInvoiceDTO;
 import vacademy.io.common.auth.dto.UserDTO;
 
 import java.time.LocalDate;
+import java.util.List;
 
 @Data
 @Builder
@@ -44,4 +45,11 @@ public class PaymentLogWithUserPlanDTO {
      * plan is not ACTIVE, is one-time or free, or is fully paid.
      */
     private String nextDueOn;
+    /**
+     * Grouped listing only (PaymentLogFilterRequestDTO.groupPayments): every row of this payment
+     * that matched the filters, one per course, oldest first, each with its own payment_amount.
+     * Null on an ungrouped listing; a payment on its own lists just itself. When it holds more than
+     * one row, this row's payment_log.payment_amount is their sum: the payment's total.
+     */
+    private List<PaymentLogWithUserPlanDTO> groupLines;
 }

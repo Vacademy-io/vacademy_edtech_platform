@@ -349,6 +349,8 @@ describe('DueLearnerDetailSheet', () => {
         expect(mockFetchPayments).toHaveBeenCalledWith(0, 20, {
             user_id: 'u1',
             package_session_ids: ['ps1'],
+            // One row per payment: a package payment is not repeated per course.
+            group_payments: true,
         });
         fireEvent.click(screen.getByText(/cash-001/));
         expect(onViewPayment).toHaveBeenCalledWith(payment);

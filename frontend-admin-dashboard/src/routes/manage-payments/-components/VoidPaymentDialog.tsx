@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import {
@@ -14,7 +14,12 @@ import {
 } from '@/components/ui/alert-dialog';
 import { MyInput } from '@/components/design-system/input';
 import { formatMoney } from '@/utils/payment-currency';
-import { serverErrorMessage, voidPaymentLog, type PaymentVoidResult } from '@/services/payment-logs';
+import {
+    fetchPaymentRows,
+    serverErrorMessage,
+    voidPaymentLog,
+    type PaymentVoidResult,
+} from '@/services/payment-logs';
 import { fallbackCurrency } from '@/utils/institute-currency';
 
 /** The payment a void is about to act on — enough to name it in the confirmation. */
@@ -60,8 +65,25 @@ export function VoidPaymentDialog({ target, onOpenChange, onVoided }: VoidPaymen
     const queryClient = useQueryClient();
     const [reason, setReason] = useState('');
 
+    // A payment stored per course goes as a whole, and the screen that opened this may know only
+    // one course's share, so the server says what the void takes. If it cannot say, the dialog
+    // still works as it always did: the server applies the same rule on the void itself.
+    const { data: rows, isFetching: rowsLoading } = useQuery({
+        queryKey: ['payment-log-rows', target?.paymentLogId],
+        queryFn: () => fetchPaymentRows(target!.paymentLogId),
+        enabled: !!target?.paymentLogId,
+        staleTime: 0,
+        gcTime: 0,
+        retry: false,
+    });
+    const rowCount = rows?.void_rows ?? 1;
+
     const amountLabel = target
-        ? formatMoney(target.amount ?? 0, target.currency || fallbackCurrency(), { maximumFractionDigits: 2 })
+        ? formatMoney(
+              rowCount > 1 ? (rows?.void_amount ?? target.amount ?? 0) : (target.amount ?? 0),
+              target.currency || fallbackCurrency(),
+              { maximumFractionDigits: 2 }
+          )
         : '';
 
     // The dialog closes as soon as the admin confirms, so everything the toast needs travels with
@@ -73,7 +95,13 @@ export function VoidPaymentDialog({ target, onOpenChange, onVoided }: VoidPaymen
             QUERY_KEYS_TOUCHED_BY_VOID.forEach((queryKey) =>
                 queryClient.invalidateQueries({ queryKey })
             );
-            toast.success(t('voidPayment.successToast', { amount: input.amountLabel }));
+            // A payment stored per course is voided as a whole on the server; say so.
+            const voided = result?.payments_voided ?? 1;
+            toast.success(
+                voided > 1
+                    ? t('voidPayment.successToastSplit', { amount: input.amountLabel, count: voided })
+                    : t('voidPayment.successToast', { amount: input.amountLabel })
+            );
             onVoided?.(result);
         },
         onError: (err: unknown) => {
@@ -95,6 +123,11 @@ export function VoidPaymentDialog({ target, onOpenChange, onVoided }: VoidPaymen
                         {t('voidPayment.dialog.title', { amount: amountLabel })}
                     </AlertDialogTitle>
                     <AlertDialogDescription>{t('voidPayment.dialog.description')}</AlertDialogDescription>
+                    {rowCount > 1 && (
+                        <p className="rounded-md bg-warning-100 px-3 py-2 text-caption text-warning-700">
+                            {t('voidPayment.dialog.splitNote', { count: rowCount })}
+                        </p>
+                    )}
                 </AlertDialogHeader>
                 <MyInput
                     label={t('voidPayment.dialog.reasonLabel')}
@@ -107,7 +140,7 @@ export function VoidPaymentDialog({ target, onOpenChange, onVoided }: VoidPaymen
                 <AlertDialogFooter>
                     <AlertDialogCancel>{t('voidPayment.dialog.keep')}</AlertDialogCancel>
                     <AlertDialogAction
-                        disabled={mutation.isPending}
+                        disabled={mutation.isPending || rowsLoading}
                         onClick={() => {
                             if (target) {
                                 mutation.mutate({

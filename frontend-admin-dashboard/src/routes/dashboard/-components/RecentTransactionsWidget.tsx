@@ -79,7 +79,8 @@ export default function RecentTransactionsWidget({ instituteId }: RecentTransact
     const statusLabel = buildStatusLabel(t);
     const { data, isLoading, isError } = useQuery({
         queryKey: ['DASHBOARD_RECENT_PAYMENTS', instituteId],
-        queryFn: () => fetchPaymentLogs(0, 5, {}),
+        // One row per payment: a package payment or a multi-course checkout is not repeated per course.
+        queryFn: () => fetchPaymentLogs(0, 5, { group_payments: true }),
         staleTime: 60_000,
         retry: false,
         enabled: !!instituteId,

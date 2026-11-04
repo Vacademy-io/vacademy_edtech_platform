@@ -107,12 +107,14 @@
         "dialog": {
             "title": "Annuler ce paiement de {{amount}} ?",
             "description": "À utiliser pour un paiement saisi par erreur. Le montant est réaffecté au solde et aux échéances de l'apprenant, sa facture est annulée et il n'est plus compté comme encaissé. Le paiement reste dans l'historique, marqué comme annulé. Cette action est irréversible.",
+            "splitNote": "Ce paiement couvre {{count}} lignes de cours enregistrées ensemble, avec un seul reçu. Elles sont toutes annulées ensemble.",
             "reasonLabel": "Motif (facultatif)",
             "reasonPlaceholder": "ex. : saisi deux fois",
             "keep": "Conserver le paiement",
             "confirm": "Annuler le paiement"
         },
         "successToast": "Paiement annulé — {{amount}} est de nouveau dû par l'apprenant",
+        "successToastSplit": "Paiement annulé — {{amount}} sur {{count}} lignes de cours est de nouveau dû par l'apprenant",
         "errorToast": "Impossible d'annuler ce paiement"
     },
     "permanentDelete": {
@@ -123,6 +125,7 @@
         "whatHappens": "Ce qui va se passer",
         "payment": {
             "removed": "L'enregistrement du paiement est supprimé définitivement.",
+            "split": "Ce paiement couvre {{count}} lignes de cours enregistrées ensemble ; elles sont toutes supprimées, avec leur reçu commun.",
             "balance": "S'il compte encore, le montant est réaffecté au solde et aux échéances de l'apprenant.",
             "invoice": "La facture-reçu générée pour ce paiement est supprimée et son numéro est libéré pour la prochaine facture."
         },

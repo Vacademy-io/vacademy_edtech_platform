@@ -24,6 +24,11 @@ export interface PaymentLog {
     /** JSON: mode_label, sub_mode_label, notes, proof_file_id, cheque_date, bank_name, payer_name. */
     payment_details_json?: string | null;
     recorded_by_user_id?: string | null;
+    /**
+     * Rows of one payment stored per course (an admission package payment split between its
+     * courses, a multi-course checkout) share this; null for a payment on its own.
+     */
+    payment_group_id?: string | null;
 }
 
 export interface EnrollInvite {
@@ -166,6 +171,12 @@ export interface PaymentLogEntry {
      * one-time or free, or fully paid). Read it with parsePlanDate.
      */
     next_due_on?: string | null;
+    /**
+     * Grouped listing only (request.group_payments): every row of this payment, one per course,
+     * oldest first, each with its own payment_amount. With more than one, this row's
+     * payment_log.payment_amount is their total. Absent on an ungrouped listing.
+     */
+    group_lines?: PaymentLogEntry[] | null;
 }
 
 /** The invoice carried inline on an invoice-backed row. Mirrors PaymentLogInvoiceDTO. */
@@ -234,6 +245,12 @@ export interface PaymentLogsRequest {
     sort_columns?: Record<string, string>;
     /** Fill enrolled_date / next_due_on on each row (only while those columns are shown). */
     include_plan_dates?: boolean;
+    /**
+     * One row per payment instead of one per course share: a package payment or multi-course
+     * checkout comes back once, its total as payment_amount and its shares in group_lines. The
+     * summary counts payments the same way when given the same flag.
+     */
+    group_payments?: boolean;
 }
 
 export interface PackageSession {

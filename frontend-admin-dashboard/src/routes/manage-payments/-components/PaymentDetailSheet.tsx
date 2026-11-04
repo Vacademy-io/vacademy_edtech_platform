@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { paymentCourseNames, paymentShares } from '../-utils/paymentGroup';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { StatusChip } from '@/components/design-system/status-chips';
 import { MyButton } from '@/components/design-system/button';
@@ -146,6 +147,10 @@ export function PaymentDetailSheet({
         (entry.invoice.status || '').toUpperCase() !== 'PAID';
     const currency = resolveEntryCurrency(entry);
     const amount = log?.payment_amount || 0;
+    // A package payment / multi-course checkout: the amount above is the total; these are its shares.
+    const shares = paymentShares(entry);
+    const isSplit = shares.length > 1;
+    const courseNames = paymentCourseNames(entry);
     const hasTime = Boolean(log?.created_at);
     const timestamp = log?.created_at || log?.date;
     const courseTerm = getTerminology(ContentTerms.Course, SystemTerms.Course);
@@ -178,7 +183,7 @@ export function PaymentDetailSheet({
         timeline.push({
             done: true,
             title: `${courseTerm} / membership activated`,
-            meta: plan?.enroll_invite?.name || '—',
+            meta: courseNames.join(', ') || plan?.enroll_invite?.name || '—',
         });
     } else if (meta.chip === 'DANGER') {
         timeline.push({ done: false, title: 'Attempt failed', meta: log?.vendor || 'Gateway' });
@@ -247,6 +252,32 @@ export function PaymentDetailSheet({
                         </div>
                     </div>
 
+                    {/* One payment for several courses: how it was split between them. */}
+                    {isSplit && (
+                        <div className="rounded-lg border border-neutral-200">
+                            <div className="border-b border-neutral-100 px-4 py-2.5 text-caption font-semibold text-neutral-600">
+                                Split across {shares.length} {courseTerm.toLowerCase()} entries
+                            </div>
+                            <ul className="divide-y divide-neutral-100">
+                                {shares.map((line, index) => (
+                                    <li
+                                        key={line?.payment_log?.id || index}
+                                        className="flex items-center justify-between gap-3 px-4 py-2.5"
+                                    >
+                                        <span className="min-w-0 truncate text-body text-neutral-700">
+                                            {line?.user_plan?.enroll_invite?.name || '—'}
+                                        </span>
+                                        <span className="shrink-0 text-body font-semibold tabular-nums text-neutral-800">
+                                            {formatMoney(line?.payment_log?.payment_amount || 0, currency, {
+                                                maximumFractionDigits: 2,
+                                            })}
+                                        </span>
+                                    </li>
+                                ))}
+                            </ul>
+                        </div>
+                    )}
+
                     {/* Key-value facts */}
                     <dl className="divide-y divide-neutral-100">
                         <Row label="Payment gateway">
@@ -282,14 +313,19 @@ export function PaymentDetailSheet({
                         <Row label="Payment type">{derivePaymentTypeLabel(entry)}</Row>
                         <Row label="Phone">{user?.mobile_number || '—'}</Row>
                         <Row label={`${courseTerm} / membership`}>
-                            {plan?.enroll_invite?.name || '—'}
+                            {courseNames.join(', ') || plan?.enroll_invite?.name || '—'}
                         </Row>
-                        <Row label="Invite code">{plan?.enroll_invite?.invite_code || '—'}</Row>
-                        <Row label="Plan status">
-                            {plan?.status ? plan.status.replace(/_/g, ' ') : '—'}
-                        </Row>
-                        <Row label="Payment plan">{plan?.payment_plan_dto?.name || '—'}</Row>
-                        {plan && (
+                        {/* These describe one course's plan, so a payment split over several leaves them out. */}
+                        {!isSplit && (
+                            <>
+                                <Row label="Invite code">{plan?.enroll_invite?.invite_code || '—'}</Row>
+                                <Row label="Plan status">
+                                    {plan?.status ? plan.status.replace(/_/g, ' ') : '—'}
+                                </Row>
+                                <Row label="Payment plan">{plan?.payment_plan_dto?.name || '—'}</Row>
+                            </>
+                        )}
+                        {plan && !isSplit && (
                             <>
                                 <Row label="Quantity">
                                     <span className="tabular-nums">{getPlanQuantity(plan)}</span>
