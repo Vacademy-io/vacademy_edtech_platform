@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { CalendarBlank, Info, WarningCircle } from '@phosphor-icons/react';
+import { CalendarBlank, Info } from '@phosphor-icons/react';
 import { useTranslation } from 'react-i18next';
 import { MyButton } from '@/components/design-system/button';
 import type { EngagementDailyReport } from '@/services/engagement-daily-report';
@@ -13,6 +13,7 @@ import { ReportSections } from './ReportSections';
 import { HealthBanners } from './HealthBanners';
 import { KpiCards } from './KpiCards';
 import { RoiHero } from './RoiHero';
+import { ReportErrorState } from './ReportErrorState';
 import { SectionError } from './ReportSection';
 import { ReportRangeContext } from './range-context';
 import { ReportRetryingContext } from './retry-context';
@@ -97,46 +98,15 @@ export function DailyReport({
     // A failed refresh must not blank a report that already loaded, so the full-page error is
     // only for when there is nothing to show.
     if (isError && !data) {
-        // Each cause gets its own words and its own way out.
-        const kind =
-            errorStatus === 400
-                ? 'badDate'
-                : errorStatus === 404
-                  ? 'noEngine'
-                  : errorStatus === 403
-                    ? 'noAccess'
-                    : 'generic';
-        const action =
-            kind === 'badDate'
-                ? { label: t('error.resetDate'), run: onResetDate }
-                : kind === 'noEngine'
-                  ? { label: t('error.resetEngine'), run: onResetEngine }
-                  : kind === 'generic'
-                    ? { label: t('retry'), run: onRetry }
-                    : null;
         return (
-            <div
-                role="alert"
-                className="flex flex-col items-center gap-3 rounded-xl border border-danger-200 bg-danger-50 p-8 text-center"
-            >
-                <WarningCircle size={28} weight="fill" className="text-danger-600" />
-                <p className="font-semibold text-neutral-900">
-                    <span className="text-subtitle">{t(`error.${kind}.title`)}</span>
-                </p>
-                <p className="max-w-md text-neutral-600">
-                    <span className="text-body">{t(`error.${kind}.text`)}</span>
-                </p>
-                {action && (
-                    <MyButton
-                        buttonType="secondary"
-                        scale="medium"
-                        disable={isFetching}
-                        onClick={action.run}
-                    >
-                        {action.label}
-                    </MyButton>
-                )}
-            </div>
+            <ReportErrorState
+                status={errorStatus}
+                range={range}
+                isFetching={isFetching}
+                onRetry={onRetry}
+                onResetEngine={onResetEngine}
+                onResetDate={onResetDate}
+            />
         );
     }
 

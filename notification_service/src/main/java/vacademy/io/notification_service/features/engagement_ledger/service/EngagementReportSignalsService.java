@@ -52,6 +52,7 @@ public class EngagementReportSignalsService {
 
     private final EngagementReportSignalsDao dao;
     private final ObjectMapper objectMapper;
+    private final EngagementReplyReachabilityService replyReachability;
 
     @Value("${aws.inbound.email.enabled:false}")
     private boolean inboundEmailEnabled;
@@ -79,7 +80,8 @@ public class EngagementReportSignalsService {
         }
         Map<String, ActionSignals> actions = new LinkedHashMap<>();
         if (actionIds.isEmpty()) {
-            return ReportSignalsResponse.builder().inboundEmailEnabled(inboundEmailEnabled).actions(actions).build();
+            return ReportSignalsResponse.builder().inboundEmailEnabled(inboundEmailEnabled)
+                    .unreachableSenders(List.of()).actions(actions).build();
         }
 
         dao.applyStatementTimeout();
@@ -89,6 +91,7 @@ public class EngagementReportSignalsService {
         List<String> emailRowIds = new ArrayList<>();
         Map<String, JsonNode> payloads = new HashMap<>();
         Set<String> templateNames = new LinkedHashSet<>();
+        Set<String> emailSenders = new LinkedHashSet<>();
         for (OutgoingRow row : rows) {
             JsonNode payload = parsePayload(row.messagePayload());
             payloads.put(row.correlationId(), payload);
@@ -100,6 +103,9 @@ public class EngagementReportSignalsService {
                 }
             } else {
                 emailRowIds.add(row.id());
+                if (row.sender() != null && !row.sender().isBlank()) {
+                    emailSenders.add(row.sender());
+                }
             }
         }
 
@@ -137,6 +143,7 @@ public class EngagementReportSignalsService {
                 Instant repliedAt = emailReplies.get(row.id());
                 signals.templateName(text(payload, "templateName"))
                         .subject(text(payload, "subject"))
+                        .sender(row.sender())
                         .emailEvents(emailEvents(names))
                         .emailTracked(names != null)
                         .firstReplyAt(repliedAt != null ? repliedAt.toEpochMilli() : null);
@@ -145,7 +152,8 @@ public class EngagementReportSignalsService {
         }
         log.debug("report-signals institute={} actions={} found={} (whatsapp={}, email={})",
                 instituteId, actionIds.size(), actions.size(), whatsAppRows.size(), emailRowIds.size());
-        return ReportSignalsResponse.builder().inboundEmailEnabled(inboundEmailEnabled).actions(actions).build();
+        return ReportSignalsResponse.builder().inboundEmailEnabled(inboundEmailEnabled)
+                .unreachableSenders(replyReachability.unreachable(emailSenders)).actions(actions).build();
     }
 
     private static int replyWindowHours(Integer requested) {

@@ -21,7 +21,7 @@ final class EngagementDailyReportSql {
     }
 
     /** Action types that are CRM work, not a message, even on a SEND/TASK row. */
-    private static final String NOT_CRM_ACTION =
+    static final String NOT_CRM_ACTION =
             "COALESCE(a.action_type, '') NOT IN ('ADD_NOTE', 'CREATE_FOLLOWUP', 'ESCALATE', 'UPDATE_STATUS', 'SCHEDULE_AI_CALL')";
 
     /** The engine's audience selectors as rows; a malformed (non-array) audience reads as none. */

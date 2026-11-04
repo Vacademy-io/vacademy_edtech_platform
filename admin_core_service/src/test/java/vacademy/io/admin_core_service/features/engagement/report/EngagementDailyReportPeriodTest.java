@@ -32,6 +32,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -229,6 +230,30 @@ class EngagementDailyReportPeriodTest {
 
         private long evening(LocalDate day) {
             return day.atTime(18, 0).atZone(IST).toInstant().toEpochMilli();
+        }
+
+        /** One email of the period and one of the lookback, from these senders. */
+        private EngagementDailyReport withSenders(String periodSender, String lookbackSender, Set<String> unreachable) {
+            Send inPeriod = email("today", ago(1));
+            Send lookback = email("lookback", ago(9));
+            Window w = EngagementDailyReportService.window(ago(1), ago(1), today, IST);
+            when(dao.sends(any(), eq(w.signalsFrom()), eq(w.to()))).thenReturn(List.of(inPeriod, lookback));
+            Map<String, Signal> byId = Map.of(
+                    "today", new Signal("EMAIL", "a@b.com", 1L, "Hello", "DELIVERED", null, "SES", null, null, null,
+                            null, null, null, null, true, false, false, false, false, true, null, periodSender),
+                    "lookback", new Signal("EMAIL", "a@b.com", 1L, "Hello", "DELIVERED", null, "SES", null, null, null,
+                            null, null, null, null, true, false, false, false, false, true, null, lookbackSender));
+            when(signals.fetch(eq(INST), anyList(), anyInt())).thenReturn(new Signals(true, byId, unreachable));
+            return service.daily(INST, null, null, ago(1).toString(), ago(1).toString(), false, true);
+        }
+
+        @Test
+        void repliesAreUntrackedOnlyWhenEverySenderOfThePeriodIsUnreachable() {
+            assertFalse(withSenders("hi@gmail.example", "ok@ses.example", Set.of("hi@gmail.example")).email().repliesTracked());
+            assertTrue(withSenders("ok@ses.example", "hi@gmail.example", Set.of("hi@gmail.example")).email().repliesTracked());
+            // A sender notification_service did not name keeps today's behaviour, as does an older server.
+            assertTrue(withSenders(null, "hi@gmail.example", Set.of("hi@gmail.example")).email().repliesTracked());
+            assertTrue(withSenders("hi@gmail.example", "ok@ses.example", Set.of()).email().repliesTracked());
         }
 
         @Test
