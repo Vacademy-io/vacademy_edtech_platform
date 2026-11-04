@@ -164,14 +164,14 @@ class CopyCheckOrchestratorBillingTest {
         }
 
         @Test
-        void aRowQueuedWithoutAQuoteIsPricedPerQuestionAndTheQuoteStored() {
+        void aRowQueuedWithoutAQuoteIsPricedAndTheQuoteStored() {
                 Reservation quote = new Reservation(BigDecimal.valueOf(2), "{\"tool_key\":\"copy_check_evaluation\"}");
                 verdict(DispatchVerdict.PROCEED, quote);
 
                 service.dispatch("process-1", "attempt-1", null, "pod-a");
 
-                // Online attempt (no sheet): only the written question is graded, so priced as one.
-                verify(credits).checkAtDispatch(eq("inst-1"), isNull(), isNull(), eq(AiEvaluationCharge.dashboard(1)),
+                // Online attempt (no sheet): only the written answer is graded, so priced as one.
+                verify(credits).checkAtDispatch(eq("inst-1"), isNull(), isNull(), eq(AiEvaluationCharge.dashboardTyped(1)),
                                 eq(false));
                 verify(processes).recordQuote(eq("process-1"), eq(BigDecimal.valueOf(2)), anyString(), any());
                 verify(client).submitGrade(any());

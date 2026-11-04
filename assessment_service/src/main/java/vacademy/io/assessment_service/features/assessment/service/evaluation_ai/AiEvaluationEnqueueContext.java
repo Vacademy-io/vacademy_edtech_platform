@@ -10,7 +10,7 @@ import java.math.BigDecimal;
  *
  * <ul>
  *   <li>{@link #dashboard()}: a teacher (or a bulk upload) on the admin dashboard.
- *       Priced per question with {@code copy_check_evaluation}; the credit check fails
+ *       Priced per page or per typed answer with {@code copy_check_evaluation}; the credit check fails
  *       open; no credit limit; nothing partner-specific on the row.</li>
  *   <li>{@link #api}: a partner API key. The caller supplies the charge (per page or
  *       per typed answer, {@code copy_check_evaluation_api}), the key's credit limit and,

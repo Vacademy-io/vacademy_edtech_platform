@@ -30,6 +30,7 @@ import {
     type UsageEventItem,
     type UsageLedgerItem,
 } from '@/services/ai-credits/usage-v2';
+import { creditHistoryText } from '@/services/ai-credits/get-ai-credits';
 import {
     contextEntries,
     eventAmount,
@@ -184,7 +185,13 @@ function UsageEventRow({
                     <Icon className={cn('size-3', style.color)} weight="bold" />
                 </span>
                 <span className="block min-w-0 flex-1">
-                    <span className="block truncate text-xs font-medium text-neutral-800">
+                    {/* A copy check row names the copy: all of it has to stay readable. */}
+                    <span
+                        className={cn(
+                            'block text-xs font-medium text-neutral-800',
+                            event.use_case === 'evaluation' ? 'break-words' : 'truncate'
+                        )}
+                    >
                         {label}
                     </span>
                     <span className="mt-0.5 flex flex-wrap items-center gap-1 text-2xs text-neutral-400">
@@ -334,7 +341,7 @@ function LedgerRow({ item, fmt }: { item: UsageLedgerItem; fmt: Formatters }) {
             </div>
             <div className="min-w-0 flex-1">
                 <span className="block truncate text-xs font-medium text-neutral-800">
-                    {item.description || t(cfg.labelKey)}
+                    {creditHistoryText(item.description) || t(cfg.labelKey)}
                 </span>
                 <div className="mt-0.5 flex items-center gap-2 text-2xs text-neutral-400">
                     <Chip>{t(cfg.labelKey)}</Chip>

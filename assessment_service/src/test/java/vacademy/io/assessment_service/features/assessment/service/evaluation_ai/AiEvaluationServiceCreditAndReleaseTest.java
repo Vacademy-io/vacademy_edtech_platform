@@ -126,10 +126,10 @@ class AiEvaluationServiceCreditAndReleaseTest {
 
                 ArgumentCaptor<List<AiEvaluationCharge>> charges = ArgumentCaptor.forClass(List.class);
                 verify(credits, times(1)).reserve(eq("inst-1"), charges.capture(), eq(BigDecimal.ZERO), eq(Mode.DASHBOARD));
-                // Priced per question on the paper: 3 live questions, the deleted one is not graded.
+                // The pages are read later: quoted at the minimum, one page a copy.
                 assertThat(charges.getValue()).hasSize(2).allSatisfy(c -> {
                         assertThat(c.toolKey()).isEqualTo("copy_check_evaluation");
-                        assertThat(c.params()).containsEntry("num_questions", 3);
+                        assertThat(c.params()).containsEntry("num_pages", 1);
                 });
                 assertThat(saved).hasSize(2).allSatisfy(row -> {
                         assertThat(row.getQuotedCredits()).isEqualByComparingTo("2");
@@ -170,7 +170,7 @@ class AiEvaluationServiceCreditAndReleaseTest {
 
                 service.initiateEvaluationForAttempt(attempt("att-9", null), null, true);
 
-                verify(credits).reserve("inst-1", List.of(AiEvaluationCharge.dashboard(3)), BigDecimal.ZERO,
+                verify(credits).reserve("inst-1", List.of(AiEvaluationCharge.dashboardHandwritten(null)), BigDecimal.ZERO,
                                 Mode.DASHBOARD);
                 assertThat(saved.get(0).getQuotedCredits()).isEqualByComparingTo("2");
         }
@@ -198,7 +198,7 @@ class AiEvaluationServiceCreditAndReleaseTest {
 
                 service.requireCreditsForCopies(assessment, "inst-1", 4);
 
-                verify(credits).reserve("inst-1", java.util.Collections.nCopies(4, AiEvaluationCharge.dashboard(3)),
+                verify(credits).reserve("inst-1", java.util.Collections.nCopies(4, AiEvaluationCharge.dashboardHandwritten(null)),
                                 BigDecimal.ZERO, Mode.DASHBOARD);
         }
 

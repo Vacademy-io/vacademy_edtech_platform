@@ -59,7 +59,6 @@ export const BulkAiCheckDialog = ({
     onOpenChange,
     assessmentId,
     instituteId,
-    questionsPerCopy,
     onStarted,
 }: {
     open: boolean;
@@ -67,7 +66,6 @@ export const BulkAiCheckDialog = ({
     assessmentId: string;
     instituteId: string;
     /** Questions on the paper — the unit the AI check is billed in. */
-    questionsPerCopy: number;
     onStarted: (batch: CopyIntakeBatch) => void;
 }) => {
     const { t } = useTranslation('assessmentCopyIntake');
@@ -87,17 +85,17 @@ export const BulkAiCheckDialog = ({
     const userId = getTokenDecodedData(getTokenFromCookie(TokenKey.accessToken))?.user ?? '';
 
     const counting = files.some((f) => f.state === 'counting');
-    // Mirrors the charge the orchestrator records per completed copy
-    // (num_questions = graded questions), once per copy: the rate card's flat
-    // base and rounding apply to each copy, so the inputs are NOT summed
-    // across files. The rate itself comes from ai_tool_pricing via the API.
+    const totalPages = files.reduce((sum, f) => sum + (f.pages ?? 1), 0);
+    // Mirrors the charge the orchestrator records per completed copy: each copy's
+    // pages, charged once per copy, so a flat base on the rate card applies to
+    // each. The rate itself comes from ai_tool_pricing via the API.
     const cost = useToolCostPreview(
         'copy_check_evaluation',
-        { num_questions: questionsPerCopy },
+        { num_pages: files.length > 0 ? totalPages / files.length : 0 },
         files.length > 0 && !counting,
         files.length
     );
-    // "1 + 0.2 per question" under the quote, straight from the rate row so a
+    // "1 credit per page" under the quote, straight from the rate row so a
     // DB change to the price is explained without a release.
     const rateLine = useMemo(() => {
         const row = cost.rate;
@@ -111,7 +109,12 @@ export const BulkAiCheckDialog = ({
                   ? t('dialog.unitPage')
                   : null;
         if (!unit) return null;
-        return t(flat > 0 ? 'dialog.rate' : 'dialog.rateNoBase', { flat, perUnit, unit });
+        return t(flat > 0 ? 'dialog.rate' : 'dialog.rateNoBase', {
+            flat,
+            perUnit,
+            unit,
+            count: perUnit,
+        });
     }, [cost.rate, t]);
 
     const addFiles = async (picked: FileList | File[]) => {
@@ -329,7 +332,7 @@ export const BulkAiCheckDialog = ({
                               ? t('dialog.counting')
                               : t('dialog.cost', {
                                     count: files.length,
-                                    questions: questionsPerCopy,
+                                    pages: t('dialog.pagesCount', { count: totalPages }),
                                     credits: cost.credits,
                                 })}
                     </span>

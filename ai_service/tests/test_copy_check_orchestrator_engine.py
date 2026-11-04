@@ -164,7 +164,7 @@ def test_plain_copy_unchanged_flow_with_criteria_max(env):
     assert complete["total_marks_awarded"] == 9 and complete["total_max_marks"] == 15
     assert complete["evaluated_file_id"] == "checked-copy-1"
     assert _posts(env, "failed") == []
-    assert env["billed"][0]["tool_params"] == {"num_questions": 3}
+    assert env["billed"][0]["tool_params"] == {"num_pages": 1}
 
 
 def test_upright_copy_is_what_ocr_and_the_checked_copy_use(env):
@@ -273,8 +273,8 @@ def test_choice_groups_mark_counted_and_total_against_paper_max(env):
     assert resent["question_id"] == "q1" and resent["counted"] is False
     complete = _posts(env, "complete")[0]
     assert complete["total_marks_awarded"] == 7 and complete["total_max_marks"] == 10
-    assert complete["questions_evaluated"] == 3  # every question still graded and billed
-    assert env["billed"][0]["tool_params"] == {"num_questions": 3}
+    assert complete["questions_evaluated"] == 3  # every question still graded
+    assert env["billed"][0]["tool_params"] == {"num_pages": 1}
     assert [v.get("counted") for v in env["rendered"]] == [False, True, True]
 
 
@@ -359,11 +359,11 @@ SNAPSHOT = {"tool_key": "copy_check_evaluation_api", "flat_base_credits": 0, "pe
             "rate_source": "global"}
 
 
-def test_dashboard_copy_bills_per_question_without_attribution(env):
+def test_dashboard_copy_bills_every_page_without_attribution(env):
     assert _run(_payload()) == orchestrator.RUN_BILLED
     billed = env["billed"][0]
     assert billed["tool_key"] == "copy_check_evaluation"
-    assert billed["tool_params"] == {"num_questions": 3}
+    assert billed["tool_params"] == {"num_pages": 1}
     assert billed["user_id"] is None and billed["user_role"] is None and billed["rate_snapshot"] is None
     assert billed["idempotency_key"] == "proc-1" and billed["institute_id"] == "inst-1"
 
@@ -395,14 +395,15 @@ def test_api_typed_copy_bills_the_non_blank_answers(env, monkeypatch):
     assert billed["tool_params"] == {"answer_mode": "TYPED", "num_answers": 2}
 
 
-def test_dashboard_typed_copy_is_unchanged(env, monkeypatch):
+def test_dashboard_typed_copy_bills_the_answers_read(env, monkeypatch):
     async def fake_grade_typed(questions, rubric_resolver, grader, preferred_model, on_verdict, check_cancelled):
         return 6.0, 15.0, 3, 2
 
     monkeypatch.setattr(orchestrator, "_grade_typed", fake_grade_typed)
     _run(_payload(answer_mode="TYPED", pdf_url=None))
     assert env["billed"][0]["tool_key"] == "copy_check_evaluation"
-    assert env["billed"][0]["tool_params"] == {"num_questions": 2}
+    assert env["billed"][0]["tool_params"] == {"answer_mode": "TYPED", "num_answers": 2}
+    assert env["billed"][0]["description_label"].endswith("2 answers")
 
 
 @pytest.mark.parametrize("actor", [None, "apikey:key-1"])
@@ -423,14 +424,42 @@ def test_failed_copy_reports_failed(env):
 
 def test_charge_plan_rules():
     plan = orchestrator.charge_plan
-    assert plan({"billing_actor": "user-1"}, typed=False, num_questions=5)["tool_key"] == "copy_check_evaluation"
-    assert plan({"billing_actor": "apikey:k", "page_count": 0}, typed=False, num_questions=5, layout_pages=0) is None
+    dash_copy = plan({"billing_actor": "user-1"}, typed=False, layout_pages=6)
+    assert dash_copy["tool_key"] == "copy_check_evaluation" and dash_copy["tool_params"] == {"num_pages": 6}
+    assert plan({"billing_actor": "user-1"}, typed=False, layout_pages=None) is None
+    assert plan({"billing_actor": "apikey:k", "page_count": 0}, typed=False, layout_pages=0) is None
     # A snapshot for the other key is not passed on.
     api = plan({"billing_actor": "apikey:k", "page_count": 2,
-                "rate_snapshot": dict(SNAPSHOT, tool_key="copy_check_evaluation")}, typed=False, num_questions=5)
+                "rate_snapshot": dict(SNAPSHOT, tool_key="copy_check_evaluation")}, typed=False)
     assert api["rate_snapshot"] is None and api["tool_params"] == {"num_pages": 2}
-    dash = plan({"rate_snapshot": dict(SNAPSHOT, tool_key="copy_check_evaluation")}, typed=False, num_questions=5)
+    dash = plan({"rate_snapshot": dict(SNAPSHOT, tool_key="copy_check_evaluation")}, typed=False, layout_pages=2)
     assert dash["rate_snapshot"]["tool_key"] == "copy_check_evaluation"
+
+
+def test_history_line_names_the_copy_and_what_it_counted():
+    meter = orchestrator.charge_metering(
+        {"billing_actor": None},
+        {"assessment_name": "Class 9 Science", "student_name": "Rahul Sharma"},
+        {"num_pages": 6},
+    )
+    assert meter["description_label"] == "AI evaluation · Class 9 Science · Rahul Sharma · 6 pages"
+    assert meter["usage_context"]["units_label"] == "6 pages"
+    assert meter["usage_context"]["student_name"] == "Rahul Sharma"
+
+
+def test_history_line_leaves_out_what_it_does_not_know():
+    one = orchestrator.charge_metering({"billing_actor": None}, {"student_name": "  "}, {"num_pages": 1})
+    assert one["description_label"] == "AI evaluation · 1 page"
+    assert orchestrator.charge_metering({"billing_actor": None}, {})["description_label"] == "AI evaluation"
+
+
+def test_names_reach_the_grade_request_schema_without_a_length_limit():
+    from app.schemas.copy_check import CopyCheckGradeRequest
+    long_name = "x" * 2000
+    req = CopyCheckGradeRequest(process_id="p", attempt_id="a", assessment_id="s", institute_id="i",
+                                pdf_url="http://f", questions=[], callback_base_url="http://c",
+                                assessment_name=long_name)
+    assert req.assessment_name == long_name and req.student_name is None
 
 
 def test_answer_location_runs_by_default(env):

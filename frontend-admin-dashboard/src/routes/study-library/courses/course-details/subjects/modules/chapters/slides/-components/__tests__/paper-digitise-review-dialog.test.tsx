@@ -3,6 +3,12 @@ import { fireEvent, render, screen } from '@testing-library/react';
 import { PaperDigitiseReviewDialog } from '../paper-digitise-review-dialog';
 import type { DigitisedPaper } from '@/services/paper-digitise';
 
+vi.mock('@/components/common/ai-credits/useToolCostPreview', () => ({
+    useToolCostPreview: () => ({
+        rate: { unit_field: 'pages', per_unit_credits: 1 },
+    }),
+}));
+
 vi.mock('react-i18next', () => ({
     useTranslation: () => ({
         t: (key: string, opts?: Record<string, unknown>) =>
@@ -74,7 +80,7 @@ describe('PaperDigitiseReviewDialog', () => {
         expect(screen.getByText('review.aiSuggestedAnswer')).toBeInTheDocument();
         expect(screen.getByText('review.marksGuessed')).toBeInTheDocument();
         expect(screen.getByText(/review\.totalLine.*"count":3,"total":10/)).toBeInTheDocument();
-        expect(screen.getByText(/review\.perSheetCost.*"count":3/)).toBeInTheDocument();
+        expect(screen.getByText(/review\.perSheetCost.*"count":1/)).toBeInTheDocument();
         expect(screen.getByText(/AI suggested answers/)).toBeInTheDocument();
     });
 

@@ -49,7 +49,7 @@
         "estimateLine_other": "≈{{credits}} credits to read the files ({{count}} pages)",
         "balance": "balance {{balance}}",
         "insufficient": "Not enough credits to read these files. Top up, or choose “Teacher checks”.",
-        "howItWorks": "Charged once, when the questions come back. You review them on the Submissions tab; each uploaded copy is then checked at 1 credit per question."
+        "howItWorks": "Charged once, when the questions come back. You review them on the Submissions tab; each uploaded copy is then charged per page."
     },
     "actions": {
         "creating": "Creating…",

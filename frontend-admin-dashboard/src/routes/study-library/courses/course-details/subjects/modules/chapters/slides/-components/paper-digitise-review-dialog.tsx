@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useToolCostPreview } from '@/components/common/ai-credits/useToolCostPreview';
+import { perPageCredits } from '@/services/ai-credits/get-ai-credits';
 import {
     Coins,
     ListChecks,
@@ -140,6 +142,7 @@ export const PaperDigitiseReviewDialog = ({
     onAiSettingsChange?: (value: CopyCheckSettingsValue) => void;
 }) => {
     const { t } = useTranslation('studyLibraryAssessmentCreateForm');
+    const creditsPerPage = perPageCredits(useToolCostPreview('copy_check_evaluation', {}).rate);
     const [rows, setRows] = useState<RowState[]>([]);
     const [choices, setChoices] = useState<ChoiceState[]>([]);
     const [editingIndex, setEditingIndex] = useState<number | null>(null);
@@ -283,7 +286,7 @@ export const PaperDigitiseReviewDialog = ({
                         )}
                     </div>
                     <p className="text-xs text-neutral-600">
-                        {t('review.perSheetCost', { count: kept.length })}
+                        {t('review.perSheetCost', { count: creditsPerPage ?? 0 })}
                     </p>
                 </div>
 

@@ -141,11 +141,11 @@ def test_set_override_returns_effective_price_and_examples():
     assert db.commits == 1
 
 
-def test_dashboard_examples_use_question_counts():
-    out = tpa.set_override(PricingDB(), INST, "copy_check_evaluation", flat_base_credits=0,
+def test_dashboard_examples_use_page_counts():
+    out = tpa.set_override(PricingDB(), INST, "copy_check_evaluation", per_unit_credits=2,
                            reason="pilot", actor=STAFF_ID)
-    assert [(e["num_questions"], e["credits"], e["global_credits"]) for e in out["examples"]] == [
-        (10, 2, 3), (40, 8, 9), (64, 13, 14)]
+    assert [(e["num_pages"], e["credits"], e["global_credits"]) for e in out["examples"]] == [
+        (3, 6, 3), (12, 24, 12), (50, 100, 50)]
 
 
 def test_edit_closes_the_open_row_and_inserts_a_new_one():

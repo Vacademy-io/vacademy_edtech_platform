@@ -36,7 +36,6 @@ import {
 } from '../-services/assessment-details-services';
 import {
     getAssessmentDetails,
-    getQuestionDataForSection,
 } from '@/routes/assessment/create-assessment/$assessmentId/$examtype/-services/assessment-services';
 import { MyPagination } from '@/components/design-system/pagination';
 import { MyButton } from '@/components/design-system/button';
@@ -237,25 +236,6 @@ const AssessmentSubmissionsTab = ({ type }: { type: string }) => {
     const savedTotalMarks: number = (
         (assessmentDetailsData?.[1]?.saved_data?.sections ?? []) as Array<{ total_marks?: number }>
     ).reduce((sum, section) => sum + (Number(section?.total_marks) || 0), 0);
-    // The AI copy check is billed per graded question (tool_cost_estimator
-    // "copy_check_evaluation"), so the bulk quote needs the paper's question
-    // count. The step-2 status payload's sections carry NO questions (SectionDto
-    // is built without fillQuestions), so they come from the per-section
-    // questions query — the same source the slide's submissions panel counts.
-    const questionSectionIds = (
-        (assessmentDetailsData?.[1]?.saved_data?.sections ?? []) as Array<{ id?: string }>
-    )
-        .map((s) => s?.id)
-        .filter(Boolean)
-        .join(',');
-    const { data: sectionQuestions } = useQuery({
-        ...getQuestionDataForSection({ assessmentId, sectionIds: questionSectionIds }),
-        enabled: Boolean(assessmentId && questionSectionIds && isManualEvaluation),
-    });
-    const questionsPerCopy: number = Object.values(
-        (sectionQuestions ?? {}) as Record<string, unknown[] | undefined>
-    ).reduce((sum, questions) => sum + (questions?.length ?? 0), 0);
-
     // How this assessment was actually handed out. An assessment created against batches
     // has no individually pre-registered learners, so "Individual Selection" could only
     // ever show an empty table — offering it is just a dead end the admin has to discover
@@ -1463,7 +1443,6 @@ const AssessmentSubmissionsTab = ({ type }: { type: string }) => {
                     onOpenChange={setBulkCheckOpen}
                     assessmentId={assessmentId}
                     instituteId={instituteId}
-                    questionsPerCopy={questionsPerCopy}
                     onStarted={(batch) => {
                         setIntakeBatchId(batch.id);
                         setIntakePanelOpen(true);
@@ -1477,7 +1456,6 @@ const AssessmentSubmissionsTab = ({ type }: { type: string }) => {
                         }}
                         assessmentId={assessmentId}
                         instituteId={instituteId}
-                        questionsPerCopy={questionsPerCopy}
                         attemptIds={submittedCheckScope}
                         defaultIncludeChecked={submittedCheckRecheck}
                         onStarted={(batch) => {

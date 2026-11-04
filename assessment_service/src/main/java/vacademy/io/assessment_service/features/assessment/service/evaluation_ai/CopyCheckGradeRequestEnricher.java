@@ -96,6 +96,7 @@ public class CopyCheckGradeRequestEnricher {
          * facade's exam context, if a provider is registered.
          */
         public void enrich(AiEvaluationProcess process, CopyCheckGradeRequestDto request) {
+                addHistoryNames(process, request);
                 if (process.getApiKeyId() != null && !process.getApiKeyId().isBlank()) {
                         request.setBillingActor("apikey:" + process.getApiKeyId());
                         request.setRateSnapshot(creditGate.gradeRequestSnapshot(process.getRateSnapshot()));
@@ -119,6 +120,21 @@ public class CopyCheckGradeRequestEnricher {
                                 log.warn("[copy-check] choice groups not added for process {}: {}", process.getId(),
                                                 e.getMessage());
                         }
+                }
+        }
+
+        /** Which copy a charge was for, for the credit history. A copy is checked without them. */
+        private void addHistoryNames(AiEvaluationProcess process, CopyCheckGradeRequestDto request) {
+                try {
+                        if (process.getAssessment() != null) {
+                                request.setAssessmentName(clean(process.getAssessment().getName()));
+                        }
+                        if (process.getStudentAttempt() != null && process.getStudentAttempt().getRegistration() != null) {
+                                request.setStudentName(clean(process.getStudentAttempt().getRegistration().getParticipantName()));
+                        }
+                } catch (Exception e) {
+                        log.warn("[copy-check] no names for the credit history of process {}: {}", process.getId(),
+                                        e.getMessage());
                 }
         }
 

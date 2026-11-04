@@ -17,6 +17,8 @@
             "recheckTitle": "هل تريد إعادة تصحيح هذه الورقة بالذكاء الاصطناعي؟",
             "recheckMessage": "ورقة {{name}} مصححة بالفعل أو قيد التقييم. سيحل التصحيح الجديد محل درجاتها الحالية، بما في ذلك أي تغييرات أجراها المعلم، وستظهر بحالة «قيد التقييم» حتى تصبح النتيجة الجديدة جاهزة.",
             "estimatedCostLabel": "التكلفة المقدّرة:",
+            "creditsPerPage_one": "{{count}} رصيد لكل صفحة",
+            "creditsPerPage_other": "{{count}} رصيد لكل صفحة",
             "creditsCount_zero": "{{count}} رصيد",
             "creditsCount_one": "{{count}} رصيد واحد",
             "creditsCount_two": "{{count}} رصيدان",

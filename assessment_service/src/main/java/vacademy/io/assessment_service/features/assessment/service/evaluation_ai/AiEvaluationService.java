@@ -197,12 +197,13 @@ public class AiEvaluationService {
                 if (assessment == null || copies <= 0) {
                         return;
                 }
-                AiEvaluationCharge charge = AiEvaluationCharge.dashboard(gradableQuestionCount(assessment, false));
+                // The pages are read later, so this checks the minimum: one page a copy.
+                AiEvaluationCharge charge = AiEvaluationCharge.dashboardHandwritten(null);
                 creditGate.reserve(instituteId, java.util.Collections.nCopies(copies, charge), BigDecimal.ZERO,
                                 AiEvaluationCreditGate.Mode.DASHBOARD);
         }
 
-        /** The dashboard price of one copy of this attempt: every question the AI will grade. */
+        /** The dashboard quote of one attempt: a copy's minimum, or every answer the AI will grade. */
         public AiEvaluationCharge dashboardCharge(StudentAttempt attempt) {
                 return dashboardCharge(attempt, new HashMap<>());
         }
@@ -211,7 +212,9 @@ public class AiEvaluationService {
                 Assessment assessment = attempt.getRegistration() != null ? attempt.getRegistration().getAssessment() : null;
                 boolean typed = laneFor(attempt, assessment) == AiEvaluationLane.TYPED;
                 String key = (assessment != null ? assessment.getId() : "") + ":" + typed;
-                return cache.computeIfAbsent(key, k -> AiEvaluationCharge.dashboard(gradableQuestionCount(assessment, typed)));
+                return cache.computeIfAbsent(key, k -> typed
+                                ? AiEvaluationCharge.dashboardTyped(gradableQuestionCount(assessment, true))
+                                : AiEvaluationCharge.dashboardHandwritten(null));
         }
 
         /**

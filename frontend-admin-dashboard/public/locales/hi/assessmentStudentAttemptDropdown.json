@@ -17,6 +17,8 @@
             "recheckTitle": "क्या इस कॉपी को AI से दोबारा जाँचना है?",
             "recheckMessage": "{{name}} की कॉपी पहले ही जाँची जा चुकी है या उसका मूल्यांकन चल रहा है। नई जाँच मौजूदा अंकों को बदल देगी, जिनमें शिक्षक के किए बदलाव भी शामिल हैं। नया परिणाम तैयार होने तक यह “मूल्यांकन हो रहा है” दिखाएगी।",
             "estimatedCostLabel": "अनुमानित लागत:",
+            "creditsPerPage_one": "{{count}} क्रेडिट प्रति पेज",
+            "creditsPerPage_other": "{{count}} क्रेडिट प्रति पेज",
             "creditsCount_one": "{{count}} क्रेडिट",
             "creditsCount_other": "{{count}} क्रेडिट",
             "balance_one": "शेष: {{count}}",

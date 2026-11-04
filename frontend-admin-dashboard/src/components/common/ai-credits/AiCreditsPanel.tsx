@@ -1,6 +1,7 @@
 import { isInEvalezyShell } from '@/lib/evalezy-mode';
 import { useState, useMemo, useEffect } from 'react';
 import {
+    creditHistoryText,
     useAiCreditsQuery,
     useAiTransactionsQuery,
     useAiUsageAnalyticsQuery,
@@ -359,8 +360,16 @@ export function TransactionsTab() {
                         </div>
                         <div className="min-w-0 flex-1">
                             <div className="flex items-center gap-1.5">
-                                <span className="truncate text-xs font-medium text-neutral-800">
-                                    {tx.description || cfg.label}
+                                {/* A copy check row names the copy: all of it has to stay readable. */}
+                                <span
+                                    className={cn(
+                                        'text-xs font-medium text-neutral-800',
+                                        tx.request_type === 'evaluation'
+                                            ? 'min-w-0 break-words'
+                                            : 'truncate'
+                                    )}
+                                >
+                                    {creditHistoryText(tx.description) || cfg.label}
                                 </span>
                             </div>
                             <div className="mt-0.5 flex items-center gap-2 text-[10px] text-neutral-400">

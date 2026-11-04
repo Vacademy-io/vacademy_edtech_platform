@@ -284,33 +284,21 @@ def charge_plan(
     billing: dict[str, Any],
     *,
     typed: bool,
-    num_questions: int,
     num_answers: int = 0,
     layout_pages: Optional[int] = None,
 ) -> Optional[dict[str, Any]]:
     """The record_tool_billing arguments for a completed copy (spec 10.1,
     10.8), or None when nothing is chargeable.
 
-    Dashboard (no `apikey:` actor): unchanged - copy_check_evaluation on the
-    graded questions (typed: the answers actually read), no user attribution.
-    API: copy_check_evaluation_api at a fixed price on the copy's pages as
-    counted at upload (`page_count`; the OCR'd page count if the request had
-    none), or on the non-blank typed answers; user_id = the billing actor,
-    user_role API_KEY. A rate_snapshot for the chosen key is passed through.
+    Both channels price the copy's pages as counted at upload (`page_count`;
+    the OCR'd page count if the request had none), or the non-blank typed
+    answers (none = nothing was read, no charge); the rate is the row's.
+    Dashboard (no `apikey:` actor): copy_check_evaluation, no user attribution.
+    API: copy_check_evaluation_api; user_id = the billing actor, user_role
+    API_KEY. A rate_snapshot for the chosen key is passed through.
     """
     actor = billing.get("billing_actor")
     snapshot = billing.get("rate_snapshot") or None
-    if not is_api_actor(actor):
-        if typed and num_answers <= 0:
-            return None  # every answer blank: nothing was read
-        units = num_answers if typed else num_questions
-        return {
-            "tool_key": DASHBOARD_TOOL_KEY,
-            "tool_params": {"num_questions": units},
-            "user_id": None,
-            "user_role": None,
-            "rate_snapshot": snapshot if _snapshot_key(snapshot) == DASHBOARD_TOOL_KEY else None,
-        }
     if typed:
         if num_answers <= 0:
             return None
@@ -322,6 +310,14 @@ def charge_plan(
         if int(pages) <= 0:
             return None
         params = {"num_pages": int(pages)}
+    if not is_api_actor(actor):
+        return {
+            "tool_key": DASHBOARD_TOOL_KEY,
+            "tool_params": params,
+            "user_id": None,
+            "user_role": None,
+            "rate_snapshot": snapshot if _snapshot_key(snapshot) == DASHBOARD_TOOL_KEY else None,
+        }
     return {
         "tool_key": API_TOOL_KEY,
         "tool_params": params,
@@ -331,11 +327,31 @@ def charge_plan(
     }
 
 
-def charge_metering(billing: dict[str, Any], req: dict[str, Any]) -> dict[str, Any]:
-    """Usage-event attribution for the copy's charge (never changes it): the
-    partner API key for API runs, else the dashboard (actor unknown here; the
-    teacher who queued the copy is not sent to ai_service)."""
+def _units_label(tool_params: Optional[dict[str, Any]]) -> Optional[str]:
+    """What the charge counted, as the customer reads it: "6 pages", "1 answer"."""
+    params = tool_params or {}
+    for key, word in (("num_pages", "page"), ("num_answers", "answer")):
+        count = params.get(key)
+        if count:
+            return f"{count} {word}" if int(count) == 1 else f"{count} {word}s"
+    return None
+
+
+def _copy_label(req: dict[str, Any], units: Optional[str]) -> str:
+    """The credit history line of a copy; the parts it does not know are left out."""
+    names = [req.get("assessment_name"), req.get("student_name"), units]
+    return " · ".join(["AI evaluation", *[str(n).strip() for n in names if n and str(n).strip()]])
+
+
+def charge_metering(
+    billing: dict[str, Any], req: dict[str, Any], tool_params: Optional[dict[str, Any]] = None
+) -> dict[str, Any]:
+    """Usage-event attribution for the copy's charge and its credit history line
+    (never changes the amount): the partner API key for API runs, else the
+    dashboard (actor unknown here; the teacher who queued the copy is not sent
+    to ai_service)."""
     try:
+        units = _units_label(tool_params)
         actor = billing.get("billing_actor")
         if is_api_actor(actor):
             meter = metering_api_key(actor[len(API_ACTOR_PREFIX):] or None)
@@ -349,7 +365,11 @@ def charge_metering(billing: dict[str, Any], req: dict[str, Any]) -> dict[str, A
                 "attempt_id": req.get("attempt_id"),
                 "process_id": req.get("process_id"),
                 "answer_mode": req.get("answer_mode"),
+                "assessment_name": req.get("assessment_name"),
+                "student_name": req.get("student_name"),
+                "units_label": units,
             },
+            "description_label": _copy_label(req, units),
         }
     except Exception:  # noqa: BLE001 - attribution must never cost a charge
         return {}
@@ -689,9 +709,8 @@ async def run(req: dict[str, Any], job_id: str, db: Session) -> str:
             logger.info("copy-check job %s (typed) complete: %s/%s, %d graded, %d tokens",
                         job_id, total_awarded, total_max, graded, grader.tokens_used)
             # Blank answers were zeroed without a model call; only the answers
-            # actually read are charged (dashboard: per answer as a question;
-            # API: typed_per_answer each, fixed price).
-            plan = charge_plan(billing, typed=True, num_questions=graded, num_answers=graded)
+            # actually read are charged (typed_per_answer each, fixed price).
+            plan = charge_plan(billing, typed=True, num_answers=graded)
             if plan is None:
                 return RUN_NO_CHARGE
             record_tool_billing(
@@ -703,7 +722,7 @@ async def run(req: dict[str, Any], job_id: str, db: Session) -> str:
                 request_id=job_id,
                 idempotency_key=process_id,
                 **plan,
-                **charge_metering(billing, req),
+                **charge_metering(billing, req, plan["tool_params"]),
             )
             return RUN_BILLED
 
@@ -1164,17 +1183,15 @@ async def run(req: dict[str, Any], job_id: str, db: Session) -> str:
         )
 
         # Meter the copy: charge the institute's credits once per completed
-        # evaluation. Dashboard: per graded question with real-token overage
-        # (tool_cost_estimator "copy_check_evaluation"); API: every page of the
-        # copy at a fixed price ("copy_check_evaluation_api"). Idempotent on
+        # evaluation: every page of the copy at a fixed price (tool_cost_estimator
+        # "copy_check_evaluation", API "copy_check_evaluation_api"). Idempotent on
         # process_id so a retried complete callback never double-charges, and
         # best-effort so a billing error never fails a delivered evaluation
         # (the nightly reconciliation flags a completed copy left unbilled).
         # Cancelled/failed copies are intentionally not charged.
-        plan = charge_plan(billing, typed=False, num_questions=evaluated,
-                           layout_pages=_layout_page_count(layout_map))
+        plan = charge_plan(billing, typed=False, layout_pages=_layout_page_count(layout_map))
         if plan is None:
-            logger.warning("copy-check %s: API copy with no page count; not billed", process_id)
+            logger.warning("copy-check %s: copy with no page count; not billed", process_id)
             return RUN_NO_CHARGE
         record_tool_billing(
             request_type=RequestType.EVALUATION,
@@ -1185,7 +1202,7 @@ async def run(req: dict[str, Any], job_id: str, db: Session) -> str:
             request_id=job_id,
             idempotency_key=process_id,
             **plan,
-            **charge_metering(billing, req),
+            **charge_metering(billing, req, plan["tool_params"]),
         )
         return RUN_BILLED
     except (cancellation.Cancelled, OcrCancelled):

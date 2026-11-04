@@ -64,22 +64,19 @@ DEFAULT_TOOL_PRICING: Dict[str, Dict[str, Any]] = {
         "unit_field": "questions",
         "params": {"image_unit_credits": "0.5"},
     },
-    # AI evaluation of one uploaded answer copy (copy-check): OCR + per-question
-    # rubric-grounded grading. Priced per copy as flat + per graded question so
-    # the quote is known before upload; the actual charge is
-    # max(this, real token cost), so premium models (Opus/GPT) add overage on
-    # long answers while flash copies stay at the quoted rate.
+    # AI evaluation of one answer copy from the dashboard: a fixed price per page
+    # of the graded copy, and for a typed attempt `typed_per_answer` per answer
+    # read. fixed_price = the quote is the charge, no real-token overage.
     #
     # THE LIVE RATE IS THE `copy_check_evaluation` ROW IN ai_tool_pricing —
     # change prices there (no release); this entry is only the fallback for an
-    # environment without that row and must mirror it (set 2026-09-21: the old
-    # 0 + 1/question made a 64-question one-word paper cost 64 credits/copy).
+    # environment without that row and must mirror it.
     "copy_check_evaluation": {
         "request_type": "evaluation",
-        "flat_base_credits": Decimal("1"),
-        "per_unit_credits": Decimal("0.2"),
-        "unit_field": "questions",
-        "params": {},
+        "flat_base_credits": Decimal("0"),
+        "per_unit_credits": Decimal("1"),
+        "unit_field": "pages",
+        "params": {"fixed_price": True, "typed_per_answer": 1},
     },
     # AI evaluation through the partner API (spec 10.1): a FIXED price per
     # page of the graded handwritten copy (the evalezy.com price), and for a
