@@ -6,6 +6,7 @@ import {
     Files,
     FolderSimple,
     Lightbulb,
+    PencilSimpleLine,
     Plus,
     Stack,
     Tag,
@@ -50,7 +51,7 @@ const StatCard = ({
             ) : (
                 <>
                     {value !== undefined && (
-                        <span className="text-h2-semibold text-neutral-700">{value}</span>
+                        <span className="text-h3-semibold text-neutral-700">{value}</span>
                     )}
                     {children}
                 </>
@@ -97,6 +98,53 @@ export const DifficultyBar = ({ counts }: { counts: Record<string, number> }) =>
     );
 };
 
+/** What an institute sees until the library has content: one message, and how it will work. */
+export const LibraryComingSoon = () => {
+    const { t } = useTranslation('assessmentQuestionLibrary');
+    const steps = [
+        {
+            icon: <FolderSimple size={20} />,
+            title: t('comingSoon.pickTitle'),
+            text: t('comingSoon.pickText'),
+        },
+        {
+            icon: <Stack size={20} />,
+            title: t('comingSoon.addTitle'),
+            text: t('comingSoon.addText'),
+        },
+        {
+            icon: <PencilSimpleLine size={20} />,
+            title: t('comingSoon.editTitle'),
+            text: t('comingSoon.editText'),
+        },
+    ];
+    return (
+        <section className="flex flex-col items-center gap-6 rounded-lg border border-neutral-200 bg-white px-4 py-12 text-center sm:px-8">
+            <span className="flex size-16 items-center justify-center rounded-full bg-primary-50 text-primary-500">
+                <Books size={32} />
+            </span>
+            <div className="flex max-w-xl flex-col gap-2">
+                <h1 className="text-h3-semibold text-neutral-700">{t('comingSoon.title')}</h1>
+                <p className="text-body text-neutral-600">{t('comingSoon.text')}</p>
+            </div>
+            <ol className="grid w-full max-w-3xl grid-cols-1 gap-3 text-left sm:grid-cols-3">
+                {steps.map((step) => (
+                    <li
+                        key={step.title}
+                        className="flex flex-col gap-2 rounded-lg border border-neutral-200 p-4"
+                    >
+                        <span className="text-primary-500">{step.icon}</span>
+                        <span className="text-subtitle font-semibold text-neutral-700">
+                            {step.title}
+                        </span>
+                        <span className="text-caption text-neutral-500">{step.text}</span>
+                    </li>
+                ))}
+            </ol>
+        </section>
+    );
+};
+
 export const LibraryHeader = ({
     summary,
     nodes,
@@ -132,15 +180,12 @@ export const LibraryHeader = ({
 
     return (
         <div className="flex flex-col gap-4">
-            <section className="flex flex-col gap-4 rounded-lg border border-primary-100 bg-gradient-to-r from-primary-50 to-white p-6 lg:flex-row lg:items-center">
-                <span className="flex size-14 shrink-0 items-center justify-center rounded-lg border border-primary-100 bg-white text-primary-500 shadow-sm">
-                    <Books size={28} />
+            <section className="flex flex-col gap-4 rounded-lg border border-primary-100 bg-gradient-to-r from-primary-50 to-white p-4 lg:flex-row lg:items-center">
+                <span className="flex size-11 shrink-0 items-center justify-center rounded-lg border border-primary-100 bg-white text-primary-500 shadow-sm">
+                    <Books size={22} />
                 </span>
                 <div className="flex min-w-0 flex-1 flex-col gap-1">
-                    <span className="text-caption font-semibold uppercase tracking-wide text-primary-500">
-                        {t('header.eyebrow')}
-                    </span>
-                    <h1 className="text-h2-semibold text-neutral-700">{t('header.title')}</h1>
+                    <h1 className="text-h3-semibold text-neutral-700">{t('header.title')}</h1>
                     <p className="max-w-2xl text-body text-neutral-600">
                         {readOnly ? t('readOnly.description') : t('header.description')}
                     </p>
