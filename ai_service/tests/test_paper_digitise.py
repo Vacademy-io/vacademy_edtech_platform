@@ -14,6 +14,7 @@ import httpx
 import pytest
 
 from app.services import paper_digitise as pd
+from app.services import paper_numbering
 
 
 # ---------------------------------------------------------------------------
@@ -535,3 +536,180 @@ def test_prompt_asks_for_attempt_and_the_printed_maximum():
     prompt = pd._build_prompt("<p>x</p>", [])
     assert '"attempt": number | null' in prompt and "Internal choice" in prompt
     assert "MM: 40" in prompt
+
+
+# ---------------------------------------------------------------------------
+# numbered instructions above the questions, and the split they declare
+# ---------------------------------------------------------------------------
+
+_INSTRUCTIONS = [
+    "Attempt all 6 questions. Write your answers on the answer sheet.",
+    "Part 'A' contains 4 questions and each question in this part carries 'Five marks'.",
+    "Part 'B' contains 2 questions and each question in this part carries 'Ten marks'.",
+    "Use of Calculator is Prohibited.",
+    "Take pi as 22/7",
+    "The question paper can be retained by the candidates.",
+]
+_FOUR_AND_TWO = [{"label": "A", "name": "Part A", "count": 4, "marks": 5.0},
+                 {"label": "B", "name": "Part B", "count": 2, "marks": 10.0}]
+
+
+def _line(number, text):
+    return f'<div class="question">{number}. {text}</div>\n'
+
+
+def _numbers(html):
+    return [int(m.group(2)) for m in paper_numbering._HTML_NO.finditer(html)]
+
+
+def _drifted_paper():
+    """As MathPix returns it: printed 1-2 on page one read as 7-8 under the list,
+    and page two opens with its own printed 3."""
+    lines = [_line(i, text) for i, text in enumerate(_INSTRUCTIONS, start=1)]
+    lines += [_line(7, "Find x."), _line(8, "Find y."), "<h2>Institute</h2>\n"]
+    lines += [_line(3, "Find z."), _line(4, "Find w."), "<p>Section - B</p>\n"]
+    lines += [_line(5, "Prove it."), _line(6, "Draw it.")]
+    return "".join(lines)
+
+
+def test_printed_numbers_come_back_when_questions_continued_the_instructions_list():
+    html, changed = paper_numbering.restore_list_numbers(_drifted_paper())
+    assert _numbers(html) == [1, 2, 3, 4, 5, 6, 1, 2, 3, 4, 5, 6]
+    assert changed == 2
+    assert "<h2>Institute</h2>" in html and "Find x." in html
+
+
+def test_a_paper_whose_questions_already_restart_is_left_alone():
+    lines = [_line(i, text) for i, text in enumerate(_INSTRUCTIONS, start=1)]
+    html = "".join(lines + [_line(1, "Find x."), _line(2, "Find y.")])
+    assert paper_numbering.restore_list_numbers(html) == (html, 0)
+
+
+def test_plain_questions_are_not_taken_for_an_instructions_list():
+    html = "".join(_line(i, f"Solve equation number {i}.") for i in range(1, 12))
+    assert paper_numbering.restore_list_numbers(html) == (html, 0)
+
+
+def test_questions_that_mention_marks_or_candidates_once_are_not_a_list():
+    html = "".join([
+        _line(1, "How many candidates passed?"), _line(2, "Find x."), _line(3, "Find y."),
+        _line(4, "Find z."), _line(5, "Find w."), _line(6, "Find v."),
+    ])
+    assert paper_numbering.restore_list_numbers(html) == (html, 0)
+
+
+def test_a_fall_back_that_does_not_fit_the_drift_changes_nothing():
+    lines = [_line(i, text) for i, text in enumerate(_INSTRUCTIONS, start=1)]
+    html = "".join(lines + [_line(7, "Find x."), _line(8, "Find y."), _line(5, "Find z.")])
+    assert paper_numbering.restore_list_numbers(html) == (html, 0)
+
+
+def test_a_section_that_restarts_at_one_after_the_drift_is_accepted():
+    lines = [_line(i, text) for i, text in enumerate(_INSTRUCTIONS, start=1)]
+    html, changed = paper_numbering.restore_list_numbers(
+        "".join(lines + [_line(7, "Find x."), _line(8, "Find y."), _line(1, "Prove it.")])
+    )
+    assert _numbers(html)[6:] == [1, 2, 1] and changed == 2
+
+
+def test_the_declared_split_reads_words_digits_and_quotes():
+    assert paper_numbering.declared_split(_drifted_paper()) == _FOUR_AND_TWO
+    html = "<p>Section A has 20 questions carrying 1 mark each.</p><p>Section B has 5 questions of 02 marks each.</p>"
+    assert [(r["label"], r["count"], r["marks"]) for r in paper_numbering.declared_split(html)] == [
+        ("A", 20, 1.0), ("B", 5, 2.0),
+    ]
+
+
+def test_one_part_or_a_part_without_marks_declares_nothing():
+    assert paper_numbering.declared_split("<p>Part A contains 20 questions of 5 marks each.</p>") == []
+    html = "<p>Part A contains 20 questions.</p><p>Part B contains 10 questions.</p>"
+    assert paper_numbering.declared_split(html) == []
+
+
+def _section_q(number, section, marks):
+    return _q(number, f"Question {section} {number}", marks=marks, section=section, marks_source="section")
+
+
+def test_a_block_read_into_the_wrong_part_is_put_back_and_the_total_is_right():
+    # The real failure: a page's questions became "Part B · Block 2" at 10 marks.
+    rounds = [{
+        "title": "Paper",
+        "sections": [{"name": "Part A", "marks_each": 5, "question_count": 4},
+                     {"name": "Part B · Block 2", "marks_each": 10},
+                     {"name": "Part B", "marks_each": 10, "question_count": 2}],
+        "questions": [_section_q("7", "Part A", 5), _section_q("8", "Part A", 5),
+                      _section_q("3", "Part B · Block 2", 10), _section_q("4", "Part B · Block 2", 10),
+                      _section_q("5", "Part B", 10), _section_q("6", "Part B", 10)],
+        "notes": ["Questions 3-4 were placed in section 'Part B · Block 2' to avoid duplicates.", "Q2 needs a figure."],
+    }]
+    paper = pd.build_paper(rounds, pdf_url="u", file_name="p.pdf", expected_total=40, declared=_FOUR_AND_TWO)
+    assert [(q["section"], q["marks"]) for q in paper.raw_questions] == [
+        ("Part A", 5.0), ("Part A", 5.0), ("Part A", 5.0), ("Part A", 5.0), ("Part B", 10.0), ("Part B", 10.0),
+    ]
+    assert paper.paper_total == 40
+    assert [s["name"] for s in paper.sections] == ["Part A", "Part B"]
+    assert not any("add up to" in w or "Block 2" in w for w in paper.warnings)
+    assert any("did not match" in w for w in paper.warnings) and "Q2 needs a figure." in paper.warnings
+    assert json.loads(paper.questions[2]["evaluation_criteria_json"])["max_marks"] == 5.0
+
+
+def test_numbers_repeated_within_a_part_after_the_move_follow_the_paper_order():
+    raw = [_section_q("7", "Part A", 5), _section_q("8", "Part A", 5),
+           _section_q("7", "Part B · Block 2", 10), _section_q("8", "Part B · Block 2", 10),
+           _section_q("5", "Part B", 10), _section_q("6", "Part B", 10)]
+    pd.hold_to_declared_split(raw, [], _FOUR_AND_TWO)
+    assert [q["question_number"] for q in raw] == ["1", "2", "3", "4", "5", "6"]
+
+
+def test_a_paper_already_matching_its_split_is_not_touched():
+    raw = [_section_q(str(i), "Part A", 5) for i in range(1, 5)] + [_section_q(str(i), "Part B", 10) for i in (1, 2)]
+    before = json.dumps(raw)
+    held = pd.hold_to_declared_split(raw, [{"name": "Part A"}, {"name": "Part B"}], _FOUR_AND_TWO)
+    assert held["warnings"] == [] and json.dumps(raw) == before
+
+
+def test_parts_printed_in_another_order_still_match_by_label():
+    raw = [_section_q("1", "Part B", 10), _section_q("2", "Part B", 10)]
+    raw += [_section_q(str(i), "Part A", 5) for i in range(3, 7)]
+    before = json.dumps(raw)
+    assert pd.hold_to_declared_split(raw, [], _FOUR_AND_TWO)["warnings"] == [] and json.dumps(raw) == before
+
+
+def test_marks_printed_at_the_question_survive_the_move():
+    raw = [_section_q(str(i), "Part A", 5) for i in range(1, 4)]
+    raw.append(_q("4", "Asked for 7", marks=7, section="Part B"))
+    raw += [_section_q("5", "Part B", 10), _section_q("6", "Part B", 10)]
+    pd.hold_to_declared_split(raw, [], _FOUR_AND_TWO)
+    assert raw[3]["section"] == "Part A" and raw[3]["marks"] == 7
+
+
+def test_a_different_question_count_is_reported_not_moved():
+    raw = [_section_q(str(i), "Part A", 5) for i in range(1, 6)]
+    before = json.dumps(raw)
+    held = pd.hold_to_declared_split(raw, [], _FOUR_AND_TWO)
+    assert json.dumps(raw) == before
+    assert "list 6 questions" in held["warnings"][0] and "5 were read" in held["warnings"][0]
+
+
+def test_internal_choice_is_left_to_the_choice_rules():
+    raw = [_section_q(str(i), "Part A", 5) for i in range(1, 8)]
+    held = pd.hold_to_declared_split(raw, [{"name": "Part A", "attempt": 4}], _FOUR_AND_TWO)
+    assert held["warnings"] == [] and held["stale_sections"] == []
+
+
+def test_extract_questions_sends_the_restored_numbers_and_holds_to_the_split(monkeypatch):
+    prompts = []
+
+    async def fake_generate(prompt, models, label=""):
+        prompts.append(prompt)
+        return json.dumps({
+            "title": "Paper", "is_process_completed": True, "sections": [],
+            "questions": [_section_q(str(i), "Part A", 5) for i in range(1, 3)]
+            + [_section_q(str(i), "Part B", 10) for i in range(3, 7)],
+        }), "m", {}
+
+    monkeypatch.setattr(pd.llm_json, "generate_json", fake_generate)
+    paper = asyncio.run(pd.extract_questions(_drifted_paper(), ["m"], pdf_url="u", file_name="p.pdf",
+                                             expected_total=None))
+    assert "7. Find x." not in prompts[0] and "1. Find x." in prompts[0]
+    assert paper.paper_total == 40

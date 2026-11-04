@@ -175,6 +175,7 @@
         "readyTitle_other": "Question paper read — {{count}} questions",
         "readyHint": "Review the questions and marks to turn on AI checking of the answer sheets.",
         "reviewButton": "Review & enable AI checking",
+        "readAgainButton": "Read again",
         "failedInline": "The last read failed: {{reason}} Nothing was charged.",
         "readyToast": "Question paper read for {{name}} — {{count}} questions. Review them to turn on AI checking.",
         "failedToast": "Could not read the question paper for {{name}}: {{reason}}",
