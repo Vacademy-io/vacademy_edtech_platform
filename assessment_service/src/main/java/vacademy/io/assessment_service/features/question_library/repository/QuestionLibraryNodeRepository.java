@@ -136,6 +136,49 @@ public interface QuestionLibraryNodeRepository extends JpaRepository<QuestionLib
     List<String> findPlacedLiveQuestionIds(@Param("instituteId") String instituteId,
                                            @Param("questionIdsCsv") String questionIdsCsv);
 
+    /**
+     * What random pick can offer, per difficulty. Columns are difficulty, count. Passage
+     * questions stay out: picked one by one they would lose the rest of their passage.
+     */
+    @Query(value = """
+            SELECT UPPER(q.difficulty), COUNT(*)
+              FROM question q
+             WHERE q.institute_id = :instituteId AND q.status = 'ACTIVE'
+               AND q.parent_rich_text_id IS NULL
+               AND (CAST(:questionTypesCsv AS text) IS NULL OR q.question_type = ANY(string_to_array(CAST(:questionTypesCsv AS text), ',')))
+               AND (CAST(:excludeIdsCsv AS text) IS NULL OR NOT (q.id = ANY(string_to_array(CAST(:excludeIdsCsv AS text), ','))))
+               AND NOT EXISTS (SELECT 1 FROM question_library_version v WHERE v.old_question_id = q.id)
+               AND EXISTS (SELECT 1 FROM question_library_mapping m
+                            WHERE m.question_id = q.id AND m.node_id = ANY(string_to_array(:nodeIdsCsv, ',')))
+             GROUP BY UPPER(q.difficulty)
+            """, nativeQuery = true)
+    List<Object[]> countPickableByDifficulty(@Param("instituteId") String instituteId,
+                                             @Param("nodeIdsCsv") String nodeIdsCsv,
+                                             @Param("questionTypesCsv") String questionTypesCsv,
+                                             @Param("excludeIdsCsv") String excludeIdsCsv);
+
+    /** Up to pickLimit random question ids of one difficulty, under the same rules as the count above. */
+    @Query(value = """
+            SELECT q.id
+              FROM question q
+             WHERE q.institute_id = :instituteId AND q.status = 'ACTIVE'
+               AND UPPER(q.difficulty) = :difficulty
+               AND q.parent_rich_text_id IS NULL
+               AND (CAST(:questionTypesCsv AS text) IS NULL OR q.question_type = ANY(string_to_array(CAST(:questionTypesCsv AS text), ',')))
+               AND (CAST(:excludeIdsCsv AS text) IS NULL OR NOT (q.id = ANY(string_to_array(CAST(:excludeIdsCsv AS text), ','))))
+               AND NOT EXISTS (SELECT 1 FROM question_library_version v WHERE v.old_question_id = q.id)
+               AND EXISTS (SELECT 1 FROM question_library_mapping m
+                            WHERE m.question_id = q.id AND m.node_id = ANY(string_to_array(:nodeIdsCsv, ',')))
+             ORDER BY random()
+             LIMIT :pickLimit
+            """, nativeQuery = true)
+    List<String> pickRandomQuestionIds(@Param("instituteId") String instituteId,
+                                       @Param("nodeIdsCsv") String nodeIdsCsv,
+                                       @Param("questionTypesCsv") String questionTypesCsv,
+                                       @Param("excludeIdsCsv") String excludeIdsCsv,
+                                       @Param("difficulty") String difficulty,
+                                       @Param("pickLimit") int pickLimit);
+
     /** The library questions the given copies were made from. */
     @Query(value = """
             SELECT q.source_meta ->> 'library_question_id'
