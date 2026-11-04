@@ -2,24 +2,27 @@ package vacademy.io.admin_core_service.features.product_config.service;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import vacademy.io.admin_core_service.features.product_config.entity.PlatformProduct;
-import vacademy.io.admin_core_service.features.product_config.repository.PlatformProductRepository;
+import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.jdbc.core.RowMapper;
 import vacademy.io.common.exceptions.VacademyException;
 import vacademy.io.common.product.ProductConfigDTO;
 
-import java.util.Optional;
+import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class PlatformProductServiceTest {
 
-    @Mock PlatformProductRepository repository;
+    @Mock JdbcTemplate jdbcTemplate;
     @InjectMocks PlatformProductService service;
 
     private ProductConfigDTO valid() {
@@ -29,23 +32,21 @@ class PlatformProductServiceTest {
     }
 
     @Test
-    void theFromEmailIsSavedWithWhoChangedIt() {
-        PlatformProduct row = new PlatformProduct();
-        row.setProductKey("evalezy");
-        when(repository.findById("evalezy")).thenReturn(Optional.of(row));
-        when(repository.save(any())).thenAnswer(i -> i.getArgument(0));
-        ProductConfigDTO saved = service.update("evalezy", valid(), "admin1");
-        assertEquals("support@evalezy.com", saved.getFromEmail());
-        assertEquals(5, saved.getTrialDays());
-        assertEquals("admin1", saved.getUpdatedBy());
-        assertNotNull(saved.getUpdatedAt());
+    @SuppressWarnings("unchecked")
+    void savesToTheProductsSettingsRowWithWhoChangedIt() {
+        when(jdbcTemplate.update(anyString(), anyString(), anyString(), anyString())).thenReturn(1);
+        when(jdbcTemplate.query(anyString(), any(RowMapper.class), eq("product.evalezy"))).thenReturn(List.of(valid()));
+        service.update("evalezy", valid(), "admin1");
+        ArgumentCaptor<String> json = ArgumentCaptor.forClass(String.class);
+        verify(jdbcTemplate).update(contains("ai_platform_settings"), json.capture(), eq("admin1"), eq("product.evalezy"));
+        assertTrue(json.getValue().contains("\"from_email\":\"support@evalezy.com\""), json.getValue());
+        assertTrue(json.getValue().contains("\"trial_days\":5"), json.getValue());
     }
 
     @Test
     void anUnknownProductIsNotCreated() {
-        when(repository.findById("nope")).thenReturn(Optional.empty());
+        when(jdbcTemplate.update(anyString(), anyString(), anyString(), anyString())).thenReturn(0);
         assertThrows(VacademyException.class, () -> service.update("nope", valid(), "a"));
-        verify(repository, never()).save(any());
     }
 
     @Test

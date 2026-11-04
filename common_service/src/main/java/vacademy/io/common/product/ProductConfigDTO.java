@@ -12,7 +12,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
 
-/** One row of {@code platform_product}: a product sold under its own name. */
+/** A product sold under its own name: its row in ai_platform_settings, key product.&lt;key&gt;. */
 @Data
 @Builder
 @NoArgsConstructor
