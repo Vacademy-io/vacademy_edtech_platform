@@ -168,6 +168,12 @@ public class AiCallFollowThrough {
                 r, said, at, followupId);
     }
 
+    /** A CRM follow-up for an AI call that needs a person. Its prefix keeps a later call from closing it. */
+    public String createHotLeadFollowup(AiCallResult r, String responseId, String userId, String instituteId,
+                                        Instant dueAt, String what) {
+        return createFollowup(r, responseId, userId, instituteId, dueAt, "AI call: " + what);
+    }
+
     /**
      * The CRM follow-up for a callback: the reminder the counsellor sees and the safety net if the AI call
      * does not connect. Owned by the lead's counsellor, else the first admin. Not created when the lead

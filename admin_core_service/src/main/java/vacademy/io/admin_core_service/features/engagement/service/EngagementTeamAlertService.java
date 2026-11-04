@@ -75,7 +75,7 @@ public class EngagementTeamAlertService {
             Subject who = contactResolver.resolve(List.of(member)).get(0);
             String body = personLabel(who) + (who.getPhone() != null && who.getName() != null ? " (" + who.getPhone() + ")" : "")
                     + " " + detail;
-            sendAlert(engine, recipients, headline, body, task);
+            sendAlert(engine, recipients, headline, body, "ENGAGEMENT_ACTION", task.getId());
             sendEmail(engine, recipients, headline, body);
         } catch (Exception e) {
             log.warn("Team alert failed for engine {}: {}", engine.getId(), e.getMessage());
@@ -108,10 +108,30 @@ public class EngagementTeamAlertService {
         return who.getPhone() != null ? who.getPhone() : "A lead";
     }
 
-    private void sendAlert(EngagementEngine engine, List<String> userIds, String title, String body, EngagementAction task) {
+    /** What an AI call produced needs a person now (a booked demo, a hot lead): same people, same channels. */
+    public void notifyCallOutcome(EngagementEngine engine, EngagementMember member, String callResultId,
+                                  String headline, String detail) {
+        try {
+            List<String> recipients = recipients(engine, member);
+            if (recipients.isEmpty()) {
+                log.info("Engine {} has a hot call outcome but nobody to tell", engine.getId());
+                return;
+            }
+            Subject who = contactResolver.resolve(List.of(member)).get(0);
+            String body = personLabel(who) + (who.getPhone() != null && who.getName() != null ? " (" + who.getPhone() + ")" : "")
+                    + " " + detail;
+            sendAlert(engine, recipients, headline, body, "AI_CALL_RESULT", callResultId);
+            sendEmail(engine, recipients, headline, body);
+        } catch (Exception e) {
+            log.warn("Call outcome alert failed for engine {}: {}", engine.getId(), e.getMessage());
+        }
+    }
+
+    private void sendAlert(EngagementEngine engine, List<String> userIds, String title, String body,
+                           String sourceKind, String sourceId) {
         try {
             notificationService.createSystemAlertAnnouncement(engine.getInstituteId(), userIds,
-                    title, body, ACTOR, "Engagement Engine", "ADMIN", null, "ENGAGEMENT_ACTION", task.getId());
+                    title, body, ACTOR, "Engagement Engine", "ADMIN", null, sourceKind, sourceId);
         } catch (Exception e) {
             log.warn("Team bell alert failed for engine {}: {}", engine.getId(), e.getMessage());
         }

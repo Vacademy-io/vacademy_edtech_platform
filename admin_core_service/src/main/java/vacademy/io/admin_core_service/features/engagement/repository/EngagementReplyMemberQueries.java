@@ -80,4 +80,25 @@ public interface EngagementReplyMemberQueries extends Repository<EngagementMembe
              WHERE institute_id = :instituteId AND wamid IN (:wamids)
             """, nativeQuery = true)
     List<String> handledWamids(@Param("instituteId") String instituteId, @Param("wamids") List<String> wamids);
+
+    /**
+     * This lead's active members in the engines that call with this agent. One institute can sell
+     * several products through different engines: what a person said to one agent is about that
+     * engine only. Pass "" for a missing id: a null would bind untyped.
+     */
+    @Query(value = """
+            SELECT m.id AS memberId, m.engine_id AS engineId, e.cadence_hours AS cadenceHours,
+                   m.user_id AS userId, m.audience_response_id AS audienceResponseId, m.status AS memberStatus
+            FROM engagement_member m
+            JOIN engagement_engine e ON e.id = m.engine_id
+            WHERE m.institute_id = :instituteId AND m.status = 'ACTIVE'
+              AND e.status IN ('ACTIVE', 'DRY_RUN')
+              AND (m.audience_response_id = :responseId OR m.user_id = :userId)
+              AND jsonb_exists(e.channels->'AI_CALL'->'agentPool', :agentId)
+            ORDER BY m.last_decided_at DESC NULLS LAST
+            """, nativeQuery = true)
+    List<LiveMember> findLiveMembersOfLeadForAgent(@Param("instituteId") String instituteId,
+                                                   @Param("responseId") String responseId,
+                                                   @Param("userId") String userId,
+                                                   @Param("agentId") String agentId);
 }

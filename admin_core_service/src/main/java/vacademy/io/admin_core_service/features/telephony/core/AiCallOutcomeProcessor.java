@@ -36,6 +36,8 @@ import vacademy.io.admin_core_service.features.telephony.persistence.repository.
 import vacademy.io.admin_core_service.features.telephony.spi.dto.CallSubjectType;
 import vacademy.io.admin_core_service.features.telephony.spi.dto.NormalizedCallEvent;
 
+import vacademy.io.admin_core_service.features.engagement.service.EngagementCallOutcomeService;
+
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -137,6 +139,12 @@ public class AiCallOutcomeProcessor {
     @Autowired
     @Lazy
     private AiCallActionService aiCallActionService;
+
+    // @Lazy, matching every other field here. What the engine that placed the call does with its
+    // outcome: tell the team about a hot lead, or take a refusal out of the engine.
+    @Autowired
+    @Lazy
+    private EngagementCallOutcomeService engagementCallOutcome;
 
     private record Lead(String responseId, String userId, String audienceId, String instituteId) {}
 
@@ -490,6 +498,15 @@ public class AiCallOutcomeProcessor {
             } catch (Exception ex) {
                 log.warn("ai-call: follow-through failed for result {} (non-fatal): {}",
                         rRef.getId(), ex.getMessage());
+            }
+            // Before the wake, so an engine that looks next already sees the exit or the follow-up.
+            // A call WE broke says nothing about the lead (see isUntrustworthyCall).
+            try {
+                if (engagementCallOutcome != null && !isUntrustworthyCall(rRef)) {
+                    engagementCallOutcome.onCallEnded(rRef, leadRef.responseId(), leadRef.userId(), instRef);
+                }
+            } catch (Exception ex) {
+                log.warn("ai-call: engine outcome failed for result {} (non-fatal): {}", rRef.getId(), ex.getMessage());
             }
             // The call's outcome is in: the lead's engagement engines look within minutes (B4)
             // rather than at their next scheduled look, days away.
