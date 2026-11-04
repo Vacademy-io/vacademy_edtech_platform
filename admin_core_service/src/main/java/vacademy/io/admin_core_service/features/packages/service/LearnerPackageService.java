@@ -82,6 +82,7 @@ public class LearnerPackageService {
                                         instituteId,
                                         learnerPackageFilterDTO.getLevelIds(),
                                         List.of(LearnerOperationEnum.PERCENTAGE_PACKAGE_SESSION_COMPLETED.name()),
+                                        learnerPackageFilterDTO.isExcludeChargePackages(),
                                         pageable);
                 } else {
                         learnerPackageDetail = getAllLearnerPackageDetail(learnerPackageFilterDTO, instituteId,
@@ -254,6 +255,7 @@ public class LearnerPackageService {
                                         List.of(SlideStatus.PUBLISHED.name(), SlideStatus.UNSYNC.name()),
                                         List.of(ChapterStatus.ACTIVE.name()),
                                         List.of(LearnerStatusEnum.ACTIVE.name()),
+                                        learnerPackageFilterDTO.isExcludeChargePackages(),
                                         pageable);
                 } else {
                         learnerPackageDetail = packageRepository.getCompletedLearnerPackageDetail(
@@ -274,6 +276,7 @@ public class LearnerPackageService {
                                         List.of(SlideStatus.PUBLISHED.name(), SlideStatus.UNSYNC.name()),
                                         List.of(ChapterStatus.ACTIVE.name()),
                                         List.of(LearnerStatusEnum.ACTIVE.name()),
+                                        learnerPackageFilterDTO.isExcludeChargePackages(),
                                         pageable);
                 }
                 return learnerPackageDetail;
@@ -301,6 +304,7 @@ public class LearnerPackageService {
                                         List.of(QuestionStatusEnum.ACTIVE.name()),
                                         List.of(SlideStatus.PUBLISHED.name(), SlideStatus.UNSYNC.name()),
                                         List.of(ChapterStatus.ACTIVE.name()),
+                                        learnerPackageFilterDTO.isExcludeChargePackages(),
                                         pageable);
                 } else {
                         learnerPackageDetail = packageRepository.getAllLearnerPackagesIrrespectiveOfProgress(
@@ -321,6 +325,7 @@ public class LearnerPackageService {
                                         List.of(QuestionStatusEnum.ACTIVE.name()),
                                         List.of(SlideStatus.PUBLISHED.name(), SlideStatus.UNSYNC.name()),
                                         List.of(ChapterStatus.ACTIVE.name()),
+                                        learnerPackageFilterDTO.isExcludeChargePackages(),
                                         pageable);
                 }
                 return learnerPackageDetail;
@@ -352,6 +357,7 @@ public class LearnerPackageService {
                                         List.of(SlideStatus.DRAFT.name(), SlideStatus.PUBLISHED.name(),
                                                         SlideStatus.UNSYNC.name()),
                                         List.of(ChapterStatus.ACTIVE.name()),
+                                        learnerPackageFilterDTO.isExcludeChargePackages(),
                                         pageable);
                 } else {
                         learnerPackageDetail = packageRepository.getIncompleteMappedPackages(
@@ -375,6 +381,7 @@ public class LearnerPackageService {
                                         List.of(SlideStatus.DRAFT.name(), SlideStatus.PUBLISHED.name(),
                                                         SlideStatus.UNSYNC.name()),
                                         List.of(ChapterStatus.ACTIVE.name()),
+                                        learnerPackageFilterDTO.isExcludeChargePackages(),
                                         pageable);
                 }
                 return learnerPackageDetail;
