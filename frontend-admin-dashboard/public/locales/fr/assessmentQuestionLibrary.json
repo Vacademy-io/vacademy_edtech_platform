@@ -1,7 +1,6 @@
 {
     "heading": "Bibliothèque de questions",
     "header": {
-        "eyebrow": "Évaluations",
         "title": "Bibliothèque de questions",
         "description": "Toutes les questions de votre établissement, classées par matière, chapitre et thème. Classez-les une fois, réutilisez-les dans n’importe quel test.",
         "importTags": "Importer les tags",
@@ -73,6 +72,7 @@
         "addPaperHere": "Ajouter un sujet ici"
     },
     "filters": {
+        "clear": "Effacer",
         "search": "Rechercher dans le texte",
         "searchButton": "Rechercher",
         "difficulty": "Difficulté",
@@ -187,6 +187,16 @@
         "versionNotice_other": "Cette question est déjà utilisée dans {{count}} tests. L’enregistrement crée une nouvelle version ; ces tests gardent la question vue par leurs élèves.",
         "savedAsVersion_one": "Enregistrée comme nouvelle version. Le test qui l’utilisait ({{count}}) est inchangé.",
         "savedAsVersion_other": "Enregistrée comme nouvelle version. Les {{count}} tests qui l’utilisaient sont inchangés."
+    },
+    "comingSoon": {
+        "title": "Des questions prêtes à l'emploi arrivent bientôt",
+        "text": "Les questions et les sujets par thème apparaîtront ici dès leur ajout.",
+        "pickTitle": "Choisissez un thème",
+        "pickText": "Ouvrez-le depuis l'étape d'ajout de questions de n'importe quelle évaluation.",
+        "addTitle": "Ajoutez des questions ou un sujet",
+        "addText": "Choisissez-les une par une ou prenez un sujet complet.",
+        "editTitle": "Modifiez dans votre évaluation",
+        "editText": "Vos modifications restent dans votre évaluation. La bibliothèque ne change pas."
     },
     "readOnly": {
         "description": "Des questions et des sujets prêts à l'emploi, classés par thème. Ajoutez-les depuis l'étape d'ajout de questions de n'importe quelle évaluation. Vos modifications restent dans votre évaluation.",

@@ -1,7 +1,6 @@
 {
     "heading": "Question Library",
     "header": {
-        "eyebrow": "Assessments",
         "title": "Question Library",
         "description": "Every question your institute has, organised by subject, chapter and topic. File questions once and reuse them in any test.",
         "importTags": "Import tags",
@@ -73,6 +72,7 @@
         "addPaperHere": "Add a paper here"
     },
     "filters": {
+        "clear": "Clear",
         "search": "Search question text",
         "searchButton": "Search",
         "difficulty": "Difficulty",
@@ -187,6 +187,16 @@
         "versionNotice_other": "This question is already used in {{count}} tests. Saving creates a new version for the library; those tests keep the question their students saw.",
         "savedAsVersion_one": "Saved as a new version. The {{count}} test that used it is unchanged.",
         "savedAsVersion_other": "Saved as a new version. The {{count}} tests that used it are unchanged."
+    },
+    "comingSoon": {
+        "title": "Ready-made questions are on their way",
+        "text": "Topic-wise questions and papers will appear here as soon as they are added.",
+        "pickTitle": "Pick a topic",
+        "pickText": "Open it from the Add Questions step of any test.",
+        "addTitle": "Add questions or a paper",
+        "addText": "Choose them one by one, or take a whole paper.",
+        "editTitle": "Edit in your test",
+        "editText": "Your changes stay in your test. The library stays as it is."
     },
     "readOnly": {
         "description": "Ready-made questions and papers, topic-wise. Add them from the Add Questions step of any test. Your edits stay in your test.",

@@ -322,17 +322,20 @@ const Step2PickFromQuestionLibrary = ({
 
                     {mode === 'questions' && (
                         <>
-                            <div className="flex items-end gap-3">
-                                <MyInput
-                                    inputType="text"
-                                    inputPlaceholder={t('filters.search')}
-                                    input={search}
-                                    onChangeFunction={(e) => setSearch(e.target.value)}
-                                    className="w-full"
-                                />
+                            <div className="flex items-center gap-2">
+                                <div className="min-w-0 flex-1">
+                                    <MyInput
+                                        inputType="text"
+                                        inputPlaceholder={t('filters.search')}
+                                        input={search}
+                                        onChangeFunction={(e) => setSearch(e.target.value)}
+                                        className="sm:w-full"
+                                    />
+                                </div>
                                 <MyButton
                                     buttonType="secondary"
                                     scale="medium"
+                                    layoutVariant="icon"
                                     aria-label={t('filters.searchButton')}
                                     onClick={() => {
                                         setPage(0);

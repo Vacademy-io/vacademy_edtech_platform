@@ -13,6 +13,7 @@ import {
     X,
 } from '@phosphor-icons/react';
 import { MyButton } from '@/components/design-system/button';
+import { MyDropdown } from '@/components/design-system/dropdown';
 import { MyInput } from '@/components/design-system/input';
 import { MyPagination } from '@/components/design-system/pagination';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -50,7 +51,7 @@ import {
     QUESTION_TYPES,
     UNSORTED,
 } from './library-constants';
-import { DifficultyBar, LibraryHeader } from './LibraryHeader';
+import { DifficultyBar, LibraryComingSoon, LibraryHeader } from './LibraryHeader';
 import { TopicTree, type TopicAction } from './TopicTree';
 import {
     DeleteTopicDialog,
@@ -67,6 +68,9 @@ type TopicForm =
     | { mode: 'create'; parent: LibraryNode | null }
     | { mode: 'rename'; node: LibraryNode }
     | null;
+
+/** Dropdown value for "no filter": an empty value would read as nothing selected. */
+const ANY = '__any__';
 
 /** Which questions a topic picker applies to, and how. */
 type PickerJob = { questionIds: string[]; mode: 'ADD' | 'MOVE' } | null;
@@ -246,22 +250,6 @@ export const QuestionLibraryPage = () => {
     const pageIds = rows.map((row) => row.question.id);
     const allOnPage = pageIds.length > 0 && pageIds.every((id) => checked.has(id));
 
-    const chip = (label: string, active: boolean, onClick: () => void, key: string) => (
-        <button
-            key={key}
-            type="button"
-            onClick={onClick}
-            className={cn(
-                'rounded-full border px-3 py-1 text-caption',
-                active
-                    ? 'border-primary-400 bg-primary-50 text-primary-500'
-                    : 'border-neutral-200 text-neutral-600 hover:border-primary-400'
-            )}
-        >
-            {label}
-        </button>
-    );
-
     const scopeTitle =
         selected === ALL_QUESTIONS
             ? t('scope.all')
@@ -271,6 +259,18 @@ export const QuestionLibraryPage = () => {
                 ? nodePath(selectedNode.id, nodes)
                 : '';
     const hasFilters = !!(appliedSearch || difficulty || questionType);
+    const clearFilters = () => {
+        resetPaging();
+        setSearch('');
+        setAppliedSearch('');
+        setDifficulty('');
+        setQuestionType('');
+    };
+
+    // Nothing to browse yet. Stats of zero, filters and two empty lists only say that three times.
+    if (readOnly && tree.data && nodes.length === 0 && tree.data.summary.total_questions === 0) {
+        return <LibraryComingSoon />;
+    }
 
     return (
         <div className="flex flex-col gap-6">
@@ -315,58 +315,142 @@ export const QuestionLibraryPage = () => {
                 </div>
 
                 <section className="flex min-w-0 flex-col gap-4 lg:col-span-8 xl:col-span-9">
-                    {/* Scope heading: what the list below is showing. */}
-                    <div className="flex flex-col gap-3 rounded-lg border border-neutral-200 bg-white p-4 sm:flex-row sm:items-center">
-                        <div className="flex min-w-0 flex-1 flex-col gap-1">
-                            <span className="truncate text-subtitle font-semibold text-neutral-700">
-                                {scopeTitle}
-                            </span>
-                            {selectedNode ? (
-                                <div className="max-w-sm">
-                                    <DifficultyBar
-                                        counts={{
-                                            EASY: selectedNode.easy_count,
-                                            MEDIUM: selectedNode.medium_count,
-                                            HARD: selectedNode.hard_count,
-                                        }}
-                                    />
-                                </div>
-                            ) : (
-                                <span className="text-caption text-neutral-500">
-                                    {readOnly
-                                        ? t('readOnly.allHint')
-                                        : selected === UNSORTED
-                                          ? t('scope.unsortedHint')
-                                          : t('scope.allHint')}
+                    {/* What the list below is showing, and how to narrow it down. */}
+                    <div className="flex flex-col gap-4 rounded-lg border border-neutral-200 bg-white p-4">
+                        <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+                            <div className="flex min-w-0 flex-1 flex-col gap-1">
+                                <span className="truncate text-subtitle font-semibold text-neutral-700">
+                                    {scopeTitle}
                                 </span>
-                            )}
-                        </div>
-                        {selectedNode && !readOnly && (
-                            <div className="flex flex-wrap gap-2">
-                                {selectedNode.depth < maxDepth && (
+                                {selectedNode ? (
+                                    <div className="max-w-sm">
+                                        <DifficultyBar
+                                            counts={{
+                                                EASY: selectedNode.easy_count,
+                                                MEDIUM: selectedNode.medium_count,
+                                                HARD: selectedNode.hard_count,
+                                            }}
+                                        />
+                                    </div>
+                                ) : (
+                                    <span className="text-caption text-neutral-500">
+                                        {readOnly
+                                            ? t('readOnly.allHint')
+                                            : selected === UNSORTED
+                                              ? t('scope.unsortedHint')
+                                              : t('scope.allHint')}
+                                    </span>
+                                )}
+                            </div>
+                            {selectedNode && !readOnly && (
+                                <div className="flex flex-wrap gap-2">
+                                    {selectedNode.depth < maxDepth && (
+                                        <MyButton
+                                            buttonType="secondary"
+                                            scale="small"
+                                            className="gap-1"
+                                            onClick={() =>
+                                                setTopicForm({
+                                                    mode: 'create',
+                                                    parent: selectedNode,
+                                                })
+                                            }
+                                        >
+                                            <Plus size={14} />
+                                            {t('scope.addSubtopic')}
+                                        </MyButton>
+                                    )}
                                     <MyButton
                                         buttonType="secondary"
                                         scale="small"
                                         className="gap-1"
-                                        onClick={() =>
-                                            setTopicForm({ mode: 'create', parent: selectedNode })
-                                        }
+                                        onClick={() => setPaperOpen(true)}
                                     >
-                                        <Plus size={14} />
-                                        {t('scope.addSubtopic')}
+                                        <Files size={14} />
+                                        {t('scope.addPaperHere')}
                                     </MyButton>
-                                )}
+                                </div>
+                            )}
+                        </div>
+
+                        <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
+                            <div className="flex min-w-0 flex-1 items-center gap-2 sm:min-w-60">
+                                <div className="min-w-0 flex-1">
+                                    <MyInput
+                                        inputType="text"
+                                        inputPlaceholder={t('filters.search')}
+                                        input={search}
+                                        onChangeFunction={(e) => setSearch(e.target.value)}
+                                        onKeyDown={(e: KeyboardEvent<HTMLInputElement>) => {
+                                            if (e.key === 'Enter') {
+                                                resetPaging();
+                                                setAppliedSearch(search.trim());
+                                            }
+                                        }}
+                                        className="sm:w-full"
+                                    />
+                                </div>
                                 <MyButton
                                     buttonType="secondary"
-                                    scale="small"
-                                    className="gap-1"
-                                    onClick={() => setPaperOpen(true)}
+                                    scale="medium"
+                                    layoutVariant="icon"
+                                    aria-label={t('filters.searchButton')}
+                                    onClick={() => {
+                                        resetPaging();
+                                        setAppliedSearch(search.trim());
+                                    }}
                                 >
-                                    <Files size={14} />
-                                    {t('scope.addPaperHere')}
+                                    <MagnifyingGlass size={16} />
                                 </MyButton>
                             </div>
-                        )}
+                            <MyDropdown
+                                currentValue={
+                                    difficulty
+                                        ? t(`difficulty.${difficulty}`)
+                                        : t('filters.difficulty')
+                                }
+                                dropdownList={[
+                                    { label: t('filters.any'), value: ANY },
+                                    ...DIFFICULTIES.map((level) => ({
+                                        label: t(`difficulty.${level}`),
+                                        value: level,
+                                    })),
+                                ]}
+                                handleChange={(value) => {
+                                    resetPaging();
+                                    setDifficulty(value === ANY ? '' : value);
+                                }}
+                                className="w-full text-body sm:w-40"
+                            />
+                            <MyDropdown
+                                currentValue={
+                                    questionType ? t(`types.${questionType}`) : t('filters.type')
+                                }
+                                dropdownList={[
+                                    { label: t('filters.any'), value: ANY },
+                                    ...QUESTION_TYPES.map((type) => ({
+                                        label: t(`types.${type}`),
+                                        value: type,
+                                    })),
+                                ]}
+                                handleChange={(value) => {
+                                    resetPaging();
+                                    setQuestionType(value === ANY ? '' : value);
+                                }}
+                                className="w-full text-body sm:w-44"
+                            />
+                            {hasFilters && (
+                                <MyButton
+                                    buttonType="text"
+                                    scale="medium"
+                                    className="gap-1 sm:min-w-0"
+                                    onClick={clearFilters}
+                                >
+                                    <X size={14} />
+                                    {t('filters.clear')}
+                                </MyButton>
+                            )}
+                        </div>
                     </div>
 
                     <LibraryPapersPanel
@@ -384,88 +468,6 @@ export const QuestionLibraryPage = () => {
                             )
                         }
                     />
-
-                    {/* Filters */}
-                    <div className="flex flex-col gap-3 rounded-lg border border-neutral-200 bg-white p-4">
-                        <div className="flex items-end gap-2">
-                            <MyInput
-                                inputType="text"
-                                inputPlaceholder={t('filters.search')}
-                                input={search}
-                                onChangeFunction={(e) => setSearch(e.target.value)}
-                                onKeyDown={(e: KeyboardEvent<HTMLInputElement>) => {
-                                    if (e.key === 'Enter') {
-                                        resetPaging();
-                                        setAppliedSearch(search.trim());
-                                    }
-                                }}
-                                className="w-full"
-                            />
-                            <MyButton
-                                buttonType="secondary"
-                                scale="medium"
-                                aria-label={t('filters.searchButton')}
-                                onClick={() => {
-                                    resetPaging();
-                                    setAppliedSearch(search.trim());
-                                }}
-                            >
-                                <MagnifyingGlass size={16} />
-                            </MyButton>
-                        </div>
-                        <div className="flex flex-wrap gap-x-6 gap-y-3">
-                            <div className="flex flex-wrap items-center gap-2">
-                                <span className="text-caption text-neutral-500">
-                                    {t('filters.difficulty')}
-                                </span>
-                                {chip(
-                                    t('filters.any'),
-                                    difficulty === '',
-                                    () => {
-                                        resetPaging();
-                                        setDifficulty('');
-                                    },
-                                    'any'
-                                )}
-                                {DIFFICULTIES.map((level) =>
-                                    chip(
-                                        t(`difficulty.${level}`),
-                                        difficulty === level,
-                                        () => {
-                                            resetPaging();
-                                            setDifficulty(level);
-                                        },
-                                        level
-                                    )
-                                )}
-                            </div>
-                            <div className="flex flex-wrap items-center gap-2">
-                                <span className="text-caption text-neutral-500">
-                                    {t('filters.type')}
-                                </span>
-                                {chip(
-                                    t('filters.any'),
-                                    questionType === '',
-                                    () => {
-                                        resetPaging();
-                                        setQuestionType('');
-                                    },
-                                    'any'
-                                )}
-                                {QUESTION_TYPES.map((type) =>
-                                    chip(
-                                        t(`types.${type}`),
-                                        questionType === type,
-                                        () => {
-                                            resetPaging();
-                                            setQuestionType(type);
-                                        },
-                                        type
-                                    )
-                                )}
-                            </div>
-                        </div>
-                    </div>
 
                     {/* Bulk bar */}
                     {!readOnly && rows.length > 0 && (
