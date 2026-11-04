@@ -58,7 +58,9 @@ public class ProfileDataPointProvider implements DataPointProvider {
             ObjectNode n = mapper.createObjectNode();
             n.put("name", s.getName());
             n.put("phone", s.getPhone());
-            n.put("email", s.getEmail());
+            // A bounced address is not a way to reach them, so the brain must not see one to write to.
+            n.put("email", s.isEmailUndeliverable() ? null : s.getEmail());
+            if (s.isEmailUndeliverable()) n.put("emailBounced", true);
             // Every CRM lead gets a user_id at submit time, so user_id cannot tell a researched
             // organisation from a learner. The lead's source can: the Lead Agent's leads never
             // contacted the institute, and their custom fields are our research, not form answers.

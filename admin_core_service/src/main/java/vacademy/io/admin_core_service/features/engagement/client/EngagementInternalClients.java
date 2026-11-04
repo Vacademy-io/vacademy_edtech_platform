@@ -102,6 +102,12 @@ public class EngagementInternalClients {
         }
     }
 
+    /** Which of these addresses are on the bounce blocklist: {blocked: [lowercase addresses]}. */
+    public JsonNode blockedEmails(List<String> emails) {
+        return post(notificationServerBaseUrl, "/notification-service/internal/v1/engagement/blocked-emails",
+                Map.of("emails", emails), "blocked-emails");
+    }
+
     public JsonNode inboundSince(String instituteId, long sinceEpochMillis) {
         try {
             String route = "/notification-service/internal/v1/engagement/inbound-since"

@@ -113,6 +113,7 @@ public interface EngagementActionRepository extends JpaRepository<EngagementActi
                AND (channel <> 'WHATSAPP' OR template_name IS NOT NULL)
                AND (channel <> 'EMAIL' OR :emailNeedsTemplate = FALSE OR template_name IS NOT NULL)
                AND (draft_body IS NOT NULL OR template_name IS NOT NULL)
+               AND error_message IS NULL
             """, nativeQuery = true)
     int promoteTasksToAutoSends(@Param("engineId") String engineId, @Param("channel") String channel,
                                 @Param("emailNeedsTemplate") boolean emailNeedsTemplate,
@@ -528,6 +529,26 @@ public interface EngagementActionRepository extends JpaRepository<EngagementActi
             """, nativeQuery = true)
     int cancelOpenForMembers(@Param("memberIds") List<String> memberIds, @Param("reason") String reason,
                              @Param("now") Instant now, @Param("keepAiCallPromises") boolean keepAiCallPromises);
+
+    /** Members of this institute with an unsent email the engine drafted (a person's reply is not one). */
+    @Query(value = """
+            SELECT DISTINCT member_id FROM engagement_action
+             WHERE institute_id = :instituteId AND channel = 'EMAIL'
+               AND kind IN ('TASK', 'SEND') AND status IN ('OPEN', 'ACKED')
+            """, nativeQuery = true)
+    List<String> memberIdsWithUnsentEmails(@Param("instituteId") String instituteId);
+
+    /** Those unsent emails become EXPIRED with the reason: their address cannot receive them. */
+    @Modifying
+    @Transactional
+    @Query(value = """
+            UPDATE engagement_action
+               SET status = 'EXPIRED', error_message = :reason, updated_at = :now
+             WHERE member_id IN (:memberIds) AND channel = 'EMAIL'
+               AND kind IN ('TASK', 'SEND') AND status IN ('OPEN', 'ACKED')
+            """, nativeQuery = true)
+    int cancelUnsentEmails(@Param("memberIds") List<String> memberIds, @Param("reason") String reason,
+                           @Param("now") Instant now);
 
     /**
      * B6: at-most-once claim of a CRM action task for approval (OPEN/ACKED TASK → DISPATCHING), so
