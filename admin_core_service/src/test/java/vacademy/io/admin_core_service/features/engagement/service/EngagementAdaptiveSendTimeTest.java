@@ -259,6 +259,8 @@ class EngagementAdaptiveSendTimeTest {
         void repliedSincePreferenceSet() throws Exception {
             member.setMemoryJson("{\"sendPref\":{\"hour\":16,\"since\":\"" + sentAt(2, 12) + "\"}}");
             sent(sentAt(2, 16), sentAt(3, 11), sentAt(4, 11));
+            // Decided after that reply at any hour of the day: a reply newer than the last decision takes another path.
+            member.setLastDecidedAt(Instant.now().minusSeconds(3600));
             JsonNode ledger = OM.readTree("{\"email\":{\"lastReplyAt\":\"" + sentAt(1, 9) + "\"}}");
             DataPointProvider ledgerProvider = mock(DataPointProvider.class);
             when(ledgerProvider.key()).thenReturn("ledger");
