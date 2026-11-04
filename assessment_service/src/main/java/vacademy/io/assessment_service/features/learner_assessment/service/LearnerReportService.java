@@ -5,6 +5,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.cache.annotation.Cacheable;
@@ -154,16 +155,16 @@ public class LearnerReportService {
                 .findTopByUserIdAndAssessmentId(userId, assessmentId);
 
         if (registration.isEmpty()) {
-            throw new VacademyException("You are not registered for this assessment");
+            throw new VacademyException(HttpStatus.FORBIDDEN, "You are not registered for this assessment");
         }
 
         Optional<StudentAttempt> attempt = studentAttemptRepository.findById(attemptId);
         if (attempt.isEmpty()) {
-            throw new VacademyException("Attempt not found");
+            throw new VacademyException(HttpStatus.NOT_FOUND, "Attempt not found");
         }
 
         if (!attempt.get().getRegistration().getId().equals(registration.get().getId())) {
-            throw new VacademyException("You do not have access to this attempt");
+            throw new VacademyException(HttpStatus.FORBIDDEN, "You do not have access to this attempt");
         }
 
         // Same rule the learner UI applies (AssessmentCard, assessment-slide-viewer):
@@ -176,7 +177,7 @@ public class LearnerReportService {
         // regardless of release status, and refusing would break that button -
         // unless the attempt is explicitly held (PENDING) for a teacher.
         if (isHeldManualResult(registration.get().getAssessment(), attempt.get())) {
-            throw new VacademyException("Result has not been released yet");
+            throw new VacademyException(HttpStatus.FORBIDDEN, "Result has not been released yet");
         }
 
         return registration.get();
