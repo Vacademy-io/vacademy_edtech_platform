@@ -127,9 +127,11 @@ export const OverviewRemarks = ({
     const canSubmit = text.trim().length > 0 && !addRemark.isPending;
 
     return (
+        // Sits inside the Overview header's card, so it draws no card of its own.
         <ProfileSectionCard
             icon={NotePencil}
             heading={t('heading')}
+            className="rounded-none border-0 bg-transparent p-0 shadow-none"
             action={
                 <ContactCallButton
                     appearance="button"
