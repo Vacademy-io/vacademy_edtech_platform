@@ -684,6 +684,21 @@ public class StockHoldService {
                         "quantity", String.valueOf(quantity)));
     }
 
+    /**
+     * How many copies are left of each stock-limited session, so the cart can warn before the
+     * checkout form. The count already excludes other orders' holds. A session with no limit, or
+     * an unknown id, is simply absent. Only a hint: {@link #hold} still decides at payment.
+     */
+    public Map<String, Integer> availableStock(Collection<String> packageSessionIds) {
+        Map<String, Integer> left = new HashMap<>();
+        stockInfo(packageSessionIds).forEach((packageSessionId, info) -> {
+            if (info.getMaxSeats() != null) {
+                left.put(packageSessionId, info.getAvailableSlots() != null ? Math.max(info.getAvailableSlots(), 0) : 0);
+            }
+        });
+        return left;
+    }
+
     private Map<String, StockInfoProjection> stockInfo(Collection<String> packageSessionIds) {
         Map<String, StockInfoProjection> byId = new HashMap<>();
         if (packageSessionIds == null || packageSessionIds.isEmpty()) {
