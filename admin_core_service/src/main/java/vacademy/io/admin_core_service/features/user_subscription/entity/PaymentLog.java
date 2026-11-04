@@ -1,5 +1,6 @@
 package vacademy.io.admin_core_service.features.user_subscription.entity;
 
+import org.hibernate.annotations.DynamicUpdate;
 import com.fasterxml.jackson.databind.JsonNode;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
@@ -18,6 +19,9 @@ import java.util.Date;
 @NoArgsConstructor
 @Getter
 @Setter
+// Only the changed columns: Razorpay delivers payment.captured and order.paid about a second apart
+// to different replicas, so writing a whole row back could undo a status another replica just set.
+@DynamicUpdate
 @Entity
 @Table(name = "payment_log")
 public class PaymentLog {
