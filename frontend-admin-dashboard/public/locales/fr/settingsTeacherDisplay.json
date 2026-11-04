@@ -179,7 +179,8 @@
         "workflowsTab": "Onglet Workflows",
         "parentTab": "Onglet Tuteur",
         "onboardingTab": "Onglet Intégration",
-        "liveSessionTab": "Onglet Sessions en direct"
+        "liveSessionTab": "Onglet Sessions en direct",
+        "academicActivityTab": "Onglet Activité académique"
     },
     "learnerManagementOptions": {
         "allowPortalAccess": "Autoriser l'accès au portail apprenant",

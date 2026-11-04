@@ -1,0 +1,381 @@
+import { useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { format, formatDistanceToNowStrict, subDays } from 'date-fns';
+import {
+    BookOpenText,
+    Books,
+    CaretDown,
+    ChatsCircle,
+    FilePdf,
+    Lightning,
+    Question,
+    Robot,
+    UserCircle,
+    VideoCamera,
+    type Icon as PhosphorIcon,
+} from '@phosphor-icons/react';
+import { BASE_URL } from '@/constants/urls';
+import authenticatedAxiosInstance from '@/lib/auth/axiosInstance';
+import { cn } from '@/lib/utils';
+import { useLearnerPackagesQuery } from '@/routes/manage-students/students-list/-services/getLearnerPackages';
+import { getLearnerLiveSessionsQuery } from '@/services/learner-live-sessions';
+import {
+    useConversationMessagesQuery,
+    useUserConversationsQuery,
+} from '@/routes/settings/-services/ai-usage-service';
+import { ProfileEmpty, ProfileSectionCard, ProfileSkeleton } from '../profile-ui';
+
+/**
+ * Academic Activity: what the learner is doing right now (live pulse), what they read lately,
+ * course progress, live classes and their AI tutor chats, on one tab.
+ */
+
+interface PulseSlide {
+    slide_id: string;
+    title: string | null;
+    type: string | null;
+    chapter: string | null;
+    last_seen_at: string | null;
+    minutes: number;
+    visits: number;
+    percent: number | null;
+}
+
+interface LearnerPulse {
+    state: 'ACTIVE' | 'IDLE' | 'OFFLINE' | 'NEVER';
+    last_seen_at: string | null;
+    last_seen_ago_seconds: number | null;
+    current: PulseSlide | null;
+    recent: PulseSlide[];
+}
+
+const fetchLearnerPulse = async (userId: string, instituteId: string): Promise<LearnerPulse> => {
+    const { data } = await authenticatedAxiosInstance.get<LearnerPulse>(
+        `${BASE_URL}/admin-core-service/course-pulse/learner`,
+        { params: { userId, instituteId } }
+    );
+    return data;
+};
+
+const DAYS = 30;
+
+const ago = (iso: string | number | null | undefined) => {
+    if (iso == null) return '';
+    const d = new Date(iso);
+    return Number.isNaN(d.getTime()) ? '' : `${formatDistanceToNowStrict(d)} ago`;
+};
+
+const slideIcon = (type: string | null): PhosphorIcon => {
+    switch ((type ?? '').toUpperCase()) {
+        case 'VIDEO':
+            return VideoCamera;
+        case 'DOCUMENT':
+            return FilePdf;
+        case 'QUESTION':
+        case 'QUIZ':
+        case 'ASSIGNMENT':
+            return Question;
+        default:
+            return BookOpenText;
+    }
+};
+
+const STATE_META: Record<LearnerPulse['state'], { label: string; dot: string; text: string }> = {
+    ACTIVE: { label: 'Learning now', dot: 'bg-success-500', text: 'text-success-700' },
+    IDLE: { label: 'Idle', dot: 'bg-warning-500', text: 'text-warning-700' },
+    OFFLINE: { label: 'Offline', dot: 'bg-neutral-400', text: 'text-neutral-600' },
+    NEVER: { label: 'No activity yet', dot: 'bg-neutral-300', text: 'text-neutral-500' },
+};
+
+const Bar = ({ value }: { value: number }) => (
+    <div className="h-1.5 w-full rounded-full bg-neutral-100">
+        <div
+            className="h-full rounded-full bg-primary-500"
+            style={{ width: `${Math.max(value > 0 ? 2 : 0, Math.min(100, value))}%` }}
+        />
+    </div>
+);
+
+const LivePulse = ({ pulse }: { pulse: LearnerPulse }) => {
+    const meta = STATE_META[pulse.state];
+    const live = pulse.state === 'ACTIVE';
+    return (
+        <ProfileSectionCard icon={Lightning} heading="Live pulse">
+            <div className="flex items-start gap-3">
+                <span className="relative mt-1 flex size-3 shrink-0">
+                    {live && (
+                        <span className="absolute inline-flex size-full animate-ping rounded-full bg-success-400 opacity-60" />
+                    )}
+                    <span className={cn('relative inline-flex size-3 rounded-full', meta.dot)} />
+                </span>
+                <div className="flex min-w-0 flex-col gap-0.5">
+                    <span className={cn('text-sm font-semibold', meta.text)}>{meta.label}</span>
+                    {pulse.current ? (
+                        <span className="text-sm text-neutral-700">
+                            On <b>{pulse.current.title ?? 'a slide'}</b>
+                            {pulse.current.chapter ? ` · ${pulse.current.chapter}` : ''}
+                        </span>
+                    ) : pulse.last_seen_at ? (
+                        <span className="text-xs text-neutral-500">
+                            Last seen {ago(pulse.last_seen_at)}
+                            {pulse.recent[0]?.title ? ` on ${pulse.recent[0].title}` : ''}
+                        </span>
+                    ) : (
+                        <span className="text-xs text-neutral-500">
+                            Has not opened any course content in the last {DAYS} days.
+                        </span>
+                    )}
+                </div>
+            </div>
+        </ProfileSectionCard>
+    );
+};
+
+const RecentlyRead = ({ pulse }: { pulse: LearnerPulse }) => (
+    <ProfileSectionCard icon={BookOpenText} heading="What they read lately">
+        {pulse.recent.length === 0 ? (
+            <ProfileEmpty title="Nothing read yet" hint={`No course content opened in ${DAYS} days.`} />
+        ) : (
+            <ul className="flex flex-col divide-y divide-neutral-100">
+                {pulse.recent.map((s) => {
+                    const Icon = slideIcon(s.type);
+                    return (
+                        <li key={s.slide_id} className="flex items-center gap-2 py-2">
+                            <Icon className="size-4 shrink-0 text-primary-500" weight="duotone" />
+                            <div className="flex min-w-0 flex-1 flex-col">
+                                <span className="truncate text-sm text-neutral-800" title={s.title ?? ''}>
+                                    {s.title ?? 'Untitled'}
+                                </span>
+                                <span className="truncate text-xs text-neutral-500">
+                                    {[s.chapter, ago(s.last_seen_at)].filter(Boolean).join(' · ')}
+                                </span>
+                            </div>
+                            <div className="flex shrink-0 flex-col items-end text-xs text-neutral-500">
+                                <span className="font-semibold text-neutral-700">
+                                    {s.minutes >= 1 ? `${Math.round(s.minutes)} min` : '<1 min'}
+                                </span>
+                                {s.percent != null && <span>{s.percent}% seen</span>}
+                            </div>
+                        </li>
+                    );
+                })}
+            </ul>
+        )}
+    </ProfileSectionCard>
+);
+
+const CourseProgress = ({ userId, instituteId }: { userId: string; instituteId: string }) => {
+    const { data, isLoading } = useLearnerPackagesQuery({
+        instituteId,
+        userId,
+        type: 'PROGRESS',
+        size: 20,
+    });
+    const courses = data?.content ?? [];
+    return (
+        <ProfileSectionCard icon={Books} heading="Course progress">
+            {isLoading ? (
+                <ProfileSkeleton blocks={2} />
+            ) : courses.length === 0 ? (
+                <ProfileEmpty title="No courses in progress" />
+            ) : (
+                <ul className="flex flex-col gap-2.5">
+                    {courses.map((c) => (
+                        <li key={`${c.id}-${c.package_session_id ?? ''}`} className="flex flex-col gap-1">
+                            <div className="flex items-baseline justify-between gap-2 text-sm">
+                                <span className="truncate text-neutral-800" title={c.package_name}>
+                                    {c.package_name}
+                                    {c.level_name ? (
+                                        <span className="text-neutral-500"> · {c.level_name}</span>
+                                    ) : null}
+                                </span>
+                                <span className="shrink-0 text-xs font-semibold text-neutral-700">
+                                    {Math.round(c.percentage_completed ?? 0)}%
+                                </span>
+                            </div>
+                            <Bar value={c.percentage_completed ?? 0} />
+                        </li>
+                    ))}
+                </ul>
+            )}
+        </ProfileSectionCard>
+    );
+};
+
+const LiveClasses = ({ userId }: { userId: string }) => {
+    const end = format(new Date(), 'yyyy-MM-dd');
+    const start = format(subDays(new Date(), DAYS), 'yyyy-MM-dd');
+    const { data, isLoading } = useQuery(getLearnerLiveSessionsQuery(userId, start, end));
+    const classes = (data?.classes ?? []).slice(0, 5);
+    return (
+        <ProfileSectionCard icon={VideoCamera} heading={`Live classes, last ${DAYS} days`}>
+            {isLoading ? (
+                <ProfileSkeleton blocks={2} />
+            ) : !data || data.total_classes === 0 ? (
+                <ProfileEmpty title="No live classes in this period" />
+            ) : (
+                <div className="flex flex-col gap-2">
+                    <div className="grid grid-cols-3 gap-2 text-center">
+                        {[
+                            { v: `${Math.round(data.attendance_percentage ?? 0)}%`, l: 'Attended' },
+                            { v: `${data.present_count}/${data.total_classes}`, l: 'Classes' },
+                            {
+                                v:
+                                    data.avg_concentration_score != null
+                                        ? `${Math.round(data.avg_concentration_score)}`
+                                        : '—',
+                                l: 'Focus score',
+                            },
+                        ].map((x) => (
+                            <div key={x.l} className="rounded-lg bg-neutral-50 px-2 py-2">
+                                <div className="text-base font-bold text-neutral-800">{x.v}</div>
+                                <div className="text-2xs text-neutral-500">{x.l}</div>
+                            </div>
+                        ))}
+                    </div>
+                    <ul className="flex flex-col divide-y divide-neutral-100">
+                        {classes.map((c) => (
+                            <li key={c.schedule_id} className="flex items-center gap-2 py-1.5 text-sm">
+                                <span className="truncate text-neutral-700">{c.title ?? 'Live class'}</span>
+                                <span className="ml-auto shrink-0 text-xs text-neutral-500">
+                                    {c.meeting_date}
+                                </span>
+                                <span
+                                    className={cn(
+                                        'shrink-0 rounded-full px-1.5 py-0.5 text-2xs font-semibold',
+                                        c.attendance_status === 'PRESENT'
+                                            ? 'bg-success-50 text-success-700'
+                                            : c.attendance_status === 'ABSENT'
+                                              ? 'bg-danger-50 text-danger-700'
+                                              : 'bg-neutral-100 text-neutral-500'
+                                    )}
+                                >
+                                    {c.attendance_status === 'PRESENT'
+                                        ? 'Present'
+                                        : c.attendance_status === 'ABSENT'
+                                          ? 'Absent'
+                                          : 'Unmarked'}
+                                </span>
+                            </li>
+                        ))}
+                    </ul>
+                </div>
+            )}
+        </ProfileSectionCard>
+    );
+};
+
+const Transcript = ({ sessionId }: { sessionId: string }) => {
+    const { data, isLoading } = useConversationMessagesQuery(sessionId);
+    const messages = (data ?? []).filter((m) => m.type === 'user' || m.type === 'assistant');
+    if (isLoading) return <ProfileSkeleton blocks={2} />;
+    if (messages.length === 0) {
+        return <p className="py-2 text-xs text-neutral-500">No messages in this chat.</p>;
+    }
+    return (
+        <div className="flex max-h-80 flex-col gap-2 overflow-y-auto rounded-lg bg-neutral-50 p-2">
+            {messages.map((m) => {
+                const mine = m.type === 'user';
+                return (
+                    <div key={m.id} className={cn('flex gap-1.5', mine ? 'justify-end' : 'justify-start')}>
+                        {!mine && <Robot className="mt-1 size-4 shrink-0 text-primary-500" weight="duotone" />}
+                        <div
+                            className={cn(
+                                'max-w-[85%] whitespace-pre-wrap rounded-xl px-2.5 py-1.5 text-xs',
+                                mine ? 'bg-primary-500 text-white' : 'bg-white text-neutral-700 shadow-sm'
+                            )}
+                        >
+                            {m.content}
+                        </div>
+                        {mine && <UserCircle className="mt-1 size-4 shrink-0 text-neutral-400" weight="duotone" />}
+                    </div>
+                );
+            })}
+        </div>
+    );
+};
+
+const AiChats = ({ userId }: { userId: string }) => {
+    const [open, setOpen] = useState<string | null>(null);
+    const [filters] = useState(() => ({
+        startDate: subDays(new Date(), DAYS).setHours(0, 0, 0, 0),
+        endDate: Date.now(),
+    }));
+    const { data, isLoading, isError } = useUserConversationsQuery(userId, 0, 10, filters);
+    const rows = data?.content ?? [];
+    return (
+        <ProfileSectionCard icon={ChatsCircle} heading={`AI tutor chats, last ${DAYS} days`}>
+            {isLoading ? (
+                <ProfileSkeleton blocks={2} />
+            ) : isError ? (
+                <ProfileEmpty title="Chats are not available" hint="Only staff of this institute can view them." />
+            ) : rows.length === 0 ? (
+                <ProfileEmpty title="No AI tutor chats" hint="Prompts and answers show up here." />
+            ) : (
+                <ul className="flex flex-col divide-y divide-neutral-100">
+                    {rows.map((c) => (
+                        <li key={c.sessionId} className="flex flex-col gap-1.5 py-2">
+                            <button
+                                type="button"
+                                onClick={() => setOpen(open === c.sessionId ? null : c.sessionId)}
+                                className="flex w-full items-start gap-2 text-left"
+                            >
+                                <ChatsCircle className="mt-0.5 size-4 shrink-0 text-primary-500" weight="duotone" />
+                                <div className="flex min-w-0 flex-1 flex-col">
+                                    <span className="truncate text-sm text-neutral-800">
+                                        {c.preview ?? 'Chat'}
+                                    </span>
+                                    <span className="truncate text-xs text-neutral-500">
+                                        {[c.contextTitle, `${c.messageCount} messages`, ago(c.lastActive ?? c.createdAt)]
+                                            .filter(Boolean)
+                                            .join(' · ')}
+                                    </span>
+                                </div>
+                                <CaretDown
+                                    className={cn(
+                                        'mt-1 size-3.5 shrink-0 text-neutral-400 transition-transform',
+                                        open === c.sessionId && 'rotate-180'
+                                    )}
+                                />
+                            </button>
+                            {open === c.sessionId && <Transcript sessionId={c.sessionId} />}
+                        </li>
+                    ))}
+                </ul>
+            )}
+        </ProfileSectionCard>
+    );
+};
+
+export const StudentAcademicActivity = ({
+    userId,
+    instituteId,
+}: {
+    userId: string;
+    instituteId: string;
+}) => {
+    const pulse = useQuery({
+        queryKey: ['LEARNER_PULSE', userId, instituteId],
+        queryFn: () => fetchLearnerPulse(userId, instituteId),
+        enabled: !!userId && !!instituteId,
+        refetchInterval: 30_000,
+        staleTime: 15_000,
+    });
+    return (
+        <div className="flex flex-col gap-3">
+            {pulse.isLoading ? (
+                <ProfileSkeleton blocks={2} />
+            ) : pulse.data ? (
+                <>
+                    <LivePulse pulse={pulse.data} />
+                    <RecentlyRead pulse={pulse.data} />
+                </>
+            ) : (
+                <ProfileEmpty title="Live pulse is not available" />
+            )}
+            <CourseProgress userId={userId} instituteId={instituteId} />
+            <LiveClasses userId={userId} />
+            <AiChats userId={userId} />
+        </div>
+    );
+};

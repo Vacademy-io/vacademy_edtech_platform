@@ -196,7 +196,8 @@ export type StudentSideViewTabId =
     | 'workflows'
     | 'parent'
     | 'onboarding'
-    | 'liveSession';
+    | 'liveSession'
+    | 'academicActivity';
 
 export interface StudentSideViewSettings {
     overviewTab: boolean;
@@ -231,6 +232,9 @@ export interface StudentSideViewSettings {
     // live classes. Optional for backward-compat with settings saved before
     // this tab existed.
     liveSessionTab?: boolean;
+    // Academic Activity tab — live pulse, recent reading, course progress, live
+    // classes and AI tutor chats. Optional for settings saved before it existed.
+    academicActivityTab?: boolean;
     /**
      * The Resend control on each outbound row of the Notifications tab, which
      * sends that message to the learner a second time. Not a tab toggle — the
@@ -313,7 +317,8 @@ export type StudentSideViewVisibilityKey =
     | 'workflowsTab'
     | 'parentTab'
     | 'onboardingTab'
-    | 'liveSessionTab';
+    | 'liveSessionTab'
+    | 'academicActivityTab';
 
 export interface LearnerManagementSettings {
     allowPortalAccess: boolean;

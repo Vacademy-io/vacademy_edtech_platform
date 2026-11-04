@@ -21,6 +21,7 @@
         "reports": "Rapports",
         "fullHistory": "Historique complet",
         "workflows": "Workflows",
-        "liveSession": "Sessions en direct"
+        "liveSession": "Sessions en direct",
+        "academicActivity": "Activité académique"
     }
 }

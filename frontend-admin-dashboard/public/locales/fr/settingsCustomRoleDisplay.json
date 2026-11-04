@@ -144,7 +144,8 @@
         "workflowsTab": "Onglet Workflows",
         "parentTab": "Onglet Tuteur",
         "onboardingTab": "Onglet Intégration",
-        "liveSessionTab": "Onglet Sessions en direct"
+        "liveSessionTab": "Onglet Sessions en direct",
+        "academicActivityTab": "Onglet Activité académique"
     },
     "learnerManagement": {
         "title": "Gestion des apprenants",
