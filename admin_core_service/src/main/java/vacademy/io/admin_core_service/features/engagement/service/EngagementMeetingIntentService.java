@@ -147,7 +147,7 @@ public class EngagementMeetingIntentService {
                     // The invitee's own reschedule path (by manage token): the one the booking emails link to.
                     // rescheduleInstance() through the proxy runs in one outer transaction, and a best-effort
                     // step inside createBooking (Meet link, calendar push) then marks it rollback-only.
-                    var view = publicBookingService.reschedule(meeting.getManageToken(), dto);
+                    var view = quietOn(channel, () -> publicBookingService.reschedule(meeting.getManageToken(), dto));
                     String to = fmt(OffsetDateTime.parse(view.getStartTimeUtc()).toInstant(), zone);
                     EngagementAction done = record(meeting, channel, "DONE", 60, "Rescheduled their meeting from "
                             + current + " to " + to + " as they asked; the new invite went out from the booking page. "
@@ -233,7 +233,8 @@ public class EngagementMeetingIntentService {
                     var host = new vacademy.io.common.auth.dto.UserServiceDTO();
                     host.setUserId(page.getHostUserId());
                     host.setUsername("engagement-engine");
-                    var booked = meetingBookingService.createBooking(dto, new vacademy.io.common.auth.model.CustomUserDetails(host));
+                    var booked = quietOn(channel, () -> meetingBookingService.createBooking(dto,
+                            new vacademy.io.common.auth.model.CustomUserDetails(host)));
                     String when = fmt(wanted.toInstant(), zone);
                     EngagementAction done = recordFor(engine, memberId, channel, "DONE", 60, "Booked a meeting for "
                             + when + " on '" + page.getTitle() + "' as they asked; the invite went out from the booking page. "
@@ -457,6 +458,16 @@ public class EngagementMeetingIntentService {
     // ---------------------------------------------------------------- replies the engine writes and sends
 
     private static final Pattern URL = Pattern.compile("https?://[^\\s)>\"']+");
+
+    /**
+     * On a WhatsApp reply the engine confirms in the lead's own words; the booking's template confirmation
+     * would be a second message. On an email reply the WhatsApp template is the cross-channel confirmation.
+     */
+    private static <T> T quietOn(String channel, java.util.function.Supplier<T> work) {
+        return "WHATSAPP".equals(channel)
+                ? vacademy.io.admin_core_service.features.booking.service.MeetingBookingService.withEngineConfirmingOnWhatsapp(work)
+                : work.get();
+    }
 
     private static String nz(String s) {
         return s == null ? "" : s;
