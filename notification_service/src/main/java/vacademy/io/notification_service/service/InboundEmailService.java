@@ -122,23 +122,10 @@ public class InboundEmailService {
             // 6. Reply linking via In-Reply-To → original outbound EMAIL log
             String parentLogId = null;
             String userId = null;
-            if (inReplyTo != null) {
-                List<NotificationLog> parents =
-                        notificationLogRepository.findBySourceIdAndNotificationType(inReplyTo, "EMAIL");
-                if (!parents.isEmpty()) {
-                    NotificationLog parent = parents.get(0);
-                    parentLogId = parent.getId();
-                    userId = parent.getUserId();
-                } else {
-                    // Fallback: most recent outbound email to the from address within a time window
-                    Optional<NotificationLog> recent = notificationLogRepository
-                            .findTopByChannelIdAndNotificationTypeAndNotificationDateBeforeOrderByNotificationDateDesc(
-                                    fromAddress, "EMAIL", Instant.now().plus(Duration.ofMinutes(5)));
-                    if (recent.isPresent()) {
-                        parentLogId = recent.get().getId();
-                        userId = recent.get().getUserId();
-                    }
-                }
+            Optional<NotificationLog> parent = findRepliedToEmail(inReplyTo, fromAddress, toAddresses, instituteId);
+            if (parent.isPresent()) {
+                parentLogId = parent.get().getId();
+                userId = parent.get().getUserId();
             }
 
             // 7. userId fallback: resolve from most recent outbound email to this sender
@@ -210,6 +197,60 @@ public class InboundEmailService {
     }
 
     // ── Helpers ──────────────────────────────────────────────────────────────
+
+    /**
+     * The outbound email this one answers, surest first. A mail with no In-Reply-To answers nothing.
+     * <ol>
+     *   <li>In-Reply-To is the Message-ID we stored: a provider that keeps our Message-ID.</li>
+     *   <li>In-Reply-To is the id SES sent it under (SES overwrites ours): that id is on the
+     *       message's EMAIL_EVENT rows, and their source is the EMAIL row.</li>
+     *   <li>The latest email from the mailbox it was sent to, to this person: right unless they
+     *       answered an older one.</li>
+     *   <li>Only for a mailbox no institute owns: the latest email to this person from anyone.
+     *       Otherwise another institute's email could take the reply.</li>
+     * </ol>
+     */
+    Optional<NotificationLog> findRepliedToEmail(String inReplyTo, String fromAddress,
+                                                 List<String> toAddresses, String instituteId) {
+        if (inReplyTo == null) {
+            return Optional.empty();
+        }
+        List<NotificationLog> exact = notificationLogRepository.findBySourceIdAndNotificationType(inReplyTo, "EMAIL");
+        if (!exact.isEmpty()) {
+            return Optional.of(exact.get(0));
+        }
+        String sesId = sesMessageId(inReplyTo);
+        if (sesId != null) {
+            Optional<NotificationLog> sent = notificationLogRepository
+                    .findTopByNotificationTypeAndSourceIdOrderByNotificationDateDesc("EMAIL_EVENT", sesId)
+                    .map(NotificationLog::getSource)
+                    .flatMap(notificationLogRepository::findById);
+            if (sent.isPresent()) {
+                return sent;
+            }
+        }
+        for (String mailbox : toAddresses) {
+            Optional<NotificationLog> latest = notificationLogRepository
+                    .findTopByChannelIdAndSenderBusinessChannelIdAndNotificationTypeOrderByNotificationDateDesc(
+                            fromAddress, mailbox, "EMAIL");
+            if (latest.isPresent()) {
+                return latest;
+            }
+        }
+        if (instituteId != null) {
+            return Optional.empty();
+        }
+        return notificationLogRepository
+                .findTopByChannelIdAndNotificationTypeAndNotificationDateBeforeOrderByNotificationDateDesc(
+                        fromAddress, "EMAIL", Instant.now().plus(Duration.ofMinutes(5)));
+    }
+
+    /** {@code <id@ap-south-1.amazonses.com>} → {@code id}, as SES names the message on its events; else null. */
+    static String sesMessageId(String messageIdHeader) {
+        String value = messageIdHeader.trim().replaceAll("^<|>$", "");
+        int at = value.indexOf('@');
+        return at > 0 && value.toLowerCase().endsWith("amazonses.com") ? value.substring(0, at) : null;
+    }
 
     private boolean isRateLimited(String fromAddress) {
         try {
