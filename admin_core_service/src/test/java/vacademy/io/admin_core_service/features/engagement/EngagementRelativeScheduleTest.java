@@ -3,6 +3,7 @@ package vacademy.io.admin_core_service.features.engagement;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
+import org.springframework.data.jpa.repository.Query;
 import vacademy.io.admin_core_service.features.engagement.entity.EngagementItem;
 import vacademy.io.admin_core_service.features.engagement.entity.EngagementPlan;
 import vacademy.io.admin_core_service.features.engagement.entity.EngagementSlot;
@@ -16,6 +17,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.ZoneId;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
@@ -181,6 +183,17 @@ class EngagementRelativeScheduleTest {
         Mockito.when(repo.findContentStartForUser("plan-1", "u-1", "PACKAGE_SESSION", "ps-1",
                 "PERCENTAGE_PACKAGE_SESSION_COMPLETED", 80)).thenReturn(List.of(at(2026, 9, 25, 7)));
         assertEquals(LocalDate.of(2026, 9, 25), schedule.dayOnesForUser("u-1", List.of(p)).get("plan-1"));
+    }
+
+    @Test
+    @DisplayName("content start: Day 1 never comes from the progress row's updated_at, which stays at the first touch")
+    void contentStartIgnoresProgressRowTimestamp() {
+        List<String> queries = Arrays.stream(EngagementPlanRepository.class.getDeclaredMethods())
+                .filter(m -> m.getName().startsWith("findContentStart") || m.getName().equals("freezeContentStarts"))
+                .map(m -> m.getAnnotation(Query.class).value())
+                .toList();
+        assertEquals(3, queries.size());
+        queries.forEach(sql -> assertFalse(sql.contains("lo.updated_at"), sql));
     }
 
     @Test

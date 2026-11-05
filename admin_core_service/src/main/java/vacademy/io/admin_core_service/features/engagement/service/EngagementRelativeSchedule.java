@@ -104,7 +104,7 @@ public class EngagementRelativeSchedule {
     }
 
     /**
-     * Freeze the completion moment of learners who have just reached a CONTENT-start plan's
+     * Freeze the current time for learners who have just reached a CONTENT-start plan's
      * start content, so their Day 1 stays put when progress is recomputed. Returns the rows
      * written; 0 for any other plan.
      */
