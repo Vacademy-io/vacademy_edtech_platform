@@ -102,7 +102,8 @@ export const startCopyIntake = async (
     files: CopyIntakeUploadedFile[],
     preferredModel?: string,
     notifyEmail = true,
-    commentPlacement: CommentPlacement = 'INSIDE',
+    /** null = leave the assessment's own choice as it is. */
+    commentPlacement: CommentPlacement | null = 'INSIDE',
     copyCheckConfig?: CopyCheckConfig,
     /** false = only check the copies (no student matching); they come back in the zip. */
     mapStudents = true
@@ -115,7 +116,7 @@ export const startCopyIntake = async (
             files,
             preferred_model: preferredModel,
             notify_email: notifyEmail,
-            comment_placement: commentPlacement,
+            comment_placement: commentPlacement ?? undefined,
             copy_check_config: copyCheckConfig,
             map_students: mapStudents,
         },

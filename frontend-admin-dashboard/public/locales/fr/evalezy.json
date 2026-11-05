@@ -72,6 +72,17 @@
         "notSet": "Non renseigné",
         "loadError": "Impossible de charger le profil."
     },
+    "settings": {
+        "title": "Paramètres d'évaluation",
+        "subtitle": "Chaque copie de votre établissement les utilise.",
+        "save": "Enregistrer",
+        "saving": "Enregistrement...",
+        "saved": "Paramètres enregistrés",
+        "saveFailed": "Impossible d'enregistrer les paramètres. Réessayez.",
+        "loadFailed": "Impossible de charger les paramètres. Rien n'a été modifié.",
+        "adminOnly": "Seul un administrateur de votre établissement peut les modifier.",
+        "fromAssessment": "Stylo, commentaires et consignes : voir Paramètres d'évaluation"
+    },
     "credits": {
         "title": "Crédits IA",
         "left": "crédits IA restants",

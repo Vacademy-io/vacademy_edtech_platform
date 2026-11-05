@@ -16,10 +16,9 @@ import {
 import { MyButton } from '@/components/design-system/button';
 import { DashboardLoader } from '@/components/core/dashboard-loader';
 import { useToolCostPreview } from '@/components/common/ai-credits/useToolCostPreview';
-import {
-    CommentPlacementPicker,
-    useInstituteCommentPlacement,
-} from '@/components/common/ai-copy-check/CommentPlacementPicker';
+import { loadAssessmentSettingsStrict } from '@/services/assessment-settings';
+import { normalizeCommentPlacement } from '@/types/assessment-settings';
+import { isUserAdmin } from '@/utils/userDetails';
 import {
     CopyCheckSettingsFields,
     toCopyCheckConfig,
@@ -160,7 +159,14 @@ function EvalezyAssessmentPage() {
     const [scannerOpen, setScannerOpen] = useState(false);
     const [readingPhotos, setReadingPhotos] = useState(false);
     const [settingsOpen, setSettingsOpen] = useState(false);
-    const [commentPlacement, setCommentPlacement] = useInstituteCommentPlacement(true);
+    // How copies are marked comes from Evaluation settings, read fresh; only the subject and the
+    // class belong to this assessment. A failed read sends no placement: the last one stays.
+    const { data: checkSettings } = useQuery({
+        queryKey: ['EVALEZY_CHECK_SETTINGS', instituteId],
+        queryFn: loadAssessmentSettingsStrict,
+        enabled: !!instituteId,
+        retry: false,
+    });
     const [copyCheckSettings, setCopyCheckSettings] = useCopyCheckSettings(true, () =>
         getCopyCheckConfig(assessmentId, instituteId)
     );
@@ -336,8 +342,11 @@ function EvalezyAssessmentPage() {
                 })),
                 undefined,
                 settings.notifyEmail,
-                commentPlacement,
-                toCopyCheckConfig(copyCheckSettings),
+                checkSettings
+                    ? normalizeCommentPlacement(checkSettings.aiCopyCheck?.commentPlacement)
+                    : null,
+                // Blank clears the assessment's own, so every check reads the institute's at dispatch.
+                { ...toCopyCheckConfig(copyCheckSettings), instructions: null, language_feedback: undefined },
                 mapStudents
             );
             return { batch, sent: new Set(uploaded.map((u) => u.copyId)) };
@@ -556,16 +565,20 @@ function EvalezyAssessmentPage() {
                     </button>
                     {settingsOpen && (
                         <div className="flex flex-col gap-4 rounded-lg border border-neutral-200 bg-white p-4">
-                            <CommentPlacementPicker
-                                value={commentPlacement}
-                                onChange={setCommentPlacement}
-                                disabled={sending}
-                            />
                             <CopyCheckSettingsFields
                                 value={copyCheckSettings}
                                 onChange={setCopyCheckSettings}
                                 disabled={sending}
+                                withInstituteFields={false}
                             />
+                            {isUserAdmin() && (
+                                <Link
+                                    to="/evalezy/settings"
+                                    className="text-body font-medium text-primary-500"
+                                >
+                                    {t('settings.fromAssessment')}
+                                </Link>
+                            )}
                             <CopyCheckCriteriaPanel
                                 assessmentId={assessmentId}
                                 subject={copyCheckSettings.subject}

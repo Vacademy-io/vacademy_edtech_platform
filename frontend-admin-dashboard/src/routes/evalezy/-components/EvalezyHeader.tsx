@@ -1,7 +1,8 @@
+import { isUserAdmin } from '@/utils/userDetails';
 import { useTranslation } from 'react-i18next';
 import { useQueryClient } from '@tanstack/react-query';
 import { Link, useNavigate } from '@tanstack/react-router';
-import { DotsThreeVertical, SignOut, Sparkle, SquaresFour, UserCircle } from '@phosphor-icons/react';
+import { DotsThreeVertical, SignOut, Sparkle, SquaresFour, UserCircle, SlidersHorizontal } from '@phosphor-icons/react';
 import { MyDropdown } from '@/components/design-system/dropdown';
 import { removeCookiesAndLogout } from '@/lib/auth/sessionUtility';
 import { isEvalezyMode } from '@/lib/evalezy-mode';
@@ -24,6 +25,15 @@ export const EvalezyHeader = () => {
     const menu = [
         { label: t('profile.view'), value: 'profile', icon: <UserCircle size={16} /> },
         { label: t('credits.title'), value: 'credits', icon: <Sparkle size={16} /> },
+        ...(isUserAdmin()
+            ? [
+                  {
+                      label: t('settings.title'),
+                      value: 'settings',
+                      icon: <SlidersHorizontal size={16} />,
+                  },
+              ]
+            : []),
         ...(inPortal
             ? [
                   {
@@ -43,6 +53,10 @@ export const EvalezyHeader = () => {
         }
         if (value === 'credits') {
             void navigate({ to: '/evalezy/credits' });
+            return;
+        }
+        if (value === 'settings') {
+            void navigate({ to: '/evalezy/settings' });
             return;
         }
         if (value === 'portal') {

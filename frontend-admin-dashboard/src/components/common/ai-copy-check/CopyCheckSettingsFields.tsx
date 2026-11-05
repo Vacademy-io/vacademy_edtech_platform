@@ -42,11 +42,14 @@ export const CopyCheckSettingsFields = ({
     onChange,
     disabled,
     withPaper = true,
+    withInstituteFields = true,
 }: {
     value: CopyCheckSettingsValue;
     onChange: (value: CopyCheckSettingsValue) => void;
     disabled?: boolean;
     withPaper?: boolean;
+    /** False hides the instructions and language check, for a screen that takes them from settings. */
+    withInstituteFields?: boolean;
 }) => {
     const { t } = useTranslation('assessmentCopyIntake');
     const set = (patch: Partial<CopyCheckSettingsValue>) => onChange({ ...value, ...patch });
@@ -80,43 +83,47 @@ export const CopyCheckSettingsFields = ({
                     </label>
                 </div>
             )}
-            <label className="flex flex-col gap-1">
-                <span className="text-body font-medium text-neutral-800">
-                    {t('aiSettings.instructions')}
-                </span>
-                <Textarea
-                    value={value.instructions}
-                    maxLength={INSTRUCTIONS_MAX}
-                    rows={4}
-                    // Same size as the Subject / Class inputs above (the base Textarea is 16px on phones).
-                    className="text-sm"
-                    placeholder={t('aiSettings.instructionsPlaceholder')}
-                    onChange={(e) => set({ instructions: e.target.value })}
-                    disabled={disabled}
-                />
-                <span className="text-caption text-neutral-500">
-                    {withPaper
-                        ? t('aiSettings.instructionsHint')
-                        : t('aiSettings.instructionsDefaultHint')}
-                    {' · '}
-                    {value.instructions.length}/{INSTRUCTIONS_MAX}
-                </span>
-            </label>
-            <label className="flex items-start justify-between gap-3 rounded-md border border-neutral-200 p-3">
-                <span className="flex flex-col">
-                    <span className="text-body font-medium text-neutral-800">
-                        {t('aiSettings.language')}
-                    </span>
-                    <span className="text-caption text-neutral-500">
-                        {t('aiSettings.languageHint')}
-                    </span>
-                </span>
-                <Switch
-                    checked={value.languageFeedback === 'HIGHLIGHT'}
-                    onCheckedChange={(on) => set({ languageFeedback: on ? 'HIGHLIGHT' : 'OFF' })}
-                    disabled={disabled}
-                />
-            </label>
+            {withInstituteFields && (
+                <>
+                    <label className="flex flex-col gap-1">
+                        <span className="text-body font-medium text-neutral-800">
+                            {t('aiSettings.instructions')}
+                        </span>
+                        <Textarea
+                            value={value.instructions}
+                            maxLength={INSTRUCTIONS_MAX}
+                            rows={4}
+                            // Same size as the Subject / Class inputs above (the base Textarea is 16px on phones).
+                            className="text-sm"
+                            placeholder={t('aiSettings.instructionsPlaceholder')}
+                            onChange={(e) => set({ instructions: e.target.value })}
+                            disabled={disabled}
+                        />
+                        <span className="text-caption text-neutral-500">
+                            {withPaper
+                                ? t('aiSettings.instructionsHint')
+                                : t('aiSettings.instructionsDefaultHint')}
+                            {' · '}
+                            {value.instructions.length}/{INSTRUCTIONS_MAX}
+                        </span>
+                    </label>
+                    <label className="flex items-start justify-between gap-3 rounded-md border border-neutral-200 p-3">
+                        <span className="flex flex-col">
+                            <span className="text-body font-medium text-neutral-800">
+                                {t('aiSettings.language')}
+                            </span>
+                            <span className="text-caption text-neutral-500">
+                                {t('aiSettings.languageHint')}
+                            </span>
+                        </span>
+                        <Switch
+                            checked={value.languageFeedback === 'HIGHLIGHT'}
+                            onCheckedChange={(on) => set({ languageFeedback: on ? 'HIGHLIGHT' : 'OFF' })}
+                            disabled={disabled}
+                        />
+                    </label>
+                </>
+            )}
         </div>
     );
 };

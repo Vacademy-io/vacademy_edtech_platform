@@ -146,6 +146,21 @@ export const getAssessmentSettingsFromCache = (): AssessmentSettingsData => {
     return getCachedSettings() || DEFAULT_ASSESSMENT_SETTINGS;
 };
 
+/**
+ * For a form that saves the whole document. Unlike getAssessmentSettings, a failed read throws
+ * instead of returning the defaults, which a later save would write over the institute's settings.
+ */
+export const loadAssessmentSettingsStrict = async (): Promise<AssessmentSettingsData> => {
+    const instituteId = getInstituteId();
+    if (!instituteId) throw new Error('Institute ID not found');
+    const response = await authenticatedAxiosInstance.get<AssessmentSettingsResponse>(
+        `${BASE_URL}/admin-core-service/institute/setting/v1/get`,
+        { params: { instituteId, settingKey: SETTINGS_KEY } }
+    );
+    const saved = response.data?.data;
+    return saved && Object.keys(saved).length > 0 ? mergeWithDefaults(saved) : DEFAULT_ASSESSMENT_SETTINGS;
+};
+
 export const saveAssessmentSettings = async (settings: AssessmentSettingsData): Promise<void> => {
     const instituteId = getInstituteId();
     if (!instituteId) throw new Error('Institute ID not found');

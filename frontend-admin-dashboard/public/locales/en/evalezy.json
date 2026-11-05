@@ -72,6 +72,17 @@
         "notSet": "Not set",
         "loadError": "The profile could not be loaded."
     },
+    "settings": {
+        "title": "Evaluation settings",
+        "subtitle": "Every copy your institute checks uses these.",
+        "save": "Save settings",
+        "saving": "Saving...",
+        "saved": "Settings saved",
+        "saveFailed": "The settings could not be saved. Try again.",
+        "loadFailed": "The settings could not be loaded. Nothing was changed.",
+        "adminOnly": "Only an admin of your institute can change these.",
+        "fromAssessment": "Pen, comments and instructions are in Evaluation settings"
+    },
     "credits": {
         "title": "AI credits",
         "left": "AI credits left",
