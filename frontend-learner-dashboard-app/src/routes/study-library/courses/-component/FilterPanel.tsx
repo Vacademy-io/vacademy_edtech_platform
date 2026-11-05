@@ -205,7 +205,7 @@ const FilterPanel: React.FC<FilterPanelProps> = ({
         );
     }
 
-    const FilterContent = () => (
+    const filterContent = (
         <div className={cn(
             "bg-card border rounded-lg shadow-sm",
             // Vibrant — white panel with a tenant top-rail
@@ -372,7 +372,7 @@ const FilterPanel: React.FC<FilterPanelProps> = ({
             {/* Desktop View — only when isDesktopOpen */}
             {isDesktopOpen && (
                 <div className="hidden lg:block sticky top-4">
-                    <FilterContent />
+                    {filterContent}
                 </div>
             )}
 
