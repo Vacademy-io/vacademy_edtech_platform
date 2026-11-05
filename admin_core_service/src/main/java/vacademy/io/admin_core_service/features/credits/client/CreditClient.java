@@ -125,8 +125,14 @@ public class CreditClient {
      * Initialize credits for a new institute (synchronous).
      */
     public void initializeCredits(String instituteId) {
+        initializeCredits(instituteId, null);
+    }
+
+    /** @param openingCredits what the institute opens with; null keeps the platform's default */
+    public void initializeCredits(String instituteId, Integer openingCredits) {
         try {
-            String url = aiServiceUrl + "/ai-service/credits/v1/institutes/" + instituteId + "/initialize";
+            String url = aiServiceUrl + "/ai-service/credits/v1/institutes/" + instituteId + "/initialize"
+                    + (openingCredits != null ? "?initial_credits=" + openingCredits : "");
 
             // ai_service only accepts this from a signed-in user or a service holding the token.
             HttpHeaders headers = buildInternalHeaders();

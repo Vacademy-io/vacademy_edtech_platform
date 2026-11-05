@@ -654,21 +654,24 @@ def acknowledge_alert(
 )
 def initialize_credits(
     institute_id: str,
+    initial_credits: Optional[int] = Query(None, ge=0, le=100000),
     service: CreditService = Depends(get_credit_service),
     current_user: Optional[dict] = Depends(get_optional_user),
     x_internal_service_token: Optional[str] = Header(None),
     authorization: Optional[str] = Header(None),
 ):
     """
-    Initialize credits for a new institute.
-    Called when an institute is created to give them initial credits (200).
+    Initialize credits for a new institute, when it is created. initial_credits is a
+    product's demo credits, and only a service may set it: a signed-in admin must not
+    be able to choose their own opening balance.
     """
     _require_user_or_internal(current_user, x_internal_service_token, institute_id, authorization)
     balance = service.get_balance(institute_id)
     if balance:
         return balance
 
-    return service.create_initial_credits(institute_id)
+    opening = initial_credits if _internal_token_matches(x_internal_service_token) else None
+    return service.create_initial_credits(institute_id, None if opening is None else Decimal(opening))
 
 
 # ============================================================================
