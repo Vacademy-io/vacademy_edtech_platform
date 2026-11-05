@@ -117,8 +117,15 @@ export function FileVideoPlayer({ src, videoRef, allowDownload = false, onError 
     const togglePlay = useCallback(() => {
         const v = videoRef.current;
         if (!v) return;
-        if (v.paused) void v.play();
-        else v.pause();
+        if (v.paused) {
+            // A pause or slide change while play() is pending rejects with AbortError — harmless.
+            v.play().catch((err: unknown) => {
+                if (err instanceof DOMException && err.name === 'AbortError') return;
+                throw err;
+            });
+        } else {
+            v.pause();
+        }
     }, [videoRef]);
 
     const skip = useCallback(
