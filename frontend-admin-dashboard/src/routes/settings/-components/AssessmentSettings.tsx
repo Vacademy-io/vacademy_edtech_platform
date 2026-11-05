@@ -9,7 +9,6 @@ import { toast } from 'sonner';
 import {
     AssessmentSettingsData,
     DEFAULT_ASSESSMENT_SETTINGS,
-    DEFAULT_EVALEZY_SETTINGS,
     DEFAULT_REPORT_BRANDING,
     normalizeStudentMapping,
     ReportBrandingSettings,
@@ -20,7 +19,6 @@ import ReportBrandingSettingsSection from './ReportBrandingSettings';
 import ResultNotificationRecipientsCard from './ResultNotificationRecipientsCard';
 import ResultNotificationTemplatesCard from './ResultNotificationTemplatesCard';
 import ExamExperienceSettingsCard from './ExamExperienceSettingsCard';
-import EvalezySettingsCard from './EvalezySettingsCard';
 import { CommentPlacementPicker } from '@/components/common/ai-copy-check/CommentPlacementPicker';
 import { StudentMappingPicker } from '@/components/common/ai-copy-check/StudentMappingPicker';
 import {
@@ -276,15 +274,6 @@ const AssessmentSettings = () => {
                     </div>
                 </CardContent>
             </Card>
-
-            {/* Evalezy: the simple scan → AI check → zip app (evalezy.vacademy.io + mobile app) */}
-            <EvalezySettingsCard
-                settings={settings.evalezy ?? DEFAULT_EVALEZY_SETTINGS}
-                onChange={(evalezy) => {
-                    setSettings((prev) => ({ ...prev, evalezy }));
-                    setHasChanges(true);
-                }}
-            />
 
             {/* Result Notification Recipients (role-wise) */}
             <ResultNotificationRecipientsCard

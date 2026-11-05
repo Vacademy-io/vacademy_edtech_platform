@@ -66,6 +66,7 @@ import { Route as SignupStartRouteImport } from "./routes/signup/start"
 import { Route as McpAuthorizeRouteImport } from "./routes/mcp/authorize"
 import { Route as KnowledgeBasePublishRouteImport } from "./routes/knowledge-base/publish"
 import { Route as KnowledgeBaseKbIdRouteImport } from "./routes/knowledge-base/$kbId"
+import { Route as EvalezySettingsRouteImport } from "./routes/evalezy/settings"
 import { Route as EvalezyProfileRouteImport } from "./routes/evalezy/profile"
 import { Route as EvalezyNewRouteImport } from "./routes/evalezy/new"
 import { Route as EvalezyCreditsRouteImport } from "./routes/evalezy/credits"
@@ -648,6 +649,11 @@ const KnowledgeBaseKbIdRoute = KnowledgeBaseKbIdRouteImport.update({
 } as any).lazy(() =>
   import("./routes/knowledge-base/$kbId.lazy").then((d) => d.Route),
 )
+const EvalezySettingsRoute = EvalezySettingsRouteImport.update({
+  id: "/settings",
+  path: "/settings",
+  getParentRoute: () => EvalezyRouteRoute,
+} as any)
 const EvalezyProfileRoute = EvalezyProfileRouteImport.update({
   id: "/profile",
   path: "/profile",
@@ -2278,6 +2284,7 @@ export interface FileRoutesByFullPath {
   "/evalezy/credits": typeof EvalezyCreditsRoute
   "/evalezy/new": typeof EvalezyNewRoute
   "/evalezy/profile": typeof EvalezyProfileRoute
+  "/evalezy/settings": typeof EvalezySettingsRoute
   "/knowledge-base/$kbId": typeof KnowledgeBaseKbIdRoute
   "/knowledge-base/publish": typeof KnowledgeBasePublishRoute
   "/mcp/authorize": typeof McpAuthorizeRoute
@@ -2536,6 +2543,7 @@ export interface FileRoutesByTo {
   "/evalezy/credits": typeof EvalezyCreditsRoute
   "/evalezy/new": typeof EvalezyNewRoute
   "/evalezy/profile": typeof EvalezyProfileRoute
+  "/evalezy/settings": typeof EvalezySettingsRoute
   "/knowledge-base/$kbId": typeof KnowledgeBaseKbIdRoute
   "/knowledge-base/publish": typeof KnowledgeBasePublishRoute
   "/mcp/authorize": typeof McpAuthorizeRoute
@@ -2797,6 +2805,7 @@ export interface FileRoutesById {
   "/evalezy/credits": typeof EvalezyCreditsRoute
   "/evalezy/new": typeof EvalezyNewRoute
   "/evalezy/profile": typeof EvalezyProfileRoute
+  "/evalezy/settings": typeof EvalezySettingsRoute
   "/knowledge-base/$kbId": typeof KnowledgeBaseKbIdRoute
   "/knowledge-base/publish": typeof KnowledgeBasePublishRoute
   "/mcp/authorize": typeof McpAuthorizeRoute
@@ -3059,6 +3068,7 @@ export interface FileRouteTypes {
     | "/evalezy/credits"
     | "/evalezy/new"
     | "/evalezy/profile"
+    | "/evalezy/settings"
     | "/knowledge-base/$kbId"
     | "/knowledge-base/publish"
     | "/mcp/authorize"
@@ -3317,6 +3327,7 @@ export interface FileRouteTypes {
     | "/evalezy/credits"
     | "/evalezy/new"
     | "/evalezy/profile"
+    | "/evalezy/settings"
     | "/knowledge-base/$kbId"
     | "/knowledge-base/publish"
     | "/mcp/authorize"
@@ -3577,6 +3588,7 @@ export interface FileRouteTypes {
     | "/evalezy/credits"
     | "/evalezy/new"
     | "/evalezy/profile"
+    | "/evalezy/settings"
     | "/knowledge-base/$kbId"
     | "/knowledge-base/publish"
     | "/mcp/authorize"
@@ -4491,6 +4503,13 @@ declare module "@tanstack/react-router" {
       fullPath: "/knowledge-base/$kbId"
       preLoaderRoute: typeof KnowledgeBaseKbIdRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    "/evalezy/settings": {
+      id: "/evalezy/settings"
+      path: "/settings"
+      fullPath: "/evalezy/settings"
+      preLoaderRoute: typeof EvalezySettingsRouteImport
+      parentRoute: typeof EvalezyRouteRoute
     }
     "/evalezy/profile": {
       id: "/evalezy/profile"
@@ -5893,6 +5912,7 @@ interface EvalezyRouteRouteChildren {
   EvalezyCreditsRoute: typeof EvalezyCreditsRoute
   EvalezyNewRoute: typeof EvalezyNewRoute
   EvalezyProfileRoute: typeof EvalezyProfileRoute
+  EvalezySettingsRoute: typeof EvalezySettingsRoute
   EvalezyIndexRoute: typeof EvalezyIndexRoute
 }
 
@@ -5901,6 +5921,7 @@ const EvalezyRouteRouteChildren: EvalezyRouteRouteChildren = {
   EvalezyCreditsRoute: EvalezyCreditsRoute,
   EvalezyNewRoute: EvalezyNewRoute,
   EvalezyProfileRoute: EvalezyProfileRoute,
+  EvalezySettingsRoute: EvalezySettingsRoute,
   EvalezyIndexRoute: EvalezyIndexRoute,
 }
 
