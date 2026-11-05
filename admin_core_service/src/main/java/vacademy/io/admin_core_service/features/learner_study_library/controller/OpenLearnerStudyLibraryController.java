@@ -8,6 +8,7 @@ import vacademy.io.admin_core_service.features.learner_study_library.dto.Learner
 import vacademy.io.admin_core_service.features.learner_study_library.dto.LearnerSlidesDetailDTO;
 import vacademy.io.admin_core_service.features.learner_study_library.dto.LearnerSubjectProjection;
 import vacademy.io.admin_core_service.features.learner_study_library.service.LearnerOpenStudyLibraryService;
+import vacademy.io.admin_core_service.features.learner_study_library.util.PublicCourseInstructors;
 import vacademy.io.admin_core_service.features.study_library.dto.ChapterDTOWithDetails;
 import vacademy.io.admin_core_service.features.study_library.service.StudyLibraryService;
 import vacademy.io.admin_core_service.config.cache.ClientCacheable;
@@ -48,13 +49,13 @@ public class OpenLearnerStudyLibraryController {
     @GetMapping("/init")
     @ClientCacheable(maxAgeSeconds = 300, scope = CacheScope.PUBLIC, varyHeaders = {"Accept-Language"})
     public ResponseEntity<List<CourseDTOWithDetails>> initStudyLibrary(String instituteId) {
-        return ResponseEntity.ok(studyLibraryService.getStudyLibraryInitDetails(instituteId));
+        return ResponseEntity.ok(PublicCourseInstructors.strip(studyLibraryService.getStudyLibraryInitDetails(instituteId)));
     }
 
     @GetMapping("/course-init")
     @ClientCacheable(maxAgeSeconds = 300, scope = CacheScope.PUBLIC, varyHeaders = {"Accept-Language"})
     public ResponseEntity<List<CourseDTOWithDetails>> initStudyLibrary(String courseId, String instituteId) {
-        return ResponseEntity.ok(studyLibraryService.getCourseInitDetails(courseId, instituteId));
+        return ResponseEntity.ok(PublicCourseInstructors.strip(studyLibraryService.getCourseInitDetails(courseId, instituteId)));
     }
 
     @GetMapping("/chapters-with-slides")
