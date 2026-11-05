@@ -265,10 +265,20 @@ async def _lifespan(app: FastAPI):
     except Exception as exc:  # noqa: BLE001
         _logger.warning("design_import purger startup skipped: %s", exc)
 
+    stats_tasks = []
+    try:
+        from .mcp import admission as mcp_admission
+        mcp_admission.reset_instance()
+        stats_tasks = mcp_admission.start_stats_tasks()
+    except Exception as exc:  # noqa: BLE001
+        _logger.warning("mcp stats startup skipped: %s", exc)
+
     try:
         async with mcp_server.session_manager.run():
             yield
     finally:
+        if stats_tasks:
+            await mcp_admission.stop_stats_tasks(stats_tasks)
         await _drain_ai_video_legs(_logger)
         await _stop_course_knowledge_worker(_logger)
         await _stop_lead_agent_workers(_logger)
@@ -578,6 +588,7 @@ def _mount_mcp(app: FastAPI, settings) -> None:
     try:
         from starlette.routing import Route
 
+        from .mcp.admission import McpEdgeGuard
         from .mcp.consent import router as mcp_consent_router
         from .mcp.institute_scope import McpInstitutePathAdapter
         from .mcp.server import McpExactPathAdapter, build_mcp_asgi_app, build_mcp_server
@@ -594,7 +605,8 @@ def _mount_mcp(app: FastAPI, settings) -> None:
 
     try:
         mcp_server = build_mcp_server()
-        mcp_app = build_mcp_asgi_app(settings, mcp_server)
+        # Wrapped once here, so the exact route, the institute route and the mount all pass through it.
+        mcp_app = McpEdgeGuard(build_mcp_asgi_app(settings, mcp_server))
     except Exception as exc:  # noqa: BLE001
         logger.error("MCP server failed to build; not mounting: %s", exc)
         return

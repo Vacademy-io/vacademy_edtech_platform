@@ -43,6 +43,7 @@ The approval page in your admin portal shows the reason. The common ones:
 | "This request has expired or was already handled." | Approval requests last 15 minutes and work once. | Start the connection again from your AI app, and approve within 15 minutes. |
 | "You're signed in to a different institute." | You approved while signed in to another institute. | Sign out, sign in with your account for the institute in the URL, then approve. See [Wrong institute](#wrong-institute). |
 | "The MCP server is not enabled for this institute." | The server is off. | An admin turns it on in **Settings → MCP Server**. |
+| "…could not read this institute's MCP settings just now…" | Temporary trouble on the server. Nothing about your access changed. | Wait a little, then reload the approval page. |
 | "This user's role is not allowed to connect…" | None of your roles is in **Who can connect**. | An admin adds your role. Only Admin is allowed by default. |
 | "The MCP server is available to institute staff only." | Learner and parent accounts can never connect. | Use a staff account. |
 
@@ -80,6 +81,21 @@ The AI app only sees tools you're allowed to use. Check these in order:
 <Note>
 If a tool is listed but returns `tool_not_permitted`, it was switched off after the chat loaded its list. Ask an admin, then start a new chat.
 </Note>
+
+## A tool says to retry
+
+These are temporary, and your access has not changed. Don't reconnect, and no admin action is needed.
+
+| What the tool returns | What it means | Fix |
+|---|---|---|
+| `rate_limited` with `limit_type: concurrent_calls` | Too many calls from your institute are running at once, including colleagues' calls and calls your app stopped waiting for. | Wait `retry_after_s` seconds and repeat the same call. Ask your AI app to run fewer tools at a time. |
+| `rate_limited` with `limit_type: hourly` **CRM** | You reached an hourly limit for calls or messages. | Wait `retry_after_s` seconds. |
+| `server_busy`, or HTTP 429 | The server is at capacity right now. This isn't caused by your usage. | Wait the time it gives and repeat the same call. |
+| `settings_unavailable` | The server could not read your institute's MCP settings just now. | Wait the time it gives and repeat the same call. |
+| `auth_unavailable` | The server could not check your connection's session just now. | Wait the time it gives and repeat the same call. |
+| `tool_timeout` | A read took too long and was stopped. Nothing changed. | Try a shorter date range or fewer records. |
+
+A call refused with `rate_limited`, `server_busy`, `settings_unavailable` or `auth_unavailable` did not run, so repeating it can't do the work twice. See [Errors](/mcp-server/usage/errors).
 
 ## Wrong institute
 

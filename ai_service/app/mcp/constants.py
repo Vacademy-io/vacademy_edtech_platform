@@ -667,6 +667,20 @@ RETRYABLE_MESSAGES = {
     ),
 }
 
+#: A call the admission gate turned away. It did not run, so repeating it is safe.
+REASON_RATE_LIMITED = "rate_limited"
+REASON_SERVER_BUSY = "server_busy"
+
+RATE_LIMITED_MESSAGE = (
+    "Too many calls from this institute are running on this server right now. That can include colleagues' calls "
+    "and calls your app stopped waiting for. This call did not run and nothing changed. Retry in about {n} seconds "
+    "and run at most {limit} calls at a time. Any confirm_token you hold still works until it expires."
+)
+SERVER_BUSY_MESSAGE = (
+    "Vacademy is at capacity right now. This call did not run and nothing changed. Retry in about {n} seconds. "
+    "This is not caused by your usage."
+)
+
 
 def retry_payload(code: str, message: str, low: int, high: int, **extra: Any) -> Dict[str, Any]:
     """The JSON a client gets for a call that did not run and is safe to repeat."""
@@ -680,6 +694,15 @@ def retry_payload(code: str, message: str, low: int, high: int, **extra: Any) ->
         "message": message.format(n=retry_after_s),
         **extra,
     }
+
+
+def rate_limited_payload(limit: int) -> Dict[str, Any]:
+    message = RATE_LIMITED_MESSAGE.replace("{limit}", str(limit))
+    return retry_payload(REASON_RATE_LIMITED, message, 5, 15, limit_type="concurrent_calls", limit=limit)
+
+
+def server_busy_payload() -> Dict[str, Any]:
+    return retry_payload(REASON_SERVER_BUSY, SERVER_BUSY_MESSAGE, 10, 30)
 
 
 __all__ = [
@@ -708,4 +731,8 @@ __all__ = [
     "RETRYABLE_REASONS",
     "RETRYABLE_MESSAGES",
     "retry_payload",
+    "REASON_RATE_LIMITED",
+    "REASON_SERVER_BUSY",
+    "rate_limited_payload",
+    "server_busy_payload",
 ]

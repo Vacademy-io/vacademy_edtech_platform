@@ -88,12 +88,12 @@ def get_complete_health(db: Session = Depends(db_dependency)) -> dict:
 # Keep original endpoints for backward compatibility if needed by K8s probes
 @router.get("", include_in_schema=False)
 @router.get("/", include_in_schema=False)
-def health_root() -> dict:
+async def health_root() -> dict:
     return {"status": "ok"}
 
 # Keep original endpoints for backward compatibility if needed by K8s probes
 @router.get("/health", include_in_schema=False)
-def health_legacy() -> dict:
+async def health_legacy() -> dict:
     return {"status": "ok"}
 
 

@@ -54,7 +54,7 @@ from ..core.security import AuthServiceUnavailable
 from ..db import db_session
 from ..schemas.auth import PinnedPrincipal
 from ..services.institute_setting_reader import SettingReadError
-from . import adapter, guides
+from . import adapter, admission, guides
 from .access import check_mcp_access, load_mcp_setting, setting_for_tool_gate
 from .constants import (
     DENIAL_MESSAGES,
@@ -75,17 +75,19 @@ logger = logging.getLogger(__name__)
 
 SERVER_NAME = "vacademy"
 SERVER_INSTRUCTIONS = (
+    "Run at most 3 tools at a time. If a tool returns rate_limited or server_busy, wait retry_after_s and retry the "
+    "same call; it did not run.\n"
     "Access to an education institute's operational data. Every call is scoped to the "
     "institute and staff member who authorized this connection; institute and user "
-    "identity are taken from that authorization, never from tool arguments. Start by "
-    "calling `whoami` to learn the user's name and the institute's name, logo, theme and "
-    "terminology, and address them accordingly — the institute may be a white-label "
-    "brand, so use ITS name, not the platform's.\n"
-    "Websites: the `website` tool reads the institute's websites (built in Manage Pages). "
-    "Use website(action='list') to find a site, website(action='get_page') to see what is "
-    "on a page and where each block's data comes from, website(action='context') for the "
-    "real courses, product pages and lead campaigns that may be linked, and "
-    "website(action='audit') before telling the admin a site is ready. Before generating "
+    "identity come from that authorization, never from tool arguments. Start by "
+    "calling `whoami` for the user's name and the institute's name, logo, theme and "
+    "terminology, and use them — the institute may be white-label, so use ITS name, "
+    "not the platform's.\n"
+    "Websites: `website` reads the institute's sites (built in Manage Pages). "
+    "Use website(action='list') to find a site, website(action='get_page') for what is "
+    "on a page and each block's data source, website(action='context') for "
+    "real courses, product pages and lead campaigns to link, and "
+    "website(action='audit') before calling a site ready. Before generating "
     "or redesigning anything (from a design: website(action='playbook') first), call "
     "website(action='brief_checklist') and interview the "
     "admin for what it reports as missing — colours, logo, photos, tone, pages, courses and "
@@ -97,9 +99,9 @@ SERVER_INSTRUCTIONS = (
     "and no model runs on the server: read website(action='schema') for the component contract, "
     "write the page JSON from the interview, save it with create_page / create_site, fix what the "
     "audit reports with update_page, and give the admin the editor_url to review and publish. "
-    "Never invent image URLs — use list_media or import_image. Quality loop: after composing or "
-    "editing a page call website(action='review') and, when possible, website(action='preview') to "
-    "look at it; fix what they report with update_page until review passes in the mode the page was "
+    "Never invent image URLs — use list_media or import_image. Quality loop: after any page change "
+    "call website(action='review') and, if possible, website(action='preview'); "
+    "fix what they report with update_page until review passes in the mode the page was "
     "created in (score ≥ 85, no `fix` items) before telling the admin it is ready. When the admin gives a "
     "design (a Figma link, screenshots, a site to copy), call "
     "website(action='playbook', source='figma'|'screenshot'|'url') FIRST and follow it; pass the design as "
@@ -315,8 +317,23 @@ async def _on_list_tools(ctx, params: Optional[PaginatedRequestParams]) -> ListT
 
 
 async def _on_call_tool(ctx, params: CallToolRequestParams) -> CallToolResult:
+    # The institute is read only to count the call. _authorize still runs in full.
+    institute_id = getattr(get_access_token(), "institute_id", None)
+    if not institute_id:
+        return await _run_call(params, db_session)
+    gate = admission.instance()
+    rejection = await gate.enter(institute_id, params.name)
+    if rejection:
+        return rejection.to_result()
+    try:
+        return await _run_call(params, db_session)
+    finally:
+        gate.leave(institute_id)
+
+
+async def _run_call(params: CallToolRequestParams, session_factory) -> CallToolResult:
     settings_obj = _settings()
-    with db_session() as db:
+    with session_factory() as db:
         try:
             principal, setting, token, platform_token = await _authorize(db, settings_obj)
         except McpAuthError as exc:
@@ -327,6 +344,8 @@ async def _on_call_tool(ctx, params: CallToolRequestParams) -> CallToolResult:
 
         repo = McpOAuthRepository(db, TokenCipher(settings_obj.resolve_mcp_encryption_key()))
         client = repo.get_client(token.client_id)
+        # Authorization is done, so a tool that starts with HTTP holds no connection during it.
+        db.commit()
 
         return await adapter.call_tool(
             name=params.name,

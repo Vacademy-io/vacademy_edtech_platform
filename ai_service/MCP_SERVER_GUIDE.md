@@ -235,6 +235,42 @@ connections included.
 Identity is never taken from tool arguments: `execute_tool` overwrites `user_id`
 and `institute_id` with the pinned principal before the executor runs.
 
+### Limits and retryable errors
+
+A tool call is admitted up to a limit per pod and per institute, and while the main
+database pool has room (`app/mcp/admission.py`). A call over a limit waits a few seconds,
+holding no connection and no thread. A refused call never reaches `execute_tool` and
+writes no audit row, so a `confirm_token` it carried stays valid. `_authorize` still runs
+in full for every admitted call; the gate only counts the token's institute.
+
+Tool errors are HTTP 200 with `isError` and JSON text:
+
+| `error` | Means | Extra fields |
+|---|---|---|
+| `rate_limited` | Too many calls from this institute are running on this pod | `limit_type: concurrent_calls`, `limit` |
+| `rate_limited` (CRM hourly cap) | An hourly cap on calls or messages | `limit_type: hourly`, `cap_per_hour` |
+| `server_busy` | The pod is at capacity | none |
+| `settings_unavailable` | The institute's MCP settings could not be read | none |
+| `auth_unavailable` | auth-service could not check the session | none |
+
+All carry `retry_after_s`. The concurrency, capacity and unavailable errors also carry
+`retryable: true`, `started: false` and `changed: false`. `tool_timeout` (`started: true`,
+`changed: false`, `limit_s`) is in the client docs for reads stopped at a deadline; no tool
+returns it yet.
+
+`tools/list`, prompts and resources answer settings or auth trouble with JSON-RPC -32603
+and `data.error`, never an empty list. A real denial still gives an empty list. The consent
+page answers 503 `settings_unavailable`. `mcp_disabled` comes only after a successful read
+shows off or absent, and `session_invalid` only after a real 401 or 403 from auth-service.
+
+`McpEdgeGuard` wraps the MCP app. A bearer POST to the endpoint gets HTTP 429 with
+`Retry-After: 10` and a JSON-RPC body when the main pool has fewer than two connections
+free, because the token check needs one. An infrastructure problem is never a 401.
+
+Each pod logs one `mcp_stats` line every 30 s: `running`, `waiting`, `by_reject`, `pool_out`,
+`mcp_pool_out`, `oldest_call_s`, `loop_lag_max_ms`, `protocol_versions`. It logs a WARNING when
+event loop lag passes 1000 ms and an ERROR when a call has been running for over 300 s.
+
 ## 3. How a connection is made
 
 ### White-label institutes: the institute-scoped server URL
@@ -297,6 +333,12 @@ do more than the person who approved it.
 | `MCP_REFRESH_TOKEN_TTL_SECONDS` | – | 2592000 (30d) |
 | `MCP_AUTH_TXN_TTL_SECONDS` | – | 900 |
 | `MCP_AUTH_CODE_TTL_SECONDS` | – | 300 |
+| `MCP_MAX_TOOL_CALLS_PER_POD` | – | 4. `0` turns off the admission gate and the edge guard. |
+| `MCP_MAX_TOOL_CALLS_PER_INSTITUTE` | – | 3, per pod |
+| `MCP_GATE_MAX_WAIT_S` | – | 5. How long a call over a limit waits for a slot. |
+| `MCP_GATE_WAITERS_PER_INSTITUTE` | – | 3 |
+| `MCP_GATE_WAITERS_PER_POD` | – | 8 |
+| `MCP_POOL_RESERVE` | – | 2. Main-pool connections a tool call may not take. |
 
 Ingress must route `/.well-known/oauth-protected-resource` and
 `/.well-known/oauth-authorization-server` to ai-service: RFC 9728/8414 put those
@@ -336,6 +378,7 @@ be removed. Most AI apps never need any of this — they self-register via DCR.
 | File | Responsibility |
 | :--- | :--- |
 | `constants.py` | Exposed-tool allow-list, setting key, learner roles, denial messages |
+| `admission.py` | Concurrency gate for tool calls, edge guard, `mcp_stats` line |
 | `schema.py` | Idempotent DDL for local standalone runs; mirrors Flyway V519 |
 | `crypto.py` | Token hashing + Fernet encryption of platform credentials |
 | `repository.py` | SQL for clients, pending authorizations, codes, tokens, audit log |

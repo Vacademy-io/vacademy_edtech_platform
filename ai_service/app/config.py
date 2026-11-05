@@ -312,6 +312,15 @@ class Settings(BaseSettings):
     mcp_auth_txn_ttl_seconds: int = int(os.getenv("MCP_AUTH_TXN_TTL_SECONDS", "900"))
     # An issued authorization code. OAuth 2.1 recommends a maximum of 10 minutes.
     mcp_auth_code_ttl_seconds: int = int(os.getenv("MCP_AUTH_CODE_TTL_SECONDS", "300"))
+    # Tool calls running at once, per pod. 0 turns off both the gate and the edge guard.
+    mcp_max_tool_calls_per_pod: int = int(os.getenv("MCP_MAX_TOOL_CALLS_PER_POD", "4"))
+    mcp_max_tool_calls_per_institute: int = int(os.getenv("MCP_MAX_TOOL_CALLS_PER_INSTITUTE", "3"))
+    # How long a call over a limit waits for a slot, and how many may wait.
+    mcp_gate_max_wait_s: float = float(os.getenv("MCP_GATE_MAX_WAIT_S", "5"))
+    mcp_gate_waiters_per_institute: int = int(os.getenv("MCP_GATE_WAITERS_PER_INSTITUTE", "3"))
+    mcp_gate_waiters_per_pod: int = int(os.getenv("MCP_GATE_WAITERS_PER_POD", "8"))
+    # Main-pool connections a tool call may not take, left for the rest of the service.
+    mcp_pool_reserve: int = int(os.getenv("MCP_POOL_RESERVE", "2"))
 
     model_config = SettingsConfigDict(env_file=None, extra="ignore")
 

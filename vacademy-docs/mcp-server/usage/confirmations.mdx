@@ -124,6 +124,8 @@ In the CRM, logging a call can include a status change. If that status change wo
   </Accordion>
   <Accordion title="Hourly limits on calls and messages" icon="gauge-high">
     CRM calls and messages have hourly limits per person. If you reach one, the tool says so and how long to wait (`rate_limited`). The AI app can also tell you how many you have left this hour before you start.
+
+A call refused because of a limit (`rate_limited`) or because the server is busy (`server_busy`) did not run, so its code is not used up. The AI app can repeat the same call with the same code until the code expires.
   </Accordion>
   <Accordion title="Bulk actions apply to exactly what you saw" icon="list-check">
     For bulk CRM actions, the preview lists the leads it found, and the ones it left out with a reason (for example opted out, already converted, or called very recently). The action then runs on exactly that list. If you lose access to some of those leads in between, they are skipped, never swapped for others.

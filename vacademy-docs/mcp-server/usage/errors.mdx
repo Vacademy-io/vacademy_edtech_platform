@@ -11,7 +11,8 @@ icon: "triangle-exclamation"
 - **`tool_not_permitted`**: that area or edit is off for your role. An admin must turn it on in **Settings → MCP Server**.
 - **`confirm_token_expired`**: the preview is too old. Ask for a new preview.
 - **`out_of_scope`**: not your lead. It is outside the leads your admin portal shows you.
-- **`rate_limited`**: you reached an hourly limit for calls or messages. Wait, then try again.
+- **`rate_limited`**: you reached an hourly limit for calls or messages, or too many calls from your institute are running at once. Wait the time it gives, then try again.
+- **`server_busy`**, **`settings_unavailable`**, **`auth_unavailable`**: temporary trouble on the server. The call did not run and your access has not changed. Wait the time it gives, then try again.
 - **"session expired"**: reconnect your AI app and approve again.
 </Info>
 
@@ -37,9 +38,15 @@ Codes marked **CRM** come from the CRM tools. You only see them when your instit
 
 These happen before a tool runs. When access is refused, the AI app sees **no tools at all**, and a tool call returns a plain message instead of a code.
 
+Temporary trouble is different: the codes marked **Retry** below mean the server could not answer just now. They never mean your access was switched off. The error carries `retry_after_s`, the number of seconds to wait, and `retryable: true`. `started: false` and `changed: false` mean the call did not run, so repeating it is safe. While the server can't read these settings, listing tools returns an error rather than an empty list.
+
 | Message or code | What it means | What to do |
 |---|---|---|
 | "The MCP server is not enabled for this institute." | The server is switched off. | An admin turns it on in **Settings → MCP Server**. |
+| `settings_unavailable` **Retry** | The server could not read your institute's MCP settings just now. Your access has not been switched off. | Wait the time it gives, then repeat the call. No admin action is needed. |
+| `auth_unavailable` **Retry** | The server could not check your connection's session just now. | Wait the time it gives, then repeat the call. Don't reconnect. |
+| `server_busy` **Retry** | The server is at capacity right now. This isn't caused by your usage, and it can happen at any level of use. | Wait the time it gives, then repeat the call. |
+| `tool_timeout` | A read took too long and was stopped. Nothing changed. `started: true` means it did begin. | Try again with a shorter date range or fewer records. |
 | "This user's role is not allowed to connect to the MCP server." | None of your roles is in **Who can connect**. | An admin adds your role. See [Roles](/mcp-server/settings/roles). |
 | "The MCP server is available to institute staff only." | The account only has learner or parent roles. | Use a staff account. Learners and parents can never connect. |
 | "This connection's session has expired." / "rejected this connection's session" | Your admin portal sign-in behind the connection could not be renewed. | Reconnect in your AI app and approve again. |
@@ -82,7 +89,9 @@ See [Confirmations](/mcp-server/usage/confirmations) for how these work.
 
 | Code | What it means | What to do |
 |---|---|---|
-| `rate_limited` **CRM** | You reached an hourly limit for calls or messages. The error says how many seconds to wait. | Wait, then try again. Ask "How many can I still send this hour?" to check first. |
+| `rate_limited`, `limit_type: hourly` **CRM** | You reached an hourly limit for calls or messages. `retry_after_s` says how many seconds to wait. | Wait, then try again. Ask "How many can I still send this hour?" to check first. |
+| `rate_limited`, `limit_type: concurrent_calls` | Too many calls from your institute are running at once. That can include colleagues' calls and calls your AI app stopped waiting for. The call did not run. | Wait `retry_after_s` seconds, then repeat the same call. Ask your AI app to run fewer tools at a time. |
+| HTTP 429 with `Retry-After` | The server is at capacity, so it refused the request before reading it. The body is a JSON-RPC error with `error: server_busy`. It is not a sign-in problem. | Wait the time it gives, then repeat the request. Don't reconnect. |
 | `too_large` | Files or images sent to the tool are too big. | Send fewer or smaller files. |
 | `too_many_courses`, `too_many_learners`, `too_many_items`, `too_many_nodes`, `too_many_slides` | Too many items in one request. The message says the limit. | Split the request into smaller batches. |
 | `too_long`, `window_too_long` | A text or a date range is longer than allowed. | Shorten it. |
