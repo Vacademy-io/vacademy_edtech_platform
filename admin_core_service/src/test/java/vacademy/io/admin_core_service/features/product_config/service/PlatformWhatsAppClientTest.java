@@ -56,6 +56,15 @@ class PlatformWhatsAppClientTest {
     }
 
     @Test
+    void theDeployPlaceholderCountsAsNoCredentials() {
+        PlatformWhatsAppClient none = new PlatformWhatsAppClient("https://meta.test", "not-configured", "not-configured");
+        assertFalse(none.isConfigured());
+        assertEquals("The platform WhatsApp account is not configured on this server",
+                none.sendTemplate("919000000001", "x", "en", List.of("a")));
+        assertThrows(IllegalStateException.class, () -> none.findTemplate("WABA", "t1", "en"));
+    }
+
+    @Test
     void findsTheTemplateAndItsStatus() {
         meta.expect(requestTo(org.hamcrest.Matchers.startsWith("https://meta.test/v22.0/WABA/message_templates?name=t1")))
                 .andRespond(withSuccess("{\"data\":[{\"name\":\"t1\",\"language\":\"en\",\"status\":\"APPROVED\","
