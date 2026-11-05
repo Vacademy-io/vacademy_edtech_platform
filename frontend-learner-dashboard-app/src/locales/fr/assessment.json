@@ -31,8 +31,12 @@
         "description": "Une fois qu'un test que vous avez tenté se termine, il apparaît ici avec son rapport."
       }
     },
+    "loadError": {
+      "assessment": "Impossible de charger vos tests",
+      "homework": "Impossible de charger vos devoirs",
+      "more": "Impossible d'en charger davantage"
+    },
     "loading": {
-      "assessments": "Chargement des évaluations...",
       "more": "Chargement en cours..."
     },
     "folders": {
@@ -75,7 +79,11 @@
       "closes": "Se termine {{date}}",
       "noExpiry": "Pas d'expiration",
       "validTill": "Valable jusqu'au {{date}}",
-      "attempt": "Tentative {{used}} sur {{max}}",
+      "unlimitedAttempts": "Tentatives illimitées",
+      "attemptsUsed": "Tentatives utilisées : {{used}} sur {{max}}",
+      "attemptsAllowed_one": "{{count}} tentative",
+      "attemptsAllowed_many": "{{count}} tentatives",
+      "attemptsAllowed_other": "{{count}} tentatives",
       "endedOn": "Terminé le {{date}}",
       "resultsPending": "Résultats en attente",
       "notAttempted": "Non tenté",

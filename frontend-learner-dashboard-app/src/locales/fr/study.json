@@ -7,11 +7,6 @@
             "scrollStart": "Faire défiler les onglets en arrière",
             "scrollEnd": "Faire défiler les onglets en avant"
         },
-        "toast": {
-            "loadError": "Une erreur s'est produite lors du chargement des {{courses}}. Veuillez réessayer.",
-            "loadTabError": "Impossible de charger les {{courses}} de cet onglet. Veuillez réessayer.",
-            "loadFallbackError": "Impossible de charger les {{courses}}. Veuillez réessayer."
-        },
         "search": {
             "placeholder": "Rechercher des {{courses}}..."
         },
@@ -27,6 +22,21 @@
         "empty": {
             "title": "Aucun {{courses}} trouvé",
             "description": "Nous n'avons rien trouvé qui corresponde à votre recherche. Essayez d'autres mots-clés, ajustez vos filtres ou effacez-les pour voir tous les {{courses}} disponibles."
+        },
+        "emptyProgress": {
+            "title": "Aucun {{courses}} en cours",
+            "description": "Tout ce que vous commencez apparaîtra ici, pour reprendre là où vous vous êtes arrêté."
+        },
+        "emptyCompleted": {
+            "title": "Aucun {{courses}} terminé pour l'instant",
+            "description": "Dès que vous en terminerez un, il apparaîtra ici."
+        },
+        "emptyAll": {
+            "title": "Aucun {{courses}} disponible pour l'instant",
+            "description": "Les nouveaux {{courses}} apparaîtront ici dès leur ajout."
+        },
+        "loadError": {
+            "title": "Impossible de charger vos {{courses}}"
         },
         "results": {
             "summary": "{{total}} {{courses}} • Page {{page}}/{{totalPages}} • {{showing}} affichés sur {{total}}"

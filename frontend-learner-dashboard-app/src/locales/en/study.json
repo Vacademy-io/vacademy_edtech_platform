@@ -7,11 +7,6 @@
             "scrollStart": "Scroll tabs back",
             "scrollEnd": "Scroll tabs forward"
         },
-        "toast": {
-            "loadError": "Something went wrong while loading {{courses}}. Please try again.",
-            "loadTabError": "Couldn't load {{courses}} for this tab. Please try again.",
-            "loadFallbackError": "Couldn't load {{courses}}. Please try again."
-        },
         "search": {
             "placeholder": "Search {{courses}}..."
         },
@@ -27,6 +22,21 @@
         "empty": {
             "title": "No {{courses}} found",
             "description": "We couldn't find anything matching your search. Try different keywords, adjust your filters, or clear them to see all available {{courses}}."
+        },
+        "emptyProgress": {
+            "title": "No {{courses}} in progress",
+            "description": "Anything you start will appear here, so you can pick it up where you left off."
+        },
+        "emptyCompleted": {
+            "title": "No completed {{courses}} yet",
+            "description": "When you finish one, it will appear here."
+        },
+        "emptyAll": {
+            "title": "No {{courses}} available yet",
+            "description": "New {{courses}} will appear here as soon as they are added."
+        },
+        "loadError": {
+            "title": "Couldn't load your {{courses}}"
         },
         "results": {
             "summary": "{{total}} {{courses}} • Page {{page}}/{{totalPages}} • Showing {{showing}} of {{total}}"

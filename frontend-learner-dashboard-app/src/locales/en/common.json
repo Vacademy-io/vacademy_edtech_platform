@@ -30,6 +30,13 @@
     "table": {
         "noResults": "No results found"
     },
+    "loadError": {
+        "title": "Couldn't load this",
+        "description": "This is usually temporary. Please try again.",
+        "offlineTitle": "You're offline",
+        "offlineDescription": "Check your connection. We'll try again as soon as you're back online.",
+        "retry": "Try again"
+    },
     "common": {
         "loading": "Loading..."
     },

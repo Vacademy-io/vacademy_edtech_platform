@@ -9,7 +9,10 @@ import {
 } from "../-utils.ts/useFetchAssessment";
 import { AssessmentCard } from "../-components/AssessmentCard";
 import { DashboardLoader } from "@/components/core/dashboard-loader";
-import { EmptyState } from "@/components/design-system/states";
+import { EmptyState, LoadErrorState } from "@/components/design-system/states";
+import { Card } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
+import { resolveListView, type RequestStatus } from "@/lib/list-status";
 import { Exam } from "@phosphor-icons/react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "@tanstack/react-router";
@@ -22,6 +25,24 @@ import {
   AssessmentFolderGrid,
   AssessmentFolderHeader,
 } from "./AssessmentFolderGrid";
+
+const NO_COUNTS: Record<string, number> = {};
+
+/** Stands in for AssessmentCard, so the list keeps its shape when the tests arrive. */
+const AssessmentListSkeleton = () => (
+  <div className="flex flex-col gap-4" role="status" aria-live="polite">
+    {[0, 1, 2].map((i) => (
+      <Card key={i} className="flex w-full flex-col gap-stack p-4 sm:p-5">
+        <Skeleton className="h-6 w-16 rounded-full" />
+        <div className="flex flex-col gap-2">
+          <Skeleton className="h-5 w-2/3" />
+          <Skeleton className="h-3 w-1/2" />
+        </div>
+        <Skeleton className="h-11 w-full sm:w-36 sm:self-end" />
+      </Card>
+    ))}
+  </div>
+);
 
 const AssessmentListView = ({
   assessment_types,
@@ -61,21 +82,27 @@ const AssessmentListView = ({
     [assessmentTypes.PAST]: true,
   });
 
-  const [loading, setLoading] = useState(false);
+  // Per tab: all three are fetched together and answer in any order.
+  const [statusByTab, setStatusByTab] = useState<
+    Record<assessmentTypes, RequestStatus>
+  >({
+    [assessmentTypes.LIVE]: "loading",
+    [assessmentTypes.UPCOMING]: "loading",
+    [assessmentTypes.PAST]: "loading",
+  });
   const [loadingMore, setLoadingMore] = useState(false);
+  const [loadMoreFailed, setLoadMoreFailed] = useState<
+    Partial<Record<assessmentTypes, boolean>>
+  >({});
   const [page, setPage] = useState<{ [key in assessmentTypes]: number }>({
     [assessmentTypes.LIVE]: 0,
     [assessmentTypes.UPCOMING]: 0,
     [assessmentTypes.PAST]: 0,
   });
 
-  const loadingRef = useRef(loading);
+  const inFlightRef = useRef<Partial<Record<assessmentTypes, boolean>>>({});
   const loadingMoreRef = useRef(loadingMore);
   const hasMorePagesRef = useRef(hasMorePages);
-
-  useEffect(() => {
-    loadingRef.current = loading;
-  }, [loading]);
 
   useEffect(() => {
     loadingMoreRef.current = loadingMore;
@@ -91,14 +118,19 @@ const AssessmentListView = ({
   const fetchMoreData = useCallback(
     async (tab: assessmentTypes, pageNum: number, isInitialLoad = false) => {
       if (
-        loadingRef.current ||
+        inFlightRef.current[tab] ||
         (loadingMoreRef.current && !isInitialLoad) ||
         !hasMorePagesRef.current[tab]
       )
         return;
 
-      setLoading(isInitialLoad);
-      setLoadingMore(!isInitialLoad);
+      inFlightRef.current[tab] = true;
+      if (isInitialLoad) {
+        setStatusByTab((prev) => ({ ...prev, [tab]: "loading" }));
+      } else {
+        setLoadingMore(true);
+        setLoadMoreFailed((prev) => ({ ...prev, [tab]: false }));
+      }
 
       try {
         const data = await fetchAssessmentData(
@@ -109,11 +141,10 @@ const AssessmentListView = ({
           folderId
         );
 
-        // Defense-in-depth: even with the upstream catch fixed, a missing
-        // or malformed payload would crash inside React's setState updater
-        // (a hard render error, not a recoverable toast). Bail instead.
+        // A missing or malformed payload is a failed load, not an empty list,
+        // and would otherwise crash inside React's setState updater.
         if (!data || !Array.isArray(data.content)) {
-          return;
+          throw new Error("Unexpected assessment list response");
         }
 
         setAssessmentData((prevData) => ({
@@ -137,11 +168,20 @@ const AssessmentListView = ({
           ...prevPage,
           [tab]: pageNum + 1,
         }));
+
+        if (isInitialLoad) {
+          setStatusByTab((prev) => ({ ...prev, [tab]: "success" }));
+        }
       } catch (error) {
         console.error(error);
+        if (isInitialLoad) {
+          setStatusByTab((prev) => ({ ...prev, [tab]: "error" }));
+        } else {
+          setLoadMoreFailed((prev) => ({ ...prev, [tab]: true }));
+        }
       } finally {
-        setLoading(false);
-        setLoadingMore(false);
+        inFlightRef.current[tab] = false;
+        if (!isInitialLoad) setLoadingMore(false);
       }
     },
     [assessment_types, folderId]
@@ -159,13 +199,24 @@ const AssessmentListView = ({
         ? t("scheduleTest.navHeading.assessment")
         : t("scheduleTest.navHeading.homework");
     setNavHeading(nextHeading);
+  }, [assessment_types, setNavHeading, t]);
+
+  useEffect(() => {
     fetchAllTabsData();
-  }, [assessment_types, fetchAllTabsData, setNavHeading, t]);
+  }, [fetchAllTabsData]);
+
+  const retryFailedTabs = () => {
+    Object.values(assessmentTypes)
+      .filter((tab) => statusByTab[tab] === "error")
+      .forEach((tab) => fetchMoreData(tab, 0, true));
+  };
 
   const lastElementRef = useCallback(
     (node: HTMLDivElement | null) => {
       if (loadingMore || !hasMorePages[selectedTab]) return;
       if (observer.current) observer.current.disconnect();
+      // Waits for the Retry below; re-observing would refetch in a loop.
+      if (loadMoreFailed[selectedTab]) return;
       observer.current = new IntersectionObserver((entries) => {
         if (entries[0].isIntersecting) {
           fetchMoreData(selectedTab, page[selectedTab]);
@@ -173,12 +224,13 @@ const AssessmentListView = ({
       });
       if (node) observer.current.observe(node);
     },
-    [loadingMore, selectedTab, page, hasMorePages, fetchMoreData]
+    [loadingMore, loadMoreFailed, selectedTab, page, hasMorePages, fetchMoreData]
   );
 
-  if (loading) {
-    return <DashboardLoader />;
-  }
+  const listView = resolveListView(
+    statusByTab[selectedTab],
+    assessmentData[selectedTab].length
+  );
 
   return (
     <div className="w-full space-y-6">
@@ -200,7 +252,20 @@ const AssessmentListView = ({
           value={selectedTab}
           className="mt-6 flex flex-col gap-4 focus-visible:outline-none"
         >
-          {assessmentData[selectedTab].length > 0 ? (
+          {listView === "loading" && <AssessmentListSkeleton />}
+
+          {listView === "error" && (
+            <LoadErrorState
+              title={
+                assessment_types === "HOMEWORK"
+                  ? t("scheduleTest.loadError.homework")
+                  : t("scheduleTest.loadError.assessment")
+              }
+              onRetry={retryFailedTabs}
+            />
+          )}
+
+          {listView === "data" &&
             assessmentData[selectedTab].map((assessment, index) => {
               if (index === assessmentData[selectedTab].length - 1) {
                 return (
@@ -221,8 +286,9 @@ const AssessmentListView = ({
                   assessment_types={assessment_types}
                 />
               );
-            })
-          ) : (
+            })}
+
+          {listView === "empty" && (
             <EmptyState
               icon={Exam}
               title={
@@ -250,10 +316,6 @@ const AssessmentListView = ({
             />
           )}
 
-          {loading && (
-            <div className="text-center text-muted-foreground py-8">{t("scheduleTest.loading.assessments")}</div>
-          )}
-
           {loadingMore && (
             <div className="py-4 flex flex-col items-center gap-2">
               <div className="text-sm text-muted-foreground">
@@ -262,6 +324,14 @@ const AssessmentListView = ({
               <DashboardLoader />
             </div>
           )}
+
+          {listView === "data" && loadMoreFailed[selectedTab] && (
+            <LoadErrorState
+              compact
+              title={t("scheduleTest.loadError.more")}
+              onRetry={() => fetchMoreData(selectedTab, page[selectedTab])}
+            />
+          )}
         </TabsContent>
       </Tabs>
     </div>
@@ -269,7 +339,7 @@ const AssessmentListView = ({
 };
 
 type FolderView =
-  | { mode: "loading" }
+  | { mode: "loading"; foldersOn?: boolean }
   | { mode: "flat" }
   | { mode: "grid"; data: LearnerFolderList }
   | { mode: "folder"; data: LearnerFolderList | null };
@@ -303,6 +373,9 @@ export const ScheduleTestMainComponent = ({
         if (!cancelled) setView({ mode: "flat" });
         return;
       }
+      if (!cancelled) {
+        setView((v) => (v.mode === "loading" ? { mode: "loading", foldersOn: true } : v));
+      }
       let data: LearnerFolderList | null = null;
       try {
         data = await fetchAssessmentFolderList(assessment_types);
@@ -329,7 +402,21 @@ export const ScheduleTestMainComponent = ({
       search: (prev: Record<string, unknown>) => ({ ...prev, folderId: id }),
     });
 
-  if (view.mode === "loading") return <DashboardLoader />;
+  if (view.mode === "loading") {
+    // Folder cards are about to take over: tabs here would appear only to vanish.
+    if (view.foldersOn && !folderId) return <AssessmentListSkeleton />;
+    // The frame AssessmentListView draws, so nothing moves when it takes over.
+    return (
+      <Tabs value={assessmentTypes.LIVE} className="w-full">
+        <div className="pointer-events-none">
+          <ScheduleTestTabList selectedTab={assessmentTypes.LIVE} totalAssessments={NO_COUNTS} />
+        </div>
+        <div className="mt-6">
+          <AssessmentListSkeleton />
+        </div>
+      </Tabs>
+    );
+  }
 
   if (view.mode === "grid") {
     // Folder cards first; tests that are in no folder follow in the usual tabs.

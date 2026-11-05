@@ -7,11 +7,6 @@
             "scrollStart": "टैब पीछे स्क्रॉल करें",
             "scrollEnd": "टैब आगे स्क्रॉल करें"
         },
-        "toast": {
-            "loadError": "{{courses}} लोड करते समय कुछ गलत हो गया। कृपया पुनः प्रयास करें।",
-            "loadTabError": "इस टैब के लिए {{courses}} लोड नहीं हो सके। कृपया पुनः प्रयास करें।",
-            "loadFallbackError": "{{courses}} लोड नहीं हो सके। कृपया पुनः प्रयास करें।"
-        },
         "search": {
             "placeholder": "{{courses}} खोजें..."
         },
@@ -27,6 +22,21 @@
         "empty": {
             "title": "कोई {{courses}} नहीं मिले",
             "description": "आपकी खोज से मेल खाता कुछ नहीं मिला। अलग कीवर्ड आज़माएँ, फ़िल्टर बदलें, या उन्हें हटाकर सभी उपलब्ध {{courses}} देखें।"
+        },
+        "emptyProgress": {
+            "title": "कोई {{courses}} जारी नहीं है",
+            "description": "आप जो भी शुरू करेंगे वह यहाँ दिखेगा, ताकि आप वहीं से आगे बढ़ सकें जहाँ छोड़ा था।"
+        },
+        "emptyCompleted": {
+            "title": "अभी तक कोई {{courses}} पूरा नहीं हुआ",
+            "description": "पूरा होने पर वह यहाँ दिखेगा।"
+        },
+        "emptyAll": {
+            "title": "अभी कोई {{courses}} उपलब्ध नहीं है",
+            "description": "नए {{courses}} जुड़ते ही यहाँ दिखेंगे।"
+        },
+        "loadError": {
+            "title": "आपके {{courses}} लोड नहीं हो सके"
         },
         "results": {
             "summary": "{{total}} {{courses}} • पृष्ठ {{page}}/{{totalPages}} • {{total}} में से {{showing}} दिखाए जा रहे हैं"

@@ -26,8 +26,8 @@ const ScheduleTestTabList = ({
 }) => {
   const { t } = useTranslation("assessment");
   return (
-    <div className="flex items-center pb-4 overflow-x-auto">
-      <TabsList className="h-auto p-1 bg-muted w-full sm:w-auto">
+    <div className="no-scrollbar flex items-center pb-4 overflow-x-auto">
+      <TabsList className="h-auto p-1 bg-muted w-max min-w-full shrink-0 sm:w-auto sm:min-w-0">
         {Object.values(assessmentTypes).map((type) => {
           const Icon = tabIcons[type as assessmentTypes];
           const count = totalAssessments[type];
@@ -36,7 +36,7 @@ const ScheduleTestTabList = ({
               key={type}
               value={type}
               className={cn(
-                "flex items-center gap-2 px-4 py-2 text-sm font-medium transition-all data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm",
+                "flex items-center gap-1 px-2 py-2 text-sm sm:gap-2 sm:px-4 font-medium transition-all data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm",
                 "flex-1 sm:flex-none justify-center"
               )}
             >
@@ -47,7 +47,7 @@ const ScheduleTestTabList = ({
               {count > 0 && (
                 <Badge
                   variant="secondary"
-                  className="ms-1 rounded-full px-2 py-0.5 text-caption h-5 min-w-5 flex items-center justify-center bg-primary/10 text-primary hover:bg-primary/20"
+                  className="rounded-full sm:ms-1 px-2 py-0.5 text-caption h-5 min-w-5 flex items-center justify-center bg-primary/10 text-primary hover:bg-primary/20"
                 >
                   {count}
                 </Badge>

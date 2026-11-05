@@ -19,7 +19,6 @@ import {
 import { getInstituteId } from "@/constants/helper.ts";
 import { getUserId } from "@/constants/getUserId.ts";
 import authenticatedAxiosInstance from "@/lib/auth/axiosInstance.ts";
-import { toast } from "sonner";
 import HeroSection from "../-component1/HeroSection.tsx";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
@@ -38,7 +37,6 @@ import { CoursePackageResponse } from "@/types/course-catalog/course-catalog-lis
 import { ContentTerms, SystemTerms } from "@/types/naming-settings.ts";
 import { getTerminology, getTerminologyPlural } from "@/components/common/layout-container/sidebar/utils.ts";
 import { useTranslation } from "react-i18next";
-import i18n from "@/i18n";
 import { Preferences } from "@capacitor/preferences";
 import { getStudentDisplaySettings } from "@/services/student-display-settings";
 import type {
@@ -46,6 +44,7 @@ import type {
   StudentAllCoursesTabId,
 } from "@/types/student-display-settings";
 import { LoadingState } from "@/components/design-system/states";
+import { requireListPage, type RequestStatus } from "@/lib/list-status";
 import { CustomTabProductPages } from "./CustomTabProductPages";
 
 // Only the "Live sessions" custom tab needs the live-class list; keep it out
@@ -214,13 +213,11 @@ const CourseCatalougePage: React.FC = () => {
     useState<CoursePackageResponse>({
       ...allCourses,
     });
-  const [isLoadingByTab, setIsLoadingByTab] = useState<
-    Record<string, boolean>
-  >({
-    ALL: false,
-    PROGRESS: false,
-    COMPLETED: false,
-  });
+  // A tab with no entry has not been asked for yet, which reads as loading.
+  const [statusByTab, setStatusByTab] = useState<Record<string, RequestStatus>>({});
+  const setTabStatus = useCallback((tab: string, status: RequestStatus) => {
+    setStatusByTab((prev) => ({ ...prev, [tab]: status }));
+  }, []);
   const [searchTerm, setSearchTerm] = useState("");
   const [sortOption, setSortOption] = useState("Newest");
 
@@ -332,11 +329,14 @@ const CourseCatalougePage: React.FC = () => {
   // ignores package ids, so these read the catalogue V2 search (price + id
   // filter) once per tab/sort and page/search the result here.
   const subsetCacheRef = useRef<Record<string, { key: string; list: CoursePackageResponse["content"] }>>({});
+  const subsetRequestRef = useRef<Record<string, object>>({});
   const fetchCatalogueSubset = useCallback(
     async (tabValue: string, tab: StudentAllCoursesCustomTab) => {
       const ids = (tab.courseIds ?? []).slice(0, CATALOGUE_SUBSET_LIMIT);
       const cacheKey = JSON.stringify([tab.type, ids, sortOption]);
-      setIsLoadingByTab((prev) => ({ ...prev, [tabValue]: true }));
+      const request = {};
+      subsetRequestRef.current[tabValue] = request;
+      setTabStatus(tabValue, "loading");
       try {
         let list = subsetCacheRef.current[tabValue]?.key === cacheKey
           ? subsetCacheRef.current[tabValue]!.list
@@ -361,13 +361,14 @@ const CourseCatalougePage: React.FC = () => {
             },
             { params: { instituteId, page: 0, size: CATALOGUE_SUBSET_LIMIT } }
           );
-          const all = ((response.data as CoursePackageResponse)?.content ?? []) as Array<
+          const all = requireListPage<CoursePackageResponse>(response.data).content as Array<
             CoursePackageResponse["content"][number] & { min_plan_actual_price?: number | null }
           >;
           // Same rule as the public catalogue's "Free" label: no price = free.
           list = tab.type === "FREE_COURSES"
             ? all.filter((c) => Number(c.min_plan_actual_price ?? 0) === 0)
             : all;
+          if (subsetRequestRef.current[tabValue] !== request) return;
           subsetCacheRef.current[tabValue] = { key: cacheKey, list };
           list.forEach((course) => {
             if (!course.id) return;
@@ -395,20 +396,15 @@ const CourseCatalougePage: React.FC = () => {
             empty: content.length === 0,
           },
         }));
+        setTabStatus(tabValue, "success");
       } catch (err) {
         if (import.meta.env.DEV) console.error("[Catalog] custom tab fetch failed", err);
-        toast.error(
-          i18n.t("study:catalog.toast.loadTabError", {
-            courses: getTerminologyPlural(ContentTerms.Course, SystemTerms.Course).toLocaleLowerCase(),
-          })
-        );
-      } finally {
-        setIsLoadingByTab((prev) => ({ ...prev, [tabValue]: false }));
+        if (subsetRequestRef.current[tabValue] === request) setTabStatus(tabValue, "error");
       }
     },
     // allCourses is only a shape template for the page envelope.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [sortOption, debouncedSearch, pageByTab, pageSize, setDripCondition, clearDripCondition]
+    [sortOption, debouncedSearch, pageByTab, pageSize, setDripCondition, clearDripCondition, setTabStatus]
   );
 
   const fetchCoursesForTab = useCallback(
@@ -490,7 +486,7 @@ const CourseCatalougePage: React.FC = () => {
           tags: selectedTags,
         });
       }
-      setIsLoadingByTab((prev) => ({ ...prev, [tabType]: true }));
+      setTabStatus(tabType, "loading");
       try {
         const instituteId = await getInstituteId();
         // A custom tab is defined by its tags alone; the ALL tab's sidebar
@@ -526,11 +522,7 @@ const CourseCatalougePage: React.FC = () => {
 
         if (controller.signal.aborted) return;
 
-        const rawData = response.data as CoursePackageResponse;
-        const data: CoursePackageResponse = {
-          ...rawData,
-          content: rawData.content ?? [],
-        };
+        const data = requireListPage<CoursePackageResponse>(response.data);
         applyCourses(data);
 
         if (data.content?.length) {
@@ -549,7 +541,9 @@ const CourseCatalougePage: React.FC = () => {
             }
           });
         }
+        setTabStatus(tabType, "success");
       } catch (err) {
+        // Aborted means a newer request took over; it owns the status from here.
         if (controller.signal.aborted || axios.isCancel(err)) return;
 
         const status = axios.isAxiosError(err) ? err.response?.status : undefined;
@@ -558,33 +552,8 @@ const CourseCatalougePage: React.FC = () => {
         if (import.meta.env.DEV) {
           console.error("[Catalog] learner-packages search failed", { status, message, tabType });
         }
-        if (status === 500) {
-          toast.error(
-            i18n.t("study:catalog.toast.loadError", {
-              courses: getTerminologyPlural(
-                ContentTerms.Course,
-                SystemTerms.Course
-              ).toLocaleLowerCase(),
-            })
-          );
-        }
-
-        // For non-ALL tabs there is no fallback, so a non-500 error
-        // (e.g. backend's custom 511) would otherwise fail silently and the
-        // user is left staring at an empty tab. Surface it.
-        if (apiType !== "ALL" && status !== 500) {
-          toast.error(
-            i18n.t("study:catalog.toast.loadTabError", {
-              courses: getTerminologyPlural(
-                ContentTerms.Course,
-                SystemTerms.Course
-              ).toLocaleLowerCase(),
-            })
-          );
-        }
-
+        let fallbackSucceeded = false;
         if (apiType === "ALL" && status !== 500) {
-          let fallbackSucceeded = false;
           try {
             const instituteId = await getInstituteId();
             const body = {
@@ -617,8 +586,8 @@ const CourseCatalougePage: React.FC = () => {
               }
             );
             if (controller.signal.aborted) return;
-            const fallbackData = response.data as CoursePackageResponse;
-            applyCourses({ ...fallbackData, content: fallbackData.content ?? [] });
+            const fallbackData = requireListPage<CoursePackageResponse>(response.data);
+            applyCourses(fallbackData);
             if (fallbackData.content?.length) {
               const current = useCatalogStore.getState().instructor;
               const merged = mergeInstructorsFromCourses(current, fallbackData.content);
@@ -636,22 +605,11 @@ const CourseCatalougePage: React.FC = () => {
             }
             fallbackSucceeded = true;
           } catch {
-            // swallow fallback errors — toast below
-          }
-
-          if (!fallbackSucceeded && !controller.signal.aborted) {
-            toast.error(
-              i18n.t("study:catalog.toast.loadFallbackError", {
-                courses: getTerminologyPlural(
-                  ContentTerms.Course,
-                  SystemTerms.Course
-                ).toLocaleLowerCase(),
-              })
-            );
+            // Falls through to the error state below.
           }
         }
-      } finally {
-        setIsLoadingByTab((prev) => ({ ...prev, [tabType]: false }));
+        if (controller.signal.aborted) return;
+        setTabStatus(tabType, fallbackSucceeded ? "success" : "error");
       }
     },
     [
@@ -667,6 +625,7 @@ const CourseCatalougePage: React.FC = () => {
       setDripCondition,
       clearDripCondition,
       setInstructors,
+      setTabStatus,
     ]
   );
 
@@ -746,7 +705,10 @@ const CourseCatalougePage: React.FC = () => {
 
   // Reset current tab page to 0 when search or sort changes
   useEffect(() => {
-    setPageByTab((prev) => ({ ...prev, [selectedTab]: 0 }));
+    // Same object when already on page 0: a new one would refetch for nothing.
+    setPageByTab((prev) =>
+      (prev[selectedTab] ?? 0) === 0 ? prev : { ...prev, [selectedTab]: 0 }
+    );
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [debouncedSearch, sortOption]);
 
@@ -1126,7 +1088,8 @@ const CourseCatalougePage: React.FC = () => {
                 handlePageChange={handlePageChangeAll}
                 showFilters={selectedTab === "ALL"}
                 selectedTab={selectedTab}
-                isLoading={isLoadingByTab.ALL}
+                status={statusByTab.ALL}
+                onRetry={() => fetchCoursesForTab("ALL")}
               />
             </TabsContent>
           )}
@@ -1151,7 +1114,8 @@ const CourseCatalougePage: React.FC = () => {
                 handlePageChange={handlePageChangeProgress}
                 showFilters={false}
                 selectedTab={selectedTab}
-                isLoading={isLoadingByTab.PROGRESS}
+                status={statusByTab.PROGRESS}
+                onRetry={() => fetchCoursesForTab("PROGRESS")}
               />
             </TabsContent>
           )}
@@ -1176,7 +1140,8 @@ const CourseCatalougePage: React.FC = () => {
                 handlePageChange={handlePageChangeCompleted}
                 showFilters={false}
                 selectedTab={selectedTab}
-                isLoading={isLoadingByTab.COMPLETED}
+                status={statusByTab.COMPLETED}
+                onRetry={() => fetchCoursesForTab("COMPLETED")}
               />
             </TabsContent>
           )}
@@ -1212,7 +1177,8 @@ const CourseCatalougePage: React.FC = () => {
                   handlePageChange={handlePageChangeCustom(tab.value)}
                   showFilters={false}
                   selectedTab="ALL"
-                  isLoading={isLoadingByTab[tab.value] ?? false}
+                  status={statusByTab[tab.value]}
+                  onRetry={() => fetchCoursesForTab(tab.value)}
                 />
                 )}
               </TabsContent>

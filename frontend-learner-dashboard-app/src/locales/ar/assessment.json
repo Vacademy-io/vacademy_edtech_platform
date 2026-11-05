@@ -31,8 +31,12 @@
         "description": "بمجرد إغلاق اختبار خضت له، سيظهر هنا مع تقريره."
       }
     },
+    "loadError": {
+      "assessment": "تعذّر تحميل اختباراتك",
+      "homework": "تعذّر تحميل واجباتك",
+      "more": "تعذّر تحميل المزيد"
+    },
     "loading": {
-      "assessments": "جارٍ تحميل الاختبارات...",
       "more": "جارٍ تحميل المزيد..."
     },
     "folders": {
@@ -78,7 +82,14 @@
       "closes": "يُغلق {{date}}",
       "noExpiry": "بدون انتهاء",
       "validTill": "صالح حتى {{date}}",
-      "attempt": "المحاولة {{used}} من {{max}}",
+      "unlimitedAttempts": "محاولات غير محدودة",
+      "attemptsUsed": "المحاولات المستخدمة: {{used}} من {{max}}",
+      "attemptsAllowed_zero": "لا محاولات",
+      "attemptsAllowed_one": "محاولة واحدة",
+      "attemptsAllowed_two": "محاولتان",
+      "attemptsAllowed_few": "{{count}} محاولات",
+      "attemptsAllowed_many": "{{count}} محاولة",
+      "attemptsAllowed_other": "{{count}} محاولة",
       "endedOn": "انتهى {{date}}",
       "resultsPending": "النتائج قيد الانتظار",
       "notAttempted": "لم تتم المحاولة",

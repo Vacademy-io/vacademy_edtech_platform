@@ -30,6 +30,13 @@
     "table": {
         "noResults": "Aucun résultat trouvé"
     },
+    "loadError": {
+        "title": "Chargement impossible",
+        "description": "C'est généralement temporaire. Veuillez réessayer.",
+        "offlineTitle": "Vous êtes hors ligne",
+        "offlineDescription": "Vérifiez votre connexion. Nous réessaierons dès que vous serez de nouveau en ligne.",
+        "retry": "Réessayer"
+    },
     "common": {
         "loading": "Chargement..."
     },

@@ -31,8 +31,12 @@
         "description": "जिस टेस्ट का आपने प्रयास किया है, वह बंद होने के बाद यहां अपनी रिपोर्ट के साथ दिखाई देगा।"
       }
     },
+    "loadError": {
+      "assessment": "आपके टेस्ट लोड नहीं हो सके",
+      "homework": "आपका होमवर्क लोड नहीं हो सका",
+      "more": "और लोड नहीं हो सका"
+    },
     "loading": {
-      "assessments": "असेसमेंट लोड हो रहे हैं...",
       "more": "और लोड हो रहा है..."
     },
     "folders": {
@@ -74,7 +78,10 @@
       "closes": "{{date}} को बंद होगा",
       "noExpiry": "कोई समाप्ति नहीं",
       "validTill": "{{date}} तक मान्य",
-      "attempt": "प्रयास {{used}} में से {{max}}",
+      "unlimitedAttempts": "असीमित प्रयास",
+      "attemptsUsed": "उपयोग किए गए प्रयास: {{max}} में से {{used}}",
+      "attemptsAllowed_one": "{{count}} प्रयास",
+      "attemptsAllowed_other": "{{count}} प्रयास",
       "endedOn": "{{date}} को समाप्त हुआ",
       "resultsPending": "परिणाम लंबित",
       "notAttempted": "प्रयास नहीं किया गया",

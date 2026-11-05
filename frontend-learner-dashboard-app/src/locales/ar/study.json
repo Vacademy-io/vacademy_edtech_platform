@@ -7,11 +7,6 @@
             "scrollStart": "مرّر التبويبات للخلف",
             "scrollEnd": "مرّر التبويبات للأمام"
         },
-        "toast": {
-            "loadError": "حدث خطأ أثناء تحميل {{courses}}. يرجى المحاولة مرة أخرى.",
-            "loadTabError": "تعذّر تحميل {{courses}} لهذا التبويب. يرجى المحاولة مرة أخرى.",
-            "loadFallbackError": "تعذّر تحميل {{courses}}. يرجى المحاولة مرة أخرى."
-        },
         "search": {
             "placeholder": "ابحث في {{courses}}..."
         },
@@ -27,6 +22,21 @@
         "empty": {
             "title": "لم يتم العثور على {{courses}}",
             "description": "لم نتمكن من العثور على أي شيء يطابق بحثك. جرّب كلمات مفتاحية مختلفة، أو عدّل عوامل التصفية، أو امسحها لعرض كل {{courses}}."
+        },
+        "emptyProgress": {
+            "title": "لا توجد {{courses}} قيد التقدم",
+            "description": "سيظهر هنا كل ما تبدأه، لتتابع من حيث توقفت."
+        },
+        "emptyCompleted": {
+            "title": "لا توجد {{courses}} مكتملة بعد",
+            "description": "عند إكمال أي منها، ستظهر هنا."
+        },
+        "emptyAll": {
+            "title": "لا توجد {{courses}} متاحة بعد",
+            "description": "ستظهر {{courses}} الجديدة هنا فور إضافتها."
+        },
+        "loadError": {
+            "title": "تعذّر تحميل قائمة {{courses}}"
         },
         "results": {
             "summary": "{{total}} {{courses}} • صفحة {{page}}/{{totalPages}} • عرض {{showing}} من {{total}}"

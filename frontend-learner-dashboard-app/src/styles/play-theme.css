@@ -551,7 +551,7 @@
   }
 
   /* ── Alert / Toast / Notification ───────────────────────────────── */
-  .ui-play [role="alert"],
+  .ui-play [role="alert"]:not([data-alert-surface="none"]),
   .ui-play [data-sonner-toast] {
     border-radius: var(--play-radius-card) !important;
     border-width: 1px !important;

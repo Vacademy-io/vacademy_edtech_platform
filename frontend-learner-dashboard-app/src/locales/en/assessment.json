@@ -31,8 +31,12 @@
         "description": "Once a test you attempted closes, it appears here with its report."
       }
     },
+    "loadError": {
+      "assessment": "Couldn't load your tests",
+      "homework": "Couldn't load your homework",
+      "more": "Couldn't load more"
+    },
     "loading": {
-      "assessments": "Loading assessments...",
       "more": "Loading more..."
     },
     "folders": {
@@ -74,7 +78,10 @@
       "closes": "Closes {{date}}",
       "noExpiry": "No expiry",
       "validTill": "Valid till {{date}}",
-      "attempt": "Attempt {{used}} of {{max}}",
+      "unlimitedAttempts": "Unlimited attempts",
+      "attemptsUsed": "Attempts used: {{used}} of {{max}}",
+      "attemptsAllowed_one": "{{count}} attempt",
+      "attemptsAllowed_other": "{{count}} attempts",
       "endedOn": "Ended {{date}}",
       "resultsPending": "Results pending",
       "notAttempted": "Not attempted",

@@ -39,27 +39,11 @@ import {
   XCircle,
 } from "@phosphor-icons/react";
 import { surveyCardState } from "../-utils/survey-card-state";
+import { summarizeAttempts } from "../-utils/attempt-limit";
+import { hasNoExpiry, toUtcDate } from "@/utils/assessment-window";
 import { cn } from "@/lib/utils";
 import { useTranslation } from "react-i18next";
 import { openStudentReport } from "@/services/student-report-routing";
-
-// Backend date strings (assessment list API) have no timezone marker but are
-// stored in UTC. Appending "Z" makes Date() interpret them as UTC so the
-// canonical formatters render them in the user's local timezone.
-function toUtcDate(raw: string | null | undefined): Date | null {
-  if (!raw) return null;
-  const hasZone = /Z$|[+-]\d{2}:?\d{2}$/i.test(raw);
-  const iso = hasZone ? raw : `${raw.replace(" ", "T")}Z`;
-  const date = new Date(iso);
-  return Number.isNaN(date.getTime()) ? null : date;
-}
-
-// Sentinel "never closes" end date used by the backend.
-const NO_EXPIRY_YEAR = 9999;
-
-function hasNoExpiry(end: Date | null): boolean {
-  return !!end && end.getFullYear() === NO_EXPIRY_YEAR;
-}
 
 /** Re-render on an interval so countdown chips stay current. */
 function useNow(enabled: boolean, intervalMs = 30_000): number {
@@ -286,10 +270,17 @@ export const AssessmentCard = ({
   if (assessmentInfo.duration && assessmentInfo.play_mode !== "SURVEY") {
     metaParts.push(formatDuration(assessmentInfo.duration * 60));
   }
-  if (isLive && maxAttempts > 0) {
-    metaParts.push(
-      t("card.meta.attempt", { used: usedAttempts, max: maxAttempts }),
-    );
+  if (isLive) {
+    const attempts = summarizeAttempts(usedAttempts, maxAttempts);
+    if (attempts?.kind === "unlimited") {
+      metaParts.push(t("card.meta.unlimitedAttempts"));
+    } else if (attempts?.kind === "unused") {
+      metaParts.push(t("card.meta.attemptsAllowed", { count: attempts.max }));
+    } else if (attempts?.kind === "used") {
+      metaParts.push(
+        t("card.meta.attemptsUsed", { used: attempts.used, max: attempts.max }),
+      );
+    }
   }
 
   const { canShowReport, resultsPending, surveySubmitted } = surveyCardState(
