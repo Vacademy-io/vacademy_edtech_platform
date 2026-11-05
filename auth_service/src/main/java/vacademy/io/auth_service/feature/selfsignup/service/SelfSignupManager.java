@@ -58,6 +58,7 @@ public class SelfSignupManager {
     private final UserRepository userRepository;
     private final AuthManager authManager;
     private final SelfSignupTokenService tokenService;
+    private final SelfSignupAlertClient alertClient;
     private final SelfSignupRateLimiter rateLimiter;
     private final ProductConfigClient productConfigClient;
 
@@ -179,7 +180,24 @@ public class SelfSignupManager {
 
         log.info("[self-signup] signup_completed product={} method={} institute={} trial_ends={} plan={} source={} campaign={}",
                 product.getProductKey(), method, institute.getId(), trialEnds, request.getPlan(), request.getSource(), request.getCampaign());
+        alertClient.signupCompleted(product.getProductKey(), signupEvent(institute.getId(), instituteName, fullName,
+                email, phone, google, trialEnds, request.getSource()));
         return tokens;
+    }
+
+    private static java.util.Map<String, Object> signupEvent(String instituteId, String instituteName, String fullName,
+            String email, String phone, boolean google, Timestamp trialEnds, String source) {
+        java.util.Map<String, Object> event = new java.util.HashMap<>();
+        event.put("institute_id", instituteId);
+        event.put("institute_name", instituteName);
+        event.put("full_name", fullName);
+        event.put("email", email);
+        event.put("phone", phone);
+        event.put("method", google ? "Google" : "Email OTP");
+        event.put("trial_ends", java.time.format.DateTimeFormatter.ofPattern("d MMM yyyy", Locale.ENGLISH)
+                .format(trialEnds.toInstant().atZone(java.time.ZoneOffset.UTC)));
+        event.put("source", source);
+        return event;
     }
 
     private ProductConfigDTO requireProduct(String product) {

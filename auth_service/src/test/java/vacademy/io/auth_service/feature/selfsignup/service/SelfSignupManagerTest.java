@@ -29,6 +29,7 @@ import java.util.Optional;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -42,6 +43,7 @@ class SelfSignupManagerTest {
     @Mock SelfSignupRateLimiter rateLimiter;
     @Mock Claims claims;
     @Mock ProductConfigClient productConfigClient;
+    @Mock SelfSignupAlertClient alertClient;
 
     @InjectMocks SelfSignupManager manager;
 
@@ -139,6 +141,25 @@ class SelfSignupManagerTest {
         assertEquals("FREE_TRIAL", sent.getInstitute().getLeadTag());
         assertEquals(List.of("1"), sent.getInstitute().getModuleRequestIds());
         assertEndsInDays(3, sent);
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void aFinishedSignupReportsTheEvent() {
+        manager.signup(valid(), "1.1.1.1");
+        ArgumentCaptor<java.util.Map<String, Object>> event = ArgumentCaptor.forClass(java.util.Map.class);
+        verify(alertClient).signupCompleted(eq("evalezy"), event.capture());
+        assertEquals("teacher@school.in", event.getValue().get("email"));
+        assertEquals("919876543210", event.getValue().get("phone"));
+        assertEquals("Sunrise School", event.getValue().get("institute_name"));
+    }
+
+    @Test
+    void aFailedSignupReportsNothing() {
+        SelfSignupRequest r = valid();
+        r.setPhone(null);
+        assertThrows(VacademyException.class, () -> manager.signup(r, "1.1.1.1"));
+        verifyNoInteractions(alertClient);
     }
 
     @Test

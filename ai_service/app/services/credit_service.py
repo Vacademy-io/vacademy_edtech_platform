@@ -257,8 +257,9 @@ class CreditService:
             updated_at=row.updated_at,
         )
 
-    def create_initial_credits(self, institute_id: str) -> CreditBalanceResponse:
-        """Create initial credit balance for a new institute."""
+    def create_initial_credits(self, institute_id: str, amount: Optional[Decimal] = None) -> CreditBalanceResponse:
+        """Create initial credit balance for a new institute. amount: a product's demo credits."""
+        opening = INITIAL_CREDITS if amount is None else amount
         now = datetime.utcnow()
         credits_id = str(uuid4())
         transaction_id = str(uuid4())
@@ -273,8 +274,8 @@ class CreditService:
         self.db.execute(insert_credits, {
             "id": credits_id,
             "institute_id": institute_id,
-            "total": INITIAL_CREDITS,
-            "balance": INITIAL_CREDITS,
+            "total": opening,
+            "balance": opening,
             "threshold": DEFAULT_LOW_BALANCE_THRESHOLD,
             "now": now,
         })
@@ -289,8 +290,8 @@ class CreditService:
             "id": transaction_id,
             "institute_id": institute_id,
             "type": TransactionType.INITIAL_GRANT.value,
-            "amount": INITIAL_CREDITS,
-            "balance": INITIAL_CREDITS,
+            "amount": opening,
+            "balance": opening,
             "desc": "Initial signup bonus",
             "now": now,
         })
