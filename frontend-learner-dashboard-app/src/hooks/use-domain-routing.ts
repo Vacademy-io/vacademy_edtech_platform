@@ -19,6 +19,8 @@ import { getPublicUrlWithoutLogin } from "@/services/upload_file";
 import { NAMING_SETTINGS_KEY } from "@/types/naming-settings";
 import { notifyNamingSettingsUpdated } from "@/components/common/layout-container/sidebar/utils";
 import { upsertInstituteDetails } from "@/services/institute-settings-cache";
+import { readSessionInstituteId } from "@/lib/auth/session-institute";
+import { hasActiveLearnerSession } from "@/lib/auth/sessionUtility";
 
 export interface DomainRoutingState {
   isLoading: boolean;
@@ -35,6 +37,9 @@ export interface DomainRoutingState {
   logoWidthPx: number | null;
   logoHeightPx: number | null;
   stackNameBelowLogo: boolean | null;
+  // A signed-in learner of another institute is viewing this host's site. What
+  // this state describes is the site, and nothing of it was saved as theirs.
+  isVisitor?: boolean;
   // Pre-login policy for this portal, straight from domain routing. The login
   // screen must read these from here and NOT from Preferences/localStorage:
   // on a fresh native install neither store has anything yet, and the
@@ -127,8 +132,59 @@ export const useDomainRouting = () => {
     }
   };
 
-  const storeInstituteData = async (data: DomainRoutingResponse) => {
+  /** Returns true when the signed-in learner belongs to another institute. */
+  const storeInstituteData = async (data: DomainRoutingResponse): Promise<boolean> => {
+    let isVisitor = false;
     try {
+      // Store per-institute learner settings for quick access
+      // Key: LEARNER_<instituteId>, Values: privacyPolicyUrl, termsAndConditionUrl
+      const learnerKey = `LEARNER_${data.instituteId}`;
+      const learnerSettings = {
+        privacyPolicyUrl: data.privacyPolicyUrl || null,
+        termsAndConditionUrl: data.termsAndConditionUrl || null,
+        theme: data.theme || data.instituteThemeCode || null,
+        fontFamily: data.fontFamily || null,
+        allowSignup:
+          typeof data.allowSignup === "boolean" ? data.allowSignup : null,
+        tabText: data.tabText || null,
+        tabIconFileId: data.tabIconFileId || null,
+        allowGoogleAuth:
+          typeof data.allowGoogleAuth === "boolean"
+            ? data.allowGoogleAuth
+            : null,
+        allowGithubAuth:
+          typeof data.allowGithubAuth === "boolean"
+            ? data.allowGithubAuth
+            : null,
+        allowEmailOtpAuth:
+          typeof data.allowEmailOtpAuth === "boolean"
+            ? data.allowEmailOtpAuth
+            : null,
+        allowUsernamePasswordAuth:
+          typeof data.allowUsernamePasswordAuth === "boolean"
+            ? data.allowUsernamePasswordAuth
+            : null,
+        allowPhoneAuth:
+          typeof data.allowPhoneAuth === "boolean"
+            ? data.allowPhoneAuth
+            : null,
+        convertUsernamePasswordToLowercase:
+          typeof data.convertUsernamePasswordToLowercase === "boolean"
+            ? data.convertUsernamePasswordToLowercase
+            : null,
+      } as const;
+      await Preferences.set({
+        key: learnerKey,
+        value: JSON.stringify(learnerSettings),
+      });
+
+      // Everything below is about the signed-in learner when one exists, and
+      // this answer is about the host. It may be saved only when nobody is
+      // signed in, or when the learner belongs to this institute.
+      const sessionInstituteId = await readSessionInstituteId();
+      isVisitor = !!sessionInstituteId && sessionInstituteId !== data.instituteId;
+      if (isVisitor) return true;
+
       // Store institute ID in preferences for future use
       await Preferences.set({
         key: "InstituteId",
@@ -180,52 +236,10 @@ export const useDomainRouting = () => {
         // Best-effort: the cache write above still covers the common ordering.
       }
 
-      // Store per-institute learner settings for quick access
-      // Key: LEARNER_<instituteId>, Values: privacyPolicyUrl, termsAndConditionUrl
-      const learnerKey = `LEARNER_${data.instituteId}`;
-      const learnerSettings = {
-        privacyPolicyUrl: data.privacyPolicyUrl || null,
-        termsAndConditionUrl: data.termsAndConditionUrl || null,
-        theme: data.theme || data.instituteThemeCode || null,
-        fontFamily: data.fontFamily || null,
-        allowSignup:
-          typeof data.allowSignup === "boolean" ? data.allowSignup : null,
-        tabText: data.tabText || null,
-        tabIconFileId: data.tabIconFileId || null,
-        allowGoogleAuth:
-          typeof data.allowGoogleAuth === "boolean"
-            ? data.allowGoogleAuth
-            : null,
-        allowGithubAuth:
-          typeof data.allowGithubAuth === "boolean"
-            ? data.allowGithubAuth
-            : null,
-        allowEmailOtpAuth:
-          typeof data.allowEmailOtpAuth === "boolean"
-            ? data.allowEmailOtpAuth
-            : null,
-        allowUsernamePasswordAuth:
-          typeof data.allowUsernamePasswordAuth === "boolean"
-            ? data.allowUsernamePasswordAuth
-            : null,
-        allowPhoneAuth:
-          typeof data.allowPhoneAuth === "boolean"
-            ? data.allowPhoneAuth
-            : null,
-        convertUsernamePasswordToLowercase:
-          typeof data.convertUsernamePasswordToLowercase === "boolean"
-            ? data.convertUsernamePasswordToLowercase
-            : null,
-      } as const;
-      await Preferences.set({
-        key: learnerKey,
-        value: JSON.stringify(learnerSettings),
-      });
-
       // Seed a minimal namingSettings entry in localStorage so pre-login
       // screens (e.g. login page) can render institute-specific terminology.
       // This is overwritten with the full set by fetchAndStoreInstituteDetails
-      // after the user logs in.
+      // after the user logs in, so a signed-in learner already has the full set.
       try {
         const overrides = data.namingOverrides;
         const seed: { key: string; customValue: string }[] = [];
@@ -247,7 +261,7 @@ export const useDomainRouting = () => {
         if (overrides?.popularTag) {
           seed.push({ key: "PopularTag", customValue: overrides.popularTag });
         }
-        if (seed.length > 0) {
+        if (seed.length > 0 && !sessionInstituteId) {
           localStorage.setItem(NAMING_SETTINGS_KEY, JSON.stringify(seed));
           // Terms feed the translation catalogs too (i18n/naming-terms.ts).
           notifyNamingSettingsUpdated();
@@ -303,6 +317,7 @@ export const useDomainRouting = () => {
     } catch (error) {
       console.error("[Domain Routing] Error storing institute data:", error);
     }
+    return isVisitor;
   };
 
   const getFallbackInstituteId = async (): Promise<string | null> => {
@@ -395,11 +410,12 @@ export const useDomainRouting = () => {
         // API returned valid institute data
         // API resolved institute successfully
 
-        await storeInstituteData(apiResult);
-        applyInstituteTheme(apiResult.instituteThemeCode);
+        const isVisitor = await storeInstituteData(apiResult);
+        if (!isVisitor) applyInstituteTheme(apiResult.instituteThemeCode);
 
         const newState: DomainRoutingState = {
           isLoading: false,
+          isVisitor,
           instituteId: apiResult.instituteId,
           instituteName: apiResult.instituteName,
           instituteLogoFileId: apiResult.instituteLogoFileId,
@@ -544,10 +560,16 @@ export const useDomainRouting = () => {
     }
   };
 
-  const redirectToResolvedPath = () => {
+  const redirectToResolvedPath = async () => {
     if (state.redirectPath) {
       // Redirecting to resolved path: ${state.redirectPath}
-      navigate({ to: state.redirectPath as never });
+      // Someone already signed in, to whichever institute, has no use for this
+      // host's sign-in page.
+      const signedInOnCatalogue =
+        state.redirectPath === "/login" &&
+        window.location.pathname.startsWith("/courses") &&
+        (await hasActiveLearnerSession());
+      navigate({ to: (signedInOnCatalogue ? "/dashboard" : state.redirectPath) as never });
     } else if (state.instituteId) {
       // Don't automatically redirect to courses if we're on a public route or course details page
       const currentPath = window.location.pathname;
@@ -683,7 +705,7 @@ export const useDomainRouting = () => {
 
       if (window.location.pathname !== "/" && !isPublicRouteForRedirect) {
         // Executing redirect to: ${state.redirectPath}
-        redirectToResolvedPath();
+        void redirectToResolvedPath();
       } else if (isPublicRouteForRedirect) {
         console.log("[Domain Routing] On public route, skipping redirect to:", state.redirectPath);
       }

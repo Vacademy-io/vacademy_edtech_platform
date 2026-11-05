@@ -7,6 +7,7 @@ import { getTerminology, getTerminologyPlural } from "@/components/common/layout
 import { ContentTerms, SystemTerms } from "@/types/naming-settings";
 import { useBlocker, useLocation, useNavigate } from "@tanstack/react-router";
 import { DashboardLoader } from "@/components/core/dashboard-loader";
+import RootNotFoundComponent from "@/components/core/default-not-found";
 import { LeadCollectionModal } from "./LeadCollectionModal";
 import { AudienceFormModal } from "./AudienceFormModal";
 import { MobileActionBar } from "./MobileActionBar";
@@ -33,7 +34,7 @@ import {
   type CourseFinderOptions,
   type CourseFinderSelection,
 } from "./CourseFinderWizard";
-import { buildPrimaryScaleVars } from "../-utils/style-utils";
+import { siteScaleVars } from "../-utils/catalogue-theme";
 import { withSiteThemeVars } from "../-utils/catalogue-palette";
 import { CourseCatalogueService } from "../-services/course-catalogue-service";
 import { CourseCatalogueData } from "../-types/course-catalogue-types";
@@ -120,11 +121,11 @@ export const CourseCataloguePage: React.FC<CourseCataloguePageProps> = ({
   // counted — the GA4/Pixel hooks above only serve the institute's own tools,
   // and most institutes never connect one.
   useCataloguePageView(
-    catalogueData && !isPreviewMode ? { instituteId, catalogueId: (catalogueData as any)?.catalogueId, pageRoute: pageSlug ?? "" } : null
+    catalogueData && !catalogueData.notFound && !isPreviewMode ? { instituteId, catalogueId: (catalogueData as any)?.catalogueId, pageRoute: pageSlug ?? "" } : null
   );
   // Freebie downloads need the same institute/page; resource cards do not know it.
   useResourceTrackingContext(
-    catalogueData && !isPreviewMode ? { instituteId, catalogueId: (catalogueData as any)?.catalogueId, pageRoute: pageSlug ?? "" } : null
+    catalogueData && !catalogueData.notFound && !isPreviewMode ? { instituteId, catalogueId: (catalogueData as any)?.catalogueId, pageRoute: pageSlug ?? "" } : null
   );
   // Non-mandatory lead collection is "armed" rather than shown immediately, then
   // surfaced on a scroll/dwell signal (see effect below) to avoid t=0 friction.
@@ -448,7 +449,8 @@ export const CourseCataloguePage: React.FC<CourseCataloguePageProps> = ({
 
   useEffect(() => {
     const el = wrapperRef.current;
-    if (!el) return;
+    // A signed-in learner of another institute gets the wrapper's style alone.
+    if (!el || domainRouting.isVisitor) return;
     const primaryColor = themeSettings?.primaryColor as string | undefined;
     if (primaryColor && /^#[0-9a-fA-F]{6}$/.test(primaryColor)) {
       const r = parseInt(primaryColor.slice(1, 3), 16) / 255;
@@ -724,6 +726,15 @@ export const CourseCataloguePage: React.FC<CourseCataloguePageProps> = ({
     );
   }
 
+  // No site at this address. The editor's preview fills an empty site in itself.
+  if (catalogueData.notFound && !isPreviewMode) {
+    return (
+      <div className="w-full">
+        <RootNotFoundComponent />
+      </div>
+    );
+  }
+
   // Keep the tenant's branded tab title (set by TabBranding/use-domain-routing);
   // only fall back to a sensible default if none was applied. og:* uses the
   // richer institute name for link previews without overriding the tab title.
@@ -805,7 +816,7 @@ export const CourseCataloguePage: React.FC<CourseCataloguePageProps> = ({
       data-catalogue-intensity={themeSettings?.atmosphere?.intensity || 'subtle'}
       data-catalogue-density={(catalogueData?.globalSettings as any)?.compactness || 'medium'}
       // Opt-in theme.palette / theme.contentMaxWidth vars join the primary scale (same object when unset).
-      style={withSiteThemeVars(buildPrimaryScaleVars(themeSettings?.primaryColor), catalogueData?.globalSettings) as React.CSSProperties}
+      style={withSiteThemeVars(siteScaleVars(themeSettings?.primaryColor, domainRouting.isVisitor, instituteThemeCode), catalogueData?.globalSettings) as React.CSSProperties}
     >
       {catalogueData.globalSettings?.i18n?.enabled ? (
         // A site with languages: title/description from stable inputs (page

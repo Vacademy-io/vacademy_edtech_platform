@@ -23,7 +23,7 @@ import { WhatsAppFloatingButton } from "./WhatsAppFloatingButton";
 import { HostedSiteAssistant } from "@/components/site-assistant/HostedSiteAssistant";
 import { IntroPageComponent } from "./IntroPageComponent";
 import { JsonRenderer } from "./JsonRenderer";
-import { buildPrimaryScaleVars } from "../-utils/style-utils";
+import { siteScaleVars } from "../-utils/catalogue-theme";
 import { withSiteThemeVars } from "../-utils/catalogue-palette";
 import { CourseCatalogueService } from "../-services/course-catalogue-service";
 import { CourseCatalogueData } from "../-types/course-catalogue-types";
@@ -463,7 +463,7 @@ const CourseSubPageContent: React.FC<CourseSubPageProps> = ({
       data-catalogue-intensity={themeSettings?.atmosphere?.intensity || "subtle"}
       data-catalogue-density={(catalogueData?.globalSettings as any)?.compactness || "medium"}
       // Opt-in theme.palette / theme.contentMaxWidth vars join the primary scale (same object when unset).
-      style={withSiteThemeVars(buildPrimaryScaleVars(themeSettings?.primaryColor), catalogueData?.globalSettings) as React.CSSProperties}
+      style={withSiteThemeVars(siteScaleVars(themeSettings?.primaryColor, domainRouting.isVisitor, instituteThemeCode), catalogueData?.globalSettings) as React.CSSProperties}
     >
       {/* A site with languages: the same title/description rules as the
           catalogue home (page SEO → institute branding), in the visitor's

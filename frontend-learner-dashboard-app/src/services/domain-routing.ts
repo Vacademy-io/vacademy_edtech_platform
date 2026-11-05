@@ -4,6 +4,7 @@ import { getDomainAndSubdomain } from "../utils/platform-flavor";
 import { getPublicUrlWithoutLogin } from "@/services/upload_file";
 import themeData from "@/constants/themes/theme.json";
 import { detectVisitorCountry } from "@/utils/geo-country";
+import { getFallbackFavicon } from "@/utils/branding";
 
 export interface DomainRoutingResponse {
   instituteId: string;
@@ -618,7 +619,7 @@ export const getCurrentDomainInfo = async () => {
  * Theme code -> primary-500 hex. Returns null for an unknown code so callers can
  * fall back rather than paint something arbitrary.
  */
-const resolveThemeHex = (code?: string | null): string | null => {
+export const resolveThemeHex = (code?: string | null): string | null => {
   if (!code) return null;
   if (code.startsWith("#")) return code;
   const theme = (
@@ -775,6 +776,60 @@ export const setCachedInstituteBranding = (
     );
   } catch (error) {
     console.warn("[Domain Routing] Failed to persist branding cache:", error);
+  }
+};
+
+/**
+ * Makes the branding cache describe the institute a learner is signed in to.
+ *
+ * The cache is first filled by host routing, before anyone signs in, so on a
+ * host that belongs to someone else it still holds that host's name, logo link
+ * and display overrides afterwards. Overrides belong to a routing row, so they
+ * are kept only when the institute is the one already cached.
+ */
+export const adoptInstituteBranding = (details: {
+  id?: string | null;
+  institute_name?: string | null;
+  institute_logo_file_id?: string | null;
+  institute_theme_code?: string | null;
+  home_icon_click_route?: string | null;
+  homeIconClickRoute?: string | null;
+}) => {
+  if (!details.id) return;
+  const existing = getCachedInstituteBranding();
+  const sameInstitute = existing?.instituteId === details.id;
+  const logoFileId = details.institute_logo_file_id ?? null;
+  const themeCode = details.institute_theme_code ?? null;
+  setCachedInstituteBranding({
+    ...(sameInstitute ? existing : null),
+    instituteId: details.id,
+    instituteName: details.institute_name ?? null,
+    instituteLogoFileId: logoFileId,
+    instituteLogoUrl:
+      sameInstitute && existing?.instituteLogoFileId === logoFileId
+        ? existing?.instituteLogoUrl
+        : null,
+    instituteThemeCode: themeCode,
+    instituteThemeHex: resolveThemeHex(themeCode),
+    homeIconClickRoute:
+      details.home_icon_click_route ??
+      details.homeIconClickRoute ??
+      (sameInstitute ? existing?.homeIconClickRoute : null),
+  });
+
+  if (!canUseLocalStorage()) return;
+  // The tab mirror came from the same routing answer as the cache above.
+  try {
+    const tab = JSON.parse(window.localStorage.getItem("TabBranding") ?? "null");
+    if (sameInstitute && tab?.tabText) return;
+    const tabText = details.institute_name || null;
+    window.localStorage.setItem(
+      "TabBranding",
+      JSON.stringify({ tabText, tabIconUrl: getFallbackFavicon() }),
+    );
+    if (tabText) document.title = tabText;
+  } catch (error) {
+    console.warn("[Domain Routing] Failed to persist tab branding:", error);
   }
 };
 

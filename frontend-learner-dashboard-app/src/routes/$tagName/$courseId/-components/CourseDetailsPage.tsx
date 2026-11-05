@@ -5,7 +5,8 @@ import { useTranslation } from "react-i18next";
 import { DEVANAGARI_FALLBACK_FAMILY, withArabicFallback, withDevanagariFallback } from "@/utils/branding";
 import { siteUsesDevanagari } from "../../-utils/catalogue-site-language";
 import { collectConfigFontFamilies, ensureFontsLoaded } from "../../-utils/catalogue-fonts";
-import { buildSiteThemeVars } from "../../-utils/catalogue-palette";
+import { withSiteThemeVars } from "../../-utils/catalogue-palette";
+import { siteScaleVars } from "../../-utils/catalogue-theme";
 import { BASE_URL, GET_PRODUCT_PAGE_BY_CODE } from "@/constants/urls";
 import { Capacitor } from "@capacitor/core";
 import { useNavigate, useRouter } from "@tanstack/react-router";
@@ -1537,7 +1538,8 @@ const CourseDetailsPageContent: React.FC<CourseDetailsPageContentProps> = ({
     ?.primaryColor as string | undefined;
   useEffect(() => {
     const el = themeRootRef.current;
-    if (!el) return;
+    // A signed-in learner of another institute gets the wrapper's style alone.
+    if (!el || domainRouting.isVisitor) return;
     if (detailsPrimaryColor && /^#[0-9a-fA-F]{6}$/.test(detailsPrimaryColor)) {
       const r = parseInt(detailsPrimaryColor.slice(1, 3), 16) / 255;
       const g = parseInt(detailsPrimaryColor.slice(3, 5), 16) / 255;
@@ -2007,7 +2009,12 @@ const CourseDetailsPageContent: React.FC<CourseDetailsPageContentProps> = ({
       }
       className={`min-h-screen bg-catalogue-bg w-full${isDarkMode ? " dark" : ""}`}
       // Opt-in theme.palette / theme.contentMaxWidth vars; undefined (no style attribute) when unset.
-      style={buildSiteThemeVars(catalogueData?.globalSettings) as React.CSSProperties | undefined}
+      style={withSiteThemeVars(
+        domainRouting.isVisitor
+          ? siteScaleVars(detailsPrimaryColor, true, domainRouting.instituteThemeCode)
+          : undefined,
+        catalogueData?.globalSettings,
+      ) as React.CSSProperties | undefined}
     >
       {/* Render header and footer - add them if not in JSON */}
       {!catalogueData && (

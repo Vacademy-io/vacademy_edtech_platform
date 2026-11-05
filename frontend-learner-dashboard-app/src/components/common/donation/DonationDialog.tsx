@@ -9,7 +9,8 @@ import { DonationEmailForm } from "./DonationEmailForm";
 import { DonationPaymentForm } from "./DonationPaymentForm";
 import { useDonationDialog } from "./useDonationDialog";
 import { InstituteBrandingComponent, type InstituteBranding } from "@/components/common/institute-branding";
-import { fetchAndStoreInstituteDetails, type InstituteDetails } from "@/services/fetchAndStoreInstituteDetails";
+import { type InstituteDetails } from "@/services/fetchAndStoreInstituteDetails";
+import { loadDialogInstitute } from "./load-dialog-institute";
 import { getUserId } from "@/utils/study-library/get-list-from-stores/getPackageSessionId";
 import { getTerminology } from "@/components/common/layout-container/sidebar/utils";
 import { ContentTerms, SystemTerms } from "@/types/naming-settings";
@@ -116,10 +117,7 @@ export const DonationDialog: React.FC<DonationDialogProps> = ({
           const userId = await getUserId();
           const targetInstituteId = enrollmentData?.institute_id || instituteId;
           
-          const details: InstituteDetails | null = await fetchAndStoreInstituteDetails(
-            targetInstituteId, 
-            userId || 'guest'
-          );
+          const details: InstituteDetails | null = await loadDialogInstitute(targetInstituteId, userId);
           
           if (details) {
             setInstituteBranding({

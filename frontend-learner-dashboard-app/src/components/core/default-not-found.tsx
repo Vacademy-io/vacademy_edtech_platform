@@ -1,4 +1,4 @@
-import { useRouter } from "@tanstack/react-router";
+import { Link, useRouter } from "@tanstack/react-router";
 import { Helmet } from "react-helmet";
 import { useTranslation } from "react-i18next";
 import { Button } from "../ui/button";
@@ -17,7 +17,7 @@ function RootNotFoundComponent() {
                 />
             </Helmet>
 
-            <div className="grid h-screen select-none place-content-center bg-base-primary px-4 text-gray-700 dark:text-gray-800">
+            <div className="grid h-screen w-full select-none place-content-center bg-base-primary px-4 text-gray-700 dark:text-gray-800">
                 <div className="text-center">
                     <h1 className="text-9xl font-black">404</h1>
                     <p className="text-2xl font-bold tracking-tight sm:text-4xl">
@@ -28,13 +28,19 @@ function RootNotFoundComponent() {
                         <br />
                         {t("defaultNotFound.descriptionLine2")}
                     </p>
-                    <div className="mt-8 flex justify-center gap-5 text-base-white">
+                    <div className="mt-8 flex flex-wrap justify-center gap-3">
                         <Button asChild variant={"default"} className="h-10 min-w-32">
-                            <div>{t("common.returnHome")}</div>
+                            <Link to="/">{t("common.returnHome")}</Link>
                         </Button>
-                        <Button asChild variant={"default"} className="h-10 min-w-32">
-                            <div onClick={() => router.history.back()}>{t("common.goBack")}</div>
-                        </Button>
+                        {router.history.canGoBack() && (
+                            <Button
+                                variant={"outline"}
+                                className="h-10 min-w-32"
+                                onClick={() => router.history.back()}
+                            >
+                                {t("common.goBack")}
+                            </Button>
+                        )}
                     </div>
                 </div>
             </div>

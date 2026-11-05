@@ -441,8 +441,52 @@ function mergeWithDefaults(
   return out;
 }
 
+// While the settings call is failing, pages stop waiting on it: an unavailable
+// backend must not cost every page load the full time it takes to fail. This
+// lasts past a reload, which is what a learner tries first, so it is per tab.
+const FAILED_READ_PAUSE_MS = 60 * 1000;
+// How long a read waits for the server when it has an expired copy to fall back on.
+const EXPIRED_COPY_WAIT_MS = 1000;
+
+const failedReadKey = (instituteId: string) => `${LS_KEY}:failedAt:${instituteId}`;
+
+function recordFailedRead(instituteId: string, error: unknown): void {
+  // A 4xx is an answer about this request. The backend is up.
+  const status = (error as { response?: { status?: number } })?.response?.status;
+  if (status && status < 500 && status !== 429) return;
+  try {
+    sessionStorage.setItem(failedReadKey(instituteId), String(Date.now()));
+  } catch {
+    // noop
+  }
+}
+
+function clearFailedRead(instituteId: string): void {
+  try {
+    sessionStorage.removeItem(failedReadKey(instituteId));
+  } catch {
+    // noop
+  }
+}
+
+function readFailedRecently(instituteId: string): boolean {
+  try {
+    const age = Date.now() - Number(sessionStorage.getItem(failedReadKey(instituteId)));
+    return age >= 0 && age < FAILED_READ_PAUSE_MS;
+  } catch {
+    return false;
+  }
+}
+
+/** The last copy we saw, even an old one, or the defaults. Nothing is written. */
+function savedOrDefaults(instituteId: string): StudentDisplaySettingsData {
+  const saved = readCacheForInstitute(instituteId, true);
+  return saved ? mergeWithDefaults(saved) : DEFAULT_STUDENT_DISPLAY_SETTINGS;
+}
+
 function readCacheForInstitute(
-  instituteId: string | null | undefined
+  instituteId: string | null | undefined,
+  allowStale = false
 ): StudentDisplaySettingsData | null {
   if (!instituteId) return null;
   try {
@@ -452,7 +496,7 @@ function readCacheForInstitute(
       ts: number;
       data: StudentDisplaySettingsData;
     };
-    return parsed?.ts && Date.now() - parsed.ts <= ONE_DAY_MS
+    return parsed?.ts && (allowStale || Date.now() - parsed.ts <= ONE_DAY_MS)
       ? parsed.data
       : null;
   } catch {
@@ -541,20 +585,32 @@ export async function getStudentDisplaySettings(
       writeCacheForInstitute(instituteId, cached);
     }
     if (cached) return mergeWithDefaults(cached);
+    if (readFailedRecently(instituteId)) return savedOrDefaults(instituteId);
 
-    const inFlight = inFlightSettingsByInstitute.get(instituteId);
-    if (inFlight) return inFlight;
-    const request = fetchAndCacheStudentDisplaySettings(
-      instituteId,
-      forceRefresh
-    );
-    inFlightSettingsByInstitute.set(instituteId, request);
-    request.finally(() => {
-      if (inFlightSettingsByInstitute.get(instituteId!) === request) {
-        inFlightSettingsByInstitute.delete(instituteId!);
-      }
-    });
-    return request;
+    let request = inFlightSettingsByInstitute.get(instituteId);
+    if (!request) {
+      const started = fetchAndCacheStudentDisplaySettings(
+        instituteId,
+        forceRefresh
+      );
+      request = started;
+      inFlightSettingsByInstitute.set(instituteId, started);
+      started.finally(() => {
+        if (inFlightSettingsByInstitute.get(instituteId!) === started) {
+          inFlightSettingsByInstitute.delete(instituteId!);
+        }
+      });
+    }
+    // An expired copy is good enough to paint with. The server still has a
+    // moment to answer first, and its answer is saved for the next read.
+    const expired = readCacheForInstitute(instituteId, true);
+    if (!expired) return request;
+    return Promise.race([
+      request,
+      new Promise<StudentDisplaySettingsData>((resolve) => {
+        setTimeout(() => resolve(mergeWithDefaults(expired)), EXPIRED_COPY_WAIT_MS);
+      }),
+    ]);
   }
   return fetchAndCacheStudentDisplaySettings(instituteId, forceRefresh);
 }
@@ -657,15 +713,18 @@ async function fetchAndCacheStudentDisplaySettings(
         : DEFAULT_STUDENT_DISPLAY_SETTINGS
     );
     await writeCacheForInstitute(instituteId, merged);
+    clearFailedRead(instituteId);
     // Forced refreshes are the post-login path (all 8 call sites) — swap the
     // skin class right away so a new institute's skin applies without F5.
     if (forceRefresh) applyUiSkinFromSettings(merged);
     return merged;
-  } catch {
-    const defaults = DEFAULT_STUDENT_DISPLAY_SETTINGS;
-    await writeCacheForInstitute(instituteId, defaults);
-    if (forceRefresh) applyUiSkinFromSettings(defaults);
-    return defaults;
+  } catch (error) {
+    // A failed read says nothing about the institute's settings. Serve the last
+    // copy we saw, even an old one, and leave it stored as it is.
+    recordFailedRead(instituteId, error);
+    const settings = savedOrDefaults(instituteId);
+    if (forceRefresh) applyUiSkinFromSettings(settings);
+    return settings;
   }
 }
 

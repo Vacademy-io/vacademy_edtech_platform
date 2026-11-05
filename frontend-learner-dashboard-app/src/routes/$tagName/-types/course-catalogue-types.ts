@@ -308,6 +308,8 @@ export interface CourseCatalogueData {
   globalSettings: GlobalSettings;
   introPage?: IntroPage;
   pages: Page[];
+  /** The backend has no catalogue under this tag; `pages` holds a placeholder. */
+  notFound?: boolean;
 }
 
 // Component-specific prop interfaces

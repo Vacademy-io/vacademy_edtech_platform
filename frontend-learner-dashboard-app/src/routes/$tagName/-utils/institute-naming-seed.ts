@@ -3,6 +3,7 @@ import axios from "axios";
 import { urlInstituteDetails } from "@/constants/urls";
 import { NAMING_SETTINGS_KEY } from "@/types/naming-settings";
 import { notifyNamingSettingsUpdated } from "@/components/common/layout-container/sidebar/utils";
+import { readSessionInstituteId } from "@/lib/auth/session-institute";
 
 /**
  * Seed the institute's Naming Settings for the public catalogue.
@@ -32,6 +33,10 @@ export const ensureInstituteNamingSettings = (instituteId: string): Promise<void
 
   const task = (async () => {
     try {
+      // These words replace the ones the whole app reads, so a signed-in learner
+      // browsing another institute's site keeps their own institute's.
+      const sessionInstituteId = await readSessionInstituteId();
+      if (sessionInstituteId && sessionInstituteId !== instituteId) return;
       const res = await axios.get(`${urlInstituteDetails}/${instituteId}`, {
         params: { instituteId },
         timeout: 8000,

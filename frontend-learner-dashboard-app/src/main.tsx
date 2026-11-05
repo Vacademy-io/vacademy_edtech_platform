@@ -38,6 +38,7 @@ import {
 import { captureUtmOnce } from "@/lib/utm-attribution";
 import { TokenKey } from "@/constants/auth/tokens";
 import { getCachedInstituteBranding } from "@/services/domain-routing";
+import { repairSessionInstituteState } from "@/lib/auth/session-institute";
 import { useInstituteDetailsStore } from "@/stores/study-library/useInstituteDetails";
 import { Capacitor } from "@capacitor/core";
 import { BASE_URL } from "@/constants/urls";
@@ -295,8 +296,9 @@ declare module "@tanstack/react-router" {
 }
 
 // Render the app
-const rootElement = document.getElementById("root")!;
-if (!rootElement.innerHTML) {
+const renderApp = () => {
+  const rootElement = document.getElementById("root")!;
+  if (rootElement.innerHTML) return;
   const root = ReactDOM.createRoot(rootElement);
 
   // Initialize analytics after first paint
@@ -318,4 +320,12 @@ if (!rootElement.innerHTML) {
       </ModeThemeProvider>
     </>
   );
-}
+};
+
+// Saved institute state is read synchronously during the first render, so check
+// it first. Never let this hold the app back: past the limit, render regardless.
+const INSTITUTE_STATE_CHECK_LIMIT_MS = 1500;
+void Promise.race([
+  repairSessionInstituteState(),
+  new Promise((resolve) => setTimeout(resolve, INSTITUTE_STATE_CHECK_LIMIT_MS)),
+]).finally(renderApp);

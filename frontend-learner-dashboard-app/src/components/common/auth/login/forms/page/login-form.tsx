@@ -23,6 +23,7 @@ import {
 import { toast } from "sonner";
 import { useTheme } from "@/providers/theme/theme-provider";
 import { fetchAndStoreInstituteDetails } from "@/services/fetchAndStoreInstituteDetails";
+import { readSessionInstituteId } from "@/lib/auth/session-institute";
 import { fetchAndStoreStudentDetails } from "@/services/studentDetails";
 import { hydrateParentSession } from "@/lib/auth/detect-user-role";
 import { readArrivalTokens } from "@/lib/auth/arrival-tokens";
@@ -174,6 +175,16 @@ export function LoginForm({
   );
   const [guestDialogOpen, setGuestDialogOpen] = useState(false);
 
+  // The chosen colour is saved, so someone already signed in to another
+  // institute keeps theirs when they open this host's sign-in page.
+  const applyHostColour = (themeCode: string) => {
+    void readSessionInstituteId().then((sessionInstituteId) => {
+      if (!sessionInstituteId || sessionInstituteId === routedInstituteId) {
+        setPrimaryColor(themeCode);
+      }
+    });
+  };
+
   // Pre-login theme and font from Preferences if present (external-first branding)
   // Re-runs once domain routing resolves: on a fresh install InstituteId is
   // empty at mount, so a mount-only read returned early and left the defaults
@@ -190,7 +201,7 @@ export function LoginForm({
         if (!stored?.value) return;
         const parsed = JSON.parse(stored.value);
         if (parsed?.theme) {
-          setPrimaryColor(parsed.theme);
+          applyHostColour(parsed.theme);
         }
         setProvidersResolved(true);
         // Update provider flags from preferences
@@ -801,9 +812,9 @@ export function LoginForm({
   // Apply domain routing theme if available
   useEffect(() => {
     if (domainRouting.instituteThemeCode) {
-      setPrimaryColor(domainRouting.instituteThemeCode);
+      applyHostColour(domainRouting.instituteThemeCode);
     }
-  }, [domainRouting.instituteThemeCode, setPrimaryColor]);
+  }, [domainRouting.instituteThemeCode, domainRouting.instituteId, setPrimaryColor]);
 
   const handleSuccessfulLogin = async (
     accessToken: string,

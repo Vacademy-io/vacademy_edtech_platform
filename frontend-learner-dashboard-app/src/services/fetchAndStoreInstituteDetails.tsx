@@ -5,6 +5,8 @@ import { NAMING_SETTINGS_KEY } from "@/types/naming-settings";
 import { notifyNamingSettingsUpdated } from "@/components/common/layout-container/sidebar/utils";
 import { THEME_ROLE_SETTINGS_KEY, type ThemeRoleSettings } from "@/types/theme-role-settings";
 import { upsertInstituteDetails } from "@/services/institute-settings-cache";
+import { adoptInstituteBranding } from "@/services/domain-routing";
+import { setPublicInstituteDetailsScope } from "@/components/common/layout-container/services/navbar-services";
 import {
   setLanguageSettingCache,
   clearLanguageSettingCache,
@@ -97,6 +99,8 @@ export const fetchAndStoreInstituteDetails = async (
       console.warn("Failed to write InstituteId to localStorage:", error);
     }
 
+    setPublicInstituteDetailsScope(instituteId);
+
     console.log('[fetchAndStoreInstituteDetails] Institute ID stored in preferences');
 
     // Call API to get institute details
@@ -123,51 +127,59 @@ export const fetchAndStoreInstituteDetails = async (
     const instituteDetails: InstituteDetails = {
       ...rawData,
       sub_modules: rawData.sub_modules || [],
+      // An empty code means no colour was chosen, like a missing one. Readers
+      // fall back on a missing code but would keep the colour already on screen.
+      institute_theme_code: rawData.institute_theme_code || null,
     };
 
     // Extract and store naming settings if present
     const settingsJson = instituteDetails.institute_settings_json;
-    if (settingsJson) {
-      try {
-        const settingsObj: InstituteSettings = JSON.parse(settingsJson);
+    try {
+      // No settings means none of these words, roles or languages are this
+      // institute's, so what an earlier institute left behind goes as well.
+      const settingsObj: InstituteSettings = settingsJson
+        ? JSON.parse(settingsJson)
+        : {};
 
-        const namingSettings = settingsObj?.setting?.NAMING_SETTING?.data?.data;
-        if (Array.isArray(namingSettings)) {
-          localStorage.setItem(
-            NAMING_SETTINGS_KEY,
-            JSON.stringify(namingSettings)
-          );
-          // Terms feed the translation catalogs too (i18n/naming-terms.ts).
-          notifyNamingSettingsUpdated();
-        }
-
-        // Role-based theme (currently just `nav`) — absent for every
-        // institute until someone saves THEME_SETTING via the settings API.
-        const themeRoleData = settingsObj?.setting?.THEME_SETTING?.data;
-        if (themeRoleData?.roles) {
-          localStorage.setItem(THEME_ROLE_SETTINGS_KEY, JSON.stringify(themeRoleData));
-        } else {
-          localStorage.removeItem(THEME_ROLE_SETTINGS_KEY);
-        }
-
-        // Institute language configuration (default/enabled locales) —
-        // cached alongside NAMING_SETTING; mirrors the admin app's
-        // syncLanguageSettingCache. Null-safe: most institutes don't have
-        // the key yet — in that case the cache is cleared so a value from a
-        // previously used institute never lingers.
-        const languageData = settingsObj?.setting?.LANGUAGE_SETTING?.data;
-        if (
-          languageData &&
-          typeof languageData === "object" &&
-          !Array.isArray(languageData)
-        ) {
-          setLanguageSettingCache(languageData as LanguageSetting);
-        } else {
-          clearLanguageSettingCache();
-        }
-      } catch (err) {
-        console.error("Failed to parse or store naming settings:", err);
+      const namingSettings = settingsObj?.setting?.NAMING_SETTING?.data?.data;
+      if (Array.isArray(namingSettings)) {
+        localStorage.setItem(
+          NAMING_SETTINGS_KEY,
+          JSON.stringify(namingSettings)
+        );
+      } else {
+        // Words seeded for another institute must not outlive this sign-in.
+        localStorage.removeItem(NAMING_SETTINGS_KEY);
       }
+      // Terms feed the translation catalogs too (i18n/naming-terms.ts).
+      notifyNamingSettingsUpdated();
+
+      // Role-based theme (currently just `nav`) — absent for every
+      // institute until someone saves THEME_SETTING via the settings API.
+      const themeRoleData = settingsObj?.setting?.THEME_SETTING?.data;
+      if (themeRoleData?.roles) {
+        localStorage.setItem(THEME_ROLE_SETTINGS_KEY, JSON.stringify(themeRoleData));
+      } else {
+        localStorage.removeItem(THEME_ROLE_SETTINGS_KEY);
+      }
+
+      // Institute language configuration (default/enabled locales) —
+      // cached alongside NAMING_SETTING; mirrors the admin app's
+      // syncLanguageSettingCache. Null-safe: most institutes don't have
+      // the key yet — in that case the cache is cleared so a value from a
+      // previously used institute never lingers.
+      const languageData = settingsObj?.setting?.LANGUAGE_SETTING?.data;
+      if (
+        languageData &&
+        typeof languageData === "object" &&
+        !Array.isArray(languageData)
+      ) {
+        setLanguageSettingCache(languageData as LanguageSetting);
+      } else {
+        clearLanguageSettingCache();
+      }
+    } catch (err) {
+      console.error("Failed to parse or store naming settings:", err);
     }
 
     // Merge-write so subsequent partial writers (use-domain-routing,
@@ -183,6 +195,8 @@ export const fetchAndStoreInstituteDetails = async (
       console.warn("Failed to write InstituteDetails to localStorage:", error);
     }
 
+    adoptInstituteBranding(instituteDetails);
+
     // Re-register push token for the new institute context
     try {
       const { pushNotificationService } = await import('@/services/push-notifications/push-notification-service');
@@ -194,6 +208,16 @@ export const fetchAndStoreInstituteDetails = async (
     return instituteDetails;
   } catch (error) {
     console.error("Failed to fetch institute details, using fallback:", error);
+
+    // A failed read says nothing about the institute: keep a real saved copy.
+    const saved = await getStoredInstituteDetails();
+    if (
+      saved?.id === instituteId &&
+      saved.institute_name &&
+      saved.institute_name !== "Loading..."
+    ) {
+      return saved;
+    }
 
     // Fallback: Store minimal institute details to ensure isAuthenticated passes
     const fallbackInstituteDetails: InstituteDetails = {

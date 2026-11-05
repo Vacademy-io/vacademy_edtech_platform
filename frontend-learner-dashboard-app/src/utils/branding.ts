@@ -163,7 +163,7 @@ const isVacademyHost = (): boolean => {
 
 // The favicon to show when no institute icon is available: the Vacademy mark on
 // Vacademy hosts, a blank icon everywhere else.
-const getFallbackFavicon = (): string =>
+export const getFallbackFavicon = (): string =>
   isVacademyHost() ? FALLBACK_FAVICON_URL : BLANK_FAVICON;
 
 // Helper: create favicon link elements

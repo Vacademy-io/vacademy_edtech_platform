@@ -542,7 +542,7 @@ export class CourseCatalogueService {
 
       // Check if it's a 404 error (tag not found)
       if (error?.response?.status === 404) {
-        return this.getEmptyCatalogueData();
+        return { ...this.getEmptyCatalogueData(), notFound: true };
       }
 
       // Check if it's a network error

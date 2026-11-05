@@ -509,6 +509,7 @@ const RootComponent = () => {
     // /institute-selection), getInstituteId() answered the token's first
     // institute. Reload the same institute-keyed settings for the pick.
     const onInstituteSelected = () => {
+      void setPrimaryColorFromStorage();
       getChatbotSettings(false)
         .then((settings) => setIsChatbotEnabled(settings?.enable === true))
         .catch(() => setIsChatbotEnabled(false));
