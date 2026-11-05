@@ -18,7 +18,9 @@ import vacademy.io.common.logging.PayloadRedactor;
 import java.math.BigDecimal;
 import java.sql.Timestamp;
 import java.time.Instant;
+import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -144,15 +146,24 @@ public class SuperAdminExternalApiLogService {
         return value == null ? null : new BigDecimal(value.toString());
     }
 
-    /** timestamp columns arrive as Timestamp, timestamptz ones as Instant or OffsetDateTime. */
+    /**
+     * Native query date types vary with the Hibernate version and column type, and a wrong
+     * cast here fails the whole list (see SuperAdminCallService). Naive values are UTC.
+     */
     private static Instant instant(Object value) {
-        if (value instanceof Timestamp timestamp) {
-            return timestamp.toInstant();
+        if (value instanceof Instant instant) {
+            return instant;
+        }
+        if (value instanceof java.util.Date date) {
+            return date.toInstant();
         }
         if (value instanceof OffsetDateTime offset) {
             return offset.toInstant();
         }
-        return (Instant) value;
+        if (value instanceof LocalDateTime local) {
+            return local.toInstant(ZoneOffset.UTC);
+        }
+        return null;
     }
 
     private String redact(String body) {
