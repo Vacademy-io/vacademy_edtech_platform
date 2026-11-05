@@ -136,19 +136,24 @@ def logged_vendors(
 ):
     """Consolidated view of external_api_vendor: a vendor is here from its first logged call."""
     _require_super_admin(current_user)
+    auto_capture = get_platform_setting(AUTO_CAPTURE_SETTING, default=False) is True
+    # Created by admin_core's Flyway, which may deploy after this service.
+    if not db.execute(text("SELECT to_regclass('external_api_vendor') IS NOT NULL")).scalar():
+        return {"vendors": [], "auto_capture": auto_capture, "tables_ready": False}
     rows = db.execute(text("""
         SELECT v.vendor, v.source_service, v.first_seen_at, v.last_seen_at,
                COUNT(l.id) AS calls,
                COUNT(l.id) FILTER (WHERE l.status = 'FAILED') AS failed_calls
         FROM external_api_vendor v
         LEFT JOIN external_api_call_log l
-               ON l.vendor = v.vendor AND l.occurred_at > now() - make_interval(hours => :hours)
+               ON l.vendor = v.vendor AND l.occurred_at > now() - make_interval(hours => CAST(:hours AS int))
         GROUP BY v.vendor, v.source_service, v.first_seen_at, v.last_seen_at
         ORDER BY v.last_seen_at DESC
     """), {"hours": hours}).fetchall()
     return {
         "vendors": [dict(r._mapping) for r in rows],
-        "auto_capture": get_platform_setting(AUTO_CAPTURE_SETTING, default=False) is True,
+        "auto_capture": auto_capture,
+        "tables_ready": True,
     }
 
 
