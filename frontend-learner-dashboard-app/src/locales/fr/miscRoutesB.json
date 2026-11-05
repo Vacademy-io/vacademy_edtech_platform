@@ -533,8 +533,8 @@
       "stopMembership": "Arrêter l'abonnement",
       "stopping": "Arrêt en cours...",
       "membershipStoppedLabel": "Abonnement arrêté.",
-      "membershipStoppedWithDate": "Vous pouvez encore accéder aux {{liveClasses}} jusqu'au {{date}}. Ensuite, votre abonnement prendra fin. Vous ne serez plus prélevé(e).",
-      "membershipStoppedNoDate": "Vous pouvez encore accéder aux {{liveClasses}} jusqu'à la fin de la période déjà payée. Vous ne serez plus prélevé(e).",
+      "membershipStoppedWithDate": "Vous aurez accès jusqu'au {{date}}. Ensuite, votre abonnement prendra fin. Vous ne serez plus prélevé(e).",
+      "membershipStoppedNoDate": "Vous aurez accès jusqu'à la fin de la période déjà payée. Vous ne serez plus prélevé(e).",
       "paymentFailedLabel": "Le paiement n'a pas abouti.",
       "paymentFailedWithDate": "Vous pouvez encore accéder aux {{liveClasses}} jusqu'au {{date}}. Payez ci-dessous pour conserver votre abonnement.",
       "paymentFailedNoDate": "Payez ci-dessous pour conserver votre abonnement.",
@@ -552,7 +552,7 @@
         "genericRetry": "Veuillez réessayer dans un instant.",
         "orderCreationFailed": "Impossible de créer la commande de paiement",
         "membershipStoppedTitle": "Abonnement arrêté",
-        "stoppedWithDate": "Vous pouvez encore accéder aux {{liveClasses}} jusqu'au {{date}}. Vous ne serez plus prélevé(e).",
+        "stoppedWithDate": "Vous aurez accès jusqu'au {{date}}. Vous ne serez plus prélevé(e).",
         "stoppedNoDate": "Vous ne serez plus prélevé(e).",
         "stopFailedTitle": "Impossible d'arrêter votre abonnement",
         "paymentReceivedTitle": "Paiement reçu !",
@@ -562,7 +562,7 @@
       },
       "cancelDialog": {
         "title": "Arrêter votre abonnement ?",
-        "description": "Vous pouvez encore accéder à vos {{liveClasses}} jusqu'au <bold>{{date}}</bold>. Passé ce délai, votre abonnement prend fin et vous ne serez plus prélevé(e). Vous pourrez le réactiver à tout moment.",
+        "description": "Vous aurez accès jusqu'au <bold>{{date}}</bold>. Passé ce délai, votre abonnement prend fin et vous ne serez plus prélevé(e). Vous pourrez le réactiver à tout moment.",
         "keepMembership": "Conserver l'abonnement"
       },
       "changePlan": "Change plan",
