@@ -16619,6 +16619,7 @@ class VideoGenerationPipeline:
         if _web_search_available:
             try:
                 self._serper_service.set_run_dir(run_dir)
+                self._serper_service.set_run_context(getattr(self, '_dialogue_institute_id', None))
                 self._serper_service.reset_usage()
             except Exception:
                 pass

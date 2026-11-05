@@ -480,6 +480,32 @@ SETTING_SPECS["metering.admin_hosts"] = SettingSpec(
     max_length=2000,
 )
 
+SETTING_SPECS["external_apis.key_details"] = SettingSpec(
+    key="external_apis.key_details",
+    group="external_apis",
+    label="External API key details (JSON)",
+    description=(
+        "Account, price and notes per vendor key, as staff entered them on the portal's External APIs page. "
+        "Prices external_api_call_log rows; nothing is charged to anyone. Never put a key here."
+    ),
+    type="string",
+    default=lambda: "{}",
+    max_length=20000,
+)
+
+SETTING_SPECS["external_apis.auto_capture"] = SettingSpec(
+    key="external_apis.auto_capture",
+    group="external_apis",
+    label="External APIs: log every outbound httpx call",
+    description=(
+        "Logs host, method, status and timing of each third-party call ai-service makes through httpx, so a "
+        "new vendor appears on the External APIs page by itself. Never logs bodies or query strings. Adds rows "
+        "to external_api_call_log, which has no automatic cleanup yet."
+    ),
+    type="bool",
+    default=lambda: False,
+)
+
 SETTING_SPECS["metering.history_v2_institutes"] = SettingSpec(
     key="metering.history_v2_institutes",
     group="rollout",

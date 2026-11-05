@@ -95,6 +95,9 @@ class SerperService:
         self._video_query_count = 0
         self._web_query_count = 0
         self._cache_hit_count = 0
+        # Labels on external_api_call_log rows. Set by set_run_dir / set_run_context.
+        self._run_id: Optional[str] = None
+        self._institute_id: Optional[str] = None
 
     @property
     def is_available(self) -> bool:
@@ -103,12 +106,17 @@ class SerperService:
 
     def set_run_dir(self, run_dir: Path) -> None:
         """Configure per-run disk cache directory. Safe to call repeatedly."""
+        self._run_id = Path(run_dir).name
         try:
             self._cache_dir = Path(run_dir) / "_serper_cache"
             self._cache_dir.mkdir(parents=True, exist_ok=True)
         except Exception as e:
             logger.warning(f"[Serper] Failed to set cache dir: {e}")
             self._cache_dir = None
+
+    def set_run_context(self, institute_id: Optional[str]) -> None:
+        """Institute that later queries are logged against."""
+        self._institute_id = institute_id
 
     def reset_usage(self) -> None:
         """Reset per-render usage counters."""
@@ -185,6 +193,54 @@ class SerperService:
             except Exception as e:
                 logger.warning(f"[Serper] Cache write failed for {key}: {e}")
 
+    # ── Call log ────────────────────────────────────────────────────────
+
+    def _log_call(
+        self,
+        url: str,
+        payload: Dict[str, Any],
+        api_key: str,
+        started: float,
+        http_status: Optional[int] = None,
+        data: Optional[Dict[str, Any]] = None,
+        error: Optional[str] = None,
+    ) -> None:
+        """One external_api_call_log row per real request (cache hits never reach here).
+        Never raises: logging must not cost a video its stock images."""
+        try:
+            # This file is loaded flat via sys.path, like automation_pipeline.py.
+            try:
+                from app.services.external_api_log import record_external_call
+            except ModuleNotFoundError:
+                from ai_service.app.services.external_api_log import record_external_call
+
+            summary = None
+            credits = 1
+            if data is not None:
+                summary = {
+                    k: len(v) for k, v in data.items() if k in ("images", "videos", "organic") and isinstance(v, list)
+                }
+                if isinstance(data.get("credits"), (int, float)):
+                    credits = data["credits"]
+                    summary["credits"] = credits
+            record_external_call(
+                vendor="serper",
+                operation=url.rsplit("/", 1)[-1],
+                status="FAILED" if error else "SUCCESS",
+                http_status=http_status,
+                duration_ms=int((time.monotonic() - started) * 1000),
+                api_key=api_key,
+                institute_id=self._institute_id,
+                run_id=self._run_id,
+                request_summary=payload,
+                response_summary=summary,
+                error_message=error,
+                credential="SERPER_API_KEYS",
+                credits=credits,
+            )
+        except Exception as e:
+            logger.debug(f"[Serper] Call log skipped: {e}")
+
     # ── HTTP ────────────────────────────────────────────────────────────
 
     def _request(self, url: str, payload: Dict[str, Any], max_retries: int = 2) -> Optional[Dict[str, Any]]:
@@ -203,12 +259,15 @@ class SerperService:
             req.add_header("Content-Type", "application/json")
             req.add_header("User-Agent", "Vacademy-AI-Video/1.0")
 
+            started = time.monotonic()
             try:
                 with urllib.request.urlopen(req, timeout=self._TIMEOUT) as response:
                     data = json.loads(response.read().decode("utf-8"))
+                    self._log_call(url, payload, api_key, started, http_status=response.status, data=data)
                     self._cache_put(cache_key, data)
                     return data
             except urllib.error.HTTPError as e:
+                self._log_call(url, payload, api_key, started, http_status=e.code, error=f"HTTP {e.code}: {e.reason}")
                 if e.code in (429, 401, 403) and attempt < max_retries - 1:
                     logger.warning(f"[Serper] HTTP {e.code} on key {self._key_index}, rotating...")
                     self._rotate_key()
@@ -219,6 +278,7 @@ class SerperService:
                 return None
             except (urllib.error.URLError, TimeoutError, OSError) as e:
                 last_error = f"network: {e}"
+                self._log_call(url, payload, api_key, started, error=last_error)
                 logger.error(f"[Serper] Network error: {e}")
                 if attempt < max_retries - 1:
                     time.sleep(0.4)
