@@ -77,8 +77,8 @@ describe("course tokens (pure)", () => {
     expect(t.short_description).toBe("A short line");
     expect(t.framework_html).toBe(
       '<h2>The method</h2><p>Para one</p><p>Para two</p><div class="tc-framework-grid">' +
-      '<article class="tc-framework-card"><span class="tc-card-number">1</span><h3>Observe</h3><p>Look first</p><ul><li>See</li><li>Note</li></ul><p class="tc-card-takeaway">Pause</p></article>' +
-      '<article class="tc-framework-card"><span class="tc-card-number">2</span><h3>Act</h3></article></div>',
+      '<article class="tc-framework-card"><div class="tc-card-heading"><span class="tc-card-number">01</span><div><h3>Observe</h3></div></div><p>Look first</p><ul><li>See</li><li>Note</li></ul><p class="tc-card-takeaway">Pause</p></article>' +
+      '<article class="tc-framework-card"><div class="tc-card-heading"><span class="tc-card-number">02</span><div><h3>Act</h3></div></div></article></div>',
     );
     expect(t.learning_experience_html).toContain('<article class="tc-learning-card"><h3>Videos</h3><p>Short clips</p></article>');
     expect(t.learning_experience_html).toContain('<div class="tc-callout"><p>Bonus</p></div>');
@@ -92,10 +92,61 @@ describe("course tokens (pure)", () => {
     // an FAQ with an empty answer is skipped
     expect(t.faqs_html).toBe('<div class="tc-faq-item"><h3>Is it live?</h3><div class="tc-faq-answer"><p>Both <b>live</b> and recorded.</p></div></div>');
     expect(t.instructors_html).toBe(
-      '<article class="tc-instructor"><img src="https://cdn.example/pic1.png" alt="Dr. One" loading="lazy"><h3>Dr. One</h3><p class="tc-instructor-role">Psychologist</p><div class="tc-instructor-bio"><p>Bio</p></div></article>' +
-      '<article class="tc-instructor"><h3>Two</h3><p class="tc-instructor-role">Instructor</p></article>',
+      '<article class="tc-instructor"><div class="tc-instructor-profile"><img src="https://cdn.example/pic1.png" alt="Dr. One" loading="lazy"><h3>Dr. One</h3></div><div class="tc-instructor-details"><p class="tc-instructor-role">Psychologist</p><div class="tc-instructor-bio"><p>Bio</p></div></div></article>' +
+      '<article class="tc-instructor"><div class="tc-instructor-profile"><h3>Two</h3></div><div class="tc-instructor-details"><p class="tc-instructor-role">Instructor</p></div></article>',
     );
     expect(applyCourseTokens("{{course.faqs_html}}", t)).toContain("<b>live</b>");
+  });
+
+  it("renders the optional small lines, subtitles, labels and stars", () => {
+    const coursePageJson = JSON.stringify({
+      template: {
+        hero_image_id: "hero01",
+        about_image_id: "about01",
+        framework: { eyebrow: "The <method>", heading: "H", cards: [
+          { title: "T", subtitle: "Sub", points: ["P"], takeaway: "Pause" },
+          { title: "No points" },
+        ] },
+        learning_experience: { eyebrow: "Daily", heading: "L", cards: [{ label: "WATCH", title: "V" }], callout_eyebrow: "After", callout_heading: "Next", callout: "<p>Note</p>" },
+        testimonials: [
+          { stars: 5, quote: "Q", name: "N" },
+          { stars: "3", quote: "Q", name: "N" },
+          { stars: 9, quote: "Q", name: "N" },
+          { stars: "many", quote: "Q", name: "N" },
+        ],
+        labels: { points_heading: "What you explore", takeaway: "Takeaway:", instructor_eyebrow: "Your guide", instructor_signature: "With love", enrolment_heading: "Begin", enrolment_button: "Enrol here", enrol_button: "Enrol" },
+      },
+    });
+    const t = buildCourseTokens({ ...course, coursePageJson, instructors: [{ name: "One" }] });
+    expect(t.hero_image).toBe("hero01");
+    expect(t.about_image).toBe("about01");
+    expect(t.image).toBe("faf7021b");
+    expect(t.framework_html).toContain('<p class="tc-eyebrow">The &lt;method&gt;</p><h2>H</h2>');
+    expect(t.framework_html).toContain('<h3>T</h3><p class="tc-card-subtitle">Sub</p></div></div><h4>What you explore</h4><ul><li>P</li></ul><p class="tc-card-takeaway"><strong>Takeaway:</strong> Pause</p>');
+    // no points, so no heading for them
+    expect(t.framework_html.match(/<h4>/g)).toHaveLength(1);
+    expect(t.learning_experience_html).toContain('<article class="tc-learning-card"><span class="tc-learning-label">WATCH</span><h3>V</h3></article>');
+    expect(t.learning_experience_html).toContain('<div class="tc-callout"><p class="tc-eyebrow">After</p><h3>Next</h3><p>Note</p></div>');
+    expect(t.testimonials_html).toContain('<div class="tc-stars" aria-label="5/5">★★★★★</div>');
+    expect(t.testimonials_html).toContain('<div class="tc-stars" aria-label="3/5">★★★</div>');
+    expect(t.testimonials_html.match(/tc-stars/g)).toHaveLength(2);
+    expect(t.instructors_html).toBe('<article class="tc-instructor"><div class="tc-instructor-profile"><p class="tc-eyebrow">Your guide</p><h3>One</h3><p class="tc-instructor-signature">With love</p></div></article>');
+    // a signature names one person, so two instructors do not get it
+    const two = buildCourseTokens({ ...course, coursePageJson, instructors: [{ name: "One" }, { name: "Two" }] });
+    expect(two.instructors_html).not.toContain("tc-instructor-signature");
+    expect(two.instructors_html.match(/Your guide/g)).toHaveLength(2);
+    expect(t.enrolment_heading).toBe("Begin");
+    expect(t.enrolment_button).toBe("Enrol here");
+  });
+
+  it("falls back to the course image, title and Enrol button text", () => {
+    const coursePageJson = JSON.stringify({ template: { labels: { enrol_button: "Enrol" } } });
+    const t = buildCourseTokens({ ...course, coursePageJson });
+    expect(t.hero_image).toBe(t.image);
+    expect(t.about_image).toBe(t.banner);
+    expect(t.enrolment_heading).toBe(course.title);
+    expect(t.enrolment_button).toBe("Enrol");
+    expect(courseTokenMediaKeys("{{course.hero_image}}")).toEqual(["hero_image"]);
   });
 
   it("leaves every template token empty when the course has no page content", () => {

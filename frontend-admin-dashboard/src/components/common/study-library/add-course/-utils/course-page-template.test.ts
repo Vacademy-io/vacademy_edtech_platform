@@ -13,13 +13,13 @@ const filled = () => {
     t.tagline = '  A calm start  ';
     t.framework.heading = 'The method';
     t.framework.cards = [
-        { title: 'Observe', body: 'Look first', points: ' See \n\n Note ', takeaway: '' },
-        { title: '', body: '', points: '', takeaway: '' },
+        { title: 'Observe', subtitle: '', body: 'Look first', points: ' See \n\n Note ', takeaway: '' },
+        { title: '', subtitle: '', body: '', points: '', takeaway: '' },
     ];
     t.learning.callout = '<p></p>';
     t.testimonials = [
-        { quote: 'Loved it', name: 'A. Learner', details: '', review: '' },
-        { quote: ' ', name: '', details: '', review: '' },
+        { stars: '', quote: 'Loved it', name: 'A. Learner', details: '', review: '' },
+        { stars: '', quote: ' ', name: '', details: '', review: '' },
     ];
     t.enrolment.imageId = 'file-1';
     t.inclusions.items = 'Videos\nWorksheets\n';
@@ -58,12 +58,60 @@ describe('course_page_json with template', () => {
         const back = parseCoursePageJson(json);
         expect(back.template.framework.cards[0]).toEqual({
             title: 'Observe',
+            subtitle: '',
             body: 'Look first',
             points: 'See\nNote',
             takeaway: '',
         });
         expect(back.template.inclusions.items).toBe('Videos\nWorksheets');
         expect(back.template.enrolment.imageId).toBe('file-1');
+    });
+
+    it('keeps the main image, small lines, subtitles, card labels and stars', () => {
+        const t = emptyCoursePageTemplate();
+        t.heroImageId = 'hero-1';
+        t.aboutImageId = 'about-1';
+        t.framework.eyebrow = 'The method';
+        t.framework.cards = [
+            { title: 'See', subtitle: 'Look first', body: '', points: '', takeaway: '' },
+        ];
+        t.learning.eyebrow = 'Daily';
+        t.learning.calloutEyebrow = 'After';
+        t.learning.calloutHeading = 'Next step';
+        t.learning.cards = [{ label: 'WATCH', title: 'Videos', body: '' }];
+        t.testimonials = [{ stars: '5', quote: 'Q', name: 'N', details: '', review: '' }];
+        expect(serializeCoursePageTemplate(t)).toEqual({
+            hero_image_id: 'hero-1',
+            about_image_id: 'about-1',
+            framework: {
+                eyebrow: 'The method',
+                cards: [{ title: 'See', subtitle: 'Look first' }],
+            },
+            learning_experience: {
+                eyebrow: 'Daily',
+                callout_eyebrow: 'After',
+                callout_heading: 'Next step',
+                cards: [{ label: 'WATCH', title: 'Videos' }],
+            },
+            testimonials: [{ stars: 5, quote: 'Q', name: 'N' }],
+        });
+        const back = parseCoursePageTemplate(serializeCoursePageTemplate(t));
+        expect(back.heroImageId).toBe('hero-1');
+        expect(back.aboutImageId).toBe('about-1');
+        expect(back.framework.cards[0]?.subtitle).toBe('Look first');
+        expect(back.learning.cards[0]?.label).toBe('WATCH');
+        expect(back.learning.calloutHeading).toBe('Next step');
+        expect(back.testimonials[0]?.stars).toBe('5');
+    });
+
+    it('drops stars outside 1 to 5', () => {
+        const t = emptyCoursePageTemplate();
+        t.testimonials = [{ stars: '9', quote: 'Q', name: 'N', details: '', review: '' }];
+        expect(serializeCoursePageTemplate(t)).toEqual({ testimonials: [{ quote: 'Q', name: 'N' }] });
+        expect(
+            parseCoursePageTemplate({ testimonials: [{ stars: 'x', quote: 'Q', name: 'N' }] })
+                .testimonials[0]?.stars
+        ).toBe('');
     });
 
     it('clears on edit when template, FAQs and mode are all empty', () => {

@@ -5,10 +5,11 @@
  *
  * Stored inside `course_page_json` under `template`:
  *   {
- *     tagline, short_description,
- *     framework: { heading, intro, cards: [{ title, body, points: [..], takeaway }] },
- *     learning_experience: { heading, intro, cards: [{ title, body }], callout },
- *     testimonials: [{ quote, name, details, review }],
+ *     tagline, short_description, hero_image_id, about_image_id,
+ *     framework: { eyebrow, heading, intro, cards: [{ title, subtitle, body, points: [..], takeaway }] },
+ *     learning_experience: { eyebrow, heading, intro, cards: [{ label, title, body }],
+ *                            callout_eyebrow, callout_heading, callout },
+ *     testimonials: [{ stars, quote, name, details, review }],
  *     enrolment: { description, image_id },
  *     inclusions: { heading, items: [..] },
  *     labels: { eyebrow, enrol_button, … }   // the page's fixed words: headings, button text
@@ -41,16 +42,32 @@ export const COURSE_TEMPLATE_LABELS = [
     { key: 'eyebrow', label: 'Small line above the title' },
     { key: 'enrol_button', label: 'Enrol button' },
     { key: 'explore_button', label: 'Second button (scrolls down the page)' },
-    { key: 'duration', label: 'Duration label' },
+    { key: 'duration', label: 'Duration label (empty hides the duration)' },
+    { key: 'hero_note', label: 'Small line below the buttons' },
+    { key: 'hero_caption', label: 'Caption below the main image' },
     { key: 'highlights', label: 'Highlights heading' },
+    { key: 'about_eyebrow', label: 'Small line above the About heading' },
     { key: 'about', label: 'About heading' },
+    { key: 'points_heading', label: 'Heading above the framework card points' },
+    { key: 'takeaway', label: 'Text before the framework card takeaway' },
     { key: 'who', label: 'Who it is for heading' },
+    { key: 'testimonials_eyebrow', label: 'Small line above the Testimonials heading' },
     { key: 'testimonials', label: 'Testimonials heading' },
     { key: 'instructors', label: 'Instructors heading' },
+    { key: 'instructor_eyebrow', label: 'Small line above the instructor name' },
+    { key: 'instructor_signature', label: 'Signature below the name (one instructor only)' },
     { key: 'enrolment', label: 'Small line above the enrolment title' },
+    { key: 'enrolment_heading', label: 'Enrolment title (empty uses the course name)' },
+    { key: 'enrolment_button', label: 'Enrolment button (empty uses the Enrol button)' },
     { key: 'original_price', label: 'Text before the original price' },
     { key: 'discount', label: 'Text after the discount %' },
+    { key: 'faq_eyebrow', label: 'Small line above the FAQ heading' },
     { key: 'faq', label: 'FAQ heading' },
+    { key: 'closing_heading', label: 'Closing box heading (empty hides the box)' },
+    { key: 'closing_text', label: 'Closing box text' },
+    { key: 'closing_button', label: 'Closing box button' },
+    { key: 'end_heading', label: 'Last line of the page (empty hides it)' },
+    { key: 'end_text', label: 'Small text below the last line' },
 ] as const;
 
 export type CourseTemplateLabelKey = (typeof COURSE_TEMPLATE_LABELS)[number]['key'];
@@ -61,6 +78,7 @@ export const emptyCourseTemplateLabels = (): CourseTemplateLabels =>
 
 export interface FrameworkCard {
     title: string;
+    subtitle: string;
     body: string;
     /** One point per line. */
     points: string;
@@ -68,11 +86,14 @@ export interface FrameworkCard {
 }
 
 export interface LearningCard {
+    label: string;
     title: string;
     body: string;
 }
 
 export interface Testimonial {
+    /** Text in the form ('' or 1 to 5); stored as a number. */
+    stars: string;
     quote: string;
     name: string;
     details: string;
@@ -82,8 +103,20 @@ export interface Testimonial {
 export interface CoursePageTemplate {
     tagline: string;
     shortDescription: string;
-    framework: { heading: string; intro: string; cards: FrameworkCard[] };
-    learning: { heading: string; intro: string; cards: LearningCard[]; callout: string };
+    /** Main image for this page only; empty uses the course Preview Image. */
+    heroImageId: string;
+    /** About-section image for this page only; empty uses the course Banner Image. */
+    aboutImageId: string;
+    framework: { eyebrow: string; heading: string; intro: string; cards: FrameworkCard[] };
+    learning: {
+        eyebrow: string;
+        heading: string;
+        intro: string;
+        cards: LearningCard[];
+        calloutEyebrow: string;
+        calloutHeading: string;
+        callout: string;
+    };
     testimonials: Testimonial[];
     enrolment: { description: string; imageId: string };
     /** `items`: one inclusion per line. */
@@ -94,18 +127,35 @@ export interface CoursePageTemplate {
 
 export const emptyFrameworkCard = (): FrameworkCard => ({
     title: '',
+    subtitle: '',
     body: '',
     points: '',
     takeaway: '',
 });
-export const emptyLearningCard = (): LearningCard => ({ title: '', body: '' });
-export const emptyTestimonial = (): Testimonial => ({ quote: '', name: '', details: '', review: '' });
+export const emptyLearningCard = (): LearningCard => ({ label: '', title: '', body: '' });
+export const emptyTestimonial = (): Testimonial => ({
+    stars: '',
+    quote: '',
+    name: '',
+    details: '',
+    review: '',
+});
 
 export const emptyCoursePageTemplate = (): CoursePageTemplate => ({
     tagline: '',
     shortDescription: '',
-    framework: { heading: '', intro: '', cards: [] },
-    learning: { heading: '', intro: '', cards: [], callout: '' },
+    heroImageId: '',
+    aboutImageId: '',
+    framework: { eyebrow: '', heading: '', intro: '', cards: [] },
+    learning: {
+        eyebrow: '',
+        heading: '',
+        intro: '',
+        cards: [],
+        calloutEyebrow: '',
+        calloutHeading: '',
+        callout: '',
+    },
     testimonials: [],
     enrolment: { description: '', imageId: '' },
     inclusions: { heading: '', items: '' },
@@ -129,11 +179,17 @@ const toLines = (text: string): string[] =>
 const html = (v: string): string => (isBlankHtml(v) ? '' : v.trim());
 
 export const isEmptyFrameworkCard = (c: Partial<FrameworkCard>): boolean =>
-    ![c.title, c.body, c.points, c.takeaway].some((v) => (v ?? '').trim());
+    ![c.title, c.subtitle, c.body, c.points, c.takeaway].some((v) => (v ?? '').trim());
 export const isEmptyLearningCard = (c: Partial<LearningCard>): boolean =>
-    ![c.title, c.body].some((v) => (v ?? '').trim());
+    ![c.label, c.title, c.body].some((v) => (v ?? '').trim());
 export const isEmptyTestimonial = (t: Partial<Testimonial>): boolean =>
-    ![t.quote, t.name, t.details, t.review].some((v) => (v ?? '').trim());
+    ![t.stars, t.quote, t.name, t.details, t.review].some((v) => (v ?? '').trim());
+
+/** Stored stars → form text; anything outside 1 to 5 reads as empty. */
+const starsText = (v: unknown): string => {
+    const stars = Number(v);
+    return Number.isInteger(stars) && stars >= 1 && stars <= 5 ? String(stars) : '';
+};
 
 /** Reads `course_page_json.template`; anything malformed reads as empty. */
 export const parseCoursePageTemplate = (raw: unknown): CoursePageTemplate => {
@@ -146,12 +202,16 @@ export const parseCoursePageTemplate = (raw: unknown): CoursePageTemplate => {
     return {
         tagline: str(t.tagline),
         shortDescription: str(t.short_description),
+        heroImageId: str(t.hero_image_id),
+        aboutImageId: str(t.about_image_id),
         framework: {
+            eyebrow: str(fw.eyebrow),
             heading: str(fw.heading),
             intro: str(fw.intro),
             cards: arr(fw.cards)
                 .map((c) => ({
                     title: str(c.title),
+                    subtitle: str(c.subtitle),
                     body: str(c.body),
                     points: lines(c.points),
                     takeaway: str(c.takeaway),
@@ -159,15 +219,19 @@ export const parseCoursePageTemplate = (raw: unknown): CoursePageTemplate => {
                 .slice(0, COURSE_TEMPLATE_MAX_CARDS),
         },
         learning: {
+            eyebrow: str(le.eyebrow),
             heading: str(le.heading),
             intro: str(le.intro),
             cards: arr(le.cards)
-                .map((c) => ({ title: str(c.title), body: str(c.body) }))
+                .map((c) => ({ label: str(c.label), title: str(c.title), body: str(c.body) }))
                 .slice(0, COURSE_TEMPLATE_MAX_CARDS),
+            calloutEyebrow: str(le.callout_eyebrow),
+            calloutHeading: str(le.callout_heading),
             callout: str(le.callout),
         },
         testimonials: arr(t.testimonials)
             .map((r) => ({
+                stars: starsText(r.stars),
                 quote: str(r.quote),
                 name: str(r.name),
                 details: str(r.details),
@@ -211,7 +275,10 @@ export const serializeCoursePageTemplate = (
     const value = compact({
         tagline: t.tagline,
         short_description: t.shortDescription,
+        hero_image_id: t.heroImageId,
+        about_image_id: t.aboutImageId,
         framework: {
+            eyebrow: t.framework?.eyebrow,
             heading: t.framework?.heading,
             intro: t.framework?.intro,
             cards: (t.framework?.cards ?? [])
@@ -219,24 +286,34 @@ export const serializeCoursePageTemplate = (
                 .slice(0, COURSE_TEMPLATE_MAX_CARDS)
                 .map((c) => ({
                     title: c.title,
+                    subtitle: c.subtitle,
                     body: c.body,
                     points: toLines(c.points ?? ''),
                     takeaway: c.takeaway,
                 })),
         },
         learning_experience: {
+            eyebrow: t.learning?.eyebrow,
             heading: t.learning?.heading,
             intro: t.learning?.intro,
             cards: (t.learning?.cards ?? [])
                 .filter((c) => !isEmptyLearningCard(c))
                 .slice(0, COURSE_TEMPLATE_MAX_CARDS)
-                .map((c) => ({ title: c.title, body: c.body })),
+                .map((c) => ({ label: c.label, title: c.title, body: c.body })),
+            callout_eyebrow: t.learning?.calloutEyebrow,
+            callout_heading: t.learning?.calloutHeading,
             callout: html(t.learning?.callout ?? ''),
         },
         testimonials: (t.testimonials ?? [])
             .filter((r) => !isEmptyTestimonial(r))
             .slice(0, COURSE_TEMPLATE_MAX_TESTIMONIALS)
-            .map((r) => ({ quote: r.quote, name: r.name, details: r.details, review: r.review })),
+            .map((r) => ({
+                stars: starsText(r.stars) ? Number(r.stars) : undefined,
+                quote: r.quote,
+                name: r.name,
+                details: r.details,
+                review: r.review,
+            })),
         enrolment: {
             description: html(t.enrolment?.description ?? ''),
             image_id: t.enrolment?.imageId,

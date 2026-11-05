@@ -33,7 +33,7 @@ export const COURSE_TOKEN_RE = /\{\{\s*course\.([a-z_]+)\s*\}\}/g;
 export const COURSE_BLOCK_RE = /\{\{#\s*course\.([a-z_]+)\s*\}\}([\s\S]*?)\{\{\/\s*course\.\1\s*\}\}/g;
 
 /** Tokens whose value is a media id/URL the host must resolve before render. */
-export const COURSE_MEDIA_TOKENS = ['image', 'banner', 'thumbnail', 'enrolment_image'] as const;
+export const COURSE_MEDIA_TOKENS = ['image', 'hero_image', 'banner', 'about_image', 'thumbnail', 'enrolment_image'] as const;
 
 const RAW_HTML_TOKENS = new Set([
     'description_html', 'about_html', 'why_html', 'who_html',
@@ -97,6 +97,8 @@ export const buildCourseTokens = (
     // Label tokens are plain text (escaped) and always prefixed, so none can shadow the
     // course tokens below.
     const labels = Object.fromEntries(Object.entries(tpl.labels).map(([k, v]) => [`label_${k}`, v]));
+    const image = isPlaceholder(c.previewImage) ? (isPlaceholder(c.thumbnail) ? '' : c.thumbnail!) : c.previewImage!;
+    const banner = isPlaceholder(c.bannerImage) ? '' : c.bannerImage!;
     return {
         ...labels,
         id: c.courseId || '',
@@ -115,8 +117,10 @@ export const buildCourseTokens = (
         instructor: c.instructor || '',
         rating: c.rating ? String(c.rating) : '',
         tags: (c.tags || []).join(', '),
-        image: isPlaceholder(c.previewImage) ? (isPlaceholder(c.thumbnail) ? '' : c.thumbnail!) : c.previewImage!,
-        banner: isPlaceholder(c.bannerImage) ? '' : c.bannerImage!,
+        image,
+        hero_image: tpl.heroImage || image,
+        banner,
+        about_image: tpl.aboutImage || banner,
         thumbnail: isPlaceholder(c.thumbnail) ? '' : c.thumbnail!,
         tagline: tpl.tagline,
         short_description: tpl.shortDescription,
@@ -125,9 +129,14 @@ export const buildCourseTokens = (
         testimonials_html: tpl.testimonialsHtml,
         enrolment_description: tpl.enrolmentDescription,
         enrolment_image: tpl.enrolmentImage,
+        enrolment_heading: tpl.labels.enrolment_heading || c.title || '',
+        enrolment_button: tpl.labels.enrolment_button || tpl.labels.enrol_button || '',
         inclusions_html: tpl.inclusionsHtml,
         faqs_html: renderFaqsHtml(c.coursePageJson),
-        instructors_html: renderInstructorsHtml(c.instructors, photos),
+        instructors_html: renderInstructorsHtml(c.instructors, photos, {
+            eyebrow: tpl.labels.instructor_eyebrow,
+            signature: tpl.labels.instructor_signature,
+        }),
     };
 };
 

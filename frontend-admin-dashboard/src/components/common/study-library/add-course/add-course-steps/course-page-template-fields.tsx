@@ -250,6 +250,12 @@ const FrameworkCards = ({ form }: { form: Form }) => {
                             name={`coursePage.template.framework.cards.${index}.title`}
                             label="Card title"
                         />
+                        <TextField
+                            form={form}
+                            name={`coursePage.template.framework.cards.${index}.subtitle`}
+                            label="Card subtitle"
+                            placeholder="Subtitle below the title (optional)"
+                        />
                         <TextAreaField
                             form={form}
                             name={`coursePage.template.framework.cards.${index}.body`}
@@ -305,6 +311,12 @@ const LearningCards = ({ form }: { form: Form }) => {
                     <div className="min-w-0 flex-1 space-y-2">
                         <TextField
                             form={form}
+                            name={`coursePage.template.learning.cards.${index}.label`}
+                            label="Small label"
+                            placeholder="Small label above the title (optional)"
+                        />
+                        <TextField
+                            form={form}
                             name={`coursePage.template.learning.cards.${index}.title`}
                             label="Card title"
                         />
@@ -348,6 +360,13 @@ const Testimonials = ({ form }: { form: Form }) => {
                         {index + 1}
                     </span>
                     <div className="min-w-0 flex-1 space-y-2">
+                        <TextField
+                            form={form}
+                            name={`coursePage.template.testimonials.${index}.stars`}
+                            label="Stars"
+                            placeholder="Stars, 1 to 5 (optional)"
+                            maxLength={1}
+                        />
                         <TextAreaField
                             form={form}
                             name={`coursePage.template.testimonials.${index}.quote`}
@@ -395,12 +414,23 @@ const Testimonials = ({ form }: { form: Form }) => {
     );
 };
 
-const EnrolmentImage = ({ form }: { form: Form }) => {
-    const imageId = useWatch({ control: form.control, name: 'coursePage.template.enrolment.imageId' }) ?? '';
+const TemplateImage = ({
+    form,
+    name,
+    alt,
+}: {
+    form: Form;
+    name:
+        | 'coursePage.template.enrolment.imageId'
+        | 'coursePage.template.heroImageId'
+        | 'coursePage.template.aboutImageId';
+    alt: string;
+}) => {
+    const imageId = useWatch({ control: form.control, name }) ?? '';
     const { uploadFile } = useFileUpload();
     const [uploading, setUploading] = useState(false);
     const preview = useQuery({
-        queryKey: ['course-template-enrolment-image', imageId],
+        queryKey: ['course-template-image', imageId],
         queryFn: () => getPublicUrl(imageId),
         enabled: !!imageId,
         staleTime: 30 * 60 * 1000,
@@ -421,7 +451,7 @@ const EnrolmentImage = ({ form }: { form: Form }) => {
                 sourceId: 'COURSES',
             });
             if (id) {
-                form.setValue('coursePage.template.enrolment.imageId', id, { shouldDirty: true });
+                form.setValue(name, id, { shouldDirty: true });
             }
         } catch {
             toast.error('Image upload failed. Please try again.');
@@ -435,7 +465,7 @@ const EnrolmentImage = ({ form }: { form: Form }) => {
             {imageId && preview.data && (
                 <img
                     src={preview.data}
-                    alt="Enrolment section"
+                    alt={alt}
                     className="size-20 rounded-md border border-neutral-200 object-cover"
                 />
             )}
@@ -464,9 +494,7 @@ const EnrolmentImage = ({ form }: { form: Form }) => {
                     scale="small"
                     layoutVariant="default"
                     className="gap-1 hover:border-danger-500 hover:!text-danger-600"
-                    onClick={() =>
-                        form.setValue('coursePage.template.enrolment.imageId', '', { shouldDirty: true })
-                    }
+                    onClick={() => form.setValue(name, '', { shouldDirty: true })}
                 >
                     <Trash className="size-4" />
                     Remove
@@ -544,6 +572,28 @@ export const CoursePageTemplateFields = ({ form, courseTerm }: { form: Form; cou
                         </div>
                     </Block>
 
+                    <Block
+                        title="Main image"
+                        hint="Optional. Shown at the top of this page only. Empty uses the Preview Image."
+                    >
+                        <TemplateImage
+                            form={form}
+                            name="coursePage.template.heroImageId"
+                            alt="Main image"
+                        />
+                    </Block>
+
+                    <Block
+                        title="About section image"
+                        hint="Optional. Shown on this page only. Empty uses the Banner Image."
+                    >
+                        <TemplateImage
+                            form={form}
+                            name="coursePage.template.aboutImageId"
+                            alt="About section"
+                        />
+                    </Block>
+
                     <Block title="Tagline and short description" hint="Shown below the title.">
                         <TextField
                             form={form}
@@ -560,6 +610,11 @@ export const CoursePageTemplateFields = ({ form, courseTerm }: { form: Form; cou
                     </Block>
 
                     <Block title={`${courseTerm} framework`} hint="Heading, introduction and cards.">
+                        <TextField
+                            form={form}
+                            name="coursePage.template.framework.eyebrow"
+                            label="Small line above the heading"
+                        />
                         <TextField form={form} name="coursePage.template.framework.heading" label="Heading" />
                         <TextAreaField
                             form={form}
@@ -574,6 +629,11 @@ export const CoursePageTemplateFields = ({ form, courseTerm }: { form: Form; cou
                         title="Learning experience"
                         hint="Heading, introduction, cards and an optional highlighted note."
                     >
+                        <TextField
+                            form={form}
+                            name="coursePage.template.learning.eyebrow"
+                            label="Small line above the heading"
+                        />
                         <TextField form={form} name="coursePage.template.learning.heading" label="Heading" />
                         <TextAreaField
                             form={form}
@@ -582,6 +642,16 @@ export const CoursePageTemplateFields = ({ form, courseTerm }: { form: Form; cou
                             placeholder="Introduction (a blank line starts a new paragraph)"
                         />
                         <LearningCards form={form} />
+                        <TextField
+                            form={form}
+                            name="coursePage.template.learning.calloutEyebrow"
+                            label="Highlighted note: small line (optional)"
+                        />
+                        <TextField
+                            form={form}
+                            name="coursePage.template.learning.calloutHeading"
+                            label="Highlighted note: heading (optional)"
+                        />
                         <RichField
                             form={form}
                             name="coursePage.template.learning.callout"
@@ -594,7 +664,11 @@ export const CoursePageTemplateFields = ({ form, courseTerm }: { form: Form; cou
                     </Block>
 
                     <Block title="Enrolment section" hint="Image and closing text beside the price.">
-                        <EnrolmentImage form={form} />
+                        <TemplateImage
+                            form={form}
+                            name="coursePage.template.enrolment.imageId"
+                            alt="Enrolment section"
+                        />
                         <RichField
                             form={form}
                             name="coursePage.template.enrolment.description"

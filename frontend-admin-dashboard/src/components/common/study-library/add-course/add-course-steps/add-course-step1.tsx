@@ -63,12 +63,16 @@ import {
 const coursePageTemplateSchema = z.object({
     tagline: z.string(),
     shortDescription: z.string(),
+    heroImageId: z.string().default(''),
+    aboutImageId: z.string().default(''),
     framework: z.object({
+        eyebrow: z.string().default(''),
         heading: z.string(),
         intro: z.string(),
         cards: z.array(
             z.object({
                 title: z.string(),
+                subtitle: z.string().default(''),
                 body: z.string(),
                 points: z.string(),
                 takeaway: z.string(),
@@ -76,13 +80,22 @@ const coursePageTemplateSchema = z.object({
         ),
     }),
     learning: z.object({
+        eyebrow: z.string().default(''),
         heading: z.string(),
         intro: z.string(),
-        cards: z.array(z.object({ title: z.string(), body: z.string() })),
+        cards: z.array(
+            z.object({ label: z.string().default(''), title: z.string(), body: z.string() })
+        ),
+        calloutEyebrow: z.string().default(''),
+        calloutHeading: z.string().default(''),
         callout: z.string(),
     }),
     testimonials: z.array(
         z.object({
+            stars: z
+                .string()
+                .regex(/^[1-5]?$/, 'Enter a number from 1 to 5, or leave empty')
+                .default(''),
             quote: z.string(),
             name: z.string(),
             details: z.string(),
