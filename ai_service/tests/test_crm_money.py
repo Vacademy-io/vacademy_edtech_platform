@@ -519,11 +519,13 @@ async def test_hourly_cap_counts_each_bill(backend, tctx, monkeypatch):
     assert (await write(tctx, **REMIND, confirm_token=token))["sent"] == 2
     over = await write(tctx, **REMIND)
     assert over["error"] == "rate_limited" and over["remaining"] == 1
+    assert over["limit_type"] == "hourly"
     one = {"action": "send_installment_reminder", "bill_ids": ["b-1"]}
     token = (await write(tctx, **one))["confirm_token"]
     monkeypatch.setattr(money, "BILLS_PER_HOUR", 2)                      # e.g. another batch landed meanwhile
     refused = await write(tctx, **one, confirm_token=token)
     assert refused["error"] == "rate_limited" and "still works" in refused["message"]
+    assert refused["limit_type"] == "hourly"
     assert tctx.db.query(CrmConfirm).filter(CrmConfirm.spent_at.is_(None), CrmConfirm.revoked_at.is_(None)).count() == 1
     assert len(_reminder_posts(backend)) == 2
     quota = await write(tctx, action="quota")

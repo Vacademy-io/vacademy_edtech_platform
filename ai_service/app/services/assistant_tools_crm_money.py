@@ -1488,7 +1488,7 @@ def _over_hourly_limit(used: Optional[int], adding: int) -> Optional[Dict[str, A
     if used is None:
         return cd.err("query_failed", message="Reminders sent in the last hour could not be counted; nothing was sent.")
     if used + adding > BILLS_PER_HOUR:
-        return cd.err("rate_limited", cap_per_hour=BILLS_PER_HOUR, used_last_hour=used,
+        return cd.err("rate_limited", limit_type="hourly", cap_per_hour=BILLS_PER_HOUR, used_last_hour=used,
                       remaining=max(0, BILLS_PER_HOUR - used),
                       message=f"At most {BILLS_PER_HOUR} reminders per hour; {max(0, BILLS_PER_HOUR - used)} left. "
                               "Remind fewer bills, or try again later.")
@@ -1619,7 +1619,7 @@ async def _remind(args: Dict[str, Any], ctx: ToolContext, kind: str) -> Dict[str
             return cd.err("confirm_token_invalid")
         used = _reminded_last_hour(ctx)
         if used is not None and used > BILLS_PER_HOUR:
-            return cd.err("rate_limited", cap_per_hour=BILLS_PER_HOUR,
+            return cd.err("rate_limited", limit_type="hourly", cap_per_hour=BILLS_PER_HOUR,
                           message=f"At most {BILLS_PER_HOUR} reminders per hour. Nothing was sent.")
         # Exactly the previewed items, re-read now: paid, opted out or out of scope since → skipped.
         got = await _candidates(ctx, s, {"kind": kind}, only_ids=wanted)
