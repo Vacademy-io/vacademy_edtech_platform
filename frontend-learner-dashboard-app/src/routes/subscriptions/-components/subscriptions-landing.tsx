@@ -593,7 +593,7 @@ function ManageSubscriptions({
       // alongside "membership stopped" is the mixed signal this page had.
       toast(t("subscriptions.manage.toast.membershipStoppedTitle"), {
         description: until
-          ? t("subscriptions.manage.toast.stoppedWithDate", { liveClasses, date: until })
+          ? t("subscriptions.manage.toast.stoppedWithDate", { date: until })
           : t("subscriptions.manage.toast.stoppedNoDate"),
       });
       setToCancel(null);
@@ -1113,7 +1113,6 @@ function ManageSubscriptions({
                 i18nKey="subscriptions.manage.cancelDialog.description"
                 t={t}
                 values={{
-                  liveClasses,
                   date:
                     formatDate(toCancel?.end_date) ??
                     t("subscriptions.manage.endOfPaidPeriodFallback"),

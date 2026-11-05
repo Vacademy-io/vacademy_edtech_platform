@@ -533,8 +533,8 @@
       "stopMembership": "إيقاف العضوية",
       "stopping": "جارٍ الإيقاف...",
       "membershipStoppedLabel": "تم إيقاف العضوية.",
-      "membershipStoppedWithDate": "يمكنك الانضمام إلى {{liveClasses}} حتى {{date}}. بعد ذلك تنتهي عضويتك. لن يُحصَّل منك أي رسوم مرة أخرى.",
-      "membershipStoppedNoDate": "يمكنك الانضمام إلى {{liveClasses}} حتى نهاية المدة التي دفعت مقابلها بالفعل. لن يُحصَّل منك أي رسوم مرة أخرى.",
+      "membershipStoppedWithDate": "سيظل بإمكانك الوصول حتى {{date}}. بعد ذلك تنتهي عضويتك. لن يُحصَّل منك أي رسوم مرة أخرى.",
+      "membershipStoppedNoDate": "سيظل بإمكانك الوصول حتى نهاية المدة التي دفعت مقابلها بالفعل. لن يُحصَّل منك أي رسوم مرة أخرى.",
       "paymentFailedLabel": "لم تتم عملية الدفع.",
       "paymentFailedWithDate": "يمكنك الانضمام إلى {{liveClasses}} حتى {{date}}. ادفع أدناه للحفاظ على عضويتك.",
       "paymentFailedNoDate": "ادفع أدناه للحفاظ على عضويتك.",
@@ -552,7 +552,7 @@
         "genericRetry": "يرجى المحاولة مرة أخرى بعد قليل.",
         "orderCreationFailed": "تعذّر إنشاء طلب الدفع",
         "membershipStoppedTitle": "تم إيقاف العضوية",
-        "stoppedWithDate": "يمكنك الانضمام إلى {{liveClasses}} حتى {{date}}. لن يُحصَّل منك أي رسوم مرة أخرى.",
+        "stoppedWithDate": "سيظل بإمكانك الوصول حتى {{date}}. لن يُحصَّل منك أي رسوم مرة أخرى.",
         "stoppedNoDate": "لن يُحصَّل منك أي رسوم مرة أخرى.",
         "stopFailedTitle": "تعذّر إيقاف عضويتك",
         "paymentReceivedTitle": "تم استلام الدفعة!",
@@ -562,7 +562,7 @@
       },
       "cancelDialog": {
         "title": "هل تريد إيقاف عضويتك؟",
-        "description": "يمكنك الانضمام إلى {{liveClasses}} حتى <bold>{{date}}</bold>. بعد ذلك تنتهي عضويتك ولن يُحصَّل منك أي رسوم مرة أخرى. يمكنك إعادة تفعيلها في أي وقت.",
+        "description": "سيظل بإمكانك الوصول حتى <bold>{{date}}</bold>. بعد ذلك تنتهي عضويتك ولن يُحصَّل منك أي رسوم مرة أخرى. يمكنك إعادة تفعيلها في أي وقت.",
         "keepMembership": "الإبقاء على العضوية"
       },
       "changePlan": "Change plan",

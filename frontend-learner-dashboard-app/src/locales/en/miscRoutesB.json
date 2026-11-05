@@ -580,8 +580,8 @@
       "stopMembership": "Stop membership",
       "stopping": "Stopping...",
       "membershipStoppedLabel": "Membership stopped.",
-      "membershipStoppedWithDate": "You can still join {{liveClasses}} until {{date}}. After that your membership ends. You won't be charged again.",
-      "membershipStoppedNoDate": "You can still join {{liveClasses}} until the end of the time you've paid for. You won't be charged again.",
+      "membershipStoppedWithDate": "You will have access until {{date}}. After that your membership ends. You won't be charged again.",
+      "membershipStoppedNoDate": "You will have access until the end of the time you've paid for. You won't be charged again.",
       "paymentFailedLabel": "Payment didn't go through.",
       "paymentFailedWithDate": "You can still join {{liveClasses}} until {{date}}. Pay below to keep your membership.",
       "paymentFailedNoDate": "Pay below to keep your membership.",
@@ -599,7 +599,7 @@
         "genericRetry": "Please try again in a moment.",
         "orderCreationFailed": "Could not create the payment order",
         "membershipStoppedTitle": "Membership stopped",
-        "stoppedWithDate": "You can still join {{liveClasses}} until {{date}}. You won't be charged again.",
+        "stoppedWithDate": "You will have access until {{date}}. You won't be charged again.",
         "stoppedNoDate": "You won't be charged again.",
         "stopFailedTitle": "Couldn't stop your membership",
         "paymentReceivedTitle": "Payment received!",
@@ -609,7 +609,7 @@
       },
       "cancelDialog": {
         "title": "Stop your membership?",
-        "description": "You can still join {{liveClasses}} until <bold>{{date}}</bold>. After that your membership ends and you won't be charged again. You can start it again anytime.",
+        "description": "You will have access until <bold>{{date}}</bold>. After that your membership ends and you won't be charged again. You can start it again anytime.",
         "keepMembership": "Keep membership"
       },
       "changePlan": "Change plan",
