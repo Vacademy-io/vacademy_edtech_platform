@@ -4,6 +4,7 @@ import { assessmentTypes } from "@/types/assessment";
 import { PlayCircle, CalendarDots, ClockCounterClockwise } from "@phosphor-icons/react";
 import { cn } from "@/lib/utils";
 import { useTranslation } from "react-i18next";
+import { useEffect, useRef } from "react";
 
 const tabIcons = {
   [assessmentTypes.LIVE]: PlayCircle,
@@ -25,8 +26,28 @@ const ScheduleTestTabList = ({
   totalAssessments: { [key: string]: number };
 }) => {
   const { t } = useTranslation("assessment");
+  const stripRef = useRef<HTMLDivElement>(null);
+  const counts = Object.values(assessmentTypes).map((type) => totalAssessments[type]).join();
+
+  // Keep the selected tab whole inside the sideways-scrolling strip. This moves the
+  // strip only, never the page, so opening the screen stays where it is.
+  useEffect(() => {
+    const strip = stripRef.current;
+    const tab = strip?.querySelector<HTMLElement>('[role="tab"][data-state="active"]');
+    if (!strip || !tab || strip.scrollWidth <= strip.clientWidth) return;
+    const stripBox = strip.getBoundingClientRect();
+    const tabBox = tab.getBoundingClientRect();
+    const overBy =
+      tabBox.left < stripBox.left
+        ? tabBox.left - stripBox.left
+        : Math.max(0, tabBox.right - stripBox.right);
+    if (overBy === 0) return;
+    const reduceMotion = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+    strip.scrollBy({ left: overBy, behavior: reduceMotion ? "auto" : "smooth" });
+  }, [selectedTab, counts]);
+
   return (
-    <div className="no-scrollbar flex items-center pb-4 overflow-x-auto">
+    <div ref={stripRef} className="no-scrollbar flex items-center pb-4 overflow-x-auto">
       <TabsList className="h-auto p-1 bg-muted w-max min-w-full shrink-0 sm:w-auto sm:min-w-0">
         {Object.values(assessmentTypes).map((type) => {
           const Icon = tabIcons[type as assessmentTypes];
