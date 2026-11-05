@@ -26,8 +26,11 @@ describe('step1Schema with course page', () => {
     });
     it('flags half-filled template rows and over-size content only', () => {
         const c = emptyCoursePageContent();
-        c.template.framework.cards = [{ title: '', body: 'x', points: '', takeaway: '' }, { title: '', body: '', points: '', takeaway: '' }];
-        c.template.testimonials = [{ quote: 'q', name: '', details: '', review: '' }];
+        c.template.framework.cards = [
+            { title: '', subtitle: '', body: 'x', points: '', takeaway: '' },
+            { title: '', subtitle: '', body: '', points: '', takeaway: '' },
+        ];
+        c.template.testimonials = [{ stars: '', quote: 'q', name: '', details: '', review: '' }];
         expect(errs(step1Schema.safeParse({ ...base, coursePage: c }))).toEqual([
             'coursePage.template.framework.cards.0.title: Add a title, or remove this card',
             'coursePage.template.testimonials.0.name: Add the reviewer name',
