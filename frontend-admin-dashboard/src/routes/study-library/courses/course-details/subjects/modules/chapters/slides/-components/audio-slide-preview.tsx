@@ -103,7 +103,11 @@ const AudioSlidePreview = ({ activeItem, isLearnerView = false }: AudioSlidePrev
             if (isPlaying) {
                 audioRef.current.pause();
             } else {
-                audioRef.current.play();
+                // A pause or slide change while play() is pending rejects with AbortError — harmless.
+                audioRef.current.play().catch((err: unknown) => {
+                    if (err instanceof DOMException && err.name === 'AbortError') return;
+                    throw err;
+                });
             }
             setIsPlaying(!isPlaying);
         }
