@@ -300,6 +300,9 @@ public interface SlideRepository extends JpaRepository<Slide, String> {
      * the learner ever opened: one chapter can sit in many modules, so resolving them earlier
      * costs time in proportion to the learner's history. Ten rather than five leaves room for a
      * lesson with no subject link to this batch to drop out and still return five.
+     *
+     * <p>A quiz returns an empty description, because the stored value can be the generated quiz
+     * itself rather than text for this list. Every other lesson type returns its stored value.
      */
     @Query(value = """
                 WITH activity AS (
@@ -374,7 +377,7 @@ public interface SlideRepository extends JpaRepository<Slide, String> {
                 SELECT
                     s.id AS slideId,
                     s.title AS slideTitle,
-                    s.description AS slideDescription,
+                    CASE WHEN s.source_type = 'QUIZ' THEN '' ELSE s.description END AS slideDescription,
                     s.source_type AS sourceType,
                     s.status AS status,
                     s.image_file_id AS imageFileId,

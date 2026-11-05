@@ -65,7 +65,7 @@ class SlideRepositoryRecentIncompleteQueryTest {
         assertThat(sql()).contains(
                 "s.id AS slideId,",
                 "s.title AS slideTitle,",
-                "s.description AS slideDescription,",
+                " AS slideDescription,",
                 "s.source_type AS sourceType,",
                 "s.status AS status,",
                 "s.image_file_id AS imageFileId,",
@@ -76,6 +76,19 @@ class SlideRepositoryRecentIncompleteQueryTest {
                 "recent.module_id AS moduleId,",
                 "recent.subject_id AS subjectId,",
                 "ps.id AS packageSessionId");
+    }
+
+    @Test
+    @DisplayName("a quiz returns an empty description and every other lesson type returns its stored one")
+    void quizDescriptionIsEmpty() {
+        assertThat(sql())
+                .contains("s.title AS slideTitle,"
+                        + " CASE WHEN s.source_type = 'QUIZ' THEN '' ELSE s.description END AS slideDescription,"
+                        + " s.source_type AS sourceType,")
+                .doesNotContain("s.description AS slideDescription");
+        assertThat(sql().split("s\\.description", -1))
+                .as("the stored description is read in one place only")
+                .hasSize(2);
     }
 
     @Test
