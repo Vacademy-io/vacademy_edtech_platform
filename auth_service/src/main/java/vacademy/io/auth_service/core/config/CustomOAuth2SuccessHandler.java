@@ -481,7 +481,6 @@ public class CustomOAuth2SuccessHandler implements AuthenticationSuccessHandler 
                 URLEncoder.encode(jwtResponseDto.getAccessToken(), StandardCharsets.UTF_8),
                 URLEncoder.encode(jwtResponseDto.getRefreshToken(), StandardCharsets.UTF_8));
 
-        log.info("Redirecting to: {}", tokenizedRedirectUrl);
         response.sendRedirect(tokenizedRedirectUrl);
     }
 
