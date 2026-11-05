@@ -37,13 +37,18 @@ public final class PublicCourseInstructors {
     }
 
     private static void stripLevel(LevelDTOWithDetails level) {
-        if (level.getInstructors() == null) {
-            return;
+        level.setInstructors(publicProfiles(level.getInstructors()));
+    }
+
+    /** Copies holding only the public fields, in the same order. Null stays null. */
+    public static List<UserDTO> publicProfiles(List<UserDTO> instructors) {
+        if (instructors == null) {
+            return null;
         }
-        level.setInstructors(level.getInstructors().stream()
+        return instructors.stream()
                 .filter(Objects::nonNull)
                 .map(PublicCourseInstructors::publicProfile)
-                .toList());
+                .toList();
     }
 
     /** A copy holding only the fields the public course pages read. */

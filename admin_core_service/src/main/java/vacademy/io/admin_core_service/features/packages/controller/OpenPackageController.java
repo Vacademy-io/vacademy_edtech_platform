@@ -6,6 +6,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
 import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
+import vacademy.io.admin_core_service.features.learner_study_library.util.PublicCourseInstructors;
 import vacademy.io.admin_core_service.features.packages.dto.CatalogPopularityDTO;
 import vacademy.io.admin_core_service.features.packages.dto.PackageDetailDTO;
 import vacademy.io.admin_core_service.features.packages.dto.LearnerPackageFilterDTO;
@@ -44,6 +45,7 @@ public class OpenPackageController {
             @RequestParam(defaultValue = PageConstants.DEFAULT_PAGE_SIZE) int size
     ) {
         Page<PackageDetailDTO> result = openPackageService.getLearnerPackageDetail(filterDTO,instituteId, page, size);
+        result.forEach(OpenPackageController::stripInstructors);
         return ResponseEntity.ok(result);
     }
 
@@ -51,6 +53,9 @@ public class OpenPackageController {
     @ClientCacheable(maxAgeSeconds = 300, scope = CacheScope.PUBLIC)
     public ResponseEntity<PackageDetailDTO> getPackageDetailById(@RequestParam("packageId") String packageId) {
         PackageDetailDTO result = openPackageService.getPackageDetailById(packageId);
+        if (result != null) {
+            stripInstructors(result);
+        }
         return ResponseEntity.ok(result);
     }
 
@@ -62,6 +67,7 @@ public class OpenPackageController {
             @RequestParam(defaultValue = PageConstants.DEFAULT_PAGE_SIZE) int size
     ) {
         Page<PackageDetailV2DTO> result = openPackageService.getLearnerPackageDetailV2(filterDTO, instituteId, page, size);
+        result.forEach(row -> row.setInstructors(PublicCourseInstructors.publicProfiles(row.getInstructors())));
         return ResponseEntity.ok(result);
     }
 
@@ -99,6 +105,11 @@ public class OpenPackageController {
                 .header(HttpHeaders.CACHE_CONTROL,
                         popularity.isUnavailable() ? POPULARITY_UNAVAILABLE_CACHE_CONTROL : POPULARITY_CACHE_CONTROL)
                 .body(popularity);
+    }
+
+    /** These endpoints need no login, so instructors carry only their public profile. */
+    private static void stripInstructors(PackageDetailDTO row) {
+        row.setInstructors(PublicCourseInstructors.publicProfiles(row.getInstructors()));
     }
 
 }
