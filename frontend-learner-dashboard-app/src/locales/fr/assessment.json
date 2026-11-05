@@ -147,7 +147,8 @@
     },
     "meta": {
       "marksLabel": "points",
-      "noMore": "Aucun autre rapport à charger"
+      "noMore": "Aucun autre rapport à charger",
+      "marksNotOut": "Note en attente"
     },
     "empty": {
       "title": "Aucun rapport pour le moment",

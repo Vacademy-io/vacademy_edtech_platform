@@ -308,7 +308,7 @@ const EnrollmentPolicyDialog = ({
                             onOpenChange(false);
                             window.location.href = loginUrl;
                         }}
-                        className="w-full sm:w-auto order-1 sm:order-2 bg-gradient-to-r from-primary-500 to-primary-600"
+                        className="w-full sm:w-auto order-1 sm:order-2"
                     >
                         {t("enrollmentPolicy.loginNow")}
                     </MyButton>
@@ -322,7 +322,7 @@ const EnrollmentPolicyDialog = ({
                             onOpenChange(false);
                             onContinue?.();
                         }}
-                        className="w-full sm:w-auto order-1 sm:order-2 bg-gradient-to-r from-primary-500 to-primary-600"
+                        className="w-full sm:w-auto order-1 sm:order-2"
                     >
                         {t("enrollmentPolicy.goToDashboard")}
                     </MyButton>

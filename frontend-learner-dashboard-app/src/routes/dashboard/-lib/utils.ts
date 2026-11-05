@@ -4,14 +4,17 @@ import {
   GET_DASHBOARD_DATA,
   GET_NOTIFCATIONS,
   GET_ANNOUNCEMENTS,
-  GET_ASSESSMENT_COUNT,
   GET_LAST_7_DAYS_PROGRESS,
 } from "@/constants/urls";
 import {
   DashbaordResponse,
   UserActivityArray,
 } from "../-types/dashboard-data-types";
-import { getStoredDetails } from "@/routes/assessment/examination/-utils.ts/useFetchAssessment";
+import {
+  fetchAssessmentData,
+  getStoredDetails,
+} from "@/routes/assessment/examination/-utils.ts/useFetchAssessment";
+import { assessmentTypes } from "@/types/assessment";
 import { safeJsonParse } from "@/utils/safe-json-parse";
 import { Student } from "@/types/user/user-detail";
 import { getDataFromPreferences } from "@/utils/storage";
@@ -74,14 +77,13 @@ export const fetchStaticData = async (
   }
 
   try {
-    const url = GET_ASSESSMENT_COUNT;
-    const response = await authenticatedAxiosInstance({
-      method: "POST",
-      url,
-      params: { instituteId: institute_id },
-      data: packageSessionIds,
-    });
-    const count = response.data;
+    // The tile opens the Live tab, so it reports that tab's total, read the same
+    // way the tab reads it (live batch list, same filter).
+    const { institute } = await getStoredDetails();
+    const live = institute
+      ? await fetchAssessmentData(0, 1, assessmentTypes.LIVE, "ASSESSMENT")
+      : null;
+    const count = live?.total_elements ?? 0;
     setTestAssigned(count);
     // need to have a count for evaluation assigned separately from test assigned
     setHomeworkAssigned(count);

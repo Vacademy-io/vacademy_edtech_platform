@@ -366,7 +366,7 @@ export const IntroPageComponent: React.FC<IntroPageComponentProps> = ({
                           </div>
                           <div className="w-full bg-gray-200 rounded-full h-2">
                             <div 
-                              className="bg-primary-600 h-2 rounded-full transition-all duration-300"
+                              className="bg-primary-500 h-2 rounded-full transition-all duration-300"
                               style={{ width: `${(1 / leadCollectionSettings.fields.length) * 100}%` }}
                             ></div>
                           </div>
@@ -414,7 +414,7 @@ export const IntroPageComponent: React.FC<IntroPageComponentProps> = ({
                         </button>
                         <button
                           onClick={handleLeadFormSubmit}
-                          className="px-6 py-2 bg-primary-600 text-white rounded-catalogue-sm hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-primary-500"
+                          className="px-6 py-2 bg-primary-500 text-primary-foreground rounded-catalogue-sm hover:brightness-90 focus:outline-none focus:ring-2 focus:ring-primary-500"
                         >
                           {t("common.submit")}
                         </button>
@@ -437,7 +437,7 @@ export const IntroPageComponent: React.FC<IntroPageComponentProps> = ({
               onClick={() => setCurrentImageIndex(index)}
               className={`w-3 h-3 rounded-full transition-colors duration-200 ${
                 index === currentImageIndex 
-                  ? 'bg-primary-600'
+                  ? 'bg-primary-500'
                   : 'bg-gray-400'
               }`}
               title={t("introPage.goToImage", { index: index + 1 })}

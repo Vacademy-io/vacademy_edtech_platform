@@ -471,7 +471,9 @@
     "term": {
       "comprehensive": "Comprehensive",
       "created": "Created: {{date}}",
-      "viewDetails": "View Details"
+      "viewDetails": "View Details",
+      "statusReady": "Ready",
+      "statusPreparing": "Preparing"
     }
   },
   "notificationSettings": {

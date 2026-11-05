@@ -95,7 +95,7 @@ export const BuyRentSectionComponent: React.FC<BuyRentSectionProps> = ({
               </p>
 
               {/* Button - PRIMARY */}
-              <button className="px-3 py-1.5 sm:px-4 sm:py-2 rounded-catalogue-sm text-xs sm:text-sm font-medium text-white bg-primary-500 hover:bg-primary-600 transition-colors flex items-center gap-1 sm:gap-2">
+              <button className="px-3 py-1.5 sm:px-4 sm:py-2 rounded-catalogue-sm text-xs sm:text-sm font-medium text-primary-foreground bg-primary-500 hover:brightness-90 transition flex items-center gap-1 sm:gap-2">
                 <span>{rent.buttonLabel}</span>
                 <ArrowRight className={`h-3 w-3 sm:h-4 sm:w-4 transition-transform ${hoveredCard === "rent" ? "translate-x-1" : ""}`} />
               </button>
@@ -131,7 +131,7 @@ export const BuyRentSectionComponent: React.FC<BuyRentSectionProps> = ({
               </p>
 
               {/* Button - PRIMARY */}
-              <button className="px-3 py-1.5 sm:px-4 sm:py-2 rounded-catalogue-sm text-xs sm:text-sm font-medium text-white bg-primary-500 hover:bg-primary-600 transition-colors flex items-center gap-1 sm:gap-2">
+              <button className="px-3 py-1.5 sm:px-4 sm:py-2 rounded-catalogue-sm text-xs sm:text-sm font-medium text-primary-foreground bg-primary-500 hover:brightness-90 transition flex items-center gap-1 sm:gap-2">
                 <span>{buy.buttonLabel}</span>
                 <ArrowRight className={`h-3 w-3 sm:h-4 sm:w-4 transition-transform ${hoveredCard === "buy" ? "translate-x-1" : ""}`} />
               </button>
@@ -204,7 +204,7 @@ export const BuyRentSectionComponent: React.FC<BuyRentSectionProps> = ({
                 </button>
                 <button
                   onClick={handleRentConfirm}
-                  className="flex-1 px-3 py-2 text-sm font-medium text-white bg-primary-500 rounded-catalogue-sm hover:bg-primary-600 transition-colors"
+                  className="flex-1 px-3 py-2 text-sm font-medium text-primary-foreground bg-primary-500 rounded-catalogue-sm hover:brightness-90 transition"
                 >
                   {t("buyRentSection.continue")}
                 </button>

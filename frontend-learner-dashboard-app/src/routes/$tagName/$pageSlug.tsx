@@ -52,7 +52,7 @@ function RouteComponent() {
           <p className="mb-4 text-gray-600">{domainRouting.error}</p>
           <button
             onClick={() => window.location.reload()}
-            className="rounded-catalogue-sm bg-primary-600 px-4 py-2 text-white hover:bg-primary-700"
+            className="rounded-catalogue-sm bg-primary-500 px-4 py-2 text-primary-foreground hover:brightness-90"
           >
             Retry
           </button>

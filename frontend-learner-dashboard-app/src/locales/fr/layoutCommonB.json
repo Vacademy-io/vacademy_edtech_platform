@@ -475,7 +475,9 @@
     "term": {
       "comprehensive": "Complet",
       "created": "Créé le : {{date}}",
-      "viewDetails": "Voir les détails"
+      "viewDetails": "Voir les détails",
+      "statusReady": "Prêt",
+      "statusPreparing": "En préparation"
     }
   },
   "notificationSettings": {

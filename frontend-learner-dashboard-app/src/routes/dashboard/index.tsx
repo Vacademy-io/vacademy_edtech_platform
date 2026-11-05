@@ -6,6 +6,8 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { LayoutContainer } from "@/components/common/layout-container/layout-container";
 import { useNavHeadingStore } from "@/stores/layout-container/useNavHeadingStore";
 import { fetchStaticData } from "./-lib/utils";
+import { learnerHasStarted } from "./-lib/learner-has-started";
+import { fetchEnrolledHasProgress } from "@/services/enrolled-courses";
 import { Helmet } from "react-helmet";
 import { useAnalytics } from "@/hooks/useAnalytics";
 import {
@@ -261,6 +263,8 @@ function DashboardOnboardingGate() {
   );
 }
 
+const ENROLLED_PROGRESS_MAX_WAIT_MS = 8000;
+
 export function DashboardComponent() {
   const { t } = useTranslation("dashboard");
   const { t: tEngagement } = useTranslation("dashboardEngagement");
@@ -297,6 +301,26 @@ export function DashboardComponent() {
   const { data: studyLibraryData, fetchStatus: studyLibraryFetchStatus } = useQuery(
     getStudyLibraryQuery(batchId)
   );
+  // Other batches are asked about only once this batch and the recent slides have
+  // answered and show nothing, so a learner they already place sends no search.
+  const { data: enrolledHasProgress, isPending: enrolledProgressPending } = useQuery({
+    queryKey: ["ENROLLED_COURSES_HAS_PROGRESS"],
+    queryFn: async () => {
+      const id = await getInstituteId();
+      if (!id) throw new Error("no institute");
+      // Reads the setting the course widget reads, so both ask for the same page.
+      const settings = await getStudentDisplaySettings(false).catch(() => null);
+      return fetchEnrolledHasProgress(id, {
+        all: settings?.allCourses?.showAllEnrolledOnDashboard === true,
+      });
+    },
+    enabled:
+      !isLoading &&
+      studyLibraryFetchStatus !== "fetching" &&
+      !learnerHasStarted({ subjects: studyLibraryData, recentSlides: data?.slides }),
+    staleTime: 60 * 1000,
+    retry: false,
+  });
 
   // Add weekly attendance query
   const { data: weeklyAttendance, isLoading: isLoadingAttendance } =
@@ -349,17 +373,34 @@ export function DashboardComponent() {
     }).length;
   }, [mergedLiveSessions]);
 
-  // Any course with progress > 0 — splits first-run from returning learners.
+  // Splits first-run from returning learners, across every enrolled batch.
   const hasAnyProgress = useMemo(
     () =>
-      (studyLibraryData ?? []).some(
-        (subject) => (subject.percentage_completed ?? 0) > 0
-      ),
-    [studyLibraryData]
+      learnerHasStarted({
+        subjects: studyLibraryData,
+        recentSlides: data?.slides,
+        enrolledHasProgress,
+      }),
+    [studyLibraryData, data?.slides, enrolledHasProgress]
   );
-  // Loaded when the query resolved OR when the page settled without a batch
+  // That answer only matters when nothing else has shown progress yet, and a
+  // slow one must not hold the hero back for long.
+  const [enrolledProgressWaitOver, setEnrolledProgressWaitOver] = useState(false);
+  useEffect(() => {
+    const timer = setTimeout(
+      () => setEnrolledProgressWaitOver(true),
+      ENROLLED_PROGRESS_MAX_WAIT_MS
+    );
+    return () => clearTimeout(timer);
+  }, []);
+  // Loaded when the queries resolved OR when the page settled without a batch
   // (zero-enrollment learners must reach the first-run hero, not a forever-skeleton).
-  const studyLibraryLoaded = Boolean(studyLibraryData) || !isLoading;
+  const stillAskingOtherBatches =
+    enrolledProgressPending && !hasAnyProgress && !enrolledProgressWaitOver;
+  const studyLibraryLoaded =
+    (Boolean(studyLibraryData) || !isLoading) &&
+    (Boolean(data) || !isLoading) &&
+    !stillAskingOtherBatches;
 
   const userInitials = useMemo(() => {
     const words = (username ?? "").trim().split(/\s+/).filter(Boolean);
@@ -1069,7 +1110,7 @@ export function DashboardComponent() {
         <ContinueLearningCard
           data={data}
           onResumeClick={handleResumeClick}
-          isLoading={isLoading}
+          isLoading={isLoading || stillAskingOtherBatches}
           hasAnyProgress={hasAnyProgress}
         />
       ),

@@ -3,7 +3,7 @@ import { CaretRight, BookOpen, CheckCircle, Clock, Play } from "@phosphor-icons/
 import { IconRocket, IconMoodSmile, IconAdjustments } from "@tabler/icons-react";
 import BoringAvatar from "boring-avatars";
 import { useTranslation } from "react-i18next";
-import { useRouter } from "@tanstack/react-router";
+import { Link, useRouter } from "@tanstack/react-router";
 import { getPublicUrlWithoutLogin } from "@/services/upload_file";
 import LocalStorageUtils from "@/utils/localstorage";
 import { Star } from "@phosphor-icons/react";
@@ -108,25 +108,30 @@ const CourseCard: React.FC<CourseCardProps> = ({
         return IconMoodSmile;
     }, [level_name]);
 
-    const handleViewCoureseDetails = (id: string) => {
+    const courseDetailsSearch = {
+        courseId,
+        packageSessionId,
+        selectedTab,
+        percentageCompleted: cappedPercentageCompleted,
+    };
+
+    // Persist percentage locally as a fallback for details page
+    const rememberPercentage = () => {
         try {
-            // Persist percentage locally as a fallback for details page
-            const key = `COURSE_PCT_${id}`;
-            LocalStorageUtils.set(key, {
+            LocalStorageUtils.set(`COURSE_PCT_${courseId}`, {
                 value: cappedPercentageCompleted,
                 ts: Date.now(),
             });
         } catch {
             // Failed to save percentage to localStorage
         }
+    };
+
+    const handleViewCourseDetails = () => {
+        rememberPercentage();
         router.navigate({
             to: "/study-library/courses/course-details",
-            search: {
-                courseId: id,
-                packageSessionId: packageSessionId,
-                selectedTab: selectedTab,
-                percentageCompleted: cappedPercentageCompleted,
-            },
+            search: courseDetailsSearch,
         });
     };
 
@@ -148,7 +153,7 @@ const CourseCard: React.FC<CourseCardProps> = ({
             });
             return;
         }
-        handleViewCoureseDetails(courseId);
+        handleViewCourseDetails();
     };
 
     const ctaLabel = isCompleted
@@ -315,7 +320,16 @@ const CourseCard: React.FC<CourseCardProps> = ({
                         className="text-lg font-bold leading-tight group-hover:text-primary transition-colors duration-200 line-clamp-3 break-words"
                         title={package_name}
                     >
-                        {package_name}
+                        {/* Stretched over the card (its nearest positioned ancestor), so a tap anywhere opens the course. */}
+                        <Link
+                            to="/study-library/courses/course-details"
+                            search={courseDetailsSearch}
+                            preload={false}
+                            onClick={rememberPercentage}
+                            className="rounded-sm after:absolute after:inset-0 after:z-10 focus:outline-none focus-visible:after:rounded-lg focus-visible:after:ring-2 focus-visible:after:ring-inset focus-visible:after:ring-ring [.ui-play_&]:focus-visible:after:rounded-2xl"
+                        >
+                            {package_name}
+                        </Link>
                     </h3>
                 </div>
 
@@ -479,7 +493,7 @@ const CourseCard: React.FC<CourseCardProps> = ({
                 )}
             </div>
 
-            <CardFooter className="p-card pt-0 mt-auto flex flex-col gap-2">
+            <CardFooter className="relative z-20 p-card pt-0 mt-auto flex flex-col gap-2">
                 <Button
                     className={cn(
                         "w-full font-semibold shadow-sm group/btn",
@@ -514,7 +528,7 @@ const CourseCard: React.FC<CourseCardProps> = ({
                             "[.ui-play_&]:rounded-xl [.ui-play_&]:font-bold [.ui-play_&]:border-2 [.ui-play_&]:border-play-surface [.ui-play_&]:text-play-ink",
                             "[.ui-play_&]:active:translate-y-0.5"
                         )}
-                        onClick={() => handleViewCoureseDetails(courseId)}
+                        onClick={handleViewCourseDetails}
                         aria-label={t("card.overviewAriaLabel", {
                             course: getTerminology(ContentTerms.Course, SystemTerms.Course),
                         })}

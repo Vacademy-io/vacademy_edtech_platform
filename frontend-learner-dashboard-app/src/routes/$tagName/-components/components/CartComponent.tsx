@@ -303,7 +303,7 @@ const MembershipPlanCard: React.FC<MembershipPlanCardProps> = ({ plan }) => {
           className={`
             w-full mt-1.5 sm:mt-2 py-1.5 sm:py-2 px-2 rounded-catalogue-sm text-caption sm:text-xs font-semibold transition-all duration-200 active:scale-95
             ${isSelected
-              ? 'bg-primary-600 text-white font-bold shadow-sm hover:bg-primary-700'
+              ? 'bg-primary-500 text-primary-foreground font-bold shadow-sm hover:brightness-90'
               : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
             }
           `}

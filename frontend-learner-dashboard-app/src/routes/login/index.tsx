@@ -1,5 +1,6 @@
 import { lazy, Suspense, useEffect, useRef, useState } from "react";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { useTranslation } from "react-i18next";
 import { LoginForm } from "@/components/common/auth/login/forms/page/login-form";
 import { AuthModal, type AuthModalRef } from "@/components/common/auth/modal/AuthModal";
 import { DashboardLoader } from "@/components/core/dashboard-loader";
@@ -36,6 +37,15 @@ const needsFullPage = (search: string) =>
 // If settings never resolve, fall back to the page rather than spin forever.
 const SETTINGS_TIMEOUT_MS = 4000;
 
+// Every catalog the login screens read. Asked for here, ahead of the form, so
+// the form's first paint has its words.
+const LOGIN_NAMESPACES = ["auth", "authExtraA", "layoutCommonB"];
+
+// Catalogs take several seconds on a slow connection and the loader stays up
+// meanwhile, so this wait is longer than the settings one. Capped so that a
+// catalog that never arrives still reaches a form.
+const COPY_TIMEOUT_MS = 15000;
+
 function RouteComponent() {
   // "Don't have an account? Sign up here" on the standalone login page. Without
   // a handler the forms fall back to navigate({ to: "/signup" }), and that route
@@ -44,6 +54,8 @@ function RouteComponent() {
   // signup modal the catalogue header already opens for its own Sign Up link.
   const signupModalRef = useRef<AuthModalRef>(null);
   const navigate = useNavigate();
+  const { ready: copyReady } = useTranslation(LOGIN_NAMESPACES);
+  const [copyWaitOver, setCopyWaitOver] = useState(false);
   const domainRouting = useDomainRouting();
   const [keepPage] = useState(
     () => needsFullPage(window.location.search) || hasArrivalTokens(),
@@ -90,8 +102,16 @@ function RouteComponent() {
   }, [modalView]);
 
   useEffect(() => {
-    if (modalView) signupModalRef.current?.setIsOpen(true);
-  }, [modalView]);
+    if (copyReady) return;
+    const timer = setTimeout(() => setCopyWaitOver(true), COPY_TIMEOUT_MS);
+    return () => clearTimeout(timer);
+  }, [copyReady]);
+
+  const showingForm = modalView !== null && (copyReady || copyWaitOver);
+
+  useEffect(() => {
+    if (modalView && showingForm) signupModalRef.current?.setIsOpen(true);
+  }, [modalView, showingForm]);
 
   // The signup screen never navigates on its own, so send the learner on here.
   const handleSignupSuccess = () => {
@@ -118,7 +138,7 @@ function RouteComponent() {
     }, 1500);
   };
 
-  if (modalView === null) {
+  if (!showingForm) {
     return <DashboardLoader />;
   }
 

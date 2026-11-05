@@ -56,7 +56,7 @@
   },
   "errorPage": {
     "title": "Content Unavailable",
-    "description": "We couldn't load the details for this content. It may have been removed, or there might be exploring an issue on our servers."
+    "description": "We couldn't load the details for this content. It may have been removed, or there may be an issue on our servers."
   },
   "subjectsRoute": {
     "title": "Learning Center",

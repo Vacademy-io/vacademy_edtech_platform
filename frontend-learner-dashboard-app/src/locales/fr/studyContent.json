@@ -68,10 +68,10 @@
         "availableInFewMinutes": "La vidéo sera disponible dans quelques minutes.",
         "pendingGeneration": "Génération de la vidéo en attente",
         "processing": "Traitement de la vidéo...",
-        "dataNotFound": "Données vidéo introuvables",
-        "videoNotFound": "Vidéo {{videoId}} introuvable",
-        "failedToLoadUrls": "Échec du chargement des URL de la vidéo",
-        "tryAgainLater": "Veuillez réessayer plus tard"
+        "tryAgainLater": "Veuillez réessayer plus tard",
+        "unavailableTitle": "Cette vidéo n'est pas disponible pour le moment",
+        "loadFailedTitle": "Nous n'avons pas pu charger cette vidéo",
+        "checkConnection": "Vérifiez votre connexion et réessayez."
     },
     "slideState": {
         "noCodeData": "Aucune donnée de code disponible",

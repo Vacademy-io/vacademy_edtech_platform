@@ -1694,3 +1694,10 @@ html, body {
     background-color: transparent !important;
   }
 }
+
+/* Centred with logical start-1/2: the inset flips under dir="rtl", so the pull
+   back to the centre has to flip with it. */
+[dir="rtl"] .start-1\/2.-translate-x-1\/2,
+[dir="rtl"] .start-1\/2.translate-x-\[-50\%\] {
+  --tw-translate-x: 50%;
+}

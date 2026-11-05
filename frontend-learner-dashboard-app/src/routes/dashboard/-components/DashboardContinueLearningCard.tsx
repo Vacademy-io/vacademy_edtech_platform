@@ -15,6 +15,7 @@ import {
 import { ContentTerms, SystemTerms } from "@/types/naming-settings";
 import { Play, Target, BookOpen, CaretRight, Sparkle } from "@phosphor-icons/react";
 import { cn } from "@/lib/utils";
+import { readableSlideDescription } from "../-lib/slide-description";
 import { usePlayTheme } from "@/hooks/use-play-theme";
 import { useCleanerPlayTheme } from "@/hooks/use-cleaner-play-theme";
 import iconContinue from "@/assets/cleaner-play/icon-continue.webp";
@@ -255,7 +256,7 @@ export const ContinueLearningCard = ({
                                     {slide.slide_title}
                                 </h4>
                                 <p className="cp-muted truncate text-3xs">
-                                    {slide.slide_description || t("continueLearning.continueFromWhereLeftOff")}
+                                    {readableSlideDescription(slide.slide_description, slide.source_type) || t("continueLearning.continueFromWhereLeftOff")}
                                 </p>
                             </div>
                             <CaretRight size={14} weight="bold" className="cp-muted shrink-0" />
@@ -330,7 +331,7 @@ export const ContinueLearningCard = ({
                                     {slide.slide_title}
                                 </h4>
                                 <p className="truncate text-3xs text-play-ink/60">
-                                    {slide.slide_description || t("continueLearning.continueFromWhereLeftOff")}
+                                    {readableSlideDescription(slide.slide_description, slide.source_type) || t("continueLearning.continueFromWhereLeftOff")}
                                 </p>
                             </div>
                             <CaretRight size={14} weight="bold" className="shrink-0 text-play-ink/50" />
@@ -420,7 +421,7 @@ export const ContinueLearningCard = ({
                                     {slide.slide_title}
                                 </h4>
                                 <p className="text-xs text-muted-foreground truncate">
-                                    {slide.slide_description || t("continueLearning.continueFromWhereLeftOff")}
+                                    {readableSlideDescription(slide.slide_description, slide.source_type) || t("continueLearning.continueFromWhereLeftOff")}
                                 </p>
                             </div>
                             <CaretRight size={14} weight="bold" className="text-muted-foreground group-hover/item:text-primary transition-colors" />

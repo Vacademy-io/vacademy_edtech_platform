@@ -38,7 +38,7 @@ function ComparisonRouteComponent() {
 
   useEffect(() => {
     setNavHeading(t("comparison.navHeading"));
-  }, [setNavHeading]);
+  }, [setNavHeading, t]);
 
   useEffect(() => {
     async function fetchInstituteId() {

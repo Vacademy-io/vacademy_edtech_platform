@@ -489,7 +489,7 @@ export const CourseStructureDetails = ({
                           className="shrink-0 text-neutral-500 group-hover:text-primary-600 transition-colors"
                         />
                       )}
-                      <div className="flex items-center justify-center w-6 h-6 rounded-full bg-primary-600 text-white text-xs font-bold shrink-0">
+                      <div className="flex items-center justify-center w-6 h-6 rounded-full bg-primary-500 text-primary-foreground text-xs font-bold shrink-0">
                         {isSubjectOpen ? (
                           <FolderOpen size={12} />
                         ) : (

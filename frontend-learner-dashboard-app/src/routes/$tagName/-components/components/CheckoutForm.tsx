@@ -776,13 +776,13 @@ export const CheckoutForm: React.FC<CheckoutFormProps> = ({
                 <DialogPrimitive.Content className="fixed start-1/2 top-1/2 z-50 w-pct-95 max-w-lg -translate-x-1/2 -translate-y-1/2 rounded-catalogue-lg bg-white p-0 shadow-2xl focus:outline-none overflow-hidden flex flex-col max-h-screen-90">
 
                     {/* Compact Header */}
-                    <div className="bg-primary-600 px-5 py-2 text-white flex justify-between items-center shrink-0">
+                    <div className="border-b border-gray-200 px-4 py-3 text-gray-900 flex justify-between items-center shrink-0">
                         <div>
                             <h2 className="text-lg font-bold">{t("checkoutForm.header.title")}</h2>
-                            <p className="text-sm text-black font-medium leading-tight">{t("checkoutForm.header.subtitle")}</p>
+                            <p className="text-sm text-gray-600 font-medium leading-tight">{t("checkoutForm.header.subtitle")}</p>
                         </div>
                         <button
-                            className="p-1.5 rounded-full hover:bg-white/10 transition-colors"
+                            className="p-1.5 rounded-full text-gray-500 hover:bg-gray-100 hover:text-gray-900 transition-colors"
                             onClick={() => onOpenChange(false)}
                         >
                             <Cross2Icon className="h-5 w-5" />

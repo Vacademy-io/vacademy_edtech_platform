@@ -490,7 +490,9 @@
     "term": {
       "comprehensive": "شامل",
       "created": "أُنشئ في: {{date}}",
-      "viewDetails": "عرض التفاصيل"
+      "viewDetails": "عرض التفاصيل",
+      "statusReady": "جاهز",
+      "statusPreparing": "قيد الإعداد"
     }
   },
   "notificationSettings": {

@@ -101,7 +101,7 @@ const AssessmentReportList = ({
 
   useEffect(() => {
     setNavHeading(t("reportList.navHeading"));
-  }, []);
+  }, [setNavHeading, t]);
 
   useEffect(() => {
     const fetchInstituteDetails = async () => {
@@ -320,12 +320,20 @@ const AssessmentReportList = ({
               <CardContent className="flex flex-col gap-4 p-card sm:flex-row sm:items-center sm:gap-5 sm:p-5">
                 {/* Score first: the figure the learner came for */}
                 <div className="flex w-fit shrink-0 items-baseline gap-1.5 rounded-lg bg-primary-50 px-4 py-2 sm:w-24 sm:flex-col sm:items-center sm:gap-0 sm:py-3 [.ui-play_&]:rounded-play-card-sm [.ui-play_&]:border [.ui-play_&]:border-border [.ui-play_&]:bg-play-gold-soft [.ui-vibrant_&]:border-t-4 [.ui-vibrant_&]:border-t-primary-300">
-                  <span className="text-h2 font-bold tabular-nums text-primary-500 [.ui-play_&]:font-black [.ui-play_&]:text-play-ink">
-                    {score != null ? score : "-"}
-                  </span>
-                  <span className="text-3xs font-medium uppercase tracking-wide text-muted-foreground [.ui-play_&]:text-play-ink/70">
-                    {t("reportList.meta.marksLabel")}
-                  </span>
+                  {score != null ? (
+                    <>
+                      <span className="text-h2 font-bold tabular-nums text-primary-500 [.ui-play_&]:font-black [.ui-play_&]:text-play-ink">
+                        {score}
+                      </span>
+                      <span className="text-3xs font-medium uppercase tracking-wide text-muted-foreground [.ui-play_&]:text-play-ink/70">
+                        {t("reportList.meta.marksLabel")}
+                      </span>
+                    </>
+                  ) : (
+                    <span className="text-caption font-medium text-muted-foreground [.ui-play_&]:text-play-ink/70">
+                      {t("reportList.meta.marksNotOut")}
+                    </span>
+                  )}
                 </div>
 
                 <div className="min-w-0 flex-1">

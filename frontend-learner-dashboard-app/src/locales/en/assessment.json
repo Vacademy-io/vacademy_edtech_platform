@@ -146,7 +146,8 @@
     },
     "meta": {
       "marksLabel": "marks",
-      "noMore": "No more reports to load"
+      "noMore": "No more reports to load",
+      "marksNotOut": "Marks pending"
     },
     "empty": {
       "title": "No reports yet",

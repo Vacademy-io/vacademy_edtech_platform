@@ -470,7 +470,9 @@
     "term": {
       "comprehensive": "व्यापक",
       "created": "बनाया गया: {{date}}",
-      "viewDetails": "विवरण देखें"
+      "viewDetails": "विवरण देखें",
+      "statusReady": "तैयार",
+      "statusPreparing": "तैयार हो रही है"
     }
   },
   "notificationSettings": {

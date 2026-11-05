@@ -1,3 +1,4 @@
+import axios from "axios";
 import authenticatedAxiosInstance from "@/lib/auth/axiosInstance";
 import { urlPublicCourseDetails } from "@/constants/urls";
 import type { CoursePackage } from "@/types/course-catalog/course-catalog-list";
@@ -25,6 +26,7 @@ export interface EnrolledCourse {
 const PAGE_SIZE = 12;
 // "Show every enrolled course" (allCourses.showAllEnrolledOnDashboard): one wide page per bucket.
 const ALL_PAGE_SIZE = 200;
+const pageSize = (opts?: { all?: boolean }) => (opts?.all ? ALL_PAGE_SIZE : PAGE_SIZE);
 
 const searchBody = (type: "PROGRESS" | "COMPLETED") => ({
   status: [] as string[],
@@ -40,22 +42,70 @@ const searchBody = (type: "PROGRESS" | "COMPLETED") => ({
   sort_columns: { created_at: "DESC" },
 });
 
-const fetchBucket = async (
+// The dashboard's course widget and its first-run check can ask for the same
+// page at once, so one request answers both.
+const bucketsInFlight = new Map<string, Promise<CoursePackage[]>>();
+
+// The same check can also run just after the widget has its answer. The first
+// page of any size says whether the learner has started, so it reads that instead
+// of asking again. The widget itself always asks.
+const ANSWER_REUSE_MS = 30_000;
+const bucketAnswers = new Map<string, { at: number; rows: CoursePackage[] }>();
+
+const fetchBucket = (
   instituteId: string,
   type: "PROGRESS" | "COMPLETED",
-  signal?: AbortSignal,
   size: number = PAGE_SIZE,
+  signal?: AbortSignal,
 ): Promise<CoursePackage[]> => {
-  const response = await authenticatedAxiosInstance.post(
-    urlPublicCourseDetails,
-    searchBody(type),
-    {
+  const key = `${instituteId}|${type}|${size}`;
+  const inFlight = bucketsInFlight.get(key);
+  if (inFlight) return inFlight;
+  const request = authenticatedAxiosInstance
+    .post(urlPublicCourseDetails, searchBody(type), {
       params: { instituteId, page: 0, size },
       headers: { accept: "*/*", "Content-Type": "application/json" },
       signal,
-    },
+    })
+    .then((response) => {
+      const rows = (response.data?.content ?? []) as CoursePackage[];
+      bucketAnswers.set(`${instituteId}|${type}`, { at: Date.now(), rows });
+      return rows;
+    })
+    .finally(() => bucketsInFlight.delete(key));
+  bucketsInFlight.set(key, request);
+  return request;
+};
+
+const recentBucket = (instituteId: string, type: "PROGRESS" | "COMPLETED", size: number) => {
+  const answer = bucketAnswers.get(`${instituteId}|${type}`);
+  if (answer && Date.now() - answer.at < ANSWER_REUSE_MS) return Promise.resolve(answer.rows);
+  // A widget leaving the page cancels its request, which may be the one joined here.
+  return fetchBucket(instituteId, type, size).catch((error) => {
+    if (axios.isCancel(error)) return fetchBucket(instituteId, type, size);
+    throw error;
+  });
+};
+
+/**
+ * Has the learner started anything across their enrollments? A bucket that fails
+ * says nothing either way, so the other one can still answer yes. Pass the same
+ * `all` as the course widget: equal pages share one request, whichever asks first.
+ */
+export const fetchEnrolledHasProgress = async (
+  instituteId: string,
+  opts?: { all?: boolean },
+): Promise<boolean> => {
+  const size = pageSize(opts);
+  const [progress, completed] = await Promise.allSettled([
+    recentBucket(instituteId, "PROGRESS", size),
+    recentBucket(instituteId, "COMPLETED", size),
+  ]);
+  return (
+    (completed.status === "fulfilled" && completed.value.length > 0) ||
+    (progress.status === "fulfilled" &&
+      progress.value.some((row) => (row.percentage_completed ?? 0) > 0))
   );
-  return (response.data?.content ?? []) as CoursePackage[];
 };
 
 /**
@@ -110,10 +160,10 @@ export const fetchEnrolledCourses = async (
   signal?: AbortSignal,
   opts?: { all?: boolean },
 ): Promise<EnrolledCourse[]> => {
-  const size = opts?.all ? ALL_PAGE_SIZE : PAGE_SIZE;
+  const size = pageSize(opts);
   const [progress, completed] = await Promise.allSettled([
-    fetchBucket(instituteId, "PROGRESS", signal, size),
-    fetchBucket(instituteId, "COMPLETED", signal, size),
+    fetchBucket(instituteId, "PROGRESS", size, signal),
+    fetchBucket(instituteId, "COMPLETED", size, signal),
   ]);
   if (progress.status === "rejected" && completed.status === "rejected") {
     throw progress.reason;

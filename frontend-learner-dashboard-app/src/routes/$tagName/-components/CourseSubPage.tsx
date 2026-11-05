@@ -390,7 +390,7 @@ const CourseSubPageContent: React.FC<CourseSubPageProps> = ({
           </p>
           <button
             onClick={() => navigate({ to: "/courses" })}
-            className="px-4 py-2 bg-primary-600 text-white rounded-catalogue-sm hover:bg-primary-700"
+            className="px-4 py-2 bg-primary-500 text-primary-foreground rounded-catalogue-sm hover:brightness-90"
           >
             {t("courseSubPage.goToCourses", { courses })}
           </button>
@@ -655,7 +655,7 @@ const SubPageNotFound: React.FC<{ page: string; onBack: () => void }> = ({ page,
         </p>
         <button
           onClick={onBack}
-          className="px-4 py-2 bg-primary-600 text-white rounded-catalogue-sm hover:bg-primary-700"
+          className="px-4 py-2 bg-primary-500 text-primary-foreground rounded-catalogue-sm hover:brightness-90"
         >
           {t("courseSubPage.goBackToCatalogue")}
         </button>

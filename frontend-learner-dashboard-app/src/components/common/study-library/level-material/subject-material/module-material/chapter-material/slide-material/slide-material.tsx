@@ -28,6 +28,8 @@ import AssignmentSlide from "./assignment-slide";
 import { isItemLocked } from "@/components/drip-conditions/helpers";
 
 import { MyButton } from "@/components/design-system/button";
+import { ErrorState } from "@/components/design-system/states";
+import { isNetworkError } from "@/lib/offline/events/track-or-queue";
 import { DocViewer } from "./doc-viewer";
 import { SlideDownloadTypeKey } from "@/constants/slide-download-permission";
 import { SlideDownloadButton, SlideImagesDownloadButton } from "./slide-download-button";
@@ -93,6 +95,11 @@ type SeekableMedia = {
 const SEEK_READY_POLL_MS = 250;
 const SEEK_READY_MAX_ATTEMPTS = 80; // ~20 s for the media to become seekable
 
+// The lesson pane has no fixed height on every layout, so `h-full` alone can
+// collapse to the state's own size and sit it against the toolbar.
+const VIDEO_STATE_FRAME =
+  "flex h-full min-h-screen-50 w-full items-center justify-center py-6";
+
 export const SlideMaterial = ({
   onNavigateToSlide,
   standaloneNav = false,
@@ -137,6 +144,8 @@ export const SlideMaterial = ({
   usePresenceHeartbeat(activeItem?.id);
   const selectionRef = useRef(null);
   const loadGenerationRef = useRef(0);
+  const [htmlVideoRetry, setHtmlVideoRetry] = useState(0);
+  const prevHtmlVideoRetryRef = useRef(0);
   const [heading, setHeading] = useState(activeItem?.title || "");
   const [content, setContent] = useState<JSX.Element | null>(null);
   const [isUploading, setIsUploading] = useState(false);
@@ -521,7 +530,7 @@ export const SlideMaterial = ({
             );
           } else if (transformedData?.status === "GENERATING") {
             setContent(
-              <div className="h-full w-full flex items-center justify-center">
+              <div className={VIDEO_STATE_FRAME}>
                 <div className="text-center">
                   <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
                   <p className="text-gray-600 font-medium">{t("videoState.generating")}</p>
@@ -536,7 +545,7 @@ export const SlideMaterial = ({
             );
           } else {
             setContent(
-              <div className="h-full w-full flex items-center justify-center">
+              <div className={VIDEO_STATE_FRAME}>
                 <div className="text-center text-gray-500">
                   <p>{t("videoState.pendingGeneration")}</p>
                   <p className="text-sm mt-2 text-gray-500">{t("videoState.availableInFewMinutes")}</p>
@@ -718,13 +727,12 @@ export const SlideMaterial = ({
               allKeys: Object.keys(activeItem),
             });
             setContent(
-              <div className="h-full w-full flex items-center justify-center">
-                <div className="text-center text-red-500">
-                  <p>{t("videoState.dataNotFound")}</p>
-                  {/* Engineer-facing diagnostic — intentionally untranslated. */}
-                  <p className="text-xs mt-2">HTML_VIDEO slide is missing video ID and URLs</p>
-                  <p className="text-xs mt-1">Source ID: {activeItem.source_id || "N/A"}</p>
-                </div>
+              <div className={VIDEO_STATE_FRAME}>
+                <ErrorState
+                  className="mx-4 px-6"
+                  title={t("videoState.unavailableTitle")}
+                  message={t("videoState.tryAgainLater")}
+                />
               </div>
             );
             break;
@@ -747,12 +755,10 @@ export const SlideMaterial = ({
               setContent(renderHtmlVideoContent(videoUrls.htmlUrl, videoUrls.audioUrl));
             } else {
               setContent(
-                <div className="h-full w-full flex items-center justify-center">
+                <div className={VIDEO_STATE_FRAME}>
                   <div className="text-center text-gray-500">
                     <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
                     <p className="text-gray-600 font-medium">{t("videoState.processing")}</p>
-                    {/* Engineer-facing diagnostic — intentionally untranslated. */}
-                    <p className="text-xs mt-2">Video URLs not available yet</p>
                     <p className="text-sm mt-2 text-gray-500">{t("videoState.availableInFewMinutes")}</p>
                   </div>
                 </div>
@@ -765,31 +771,27 @@ export const SlideMaterial = ({
               status: err.response?.status,
               message: err.message,
               response: err.response?.data,
-              // CORS error details
-              isCorsError: err.code === 'ERR_NETWORK' || err.message === 'Network Error',
             });
 
-            // Check if it's a CORS error
-            const isCorsError = err.code === 'ERR_NETWORK' || err.message === 'Network Error';
-            const errorMessage = isCorsError
-              // Engineer-facing diagnostic — intentionally untranslated.
-              ? 'CORS Error: Backend proxy route may not be configured. Please check backend configuration for /ai-service/video/urls/ endpoint.'
-              : err.response?.status === 404
-                ? t("videoState.videoNotFound", { videoId })
-                : t("videoState.failedToLoadUrls");
-
+            const missing = err.response?.status === 404;
             setContent(
-              <div className="h-full w-full flex items-center justify-center">
-                <div className="text-center text-red-500 max-w-md">
-                  <p className="font-medium">{errorMessage}</p>
-                  <p className="text-xs mt-2">
-                    {isCorsError
-                      // Engineer-facing diagnostic — intentionally untranslated.
-                      ? 'The backend needs to configure a proxy route for /ai-service/video/urls/'
-                      : t("videoState.tryAgainLater")}
-                  </p>
-                  <p className="text-xs mt-1 text-gray-400">Video ID: {videoId}</p>
-                </div>
+              <div className={VIDEO_STATE_FRAME}>
+                <ErrorState
+                  className="mx-4 px-6"
+                  title={
+                    missing
+                      ? t("videoState.unavailableTitle")
+                      : t("videoState.loadFailedTitle")
+                  }
+                  message={
+                    isNetworkError(err)
+                      ? t("videoState.checkConnection")
+                      : t("videoState.tryAgainLater")
+                  }
+                  onRetry={
+                    missing ? undefined : () => setHtmlVideoRetry((n) => n + 1)
+                  }
+                />
               </div>
             );
           }
@@ -1410,9 +1412,12 @@ export const SlideMaterial = ({
     // showing the previous language until the learner navigated away.
     const languageChanged = prevLangRef.current !== i18n.language;
     if (languageChanged) prevLangRef.current = i18n.language;
+    const retried = prevHtmlVideoRetryRef.current !== htmlVideoRetry;
+    prevHtmlVideoRetryRef.current = htmlVideoRetry;
 
-    // Only reload content if the slide ID actually changed (or the language did)
-    if (activeItem?.id !== prevSlideIdRef.current || languageChanged) {
+    // Only reload content if the slide ID actually changed (or the language did,
+    // or the learner asked to retry)
+    if (activeItem?.id !== prevSlideIdRef.current || languageChanged || retried) {
       loadGenerationRef.current += 1;
       const currentGeneration = loadGenerationRef.current;
 
@@ -1443,7 +1448,7 @@ export const SlideMaterial = ({
       // Slide ID is the same, just update heading (no content reload)
       setHeading(activeItem.title || "");
     }
-  }, [activeItem, t, i18n.language]);
+  }, [activeItem, t, i18n.language, htmlVideoRetry]);
 
   // The slide on screen when a citation for another slide became pending. The
   // host may take a render or two to open the cited slide, so a mismatch alone
