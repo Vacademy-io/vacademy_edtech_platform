@@ -1,6 +1,7 @@
 """Constants for the Vacademy MCP server."""
 from __future__ import annotations
 
+import random
 from typing import Any, Dict, Tuple
 
 #: Institute-settings key holding the MCP server configuration. Written by the
@@ -648,6 +649,38 @@ DENIAL_MESSAGES = {
     ),
 }
 
+#: Trouble on the server's side, not a decision about the caller. A client should
+#: retry the same call; none of these means access was switched off.
+REASON_SETTINGS_UNAVAILABLE = "settings_unavailable"
+REASON_AUTH_UNAVAILABLE = "auth_unavailable"
+
+RETRYABLE_REASONS = frozenset({REASON_SETTINGS_UNAVAILABLE, REASON_AUTH_UNAVAILABLE})
+
+RETRYABLE_MESSAGES = {
+    REASON_SETTINGS_UNAVAILABLE: (
+        "Vacademy could not read this institute's MCP settings just now, so this call did not run. "
+        "Your access has not been switched off and no admin action is needed. Retry in about {n} seconds."
+    ),
+    REASON_AUTH_UNAVAILABLE: (
+        "Vacademy could not check this connection's session just now, so this call did not run. "
+        "Do not reconnect. Retry in about {n} seconds."
+    ),
+}
+
+
+def retry_payload(code: str, message: str, low: int, high: int, **extra: Any) -> Dict[str, Any]:
+    """The JSON a client gets for a call that did not run and is safe to repeat."""
+    retry_after_s = random.randint(low, high)
+    return {
+        "error": code,
+        "retry_after_s": retry_after_s,
+        "retryable": True,
+        "started": False,
+        "changed": False,
+        "message": message.format(n=retry_after_s),
+        **extra,
+    }
+
 
 __all__ = [
     "MCP_SERVER_SETTING_KEY",
@@ -670,4 +703,9 @@ __all__ = [
     "DENY_LEARNER",
     "DENY_ROLE",
     "DENIAL_MESSAGES",
+    "REASON_SETTINGS_UNAVAILABLE",
+    "REASON_AUTH_UNAVAILABLE",
+    "RETRYABLE_REASONS",
+    "RETRYABLE_MESSAGES",
+    "retry_payload",
 ]

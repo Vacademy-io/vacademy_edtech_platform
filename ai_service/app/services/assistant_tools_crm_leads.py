@@ -1509,6 +1509,8 @@ async def _run(action: str, args: Dict[str, Any], ctx: ToolContext) -> Dict[str,
     s = await cd.scope(ctx)               # refuses learner role sets before anything is read
     if cd.is_error(s):
         return s
+    if spec["admin_only"] and not s.available:
+        return cd.err("scope_unavailable")
     if spec["admin_only"] and not s.is_admin:
         return cd.err("admin_only")
     return await handler(args, ctx)

@@ -32,6 +32,7 @@ from ..config import Settings, get_settings
 from ..core.security import _extract_bearer, get_pinned_principal
 from ..db import db_dependency
 from ..schemas.auth import PinnedPrincipal
+from ..services.institute_setting_reader import SettingReadError
 from .access import check_mcp_access, load_mcp_setting, normalize_role
 from .adapter import tool_catalog
 from .constants import (
@@ -40,6 +41,7 @@ from .constants import (
     AUTO_CLIENT_REDIRECT_URIS,
     DENIAL_MESSAGES,
     MCP_SCOPE_READ,
+    REASON_SETTINGS_UNAVAILABLE,
     is_auto_client,
 )
 from .crypto import TokenCipher
@@ -78,7 +80,17 @@ def _require_institute_admin(principal: PinnedPrincipal) -> None:
 
 def _require_can_connect(principal: PinnedPrincipal, db: Session) -> Dict[str, Any]:
     """Gate for GRANTING an AI client access: the institute + role allow-list."""
-    setting = load_mcp_setting(db, principal.institute_id)
+    try:
+        setting = load_mcp_setting(db, principal.institute_id)
+    except SettingReadError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail={
+                "reason": REASON_SETTINGS_UNAVAILABLE,
+                "message": "Vacademy could not read this institute's MCP settings just now. "
+                           "Nothing has changed. Please try again in a moment.",
+            },
+        ) from exc
     denial = check_mcp_access(principal, setting)
     if denial:
         raise HTTPException(

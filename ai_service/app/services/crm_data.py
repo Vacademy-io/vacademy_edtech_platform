@@ -91,8 +91,9 @@ _MESSAGES = {
     "confirm_token_expired": "The preview expired. Call again without confirm_token, show the new preview and ask again.",
     "confirm_token_mismatch": ("The request or the data changed since the preview. Call again without confirm_token "
                                "with exactly these arguments, show the new preview and ask again."),
-    "confirm_token_used": ("That confirm_token was already used, or a newer preview replaced it. Tokens work once. "
-                           "Call again without confirm_token to preview."),
+    "confirm_token_used": ("That confirm_token was already used, or a newer preview replaced it. If an earlier call "
+                           "timed out it may have completed, so check the result with a read before repeating. "
+                           "Otherwise call again without confirm_token to preview."),
     "confirm_unavailable": "Confirmed actions are not available on this server yet. Nothing was changed.",
     "rate_limited": "Too many of these in the last hour. Try again later.",
     "query_failed": "The CRM data could not be read right now. Try again, or narrow the request.",
@@ -437,6 +438,8 @@ async def require_admin(ctx: ToolContext) -> Optional[Dict[str, Any]]:
     s = await scope(ctx)
     if is_error(s):
         return s
+    if isinstance(s, Scope) and not s.available:
+        return err("scope_unavailable")
     return None if s.is_admin else err("admin_only")
 
 
@@ -1568,7 +1571,7 @@ def spend_once(ctx: ToolContext, purpose: str, request: Any,
         if hourly_count(ctx, purpose) >= cap:
             retry = _retry_after(ctx, purpose)
             _quiet_rollback(ctx)
-            return None, err("rate_limited", cap_per_hour=cap, retry_after_s=retry,
+            return None, err("rate_limited", limit_type="hourly", cap_per_hour=cap, retry_after_s=retry,
                              message=f"At most {cap} of these per hour. The confirm_token still works until it expires.")
         n = (ctx.db.query(CrmConfirm)
              .filter(CrmConfirm.id == row.id, CrmConfirm.institute_id == inst, CrmConfirm.user_id == uid,

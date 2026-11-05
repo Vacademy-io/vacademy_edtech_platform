@@ -20,7 +20,7 @@ from typing import Optional
 import httpx
 
 from ..config import Settings
-from ..core.security import resolve_pinned_principal
+from ..core.security import AuthServiceUnavailable, resolve_pinned_principal
 from ..schemas.auth import PinnedPrincipal
 
 logger = logging.getLogger(__name__)
@@ -34,12 +34,14 @@ async def build_pinned_principal(
     """Verify a stored platform token and pin it to ``institute_id``.
 
     Raises the same HTTPException (401/403) the HTTP dependency raises; MCP
-    handlers translate that into a protocol error.
+    handlers translate that into a protocol error. Raises AuthServiceUnavailable
+    when auth-service could not answer.
     """
     return await resolve_pinned_principal(
         token=platform_token,
         client_id=institute_id,
         settings=settings,
+        raise_on_unavailable=True,
     )
 
 
@@ -53,8 +55,10 @@ async def refresh_platform_token(
     auth_service: POST /auth-service/v1/refresh-token  {"token": "<refresh>"}
                   -> {"accessToken": "...", ...}   (camelCase; no new refresh token)
 
-    Returns None on any failure — the caller then fails the MCP request so the
-    client re-runs the OAuth flow rather than retrying forever.
+    Returns None when the token is refused or the answer is unusable — the caller
+    then fails the MCP request so the client re-runs the OAuth flow rather than
+    retrying forever. Raises AuthServiceUnavailable when auth-service is unreachable
+    or answers 5xx, because that says nothing about the token.
     """
     if not platform_refresh_token:
         return None
@@ -65,7 +69,11 @@ async def refresh_platform_token(
             response = await client.post(url, json={"token": platform_refresh_token})
     except httpx.RequestError as exc:
         logger.warning("MCP platform-token refresh could not reach auth-service: %s", exc)
-        return None
+        raise AuthServiceUnavailable(type(exc).__name__) from exc
+
+    if response.status_code >= 500:
+        logger.warning("MCP platform-token refresh got %s from auth-service", response.status_code)
+        raise AuthServiceUnavailable(f"auth-service answered {response.status_code}")
 
     if response.status_code != 200:
         # Never log the response body — it carries tokens on success.
@@ -76,6 +84,9 @@ async def refresh_platform_token(
         data = response.json()
     except ValueError:
         logger.warning("MCP platform-token refresh returned a non-JSON body.")
+        return None
+
+    if not isinstance(data, dict):
         return None
 
     token = data.get("accessToken") or data.get("access_token")

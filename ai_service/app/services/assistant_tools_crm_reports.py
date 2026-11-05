@@ -2485,10 +2485,10 @@ async def _run(action: str, args: Dict[str, Any], ctx: ToolContext) -> Result:
     s = await cd.scope(ctx)
     if cd.is_error(s):
         return s
+    if not s.available:
+        return cd.err("scope_unavailable")
     if spec["admin_only"] and not s.is_admin:
         return cd.err("admin_only", message="Only an institute admin can see this report.")
-    if not s.is_admin and not s.available:
-        return cd.err("scope_unavailable")
     tz = cd.institute_tz(ctx, "reports")
     w = _live_window(action, args, tz) if action in _LIVE else cd.window(args, tz=tz)
     if cd.is_error(w):

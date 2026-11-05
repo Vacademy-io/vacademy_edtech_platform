@@ -12,6 +12,21 @@ from ..schemas.auth import CustomUserDetails, AuthError, PinnedPrincipal
 logger = logging.getLogger(__name__)
 
 
+class AuthServiceUnavailable(Exception):
+    """auth-service could not answer, which says nothing about the token."""
+
+
+def _auth_service_could_not_answer(response: httpx.Response) -> bool:
+    """
+    True for a 5xx, except auth-service's answer for an unknown username. That
+    one comes out of its catch-all as 511 and is a real rejection, which a
+    refresh can still recover from when the username has changed.
+    """
+    if response.status_code < 500:
+        return False
+    return not (response.status_code == 511 and "could not found user" in response.text)
+
+
 def _extract_bearer(auth_header: Optional[str]) -> Optional[str]:
     """Return the raw token from an 'Authorization: Bearer <token>' header."""
     if not auth_header or not auth_header.startswith("Bearer "):
@@ -184,6 +199,7 @@ async def _verify_and_fetch_user(
     auth_header: str,
     client_id: Optional[str],
     settings: Settings,
+    raise_on_unavailable: bool = False,
 ) -> Optional[CustomUserDetails]:
     """
     Internal logic to decode JWT and call Auth Service.
@@ -191,6 +207,9 @@ async def _verify_and_fetch_user(
     Takes the institute id explicitly rather than a Request, so callers without
     an HTTP request in hand (the MCP server, which replays a stored token) reuse
     exactly this verification path.
+
+    With raise_on_unavailable, an unreachable or failing auth-service raises
+    AuthServiceUnavailable instead of returning None like a rejected token.
     """
     if not auth_header.startswith("Bearer "):
         # Log to debug
@@ -260,10 +279,14 @@ async def _verify_and_fetch_user(
                  logger.warning(f"Auth Service returned {response.status_code} for user {full_username}: {response.text}")
                  # Fallback to JWT if Auth Service fails? 
                  # User said "verify via auth service". If verification fails, we should fail.
+                 if raise_on_unavailable and _auth_service_could_not_answer(response):
+                     raise AuthServiceUnavailable(f"auth-service answered {response.status_code}")
                  return None
                  
     except httpx.RequestError as e:
         logger.error(f"Failed to connect to Auth Service: {e}")
+        if raise_on_unavailable:
+            raise AuthServiceUnavailable(type(e).__name__) from e
         return None
 
 def _create_user_from_jwt_payload(payload: dict) -> CustomUserDetails:
@@ -317,6 +340,7 @@ async def resolve_pinned_principal(
     token: Optional[str],
     client_id: Optional[str],
     settings: Settings,
+    raise_on_unavailable: bool = False,
 ) -> PinnedPrincipal:
     """
     The body of the Assistant trust boundary, without an HTTP request.
@@ -325,7 +349,8 @@ async def resolve_pinned_principal(
     server replays a stored token on every tool call — go through this so the
     verification, pinning and authorities-map rules stay in exactly one place.
 
-    Raises the same HTTPExceptions as get_pinned_principal (401/403).
+    Raises the same HTTPExceptions as get_pinned_principal (401/403). With
+    raise_on_unavailable, also AuthServiceUnavailable.
     """
     # 1. Enforce authentication (and liveness/enabled checks when CLIENT_SECRET
     #    is configured). Reuses the existing, audited verification path.
@@ -335,8 +360,9 @@ async def resolve_pinned_principal(
             detail="Missing Authorization header",
         )
 
+    verify_options = {"raise_on_unavailable": True} if raise_on_unavailable else {}
     try:
-        current_user = await _verify_and_fetch_user(f"Bearer {token}", client_id, settings)
+        current_user = await _verify_and_fetch_user(f"Bearer {token}", client_id, settings, **verify_options)
     except AuthError as ae:
         raise HTTPException(status_code=ae.status_code, detail=ae.message)
 

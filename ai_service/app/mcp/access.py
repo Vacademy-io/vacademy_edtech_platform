@@ -7,7 +7,7 @@ from typing import Any, Dict, List, Optional
 from sqlalchemy.orm import Session
 
 from ..schemas.auth import PinnedPrincipal
-from ..services.institute_setting_reader import load_institute_setting_data
+from ..services.institute_setting_reader import read_institute_setting_data
 from .constants import (
     DEFAULT_ALLOWED_ROLES,
     DENY_DISABLED,
@@ -79,8 +79,13 @@ def normalize_setting(raw: Optional[Dict[str, Any]]) -> Dict[str, Any]:
 
 
 def load_mcp_setting(db: Session, institute_id: str) -> Dict[str, Any]:
-    """Read and normalize this institute's MCP settings. Fails closed (disabled)."""
-    return normalize_setting(load_institute_setting_data(db, institute_id, MCP_SERVER_SETTING_KEY))
+    """
+    Read and normalize this institute's MCP settings.
+
+    Raises SettingReadError when they cannot be read, so "could not read" is not
+    reported as "disabled". It grants nothing either way.
+    """
+    return normalize_setting(read_institute_setting_data(db, institute_id, MCP_SERVER_SETTING_KEY))
 
 
 def setting_for_tool_gate(setting: Dict[str, Any], principal: PinnedPrincipal) -> Dict[str, Any]:

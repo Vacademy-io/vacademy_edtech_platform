@@ -18,9 +18,10 @@ session affinity, so each request must stand alone.
 """
 from __future__ import annotations
 
+import json
 import logging
 import time
-from typing import Dict, Optional, Tuple
+from typing import Any, Dict, Optional, Tuple
 
 from fastapi import HTTPException, status
 from mcp.server.auth.middleware.auth_context import get_access_token
@@ -29,6 +30,7 @@ from mcp.server.lowlevel.server import Server
 from mcp.server.transport_security import TransportSecuritySettings
 from mcp.shared.exceptions import MCPError
 from mcp.types import (
+    INTERNAL_ERROR,
     INVALID_REQUEST,
     CallToolRequestParams,
     CallToolResult,
@@ -48,11 +50,21 @@ from sqlalchemy.orm import Session
 from starlette.applications import Starlette
 
 from ..config import Settings
+from ..core.security import AuthServiceUnavailable
 from ..db import db_session
 from ..schemas.auth import PinnedPrincipal
+from ..services.institute_setting_reader import SettingReadError
 from . import adapter, guides
 from .access import check_mcp_access, load_mcp_setting, setting_for_tool_gate
-from .constants import DENIAL_MESSAGES, MCP_SCOPE_READ
+from .constants import (
+    DENIAL_MESSAGES,
+    MCP_SCOPE_READ,
+    REASON_AUTH_UNAVAILABLE,
+    REASON_SETTINGS_UNAVAILABLE,
+    RETRYABLE_MESSAGES,
+    RETRYABLE_REASONS,
+    retry_payload,
+)
 from .crypto import TokenCipher
 from .institute_scope import institute_from_resource, request_institute_id
 from .oauth_provider import VacademyAccessToken, VacademyOAuthProvider
@@ -169,10 +181,23 @@ SERVER_INSTRUCTIONS = (
 class McpAuthError(Exception):
     """A request that must not reach the tool layer."""
 
-    def __init__(self, reason: str, message: str):
+    def __init__(self, reason: str, message: str, payload: Optional[Dict[str, Any]] = None):
         super().__init__(message)
         self.reason = reason
         self.message = message
+        self.payload = payload
+
+
+def _unavailable(reason: str) -> McpAuthError:
+    """The server could not decide, so the call did not run. Nothing about the caller is implied."""
+    payload = retry_payload(reason, RETRYABLE_MESSAGES[reason], 10, 30)
+    return McpAuthError(reason, payload["message"], payload=payload)
+
+
+def _raise_if_unavailable(exc: McpAuthError) -> None:
+    """A listing answers trouble with a protocol error; only a real denial may be an empty list."""
+    if exc.reason in RETRYABLE_REASONS:
+        raise MCPError(code=INTERNAL_ERROR, message=exc.message, data=exc.payload) from exc
 
 
 async def _resolve_platform_token(
@@ -202,10 +227,19 @@ async def _resolve_platform_token(
 
 async def _authorize(db: Session, settings: Settings) -> Tuple[PinnedPrincipal, dict, VacademyAccessToken, str]:
     """
-    Full per-request authorization. Raises McpAuthError when the caller is out.
+    Full per-request authorization. Raises McpAuthError when the caller is out, or
+    when auth-service or the settings could not give an answer.
 
     Returns (principal, institute MCP settings, access token, platform JWT).
     """
+    try:
+        return await _authorize_chain(db, settings)
+    except AuthServiceUnavailable as exc:
+        logger.warning("MCP authorization could not check the session: %s", exc)
+        raise _unavailable(REASON_AUTH_UNAVAILABLE) from exc
+
+
+async def _authorize_chain(db: Session, settings: Settings) -> Tuple[PinnedPrincipal, dict, VacademyAccessToken, str]:
     token = get_access_token()
     if token is None or not isinstance(token, VacademyAccessToken):
         raise McpAuthError("unauthorized", "This request is not authenticated.")
@@ -253,7 +287,11 @@ async def _authorize(db: Session, settings: Settings) -> Tuple[PinnedPrincipal, 
             "in your institute's MCP settings.",
         )
 
-    setting = load_mcp_setting(db, principal.institute_id)
+    try:
+        setting = load_mcp_setting(db, principal.institute_id)
+    except SettingReadError as exc:
+        logger.warning("MCP settings unavailable for %s: %s", principal.institute_id, exc)
+        raise _unavailable(REASON_SETTINGS_UNAVAILABLE) from exc
     denial = check_mcp_access(principal, setting)
     if denial:
         raise McpAuthError(denial, DENIAL_MESSAGES.get(denial, "Access denied."))
@@ -267,6 +305,7 @@ async def _on_list_tools(ctx, params: Optional[PaginatedRequestParams]) -> ListT
         try:
             principal, setting, _token, _jwt = await _authorize(db, settings_obj)
         except McpAuthError as exc:
+            _raise_if_unavailable(exc)
             # An empty catalogue is the honest answer to "what can I do here?"
             # when the answer is nothing; the reason surfaces on the first call.
             logger.info("MCP tools/list denied: %s", exc.reason)
@@ -282,7 +321,7 @@ async def _on_call_tool(ctx, params: CallToolRequestParams) -> CallToolResult:
             principal, setting, token, platform_token = await _authorize(db, settings_obj)
         except McpAuthError as exc:
             return CallToolResult(
-                content=[TextContent(type="text", text=exc.message)],
+                content=[TextContent(type="text", text=json.dumps(exc.payload) if exc.payload else exc.message)],
                 is_error=True,
             )
 
@@ -335,6 +374,7 @@ async def _may_read_guides() -> Tuple[bool, str]:
         try:
             principal, setting, _token, _jwt = await _authorize(db, settings_obj)
         except McpAuthError as exc:
+            _raise_if_unavailable(exc)
             logger.info("MCP guides denied: %s", exc.reason)
             return False, exc.message
     if not is_tool_allowed(_GUIDE_TOOL, principal, setting_for_tool_gate(setting, principal)):
