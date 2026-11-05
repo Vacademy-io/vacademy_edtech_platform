@@ -212,6 +212,12 @@ export default defineConfig({
         // resolved SSDC Horizon's domain. Empty string on web/mobile, where the
         // appId comes from Capacitor instead.
         __ELECTRON_APP_ID__: JSON.stringify(process.env.VITE_ELECTRON_APP_ID || ""),
+        // Which build a speed measurement came from (see src/lib/perf/learner-rum.ts).
+        // Same reason as above for reading process.env here. Cloudflare Pages sets the
+        // commit; other builds fall back to the app version.
+        __APP_BUILD__: JSON.stringify(
+            (process.env.CF_PAGES_COMMIT_SHA || "").slice(0, 8) || pkgVersion
+        ),
     },
     plugins: [
         TanStackRouterVite(),

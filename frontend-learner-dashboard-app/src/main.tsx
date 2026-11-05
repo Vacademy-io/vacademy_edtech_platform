@@ -31,12 +31,17 @@ import {
 } from "./lib/chunk-reload";
 import {
   getTokenFromCookie,
+  getTokenFromStorage,
+  isTokenExpired,
   getTokenDecodedData,
 } from "@/lib/auth/sessionUtility";
 import { captureUtmOnce } from "@/lib/utm-attribution";
 import { TokenKey } from "@/constants/auth/tokens";
 import { getCachedInstituteBranding } from "@/services/domain-routing";
 import { useInstituteDetailsStore } from "@/stores/study-library/useInstituteDetails";
+import { Capacitor } from "@capacitor/core";
+import { BASE_URL } from "@/constants/urls";
+import { installLearnerRum, type RumRouter } from "@/lib/perf/learner-rum";
 
 // Recover stale tabs whose cached chunk URLs 404 after a new deploy.
 // Must run before React renders so failures during the first lazy import
@@ -70,6 +75,21 @@ const readAccessTokenSync = (): string | null => {
     // localStorage may be blocked in some WebViews — fall through
   }
   return getTokenFromCookie(TokenKey.accessToken);
+};
+
+/** The institute the API calls are already labelled with, read synchronously. */
+const readInstituteIdSync = (): string | null | undefined => {
+  try {
+    const stored =
+      localStorage.getItem("InstituteId") ?? localStorage.getItem("instituteId");
+    if (stored) return stored;
+  } catch {
+    // localStorage may be blocked in some WebViews, so fall through
+  }
+  return (
+    getCachedInstituteBranding()?.instituteId ??
+    useInstituteDetailsStore.getState().instituteDetails?.id
+  );
 };
 
 if (import.meta.env.VITE_ENABLE_SENTRY === "true") {
@@ -251,6 +271,21 @@ const router = createRouter({
 // see reserved-app-routes.ts for why a root-mounted catalogue page named
 // "privacy-policy" would otherwise open the app's own page.
 registerAppRoutePaths(Object.keys(router.routesByPath));
+
+// Real-user speed numbers, from a sampled fraction of sessions. First-party only and
+// no identifiers: see the header of learner-rum.ts.
+if (import.meta.env.PROD) {
+  installLearnerRum({
+    endpoint: `${BASE_URL}/admin-core-service/v1/perf/rum`,
+    router: router as unknown as RumRouter,
+    isFetching: () => queryClient.isFetching(),
+    getAccessToken: () => getTokenFromStorage(TokenKey.accessToken),
+    isTokenExpired,
+    getInstituteId: readInstituteIdSync,
+    getPlatform: () => Capacitor.getPlatform(),
+    build: typeof __APP_BUILD__ === "string" ? __APP_BUILD__ : "na",
+  });
+}
 
 // Register the router instance for type safety
 declare module "@tanstack/react-router" {
