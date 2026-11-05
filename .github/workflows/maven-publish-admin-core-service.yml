@@ -132,6 +132,9 @@ jobs:
 
       - name: Deploy to Kubernetes
         if: (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
+        env:
+          WHATSAPP_ACCESS_TOKEN_VIDYAYATAN: ${{ secrets.WHATSAPP_ACCESS_TOKEN_VIDYAYATAN }}
+          WHATSAPP_PHONE_NUMBER_ID_VIDYAYATAN: ${{ secrets.WHATSAPP_PHONE_NUMBER_ID_VIDYAYATAN }}
         run: |
           kubectl set env deployment/admin-core-service \
             DB_PASSWORD=${{ secrets.DB_PASSWORD }} \
@@ -175,6 +178,8 @@ jobs:
             GOOGLE_OAUTH_FRONTEND_CALLBACK_URL=${{ secrets.GOOGLE_OAUTH_FRONTEND_CALLBACK_URL }} \
             GOOGLE_EVENTS_PUBSUB_TOPIC=${{ secrets.GOOGLE_EVENTS_PUBSUB_TOPIC }} \
             GOOGLE_EVENTS_PUSH_TOKEN=${{ secrets.GOOGLE_EVENTS_PUSH_TOKEN }} \
+            "WHATSAPP_ACCESS_TOKEN_VIDYAYATAN=${WHATSAPP_ACCESS_TOKEN_VIDYAYATAN//[$'\r\n']/}" \
+            "WHATSAPP_PHONE_NUMBER_ID_VIDYAYATAN=${WHATSAPP_PHONE_NUMBER_ID_VIDYAYATAN//[$'\r\n']/}" \
             TELEPHONY_AIRTEL_S3_ENABLED=true \
             TELEPHONY_AIRTEL_S3_REGION=us-east-1 \
             TELEPHONY_AIRTEL_S3_BUCKET=vacademy-airtel-ccr \

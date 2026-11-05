@@ -31,6 +31,9 @@ import java.util.Map;
 @Component
 public class PlatformWhatsAppClient {
 
+    /** What the shared deploy secret holds when it has no value; Meta would answer it with a 401. */
+    private static final String PLACEHOLDER = "not-configured";
+
     private final String baseUrl;
     private final String accessToken;
     private final String phoneNumberId;
@@ -42,12 +45,16 @@ public class PlatformWhatsAppClient {
             @Value("${WHATSAPP_ACCESS_TOKEN_VIDYAYATAN:}") String accessToken,
             @Value("${WHATSAPP_PHONE_NUMBER_ID_VIDYAYATAN:}") String phoneNumberId) {
         this.baseUrl = baseUrl;
-        this.accessToken = accessToken;
-        this.phoneNumberId = phoneNumberId;
+        this.accessToken = withoutPlaceholder(accessToken);
+        this.phoneNumberId = withoutPlaceholder(phoneNumberId);
         SimpleClientHttpRequestFactory factory = new SimpleClientHttpRequestFactory();
         factory.setConnectTimeout(5_000);
         factory.setReadTimeout(15_000);
         this.rest = new RestTemplate(factory);
+    }
+
+    private static String withoutPlaceholder(String value) {
+        return value == null || PLACEHOLDER.equalsIgnoreCase(value.trim()) ? "" : value;
     }
 
     RestTemplate restTemplate() {
