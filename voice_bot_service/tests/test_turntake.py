@@ -7,7 +7,8 @@ The asymmetry under test: when unsure, INTERRUPT — wrongly stopping the bot
 costs a moment; wrongly steamrolling the caller costs the call.
 """
 from app.turntake import (mid_reply_action, ABSORB, INTERRUPT, is_carrier_announcement, is_repeat,
-                          suppresses_opening, strip_echo_opener, caller_asked_a_question)
+                          suppresses_opening, strip_echo_opener, caller_asked_a_question,
+                          is_audio_check)
 from app.callstate import (
     CallState, WatchdogConfig, watchdog_decide, apply_decision,
     NONE, DUCK_RESUME, CAP_FAREWELL, ARM_STOP, ORPHAN_ASK, NUDGE,
@@ -188,6 +189,36 @@ def test_a_real_question_mid_reply_still_interrupts():
     assert mid_reply_action("क्या पूछा आपने?") == INTERRUPT
     assert mid_reply_action("hello, fees kitni hai?") == INTERRUPT
     assert mid_reply_action("nahi") == INTERRUPT
+
+
+def test_a_word_stt_split_in_two_is_still_that_word():
+    """Call 13b4ba2d (2026-09-15) lost its entire opening to one "hello".
+
+    The caller said hello over the first second of the opening; INTERRUPT_ON_VAD
+    cancelled it, as designed. A clean "hello" would then have ABSORBED and the
+    carry-on cue would have resumed the opening. But Sarvam delivered the final as
+    "Hell o" — two tokens, neither a word we know — so it fell through to INTERRUPT,
+    the model was told the opening had already been said, and it went straight to
+    the next script line. The caller: "बीच से start हो गया यार".
+
+    The fragments are not words; the whole is. Judge the whole when the parts miss."""
+    for split in ("Hell o", "hel lo", "Hel lo.", "ha an", "ac cha"):
+        assert mid_reply_action(split) == ABSORB, split
+    # The same split must read as a line-check too, or the audio-check path that
+    # counts "hello? hello?" toward a bad line never sees it.
+    for split in ("Hell o", "hel lo", "Hel lo?"):
+        assert is_audio_check(split), split
+
+
+def test_joining_fragments_cannot_manufacture_consent():
+    """The join is a fallback for a word that was CUT UP, not a way to glue two
+    real words into a third. A negation anywhere still interrupts, and fragments
+    that do not form a known word are still content."""
+    assert mid_reply_action("hel lo nahi") == INTERRUPT      # negation wins
+    assert mid_reply_action("hell no") == INTERRUPT          # "hellno" is nothing; "no" negates
+    assert mid_reply_action("fees kit ni") == INTERRUPT      # "feeskitni" is nothing
+    assert mid_reply_action("ok ay") == ABSORB               # "okay" — same class as hello
+    assert not is_audio_check("fe es")                       # "fees" is not a line-check
 
 
 def test_carrier_announcements_are_not_the_callee():

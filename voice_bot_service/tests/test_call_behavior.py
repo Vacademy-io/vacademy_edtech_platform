@@ -3081,6 +3081,47 @@ async def test_a_hello_that_cuts_the_opening_resays_it_instead_of_carrying_on():
 
 
 @pytest.mark.asyncio
+async def test_a_split_hello_still_reaches_the_resay():
+    """Call 13b4ba2d (2026-09-15): the same pickup-hello, but Sarvam delivered it
+    as "Hell o" — two tokens. mid_reply_action classified it INTERRUPT (neither
+    piece is a word we know), so this absorb branch — where the resay lives —
+    was never entered. The opening never played and the model, told it had, went
+    to the next line: "बीच से start हो गया यार".
+
+    Same harness, same assertions as the clean "Hello." above. The fix is in
+    turntake (judge the joined word when the pieces miss); this pins that the
+    whole turn-gate path now behaves identically for the split form."""
+    rec = _Rec()
+    calls = []
+
+    async def resay(text):
+        calls.append(text)
+        return True
+    tc = await _collector_with_resay(rec, resay)
+    await _feed(tc, "Hell o")
+    assert calls == ["Hell o"], "the split hello must reach _resay_opening"
+    cues = _cue_texts(rec)
+    assert "Hell o" in cues, "absorb-but-never-lose: the words still reach the context"
+    assert not any("carry on" in c or "re-greet" in c for c in cues), cues
+
+
+@pytest.mark.asyncio
+async def test_a_split_real_answer_still_interrupts_and_never_resays():
+    """The join must not turn a real answer into a resay. "class nine" split or
+    not is content; it interrupts, the opening is not replayed, and the words
+    become a normal turn."""
+    rec = _Rec()
+    calls = []
+
+    async def resay(text):
+        calls.append(text)
+        return True
+    tc = await _collector_with_resay(rec, resay)
+    await _feed(tc, "cla ss nine")
+    assert calls == [], "a real answer must never reach the resay"
+
+
+@pytest.mark.asyncio
 async def test_a_hello_mid_pitch_still_gets_the_carry_on_cue():
     """resay says 'not the opening' -> today's behaviour, byte for byte."""
     rec = _Rec()
