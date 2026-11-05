@@ -498,7 +498,7 @@ class McpOAuthRepository:
             text(
                 "SELECT token_hash, kind, pair_id, client_id, user_id, institute_id, username, "
                 "scopes, resource, platform_access_enc, platform_refresh_enc, expires_at, "
-                "revoked_at "
+                "revoked_at, last_used_at "
                 "FROM mcp_oauth_token WHERE token_hash = :hash AND kind = :kind"
             ),
             {"hash": hash_token(token), "kind": kind},
@@ -519,6 +519,7 @@ class McpOAuthRepository:
             "platform_refresh_token": self.cipher.decrypt(row["platform_refresh_enc"]),
             "expires_at": row["expires_at"],
             "revoked_at": row["revoked_at"],
+            "last_used_at": row["last_used_at"],
         }
 
     def touch_token(self, token_hash: str) -> None:

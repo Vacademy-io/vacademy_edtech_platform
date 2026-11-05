@@ -272,11 +272,18 @@ async def _lifespan(app: FastAPI):
         stats_tasks = mcp_admission.start_stats_tasks()
     except Exception as exc:  # noqa: BLE001
         _logger.warning("mcp stats startup skipped: %s", exc)
+    # A failure here leaves the lanes off, so MCP runs on the main loop as without them.
+    from .mcp import lanes as mcp_lanes
+    try:
+        mcp_lanes.start()
+    except Exception as exc:  # noqa: BLE001
+        _logger.error("mcp lanes did not start: %s", exc)
 
     try:
         async with mcp_server.session_manager.run():
             yield
     finally:
+        await mcp_lanes.stop()
         if stats_tasks:
             await mcp_admission.stop_stats_tasks(stats_tasks)
         await _drain_ai_video_legs(_logger)

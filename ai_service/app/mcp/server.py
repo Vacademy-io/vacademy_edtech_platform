@@ -18,10 +18,11 @@ session affinity, so each request must stand alone.
 """
 from __future__ import annotations
 
+import asyncio
 import json
 import logging
 import time
-from typing import Any, Dict, Optional, Tuple
+from typing import Any, Awaitable, Callable, Dict, Optional, Tuple, TypeVar
 
 from fastapi import HTTPException, status
 from mcp.server.auth.middleware.auth_context import get_access_token
@@ -51,19 +52,24 @@ from starlette.applications import Starlette
 
 from ..config import Settings
 from ..core.security import AuthServiceUnavailable
-from ..db import db_session
+from ..db import db_session, mcp_db_session
 from ..schemas.auth import PinnedPrincipal
 from ..services.institute_setting_reader import SettingReadError
-from . import adapter, admission, guides
+from . import adapter, admission, guides, lanes
 from .access import check_mcp_access, load_mcp_setting, setting_for_tool_gate
 from .constants import (
     DENIAL_MESSAGES,
     MCP_SCOPE_READ,
+    OFF_LOOP_TOOLS,
     REASON_AUTH_UNAVAILABLE,
     REASON_SETTINGS_UNAVAILABLE,
+    REASON_TOOL_TIMEOUT,
     RETRYABLE_MESSAGES,
     RETRYABLE_REASONS,
+    TOOL_LANE_DEADLINE_S,
     retry_payload,
+    server_busy_payload,
+    tool_timeout_payload,
 )
 from .crypto import TokenCipher
 from .institute_scope import institute_from_resource, request_institute_id
@@ -72,6 +78,8 @@ from .principal import build_pinned_principal, refresh_platform_token
 from .repository import McpOAuthRepository
 
 logger = logging.getLogger(__name__)
+
+T = TypeVar("T")
 
 SERVER_NAME = "vacademy"
 SERVER_INSTRUCTIONS = (
@@ -301,9 +309,24 @@ async def _authorize_chain(db: Session, settings: Settings) -> Tuple[PinnedPrinc
     return principal, setting, token, platform_token
 
 
+async def _on_control_lane(body: Callable[[Callable[[], Any]], Awaitable[T]]) -> T:
+    """``body(session_factory)`` on the control lane when the lanes run, otherwise right here."""
+    if not lanes.active():
+        return await body(db_session)
+    try:
+        return await lanes.control_lane().run(lambda: body(mcp_db_session))
+    except lanes.LaneBusy as exc:
+        payload = server_busy_payload()
+        raise MCPError(code=INTERNAL_ERROR, message=payload["message"], data=payload) from exc
+
+
 async def _on_list_tools(ctx, params: Optional[PaginatedRequestParams]) -> ListToolsResult:
+    return await _on_control_lane(_list_tools)
+
+
+async def _list_tools(session_factory: Callable[[], Any]) -> ListToolsResult:
     settings_obj = _settings()
-    with db_session() as db:
+    with session_factory() as db:
         try:
             principal, setting, _token, _jwt = await _authorize(db, settings_obj)
         except McpAuthError as exc:
@@ -322,6 +345,8 @@ async def _on_call_tool(ctx, params: CallToolRequestParams) -> CallToolResult:
     if not institute_id:
         return await _run_call(params, db_session)
     gate = admission.instance()
+    if lanes.active() and params.name in OFF_LOOP_TOOLS:
+        return await _call_on_tool_lane(gate, institute_id, params)
     rejection = await gate.enter(institute_id, params.name)
     if rejection:
         return rejection.to_result()
@@ -331,7 +356,76 @@ async def _on_call_tool(ctx, params: CallToolRequestParams) -> CallToolResult:
         gate.leave(institute_id)
 
 
-async def _run_call(params: CallToolRequestParams, session_factory) -> CallToolResult:
+async def _call_on_tool_lane(
+    gate: admission.McpAdmission, institute_id: str, params: CallToolRequestParams
+) -> CallToolResult:
+    """
+    A read on a worker thread. The client always gets an answer by the deadline, but
+    the slot and the worker come back only when the thread has really finished, so a
+    call stuck in sync code keeps counting against the limits.
+    """
+    rejection = await gate.enter(institute_id, params.name, uses_main_pool=False)
+    if rejection:
+        return rejection.to_result()
+    lane = lanes.tool_lane()
+    worker = lane.try_checkout()
+    if worker is None:
+        gate.leave(institute_id, uses_main_pool=False)
+        return gate.refuse_busy(institute_id, params.name).to_result()
+
+    def on_finish() -> None:
+        lane.checkin(worker)
+        gate.leave(institute_id, uses_main_pool=False)
+
+    cancel_code = {"code": "cancelled"}
+    result, cancel = lanes.submit(
+        worker, lambda: _run_call(params, mcp_db_session, cancel_code=cancel_code), on_finish
+    )
+    try:
+        done, _ = await asyncio.wait({result}, timeout=TOOL_LANE_DEADLINE_S)
+    except asyncio.CancelledError:
+        result.cancel()
+        cancel()
+        raise
+    if not done:
+        cancel_code["code"] = REASON_TOOL_TIMEOUT
+        result.cancel()
+        cancel()
+        logger.warning("MCP tool %s passed its deadline for institute %s", params.name, institute_id)
+        return CallToolResult(
+            content=[TextContent(type="text", text=json.dumps(tool_timeout_payload()))], is_error=True,
+        )
+    if result.cancelled():
+        raise RuntimeError(f"MCP tool {params.name} was cancelled on its worker")
+    return result.result()
+
+
+def _audit_cancelled(
+    settings_obj: Settings, principal: PinnedPrincipal, client_id: Optional[str], client_name: Optional[str],
+    params: CallToolRequestParams, error_code: str, duration_ms: int,
+) -> None:
+    """Never on the tool's session: log_tool_call commits, and that would keep whatever the tool had pending."""
+    try:
+        with mcp_db_session() as db:
+            McpOAuthRepository(db, TokenCipher(settings_obj.resolve_mcp_encryption_key())).log_tool_call(
+                user_id=principal.user_id,
+                institute_id=principal.institute_id,
+                client_id=client_id,
+                client_name=client_name,
+                tool_name=params.name,
+                args=params.arguments or {},
+                ok=False,
+                error_code=error_code,
+                duration_ms=duration_ms,
+            )
+    except Exception as exc:  # noqa: BLE001
+        logger.warning("MCP audit of a stopped call failed: %s", exc)
+
+
+async def _run_call(
+    params: CallToolRequestParams, session_factory, cancel_code: Optional[Dict[str, str]] = None
+) -> CallToolResult:
+    """``cancel_code``, for lane tools only, holds the audit code to write if the tool is cancelled."""
     settings_obj = _settings()
     with session_factory() as db:
         try:
@@ -347,17 +441,29 @@ async def _run_call(params: CallToolRequestParams, session_factory) -> CallToolR
         # Authorization is done, so a tool that starts with HTTP holds no connection during it.
         db.commit()
 
-        return await adapter.call_tool(
-            name=params.name,
-            arguments=params.arguments,
-            principal=principal,
-            platform_token=platform_token,
-            db=db,
-            mcp_setting=setting,
-            repo=repo,
-            client_id=token.client_id,
-            client_name=(client or {}).get("client_name"),
-        )
+        started = time.monotonic()
+        try:
+            return await adapter.call_tool(
+                name=params.name,
+                arguments=params.arguments,
+                principal=principal,
+                platform_token=platform_token,
+                db=db,
+                mcp_setting=setting,
+                repo=repo,
+                client_id=token.client_id,
+                client_name=(client or {}).get("client_name"),
+            )
+        except asyncio.CancelledError:
+            if cancel_code is not None:
+                duration_ms = int((time.monotonic() - started) * 1000)
+                try:
+                    db.rollback()
+                except Exception as exc:  # noqa: BLE001
+                    logger.warning("MCP rollback of a stopped call failed: %s", exc)
+                _audit_cancelled(settings_obj, principal, token.client_id, (client or {}).get("client_name"),
+                                 params, cancel_code["code"], duration_ms)
+            raise
 
 
 # ── prompts + resources: the design playbook and patterns ─────────────────
@@ -388,14 +494,9 @@ async def _may_read_guides() -> Tuple[bool, str]:
     now = time.monotonic()
     if key is not None and _guide_grants.get(key, 0.0) > now:
         return True, ""
-    settings_obj = _settings()
-    with db_session() as db:
-        try:
-            principal, setting, _token, _jwt = await _authorize(db, settings_obj)
-        except McpAuthError as exc:
-            _raise_if_unavailable(exc)
-            logger.info("MCP guides denied: %s", exc.reason)
-            return False, exc.message
+    principal, setting, denial = await _on_control_lane(_authorize_for_guides)
+    if principal is None:
+        return False, denial
     if not is_tool_allowed(_GUIDE_TOOL, principal, setting_for_tool_gate(setting, principal)):
         return False, "The website tool is not enabled for you in this institute's MCP settings."
     if key is not None:
@@ -404,6 +505,18 @@ async def _may_read_guides() -> Tuple[bool, str]:
                 _guide_grants.pop(k, None)
         _guide_grants[key] = now + _GUIDE_GRANT_TTL_S
     return True, ""
+
+
+async def _authorize_for_guides(session_factory: Callable[[], Any]) -> Tuple[Optional[PinnedPrincipal], dict, str]:
+    settings_obj = _settings()
+    with session_factory() as db:
+        try:
+            principal, setting, _token, _jwt = await _authorize(db, settings_obj)
+        except McpAuthError as exc:
+            _raise_if_unavailable(exc)
+            logger.info("MCP guides denied: %s", exc.reason)
+            return None, {}, exc.message
+    return principal, setting, ""
 
 
 async def _require_guides() -> None:

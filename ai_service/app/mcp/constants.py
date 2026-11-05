@@ -682,6 +682,18 @@ SERVER_BUSY_MESSAGE = (
 )
 
 
+#: Read-only CRM tools that run on the tool lane (app/mcp/lanes.py) rather than the main event loop.
+OFF_LOOP_TOOLS = frozenset({"crm_leads", "crm_calls", "crm_meetings", "crm_messages", "crm_reports", "crm_collections"})
+
+#: How long a client waits for a tool on the lane. Above any single CRM hop.
+TOOL_LANE_DEADLINE_S = 200
+REASON_TOOL_TIMEOUT = "tool_timeout"
+TOOL_TIMEOUT_MESSAGE = (
+    "This read took longer than {limit} seconds and was stopped. Nothing changed. "
+    "Try again with a shorter date range or fewer records."
+)
+
+
 def retry_payload(code: str, message: str, low: int, high: int, **extra: Any) -> Dict[str, Any]:
     """The JSON a client gets for a call that did not run and is safe to repeat."""
     retry_after_s = random.randint(low, high)
@@ -703,6 +715,17 @@ def rate_limited_payload(limit: int) -> Dict[str, Any]:
 
 def server_busy_payload() -> Dict[str, Any]:
     return retry_payload(REASON_SERVER_BUSY, SERVER_BUSY_MESSAGE, 10, 30)
+
+
+def tool_timeout_payload(limit_s: int = TOOL_LANE_DEADLINE_S) -> Dict[str, Any]:
+    return {
+        "error": REASON_TOOL_TIMEOUT,
+        "limit_s": limit_s,
+        "retryable": True,
+        "started": True,
+        "changed": False,
+        "message": TOOL_TIMEOUT_MESSAGE.format(limit=limit_s),
+    }
 
 
 __all__ = [
@@ -735,4 +758,8 @@ __all__ = [
     "REASON_SERVER_BUSY",
     "rate_limited_payload",
     "server_busy_payload",
+    "OFF_LOOP_TOOLS",
+    "TOOL_LANE_DEADLINE_S",
+    "REASON_TOOL_TIMEOUT",
+    "tool_timeout_payload",
 ]

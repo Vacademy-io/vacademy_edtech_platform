@@ -7,8 +7,10 @@ holding no connection and no thread, then either runs or gets a retryable error.
 A refused call writes no audit row and never reaches the tool layer, so a
 confirm_token it carried is not read or spent.
 
-``McpEdgeGuard`` answers HTTP 429 before the bearer token check when the main pool
-is nearly out of connections, because that check itself needs one.
+``McpEdgeGuard`` stands in front of the bearer token check, which needs a database
+connection. With the lanes running (app/mcp/lanes.py) it does that check on a worker
+thread and answers HTTP 429 when the check cannot finish. Otherwise it answers 429
+when the main pool is nearly out of connections.
 
 The state is plain ints, a deque and futures. It is touched only on the main event
 loop, with no await between a check and the take that follows it.
@@ -30,8 +32,10 @@ from mcp.types import CallToolResult, TextContent
 from starlette._utils import get_route_path
 
 from ..config import Settings, get_settings
-from ..db import get_engine
+from ..db import get_engine, mcp_pool_checked_out
+from . import lanes
 from .constants import REASON_RATE_LIMITED, REASON_SERVER_BUSY, rate_limited_payload, server_busy_payload
+from .oauth_provider import check_access_token_off_loop, verified_token
 
 logger = logging.getLogger(__name__)
 
@@ -233,6 +237,9 @@ class McpAdmission:
         except ValueError:
             pass
 
+    def refuse_busy(self, institute_id: str, tool: str) -> Rejection:
+        return self._reject(REASON_SERVER_BUSY, institute_id, tool)
+
     def _reject(self, code: str, institute_id: str, tool: str) -> Rejection:
         self._by_reject[code] += 1
         self._log_reject(code, institute_id, tool)
@@ -272,9 +279,12 @@ class McpAdmission:
         checked_out = self._pool_checked_out()
         if checked_out is None or self.pool_capacity - checked_out >= EDGE_MIN_FREE_CONNECTIONS:
             return False
+        self.note_edge_refusal()
+        return True
+
+    def note_edge_refusal(self) -> None:
         self._by_reject[EDGE_REJECT] += 1
         self._log_reject(EDGE_REJECT, None, None)
-        return True
 
     def note_protocol_version(self, raw: Optional[bytes]) -> None:
         if raw is None:
@@ -301,6 +311,7 @@ class McpAdmission:
             "running_by_institute": dict(self.running_by_institute),
             "by_reject": dict(self._by_reject),
             "pool_out": self._pool_checked_out(),
+            "mcp_pool_out": mcp_pool_checked_out(),
             "oldest_call_s": max((now - t for t in self._started.values()), default=0.0),
             "loop_lag_max_ms": self._lag_max_ms,
             "protocol_versions": dict(self._protocol_versions),
@@ -331,10 +342,14 @@ def reset_instance() -> McpAdmission:
 
 class McpEdgeGuard:
     """
-    Wraps the MCP app. A bearer POST to the MCP endpoint gets HTTP 429 when the main
-    pool has fewer than two connections free. The request body is never read.
-    Everything else passes through: the OAuth routes, GET, DELETE, and requests
-    with no token, which still get the SDK's 401.
+    Wraps the MCP app. With the lanes running, a bearer POST to the MCP endpoint has
+    its token checked on a worker thread, and any answer, valid or not, goes on to the
+    SDK, so a bad token still gets its 401. A full queue, a timeout or a database error
+    gets HTTP 429. Without the lanes, that POST gets 429 when the main pool has fewer
+    than two connections free.
+
+    The request body is never read. Everything else passes through: the OAuth routes,
+    GET, DELETE, and requests with no token, which still get the SDK's 401.
     """
 
     def __init__(self, app: Any):
@@ -346,10 +361,30 @@ class McpEdgeGuard:
             return
         gate = instance()
         gate.note_protocol_version(_header(scope, b"mcp-protocol-version"))
+        if lanes.active():
+            await self._check_off_loop(gate, scope, receive, send)
+            return
         if gate.edge_should_refuse():
             await _send_busy(send)
             return
         await self.app(scope, receive, send)
+
+    async def _check_off_loop(self, gate: McpAdmission, scope: Any, receive: Any, send: Any) -> None:
+        # Same slice as the SDK's bearer backend, so verify_token finds this answer.
+        token = _header(scope, b"authorization")[7:].decode("latin-1")
+        try:
+            checked = await check_access_token_off_loop(token)
+        except Exception as exc:  # noqa: BLE001
+            if not isinstance(exc, lanes.LaneBusy):
+                logger.warning("mcp edge could not check a token: %s", type(exc).__name__)
+            gate.note_edge_refusal()
+            await _send_busy(send)
+            return
+        reset = verified_token.set((token, checked))
+        try:
+            await self.app(scope, receive, send)
+        finally:
+            verified_token.reset(reset)
 
     @staticmethod
     def _applies(scope: Any) -> bool:
@@ -385,10 +420,10 @@ def log_stats(gate: McpAdmission) -> None:
     """One line per interval, the alert source for this service, then the interval counters restart."""
     snap = gate.snapshot()
     logger.info(
-        "mcp_stats running=%d waiting=%d by_reject=%s pool_out=%s mcp_pool_out=0 oldest_call_s=%.1f "
+        "mcp_stats running=%d waiting=%d by_reject=%s pool_out=%s mcp_pool_out=%d oldest_call_s=%.1f "
         "loop_lag_max_ms=%.0f protocol_versions=%s",
-        snap["running"], snap["waiting"], _compact(snap["by_reject"]), snap["pool_out"], snap["oldest_call_s"],
-        snap["loop_lag_max_ms"], _compact(snap["protocol_versions"]),
+        snap["running"], snap["waiting"], _compact(snap["by_reject"]), snap["pool_out"], snap["mcp_pool_out"],
+        snap["oldest_call_s"], snap["loop_lag_max_ms"], _compact(snap["protocol_versions"]),
     )
     if snap["loop_lag_max_ms"] > LAG_WARNING_MS:
         logger.warning("mcp_stats event loop lag reached %.0f ms", snap["loop_lag_max_ms"])

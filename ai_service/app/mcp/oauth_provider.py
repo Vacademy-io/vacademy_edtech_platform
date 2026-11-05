@@ -24,7 +24,8 @@ from __future__ import annotations
 import logging
 import time
 import uuid
-from typing import Any, List, Optional
+from contextvars import ContextVar
+from typing import Any, Callable, List, Optional, Tuple
 from urllib.parse import urlencode, urlparse
 
 from mcp.server.auth.provider import (
@@ -40,8 +41,9 @@ from mcp.server.auth.provider import (
 from mcp.shared.auth import OAuthClientInformationFull, OAuthToken
 from pydantic import AnyUrl
 
-from ..config import Settings
-from ..db import db_session
+from ..config import Settings, get_settings
+from ..db import db_session, mcp_db_session
+from . import lanes
 from .institute_scope import admin_portal_base, institute_from_resource
 from .crypto import (
     ACCESS_TOKEN_PREFIX,
@@ -53,6 +55,15 @@ from .crypto import (
 from .repository import McpOAuthRepository
 
 logger = logging.getLogger(__name__)
+
+#: last_used_at only feeds the connections listing, so one write a minute is enough.
+TOKEN_TOUCH_EVERY_S = 60
+
+#: This request's (token, result) when the edge already checked it off the main loop.
+#: A result of None is an answer too: that token is not valid.
+verified_token: ContextVar[Optional[Tuple[str, Optional["VacademyAccessToken"]]]] = ContextVar(
+    "mcp_verified_token", default=None
+)
 
 
 class VacademyAccessToken(AccessToken):
@@ -71,6 +82,47 @@ class VacademyRefreshToken(RefreshToken):
     pair_id: str
     user_id: str
     institute_id: str
+
+
+def check_access_token_sync(
+    token: str, cipher: TokenCipher, session_factory: Callable[[], Any]
+) -> Optional[VacademyAccessToken]:
+    """The stored token if it is live, else None. Raises when the database could not answer."""
+    with session_factory() as db:
+        repo = McpOAuthRepository(db, cipher)
+        record = repo.get_token(token, kind="access")
+        if not record:
+            return None
+        if record["revoked_at"] is not None or record["expires_at"].timestamp() <= time.time():
+            return None
+        last_used_at = record["last_used_at"]
+        if last_used_at is None or time.time() - last_used_at.timestamp() >= TOKEN_TOUCH_EVERY_S:
+            repo.touch_token(record["token_hash"])
+
+    return VacademyAccessToken(
+        token=token,
+        client_id=record["client_id"],
+        scopes=record["scopes"],
+        expires_at=int(record["expires_at"].timestamp()),
+        resource=record["resource"],
+        subject=record["user_id"],
+        user_id=record["user_id"],
+        institute_id=record["institute_id"],
+        username=record["username"],
+        token_hash=record["token_hash"],
+        pair_id=record["pair_id"],
+        platform_access_token=record["platform_access_token"],
+        platform_refresh_token=record["platform_refresh_token"],
+    )
+
+
+async def check_access_token_off_loop(token: str) -> Optional[VacademyAccessToken]:
+    """The same check on the verify lane. Raises lanes.LaneBusy when the lane is full or too slow."""
+    async def check() -> Optional[VacademyAccessToken]:
+        cipher = TokenCipher(get_settings().resolve_mcp_encryption_key())
+        return check_access_token_sync(token, cipher, mcp_db_session)
+
+    return await lanes.verify_lane().run(check, total_s=lanes.VERIFY_WAIT_S)
 
 
 def is_acceptable_redirect_uri(uri: str) -> bool:
@@ -302,33 +354,15 @@ class VacademyOAuthProvider(
 
     # ── token verification ───────────────────────────────────────────────
     async def load_access_token(self, token: str) -> Optional[VacademyAccessToken]:
-        with db_session() as db:
-            repo = self._repo(db)
-            record = repo.get_token(token, kind="access")
-            if not record:
-                return None
-            if record["revoked_at"] is not None or record["expires_at"].timestamp() <= time.time():
-                return None
-            repo.touch_token(record["token_hash"])
-
-        return VacademyAccessToken(
-            token=token,
-            client_id=record["client_id"],
-            scopes=record["scopes"],
-            expires_at=int(record["expires_at"].timestamp()),
-            resource=record["resource"],
-            subject=record["user_id"],
-            user_id=record["user_id"],
-            institute_id=record["institute_id"],
-            username=record["username"],
-            token_hash=record["token_hash"],
-            pair_id=record["pair_id"],
-            platform_access_token=record["platform_access_token"],
-            platform_refresh_token=record["platform_refresh_token"],
-        )
+        return check_access_token_sync(token, self.cipher, db_session)
 
     async def verify_token(self, token: str) -> Optional[AccessToken]:
         """TokenVerifier protocol — the resource-server side of the same store."""
+        checked = verified_token.get()
+        if checked is not None and checked[0] == token:
+            return checked[1]
+        if lanes.active():
+            return await check_access_token_off_loop(token)
         return await self.load_access_token(token)
 
     async def revoke_token(self, token: Any) -> None:

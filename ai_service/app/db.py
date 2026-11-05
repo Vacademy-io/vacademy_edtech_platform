@@ -1,4 +1,5 @@
 import logging
+import threading
 from contextlib import contextmanager
 from typing import Iterator, Optional
 
@@ -16,6 +17,41 @@ _engine: Optional[Engine] = None
 _SessionLocal: Optional[sessionmaker] = None
 
 
+_mcp_engine: Optional[Engine] = None
+_McpSessionLocal: Optional[sessionmaker] = None
+_mcp_engine_lock = threading.Lock()
+_search_path_listening = False
+_search_path_lock = threading.Lock()
+
+MCP_POOL_TIMEOUT_S = 5
+MCP_CONNECT_ARGS = {
+    "application_name": "ai_service_mcp",
+    "connect_timeout": 5,
+    "keepalives_idle": 30,
+    "keepalives_interval": 10,
+    "keepalives_count": 3,
+}
+#: Transaction-local, so nothing outlives the transaction on a pooled connection.
+_MCP_TIMEOUTS_SQL = text(
+    "SELECT set_config('statement_timeout', '60000', true), set_config('lock_timeout', '10000', true)"
+)
+
+
+def _listen_for_search_path(target_schema: Optional[str]) -> None:
+    """Optionally set search_path to a specific schema on session begin. On Session itself, so once per process."""
+    global _search_path_listening
+    if not target_schema:
+        return
+    with _search_path_lock:
+        if _search_path_listening:
+            return
+        _search_path_listening = True
+
+    @event.listens_for(Session, "after_begin")
+    def set_search_path(session: Session, transaction, connection):  # type: ignore[no-redef]
+        session.execute(text(f"SET search_path TO {target_schema}"))
+
+
 def _create_engine() -> Engine:
     settings = get_settings()
     url = settings.build_sqlalchemy_url()
@@ -29,14 +65,23 @@ def _create_engine() -> Engine:
         future=True,
     )
 
-    # Optionally set search_path to a specific schema on session begin
-    target_schema = settings.db_schema
+    _listen_for_search_path(settings.db_schema)
+    return engine
 
-    if target_schema:
-        @event.listens_for(Session, "after_begin")
-        def set_search_path(session: Session, transaction, connection):  # type: ignore[no-redef]
-            session.execute(text(f"SET search_path TO {target_schema}"))
 
+def _create_mcp_engine() -> Engine:
+    settings = get_settings()
+    engine = create_engine(
+        settings.build_sqlalchemy_url(),
+        pool_size=settings.mcp_lane_connections(),
+        max_overflow=0,
+        pool_timeout=MCP_POOL_TIMEOUT_S,
+        pool_recycle=settings.db_pool_recycle_seconds,
+        pool_pre_ping=True,
+        future=True,
+        connect_args=dict(MCP_CONNECT_ARGS),
+    )
+    _listen_for_search_path(settings.db_schema)
     return engine
 
 
@@ -56,6 +101,33 @@ def get_sessionmaker() -> sessionmaker:
     return _SessionLocal
 
 
+def get_mcp_engine() -> Engine:
+    """The engine behind MCP's worker threads, kept apart from the main pool. Created on first use."""
+    global _mcp_engine, _McpSessionLocal
+    with _mcp_engine_lock:
+        if _mcp_engine is None:
+            engine = _create_mcp_engine()
+            factory = sessionmaker(bind=engine, expire_on_commit=False, future=True)
+
+            @event.listens_for(factory, "after_begin")
+            def set_mcp_timeouts(session: Session, transaction, connection):  # type: ignore[no-redef]
+                connection.execute(_MCP_TIMEOUTS_SQL)
+
+            _mcp_engine, _McpSessionLocal = engine, factory
+        return _mcp_engine
+
+
+def get_mcp_sessionmaker() -> sessionmaker:
+    get_mcp_engine()
+    assert _McpSessionLocal is not None
+    return _McpSessionLocal
+
+
+def mcp_pool_checked_out() -> int:
+    """Connections out of the MCP engine's pool. Does not create the engine."""
+    return _mcp_engine.pool.checkedout() if _mcp_engine is not None else 0
+
+
 @contextmanager
 def db_session() -> Iterator[Session]:
     """
@@ -63,6 +135,20 @@ def db_session() -> Iterator[Session]:
     """
     session_factory = get_sessionmaker()
     session: Session = session_factory()
+    try:
+        yield session
+        session.commit()
+    except Exception:
+        session.rollback()
+        raise
+    finally:
+        session.close()
+
+
+@contextmanager
+def mcp_db_session() -> Iterator[Session]:
+    """``db_session`` on the MCP engine, with the same exit semantics."""
+    session: Session = get_mcp_sessionmaker()()
     try:
         yield session
         session.commit()
