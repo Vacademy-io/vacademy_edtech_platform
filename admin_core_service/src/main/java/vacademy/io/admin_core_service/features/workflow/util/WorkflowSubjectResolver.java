@@ -3,6 +3,7 @@ package vacademy.io.admin_core_service.features.workflow.util;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
+import vacademy.io.common.auth.dto.UserDTO;
 
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -60,6 +61,13 @@ public class WorkflowSubjectResolver {
      * cached result set that will be recomputed anyway.
      */
     private static final int MAX_VALUE_CHARS = 32_000;
+
+    /**
+     * Context keys every trigger emitter fills with a {@code UserDTO}. In {@code seed_context}
+     * they are plain maps with snake_case keys, so {@link #toRetryContext(Map)} turns them back
+     * into DTOs for node expressions written against the live object.
+     */
+    private static final List<String> USER_DTO_KEYS = List.of("user", "member", "subOrgAdmin", "enrolledBy", "admin");
 
     private final ObjectMapper objectMapper;
 
@@ -128,7 +136,10 @@ public class WorkflowSubjectResolver {
      * The context a retry should re-run with: the stored seed minus the bookkeeping the
      * engine stamps per-run. Leaving {@code executionId} in would make the retry log its
      * nodes against the ORIGINAL execution, and leaving the resume markers in would make it
-     * skip straight to a node from a pause that is not happening this time.
+     * skip straight to a node from a pause that is not happening this time. Stored users are
+     * rebuilt as {@code UserDTO}s: on the raw map {@code #ctx['user'].fullName} throws (the key
+     * is {@code full_name}) and {@code #ctx['user']['fullName']} is null, which puts the
+     * expression text into emails and wrong values into outbound calls.
      */
     public Map<String, Object> toRetryContext(Map<String, Object> storedSeedContext) {
         Map<String, Object> ctx = new HashMap<>(storedSeedContext == null ? Map.of() : storedSeedContext);
@@ -138,7 +149,21 @@ public class WorkflowSubjectResolver {
         ctx.remove("__resumed_at_node");
         ctx.remove("__resumed_from_delay");
         ctx.remove("__executed_notification_nodes");
+        USER_DTO_KEYS.forEach(key -> rehydrateUser(ctx, key));
         return ctx;
+    }
+
+    private void rehydrateUser(Map<String, Object> ctx, String key) {
+        if (!(ctx.get(key) instanceof Map<?, ?> stored)) {
+            return;
+        }
+        try {
+            ctx.put(key, objectMapper.convertValue(stored, UserDTO.class));
+        } catch (IllegalArgumentException e) {
+            // Exception type only: Jackson's message can quote field values, and this map holds a password.
+            log.warn("Workflow retry context: keeping '{}' as a map, could not rebuild UserDTO ({})",
+                    key, e.getClass().getSimpleName());
+        }
     }
 
     private String asId(Object value) {
