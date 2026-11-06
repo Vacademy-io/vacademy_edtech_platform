@@ -669,6 +669,20 @@ def _wire_campaign(backend, guards_by_id):
         "total": 99, "eligible": len(body["responseIds"]), "dispatched": True, "message": "Queued"})
 
 
+async def test_campaign_filter_on_an_opt_out_list_says_why_it_is_empty(backend, settings, monkeypatch):
+    backend.lead_scope("ADMIN")
+    wire_ai(backend, credits=1000)
+    _wire_campaign(backend, {})
+
+    async def nothing(ctx, filt, max_n=500):
+        return [], {"matched": 0, "opted_out_dropped": 0, "over_cap_dropped": 0, "max": max_n,
+                    "note": m.cd.OPT_OUT_LIST_NOTE}
+
+    monkeypatch.setattr(m.cd, "resolve_filter", nothing)
+    out = await call(campaign, make_ctx(db=confirm_db()), action="start", filter={"list_ids": ["optl"]})
+    assert out["error"] == "nothing_to_call" and out["selection"]["note"] == m.cd.OPT_OUT_LIST_NOTE
+
+
 async def test_campaign_start_preview_drops_with_reasons_and_apply_sends_explicit_ids(backend, settings):
     backend.lead_scope("ADMIN")
     wire_ai(backend, credits=1000)
@@ -732,6 +746,8 @@ async def test_campaign_refuses_foreign_and_out_of_scope_lead_ids(backend, setti
     assert out["error"] == "out_of_scope" and out["ids"] == ["r-2"]
     out = await call(campaign, make_ctx(db=confirm_db()), action="start", filter={"list_ids": ["list-foreign"]})
     assert out["error"] == "unknown_list"
+    out = await call(campaign, make_ctx(db=confirm_db()), action="start", filter={"converted_from": "2026-10-01"})
+    assert out["error"] == "invalid_filter" and out["unknown_keys"] == ["converted_from"]
     out = await call(campaign, make_ctx(), action="start", lead_ids=[f"r-{i}" for i in range(501)])
     assert out["error"] == "too_many"
     out = await call(campaign, make_ctx(), action="start")
@@ -801,3 +817,46 @@ def test_module_has_no_never_call_endpoints():
     src = Path(m.__file__).read_text(encoding="utf-8")
     for bad in cd.NEVER_CALL:
         assert bad not in src
+
+
+@pytest.mark.parametrize("stored, shown", [
+    ("asha.verma@gmail.com", "a***@gmail.com"), ("9222200007", "******0007"), ("Asha Verma", "Asha Verma")])
+def test_the_lead_brief_masks_a_name_that_holds_contact(stored, shown):
+    assert m._lead_brief({"lead_id": "r-1", "parent_name": stored, "parent_mobile": "9222200007"})["name"] == shown
+
+
+@pytest.mark.parametrize("stored, shown", [
+    ("asha.verma@gmail.com", "a***@gmail.com"), ("9222200007", "******0007"), ("Asha Verma", "Asha Verma")])
+def test_a_queue_item_masks_a_name_that_holds_contact(stored, shown):
+    item = m._queue_item({"id": "q-1", "leadName": stored, "phoneNumber": "+919222200007"})
+    assert item["lead"]["name"] == shown
+
+
+@pytest.mark.parametrize("stored, shown", [
+    ("asha.verma@gmail.com", "a***@gmail.com"), ("9222200007", "******0007"), ("Asha Verma", "Asha Verma")])
+async def test_a_call_list_masks_a_lead_name_that_holds_contact(backend, stored, shown):
+    backend.lead_scope("ADMIN")
+    _search_route(backend, [_call_row("k-1", lead_name=stored)])
+    out = await call(calls_tool, make_ctx(), action="list", days=7)
+    assert out["calls"][0]["lead"]["name"] == shown
+
+
+@pytest.mark.parametrize("stored, shown", [
+    ("asha.verma@gmail.com", "a***@gmail.com"), ("9222200007", "******0007"), ("Asha Verma", "Asha Verma")])
+async def test_the_calls_of_one_lead_mask_a_name_that_holds_contact(backend, stored, shown):
+    backend.lead_scope("ADMIN")
+    backend.sql.on("FROM audience_response ar", lambda p, sql: [lead_row("r-1", "u-1", name=stored)])
+    backend.sql.on("-- crm_calls.lead_calls", [])
+    out = await call(calls_tool, make_ctx(), action="list", lead_id="r-1")
+    assert out["lead"]["name"] == shown
+
+
+@pytest.mark.parametrize("stored, shown", [
+    ("asha.verma@gmail.com", "a***@gmail.com"), ("9222200007", "******0007"), ("Asha Verma", "Asha Verma")])
+async def test_one_call_masks_a_lead_name_that_holds_contact(backend, stored, shown):
+    backend.lead_scope("ADMIN")
+    backend.sql.on("FROM telephony_call_log tcl", [{"id": "k-1", "counsellor_user_id": "c-1", "lead_in_scope": True}])
+    backend.sql.on("-- crm_calls.call_detail", [_detail_row(parent_name=stored)])
+    backend.admin_core.on("GET", f"{m.CALLS_PATH}/k-1/detail", {})
+    out = await call(calls_tool, make_ctx(), action="get", call_id="k-1")
+    assert out["lead"]["name"] == shown

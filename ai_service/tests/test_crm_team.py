@@ -255,6 +255,8 @@ async def test_assign_input_errors(backend, ctx):
     assert many["error"] == "too_many" and many["max"] == 500
     bad = await call(ctx, action="assign_leads", filter={"colour": "red"}, to_counsellor_id="c-2")
     assert bad["error"] == "invalid_filter"
+    bad = await call(ctx, action="assign_leads", filter={"converted_from": "2026-10-01"}, to_counsellor_id="c-2")
+    assert bad["error"] == "invalid_filter" and bad["unknown_keys"] == ["converted_from"]
     assert _writes(backend) == []
 
 
@@ -688,3 +690,19 @@ async def test_routing_needs_a_pool_and_a_counsellor(backend, ctx):
     backend.sql.fail = True
     assert (await call(ctx, action="pause_routing", counsellor_id="c-1"))["error"] == "query_failed"
     assert _writes(backend) == []
+
+
+@pytest.mark.parametrize("stored, shown", [
+    ("asha.verma@gmail.com", "a***@gmail.com"), ("9222200007", "******0007"), ("Asha Verma", "Asha Verma")])
+async def test_the_assign_preview_masks_a_name_that_holds_contact(backend, ctx, stored, shown):
+    _leads(backend, [lead_row("r-1", "u-1", owner_id=None, name=stored)])
+    out = await call(ctx, action="assign_leads", lead_ids=["r-1"], to_counsellor_id="c-2")
+    assert out["changes"][0]["name"] == shown
+
+
+@pytest.mark.parametrize("stored, shown", [
+    ("asha.verma@gmail.com", "a***@gmail.com"), ("9222200007", "******0007"), ("Asha Verma", "Asha Verma")])
+async def test_the_reassign_preview_masks_a_name_that_holds_contact(backend, ctx, stored, shown):
+    _profiles(backend, [{**_profile("p-1", "u-1", "r-1"), "parent_name": stored}])
+    out = await call(ctx, action="reassign_from_counsellor", from_counsellor_id="c-1", to_counsellor_id="c-2")
+    assert out["changes"][0]["name"] == shown

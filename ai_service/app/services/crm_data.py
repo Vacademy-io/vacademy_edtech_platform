@@ -37,6 +37,7 @@ import json
 import logging
 import re
 import secrets
+import unicodedata
 from dataclasses import dataclass
 from datetime import date, datetime, time as dtime, timedelta, timezone
 from typing import Any, Awaitable, Callable, Dict, Iterable, List, Optional, Sequence, Tuple, Union
@@ -259,14 +260,68 @@ def mask_phone(value: Any) -> Optional[str]:
     return "*" * min(len(d) - 4, 6) + d[-4:]
 
 
+#: The one part of an address a list may show: a single host name. Anything else in the field stays hidden.
+_EMAIL_DOMAIN_RE = re.compile(r"^(?:[A-Za-z0-9-]+\.)+[A-Za-z]{2,}$")
+_EMAIL_DOMAIN_MAX_LABELS = 4
+
+
 def mask_email(value: Any) -> Optional[str]:
     s = str(value or "").strip()
     if not s:
         return None
     local, at, domain = s.partition("@")
-    if not at or not domain:
+    if (not at or not _EMAIL_DOMAIN_RE.match(domain) or len(domain) > 80 or len(ld.digits(domain)) >= 7
+            or domain.count(".") >= _EMAIL_DOMAIN_MAX_LABELS):
         return "***"
-    return f"{local[:1]}***@{clean(domain, 80)}"
+    return f"{local[:1]}***@{domain}"
+
+
+def name_is_contact(value: Any) -> bool:
+    """A name that holds an email or phone number: an "@", or as many digits as a number needs."""
+    s = unicodedata.normalize("NFKC", str(value or ""))
+    return "@" in s or len(ld.digits(s)) >= 7
+
+
+def mask_name(value: Any) -> Any:
+    """A name as a list may show it. One that holds an email or phone number is masked like those fields."""
+    if not name_is_contact(value):
+        return value
+    s = unicodedata.normalize("NFKC", str(value))
+    return mask_email(s) if "@" in s else mask_phone(s)
+
+
+def shown_name(candidates: Iterable[Any]) -> Optional[str]:
+    """The first name that does not hold an email or phone number; only when none does not, the first one masked."""
+    names_ = [c for c in candidates if clean(c)]
+    plain = next((c for c in names_ if not name_is_contact(c)), None)
+    if plain is not None:
+        return clean(plain)
+    return clean(mask_name(names_[0])) if names_ else None
+
+
+_FORMULA_START = ("=", "+", "-", "@", "\t", "\r", "\n")
+#: What a real source key looks like (META_LEAD_ADS, WEBSITE_FORM, google-ads …): a short enum-shaped label, no spaces.
+_SOURCE_KEY_RE = re.compile(r"^[A-Za-z0-9_.:/-]{1,40}$")
+_SOURCE_KEY_MAX_PARTS = 5
+
+
+def csv_cell(value: Any) -> str:
+    """A CSV cell that spreadsheet apps never evaluate as a formula."""
+    s = "" if value is None else str(value)
+    guarded = s.startswith(_FORMULA_START) or _CTRL_RE.sub("", s).lstrip().startswith(_FORMULA_START)
+    return "'" + s if guarded else s
+
+
+def is_source_key(value: Any) -> bool:
+    if not isinstance(value, str) or not _SOURCE_KEY_RE.match(value) or "://" in value:
+        return False
+    return len(re.findall(r"[A-Za-z0-9]+", value)) <= _SOURCE_KEY_MAX_PARTS
+
+
+def safe_source(value: Any) -> Any:
+    """A lead source as it may reach the model: plain when it looks like a key, else wrapped as lead content."""
+    text_ = clean(value, 120) or "UNKNOWN"
+    return text_ if is_source_key(text_) else lead_content(text_, limit=120)
 
 
 # ── names (auth-service, JWT; name only) ─────────────────────────────────
@@ -524,11 +579,58 @@ def scope_sql(s: Scope, ar: str = "ar", ulp: str = "ulp", lu: str = "lu") -> Tup
     return "(" + " AND ".join(parts) + ")", params
 
 
+# ── opt-outs ─────────────────────────────────────────────────────────────
+
+#: A row of an opt-out list: its own source, or its audience's campaign type. The same rule as crm_admissions._ON_LIST.
+OPT_OUT_LIST_SQL = "(COALESCE({r}.source_type, '') = 'OPT_OUT' OR COALESCE({a}.campaign_type, '') LIKE '%OPT_OUT%')"
+_OPT_OUT_ROW_SQL = "(o.overall_status = 'OPTED_OUT' OR " + OPT_OUT_LIST_SQL.format(r="o", a="oa") + ")"
+#: The people with a row in this institute that is flagged or on an opt-out list.
+_OPTED_PERSON_SQL = """SELECT DISTINCT o.user_id AS pid
+    FROM audience_response o
+    JOIN audience oa ON oa.id = o.audience_id AND oa.institute_id = :inst
+    WHERE {match} AND """ + _OPT_OUT_ROW_SQL
+#: Bulk reads: everyone who opted out here, read once. ``ou`` is the row's user, ``os`` its linked student.
+_OPTED_PEOPLE_CTE = "opted_people AS MATERIALIZED (\n    " + _OPTED_PERSON_SQL.format(match="o.user_id IS NOT NULL") + "\n)"
+_LEAD_OPTED_JOIN = """LEFT JOIN opted_people ou ON ou.pid = ar.user_id
+LEFT JOIN opted_people os ON os.pid = ar.student_user_id"""
+#: Reads of a few rows: the same two people, looked up per row.
+LEAD_OPTED_LOOKUP = f"""LEFT JOIN LATERAL (
+    {_OPTED_PERSON_SQL.format(match="o.user_id = ar.user_id")}
+) ou ON TRUE
+LEFT JOIN LATERAL (
+    {_OPTED_PERSON_SQL.format(match="o.user_id = ar.student_user_id")}
+) os ON TRUE
+"""
+_ROW_IS_OPT_OUT = "COALESCE(ar.overall_status = 'OPTED_OUT', FALSE) OR " + OPT_OUT_LIST_SQL.format(r="ar", a="a")
+#: This row stays out of lists, whatever its date. Needs ``ou`` and ``os``. Never null.
+LEAD_OPTED_OUT_SQL = "(" + _ROW_IS_OPT_OUT + " OR ou.pid IS NOT NULL OR os.pid IS NOT NULL)"
+#: The row's own person opted out here. Needs ``ou``. Never null.
+OWN_OPTED_OUT_SQL = "(" + _ROW_IS_OPT_OUT + " OR ou.pid IS NOT NULL)"
+#: The same rule in words, for definitions and tool text.
+OPT_OUT_RULE_TEXT = ("Lists leave out a lead when the row is marked opted out or sits on an opt-out list, or when the "
+                     "lead's user or linked student has a row here that is, whatever the date of this lead. The match "
+                     "is by person, not by number or email, so another guardian's opt-out does not hide this lead. "
+                     "Rows of an opt-out list are not leads and are never shown in lists, export or my_day; find and "
+                     "get can still open one. Message sends check the person's id, number and email, and calls check "
+                     "the row and the person's id, so a lead left out only for its linked student carries "
+                     "linked_student_opted_out and they are not refused for that reason.")
+OPT_OUT_LIST_NOTE = ("Opt-out list rows are not shown here, so a list that holds only those shows nothing and they are "
+                     "not counted in excluded.")
+LINKED_STUDENT_OPT_OUT_NOTE = ("Lists leave this lead out because its linked student opted out. Message sends check the "
+                               "person's id, number and email, and calls check the row and the person's id, so they are "
+                               "not refused for that reason.")
+OPT_OUT_READD_NOTE = ("A new lead on this person's own record will not appear in crm_leads list, export or my_day, and "
+                      "message sends and calls to them stay refused. A lead under a different account counts as a "
+                      "different person.")
+
+
 # ── leads ────────────────────────────────────────────────────────────────
 
 _ID_RE = re.compile(r"^[A-Za-z0-9_.:-]{1,80}$")
 
 _LEAD_COLUMNS = f"""
+{OPT_OUT_LIST_SQL.format(r="ar", a="a")} AS on_opt_out_list, {LEAD_OPTED_OUT_SQL} AS lead_opted_out,
+{OWN_OPTED_OUT_SQL} AS own_opted_out,
 ar.id AS lead_id, ar.user_id AS lead_user_id, ar.audience_id AS list_id, a.campaign_name AS list_name,
 ar.overall_status, ar.audience_status, ar.submitted_at, ar.updated_at, ar.source_type, ar.lead_status_id,
 ar.enquiry_id, ar.parent_name, ar.parent_email, ar.parent_mobile,
@@ -540,7 +642,7 @@ ulp.updated_at AS profile_updated_at, lu.user_id AS enquiry_owner_id, ulp.assign
 def _lead_sql(s: Scope, where: str) -> Tuple[str, Dict[str, Any]]:
     pred, params = scope_sql(s)
     sql = (f"SELECT {_LEAD_COLUMNS},\n       CASE WHEN {pred} THEN TRUE ELSE FALSE END AS in_scope\n"
-           f"FROM audience_response ar\n{LEAD_OWNER_JOINS}\nWHERE {where}\n"
+           f"FROM audience_response ar\n{LEAD_OWNER_JOINS}\n{LEAD_OPTED_LOOKUP}WHERE {where}\n"
            f"ORDER BY ar.submitted_at DESC NULLS LAST, ar.id\nLIMIT :lim")
     return sql, {**params, "inst": s.institute_id}
 
@@ -549,10 +651,20 @@ def is_live(row: Dict[str, Any]) -> bool:
     return row.get("audience_status") == "ACTIVE" and row.get("overall_status") != "OPTED_OUT"
 
 
+def lead_opted_out(row: Dict[str, Any]) -> bool:
+    """The answer crm_leads list gives for this row: it stays out as opted out."""
+    return row.get("overall_status") == "OPTED_OUT" or bool(row.get("lead_opted_out"))
+
+
+def own_opted_out(row: Dict[str, Any]) -> bool:
+    """This row's own person opted out here, not only its linked student. Needs OWN_OPTED_OUT_SQL as own_opted_out."""
+    return row.get("overall_status") == "OPTED_OUT" or bool(row.get("own_opted_out"))
+
+
 def lead_flags(row: Dict[str, Any]) -> List[str]:
     flags = []
-    if row.get("overall_status") == "OPTED_OUT":
-        flags.append("opted_out")
+    if lead_opted_out(row):
+        flags.append("opted_out" if own_opted_out(row) else "linked_student_opted_out")
     if row.get("audience_status") and row.get("audience_status") != "ACTIVE":
         flags.append("deleted")
     if "CONVERTED" in (row.get("status_key"), row.get("conversion_status")):
@@ -561,6 +673,20 @@ def lead_flags(row: Dict[str, Any]) -> List[str]:
             and row["enquiry_owner_id"] != row["profile_owner_id"]:
         flags.append("ownership_conflict")
     return flags
+
+
+def person_flags(rows_: Iterable[Dict[str, Any]]) -> List[str]:
+    """Flags for a person's rows. The opt-out flags hold only when none of these rows would be listed."""
+    rs = list(rows_)
+    flags = {f for r in rs for f in lead_flags(r)}
+    if any(r.get("audience_status") == "ACTIVE" and not lead_opted_out(r) for r in rs):
+        flags -= {"opted_out", "linked_student_opted_out"}
+    return sorted(flags)
+
+
+def person_opted_out(flags: Iterable[str]) -> bool:
+    """A person's ``opted_out`` from their ``person_flags``: list leaves out every row those flags cover."""
+    return bool({"opted_out", "linked_student_opted_out"} & set(flags))
 
 
 def _phone_where(phone: str) -> Tuple[str, Dict[str, Any]]:
@@ -607,11 +733,12 @@ async def resolve_lead(ctx: ToolContext, lead_id: Any = None, phone: Any = None,
     people = list(dict.fromkeys(r.get("lead_user_id") or r["lead_id"] for r in visible))
     if len(people) > 1:
         return err("ambiguous_lead", candidates=[
-            {"lead_id": r["lead_id"], "lead_user_id": r.get("lead_user_id"), "name": clean(r.get("parent_name")),
+            {"lead_id": r["lead_id"], "lead_user_id": r.get("lead_user_id"), "name": clean(mask_name(r.get("parent_name"))),
              "list": clean(r.get("list_name")), "phone": mask_phone(r.get("parent_mobile")),
              "email": mask_email(r.get("parent_email")), "submitted_at": _iso(r.get("submitted_at"))}
             for r in visible[:10]])
-    lead = next((r for r in visible if is_live(r)), visible[0])
+    leads = [r for r in visible if not r.get("on_opt_out_list")] or visible
+    lead = next((r for r in leads if is_live(r)), leads[0])
     person = [lead]
     if lead.get("lead_user_id"):
         psql, pbase = _lead_sql(s, "ar.user_id = :luid")
@@ -663,7 +790,8 @@ async def find_people(ctx: ToolContext, query: Any, limit: int = DEFAULT_LIMIT) 
     """
     People whose lead rows match a phone (last 10 digits), an email or a name,
     within the caller's scope — including opted-out and deleted rows, which are
-    flagged. Grouped by person: ``[{person: {...}, leads: [...]}]``; contact masked.
+    flagged by the same rule as crm_leads list. Grouped by person:
+    ``[{person: {...}, leads: [...]}]``; contact masked.
     """
     q = str(query or "").strip()
     if len(q) < 2:
@@ -678,7 +806,7 @@ async def find_people(ctx: ToolContext, query: Any, limit: int = DEFAULT_LIMIT) 
     else:
         where, params = "ar.parent_name ILIKE :name", {"name": "%" + q.translate(_LIKE_ESC) + "%"}
     pred, sparams = scope_sql(s)
-    sql = (f"SELECT {_LEAD_COLUMNS}\nFROM audience_response ar\n{LEAD_OWNER_JOINS}\n"
+    sql = (f"SELECT {_LEAD_COLUMNS}\nFROM audience_response ar\n{LEAD_OWNER_JOINS}\n{LEAD_OPTED_LOOKUP}"
            f"WHERE {where} AND {pred}\nORDER BY ar.submitted_at DESC NULLS LAST, ar.id\nLIMIT :lim")
     found, ok = rows(ctx, sql, {**sparams, **params, "inst": s.institute_id, "lim": 200})
     if not ok:
@@ -688,22 +816,23 @@ async def find_people(ctx: ToolContext, query: Any, limit: int = DEFAULT_LIMIT) 
     for r in found:
         grouped.setdefault(r.get("lead_user_id") or r["lead_id"], []).append(r)
     people = list(grouped.items())[:limit]
-    missing = [k for k, rs in people if not any(clean(r.get("parent_name")) for r in rs)]
+    missing = [k for k, rs in people
+               if not any(clean(r.get("parent_name")) and not name_is_contact(r.get("parent_name")) for r in rs)]
     display = await names(ctx, missing) if missing else {}
     out = []
     for key, rs in people:
         top = rs[0]
-        flags = sorted({f for r in rs for f in lead_flags(r)})
+        flags = person_flags(rs)
         if all(r.get("audience_status") != "ACTIVE" for r in rs):
             flags = sorted(set(flags) | {"deleted"})
         else:
             flags = [f for f in flags if f != "deleted"]
         out.append({
             "person": {"lead_user_id": top.get("lead_user_id"),
-                       "name": next((clean(r.get("parent_name")) for r in rs if clean(r.get("parent_name"))), None)
-                       or display.get(key) or None,
+                       "name": shown_name([r.get("parent_name") for r in rs] + [display.get(key)]),
                        "phone": mask_phone(top.get("parent_mobile")), "email": mask_email(top.get("parent_email")),
-                       "owner_id": top.get("owner_id"), "tier": top.get("lead_tier"), "flags": flags},
+                       "owner_id": top.get("owner_id"), "tier": top.get("lead_tier"), "flags": flags,
+                       "opted_out": person_opted_out(flags)},
             "leads": [{"lead_id": r["lead_id"], "list_id": r.get("list_id"), "list": clean(r.get("list_name")),
                        "status": r.get("status_key"), "flags": lead_flags(r),
                        "submitted_at": _iso(r.get("submitted_at"))} for r in rs],
@@ -716,6 +845,14 @@ async def find_people(ctx: ToolContext, query: Any, limit: int = DEFAULT_LIMIT) 
 FILTER_KEYS = ("status_keys", "exclude_status_keys", "tier", "owner", "list_ids", "source", "min_score", "max_score",
                "submitted_from", "submitted_to", "last_activity_before", "sla", "never_called", "has_open_followup",
                "converted")
+_OPT_OUT_LISTS_SQL = """
+SELECT a.id FROM audience a
+WHERE a.id = ANY(:lists) AND a.institute_id = :inst AND COALESCE(a.campaign_type, '') LIKE '%OPT_OUT%'
+"""
+
+#: Filter keys for reads only (crm_leads list and export); bulk writes and AI-call targeting never take them.
+READ_ONLY_FILTER_KEYS = ("converted_from", "converted_to")
+_CONVERTED_MAX_DAYS = 366
 
 
 def _as_list(value: Any) -> List[str]:
@@ -733,24 +870,59 @@ def _parse_date(value: Any) -> Optional[date]:
         return None
 
 
+def has_converted_dates(filter_obj: Any) -> bool:
+    return isinstance(filter_obj, dict) and any(filter_obj.get(k) not in (None, "") for k in READ_ONLY_FILTER_KEYS)
+
+
+def _converted_bounds(ctx: ToolContext, f: Dict[str, Any]) -> Union[Tuple[datetime, datetime], Dict[str, Any]]:
+    """[from, to + 1 day) as the naive-UTC instants the column stores; ``to`` defaults to today."""
+    tz = institute_tz(ctx)
+    start = _parse_date(f.get("converted_from"))
+    if start is None:
+        return err("invalid_filter", message="converted_from is required with these dates (YYYY-MM-DD).")
+    end = _parse_date(f.get("converted_to")) if f.get("converted_to") else datetime.now(zone(tz) or timezone.utc).date()
+    if end is None:
+        return err("invalid_filter", message="converted_to must be a date (YYYY-MM-DD).")
+    if end < start:
+        return err("invalid_filter", message="converted_from is after converted_to.")
+    if (end - start).days + 1 > _CONVERTED_MAX_DAYS:
+        return err("invalid_filter", message=f"The converted dates can cover at most {_CONVERTED_MAX_DAYS} days.")
+    try:
+        return _utc_naive(_day_start(start, tz)), _utc_naive(_day_start(end + timedelta(days=1), tz))
+    except OverflowError:
+        return err("invalid_filter", message="The converted dates are out of range. Use real dates (YYYY-MM-DD).")
+
+
 async def resolve_filter(ctx: ToolContext, filter_obj: Optional[Dict[str, Any]],
-                         max_n: int = MAX_BULK) -> Tuple[Optional[List[str]], Dict[str, Any]]:
+                         max_n: int = MAX_BULK, *, allow_converted_dates: bool = False,
+                         offset: int = 0) -> Tuple[Optional[List[str]], Dict[str, Any]]:
     """
     Lead ids (live: not deleted, not opted out; newest first, at most ``max_n``)
-    matching the crm_leads filter object, within the caller's scope.
-    ``(ids, info)`` with info ``{matched, opted_out_dropped, over_cap_dropped, max}``;
-    ``(None, error)`` when the filter is invalid or the read fails.
+    matching the crm_leads filter object, within the caller's scope. Opted out is
+    LEAD_OPTED_OUT_SQL; the rows of an opt-out list are not leads and never match.
+    ``(ids, info)`` with info ``{matched, opted_out_dropped, over_cap_dropped, max}``
+    and ``note`` when the filter names an opt-out list; ``(None, error)`` when the
+    filter is invalid or the read fails.
+
+    With ``allow_converted_dates`` the filter may also hold READ_ONLY_FILTER_KEYS.
+    Then the newest conversions come first and SQL pages from ``offset``, so
+    ``max_n`` is a page and over_cap_dropped stays 0.
     """
     f = dict(filter_obj or {})
-    unknown_keys = sorted(set(f) - set(FILTER_KEYS))
+    allowed = FILTER_KEYS + (READ_ONLY_FILTER_KEYS if allow_converted_dates else ())
+    unknown_keys = sorted(set(f) - set(allowed))
     if unknown_keys:
-        return None, err("invalid_filter", unknown_keys=unknown_keys, allowed=list(FILTER_KEYS))
+        return None, err("invalid_filter", unknown_keys=unknown_keys, allowed=list(allowed))
+    dated = allow_converted_dates and has_converted_dates(f)
+    bounds = _converted_bounds(ctx, f) if dated else None
+    if is_error(bounds):
+        return None, bounds
     s = await sql_scope(ctx)
     if is_error(s):
         return None, s
     pred, params = scope_sql(s)
     params["inst"] = s.institute_id
-    where = ["ar.audience_status = 'ACTIVE'", pred]
+    where = ["ar.audience_status = 'ACTIVE'", "NOT " + OPT_OUT_LIST_SQL.format(r="ar", a="a"), pred]
     status_keys = [k.upper() for k in _as_list(f.get("status_keys"))]
     if status_keys:
         where.append(f"{STATUS_KEY_SQL} = ANY(:f_status)")
@@ -776,12 +948,15 @@ async def resolve_filter(ctx: ToolContext, filter_obj: Optional[Dict[str, Any]],
             where.append("(lu.user_id = :f_owner OR ulp.assigned_counselor_id = :f_owner)")
             params["f_owner"] = oid
     list_ids = _as_list(f.get("list_ids"))
+    names_opt_out_list = False
     if list_ids:
         known = await verify_ids(ctx, "lists", list_ids)
         if is_error(known):
             return None, known
         where.append("ar.audience_id = ANY(:f_lists)")
         params["f_lists"] = list_ids
+        opt_lists, ok = rows(ctx, _OPT_OUT_LISTS_SQL, {"lists": list_ids, "inst": s.institute_id})
+        names_opt_out_list = bool(ok and opt_lists)
     if f.get("source"):
         keys = await source_keys(ctx, f.get("source"))
         if is_error(keys):
@@ -834,22 +1009,41 @@ async def resolve_filter(ctx: ToolContext, filter_obj: Optional[Dict[str, Any]],
     if converted in ("exclude", "only"):
         conv = "(ulp.conversion_status = 'CONVERTED')"
         where.append(f"COALESCE({conv}, FALSE) = FALSE" if converted == "exclude" else conv)
+    if dated:
+        where.append("ulp.conversion_status = 'CONVERTED' AND ulp.converted_at >= :f_converted_from "
+                     "AND ulp.converted_at < :f_converted_to")
+        params["f_converted_from"], params["f_converted_to"] = bounds
     max_n = max(1, int(max_n))
-    sql = ("SELECT ar.id, (ar.overall_status = 'OPTED_OUT') AS opted_out,\n"
+    newest = "ulp.converted_at DESC NULLS LAST" if dated else "ar.submitted_at DESC NULLS LAST"
+    sql = (f"WITH {_OPTED_PEOPLE_CTE}\n"
+           "SELECT ar.id, ow.opted AS opted_out,\n"
            "       COUNT(*) OVER () AS total,\n"
-           "       COUNT(*) FILTER (WHERE ar.overall_status = 'OPTED_OUT') OVER () AS opted_out_total\n"
-           f"FROM audience_response ar\n{LEAD_OWNER_JOINS}\nWHERE " + "\n  AND ".join(where) +
-           "\nORDER BY (ar.overall_status = 'OPTED_OUT') NULLS FIRST, ar.submitted_at DESC NULLS LAST, ar.id\nLIMIT :lim")
+           "       COUNT(*) FILTER (WHERE ow.opted) OVER () AS opted_out_total\n"
+           f"FROM audience_response ar\n{LEAD_OWNER_JOINS}\n{_LEAD_OPTED_JOIN}\n"
+           f"CROSS JOIN LATERAL (SELECT {LEAD_OPTED_OUT_SQL} AS opted) ow\nWHERE " + "\n  AND ".join(where) +
+           f"\nORDER BY ow.opted, {newest}, ar.id\nLIMIT :lim" +
+           (" OFFSET :off" if dated else ""))
     params["lim"] = max_n
+    if dated:
+        params["off"] = max(0, int(offset))
     found, ok = rows(ctx, sql, params, timeout_ms=20000)
     if not ok:
         return None, err("query_failed")
-    total = int(found[0]["total"]) if found else 0
-    opted = int(found[0]["opted_out_total"] or 0) if found else 0
+    counted = found
+    if dated and not found and params["off"] > 0:
+        # Past the end the page has no row to read the totals from.
+        counted, ok = rows(ctx, sql, {**params, "off": 0, "lim": 1}, timeout_ms=20000)
+        if not ok:
+            return None, err("query_failed")
+    total = int(counted[0]["total"]) if counted else 0
+    opted = int(counted[0]["opted_out_total"] or 0) if counted else 0
     ids = [r["id"] for r in found if not r.get("opted_out")]
     live = total - opted
-    return ids, {"matched": live, "opted_out_dropped": opted, "over_cap_dropped": max(0, live - len(ids)),
-                 "max": max_n}
+    summary: Dict[str, Any] = {"matched": live, "opted_out_dropped": opted,
+                               "over_cap_dropped": 0 if dated else max(0, live - len(ids)), "max": max_n}
+    if names_opt_out_list:
+        summary["note"] = OPT_OUT_LIST_NOTE
+    return ids, summary
 
 
 # ── sources ──────────────────────────────────────────────────────────────
@@ -1914,11 +2108,15 @@ async def anchored_timeline(ctx: ToolContext, lead_ref: Any, limit: int = 10,
 __all__ = [
     "AC", "NEVER_CALL", "DEFAULT_TZ", "DEFAULT_LIMIT", "MAX_LIMIT", "MAX_BULK", "LEAD_CONTENT_NOTE",
     "err", "is_error", "guard_identity", "ac", "nc", "rows", "entitlements_for", "feature_on",
-    "clean", "lead_content", "mask_phone", "mask_email", "names",
+    "clean", "lead_content", "mask_phone", "mask_email", "name_is_contact", "mask_name", "csv_cell", "is_source_key",
+    "safe_source", "names",
     "Scope", "SCOPE_MODES", "LEARNER_ROLES", "scope", "sql_scope", "require_admin",
     "LEAD_OWNER_JOINS", "LEAD_OWNER_LEFT_JOINS", "STATUS_KEY_SQL", "TIER_SQL", "RESPONSE_EVENT_SQL",
     "owner_display_sql", "live_lead_sql", "scope_sql",
-    "is_live", "lead_flags", "resolve_lead", "resolve_leads", "find_people", "FILTER_KEYS", "resolve_filter",
+    "OPT_OUT_LIST_SQL", "LEAD_OPTED_LOOKUP", "LEAD_OPTED_OUT_SQL", "OWN_OPTED_OUT_SQL", "OPT_OUT_RULE_TEXT",
+    "OPT_OUT_LIST_NOTE", "LINKED_STUDENT_OPT_OUT_NOTE", "OPT_OUT_READD_NOTE", "shown_name",
+    "is_live", "lead_opted_out", "own_opted_out", "lead_flags", "person_flags", "resolve_lead", "resolve_leads", "find_people", "FILTER_KEYS", "READ_ONLY_FILTER_KEYS",
+    "has_converted_dates", "resolve_filter",
     "SOURCE_ALIASES", "institute_sources", "source_keys", "ID_KINDS", "verify_ids", "counsellor_roster",
     "zone", "institute_tz", "iso", "PERIODS", "Window", "window", "DEFINITIONS", "definition", "DATE_BASES",
     "date_basis", "payment_at_sql",

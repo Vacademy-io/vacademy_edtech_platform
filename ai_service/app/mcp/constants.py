@@ -69,7 +69,7 @@ MCP_EXPOSED_TOOLS: Tuple[str, ...] = (
     "crm_messages",         # READ:  a lead's WhatsApp / email history, inbox, approved templates, escalations
     "crm_send",             # WRITE: outbound — one approved WhatsApp template or one email to one lead; single-use confirm token
     "crm_reports",          # READ:  CRM reports, custom reports and the live activity feed, each figure with its definition
-    "crm_collections",      # READ:  a lead's dues, who owes, what falls due, converted-not-paid, failed checkouts, collections
+    "crm_collections",      # READ:  a lead's dues, who owes, what falls due, converted-not-paid, failed checkouts, collections, admissions
     "crm_payment_reminders",  # WRITE: outbound, admins only — fee reminders for unpaid installments / pending invoices
 )
 
@@ -478,7 +478,8 @@ MCP_TOOL_GROUP_SUMMARIES: Dict[str, str] = {
     "crm_collections": (
         "See what a lead owes, who is overdue, what falls due soon, converted leads who have not paid and failed "
         "checkouts — for the people behind the leads each user can see. Admins also see money collected, by day, "
-        "method, course and counsellor."
+        "method, course and counsellor, and the admissions report: who was converted or enrolled in a period, with "
+        "plan, fees, counsellor and source, as a masked list or a private file with full contact details."
     ),
     "crm_payment_reminders": (
         "Let the connected AI app send fee reminders for unpaid installments or pending invoices — through your "
@@ -511,7 +512,7 @@ MCP_TOOL_AREAS: Dict[str, Dict[str, str]] = {
     "crm_messages": {"label": "CRM: Messages", "summary": "Lead WhatsApp and email history, inbox and templates."},
     "crm_reports": {"label": "CRM: Reports",
                     "summary": "Sources, funnel, counsellors, calling, follow-ups, SLAs, custom reports, live activity."},
-    "crm_payments": {"label": "CRM: Payments", "summary": "Dues, overdue fees, collections and fee reminders."},
+    "crm_payments": {"label": "CRM: Payments", "summary": "Dues, overdue fees, collections, admissions and fee reminders."},
 }
 
 #: group key → where it sits on the settings page.

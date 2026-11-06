@@ -98,10 +98,13 @@ SCHEMA: Dict[str, Any] = {
             "to_counsellor_id | round_robin + candidate_ids? (default: every counsellor you can assign to) | "
             "unassign (admins only; back to the unassigned pool)): gives each PERSON an owner across all their "
             "lists in this institute. Deleted and already-assigned-to-that-counsellor leads, and (except for "
-            "unassign) opted-out leads, are skipped with a reason.\n"
+            "unassign) leads that crm_leads list leaves out as opted out, are skipped with a reason. A row of an "
+            "opt-out list never gets anyone a new owner; unassign clears the person's owner and leaves the row as "
+            "it is.\n"
             "- reassign_from_counsellor (from_counsellor_id; mode: single + to_counsellor_id | round_robin; "
             "lead_ids? to move only some of their leads; mark_inactive? to also stop new leads being routed to "
-            "them): moves that counsellor's open leads (not converted — LOST leads included), at most 500 a call.\n"
+            "them): moves that counsellor's open leads (not converted — LOST leads included), at most 500 a call. "
+            "People that crm_leads list leaves out as opted out are skipped with a reason.\n"
             "- pause_routing / resume_routing (counsellor_id): stop / restart routing new leads to a counsellor "
             "through the lead pools. No lead moves — for a short leave prefer pause_routing to reassigning.\n"
             "Moves are permanent (leads do not come back on resume); open follow-ups stay with whoever created "
@@ -146,27 +149,30 @@ SCHEMA: Dict[str, Any] = {
 
 # ── SQL ──────────────────────────────────────────────────────────────────
 
-#: People (lead user ids) with an opted-out lead row anywhere in this institute.
+#: People (lead user ids) with a row anywhere in this institute that is flagged or on an opt-out list.
 _OPTED_OUT_SQL = """
 SELECT DISTINCT ar.user_id
 FROM audience_response ar JOIN audience a ON a.id = ar.audience_id AND a.institute_id = :inst
-WHERE ar.user_id = ANY(:uids) AND ar.overall_status = 'OPTED_OUT'
+WHERE ar.user_id = ANY(:uids) AND (ar.overall_status = 'OPTED_OUT' OR """ + cd.OPT_OUT_LIST_SQL.format(r="ar", a="a") + """)
 """
+#: This user has a row in this institute that is flagged or on an opt-out list. Never null.
+_PERSON_OPTED_SQL = """EXISTS (SELECT 1 FROM audience_response x JOIN audience xa ON xa.id = x.audience_id AND xa.institute_id = :inst
+               WHERE x.user_id = {uid} AND (x.overall_status = 'OPTED_OUT' OR """ + cd.OPT_OUT_LIST_SQL.format(r="x", a="xa") + "))"
 
 #: A counsellor's open leads as the workbench counts them (profile owner, not converted), each with the
-#: person's best live response here — in-scope first — for display and the scope check. Binds :inst,
-#: :from_id, :lim (+ :only_ids) and the scope_* params.
+#: person's best live response here, never an opt-out list row — in-scope first, then one crm_leads list shows —
+#: for display and the scope check. Binds :inst, :from_id, :lim (+ :only_ids) and the scope_* params.
 _OPEN_PROFILES_SQL = """
 SELECT ulp.id AS profile_id, ulp.user_id AS lead_user_id, ulp.conversion_status,
        r.lead_id, r.list_id, r.list_name, r.parent_name, r.parent_mobile, r.enquiry_owner_id, r.in_scope,
-       EXISTS (SELECT 1 FROM audience_response x JOIN audience xa ON xa.id = x.audience_id AND xa.institute_id = :inst
-               WHERE x.user_id = ulp.user_id AND x.overall_status = 'OPTED_OUT') AS opted_out,
+       """ + _PERSON_OPTED_SQL.format(uid="ulp.user_id") + """ OR COALESCE(r.student_opted, FALSE) AS opted_out,
        COUNT(*) OVER () AS total
 FROM user_lead_profile ulp
 LEFT JOIN LATERAL (
     SELECT ar.id AS lead_id, ar.audience_id AS list_id, a.campaign_name AS list_name, ar.parent_name,
            ar.parent_mobile, lu.user_id AS enquiry_owner_id,
-           CASE WHEN {pred} THEN TRUE ELSE FALSE END AS in_scope
+           CASE WHEN {pred} THEN TRUE ELSE FALSE END AS in_scope,
+           """ + _PERSON_OPTED_SQL.format(uid="ar.student_user_id") + """ AS student_opted
     FROM audience_response ar
     JOIN audience a ON a.id = ar.audience_id AND a.institute_id = :inst
     LEFT JOIN LATERAL (
@@ -174,8 +180,8 @@ LEFT JOIN LATERAL (
         WHERE l.source = 'ENQUIRY' AND l.source_id = ar.enquiry_id
         ORDER BY l.created_at DESC LIMIT 1
     ) lu ON true
-    WHERE ar.user_id = ulp.user_id AND ar.audience_status = 'ACTIVE'
-    ORDER BY in_scope DESC, ar.submitted_at DESC NULLS LAST, ar.id
+    WHERE ar.user_id = ulp.user_id AND ar.audience_status = 'ACTIVE' AND NOT """ + cd.OPT_OUT_LIST_SQL.format(r="ar", a="a") + """
+    ORDER BY in_scope DESC, student_opted, ar.submitted_at DESC NULLS LAST, ar.id
     LIMIT 1
 ) r ON true
 WHERE ulp.institute_id = :inst AND ulp.assigned_counselor_id = :from_id
@@ -360,12 +366,20 @@ def _skipped(dropped: List[Dict[str, Any]]) -> Optional[Dict[str, Any]]:
 
 # ── assign_leads ─────────────────────────────────────────────────────────
 
-def _people(rows: List[Dict[str, Any]]) -> Tuple[Dict[str, Dict[str, Any]], List[Dict[str, Any]]]:
-    """Lead rows → people (assignment is per person); rows with no person record are dropped."""
+def _people(rows: List[Dict[str, Any]], mode: Optional[str] = None
+            ) -> Tuple[Dict[str, Dict[str, Any]], List[Dict[str, Any]]]:
+    """
+    Lead rows → people (assignment is per person); rows with no person record are
+    dropped. So are opt-out list rows, except for unassign: it clears the person's
+    owner and changes no row.
+    """
     people: Dict[str, Dict[str, Any]] = {}
     dropped: List[Dict[str, Any]] = []
     for r in rows:
         uid = r.get("lead_user_id")
+        if r.get("on_opt_out_list") and mode != "unassign":
+            dropped.append({"lead_ids": [r["lead_id"]], "reason": "opt_out_list_row"})
+            continue
         if not uid:
             dropped.append({"lead_ids": [r["lead_id"]], "reason": "no_person_record"})
             continue
@@ -382,8 +396,8 @@ def _people(rows: List[Dict[str, Any]]) -> Tuple[Dict[str, Dict[str, Any]], List
 def _eligible(ctx: ToolContext, s: cd.Scope, people: Dict[str, Dict[str, Any]], mode: str,
               to: Optional[str]) -> Union[Tuple[Dict[str, Dict[str, Any]], List[Dict[str, Any]]], Dict[str, Any]]:
     """(people to assign, dropped with a reason) — or query_failed."""
-    # Opted-out people are skipped because assigning runs automations that may contact them; clearing an
-    # owner runs none.
+    # Opted-out people are skipped, by the crm_leads list rule, because assigning runs automations that may
+    # contact them; clearing an owner runs none.
     opted = _opted_out(ctx, list(people)) if mode != "unassign" else set()
     if opted is None:
         return cd.err("query_failed")
@@ -391,7 +405,8 @@ def _eligible(ctx: ToolContext, s: cd.Scope, people: Dict[str, Dict[str, Any]], 
     dropped: List[Dict[str, Any]] = []
     for uid, p in people.items():
         reason = None
-        if uid in opted:
+        not_deleted = [r for r in p["rows"] if r.get("audience_status") == "ACTIVE"]
+        if uid in opted or (mode != "unassign" and not_deleted and all(cd.lead_opted_out(r) for r in not_deleted)):
             reason = "opted_out"
         elif not any(cd.is_live(r) for r in p["rows"]):
             reason = "deleted"
@@ -471,7 +486,7 @@ async def _assign_preview(ctx: ToolContext, s: cd.Scope, args: Dict[str, Any]) -
     rows, info = await _assign_targets(ctx, args)
     if rows is None:
         return info
-    people, dropped = _people(rows)
+    people, dropped = _people(rows, mode)
     picked = _eligible(ctx, s, people, mode, to)
     if cd.is_error(picked):
         return picked
@@ -507,7 +522,8 @@ async def _assign_preview(ctx: ToolContext, s: cd.Scope, args: Dict[str, Any]) -
     changes = []
     for uid, p in list(keep.items())[:_SAMPLE]:
         top = next((r for r in p["rows"] if cd.is_live(r)), p["rows"][0])
-        changes.append({"lead_user_id": uid, "lead_ids": p["lead_ids"], "name": cd.clean(top.get("parent_name")),
+        changes.append({"lead_user_id": uid, "lead_ids": p["lead_ids"],
+                        "name": cd.clean(cd.mask_name(top.get("parent_name"))),
                         "phone": cd.mask_phone(top.get("parent_mobile")), "list": cd.clean(top.get("list_name")),
                         "from": _who(p["owner_id"], names), "to": _who(plan[uid], names)})
     shown_elsewhere = [uid for uid, p in keep.items()
@@ -565,7 +581,7 @@ async def _assign_apply(ctx: ToolContext, s: cd.Scope, summary: Dict[str, Any]) 
     res = await cd.resolve_leads(ctx, [lid for uid in plan for lid in stored.get(uid, [])], max_n=cd.MAX_BULK)
     if cd.is_error(res):
         return res
-    people, _ = _people(res["leads"])
+    people, _ = _people(res["leads"], mode)
     picked = _eligible(ctx, s, {uid: p for uid, p in people.items() if uid in plan}, mode, to)
     if cd.is_error(picked):
         return picked
@@ -756,7 +772,8 @@ async def _reassign_preview(ctx: ToolContext, s: cd.Scope, args: Dict[str, Any])
     by_target: Dict[str, int] = {}
     for t in plan.values():
         by_target[t] = by_target.get(t, 0) + 1
-    changes = [{"lead_user_id": r["lead_user_id"], "lead_id": r.get("lead_id"), "name": cd.clean(r.get("parent_name")),
+    changes = [{"lead_user_id": r["lead_user_id"], "lead_id": r.get("lead_id"),
+                "name": cd.clean(cd.mask_name(r.get("parent_name"))),
                 "phone": cd.mask_phone(r.get("parent_mobile")), "list": cd.clean(r.get("list_name")),
                 "status": r.get("conversion_status"), "to": _who(plan.get(r["profile_id"]), names)}
                for r in keep[:_SAMPLE]]

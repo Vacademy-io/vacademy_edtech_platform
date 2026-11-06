@@ -644,7 +644,7 @@ DROP_REASONS = {
 
 def _lead_brief(g: Dict[str, Any]) -> Dict[str, Any]:
     return {"lead_id": g.get("lead_id"), "lead_user_id": g.get("lead_user_id"),
-            "name": cd.clean(g.get("parent_name")), "phone": _mask(g.get("parent_mobile")),
+            "name": cd.clean(cd.mask_name(g.get("parent_name"))), "phone": _mask(g.get("parent_mobile")),
             "status": g.get("status_key"), "owner_id": g.get("owner_id")}
 
 
@@ -759,7 +759,7 @@ def _row_out(r: Dict[str, Any], names: Dict[str, str], *, analysis: bool = True)
                           "name": cd.clean(r.get("counsellor_name")) or names.get(r.get("counsellor_user_id") or "")}
            if r.get("counsellor_user_id") else None,
            "lead": {"lead_id": r.get("response_id"), "lead_user_id": r.get("user_id"),
-                    "name": cd.clean(r.get("lead_name")), "phone": _mask(r.get("lead_number"))}
+                    "name": cd.clean(cd.mask_name(r.get("lead_name"))), "phone": _mask(r.get("lead_number"))}
            if (r.get("response_id") or r.get("lead_name")) else None,
            "lead_status": r.get("lead_status_key"),
            "outcome": disposition, "outcome_set_by": "counsellor" if r.get("disposition_key") else (
@@ -869,7 +869,8 @@ async def _calls_for_lead(ctx: ToolContext, args: Dict[str, Any]) -> Dict[str, A
             row["ai_lead_rating"] = r["lead_rating"]
         calls.append(row)
     out: Dict[str, Any] = {"lead": {"lead_id": lead["lead_id"], "lead_user_id": lead.get("lead_user_id"),
-                                    "name": cd.clean(lead.get("parent_name")), "phone": _mask(lead.get("parent_mobile"))},
+                                    "name": cd.clean(cd.mask_name(lead.get("parent_name"))),
+                                    "phone": _mask(lead.get("parent_mobile"))},
                            "calls": calls, "page": page, "definitions": {"ai_call": DEFINITIONS["ai_call"]}}
     if more:
         out["more"] = True
@@ -940,7 +941,7 @@ async def _calls_get(args: Dict[str, Any], ctx: ToolContext) -> Dict[str, Any]:
         "ended_at": _when(r.get("end_time")), "duration_seconds": r.get("duration_seconds"),
         "counsellor": {"id": r["counsellor_user_id"], "name": names.get(r["counsellor_user_id"])}
         if r.get("counsellor_user_id") else None,
-        "lead": {"lead_id": r.get("response_id"), "name": cd.clean(r.get("parent_name")),
+        "lead": {"lead_id": r.get("response_id"), "name": cd.clean(cd.mask_name(r.get("parent_name"))),
                  "phone": _mask(r.get("parent_mobile"))} if r.get("response_id") else None,
         "outcome": {"counsellor_disposition": r.get("disposition_key"), "ai_disposition": r.get("ai_disposition"),
                     "callback_at": _when(r.get("callback_at")), "ai_lead_rating": r.get("lead_rating"),
@@ -1030,7 +1031,7 @@ def _queue_item(q: Dict[str, Any]) -> Dict[str, Any]:
            "why": cd.lead_content(why, limit=200) if why else None,
            "source": q.get("source"), "agent": cd.clean(q.get("agentName") or q.get("campaignName")),
            "lead": {"lead_id": q.get("responseId"), "lead_user_id": q.get("userId"),
-                    "name": cd.clean(q.get("leadName")), "phone": _mask(q.get("phoneNumber"))},
+                    "name": cd.clean(cd.mask_name(q.get("leadName"))), "phone": _mask(q.get("phoneNumber"))},
            "queued_at": _when(q.get("createdAt")), "ahead_in_line": q.get("aheadInLane"),
            "eta_minutes": q.get("etaMinutes"), "on_a_call_now": bool(q.get("live")),
            "call_id": q.get("callLogId"), "call_status": q.get("callStatus")}
@@ -1455,6 +1456,8 @@ async def _campaign_start(args: Dict[str, Any], ctx: ToolContext) -> Dict[str, A
                 return info
             selection = {"filter_matched": info.get("matched"), "opted_out_dropped": info.get("opted_out_dropped"),
                          "over_500_not_included": info.get("over_cap_dropped")}
+            if info.get("note"):
+                selection["note"] = info["note"]
         if not ids:
             return cd.err("nothing_to_call", selection=selection, message="No live leads match.")
         g = await _guards(ctx, ids, settings["provider"])

@@ -336,7 +336,7 @@ def _meeting(row: Dict[str, Any], tz: str, *, show_link: bool, now: datetime) ->
         "host_user_id": row.get("host_user_id"),
         "host": cd.clean(row.get("host_name")),
         "lead_id": row.get("audience_response_id"),
-        "invitee": {"name": cd.clean(row.get("invitee_name")), "phone": cd.mask_phone(row.get("invitee_phone")),
+        "invitee": {"name": cd.clean(cd.mask_name(row.get("invitee_name"))), "phone": cd.mask_phone(row.get("invitee_phone")),
                     "email": cd.mask_email(row.get("invitee_email"))},
         "booking_page_id": row.get("booking_page_id"),
     }
@@ -563,7 +563,7 @@ async def _action_for_lead(args: Dict[str, Any], ctx: ToolContext) -> Dict[str, 
     past = sorted((m for m in meetings if not m["upcoming"]), key=lambda m: m["start"] or "", reverse=True)
     meetings = upcoming + past
     return {"lead": {"lead_id": lead["lead_id"], "lead_user_id": lead.get("lead_user_id"),
-                     "name": cd.clean(lead.get("parent_name"))},
+                     "name": cd.clean(cd.mask_name(lead.get("parent_name")))},
             "definition": "Meetings booked with this lead (by its lead id or the person), newest first after "
                           "the upcoming ones; cancelled and rescheduled ones only with include_cancelled.",
             "data": {"total": len(keep), "upcoming": len(upcoming), "meetings": meetings,
@@ -998,7 +998,7 @@ async def _action_book(args: Dict[str, Any], ctx: ToolContext) -> Dict[str, Any]
             warnings.append(no_link)
         return {
             "preview": {
-                "lead": {"lead_id": lead["lead_id"], "name": cd.clean(lead.get("parent_name")),
+                "lead": {"lead_id": lead["lead_id"], "name": cd.clean(cd.mask_name(lead.get("parent_name"))),
                          "phone": cd.mask_phone(lead.get("parent_mobile")),
                          "email": cd.mask_email(lead.get("parent_email")), "list": cd.clean(lead.get("list_name"))},
                 "host": {"host_user_id": plan["host"], "name": plan["host_name"],

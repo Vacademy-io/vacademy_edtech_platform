@@ -159,7 +159,8 @@ ACTIVITY_SCHEMA: Dict[str, Any] = {
             "label from crm_leads catalog) also applies immediately unless an automation listens for status "
             "changes: then the result has a preview and confirm_token for the status part ONLY — show it and, on a "
             "clear yes, call log_interaction again with the same arguments + confirm_token (only the status is "
-            "applied then; nothing is logged twice). call_id + disposition_key record a call's outcome "
+            "applied then; nothing is logged twice). A lead that crm_leads list leaves out as opted out keeps its "
+            "status: the rest is saved and the result's status says why. call_id + disposition_key record a call's outcome "
             "(dispositions in crm_leads catalog).\n"
             "- add_note (lead, note, kind?): just a note on the lead's timeline.\n"
             "- schedule_followup (lead, at, note?, student_response?, follow_up_mode?, next_action?).\n"
@@ -198,7 +199,7 @@ _FILTER_PROP = {"type": "object", "description": (
     "Instead of lead_ids: the crm_leads list filter {status_keys, exclude_status_keys, tier, owner: me | "
     "<counsellor_id> | unassigned, list_ids, source, min_score, max_score, submitted_from, submitted_to, "
     "last_activity_before, sla: overdue | due_soon, never_called, has_open_followup, converted: exclude | only}; "
-    "at most 500 leads (opted-out leads are left out).")}
+    "at most 500 leads (opted-out leads are left out, by the crm_leads list rule).")}
 
 EDIT_SCHEMA: Dict[str, Any] = {
     "type": "function",
@@ -265,14 +266,14 @@ INTAKE_SCHEMA: Dict[str, Any] = {
             "Add new leads to one of the institute's lead lists (list ids from crm_leads catalog). Before adding, the "
             "person is looked up: an existing lead is refused with already_lead (with the matching leads) and an "
             "opted-out person with opted_out — show that to the user; pass re_enquiry: true ONLY when the user says "
-            "this is a new enquiry from an existing lead. Both actions are two-step, and new leads run the list's "
-            "automations (the preview lists them). Actions:\n"
+            "this is a new enquiry from an existing lead. For an opted-out person: " + cd.OPT_OUT_READD_NOTE + " Both actions are two-step, "
+            "and new leads run the list's automations (the preview lists them). Actions:\n"
             "- add_lead (list_id, name, phone and/or email, source?: MANUAL (default) | WALK_IN (someone at the "
             "front desk) | INBOUND_CALL | REFERRAL, counsellor_id? ('me' or a counsellor id from catalog; for a "
             "walk-in usually 'me'), status?, answers?, re_enquiry?).\n"
             "- import_leads (list_id, rows: [{name, phone?, email?, counsellor_id?, status?, answers?}] ≤100, "
             "source?, re_enquiry?): rows that fail a check or already exist are left out with a reason in the "
-            "preview.\n"
+            "preview, and so are people who opted out, re_enquiry or not.\n"
             "answers: {form question (field key or label): answer} for that list. " + _TWO_STEP
         ),
         "parameters": {
@@ -329,7 +330,7 @@ async def _lead(ctx: ToolContext, args: Dict[str, Any]) -> Dict[str, Any]:
 def _lead_view(row: Dict[str, Any], name: Optional[str] = None) -> Dict[str, Any]:
     """One lead as lists show it: contact masked."""
     return {"lead_id": row.get("lead_id"), "lead_user_id": row.get("lead_user_id"),
-            "name": cd.clean(row.get("parent_name")) or name or None,
+            "name": cd.clean(cd.mask_name(row.get("parent_name"))) or cd.mask_name(name) or None,
             "phone": cd.mask_phone(row.get("parent_mobile")), "email": cd.mask_email(row.get("parent_email")),
             "list": cd.clean(row.get("list_name")), "status": row.get("status_key"), "flags": cd.lead_flags(row)}
 
@@ -689,7 +690,9 @@ async def _log_interaction(args: Dict[str, Any], ctx: ToolContext) -> Dict[str, 
         return _invalid(problems)
 
     # ── the status part: direct unless an automation listens for status changes
-    gated_status = status if status and status.get("id") != lead.get("lead_status_id") else None
+    held = _opt_out_skip(lead) if status else None
+    held_view = {**_status_view(status), "applied": False, "reason": held} if held else None
+    gated_status = status if status and not held and status.get("id") != lead.get("lead_status_id") else None
     gated_disp = disp if disp and disp.get("maps_to_lead_status_id") else None
     request = {"lead_id": lead["lead_id"], "status_id": (gated_status or {}).get("id"), "call_id": call_id or None,
                "disposition_key": (gated_disp or {}).get("disposition_key")}
@@ -717,13 +720,16 @@ async def _log_interaction(args: Dict[str, Any], ctx: ToolContext) -> Dict[str, 
     if args.get("confirm_token"):
         if not (gated_status or gated_disp):
             return cd.err("nothing_to_confirm", message="Nothing in this request waits for confirmation (the status "
-                                                        "may already be set). Do not resend it.")
+                                                        "may already be set). Do not resend it.",
+                          **({"status": held_view} if held else {}))
         refusal = cd.check_edit_token(ctx, purpose, request, state, args["confirm_token"])
         if refusal:
             return refusal
         done, failures = await apply_gated()
         result = {"lead": who, "applied": not failures, **done, "done": not failures,
                   "note": "Only the status part was applied now; the activity was saved by the first call."}
+        if held:
+            result["status"] = held_view
         if failures:
             result["failed"] = failures
         return result
@@ -761,7 +767,9 @@ async def _log_interaction(args: Dict[str, Any], ctx: ToolContext) -> Dict[str, 
             out["saved"]["call_outcome"] = res
     if notes:
         out["notes"] = notes
-    if status and not gated_status:
+    if held:
+        out["status"] = held_view
+    elif status and not gated_status:
         out["status"] = {**_status_view(status), "unchanged": True}
     if gated_status or gated_disp:
         autos = await cd.automations_for(ctx, cd.EVENT_STATUS_CHANGED, audience_id=lead.get("list_id"))
@@ -923,6 +931,7 @@ FROM audience_response ar
 JOIN audience a ON a.id = ar.audience_id AND a.institute_id = :inst
 WHERE ar.user_id = ANY(:uids) AND ar.audience_status = 'ACTIVE'
   AND (ar.overall_status IS NULL OR ar.overall_status <> 'OPTED_OUT')
+  AND NOT """ + cd.OPT_OUT_LIST_SQL.format(r="ar", a="a") + """
 ORDER BY ar.submitted_at DESC NULLS LAST, ar.id
 LIMIT :lim
 """
@@ -998,19 +1007,31 @@ async def _with_person_leads(ctx: ToolContext, rows: List[Dict[str, Any]]) -> Di
     return {"rows": rows + res["leads"], "hidden_siblings": len(res["out_of_scope"])}
 
 
+def _opt_out_skip(row: Dict[str, Any]) -> Optional[str]:
+    """Why a status or tier change leaves this row alone by the crm_leads list rule, else None."""
+    if row.get("on_opt_out_list"):
+        return "a row of an opt-out list: not a lead"
+    if cd.lead_opted_out(row):
+        who = "opted out" if cd.own_opted_out(row) else "linked student opted out"
+        return f"{who}: change it in the admin portal"
+    return None
+
+
 def _live_split(rows: List[Dict[str, Any]], *, skip_opted_out: bool = False
                 ) -> Tuple[List[Dict[str, Any]], List[Dict[str, Any]]]:
     """
     Leads that can be changed, and the rest with a reason. ``skip_opted_out``
     for changes that fire LEAD_STATUS_CHANGED: its automations can message or
-    call the lead, so an opted-out lead is left for the admin portal.
+    call the lead, so a lead crm_leads list leaves out as opted out is left for
+    the admin portal, and a row of an opt-out list is never changed.
     """
     live, skipped = [], []
     for r in rows:
+        why = _opt_out_skip(r) if skip_opted_out else None
         if r.get("audience_status") != "ACTIVE":
             skipped.append({"lead_id": r["lead_id"], "reason": "deleted"})
-        elif skip_opted_out and r.get("overall_status") == "OPTED_OUT":
-            skipped.append({"lead_id": r["lead_id"], "reason": "opted out: change it in the admin portal"})
+        elif why:
+            skipped.append({"lead_id": r["lead_id"], "reason": why})
         else:
             live.append(r)
     return live, skipped
@@ -1084,7 +1105,8 @@ async def _set_status(args: Dict[str, Any], ctx: ToolContext) -> Dict[str, Any]:
     change = [r for r in live if r.get("lead_status_id") != status["id"]]
     if not change:
         return {"to": _status_view(status), "applied": False, "unchanged": len(unchanged), "skipped": skipped,
-                "message": "Every lead named is already on that status (or deleted). Nothing to change."}
+                "message": "Every lead named is already on that status, or is deleted or opted out. Nothing to "
+                           "change."}
     state = {r["lead_id"]: [r.get("lead_status_id"), cd.iso(r.get("updated_at"))] for r in change}
     many = len(change) > 1
     request = {**_request(args, "status", "this_list_only"), "status_id": status["id"]}
@@ -1163,7 +1185,8 @@ async def _set_tier(args: Dict[str, Any], ctx: ToolContext) -> Dict[str, Any]:
             change[uid] = r
     if not change:
         return {"tier": tier_key, "applied": False, "skipped": skipped,
-                "message": "Every person named already has that tier (or cannot get one). Nothing to change."}
+                "message": "Every person named already has that tier, or cannot get one (see skipped). Nothing to "
+                           "change."}
     state = {uid: [r.get("lead_tier"), cd.iso(r.get("profile_updated_at"))] for uid, r in change.items()}
     many = len(change) > 1
     request = {**_request(args, "tier"), "tier_key": tier_key}
@@ -1460,10 +1483,11 @@ SELECT ar.id AS lead_id, ar.user_id AS lead_user_id, ar.audience_id AS list_id, 
        LOWER(TRIM(ar.parent_email)) AS email_lc,
        {status_key} AS status_key, ulp.conversion_status, lu.user_id AS enquiry_owner_id,
        ulp.assigned_counselor_id AS profile_owner_id, {owner} AS owner_id,
+       {lead_opted_out} AS lead_opted_out, {own_opted_out} AS own_opted_out,
        CASE WHEN {pred} THEN TRUE ELSE FALSE END AS in_scope
 FROM audience_response ar
 {joins}
-WHERE {where}
+{opted_lookup}WHERE {where}
 ORDER BY ar.submitted_at DESC NULLS LAST, ar.id
 LIMIT 500
 """
@@ -1504,7 +1528,9 @@ async def _existing(ctx: ToolContext, people: List[Dict[str, Any]]) -> Any:
         return s
     pred, sparams = cd.scope_sql(s)
     sql = _MATCH_SQL.format(status_key=cd.STATUS_KEY_SQL, owner=cd.owner_display_sql(), pred=pred,
-                            joins=cd.LEAD_OWNER_JOINS, where="(" + " OR ".join(where) + ")")
+                            joins=cd.LEAD_OWNER_JOINS, where="(" + " OR ".join(where) + ")",
+                            lead_opted_out=cd.LEAD_OPTED_OUT_SQL, own_opted_out=cd.OWN_OPTED_OUT_SQL,
+                            opted_lookup=cd.LEAD_OPTED_LOOKUP)
     found, ok = cd.rows(ctx, sql, {**sparams, **params, "inst": ctx.principal.institute_id})
     if not ok:
         return cd.err("query_failed")
@@ -1525,7 +1551,7 @@ def _matches_for(person: Dict[str, Any], found: List[Dict[str, Any]]) -> List[Di
 
 def _blocking(matches: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
     """Matches that make a new add a duplicate: live leads, or anyone who opted out."""
-    return [m for m in matches if m.get("audience_status") == "ACTIVE" or m.get("overall_status") == "OPTED_OUT"]
+    return [m for m in matches if m.get("audience_status") == "ACTIVE" or cd.own_opted_out(m)]
 
 
 def _match_report(matches: List[Dict[str, Any]]) -> Dict[str, Any]:
@@ -1620,12 +1646,12 @@ async def _add_lead(args: Dict[str, Any], ctx: ToolContext) -> Dict[str, Any]:
     if cd.is_error(found):
         return found
     blocking = _blocking(found)
-    opted_out = any(m.get("overall_status") == "OPTED_OUT" for m in blocking)
+    opted_out = any(cd.own_opted_out(m) for m in blocking)
     if blocking and not args.get("re_enquiry"):
         if opted_out:
             return cd.err("opted_out", **_match_report(blocking), message=(
                 "This person opted out of contact earlier. Do not add them unless the user confirms they asked to "
-                "be contacted again (then pass re_enquiry: true)."))
+                "be contacted again (then pass re_enquiry: true). " + cd.OPT_OUT_READD_NOTE))
         return cd.err("already_lead", **_match_report(blocking), message=(
             "This person already is a lead. Use the existing lead (log_interaction) — or, only if the user says this "
             "is a new enquiry, pass re_enquiry: true."))
@@ -1647,7 +1673,8 @@ async def _add_lead(args: Dict[str, Any], ctx: ToolContext) -> Dict[str, Any]:
         if blocking:
             view["re_enquiry_of"] = _match_report(blocking)
             if opted_out:
-                view["warning"] = "This person opted out of contact earlier; the list's automations may contact them."
+                view["warning"] = ("This person opted out of contact earlier. " + cd.OPT_OUT_READD_NOTE
+                                   + " The list's automations may contact them.")
         return view
 
     async def apply(summary: Optional[Dict[str, Any]]) -> Dict[str, Any]:
@@ -1663,8 +1690,11 @@ async def _add_lead(args: Dict[str, Any], ctx: ToolContext) -> Dict[str, Any]:
             return _rejected(resp, "The lead")
         text_ = str(resp if not isinstance(resp, (dict, list)) else "").strip().strip('"')
         if _UUID_RE.match(text_):
-            return {"lead_id": text_, "list": base["list"], "done": True,
-                    "next": "Use this lead_id with crm_lead_activity to log the conversation."}
+            added: Dict[str, Any] = {"lead_id": text_, "list": base["list"], "done": True,
+                                     "next": "Use this lead_id with crm_lead_activity to log the conversation."}
+            if opted_out:
+                added["opt_out_note"] = cd.OPT_OUT_READD_NOTE
+            return added
         if "already submitted" in text_.lower():
             return cd.err("already_lead", message="This person already is a lead in that list.")
         return cd.err("admin_core_rejected", message=cd.clean(text_, 200) or "The lead was not added.")
@@ -1720,12 +1750,14 @@ async def _import_leads(args: Dict[str, Any], ctx: ToolContext) -> Dict[str, Any
         return found
     send: List[Tuple[int, Dict[str, Any]]] = []
     re_enquiries = 0
+    left_out_opted: List[int] = []
     for i, row in checked:
         hits = _blocking(_matches_for({"phone": row["user_dto"]["mobile_number"], "email": row["user_dto"]["email"]},
                                       found))
         # Opted-out people are never re-added in bulk, re_enquiry or not: add_lead takes them one at a time,
         # with its own warning, when the person asked to be contacted again.
-        if any(h.get("overall_status") == "OPTED_OUT" for h in hits):
+        if any(cd.own_opted_out(h) for h in hits):
+            left_out_opted.append(i)
             dropped.append({"row": i, "reason": "opted out earlier: add them one at a time with add_lead if they "
                                                 "asked to be contacted", "lead_ids": [h["lead_id"] for h in hits
                                                                                       if h.get("in_scope")][:5]})
@@ -1738,7 +1770,8 @@ async def _import_leads(args: Dict[str, Any], ctx: ToolContext) -> Dict[str, Any
         send.append((i, row))
     if not send:
         return cd.err("nothing_to_import", dropped=dropped[:100],
-                      message="No row can be added (see dropped). Nothing was changed.")
+                      message="No row can be added (see dropped). Nothing was changed.",
+                      **({"opt_out_note": cd.OPT_OUT_READD_NOTE} if left_out_opted else {}))
     indexes = [i for i, _ in send]
     request = {k: v for k, v in args.items() if k not in ("user_id", "institute_id", "confirm_token")}
 
@@ -1755,6 +1788,8 @@ async def _import_leads(args: Dict[str, Any], ctx: ToolContext) -> Dict[str, Any
             "_summary": {"list_id": base["list"]["list_id"], "rows": indexes}}
         if re_enquiries:
             view["re_enquiries"] = re_enquiries
+        if left_out_opted:
+            view["opt_out_note"] = cd.OPT_OUT_READD_NOTE
         return view
 
     async def apply(summary: Optional[Dict[str, Any]]) -> Dict[str, Any]:
@@ -1783,6 +1818,9 @@ async def _import_leads(args: Dict[str, Any], ctx: ToolContext) -> Dict[str, Any
         dropped_since = [i for i in allowed if i not in {j for j, _ in rows}]
         if dropped_since:
             out["not_added_because_they_changed_since_preview"] = dropped_since
+        if left_out_opted:
+            out["not_added_because_they_opted_out"] = left_out_opted
+            out["opt_out_note"] = cd.OPT_OUT_READD_NOTE
         return out
 
     return await cd.preview_or_apply(ctx, args, purpose=_purpose(INTAKE_TOOL, "import_leads"), confirm="single_use",

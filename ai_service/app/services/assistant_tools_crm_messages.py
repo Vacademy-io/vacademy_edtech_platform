@@ -300,7 +300,7 @@ def _tail(value: Any) -> str:
 
 def _lead_identity(lead: Dict[str, Any]) -> Dict[str, Any]:
     return {"lead_id": lead["lead_id"], "lead_user_id": lead.get("lead_user_id"),
-            "name": cd.clean(lead.get("parent_name")), "phone": cd.mask_phone(lead.get("parent_mobile")),
+            "name": cd.clean(cd.mask_name(lead.get("parent_name"))), "phone": cd.mask_phone(lead.get("parent_mobile")),
             "email": cd.mask_email(lead.get("parent_email")), "list": cd.clean(lead.get("list_name"))}
 
 
@@ -961,7 +961,7 @@ def _wa_message(m: Dict[str, Any]) -> Dict[str, Any]:
                 str(m.get("headerType")).lower() if m.get("headerType") not in (None, "NONE", "TEXT") else None)}
     body = {"text": m.get("body")}
     if m.get("direction") == "INCOMING" and m.get("senderName"):
-        body["sender_name"] = m.get("senderName")
+        body["sender_name"] = cd.mask_name(m.get("senderName"))
     item["content"] = cd.lead_content(body, limit=1500)
     return {k: v for k, v in item.items() if v is not None}
 
@@ -1071,7 +1071,7 @@ async def _action_inbox(args: Dict[str, Any], ctx: ToolContext) -> Dict[str, Any
             "last_message_at": _at(c.get("lastMessageTime")), "last_direction": c.get("lastMessageType"),
             "last_status": c.get("lastMessageStatus"), "unread": c.get("unreadCount"),
             "awaiting_reply": bool(c.get("awaitingReply")), "failed_messages": c.get("failedCount") or 0,
-            "content": cd.lead_content({"sender_name": c.get("senderName"), "last_message": c.get("lastMessage")},
+            "content": cd.lead_content({"sender_name": cd.mask_name(c.get("senderName")), "last_message": c.get("lastMessage")},
                                        limit=300),
         }
         if c.get("escalationId"):
@@ -1120,7 +1120,7 @@ async def _action_escalations(args: Dict[str, Any], ctx: ToolContext) -> Dict[st
             "escalation_id": e.get("id"), **_lead_link(found), "phone": cd.mask_phone(e.get("userPhone")),
             "reason": e.get("reason"), "status": e.get("status"), "at": _at(e.get("createdAt")),
             "staff_notified_at": _at(e.get("notifiedAt")), "resolved_at": _at(e.get("resolvedAt")),
-            "content": cd.lead_content({"name": e.get("userName"), "message": e.get("userMessage"),
+            "content": cd.lead_content({"name": cd.mask_name(e.get("userName")), "message": e.get("userMessage"),
                                         "bot_reply": e.get("botReply")}, limit=500),
         })
     more = visible > offset + len(items)

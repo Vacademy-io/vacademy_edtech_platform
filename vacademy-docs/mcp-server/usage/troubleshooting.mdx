@@ -90,6 +90,7 @@ These are temporary, and your access has not changed. Don't reconnect, and no ad
 |---|---|---|
 | `rate_limited` with `limit_type: concurrent_calls` | Too many calls from your institute are running at once, including colleagues' calls and calls your app stopped waiting for. | Wait `retry_after_s` seconds and repeat the same call. Ask your AI app to run fewer tools at a time. |
 | `rate_limited` with `limit_type: hourly` **CRM** | You reached an hourly limit for calls or messages. | Wait `retry_after_s` seconds. |
+| `rate_limited` with `limit_type: report_running` **CRM** | This institute's admissions report is already running. | Wait `retry_after_s` seconds and repeat the same call. |
 | `server_busy`, or HTTP 429 | The server is at capacity right now. This isn't caused by your usage. | Wait the time it gives and repeat the same call. |
 | `settings_unavailable` | The server could not read your institute's MCP settings just now. | Wait the time it gives and repeat the same call. |
 | `auth_unavailable` | The server could not check your connection's session just now. | Wait the time it gives and repeat the same call. |

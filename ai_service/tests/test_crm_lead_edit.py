@@ -463,6 +463,8 @@ async def test_set_status_this_list_only_and_filter(backend):
     assert shown["count"] == 1 and shown["filter_matched"]["opted_out_dropped"] == 1
     bad = await run(m.EDIT_TOOL, admin(), action="set_status", filter={"colour": "red"}, status="NEW")
     assert bad["error"] == "invalid_filter"
+    bad = await run(m.EDIT_TOOL, admin(), action="set_status", filter={"converted_to": "2026-10-31"}, status="NEW")
+    assert bad["error"] == "invalid_filter" and bad["unknown_keys"] == ["converted_to"]
     assert writes(backend) == []
 
 
@@ -741,3 +743,10 @@ async def test_tag_lists_one_list_replace_and_refusals(backend):
     backend.lead_scope("COUNSELLOR_TREE", owner_ids=["c-1"])
     out = await run(m.EDIT_TOOL, counsellor(), **args)
     assert out["error"] == "admin_only" and writes(backend) == []
+
+
+@pytest.mark.parametrize("stored, shown", [
+    ("asha.verma@gmail.com", "a***@gmail.com"), ("9222200007", "******0007"), ("Asha Verma", "Asha Verma")])
+def test_a_lead_view_masks_a_name_that_holds_contact(stored, shown):
+    assert m._lead_view(lead_row("r-1", "u-1", name=stored))["name"] == shown
+    assert m._lead_view(lead_row("r-1", "u-1", name=None), stored)["name"] == shown

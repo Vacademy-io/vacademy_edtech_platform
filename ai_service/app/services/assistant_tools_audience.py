@@ -185,6 +185,8 @@ async def _action_leads(args: Dict[str, Any], ctx: ToolContext) -> Dict[str, Any
     # Contact details reach the model only for callers who could see them in
     # Audience Manager anyway (admins); other roles get names and timing. Not
     # is_root_user: it is set for ordinary users and says nothing about this institute.
+    from . import crm_data as cd  # at call time: crm_data needs the tool registry loaded first
+
     roles = {str(r).upper() for r in (ctx.principal.roles or [])}
     show_contact = "ADMIN" in roles
     leads: List[Dict[str, Any]] = []
@@ -192,9 +194,10 @@ async def _action_leads(args: Dict[str, Any], ctx: ToolContext) -> Dict[str, Any
         if not isinstance(row, dict):
             continue
         user = row.get("user") or {}
+        name = row.get("parent_name") or user.get("full_name") or user.get("fullName")
         entry: Dict[str, Any] = {
             "response_id": row.get("response_id"),
-            "name": row.get("parent_name") or user.get("full_name") or user.get("fullName"),
+            "name": name if show_contact else cd.mask_name(name),
             "submitted_at": row.get("submitted_at_local"),
             "source": row.get("source_id") or row.get("source_type"),
             "status": row.get("conversion_status") or row.get("overall_status"),

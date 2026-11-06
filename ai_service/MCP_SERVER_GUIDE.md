@@ -38,7 +38,7 @@ settings tab has one toggle per feature to manage per role:
 | `sub_orgs` | READ | `sub_orgs` (own area "Sub-organisations") | `list` (admin-core `GET /institute/v1/sub-org/get-all-with-details`, caller's visibility), `get` (courses = batches of the sub-org's ACTIVE `tag='SUB_ORG'` invites, seats used per batch vs the cap, admins, `SUB_ORG_SETTING`, invite link), `members` (learners: stamped `sub_org_id` OR a plan from one of its invites), `create_options` (ACTIVE institute payment options incl. CPO mirrors, gateways, auth-service roles, admin permissions), `enroll_template` (add-member's profile columns + custom fields). Institute-scoped through `institute_suborg` (`services/sub_org_data.py`) |
 | `sub_org_edit` | WRITE (**live**, preview + confirm token) | `sub_org_edits` (Sub-organisations → "Create and change", **opt-in**) | `preview` / `apply` × `change`: `create` (`POST /institute/v1/sub-org/create-with-subscription` — the dashboard wizard's body; name unique per institute, ≥1 course, payment option / seats / validity / admin roles never defaulted, warns on ADMIN), `update` (`PATCH /{id}/configuration`: `add_package_session_ids`, `member_count` (not below current usage), `validity_in_days`, `auth_roles`, `allowed_team_roles`, `admin_permissions`; no payment-option swap), `add_admin` (`POST /sub-org/v1/add-member` with ROOT_ADMIN on every batch, role = `AUTH_ROLES[0]`; refused when an admin exists). No delete / deactivate / course removal |
 | `sub_org_enroll` | WRITE (additive, preview + confirm token) | `sub_org_enrollments` (Sub-organisations → "Add learners", **opt-in**) | `preview` / `enroll`: CSV and/or `[{learner_id} | row]` (≤200) into all or some of the sub-org's batches; one `POST /sub-org/v1/add-member` per learner (role LEARNER, institute / sub-org forced, 4 at a time, each its own transaction, per-row result). Skips anyone ACTIVE in a batch (in or outside the sub-org); refuses an upload over the per-batch cap (`SUB_ORG_SETTING.MEMBER_COUNT`, else the admin plan's `member_count` — admin-core itself only checks the latter); asks `credentials_file` (link-only CSV, `file_exports`); login emails follow Course Settings; lists `SUB_ORG_MEMBER_ENROLLMENT` automations |
-| `crm_leads` | READ | `crm_leads` (area "CRM: Leads") | `find`, `list`, `get`, `timeline`, `my_day`, `check_exists`, `catalog`, `automations`, `export` (link-only CSV) |
+| `crm_leads` | READ | `crm_leads` (area "CRM: Leads") | `find`, `list`, `get`, `timeline`, `my_day`, `check_exists`, `catalog`, `automations`, `export` (link-only CSV). `list` and `export` also take `filter.converted_from` / `converted_to`; bulk writes and AI-call targeting do not |
 | `crm_lead_activity` | WRITE (live additive, **opt-in**) | `crm_lead_activity` | `log_interaction` (note + follow-up + answers + call outcome in one call; the status part waits for a confirm when an automation listens), `add_note`, `schedule_followup`, `reschedule_followup`, `complete_followup` (two-step) |
 | `crm_lead_edit` | WRITE (live, **opt-in**, two-step) | `crm_lead_edits` | `set_status` (≤500, ids or filter), `set_tier`, `update_details`, `tag`, `untag` |
 | `crm_team_edit` | WRITE (live, **opt-in**, two-step; admin / manager of the target) | `crm_team_edits` | `assign_leads` (≤500), `reassign_from_counsellor`, `pause_routing`, `resume_routing` |
@@ -51,7 +51,7 @@ settings tab has one toggle per feature to manage per role:
 | `crm_messages` | READ | `crm_messages` (area "CRM: Messages") | `history`, `inbox`, `templates`, `can_message`, `escalations` |
 | `crm_send` | WRITE (outbound, **opt-in**, single-use; 20 WhatsApp + 30 email /h/user) | `crm_messaging_outbound` | `send` (`channel` WHATSAPP: an APPROVED template; EMAIL: an institute email template or subject + body; ONE lead; email honours the unsubscribe list whatever its type), `quota` |
 | `crm_reports` | READ | `crm_reports` (area "CRM: Reports") | `overview`, `sources`, `campaigns`, `funnel`, `status_changes`, `counsellors`, `workload`, `targets`, `calling`, `ai_calling`, `followup_aging`, `sla_breaches`, `stalled`, `unassigned`, `meetings`, `activity`, `revenue` (admin), `utm` (admin), `custom_options`, `custom` (1-2 dimensions incl. lead-form fields × chosen lead / activity metrics, scoped SQL in `crm_custom_reports.py`), `live_feed`, `live_counts` (the live activity feed, `crm.live_activity`); `compare_to: previous_period` on every windowed action |
-| `crm_collections` | READ | `crm_collections` (area "CRM: Payments") | `lead_dues`, `who_owes`, `due_soon`, `collections` (admin), `converted_not_paid`, `abandoned_checkouts` |
+| `crm_collections` | READ | `crm_collections` (area "CRM: Payments") | `lead_dues`, `who_owes`, `due_soon`, `collections` (admin), `converted_not_paid`, `abandoned_checkouts`, `admissions` (admin; masked page plus totals), `admissions_export` (admin; private CSV link, full contact, ≤5000 rows, 6 files/h/user). Statements and the report slot are in `crm_admissions.py` |
 | `crm_payment_reminders` | WRITE (outbound, **opt-in**, single-use, ADMIN only, ≤50 reminders/h/user) | `crm_payment_reminders` | `send_installment_reminder`, `send_invoice_reminder` (≤50 per batch, ids verified, re-read at apply), `quota` |
 
 The allow-list is `MCP_EXPOSED_TOOLS` in `app/mcp/constants.py`. A tool in the
@@ -198,11 +198,23 @@ via `app/services/entitlements.py`; LEGACY institutes have everything on).
   single-use rows in `mcp_crm_confirm` (Flyway V583), spent atomically, with
   per-user hourly caps (`crm_data.CAPS`) counted from spent rows. Tokens are
   bound to the MCP client (`ToolContext.client_id`).
-* **PII.** Lists mask phone / email; `get` on one lead in scope returns full
+* **PII.** Lists mask phone / email, and a name that holds either, when no other
+  name is on record (`crm_data.shown_name`);
+  `get` on one lead in scope returns full
   contact; bulk contact only through `export` (a `file_exports` link). Text
   written by leads or staff comes back inside `lead_content`. The audit log
   keeps only action, ids, enums, numbers and dates for `crm_*` calls
   (`repository._audit_args_json(args, tool_name)`).
+* **Opt-outs.** `crm_data.LEAD_OPTED_OUT_SQL` is the one rule for list, export,
+  bulk targets, `my_day`, `get` and `find`: the row is flagged or on an opt-out
+  list, or the row's user or linked student has such a row here, whatever the
+  row's date. It matches by person, not by number or email. `crm_team_edit`,
+  status and tier changes and `log_interaction` with a status use the same rule
+  and never change an opt-out list row; unassign clears the person's owner and
+  changes no row. `crm_lead_intake` recognises the same people.
+  `crm_messages.opted_out` checks the person's id, number and email, and the call
+  guards check the row and the person's id, so a linked student's opt-out alone
+  does not refuse them.
 * **Deploy order.** admin-core first (V583 + the lead-scope endpoint), then
   ai_service. Until V583 is applied, confirm-token actions answer
   `confirm_unavailable`.
@@ -238,31 +250,51 @@ and `institute_id` with the pinned principal before the executor runs.
 ### Worker lanes
 
 With `MCP_OFF_LOOP_ENABLED` on (the default), the work below runs on worker threads
-(`app/mcp/lanes.py`), on an engine of its own with one connection per worker (`application_name` `ai_service_mcp`, 8 connections at the
-default limits, 60 s statement timeout and 10 s lock timeout, both transaction-local):
+(`app/mcp/lanes.py`), on an engine of its own with one connection per worker (`application_name` `ai_service_mcp`,
+with transaction-local statement and lock timeouts):
 
-| Lane | Workers | Runs | When it cannot take the work |
-|---|---|---|---|
-| tool | pod limit | `crm_leads`, `crm_calls`, `crm_meetings`, `crm_messages`, `crm_reports`, `crm_collections` | The gate has already bounded it; otherwise `server_busy` |
-| control | 2, up to 16 waiting 5 s | `tools/list` and the guides' authorization | JSON-RPC -32603 with `data.error: server_busy` |
-| verify | 2, up to 32 waiting 5 s | The bearer token check for a POST to the MCP endpoint | HTTP 429 from the edge guard |
+| Lane | Runs | When it cannot take the work |
+|---|---|---|
+| tool | `crm_leads`, `crm_calls`, `crm_meetings`, `crm_messages`, `crm_reports`, `crm_collections` | `server_busy` |
+| control | `tools/list` and the guides' authorization | JSON-RPC -32603 with `data.error: server_busy` |
+| verify | The bearer token check | HTTP 429 from the edge guard |
+| oauth | The database work of `/register`, `/authorize`, `/token`, `/revoke`, the consent page and the settings routes (`/oauth/connection-info`, `/oauth/connection/{pair}`, `/oauth/manual-client`) | HTTP 503 with `Retry-After`; see below |
 
-Every other tool, including every write tool and every confirm path, stays on the main loop.
+A tool on the tool lane gets `tool_timeout` at its time limit (`limit_s` in the error). Its slot and its worker come back when
+its thread has finished. A cancelled call rolls back, and one audit row is written from a separate session with
+`error_code` `tool_timeout` or, at shutdown, `cancelled`. A call that reaches its end after being stopped is
+recorded the same way. A call that finished by the deadline keeps its own answer and audit row. A token's
+`last_used_at` is written at most once a minute.
 
-A tool on the tool lane gets `tool_timeout` after 200 s. Its slot and its worker come back only
-when its thread has finished, so a call stuck in sync code keeps counting against the limits.
-A cancelled call rolls back, and one audit row is written from a separate session with
-`error_code` `tool_timeout` or, at shutdown, `cancelled`. A token's `last_used_at` is written
-at most once a minute.
+A bearer value that does not have the shape of an issued access token gets the SDK's 401 without using a lane.
+
+When the OAuth lane cannot take a request just now or its database work meets a connection, timeout, lock or deadlock
+error, `/register`, `/token`, `/revoke` and a client lookup on
+`/authorize` answer HTTP 503 with `Retry-After` and `{"error": "temporarily_unavailable", "error_description": ...,
+"retry_after_s": n}`. When `/authorize` has already verified the client and its redirect, the browser goes back to
+that redirect with `error=temporarily_unavailable` and the `state`. The consent page and the settings routes answer
+503 with `detail.reason: server_busy`. None of these says that a client, code or token is invalid. A code exchange, a
+token rotation and an approved consent each commit as one transaction, so a code, refresh token or pending request
+stays usable when its step did not commit. Refusals count as `oauth_busy` in `by_reject`.
+
+Other errors do not say busy, with the flag on or off. A value the database refuses gets `invalid_client_metadata` from
+`/register` and an `invalid_request` redirect from `/authorize`. A client id that cannot be looked up, or a stored client
+the SDK's model refuses, counts as no client: `/token` answers `invalid_client`. With the lanes on, a settings route
+answers 400 for a value the database refuses. Anything else takes the ordinary server error path.
+
+A rotation and a revoke take the pair's live rows in `token_hash` order, so one waits for the other. A rotation keeps
+the `pair_id`, so a revoke that waited for a rotation reaches the tokens it issued, and a rotation that waited for a
+revoke answers `invalid_grant`.
 
 `MCP_OFF_LOOP_ENABLED=false` or `MCP_MAX_TOOL_CALLS_PER_POD=0` puts all of this back on the
-main loop, where the edge guard uses the main-pool rule described below.
+main loop, where the edge guard looks at the main pool's free connections.
 
 ### Limits and retryable errors
 
-A tool call is admitted up to a limit per pod and per institute, and while the main
-database pool has room (`app/mcp/admission.py`). A call over a limit waits a few seconds,
-holding no connection and no thread. A refused call never reaches `execute_tool` and
+A tool call is admitted within limits per pod and per institute, and while the main
+database pool has room (`app/mcp/admission.py`; the settings are in the table in the
+configuration section). A call over a limit waits a few seconds, holding no connection and
+no thread. A refused call never reaches `execute_tool` and
 writes no audit row, so a `confirm_token` it carried stays valid. `_authorize` still runs
 in full for every admitted call; the gate only counts the token's institute.
 
@@ -272,6 +304,7 @@ Tool errors are HTTP 200 with `isError` and JSON text:
 |---|---|---|
 | `rate_limited` | Too many calls from this institute are running on this pod | `limit_type: concurrent_calls`, `limit` |
 | `rate_limited` (CRM hourly cap) | An hourly cap on calls or messages | `limit_type: hourly`, `cap_per_hour` |
+| `rate_limited` (admissions report) | This institute's report is already running | `limit_type: report_running` |
 | `server_busy` | The pod is at capacity | none |
 | `settings_unavailable` | The institute's MCP settings could not be read | none |
 | `auth_unavailable` | auth-service could not check the session | none |
@@ -279,22 +312,23 @@ Tool errors are HTTP 200 with `isError` and JSON text:
 All carry `retry_after_s`. The concurrency, capacity and unavailable errors also carry
 `retryable: true`, `started: false` and `changed: false`. `tool_timeout` (`retryable: true`,
 `started: true`, `changed: false`, `limit_s`, no `retry_after_s`) is returned only by the
-tools on the tool lane below.
+tools on the tool lane below. A fee reminder refused at the moment its token is spent also
+carries `confirm_token_spent: true`: nothing was sent, and it needs a fresh preview after the wait.
+
+A database error or an unreadable auth-service answer before a tool starts gives `auth_unavailable`.
+A failed commit after a tool ran gives `tool_failed`, since the tool did run.
 
 `tools/list`, prompts and resources answer settings or auth trouble with JSON-RPC -32603
 and `data.error`, never an empty list. A real denial still gives an empty list. The consent
 page answers 503 `settings_unavailable`. `mcp_disabled` comes only after a successful read
 shows off or absent, and `session_invalid` only after a real 401 or 403 from auth-service.
 
-`McpEdgeGuard` wraps the MCP app. A bearer POST to the endpoint gets HTTP 429 with
-`Retry-After: 10` and a JSON-RPC body when its token cannot be checked: with the lanes on,
-when the verify lane is full, the check passes 5 s or the database fails; with them off, when
-the main pool has fewer than two connections free, because the token check needs one. An
-infrastructure problem is never a 401.
+`McpEdgeGuard` wraps the MCP app. A caller whose token check cannot answer gets HTTP 429 with
+`Retry-After` and a JSON-RPC body. An infrastructure problem is never a 401.
 
 Each pod logs one `mcp_stats` line every 30 s: `running`, `waiting`, `by_reject`, `pool_out`,
-`mcp_pool_out`, `oldest_call_s`, `loop_lag_max_ms`, `protocol_versions`. It logs a WARNING when
-event loop lag passes 1000 ms and an ERROR when a call has been running for over 300 s.
+`mcp_pool_out`, `oldest_call_s`, `loop_lag_max_ms`, `protocol_versions`. It logs a WARNING on
+high event loop lag and an ERROR on a call that has been running for a long time.
 
 ## 3. How a connection is made
 
@@ -358,13 +392,13 @@ do more than the person who approved it.
 | `MCP_REFRESH_TOKEN_TTL_SECONDS` | – | 2592000 (30d) |
 | `MCP_AUTH_TXN_TTL_SECONDS` | – | 900 |
 | `MCP_AUTH_CODE_TTL_SECONDS` | – | 300 |
-| `MCP_MAX_TOOL_CALLS_PER_POD` | – | 4. `0` turns off the admission gate and the edge guard. |
-| `MCP_MAX_TOOL_CALLS_PER_INSTITUTE` | – | 3, per pod |
-| `MCP_GATE_MAX_WAIT_S` | – | 5. How long a call over a limit waits for a slot. |
-| `MCP_GATE_WAITERS_PER_INSTITUTE` | – | 3 |
-| `MCP_GATE_WAITERS_PER_POD` | – | 8 |
-| `MCP_POOL_RESERVE` | – | 2. Main-pool connections a tool call may not take. |
-| `MCP_OFF_LOOP_ENABLED` | – | `true`. Runs the CRM read tools, listings and token check on worker threads. |
+| `MCP_MAX_TOOL_CALLS_PER_POD` | – | The limit per pod. `0` turns off the admission gate and the edge guard. |
+| `MCP_MAX_TOOL_CALLS_PER_INSTITUTE` | – | The limit per institute, per pod. |
+| `MCP_GATE_MAX_WAIT_S` | – | How long a call over a limit waits for a slot. |
+| `MCP_GATE_WAITERS_PER_INSTITUTE` | – | How many calls of one institute may wait. |
+| `MCP_GATE_WAITERS_PER_POD` | – | How many calls may wait on one pod. |
+| `MCP_POOL_RESERVE` | – | Main-pool connections a tool call may not take. |
+| `MCP_OFF_LOOP_ENABLED` | – | `true`. Runs the CRM read tools, listings, token check and OAuth database work on worker threads. |
 
 Ingress must route `/.well-known/oauth-protected-resource` and
 `/.well-known/oauth-authorization-server` to ai-service: RFC 9728/8414 put those

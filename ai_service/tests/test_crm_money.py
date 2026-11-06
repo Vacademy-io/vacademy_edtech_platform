@@ -13,7 +13,7 @@ is called), capped per hour per bill, and logged as REACHOUT on the lead.
 """
 import json
 import sys
-from datetime import date, timedelta
+from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
@@ -188,7 +188,7 @@ async def test_lead_dues_reads_the_dues_and_breakdown_endpoints_for_the_leads_pe
     assert out["pending_invoices"][0]["invoice_id"] == "inv-1" and out["pending_invoices"][0]["overdue"] is True
     pay = out["last_payments"][0]
     assert pay["reference"] == "******8899" and "4455" not in json.dumps(out) and pay["mode"] == "UPI"
-    assert {"person", "installment_due", "overdue", "owes"} <= set(out["definitions"])
+    assert {"person", "installment_due", "overdue", "owes", "conversion"} <= set(out["definitions"])
     for _sql, params in backend.sql.matching("crm_money."):
         if "pids" in params:
             assert params["pids"] == ["u-1"] and params["inst"] == "inst-1"
@@ -525,11 +525,53 @@ async def test_hourly_cap_counts_each_bill(backend, tctx, monkeypatch):
     monkeypatch.setattr(money, "BILLS_PER_HOUR", 2)                      # e.g. another batch landed meanwhile
     refused = await write(tctx, **one, confirm_token=token)
     assert refused["error"] == "rate_limited" and "still works" in refused["message"]
-    assert refused["limit_type"] == "hourly"
+    assert refused["limit_type"] == "hourly" and 3500 < refused["retry_after_s"] <= 3601
+    assert over["limit_type"] == "hourly" and 3500 < over["retry_after_s"] <= 3601
     assert tctx.db.query(CrmConfirm).filter(CrmConfirm.spent_at.is_(None), CrmConfirm.revoked_at.is_(None)).count() == 1
     assert len(_reminder_posts(backend)) == 2
     quota = await write(tctx, action="quota")
     assert quota["reminders"]["used_last_hour"] == 2 and quota["reminders"]["remaining"] == 0
+
+
+async def test_retry_after_covers_both_reminder_kinds_and_waits_for_enough_room(backend, tctx, monkeypatch):
+    monkeypatch.setattr(money, "BILLS_PER_HOUR", 5)
+    now = datetime.now(timezone.utc)
+
+    def batch(token, purpose, minutes_ago, targets, outcome="done"):
+        tctx.db.add(CrmConfirm(id=token, institute_id=tctx.principal.institute_id, user_id=tctx.principal.user_id,
+                               purpose=purpose, request_sha256="x", summary_json=json.dumps({"targets": ["t"] * targets}),
+                               created_at=now, expires_at=now + timedelta(minutes=10),
+                               spent_at=now - timedelta(minutes=minutes_ago), outcome=outcome))
+
+    batch("a", money.INSTALLMENT_PURPOSE, 50, 1)
+    batch("failed", money.INVOICE_PURPOSE, 45, 3, outcome="failed")
+    batch("b", money.INVOICE_PURPOSE, 40, 3)
+    batch("c", money.INSTALLMENT_PURPOSE, 10, 1)
+    tctx.db.commit()
+    used = money._reminded_last_hour(tctx)
+    assert used == 5
+    assert 590 <= money._over_hourly_limit(tctx, used, 1)["retry_after_s"] <= 601      # the oldest batch is enough
+    assert 1190 <= money._over_hourly_limit(tctx, used, 3)["retry_after_s"] <= 1201    # it takes the second one too
+
+
+async def test_a_limit_met_as_the_token_is_spent_says_the_token_is_used(backend, tctx, monkeypatch):
+    monkeypatch.setattr(money, "BILLS_PER_HOUR", 3)
+    _reminder_setup(backend)
+    token = (await write(tctx, **REMIND))["confirm_token"]
+    # The check made before the token is spent sees no problem, then another batch lands.
+    monkeypatch.setattr(money, "_pending_targets", lambda ctx, purpose, raw: None)
+    now = datetime.now(timezone.utc)
+    tctx.db.add(CrmConfirm(id="other", institute_id=tctx.principal.institute_id, user_id=tctx.principal.user_id,
+                           purpose=money.INVOICE_PURPOSE, request_sha256="x",
+                           summary_json=json.dumps({"targets": ["t"] * 4}), created_at=now,
+                           expires_at=now + timedelta(minutes=10), spent_at=now, outcome="done"))
+    tctx.db.commit()
+    refused = await write(tctx, **REMIND, confirm_token=token)
+    assert refused["error"] == "rate_limited" and refused["limit_type"] == "hourly"
+    assert refused["confirm_token_spent"] is True and 3500 < refused["retry_after_s"] <= 3601
+    assert "Nothing was sent" in refused["message"] and "without confirm_token" in refused["message"]
+    assert _reminder_posts(backend) == []
+    assert (await write(tctx, **REMIND, confirm_token=token))["error"] == "confirm_token_used"
 
 
 async def test_selection_errors(backend, tctx):
@@ -657,3 +699,111 @@ async def test_collections_group_by_refuses_unknown_input(backend, args):
     out = await read(make_ctx(), action="collections", **args)
     assert out["error"] == "invalid_argument"
     assert backend.sql.matching("crm_money.") == []
+
+
+# ── lead_dues: enrolment and conversion facts ────────────────────────────
+
+def _breakdown_with_invoice(backend):
+    backend.admin_core.on("POST", money.PLAN_BREAKDOWN_PATH, [
+        {"user_plan_id": "up-1", "course_name": "NEET 2027", "plan_status": "ACTIVE", "billed": 60000.0, "paid": 20000.0,
+         "due": 20000.0, "upcoming": 0.0, "counts_towards_due": True, "currency": "INR"},
+        {"user_plan_id": "inv-9", "course_name": "Invoice", "plan_status": "PENDING_PAYMENT", "billed": 500.0, "paid": 0.0,
+         "due": 500.0, "upcoming": 0.0, "counts_towards_due": True, "currency": "INR"}])
+
+
+async def test_lead_dues_merges_enrolment_facts_by_plan_and_adds_conversion(backend):
+    _lead(backend, lead_row("r-1", "u-1"))
+    _dues_routes(backend)
+    _breakdown_with_invoice(backend)
+    backend.sql.on("crm_money.enrolment_facts", [
+        {"plan_id": "up-1", "plan_created_on": date(2026, 10, 1), "enrolled_on": date(2026, 10, 3),
+         "admission_package_id": "ap-1", "fee_total": 100000, "discount_total": 5000, "net_total": 95000,
+         "package_courses": 2}])
+    backend.sql.on("crm_money.conversion_facts", [
+        {"pid": "u-1", "converted_at": datetime(2026, 10, 2, 19, 0), "counsellor_id": "c-1",
+         "marked_converted_by": "c-2"},
+        {"pid": "u-2", "converted_at": None, "counsellor_id": "c-1", "marked_converted_by": None}])
+    out = await read(make_ctx(), action="lead_dues", lead_id="r-1")
+    plan, invoice = out["enrolments"]
+    assert plan["billed"] == 60000 and plan["plan_created_on"] == "2026-10-01" and plan["enrolled_on"] == "2026-10-03"
+    assert plan["admission_package"] == {"id": "ap-1", "fee_total": 100000.0, "discount_total": 5000.0,
+                                         "net_total": 95000.0, "courses": 2}
+    assert invoice["plan_id"] == "inv-9" and invoice["plan_created_on"] is None and invoice["enrolled_on"] is None
+    assert invoice["admission_package"] is None
+    assert out["conversion"] == [{
+        "person_id": "u-1", "converted_on": "2026-10-03",
+        "converting_counsellor": {"counsellor_id": "c-1", "name": "Asha Rao", "basis": "lead_owner"},
+        "marked_converted_by": {"user_id": "c-2", "name": "Bala K"}}]
+    assert "not snapshots" in out["definitions"]["conversion"]
+    sql, params = backend.sql.matching("crm_money.enrolment_facts")[0]
+    assert params["plan_ids"] == ["up-1", "inv-9"] and params["pids"] == ["u-1"] and params["inst"] == "inst-1"
+    assert params["tz"] == "Asia/Kolkata" and "ei.institute_id = :inst" in sql
+    assert "unavailable" not in out
+
+
+async def test_lead_dues_masks_a_staff_name_that_holds_contact_in_the_conversion_block(backend):
+    backend.counsellors({"c-1": "owner.name@gmail.com", "c-2": "9876543210"})
+    view = await money._conversion_view(make_ctx(), [{"pid": "u-1", "converted_at": datetime(2026, 10, 3, 5, 0),
+                                                      "counsellor_id": "c-1", "marked_converted_by": "c-2"}],
+                                        "Asia/Kolkata")
+    assert view[0]["converting_counsellor"]["name"] == "o***@gmail.com"
+    assert view[0]["marked_converted_by"]["name"] == "******3210"
+    backend.counsellors({"c-1": "Asha Rao", "c-2": "Bala K"})
+    view = await money._conversion_view(make_ctx(), [{"pid": "u-1", "converted_at": datetime(2026, 10, 3, 5, 0),
+                                                      "counsellor_id": "c-1", "marked_converted_by": "c-2"}],
+                                        "Asia/Kolkata")
+    assert view[0]["converting_counsellor"]["name"] == "Asha Rao" and view[0]["marked_converted_by"]["name"] == "Bala K"
+
+
+async def test_lead_dues_keeps_the_money_when_the_facts_cannot_be_read(backend, monkeypatch):
+    _lead(backend, lead_row("r-1", "u-1"))
+    _dues_routes(backend)
+    timeouts = {}
+    real = cd.rows
+
+    def rows(ctx, sql, params=None, *, timeout_ms=15000):
+        if "crm_money.enrolment_facts" in sql or "crm_money.conversion_facts" in sql:
+            timeouts[sql.split("\n")[0]] = timeout_ms
+            return [], False
+        return real(ctx, sql, params, timeout_ms=timeout_ms)
+
+    monkeypatch.setattr(cd, "rows", rows)
+    out = await read(make_ctx(), action="lead_dues", lead_id="r-1")
+    assert out["enrolments"][0]["billed"] == 60000 and out["enrolments"][0]["paid"] == 20000
+    assert out["enrolments"][0]["overdue"] == 20000 and out["installments"]["total_due"] == 38000
+    assert out["enrolments"][0]["plan_created_on"] is None and out["conversion"] == []
+    assert out["unavailable"] == ["conversion_facts", "enrolment_facts"] and "could not be read" in out["note"]
+    assert set(timeouts.values()) == {5000} and len(timeouts) == 2
+
+
+async def test_lead_dues_with_no_plans_skips_the_plan_facts(backend):
+    _lead(backend, lead_row("r-1", "u-1"))
+    _dues_routes(backend)
+    backend.admin_core.on("POST", money.PLAN_BREAKDOWN_PATH, [])
+    out = await read(make_ctx(), action="lead_dues", lead_id="r-1")
+    assert out["enrolments"] == [] and not backend.sql.matching("crm_money.enrolment_facts")
+    assert backend.sql.matching("crm_money.conversion_facts")
+
+
+@pytest.mark.parametrize("stored, shown", [
+    ("asha.verma@gmail.com", "a***@gmail.com"), ("9876543210", "******3210"), ("x" * 130 + "@gmail.com", "x***@gmail.com"),
+    ("Asha Verma", "Asha Verma")])
+async def test_the_person_block_masks_a_name_that_holds_contact(backend, stored, shown):
+    backend.lead_scope("ADMIN")
+    out = await money._person_views(make_ctx(), {"u-1": {"parent_name": stored}}, ["u-1"])
+    assert out["u-1"]["name"] == shown
+
+
+async def test_the_person_block_masks_an_account_name_that_holds_contact(backend):
+    backend.lead_scope("ADMIN")
+    backend.user_names = {"u-1": "ravi@gmail.com"}
+    out = await money._person_views(make_ctx(), {"u-1": {}}, ["u-1"])
+    assert out["u-1"]["name"] == "r***@gmail.com"
+
+
+@pytest.mark.parametrize("stored, shown", [
+    ("asha.verma@gmail.com", "a***@gmail.com"), ("9222200007", "******0007"), ("Asha Verma", "Asha Verma")])
+async def test_lead_dues_masks_a_name_that_holds_contact(backend, stored, shown):
+    _lead(backend, lead_row("r-1", "u-1", name=stored))
+    _dues_routes(backend)
+    assert (await read(make_ctx(), action="lead_dues", lead_id="r-1"))["name"] == shown

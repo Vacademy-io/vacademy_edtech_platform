@@ -1172,3 +1172,42 @@ def test_module_never_names_blocked_endpoints():
     for bad in cd.NEVER_CALL:
         assert bad not in src
     assert "/notification-service/v1/send" not in src and "/inbox/send" not in src
+
+
+@pytest.mark.parametrize("stored, shown", [
+    ("asha.verma@gmail.com", "a***@gmail.com"), ("9222200007", "******0007"), ("Asha Verma", "Asha Verma")])
+async def test_a_lead_identity_masks_a_name_that_holds_contact(backend, stored, shown):
+    backend.lead_scope("ADMIN")
+    _lead(backend, lead_row("r-1", "u-1", name=stored))
+    _history_routes(backend)
+    out = await _call("read", {"action": "history", "lead_id": "r-1"}, make_ctx())
+    assert out["lead"]["name"] == shown
+
+
+@pytest.mark.parametrize("stored, shown", [
+    ("asha.verma@gmail.com", "a***@gmail.com"), ("9222200007", "******0007"), ("Asha Verma", "Asha Verma")])
+def test_an_incoming_whatsapp_message_masks_a_sender_name_that_holds_contact(stored, shown):
+    item = msg._wa_message({"direction": "INCOMING", "senderName": stored, "body": "hello"})
+    assert item["content"]["sender_name"] == shown
+
+
+@pytest.mark.parametrize("stored, shown", [
+    ("asha.verma@gmail.com", "a***@gmail.com"), ("9222200007", "******0007"), ("Asha Verma", "Asha Verma")])
+async def test_the_inbox_masks_a_sender_name_that_holds_contact(backend, stored, shown):
+    backend.lead_scope("ADMIN")
+    _tails(backend, {TAIL: ("r-1", "u-1")})
+    backend.on_notification(msg.INBOX_PATH, [{"phone": WA, "senderName": stored, "lastMessage": "hello"}])
+    out = await _call("read", {"action": "inbox", "limit": 10}, make_ctx())
+    assert out["conversations"][0]["content"]["sender_name"] == shown
+
+
+@pytest.mark.parametrize("stored, shown", [
+    ("asha.verma@gmail.com", "a***@gmail.com"), ("9222200007", "******0007"), ("Asha Verma", "Asha Verma")])
+async def test_escalations_mask_a_user_name_that_holds_contact(backend, stored, shown):
+    backend.lead_scope("ADMIN")
+    _tails(backend, {TAIL: ("r-1", "u-1")})
+    backend.on_notification(msg.ESCALATIONS_PATH, [
+        {"id": "esc-1", "userPhone": WA, "userName": stored, "reason": "NO_CONTEXT", "status": "PENDING",
+         "userMessage": "fees?", "createdAt": "2026-10-13T09:00:00Z"}])
+    out = await _call("read", {"action": "escalations"}, make_ctx())
+    assert out["escalations"][0]["content"]["name"] == shown

@@ -163,7 +163,8 @@ async def test_per_action_feature_gate(backend, world, monkeypatch):
 async def test_find_groups_masks_and_adds_dashboard_search_hits(backend, world):
     backend.lead_scope("ADMIN")
     backend.user_names = {"c-1": "Asha (counsellor)", "u-3": "Meera Iyer"}
-    world.add(row("r-1", "u-1", owner_id="c-1"), row("r-2", "u-1", list_id="list-2", overall_status="OPTED_OUT"),
+    world.add(row("r-1", "u-1", owner_id="c-1", lead_opted_out=True, own_opted_out=True),
+              row("r-2", "u-1", list_id="list-2", overall_status="OPTED_OUT"),
               row("r-3", "u-3", name=None, phone=None, email=None, cf_phone="+91 90000 11111"))
     backend.admin_core.on("POST", m.LEADS_PATH, {"content": [{"response_id": "r-1"}, {"response_id": "r-3"}],
                                                  "totalElements": 2})
@@ -516,6 +517,17 @@ async def test_check_exists_for_a_counsellor_uses_the_lookup_and_masks(backend, 
     assert writes(backend) == []
 
 
+@pytest.mark.parametrize("held, shown", [
+    ("ravi.kumar@example.com", "r***@example.com"), ("+91 98765 43210", "******3210"), ("Ravi Kumar", "Ravi Kumar"),
+])
+async def test_check_exists_for_a_counsellor_masks_a_name_that_holds_contact(backend, world, held, shown):
+    backend.lead_scope("COUNSELLOR_TREE", owner_ids=["c-1"])
+    world.tables["right(regexp_replace"] = []
+    backend.admin_core.on("GET", m.LEAD_LOOKUP_PATH, {"found": True, "lead_name": held, "lead_mobile": "+91 99999 12345"})
+    out = await run({"action": "check_exists", "phone": "9999912345"}, counsellor_ctx())
+    assert out["institute_lookup"]["name"] == shown
+
+
 async def test_check_exists_lookup_disabled_falls_back_to_own_leads(backend, world):
     backend.lead_scope("COUNSELLOR_TREE", owner_ids=["c-1"])
     world.tables["right(regexp_replace"] = []
@@ -740,3 +752,204 @@ async def test_no_action_writes_or_asks_for_a_token(backend, world, monkeypatch)
         assert "confirm_token" not in out and out.get("error") not in ("confirm_required",), args
     assert writes(backend) == []
     assert not [c for c in backend.notification_calls if c["method"] != "GET"]
+
+
+# ── the converted dates ──────────────────────────────────────────────────
+
+OCTOBER = {"converted_from": "2026-10-01", "converted_to": "2026-10-31"}
+
+
+def _converted_world(world, n):
+    """``n`` converted leads; the dated statement answers one SQL page of them, with the total."""
+    ids = [f"r-{i}" for i in range(n)]
+    world.add(*(row(i, f"u-{i}", converted_at=datetime(2026, 10, 5, 5, 0)) for i in ids))
+
+    def page(params):
+        chosen = ids[params["off"]:params["off"] + params["lim"]]
+        return [{"id": i, "opted_out": False, "total": n, "opted_out_total": 0} for i in chosen]
+
+    world.tables["OFFSET :off"] = page
+    return ids
+
+
+async def test_list_pages_converted_dates_in_sql(backend, world):
+    backend.lead_scope("ADMIN")
+    ids = _converted_world(world, 600)
+    out = await run({"action": "list", "filter": OCTOBER, "offset": 500, "limit": 20})
+    assert out["matched"] == 600 and out["leads_shown"] == 20 and out["next_offset"] == 520
+    assert [p["leads"][0]["lead_id"] for p in out["people"]] == ids[500:520]
+    assert out["people"][0]["leads"][0]["converted_at"] == "2026-10-05T05:00:00Z"
+    assert not any("newest 500" in n for n in out["notes"])
+    assert any("Leads only" in n and "crm_collections(action='admissions')" in n for n in out["notes"])
+    _sql, params = backend.sql.matching("OFFSET :off")[0]
+    assert params["off"] == 500 and params["lim"] == 20
+    last = await run({"action": "list", "filter": OCTOBER, "offset": 590, "limit": 20})
+    assert last["leads_shown"] == 10 and last["next_offset"] is None
+
+
+async def test_list_past_the_end_of_converted_dates_keeps_the_total(backend, world):
+    backend.lead_scope("ADMIN")
+    _converted_world(world, 30)
+    out = await run({"action": "list", "filter": OCTOBER, "offset": 500})
+    assert out["matched"] == 30 and out["people"] == [] and out["next_offset"] is None
+
+
+async def test_list_converted_dates_validation(backend, world):
+    backend.lead_scope("ADMIN")
+    for f in ({"converted_to": "2026-10-31"}, {"converted_from": "2025-10-01", "converted_to": "2026-10-02"},
+              {"converted_from": "0001-01-01", "converted_to": "0001-06-01"},
+              {"converted_from": "9999-12-30", "converted_to": "9999-12-31"}):
+        assert (await run({"action": "list", "filter": f}))["error"] == "invalid_filter"
+        assert (await run({"action": "export", "filter": f}))["error"] == "invalid_filter"
+    out = await run({"action": "list", "filter": OCTOBER, "offset": 10001})
+    assert out["error"] == "invalid_filter" and "10000" in out["message"]
+    assert not backend.sql.matching("COUNT(*) OVER ()")
+
+
+async def test_the_window_note_only_shows_when_the_window_really_cut_rows(backend, world):
+    backend.lead_scope("ADMIN")
+    world.add(*(row(f"r-{i}", f"u-{i}") for i in range(3)))
+    world.filter_ids = ["r-0", "r-1", "r-2"]
+    out = await run({"action": "list", "filter": {}})
+    assert not any("newest 500" in n for n in out["notes"])
+    world.tables["COUNT(*) OVER ()"] = [{"id": "r-0", "opted_out": False, "total": 900, "opted_out_total": 0}]
+    out = await run({"action": "list", "filter": {}})
+    assert any("newest 500" in n for n in out["notes"])
+
+
+@pytest.mark.parametrize("dated", [False, True])
+async def test_a_page_too_large_for_the_reply_loses_no_lead_across_pages(backend, world, monkeypatch, dated):
+    backend.lead_scope("ADMIN")
+    monkeypatch.setattr(m, "MAX_RESULT_BYTES", 6000)
+    if dated:
+        ids = _converted_world(world, 45)
+        flt = OCTOBER
+    else:
+        ids = [f"r-{i}" for i in range(45)]
+        world.add(*(row(i, f"u-{i}") for i in ids))
+        world.filter_ids = ids
+        flt = {}
+    seen, offset, shrunk = [], 0, False
+    while offset is not None:
+        out = await run({"action": "list", "filter": flt, "limit": 20, "offset": offset})
+        assert len(json.dumps(out, ensure_ascii=False).encode()) <= 6000 + 100
+        seen += [lead["lead_id"] for p in out["people"] for lead in p["leads"]]
+        shrunk = shrunk or "truncated" in out
+        assert out["leads_shown"] == sum(len(p["leads"]) for p in out["people"])
+        offset = out["next_offset"]
+    assert shrunk and seen == ids
+
+
+async def test_a_single_lead_page_is_never_shrunk_away(backend, world, monkeypatch):
+    backend.lead_scope("ADMIN")
+    monkeypatch.setattr(m, "MAX_RESULT_BYTES", 10)
+    world.add(row("r-1", "u-1"))
+    world.filter_ids = ["r-1"]
+    out = await run({"action": "list", "filter": {}})
+    assert out["leads_shown"] == 1 and out["next_offset"] is None
+
+
+async def test_export_with_converted_dates_has_the_column_and_says_what_was_left_out(backend, world, monkeypatch):
+    backend.lead_scope("ADMIN")
+    ids = _converted_world(world, 2100)
+    made = {}
+
+    def fake_create(db, **kw):
+        made.update(kw)
+        return fe.ExportHandle(export_id="e-1", url="https://ai/exports/e-1/k", kind=kw["kind"], label="leads",
+                               file_name=kw["file_name"], size_bytes=10,
+                               expires_at=datetime.now(timezone.utc) + timedelta(minutes=15), max_downloads=2)
+
+    monkeypatch.setattr(m, "create_export", fake_create)
+    out = await run({"action": "export", "filter": OCTOBER})
+    assert out["rows"] == 2000 and out["matched"] == 2100
+    assert "100 older" in out["not_included"] and "converted_from" in out["not_included"]
+    assert "converted_to" in out["not_included"]
+    rows_ = list(csv.reader(io.StringIO(made["content"])))
+    assert rows_[0] == list(m.EXPORT_COLUMNS) and rows_[0][-1] == "converted_at"
+    assert rows_[0][:14] == ["lead_id", "lead_user_id", "name", "phone", "email", "list", "status", "tier", "score",
+                             "owner", "source", "submitted_at", "next_followup_at", "first_contact_due_at"]
+    assert rows_[1][0] == ids[0] and rows_[1][-1] == "2026-10-05T05:00:00Z"
+    assert writes(backend) == []
+
+
+def test_the_filter_schema_and_row_statement_carry_the_converted_dates():
+    props = m._FILTER_SCHEMA["properties"]
+    assert "converted_from" in props and "converted_to" in props
+    assert "CASE WHEN ulp.conversion_status = 'CONVERTED' THEN ulp.converted_at END AS converted_at" in m._ROWS_SQL
+    assert m._cell("=x") == "'=x"
+
+
+@pytest.mark.parametrize("field", ["cf_name", "parent_name"])
+@pytest.mark.parametrize("stored, shown", [
+    ("asha.verma@gmail.com", "a***@gmail.com"), ("9876543210", "******3210"), ("x" * 130 + "@gmail.com", "x***@gmail.com"),
+    ("Asha Verma", "Asha Verma")])
+def test_a_list_masks_a_name_that_holds_contact(field, stored, shown):
+    row = {"lead_id": "r-1", "lead_user_id": "u-1", field: stored}
+    assert m._group([row], {}, {})[0]["person"]["name"] == shown
+
+
+@pytest.mark.parametrize("row_fields, account, shown", [
+    ({"cf_name": "asha@gmail.com", "name": "Asha Verma"}, None, "Asha Verma"),
+    ({"cf_name": "9876543210", "name": "Asha Verma"}, None, "Asha Verma"),
+    ({"cf_name": "asha@gmail.com", "name": None}, "Asha Verma", "Asha Verma"),
+    ({"cf_name": "Asha V", "name": "x@gmail.com"}, "Y Z", "Asha V"),
+    ({"cf_name": "asha@gmail.com", "name": "9876543210"}, "ravi@gmail.com", "a***@gmail.com"),
+    ({"cf_name": None, "name": "9876543210"}, None, "******3210"),
+    ({"cf_name": None, "name": None}, None, None)])
+def test_a_list_shows_the_first_name_that_holds_no_contact(row_fields, account, shown):
+    r = row("r-1", "u-1", **row_fields)
+    assert m._shown_name(r, {"u-1": account} if account else {}) == shown
+    assert m._group([r], {"u-1": account} if account else {}, {})[0]["person"]["name"] == shown
+
+
+def test_a_person_with_a_real_name_on_a_later_row_shows_it_over_a_masked_one():
+    rows_ = [row("r-1", "u-1", cf_name="asha@gmail.com", name=None), row("r-2", "u-1", cf_name=None, name="Asha Verma")]
+    assert m._group(rows_, {}, {})[0]["person"]["name"] == "Asha Verma"
+    assert m._group(rows_[:1], {}, {})[0]["person"]["name"] == "a***@gmail.com"
+
+
+def test_a_list_masks_an_account_name_that_holds_contact_and_the_file_name_stays_whole():
+    row = {"lead_id": "r-1", "lead_user_id": "u-1"}
+    assert m._group([row], {"u-1": "ravi@gmail.com"}, {})[0]["person"]["name"] == "r***@gmail.com"
+    assert m._name(row, {"u-1": "ravi@gmail.com"}) == "ravi@gmail.com"
+
+
+def test_the_converted_dates_text_says_whose_conversion_counts():
+    props = m._FILTER_SCHEMA["properties"]
+    assert "whose own user became CONVERTED" in props["converted_from"]["description"]
+    assert "a linked student's conversion does not count" in props["converted_from"]["description"]
+
+
+async def test_the_converted_dates_note_says_whose_conversion_counts(backend, world):
+    backend.lead_scope("ADMIN")
+    _converted_world(world, 1)
+    out = await run({"action": "list", "filter": OCTOBER})
+    assert any("the conversion of the lead's own user, not a linked student's" in n for n in out["notes"])
+
+
+@pytest.mark.parametrize("stored, shown", [
+    ("asha.verma@gmail.com", "a***@gmail.com"), ("9222200007", "******0007"), ("Asha Verma", "Asha Verma")])
+async def test_my_day_masks_a_name_that_holds_contact(backend, world, stored, shown):
+    backend.lead_scope("COUNSELLOR_TREE", owner_ids=["c-1"])
+    world.add(row("r-tat", "u-1", owner_id="c-1", sla_due_at=NOW - timedelta(hours=3), parent_name=stored))
+    world.tables["COUNT(*) OVER ()"] = lambda p: (
+        [{"id": "r-tat", "opted_out": False, "total": 1, "opted_out_total": 0}]
+        if "deadline" in backend.sql.calls[-1][0] or "tat_due_at" in backend.sql.calls[-1][0] else [])
+    world.tables["FROM lead_followup lf\nJOIN audience_response"] = []
+    world.tables["OR EXISTS (SELECT 1 FROM timeline_event"] = []
+    out = await run({"action": "my_day"}, counsellor_ctx())
+    assert out["items"][0]["lead_id"] == "r-tat" and out["items"][0]["name"] == shown
+
+
+async def test_my_day_masks_an_account_name_that_holds_contact(backend, world):
+    backend.lead_scope("COUNSELLOR_TREE", owner_ids=["c-1"])
+    backend.user_names = {"u-1": "ravi@gmail.com"}
+    world.add(row("r-tat", "u-1", owner_id="c-1", sla_due_at=NOW - timedelta(hours=3), parent_name=None))
+    world.tables["COUNT(*) OVER ()"] = lambda p: (
+        [{"id": "r-tat", "opted_out": False, "total": 1, "opted_out_total": 0}]
+        if "deadline" in backend.sql.calls[-1][0] or "tat_due_at" in backend.sql.calls[-1][0] else [])
+    world.tables["FROM lead_followup lf\nJOIN audience_response"] = []
+    world.tables["OR EXISTS (SELECT 1 FROM timeline_event"] = []
+    out = await run({"action": "my_day"}, counsellor_ctx())
+    assert out["items"][0]["name"] == "r***@gmail.com"

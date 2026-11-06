@@ -54,9 +54,11 @@ WORKFLOW_RUNS_PATH = f"{AC}/v1/workflow-execution/user"
 
 #: Rows ``list`` pages through (beyond this: narrow the filter, or export).
 LIST_WINDOW = 500
+#: Furthest offset ``list`` pages to with the converted dates.
+MAX_CONVERTED_OFFSET = 10000
 EXPORT_MAX = 2000
 EXPORT_KIND = "CRM_LEADS"
-#: Results larger than this are trimmed (the longest list in the reply loses its tail).
+#: Reply size of one result.
 MAX_RESULT_BYTES = 60_000
 
 register_kind(EXPORT_KIND, ExportKind(label="CRM lead contact details (names, phone numbers, emails)",
@@ -90,7 +92,7 @@ ACTION_SPEC: Dict[str, Dict[str, Any]] = {
 _FILTER_SCHEMA: Dict[str, Any] = {
     "type": "object",
     "description": "list / export: which leads. All keys optional and combined with AND. Opted-out and deleted "
-                   "leads are never included.",
+                   "leads are never included. " + cd.OPT_OUT_RULE_TEXT,
     "properties": {
         "status_keys": {"type": "array", "items": {"type": "string"},
                         "description": "Status keys from catalog (e.g. NEW, CONVERTED, LOST)."},
@@ -110,6 +112,12 @@ _FILTER_SCHEMA: Dict[str, Any] = {
         "never_called": {"type": "boolean"},
         "has_open_followup": {"type": "boolean"},
         "converted": {"type": "string", "enum": ["exclude", "only"]},
+        "converted_from": {"type": "string",
+                           "description": "YYYY-MM-DD (institute timezone, included): leads whose own user became "
+                                          "CONVERTED on or after this day, newest conversion first; a linked "
+                                          "student's conversion does not count. Required with converted_to; at most "
+                                          "366 days."},
+        "converted_to": {"type": "string", "description": "YYYY-MM-DD (included); default today."},
     },
 }
 
@@ -122,13 +130,21 @@ CRM_LEADS_SCHEMA: Dict[str, Any] = {
             "A lead_id is one enquiry (one person in one list); a person (lead_user_id) can have several. Pick an "
             "`action`:\n"
             "- find (query: name, phone or email): people who match, each with all their leads and flags "
-            "(opted_out, converted, deleted). When several people match, show them and ask which one — never "
-            "guess. Use this before any write to get the lead_id.\n"
+            "(opted_out, linked_student_opted_out, converted, deleted), by the same opt-out rule as list. "
+            "person.opted_out and person.flags cover the rows this query matched: person.opted_out is true when list "
+            "leaves out every one of them, and a row of theirs the query did not match is not counted (get shows "
+            "them all). opted_out is the person's own opt-out: message sends and calls to them are refused. "
+            "linked_student_opted_out leaves the lead out of lists only: message sends check the person's id, number "
+            "and email, and calls check the row and the person's id. When several people match, show them "
+            "and ask which one — never guess. Use this before any write to get the lead_id.\n"
             "- list (filter, limit ≤50, offset): leads matching the filter, grouped by person, newest first, with "
-            "status, tier, score, owner, next follow-up and SLA deadline. `matched` is the total.\n"
+            "status, tier, score, owner, next follow-up and SLA deadline. `matched` is the total. filter.converted_from "
+            "/ converted_to list the leads whose own user converted in those days, not a linked student's; it counts "
+            "leads, so for people and enrolments use crm_collections(action='admissions').\n"
             "- get (lead_id, or lead_user_id / phone / email): one lead in full — contact (unmasked), form "
             "answers, status history, owner, SLA, open follow-ups, recent timeline, last calls, next meeting, "
-            "tags, enrolment and payments.\n"
+            "tags, enrolment and payments. lead.opted_out says whether list leaves this row out, and lead.flags say "
+            "why, as in find.\n"
             "- timeline (lead_id; limit, before = next_before from the previous page): the lead's activity here.\n"
             "- my_day (limit): the user's ranked call list for today — overdue first contact, overdue and due "
             "follow-ups and callbacks, AI-call leads asking for a call, hot leads untouched for 24 h, new today.\n"
@@ -206,13 +222,14 @@ def _num(value: Any) -> Any:
     return int(f) if f.is_integer() else round(f, 2)
 
 
+def _reply_bytes(result: Dict[str, Any]) -> int:
+    return len(json.dumps(result, ensure_ascii=False, default=str).encode("utf-8"))
+
+
 def _fit(result: Dict[str, Any], keys: Sequence[str]) -> Dict[str, Any]:
     """Keep the reply under MAX_RESULT_BYTES by dropping the tail of the longest listed array."""
-    def size() -> int:
-        return len(json.dumps(result, ensure_ascii=False, default=str).encode("utf-8"))
-
     trimmed = False
-    while size() > MAX_RESULT_BYTES:
+    while _reply_bytes(result) > MAX_RESULT_BYTES:
         candidates = [k for k in keys if isinstance(result.get(k), list) and len(result[k]) > 1]
         if not candidates:
             break
@@ -242,16 +259,19 @@ _ROWS_SQL = """
 SELECT ar.id AS lead_id, ar.user_id AS lead_user_id, ar.audience_id AS list_id, a.campaign_name AS list_name,
        ar.parent_name, ar.parent_email, ar.parent_mobile, cfc.cf_name, cfc.cf_phone, cfc.cf_email,
        ar.source_type, ar.submitted_at, ar.overall_status, ar.audience_status,
-       {status_key} AS status_key, ({tier}) AS tier, ulp.conversion_status, ulp.last_activity_at,
+       {status_key} AS status_key, ({tier}) AS tier, ulp.conversion_status,
+       CASE WHEN ulp.conversion_status = 'CONVERTED' THEN ulp.converted_at END AS converted_at, ulp.last_activity_at,
        lu.user_id AS enquiry_owner_id, ulp.assigned_counselor_id AS profile_owner_id, {owner} AS owner_id,
        (SELECT ls.raw_score FROM lead_score ls WHERE ls.audience_response_id = ar.id
          ORDER BY ls.updated_at DESC NULLS LAST LIMIT 1) AS score,
        (SELECT MIN(lf.schedule_time) FROM lead_followup lf
          WHERE lf.audience_response_id = ar.id AND lf.is_closed = FALSE) AS next_followup_at,
-       {sla_due} AS sla_due_at, {first_response} AS first_response_at
+       {sla_due} AS sla_due_at, {first_response} AS first_response_at,
+       {lead_opted_out} AS lead_opted_out, {own_opted_out} AS own_opted_out
 FROM audience_response ar
 {joins}
 {contact}
+{opted_lookup}
 WHERE ar.id = ANY(:ids) AND {pred}
 """
 
@@ -278,7 +298,9 @@ def _rows_sql(s: "cd.Scope") -> Tuple[str, Dict[str, Any]]:
     pred, params = cd.scope_sql(s)
     sql = _ROWS_SQL.format(status_key=cd.STATUS_KEY_SQL, tier=cd.TIER_SQL, owner=cd.owner_display_sql(),
                            sla_due=_SLA_DUE_SQL, first_response=_FIRST_RESPONSE_SQL.format(event=cd.RESPONSE_EVENT_SQL),
-                           joins=cd.LEAD_OWNER_JOINS, contact=_CONTACT_JOIN, pred=pred)
+                           joins=cd.LEAD_OWNER_JOINS, contact=_CONTACT_JOIN, pred=pred,
+                           lead_opted_out=cd.LEAD_OPTED_OUT_SQL, own_opted_out=cd.OWN_OPTED_OUT_SQL,
+                           opted_lookup=cd.LEAD_OPTED_LOOKUP)
     return sql, {**params, "inst": s.institute_id}
 
 
@@ -329,6 +351,15 @@ def _name(r: Dict[str, Any], display: Dict[str, str]) -> Optional[str]:
             or None)
 
 
+def _name_candidates(r: Dict[str, Any], display: Dict[str, str]) -> List[Any]:
+    return [r.get("cf_name"), display.get(str(r.get("lead_user_id") or "")), r.get("parent_name")]
+
+
+def _shown_name(r: Dict[str, Any], display: Dict[str, str]) -> Optional[str]:
+    """``_name`` as a list shows it: the first candidate with no email or phone number in it, else one masked."""
+    return cd.shown_name(_name_candidates(r, display))
+
+
 def _owner(r: Dict[str, Any], display: Dict[str, str]) -> Optional[Dict[str, Any]]:
     oid = r.get("owner_id")
     if not oid:
@@ -340,8 +371,8 @@ def _lead_brief(r: Dict[str, Any], labels: Dict[str, str]) -> Dict[str, Any]:
     key = r.get("status_key")
     out = {"lead_id": r["lead_id"], "list_id": r.get("list_id"), "list": cd.clean(r.get("list_name")),
            "status": key, "status_label": labels.get(str(key)) if key else None, "score": r.get("score"),
-           "submitted_at": cd.iso(r.get("submitted_at")), "next_followup_at": cd.iso(r.get("next_followup_at")),
-           "flags": cd.lead_flags(r)}
+           "submitted_at": cd.iso(r.get("submitted_at")), "converted_at": cd.iso(r.get("converted_at")),
+           "next_followup_at": cd.iso(r.get("next_followup_at")), "flags": cd.lead_flags(r)}
     if r.get("sla_due_at") and not r.get("first_response_at"):
         out["sla_due_at"] = cd.iso(r.get("sla_due_at"))
     return out
@@ -357,11 +388,11 @@ def _group(rows: Sequence[Dict[str, Any]], display: Dict[str, str], labels: Dict
         top = rs[0]
         out.append({
             "person": {"lead_user_id": top.get("lead_user_id"),
-                       "name": next((n for n in (_name(r, display) for r in rs) if n), None),
+                       "name": cd.shown_name(c for r in rs for c in _name_candidates(r, display)),
                        "phone": cd.mask_phone(next((_phone(r) for r in rs if _phone(r)), None)),
                        "email": cd.mask_email(next((_email(r) for r in rs if _email(r)), None)),
                        "owner": _owner(top, display), "tier": top.get("tier"),
-                       "flags": sorted({f for r in rs for f in cd.lead_flags(r)})},
+                       "flags": cd.person_flags(rs)},
             "leads": [_lead_brief(r, labels) for r in rs],
         })
     return out
@@ -375,7 +406,8 @@ async def _resolve(ctx: ToolContext, args: Dict[str, Any]) -> Dict[str, Any]:
         if cd.is_error(s):
             return s
         pred, params = cd.scope_sql(s)
-        found, ok = cd.rows(ctx, _PERSON_LEAD_SQL.format(joins=cd.LEAD_OWNER_JOINS, pred=pred),
+        found, ok = cd.rows(ctx, _PERSON_LEAD_SQL.format(joins=cd.LEAD_OWNER_JOINS, pred=pred,
+                                                             on_list=cd.OPT_OUT_LIST_SQL.format(r="ar", a="a")),
                             {**params, "inst": s.institute_id, "luid": luid})
         if not ok:
             return cd.err("query_failed")
@@ -390,7 +422,7 @@ SELECT ar.id, CASE WHEN {pred} THEN 1 ELSE 0 END AS in_scope
 FROM audience_response ar
 {joins}
 WHERE ar.user_id = :luid
-ORDER BY in_scope DESC, (ar.audience_status = 'ACTIVE') DESC, ar.submitted_at DESC NULLS LAST, ar.id
+ORDER BY in_scope DESC, {on_list}, (ar.audience_status = 'ACTIVE') DESC, ar.submitted_at DESC NULLS LAST, ar.id
 LIMIT 1
 """
 
@@ -445,6 +477,7 @@ async def _action_find(args: Dict[str, Any], ctx: ToolContext) -> Dict[str, Any]
             for p in _group(found, display, _status_labels(ctx)):
                 if p["person"].get("lead_user_id") and p["person"]["lead_user_id"] in seen:
                     continue
+                p["person"]["opted_out"] = cd.person_opted_out(p["person"]["flags"])
                 people.append(p)
             people = people[:limit]
     tokens = query.split()
@@ -471,10 +504,18 @@ async def _action_list(args: Dict[str, Any], ctx: ToolContext) -> Dict[str, Any]
     if not isinstance(f, dict):
         return cd.err("invalid_filter", message="filter is an object; see the tool description.")
     limit, offset = _limit(args), _offset(args)
-    ids, info = await cd.resolve_filter(ctx, f, max_n=LIST_WINDOW)
+    dated = cd.has_converted_dates(f)
+    if dated and offset > MAX_CONVERTED_OFFSET:
+        return cd.err("invalid_filter", message=f"offset can go up to {MAX_CONVERTED_OFFSET} here; narrow the "
+                                                "converted dates, or use export.")
+    if dated:
+        ids, info = await cd.resolve_filter(ctx, f, max_n=limit, allow_converted_dates=True, offset=offset)
+    else:
+        ids, info = await cd.resolve_filter(ctx, f, max_n=LIST_WINDOW, allow_converted_dates=True)
     if ids is None:
         return info
-    page_ids = ids[offset:offset + limit]
+    page_ids = ids if dated else ids[offset:offset + limit]
+    pageable = info["matched"] if dated else len(ids)
     s = await cd.sql_scope(ctx)
     if cd.is_error(s):
         return s
@@ -482,17 +523,22 @@ async def _action_list(args: Dict[str, Any], ctx: ToolContext) -> Dict[str, Any]
     if found is None:
         return cd.err("query_failed")
     display = await _people_names(ctx, found)
+    labels = _status_labels(ctx)
     nxt = offset + len(page_ids)
     out: Dict[str, Any] = {
         "matched": info["matched"], "offset": offset, "leads_shown": len(found),
-        "next_offset": nxt if nxt < len(ids) else None,
-        "people": _group(found, display, _status_labels(ctx)),
+        "next_offset": nxt if nxt < pageable else None,
+        "people": _group(found, display, labels),
         "excluded": {"opted_out": info["opted_out_dropped"]},
         "definition": "matched = leads in your scope that match the filter (deleted and opted-out leads are never "
-                      "included; converted and lost ones are unless the filter excludes them).",
+                      "included; converted and lost ones are included unless the filter excludes them). "
+                      + cd.OPT_OUT_RULE_TEXT + " excluded.opted_out counts the other leads this filter matched that "
+                      "this rule left out.",
         "notes": ["Newest first. Phone numbers and emails are masked; use get for one lead's full contact, or "
                   "export for a file."],
     }
+    if info.get("note"):
+        out["notes"].append(info["note"])
     if info.get("over_cap_dropped"):
         out["notes"].append(f"Only the newest {LIST_WINDOW} matches can be paged here; narrow the filter or use "
                             "export to see the rest.")
@@ -500,7 +546,23 @@ async def _action_list(args: Dict[str, Any], ctx: ToolContext) -> Dict[str, Any]
         keys = await cd.source_keys(ctx, f["source"])
         if not cd.is_error(keys):
             out["source_keys_counted"] = keys
-    return _fit(out, ("people",))
+    if dated:
+        out["notes"][0] = ("Newest conversion first. Phone numbers and emails are masked; use get for one lead's full "
+                           "contact, or export for a file.")
+        out["notes"].append("Leads only. Counts leads, not people, and excludes opted-out ones and people with no "
+                            "active enquiry. Matches the conversion of the lead's own user, not a linked student's; "
+                            "see crm_collections(action='admissions').")
+    # A shorter page, not a cut list, so next_offset still reaches every lead.
+    while _reply_bytes(out) > MAX_RESULT_BYTES and len(page_ids) > 1:
+        page_ids = page_ids[: max(1, len(page_ids) * 3 // 4)]
+        kept = set(page_ids)
+        found = [r for r in found if r["lead_id"] in kept]
+        nxt = offset + len(page_ids)
+        out.update(leads_shown=len(found), next_offset=nxt if nxt < pageable else None,
+                   people=_group(found, display, labels),
+                   truncated="The reply was shortened to fit; continue from next_offset, or ask for fewer rows "
+                             "(limit).")
+    return out
 
 
 # ── get ──────────────────────────────────────────────────────────────────
@@ -711,7 +773,7 @@ async def _action_get(args: Dict[str, Any], ctx: ToolContext) -> Dict[str, Any]:
                  "submitted_at": cd.iso(row.get("submitted_at")), "status": row.get("status_key"),
                  "status_label": labels.get(str(row.get("status_key"))) if row.get("status_key") else None,
                  "tier": row.get("tier"), "score": row.get("score"), "flags": flags,
-                 "opted_out": "opted_out" in flags},
+                 "opted_out": cd.lead_opted_out(row)},
         "contact": contact,
         "owner": _owner(row, display),
         "sla": {"first_contact_due_at": cd.iso(row.get("sla_due_at")),
@@ -745,6 +807,8 @@ async def _action_get(args: Dict[str, Any], ctx: ToolContext) -> Dict[str, Any]:
     answers = _answers(detail)
     if answers:
         out["answers"] = cd.lead_content(answers)
+    if "linked_student_opted_out" in flags:
+        out["opt_out_note"] = cd.LINKED_STUDENT_OPT_OUT_NOTE
     if "ownership_conflict" in flags:
         out["ownership_note"] = ("The enquiry's counsellor and the lead profile's counsellor differ; the enquiry's "
                                  "is shown as owner (the dashboard does the same).")
@@ -818,7 +882,7 @@ MY_DAY_SOURCE_CAP = 100
 _MY_FOLLOWUPS_WHERE = """lf.institute_id = :inst AND lf.is_closed = FALSE AND lf.schedule_time < :day_end
   AND (lf.created_by = :me OR lu.user_id = :me OR ulp.assigned_counselor_id = :me)
   AND ({pred} OR lf.created_by = :me)
-  AND ar.audience_status = 'ACTIVE'"""
+  AND ar.audience_status = 'ACTIVE' AND NOT {opted}"""
 
 #: One page of them: the overdue ones newest-due first (a long backlog then shows what was missed most
 #: recently), or the ones still due today soonest first.
@@ -899,7 +963,8 @@ async def _action_my_day(args: Dict[str, Any], ctx: ToolContext) -> Dict[str, An
     now = _now_naive()
     pred, sparams = cd.scope_sql(s)
     base = {**sparams, "inst": inst, "me": me, "lim": MY_DAY_SOURCE_CAP}
-    live = cd.live_lead_sql()
+    live = f"{cd.live_lead_sql()} AND NOT {cd.LEAD_OPTED_OUT_SQL}"
+    joins = cd.LEAD_OWNER_JOINS + cd.LEAD_OPTED_LOOKUP
     items: Dict[str, Dict[str, Any]] = {}
     failed: List[str] = []
 
@@ -924,17 +989,17 @@ async def _action_my_day(args: Dict[str, Any], ctx: ToolContext) -> Dict[str, An
         add(i, "first_contact_overdue")
     full["first_contact_overdue"] = info["matched"]
 
-    where = _MY_FOLLOWUPS_WHERE.format(pred=pred)
+    where = _MY_FOLLOWUPS_WHERE.format(pred=pred, opted=cd.LEAD_OPTED_OUT_SQL)
     fparams = {**base, "day_end": day_end, "now": now}
     fups: List[Dict[str, Any]] = []
     for window, order in (("<", "DESC"), (">=", "ASC")):
-        page, ok = cd.rows(ctx, _MY_FOLLOWUPS_SQL.format(joins=cd.LEAD_OWNER_JOINS, pred=pred, where=where,
+        page, ok = cd.rows(ctx, _MY_FOLLOWUPS_SQL.format(joins=joins, pred=pred, where=where,
                                                          window=window, order=order), fparams)
         if not ok:
             failed.append("follow-ups")
             break
         fups += page
-    fcount, ok = cd.rows(ctx, _MY_FOLLOWUP_COUNTS_SQL.format(joins=cd.LEAD_OWNER_JOINS, where=where), fparams)
+    fcount, ok = cd.rows(ctx, _MY_FOLLOWUP_COUNTS_SQL.format(joins=joins, where=where), fparams)
     if ok and fcount:
         full["followup_overdue"] = int(fcount[0].get("overdue") or 0)
         full["followup_due_today"] = int(fcount[0].get("due_today") or 0)
@@ -949,7 +1014,7 @@ async def _action_my_day(args: Dict[str, Any], ctx: ToolContext) -> Dict[str, An
                                      "mode": f.get("follow_up_mode")}, limit=300))
 
     since7 = now - timedelta(days=7)
-    cbs, ok = cd.rows(ctx, _MY_CALLBACKS_SQL.format(joins=cd.LEAD_OWNER_JOINS, pred=pred, live=live),
+    cbs, ok = cd.rows(ctx, _MY_CALLBACKS_SQL.format(joins=joins, pred=pred, live=live),
                       {**base, "day_end": day_end, "since": since7})
     if not ok:
         failed.append("callbacks")
@@ -959,7 +1024,7 @@ async def _action_my_day(args: Dict[str, Any], ctx: ToolContext) -> Dict[str, An
             due_at=cd.iso(due), call_id=c["call_id"])
 
     if cd.feature_on(ctx, "crm.ai_calling"):
-        ai, ok = cd.rows(ctx, _MY_AI_SQL.format(joins=cd.LEAD_OWNER_JOINS, pred=pred, live=live,
+        ai, ok = cd.rows(ctx, _MY_AI_SQL.format(joins=joins, pred=pred, live=live,
                                                 touched=_HUMAN_TOUCH_SQL.format(since="r.created_at")),
                          {**base, "since": since7})
         if not ok:
@@ -1016,7 +1081,7 @@ async def _action_my_day(args: Dict[str, Any], ctx: ToolContext) -> Dict[str, An
         if it.get("also"):
             entry["also"] = [MY_DAY_REASONS[c][1] for c in it["also"]]
         if r:
-            entry.update({"lead_user_id": r.get("lead_user_id"), "name": _name(r, display),
+            entry.update({"lead_user_id": r.get("lead_user_id"), "name": _shown_name(r, display),
                           "phone": cd.mask_phone(_phone(r)), "list": cd.clean(r.get("list_name")),
                           "status": r.get("status_key"),
                           "status_label": labels.get(str(r.get("status_key"))) if r.get("status_key") else None,
@@ -1037,7 +1102,9 @@ async def _action_my_day(args: Dict[str, Any], ctx: ToolContext) -> Dict[str, An
                         "callbacks": "Callbacks promised on a call, shown only when the lead has no open follow-up "
                                      "and was not called again since.",
                         "hot_untouched": "Your HOT-tier open leads, submitted over 24 hours ago, with no note, call, "
-                                         "follow-up or status change by staff in the last 24 hours."},
+                                         "follow-up or status change by staff in the last 24 hours.",
+                        "opted_out": "Every reason leaves out opted-out leads, as crm_leads list does. "
+                                     + cd.OPT_OUT_RULE_TEXT},
         "notes": ["Phone numbers are masked; use get for one lead's full contact."],
     }
     if not_listed:
@@ -1192,7 +1259,7 @@ async def _action_check_exists(args: Dict[str, Any], ctx: ToolContext) -> Dict[s
     lookup: Dict[str, Any] = {"found": bool(data.get("found"))}
     if data.get("found"):
         lookup.update({
-            "name": cd.clean(data.get("lead_name")), "phone": cd.mask_phone(data.get("lead_mobile")),
+            "name": cd.clean(cd.mask_name(data.get("lead_name"))), "phone": cd.mask_phone(data.get("lead_mobile")),
             "email": cd.mask_email(data.get("lead_email")), "counsellor": cd.clean(data.get("counsellor_name")),
             "list": cd.clean(data.get("campaign_name")), "source": cd.clean(data.get("campaign_type")),
             "status": cd.clean(data.get("status")), "stage": data.get("stage"),
@@ -1421,25 +1488,23 @@ async def _action_automations(args: Dict[str, Any], ctx: ToolContext) -> Dict[st
 # ── export ───────────────────────────────────────────────────────────────
 
 EXPORT_COLUMNS = ("lead_id", "lead_user_id", "name", "phone", "email", "list", "status", "tier", "score", "owner",
-                  "source", "submitted_at", "next_followup_at", "first_contact_due_at")
-_FORMULA_START = ("=", "+", "-", "@", "\t", "\r")
+                  "source", "submitted_at", "next_followup_at", "first_contact_due_at", "converted_at")
 
 
 def _cell(value: Any) -> str:
-    """A CSV cell that spreadsheet apps never evaluate as a formula."""
-    s = "" if value is None else str(value)
-    return "'" + s if s.startswith(_FORMULA_START) else s
+    return cd.csv_cell(value)
 
 
 async def _action_export(args: Dict[str, Any], ctx: ToolContext) -> Dict[str, Any]:
     f = args.get("filter") or {}
     if not isinstance(f, dict):
         return cd.err("invalid_filter", message="filter is an object; see the tool description.")
-    ids, info = await cd.resolve_filter(ctx, f, max_n=EXPORT_MAX)
+    ids, info = await cd.resolve_filter(ctx, f, max_n=EXPORT_MAX, allow_converted_dates=True)
     if ids is None:
         return info
     if not ids:
-        return {"status": "empty", "matched": 0, "note": "No lead matches this filter; nothing to export."}
+        note = "No lead matches this filter; nothing to export."
+        return {"status": "empty", "matched": 0, "note": f"{note} {info['note']}" if info.get("note") else note}
     s = await cd.sql_scope(ctx)
     if cd.is_error(s):
         return s
@@ -1459,7 +1524,7 @@ async def _action_export(args: Dict[str, Any], ctx: ToolContext) -> Dict[str, An
             labels.get(str(key)) or key if key else "", r.get("tier"), r.get("score"),
             (owner or {}).get("name") or (owner or {}).get("counsellor_id") or "", r.get("source_type"),
             cd.iso(r.get("submitted_at")), cd.iso(r.get("next_followup_at")),
-            cd.iso(r.get("sla_due_at")) if not r.get("first_response_at") else "")])
+            cd.iso(r.get("sla_due_at")) if not r.get("first_response_at") else "", cd.iso(r.get("converted_at")))])
     stamp = datetime.now(timezone.utc).strftime("%Y%m%d-%H%M")
     try:
         handle = create_export(ctx.db, institute_id=ctx.principal.institute_id, user_id=ctx.principal.user_id,
@@ -1476,9 +1541,13 @@ async def _action_export(args: Dict[str, Any], ctx: ToolContext) -> Dict[str, An
         return cd.err("export_failed", message="The file could not be created right now. Try again shortly.")
     extra: Dict[str, Any] = {"rows": len(found), "matched": info["matched"],
                              "excluded": {"opted_out": info["opted_out_dropped"]}}
-    if info.get("over_cap_dropped"):
-        extra["not_included"] = (f"{info['over_cap_dropped']} older matches are not in the file (max {EXPORT_MAX} "
-                                 "rows); narrow the filter, e.g. by submitted_from / submitted_to.")
+    if info.get("note"):
+        extra["opt_out_list_note"] = info["note"]
+    # With the converted dates over_cap_dropped stays 0, so count what the page left out.
+    left_out = max(info.get("over_cap_dropped") or 0, info["matched"] - len(ids))
+    if left_out:
+        extra["not_included"] = (f"{left_out} older matches are not in the file (max {EXPORT_MAX} rows); narrow the "
+                                 "filter, e.g. by submitted_from / submitted_to or converted_from / converted_to.")
     return link_result(handle, **extra)
 
 

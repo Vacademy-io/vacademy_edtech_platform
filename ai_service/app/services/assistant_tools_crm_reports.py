@@ -319,7 +319,12 @@ _DEFS: Dict[str, str] = {
                 "invoices) by people whose lead profile here is CONVERTED, by payment day in the window (see date_basis). "
                 "Source = "
                 "the person's first lead source here; counsellor = their current owner. Amounts in several "
-                "currencies are summed (see currency)."),
+                "currencies are summed (see currency). Covers payers marked Converted only; the other payers are "
+                "under reconciliation.by_payer. (no lead) means no enquiry exists under this payer's own user id; an "
+                "enquiry where they are only the linked student is not checked, and a deleted enquiry still supplies "
+                "its source. UNKNOWN means an enquiry with a blank source. These rules differ from the admissions "
+                "report, which also checks the linked student and falls back to the profile's source, so one person "
+                "can show different sources in the two."),
     "utm": ("UTM touches recorded from tracked links in the window, counted per person; enrolled = of those "
             "people, how many hold an active enrolment now. UTM values come from the links themselves."),
     "targets": ("Workbench targets (set per counsellor in the CRM) vs completed: conversions and leads assigned "
@@ -893,7 +898,7 @@ def _person(uid: Any, display: Dict[str, str], name: Any = None) -> Dict[str, An
 
 
 def _lead_sample(r: Dict[str, Any], display: Dict[str, str]) -> Dict[str, Any]:
-    out = {"lead_id": r.get("lead_id"), "name": cd.clean(r.get("parent_name")),
+    out = {"lead_id": r.get("lead_id"), "name": cd.clean(cd.mask_name(r.get("parent_name"))),
            "phone": cd.mask_phone(r.get("parent_mobile")), "list_id": r.get("list_id"),
            "list": cd.clean(r.get("list_name")), "source": r.get("source_type"),
            "owner": _person(r.get("owner_id"), display), "submitted_at": cd.iso(r.get("submitted_at"))}
@@ -1685,8 +1690,13 @@ async def _revenue(rq: _Req) -> Result:
     display = await _named(rq, [r.get("owner_id") for r in owners])
     by_counsellor = sorted(({"counsellor": _person(r.get("owner_id"), display), **money(r)} for r in owners),
                            key=lambda x: -x["revenue"])
-    by_source = sorted(({"source": r.get("source_type"), **money(r)} for r in found if r.get("g_source") == 0),
-                       key=lambda x: -x["revenue"])
+    by_source = sorted(({"source": r["source_type"], **money(r)} if r.get("source_type") is not None
+                        else {"source": "(no lead)", "no_lead": True, **money(r)}
+                        for r in found if r.get("g_source") == 0), key=lambda x: -x["revenue"])
+    shown_sources = by_source[:_MAX_ROWS]
+    no_lead = next((x for x in by_source[_MAX_ROWS:] if x.get("no_lead")), None)
+    if no_lead:
+        shown_sources[-1] = no_lead
     trend = sorted(({"date": str(r.get("day")), **money(r)} for r in found if r.get("g_day") == 0),
                    key=lambda x: x["date"])
     currencies = sorted({c for c in str(total.get("currencies") or "").split(",") if c})
@@ -1705,7 +1715,7 @@ async def _revenue(rq: _Req) -> Result:
     return {"basis": "scoped query", "date_basis": basis, "data": {
         "currency": currencies[0] if len(currencies) == 1 else currencies or None,
         "totals": money(total) if total else money({}),
-        "by_source": by_source[:_MAX_ROWS], "by_counsellor": by_counsellor[:_MAX_ROWS],
+        "by_source": shown_sources, "by_counsellor": by_counsellor[:_MAX_ROWS],
         "trend": _by_month(trend, ("revenue", "payments")),
         "reconciliation": reconciliation},
         "definition": {**_defs("revenue"), "date_basis": cd.definition("date_basis"), **_RECONCILE_PARTS}}
@@ -2095,7 +2105,7 @@ def _live_row(r: Dict[str, Any], display: Dict[str, str], tzinfo: Any) -> Dict[s
     if r.get("lead_id"):
         out["lead_id"] = r["lead_id"]
         out["list_id"] = r.get("list_id")
-    name = cd.clean(r.get("subject_name") or r.get("lead_name"))
+    name = cd.clean(cd.mask_name(r.get("subject_name") or r.get("lead_name")))
     phone = cd.mask_phone(r.get("subject_mobile") or r.get("lead_mobile"))
     email = cd.mask_email(r.get("subject_email"))
     for k, v in (("name", name), ("phone", phone), ("email", email)):
@@ -2411,17 +2421,13 @@ async def _filters(ctx: ToolContext, s: cd.Scope, args: Dict[str, Any], rq_kwarg
 
 # ── lead sources are written by whoever submits a lead form ──────────────
 
-#: What a real source key looks like (META_LEAD_ADS, WEBSITE_FORM, google-ads …).
-_SRC_RE = re.compile(r"^[A-Za-z0-9_ .:/-]{1,60}$")
 _SOURCE_LIST_KEYS = ("source_keys", "raw_keys", "keys")
 _MAX_SOURCES = 50
 _OUR_SOURCE_LABELS = ("(other values)", "(no lead)")
 
 
 def _src(value: Any) -> Any:
-    """A source key as it may reach the model: plain when it looks like a key, else wrapped as lead content."""
-    text = cd.clean(value, 120) or "UNKNOWN"
-    return text if _SRC_RE.match(text) else cd.lead_content(text, limit=120)
+    return cd.safe_source(value)
 
 
 def _safe_sources(obj: Any) -> Any:
@@ -2447,7 +2453,7 @@ def _safe_sources(obj: Any) -> Any:
         elif k == "by_source" and isinstance(v, dict):
             safe: Dict[str, Any] = {}
             for sk, sv in list(v.items())[:_MAX_SOURCES]:
-                key = sk if isinstance(sk, str) and _SRC_RE.match(sk) else "OTHER (unusual source text)"
+                key = sk if cd.is_source_key(sk) else "OTHER (unusual source text)"
                 safe[key] = (safe.get(key) or 0) + sv if isinstance(sv, (int, float)) else sv
             out[k] = safe
         elif k == "by_source" and isinstance(v, list):

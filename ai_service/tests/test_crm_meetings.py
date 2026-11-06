@@ -636,3 +636,30 @@ async def test_log_outcome_refuses_foreign_out_of_scope_future_and_cancelled(bac
     out = await run(mt.execute_crm_meetings_edit, ctx, action="log_outcome", outcome="HELD")
     assert out["error"] == "missing_argument"
     assert writes(backend) == []
+
+
+@pytest.mark.parametrize("stored, shown", [
+    ("asha.verma@gmail.com", "a***@gmail.com"), ("9222200007", "******0007"), ("Asha Verma", "Asha Verma")])
+def test_a_meeting_masks_an_invitee_name_that_holds_contact(stored, shown):
+    row = booking("m-1", invitee_name=stored)
+    assert mt._meeting(row, "Asia/Kolkata", show_link=False, now=NOW)["invitee"]["name"] == shown
+
+
+@pytest.mark.parametrize("stored, shown", [
+    ("asha.verma@gmail.com", "a***@gmail.com"), ("9222200007", "******0007"), ("Asha Verma", "Asha Verma")])
+async def test_for_lead_masks_a_name_that_holds_contact(backend, stored, shown):
+    backend.lead_scope("ADMIN")
+    backend.sql.on("FROM audience_response ar", leads(lead_row("r-1", "u-1", name=stored)))
+    backend.admin_core.on("GET", mt.BY_LEAD_PATH, [])
+    out = await run(mt.execute_crm_meetings, make_ctx(), action="for_lead", lead_id="r-1")
+    assert out["lead"]["name"] == shown
+
+
+@pytest.mark.parametrize("stored, shown", [
+    ("asha.verma@gmail.com", "a***@gmail.com"), ("9222200007", "******0007"), ("Asha Verma", "Asha Verma")])
+async def test_a_book_preview_masks_a_name_that_holds_contact_and_the_booking_keeps_it_whole(backend, bctx, stored, shown):
+    _book_setup(backend, lead=lead_row("r-1", "u-1", owner_id="admin-1", name=stored))
+    preview = await run(mt.execute_crm_meetings_edit, bctx, **BOOK)
+    assert preview["preview"]["lead"]["name"] == shown
+    await run(mt.execute_crm_meetings_edit, bctx, **BOOK, confirm_token=preview["confirm_token"])
+    assert backend.admin_core.called(mt.BOOK_PATH, "POST")[0]["body"]["invitee_name"] == stored

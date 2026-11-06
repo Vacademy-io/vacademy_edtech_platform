@@ -428,6 +428,27 @@ async def test_audience_leads_mask_contact_for_non_admins(admin_core):
     assert teacher["leads"][0]["name"] == "Riya"
 
 
+@pytest.mark.parametrize("stored, shown", [
+    ({"parent_name": "asha@gmail.com 9876543210"}, "***"),
+    ({"parent_name": "9876543210"}, "******3210"),
+    ({"parent_name": None, "user": {"full_name": "asha@gmail.com"}}, "a***@gmail.com"),
+    ({"parent_name": "Riya"}, "Riya"),
+])
+async def test_audience_leads_mask_a_contact_shaped_name_for_a_non_admin_only(monkeypatch, stored, shown):
+    async def leads(ctx, method, path, **kw):
+        if path.endswith("/audience/leads"):
+            return {"content": [{"response_id": "resp-1", **stored}], "total_elements": 1}
+        return CAMPAIGN
+
+    monkeypatch.setattr(website_data, "_admin_core_json", leads)
+    monkeypatch.setattr(audience_mod, "_admin_core_json", leads)
+    args = {"action": "leads", "audience_id": "camp-1"}
+    teacher = json.loads(await audience_mod.execute_audience_forms(args, ctx(("TEACHER",))))
+    assert teacher["contact_details_included"] is False and teacher["leads"][0]["name"] == shown
+    admin = json.loads(await audience_mod.execute_audience_forms(args, ctx()))
+    assert admin["leads"][0]["name"] == (stored["parent_name"] or stored["user"]["full_name"])
+
+
 # ── audience_forms_edit (additive writes) ────────────────────────────────
 @pytest.fixture
 def audience_backend(monkeypatch):
