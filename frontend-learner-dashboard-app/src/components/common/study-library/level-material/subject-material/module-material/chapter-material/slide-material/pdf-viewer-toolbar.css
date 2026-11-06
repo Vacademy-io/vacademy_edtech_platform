@@ -7,3 +7,13 @@
 .rpv-core__display--hidden:has(> .rpv-toolbar__item > [data-pdf-toolbar-show]) {
   display: block;
 }
+
+/*
+ * On a phone the icon rail takes 51 of about 360 pixels from a page that is
+ * already small. Page jumping stays in the toolbar.
+ */
+@media (max-width: 639px) {
+  .rpv-default-layout__sidebar {
+    display: none;
+  }
+}

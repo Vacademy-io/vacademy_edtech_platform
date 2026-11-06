@@ -218,6 +218,13 @@ export const VimeoPlayerComp: React.FC<VimeoPlayerProps> = ({
     setCurrentYoutubeTime(currentTime);
   }, [currentTime, setCurrentYoutubeTime]);
 
+  // Writing a note pauses the video.
+  useEffect(() => {
+    const { setPauseActiveMedia } = useMediaRefsStore.getState();
+    setPauseActiveMedia(() => void player?.pause());
+    return () => setPauseActiveMedia(null);
+  }, [player]);
+
   useEffect(() => {
     setAnsweredQuestions({});
     lastQuestionCheckTimeRef.current = 0;

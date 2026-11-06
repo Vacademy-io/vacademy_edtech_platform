@@ -419,6 +419,13 @@ export const YouTubePlayerComp: React.FC<YouTubePlayerProps> = ({
     setCurrentYoutubeTime(currentTime);
   }, [currentTime, setCurrentYoutubeTime]);
 
+  // Writing a note pauses the video.
+  useEffect(() => {
+    const { setPauseActiveMedia } = useMediaRefsStore.getState();
+    setPauseActiveMedia(() => playerRef.current?.pauseVideo?.());
+    return () => setPauseActiveMedia(null);
+  }, []);
+
   // Reset answered questions when questions or videoId changes
   useEffect(() => {
     setAnsweredQuestions({});

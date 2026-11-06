@@ -1,6 +1,7 @@
 import { useDoubtSidebarStore } from "@/stores/study-library/doubt-sidebar-store";
 import { X, ChatText } from "@phosphor-icons/react";
 import { useState, useRef, useCallback, useEffect, useMemo } from "react";
+import { createPortal } from "react-dom";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useContentStore } from "@/stores/study-library/chapter-sidebar-store";
 import { useSidebar } from "@/components/ui/sidebar";
@@ -27,7 +28,7 @@ const HISTORY_WINDOW_DAYS = 3650;
 
 export const DoubtResolutionSidebar = () => {
   const { t } = useTranslation("studyContent");
-  const { isOpen: open, closeSidebar } = useDoubtSidebarStore();
+  const { isOpen: open, closeSidebar, draft, clearDraft } = useDoubtSidebarStore();
   const [showInput, setShowInput] = useState<boolean>(false);
   const [doubt, setDoubt] = useState<string>("");
   const [showPositionDialog, setShowPositionDialog] = useState<boolean>(false);
@@ -266,6 +267,18 @@ export const DoubtResolutionSidebar = () => {
     setShowInput(true);
   };
 
+  // Started from a note: open the composer with its text and place filled in.
+  useEffect(() => {
+    if (!draft) return;
+    // Plain text from a lesson, going into a rich-text editor.
+    setDoubt(
+      `<p>${draft.text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")}</p>`
+    );
+    setTimestamp(draft.position);
+    setShowInput(true);
+    clearDraft();
+  }, [draft, clearDraft]);
+
   const handleCancelComposer = () => {
     setShowInput(false);
     setDoubt("");
@@ -302,7 +315,9 @@ export const DoubtResolutionSidebar = () => {
     closeSidebar();
   };
 
-  return (
+  // Portalled: the app's bottom tab bar shares this z-index and sits later in the
+  // page, so inside the lesson it covered the "Ask a Doubt" button on phones.
+  return createPortal(
     <>
       <div
         ref={sidebarRef}
@@ -439,6 +454,7 @@ export const DoubtResolutionSidebar = () => {
           initialTimestamp={timestamp}
         />
       )}
-    </>
+    </>,
+    document.body
   );
 };

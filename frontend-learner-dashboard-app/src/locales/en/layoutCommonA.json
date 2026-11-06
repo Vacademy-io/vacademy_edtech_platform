@@ -36,6 +36,7 @@
         "hamburgerMenu": {
             "viewProfileDetails": "View Profile Details",
             "myFiles": "My Files",
+            "notebook": "My Notebook",
             "downloads": "Downloads",
             "myReports": "My Reports",
             "onboarding": "Onboarding",

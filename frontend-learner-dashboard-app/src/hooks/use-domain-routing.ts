@@ -663,7 +663,8 @@ export const useDomainRouting = () => {
       const isOnPasswordlessLanding = isPasswordlessLandingRoute(currentPath);
 
       // Don't redirect if we're on my-files routes
-      const isOnMyFilesRoute = currentPath.startsWith("/my-files");
+      const isOnMyFilesRoute =
+        currentPath.startsWith("/my-files") || currentPath.startsWith("/notebook");
 
       if (
         isOnPublicRoute ||
@@ -701,6 +702,7 @@ export const useDomainRouting = () => {
         !currentPathForRedirect.startsWith('/learning-centre') &&
         !currentPathForRedirect.startsWith('/user-profile') &&
         !currentPathForRedirect.startsWith('/my-files') &&
+        !currentPathForRedirect.startsWith('/notebook') &&
         !currentPathForRedirect.startsWith('/Coursetile');
 
       if (window.location.pathname !== "/" && !isPublicRouteForRedirect) {

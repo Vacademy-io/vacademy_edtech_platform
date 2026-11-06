@@ -17,8 +17,8 @@ import { Route as TermsAndConditionsIndexRouteImport } from './routes/terms-and-
 import { Route as SubOrgRegistrationIndexRouteImport } from './routes/sub-org-registration/index'
 import { Route as SubOrgLearnersIndexRouteImport } from './routes/sub-org-learners/index'
 import { Route as StudyLibraryIndexRouteImport } from './routes/study-library/index'
-import { Route as SignupIndexRouteImport } from './routes/signup/index'
 import { Route as SiteAssistantEmbedIndexRouteImport } from './routes/site-assistant-embed/index'
+import { Route as SignupIndexRouteImport } from './routes/signup/index'
 import { Route as SessionTerminatedIndexRouteImport } from './routes/session-terminated/index'
 import { Route as RegisterIndexRouteImport } from './routes/register/index'
 import { Route as ReferralIndexRouteImport } from './routes/referral/index'
@@ -26,6 +26,7 @@ import { Route as PrivacyPolicyIndexRouteImport } from './routes/privacy-policy/
 import { Route as PlanningIndexRouteImport } from './routes/planning/index'
 import { Route as PaymentResultIndexRouteImport } from './routes/payment-result/index'
 import { Route as ParentIndexRouteImport } from './routes/parent/index'
+import { Route as NotebookIndexRouteImport } from './routes/notebook/index'
 import { Route as MyReportsIndexRouteImport } from './routes/my-reports/index'
 import { Route as MyMentorsIndexRouteImport } from './routes/my-mentors/index'
 import { Route as MyFilesIndexRouteImport } from './routes/my-files/index'
@@ -57,7 +58,9 @@ import { Route as AssignmentSlideIdRouteImport } from './routes/assignment/$slid
 import { Route as TagNamePageSlugRouteImport } from './routes/$tagName/$pageSlug'
 import { Route as VerifyCertificateIdIndexRouteImport } from './routes/verify/$certificateId/index'
 import { Route as UserProfileEditIndexRouteImport } from './routes/user-profile/edit/index'
+import { Route as SubscriptionsPaymentReturnIndexRouteImport } from './routes/subscriptions/payment-return/index'
 import { Route as SubscriptionsUsernameIndexRouteImport } from './routes/subscriptions/$username/index'
+import { Route as SubOrgLearnersUsernameIndexRouteImport } from './routes/sub-org-learners/$username/index'
 import { Route as StudyLibraryLiveClassIndexRouteImport } from './routes/study-library/live-class/index'
 import { Route as StudyLibraryCoursesIndexRouteImport } from './routes/study-library/courses/index'
 import { Route as ReportsAttendanceIndexRouteImport } from './routes/reports/attendance/index'
@@ -84,8 +87,6 @@ import { Route as LeaderboardPackageSessionIdIndexRouteImport } from './routes/l
 import { Route as HomeworkReportsIndexRouteImport } from './routes/homework/reports/index'
 import { Route as HomeworkListIndexRouteImport } from './routes/homework/list/index'
 import { Route as GoUsernameIndexRouteImport } from './routes/go/$username/index'
-import { Route as SubOrgLearnersUsernameIndexRouteImport } from './routes/sub-org-learners/$username/index'
-import { Route as UserProfileEditUsernameIndexRouteImport } from './routes/user-profile/edit/$username/index'
 import { Route as EngagementHistoryIndexRouteImport } from './routes/engagement/history/index'
 import { Route as DashboardNotificationsIndexRouteImport } from './routes/dashboard/notifications/index'
 import { Route as CoursesCourseDetailsIndexRouteImport } from './routes/courses/course-details/index'
@@ -98,6 +99,8 @@ import { Route as ParentChildChildIdRouteImport } from './routes/parent/child/$c
 import { Route as LoginOauthModalLearnerRouteImport } from './routes/login/oauth/modal-learner'
 import { Route as LoginOauthLearnerRouteImport } from './routes/login/oauth/learner'
 import { Route as TagNamePageSlugPostSlugRouteImport } from './routes/$tagName/$pageSlug_.$postSlug'
+import { Route as UserProfileEditUsernameIndexRouteImport } from './routes/user-profile/edit/$username/index'
+import { Route as SubscriptionsUsernameCancelIndexRouteImport } from './routes/subscriptions/$username/cancel/index'
 import { Route as StudyLibraryLiveClassWaitingRoomIndexRouteImport } from './routes/study-library/live-class/waiting-room/index'
 import { Route as StudyLibraryLiveClassFeedbackIndexRouteImport } from './routes/study-library/live-class/feedback/index'
 import { Route as StudyLibraryLiveClassEmbedIndexRouteImport } from './routes/study-library/live-class/embed/index'
@@ -169,14 +172,14 @@ const StudyLibraryIndexRoute = StudyLibraryIndexRouteImport.update({
   path: '/study-library/',
   getParentRoute: () => rootRouteImport,
 } as any)
-const SignupIndexRoute = SignupIndexRouteImport.update({
-  id: '/signup/',
-  path: '/signup/',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const SiteAssistantEmbedIndexRoute = SiteAssistantEmbedIndexRouteImport.update({
   id: '/site-assistant-embed/',
   path: '/site-assistant-embed/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SignupIndexRoute = SignupIndexRouteImport.update({
+  id: '/signup/',
+  path: '/signup/',
   getParentRoute: () => rootRouteImport,
 } as any)
 const SessionTerminatedIndexRoute = SessionTerminatedIndexRouteImport.update({
@@ -212,6 +215,11 @@ const PaymentResultIndexRoute = PaymentResultIndexRouteImport.update({
 const ParentIndexRoute = ParentIndexRouteImport.update({
   id: '/parent/',
   path: '/parent/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const NotebookIndexRoute = NotebookIndexRouteImport.update({
+  id: '/notebook/',
+  path: '/notebook/',
   getParentRoute: () => rootRouteImport,
 } as any)
 const MyReportsIndexRoute = MyReportsIndexRouteImport.update({
@@ -372,10 +380,22 @@ const UserProfileEditIndexRoute = UserProfileEditIndexRouteImport.update({
   path: '/user-profile/edit/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const SubscriptionsPaymentReturnIndexRoute =
+  SubscriptionsPaymentReturnIndexRouteImport.update({
+    id: '/subscriptions/payment-return/',
+    path: '/subscriptions/payment-return/',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const SubscriptionsUsernameIndexRoute =
   SubscriptionsUsernameIndexRouteImport.update({
     id: '/subscriptions/$username/',
     path: '/subscriptions/$username/',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const SubOrgLearnersUsernameIndexRoute =
+  SubOrgLearnersUsernameIndexRouteImport.update({
+    id: '/sub-org-learners/$username/',
+    path: '/sub-org-learners/$username/',
     getParentRoute: () => rootRouteImport,
   } as any)
 const StudyLibraryLiveClassIndexRoute =
@@ -518,16 +538,6 @@ const GoUsernameIndexRoute = GoUsernameIndexRouteImport.update({
   path: '/go/$username/',
   getParentRoute: () => rootRouteImport,
 } as any)
-const SubOrgLearnersUsernameIndexRoute = SubOrgLearnersUsernameIndexRouteImport.update({
-  id: '/sub-org-learners/$username/',
-  path: '/sub-org-learners/$username/',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const UserProfileEditUsernameIndexRoute = UserProfileEditUsernameIndexRouteImport.update({
-  id: '/user-profile/edit/$username/',
-  path: '/user-profile/edit/$username/',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const EngagementHistoryIndexRoute = EngagementHistoryIndexRouteImport.update({
   id: '/engagement/history/',
   path: '/engagement/history/',
@@ -592,6 +602,18 @@ const TagNamePageSlugPostSlugRoute = TagNamePageSlugPostSlugRouteImport.update({
   path: '/$tagName/$pageSlug/$postSlug',
   getParentRoute: () => rootRouteImport,
 } as any)
+const UserProfileEditUsernameIndexRoute =
+  UserProfileEditUsernameIndexRouteImport.update({
+    id: '/user-profile/edit/$username/',
+    path: '/user-profile/edit/$username/',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const SubscriptionsUsernameCancelIndexRoute =
+  SubscriptionsUsernameCancelIndexRouteImport.update({
+    id: '/subscriptions/$username/cancel/',
+    path: '/subscriptions/$username/cancel/',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const StudyLibraryLiveClassWaitingRoomIndexRoute =
   StudyLibraryLiveClassWaitingRoomIndexRouteImport.update({
     id: '/study-library/live-class/waiting-room/',
@@ -807,6 +829,7 @@ export interface FileRoutesByFullPath {
   '/my-files': typeof MyFilesIndexRoute
   '/my-mentors': typeof MyMentorsIndexRoute
   '/my-reports': typeof MyReportsIndexRoute
+  '/notebook': typeof NotebookIndexRoute
   '/parent': typeof ParentIndexRoute
   '/payment-result': typeof PaymentResultIndexRoute
   '/planning': typeof PlanningIndexRoute
@@ -836,8 +859,6 @@ export interface FileRoutesByFullPath {
   '/dashboard/notifications': typeof DashboardNotificationsIndexRoute
   '/engagement/history': typeof EngagementHistoryIndexRoute
   '/go/$username': typeof GoUsernameIndexRoute
-  '/sub-org-learners/$username': typeof SubOrgLearnersUsernameIndexRoute
-  '/user-profile/edit/$username': typeof UserProfileEditUsernameIndexRoute
   '/homework/list': typeof HomeworkListIndexRoute
   '/homework/reports': typeof HomeworkReportsIndexRoute
   '/leaderboard/$packageSessionId': typeof LeaderboardPackageSessionIdIndexRoute
@@ -863,7 +884,9 @@ export interface FileRoutesByFullPath {
   '/reports/attendance': typeof ReportsAttendanceIndexRoute
   '/study-library/courses': typeof StudyLibraryCoursesIndexRoute
   '/study-library/live-class': typeof StudyLibraryLiveClassIndexRoute
+  '/sub-org-learners/$username': typeof SubOrgLearnersUsernameIndexRoute
   '/subscriptions/$username': typeof SubscriptionsUsernameIndexRoute
+  '/subscriptions/payment-return': typeof SubscriptionsPaymentReturnIndexRoute
   '/user-profile/edit': typeof UserProfileEditIndexRoute
   '/verify/$certificateId': typeof VerifyCertificateIdIndexRoute
   '/assessment/examination/$assessmentId/LearnerLiveTest': typeof AssessmentExaminationAssessmentIdLearnerLiveTestRoute
@@ -882,6 +905,8 @@ export interface FileRoutesByFullPath {
   '/study-library/live-class/embed': typeof StudyLibraryLiveClassEmbedIndexRoute
   '/study-library/live-class/feedback': typeof StudyLibraryLiveClassFeedbackIndexRoute
   '/study-library/live-class/waiting-room': typeof StudyLibraryLiveClassWaitingRoomIndexRoute
+  '/subscriptions/$username/cancel': typeof SubscriptionsUsernameCancelIndexRoute
+  '/user-profile/edit/$username': typeof UserProfileEditUsernameIndexRoute
   '/parent/child/$childId/reports/$processId': typeof ParentChildChildIdReportsProcessIdRoute
   '/parent/child/$childId/assessments': typeof ParentChildChildIdAssessmentsIndexRoute
   '/parent/child/$childId/attendance': typeof ParentChildChildIdAttendanceIndexRoute
@@ -927,6 +952,7 @@ export interface FileRoutesByTo {
   '/my-files': typeof MyFilesIndexRoute
   '/my-mentors': typeof MyMentorsIndexRoute
   '/my-reports': typeof MyReportsIndexRoute
+  '/notebook': typeof NotebookIndexRoute
   '/parent': typeof ParentIndexRoute
   '/payment-result': typeof PaymentResultIndexRoute
   '/planning': typeof PlanningIndexRoute
@@ -955,8 +981,6 @@ export interface FileRoutesByTo {
   '/dashboard/notifications': typeof DashboardNotificationsIndexRoute
   '/engagement/history': typeof EngagementHistoryIndexRoute
   '/go/$username': typeof GoUsernameIndexRoute
-  '/sub-org-learners/$username': typeof SubOrgLearnersUsernameIndexRoute
-  '/user-profile/edit/$username': typeof UserProfileEditUsernameIndexRoute
   '/homework/list': typeof HomeworkListIndexRoute
   '/homework/reports': typeof HomeworkReportsIndexRoute
   '/leaderboard/$packageSessionId': typeof LeaderboardPackageSessionIdIndexRoute
@@ -982,7 +1006,9 @@ export interface FileRoutesByTo {
   '/reports/attendance': typeof ReportsAttendanceIndexRoute
   '/study-library/courses': typeof StudyLibraryCoursesIndexRoute
   '/study-library/live-class': typeof StudyLibraryLiveClassIndexRoute
+  '/sub-org-learners/$username': typeof SubOrgLearnersUsernameIndexRoute
   '/subscriptions/$username': typeof SubscriptionsUsernameIndexRoute
+  '/subscriptions/payment-return': typeof SubscriptionsPaymentReturnIndexRoute
   '/user-profile/edit': typeof UserProfileEditIndexRoute
   '/verify/$certificateId': typeof VerifyCertificateIdIndexRoute
   '/assessment/examination/$assessmentId/LearnerLiveTest': typeof AssessmentExaminationAssessmentIdLearnerLiveTestRoute
@@ -1001,6 +1027,8 @@ export interface FileRoutesByTo {
   '/study-library/live-class/embed': typeof StudyLibraryLiveClassEmbedIndexRoute
   '/study-library/live-class/feedback': typeof StudyLibraryLiveClassFeedbackIndexRoute
   '/study-library/live-class/waiting-room': typeof StudyLibraryLiveClassWaitingRoomIndexRoute
+  '/subscriptions/$username/cancel': typeof SubscriptionsUsernameCancelIndexRoute
+  '/user-profile/edit/$username': typeof UserProfileEditUsernameIndexRoute
   '/parent/child/$childId/reports/$processId': typeof ParentChildChildIdReportsProcessIdRoute
   '/parent/child/$childId/assessments': typeof ParentChildChildIdAssessmentsIndexRoute
   '/parent/child/$childId/attendance': typeof ParentChildChildIdAttendanceIndexRoute
@@ -1048,6 +1076,7 @@ export interface FileRoutesById {
   '/my-files/': typeof MyFilesIndexRoute
   '/my-mentors/': typeof MyMentorsIndexRoute
   '/my-reports/': typeof MyReportsIndexRoute
+  '/notebook/': typeof NotebookIndexRoute
   '/parent/': typeof ParentIndexRoute
   '/payment-result/': typeof PaymentResultIndexRoute
   '/planning/': typeof PlanningIndexRoute
@@ -1077,8 +1106,6 @@ export interface FileRoutesById {
   '/dashboard/notifications/': typeof DashboardNotificationsIndexRoute
   '/engagement/history/': typeof EngagementHistoryIndexRoute
   '/go/$username/': typeof GoUsernameIndexRoute
-  '/sub-org-learners/$username/': typeof SubOrgLearnersUsernameIndexRoute
-  '/user-profile/edit/$username/': typeof UserProfileEditUsernameIndexRoute
   '/homework/list/': typeof HomeworkListIndexRoute
   '/homework/reports/': typeof HomeworkReportsIndexRoute
   '/leaderboard/$packageSessionId/': typeof LeaderboardPackageSessionIdIndexRoute
@@ -1104,7 +1131,9 @@ export interface FileRoutesById {
   '/reports/attendance/': typeof ReportsAttendanceIndexRoute
   '/study-library/courses/': typeof StudyLibraryCoursesIndexRoute
   '/study-library/live-class/': typeof StudyLibraryLiveClassIndexRoute
+  '/sub-org-learners/$username/': typeof SubOrgLearnersUsernameIndexRoute
   '/subscriptions/$username/': typeof SubscriptionsUsernameIndexRoute
+  '/subscriptions/payment-return/': typeof SubscriptionsPaymentReturnIndexRoute
   '/user-profile/edit/': typeof UserProfileEditIndexRoute
   '/verify/$certificateId/': typeof VerifyCertificateIdIndexRoute
   '/assessment/examination/$assessmentId/LearnerLiveTest': typeof AssessmentExaminationAssessmentIdLearnerLiveTestRoute
@@ -1123,6 +1152,8 @@ export interface FileRoutesById {
   '/study-library/live-class/embed/': typeof StudyLibraryLiveClassEmbedIndexRoute
   '/study-library/live-class/feedback/': typeof StudyLibraryLiveClassFeedbackIndexRoute
   '/study-library/live-class/waiting-room/': typeof StudyLibraryLiveClassWaitingRoomIndexRoute
+  '/subscriptions/$username/cancel/': typeof SubscriptionsUsernameCancelIndexRoute
+  '/user-profile/edit/$username/': typeof UserProfileEditUsernameIndexRoute
   '/parent/child/$childId/reports/$processId': typeof ParentChildChildIdReportsProcessIdRoute
   '/parent/child/$childId/assessments/': typeof ParentChildChildIdAssessmentsIndexRoute
   '/parent/child/$childId/attendance/': typeof ParentChildChildIdAttendanceIndexRoute
@@ -1171,6 +1202,7 @@ export interface FileRouteTypes {
     | '/my-files'
     | '/my-mentors'
     | '/my-reports'
+    | '/notebook'
     | '/parent'
     | '/payment-result'
     | '/planning'
@@ -1200,8 +1232,6 @@ export interface FileRouteTypes {
     | '/dashboard/notifications'
     | '/engagement/history'
     | '/go/$username'
-    | '/sub-org-learners/$username'
-    | '/user-profile/edit/$username'
     | '/homework/list'
     | '/homework/reports'
     | '/leaderboard/$packageSessionId'
@@ -1227,7 +1257,9 @@ export interface FileRouteTypes {
     | '/reports/attendance'
     | '/study-library/courses'
     | '/study-library/live-class'
+    | '/sub-org-learners/$username'
     | '/subscriptions/$username'
+    | '/subscriptions/payment-return'
     | '/user-profile/edit'
     | '/verify/$certificateId'
     | '/assessment/examination/$assessmentId/LearnerLiveTest'
@@ -1246,6 +1278,8 @@ export interface FileRouteTypes {
     | '/study-library/live-class/embed'
     | '/study-library/live-class/feedback'
     | '/study-library/live-class/waiting-room'
+    | '/subscriptions/$username/cancel'
+    | '/user-profile/edit/$username'
     | '/parent/child/$childId/reports/$processId'
     | '/parent/child/$childId/assessments'
     | '/parent/child/$childId/attendance'
@@ -1291,6 +1325,7 @@ export interface FileRouteTypes {
     | '/my-files'
     | '/my-mentors'
     | '/my-reports'
+    | '/notebook'
     | '/parent'
     | '/payment-result'
     | '/planning'
@@ -1319,8 +1354,6 @@ export interface FileRouteTypes {
     | '/dashboard/notifications'
     | '/engagement/history'
     | '/go/$username'
-    | '/sub-org-learners/$username'
-    | '/user-profile/edit/$username'
     | '/homework/list'
     | '/homework/reports'
     | '/leaderboard/$packageSessionId'
@@ -1346,7 +1379,9 @@ export interface FileRouteTypes {
     | '/reports/attendance'
     | '/study-library/courses'
     | '/study-library/live-class'
+    | '/sub-org-learners/$username'
     | '/subscriptions/$username'
+    | '/subscriptions/payment-return'
     | '/user-profile/edit'
     | '/verify/$certificateId'
     | '/assessment/examination/$assessmentId/LearnerLiveTest'
@@ -1365,6 +1400,8 @@ export interface FileRouteTypes {
     | '/study-library/live-class/embed'
     | '/study-library/live-class/feedback'
     | '/study-library/live-class/waiting-room'
+    | '/subscriptions/$username/cancel'
+    | '/user-profile/edit/$username'
     | '/parent/child/$childId/reports/$processId'
     | '/parent/child/$childId/assessments'
     | '/parent/child/$childId/attendance'
@@ -1411,6 +1448,7 @@ export interface FileRouteTypes {
     | '/my-files/'
     | '/my-mentors/'
     | '/my-reports/'
+    | '/notebook/'
     | '/parent/'
     | '/payment-result/'
     | '/planning/'
@@ -1440,8 +1478,6 @@ export interface FileRouteTypes {
     | '/dashboard/notifications/'
     | '/engagement/history/'
     | '/go/$username/'
-    | '/sub-org-learners/$username/'
-    | '/user-profile/edit/$username/'
     | '/homework/list/'
     | '/homework/reports/'
     | '/leaderboard/$packageSessionId/'
@@ -1467,7 +1503,9 @@ export interface FileRouteTypes {
     | '/reports/attendance/'
     | '/study-library/courses/'
     | '/study-library/live-class/'
+    | '/sub-org-learners/$username/'
     | '/subscriptions/$username/'
+    | '/subscriptions/payment-return/'
     | '/user-profile/edit/'
     | '/verify/$certificateId/'
     | '/assessment/examination/$assessmentId/LearnerLiveTest'
@@ -1486,6 +1524,8 @@ export interface FileRouteTypes {
     | '/study-library/live-class/embed/'
     | '/study-library/live-class/feedback/'
     | '/study-library/live-class/waiting-room/'
+    | '/subscriptions/$username/cancel/'
+    | '/user-profile/edit/$username/'
     | '/parent/child/$childId/reports/$processId'
     | '/parent/child/$childId/assessments/'
     | '/parent/child/$childId/attendance/'
@@ -1533,6 +1573,7 @@ export interface RootRouteChildren {
   MyFilesIndexRoute: typeof MyFilesIndexRoute
   MyMentorsIndexRoute: typeof MyMentorsIndexRoute
   MyReportsIndexRoute: typeof MyReportsIndexRoute
+  NotebookIndexRoute: typeof NotebookIndexRoute
   ParentIndexRoute: typeof ParentIndexRoute
   PaymentResultIndexRoute: typeof PaymentResultIndexRoute
   PlanningIndexRoute: typeof PlanningIndexRoute
@@ -1562,8 +1603,6 @@ export interface RootRouteChildren {
   DashboardNotificationsIndexRoute: typeof DashboardNotificationsIndexRoute
   EngagementHistoryIndexRoute: typeof EngagementHistoryIndexRoute
   GoUsernameIndexRoute: typeof GoUsernameIndexRoute
-  SubOrgLearnersUsernameIndexRoute: typeof SubOrgLearnersUsernameIndexRoute
-  UserProfileEditUsernameIndexRoute: typeof UserProfileEditUsernameIndexRoute
   HomeworkListIndexRoute: typeof HomeworkListIndexRoute
   HomeworkReportsIndexRoute: typeof HomeworkReportsIndexRoute
   LeaderboardPackageSessionIdIndexRoute: typeof LeaderboardPackageSessionIdIndexRoute
@@ -1588,7 +1627,9 @@ export interface RootRouteChildren {
   ReportsAttendanceIndexRoute: typeof ReportsAttendanceIndexRoute
   StudyLibraryCoursesIndexRoute: typeof StudyLibraryCoursesIndexRoute
   StudyLibraryLiveClassIndexRoute: typeof StudyLibraryLiveClassIndexRoute
+  SubOrgLearnersUsernameIndexRoute: typeof SubOrgLearnersUsernameIndexRoute
   SubscriptionsUsernameIndexRoute: typeof SubscriptionsUsernameIndexRoute
+  SubscriptionsPaymentReturnIndexRoute: typeof SubscriptionsPaymentReturnIndexRoute
   UserProfileEditIndexRoute: typeof UserProfileEditIndexRoute
   VerifyCertificateIdIndexRoute: typeof VerifyCertificateIdIndexRoute
   AssessmentExaminationAssessmentIdLearnerLiveTestRoute: typeof AssessmentExaminationAssessmentIdLearnerLiveTestRoute
@@ -1606,6 +1647,8 @@ export interface RootRouteChildren {
   StudyLibraryLiveClassEmbedIndexRoute: typeof StudyLibraryLiveClassEmbedIndexRoute
   StudyLibraryLiveClassFeedbackIndexRoute: typeof StudyLibraryLiveClassFeedbackIndexRoute
   StudyLibraryLiveClassWaitingRoomIndexRoute: typeof StudyLibraryLiveClassWaitingRoomIndexRoute
+  SubscriptionsUsernameCancelIndexRoute: typeof SubscriptionsUsernameCancelIndexRoute
+  UserProfileEditUsernameIndexRoute: typeof UserProfileEditUsernameIndexRoute
   StudyLibraryCoursesCourseDetailsSubjectsIndexRoute: typeof StudyLibraryCoursesCourseDetailsSubjectsIndexRoute
   StudyLibraryCoursesCourseDetailsTutorIndexRoute: typeof StudyLibraryCoursesCourseDetailsTutorIndexRoute
   UnChannelUsernameCategoryIndexRoute: typeof UnChannelUsernameCategoryIndexRoute
@@ -1673,18 +1716,18 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof StudyLibraryIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/signup/': {
-      id: '/signup/'
-      path: '/signup'
-      fullPath: '/signup'
-      preLoaderRoute: typeof SignupIndexRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/site-assistant-embed/': {
       id: '/site-assistant-embed/'
       path: '/site-assistant-embed'
       fullPath: '/site-assistant-embed'
       preLoaderRoute: typeof SiteAssistantEmbedIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/signup/': {
+      id: '/signup/'
+      path: '/signup'
+      fullPath: '/signup'
+      preLoaderRoute: typeof SignupIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/session-terminated/': {
@@ -1734,6 +1777,13 @@ declare module '@tanstack/react-router' {
       path: '/parent'
       fullPath: '/parent'
       preLoaderRoute: typeof ParentIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/notebook/': {
+      id: '/notebook/'
+      path: '/notebook'
+      fullPath: '/notebook'
+      preLoaderRoute: typeof NotebookIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/my-reports/': {
@@ -1953,11 +2003,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof UserProfileEditIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/subscriptions/payment-return/': {
+      id: '/subscriptions/payment-return/'
+      path: '/subscriptions/payment-return'
+      fullPath: '/subscriptions/payment-return'
+      preLoaderRoute: typeof SubscriptionsPaymentReturnIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/subscriptions/$username/': {
       id: '/subscriptions/$username/'
       path: '/subscriptions/$username'
       fullPath: '/subscriptions/$username'
       preLoaderRoute: typeof SubscriptionsUsernameIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/sub-org-learners/$username/': {
+      id: '/sub-org-learners/$username/'
+      path: '/sub-org-learners/$username'
+      fullPath: '/sub-org-learners/$username'
+      preLoaderRoute: typeof SubOrgLearnersUsernameIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/study-library/live-class/': {
@@ -2142,20 +2206,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof GoUsernameIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/sub-org-learners/$username/': {
-      id: '/sub-org-learners/$username/'
-      path: '/sub-org-learners/$username'
-      fullPath: '/sub-org-learners/$username'
-      preLoaderRoute: typeof SubOrgLearnersUsernameIndexRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/user-profile/edit/$username/': {
-      id: '/user-profile/edit/$username/'
-      path: '/user-profile/edit/$username'
-      fullPath: '/user-profile/edit/$username'
-      preLoaderRoute: typeof UserProfileEditUsernameIndexRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/engagement/history/': {
       id: '/engagement/history/'
       path: '/engagement/history'
@@ -2238,6 +2288,20 @@ declare module '@tanstack/react-router' {
       path: '/$tagName/$pageSlug/$postSlug'
       fullPath: '/$tagName/$pageSlug/$postSlug'
       preLoaderRoute: typeof TagNamePageSlugPostSlugRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/user-profile/edit/$username/': {
+      id: '/user-profile/edit/$username/'
+      path: '/user-profile/edit/$username'
+      fullPath: '/user-profile/edit/$username'
+      preLoaderRoute: typeof UserProfileEditUsernameIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/subscriptions/$username/cancel/': {
+      id: '/subscriptions/$username/cancel/'
+      path: '/subscriptions/$username/cancel'
+      fullPath: '/subscriptions/$username/cancel'
+      preLoaderRoute: typeof SubscriptionsUsernameCancelIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/study-library/live-class/waiting-room/': {
@@ -2525,6 +2589,7 @@ const rootRouteChildren: RootRouteChildren = {
   MyFilesIndexRoute: MyFilesIndexRoute,
   MyMentorsIndexRoute: MyMentorsIndexRoute,
   MyReportsIndexRoute: MyReportsIndexRoute,
+  NotebookIndexRoute: NotebookIndexRoute,
   ParentIndexRoute: ParentIndexRoute,
   PaymentResultIndexRoute: PaymentResultIndexRoute,
   PlanningIndexRoute: PlanningIndexRoute,
@@ -2554,8 +2619,6 @@ const rootRouteChildren: RootRouteChildren = {
   DashboardNotificationsIndexRoute: DashboardNotificationsIndexRoute,
   EngagementHistoryIndexRoute: EngagementHistoryIndexRoute,
   GoUsernameIndexRoute: GoUsernameIndexRoute,
-  SubOrgLearnersUsernameIndexRoute: SubOrgLearnersUsernameIndexRoute,
-  UserProfileEditUsernameIndexRoute: UserProfileEditUsernameIndexRoute,
   HomeworkListIndexRoute: HomeworkListIndexRoute,
   HomeworkReportsIndexRoute: HomeworkReportsIndexRoute,
   LeaderboardPackageSessionIdIndexRoute: LeaderboardPackageSessionIdIndexRoute,
@@ -2580,7 +2643,9 @@ const rootRouteChildren: RootRouteChildren = {
   ReportsAttendanceIndexRoute: ReportsAttendanceIndexRoute,
   StudyLibraryCoursesIndexRoute: StudyLibraryCoursesIndexRoute,
   StudyLibraryLiveClassIndexRoute: StudyLibraryLiveClassIndexRoute,
+  SubOrgLearnersUsernameIndexRoute: SubOrgLearnersUsernameIndexRoute,
   SubscriptionsUsernameIndexRoute: SubscriptionsUsernameIndexRoute,
+  SubscriptionsPaymentReturnIndexRoute: SubscriptionsPaymentReturnIndexRoute,
   UserProfileEditIndexRoute: UserProfileEditIndexRoute,
   VerifyCertificateIdIndexRoute: VerifyCertificateIdIndexRoute,
   AssessmentExaminationAssessmentIdLearnerLiveTestRoute:
@@ -2607,6 +2672,8 @@ const rootRouteChildren: RootRouteChildren = {
     StudyLibraryLiveClassFeedbackIndexRoute,
   StudyLibraryLiveClassWaitingRoomIndexRoute:
     StudyLibraryLiveClassWaitingRoomIndexRoute,
+  SubscriptionsUsernameCancelIndexRoute: SubscriptionsUsernameCancelIndexRoute,
+  UserProfileEditUsernameIndexRoute: UserProfileEditUsernameIndexRoute,
   StudyLibraryCoursesCourseDetailsSubjectsIndexRoute:
     StudyLibraryCoursesCourseDetailsSubjectsIndexRoute,
   StudyLibraryCoursesCourseDetailsTutorIndexRoute:

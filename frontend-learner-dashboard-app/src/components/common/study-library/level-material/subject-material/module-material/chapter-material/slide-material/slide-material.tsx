@@ -58,6 +58,8 @@ import { Network } from "@/utils/network-plugin";
 import { resolveSlideSource, getOfflineLockReason } from "@/lib/offline/resolve";
 import { getUserId } from "@/constants/getUserId";
 import { SelectionAsk } from "@/components/chatbot/moments/SelectionAskPill";
+import { LessonNotesHost, NotesButton, useNotesAllowed } from "@/components/notebook/LessonNotesHost";
+import { NoteSelectionTools } from "@/components/notebook/NoteSelectionTools";
 import { VideoStuckChip } from "@/components/chatbot/moments/VideoStuckChip";
 import { useVideoStuckMoment } from "@/components/chatbot/moments/use-video-stuck-moment";
 import { useAvailableTutor } from "@/components/chatbot/moments/tutor-moments";
@@ -283,6 +285,7 @@ export const SlideMaterial = ({
   // offer when the learner keeps rewinding to the same part of a video.
   const momentTutor = useAvailableTutor();
   const contentAreaRef = useRef<HTMLDivElement>(null);
+  const notesAllowed = useNotesAllowed();
 
   // ── Citation deep links ─────────────────────────────────────────────────
   // A start is "pending" until it has been applied once. The URL keeps the
@@ -1514,7 +1517,7 @@ export const SlideMaterial = ({
   }, [startAtKey, activeItem?.id]);
 
   return (
-    <div className="flex h-full w-full flex-col bg-white" ref={selectionRef}>
+    <div className="flex h-full w-full flex-col bg-white" ref={selectionRef} data-lesson-root>
       <SlideProtectionGuard />
       {/* Compact Header */}
       <div className="flex flex-shrink-0 items-center justify-between gap-2 border-b border-neutral-100 bg-white px-3 py-1.5 sm:px-4">
@@ -1627,6 +1630,9 @@ export const SlideMaterial = ({
           containerRef={contentAreaRef}
           lessonName={activeItem?.title}
           enabled={isTextDocument && !isLoading}
+          {...(notesAllowed && {
+            tools: (selection, done) => <NoteSelectionTools selection={selection} onDone={done} />,
+          })}
         />
         {videoMoment.stuckAt !== null && !isLoading && (
           <VideoStuckChip
@@ -1729,6 +1735,7 @@ export const SlideMaterial = ({
       </div>
 
       <DoubtResolutionSidebar />
+      <LessonNotesHost contentRef={contentAreaRef} />
     </div>
   );
 };
@@ -1743,17 +1750,21 @@ const AskDoubtButton = () => {
       )
       .catch(() => setEnabled(true));
   }, []);
-  if (!enabled) return null;
   return (
-    <button
-      onClick={() => {
-        const { openSidebar } = useDoubtSidebarStore.getState();
-        openSidebar();
-      }}
-      className="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium text-neutral-600 bg-white border border-neutral-200 rounded-md hover:bg-neutral-50 hover:border-neutral-300 transition-colors"
-    >
-      <ChatText size={12} className="text-neutral-500" />
-      <span>{t("slideNav.doubts")}</span>
-    </button>
+    <>
+      <NotesButton />
+      {enabled && (
+        <button
+          onClick={() => {
+            const { openSidebar } = useDoubtSidebarStore.getState();
+            openSidebar();
+          }}
+          className="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium text-neutral-600 bg-white border border-neutral-200 rounded-md hover:bg-neutral-50 hover:border-neutral-300 transition-colors"
+        >
+          <ChatText size={12} className="text-neutral-500" />
+          <span>{t("slideNav.doubts")}</span>
+        </button>
+      )}
+    </>
   );
 };

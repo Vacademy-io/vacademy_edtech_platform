@@ -675,8 +675,8 @@ export const DocViewer: React.FC<DocViewerProps> = ({
                 </div>
             )}
 
-            {/* Pause overlay */}
-            {isPaused && (
+            {/* Pause overlay. Only for institutes that switched the focus check on. */}
+            {isPaused && trackingSettings.focus.idlePopupEnabled && (
                 <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/50">
                     <div className="rounded-lg bg-white p-6 text-center space-y-4">
                         <h3 className="text-lg font-semibold">

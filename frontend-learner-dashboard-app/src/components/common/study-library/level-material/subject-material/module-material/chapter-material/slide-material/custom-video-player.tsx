@@ -247,6 +247,13 @@ const CustomVideoPlayer = forwardRef<any, CustomVideoPlayerProps>(
             setCurrentUploadedVideoTime(currentTime);
         }, [currentTime]);
 
+        // Writing a note pauses the video.
+        useEffect(() => {
+            const { setPauseActiveMedia } = useMediaRefsStore.getState();
+            setPauseActiveMedia(() => videoRef.current?.pause());
+            return () => setPauseActiveMedia(null);
+        }, []);
+
         // Expose methods to parent component via ref
         useImperativeHandle(ref, () => ({
             playVideo: () => {

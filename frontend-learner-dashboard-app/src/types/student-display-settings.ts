@@ -232,6 +232,11 @@ export interface StudentCourseDetailsSettings {
     showLearningPath: boolean;
     feedbackVisible: boolean;
     canAskDoubt: boolean;
+    /**
+     * Highlights, bookmarks and notes in lessons, and the Notebook page. Unset
+     * means on: only an institute that switches it off loses them.
+     */
+    canTakeNotes?: boolean;
     /** See {@link SlidesSidebarNavigation}. Optional for backwards compat
      *  with settings payloads saved before this field existed — consumers
      *  should fall back to "breadcrumb" (the legacy default) when missing

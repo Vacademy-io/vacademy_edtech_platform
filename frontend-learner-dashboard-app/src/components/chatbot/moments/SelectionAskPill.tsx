@@ -3,7 +3,7 @@ import { createPortal } from "react-dom";
 import { useTranslation } from "react-i18next";
 import { Sparkle } from "@phosphor-icons/react";
 import { cn } from "@/lib/utils";
-import { selectionPrompt, useAvailableTutor, type SelectionAction } from "./tutor-moments";
+import { SELECTION_MIN_CHARS, selectionPrompt, useAvailableTutor, type SelectionAction } from "./tutor-moments";
 import { useSelectionAsk, type AskableSelection } from "./use-selection-ask";
 
 const PILL_HEIGHT = 40;
@@ -21,6 +21,8 @@ interface PillProps {
   onAsk: (prompt: string) => void;
   /** Called on press, before the selection may collapse (touch). */
   onPress: () => void;
+  /** Extra actions shown first. */
+  tools?: ReactNode;
 }
 
 /**
@@ -29,34 +31,37 @@ interface PillProps {
  * the phone's own selection menu (drawn above it) stays reachable; above with
  * room for that menu when the selection sits at the bottom of the screen.
  */
-function pillPosition(rect: AskableSelection["rect"], width: number) {
+function pillPosition(rect: AskableSelection["rect"], width: number, height: number) {
   const vw = window.innerWidth;
   const vh = window.innerHeight;
   const coarse = window.matchMedia?.("(pointer: coarse)").matches ?? false;
   let top: number;
   if (coarse) {
     top = rect.bottom + 28;
-    if (top + PILL_HEIGHT > vh - EDGE) top = rect.top - PILL_HEIGHT - NATIVE_MENU_ROOM;
+    if (top + height > vh - EDGE) top = rect.top - height - NATIVE_MENU_ROOM;
   } else {
-    top = rect.top - PILL_HEIGHT - EDGE;
+    top = rect.top - height - EDGE;
     if (top < EDGE) top = rect.bottom + EDGE;
   }
-  top = Math.min(Math.max(top, EDGE), vh - PILL_HEIGHT - EDGE);
+  top = Math.min(Math.max(top, EDGE), vh - height - EDGE);
   const center = (rect.left + rect.right) / 2;
   const left = Math.min(Math.max(center - width / 2, EDGE), Math.max(EDGE, vw - width - EDGE));
   return { top, left };
 }
 
-function Pill({ selection, lessonName, containerRef, onDismiss, onAsk, onPress }: PillProps) {
+function Pill({ selection, lessonName, containerRef, onDismiss, onAsk, onPress, tools }: PillProps) {
   const { t } = useTranslation("chatFeatureB");
   const tutor = useAvailableTutor();
   const pillRef = useRef<HTMLDivElement>(null);
   const [width, setWidth] = useState(240);
+  const [height, setHeight] = useState(PILL_HEIGHT);
 
   useLayoutEffect(() => {
     const w = pillRef.current?.offsetWidth;
     if (w && w !== width) setWidth(w);
-  }, [width, selection]);
+    const h = pillRef.current?.offsetHeight;
+    if (h && h !== height) setHeight(h);
+  }, [width, height, selection]);
 
   // Escape and a press elsewhere dismiss; Tab from the selection moves into the pill.
   useEffect(() => {
@@ -87,8 +92,10 @@ function Pill({ selection, lessonName, containerRef, onDismiss, onAsk, onPress }
     };
   }, [onDismiss, containerRef]);
 
-  const { top, left } = pillPosition(selection.rect, width);
+  const { top, left } = pillPosition(selection.rect, width, height);
   const name = tutor?.chatbotSettings.assistant_name ?? "";
+  // Short selections can be highlighted but are too little to ask about.
+  const showAsk = !!tutor && selection.text.length >= SELECTION_MIN_CHARS;
 
   return (
     <div
@@ -98,10 +105,14 @@ function Pill({ selection, lessonName, containerRef, onDismiss, onAsk, onPress }
       // Pressing a button must not clear the learner's selection.
       onMouseDown={(e) => e.preventDefault()}
       onPointerDown={onPress}
-      className="fixed z-50 flex h-10 items-center gap-0.5 rounded-full border border-border bg-card p-1 text-card-foreground shadow-lg motion-safe:animate-in motion-safe:fade-in motion-safe:zoom-in-95"
+      className={cn(
+        "fixed z-50 flex items-center gap-0.5 border border-border bg-card p-1 text-card-foreground shadow-lg motion-safe:animate-in motion-safe:fade-in motion-safe:zoom-in-95",
+        tools ? "max-w-sm flex-wrap justify-center rounded-2xl" : "h-10 rounded-full",
+      )}
       style={{ top, left }} // design-lint-ignore: follows the live selection rectangle
     >
-      {ACTIONS.map((action, i) => (
+      {tools}
+      {showAsk && ACTIONS.map((action, i) => (
         <button
           key={action}
           type="button"
@@ -128,7 +139,15 @@ export interface SelectionAskProps {
   lessonName?: string | null;
   /** Extra gate from the host, e.g. only for document slides. */
   enabled?: boolean;
+  /**
+   * Actions that need no tutor (highlight, add a note). When given, the pill
+   * also shows without the tutor and for selections of a word or two.
+   */
+  tools?: (selection: AskableSelection, done: () => void) => ReactNode;
 }
+
+/** Enough to highlight one short word. */
+const TOOLS_MIN_CHARS = 2;
 
 /**
  * Select-to-ask for a container the host already renders: select 12+
@@ -137,10 +156,14 @@ export interface SelectionAskProps {
  * tutor is available on this page (enabled, visible on the route — never on
  * `/assessment/**` — and not in a voice call).
  */
-export function SelectionAsk({ containerRef, lessonName, enabled = true }: SelectionAskProps) {
+export function SelectionAsk({ containerRef, lessonName, enabled = true, tools }: SelectionAskProps) {
   const tutor = useAvailableTutor();
-  const active = enabled && !!tutor;
-  const { selection, dismiss, hold } = useSelectionAsk(containerRef, active);
+  const active = enabled && (!!tutor || !!tools);
+  const { selection, dismiss, hold } = useSelectionAsk(
+    containerRef,
+    active,
+    tools ? TOOLS_MIN_CHARS : SELECTION_MIN_CHARS,
+  );
   if (!active || !selection || typeof document === "undefined") return null;
   return createPortal(
     <Pill
@@ -149,9 +172,10 @@ export function SelectionAsk({ containerRef, lessonName, enabled = true }: Selec
       containerRef={containerRef}
       onDismiss={dismiss}
       onPress={hold}
+      tools={tools?.(selection, dismiss)}
       onAsk={(prompt) => {
         dismiss();
-        tutor.openAndSend(prompt);
+        tutor?.openAndSend(prompt);
       }}
     />,
     document.body,

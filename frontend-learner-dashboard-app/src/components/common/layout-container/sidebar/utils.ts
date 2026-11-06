@@ -526,6 +526,12 @@ export const getHamBurgerSidebarItemsData = (t: TFunction): SidebarItemsType[] =
     to: "/my-files",
   },
   {
+    icon: NotePencil,
+    id: "notebook",
+    title: t("sidebar.hamburgerMenu.notebook", { ns: "layoutCommonA" }),
+    to: "/notebook",
+  },
+  {
     icon: DownloadSimple,
     id: "offline-downloads",
     title: t("sidebar.hamburgerMenu.downloads", { ns: "layoutCommonA" }),
@@ -590,6 +596,16 @@ export async function filterHamburgerMenuItemsWithPermissions(
     HamBurgerSidebarItemsData = HamBurgerSidebarItemsData.filter(
       (item) => item.id !== "view-profile"
     );
+  }
+
+  try {
+    const { getStudentDisplaySettings } = await import("@/services/student-display-settings");
+    const settings = await getStudentDisplaySettings(false);
+    if (settings?.courseDetails?.slidesView?.canTakeNotes === false) {
+      HamBurgerSidebarItemsData = HamBurgerSidebarItemsData.filter((item) => item.id !== "notebook");
+    }
+  } catch {
+    /* Settings unavailable: leave the item, the same default as the lesson. */
   }
 
   if (!permissions.canViewFiles) {

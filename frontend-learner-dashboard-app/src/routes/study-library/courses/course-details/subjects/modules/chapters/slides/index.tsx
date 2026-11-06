@@ -33,6 +33,7 @@ import { getModuleName } from "@/utils/study-library/get-name-by-id/getModuleNam
 import { getSubjectName } from "@/utils/study-library/get-name-by-id/getSubjectNameById";
 import { getChapterName } from "@/utils/study-library/get-name-by-id/getChapterById";
 import { useContentStore } from "@/stores/study-library/chapter-sidebar-store";
+import { useLessonNotesStore } from "@/stores/study-library/lesson-notes-store";
 import useSidebarBranding from "@/components/common/layout-container/sidebar/useSidebar";
 import { InitStudyLibraryProvider } from "@/providers/study-library/init-study-library-provider";
 import { ModulesWithChaptersProvider } from "@/providers/study-library/modules-with-chapters-provider";
@@ -995,6 +996,7 @@ function Slides() {
                 matchingBatch.package_dto?.package_name || "";
               const levelNameFromBatch = matchingBatch.level?.level_name || "";
               setCourseName(courseNameFromBatch);
+              useLessonNotesStore.getState().setCourseName(courseNameFromBatch || null);
               setLevelName(levelNameFromBatch);
             }
           }

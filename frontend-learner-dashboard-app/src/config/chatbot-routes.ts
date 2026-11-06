@@ -5,7 +5,7 @@
 const PAGE_CATEGORY_ROUTES: Record<string, string[]> = {
   // The daily-tasks page is part of the learner's home: the tutor helps
   // there ("Why was I wrong?" after a reveal, the Buddy line).
-  dashboard: ['/dashboard', '/engagement'],
+  dashboard: ['/dashboard', '/engagement', '/notebook'],
   all_courses: ['/study-library'],
   course_details: ['/study-library/courses'],
   study_material: ['/study-library/courses/course-details'],

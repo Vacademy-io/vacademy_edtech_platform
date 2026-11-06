@@ -6,6 +6,8 @@ import { FRAME_SELECTION_EVENT, type FrameSelectionDetail } from "./frame-select
 export interface AskableSelection {
   text: string;
   rect: { top: number; bottom: number; left: number; right: number };
+  /** The selection itself, when it is in this document (not inside a frame). */
+  range?: Range;
 }
 
 /** Inputs, editors and code panes: selecting there is editing, not asking. */
@@ -37,6 +39,7 @@ function isEditable(node: Node | null): boolean {
 export function useSelectionAsk(
   containerRef: RefObject<HTMLElement | null>,
   enabled: boolean,
+  minChars: number = SELECTION_MIN_CHARS,
 ): { selection: AskableSelection | null; dismiss: () => void; hold: () => void } {
   const [selection, setSelection] = useState<AskableSelection | null>(null);
   const dismissedRef = useRef<string | null>(null);
@@ -91,7 +94,7 @@ export function useSelectionAsk(
         return;
       }
       const text = sel.toString().replace(/\s+/g, " ").trim();
-      if (text.length < SELECTION_MIN_CHARS || text === dismissedRef.current) {
+      if (text.length < minChars || text === dismissedRef.current) {
         setSelection(null);
         return;
       }
@@ -103,6 +106,7 @@ export function useSelectionAsk(
       setSelection({
         text,
         rect: { top: box.top, bottom: box.bottom, left: box.left, right: box.right },
+        range: range.cloneRange(),
       });
     };
     const schedule = (ms: number) => {
@@ -138,7 +142,7 @@ export function useSelectionAsk(
       document.removeEventListener("pointerup", onPointerUp);
       container.removeEventListener("keyup", onKeyUp);
     };
-  }, [containerRef, enabled]);
+  }, [containerRef, enabled, minChars]);
 
   useEffect(() => {
     if (!enabled) return;
@@ -152,7 +156,7 @@ export function useSelectionAsk(
         setSelection(null);
         return;
       }
-      if (text.length < SELECTION_MIN_CHARS || text === dismissedRef.current) {
+      if (text.length < minChars || text === dismissedRef.current) {
         setSelection(null);
         return;
       }
@@ -160,7 +164,7 @@ export function useSelectionAsk(
     };
     window.addEventListener(FRAME_SELECTION_EVENT, onFrameSelection);
     return () => window.removeEventListener(FRAME_SELECTION_EVENT, onFrameSelection);
-  }, [containerRef, enabled]);
+  }, [containerRef, enabled, minChars]);
 
   // While shown: hide on scroll (any scroller) and on resize. Not remembered as
   // dismissed: the next pointer-up or selection change shows it again in place.

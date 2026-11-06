@@ -153,6 +153,11 @@ const isPublicRoute = (pathname: string): boolean => {
     return false;
   }
 
+  // A learner's own notes always require authentication.
+  if (pathname.startsWith("/notebook")) {
+    return false;
+  }
+
   // Public shareable leaderboard — course (/leaderboard/{id}) AND institute
   // (/leaderboard/institute/{id}). Explicit so 3-segment institute links don't
   // fall through to the auth redirect (the 2-segment "course details" fallback
@@ -195,6 +200,7 @@ const isPublicRoute = (pathname: string): boolean => {
     !pathname.startsWith("/Coursetile") &&
     !pathname.startsWith("/planning") &&
     !pathname.startsWith("/my-files") &&
+    !pathname.startsWith("/notebook") &&
     !pathname.startsWith("/parent-portal");
 
   // Course details dynamic routes - /{tagName}/{courseId}
@@ -225,6 +231,7 @@ const isPublicRoute = (pathname: string): boolean => {
     !pathname.startsWith("/user-profile") &&
     !pathname.startsWith("/planning") &&
     !pathname.startsWith("/my-files") &&
+    !pathname.startsWith("/notebook") &&
     !pathname.startsWith("/reports") &&
     !pathname.startsWith("/my-reports") &&
     !pathname.startsWith("/parent-portal");

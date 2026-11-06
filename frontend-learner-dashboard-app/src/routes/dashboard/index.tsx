@@ -82,6 +82,7 @@ import type { StatCardLayout } from "./-components/DashboardStatCard";
 import { ContinueLearningCard } from "./-components/DashboardContinueLearningCard";
 import { RESUME_WAIT_MS, useDashboardResume } from "./-hooks/use-dashboard-resume";
 import { DashboardHero } from "./-components/DashboardHero";
+import { NotebookReviewLine } from "@/components/notebook/NotebookReviewLine";
 import { PlayDashboardHero } from "./-components/play/PlayDashboardHero";
 import { CleanerPlayDashboardHero } from "./-components/play/CleanerPlayDashboardHero";
 import { cn } from "@/lib/utils";
@@ -1418,6 +1419,8 @@ export function DashboardComponent() {
                 showGettingStarted={isWidgetVisible("gettingStarted")}
               />
             )}
+
+            <NotebookReviewLine />
 
             {/* Main 2/3 + 1/3 layout. The rail's third is only reserved when
                 the institute actually left rail widgets on — otherwise the
