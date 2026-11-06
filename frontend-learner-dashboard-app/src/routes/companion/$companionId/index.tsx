@@ -317,7 +317,7 @@ function CompanionStudyRoom() {
           </aside>
 
           {/* Main */}
-          <main ref={mainRef} className="min-w-0 flex-1 scroll-mt-4">
+          <main ref={mainRef} className="min-w-0 flex-1 scroll-mt-16 md:scroll-mt-20">
             {activeMode === "ask" ? (
               <section className="rounded-2xl border border-neutral-200 bg-white p-card shadow-sm sm:p-card-lg dark:border-neutral-800 dark:bg-neutral-900">
                 <AskPanel

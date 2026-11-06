@@ -1,7 +1,9 @@
+import { Suspense } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import * as Sentry from "@sentry/react";
 import { useTranslation } from "react-i18next";
 import { CourseDetailsPage } from "./-components/course-details-page";
+import { CourseDetailsSkeleton } from "./-components/course-details-skeleton";
 import { LayoutContainer } from "@/components/common/layout-container/layout-container";
 import { Button } from "@/components/ui/button";
 
@@ -15,7 +17,9 @@ interface CourseSearchParams {
 export const Route = createFileRoute("/study-library/courses/course-details/")({
     component: () => (
         <LayoutContainer>
-            <CourseDetailsPage />
+            <Suspense fallback={<CourseDetailsSkeleton />}>
+                <CourseDetailsPage />
+            </Suspense>
         </LayoutContainer>
     ),
     errorComponent: ({ error }) => {

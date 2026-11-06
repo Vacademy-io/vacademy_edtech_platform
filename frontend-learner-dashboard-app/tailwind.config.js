@@ -606,6 +606,10 @@ module.exports = {
             transform: "translateY(0)",
           },
         },
+        "launcher-ring": {
+          "0%, 100%": { transform: "scale(1)", opacity: "0.6" },
+          "50%": { transform: "scale(1.3)", opacity: "0" },
+        },
         "gentle-pulse": {
           "0%, 100%": {
             opacity: "0.3",
@@ -620,6 +624,7 @@ module.exports = {
         "accordion-up": "accordion-up 0.2s ease-out",
         "fade-in-up": "fade-in-up 0.6s ease-out",
         "gentle-pulse": "gentle-pulse 4s ease-in-out infinite",
+        "launcher-ring": "launcher-ring 2s ease-in-out infinite",
       },
     },
   },

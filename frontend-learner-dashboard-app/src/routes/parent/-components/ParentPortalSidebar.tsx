@@ -90,7 +90,7 @@ export function ParentPortalSidebar({
             // Razorpay checkout — hide it (Apple 3.1.1). The route is also
             // blocked in __root, so this just removes the now-dead tab.
             (tab) => !(shouldHidePaidPurchaseUI() && tab.id === "payments"),
-          ).map((tab, index) => {
+          ).map((tab) => {
             const currentPath = router.state.location.pathname;
             const isActive =
               tab.id === activeTab ||
@@ -100,11 +100,7 @@ export function ParentPortalSidebar({
                 : currentPath.startsWith(tab.route.replace(/\/$/, "")));
 
             return (
-              <div
-                key={tab.id}
-                className="animate-slide-in-left max-w-full w-full"
-                style={{ animationDelay: `${index * 30}ms` }}
-              >
+              <div key={tab.id} className="max-w-full w-full">
                 <SidebarMenuItem>
                   <SidebarMenuButton
                     isActive={isActive}

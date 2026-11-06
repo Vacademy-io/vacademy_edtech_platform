@@ -6,6 +6,7 @@ import CourseCard from "./CourseCards.tsx";
 import Pagination from "./Pagination.tsx";
 import { useCatalogStore } from "../-store/catalogStore.ts";
 import { toTitleCase } from "@/lib/utils";
+import { createPageChangeDetector } from "@/routes/study-library/courses/-component/page-change";
 import { getTerminologyPlural } from "@/components/common/layout-container/sidebar/utils";
 import { ContentTerms, SystemTerms } from "@/types/naming-settings";
 
@@ -62,15 +63,17 @@ const CoursesPage: React.FC<CoursesPageProps> = ({
 
   const totalPages = Math.ceil(courseData.length / itemsPerPage);
 
-  // Smooth scroll on page change
+  // Smooth scroll on page change. Opening the screen is not a page change: it
+  // stays at the top with the banner in view.
+  const [pageChanged] = useState(() => createPageChangeDetector(currentPage));
   useEffect(() => {
-    if (scrollRef.current) {
+    if (pageChanged(currentPage) && scrollRef.current) {
       scrollRef.current.scrollIntoView({
         behavior: "smooth",
         block: "start",
       });
     }
-  }, [currentPage]);
+  }, [currentPage, pageChanged]);
 
   // Reset page to 1 on course data change
   useEffect(() => {

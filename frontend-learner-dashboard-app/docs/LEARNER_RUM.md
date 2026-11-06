@@ -36,10 +36,16 @@ Chrome stops recording LCP at the first scroll, and a smooth programmatic scroll
 screen scrolls itself on opening, there may be no `lcp` row at all, with nothing to say so. The
 query below shows those screens with `samples` far below `first_loads`.
 
-**`/study-library/courses` is one today.** The effect in `CoursesPage.tsx` that scrolls the list
-into view on a page change also runs on opening, before the first content paints. The page always
-overflows the viewport slightly, so this happens whatever the length of the list. Use `settle` for
-this screen.
+`CourseCatalogComponent.tsx` has an effect that scrolls the list into view and also runs on opening,
+so read `/$tagName` with this in mind.
+
+`/courses` and `/study-library/courses` used to be two of these screens. The effect in each screen's
+`CoursesPage.tsx` now scrolls only when the page number changes, so opening them no longer scrolls
+them. Rows for these screens from builds before that change are missing most `lcp` samples, so
+their `lcp` starts fresh there. Use `settle` to compare across the change.
+
+A report goes out only with a signed-in token. A signed-out visit is held on the device and sent if
+that visitor signs in later, so `/courses` rows leave out visitors who never sign in.
 
 ## Reading a row
 

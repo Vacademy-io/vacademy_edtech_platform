@@ -766,13 +766,7 @@ export const MySidebar = ({
               );
 
               return items.map((obj, key) => (
-                <div
-                  key={key}
-                  className="animate-slide-in-left max-w-full w-full"
-                  style={{
-                    animationDelay: `${key * 30}ms`,
-                  }}
-                >
+                <div key={key} className="max-w-full w-full">
                   <SidebarItem
                     icon={obj.icon}
                     subItems={

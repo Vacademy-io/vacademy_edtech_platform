@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
+import { createPageChangeDetector } from "./page-change";
 import FilterPanel from "./FilterPanel.tsx";
 import SearchAndSortBar from "./SearchAndSortBar.tsx";
 import CourseCard from "./CourseCards.tsx";
@@ -102,7 +103,10 @@ const CoursesPage: React.FC<CoursesPageProps> = ({
                     ? "catalog.emptyCompleted"
                     : "catalog.emptyAll";
 
-    // Smooth scroll on page change and dev log
+    // Smooth scroll on page change and dev log. Opening the screen and the first
+    // page of results arriving are not page changes: both leave the learner where
+    // they are.
+    const [pageChanged] = useState(() => createPageChangeDetector(courseData.number));
     useEffect(() => {
         if (import.meta.env.DEV) {
             console.debug("[CoursesPage] page changed", {
@@ -111,13 +115,13 @@ const CoursesPage: React.FC<CoursesPageProps> = ({
                 totalElements: courseData.totalElements,
             });
         }
-        if (scrollRef.current) {
+        if (pageChanged(courseData.number) && scrollRef.current) {
             scrollRef.current.scrollIntoView({
                 behavior: "smooth",
                 block: "start",
             });
         }
-    }, [courseData.number, courseData.totalPages, courseData.totalElements]);
+    }, [courseData.number, courseData.totalPages, courseData.totalElements, pageChanged]);
 
     // Helper function to toggle item in array
     const toggleItem = (
@@ -184,7 +188,7 @@ const CoursesPage: React.FC<CoursesPageProps> = ({
     return (
         <div
             ref={scrollRef}
-            className="w-full"
+            className="w-full scroll-mt-12 md:scroll-mt-14"
         >
             <div
                 className={`flex flex-col lg:flex-row lg:items-start ${showFilters ? "gap-4 lg:gap-6" : ""} mx-auto relative`}

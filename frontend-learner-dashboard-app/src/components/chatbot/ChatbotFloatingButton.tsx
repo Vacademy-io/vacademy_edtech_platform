@@ -308,18 +308,13 @@ export const ChatbotFloatingButton = () => {
             : { duration: 0.25 }
         }
       >
-          {/* Pulsing Glow Ring - draws attention */}
-          <motion.div
-            className="absolute inset-0 rounded-full bg-primary/30"
-            animate={{
-              scale: isDragging || reduceMotion ? 1 : [1, 1.3, 1],
-              opacity: isDragging || reduceMotion ? 0 : [0.6, 0, 0.6],
-            }}
-            transition={{
-              duration: 2,
-              repeat: Infinity,
-              ease: "easeInOut",
-            }}
+          {/* Pulsing Glow Ring - draws attention. A CSS animation, so an idle
+              page runs no script for it. */}
+          <div
+            className={cn(
+              "absolute inset-0 rounded-full bg-primary/30",
+              isDragging ? "hidden" : "animate-launcher-ring motion-reduce:hidden"
+            )}
           />
 
           {/* Main Button — tap to open, drag to move */}

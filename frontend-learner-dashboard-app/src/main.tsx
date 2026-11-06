@@ -16,6 +16,7 @@ import { SmartErrorPage as RootErrorComponent } from "./components/core/SmartErr
 import RootNotFoundComponent from "./components/core/default-not-found";
 import RootPendingComponent from "./components/core/default-pending";
 import "./index.css";
+import { installScrollReset } from "./lib/scroll-reset";
 import { ThemeProvider as ColorThemeProvider } from "./providers/theme/theme-provider";
 import { ThemeProvider as ModeThemeProvider } from "./providers/theme-provider";
 import { SidebarProvider } from "./components/ui/sidebar";
@@ -272,6 +273,8 @@ const router = createRouter({
 // see reserved-app-routes.ts for why a root-mounted catalogue page named
 // "privacy-policy" would otherwise open the app's own page.
 registerAppRoutePaths(Object.keys(router.routesByPath));
+
+installScrollReset(router);
 
 // Real-user speed numbers, from a sampled fraction of sessions. First-party only and
 // no identifiers: see the header of learner-rum.ts.

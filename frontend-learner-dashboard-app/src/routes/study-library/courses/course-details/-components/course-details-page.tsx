@@ -1,5 +1,4 @@
 import { useRouter } from "@tanstack/react-router";
-import { CaretLeft } from "@phosphor-icons/react";
 import { shouldHidePaidPurchaseUI } from "@/utils/ios-iap-compliance";
 import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -17,17 +16,16 @@ import {
   handleGetCourseInit,
   handleGetCourseDetails,
 } from "../-services/get-course-details";
-import { useNavHeadingStore } from "@/stores/layout-container/useNavHeadingStore";
 import { CourseStructureDetails } from "./course-structure-details";
 import { DonationDialog } from "@/components/common/donation/DonationDialog";
 import { EnrollmentPaymentDialog } from "./payment-dialogs/EnrollmentPaymentDialog";
 import { EnrollmentPendingApprovalDialog } from "./payment-dialogs/EnrollmentPendingApprovalDialog";
 import { useEnrollmentStatus } from "@/hooks/use-enrollment-status";
 import { getSubjectDetails } from "@/routes/courses/course-details/-utils/helper";
-import { getTerminology } from "@/components/common/layout-container/sidebar/utils";
-import { ContentTerms, SystemTerms } from "@/types/naming-settings";
-import { DashboardLoader } from "@/components/core/dashboard-loader";
-import { ContentOnlyCourseDetailsSkeleton } from "./course-details-skeleton";
+import {
+  ContentOnlyCourseDetailsSkeleton,
+  CourseDetailsSkeleton,
+} from "./course-details-skeleton";
 import { CourseHeader } from "./course-header";
 import { CourseSubscriptionCancel } from "./CourseSubscriptionCancel";
 import { CertificateCompletionBanner } from "./certificate-completion-banner.tsx";
@@ -48,6 +46,7 @@ import type {
   SlideCountType,
 } from "../-utils/course-details-types";
 import { useCourseDetailsLoadingStates } from "../-hooks/use-loading-states";
+import { useCourseDetailsNavHeading } from "../-hooks/use-course-details-nav-heading";
 import { useUserContext } from "../-hooks/use-user-context";
 import { useInstituteAndBatches } from "../-hooks/use-institute-and-batches";
 import { usePaymentType } from "../-hooks/use-payment-type";
@@ -65,32 +64,15 @@ export type {
 } from "../-utils/course-details-types";
 
 export const CourseDetailsPage = () => {
-  const { t, i18n: i18nInstance } = useTranslation("courseDetailsA");
+  const { i18n: i18nInstance } = useTranslation("courseDetailsA");
   const { t: tSlideCounts } = useTranslation("courseDetailsC");
-  const { setNavHeading } = useNavHeadingStore();
   const courseDetailsSchema = useMemo(
     () => makeCourseDetailsSchema(),
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [i18nInstance.language],
   );
 
-  const heading = (
-    <div className="flex items-center">
-      <CaretLeft
-        onClick={() => window.history.back()}
-        className="cursor-pointer"
-      />
-      <h1 className="text-lg ms-2">
-        {t("detailsPage.heading", {
-          course: getTerminology(ContentTerms.Course, SystemTerms.Course),
-        })}
-      </h1>
-    </div>
-  );
-
-  useEffect(() => {
-    setNavHeading(heading);
-  }, [setNavHeading]);
+  useCourseDetailsNavHeading();
 
   const router = useRouter();
   const searchParams = router.state.location.search;
@@ -491,7 +473,7 @@ export const CourseDetailsPage = () => {
     return contentOnly ? (
       <ContentOnlyCourseDetailsSkeleton />
     ) : (
-      <DashboardLoader />
+      <CourseDetailsSkeleton />
     );
   }
 

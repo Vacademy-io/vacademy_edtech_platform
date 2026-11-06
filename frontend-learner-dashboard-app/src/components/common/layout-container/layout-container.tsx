@@ -14,6 +14,15 @@ import { getStudentDisplaySettings } from "@/services/student-display-settings";
 import { useStudentLayout } from "@/hooks/use-student-layout";
 import { useRouterState } from "@tanstack/react-router";
 import { StudentWallpaper } from "./StudentWallpaper";
+import { Capacitor } from "@capacitor/core";
+
+// overflow-x-hidden makes <main> a scroll container that never scrolls, which is
+// what the top bar's `sticky` would bind to. clip keeps the same horizontal
+// cropping without creating one; min-w-0 keeps the shrink behaviour hidden gave
+// this flex child. The bar is solid on phones, where it sits over moving content
+// on small GPUs. Browsers without clip stay on hidden.
+const STICKY_TOP_BAR_MAIN =
+    "min-w-0 supports-[overflow:clip]:overflow-x-clip max-md:[&>.navbar]:![background-color:hsl(var(--surface))] max-md:[&>.navbar]:backdrop-blur-none";
 
 interface LayoutContainerProps {
     children?: React.ReactNode;
@@ -60,6 +69,9 @@ export const LayoutContainer = ({
     immersive = false,
 }: LayoutContainerProps) => {
     const fillViewport = fillViewportProp || immersive;
+    // Web only: on native the bar's spacing around the status bar assumes it
+    // scrolls away. Pinned and full-bleed surfaces keep their own layout.
+    const stickyTopBar = !fillViewport && !fullWidth && !Capacitor.isNativePlatform();
     const { setHasCustomSidebar } = useStore();
     const { isOpen: chatbotIsOpen } = useChatbotContext();
     const { panelWidth, setIsDockedMode, viewMode, setViewMode } = useChatbotPanelStore();
@@ -167,6 +179,7 @@ export const LayoutContainer = ({
             <SidebarInset
                 className={cn(
                     "overflow-x-hidden w-full",
+                    stickyTopBar && STICKY_TOP_BAR_MAIN,
                     fillViewport && "h-svh max-h-svh overflow-hidden",
                     wallpaper && !immersive && "bg-transparent"
                 )}

@@ -107,7 +107,7 @@ export default function ReportDetailsPage({ report }: ReportDetailsPageProps) {
     }
   };
   const renderSection = (content: string, sectionId: string) => (
-    <Card id={sectionId} className="mb-6 p-6">
+    <Card id={sectionId} className="mb-6 scroll-mt-14 p-6 md:scroll-mt-16">
       <CardContent className="prose prose-sm max-w-none">
         <ReactMarkdown
           remarkPlugins={[remarkBreaks, remarkGfm]}

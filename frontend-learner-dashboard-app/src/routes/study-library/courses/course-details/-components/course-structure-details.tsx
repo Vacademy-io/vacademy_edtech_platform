@@ -1,4 +1,3 @@
-import { useNavHeadingStore } from "@/stores/layout-container/useNavHeadingStore";
 import { useEffect, useMemo, useState, useCallback, useRef } from "react";
 import { PullToRefreshWrapper } from "@/components/design-system/pull-to-refresh";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
@@ -232,7 +231,6 @@ export const CourseStructureDetails = ({
     pathname: string,
     searchParamsObj: Record<string, string | undefined>,
   ) => router.navigate({ to: pathname, search: searchParamsObj });
-  const { setNavHeading } = useNavHeadingStore();
 
   const [studyLibraryData, setStudyLibraryData] = useState<SubjectType[]>([]);
   const [showContentPrefixes, setShowContentPrefixes] = useState<boolean>(true);
@@ -3949,14 +3947,6 @@ export const CourseStructureDetails = ({
     selectedChapterId,
     getSlidesWithChapterId,
   ]);
-
-  useEffect(() => {
-    setNavHeading(
-      <div className="flex items-center gap-2">
-        <div>{getTerminology(ContentTerms.Course, SystemTerms.Course)} Details</div>
-      </div>,
-    );
-  }, [setNavHeading]);
 
   // Debug logging for render
 

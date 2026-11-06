@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import {
   FileText,
   PresentationChart,
@@ -11,6 +12,7 @@ import { Steps } from "@phosphor-icons/react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   getTerminology,
   getTerminologyPlural,
@@ -538,10 +540,12 @@ export const CourseSidebar = ({
       {/* Ratings & Reviews */}
       {packageSessionIdForCurrentLevel && (
         <div className="animate-fade-in-up" style={{ animationDelay: "0.2s" }}>
-          <CourseDetailsRatingsComponent
-            packageSessionId={packageSessionIdForCurrentLevel}
-            onLoadingChange={onRatingsLoadingChange}
-          />
+          <Suspense fallback={<Skeleton className="h-40 w-full rounded-lg" />}>
+            <CourseDetailsRatingsComponent
+              packageSessionId={packageSessionIdForCurrentLevel}
+              onLoadingChange={onRatingsLoadingChange}
+            />
+          </Suspense>
         </div>
       )}
     </div>
