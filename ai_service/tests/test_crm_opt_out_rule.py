@@ -280,7 +280,8 @@ async def test_real_driver_get_agrees_with_list(real_ctx, lead_id, opted_out, fl
     lead = out["lead"]
     assert lead["lead_id"] == lead_id and lead["opted_out"] is opted_out
     assert set(lead) == {"lead_id", "lead_user_id", "list_id", "list", "source", "submitted_at", "status",
-                         "status_label", "tier", "score", "flags", "opted_out"}
+                         "status_label", "in_status_since", "days_in_status", "days_in_status_from", "tier", "score",
+                         "flags", "opted_out"}
     assert (flag in lead["flags"]) if flag else not {"opted_out", "linked_student_opted_out"} & set(lead["flags"])
     assert out.get("opt_out_note") == (cd.LINKED_STUDENT_OPT_OUT_NOTE if flag == "linked_student_opted_out" else None)
 

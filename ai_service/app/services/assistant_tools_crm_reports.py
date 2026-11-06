@@ -15,6 +15,7 @@ Actions
     followup_aging   open follow-ups by age per counsellor
     sla_breaches     live leads past their first-response deadline
     stalled          open leads with no staff activity for N days
+    bottlenecks      where leads wait: time in each status, time to first contact and to convert, how complete status data is
     unassigned       open leads with no counsellor
     meetings         booked meetings per host and status
     activity         staff activity per person (notes, calls, status changes, follow-ups)
@@ -98,6 +99,10 @@ ACTION_SPEC: Dict[str, Dict[str, Any]] = {
                      "writes": False, "confirm": "none", "feature": None, "admin_only": False},
     "stalled": {"summary": "Open leads with no staff activity for N days, by owner, list and source.",
                 "writes": False, "confirm": "none", "feature": None, "admin_only": False},
+    "bottlenecks": {"summary": "Where leads wait: open leads per status by how long they have been there, also by "
+                               "owner, list and source; how long leads took before moving on; time to first contact "
+                               "and to convert; and how complete the status data is.",
+                    "writes": False, "confirm": "none", "feature": None, "admin_only": False},
     "unassigned": {"summary": "Open leads with no counsellor, by list and source.",
                    "writes": False, "confirm": "none", "feature": None, "admin_only": False},
     "meetings": {"summary": "Booked meetings per host and status in the window.",
@@ -165,6 +170,11 @@ CRM_REPORTS_SCHEMA: Dict[str, Any] = {
             "- followup_aging: open follow-ups by age per counsellor (point in time).\n"
             "- sla_breaches: live leads past their first-response deadline now, with the oldest few.\n"
             "- stalled: open leads with no staff activity for `stalled_days` (default 7).\n"
+            "- bottlenecks: how long leads take and where they wait, in one call: open leads per status by days in "
+            "that status, the same wait by owner, list and source, how long leads took before moving on and where "
+            "they went, time to first contact and to convert, and `reading`, which names the biggest queue and "
+            "slowest status only when enough status data exists. Quote `reading.status_data`: when it is too_thin, "
+            "say the statuses are not being kept up, not that leads are stuck.\n"
             "- unassigned: open leads with no counsellor.\n"
             "- meetings: booked meetings per host and status.\n"
             "- activity: per staff member: notes, calls, status changes, follow-ups created / closed.\n"
@@ -309,6 +319,29 @@ _DEFS: Dict[str, str] = {
     "status_change_actor": "The person who changed the status; SYSTEM = an automation or the platform.",
     "stalled": ("Open leads submitted before the cut-off with no staff activity on the lead's timeline and no "
                 "call on it since the cut-off."),
+    "days_in_status": ("Days since the lead's latest recorded status change, when that change set its current status; "
+                       "otherwise since the enquiry. age_from_enquiry counts the leads aged from the enquiry, which "
+                       "is every lead that never moved. Each enquiry counts as one lead."),
+    "moved_out": ("Status changes in the window, per status left. moved_out and moved_to count moves, so a lead that "
+                  "moves back and forth counts each time; other_moves adds up the destinations not listed. "
+                  "median_days_before_moving and p90_days_before_moving are how long a lead had been in that status "
+                  "before a move, and leads_timed is how many leads those times come from. A lead's first stay runs "
+                  "from its enquiry. Backfilled history counts as a move and has no time."),
+    "days_to_convert": ("Days from a lead's own enquiry to its first change to CONVERTED, for changes in the window. "
+                        "Each enquiry counts, and a person enrolled or converted without a status change on the "
+                        "enquiry is not counted, so the admissions report in crm_collections, which counts people, "
+                        "can show more or fewer."),
+    "first_contact": ("For leads submitted in the window: the first staff response on the lead so far, by the "
+                      "dashboard's response rule. A contact made outside the CRM and not logged does not count."),
+    "looks_closed": ("A status whose name says the lead's journey is over, such as NOT_INTERESTED or WRONG_NUMBER. "
+                     "The status settings do not record this, so it goes by name and can miss a custom name. These "
+                     "leads keep their own stages row and are left out of open_now, by_owner, by_list, by_source and "
+                     "reading. CONVERTED and LOST are not open, so leads_now is 0 there; the funnel report counts "
+                     "them. UNKNOWN means the lead has no status recorded."),
+    "status_data": ("reading.status_data says how far the times can be trusted, from the share of the window's leads "
+                    "with a recorded status change: good is 70% or more, partial is 30% or more, too_thin is less, "
+                    "and too_few_leads is under 20 leads. largest_queue and slowest_status are null when it is "
+                    "too_thin or too_few_leads. slowest_status needs at least 10 leads_timed."),
     "meeting_outcome": ("HELD / NO_SHOW come only from outcomes logged with crm_meetings_edit(log_outcome); "
                         "meetings have no other outcome record."),
     "meeting_converted": "Meetings whose lead's profile is CONVERTED now.",
@@ -1522,6 +1555,301 @@ async def _stalled(rq: _Req) -> Result:
                                               leads="The oldest stalled leads first (masked contact).")}
 
 
+BOTTLENECK_STATUS_SQL = """
+SELECT st.status_key, st.label, st.display_order, st.is_default
+FROM lead_status st
+WHERE st.institute_id = :inst AND st.is_active = TRUE AND st.deleted_at IS NULL
+ORDER BY st.display_order, st.status_key
+"""
+
+BOTTLENECK_NOW_SQL = """
+WITH s AS (
+    SELECT ar.audience_id AS list_id, a.campaign_name AS list_name, COALESCE(ar.source_type, 'UNKNOWN') AS source_type,
+           {owner} AS owner_id, COALESCE({status}, 'UNKNOWN') AS status_key,
+           COALESCE(ar.submitted_at, ar.created_at) AS enquired_at, lc.changed_at, lc.to_key, lc.source AS change_source
+    FROM audience_response ar
+    {joins}
+    LEFT JOIN LATERAL (
+        SELECT h.changed_at, h.source, st.status_key AS to_key
+        FROM lead_status_history h
+        LEFT JOIN lead_status st ON st.id = h.to_status_id
+        WHERE h.audience_response_id = ar.id
+        ORDER BY h.changed_at DESC, h.id DESC
+        LIMIT 1
+    ) lc ON true
+    WHERE {where}
+), t AS (
+    SELECT s.*, COALESCE(s.to_key = s.status_key AND s.change_source <> 'BACKFILL', FALSE) AS from_change
+    FROM s
+), a AS (
+    SELECT t.*, GREATEST(EXTRACT(EPOCH FROM (CAST(:now AS timestamp)
+           - CASE WHEN t.from_change THEN t.changed_at ELSE t.enquired_at END)) / 86400.0, 0) AS days
+    FROM t
+)
+SELECT 0 AS g_status, 1 AS g_owner, 1 AS g_list, 1 AS g_source, status_key, CAST(NULL AS varchar) AS owner_id,
+       CAST(NULL AS varchar) AS list_id, CAST(NULL AS varchar) AS list_name, CAST(NULL AS varchar) AS source_type,
+       {aggregates}
+FROM a
+GROUP BY status_key
+UNION ALL
+SELECT 1, GROUPING(owner_id), GROUPING(list_id), GROUPING(source_type), CAST(NULL AS varchar), owner_id, list_id,
+       MAX(list_name), source_type,
+       {aggregates}
+FROM a
+WHERE status_key !~ :closed_like
+GROUP BY GROUPING SETS ((owner_id), (list_id), (source_type), ())
+"""
+
+_BOTTLENECK_AGGREGATES = """COUNT(*) AS n,
+       COUNT(*) FILTER (WHERE days < 2) AS days_0_1,
+       COUNT(*) FILTER (WHERE days >= 2 AND days < 8) AS days_2_7,
+       COUNT(*) FILTER (WHERE days >= 8 AND days < 31) AS days_8_30,
+       COUNT(*) FILTER (WHERE days >= 31) AS days_31_plus,
+       COUNT(*) FILTER (WHERE NOT from_change) AS age_from_enquiry,
+       PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY days) AS median_days,
+       PERCENTILE_CONT(0.9) WITHIN GROUP (ORDER BY days) AS p90_days"""
+
+#: A status whose name says the lead's journey is over. The status catalog does not record this, so it goes by name.
+_CLOSED_LIKE = ("^(CONVERTED|CLOSED|CANCELLED|DEAD|JUNK|SPAM|INVALID|DUPLICATE|REJECTED|DROPPED|DISQUALIFIED|"
+                "IRRELEVANT|IRRELEVENT|WRONG_NUMBER|NOT_INTERESTED|NOT_QUALIFIED|NOT_ELIGIBLE|NOT_RELEVANT|NO_INTEREST|"
+                "ENROLLED|ADMITTED|ADMISSION_DONE|ADMISSION_TAKEN|WON|LOST)$|_WON$|_LOST$|_CLOSED$")
+
+BOTTLENECK_FLOW_SQL = """
+WITH l AS (
+    SELECT ar.id AS lead_id, COALESCE(ar.submitted_at, ar.created_at) AS enquired_at
+    FROM audience_response ar
+    {joins}
+    WHERE {where}
+), h AS (
+    SELECT h.audience_response_id AS lead_id, h.changed_at, h.source, fs.status_key AS from_key,
+           ts.status_key AS to_key, l.enquired_at,
+           LAG(ts.status_key) OVER w AS prev_to, LAG(h.changed_at) OVER w AS prev_at, LAG(h.source) OVER w AS prev_source
+    FROM lead_status_history h
+    JOIN l ON l.lead_id = h.audience_response_id
+    LEFT JOIN lead_status fs ON fs.id = h.from_status_id
+    LEFT JOIN lead_status ts ON ts.id = h.to_status_id
+    WHERE h.institute_id = :inst
+    WINDOW w AS (PARTITION BY h.audience_response_id ORDER BY h.changed_at, h.id)
+), m AS (
+    SELECT lead_id, COALESCE(from_key, prev_to, :start_key) AS stage, to_key,
+           CASE WHEN source <> 'BACKFILL' AND COALESCE(prev_source, '') <> 'BACKFILL'
+                     AND changed_at >= COALESCE(prev_at, enquired_at)
+                THEN EXTRACT(EPOCH FROM (changed_at - COALESCE(prev_at, enquired_at))) / 86400.0 END AS days
+    FROM h
+    WHERE changed_at >= :w_from AND changed_at < :w_to
+), c AS (
+    SELECT lead_id, MIN(changed_at) AS at, MIN(enquired_at) AS enquired_at
+    FROM h
+    WHERE to_key = 'CONVERTED' AND source <> 'BACKFILL'
+    GROUP BY lead_id
+)
+SELECT 'stage' AS kind, stage, CAST(NULL AS varchar) AS to_key, COUNT(*) AS n,
+       COUNT(DISTINCT lead_id) FILTER (WHERE days IS NOT NULL) AS leads_timed,
+       PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY days) AS median_days,
+       PERCENTILE_CONT(0.9) WITHIN GROUP (ORDER BY days) AS p90_days
+FROM m
+WHERE stage IS DISTINCT FROM to_key
+GROUP BY stage
+UNION ALL
+SELECT 'move', stage, to_key, COUNT(*), CAST(NULL AS bigint), CAST(NULL AS double precision),
+       CAST(NULL AS double precision)
+FROM m
+WHERE stage IS DISTINCT FROM to_key
+GROUP BY stage, to_key
+UNION ALL
+SELECT 'convert', CAST(NULL AS varchar), CAST(NULL AS varchar), COUNT(*), CAST(NULL AS bigint),
+       PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY EXTRACT(EPOCH FROM (at - enquired_at)) / 86400.0),
+       PERCENTILE_CONT(0.9) WITHIN GROUP (ORDER BY EXTRACT(EPOCH FROM (at - enquired_at)) / 86400.0)
+FROM c
+WHERE at >= :w_from AND at < :w_to AND at >= enquired_at
+"""
+
+BOTTLENECK_COHORT_SQL = """
+WITH base AS (
+    SELECT ar.id AS lid, ar.submitted_at AS sub_at, ar.user_id AS uid, ulp.id AS ulp_id
+    FROM audience_response ar
+    {joins}
+    WHERE {where}
+),
+{first_response}
+SELECT COUNT(*) AS n, COUNT(first_at) AS contacted,
+       PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY resp_min) AS median_min,
+       PERCENTILE_CONT(0.9) WITHIN GROUP (ORDER BY resp_min) AS p90_min,
+       COUNT(*) FILTER (WHERE EXISTS (SELECT 1 FROM lead_status_history h
+                                      WHERE h.audience_response_id = lb.lid AND h.source <> 'BACKFILL')) AS with_status
+FROM lb
+"""
+
+#: Share of the window's leads with a recorded status change, and the fewest leads worth judging.
+_STATUS_DATA_GOOD_PCT = 70
+_STATUS_DATA_PARTIAL_PCT = 30
+_STATUS_DATA_MIN_LEADS = 20
+#: The fewest leads with a timed move out before a status can be called the slowest.
+_SLOWEST_MIN_LEADS = 10
+_DEFAULT_START_STATUS = "LEAD"
+_MOVED_TO_SHOWN = 5
+_STATUS_DATA_NOTES = {
+    "good": "Most leads have a recorded status change, so these times describe the pipeline.",
+    "partial": "Only some leads have a recorded status change, so these times describe those leads. Leads never "
+               "moved in the CRM look older than they may really be.",
+    "too_thin": "Too few leads have a recorded status change to say where leads are stuck. Waiting in a status here "
+                "can mean the status was not updated. first_contact and the stalled report do not depend on "
+                "statuses, so use them.",
+    "too_few_leads": "Too few leads were submitted in this window to judge. Try a longer window.",
+}
+
+
+def _looks_closed(status: Any) -> bool:
+    return bool(re.search(_CLOSED_LIKE, str(status or "")))
+
+
+def _days(value: Any) -> Optional[float]:
+    return None if value is None else round(float(value), 1)
+
+
+def _age_bands(r: Dict[str, Any]) -> Dict[str, int]:
+    return {k: _num(r.get(k)) for k in ("days_0_1", "days_2_7", "days_8_30", "days_31_plus")}
+
+
+def _stuck(r: Dict[str, Any]) -> int:
+    return _num(r.get("days_8_30")) + _num(r.get("days_31_plus"))
+
+
+def _split_row(r: Dict[str, Any]) -> Dict[str, Any]:
+    return {"leads": _num(r.get("n")), "leads_8_days_plus": _stuck(r), "leads_31_days_plus": _num(r.get("days_31_plus")),
+            "median_days_in_status": _days(r.get("median_days")), "p90_days_in_status": _days(r.get("p90_days"))}
+
+
+def _status_data(leads: int, with_status: int) -> str:
+    if leads < _STATUS_DATA_MIN_LEADS:
+        return "too_few_leads"
+    pct = 100.0 * with_status / leads
+    if pct >= _STATUS_DATA_GOOD_PCT:
+        return "good"
+    return "partial" if pct >= _STATUS_DATA_PARTIAL_PCT else "too_thin"
+
+
+def _reading(quality: str, leads: int, with_status: int, stages: List[Dict[str, Any]]) -> Dict[str, Any]:
+    out: Dict[str, Any] = {"status_data": quality, "leads_in_window": leads, "leads_with_status_change": with_status,
+                           "status_change_pct": _rate(with_status, leads), "largest_queue": None,
+                           "slowest_status": None, "note": _STATUS_DATA_NOTES[quality]}
+    if quality not in ("good", "partial"):
+        return out
+    open_stages = [s for s in stages if not s["looks_closed"]]
+    queued = [s for s in open_stages if s["leads_8_days_plus"] > 0]
+    if queued:
+        top = max(queued, key=lambda s: s["leads_8_days_plus"])
+        out["largest_queue"] = {"status": top["status"], "label": top["label"],
+                                "leads_8_days_plus": top["leads_8_days_plus"],
+                                "age_from_enquiry": top["age_from_enquiry"]}
+    moved = [s for s in open_stages if s["leads_timed"] >= _SLOWEST_MIN_LEADS
+             and s["median_days_before_moving"] is not None]
+    if moved:
+        top = max(moved, key=lambda s: s["median_days_before_moving"])
+        out["slowest_status"] = {"status": top["status"], "label": top["label"], "leads_timed": top["leads_timed"],
+                                 "median_days_before_moving": top["median_days_before_moving"]}
+    return out
+
+
+def _capped(rows_: List[Dict[str, Any]], limit: int) -> Tuple[List[Dict[str, Any]], Optional[int]]:
+    ranked = sorted(rows_, key=lambda x: (-x["leads_8_days_plus"], -x["leads"]))
+    return ranked[:limit], (len(ranked) - limit if len(ranked) > limit else None)
+
+
+async def _bottlenecks(rq: _Req) -> Result:
+    from . import crm_custom_reports as ccr
+
+    catalog = _sql(rq, BOTTLENECK_STATUS_SQL, {"inst": rq.inst})
+    if catalog is None:
+        return cd.err("query_failed")
+    labels = {c["status_key"]: cd.clean(c.get("label")) for c in catalog}
+    order = [c["status_key"] for c in catalog]
+    start_key = next((c["status_key"] for c in catalog if c.get("is_default")), _DEFAULT_START_STATUS)
+
+    not_list_row = "NOT " + cd.OPT_OUT_LIST_SQL.format(r="ar", a="a")
+    where, params = _lead_where(rq, window=False, open_only=True)
+    now_rows = _sql(rq, BOTTLENECK_NOW_SQL.format(owner=_owner(), status=_status(), joins=cd.LEAD_OWNER_JOINS,
+                                                  where="\n      AND ".join(where + [not_list_row]),
+                                                  aggregates=_BOTTLENECK_AGGREGATES),
+                    {**params, "now": _now_naive(), "closed_like": _CLOSED_LIKE})
+    where, params = _lead_where(rq, window=False)
+    flow = _sql(rq, BOTTLENECK_FLOW_SQL.format(joins=cd.LEAD_OWNER_JOINS, where="\n      AND ".join(where + [not_list_row])),
+                {**params, "start_key": start_key})
+    where, params = _lead_where(rq)
+    cohort = _sql(rq, BOTTLENECK_COHORT_SQL.format(joins=cd.LEAD_OWNER_JOINS, where="\n      AND ".join(where + [not_list_row]),
+                                                   first_response=ccr._first_response_ctes()), params)
+    if now_rows is None or flow is None or cohort is None:
+        return cd.err("query_failed")
+
+    def part(*flags: str) -> List[Dict[str, Any]]:
+        names = ("g_status", "g_owner", "g_list", "g_source")
+        return [r for r in now_rows if all(bool(r.get(n)) == (n not in flags) for n in names)]
+
+    grand = next(iter(part()), {})
+    now_by_status = {r.get("status_key"): r for r in part("g_status")}
+    left = {r.get("stage"): r for r in flow if r.get("kind") == "stage"}
+    moves: Dict[Any, List[Dict[str, Any]]] = {}
+    for r in flow:
+        if r.get("kind") == "move":
+            moves.setdefault(r.get("stage"), []).append(r)
+    keys = order + sorted({k for k in list(now_by_status) + list(left) if k and k not in order})
+    stages = []
+    for k in keys:
+        here, out_ = now_by_status.get(k, {}), left.get(k, {})
+        if k not in labels and not here and not out_:
+            continue
+        ranked = sorted(moves.get(k, []), key=lambda m: -_num(m.get("n")))
+        stages.append({"status": cd.clean(k), "label": labels.get(k), "looks_closed": _looks_closed(k),
+                       "leads_now": _num(here.get("n")),
+                       "age": _age_bands(here), "leads_8_days_plus": _stuck(here),
+                       "median_days_in_status": _days(here.get("median_days")),
+                       "p90_days_in_status": _days(here.get("p90_days")),
+                       "age_from_enquiry": _num(here.get("age_from_enquiry")),
+                       "moved_out": _num(out_.get("n")), "leads_timed": _num(out_.get("leads_timed")),
+                       "median_days_before_moving": _days(out_.get("median_days")),
+                       "p90_days_before_moving": _days(out_.get("p90_days")),
+                       "moved_to": [{"status": cd.clean(m.get("to_key")), "label": labels.get(m.get("to_key")),
+                                     "moves": _num(m.get("n"))} for m in ranked[:_MOVED_TO_SHOWN]],
+                       "other_moves": sum(_num(m.get("n")) for m in ranked[_MOVED_TO_SHOWN:])})
+
+    c = cohort[0] if cohort else {}
+    leads, with_status = _num(c.get("n")), _num(c.get("with_status"))
+    converted = next((r for r in flow if r.get("kind") == "convert"), {})
+    totals = {"leads_submitted": leads, "contacted": _num(c.get("contacted")),
+              "contacted_pct": _rate(c.get("contacted"), leads),
+              "median_first_response_minutes": _days(c.get("median_min")),
+              "p90_first_response_minutes": _days(c.get("p90_min")),
+              "leads_with_status_change": with_status, "status_change_pct": _rate(with_status, leads),
+              "status_moves": sum(_num(r.get("n")) for r in left.values()), "converted": _num(converted.get("n")),
+              "median_days_to_convert": _days(converted.get("median_days")),
+              "p90_days_to_convert": _days(converted.get("p90_days"))}
+
+    owners_ = part("g_owner")
+    display = await _named(rq, [r.get("owner_id") for r in owners_])
+    by_owner, more_owners = _capped([{"owner": _person(r.get("owner_id"), display), **_split_row(r)} for r in owners_],
+                                    rq.limit)
+    by_list, more_lists = _capped([{"list_id": r.get("list_id"), "list": cd.clean(r.get("list_name")), **_split_row(r)}
+                                   for r in part("g_list")], rq.limit)
+    by_source, more_sources = _capped([{"source": r.get("source_type"), **_split_row(r)} for r in part("g_source")],
+                                      rq.limit)
+    data: Dict[str, Any] = {
+        "totals": totals,
+        "reading": _reading(_status_data(leads, with_status), leads, with_status, stages),
+        "open_now": {"leads": _num(grand.get("n")), "age": _age_bands(grand),
+                     "median_days_in_status": _days(grand.get("median_days")),
+                     "p90_days_in_status": _days(grand.get("p90_days")),
+                     "age_from_enquiry": _num(grand.get("age_from_enquiry"))},
+        "stages": stages, "by_owner": by_owner, "by_list": by_list, "by_source": by_source}
+    more = {k: v for k, v in (("owners", more_owners), ("lists", more_lists), ("sources", more_sources)) if v}
+    if more:
+        data["more_rows"] = more
+    return {"basis": "scoped query", "data": data,
+            "definition": _defs("days_in_status", "moved_out", "days_to_convert", "first_contact", "status_data",
+                                "looks_closed", "open", "owner", "scope",
+                                window="The window sets totals and moved_out. open_now, stages' leads_now and age, "
+                                       "and by_owner, by_list and by_source describe open leads now, whenever they enquired.")}
+
+
 async def _unassigned(rq: _Req) -> Result:
     if rq.scope.owner_ids is not None and not rq.scope.include_unassigned:
         return {"basis": "scoped query", "point_in_time": True, "data": {"totals": {"leads": 0}, "leads": []},
@@ -2365,7 +2693,7 @@ _ACTIONS: Dict[str, Callable[[_Req], Awaitable[Result]]] = {
     "overview": _overview, "sources": _sources, "campaigns": _campaigns, "funnel": _funnel,
     "status_changes": _status_changes, "counsellors": _counsellors, "workload": _workload, "targets": _targets,
     "calling": _calling, "ai_calling": _ai_calling, "followup_aging": _followup_aging,
-    "sla_breaches": _sla_breaches, "stalled": _stalled, "unassigned": _unassigned, "meetings": _meetings,
+    "sla_breaches": _sla_breaches, "stalled": _stalled, "bottlenecks": _bottlenecks, "unassigned": _unassigned, "meetings": _meetings,
     "activity": _activity, "revenue": _revenue, "utm": _utm,
     "custom_options": _custom_options, "custom": _custom, "live_feed": _live_feed, "live_counts": _live_counts,
 }

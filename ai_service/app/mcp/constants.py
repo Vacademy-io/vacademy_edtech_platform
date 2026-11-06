@@ -469,8 +469,9 @@ MCP_TOOL_GROUP_SUMMARIES: Dict[str, str] = {
         "Turned on separately."
     ),
     "crm_reports": (
-        "See CRM reports — lead sources and campaigns, the funnel, counsellor performance and workload, calling and "
-        "AI calling, follow-up ageing, SLA breaches, meetings and revenue — each figure with its date range and how "
+        "See CRM reports — lead sources and campaigns, the funnel, where leads wait, counsellor performance and "
+        "workload, calling and AI calling, follow-up ageing, SLA breaches, meetings and revenue — each figure with "
+        "its date range and how "
         "it is counted — plus custom reports the AI app builds (your own breakdowns and metrics) and the live "
         "activity feed (what happened in the last hour or today). Each user sees the figures for the leads they "
         "can see."
@@ -511,7 +512,7 @@ MCP_TOOL_AREAS: Dict[str, Dict[str, str]] = {
     "crm_meetings": {"label": "CRM: Meetings", "summary": "Counselling meetings, free slots and booking pages."},
     "crm_messages": {"label": "CRM: Messages", "summary": "Lead WhatsApp and email history, inbox and templates."},
     "crm_reports": {"label": "CRM: Reports",
-                    "summary": "Sources, funnel, counsellors, calling, follow-ups, SLAs, custom reports, live activity."},
+                    "summary": "Sources, funnel, bottlenecks, counsellors, calling, follow-ups, SLAs, custom reports, live activity."},
     "crm_payments": {"label": "CRM: Payments", "summary": "Dues, overdue fees, collections, admissions and fee reminders."},
 }
 

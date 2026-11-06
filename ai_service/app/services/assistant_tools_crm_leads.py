@@ -142,8 +142,9 @@ CRM_LEADS_SCHEMA: Dict[str, Any] = {
             "/ converted_to list the leads whose own user converted in those days, not a linked student's; it counts "
             "leads, so for people and enrolments use crm_collections(action='admissions').\n"
             "- get (lead_id, or lead_user_id / phone / email): one lead in full — contact (unmasked), form "
-            "answers, status history, owner, SLA, open follow-ups, recent timeline, last calls, next meeting, "
-            "tags, enrolment and payments. lead.opted_out says whether list leaves this row out, and lead.flags say "
+            "answers, status history, days in the current status (days_in_status_from says if that counts from "
+            "a status change or the enquiry), owner, SLA, open follow-ups, recent timeline, last calls, next "
+            "meeting, tags, enrolment and payments. lead.opted_out says whether list leaves this row out, and lead.flags say "
             "why, as in find.\n"
             "- timeline (lead_id; limit, before = next_before from the previous page): the lead's activity here.\n"
             "- my_day (limit): the user's ranked call list for today — overdue first contact, overdue and due "
@@ -567,6 +568,26 @@ async def _action_list(args: Dict[str, Any], ctx: ToolContext) -> Dict[str, Any]
 
 # ── get ──────────────────────────────────────────────────────────────────
 
+_LAST_STATUS_CHANGE_SQL = """
+SELECT h.changed_at, h.source, ts.status_key AS to_key
+FROM lead_status_history h
+LEFT JOIN lead_status ts ON ts.id = h.to_status_id
+WHERE h.audience_response_id = :lid
+ORDER BY h.changed_at DESC, h.id DESC
+LIMIT 1
+"""
+
+
+def _time_in_status(row: Dict[str, Any], last_change: List[Dict[str, Any]]) -> Dict[str, Any]:
+    """How long this lead has been in its current status, and what that is counted from."""
+    last = last_change[0] if last_change else {}
+    measured = bool(last) and last.get("to_key") == row.get("status_key") and last.get("source") != "BACKFILL"
+    since = last.get("changed_at") if measured else row.get("submitted_at")
+    days = round((_now_naive() - since).total_seconds() / 86400.0, 1) if since else None
+    return {"in_status_since": cd.iso(since), "days_in_status": max(days, 0.0) if days is not None else None,
+            "days_in_status_from": "status_change" if measured else "enquiry"}
+
+
 _HISTORY_SQL = """
 SELECT h.audience_response_id AS lead_id, h.changed_at, h.source, h.changed_by_user_id,
        fs.status_key AS from_key, ts.status_key AS to_key
@@ -744,6 +765,7 @@ async def _action_get(args: Dict[str, Any], ctx: ToolContext) -> Dict[str, Any]:
     user = detail.get("user") if isinstance(detail.get("user"), dict) else {}
 
     history, _ = cd.rows(ctx, _HISTORY_SQL, {"lids": lids})
+    last_change, _ = cd.rows(ctx, _LAST_STATUS_CHANGE_SQL, {"lid": lid})
     followups, _ = cd.rows(ctx, _FOLLOWUPS_SQL, {"lids": lids, "inst": inst})
     calls: List[Dict[str, Any]] = []
     if cd.feature_on(ctx, "crm.calling") or cd.feature_on(ctx, "crm.ai_calling"):
@@ -772,6 +794,7 @@ async def _action_get(args: Dict[str, Any], ctx: ToolContext) -> Dict[str, Any]:
                  "list": cd.clean(row.get("list_name")), "source": row.get("source_type"),
                  "submitted_at": cd.iso(row.get("submitted_at")), "status": row.get("status_key"),
                  "status_label": labels.get(str(row.get("status_key"))) if row.get("status_key") else None,
+                 **_time_in_status(row, last_change),
                  "tier": row.get("tier"), "score": row.get("score"), "flags": flags,
                  "opted_out": cd.lead_opted_out(row)},
         "contact": contact,
