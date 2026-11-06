@@ -5,6 +5,10 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+import vacademy.io.admin_core_service.features.learner_quiz.answerkey.AnswerKeyAccess;
+import vacademy.io.admin_core_service.features.learner_quiz.answerkey.AnswerKeyStripper;
+import vacademy.io.admin_core_service.features.learner_quiz.repository.LearnerQuizAttemptRepository;
+import vacademy.io.admin_core_service.features.learner_quiz.service.LearnerQuizAccessService;
 import vacademy.io.admin_core_service.features.learner_quiz.service.QuizGrader;
 import vacademy.io.admin_core_service.features.learner_quiz.service.QuizLoader;
 import vacademy.io.admin_core_service.features.learner_tracking.dto.ActivityLogDTO;
@@ -20,11 +24,14 @@ import vacademy.io.admin_core_service.features.slide.entity.QuizSlideQuestionOpt
 import vacademy.io.admin_core_service.features.slide.repository.QuizSlideQuestionOptionRepository;
 import vacademy.io.admin_core_service.features.slide.repository.QuizSlideQuestionRepository;
 import vacademy.io.common.auth.model.CustomUserDetails;
+import vacademy.io.common.exceptions.ConflictException;
+import vacademy.io.common.exceptions.ForbiddenException;
 import vacademy.io.common.exceptions.VacademyException;
 
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 @Service
@@ -41,6 +48,10 @@ public class QuizSlideActivityLogService {
     private final AutoEvaluationScorer autoEvaluationScorer;
     private final QuizLoader quizLoader;
     private final QuizGrader quizGrader;
+    private final AnswerKeyAccess answerKeyAccess;
+    private final AnswerKeyStripper answerKeyStripper;
+    private final LearnerQuizAccessService learnerQuizAccessService;
+    private final LearnerQuizAttemptRepository learnerQuizAttemptRepository;
 
     public void addQuizSlideActivityLog(ActivityLog activityLog, List<QuizSideActivityLogDTO> quizSideActivityLogDTOS) {
         quizSlideTrackedRepositry.deleteByActivityId(activityLog.getId());
@@ -190,8 +201,46 @@ public class QuizSlideActivityLogService {
 
     public Page<ActivityLogDTO> getQuizSlideActivityLog(String userId, String slideId, Pageable pageable,
             CustomUserDetails userDetails) {
+        boolean staff = answerKeyAccess.keepsAnswersOnAuthoringRead(userDetails);
+        if (answerKeyAccess.stripsAttemptLogs() && !staff
+                && (userDetails == null || !Objects.equals(userDetails.getUserId(), userId))) {
+            throw new ForbiddenException("Attempts can only be read by the learner who made them");
+        }
         Page<ActivityLog> activityLogs = activityLogRepository.findActivityLogsWithQuizSlide(userId, slideId, pageable);
-        return activityLogs.map(activityLog -> activityLog.toActivityLogDTO());
+        Page<ActivityLogDTO> logs = activityLogs.map(activityLog -> activityLog.toActivityLogDTO());
+        if (answerKeyAccess.stripsAttemptLogs() && !staff) {
+            logs.forEach(this::removeRecordedAnswers);
+        }
+        return logs;
+    }
+
+    private void removeRecordedAnswers(ActivityLogDTO log) {
+        if (log.getQuizSides() != null) {
+            log.getQuizSides().forEach(side ->
+                    side.setResponseJson(answerKeyStripper.withoutCorrectOptions(side.getResponseJson())));
+        }
+    }
+
+    /**
+     * With grading on the server, this endpoint follows the same enrolment and attempt rules
+     * as the submit endpoint. Device-outbox replays do not come through this check: those
+     * attempts were made while offline and are kept.
+     */
+    public void requireLegacySubmitAllowed(ActivityLogDTO activityLogDTO, String slideId, CustomUserDetails user,
+            String clientInstituteId) {
+        if (!answerKeyAccess.enforcesLegacySubmit()) {
+            return;
+        }
+        learnerQuizAccessService.requireAccess(user, slideId, clientInstituteId, null, null);
+        Integer cap = learnerQuizAttemptRepository.findQuizBySlideId(slideId)
+                .map(LearnerQuizAttemptRepository.QuizMetaRow::getReAttemptCount)
+                .orElse(null);
+        boolean isNewAttempt = activityLogDTO.getId() == null
+                || !activityLogRepository.existsById(activityLogDTO.getId());
+        if (cap != null && isNewAttempt
+                && learnerQuizAttemptRepository.countQuizAttempts(user.getUserId(), slideId) >= cap) {
+            throw new ConflictException("No attempts remaining for this quiz");
+        }
     }
 
     public String saveQuizQuestionFeedback(QuizQuestionFeedbackDTO dto) {

@@ -1,5 +1,7 @@
 package vacademy.io.admin_core_service.features.study_library.controller;
 
+import vacademy.io.admin_core_service.features.learner_quiz.answerkey.AnswerKeySurface;
+import vacademy.io.admin_core_service.features.learner_quiz.answerkey.WithoutAnswerKeys;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -36,6 +38,7 @@ public class StudyLibraryController {
         return ResponseEntity.ok(studyLibraryService.getModulesDetailsWithChapters(subjectId, packageSessionId, user));
     }
 
+    @WithoutAnswerKeys(AnswerKeySurface.AUTHORING)
     @GetMapping("/chapters-with-slides")
     public ResponseEntity<List<ChapterDTOWithDetails>>getChaptersWithSlides(@RequestParam("moduleId") String subjectId, @RequestParam("packageSessionId") String packageSessionId, @RequestAttribute("user") CustomUserDetails user) {
         return ResponseEntity.ok(studyLibraryService.getChaptersWithSlides(subjectId, packageSessionId, user));

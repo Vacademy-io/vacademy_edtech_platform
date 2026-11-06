@@ -21,6 +21,8 @@ import org.springframework.orm.jpa.vendor.HibernateJpaVendorAdapter;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
 import org.springframework.transaction.support.TransactionTemplate;
 import vacademy.io.admin_core_service.core.security.InstituteAccessValidator;
+import vacademy.io.admin_core_service.features.learner_quiz.answerkey.AnswerKeyAccess;
+import vacademy.io.admin_core_service.features.learner_quiz.answerkey.AnswerKeyStripper;
 import vacademy.io.admin_core_service.features.learner_quiz.dto.QuizAnswerCheckRequest;
 import vacademy.io.admin_core_service.features.learner_quiz.dto.QuizAnswerCheckResponse;
 import vacademy.io.admin_core_service.features.learner_quiz.dto.QuizAttemptResultResponse;
@@ -148,7 +150,9 @@ class LearnerQuizAttemptPostgresTest {
                 new QuizReviewPolicy(repository, MAPPER, false), loader, grader, scorer, MAPPER, transactionManager);
         legacyService = new QuizSlideActivityLogService(trackedRepository, activityLogRepository,
                 new ActivityLogService(activityLogRepository), asyncService, questionRepository, optionRepository,
-                scorer, loader, grader);
+                scorer, loader, grader, new AnswerKeyAccess(false, true, false, true),
+                new AnswerKeyStripper(MAPPER), new LearnerQuizAccessService(repository, new InstituteAccessValidator()),
+                repository);
     }
 
     @AfterAll
@@ -600,6 +604,46 @@ class LearnerQuizAttemptPostgresTest {
         assertThat(json.path("maxMarks").asDouble()).isEqualTo(2.0);
         assertThat(json.path("isCorrect").asBoolean()).isFalse();
         assertThat(json.path("gradedBy").asText()).isEqualTo("server-legacy");
+    }
+
+    @Test
+    @DisplayName("with enforcement on, the older endpoint refuses strangers and attempts past the cap")
+    void legacyEnforcement() {
+        setCap(1);
+        ActivityLogDTO first = new ActivityLogDTO();
+        first.setId(id());
+        assertThatThrownBy(() -> legacyService.requireLegacySubmitAllowed(first, slide, user(id()), institute))
+                .isInstanceOf(ForbiddenException.class);
+
+        legacyService.requireLegacySubmitAllowed(first, slide, user(learner), institute);
+        jdbc.update("INSERT INTO activity_log (id, source_id, source_type, user_id, slide_id) VALUES (?, ?, 'QUIZ', ?, ?)",
+                first.getId(), slide, learner, slide);
+        // The same attempt sent again is still fine; a new one is past the cap.
+        legacyService.requireLegacySubmitAllowed(first, slide, user(learner), institute);
+        ActivityLogDTO second = new ActivityLogDTO();
+        second.setId(id());
+        assertThatThrownBy(() -> legacyService.requireLegacySubmitAllowed(second, slide, user(learner), institute))
+                .isInstanceOf(ConflictException.class);
+    }
+
+    @Test
+    @DisplayName("an attempt log read by its learner has no correct answers, and nobody else may read it")
+    void attemptLogRedaction() {
+        submit(id(), Map.of(q1, List.of("A2")));
+        tx.executeWithoutResult(s -> {
+            var logs = legacyService.getQuizSlideActivityLog(learner, slide,
+                    org.springframework.data.domain.PageRequest.of(0, 10), user(learner));
+            assertThat(logs.getTotalElements()).isEqualTo(1);
+            var sides = logs.getContent().get(0).getQuizSides();
+            assertThat(sides).hasSize(3);
+            sides.forEach(side -> {
+                assertThat(side.getResponseJson()).doesNotContain("correctOptions");
+                assertThat(side.getResponseJson()).contains("selectedOptions");
+            });
+        });
+        assertThatThrownBy(() -> legacyService.getQuizSlideActivityLog(learner, slide,
+                org.springframework.data.domain.PageRequest.of(0, 10), user(id())))
+                .isInstanceOf(ForbiddenException.class);
     }
 
     @Test

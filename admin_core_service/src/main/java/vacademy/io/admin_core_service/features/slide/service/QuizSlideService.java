@@ -3,6 +3,7 @@ package vacademy.io.admin_core_service.features.slide.service;
 import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
 import vacademy.io.admin_core_service.features.common.entity.RichTextData;
 import vacademy.io.admin_core_service.features.common.service.RichTextDataService;
 import vacademy.io.admin_core_service.features.slide.dto.QuizSlideDTO;
@@ -199,7 +200,10 @@ public class QuizSlideService {
             existingQuestion.setAccessLevel(dto.getAccessLevel());
         }
 
-        existingQuestion.setAutoEvaluationJson(dto.getAutoEvaluationJson());
+        // A save built from a read that had answers removed must not erase the stored ones.
+        if (StringUtils.hasText(dto.getAutoEvaluationJson())) {
+            existingQuestion.setAutoEvaluationJson(dto.getAutoEvaluationJson());
+        }
         existingQuestion.setEvaluationType(dto.getEvaluationType());
         existingQuestion.setQuestionOrder(dto.getQuestionOrder());
         existingQuestion.setCanSkip(dto.getCanSkip());

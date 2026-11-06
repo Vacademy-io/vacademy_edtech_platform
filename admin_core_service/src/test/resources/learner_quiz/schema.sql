@@ -303,5 +303,82 @@ CREATE TABLE IF NOT EXISTS concentration_score (
   PRIMARY KEY (id)
 );
 
+CREATE TABLE IF NOT EXISTS assignment_slide_tracked (
+  "id" varchar(255) NOT NULL,
+  "comma_separated_file_ids" text,
+  "activity_id" varchar(255) NOT NULL,
+  "created_at" timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
+  "updated_at" timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
+  "marks" double precision,
+  "feedback" text,
+  "checked_file_id" varchar(255),
+  "late_submission" boolean DEFAULT false NOT NULL,
+  PRIMARY KEY (id)
+);
+
+CREATE TABLE IF NOT EXISTS assessment_slide_tracked (
+  "id" varchar(255) NOT NULL,
+  "activity_id" varchar(255) NOT NULL,
+  "attempt_id" varchar(255),
+  "comma_separated_file_ids" text,
+  "created_at" timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
+  "updated_at" timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (id)
+);
+
+CREATE TABLE IF NOT EXISTS audio_tracked (
+  "id" varchar(255) NOT NULL,
+  "activity_id" varchar(255),
+  "start_time" timestamp without time zone,
+  "end_time" timestamp without time zone,
+  "playback_speed" double precision,
+  "created_at" timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
+  "updated_at" timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (id)
+);
+
+CREATE TABLE IF NOT EXISTS document_tracked (
+  "id" varchar(255) NOT NULL,
+  "activity_id" varchar(255),
+  "start_time" timestamp without time zone,
+  "end_time" timestamp without time zone,
+  "page_number" integer,
+  "created_at" timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
+  "updated_at" timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (id)
+);
+
+CREATE TABLE IF NOT EXISTS question_slide_tracked (
+  "id" varchar(255) NOT NULL,
+  "attempt_number" integer,
+  "response_json" text,
+  "response_status" varchar(255),
+  "marks" double precision,
+  "activity_id" varchar(255) NOT NULL,
+  "created_at" timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
+  "updated_at" timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (id)
+);
+
+CREATE TABLE IF NOT EXISTS video_slide_question_tracked (
+  "id" varchar NOT NULL,
+  "response_json" text,
+  "response_status" text,
+  "activity_id" varchar(255) NOT NULL,
+  "created_at" timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
+  "updated_at" timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (id)
+);
+
+CREATE TABLE IF NOT EXISTS video_tracked (
+  "id" varchar(255) NOT NULL,
+  "activity_id" varchar(255),
+  "start_time" timestamp without time zone,
+  "end_time" timestamp without time zone,
+  "created_at" timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
+  "updated_at" timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (id)
+);
+
 ALTER TABLE activity_log ADD CONSTRAINT activity_log_slide_id_fkey FOREIGN KEY (slide_id) REFERENCES slide(id);
 ALTER TABLE quiz_slide_question_tracked ADD CONSTRAINT fk_activity_id FOREIGN KEY (activity_id) REFERENCES activity_log(id);
