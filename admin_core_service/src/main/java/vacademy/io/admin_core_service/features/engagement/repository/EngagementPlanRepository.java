@@ -144,14 +144,16 @@ public interface EngagementPlanRepository extends JpaRepository<EngagementPlan, 
             "AND (CASE WHEN lo.value ~ '^[0-9][0-9.eE+-]*$' THEN CAST(lo.value AS numeric) ELSE 0 END) >= :threshold ";
 
     /**
-     * When each active learner of the batch completed the start content: the frozen moment
-     * when there is one, else the live completion row (frozen by the next start tick).
-     * Learners who have not completed it are left out. Rows: [userId, Timestamp startedAt].
+     * When each active learner of the batch started the plan: the frozen moment when there
+     * is one, else now for a learner who has just reached the threshold (the next start tick
+     * freezes it). learner_operation.updated_at is not a completion time, because the progress
+     * upsert leaves it at the first touch of the content. Learners who have not completed it
+     * are left out. Rows: [userId, Timestamp startedAt].
      */
-    @Query(value = "SELECT b.user_id, COALESCE(s.started_at, lo.updated_at) FROM " + BATCH_LEARNERS +
+    @Query(value = "SELECT b.user_id, COALESCE(s.started_at, LOCALTIMESTAMP) FROM " + BATCH_LEARNERS +
             "LEFT JOIN engagement_plan_learner_start s ON s.plan_id = :planId AND s.user_id = b.user_id " +
             "LEFT JOIN learner_operation lo ON " + CONTENT_DONE +
-            "WHERE s.started_at IS NOT NULL OR lo.updated_at IS NOT NULL", nativeQuery = true)
+            "WHERE s.started_at IS NOT NULL OR lo.id IS NOT NULL", nativeQuery = true)
     List<Object[]> findContentStartsForBatch(@Param("planId") String planId,
                                              @Param("packageSessionId") String packageSessionId,
                                              @Param("source") String source,
@@ -160,10 +162,10 @@ public interface EngagementPlanRepository extends JpaRepository<EngagementPlan, 
                                              @Param("threshold") int threshold);
 
     /** The same for one learner; empty when they have not completed the start content. */
-    @Query(value = "SELECT COALESCE(s.started_at, lo.updated_at) FROM (SELECT CAST(:userId AS varchar) AS user_id) b " +
+    @Query(value = "SELECT COALESCE(s.started_at, LOCALTIMESTAMP) FROM (SELECT CAST(:userId AS varchar) AS user_id) b " +
             "LEFT JOIN engagement_plan_learner_start s ON s.plan_id = :planId AND s.user_id = b.user_id " +
             "LEFT JOIN learner_operation lo ON " + CONTENT_DONE +
-            "WHERE s.started_at IS NOT NULL OR lo.updated_at IS NOT NULL", nativeQuery = true)
+            "WHERE s.started_at IS NOT NULL OR lo.id IS NOT NULL", nativeQuery = true)
     List<Object> findContentStartForUser(@Param("planId") String planId,
                                          @Param("userId") String userId,
                                          @Param("source") String source,
@@ -172,16 +174,15 @@ public interface EngagementPlanRepository extends JpaRepository<EngagementPlan, 
                                          @Param("threshold") int threshold);
 
     /**
-     * Copy the completion moment of every active learner who has reached the threshold and
-     * has no frozen row yet. Existing rows are never changed, so Day 1 cannot drift when
-     * progress is recomputed later.
+     * Stamp the current time on every active learner who has reached the threshold and has
+     * no frozen row yet. This runs every few minutes, so it is the moment they got there.
+     * Existing rows are never changed, so Day 1 cannot drift when progress is recomputed later.
      */
     @Modifying
     @Transactional
     @Query(value = "INSERT INTO engagement_plan_learner_start (plan_id, user_id, started_at) " +
-            "SELECT :planId, b.user_id, lo.updated_at FROM " + BATCH_LEARNERS +
+            "SELECT :planId, b.user_id, LOCALTIMESTAMP FROM " + BATCH_LEARNERS +
             "JOIN learner_operation lo ON " + CONTENT_DONE +
-            "WHERE lo.updated_at IS NOT NULL " +
             "ON CONFLICT (plan_id, user_id) DO NOTHING", nativeQuery = true)
     int freezeContentStarts(@Param("planId") String planId,
                             @Param("packageSessionId") String packageSessionId,

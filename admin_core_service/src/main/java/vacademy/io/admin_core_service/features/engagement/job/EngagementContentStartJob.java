@@ -15,8 +15,8 @@ import java.util.List;
  * Freezes when learners complete the start content of "days after completing" plans.
  *
  * Reads (feed, tracking, pushes) already treat a learner whose completion row crossed the
- * threshold as started, using that row's updated_at. That timestamp moves whenever the
- * learner's progress is recomputed, so this tick copies it once into
+ * threshold as started today. Progress rows keep no completion time (updated_at stays at
+ * the first touch of the content), so this tick stamps the current time once into
  * engagement_plan_learner_start; from then on the frozen moment wins and Day 1 cannot
  * drift. Writes happen only here, never inside a read request (admin-core routes
  * read-only transactions to the replica).
