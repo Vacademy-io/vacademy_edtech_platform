@@ -13,7 +13,6 @@ import { EmptySlideMaterial } from "@/assets/svgs";
 import YouTubePlayerWrapper from "./youtube-player";
 import VimeoPlayerWrapper from "./vimeo-player";
 import { useFileUpload } from "@/hooks/use-file-upload";
-import { DashboardLoader } from "@/components/core/dashboard-loader";
 import { extractVideoId } from "@/utils/study-library/tracking/extractVideoId";
 import {
   resolveVideoSourceType,
@@ -64,6 +63,7 @@ import { VideoStuckChip } from "@/components/chatbot/moments/VideoStuckChip";
 import { useVideoStuckMoment } from "@/components/chatbot/moments/use-video-stuck-moment";
 import { useAvailableTutor } from "@/components/chatbot/moments/tutor-moments";
 import { useMediaRefsStore } from "@/stores/mediaRefsStore";
+import { contentForSlide, type LoadedSlideContent } from "./slide-load-guard";
 
 /**
  * Where a citation deep link (?page / ?t on the slides route) asks a slide to
@@ -111,6 +111,7 @@ export const SlideMaterial = ({
   completionContext,
   startAt,
   onStartAtApplied,
+  slidesLoading = false,
 }: {
   // Optional: lets the host route mirror the active slide into the URL so the
   // course-tree sidebar (which highlights by URL slideId) and a browser
@@ -137,6 +138,9 @@ export const SlideMaterial = ({
   // which onStartAtApplied lets the host drop the params from the URL.
   startAt?: SlideStartAt | undefined;
   onStartAtApplied?: (() => void) | undefined;
+  // The host is still fetching the chapter's slides, so "no active slide" does
+  // not yet mean the chapter is empty.
+  slidesLoading?: boolean;
 }) => {
   const { t, i18n } = useTranslation("studyContent");
   const { activeItem, items, setActiveItem, slideEvaluations } =
@@ -148,8 +152,12 @@ export const SlideMaterial = ({
   const loadGenerationRef = useRef(0);
   const [htmlVideoRetry, setHtmlVideoRetry] = useState(0);
   const prevHtmlVideoRetryRef = useRef(0);
-  const [heading, setHeading] = useState(activeItem?.title || "");
-  const [content, setContent] = useState<JSX.Element | null>(null);
+  const heading = activeItem?.title || (!activeItem && slidesLoading ? "" : t("slideState.noContent"));
+  // Stored with the slide it was built for and read through contentForSlide, so
+  // a slide's player leaves the page in the same commit its slide stops being
+  // the active one, and nothing can show under another slide's title.
+  const [loadedContent, setLoadedContent] = useState<LoadedSlideContent<JSX.Element | null> | null>(null);
+  const content = contentForSlide(loadedContent, activeItem?.id ?? null);
   const [isUploading, setIsUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -181,7 +189,9 @@ export const SlideMaterial = ({
      * transient memory, so a 51 MB PDF failed to load offline even though it
      * had downloaded fine.
      */
-    stream = false
+    stream = false,
+    /** Set when the caller's load is no longer the current one. */
+    isStale: () => boolean = () => false
   ): Promise<string> => {
     try {
       const userId = await getUserId();
@@ -197,6 +207,10 @@ export const SlideMaterial = ({
       // Streamed sources hold a native decrypt session open; hand its closer to
       // the ref the slide lifecycle already drains on every slide change.
       if (result.kind === "offline-stream") {
+        if (isStale()) {
+          result.release?.();
+          return "";
+        }
         offlineStreamReleaseRef.current = result.release ?? null;
       }
       return result.url ?? "";
@@ -431,6 +445,15 @@ export const SlideMaterial = ({
 
   const loadContent = async (generationId: number) => {
     if (generationId !== loadGenerationRef.current) return;
+    const isStale = () => generationId !== loadGenerationRef.current;
+    // Every write below goes through this: a load that has been overtaken by a
+    // newer one can finish its awaits, but it can no longer change the page.
+    let contentWritten = false;
+    const setContent = (node: JSX.Element | null) => {
+      if (isStale()) return;
+      contentWritten = true;
+      setLoadedContent({ slideId: activeItem?.id ?? null, node });
+    };
     // Captured before any await: the citation start this slide opens at.
     const start =
       activeItem && appliedStartRef.current?.slideId === activeItem.id
@@ -444,7 +467,7 @@ export const SlideMaterial = ({
       // Add slight delay for smooth transition
       await new Promise((resolve) => setTimeout(resolve, 200));
       setContent(
-        <div className="flex h-reg-500 flex-col items-center justify-center rounded-lg py-10 animate-in fade-in slide-in-from-bottom-4 duration-500">
+        <div className="flex h-reg-500 flex-col items-center justify-center rounded-lg py-10 animate-in fade-in duration-100 motion-reduce:animate-none">
           <div className="relative group">
             <div className="bg-neutral-50 rounded-full p-6 transition-transform duration-300 group-hover:scale-105">
               <EmptySlideMaterial />
@@ -460,7 +483,7 @@ export const SlideMaterial = ({
     }
 
     if (generationId !== loadGenerationRef.current) return;
-    setContent(<DashboardLoader />);
+    setLoadedContent({ slideId: activeItem.id, node: null });
     // Leaving whatever slide was previously shown — close any open offline
     // video decrypt session before the new slide's content (possibly a new
     // one) is resolved.
@@ -493,9 +516,6 @@ export const SlideMaterial = ({
     }
 
     try {
-      // Add artificial delay for smooth loading experience
-      await new Promise((resolve) => setTimeout(resolve, 300));
-
       switch (activeItem.source_type?.toUpperCase()) {
         case "AI_VIDEO": {
           // AI_VIDEO slides from course generation - have aiVideoData already
@@ -520,7 +540,7 @@ export const SlideMaterial = ({
             transformedData.timelineUrl &&
             transformedData.audioUrl) {
             setContent(
-              <div className="h-full w-full animate-in fade-in slide-in-from-bottom-4 duration-700">
+              <div className="h-full w-full animate-in fade-in duration-100 motion-reduce:animate-none">
                 <div className="h-full w-full bg-white rounded-lg overflow-hidden border border-neutral-200">
                   <AIVideoPlayer
                     timelineUrl={transformedData.timelineUrl}
@@ -672,7 +692,7 @@ export const SlideMaterial = ({
           const renderHtmlVideoContent = (htmlUrl: string, audioUrl: string) => {
             if (embeddedType && embeddedData) {
               return (
-                <div className="h-full w-full animate-in fade-in slide-in-from-bottom-4 duration-700">
+                <div className="h-full w-full animate-in fade-in duration-100 motion-reduce:animate-none">
                   <SplitScreenHtmlVideoSlide
                     videoId={activeItem.source_id}
                     videoUrls={{ htmlUrl, audioUrl }}
@@ -688,7 +708,7 @@ export const SlideMaterial = ({
               return (
                 <div
                   key={`html-video-${activeItem.id}`}
-                  className="h-full w-full animate-in fade-in slide-in-from-bottom-4 duration-700"
+                  className="h-full w-full animate-in fade-in duration-100 motion-reduce:animate-none"
                 >
                   <div className="h-full w-full bg-white rounded-lg overflow-hidden border border-neutral-200">
                     <AIVideoPlayer
@@ -811,7 +831,7 @@ export const SlideMaterial = ({
             setContent(
               <div
                 key={`split-video-${activeItem.id}`}
-                className="h-full w-full animate-in fade-in slide-in-from-bottom-4 duration-700"
+                className="h-full w-full animate-in fade-in duration-100 motion-reduce:animate-none"
               >
                 <SplitScreenVideoSlide
                   videoSlide={videoSlide}
@@ -850,7 +870,7 @@ export const SlideMaterial = ({
               setContent(
                 <div
                   key={`video-${activeItem.id}`}
-                  className="h-full w-full animate-in fade-in slide-in-from-bottom-4 duration-700"
+                  className="h-full w-full animate-in fade-in duration-100 motion-reduce:animate-none"
                 >
                   <div className="h-full w-full bg-black rounded-lg overflow-hidden border border-neutral-200">
                     <VimeoPlayerWrapper
@@ -891,6 +911,10 @@ export const SlideMaterial = ({
                       resolveRemoteUrl: () => getPublicUrl(fileId),
                     })
                   : null;
+                if (isStale()) {
+                  resolved?.release?.();
+                  return;
+                }
                 if (resolved?.kind === "offline-stream" && resolved.url) {
                   videoUrl = resolved.url;
                   isOfflineVideoSource = true;
@@ -907,7 +931,7 @@ export const SlideMaterial = ({
               setContent(
                 <div
                   key={`video-${activeItem.id}`}
-                  className="h-full w-full overflow-hidden rounded-lg animate-in fade-in slide-in-from-bottom-4 duration-700"
+                  className="h-full w-full overflow-hidden rounded-lg animate-in fade-in duration-100 motion-reduce:animate-none"
                 >
                   <div className="h-full w-full bg-black rounded-lg overflow-hidden border border-neutral-200">
                     <CustomVideoPlayer
@@ -932,7 +956,7 @@ export const SlideMaterial = ({
               setContent(
                 <div
                   key={`video-${activeItem.id}`}
-                  className="h-full w-full animate-in fade-in slide-in-from-bottom-4 duration-700"
+                  className="h-full w-full animate-in fade-in duration-100 motion-reduce:animate-none"
                 >
                   <div className="h-full w-full bg-black rounded-lg overflow-hidden border border-neutral-200">
                     <YouTubePlayerWrapper
@@ -1018,6 +1042,10 @@ export const SlideMaterial = ({
 
           setContent(
             <QuizViewer
+              key={activeItem.id}
+              slideId={activeItem.id}
+              title={activeItem.title}
+              description={activeItem.description}
               questions={mappedQuestions}
               timeLimitMinutes={quizSlide?.time_limit_in_minutes ?? null}
               marksPerQuestion={quizSlide?.marks_per_question ?? 1}
@@ -1078,6 +1106,10 @@ export const SlideMaterial = ({
             });
             setContent(
               <QuizViewer
+                key={activeItem.id}
+                slideId={activeItem.id}
+                title={activeItem.title}
+                description={activeItem.description}
                 questions={mappedQuestions}
                 passPercentage={(quizSlide as any)?.pass_percentage ?? null}
               reAttemptCount={(quizSlide as any)?.re_attempt_count ?? null}
@@ -1094,7 +1126,7 @@ export const SlideMaterial = ({
           // Legacy: single question slide
           if (activeItem.question_slide) {
             setContent(
-              <div className="h-full w-full animate-in fade-in slide-in-from-bottom-4 duration-700">
+              <div className="h-full w-full animate-in fade-in duration-100 motion-reduce:animate-none">
                 <div className="h-full w-full bg-white rounded-lg overflow-hidden border border-neutral-200">
                   <QuestionSlide
                     questionData={activeItem.question_slide}
@@ -1105,7 +1137,7 @@ export const SlideMaterial = ({
             );
           } else {
             setContent(
-              <div className="flex h-reg-500 flex-col items-center justify-center rounded-lg py-10 animate-in fade-in slide-in-from-bottom-4 duration-500">
+              <div className="flex h-reg-500 flex-col items-center justify-center rounded-lg py-10 animate-in fade-in duration-100 motion-reduce:animate-none">
                 <div className="bg-red-50 rounded-full p-6 transition-transform duration-300">
                   <svg
                     className="w-8 h-8 text-red-500"
@@ -1137,11 +1169,12 @@ export const SlideMaterial = ({
               pdfFileId,
               activeItem.id,
               "application/pdf",
-              true
+              true,
+              isStale
             );
             if (!url) throw new Error("Failed to retrieve PDF URL");
             setContent(
-              <div className="h-full w-full animate-in fade-in slide-in-from-bottom-4 duration-700">
+              <div className="h-full w-full animate-in fade-in duration-100 motion-reduce:animate-none">
                 <div className="h-full w-full bg-white rounded-lg overflow-hidden border border-neutral-200">
                   {/* Keyed by slide so moving between two PDF slides mounts a
                       fresh viewer instead of reusing one carrying the previous
@@ -1173,7 +1206,7 @@ export const SlideMaterial = ({
               // 'HTML' = creative, self-contained HTML → sandboxed iframe.
               const isCreativeHtml = activeItem.document_slide?.type === "HTML";
               setContent(
-                <div className="relative h-full w-full animate-in fade-in slide-in-from-bottom-4 duration-700">
+                <div className="relative h-full w-full animate-in fade-in duration-100 motion-reduce:animate-none">
                   {/* Content Protection → Document (Docs) / Images (in Docs): off for learners unless switched on. */}
                   <div className="absolute end-3 top-3 z-10 flex gap-2">
                     <SlideImagesDownloadButton
@@ -1202,10 +1235,12 @@ export const SlideMaterial = ({
               const url = await resolvePlaybackUrl(
                 activeItem.document_slide.published_data || "",
                 activeItem.id,
-                "application/octet-stream"
+                "application/octet-stream",
+                false,
+                isStale
               );
               setContent(
-                <div className="relative h-full w-full animate-in fade-in slide-in-from-bottom-4 duration-700">
+                <div className="relative h-full w-full animate-in fade-in duration-100 motion-reduce:animate-none">
                   <SlideDownloadButton
                     typeKey={SlideDownloadTypeKey.DOCUMENT_DOC}
                     title={activeItem.title}
@@ -1226,11 +1261,13 @@ export const SlideMaterial = ({
             const url = await resolvePlaybackUrl(
               activeItem.document_slide.published_data || "",
               activeItem.id,
-              "application/octet-stream"
+              "application/octet-stream",
+              false,
+              isStale
             );
             if (!url) throw new Error("Failed to retrieve presentation URL");
             setContent(
-              <div className="h-full w-full animate-in fade-in slide-in-from-bottom-4 duration-700">
+              <div className="h-full w-full animate-in fade-in duration-100 motion-reduce:animate-none">
                 <div className="h-full w-full bg-white rounded-lg overflow-hidden border border-neutral-200">
                   <PresentationViewer slide={activeItem} />
                 </div>
@@ -1248,7 +1285,7 @@ export const SlideMaterial = ({
             // depends on the parent resolving a height (a pure h-full child
             // collapses to 0 here, unlike PDF/pdf.js which self-sizes).
             setContent(
-              <div className="flex h-full w-full items-center justify-center animate-in fade-in slide-in-from-bottom-4 duration-700">
+              <div className="flex h-full w-full items-center justify-center animate-in fade-in duration-100 motion-reduce:animate-none">
                 <div className="aspect-video w-full overflow-hidden rounded-lg border border-neutral-200">
                   <DeckPlayer baseUrl={deckBase} />
                 </div>
@@ -1260,7 +1297,7 @@ export const SlideMaterial = ({
             if (publishedData) {
               console.log("[SlideMaterial] Creating CodeEditorSlide component");
               setContent(
-                <div className="h-full w-full animate-in fade-in slide-in-from-bottom-4 duration-700">
+                <div className="h-full w-full animate-in fade-in duration-100 motion-reduce:animate-none">
                   <CodeEditorSlide
                     published_data={publishedData}
                     documentId={activeItem.id}
@@ -1279,7 +1316,7 @@ export const SlideMaterial = ({
             const publishedData = activeItem.document_slide.published_data;
             if (publishedData) {
               setContent(
-                <div className="h-full w-full animate-in fade-in slide-in-from-bottom-4 duration-700">
+                <div className="h-full w-full animate-in fade-in duration-100 motion-reduce:animate-none">
                   <JupyterNotebookSlide
                     published_data={publishedData}
                     documentId={activeItem.id}
@@ -1292,7 +1329,7 @@ export const SlideMaterial = ({
             const publishedData = activeItem.document_slide.published_data;
             if (publishedData) {
               setContent(
-                <div className="h-full w-full animate-in fade-in slide-in-from-bottom-4 duration-700">
+                <div className="h-full w-full animate-in fade-in duration-100 motion-reduce:animate-none">
                   <ScratchProjectSlide
                     published_data={publishedData}
                     documentId={activeItem.id}
@@ -1306,7 +1343,7 @@ export const SlideMaterial = ({
         case "ASSIGNMENT": {
           if (activeItem.assignment_slide) {
             setContent(
-              <div className="h-full w-full animate-in fade-in slide-in-from-bottom-4 duration-700">
+              <div className="h-full w-full animate-in fade-in duration-100 motion-reduce:animate-none">
                 <div className="h-full w-full bg-white rounded-lg overflow-hidden border border-neutral-200">
                   <AssignmentSlide
                     assignmentData={activeItem.assignment_slide}
@@ -1327,7 +1364,7 @@ export const SlideMaterial = ({
             setContent(
               <div
                 key={`audio-${activeItem.id}`}
-                className="h-full w-full animate-in fade-in slide-in-from-bottom-4 duration-700"
+                className="h-full w-full animate-in fade-in duration-100 motion-reduce:animate-none"
               >
                 <AudioPlayer audioSlide={audioSlide} />
               </div>
@@ -1337,7 +1374,7 @@ export const SlideMaterial = ({
             }
           } else {
             setContent(
-              <div className="flex h-reg-300 flex-col items-center justify-center animate-in fade-in slide-in-from-bottom-4 duration-500">
+              <div className="flex h-reg-300 flex-col items-center justify-center animate-in fade-in duration-100 motion-reduce:animate-none">
                 <p className="text-red-500 font-medium">{t("slideState.audioDataMissing")}</p>
               </div>
             );
@@ -1349,7 +1386,7 @@ export const SlideMaterial = ({
           setContent(
             <div
               key={`scorm-${activeItem.id}`}
-              className="h-full w-full animate-in fade-in slide-in-from-bottom-4 duration-700"
+              className="h-full w-full animate-in fade-in duration-100 motion-reduce:animate-none"
             >
               <ScormSlideComponent
                 slide={activeItem}
@@ -1363,7 +1400,7 @@ export const SlideMaterial = ({
           setContent(
             <div
               key={`assessment-${activeItem.id}`}
-              className="w-full animate-in fade-in slide-in-from-bottom-4 duration-700"
+              className="w-full animate-in fade-in duration-100 motion-reduce:animate-none"
             >
               <AssessmentSlideViewer activeItem={activeItem} />
             </div>
@@ -1374,12 +1411,17 @@ export const SlideMaterial = ({
         default:
           break;
       }
+      // A slide type or empty payload with nothing to show says so, rather than
+      // leaving the frame blank.
+      if (!contentWritten) {
+        setContent(<SlideEmptyState label={t("slideState.noStudyMaterial")} />);
+      }
     } catch (err) {
       console.error("Error loading content:", err);
       if (generationId === loadGenerationRef.current) {
         setError(err instanceof Error ? err.message : "Failed to load content");
         setContent(
-          <div className="flex h-reg-300 flex-col items-center justify-center animate-in fade-in slide-in-from-bottom-4 duration-500">
+          <div className="flex h-reg-300 flex-col items-center justify-center animate-in fade-in duration-100 motion-reduce:animate-none">
             <div className="bg-red-50 rounded-full p-4 transition-transform duration-300">
               <svg
                 className="w-8 h-8 text-red-500"
@@ -1402,11 +1444,14 @@ export const SlideMaterial = ({
         );
       }
     } finally {
-      setIsLoading(false);
+      if (!isStale()) setIsLoading(false);
     }
   };
 
+  const showSkeleton = isLoading || (!activeItem && slidesLoading);
+
   const prevSlideIdRef = useRef<string | null>(null);
+  const prevSourceIdRef = useRef<string | undefined>(undefined);
   const prevLangRef = useRef<string>(i18n.language);
 
   useEffect(() => {
@@ -1418,40 +1463,41 @@ export const SlideMaterial = ({
     const retried = prevHtmlVideoRetryRef.current !== htmlVideoRetry;
     prevHtmlVideoRetryRef.current = htmlVideoRetry;
 
-    // Only reload content if the slide ID actually changed (or the language did,
-    // or the learner asked to retry)
-    if (activeItem?.id !== prevSlideIdRef.current || languageChanged || retried) {
+    // Only reload content if the slide actually changed (or the language did, or
+    // the learner asked to retry). Resuming from the dashboard opens a slide from
+    // its id and title alone, so the same id gaining its source is the real slide
+    // arriving.
+    if (
+      activeItem?.id !== prevSlideIdRef.current ||
+      activeItem?.source_id !== prevSourceIdRef.current ||
+      languageChanged ||
+      retried
+    ) {
       loadGenerationRef.current += 1;
       const currentGeneration = loadGenerationRef.current;
 
-      if (activeItem) {
-        setHeading(activeItem.title || "");
+      if (activeItem && !activeItem.source_id && slidesLoading) {
+        // Nothing to build from yet: hold the skeleton until the list arrives.
+        prevSlideIdRef.current = null;
+        setIsLoading(true);
+      } else if (activeItem) {
+        prevSourceIdRef.current = activeItem.source_id;
         // Settles which citation start (if any) this build opens at, before
         // loadContent reads it.
         takeStartFor(activeItem.id);
         loadContent(currentGeneration);
         prevSlideIdRef.current = activeItem.id;
       } else {
-        setHeading(t("slideState.noContent"));
         prevSlideIdRef.current = null;
-        if (currentGeneration === loadGenerationRef.current) {
-          setContent(
-            <div className="flex h-reg-500 flex-col items-center justify-center rounded-lg py-10 animate-in fade-in slide-in-from-bottom-4 duration-500">
-              <div className="bg-neutral-50 rounded-full p-6 transition-transform duration-300 group-hover:scale-105">
-                <EmptySlideMaterial />
-              </div>
-              <p className="mt-6 text-neutral-500 animate-in fade-in duration-700 delay-200 text-center">
-                {t("slideState.noStudyMaterial")}
-              </p>
-            </div>
-          );
-        }
+        prevSourceIdRef.current = undefined;
+        setIsLoading(false);
+        setLoadedContent({
+          slideId: null,
+          node: <SlideEmptyState label={t("slideState.noStudyMaterial")} />,
+        });
       }
-    } else if (activeItem) {
-      // Slide ID is the same, just update heading (no content reload)
-      setHeading(activeItem.title || "");
     }
-  }, [activeItem, t, i18n.language, htmlVideoRetry]);
+  }, [activeItem, t, i18n.language, slidesLoading, htmlVideoRetry]);
 
   // The slide on screen when a citation for another slide became pending. The
   // host may take a render or two to open the cited slide, so a mismatch alone
@@ -1522,7 +1568,7 @@ export const SlideMaterial = ({
       {/* Compact Header */}
       <div className="flex flex-shrink-0 items-center justify-between gap-2 border-b border-neutral-100 bg-white px-3 py-1.5 sm:px-4">
         <h3 className="text-xs sm:text-sm font-medium text-neutral-700 leading-tight truncate min-w-0 flex-1">
-          {heading || "No content"}
+          {heading || "\u00A0"}
         </h3>
 
         <div
@@ -1578,14 +1624,16 @@ export const SlideMaterial = ({
         </div>
       </div>
 
-      {/* Play-theme mobile: inline slide nav right below the compact header.
+      {/* Play themes on mobile: inline slide nav right below the compact header.
           Sits in flex flow so it pushes the content down (no fixed-overlap).
           Standalone nav already renders its row at every breakpoint, so this
           one stands down there rather than stacking a second set of arrows. */}
       <div
         className={cn(
           "flex-shrink-0 items-center gap-2 border-b border-neutral-100 bg-white px-3 py-2",
-          standaloneNav ? "hidden" : "hidden sm:hidden [.ui-play_&]:flex",
+          standaloneNav
+            ? "hidden"
+            : "hidden [.ui-play_&]:flex sm:[.ui-play_&]:hidden [.ui-cleaner-play_&]:flex sm:[.ui-cleaner-play_&]:hidden",
         )}
       >
         <MyButton
@@ -1622,9 +1670,15 @@ export const SlideMaterial = ({
         </MyButton>
       </div>
 
-      <div className="w-full flex-1 min-h-0 relative pb-16 sm:pb-0 [.ui-play_&]:pb-0">
-        <div ref={contentAreaRef} className="h-full w-full transition-all duration-500">
-          {content}
+      <div
+        className={cn(
+          "w-full flex-1 min-h-0 relative pb-16 sm:pb-0 [.ui-play_&]:pb-0 [.ui-cleaner-play_&]:pb-0",
+          // Nothing else gives this area a height until the content arrives.
+          showSkeleton && "min-h-reg-500",
+        )}
+      >
+        <div ref={contentAreaRef} className="h-full w-full">
+          {!activeItem && slidesLoading ? null : content}
         </div>
         <SelectionAsk
           containerRef={contentAreaRef}
@@ -1644,13 +1698,14 @@ export const SlideMaterial = ({
         )}
 
         {/* Loading skeleton of slide content */}
-        {isLoading && (
-          <div className="absolute inset-0 bg-white z-50 animate-in fade-in duration-200 p-4 sm:p-6 overflow-hidden">
-            <div className="max-w-4xl mx-auto space-y-4">
-              <div className="h-6 w-2/3 rounded-md bg-neutral-200 animate-pulse" />
-              <div className="h-3 w-1/3 rounded-md bg-neutral-100 animate-pulse" />
-              <div className="aspect-video w-full rounded-lg bg-neutral-100 animate-pulse mt-4" />
-              <div className="space-y-2 mt-6">
+        {/* Held back so a slide that is ready within a moment never flashes it. */}
+        {showSkeleton && (
+          <div className="absolute inset-0 bg-white z-50 animate-in fade-in fill-mode-both delay-150 duration-150 p-4 pb-20 sm:p-6 [.ui-play_&]:pb-4 sm:[.ui-play_&]:pb-6 [.ui-cleaner-play_&]:pb-4 sm:[.ui-cleaner-play_&]:pb-6 overflow-hidden">
+            <div className="max-w-4xl h-full mx-auto flex flex-col gap-4">
+              <div className="h-6 w-2/3 shrink-0 rounded-md bg-neutral-200 animate-pulse" />
+              <div className="h-3 w-1/3 shrink-0 rounded-md bg-neutral-100 animate-pulse" />
+              <div className="min-h-0 w-full flex-1 rounded-lg bg-neutral-100 animate-pulse" />
+              <div className="shrink-0 space-y-2 pt-2">
                 <div className="h-3 w-full rounded bg-neutral-100 animate-pulse" />
                 <div className="h-3 w-[94%] rounded bg-neutral-100 animate-pulse"></div>{/* design-lint-ignore: decorative skeleton width */}
                 <div className="h-3 w-[88%] rounded bg-neutral-100 animate-pulse"></div>{/* design-lint-ignore: decorative skeleton width */}
@@ -1686,15 +1741,15 @@ export const SlideMaterial = ({
         </div>
       )}
 
-      {/* Mobile bottom navigation — default theme only. In play theme the app
+      {/* Mobile bottom navigation — default theme only. In the play themes the app
           bottom tab bar hides this, so we render the inline top version above. */}
-      <div className="sm:hidden fixed bottom-0 start-0 end-0 z-40 [.ui-play_&]:hidden">
+      <div className="sm:hidden fixed bottom-0 start-0 end-0 z-40 [.ui-play_&]:hidden [.ui-cleaner-play_&]:hidden">
         <div className="pointer-events-none absolute -top-3 start-0 end-0 h-3 bg-gradient-to-t from-white to-transparent"></div>
         <div className="bg-white border-t border-neutral-100 shadow-[0_-2px_8px_-2px_rgba(0,0,0,0.08)] px-3 py-2 pb-[calc(env(safe-area-inset-bottom)+10px)]"> {/* design-lint-ignore: custom shadow, safe-area viewport math */}
           {/* Context strip: slide title + position */}
           <div className="flex items-center justify-between gap-2 border-b border-neutral-100 pb-1.5 mb-2">
             <span className="text-2xs font-medium text-neutral-600 truncate flex-1 min-w-0">
-              {heading || "No content"}
+              {heading || "\u00A0"}
             </span>
             {slidesList.length > 0 && currentIndex > -1 && (
               <span className="text-2xs font-semibold text-neutral-400 shrink-0 tabular-nums">
@@ -1739,6 +1794,15 @@ export const SlideMaterial = ({
     </div>
   );
 };
+
+const SlideEmptyState = ({ label }: { label: string }) => (
+  <div className="flex h-reg-500 flex-col items-center justify-center rounded-lg py-10 animate-in fade-in fill-mode-both delay-150 duration-100 motion-reduce:animate-none">
+    <div className="bg-neutral-50 rounded-full p-6">
+      <EmptySlideMaterial />
+    </div>
+    <p className="mt-6 text-neutral-500 text-center">{label}</p>
+  </div>
+);
 
 const AskDoubtButton = () => {
   const { t } = useTranslation("studyContent");

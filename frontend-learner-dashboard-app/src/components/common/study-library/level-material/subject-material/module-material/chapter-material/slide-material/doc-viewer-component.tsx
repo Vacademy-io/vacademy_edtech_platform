@@ -340,7 +340,7 @@ const DocViewerComponentInner = forwardRef<DocViewerComponentRef, DocViewerCompo
   }
 
   return (
-    <div ref={containerRef} className="min-h-screen-40 sm:min-h-screen-50 lg:min-h-screen-60 max-h-[calc(100vh-120px)] sm:max-h-[calc(100vh-140px)] lg:max-h-[calc(100vh-170px)] overflow-auto bg-white rounded-lg sm:rounded-xl lg:rounded-2xl border border-gray-200 shadow-lg hover:shadow-xl transition-shadow duration-300"> {/* design-lint-ignore: viewport math */}
+    <div ref={containerRef} className="min-h-screen-40 sm:min-h-screen-50 lg:min-h-screen-60 max-h-[calc(100vh-120px)] sm:max-h-[calc(100vh-140px)] lg:max-h-[calc(100vh-170px)] [.ui-play_&]:max-sm:max-h-[calc(100svh-272px-env(safe-area-inset-bottom,0px))] [.ui-cleaner-play_&]:max-sm:max-h-[calc(100svh-272px-env(safe-area-inset-bottom,0px))] [.ui-play_&]:max-sm:overscroll-y-contain [.ui-cleaner-play_&]:max-sm:overscroll-y-contain overflow-auto bg-white rounded-lg sm:rounded-xl lg:rounded-2xl border border-gray-200 shadow-lg hover:shadow-xl transition-shadow duration-300"> {/* design-lint-ignore: viewport math */}
       {creativeHtml ? (
         <HtmlSlideIframe
           html={stableDocUrl}

@@ -112,6 +112,31 @@
     }
   },
   "quizViewer": {
+    "start": {
+      "eyebrow": "क्विज़",
+      "questionsLabel": "प्रश्न",
+      "timeLabel": "समय सीमा",
+      "timeValue_one": "{{count}} मिनट",
+      "timeValue_other": "{{count}} मिनट",
+      "noTimeLimit": "कोई समय सीमा नहीं",
+      "attemptsLabel": "प्रयास",
+      "unlimitedAttempts": "असीमित",
+      "attemptsLeft": "{{total}} में से {{left}} बाकी",
+      "attemptsAllowed": "{{total}} की अनुमति",
+      "timedNote": "“शुरू करें” दबाने पर टाइमर चलने लगता है और इस पेज से जाने पर भी चलता रहता है। समय समाप्त होने पर आपके उत्तर अपने आप जमा हो जाते हैं।",
+      "attemptNote": "हर बार जमा करने पर एक प्रयास गिना जाता है।",
+      "passLabel": "पास होने के लिए",
+      "passValue": "{{percent}}%",
+      "negativeLabel": "हर गलत उत्तर पर",
+      "negativeValue_one": "−{{marks}} अंक",
+      "negativeValue_other": "−{{marks}} अंक",
+      "startButton": "क्विज़ शुरू करें",
+      "startAttemptButton": "प्रयास {{number}} शुरू करें",
+      "timeUpTitle": "समय समाप्त",
+      "timeUpBody": "आपके उत्तर जमा किए जा रहे हैं…",
+      "timeUpFailedBody": "आपके उत्तर इस डिवाइस पर सहेजे गए हैं, लेकिन जमा नहीं हो सके। अपना कनेक्शन जाँचें और फिर से कोशिश करें।",
+      "timeUpRetry": "फिर से कोशिश करें"
+    },
     "selectAllThatApply": "एक से ज़्यादा विकल्प सही हो सकते हैं — सभी सही विकल्प चुनें",
     "questionTypeDescriptions": {
       "mcqs": "बहुविकल्पीय प्रश्न - एकल सही विकल्प",
@@ -128,6 +153,7 @@
     },
     "noQuestionsAvailable": "कोई क्विज़ प्रश्न उपलब्ध नहीं है।",
     "toast": {
+      "timeUpSubmitted": "समय समाप्त। आपके उत्तर जमा कर दिए गए हैं।",
       "noAttemptsRemaining": "इस क्विज़ के लिए कोई प्रयास शेष नहीं है।",
       "missingContext": "क्विज़ सबमिट नहीं हो सका — जानकारी अधूरी है। कृपया इस स्लाइड को फिर से खोलें।",
       "savedOffline": "सहेजा गया — ऑनलाइन होने पर सिंक होगा",

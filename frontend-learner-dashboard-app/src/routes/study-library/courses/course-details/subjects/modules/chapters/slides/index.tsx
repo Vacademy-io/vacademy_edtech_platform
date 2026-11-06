@@ -371,6 +371,11 @@ function Slides() {
     setCurrentPackageSessionId,
   } = useContentStore();
 
+  // The active slide belongs to this visit. Left in the store, it is what the
+  // viewer would open on the next visit, to any course, before that visit's own
+  // slide is resolved.
+  useEffect(() => () => setActiveItem(null), [setActiveItem]);
+
   // Keep the content store in sync with the course currently being viewed so
   // that doubts are raised/filtered against THIS course's package session
   // (the URL's sessionId), not the learner's default first enrollment.
@@ -378,7 +383,7 @@ function Slides() {
     setCurrentPackageSessionId(resolvedSessionId || null);
   }, [resolvedSessionId, setCurrentPackageSessionId]);
 
-  const { slides } = useSlides(chapterId || "");
+  const { slides, isLoading: slidesLoading } = useSlides(chapterId || "");
   const { studyLibraryData } = useStudyLibraryStore();
   const { modulesWithChaptersData, setModulesWithChaptersData } = useModulesWithChaptersStore();
 
@@ -1980,6 +1985,7 @@ function Slides() {
             ) : (
               <SlideMaterial
                 onNavigateToSlide={handleNavigateToSlide}
+                slidesLoading={slidesLoading}
                 startAt={slideStartAt}
                 onStartAtApplied={handleSlideStartApplied}
                 standaloneNav={hideSlidesSidebar}

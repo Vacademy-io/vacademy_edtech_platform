@@ -10,7 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { useSubmitQuizSlideActivityLog } from "@/services/study-library/tracking-api/submit-quiz-slide-activity-log";
 import { QuizSlideActivityLogPayload } from "@/types/quiz-slide-activity-log";
 import { getUserId } from "@/constants/getUserId";
-import { v4 as uuidv4 } from "uuid";
+import { v4 as uuidv4, v5 as uuidv5 } from "uuid";
 import { toast } from "sonner";
 import { trackOrQueue, isNetworkError } from "@/lib/offline/events/track-or-queue";
 import QuizReview from "./QuizReview";
@@ -25,6 +25,19 @@ import type { Slide } from "@/hooks/study-library/use-slides";
 import { useSelectedSessionStore } from "@/stores/study-library/selected-session-store";
 import { useQuizActiveStore } from "@/stores/study-library/quiz-active-store";
 import { refreshProgressAfterSubmit as invalidateProgressCaches } from "@/utils/study-library/tracking/refreshProgressAfterSubmit";
+import {
+  clearQuizSession,
+  quizAttemptEnd,
+  quizNeedsStart,
+  quizSecondsLeft,
+  quizSessionKey,
+  readOwnQuizSession,
+  readQuizSession,
+  writeQuizSession,
+  type QuizSession,
+} from "./quiz-session";
+import { QuizAttemptScreenGuard, QuizStartCard, QuizTimeUpCard } from "./quiz-start-card";
+import { QUESTION_SETTLE_MS } from "./press-settle";
 
 interface Option {
   id: string;
@@ -66,6 +79,10 @@ export interface ScoreCard {
 }
 
 interface QuizViewerProps {
+  /** The slide this quiz belongs to. Attempts and the running clock are kept per slide. */
+  slideId: string;
+  title?: string;
+  description?: string | null;
   questions: Question[];
   onAnswer: (questionId: string, selectedOptionId: string | number | string[]) => void;
   onComplete?: () => void;
@@ -186,6 +203,9 @@ const getQuestionTypeDescription = (type: string | undefined, t: TFunction): str
 
 
 export const QuizViewer: React.FC<QuizViewerProps> = ({
+  slideId,
+  title,
+  description,
   questions,
   onAnswer,
   onComplete,
@@ -197,23 +217,62 @@ export const QuizViewer: React.FC<QuizViewerProps> = ({
   reAttemptCount,
 }) => {
   const { t } = useTranslation("libraryCommonB");
-  const [current, setCurrent] = useState(0);
-  const [answers, setAnswers] = useState<{ [questionId: string]: string | number | string[] }>({});
+  const timeLimitSeconds = timeLimitMinutes && timeLimitMinutes > 0 ? timeLimitMinutes * 60 : 0;
+  const needsStart = quizNeedsStart(timeLimitMinutes, reAttemptCount);
+  // Already submitted on this device. Read before the first paint so a finished
+  // quiz opens on its review, not on a frame of something else.
+  const [submittedAnswers] = useState<QuizSession["answers"] | null>(() => {
+    const chapterId = new URLSearchParams(window.location.search).get("chapterId") || "";
+    try {
+      return JSON.parse(localStorage.getItem(`quiz_answers_${slideId}_${chapterId}`) || "null");
+    } catch {
+      return null;
+    }
+  });
+  // The attempt in progress. An existing one resumes directly with its own clock.
+  const [session, setSession] = useState<QuizSession | null>(() =>
+    needsStart && !submittedAnswers ? readQuizSession(slideId) : null
+  );
+  // The clock has run out, on screen or while the learner was away. From here
+  // the attempt can only be submitted: the questions do not come back.
+  const [timeUp, setTimeUp] = useState<"submitting" | "failed" | null>(() =>
+    session &&
+    timeLimitSeconds > 0 &&
+    quizSecondsLeft(session.startedAt, timeLimitSeconds, Date.now()) <= 0
+      ? "submitting"
+      : null
+  );
+  // Where the attempt had got to, within the questions the quiz has now.
+  const resumeAt = Math.min(session?.current ?? 0, Math.max((questions?.length ?? 1) - 1, 0));
+  const [current, setCurrent] = useState(resumeAt);
+  const [answers, setAnswers] = useState<{ [questionId: string]: string | number | string[] }>(
+    submittedAnswers ?? session?.answers ?? {}
+  );
   const [numericErrors, setNumericErrors] = useState<{ [questionId: string]: string }>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showFullPassage, setShowFullPassage] = useState(false);
-  const [showReview, setShowReview] = useState(false);
+  const [showReview, setShowReview] = useState(!!submittedAnswers);
   const [moveOnlyOnCorrectAnswer, setMoveOnlyOnCorrectAnswer] = useState(false);
   const [celebrateOnQuizComplete, setCelebrateOnQuizComplete] = useState(true);
   const [showReportAndCorrectAnswers, setShowReportAndCorrectAnswers] = useState(true);
   const [passed, setPassed] = useState<boolean | null>(null);
   const [currentUserId, setCurrentUserId] = useState<string | undefined>(undefined);
+  const [userResolved, setUserResolved] = useState(false);
   const [showIncorrectNotice, setShowIncorrectNotice] = useState(false);
   const [showWarning, setShowWarning] = useState(false);
   const timerExpiredRef = useRef(false);
-  // Real time the learner has had this quiz open (mount → submit) so the
-  // reported "Time Spent" reflects actual engagement, not a fake 1 minute.
-  const activityStartRef = useRef<number>(Date.now());
+  // Real time the learner has spent on this attempt so the reported "Time
+  // Spent" reflects actual engagement, not a fake 1 minute. A timed attempt counts
+  // from Start, since its clock kept running. An untimed one resumed later counts
+  // what it had spent so far, not the days in between. One without a session
+  // counts from mount.
+  const activityStartRef = useRef<number>(
+    session
+      ? timeLimitSeconds > 0
+        ? session.startedAt
+        : Date.now() - session.spentMs
+      : Date.now()
+  );
   // Keep a ref to always-current answers so the timer's stale closure gets the latest values
   const answersRef = useRef(answers);
   useEffect(() => { answersRef.current = answers; }, [answers]);
@@ -225,22 +284,31 @@ export const QuizViewer: React.FC<QuizViewerProps> = ({
 
   // Resolve userId for attempt tracking query
   useEffect(() => {
-    getUserId().then((id) => setCurrentUserId(id || undefined));
+    getUserId().then((id) => {
+      setCurrentUserId(id || undefined);
+      setUserResolved(true);
+      // A session left by someone else on a shared device is not this learner's.
+      const opened = readQuizSession(slideId);
+      if (opened?.userId && id && opened.userId !== id) {
+        setSession(null);
+        setAnswers({});
+        setCurrent(0);
+        setTimeUp(null);
+      }
+    });
+    // Once per viewer: each slide mounts its own.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Flag the quiz as active while this viewer is mounted so the floating
-  // chatbot button hides itself and never covers the Next/Finish controls
-  // (bottom-right) on mobile/desktop. Cleared on unmount (slide navigation).
+  // chatbot button moves up, clear of the Next/Finish controls (bottom-right).
+  // Cleared on unmount (slide navigation).
   const setQuizActive = useQuizActiveStore((state) => state.setActive);
   useEffect(() => {
     setQuizActive(true);
     return () => setQuizActive(false);
   }, [setQuizActive]);
-  const currentSlideIdForAttempts = useMemo(() => {
-    return new URLSearchParams(window.location.search).get("slideId") || undefined;
-  // Re-compute when questions change (indicates slide navigation)
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [questions]);
+  const currentSlideIdForAttempts = slideId;
   const attemptLogsQuery = useGetQuizSlideActivityLogs(currentUserId, currentSlideIdForAttempts);
 
   // Attempts already consumed (server-recorded). `reAttemptCount` is the TOTAL
@@ -249,14 +317,83 @@ export const QuizViewer: React.FC<QuizViewerProps> = ({
   const usedAttempts = attemptLogsQuery.data?.length ?? 0;
   const attemptsExhausted = reAttemptCount != null && usedAttempts >= reAttemptCount;
   const attemptLogsLoaded = !attemptLogsQuery.isLoading && attemptLogsQuery.data !== undefined;
+  // Only a capped quiz has to wait for the count. A failed or offline lookup
+  // settles too: the count is then unknown and the server still records submits.
+  const attemptsPending = reAttemptCount != null && (!userResolved || attemptLogsQuery.isLoading);
 
   // Once logs have loaded, if the user has no attempts left, force the
   // review screen so they can never re-enter the answer-collection UI.
   useEffect(() => {
     if (attemptLogsLoaded && attemptsExhausted) {
       setShowReview(true);
+      setTimeUp(null);
+      clearQuizSession(slideId);
+      setSession(null);
     }
-  }, [attemptLogsLoaded, attemptsExhausted]);
+  }, [attemptLogsLoaded, attemptsExhausted, slideId]);
+
+  // Keep the attempt's answers and position with its start time, so coming back
+  // to it loses neither.
+  useEffect(() => {
+    if (session) {
+      writeQuizSession(slideId, {
+        ...session,
+        answers,
+        current,
+        spentMs: Date.now() - activityStartRef.current,
+      });
+    }
+  }, [session, answers, current, slideId]);
+
+  // Take over an attempt that is already running on this device. It keeps its
+  // own clock and its own id, wherever it was started.
+  const joinSession = (running: QuizSession) => {
+    activityStartRef.current =
+      timeLimitSeconds > 0 ? running.startedAt : Date.now() - running.spentMs;
+    timerExpiredRef.current = false;
+    setShowReview(false);
+    setAnswers(running.answers);
+    setCurrent(Math.min(running.current, Math.max((questions?.length ?? 1) - 1, 0)));
+    setSession(running);
+    if (
+      timeLimitSeconds > 0 &&
+      quizSecondsLeft(running.startedAt, timeLimitSeconds, Date.now()) <= 0
+    ) {
+      setTimeUp("submitting");
+    }
+  };
+
+  // Another tab can start or finish this attempt while this one is open. Follow
+  // it, so a start screen left open never starts a second clock and a finished
+  // attempt cannot be answered again here.
+  useEffect(() => {
+    if (!needsStart) return;
+    const answersKey = `quiz_answers_${slideId}_${getUrlParams().chapterId}`;
+    const onStorage = (e: StorageEvent) => {
+      if (e.key === answersKey && e.newValue) {
+        try {
+          setAnswers(JSON.parse(e.newValue));
+          setSession(null);
+          setTimeUp(null);
+          setShowReview(true);
+        } catch {
+          // A damaged record says nothing about this attempt.
+        }
+        queryClient.invalidateQueries({ queryKey: ["quiz-slide-activity-logs", currentUserId, slideId] });
+      } else if (e.key === quizSessionKey(slideId)) {
+        if (e.newValue === null) {
+          queryClient.invalidateQueries({ queryKey: ["quiz-slide-activity-logs", currentUserId, slideId] });
+        } else if (!session && !showReview) {
+          const running = readOwnQuizSession(slideId, currentUserId);
+          if (running) joinSession(running);
+        }
+      }
+    };
+    window.addEventListener("storage", onStorage);
+    return () => window.removeEventListener("storage", onStorage);
+    // joinSession and getUrlParams read nothing beyond these and the props.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [needsStart, slideId, session, showReview, currentUserId, queryClient]);
 
   // ✅ Helper: Restore 100% for ALL completed quizzes from localStorage
   const restoreLocalStorageCompletions = useCallback((chapterId: string) => {
@@ -341,7 +478,7 @@ export const QuizViewer: React.FC<QuizViewerProps> = ({
 
   // ✅ Load answers from localStorage on mount AND when slide changes
   useEffect(() => {
-    const { slideId, chapterId } = getUrlParams();
+    const { chapterId } = getUrlParams();
     console.log("🔄 [QuizViewer] useEffect triggered - checking slide:", { slideId, chapterId });
     
     if (!slideId || !chapterId) {
@@ -378,10 +515,12 @@ export const QuizViewer: React.FC<QuizViewerProps> = ({
     } else {
       console.log("ℹ️ [QuizViewer] No stored answers - quiz not completed yet, resetting state");
       // ✅ Reset state when navigating to a different quiz that hasn't been completed
-      setAnswers({});
+      setAnswers(session?.answers ?? {});
       setShowReview(false);
-      setCurrent(0);
+      setCurrent(resumeAt);
     }
+    // Runs on arrival; the session it reads is the one this viewer opened with.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [queryClient, questions, restoreLocalStorageCompletions]);
 
   // Helper to get URL params
@@ -405,7 +544,7 @@ export const QuizViewer: React.FC<QuizViewerProps> = ({
     const packageSessionId = (sessionId && sessionId.trim()) || courseId || sessionFromStore;
     
     return {
-      slideId: urlParams.get("slideId") || "",
+      slideId,
       chapterId: urlParams.get("chapterId") || "",
       moduleId: urlParams.get("moduleId") || "",
       subjectId: urlParams.get("subjectId") || "",
@@ -427,16 +566,15 @@ export const QuizViewer: React.FC<QuizViewerProps> = ({
     finalAnswers: typeof answers
   ): Promise<QuizSlideActivityLogPayload> => {
     const userId = (await getUserId()) || "";
-    const { slideId } = getUrlParams();
     const now = Date.now();
     return {
-      id: uuidv4(),
+      id: session?.attemptId ?? uuidv4(),
       source_id: slideId,
       source_type: "QUIZ",
       user_id: userId,
       slide_id: slideId,
       start_time_in_millis: activityStartRef.current,
-      end_time_in_millis: now,
+      end_time_in_millis: quizAttemptEnd(activityStartRef.current, timeLimitSeconds, now),
       percentage_watched: 100,
       videos: [],
       documents: [],
@@ -479,7 +617,7 @@ export const QuizViewer: React.FC<QuizViewerProps> = ({
               : 0;
         const responseStatus = !isAnswered ? "SKIPPED" : correct ? "CORRECT" : "WRONG";
         return {
-          id: uuidv4(),
+          id: session ? uuidv5(q.id, session.attemptId) : uuidv4(),
           response_json: JSON.stringify({
             questionName,
             selectedOptions,
@@ -497,6 +635,16 @@ export const QuizViewer: React.FC<QuizViewerProps> = ({
       }),
     };
   };
+
+  // Submit an attempt whose time is up, once it is known that an attempt is still
+  // available. Retrying goes back through "submitting".
+  const submitTimeUpRef = useRef<(() => void) | null>(null);
+  const timeUpSendingRef = useRef(false);
+  useEffect(() => {
+    if (timeUp !== "submitting" || !userResolved || attemptsPending || timeUpSendingRef.current) return;
+    timeUpSendingRef.current = true;
+    submitTimeUpRef.current?.();
+  }, [timeUp, userResolved, attemptsPending]);
 
   const currentQuestion = questions?.[current];
   const total = questions?.length || 0;
@@ -629,7 +777,9 @@ export const QuizViewer: React.FC<QuizViewerProps> = ({
 
   // Show review whenever we have answers OR the user has exhausted attempts
   // (so re-entering an exhausted quiz never lands them in the answer UI).
-  if (showReview && (Object.keys(answers).length > 0 || attemptsExhausted)) {
+  // A clock can run out before anything is answered, and that submission still
+  // has a result to show.
+  if (showReview && (Object.keys(answers).length > 0 || attemptsExhausted || scoreCard)) {
     const logsCount = attemptLogsQuery.data?.length ?? 0;
     // Display attempt number = how many attempts have been recorded. If we just
     // submitted but the refetch hasn't arrived, fall back to 1 so we don't show 0.
@@ -725,7 +875,7 @@ export const QuizViewer: React.FC<QuizViewerProps> = ({
           toast.error(t("quizViewer.toast.noAttemptsRemaining"));
           return;
         }
-        const { slideId, chapterId } = getUrlParams();
+        const { chapterId } = getUrlParams();
         const storageKey = `quiz_answers_${slideId}_${chapterId}`;
         localStorage.removeItem(storageKey);
 
@@ -743,24 +893,24 @@ export const QuizViewer: React.FC<QuizViewerProps> = ({
   const handleTimerExpire = () => {
     if (timerExpiredRef.current) return;
     timerExpiredRef.current = true;
-    // Use ref to avoid stale closure — answersRef always holds the latest answers
-    handleQuizSubmit(answersRef.current);
+    setTimeUp("submitting");
   };
 
-  const handleQuizSubmit = async (finalAnswers: typeof answers) => {
+  // Resolves false if the attempt is still unsent.
+  const handleQuizSubmit = async (finalAnswers: typeof answers): Promise<boolean> => {
     if (attemptsExhausted) {
       toast.error(t("quizViewer.toast.noAttemptsRemaining"));
       setShowReview(true);
-      return;
+      return true;
     }
     setIsSubmitting(true);
     try {
-      const { slideId, chapterId, moduleId, subjectId, packageSessionId } = getUrlParams();
+      const { chapterId, moduleId, subjectId, packageSessionId } = getUrlParams();
       const userId = (await getUserId()) || "";
 
       if (!slideId || !chapterId || !moduleId || !subjectId || !packageSessionId || !userId) {
         toast.error(t("quizViewer.toast.missingContext"));
-        return;
+        return false;
       }
 
       const payload = await buildQuizPayload(finalAnswers);
@@ -796,15 +946,19 @@ export const QuizViewer: React.FC<QuizViewerProps> = ({
       toast.success(
         offlineQueued
           ? t("quizViewer.toast.savedOffline")
-          : t("quizViewer.toast.quizSubmitted"),
+          : timerExpiredRef.current
+            ? t("quizViewer.toast.timeUpSubmitted")
+            : t("quizViewer.toast.quizSubmitted"),
         { className: "text-center" }
       );
+      // Answers before the session: another tab reads these in this order.
+      const storageKey = `quiz_answers_${slideId}_${chapterId}`;
+      localStorage.setItem(storageKey, JSON.stringify(finalAnswers));
+      clearQuizSession(slideId);
+      setSession(null);
 
       // Refresh attempt history
       queryClient.invalidateQueries({ queryKey: ["quiz-slide-activity-logs", currentUserId, currentSlideIdForAttempts] });
-
-      const storageKey = `quiz_answers_${slideId}_${chapterId}`;
-      localStorage.setItem(storageKey, JSON.stringify(finalAnswers));
 
       queryClient.setQueryData<Slide[]>(["slides", chapterId], (oldSlides) => {
         if (!oldSlides) return oldSlides;
@@ -831,14 +985,22 @@ export const QuizViewer: React.FC<QuizViewerProps> = ({
       setAnswers(finalAnswers);
       setShowReview(true);
       if (onComplete) onComplete();
+      return true;
     } catch {
-      toast.error(t("quizViewer.toast.submitFailed"));
+      return false;
     } finally {
       setIsSubmitting(false);
     }
   };
 
-
+  submitTimeUpRef.current = () => {
+    timerExpiredRef.current = true;
+    // Use ref to avoid stale closure — answersRef always holds the latest answers
+    void handleQuizSubmit(answersRef.current).then((sent) => {
+      timeUpSendingRef.current = false;
+      setTimeUp(sent ? null : "failed");
+    });
+  };
 
   const handleOptionSelect = (optionId: string) => {
     setAnswers((prev) => ({ ...prev, [currentQuestion.id]: optionId }));
@@ -906,7 +1068,7 @@ export const QuizViewer: React.FC<QuizViewerProps> = ({
       // On Finish: submit quiz
       setIsSubmitting(true);
       try {
-        const { slideId, chapterId, moduleId, subjectId, packageSessionId } = getUrlParams();
+        const { chapterId, moduleId, subjectId, packageSessionId } = getUrlParams();
         const userId = (await getUserId()) || "";
 
         if (!slideId || !chapterId || !moduleId || !subjectId || !packageSessionId || !userId) {
@@ -973,11 +1135,14 @@ export const QuizViewer: React.FC<QuizViewerProps> = ({
           { className: "text-center" }
         );
         queryClient.invalidateQueries({ queryKey: ["quiz-slide-activity-logs", currentUserId, currentSlideIdForAttempts] });
-        
+
         // ✅ STEP 1: Save answers to localStorage for persistence across refreshes
+        // Answers before the session: another tab reads these in this order.
         const storageKey = `quiz_answers_${slideId}_${chapterId}`;
         localStorage.setItem(storageKey, JSON.stringify(answers));
         console.log("💾 [QuizViewer] Saved answers to localStorage:", storageKey);
+        clearQuizSession(slideId);
+        setSession(null);
         
         // ✅ STEP 2: Optimistic UI update - instantly show 100% in sidebar
         queryClient.setQueryData<Slide[]>(["slides", chapterId], (oldSlides) => {
@@ -1095,6 +1260,56 @@ export const QuizViewer: React.FC<QuizViewerProps> = ({
       }
     }
   };
+
+  if (timeUp) {
+    return (
+      <QuizTimeUpCard failed={timeUp === "failed"} onRetry={() => setTimeUp("submitting")} />
+    );
+  }
+
+  if (needsStart && !session) {
+    return (
+      <QuizStartCard
+        title={title}
+        description={description}
+        questionCount={total}
+        timeLimitMinutes={timeLimitMinutes}
+        maxAttempts={reAttemptCount}
+        usedAttempts={attemptLogsQuery.data?.length}
+        attemptsPending={attemptsPending}
+        passPercentage={passPercentage}
+        negativeMarking={defaultNegativeMarking}
+        canStart={userResolved && !attemptsPending}
+        onStart={() => {
+          // Started already in another tab: there is one attempt and one clock.
+          const running = readOwnQuizSession(slideId, currentUserId);
+          if (running) {
+            joinSession(running);
+            return;
+          }
+          const startedAt = Date.now();
+          activityStartRef.current = startedAt;
+          timerExpiredRef.current = false;
+          // A new attempt replaces whatever this device kept from the last one.
+          localStorage.removeItem(`quiz_answers_${slideId}_${getUrlParams().chapterId}`);
+          setShowReview(false);
+          setAnswers({});
+          setCurrent(0);
+          // Saved now, not after the next render, so another tab cannot miss it.
+          const started: QuizSession = {
+            userId: currentUserId ?? null,
+            attemptId: uuidv4(),
+            startedAt,
+            spentMs: 0,
+            answers: {},
+            current: 0,
+          };
+          writeQuizSession(slideId, started);
+          setSession(started);
+        }}
+      />
+    );
+  }
 
   // Progress bar width
   const progress = ((current + 1) / total) * 100;
@@ -1316,6 +1531,7 @@ export const QuizViewer: React.FC<QuizViewerProps> = ({
 
   return (
     <div className="w-full min-h-screen-80 bg-white rounded-xl shadow-lg p-4 sm:p-8">
+      <QuizAttemptScreenGuard settleMs={QUESTION_SETTLE_MS} />
       {/* Timer warning overlay */}
       {showWarning && <QuizTimeWarning onDismiss={() => setShowWarning(false)} />}
 
@@ -1324,9 +1540,10 @@ export const QuizViewer: React.FC<QuizViewerProps> = ({
         <div className="flex items-center justify-between">
           <span className="text-sm text-gray-700 font-medium">{t("quizViewer.questionOf", { current: current + 1, total })}</span>
           <div className="ms-auto flex items-center gap-3">
-            {timeLimitMinutes && timeLimitMinutes > 0 && (
+            {session && timeLimitSeconds > 0 && (
               <QuizTimer
-                totalSeconds={timeLimitMinutes * 60}
+                startedAt={session.startedAt}
+                totalSeconds={timeLimitSeconds}
                 onWarn={() => setShowWarning(true)}
                 onExpire={handleTimerExpire}
               />

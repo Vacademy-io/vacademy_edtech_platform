@@ -24,6 +24,9 @@ const DEFAULT_NUDGE_DURATION_S = 5; // keep it open ~5s, then collapse to the ic
 const DRAG_THRESHOLD = 6; // px of travel before a press counts as a drag (vs a tap)
 const EDGE_MARGIN = 24; // matches end-6 / bottom-6 (1.5rem)
 const BUTTON_SIZE = 56; // h-14 collapsed launcher
+// A phone in either orientation: no corner of the screen is free of quiz content.
+const PHONE_MAX_WIDTH = 768;
+const PHONE_MAX_HEIGHT = 480;
 // A stored position is only usable if it matches the current { side, yRatio } shape
 const isValidFabPosition = (p: FabPosition | null): p is FabPosition =>
   !!p && (p.side === "left" || p.side === "right") && typeof p.yRatio === "number";
@@ -54,6 +57,7 @@ export const ChatbotFloatingButton = () => {
 
   const isDoubtSidebarOpen = useDoubtSidebarStore((state) => state.isOpen);
   const isQuizActive = useQuizActiveStore((state) => state.isActive);
+  const isQuizAttemptScreen = useQuizActiveStore((state) => state.isAttemptScreen);
   const location = useLocation();
 
   // Move button higher on video/slide pages to avoid overlapping player controls
@@ -203,9 +207,12 @@ export const ChatbotFloatingButton = () => {
 
 
   const isTutorRoute = location.pathname.includes("/course-details/tutor");
+  const yieldsToQuiz =
+    isQuizAttemptScreen &&
+    (window.innerWidth < PHONE_MAX_WIDTH || window.innerHeight < PHONE_MAX_HEIGHT);
   // The launcher peek only speaks while the launcher is idle on screen.
   const peekEnabled =
-    !isOpen && !voiceMode && !isDoubtSidebarOpen && !isTutorRoute && !isDragging && shouldShowChatbot();
+    !isOpen && !voiceMode && !isDoubtSidebarOpen && !isTutorRoute && !isDragging && !yieldsToQuiz && shouldShowChatbot();
 
   if (!shouldShowChatbot()) {
     return null;
@@ -224,6 +231,12 @@ export const ChatbotFloatingButton = () => {
   // Hide the floating button while the doubt sidebar is open so it never
   // covers the doubt submit controls in the bottom-right corner
   if (isDoubtSidebarOpen) {
+    return null;
+  }
+
+  // On a phone the start screen and the questions fill the screen, so the button
+  // would sit over the facts, an option or Next.
+  if (yieldsToQuiz) {
     return null;
   }
 

@@ -112,6 +112,31 @@
     }
   },
   "quizViewer": {
+    "start": {
+      "eyebrow": "Quiz",
+      "questionsLabel": "Questions",
+      "timeLabel": "Time limit",
+      "timeValue_one": "{{count}} minute",
+      "timeValue_other": "{{count}} minutes",
+      "noTimeLimit": "No time limit",
+      "attemptsLabel": "Attempts",
+      "unlimitedAttempts": "Unlimited",
+      "attemptsLeft": "{{left}} of {{total}} left",
+      "attemptsAllowed": "{{total}} allowed",
+      "timedNote": "The timer starts when you press Start and keeps running if you leave this page. Your answers are submitted automatically when time runs out.",
+      "attemptNote": "Each submission uses one attempt.",
+      "passLabel": "To pass",
+      "passValue": "{{percent}}%",
+      "negativeLabel": "Each wrong answer",
+      "negativeValue_one": "−{{marks}} mark",
+      "negativeValue_other": "−{{marks}} marks",
+      "startButton": "Start quiz",
+      "startAttemptButton": "Start attempt {{number}}",
+      "timeUpTitle": "Time's up",
+      "timeUpBody": "Submitting your answers…",
+      "timeUpFailedBody": "Your answers are saved on this device, but they could not be submitted. Check your connection and try again.",
+      "timeUpRetry": "Try again"
+    },
     "selectAllThatApply": "More than one option can be correct — select all that apply",
     "questionTypeDescriptions": {
       "mcqs": "Multiple Choice Questions - Single Correct Option",
@@ -128,6 +153,7 @@
     },
     "noQuestionsAvailable": "No quiz questions available.",
     "toast": {
+      "timeUpSubmitted": "Time's up. Your answers have been submitted.",
       "noAttemptsRemaining": "No attempts remaining for this quiz.",
       "missingContext": "Cannot submit quiz — missing context. Please reopen this slide.",
       "savedOffline": "Saved — will sync when online",

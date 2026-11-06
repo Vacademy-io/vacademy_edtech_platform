@@ -1,10 +1,16 @@
 import React, { useEffect, useRef, useState } from "react";
+import { quizSecondsLeft } from "./quiz-session";
 
 interface QuizTimerProps {
+  /** When the learner pressed Start. Time is read from this on every tick, so a
+   * throttled or suspended page cannot stretch the clock. */
+  startedAt: number;
   totalSeconds: number;
   onExpire: () => void;
   onWarn: () => void;
 }
+
+const WARN_AT_SECONDS = 30;
 
 const formatTime = (seconds: number): string => {
   const m = Math.floor(seconds / 60);
@@ -12,41 +18,40 @@ const formatTime = (seconds: number): string => {
   return `${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
 };
 
-const QuizTimer: React.FC<QuizTimerProps> = ({ totalSeconds, onExpire, onWarn }) => {
-  const [remaining, setRemaining] = useState(totalSeconds);
+const QuizTimer: React.FC<QuizTimerProps> = ({ startedAt, totalSeconds, onExpire, onWarn }) => {
+  const [remaining, setRemaining] = useState(() =>
+    quizSecondsLeft(startedAt, totalSeconds, Date.now())
+  );
   const warnFiredRef = useRef(false);
   const expiredRef = useRef(false);
+  const onExpireRef = useRef(onExpire);
+  const onWarnRef = useRef(onWarn);
+  onExpireRef.current = onExpire;
+  onWarnRef.current = onWarn;
 
   useEffect(() => {
     if (totalSeconds <= 0) return;
-    setRemaining(totalSeconds);
     warnFiredRef.current = false;
     expiredRef.current = false;
 
     const interval = setInterval(() => {
-      setRemaining((prev) => {
-        const next = prev - 1;
+      const next = quizSecondsLeft(startedAt, totalSeconds, Date.now());
+      setRemaining(next);
 
-        if (next === 30 && !warnFiredRef.current) {
-          warnFiredRef.current = true;
-          onWarn();
-        }
+      if (next <= WARN_AT_SECONDS && next > 0 && totalSeconds > WARN_AT_SECONDS && !warnFiredRef.current) {
+        warnFiredRef.current = true;
+        onWarnRef.current();
+      }
 
-        if (next <= 0 && !expiredRef.current) {
-          expiredRef.current = true;
-          clearInterval(interval);
-          onExpire();
-          return 0;
-        }
-
-        return next;
-      });
-    }, 1000);
+      if (next <= 0 && !expiredRef.current) {
+        expiredRef.current = true;
+        clearInterval(interval);
+        onExpireRef.current();
+      }
+    }, 250);
 
     return () => clearInterval(interval);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [totalSeconds]);
-
+  }, [startedAt, totalSeconds]);
   const isWarning = remaining <= 120; // orange when ≤ 2 min
 
   return (

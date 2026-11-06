@@ -1,5 +1,5 @@
 "use client";
-import React, { useEffect, useRef, useState, useCallback, useMemo } from "react";
+import React, { useEffect, useLayoutEffect, useRef, useState, useCallback, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
@@ -47,6 +47,7 @@ import { processHtmlContent, fixHtmlContent } from "./html-processor";
 import { useWebAudioMixer } from "./hooks/useWebAudioMixer";
 import { useSoundScheduler, collectCuesFromEntries } from "./hooks/useSoundScheduler";
 import { canvasBackground, entryBoxStyle, fillSceneGaps } from './entry-layout';
+import { fitScale } from './fit-scale';
 
 // Re-export types for backward compatibility
 export type { Frame, TimelineMeta, TimelineData, ContentType, NavigationType };
@@ -135,7 +136,9 @@ export const AIVideoPlayer: React.FC<AIVideoPlayerProps> = ({
   // Refs
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const iframeRef = useRef<HTMLIFrameElement | null>(null);
-  const containerRef = useRef<HTMLDivElement | null>(null);
+  // The frame's box does not exist while the timeline loads, so it is held in
+  // state: its arrival has to run the fit below.
+  const [frameBox, setFrameBox] = useState<HTMLDivElement | null>(null);
   const animationFrameRef = useRef<number | null>(null);
   const navigationRef = useRef<NavigationController | null>(null);
   const onEntryChangeRef = useRef(onEntryChange);
@@ -468,18 +471,17 @@ export const AIVideoPlayer: React.FC<AIVideoPlayerProps> = ({
     }
   }, [frames, currentTime, currentEntryIndex, isTimeDriven, isUserDriven, isSelfContained]);
 
-  // Calculate scale to fit iframe content in container
-  useEffect(() => {
-    const calculateScale = () => {
-      if (!containerRef.current) return;
+  // Calculate scale to fit iframe content in container. A layout effect so the
+  // first painted frame is already fitted.
+  useLayoutEffect(() => {
+    if (!frameBox) return;
 
-      const container = containerRef.current;
-      const rect = container.getBoundingClientRect();
+    const calculateScale = () => {
+      const rect = frameBox.getBoundingClientRect();
       const containerWidth = rect.width;
       const containerHeight = rect.height;
 
       if (containerWidth <= 0 || containerHeight <= 0) {
-        console.warn("[AIVideoPlayer] Invalid container dimensions:", { containerWidth, containerHeight });
         console.warn("[AIVideoPlayer] Invalid container dimensions:", {
           containerWidth,
           containerHeight
@@ -487,11 +489,7 @@ export const AIVideoPlayer: React.FC<AIVideoPlayerProps> = ({
         return;
       }
 
-      const scaleX = containerWidth / width;
-      const scaleY = containerHeight / height;
-      const newScale = Math.min(scaleX, scaleY);
-      // Add a small buffer (0.98 multiplier) to ensure it doesn't hit edges in default view
-      const finalScale = isFullscreen ? Math.min(newScale, 1) : Math.min(newScale * 0.98, 1);
+      const finalScale = fitScale(containerWidth, containerHeight, width, height, isFullscreen);
 
       // Prevent infinite loops by only updating if change is significant (> 0.001)
       setScale(prev => Math.abs(prev - finalScale) > 0.001 ? finalScale : prev);
@@ -525,9 +523,7 @@ export const AIVideoPlayer: React.FC<AIVideoPlayerProps> = ({
     // Initial calculation
     calculateScale();
 
-    if (containerRef.current) {
-      resizeObserver.observe(containerRef.current);
-    }
+    resizeObserver.observe(frameBox);
 
     window.addEventListener('resize', calculateScale);
 
@@ -536,7 +532,7 @@ export const AIVideoPlayer: React.FC<AIVideoPlayerProps> = ({
       resizeObserver.disconnect();
       window.removeEventListener('resize', calculateScale);
     };
-  }, [width, height]);
+  }, [frameBox, width, height, isFullscreen]);
 
 
 
@@ -931,7 +927,7 @@ export const AIVideoPlayer: React.FC<AIVideoPlayerProps> = ({
 
       {/* Video Frame */}
       <div
-        ref={containerRef}
+        ref={setFrameBox}
         className="relative w-full flex-1 bg-black overflow-hidden"
         style={{ minHeight: 0, position: 'relative', aspectRatio: isFullscreen ? 'auto' : '16/9' }}
       >
