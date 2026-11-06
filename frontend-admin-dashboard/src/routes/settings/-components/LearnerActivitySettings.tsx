@@ -54,7 +54,7 @@ const DEFAULT_SETTINGS: LearnerActivitySettingsData = {
         },
     },
     focus: {
-        idlePopupEnabled: true,
+        idlePopupEnabled: false,
         idlePopupDelaySeconds: 60,
         hardPauseMinutes: 5,
     },

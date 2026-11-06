@@ -289,6 +289,7 @@ function mergeWithDefaults(
                 canAskDoubt:
                     incoming?.courseDetails?.slidesView?.canAskDoubt ??
                     d.courseDetails.slidesView.canAskDoubt,
+                canTakeNotes: incoming?.courseDetails?.slidesView?.canTakeNotes ?? true,
                 sidebarNavigation:
                     incoming?.courseDetails?.slidesView?.sidebarNavigation ??
                     d.courseDetails.slidesView.sidebarNavigation,

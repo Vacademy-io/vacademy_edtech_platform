@@ -255,6 +255,8 @@ export interface StudentCourseDetailsSettings {
         showLearningPath: boolean;
         feedbackVisible: boolean;
         canAskDoubt: boolean;
+        /** Highlights, bookmarks, notes and the Notebook. Unset means on. */
+        canTakeNotes?: boolean;
         /** Optional for backwards compat. Missing means default ("breadcrumb"). */
         sidebarNavigation?: SlidesSidebarNavigation;
         /**

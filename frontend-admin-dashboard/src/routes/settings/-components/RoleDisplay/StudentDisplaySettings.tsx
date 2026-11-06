@@ -1450,6 +1450,21 @@ export default function StudentDisplaySettings(): JSX.Element {
                             />
                             <Label className="text-xs">{t('courseDetails.canAskDoubt')}</Label>
                         </div>
+                        <div className="flex items-center gap-2">
+                            <Switch
+                                checked={settings.courseDetails.slidesView.canTakeNotes !== false}
+                                onCheckedChange={(v) =>
+                                    update('courseDetails', {
+                                        ...settings.courseDetails,
+                                        slidesView: {
+                                            ...settings.courseDetails.slidesView,
+                                            canTakeNotes: v,
+                                        },
+                                    })
+                                }
+                            />
+                            <Label className="text-xs">{t('courseDetails.canTakeNotes')}</Label>
+                        </div>
                     </div>
 
                     {/* When the feedback slide is offered. Asking after every
