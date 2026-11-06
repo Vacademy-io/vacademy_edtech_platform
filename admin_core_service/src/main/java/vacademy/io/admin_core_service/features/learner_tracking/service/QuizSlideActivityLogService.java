@@ -5,6 +5,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+import vacademy.io.admin_core_service.features.learner_quiz.service.QuizGrader;
+import vacademy.io.admin_core_service.features.learner_quiz.service.QuizLoader;
 import vacademy.io.admin_core_service.features.learner_tracking.dto.ActivityLogDTO;
 import vacademy.io.admin_core_service.features.learner_tracking.dto.QuizQuestionFeedbackDTO;
 import vacademy.io.admin_core_service.features.learner_tracking.dto.QuizSideActivityLogDTO;
@@ -37,6 +39,8 @@ public class QuizSlideActivityLogService {
     private final QuizSlideQuestionRepository quizSlideQuestionRepository;
     private final QuizSlideQuestionOptionRepository quizSlideQuestionOptionRepository;
     private final AutoEvaluationScorer autoEvaluationScorer;
+    private final QuizLoader quizLoader;
+    private final QuizGrader quizGrader;
 
     public void addQuizSlideActivityLog(ActivityLog activityLog, List<QuizSideActivityLogDTO> quizSideActivityLogDTOS) {
         quizSlideTrackedRepositry.deleteByActivityId(activityLog.getId());
@@ -67,6 +71,7 @@ public class QuizSlideActivityLogService {
         // place, so the tracked rows, the learner-operation update and the LLM raw JSON
         // all see the same authoritative verdict.
         applyServerSideScoring(activityLogDTO.getQuizSides());
+        regradeRecordedMarks(slideId, activityLogDTO.getQuizSides());
         addQuizSlideActivityLog(activityLog, activityLogDTO.getQuizSides());
         learnerTrackingAsyncService.updateLearnerOperationsForQuiz(user.getUserId(), slideId, chapterId, moduleId,
                 subjectId, packageSessionId, activityLogDTO);
@@ -136,6 +141,43 @@ public class QuizSlideActivityLogService {
         } catch (Exception e) {
             // Scoring must never cost a learner their submission.
             log.error("Server-side quiz scoring failed; falling back to client-reported status", e);
+        }
+    }
+
+    /**
+     * The marks inside response_json, which the review screen and activity dialog read, get
+     * the same treatment as the status above. Only clients that still grade locally post
+     * here, and each row says so, which is how they are counted before this endpoint retires.
+     * The AI tutor is the exception: see below.
+     */
+    private void regradeRecordedMarks(String slideId, List<QuizSideActivityLogDTO> quizSides) {
+        if (slideId == null || quizSides == null || quizSides.isEmpty()) {
+            return;
+        }
+        try {
+            QuizLoader.LoadedQuiz quiz = quizLoader.load(slideId).orElse(null);
+            if (quiz == null) {
+                return;
+            }
+            Map<String, QuizGrader.Question> questions = quiz.questions().stream()
+                    .collect(Collectors.toMap(QuizGrader.Question::id, q -> q, (a, b) -> a));
+            for (QuizSideActivityLogDTO side : quizSides) {
+                QuizGrader.Question question = side == null ? null : questions.get(side.getQuestionId());
+                // The AI tutor posts here too, with its own judgement of spoken and typed
+                // answers and the words the learner used. Nothing here can redo that.
+                if (question == null || quizGrader.isTutorRecord(side.getResponseJson())) {
+                    continue;
+                }
+                QuizGrader.Graded graded = quizGrader.regrade(question, quiz.rules(), side.getResponseJson(),
+                        QuizGrader.GRADED_BY_LEGACY);
+                if (graded != null) {
+                    side.setResponseJson(graded.responseJson());
+                    side.setResponseStatus(graded.responseStatus());
+                }
+            }
+        } catch (Exception e) {
+            // Marking must never cost a learner their submission.
+            log.error("Server-side quiz marking failed for slide {}; keeping what the client recorded", slideId, e);
         }
     }
 
