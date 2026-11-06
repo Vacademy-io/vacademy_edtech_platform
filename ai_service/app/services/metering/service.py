@@ -156,6 +156,28 @@ class EventInput:
 _INPUT_FIELDS = frozenset(f.name for f in dc_fields(EventInput))
 
 
+def _route_of(inp: EventInput, meta: Dict[str, Any], *models: Optional[str]) -> Optional[str]:
+    """Which gateway served this call: what the caller said, else the live route map for an
+    LLM call. A failover to OpenRouter is only visible when the caller reports it. Never raises."""
+    said = inp.router or meta.get("router")
+    if said:
+        return str(said)
+    if not (_int(inp.prompt_tokens) or _int(inp.completion_tokens)):
+        return None  # not an LLM call, so the route map says nothing about it
+    try:
+        from ..llm_router import DEFAULT_ROUTER, model_routes
+
+        if inp.byo_key:
+            return DEFAULT_ROUTER  # an institute's own key always stays on OpenRouter
+        routes = model_routes()
+        for model in models:
+            if model and model in routes:
+                return routes[model]["router"]
+        return DEFAULT_ROUTER if any(models) else None
+    except Exception:  # noqa: BLE001
+        return None
+
+
 def input_from(obj: Any = None, **overrides: Any) -> EventInput:
     """EventInput from a CreditDeductRequest-like object (getattr) plus overrides."""
     data: Dict[str, Any] = {}
@@ -534,8 +556,8 @@ def build_row(
         "context": context,
         "model_id": _s(model_id, W_MODEL),
         "model_wire_id": _s(wire, W_MODEL),
-        "provider": _s(inp.provider, W_PROVIDER),
-        "router": _s(inp.router, W_ROUTER),
+        "provider": _s(inp.provider or meta.get("provider"), W_PROVIDER),
+        "router": _s(_route_of(inp, meta, model_id, raw_model), W_ROUTER),
         "gateway_key_id": _s(inp.gateway_key_id, W_GATEWAY_KEY),
         "byo_key": bool(inp.byo_key) if inp.byo_key is not None else False,
         "prompt_tokens": _int(inp.prompt_tokens),
