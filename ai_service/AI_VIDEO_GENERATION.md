@@ -1,5 +1,6 @@
 # AI Video Generation Documentation
 
+
 ## Overview
 AI video generation system integrated into the `ai_service` API. Generates educational videos through multiple stages: script → TTS → audio alignment → HTML timeline → rendering.  
 
