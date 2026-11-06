@@ -6,6 +6,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
+import java.util.List;
 import vacademy.io.admin_core_service.features.learner_quiz.repository.LearnerQuizAttemptRepository;
 
 /**
@@ -51,12 +52,27 @@ public class QuizReviewPolicy {
         } catch (Exception e) {
             // Settings that cannot be read must not reveal more than the institute chose.
             log.warn("[quiz-review] Unreadable settings for institute {}: {}", instituteId, e.getMessage());
-            return new QuizSettings(false, true);
+            return new QuizSettings(false, false);
         }
     }
 
+    /** Settings for someone not reading through any one institute: all of them must allow it. */
+    public QuizSettings strictestOf(List<String> instituteIds) {
+        if (instituteIds == null || instituteIds.isEmpty()) {
+            return new QuizSettings(false, false);
+        }
+        boolean show = true;
+        boolean moveOnly = true;
+        for (String instituteId : instituteIds) {
+            QuizSettings settings = settingsOf(instituteId);
+            show &= settings.showReportAndCorrectAnswers();
+            moveOnly &= settings.moveOnlyOnCorrectAnswer();
+        }
+        return new QuizSettings(show, moveOnly);
+    }
+
     /**
-     * @param attemptsUsed recorded attempts of this learner on this quiz
+     * @param attemptsUsed attempts of this learner on this quiz with recorded answers
      * @param attemptsLeft null when the quiz does not cap attempts
      */
     public boolean mayShowAnswers(QuizSettings settings, int attemptsUsed, Integer attemptsLeft) {

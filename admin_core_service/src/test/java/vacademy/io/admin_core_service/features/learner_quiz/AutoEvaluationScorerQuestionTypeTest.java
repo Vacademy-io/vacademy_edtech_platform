@@ -86,11 +86,33 @@ class AutoEvaluationScorerQuestionTypeTest {
     }
 
     @Test
-    @DisplayName("free text is not graded, whatever its key says")
+    @DisplayName("free text is not graded: a model answer or a placeholder key never marks it")
     void freeTextIsNotGraded() {
         assertThat(verdict("LONG_ANSWER", "{\"data\":{\"answer\":{\"content\":\"x\"}}}", picked("x"))).isEqualTo(Verdict.UNKNOWN);
         assertThat(verdict("ONE_WORD", "{\"data\":{\"answer\":\"x\"}}", picked("x"))).isEqualTo(Verdict.UNKNOWN);
         assertThat(verdict("LONG_ANSWER", "{\"correctAnswers\":[0]}", picked("x"))).isEqualTo(Verdict.UNKNOWN);
+    }
+
+    @Test
+    @DisplayName("typing exactly what a correctAnswers key holds stays correct; anything else is not marked wrong")
+    void explicitTextKey() {
+        assertThat(verdict("ONE_WORD", "{\"correctAnswers\":[\"Paris\"]}", picked("Paris"))).isEqualTo(Verdict.CORRECT);
+        assertThat(verdict("ONE_WORD", "{\"correctAnswers\":[\"Paris\"]}", picked("London"))).isEqualTo(Verdict.UNKNOWN);
+    }
+
+    @Test
+    @DisplayName("older callers read exactly the key shapes they always read, with the exact-set rule")
+    void olderCallersKeepTheirShapes() {
+        for (String key : List.of("{\"data\":{\"correctOptionIds\":[\"a\",\"b\"]}}", "{\"correctOptionIds\":[\"a\"]}",
+                "{\"data\":{\"correctOptionId\":\"a\"}}", "{\"correctOptionId\":\"a\"}", "{\"data\":{\"validAnswers\":[2.5]}}",
+                "{\"correctAnswers\":\"a\"}")) {
+            assertThat(scorer.evaluate(key, picked("a"))).as(key).isEqualTo(Verdict.UNKNOWN);
+            assertThat(scorer.correctAnswerIds(key, List::of)).as(key).isEmpty();
+        }
+        // The same answers, on the shapes they did read.
+        assertThat(scorer.evaluate("{\"correctAnswers\":[\"a\"]}", picked("a"))).isEqualTo(Verdict.CORRECT);
+        assertThat(scorer.evaluate("{\"data\":{\"correctAnswers\":[\"a\"]}}", picked("a"))).isEqualTo(Verdict.CORRECT);
+        assertThat(scorer.correctAnswerIds("{\"correctAnswers\":[\"a\"]}", List::of)).containsExactly("a");
     }
 
     @Test

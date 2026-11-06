@@ -17,6 +17,7 @@ import vacademy.io.admin_core_service.features.learner_offline.controller.Learne
 import vacademy.io.admin_core_service.features.learner_quiz.answerkey.AnswerKeyAccess;
 import vacademy.io.admin_core_service.features.learner_quiz.answerkey.AnswerKeyResponseAdvice;
 import vacademy.io.admin_core_service.features.learner_quiz.answerkey.AnswerKeyStripper;
+import vacademy.io.admin_core_service.features.learner_quiz.answerkey.AuthoringAnswerAccess;
 import vacademy.io.admin_core_service.features.learner_quiz.answerkey.AnswerKeySurface;
 import vacademy.io.admin_core_service.features.learner_quiz.answerkey.WithoutAnswerKeys;
 import vacademy.io.admin_core_service.features.learner_study_library.controller.LearnerStudyLibraryController;
@@ -34,9 +35,13 @@ import java.util.List;
 import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 
 class AnswerKeyStrippingTest {
+
+    private final AuthoringAnswerAccess authoring = org.mockito.Mockito.mock(AuthoringAnswerAccess.class);
 
     private static final ObjectMapper MAPPER = new ObjectMapper();
     private final AnswerKeyStripper stripper = new AnswerKeyStripper(MAPPER);
@@ -116,21 +121,6 @@ class AnswerKeyStrippingTest {
         assertThat(stripper.withoutCorrectOptions("correctOptions not json")).isEqualTo("{}");
     }
 
-    @ParameterizedTest
-    @CsvSource({ "ADMIN,true", "TEACHER,true", "COURSE_CREATOR,true", "SOME_CUSTOM_ROLE,true", "STUDENT,false", "PARENT,false" })
-    void authoringRead(String authority, boolean keeps) {
-        assertThat(access(false, false, true).keepsAnswersOnAuthoringRead(user(authority))).isEqualTo(keeps);
-    }
-
-    @Test
-    @DisplayName("a learner who also creates courses keeps answers; no authorities at all does not, even as root")
-    void authoringEdges() {
-        AnswerKeyAccess access = access(false, false, true);
-        assertThat(access.keepsAnswersOnAuthoringRead(user("STUDENT", "TEACHER"))).isTrue();
-        assertThat(access.keepsAnswersOnAuthoringRead(user())).isFalse();
-        assertThat(access.keepsAnswersOnAuthoringRead(null)).isFalse();
-    }
-
     private static AnswerKeyAccess access(boolean open, boolean learner, boolean authoring) {
         return new AnswerKeyAccess(open, learner, authoring, false);
     }
@@ -166,6 +156,13 @@ class AnswerKeyStrippingTest {
             return ResponseEntity.ok(slideDtos());
         }
 
+        @WithoutAnswerKeys(AnswerKeySurface.AUTHORING)
+        @GetMapping("/authoring/{chapterId}")
+        ResponseEntity<List<LearnerSlidesDetailDTO>> authoringChapter(@org.springframework.web.bind.annotation.PathVariable String chapterId)
+                throws Exception {
+            return ResponseEntity.ok(slideDtos());
+        }
+
         @GetMapping("/other")
         ResponseEntity<List<LearnerSlidesDetailDTO>> other() throws Exception {
             return ResponseEntity.ok(slideDtos());
@@ -174,7 +171,7 @@ class AnswerKeyStrippingTest {
 
     private MockMvc mvc(AnswerKeyAccess access) {
         return MockMvcBuilders.standaloneSetup(new Fixture())
-                .setControllerAdvice(new AnswerKeyResponseAdvice(access, stripper))
+                .setControllerAdvice(new AnswerKeyResponseAdvice(access, stripper, authoring))
                 .setMessageConverters(new MappingJackson2HttpMessageConverter())
                 .build();
     }
@@ -211,12 +208,24 @@ class AnswerKeyStrippingTest {
     }
 
     @Test
-    @DisplayName("authoring reads keep answers for staff and lose them for learners")
+    @DisplayName("authoring reads are judged on the content each endpoint names")
     void authoringSurface() throws Exception {
         MockMvc mvc = mvc(access(false, false, true));
-        assertThat(body(mvc, "/authoring", user("ADMIN"))).contains("KEYVALUE");
-        assertThat(body(mvc, "/authoring", user("STUDENT"))).doesNotContain("KEYVALUE");
-        assertThat(body(mvc, "/authoring", null)).doesNotContain("KEYVALUE");
+        CustomUserDetails staff = user("ADMIN");
+        when(authoring.keepsAnswersOnSlide(eq(staff), eq("kept"))).thenReturn(true);
+        when(authoring.keepsAnswersOnChapter(eq(staff), eq("kept"))).thenReturn(true);
+        when(authoring.keepsAnswersOnBatch(eq(staff), eq("kept"))).thenReturn(true);
+
+        assertThat(body(mvc, "/authoring?slideId=kept", staff)).contains("KEYVALUE");
+        assertThat(body(mvc, "/authoring?chapterId=kept", staff)).contains("KEYVALUE");
+        assertThat(body(mvc, "/authoring/kept", staff)).contains("KEYVALUE");
+        assertThat(body(mvc, "/authoring?moduleId=m&packageSessionId=kept", staff)).contains("KEYVALUE");
+
+        assertThat(body(mvc, "/authoring?slideId=other", staff)).doesNotContain("KEYVALUE");
+        assertThat(body(mvc, "/authoring?chapterId=other", staff)).doesNotContain("KEYVALUE");
+        assertThat(body(mvc, "/authoring?packageSessionId=other", staff)).doesNotContain("KEYVALUE");
+        assertThat(body(mvc, "/authoring", staff)).as("names nothing").doesNotContain("KEYVALUE");
+        assertThat(body(mvc, "/authoring?slideId=kept", null)).doesNotContain("KEYVALUE");
     }
 
     @Test

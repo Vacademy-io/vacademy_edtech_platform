@@ -1,20 +1,14 @@
 package vacademy.io.admin_core_service.features.learner_quiz.answerkey;
 
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.security.core.GrantedAuthority;
 import org.springframework.stereotype.Component;
-import vacademy.io.common.auth.model.CustomUserDetails;
+import vacademy.io.admin_core_service.features.learner_tracking.dto.ActivityLogDTO;
 
-import java.util.Set;
+import java.util.List;
 
-/**
- * The switches for removing correct answers, each off until its step of the rollout, and who
- * keeps them on authoring reads. The root flag is not read: learners are created as root.
- */
+/** The switches for removing correct answers, each off until its step of the rollout. */
 @Component
 public class AnswerKeyAccess {
-
-    private static final Set<String> LEARNER_ONLY = Set.of("STUDENT", "PARENT", "GUARDIAN");
 
     private final boolean stripOpen;
     private final boolean stripLearner;
@@ -49,19 +43,11 @@ public class AnswerKeyAccess {
         return stripLearner;
     }
 
-    /**
-     * Staff keep answers on authoring reads: an editor that loads a quiz without them could
-     * not show or save them. Anyone holding any authority beyond the learner roles counts,
-     * since a learner who may create courses carries TEACHER too and edits their own quizzes.
-     * The authorities are minted for the clientId header's institute, and the admin dashboard
-     * and the AI assistant both send it.
-     */
-    public boolean keepsAnswersOnAuthoringRead(CustomUserDetails user) {
-        if (user == null || user.getAuthorities() == null) {
-            return false;
+    /** A log read that is not the quiz log has no reason to carry quiz answers. */
+    public ActivityLogDTO withoutQuizSidesWhenStripping(ActivityLogDTO log) {
+        if (stripLearner && log != null) {
+            log.setQuizSides(List.of());
         }
-        return user.getAuthorities().stream()
-                .map(GrantedAuthority::getAuthority)
-                .anyMatch(authority -> authority != null && !LEARNER_ONLY.contains(authority.trim().toUpperCase()));
+        return log;
     }
 }

@@ -17,8 +17,10 @@ import vacademy.io.admin_core_service.features.learner_quiz.dto.QuizAttemptResul
 import vacademy.io.admin_core_service.features.learner_quiz.dto.QuizAttemptResultResponse.Status;
 import vacademy.io.admin_core_service.features.learner_quiz.dto.QuizAttemptSubmitRequest;
 import vacademy.io.admin_core_service.features.learner_quiz.repository.LearnerQuizAttemptRepository;
+import vacademy.io.admin_core_service.features.learner_quiz.repository.LearnerQuizAttemptRepository.AttemptStateRow;
 import vacademy.io.admin_core_service.features.learner_quiz.repository.LearnerQuizAttemptRepository.CheckableQuestionRow;
 import vacademy.io.admin_core_service.features.learner_quiz.repository.LearnerQuizAttemptRepository.RecordedAnswerRow;
+import vacademy.io.admin_core_service.features.learner_quiz.repository.LearnerQuizAttemptRepository.SlideKindRow;
 import vacademy.io.admin_core_service.features.learner_quiz.service.QuizLoader.LoadedQuiz;
 import vacademy.io.admin_core_service.features.learner_tracking.dto.ActivityLogDTO;
 import vacademy.io.admin_core_service.features.learner_tracking.dto.QuizSideActivityLogDTO;
@@ -110,6 +112,10 @@ public class LearnerQuizAttemptService {
             String clientInstituteId) {
         validate(request);
         String slideId = request.getSlideId();
+        QuizAttemptResultResponse recorded = readBackIfRecorded(request, user, clientInstituteId);
+        if (recorded != null) {
+            return recorded;
+        }
         LoadedQuiz quiz = quizLoader.load(slideId)
                 .filter(q -> isLive(q.meta().getSlideStatus()))
                 .orElseThrow(() -> new ResourceNotFoundException("This quiz is no longer available"));
@@ -130,7 +136,28 @@ public class LearnerQuizAttemptService {
             runAfterCommitHooks(user.getUserId(), request, access, outcome.dtoForHooks());
         }
         return buildResult(outcome.status(), request.getAttemptId(), user.getUserId(), slideId, quiz,
-                access.instituteId());
+                reviewPolicy.settingsOf(access.instituteId()));
+    }
+
+    /**
+     * A retry of an attempt already recorded answers from what is stored, even if the slide
+     * was unpublished or the membership ended since the first send: the reply was lost, the
+     * attempt was not.
+     */
+    private QuizAttemptResultResponse readBackIfRecorded(QuizAttemptSubmitRequest request, CustomUserDetails user,
+            String clientInstituteId) {
+        if (user == null || !StringUtils.hasText(user.getUserId())) {
+            return null;
+        }
+        AttemptStateRow state = repository.findAttemptState(request.getAttemptId()).orElse(null);
+        if (state == null || state.getAnswerCount() == 0 || !user.getUserId().equals(state.getUserId())
+                || !request.getSlideId().equals(state.getSlideId()) || !"QUIZ".equals(state.getSourceType())) {
+            return null;
+        }
+        LoadedQuiz quiz = quizLoader.load(request.getSlideId()).orElse(null);
+        return quiz == null ? null
+                : buildResult(Status.ALREADY_GRADED, request.getAttemptId(), user.getUserId(), request.getSlideId(),
+                        quiz, settingsForRead(request.getSlideId(), user, clientInstituteId));
     }
 
     /** Runs inside one short transaction: no remote call belongs in here. */
@@ -148,12 +175,11 @@ public class LearnerQuizAttemptService {
             if (trackedRepository.countByActivityLogId(existing.getId()) > 0) {
                 return new WriteOutcome(Status.ALREADY_GRADED, null);
             }
-            // A row with no answers: an earlier write stopped halfway. Finish it.
-        } else {
-            Integer cap = quiz.meta().getReAttemptCount();
-            if (cap != null && repository.countQuizAttempts(userId, slideId) >= cap) {
-                return new WriteOutcome(Status.ATTEMPTS_EXHAUSTED, null);
-            }
+            // A row with no answers is not an attempt yet, so the cap applies as to a new one.
+        }
+        Integer cap = quiz.meta().getReAttemptCount();
+        if (cap != null && repository.countQuizAttempts(userId, slideId) >= cap) {
+            return new WriteOutcome(Status.ATTEMPTS_EXHAUSTED, null);
         }
 
         ActivityLogDTO dto = new ActivityLogDTO();
@@ -259,27 +285,30 @@ public class LearnerQuizAttemptService {
         LoadedQuiz quiz = quizLoader.load(slideId)
                 .orElseThrow(() -> new ResourceNotFoundException("This quiz is no longer available"));
         // A learner whose access has ended can still read back what they submitted.
-        String instituteId = resolveInstituteForRead(slideId, user, clientInstituteId);
-        return buildResult(Status.RESULT, null, user.getUserId(), slideId, quiz, instituteId);
+        return buildResult(Status.RESULT, null, user.getUserId(), slideId, quiz,
+                settingsForRead(slideId, user, clientInstituteId));
     }
 
-    private String resolveInstituteForRead(String slideId, CustomUserDetails user, String clientInstituteId) {
+    /**
+     * With no live access, the institutes owning the slide decide together: the header cannot
+     * choose a more generous one, and a slide no institute owns shows nothing.
+     */
+    private QuizReviewPolicy.QuizSettings settingsForRead(String slideId, CustomUserDetails user,
+            String clientInstituteId) {
         try {
-            return accessService.requireAccess(user, slideId, clientInstituteId, null, null).instituteId();
+            return reviewPolicy.settingsOf(
+                    accessService.requireAccess(user, slideId, clientInstituteId, null, null).instituteId());
         } catch (ForbiddenException noLiveAccess) {
-            List<String> institutes = repository.findInstitutesOfSlide(slideId);
-            return institutes.contains(clientInstituteId) || institutes.isEmpty() ? clientInstituteId
-                    : institutes.get(0);
+            return reviewPolicy.strictestOf(repository.findInstitutesOfSlide(slideId));
         }
     }
 
     private QuizAttemptResultResponse buildResult(Status status, String attemptId, String userId, String slideId,
-            LoadedQuiz quiz, String instituteId) {
+            LoadedQuiz quiz, QuizReviewPolicy.QuizSettings settings) {
         List<AttemptSummary> attempts = summarise(repository.findRecordedAnswers(userId, slideId), quiz);
         Integer cap = quiz.meta().getReAttemptCount();
         int used = attempts.size();
         Integer left = cap == null ? null : Integer.valueOf(Math.max(0, cap - used));
-        QuizReviewPolicy.QuizSettings settings = reviewPolicy.settingsOf(instituteId);
         boolean showAnswers = reviewPolicy.mayShowAnswers(settings, used, left);
         return QuizAttemptResultResponse.builder()
                 .status(status)
@@ -311,14 +340,18 @@ public class LearnerQuizAttemptService {
 
     /**
      * Scores stored attempts the way the review screen always has: recorded marks win, and
-     * older rows without them score 1 per correct answer against the current key.
+     * older rows without them score 1 per correct answer against the current key. A row with
+     * no recorded answers is not an attempt. Only rows this service graded are taken as they
+     * stand. Anything else has its marks held inside what the question can award, cannot add
+     * a question the quiz does not have, and cannot shrink the total by leaving one out.
      */
     private List<AttemptSummary> summarise(List<RecordedAnswerRow> rows, LoadedQuiz quiz) {
         Map<String, QuizGrader.Question> questions = new HashMap<>();
         quiz.questions().forEach(q -> questions.put(q.id(), q));
 
         Map<String, List<RecordedAnswerRow>> byAttempt = new LinkedHashMap<>();
-        rows.forEach(row -> byAttempt.computeIfAbsent(row.getAttemptId(), k -> new ArrayList<>()).add(row));
+        rows.stream().filter(row -> row.getQuestionId() != null)
+                .forEach(row -> byAttempt.computeIfAbsent(row.getAttemptId(), k -> new ArrayList<>()).add(row));
 
         List<AttemptSummary> summaries = new ArrayList<>();
         for (Map.Entry<String, List<RecordedAnswerRow>> attempt : byAttempt.entrySet()) {
@@ -332,12 +365,23 @@ public class LearnerQuizAttemptService {
             List<QuestionResult> results = new ArrayList<>();
             Timestamp at = null;
             Set<String> seen = new LinkedHashSet<>();
+            boolean gradedHere = true;
+            boolean marksRecorded = false;
             for (RecordedAnswerRow row : attempt.getValue()) {
                 at = row.getEndTime() != null ? row.getEndTime() : row.getCreatedAt();
-                if (row.getQuestionId() == null || !seen.add(row.getQuestionId())) {
+                if (!seen.add(row.getQuestionId())) {
                     continue;
                 }
-                QuestionResult result = resultOf(row, questions.get(row.getQuestionId()));
+                JsonNode stored = parse(row.getResponseJson());
+                boolean server = stored != null
+                        && QuizGrader.GRADED_BY_SERVER.equals(stored.path("gradedBy").asText(null));
+                gradedHere &= server;
+                marksRecorded |= stored != null && stored.path("maxMarks").isNumber();
+                QuizGrader.Question question = questions.get(row.getQuestionId());
+                if (question == null && !server) {
+                    continue;
+                }
+                QuestionResult result = resultOf(row, stored, question, server, quiz.rules());
                 results.add(result);
                 earned += result.getMarks();
                 total += result.getMaxMarks();
@@ -347,6 +391,18 @@ public class LearnerQuizAttemptService {
                     case "WRONG" -> wrong++;
                     case "SKIPPED" -> skipped++;
                     default -> pending++;
+                }
+            }
+            if (!gradedHere) {
+                for (QuizGrader.Question question : quiz.questions()) {
+                    if (!seen.contains(question.id())) {
+                        // An attempt too old to have marks is scored one per question throughout.
+                        double max = marksRecorded ? maxMarksOf(question, quiz.rules()) : 1;
+                        results.add(QuestionResult.builder().questionId(question.id()).outcome("SKIPPED").marks(0)
+                                .maxMarks(max).build());
+                        total += max;
+                        skipped++;
+                    }
                 }
             }
             double floored = Math.max(0, earned);
@@ -367,13 +423,24 @@ public class LearnerQuizAttemptService {
         return summaries;
     }
 
-    private QuestionResult resultOf(RecordedAnswerRow row, QuizGrader.Question question) {
+    private static double maxMarksOf(QuizGrader.Question question, QuizGrader.Rules rules) {
+        return question.marks() != null ? question.marks() : rules.marksPerQuestion();
+    }
+
+    private QuestionResult resultOf(RecordedAnswerRow row, JsonNode stored, QuizGrader.Question question,
+            boolean gradedHere, QuizGrader.Rules rules) {
         String status = row.getResponseStatus() == null ? "" : row.getResponseStatus().trim().toUpperCase();
-        JsonNode stored = parse(row.getResponseJson());
         if (stored != null && stored.path("maxMarks").isNumber()) {
             double max = stored.path("maxMarks").asDouble();
             double marks = stored.path("marks").isNumber() ? stored.path("marks").asDouble()
                     : stored.path("isCorrect").asBoolean(false) ? max : 0;
+            if (!gradedHere && question != null) {
+                double questionMax = maxMarksOf(question, rules);
+                double negative = question.negativeMarking() != null ? question.negativeMarking()
+                        : rules.negativeMarking();
+                max = max > 0 ? Math.min(max, questionMax) : questionMax;
+                marks = Math.max(QuizGrader.lowestMarks(negative), Math.min(max, marks));
+            }
             return QuestionResult.builder()
                     .questionId(row.getQuestionId())
                     .outcome(recordedOutcome(status, stored, question, row.getResponseJson()))
@@ -409,6 +476,10 @@ public class LearnerQuizAttemptService {
         if ("SKIPPED".equals(status)) {
             return "SKIPPED";
         }
+        // A wrong judgement or a penalty someone already recorded is shown as what it is.
+        if ("WRONG".equals(status) && (stored.path("marks").asDouble(0) < 0 || "tutor".equals(stored.path("source").asText(null)))) {
+            return "WRONG";
+        }
         if ("SUBMITTED".equals(status)
                 || (question != null && AutoEvaluationScorer.isFreeText(question.questionType()))) {
             boolean answered = !scorer.selectedAnswerIds(responseJson).isEmpty();
@@ -433,8 +504,9 @@ public class LearnerQuizAttemptService {
     /**
      * Whether one answer is right, without recording anything. Quiz questions answer only
      * while the institute uses "move on only after a correct answer", and say nothing past
-     * the verdict. Question and video slides have always shown their guidance straight after
-     * answering, so they get it here.
+     * the verdict. Question slides get the verdict and the explanation they have always shown
+     * straight after answering. Video questions also get the correct option, because the
+     * overlay shows it after one guess.
      */
     public QuizAnswerCheckResponse checkAnswer(QuizAnswerCheckRequest request, CustomUserDetails user,
             String clientInstituteId) {
@@ -445,24 +517,31 @@ public class LearnerQuizAttemptService {
         String slideId = request.getSlideId();
         LearnerQuizAccessService.Access access = accessService.requireAccess(user, slideId, clientInstituteId, null,
                 null);
-        String sourceType = repository.findSlideSourceType(slideId)
+        SlideKindRow slide = repository.findSlideKind(slideId)
+                .filter(kind -> isLive(kind.getStatus()))
                 .orElseThrow(() -> new ResourceNotFoundException("Slide not found"));
+        String sourceType = slide.getSourceType();
         String responseJson = responseJsonOf(request);
         return switch (sourceType) {
-            case "QUIZ" -> checkQuizAnswer(request, slideId, access, responseJson);
+            case "QUIZ" -> checkQuizAnswer(request, slideId, access, responseJson, user);
             case "QUESTION", "VIDEO" -> checkSlideAnswer(request, slideId, sourceType, responseJson);
             default -> throw new InvalidRequestException("This slide has no questions to check");
         };
     }
 
     private QuizAnswerCheckResponse checkQuizAnswer(QuizAnswerCheckRequest request, String slideId,
-            LearnerQuizAccessService.Access access, String responseJson) {
+            LearnerQuizAccessService.Access access, String responseJson, CustomUserDetails user) {
         QuizReviewPolicy.QuizSettings settings = reviewPolicy.settingsOf(access.instituteId());
         if (settings.showReportAndCorrectAnswers() || !settings.moveOnlyOnCorrectAnswer()) {
             throw new ForbiddenException("Answers are checked when the quiz is submitted");
         }
         LoadedQuiz quiz = quizLoader.load(slideId)
                 .orElseThrow(() -> new ResourceNotFoundException("Slide not found"));
+        // The gate is for working through a quiz. With no attempts left there is nothing to work through.
+        Integer cap = quiz.meta().getReAttemptCount();
+        if (cap != null && repository.countQuizAttempts(user.getUserId(), slideId) >= cap) {
+            throw new ForbiddenException("No attempts remaining for this quiz");
+        }
         QuizGrader.Question question = quiz.questions().stream()
                 .filter(q -> q.id().equals(request.getQuestionId()))
                 .findFirst()
@@ -487,6 +566,12 @@ public class LearnerQuizAttemptService {
         // These keys store ids, never positions, so the option list is not consulted.
         AutoEvaluationScorer.Verdict verdict = scorer.evaluateForQuestionType(question.getQuestionType(),
                 question.getAutoEvaluationJson(), responseJson, List::of);
+        if ("QUESTION".equals(sourceType)) {
+            return QuizAnswerCheckResponse.builder()
+                    .correct(verdictToBoolean(verdict))
+                    .explanation(question.getExplanationContent())
+                    .build();
+        }
         return QuizAnswerCheckResponse.builder()
                 .correct(verdictToBoolean(verdict))
                 .correctOptionIds(new ArrayList<>(scorer.correctAnswerIdsForQuestionType(question.getQuestionType(),

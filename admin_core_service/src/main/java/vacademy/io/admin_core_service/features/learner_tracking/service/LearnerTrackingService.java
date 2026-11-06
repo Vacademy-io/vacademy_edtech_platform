@@ -13,6 +13,7 @@ import vacademy.io.admin_core_service.features.learner_operation.enums.LearnerOp
 import vacademy.io.admin_core_service.features.learner_operation.enums.LearnerOperationSourceEnum;
 import vacademy.io.admin_core_service.features.learner_operation.service.LearnerOperationService;
 import vacademy.io.admin_core_service.features.slide.enums.SlideTypeEnum;
+import vacademy.io.admin_core_service.features.learner_quiz.answerkey.AnswerKeyAccess;
 import vacademy.io.admin_core_service.features.learner_tracking.dto.ActivityLogDTO;
 import vacademy.io.admin_core_service.features.learner_tracking.dto.DocumentActivityLogDTO;
 import vacademy.io.admin_core_service.features.learner_tracking.dto.VideoActivityLogDTO;
@@ -40,6 +41,7 @@ public class LearnerTrackingService {
     private final LearnerOperationService learnerOperationService;
     private final LearnerTrackingAsyncService learnerTrackingAsyncService;
     private final ConcentrationScoreService concentrationScoreService;
+    private final AnswerKeyAccess answerKeyAccess;
 
     @Autowired
     public LearnerTrackingService(
@@ -49,7 +51,8 @@ public class LearnerTrackingService {
             AudioTrackedRepository audioTrackedRepository,
             LearnerOperationService learnerOperationService,
             LearnerTrackingAsyncService learnerTrackingAsyncService,
-            ConcentrationScoreService concentrationScoreService) {
+            ConcentrationScoreService concentrationScoreService,
+            AnswerKeyAccess answerKeyAccess) {
         this.activityLogRepository = activityLogRepository;
         this.documentTrackedRepository = documentTrackedRepository;
         this.videoTrackedRepository = videoTrackedRepository;
@@ -57,6 +60,7 @@ public class LearnerTrackingService {
         this.learnerOperationService = learnerOperationService;
         this.learnerTrackingAsyncService = learnerTrackingAsyncService;
         this.concentrationScoreService = concentrationScoreService;
+        this.answerKeyAccess = answerKeyAccess;
     }
 
     /**
@@ -114,7 +118,7 @@ public class LearnerTrackingService {
         afterCommit(() -> learnerTrackingAsyncService.updateLearnerOperationsForDocument(user.getUserId(), slideId,
                 chapterId, moduleId, subjectId, packageSessionId, activityLogDTO));
         concentrationScoreService.addConcentrationScore(activityLogDTO.getConcentrationScore(), activityLog);
-        return activityLog.toActivityLogDTO();
+        return toDto(activityLog);
     }
 
     @Transactional
@@ -130,7 +134,7 @@ public class LearnerTrackingService {
         afterCommit(() -> learnerTrackingAsyncService.updateLearnerOperationsForVideo(user.getUserId(), slideId,
                 chapterId, moduleId, subjectId, packageSessionId, activityLogDTO));
         concentrationScoreService.addConcentrationScore(activityLogDTO.getConcentrationScore(), activityLog);
-        return activityLog.toActivityLogDTO();
+        return toDto(activityLog);
     }
 
     @Transactional
@@ -146,7 +150,7 @@ public class LearnerTrackingService {
         afterCommit(() -> learnerTrackingAsyncService.updateLearnerOperationsForHtmlVideo(user.getUserId(), slideId,
                 chapterId, moduleId, subjectId, packageSessionId, activityLogDTO));
         concentrationScoreService.addConcentrationScore(activityLogDTO.getConcentrationScore(), activityLog);
-        return activityLog.toActivityLogDTO();
+        return toDto(activityLog);
     }
 
     // Clients send new_activity=true with an id they generated, so this save()
@@ -275,16 +279,20 @@ public class LearnerTrackingService {
         }
     }
 
+    private ActivityLogDTO toDto(ActivityLog activityLog) {
+        return answerKeyAccess.withoutQuizSidesWhenStripping(activityLog.toActivityLogDTO());
+    }
+
     public Page<ActivityLogDTO> getDocumentActivityLogs(String userId, String slideId, Pageable pageable,
             CustomUserDetails userDetails) {
         Page<ActivityLog> activityLogs = activityLogRepository.findActivityLogsWithDocuments(userId, slideId, pageable);
-        return activityLogs.map(ActivityLog::toActivityLogDTO);
+        return activityLogs.map(this::toDto);
     }
 
     public Page<ActivityLogDTO> getVideoActivityLogs(String userId, String slideId, Pageable pageable,
             CustomUserDetails userDetails) {
         Page<ActivityLog> activityLogs = activityLogRepository.findActivityLogsWithVideos(userId, slideId, pageable);
-        return activityLogs.map(ActivityLog::toActivityLogDTO);
+        return activityLogs.map(this::toDto);
     }
 
     // ==== Audio Tracking Methods ====
@@ -301,7 +309,7 @@ public class LearnerTrackingService {
         afterCommit(() -> learnerTrackingAsyncService.updateLearnerOperationsForAudio(user.getUserId(), slideId,
                 chapterId, moduleId, subjectId, packageSessionId, activityLogDTO));
         concentrationScoreService.addConcentrationScore(activityLogDTO.getConcentrationScore(), activityLog);
-        return activityLog.toActivityLogDTO();
+        return toDto(activityLog);
     }
 
     // Upsert per row (same as documents/videos) instead of the historical
@@ -334,7 +342,7 @@ public class LearnerTrackingService {
     public Page<ActivityLogDTO> getAudioActivityLogs(String userId, String slideId, Pageable pageable,
             CustomUserDetails userDetails) {
         Page<ActivityLog> activityLogs = activityLogRepository.findActivityLogsWithAudios(userId, slideId, pageable);
-        return activityLogs.map(ActivityLog::toActivityLogDTO);
+        return activityLogs.map(this::toDto);
     }
 
     /**

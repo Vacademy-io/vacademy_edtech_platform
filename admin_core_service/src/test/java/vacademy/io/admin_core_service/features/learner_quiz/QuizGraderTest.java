@@ -47,6 +47,15 @@ class QuizGraderTest {
     }
 
     @Test
+    @DisplayName("a wrong answer with no penalty stores a plain 0")
+    void noPenaltyStoresPlainZero() {
+        QuizGrader.Rules noPenalty = new QuizGrader.Rules(2.0, 0.0, false);
+        Graded wrong = grader.grade(mcq("MCQS", "{\"correctAnswers\":[\"a\"]}"), noPenalty, List.of("b"), "server");
+        assertThat(wrong.marks()).isEqualTo(0.0);
+        assertThat(wrong.responseJson()).contains("\"marks\":0.0").doesNotContain("-0.0");
+    }
+
+    @Test
     @DisplayName("a question's own marks win over the quiz defaults")
     void questionMarksWin() {
         Question own = new Question("q1", "MCQS", 5.0, 2.0, "{\"correctAnswers\":[\"a\"]}", "t", null, OPTIONS);
@@ -105,9 +114,31 @@ class QuizGraderTest {
 
     @Test
     @DisplayName("option ids the question does not have are dropped")
-    void unknownOptionDropped() {
-        Graded g = grader.grade(mcq("MCQS", "{\"correctAnswers\":[\"a\"]}"), PLAIN, List.of("not-an-option"), "server");
-        assertThat(g.outcome()).isEqualTo(Outcome.SKIPPED);
+    void removedOptionStillCountsAsAnswered() throws Exception {
+        Graded g = grader.grade(mcq("MCQS", "{\"correctAnswers\":[\"a\"]}"), PLAIN, List.of("removed-option"), "server");
+        assertThat(g.outcome()).isEqualTo(Outcome.WRONG);
+        assertThat(mapper.readTree(g.responseJson()).path("selectedOptions").get(0).path("id").asText())
+                .isEqualTo("removed-option");
+        // A removed option that was picked alongside a right one earns no share.
+        Graded mixed = grader.grade(mcq("MCQM", "{\"correctAnswers\":[\"a\",\"b\"]}"), PARTIAL,
+                List.of("a", "removed-option"), "server");
+        assertThat(mixed.outcome()).isEqualTo(Outcome.WRONG);
+    }
+
+    @Test
+    @DisplayName("regrading keeps what the client sent and replaces only marks and verdict")
+    void regradeKeepsWhatWasSent() throws Exception {
+        Graded g = grader.regrade(mcq("MCQS", "{\"correctAnswers\":[\"a\"]}"), PLAIN,
+                "{\"questionName\":\"Shown\",\"selectedOptions\":[{\"id\":\"gone\",\"name\":\"Removed\"}],"
+                        + "\"marks\":99,\"maxMarks\":99,\"isCorrect\":true,\"extra\":\"kept\"}", "server-legacy");
+        JsonNode json = mapper.readTree(g.responseJson());
+        assertThat(json.path("questionName").asText()).isEqualTo("Shown");
+        assertThat(json.path("selectedOptions").get(0).path("name").asText()).isEqualTo("Removed");
+        assertThat(json.path("extra").asText()).isEqualTo("kept");
+        assertThat(json.path("marks").asDouble()).isEqualTo(-0.5);
+        assertThat(json.path("maxMarks").asDouble()).isEqualTo(2.0);
+        assertThat(json.path("isCorrect").asBoolean()).isFalse();
+        assertThat(json.path("gradedBy").asText()).isEqualTo("server-legacy");
     }
 
     @Test

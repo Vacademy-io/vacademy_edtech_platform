@@ -7,6 +7,9 @@ import org.springframework.web.bind.annotation.RequestAttribute;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import vacademy.io.admin_core_service.features.learner_quiz.answerkey.AnswerKeyAccess;
+import vacademy.io.admin_core_service.features.learner_quiz.answerkey.AnswerKeySurface;
+import vacademy.io.admin_core_service.features.learner_quiz.answerkey.AuthoringAnswerAccess;
 import vacademy.io.admin_core_service.features.quiz_results.dto.LearnerQuizAnswersResponse;
 import vacademy.io.admin_core_service.features.quiz_results.dto.LearnerQuizDetailResponse;
 import vacademy.io.admin_core_service.features.quiz_results.dto.LearnerQuizOverviewResponse;
@@ -30,12 +33,22 @@ import vacademy.io.common.auth.model.CustomUserDetails;
 public class QuizResultsController {
 
     private final QuizResultsService quizResultsService;
+    private final AnswerKeyAccess answerKeyAccess;
+    private final AuthoringAnswerAccess authoringAnswerAccess;
+
+    /** These carry the answer key, so they follow the switch that keeps it from non-staff. */
+    private void requireResultsReader(CustomUserDetails user, String batchId) {
+        if (answerKeyAccess.isOn(AnswerKeySurface.AUTHORING)) {
+            authoringAnswerAccess.requireResultsReader(user, batchId);
+        }
+    }
 
     /** Every quiz in the batch, with participation and score aggregates. */
     @GetMapping("/overview")
     public ResponseEntity<QuizOverviewResponse> getOverview(
             @RequestParam("batchId") String batchId,
             @RequestAttribute("user") CustomUserDetails user) {
+        requireResultsReader(user, batchId);
         return ResponseEntity.ok(quizResultsService.getOverview(batchId, user));
     }
 
@@ -45,6 +58,7 @@ public class QuizResultsController {
             @RequestParam("batchId") String batchId,
             @RequestParam("slideId") String slideId,
             @RequestAttribute("user") CustomUserDetails user) {
+        requireResultsReader(user, batchId);
         return ResponseEntity.ok(quizResultsService.getQuizResults(batchId, slideId, user));
     }
 
@@ -54,6 +68,7 @@ public class QuizResultsController {
             @RequestParam("batchId") String batchId,
             @RequestParam("slideId") String slideId,
             @RequestAttribute("user") CustomUserDetails user) {
+        requireResultsReader(user, batchId);
         return ResponseEntity.ok(quizResultsService.getQuestionAnalysis(batchId, slideId, user));
     }
 
@@ -62,6 +77,7 @@ public class QuizResultsController {
     public ResponseEntity<LearnerQuizOverviewResponse> getLearnerOverview(
             @RequestParam("batchId") String batchId,
             @RequestAttribute("user") CustomUserDetails user) {
+        requireResultsReader(user, batchId);
         return ResponseEntity.ok(quizResultsService.getLearnerOverview(batchId, user));
     }
 
@@ -71,6 +87,7 @@ public class QuizResultsController {
             @RequestParam("batchId") String batchId,
             @RequestParam("userId") String userId,
             @RequestAttribute("user") CustomUserDetails user) {
+        requireResultsReader(user, batchId);
         return ResponseEntity.ok(quizResultsService.getLearnerDetail(batchId, userId, user));
     }
 
@@ -81,6 +98,7 @@ public class QuizResultsController {
             @RequestParam("slideId") String slideId,
             @RequestParam("userId") String userId,
             @RequestAttribute("user") CustomUserDetails user) {
+        requireResultsReader(user, batchId);
         return ResponseEntity.ok(quizResultsService.getLearnerAnswers(batchId, slideId, userId, user));
     }
 }

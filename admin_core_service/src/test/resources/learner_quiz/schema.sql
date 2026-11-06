@@ -195,6 +195,14 @@ CREATE TABLE IF NOT EXISTS package_session (
   PRIMARY KEY (id)
 );
 
+CREATE TABLE IF NOT EXISTS package (
+  "id" varchar(255) NOT NULL,
+  "package_name" varchar(255),
+  "status" varchar(50) NOT NULL,
+  "created_by_user_id" varchar(255),
+  PRIMARY KEY (id)
+);
+
 CREATE TABLE IF NOT EXISTS package_institute (
   "package_id" varchar(255),
   "group_id" varchar(255),

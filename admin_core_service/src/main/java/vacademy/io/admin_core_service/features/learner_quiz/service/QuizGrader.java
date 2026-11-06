@@ -27,8 +27,13 @@ public class QuizGrader {
 
     /** response_json marker: graded by the submit endpoint. */
     public static final String GRADED_BY_SERVER = "server";
-    /** response_json marker: posted to the older activity-log endpoint with client marks. */
+    /** response_json marker: posted to the older activity-log endpoint, marks recomputed here. */
     public static final String GRADED_BY_LEGACY = "server-legacy";
+    /** response_json marker: posted to the older activity-log endpoint, the client's marks kept. */
+    public static final String GRADED_BY_CLIENT = "client-legacy";
+
+    /** What a client claims about its own answer. Nothing else in response_json affects a score. */
+    private static final List<String> CLAIM_FIELDS = List.of("marks", "maxMarks", "isCorrect", "isPartial", "gradedBy");
 
     public enum Outcome { CORRECT, PARTIAL, WRONG, SKIPPED, PENDING }
 
@@ -55,18 +60,15 @@ public class QuizGrader {
 
     /**
      * @param selected what the learner chose: option ids, or the typed answer as its single
-     *                 entry. Option ids the question does not have are dropped.
+     *                 entry. An option the question no longer has still counts as answered,
+     *                 and the id is kept, since an author may have removed it after the
+     *                 learner picked it.
      */
     public Graded grade(Question question, Rules rules, List<String> selected, String gradedBy) {
-        boolean optionQuestion = hasRealOptions(question);
         List<String> known = new ArrayList<>();
         if (selected != null) {
-            Set<String> optionIds = new LinkedHashSet<>(question.optionIds());
             for (String id : new LinkedHashSet<>(selected)) {
-                if (id == null || id.isBlank()) {
-                    continue;
-                }
-                if (!optionQuestion || optionIds.contains(id)) {
+                if (id != null && !id.isBlank()) {
                     known.add(id.trim());
                 }
             }
@@ -100,7 +102,7 @@ public class QuizGrader {
                     marks = maxMarks * share;
                 } else {
                     outcome = Outcome.WRONG;
-                    marks = -negative;
+                    marks = 0.0 - negative;
                 }
             }
             default -> {
@@ -123,17 +125,105 @@ public class QuizGrader {
     }
 
     /**
-     * Regrades what an older client recorded. Its stored answer stays as it sent it, so
-     * nothing it wrote is lost; the marks and verdict become the server's.
+     * Regrades what an older client recorded. What it sent stays, so nothing it wrote is
+     * lost; the marks and verdict become the server's.
      *
-     * @return null when the stored answer has a shape this cannot read: leave it alone
+     * @return null when the stored answer has a shape this cannot read
      */
     public Graded regrade(Question question, Rules rules, String clientResponseJson, String gradedBy) {
         if (!scorer.recognisesResponse(clientResponseJson)) {
             return null;
         }
         Set<String> selected = scorer.selectedAnswerIds(clientResponseJson);
-        return grade(question, rules, new ArrayList<>(selected), gradedBy);
+        Graded graded = grade(question, rules, new ArrayList<>(selected), gradedBy);
+        ObjectNode client = parseObject(clientResponseJson);
+        if (client == null) {
+            return graded;
+        }
+        ObjectNode server = parseObject(graded.responseJson());
+        for (String field : List.of("questionName", "selectedOptions", "questionType")) {
+            if (client.hasNonNull(field)) {
+                server.remove(field);
+            }
+        }
+        client.setAll(server);
+        return new Graded(graded.questionId(), graded.outcome(), graded.marks(), graded.maxMarks(),
+                graded.responseStatus(), client.toString());
+    }
+
+    /**
+     * Keeps a client's own judgement of an answer exactly as sent, except for who judged it:
+     * only this service can say a row was graded here.
+     *
+     * @param gradedBy the marker to store, or null to store none
+     */
+    public String withClientMarker(String clientResponseJson, String gradedBy) {
+        ObjectNode client = parseObject(clientResponseJson);
+        if (client == null || (gradedBy == null && !client.has("gradedBy"))) {
+            return clientResponseJson;
+        }
+        client.remove("gradedBy");
+        if (gradedBy != null) {
+            client.put("gradedBy", gradedBy);
+        }
+        return client.toString();
+    }
+
+    /**
+     * Keeps the AI tutor's judgement of an answer, held inside what the question can award,
+     * and stores no marker.
+     *
+     * @return null when there is nothing readable to keep
+     */
+    public String withinQuestionLimits(Question question, Rules rules, String clientResponseJson) {
+        ObjectNode client = parseObject(clientResponseJson);
+        if (client == null) {
+            return null;
+        }
+        double questionMax = question.marks() != null ? question.marks() : rules.marksPerQuestion();
+        double negative = question.negativeMarking() != null ? question.negativeMarking() : rules.negativeMarking();
+        if (client.path("maxMarks").isNumber() || client.path("marks").isNumber()) {
+            double stored = client.path("maxMarks").asDouble(0);
+            double max = stored > 0 ? Math.min(stored, questionMax) : questionMax;
+            if (client.path("maxMarks").isNumber() && stored != max) {
+                client.put("maxMarks", max);
+            }
+            if (client.path("marks").isNumber()) {
+                double marks = client.path("marks").asDouble();
+                double held = Math.max(lowestMarks(negative), Math.min(max, marks));
+                if (held != marks) {
+                    client.put("marks", held);
+                }
+            }
+        }
+        client.remove("gradedBy");
+        return client.toString();
+    }
+
+    /** The penalty as marks. Subtracting from 0 rather than negating keeps "no penalty" a plain 0, never -0.0. */
+    public static double lowestMarks(double negative) {
+        return 0.0 - Math.abs(negative);
+    }
+
+    /** What a client said about an answer the server cannot place: its marks and verdict go. */
+    public String withoutClaims(String clientResponseJson) {
+        ObjectNode client = parseObject(clientResponseJson);
+        if (client == null) {
+            return "{}";
+        }
+        client.remove(CLAIM_FIELDS);
+        return client.toString();
+    }
+
+    private ObjectNode parseObject(String json) {
+        if (json == null || json.isBlank()) {
+            return null;
+        }
+        try {
+            return objectMapper.readTree(json) instanceof ObjectNode object ? object : null;
+        } catch (Exception e) {
+            return null;
+        }
     }
 
     /** Written by the learner app's AI tutor flow, which posts to the older endpoint. */
@@ -178,12 +268,6 @@ public class QuizGrader {
             // Quiz Results tab and the activity dialog already read.
             case PARTIAL, WRONG -> "WRONG";
         };
-    }
-
-    private boolean hasRealOptions(Question question) {
-        return !AutoEvaluationScorer.isNumeric(question.questionType())
-                && !AutoEvaluationScorer.isFreeText(question.questionType())
-                && question.options() != null && !question.options().isEmpty();
     }
 
     private String selectionJson(List<String> selected) {

@@ -50,6 +50,7 @@ class QuizReviewPolicyTest {
     @DisplayName("unreadable settings do not reveal answers")
     void unreadableHidesAnswers() {
         assertThat(read("not json").showReportAndCorrectAnswers()).isFalse();
+        assertThat(read("not json").moveOnlyOnCorrectAnswer()).as("nor open the per-question check").isFalse();
     }
 
     @Test

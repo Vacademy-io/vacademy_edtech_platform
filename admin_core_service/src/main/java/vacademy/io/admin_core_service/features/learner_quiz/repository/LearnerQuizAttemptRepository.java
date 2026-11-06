@@ -25,14 +25,28 @@ public interface LearnerQuizAttemptRepository extends Repository<ActivityLog, St
     @Query(value = "SELECT CAST(pg_advisory_xact_lock(hashtextextended(:lockKey, 0)) AS text)", nativeQuery = true)
     String lockLearnerOnQuiz(@Param("lockKey") String lockKey);
 
+    /** A row with no recorded answers is not an attempt: other writers can create one freely. */
     @Query(value = """
             SELECT COUNT(*)
             FROM activity_log al
             WHERE al.user_id = :userId
               AND al.slide_id = :slideId
               AND al.source_type = 'QUIZ'
+              AND EXISTS (SELECT 1 FROM quiz_slide_question_tracked t WHERE t.activity_id = al.id)
             """, nativeQuery = true)
     long countQuizAttempts(@Param("userId") String userId, @Param("slideId") String slideId);
+
+    /** One activity row and whether answers are recorded on it. Reads the primary. */
+    @Query(value = """
+            SELECT al.id AS attemptId,
+                   al.user_id AS userId,
+                   al.slide_id AS slideId,
+                   al.source_type AS sourceType,
+                   (SELECT COUNT(*) FROM quiz_slide_question_tracked t WHERE t.activity_id = al.id) AS answerCount
+            FROM activity_log al
+            WHERE al.id = :attemptId
+            """, nativeQuery = true)
+    Optional<AttemptStateRow> findAttemptState(@Param("attemptId") String attemptId);
 
     @Query(value = """
             SELECT s.id AS slideId,
@@ -73,20 +87,27 @@ public interface LearnerQuizAttemptRepository extends Repository<ActivityLog, St
     List<QuizQuestionRow> findActiveQuestions(@Param("quizId") String quizId, @Param("lang") String lang);
 
     /**
-     * No ORDER BY, like the json_agg the learner slide queries build the option list from:
-     * positional answer keys depend on that same natural order.
+     * In the order the learner slide queries list options, which is what a positional answer
+     * key means. Those queries read a question's options with a subquery per question and
+     * state no order, so this reads them the same way rather than naming an order of its own.
+     * Row order would not do: editing one option moves its row but not its place in that read.
      */
     @Query(value = """
-            SELECT o.id AS optionId,
-                   o.quiz_slide_question_id AS questionId,
-                   COALESCE(rtt_text.content, rt_text.content) AS textContent
-            FROM quiz_slide_question_options o
-            JOIN quiz_slide_question q ON q.id = o.quiz_slide_question_id
-            LEFT JOIN rich_text_data rt_text ON rt_text.id = o.text_id
-            LEFT JOIN rich_text_translation rtt_text ON rtt_text.rich_text_id = rt_text.id
-                 AND rtt_text.locale = :lang AND rtt_text.state IN ('PUBLISHED','STALE')
+            SELECT j.value ->> 'id' AS optionId,
+                   q.id AS questionId,
+                   j.value ->> 'text' AS textContent
+            FROM quiz_slide_question q
+            CROSS JOIN LATERAL json_array_elements(COALESCE((
+                SELECT json_agg(json_build_object('id', o.id, 'text', COALESCE(rtt_text.content, rt_text.content)))
+                FROM quiz_slide_question_options o
+                LEFT JOIN rich_text_data rt_text ON rt_text.id = o.text_id
+                LEFT JOIN rich_text_translation rtt_text ON rtt_text.rich_text_id = rt_text.id
+                     AND rtt_text.locale = :lang AND rtt_text.state IN ('PUBLISHED','STALE')
+                WHERE o.quiz_slide_question_id = q.id
+            ), CAST('[]' AS json))) WITH ORDINALITY AS j(value, position)
             WHERE q.quiz_slide_id = :quizId
               AND q.status = 'ACTIVE'
+            ORDER BY q.id, j.position
             """, nativeQuery = true)
     List<QuizOptionRow> findOptions(@Param("quizId") String quizId, @Param("lang") String lang);
 
@@ -105,6 +126,8 @@ public interface LearnerQuizAttemptRepository extends Repository<ActivityLog, St
             JOIN package_session ps ON ps.id = m.package_session_id
             JOIN package_institute pi ON pi.package_id = ps.package_id AND pi.institute_id = m.institute_id
             WHERE cts.slide_id = :slideId
+              AND cts.status <> 'DELETED'
+              AND cpsm.status <> 'DELETED'
               AND m.user_id = :userId
               AND m.status = 'ACTIVE'
               AND (m.type IS NULL OR m.type NOT IN ('ABANDONED_CART', 'PAYMENT_FAILED'))
@@ -178,8 +201,59 @@ public interface LearnerQuizAttemptRepository extends Repository<ActivityLog, St
     Optional<CheckableQuestionRow> findVideoSlideQuestion(@Param("slideId") String slideId,
             @Param("questionId") String questionId, @Param("lang") String lang);
 
-    @Query(value = "SELECT source_type FROM slide WHERE id = :slideId", nativeQuery = true)
-    Optional<String> findSlideSourceType(@Param("slideId") String slideId);
+    @Query(value = "SELECT source_type AS sourceType, status AS status FROM slide WHERE id = :slideId", nativeQuery = true)
+    Optional<SlideKindRow> findSlideKind(@Param("slideId") String slideId);
+
+    /** The institutes owning this slide, with who created each course that holds it. */
+    @Query(value = """
+            SELECT DISTINCT pi.institute_id AS instituteId, p.created_by_user_id AS createdByUserId
+            FROM chapter_to_slides cts
+            JOIN chapter_package_session_mapping cpsm ON cpsm.chapter_id = cts.chapter_id
+            JOIN package_session ps ON ps.id = cpsm.package_session_id
+            JOIN package_institute pi ON pi.package_id = ps.package_id
+            LEFT JOIN package p ON p.id = ps.package_id
+            WHERE cts.slide_id = :slideId
+            """, nativeQuery = true)
+    List<CourseOwnerRow> findOwnersOfSlide(@Param("slideId") String slideId);
+
+    /** As {@link #findOwnersOfSlide}, for a chapter. */
+    @Query(value = """
+            SELECT DISTINCT pi.institute_id AS instituteId, p.created_by_user_id AS createdByUserId
+            FROM chapter_package_session_mapping cpsm
+            JOIN package_session ps ON ps.id = cpsm.package_session_id
+            JOIN package_institute pi ON pi.package_id = ps.package_id
+            LEFT JOIN package p ON p.id = ps.package_id
+            WHERE cpsm.chapter_id = :chapterId
+            """, nativeQuery = true)
+    List<CourseOwnerRow> findOwnersOfChapter(@Param("chapterId") String chapterId);
+
+    /** As {@link #findOwnersOfSlide}, for a batch. */
+    @Query(value = """
+            SELECT DISTINCT pi.institute_id AS instituteId, p.created_by_user_id AS createdByUserId
+            FROM package_session ps
+            JOIN package_institute pi ON pi.package_id = ps.package_id
+            LEFT JOIN package p ON p.id = ps.package_id
+            WHERE ps.id = :packageSessionId
+            """, nativeQuery = true)
+    List<CourseOwnerRow> findOwnersOfBatch(@Param("packageSessionId") String packageSessionId);
+
+    interface AttemptStateRow {
+        String getAttemptId();
+        String getUserId();
+        String getSlideId();
+        String getSourceType();
+        long getAnswerCount();
+    }
+
+    interface SlideKindRow {
+        String getSourceType();
+        String getStatus();
+    }
+
+    interface CourseOwnerRow {
+        String getInstituteId();
+        String getCreatedByUserId();
+    }
 
     interface QuizMetaRow {
         String getSlideId();

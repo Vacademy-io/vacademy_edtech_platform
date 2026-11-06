@@ -6,6 +6,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 import vacademy.io.admin_core_service.features.common.entity.RichTextData;
 import vacademy.io.admin_core_service.features.common.service.RichTextDataService;
+import vacademy.io.admin_core_service.features.learner_quiz.answerkey.AnswerKeyAccess;
+import vacademy.io.admin_core_service.features.learner_quiz.answerkey.AnswerKeySurface;
 import vacademy.io.admin_core_service.features.slide.dto.QuizSlideDTO;
 import vacademy.io.admin_core_service.features.slide.dto.QuizSlideQuestionDTO;
 import vacademy.io.admin_core_service.features.slide.dto.QuizSlideQuestionOptionDTO;
@@ -25,6 +27,9 @@ import java.util.stream.Collectors;
 
 @Service
 public class QuizSlideService {
+
+    @Autowired
+    private AnswerKeyAccess answerKeyAccess;
 
     @Autowired
     private SlideService slideService;
@@ -181,7 +186,7 @@ public class QuizSlideService {
             } else {
                 existingQuestion.setExplanationText(new RichTextData(dto.getExplanationText()));
             }
-        } else {
+        } else if (!answerKeyAccess.isOn(AnswerKeySurface.AUTHORING)) {
             existingQuestion.setExplanationText(null);
         }
 
@@ -200,8 +205,9 @@ public class QuizSlideService {
             existingQuestion.setAccessLevel(dto.getAccessLevel());
         }
 
-        // A save built from a read that had answers removed must not erase the stored ones.
-        if (StringUtils.hasText(dto.getAutoEvaluationJson())) {
+        // Once authoring reads can come back without answers, a save built from one must not
+        // erase what is stored. Until then a save does what it always has.
+        if (!answerKeyAccess.isOn(AnswerKeySurface.AUTHORING) || StringUtils.hasText(dto.getAutoEvaluationJson())) {
             existingQuestion.setAutoEvaluationJson(dto.getAutoEvaluationJson());
         }
         existingQuestion.setEvaluationType(dto.getEvaluationType());
@@ -271,7 +277,7 @@ public class QuizSlideService {
             } else {
                 existingOption.setExplanationText(new RichTextData(dto.getExplanationText()));
             }
-        } else {
+        } else if (!answerKeyAccess.isOn(AnswerKeySurface.AUTHORING)) {
             existingOption.setExplanationText(null);
         }
 
