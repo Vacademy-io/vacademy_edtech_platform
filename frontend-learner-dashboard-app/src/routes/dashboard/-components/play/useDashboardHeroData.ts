@@ -9,12 +9,8 @@ import {
   type PointsStreakDay,
 } from "@/services/points";
 import { formatDate } from "@/lib/formatters";
-import {
-  getLatestResume,
-  resumeSearchParams,
-  RESUME_ROUTE,
-  type ResumeEntry,
-} from "@/services/resume-thread";
+import type { ResumeTarget } from "../../-lib/resume-target";
+import { useHeldTap } from "../../-hooks/use-held-tap";
 import { SessionDetails } from "@/routes/study-library/live-class/-types/types";
 import {
   isSessionLiveTimezoneAware,
@@ -22,6 +18,7 @@ import {
 } from "@/utils/timezone";
 import {
   getTerminology,
+  getTerminologyPlural,
   readEngagementPlanFlag,
 } from "@/components/common/layout-container/sidebar/utils";
 import { ContentTerms, SystemTerms } from "@/types/naming-settings";
@@ -303,7 +300,7 @@ export interface DashboardHeroData {
   goalPercent: number;
   /** Set while a daily-task plan runs: the ring is tasks done / scheduled. */
   taskProgress: DailyTaskProgress | null;
-  resume: ResumeEntry | null;
+  resume: ResumeTarget | null;
   imminent: ImminentSession | null;
   liveClassTerm: string;
   /** Whether the CTA should read as "continue" (vs "start fresh"). */
@@ -317,12 +314,21 @@ export function useDashboardHeroData({
   userName,
   liveSessions,
   hasAnyProgress,
+  resume,
+  resumeResolving,
+  firstRunKnown,
   showGamification = true,
   taskProgress = null,
 }: {
   userName: string | null;
   liveSessions: SessionDetails[] | undefined;
   hasAnyProgress: boolean;
+  /** The checked resume point (see useDashboardResume), or null. */
+  resume: ResumeTarget | null;
+  /** The answer is not in yet: a tap now waits for it. */
+  resumeResolving: boolean;
+  /** Whether this page has settled if the learner has started; false holds back first-run copy. */
+  firstRunKnown: boolean;
   /** The institute's gamification flag; off = no streak and no points read. */
   showGamification?: boolean;
   taskProgress?: DailyTaskProgress | null;
@@ -333,7 +339,6 @@ export function useDashboardHeroData({
   const streakState = useStreakState({ enabled: showGamification });
   const { data: serverPoints } = usePointsSummary({ enabled: showGamification });
 
-  const resume = useMemo(() => getLatestResume(), []);
   const imminent = useMemo(
     () => findImminentSession(liveSessions),
     [liveSessions]
@@ -343,6 +348,10 @@ export function useDashboardHeroData({
     ContentTerms.LiveSession,
     SystemTerms.LiveSession
   );
+  const coursesTerm = getTerminologyPlural(
+    ContentTerms.Course,
+    SystemTerms.Course,
+  ).toLocaleLowerCase();
   const slideTerm = getTerminology(
     ContentTerms.Slides,
     SystemTerms.Slides
@@ -375,23 +384,26 @@ export function useDashboardHeroData({
         Math.min(100, Math.round((todayXp / DAILY_GOAL_XP) * 100))
       );
 
-  const isContinue = resume !== null || hasAnyProgress;
-  const ctaCaption = resume
-    ? resume.slideTitle
-    : isContinue
-      ? t("hero.pickUpWhereLeftOff")
-      : t("hero.yourFirstSlide", { slide: slideTerm });
+  const isContinue = resume !== null || hasAnyProgress || resumeResolving || !firstRunKnown;
+  const ctaCaption = resumeResolving
+    ? t("hero.findingSlide", { slide: slideTerm })
+    : resume
+      ? resume.slideTitle
+      : !firstRunKnown
+        ? t("hero.goToCourses", { courses: coursesTerm })
+        : isContinue
+          ? t("hero.pickUpWhereLeftOff")
+          : t("hero.yourFirstSlide", { slide: slideTerm });
 
-  // Existing app pattern: loosely-typed navigate (the resume route's search
-  // schema is validated by the destination route itself).
-  const goToCta = () => {
+  const openCta = () => {
     if (resume) {
-      const to: string = RESUME_ROUTE;
-      navigate({ to, search: resumeSearchParams(resume) });
+      resume.open();
     } else {
       navigate({ to: "/study-library/courses" });
     }
   };
+
+  const goToCta = useHeldTap(resumeResolving, openCta);
 
   return {
     greeting,

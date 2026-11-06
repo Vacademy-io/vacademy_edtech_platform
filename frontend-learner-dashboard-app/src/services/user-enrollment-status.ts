@@ -15,6 +15,13 @@ export interface EnrolledCourseSummary {
   level_name: string | null;
   session_id: string | null;
   session_name: string | null;
+  percentage_completed?: number | null;
+}
+
+/** An enrolment list, and whether both of its lookups came back. */
+export interface EnrolmentLookup {
+  courses: EnrolledCourseSummary[];
+  complete: boolean;
 }
 
 interface LearnerPackagesSearchResponse {
@@ -26,6 +33,7 @@ interface LearnerPackagesSearchResponse {
     level_name: string | null;
     session_id: string | null;
     session_name: string | null;
+    percentage_completed?: number | null;
   }>;
   totalPages: number;
   last: boolean;
@@ -67,6 +75,7 @@ const memoized = <T>(
 const fetchEnrolledByType = async (
   instituteId: string,
   type: "PROGRESS" | "COMPLETED",
+  signal?: AbortSignal,
 ): Promise<LearnerPackagesSearchResponse["content"]> => {
   const requestPage = async (page: number) => {
     const response =
@@ -86,6 +95,7 @@ const fetchEnrolledByType = async (
         {
           params: { instituteId, page, size: ENROLLED_PAGE_SIZE },
           headers: { accept: "*/*", "Content-Type": "application/json" },
+          signal,
         },
       );
     return response.data;
@@ -104,7 +114,7 @@ const fetchEnrolledByType = async (
   return all;
 };
 
-const enrolledPackagesMemo = new Map<string, MemoEntry<EnrolledCourseSummary[]>>();
+const enrolledPackagesMemo = new Map<string, MemoEntry<EnrolmentLookup>>();
 const ENROLLED_PACKAGES_TTL_MS = 30_000;
 
 // Returns courses the learner is enrolled in — both in-progress and completed —
@@ -113,29 +123,49 @@ export const fetchEnrolledCoursePackages = async (
   instituteId: string,
   opts?: { force?: boolean },
 ): Promise<EnrolledCourseSummary[]> =>
-  memoized(
-    enrolledPackagesMemo,
-    instituteId,
-    ENROLLED_PACKAGES_TTL_MS,
-    opts?.force,
-    () => fetchEnrolledCoursePackagesUncached(instituteId),
-  );
+  (
+    await memoized(
+      enrolledPackagesMemo,
+      instituteId,
+      ENROLLED_PACKAGES_TTL_MS,
+      opts?.force,
+      () => fetchEnrolledCoursePackagesUncached(instituteId),
+    )
+  ).courses;
+
+// For a caller that must tell "not in the list" from "the list is partial". It
+// sends its own requests, so one that stalls leaves nothing for another reader
+// to wait on. A complete answer is kept for those readers.
+export const fetchEnrolmentLookup = async (
+  instituteId: string,
+  signal?: AbortSignal,
+): Promise<EnrolmentLookup> => {
+  const lookup = await fetchEnrolledCoursePackagesUncached(instituteId, signal);
+  if (lookup.complete) {
+    enrolledPackagesMemo.set(instituteId, {
+      ts: Date.now(),
+      promise: Promise.resolve(lookup),
+    });
+  }
+  return lookup;
+};
 
 const fetchEnrolledCoursePackagesUncached = async (
   instituteId: string,
-): Promise<EnrolledCourseSummary[]> => {
+  signal?: AbortSignal,
+): Promise<EnrolmentLookup> => {
   const [progressResult, completedResult] = await Promise.allSettled([
-    fetchEnrolledByType(instituteId, "PROGRESS"),
-    fetchEnrolledByType(instituteId, "COMPLETED"),
+    fetchEnrolledByType(instituteId, "PROGRESS", signal),
+    fetchEnrolledByType(instituteId, "COMPLETED", signal),
   ]);
   const progress =
     progressResult.status === "fulfilled" ? progressResult.value : [];
   const completed =
     completedResult.status === "fulfilled" ? completedResult.value : [];
-  if (
-    progressResult.status === "rejected" ||
-    completedResult.status === "rejected"
-  ) {
+  const complete =
+    progressResult.status === "fulfilled" &&
+    completedResult.status === "fulfilled";
+  if (!complete) {
     // Degraded result (network blip): serve what we have — same as before the
     // memo existed — but evict the entry so the next read retries the network
     // instead of pinning a partial/empty enrollment list for the whole TTL.
@@ -154,7 +184,7 @@ const fetchEnrolledCoursePackagesUncached = async (
     }
   }
 
-  return Array.from(byPackageSessionId.values()).map((c) => ({
+  const courses = Array.from(byPackageSessionId.values()).map((c) => ({
     id: c.id,
     package_name: c.package_name,
     package_session_id: c.package_session_id,
@@ -162,7 +192,9 @@ const fetchEnrolledCoursePackagesUncached = async (
     level_name: c.level_name,
     session_id: c.session_id,
     session_name: c.session_name,
+    percentage_completed: c.percentage_completed,
   }));
+  return { courses, complete };
 };
 
 export interface LearnerInfo {

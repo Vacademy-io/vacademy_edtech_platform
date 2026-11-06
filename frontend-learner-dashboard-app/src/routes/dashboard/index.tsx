@@ -80,6 +80,7 @@ import {
 import { StatCard } from "./-components/DashboardStatCard";
 import type { StatCardLayout } from "./-components/DashboardStatCard";
 import { ContinueLearningCard } from "./-components/DashboardContinueLearningCard";
+import { RESUME_WAIT_MS, useDashboardResume } from "./-hooks/use-dashboard-resume";
 import { DashboardHero } from "./-components/DashboardHero";
 import { PlayDashboardHero } from "./-components/play/PlayDashboardHero";
 import { CleanerPlayDashboardHero } from "./-components/play/CleanerPlayDashboardHero";
@@ -336,6 +337,13 @@ export function DashboardComponent() {
   const [widgetConfigs, setWidgetConfigs] = useState<
     StudentDashboardWidgetConfig[] | null
   >(null);
+  const settingsPending = widgetConfigs === null;
+  const [settingsWaitOver, setSettingsWaitOver] = useState(false);
+  useEffect(() => {
+    if (!settingsPending) return;
+    const id = window.setTimeout(() => setSettingsWaitOver(true), RESUME_WAIT_MS);
+    return () => window.clearTimeout(id);
+  }, [settingsPending]);
 
   // ── Derived view-model for the hero band and header ────────────────────────
 
@@ -593,6 +601,34 @@ export function DashboardComponent() {
   // appears once when the feed lands; from then on the flag holds its slot.
   const todayMounted =
     showTodayTasks && (engagementFeed != null || (engagementStatus !== "ready" && rememberedPlan));
+
+  const continueLearningOn = isWidgetVisible("continueLearning");
+  // The one resume point every hero offers. The play heroes offer it whatever
+  // the widget says; otherwise the band and Keep going are the places it shows.
+  const {
+    target: resumeTarget,
+    resolving: resumeResolving,
+    unanswered: resumeUnanswered,
+  } = useDashboardResume({
+    serverSlides: data?.slides,
+    // The search for other batches shares the one wait: the hero's first-run
+    // question and its resume answer settle together.
+    serverLoading: (isLoading && !data) || stillAskingOtherBatches,
+    openServerSlide: handleResumeClick,
+    track,
+    enabled: isPlayTheme || isCleanerPlayTheme || continueLearningOn || todayMounted,
+  });
+  // With Continue Learning off the hero has no band, so a finished day keeps
+  // this smaller way back in. With it on, the band is the page's one offer.
+  const keepGoing = !settingsPending && !continueLearningOn ? resumeTarget : null;
+  // Settings that outlast the wait cost this visit its band: arriving now, it
+  // would push the page down under a finger.
+  const bandPossible = continueLearningOn && !settingsWaitOver;
+  const bandTarget = bandPossible ? resumeTarget : null;
+  // A slot held for a band that did not come keeps its height, with a way in, so
+  // nothing moves under a finger. Institutes without the widget hold no such slot.
+  const coursesBand =
+    continueLearningOn && !bandTarget && (resumeUnanswered || settingsWaitOver);
 
   useEffect(() => {
     if (batchId) {
@@ -983,6 +1019,8 @@ export function DashboardComponent() {
   // Play / cleanerPlay heroes carry the streak and the daily-goal ring.
   const playHeroProps = {
     ...heroProps,
+    resume: resumeTarget,
+    resumeResolving,
     showGamification,
     taskProgress: dailyTaskProgress,
   };
@@ -1100,7 +1138,7 @@ export function DashboardComponent() {
       id: "todayTasks" as const,
       order: getWidgetOrder("todayTasks"),
       visible: todayMounted && !todayInRail,
-      render: <TodayModule slot="main" showGamification={showGamification} />,
+      render: <TodayModule slot="main" showGamification={showGamification} keepGoing={keepGoing} />,
     },
     {
       id: "continueLearning" as const,
@@ -1112,6 +1150,7 @@ export function DashboardComponent() {
           onResumeClick={handleResumeClick}
           isLoading={isLoading || stillAskingOtherBatches}
           hasAnyProgress={hasAnyProgress}
+          heroOffersResume={Boolean(isPlayTheme || isCleanerPlayTheme ? resumeTarget : bandTarget)}
         />
       ),
     },
@@ -1222,7 +1261,7 @@ export function DashboardComponent() {
       id: "todayTasks" as const,
       order: getWidgetOrder("todayTasks"),
       visible: todayMounted && todayInRail,
-      render: <TodayModule slot="rail" showGamification={showGamification} />,
+      render: <TodayModule slot="rail" showGamification={showGamification} keepGoing={keepGoing} />,
     },
     {
       id: "upcomingLiveClasses" as const,
@@ -1367,6 +1406,15 @@ export function DashboardComponent() {
               // regardless of progress), so the flag has nothing to act on there.
               <DashboardHero
                 {...heroProps}
+                // An institute that turned Continue Learning off gets no band,
+                // and so nothing to hold a slot for. Its settings may still be on
+                // their way, and a band that vanishes under a finger is worse
+                // than a slot held a moment longer.
+                resume={settingsPending ? null : bandTarget}
+                resumeResolving={
+                  bandPossible && (resumeResolving || (settingsPending && Boolean(resumeTarget)))
+                }
+                coursesBand={coursesBand}
                 showGettingStarted={isWidgetVisible("gettingStarted")}
               />
             )}

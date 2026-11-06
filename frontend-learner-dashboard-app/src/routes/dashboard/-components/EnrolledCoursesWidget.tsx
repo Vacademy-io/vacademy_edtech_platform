@@ -25,6 +25,7 @@ import {
   getResumeForCourse,
   resumeSearchParams,
   RESUME_ROUTE,
+  useResumeScope,
 } from "@/services/resume-thread";
 import { formatMinutesHuman } from "@/utils/courseTime";
 import { getTerminologyPlural } from "@/components/common/layout-container/sidebar/utils";
@@ -239,6 +240,7 @@ export const EnrolledCoursesWidget: React.FC<{ className?: string }> = ({
 }) => {
   const { t } = useTranslation("dashboard");
   const navigate = useNavigate();
+  const resumeScope = useResumeScope();
   const isPlay = usePlayTheme();
   const isCleanerPlay = useCleanerPlayTheme();
   const skin: Skin = isPlay ? "play" : isCleanerPlay ? "cleanerPlay" : "default";
@@ -294,7 +296,7 @@ export const EnrolledCoursesWidget: React.FC<{ className?: string }> = ({
     (course: EnrolledCourse) => {
       // Resume straight into the last-visited slide when this device has a
       // thread for the course; otherwise the course-details page.
-      const resume = getResumeForCourse(course.id);
+      const resume = getResumeForCourse(resumeScope, course.id);
       if (resume && course.state !== "COMPLETED") {
         navigate({
           to: RESUME_ROUTE,
@@ -333,7 +335,7 @@ export const EnrolledCoursesWidget: React.FC<{ className?: string }> = ({
         },
       });
     },
-    [navigate],
+    [navigate, resumeScope],
   );
 
   const viewAll = useCallback(() => {

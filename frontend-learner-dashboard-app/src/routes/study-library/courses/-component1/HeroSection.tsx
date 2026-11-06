@@ -8,12 +8,12 @@ import { MyButton } from "@/components/design-system/button";
 import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
 import { handleFetchUserRoleDetails } from "../-services/institute-details";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
     getLatestResume,
     resumeSearchParams,
     RESUME_ROUTE,
-    type ResumeEntry,
+    useResumeScope,
 } from "@/services/resume-thread";
 import { DashboardLoader } from "@/components/core/dashboard-loader";
 import { Preferences } from "@capacitor/preferences";
@@ -52,9 +52,10 @@ const HeroSection = ({
         useState(false);
 
     const navigate = useNavigate();
-    // Resume thread is written by the slides viewer; read once per mount —
-    // the catalog remounts on every visit, so mount-time freshness is enough.
-    const [resume] = useState<ResumeEntry | null>(() => getLatestResume());
+    // Resume thread is written by the slides viewer; read once the signed-in
+    // learner is known — the catalog remounts on every visit, so that is fresh enough.
+    const resumeScope = useResumeScope();
+    const resume = useMemo(() => getLatestResume(resumeScope), [resumeScope]);
 
     const roleNames = userRoleDetails?.roles?.map(
         (role: UserRole) => role.role_name

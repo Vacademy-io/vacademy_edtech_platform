@@ -42,10 +42,7 @@ import { useModulesWithChaptersStore, ModulesWithChapters } from "@/stores/study
 import { useDripConditionStore } from "@/stores/study-library/drip-conditions-store";
 import { useCourseDripSchedule } from "@/hooks/use-course-drip-schedule";
 import { useDripConditions } from "@/hooks/use-drip-conditions";
-import {
-  evaluateDripCondition,
-  type LearnerProgressData,
-} from "@/utils/drip-conditions";
+import { evaluateListedItem } from "@/utils/drip-conditions";
 import {
   shouldFilterItem,
   isItemLocked,
@@ -616,111 +613,45 @@ function Slides() {
         { isLocked: boolean; isHidden: boolean; unlockMessage: string | null }
       > = {};
 
-      // Build comprehensive prerequisite completions map with BOTH chapters and slides
-      const prerequisiteCompletions: Record<string, number> = {};
-
-      // 1. Add all chapters and their progress
-      if (modulesWithChaptersData) {
-        modulesWithChaptersData.forEach((module) => {
-          module.chapters.forEach((chapter) => {
-            // Calculate chapter progress from its slides (if available in current context)
-            // For now, use 0 as default - will be updated when we have slide data loaded
-            prerequisiteCompletions[chapter.id] = 0;
-          });
+      // Chapters count as 0 until their slides are loaded; this chapter comes
+      // from its own slides. The slides themselves are added per slide below.
+      const chapterCompletions: Record<string, number> = {};
+      modulesWithChaptersData?.forEach((module) => {
+        module.chapters.forEach((chapter) => {
+          chapterCompletions[chapter.id] = 0;
         });
-      }
-
-      // 2. Add all slides from current chapter and their progress
-      slides.forEach((slide: Slide) => {
-        prerequisiteCompletions[slide.id] = slide.percentage_completed || 0;
       });
-
-      // 3. Calculate chapter progress for current chapter based on its slides
       if (chapterId) {
-        const chapterProgress = calculateOverallCompletion(slides);
-        prerequisiteCompletions[chapterId] = chapterProgress;
+        chapterCompletions[chapterId] = calculateOverallCompletion(slides);
       }
+
+      const listed = slides.map((slide: Slide) => ({
+        id: slide.id,
+        percentage: slide.percentage_completed || 0,
+        rowCondition: slide.drip_condition || slide.drip_condition_json,
+      }));
+      const dripRules = {
+        // Admin-configured conditions win over anything stamped on the row.
+        conditionFor: dripConditionFor,
+        courseCondition: slideCondition,
+        // `isDrippingEnable` owns the original row-level path; a configured
+        // condition has already cleared the new path's opt-in in conditionFor.
+        rowLevelEnabled: isDrippingEnable,
+        ...dripAnchors,
+        now: dripNow ? new Date(dripNow) : new Date(),
+      };
 
       // Evaluate drip conditions for each slide
       accessibleSlides = slides.filter((slide: Slide, index: number) => {
-        const previousSlide = index > 0 ? slides[index - 1] : null;
-        const progressData: LearnerProgressData = {
-          percentageCompleted: slide.percentage_completed || 0,
-          previousItemId: previousSlide?.id,
-          previousItemCompletion: previousSlide?.percentage_completed || 0,
-          itemIndex: index,
-          prerequisiteCompletions,
-          // Completion of every slide before this one, in slide_order.
-          recentScores: slides
-            .slice(0, index)
-            .map((s: Slide) => s.percentage_completed || 0),
-          ...dripAnchors,
-        };
-
-        // Check if this slide has its own drip condition (check both fields)
-        let slideDripCondition = null;
-        const dripConditionData =
-          slide.drip_condition || slide.drip_condition_json;
-
-        if (dripConditionData) {
-          try {
-            const parsed =
-              typeof dripConditionData === "string"
-                ? JSON.parse(dripConditionData)
-                : dripConditionData;
-
-            // Handle array of conditions - filter for enabled slide conditions
-            if (Array.isArray(parsed)) {
-              slideDripCondition =
-                parsed.find(
-                  (cond) =>
-                    (cond.target === "slide" || !cond.target) &&
-                    cond.is_enabled !== false
-                ) || null;
-            } else if (parsed && typeof parsed === "object") {
-              // Single condition - check if enabled and for slides
-              if (
-                (parsed.target === "slide" || !parsed.target) &&
-                parsed.is_enabled !== false
-              ) {
-                slideDripCondition = parsed;
-              }
-            }
-          } catch (e) {
-            console.error("Failed to parse slide drip condition:", e);
-          }
-        }
-
-        // Admin-configured conditions win over anything stamped on the row.
-        const configuredCondition = dripConditionFor("slide", slide.id);
-        const conditionToUse =
-          configuredCondition || slideDripCondition || slideCondition;
-        const hasCondition =
-          !!configuredCondition || !!slideDripCondition || !!slideCondition;
-
-        // `isDrippingEnable` owns the original row-level path; a configured
-        // condition has already cleared the new path's opt-in in conditionFor.
-        const shouldEvaluate =
-          (isDrippingEnable || !!configuredCondition) &&
-          hasCondition &&
-          conditionToUse?.is_enabled !== false;
-
-        const evaluation =
-          shouldEvaluate && conditionToUse
-            ? evaluateDripCondition(
-                conditionToUse,
-                progressData,
-                dripNow ? new Date(dripNow) : new Date(),
-              )
-            : {
-              isLocked: false,
-              isHidden: false,
-              unlockMessage: null,
-            };
+        const evaluation = evaluateListedItem(
+          "slide",
+          listed,
+          index,
+          dripRules,
+          chapterCompletions,
+        );
         evaluations[slide.id] = evaluation; // Store evaluation for this slide
-        const shouldHide = shouldFilterItem(evaluation);
-
-        return !shouldHide; // Keep slide if not hidden
+        return !shouldFilterItem(evaluation); // Keep slide if not hidden
       });
 
       // Store evaluations for all accessible slides

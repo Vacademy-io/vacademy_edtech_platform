@@ -39,6 +39,7 @@ import { BatchLegend, TaskRow, type TaskBatch } from "./TaskRow";
 import { TodayComplete } from "./TodayComplete";
 import { ComingUpLine, dayLabel, groupComingUp } from "./ComingUpLine";
 import { TutorBuddyLine } from "@/components/chatbot/moments/TutorBuddyLine";
+import type { ResumeTarget } from "../../-lib/resume-target";
 
 /**
  * "Today": the learner's daily tasks as one compact dashboard module (learner
@@ -348,6 +349,8 @@ export interface TodayModuleProps {
    * or after a failed first load.
    */
   onHasPlanChange?: (hasPlan: boolean) => void;
+  /** Passed to the finished state: a checked lesson, when the hero offers none. */
+  keepGoing?: ResumeTarget | null;
   className?: string;
 }
 
@@ -355,6 +358,7 @@ export function TodayModule({
   slot,
   showGamification = true,
   onHasPlanChange,
+  keepGoing,
   className,
 }: TodayModuleProps) {
   const { t } = useTranslation("dashboardEngagement");
@@ -603,6 +607,7 @@ export function TodayModule({
           celebrationSkin={celebrationSkin}
           compact={slot === "rail"}
           now={now}
+          keepGoing={keepGoing}
         />
       )}
 

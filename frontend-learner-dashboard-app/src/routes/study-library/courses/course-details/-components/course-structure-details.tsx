@@ -83,7 +83,7 @@ import type { StudentCourseDetailsTabId } from "@/types/student-display-settings
 import { BatchChatPanel } from "@/components/chat/BatchChatPanel";
 import { CourseLeaderboard } from "./CourseLeaderboard";
 import { getFilePublicUrlQuery } from "@/services/file-url-cache";
-import { getLatestResume } from "@/services/resume-thread";
+import { getLatestResume, useResumeScope } from "@/services/resume-thread";
 import { useTranslation } from "react-i18next";
 
 // Course-structure data contract — shared with the other course-details view so
@@ -1425,8 +1425,9 @@ export const CourseStructureDetails = ({
 
   // Resume thread: when the learner's latest resume point is in this course,
   // auto-expand the chain to "you are here" and mark that slide row.
+  const resumeScope = useResumeScope();
   const resumeEntry = useMemo(() => {
-    const latest = getLatestResume();
+    const latest = getLatestResume(resumeScope);
     if (
       !latest ||
       !searchParams.courseId ||
@@ -1435,7 +1436,7 @@ export const CourseStructureDetails = ({
       return null;
     }
     return latest;
-  }, [searchParams.courseId]);
+  }, [resumeScope, searchParams.courseId]);
   const resumeEntryRef = useRef(resumeEntry);
   useEffect(() => {
     resumeEntryRef.current = resumeEntry;

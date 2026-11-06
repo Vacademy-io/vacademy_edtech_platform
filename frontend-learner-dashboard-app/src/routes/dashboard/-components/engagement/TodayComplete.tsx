@@ -1,15 +1,9 @@
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { useTranslation } from "react-i18next";
-import { useNavigate } from "@tanstack/react-router";
 import { CheckCircle, LockSimple, Play, XCircle, type Icon } from "@phosphor-icons/react";
 import type { EngagementItem } from "@/services/engagement";
-import {
-  getLatestResume,
-  resumeSearchParams,
-  RESUME_ROUTE,
-  type ResumeEntry,
-} from "@/services/resume-thread";
 import { celebrate, claimDailyCelebration, type CelebrationSkin } from "@/lib/play-celebration";
+import type { ResumeTarget } from "../../-lib/resume-target";
 import { ecn, outcomeClasses, skinClasses } from "./engagement-tone";
 import { outcomeOf, type EngagementOutcome } from "./engagement-copy";
 import { timeOnly } from "./ComingUpLine";
@@ -19,8 +13,7 @@ import { timeOnly } from "./ComingUpLine";
  * - "All 9 done · +82 pts today";
  * - "2 answers reveal at 8:00 PM · Next tasks tomorrow, 7:00 AM";
  * - one outcome mark per finished task;
- * - "Keep going: Resume {lesson}", only in the skins whose hero has no resume
- *   CTA (default, vibrant, corporate);
+ * - "Keep going: {lesson}", when the page's hero offers no way back in;
  * - play skins: one milestone celebration per day.
  */
 
@@ -66,6 +59,8 @@ export interface TodayCompleteProps {
   /** Rail slot: below xl the rail can be under 200 px, so the icon column goes. */
   compact?: boolean;
   now: number;
+  /** A checked lesson to offer, when the page's hero offers none. */
+  keepGoing?: ResumeTarget | null;
   className?: string;
 }
 
@@ -79,12 +74,11 @@ export function TodayComplete({
   celebrationSkin = "other",
   compact = false,
   now,
+  keepGoing,
   className,
 }: TodayCompleteProps) {
   const indent = compact ? "xl:ps-12" : "ps-12";
   const { t } = useTranslation("dashboardEngagement");
-  const navigate = useNavigate();
-  const [resume] = useState<ResumeEntry | null>(() => getLatestResume());
   const reveals = pendingReveals(doneToday, now);
 
   // One milestone per day, play skins only (the helper is a no-op elsewhere).
@@ -177,34 +171,21 @@ export function TodayComplete({
         </ul>
       )}
 
-      {resume && (
+      {keepGoing && (
         // The play heroes carry their own resume CTA.
         <div className={ecn("min-w-0 [.ui-cleaner-play_&]:hidden [.ui-play_&]:hidden", indent)}>
           <button
-          type="button"
-          onClick={() =>
-            navigate({
-              to: RESUME_ROUTE,
-              search: resumeSearchParams(resume) as {
-                courseId: string;
-                levelId?: string;
-                subjectId: string;
-                moduleId: string;
-                chapterId: string;
-                slideId: string;
-                sessionId: string;
-              },
-            })
-          }
-          className={ecn(
-            "inline-flex min-h-9 max-w-full items-center gap-1.5 rounded-md text-start text-body font-medium text-primary-500 hover:underline",
-            "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-400"
-          )}
-        >
-          <Play aria-hidden weight="fill" className="size-4 shrink-0 rtl:-scale-x-100" />
-          <span className="shrink-0">{t("today.complete.keepGoing")}</span>
-          <bdi className="min-w-0 truncate">{resume.slideTitle || resume.courseName}</bdi>
-        </button>
+            type="button"
+            onClick={keepGoing.open}
+            className={ecn(
+              "inline-flex min-h-9 max-w-full items-center gap-1.5 rounded-md text-start text-body font-medium text-primary-500 hover:underline",
+              "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-400"
+            )}
+          >
+            <Play aria-hidden weight="fill" className="size-4 shrink-0 rtl:-scale-x-100" />
+            <span className="shrink-0">{t("today.complete.keepGoing")}</span>
+            <bdi className="min-w-0 truncate">{keepGoing.slideTitle || keepGoing.courseName}</bdi>
+          </button>
         </div>
       )}
     </div>

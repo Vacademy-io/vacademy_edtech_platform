@@ -3,12 +3,10 @@
  *
  * Priority order inside the hero:
  *   1. Live/imminent class banner (session live now or starting within 60 min)
- *   2. First-run onboarding (no progress anywhere)
- *   3. Returning learner — point back at courses to pick up where they left off
- *   4. Loading skeleton while the study library hydrates
- *
- * The "Continue learning" resume band lives only on the courses page
- * (study-library/courses HeroSection); the dashboard no longer duplicates it.
+ *   2. Resume band (a checked resume point; see useDashboardResume)
+ *   3. Courses band (the band's slot was held and no lesson came)
+ *   4. The band's skeleton while the study library and resume point settle
+ *   5. First-run onboarding (nothing to resume, no progress anywhere)
  *
  * Play mode gets its own divergent hero elsewhere — this component is only
  * rendered for default/vibrant and must simply not break under .ui-play.
@@ -22,12 +20,14 @@ import {
   ClipboardText,
   UserCircle,
   CaretRight,
+  Play,
   Sparkle,
 } from "@phosphor-icons/react";
 
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
+import { formatRelative } from "@/lib/formatters";
 import { convertSessionTimeToUserTimezone } from "@/utils/timezone";
 import { SessionDetails } from "@/routes/study-library/live-class/-types/types";
 import {
@@ -36,6 +36,7 @@ import {
 } from "@/components/common/layout-container/sidebar/utils";
 import { ContentTerms, SystemTerms } from "@/types/naming-settings";
 import { playIllustrations } from "@/assets/play-illustrations";
+import type { ResumeTarget } from "../-lib/resume-target";
 
 export interface DashboardHeroProps {
   userName: string | null;
@@ -44,6 +45,12 @@ export interface DashboardHeroProps {
   isLoadingLive: boolean;
   /** Any course percentage_completed > 0 — splits first-run from returning. */
   hasAnyProgress: boolean;
+  /** The checked resume point (see useDashboardResume), or null. */
+  resume: ResumeTarget | null;
+  /** The answer is not in yet: hold the band's slot. */
+  resumeResolving: boolean;
+  /** The slot was held and no lesson came: keep its height, as a way to the courses. */
+  coursesBand: boolean;
   studyLibraryLoaded: boolean;
   onJoinSession: (session: SessionDetails) => void;
   /**
@@ -147,6 +154,14 @@ const bandClassName = cn(
   "[.ui-vibrant_&]:border-t-4 [.ui-vibrant_&]:border-t-primary-300",
 );
 
+/** Resume band: the slim shell; Corporate lifts it to the plain white card its
+ *  dashboards use, so it reads as content rather than a wash. */
+const resumeBand = cn(
+  bandClassName,
+  "p-4 sm:p-6",
+  "[.ui-corporate_&]:border [.ui-corporate_&]:border-border [.ui-corporate_&]:bg-card [.ui-corporate_&]:shadow-xs",
+);
+
 /** First-run band: a soft tenant-primary gradient with real presence (the
  *  onboarding moment is the fold), still tasteful in default. */
 const firstRunBand = cn(
@@ -166,6 +181,9 @@ export function DashboardHero({
   liveSessions,
   isLoadingLive,
   hasAnyProgress,
+  resume,
+  resumeResolving,
+  coursesBand,
   studyLibraryLoaded,
   onJoinSession,
   showGettingStarted = true,
@@ -194,20 +212,6 @@ export function DashboardHero({
     ContentTerms.LiveSession,
     SystemTerms.LiveSession,
   );
-
-  // 4. LOADING — skeleton matching the band's shape.
-  if (!studyLibraryLoaded) {
-    return (
-      <section aria-busy="true" aria-label={t("dashboardHero.loadingAria")} className={bandClassName}>
-        <div className="flex flex-col gap-stack">
-          <Skeleton className="h-3 w-32" />
-          <Skeleton className="h-9 w-full max-w-md" />
-          <Skeleton className="h-4 w-56" />
-          <Skeleton className="mt-2 h-9 w-full rounded-md sm:w-40" />
-        </div>
-      </section>
-    );
-  }
 
   const goToCourses = () => navigate({ to: "/study-library/courses" });
 
@@ -258,11 +262,105 @@ export function DashboardHero({
     </div>
   ) : null;
 
-  // 2. FIRST-RUN — no progress anywhere. An onboarding checklist so the
+  // 2. RESUME BAND — a lesson this learner can pick up right now. Beside a
+  // class to join, the class keeps the one filled button. A confirmed lesson
+  // needs nothing else on this page to have answered.
+  if (resume) {
+    const courseLine = resume.courseName ?? resume.chapterName;
+    const lastOpened = resume.updatedAt ? formatRelative(resume.updatedAt, nowMs) : null;
+    return (
+      <section data-resume-band aria-label={t("continueLearning.title")} className={resumeBand}>
+        {liveBanner}
+        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between md:gap-8">
+          <div className="min-w-0 flex-1 space-y-1">
+            <p className="text-caption font-medium text-muted-foreground">
+              {resume.updatedAt ? t("hero.pickUpWhereLeftOff") : t("continueLearning.title")}
+            </p>
+            <h2 className="line-clamp-2 break-words text-h3 font-semibold tracking-tight text-foreground sm:text-h2 [.ui-corporate_&]:sm:text-h3">
+              {resume.slideTitle}
+            </h2>
+            {(courseLine || lastOpened) && (
+              <p className="flex min-w-0 gap-1.5 text-caption text-muted-foreground">
+                {courseLine && <bdi className="min-w-0 truncate">{courseLine}</bdi>}
+                {courseLine && lastOpened && <span aria-hidden="true">·</span>}
+                {lastOpened && <span className="shrink-0">{lastOpened}</span>}
+              </p>
+            )}
+          </div>
+          <Button
+            size="lg"
+            variant={banner ? "outline" : "default"}
+            onClick={resume.open}
+            aria-label={t("hero.continueAria", { title: resume.slideTitle })}
+            className="w-full gap-2 md:w-auto md:shrink-0"
+          >
+            <Play size={16} weight="fill" className="rtl:-scale-x-100" />
+            {t("hero.ctaContinue")}
+          </Button>
+        </div>
+      </section>
+    );
+  }
+
+  // A learner known to be new gets the checklist below, whatever the slot held.
+  const isFirstRun = studyLibraryLoaded && !hasAnyProgress && showGettingStarted;
+
+  // 3. COURSES BAND — the same shape as (2), for a slot that was held and got no lesson.
+  if (coursesBand && !isFirstRun) {
+    const coursesLabel = t("hero.goToCourses", { courses: coursesPlural.toLocaleLowerCase() });
+    return (
+      <section data-courses-band aria-label={t("continueLearning.title")} className={resumeBand}>
+        {liveBanner}
+        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between md:gap-8">
+          <div className="min-w-0 flex-1 space-y-1">
+            <p className="text-caption font-medium text-muted-foreground">
+              {t("continueLearning.title")}
+            </p>
+            <h2 className="truncate text-h3 font-semibold tracking-tight text-foreground sm:text-h2 [.ui-corporate_&]:sm:text-h3">
+              {t("dashboardHero.coursesBandTitle", { courses: coursesPlural })}
+            </h2>
+            <p className="truncate text-caption text-muted-foreground">
+              {t("dashboardHero.coursesBandHint")}
+            </p>
+          </div>
+          <Button
+            size="lg"
+            variant="outline"
+            onClick={goToCourses}
+            className="w-full gap-2 md:w-auto md:shrink-0"
+          >
+            <BookOpen size={16} weight="fill" />
+            {coursesLabel}
+            <CaretRight size={14} weight="bold" className="rtl:-scale-x-100" />
+          </Button>
+        </div>
+      </section>
+    );
+  }
+
+  // 4. LOADING — the band's exact height, beside any class to join, so what
+  // replaces it moves nothing.
+  if (!studyLibraryLoaded || resumeResolving) {
+    return (
+      <section aria-busy="true" aria-label={t("dashboardHero.loadingAria")} className={resumeBand}>
+        {liveBanner}
+        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between md:gap-8">
+          <div className="min-w-0 flex-1 space-y-2">
+            <Skeleton className="h-3 w-32" />
+            <Skeleton className="h-8 w-full max-w-md sm:h-9 [.ui-corporate_&]:sm:h-8" />
+            <Skeleton className="h-3 w-56" />
+          </div>
+          <Skeleton className="h-10 w-full rounded-md md:w-36 md:shrink-0" />
+        </div>
+      </section>
+    );
+  }
+
+  // 5. FIRST-RUN — no progress anywhere. An onboarding checklist so the
   // learner always has a clear next action instead of a barren empty state.
   // Institutes that don't want it turn off the "gettingStarted" widget; the
-  // learner then falls through to (3), keeping any live-class banner.
-  if (!hasAnyProgress && showGettingStarted) {
+  // learner then falls through, keeping any live-class banner.
+  if (isFirstRun) {
     const steps = [
       {
         icon: BookOpen,
@@ -379,34 +477,6 @@ export function DashboardHero({
     );
   }
 
-  // 3. RETURNING LEARNER — has progress; the "Continue learning" resume band
-  // now lives only on the courses page, so the dashboard hero stays empty here
-  // (just surface a live/imminent class if there is one).
+  // Nothing to resume and no checklist: just surface a live/imminent class.
   return banner ? <section className={bandClassName}>{liveBanner}</section> : null;
-
-  // Kept for reference — the old "Jump back in" returning-learner band.
-  // return (
-  //   <section className={bandClassName}>
-  //     {liveBanner}
-  //     <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
-  //       <div className="min-w-0 flex-1 space-y-1.5">
-  //         <p className="text-caption font-semibold uppercase tracking-wider text-muted-foreground">
-  //           {userName ? `Welcome back, ${userName}` : "Welcome back"}
-  //         </p>
-  //         <h2 className="text-display-sm text-foreground">Jump back in</h2>
-  //         <p className="text-body text-muted-foreground">
-  //           Open your {coursesPlural.toLocaleLowerCase()} to pick up where you
-  //           left off.
-  //         </p>
-  //       </div>
-  //       <Button
-  //         onClick={goToCourses}
-  //         className="w-full gap-2 sm:w-auto md:shrink-0"
-  //       >
-  //         <BookOpen size={16} weight="fill" />
-  //         Browse {coursesPlural}
-  //       </Button>
-  //     </div>
-  //   </section>
-  // );
 }

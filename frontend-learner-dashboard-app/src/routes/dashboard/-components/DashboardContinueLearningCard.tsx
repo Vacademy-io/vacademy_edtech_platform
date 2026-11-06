@@ -54,6 +54,7 @@ export const ContinueLearningCard = ({
     onResumeClick,
     isLoading = false,
     hasAnyProgress = false,
+    heroOffersResume = false,
 }: {
     data: DashbaordResponse | null;
     onResumeClick: (slide: DashboardSlide) => void;
@@ -61,6 +62,10 @@ export const ContinueLearningCard = ({
     /** Whether the learner has made any progress at all — splits the empty
      *  state into first-run ("start your first lesson") vs genuinely done. */
     hasAnyProgress?: boolean;
+    /** The hero already offers a lesson, so its button is the page's one primary
+     *  action. Only this card's colours answer to that: the answer can land while
+     *  a finger is on its way to a course below, so nothing here changes size. */
+    heroOffersResume?: boolean;
 }) => {
     const { t } = useTranslation("dashboard");
     const navigate = useNavigate();
@@ -267,7 +272,12 @@ export const ContinueLearningCard = ({
                 <button
                     type="button"
                     onClick={() => data.slides[0] && onResumeClick(data.slides[0])}
-                    className="flex w-full items-center justify-center gap-2 rounded-full bg-primary py-3 text-body font-semibold text-primary-foreground shadow-sm transition-transform active:translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-2"
+                    className={cn(
+                        "flex w-full items-center justify-center gap-2 rounded-full py-3 text-body font-semibold transition-transform active:translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-2",
+                        heroOffersResume
+                            ? "text-foreground ring-1 ring-inset ring-border"
+                            : "bg-primary text-primary-foreground shadow-sm"
+                    )}
                 >
                     <Play weight="fill" size={16} />
                     {t("continueLearning.resumeLearningButton")}
@@ -342,7 +352,12 @@ export const ContinueLearningCard = ({
                 <button
                     type="button"
                     onClick={() => data.slides[0] && onResumeClick(data.slides[0])}
-                    className="flex w-full items-center justify-center gap-2 rounded-play-btn bg-play-navy py-3 text-body font-black uppercase tracking-wide text-white shadow-play-2d-navy transition-transform active:translate-y-0.5 active:shadow-none focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-play-ink/30"
+                    className={cn(
+                        "flex w-full items-center justify-center gap-2 rounded-play-btn py-3 text-body font-black uppercase tracking-wide transition-transform active:translate-y-0.5 active:shadow-none focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-play-ink/30",
+                        heroOffersResume
+                            ? "bg-play-navy-soft text-play-ink"
+                            : "bg-play-navy text-white shadow-play-2d-navy"
+                    )}
                 >
                     <Play weight="fill" size={16} />
                     {t("continueLearning.resumeLearningButton")}
@@ -430,10 +445,12 @@ export const ContinueLearningCard = ({
                 </div>
 
                 <Button
+                    variant={heroOffersResume ? "outline" : "default"}
                     onClick={() => data.slides[0] && onResumeClick(data.slides[0])}
                     className={cn(
                         "w-full gap-2 font-semibold",
-                        "[.ui-vibrant_&]:bg-gradient-to-r [.ui-vibrant_&]:from-primary [.ui-vibrant_&]:to-primary/90 [.ui-vibrant_&]:shadow-lg [.ui-vibrant_&]:shadow-primary/20"
+                        !heroOffersResume &&
+                            "[.ui-vibrant_&]:bg-gradient-to-r [.ui-vibrant_&]:from-primary [.ui-vibrant_&]:to-primary/90 [.ui-vibrant_&]:shadow-lg [.ui-vibrant_&]:shadow-primary/20"
                     )}
                 >
                     <Play weight="fill" size={16} />

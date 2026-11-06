@@ -11,6 +11,7 @@ import {
     getResumeForCourse,
     resumeSearchParams,
     RESUME_ROUTE,
+    useResumeScope,
 } from "@/services/resume-thread";
 import { ProgressBar } from "@/components/ui/custom-progress-bar";
 import { ProgressRing } from "@/routes/dashboard/-components/play/ProgressRing";
@@ -98,7 +99,11 @@ const CourseCard: React.FC<CourseCardProps> = ({
         selectedTab === "COMPLETED" ||
         cappedPercentageCompleted > 0;
     // Resume thread: where the learner left off in this course (per-device).
-    const resume = useMemo(() => getResumeForCourse(courseId), [courseId]);
+    const resumeScope = useResumeScope();
+    const resume = useMemo(
+        () => getResumeForCourse(resumeScope, courseId),
+        [resumeScope, courseId]
+    );
 
     const LevelIcon = useMemo(() => {
         const lvl = (level_name || "").toLowerCase();

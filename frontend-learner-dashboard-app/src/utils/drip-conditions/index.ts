@@ -22,6 +22,9 @@ export {
   getEnabledConditionForTarget,
 } from "./selectDripCondition";
 
+export { evaluateListedItem, rowDripCondition } from "./listedItemDrip";
+export type { ListedItem, ListedItemDripRules } from "./listedItemDrip";
+
 export type {
   LearnerProgressData,
   DripConditionEvaluation,
