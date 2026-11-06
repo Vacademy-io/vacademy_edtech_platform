@@ -3059,7 +3059,7 @@ public interface PackageRepository extends JpaRepository<PackageEntity, String> 
                         pp.actual_price,
                         pp.elevated_price,
                         pp.currency,
-                        ROW_NUMBER() OVER(PARTITION BY ps.id ORDER BY psli.updated_at DESC NULLS LAST, pp.actual_price ASC NULLS LAST) as row_num
+                        ROW_NUMBER() OVER(PARTITION BY ps.id ORDER BY CASE WHEN ei.id IS NOT NULL AND pp.id IS NOT NULL THEN 0 ELSE 1 END, psli.updated_at DESC NULLS LAST, pp.actual_price ASC NULLS LAST) as row_num
                     FROM package_session ps
                     LEFT JOIN package_session_learner_invitation_to_payment_option psli ON ps.id = psli.package_session_id
                         AND (:#{#psliStatus == null || #psliStatus.isEmpty()} = true OR psli.status IN (:psliStatus))
@@ -3297,7 +3297,7 @@ public interface PackageRepository extends JpaRepository<PackageEntity, String> 
                         pp.actual_price,
                         pp.elevated_price,
                         pp.currency,
-                        ROW_NUMBER() OVER(PARTITION BY ps.id ORDER BY psli.updated_at DESC NULLS LAST, pp.actual_price ASC NULLS LAST) as row_num
+                        ROW_NUMBER() OVER(PARTITION BY ps.id ORDER BY CASE WHEN e.id IS NOT NULL AND pp.id IS NOT NULL THEN 0 ELSE 1 END, psli.updated_at DESC NULLS LAST, pp.actual_price ASC NULLS LAST) as row_num
                     FROM package_session ps
                     LEFT JOIN package_session_learner_invitation_to_payment_option psli ON ps.id = psli.package_session_id
                         AND (:#{#psliStatus == null || #psliStatus.isEmpty()} = true OR psli.status IN (:psliStatus))
