@@ -21,18 +21,21 @@ from __future__ import annotations
 
 import logging
 import uuid
-from typing import Any, Dict, List, Optional
+from typing import Any, Callable, Dict, List, Optional, TypeVar
 from urllib.parse import urlencode, urlparse
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 from pydantic import BaseModel, Field
+from sqlalchemy import text
+from sqlalchemy.exc import DataError
 from sqlalchemy.orm import Session
 
 from ..config import Settings, get_settings
 from ..core.security import _extract_bearer, get_pinned_principal
-from ..db import db_dependency
+from ..db import db_dependency, mcp_db_session
 from ..schemas.auth import PinnedPrincipal
 from ..services.institute_setting_reader import SettingReadError
+from . import lanes
 from .access import check_mcp_access, load_mcp_setting, normalize_role
 from .adapter import tool_catalog
 from .constants import (
@@ -41,21 +44,60 @@ from .constants import (
     AUTO_CLIENT_REDIRECT_URIS,
     DENIAL_MESSAGES,
     MCP_SCOPE_READ,
+    REASON_SERVER_BUSY,
     REASON_SETTINGS_UNAVAILABLE,
+    busy_retry_after_s,
     is_auto_client,
 )
 from .crypto import TokenCipher
 from .institute_scope import admin_portal_base, institute_from_resource, institute_name, scoped_server_url
-from .oauth_provider import is_acceptable_redirect_uri, new_authorization_code
+from .oauth_provider import (
+    OAUTH_BAD_VALUE_MESSAGE,
+    OAuthBusy,
+    is_acceptable_redirect_uri,
+    new_authorization_code,
+    run_oauth_db,
+)
 from .repository import McpOAuthRepository
 
 logger = logging.getLogger(__name__)
+
+T = TypeVar("T")
 
 router = APIRouter(prefix="/ai-service/mcp/oauth", tags=["mcp"])
 
 
 def _repo(db: Session, settings: Settings) -> McpOAuthRepository:
     return McpOAuthRepository(db, TokenCipher(settings.resolve_mcp_encryption_key()))
+
+
+async def _consent_db_work(db: Session, body: Callable[[Session], T], total_s: Optional[float] = None) -> T:
+    """
+    ``body(session)`` on the OAuth lane with a session of its own when the lanes run, which
+    leaves the request's session unused. Otherwise right here on the request's session.
+    """
+    if not lanes.active():
+        return body(db)
+
+    def on_worker() -> T:
+        with mcp_db_session() as session:
+            return body(session)
+
+    try:
+        return await run_oauth_db(on_worker, total_s)
+    except OAuthBusy as exc:
+        retry_after_s = busy_retry_after_s()
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail={
+                "reason": REASON_SERVER_BUSY,
+                "retry_after_s": retry_after_s,
+                "message": f"Vacademy is busy right now. Please try again in about {retry_after_s} seconds.",
+            },
+            headers={"Retry-After": str(retry_after_s)},
+        ) from exc
+    except DataError as exc:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=OAUTH_BAD_VALUE_MESSAGE) from exc
 
 
 def _require_institute_admin(principal: PinnedPrincipal) -> None:
@@ -117,8 +159,18 @@ def _ensure_auto_client(repo: McpOAuthRepository, principal: PinnedPrincipal, db
     shows front and centre, and it cannot be removed (see
     ``delete_manual_client``), so an institute always has a working id.
     """
-    if any(is_auto_client(c["client_id"]) for c in repo.list_manual_clients(principal.institute_id)):
+    def has_auto_client() -> bool:
+        return any(is_auto_client(c["client_id"]) for c in repo.list_manual_clients(principal.institute_id))
+
+    if has_auto_client():
         return
+    if lanes.active():
+        # Requests run side by side on the lane's workers, and saving the client commits and
+        # releases this lock. Whoever waited for it finds the client that was made.
+        db.execute(text("SELECT pg_advisory_xact_lock(hashtextextended(:key, 0))"),
+                   {"key": f"mcp_auto_client:{principal.institute_id}"})
+        if has_auto_client():
+            return
 
     repo.save_client(
         client_id=f"{AUTO_CLIENT_ID_PREFIX}{uuid.uuid4().hex}",
@@ -180,27 +232,30 @@ async def get_txn(
     It discloses only what the consent screen has to show — which client is
     asking and for what — and nothing about any Vacademy user or institute.
     """
-    record = _repo(db, settings).get_txn(txn)
-    if not record or record["consumed_at"] is not None:
-        raise HTTPException(status_code=404, detail="This authorization request is no longer valid.")
+    def read(session: Session) -> TxnResponse:
+        record = _repo(session, settings).get_txn(txn)
+        if not record or record["consumed_at"] is not None:
+            raise HTTPException(status_code=404, detail="This authorization request is no longer valid.")
 
-    client = _repo(db, settings).get_client(record["client_id"])
-    try:
-        redirect_host = urlparse(record["redirect_uri"]).hostname
-    except ValueError:
-        redirect_host = None
+        client = _repo(session, settings).get_client(record["client_id"])
+        try:
+            redirect_host = urlparse(record["redirect_uri"]).hostname
+        except ValueError:
+            redirect_host = None
 
-    institute_id = institute_from_resource(record.get("resource"), settings.mcp_issuer_url)
-    return TxnResponse(
-        txn=record["txn"],
-        client_id=record["client_id"],
-        client_name=(client or {}).get("client_name"),
-        redirect_host=redirect_host,
-        scopes=record["scopes"] or [MCP_SCOPE_READ],
-        expires_at=record["expires_at"].isoformat() if record["expires_at"] else None,
-        institute_id=institute_id,
-        institute_name=institute_name(db, institute_id) if institute_id else None,
-    )
+        institute_id = institute_from_resource(record.get("resource"), settings.mcp_issuer_url)
+        return TxnResponse(
+            txn=record["txn"],
+            client_id=record["client_id"],
+            client_name=(client or {}).get("client_name"),
+            redirect_host=redirect_host,
+            scopes=record["scopes"] or [MCP_SCOPE_READ],
+            expires_at=record["expires_at"].isoformat() if record["expires_at"] else None,
+            institute_id=institute_id,
+            institute_name=institute_name(session, institute_id) if institute_id else None,
+        )
+
+    return await _consent_db_work(db, read, total_s=lanes.OAUTH_READ_LIMIT_S)
 
 
 @router.post(
@@ -222,64 +277,72 @@ async def consent(
     The platform tokens captured here are what every later tool call replays, so
     the connection can never do more than this user could do themselves.
     """
-    repo = _repo(db, settings)
-    record = repo.get_txn(payload.txn)
-    if not record or record["consumed_at"] is not None:
-        raise HTTPException(status_code=404, detail="This authorization request is no longer valid.")
-
-    state_qs = {"state": record["state"]} if record["state"] else {}
-
-    if not payload.approve:
-        repo.consume_txn(payload.txn)
-        return ConsentResponse(
-            redirect_to=f"{record['redirect_uri']}?{urlencode({'error': 'access_denied', **state_qs})}"
-        )
-
-    # A scoped server URL fixes the institute at /authorize time; the user must
-    # be approving AS that institute (the dashboard sends it as clientId).
-    pinned = institute_from_resource(record.get("resource"), settings.mcp_issuer_url)
-    if pinned and pinned != principal.institute_id:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail={
-                "reason": "institute_mismatch",
-                "message": "This connection is for a different institute. Sign in to that institute's portal to approve it.",
-                "institute_id": pinned,
-            },
-        )
-
-    # Gate the institute + role BEFORE issuing anything.
-    _require_can_connect(principal, db)
-
-    if not repo.consume_txn(payload.txn):
-        raise HTTPException(status_code=409, detail="This authorization request was already handled.")
-
     # The platform access token is the very one this request authenticated with —
     # already verified by get_pinned_principal above.
     platform_access_token = _extract_bearer(request.headers.get("authorization"))
-    code = new_authorization_code()
-    repo.create_code(
-        code=code,
-        client_id=record["client_id"],
-        user_id=principal.user_id,
-        institute_id=principal.institute_id,
-        username=principal.username,
-        redirect_uri=record["redirect_uri"],
-        code_challenge=record["code_challenge"],
-        scopes=record["scopes"] or [MCP_SCOPE_READ],
-        resource=record["resource"],
-        platform_access_token=platform_access_token,
-        platform_refresh_token=payload.refresh_token,
-        ttl_seconds=settings.mcp_auth_code_ttl_seconds,
-    )
 
-    logger.info(
-        "MCP authorization granted: user=%s institute=%s client=%s",
-        principal.user_id, principal.institute_id, record["client_id"],
-    )
-    return ConsentResponse(
-        redirect_to=f"{record['redirect_uri']}?{urlencode({'code': code, **state_qs})}"
-    )
+    def decide(session: Session) -> ConsentResponse:
+        repo = _repo(session, settings)
+        record = repo.get_txn(payload.txn)
+        if not record or record["consumed_at"] is not None:
+            raise HTTPException(status_code=404, detail="This authorization request is no longer valid.")
+
+        state_qs = {"state": record["state"]} if record["state"] else {}
+
+        if not payload.approve:
+            repo.consume_txn(payload.txn)
+            return ConsentResponse(
+                redirect_to=f"{record['redirect_uri']}?{urlencode({'error': 'access_denied', **state_qs})}"
+            )
+
+        # A scoped server URL fixes the institute at /authorize time; the user must
+        # be approving AS that institute (the dashboard sends it as clientId).
+        pinned = institute_from_resource(record.get("resource"), settings.mcp_issuer_url)
+        if pinned and pinned != principal.institute_id:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail={
+                    "reason": "institute_mismatch",
+                    "message": "This connection is for a different institute. Sign in to that institute's portal to approve it.",
+                    "institute_id": pinned,
+                },
+            )
+
+        # Gate the institute + role BEFORE issuing anything.
+        _require_can_connect(principal, session)
+
+        # Using the request and storing its code take effect together, before the code is
+        # handed back. If they do not commit, the request is still pending.
+        if not repo.consume_txn(payload.txn, commit=False):
+            raise HTTPException(status_code=409, detail="This authorization request was already handled.")
+
+        code = new_authorization_code()
+        repo.create_code(
+            code=code,
+            client_id=record["client_id"],
+            user_id=principal.user_id,
+            institute_id=principal.institute_id,
+            username=principal.username,
+            redirect_uri=record["redirect_uri"],
+            code_challenge=record["code_challenge"],
+            scopes=record["scopes"] or [MCP_SCOPE_READ],
+            resource=record["resource"],
+            platform_access_token=platform_access_token,
+            platform_refresh_token=payload.refresh_token,
+            ttl_seconds=settings.mcp_auth_code_ttl_seconds,
+            commit=False,
+        )
+        session.commit()
+
+        logger.info(
+            "MCP authorization granted: user=%s institute=%s client=%s",
+            principal.user_id, principal.institute_id, record["client_id"],
+        )
+        return ConsentResponse(
+            redirect_to=f"{record['redirect_uri']}?{urlencode({'code': code, **state_qs})}"
+        )
+
+    return await _consent_db_work(db, decide)
 
 
 # ── settings support ─────────────────────────────────────────────────────
@@ -330,24 +393,29 @@ async def connection_info(
     opt_in: bool = Query(False),
 ) -> ConnectionInfoResponse:
     _require_institute_admin(principal)
-    repo = _repo(db, settings)
-    _ensure_auto_client(repo, principal, db)
-    # Note this is NOT gated on check_mcp_access: the settings page must render
-    # (server URL, catalogue) precisely while the server is still switched off.
-    return ConnectionInfoResponse(
-        server_url=scoped_server_url(settings.mcp_issuer_url, principal.institute_id),
-        legacy_server_url=settings.mcp_issuer_url,
-        admin_portal_url=admin_portal_base(db, principal.institute_id, settings.admin_dashboard_url),
-        issuer=settings.mcp_issuer_url,
-        scope=MCP_SCOPE_READ,
-        tools=tool_catalog(include_opt_in=opt_in),
-        # Primary client first, then custom ones newest-first (the repository order).
-        manual_clients=sorted(
-            (_client_response(c) for c in repo.list_manual_clients(principal.institute_id)),
-            key=lambda c: not c.is_primary,
-        ),
-        connections=repo.list_connections(principal.institute_id),
-    )
+    tools = tool_catalog(include_opt_in=opt_in)
+
+    def read(session: Session) -> ConnectionInfoResponse:
+        repo = _repo(session, settings)
+        _ensure_auto_client(repo, principal, session)
+        # Note this is NOT gated on check_mcp_access: the settings page must render
+        # (server URL, catalogue) precisely while the server is still switched off.
+        return ConnectionInfoResponse(
+            server_url=scoped_server_url(settings.mcp_issuer_url, principal.institute_id),
+            legacy_server_url=settings.mcp_issuer_url,
+            admin_portal_url=admin_portal_base(session, principal.institute_id, settings.admin_dashboard_url),
+            issuer=settings.mcp_issuer_url,
+            scope=MCP_SCOPE_READ,
+            tools=tools,
+            # Primary client first, then custom ones newest-first (the repository order).
+            manual_clients=sorted(
+                (_client_response(c) for c in repo.list_manual_clients(principal.institute_id)),
+                key=lambda c: not c.is_primary,
+            ),
+            connections=repo.list_connections(principal.institute_id),
+        )
+
+    return await _consent_db_work(db, read, total_s=lanes.OAUTH_READ_LIMIT_S)
 
 
 @router.post(
@@ -380,17 +448,20 @@ async def create_manual_client(
         )
 
     client_id = f"vcm-{uuid.uuid4().hex}"
-    repo = _repo(db, settings)
-    repo.save_client(
-        client_id=client_id,
-        client_name=payload.client_name.strip(),
-        redirect_uris=uris,
-        grant_types=["authorization_code", "refresh_token"],
-        scope=MCP_SCOPE_READ,
-        institute_id=principal.institute_id,
-        created_by=principal.user_id,
-        source="manual",
-    )
+
+    def save(session: Session) -> None:
+        _repo(session, settings).save_client(
+            client_id=client_id,
+            client_name=payload.client_name.strip(),
+            redirect_uris=uris,
+            grant_types=["authorization_code", "refresh_token"],
+            scope=MCP_SCOPE_READ,
+            institute_id=principal.institute_id,
+            created_by=principal.user_id,
+            source="manual",
+        )
+
+    await _consent_db_work(db, save)
     logger.info(
         "MCP manual client created: %s by user=%s institute=%s",
         client_id, principal.user_id, principal.institute_id,
@@ -423,7 +494,9 @@ async def delete_manual_client(
                 "message": "Your institute's own client ID cannot be removed.",
             },
         )
-    deleted = _repo(db, settings).delete_manual_client(principal.institute_id, client_id)
+    deleted = await _consent_db_work(
+        db, lambda session: _repo(session, settings).delete_manual_client(principal.institute_id, client_id)
+    )
     if not deleted:
         raise HTTPException(status_code=404, detail="No such client for this institute.")
     return {"deleted": True}
@@ -440,7 +513,9 @@ async def revoke_connection(
     settings: Settings = Depends(get_settings),
 ) -> Dict[str, bool]:
     _require_institute_admin(principal)
-    revoked = _repo(db, settings).revoke_connection(principal.institute_id, pair_id)
+    revoked = await _consent_db_work(
+        db, lambda session: _repo(session, settings).revoke_connection(principal.institute_id, pair_id)
+    )
     if not revoked:
         raise HTTPException(status_code=404, detail="No such active connection for this institute.")
     logger.info("MCP connection revoked: pair=%s by user=%s", pair_id, principal.user_id)

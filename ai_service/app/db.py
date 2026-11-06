@@ -79,6 +79,7 @@ def _create_mcp_engine() -> Engine:
         pool_recycle=settings.db_pool_recycle_seconds,
         pool_pre_ping=True,
         future=True,
+        hide_parameters=True,
         connect_args=dict(MCP_CONNECT_ARGS),
     )
     _listen_for_search_path(settings.db_schema)

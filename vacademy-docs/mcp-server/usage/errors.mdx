@@ -92,6 +92,7 @@ See [Confirmations](/mcp-server/usage/confirmations) for how these work.
 | `rate_limited`, `limit_type: hourly` **CRM** | You reached an hourly limit for calls or messages. `retry_after_s` says how many seconds to wait. | Wait, then try again. Ask "How many can I still send this hour?" to check first. |
 | `rate_limited`, `limit_type: concurrent_calls` | Too many calls from your institute are running at once. That can include colleagues' calls and calls your AI app stopped waiting for. The call did not run. | Wait `retry_after_s` seconds, then repeat the same call. Ask your AI app to run fewer tools at a time. |
 | HTTP 429 with `Retry-After` | The server is at capacity, so it refused the request before reading it. The body is a JSON-RPC error with `error: server_busy`. It is not a sign-in problem. | Wait the time it gives, then repeat the request. Don't reconnect. |
+| HTTP 503 with `Retry-After`, `error: temporarily_unavailable` | The server couldn't complete a sign-in, token or revocation request just now. It says nothing about your connection. Loading or saving **Settings → MCP Server** can also get HTTP 503 with `Retry-After`, and nothing was changed. | Wait the time it gives, then repeat the same request. Don't reconnect. |
 | `too_large` | Files or images sent to the tool are too big. | Send fewer or smaller files. |
 | `too_many_courses`, `too_many_learners`, `too_many_items`, `too_many_nodes`, `too_many_slides` | Too many items in one request. The message says the limit. | Split the request into smaller batches. |
 | `too_long`, `window_too_long` | A text or a date range is longer than allowed. | Shorten it. |
@@ -131,6 +132,8 @@ See [Confirmations](/mcp-server/usage/confirmations) for how these work.
 | `bad_request`, `invalid_*` | A field had the wrong format or value. The message says which. |
 | `secret_not_accepted` | Someone sent a password or access token to a tool. Tools never need one: they already act as you. |
 | `reference_not_allowed` | An image link that isn't stored in your institute's media was used. Upload the image first. |
+| `invalid_client_metadata`, `invalid_request` | At app registration or sign-in, a value the app sent is too long or not allowed. Repeating the same request won't help. |
+| `invalid_client`, `unauthorized_client` | On a token or revocation request, the client ID is unknown or can't be used. The app registers again, or an admin creates a new [client ID](/mcp-server/settings/client-ids). |
 
 ## Something failed on our side
 

@@ -20,7 +20,7 @@ from __future__ import annotations
 import json
 import logging
 import time
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Callable, Dict, List, Optional, Tuple
 
 from mcp.types import CallToolResult, ImageContent, TextContent, Tool, ToolAnnotations
 from sqlalchemy.orm import Session
@@ -178,6 +178,7 @@ async def call_tool(
     repo: Optional[McpOAuthRepository] = None,
     client_id: Optional[str] = None,
     client_name: Optional[str] = None,
+    before_audit: Optional[Callable[[], None]] = None,
 ) -> CallToolResult:
     """
     Execute one exposed tool and shape the result for MCP.
@@ -185,6 +186,9 @@ async def call_tool(
     Tool failures are returned as ``is_error`` results rather than raised: the
     model can read the message and recover (or tell the user what to enable),
     which a protocol-level error would not allow.
+
+    ``before_audit`` runs once the tool has returned, before its audit row. A lane
+    call uses it to end as cancelled if it was stopped in the meantime.
     """
     if name not in MCP_EXPOSED_TOOLS:
         return CallToolResult(
@@ -217,6 +221,8 @@ async def call_tool(
     started = time.monotonic()
     raw = await execute_tool(name, arguments or {}, ctx, gate_setting)
     duration_ms = int((time.monotonic() - started) * 1000)
+    if before_audit is not None:
+        before_audit()
 
     try:
         payload = json.loads(raw)

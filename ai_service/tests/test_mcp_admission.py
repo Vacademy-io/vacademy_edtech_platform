@@ -37,7 +37,12 @@ from app.config import Settings, get_settings  # noqa: E402
 from app.core import security  # noqa: E402
 from app.mcp import adapter, admission, server  # noqa: E402
 from app.mcp.admission import McpAdmission, McpEdgeGuard  # noqa: E402
-from app.mcp.constants import rate_limited_payload, server_busy_payload  # noqa: E402
+from app.mcp.constants import (  # noqa: E402
+    BUSY_RETRY_HIGH_S,
+    BUSY_RETRY_LOW_S,
+    rate_limited_payload,
+    server_busy_payload,
+)
 from app.mcp.oauth_provider import VacademyAccessToken, VacademyOAuthProvider  # noqa: E402
 from app.models.crm_confirm import CrmConfirm  # noqa: E402
 from app.routers import health  # noqa: E402
@@ -700,15 +705,29 @@ async def test_edge_answers_429_below_two_free(edge):
     start, body = sent
     assert start["status"] == 429
     headers = dict(start["headers"])
-    assert headers[b"retry-after"] == b"10"
+    wait = int(headers[b"retry-after"])
+    assert BUSY_RETRY_LOW_S <= wait <= BUSY_RETRY_HIGH_S
     assert headers[b"content-type"] == b"application/json"
     assert int(headers[b"content-length"]) == len(body["body"])
     assert json.loads(body["body"]) == {
         "jsonrpc": "2.0", "id": None,
-        "error": {"code": -32000, "message": "Vacademy is busy right now. Retry after 10 seconds.",
-                  "data": {"error": "server_busy", "retry_after_s": 10}},
+        "error": {"code": -32000, "message": f"Vacademy is busy right now. Retry after {wait} seconds.",
+                  "data": {"error": "server_busy", "retry_after_s": wait}},
     }
     assert edge.gate.snapshot()["by_reject"] == {"edge_busy": 1}
+
+
+async def test_edge_wait_is_spread_like_the_tool_level_answers(edge):
+    edge.pool.out = 14
+    waits = set()
+    for _ in range(300):
+        start, body = await drive(edge.guard, scope_for())
+        wait = int(dict(start["headers"])[b"retry-after"])
+        assert json.loads(body["body"])["error"]["data"]["retry_after_s"] == wait
+        waits.add(wait)
+    busy = {server_busy_payload()["retry_after_s"] for _ in range(300)}
+    assert len(waits) > 3
+    assert min(waits) >= min(busy) >= BUSY_RETRY_LOW_S and max(waits) <= BUSY_RETRY_HIGH_S
 
 
 async def test_edge_passes_with_two_free(edge):
@@ -793,7 +812,7 @@ async def test_every_entry_point_goes_through_the_guard(mounted, suffix):
     mounted.pool.out = 14
     async with mounted.client as client:
         response = await client.post(mounted.base + suffix, headers=BEARER, json={"jsonrpc": "2.0"}, follow_redirects=False)
-    assert response.status_code == 429 and response.headers["retry-after"] == "10"
+    assert response.status_code == 429 and BUSY_RETRY_LOW_S <= int(response.headers["retry-after"]) <= BUSY_RETRY_HIGH_S
     assert mounted.inner.scopes == []
 
 
@@ -913,6 +932,17 @@ async def test_reject_log_keys_stay_bounded(monkeypatch):
     for i in range(20):
         await gate.enter(f"inst-{i}", "t")
     assert len(gate._reject_logged_at) <= 4
+
+
+@pytest.mark.parametrize("name,logged", [
+    ("x\nmcp_stats running=0 waiting=0", "other"), ("y" * 5000, "other"), ("crm_collections", "crm_collections"),
+], ids=["newline", "long", "known"])
+async def test_a_refusal_logs_a_tool_name_only_from_the_exposed_list(caplog, name, logged):
+    gate = make_gate(institute_cap=0, waiters_per_institute=0)
+    with caplog.at_level(logging.WARNING, logger=admission.logger.name):
+        assert await gate.enter("inst", name) is not None
+    [line] = [r.getMessage() for r in caplog.records]
+    assert f" tool={logged} " in line and "\n" not in line and len(line) < 200
 
 
 async def test_stats_line_shape_and_interval_reset(caplog):

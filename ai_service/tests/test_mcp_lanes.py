@@ -1,5 +1,6 @@
 """
 The worker lanes that keep MCP's CRM reads, listings and token check off the main loop.
+The OAuth lane has its own file, test_mcp_oauth_lanes.py.
 
 Pinned here: the request's identity reaches a tool on a worker, and a negative control
 proves that test can see it go missing. A reply comes at the deadline while the slot
@@ -40,13 +41,16 @@ from mcp.server.auth.middleware.bearer_auth import AuthenticatedUser  # noqa: E4
 from mcp.shared.exceptions import MCPError  # noqa: E402
 from mcp.types import INTERNAL_ERROR, CallToolResult, TextContent, Tool  # noqa: E402
 from sqlalchemy import create_engine, event, text  # noqa: E402
+from sqlalchemy.exc import OperationalError  # noqa: E402
 
 from app import app_factory  # noqa: E402
 from app import db as app_db  # noqa: E402
-from app.config import MCP_CONTROL_WORKERS, MCP_VERIFY_WORKERS, Settings  # noqa: E402
+from app.config import MCP_CONTROL_WORKERS, MCP_OAUTH_WORKERS, MCP_VERIFY_WORKERS, Settings  # noqa: E402
 from app.mcp import adapter, admission, lanes, oauth_provider, server  # noqa: E402
 from app.mcp.admission import McpAdmission, McpEdgeGuard  # noqa: E402
 from app.mcp.constants import (  # noqa: E402
+    BUSY_RETRY_HIGH_S,
+    BUSY_RETRY_LOW_S,
     MCP_ALLOWED_WRITE_TOOLS,
     OFF_LOOP_TOOLS,
     TOOL_LANE_DEADLINE_S,
@@ -60,7 +64,9 @@ from test_course_knowledge_wiring import lifespan_env  # noqa: E402,F401
 
 A, B = "institute-a", "institute-b"
 ISSUER = "https://mcp.test/ai-service/mcp"
-BEARER = {"authorization": "Bearer vcm-test"}
+TEST_TOKEN = "vcm_at_" + "t" * 43
+UNKNOWN_TOKEN = "vcm_at_" + "u" * 43
+BEARER = {"authorization": f"Bearer {TEST_TOKEN}"}
 PROTOCOLS = ["2025-06-18", "2026-07-28"]
 PG_URL = os.getenv("MCP_ADMISSION_TEST_PG_URL")
 LANE_TOOL = "crm_collections"
@@ -99,7 +105,16 @@ async def until(predicate, timeout=5.0):
         await asyncio.sleep(0.005)
 
 
-def access_token(institute=A, resource=None, token="vcm-test"):
+def assert_edge_busy(response):
+    """HTTP 429 whose header and body give the same wait, from the spread the tool-level answers use."""
+    assert response.status_code == 429
+    wait = int(response.headers["retry-after"])
+    assert BUSY_RETRY_LOW_S <= wait <= BUSY_RETRY_HIGH_S
+    assert response.json()["error"]["data"] == {"error": "server_busy", "retry_after_s": wait}
+    assert response.json()["error"]["message"] == f"Vacademy is busy right now. Retry after {wait} seconds."
+
+
+def access_token(institute=A, resource=None, token=TEST_TOKEN):
     return VacademyAccessToken(
         token=token, client_id="client-1", scopes=["vacademy.read"], expires_at=4_000_000_000,
         resource=resource, subject="user-1", user_id="user-1", institute_id=institute, token_hash="hash-1",
@@ -389,7 +404,7 @@ async def test_on_finish_leaves_the_ticket_this_call_took(env, on):
 
 
 # ── the deadline ─────────────────────────────────────────────────────────
-async def test_a_sync_blocked_call_replies_at_the_deadline_and_keeps_its_slot(env, on, monkeypatch):
+async def test_a_call_past_the_deadline_replies_and_returns_its_slot_when_it_ends(env, on, monkeypatch):
     monkeypatch.setattr(server, "TOOL_LANE_DEADLINE_S", 0.25)
     release = threading.Event()
     finished = threading.Event()
@@ -492,6 +507,136 @@ async def test_the_deadline_cancels_the_tool_rolls_back_and_audits_separately(en
     assert row["args"] == {"action": "lead_dues"} and row["duration_ms"] >= 0
     assert_clean(env.gate)
     assert len(lanes.tool_lane()._idle) == 4
+
+
+REAL_CALL_TOOL = adapter.call_tool
+
+
+@pytest.fixture
+def real_adapter(env, monkeypatch):
+    """adapter.call_tool as it runs, around a tool the test chooses. It writes the tool's own audit row."""
+    def use(execute_tool):
+        monkeypatch.setattr(adapter, "call_tool", REAL_CALL_TOOL)
+        monkeypatch.setattr(adapter, "execute_tool", execute_tool)
+        monkeypatch.setattr(adapter, "setting_for_tool_gate", lambda setting, principal: setting)
+    return use
+
+
+def audit_rows(env):
+    return [(row["ok"], row["error_code"]) for row in env.audit]
+
+
+@pytest.mark.parametrize("answer", [{"report": "funnel"}, {"error": "query_failed"}])
+async def test_a_call_that_runs_on_to_its_end_past_the_deadline_is_audited_as_stopped(env, on, monkeypatch, real_adapter,
+                                                                                     answer):
+    monkeypatch.setattr(server, "TOOL_LANE_DEADLINE_S", 0.05)
+
+    async def execute_tool(name, args, ctx, setting):
+        time.sleep(0.3)
+        return json.dumps(answer)
+
+    real_adapter(execute_tool)
+    result = await server._on_call_tool(None, params())
+    assert json.loads(result.content[0].text)["error"] == "tool_timeout"
+    await until(lambda: env.gate.running == 0)
+
+    assert audit_rows(env) == [(False, "tool_timeout")]
+    tool_session = env.lane_sessions[0]
+    assert env.audit[0]["session"] is not tool_session and env.audit[0]["duration_ms"] >= 300
+    assert tool_session.events == ["get_client", "commit", "rollback"]
+    assert_clean(env.gate)
+    assert len(lanes.tool_lane()._idle) == 4
+
+
+async def test_a_real_suspension_after_the_deadline_still_writes_one_row(env, on, monkeypatch, real_adapter):
+    monkeypatch.setattr(server, "TOOL_LANE_DEADLINE_S", 0.05)
+
+    async def execute_tool(name, args, ctx, setting):
+        time.sleep(0.3)
+        await asyncio.sleep(0)
+        return json.dumps({"report": "funnel"})
+
+    real_adapter(execute_tool)
+    await server._on_call_tool(None, params())
+    await until(lambda: env.gate.running == 0)
+    assert audit_rows(env) == [(False, "tool_timeout")]
+
+
+async def test_a_caller_cancelled_while_the_tool_runs_on_to_its_end_is_audited_cancelled(env, on, real_adapter):
+    started = threading.Event()
+
+    async def execute_tool(name, args, ctx, setting):
+        started.set()
+        time.sleep(0.2)
+        return json.dumps({"report": "funnel"})
+
+    real_adapter(execute_tool)
+    call = asyncio.ensure_future(server._on_call_tool(None, params()))
+    await until(started.is_set)
+    call.cancel()
+    with pytest.raises(asyncio.CancelledError):
+        await call
+    await until(lambda: env.gate.running == 0)
+    assert audit_rows(env) == [(False, "cancelled")]
+    assert env.audit[0]["session"] is not env.lane_sessions[0]
+
+
+async def test_a_call_that_finished_in_time_keeps_its_answer_and_row(env, on, real_adapter):
+    async def execute_tool(name, args, ctx, setting):
+        return json.dumps({"report": "funnel"})
+
+    real_adapter(execute_tool)
+    result = await server._on_call_tool(None, params())
+    assert json.loads(result.content[0].text) == {"report": "funnel"} and not result.is_error
+    assert audit_rows(env) == [(True, None)]
+    assert env.audit[0]["session"] is env.lane_sessions[0] and len(env.lane_sessions) == 1
+
+
+def slow_audit(monkeypatch, seconds):
+    real = FakeRepo.log_tool_call
+
+    def log_tool_call(self, **row):
+        time.sleep(seconds)
+        real(self, **row)
+
+    monkeypatch.setattr(FakeRepo, "log_tool_call", log_tool_call)
+
+
+async def test_a_tool_that_finished_by_the_deadline_is_answered_even_if_its_row_crosses_it(env, on, monkeypatch,
+                                                                                           real_adapter):
+    monkeypatch.setattr(server, "TOOL_LANE_DEADLINE_S", 0.05)
+    slow_audit(monkeypatch, 0.3)
+
+    async def execute_tool(name, args, ctx, setting):
+        return json.dumps({"report": "funnel"})
+
+    real_adapter(execute_tool)
+    result = await server._on_call_tool(None, params())
+    assert json.loads(result.content[0].text) == {"report": "funnel"} and not result.is_error
+    assert audit_rows(env) == [(True, None)]
+    assert_clean(env.gate)
+
+
+async def test_the_wait_for_a_finished_tools_row_is_bounded(env, on, monkeypatch, real_adapter):
+    monkeypatch.setattr(server, "TOOL_LANE_DEADLINE_S", 0.05)
+    monkeypatch.setattr(server, "TOOL_LANE_FINISH_GRACE_S", 0.05)
+    slow_audit(monkeypatch, 0.4)
+
+    async def execute_tool(name, args, ctx, setting):
+        return json.dumps({"report": "funnel"})
+
+    real_adapter(execute_tool)
+    begun = time.monotonic()
+    result = await server._on_call_tool(None, params())
+    assert json.loads(result.content[0].text)["error"] == "tool_timeout" and time.monotonic() - begun < 0.35
+    assert env.gate.running == 1
+    await until(lambda: env.gate.running == 0)
+    assert_clean(env.gate)
+
+
+async def test_an_on_loop_tool_is_given_no_stop_check(env, on):
+    await server._on_call_tool(None, params(name="whoami"))
+    assert env.runs[0]["before_audit"] is None
 
 
 async def test_cancelling_the_caller_cancels_the_tool_and_audits_cancelled(env, on):
@@ -755,7 +900,7 @@ async def test_tools_list_runs_on_the_control_lane(env, on, listing):
     assert env.main_sessions == [] and env.lane_sessions[0].thread.startswith("mcp-control-")
 
 
-async def test_a_full_control_lane_raises_server_busy_not_an_empty_list(env, on, listing):
+async def test_a_busy_control_lane_raises_server_busy_not_an_empty_list(env, on, listing):
     lane = lanes.control_lane()
     assert (lane.max_waiters, lane.wait_s) == (16, 5.0)
     lane.max_waiters = 0
@@ -840,7 +985,7 @@ async def test_a_guides_denial_is_not_cached(env, on, monkeypatch):
     assert server._guide_grants == {}
 
 
-async def test_guides_on_a_full_control_lane_raise_server_busy(env, on, monkeypatch):
+async def test_guides_on_a_busy_control_lane_raise_server_busy(env, on, monkeypatch):
     monkeypatch.setattr(server, "_guide_grants", {})
     lane = lanes.control_lane()
     lane.max_waiters = 0
@@ -857,7 +1002,7 @@ class TokenStore:
     """Stands in for the token table. Every read and touch records its thread."""
 
     def __init__(self):
-        self.rows = {"vcm-test": self.row()}
+        self.rows = {TEST_TOKEN: self.row()}
         self.reads = []
         self.touches = []
         self.failure = None
@@ -886,7 +1031,7 @@ class TokenStore:
 
             def touch_token(self, token_hash):
                 store.touches.append(threading.current_thread().name)
-                store.rows["vcm-test"]["last_used_at"] = datetime.now(timezone.utc)
+                store.rows[TEST_TOKEN]["last_used_at"] = datetime.now(timezone.utc)
 
         return Repo()
 
@@ -944,18 +1089,40 @@ async def test_the_token_check_runs_on_the_verify_lane_once_per_request(wire, on
 async def test_a_database_failure_in_the_token_check_is_429_not_401_or_500(wire, on, version):
     wire.store.failure = RuntimeError("could not connect")
     response = await wire.post(version)
-    assert response.status_code == 429
-    assert response.headers["retry-after"] == "10"
-    assert response.json()["error"]["data"] == {"error": "server_busy", "retry_after_s": 10}
+    assert_edge_busy(response)
     assert wire.env.runs == []
     assert wire.env.gate.snapshot()["by_reject"] == {"edge_busy": 1}
 
 
 @pytest.mark.parametrize("version", PROTOCOLS)
 async def test_a_bad_token_still_gets_the_sdks_401(wire, on, version):
-    response = await wire.post(version, headers={"authorization": "Bearer vcm-unknown"})
+    response = await wire.post(version, headers={"authorization": f"Bearer {UNKNOWN_TOKEN}"})
     assert response.status_code == 401
     assert len(wire.store.reads) == 1 and wire.env.runs == []
+
+
+MISSHAPEN_TOKENS = ["x", "vcm-test", "vcm_at_", "vcm_at_" + "a" * 42, "vcm_at_" + "a" * 44, "vcm_at_" + "a" * 42 + "+",
+                    "vcm_rt_" + "a" * 43, "VCM_AT_" + "a" * 43, " vcm_at_" + "a" * 43, "vcm_at_" + "a" * 43 + " "]
+
+
+@pytest.mark.parametrize("version", PROTOCOLS)
+@pytest.mark.parametrize("value", MISSHAPEN_TOKENS)
+async def test_a_value_that_cannot_be_an_issued_token_gets_a_401_with_no_lane_and_no_read(wire, on, version, value):
+    lane = lanes.verify_lane()
+    lane.max_waiters = 0
+    release, tasks = await jam(lane)
+    response = await wire.post(version, headers={"authorization": f"Bearer {value}"})
+    assert response.status_code == 401
+    assert wire.store.reads == [] and wire.sessions == [] and wire.env.runs == []
+    assert wire.env.gate.snapshot()["by_reject"] == {}
+    release.set()
+    await asyncio.gather(*tasks)
+
+
+async def test_an_issued_token_is_checked_while_a_misshapen_one_is_not(wire, on):
+    assert (await wire.post(headers={"authorization": "Bearer x"})).status_code == 401
+    assert (await wire.post()).status_code == 200
+    assert len(wire.store.reads) == 1
 
 
 async def test_no_token_gets_a_401_without_a_check(wire, on):
@@ -966,12 +1133,12 @@ async def test_no_token_gets_a_401_without_a_check(wire, on):
 
 async def test_a_revoked_token_is_refused_on_the_next_request(wire, on):
     assert (await wire.post()).status_code == 200
-    wire.store.rows["vcm-test"]["revoked_at"] = datetime.now(timezone.utc)
+    wire.store.rows[TEST_TOKEN]["revoked_at"] = datetime.now(timezone.utc)
     assert (await wire.post()).status_code == 401
 
 
 async def test_an_expired_token_is_refused(wire, on):
-    wire.store.rows["vcm-test"]["expires_at"] = datetime.now(timezone.utc) - timedelta(seconds=1)
+    wire.store.rows[TEST_TOKEN]["expires_at"] = datetime.now(timezone.utc) - timedelta(seconds=1)
     assert (await wire.post()).status_code == 401
     assert wire.store.touches == []
 
@@ -981,12 +1148,12 @@ async def test_touch_runs_once_in_60_seconds(wire, on):
         assert (await wire.post()).status_code == 200
     assert len(wire.store.touches) == 1
     assert wire.store.touches[0].startswith("mcp-verify-")
-    wire.store.rows["vcm-test"]["last_used_at"] = datetime.now(timezone.utc) - timedelta(seconds=61)
+    wire.store.rows[TEST_TOKEN]["last_used_at"] = datetime.now(timezone.utc) - timedelta(seconds=61)
     assert (await wire.post()).status_code == 200
     assert len(wire.store.touches) == 2
 
 
-async def test_a_full_verify_queue_is_429_at_once(wire, on):
+async def test_a_busy_verify_lane_is_429_at_once(wire, on):
     lane = lanes.verify_lane()
     assert (lane.max_waiters, lane.wait_s, len(lane._idle)) == (32, 5.0, 2)
     lane.max_waiters = 0
@@ -1025,15 +1192,17 @@ async def test_the_body_is_not_read_by_the_guard_with_the_lanes_on(on, monkeypat
 
     gate = make_gate()
     monkeypatch.setattr(admission, "_instance", gate)
-    scope = {"type": "http", "method": "POST", "path": "/", "root_path": "", "headers": [(b"authorization", b"bEaReR abc")]}
+    scope = {"type": "http", "method": "POST", "path": "/", "root_path": "", "headers": [(b"authorization", f"bEaReR {TEST_TOKEN}".encode())]}
     await McpEdgeGuard(inner)(scope, receive, None)
-    assert reached == {"token": "abc", "verified": ("abc", None)}
+    assert reached == {"token": TEST_TOKEN, "verified": (TEST_TOKEN, None)}
     assert oauth_provider.verified_token.get() is None
 
 
-async def test_the_guard_leaves_get_and_other_paths_alone_with_the_lanes_on(on, monkeypatch):
+async def test_the_guard_checks_any_issued_shape_token_and_leaves_the_rest_alone_with_the_lanes_on(on, monkeypatch):
+    checked = []
+
     async def check(token):
-        raise AssertionError("checked")
+        checked.append(token)
 
     monkeypatch.setattr(admission, "check_access_token_off_loop", check)
     monkeypatch.setattr(admission, "_instance", make_gate())
@@ -1043,11 +1212,49 @@ async def test_the_guard_leaves_get_and_other_paths_alone_with_the_lanes_on(on, 
         calls.append(scope["path"])
 
     guard = McpEdgeGuard(inner)
-    headers = [(b"authorization", b"Bearer abc")]
+    headers = [(b"authorization", f"Bearer {TEST_TOKEN}".encode())]
     await guard({"type": "http", "method": "GET", "path": "/", "root_path": "", "headers": headers}, None, None)
     await guard({"type": "http", "method": "POST", "path": "/token", "root_path": "", "headers": headers}, None, None)
     await guard({"type": "http", "method": "POST", "path": "/", "root_path": "", "headers": []}, None, None)
-    assert calls == ["/", "/token", "/"]
+    await guard({"type": "http", "method": "GET", "path": "/", "root_path": "", "headers": []}, None, None)
+    await guard({"type": "websocket", "path": "/", "root_path": "", "headers": headers}, None, None)
+    assert calls == ["/", "/token", "/", "/", "/"]
+    assert checked == [TEST_TOKEN, TEST_TOKEN]
+
+
+@pytest.mark.parametrize("method,path", [("GET", "/"), ("DELETE", "/"), ("POST", "/register")],
+                         ids=["get", "delete", "other-route"])
+async def test_a_busy_verify_lane_is_429_for_every_bearer_request(wire, on, method, path):
+    lane = lanes.verify_lane()
+    lane.max_waiters = 0
+    release, tasks = await jam(lane)
+    try:
+        response = await wire.post(method=method, path=path)
+    finally:
+        release.set()
+        await asyncio.gather(*tasks)
+    assert_edge_busy(response)
+
+
+@pytest.mark.parametrize("method", ["GET", "DELETE"])
+async def test_a_database_failure_in_the_token_check_is_429_on_get_and_delete(wire, on, method):
+    wire.store.failure = RuntimeError("could not connect")
+    response = await wire.post(method=method)
+    assert_edge_busy(response)
+
+
+async def test_without_a_token_or_with_a_healthy_lane_get_and_delete_answer_as_usual(wire, on):
+    lane = lanes.verify_lane()
+    lane.max_waiters = 0
+    release, tasks = await jam(lane)
+    try:
+        assert (await wire.post(method="GET", headers={})).status_code == 401
+        assert (await wire.post(method="DELETE", headers={})).status_code == 401
+    finally:
+        release.set()
+        await asyncio.gather(*tasks)
+    assert (await wire.post(method="DELETE")).status_code == 405
+    assert len(wire.store.reads) == 1
 
 
 async def test_verify_token_uses_only_an_answer_for_the_same_token(on, monkeypatch):
@@ -1076,7 +1283,7 @@ async def test_verify_token_uses_only_an_answer_for_the_same_token(on, monkeypat
         oauth_provider.verified_token.reset(reset)
 
 
-async def test_a_full_control_lane_does_not_stop_a_modern_tools_call(wire, on):
+async def test_a_busy_control_lane_does_not_stop_a_modern_tools_call(wire, on):
     """The SDK's header validation lists tools first and carries on without it; the call then meets the gate."""
     lane = lanes.control_lane()
     lane.max_waiters = 0
@@ -1242,7 +1449,7 @@ SHUTDOWN_SERVER = textwrap.dedent('''
         return PinnedPrincipal(user_id="u", institute_id="i", roles=["ADMIN"]), {}, TOKEN, "j"
     async def call_tool(**kwargs):
         say("tool started")
-        if MODE == "stuck":
+        if MODE == "time_sleep":
             time.sleep(120)
         try:
             await asyncio.sleep(120)
@@ -1306,7 +1513,7 @@ def _run_shutdown(tmp_path, mode):
                 httpx.post(
                     f"http://127.0.0.1:{port}/",
                     json={"jsonrpc": "2.0", "id": 1, "method": "tools/call", "params": {"name": LANE_TOOL, "arguments": {}}},
-                    headers={"Accept": "application/json, text/event-stream", "Authorization": "Bearer t",
+                    headers={"Accept": "application/json, text/event-stream", "Authorization": f"Bearer {TEST_TOKEN}",
                              "MCP-Protocol-Version": "2025-06-18"},
                     timeout=30,
                 )
@@ -1338,11 +1545,103 @@ def test_sigterm_with_a_slow_tool_cancels_rolls_back_audits_and_exits(tmp_path):
     assert code in (0, -signal.SIGTERM), lines
 
 
-def test_sigterm_with_a_worker_stuck_in_time_sleep_does_not_hold_the_process(tmp_path):
-    lines, took, code = _run_shutdown(tmp_path, "stuck")
+def test_sigterm_with_a_worker_in_time_sleep_exits_within_the_grace(tmp_path):
+    lines, took, code = _run_shutdown(tmp_path, "time_sleep")
     assert "lanes stopped" in lines, lines
     assert took < 10, lines
     assert code in (0, -signal.SIGTERM), lines
+
+
+# ── database errors around the tool ──────────────────────────────────────
+def db_error():
+    return OperationalError("UPDATE t SET a = %(a)s", {"a": "value-to-keep-out"}, Exception("gone"))
+
+
+def assert_retryable_text(result):
+    assert result.is_error is True
+    payload = json.loads(result.content[0].text)
+    assert payload["error"] == "auth_unavailable"
+    assert payload["retryable"] is True and payload["started"] is False and payload["changed"] is False
+    assert BUSY_RETRY_LOW_S <= payload["retry_after_s"] <= BUSY_RETRY_HIGH_S
+    assert "value-to-keep-out" not in result.content[0].text and "UPDATE" not in result.content[0].text
+
+
+async def test_a_failed_commit_before_the_tool_is_retryable_and_the_tool_does_not_run(env, monkeypatch, caplog):
+    def commit(self):
+        raise db_error()
+
+    monkeypatch.setattr(FakeSession, "commit", commit)
+    with caplog.at_level(logging.WARNING, logger="app.mcp.server"):
+        result = await server._run_call(params(), server.db_session)
+    assert_retryable_text(result)
+    assert env.runs == []
+    assert all("value-to-keep-out" not in r.getMessage() and "UPDATE" not in r.getMessage() for r in caplog.records)
+    assert any("OperationalError" in r.getMessage() for r in caplog.records)
+
+
+async def test_a_session_that_will_not_open_is_retryable(env, monkeypatch):
+    @contextmanager
+    def broken():
+        raise db_error()
+        yield
+
+    assert_retryable_text(await server._run_call(params(), broken))
+    assert env.runs == []
+
+
+@pytest.mark.parametrize("error", [db_error(), ValueError("Expecting value: line 1 column 1")], ids=["database", "json"])
+async def test_authorize_turns_these_into_the_retryable_payload(env, monkeypatch, error):
+    async def chain(db, settings):
+        raise error
+
+    monkeypatch.undo()
+    monkeypatch.setattr(server, "_authorize_chain", chain)
+    with pytest.raises(server.McpAuthError) as caught:
+        await server._authorize(None, None)
+    assert caught.value.reason == "auth_unavailable"
+    assert caught.value.payload["retryable"] is True
+
+
+async def test_a_failed_commit_after_the_tool_ran_does_not_say_it_did_not_run(env, monkeypatch, caplog):
+    @contextmanager
+    def fails_on_exit():
+        yield FakeSession("main")
+        raise db_error()
+
+    with caplog.at_level(logging.WARNING, logger="app.mcp.server"):
+        result = await server._run_call(params(), fails_on_exit)
+    assert len(env.runs) == 1
+    assert result.is_error is True
+    assert json.loads(result.content[0].text) == {"error": "tool_failed", "tool": LANE_TOOL}
+    assert all("value-to-keep-out" not in r.getMessage() for r in caplog.records)
+
+
+async def test_a_listing_answers_a_database_error_with_the_retryable_payload(env, monkeypatch):
+    @contextmanager
+    def fails_on_exit():
+        yield FakeSession("main")
+        raise db_error()
+
+    monkeypatch.setattr(server, "db_session", fails_on_exit)
+    monkeypatch.setattr(adapter, "list_tools_for", lambda principal, setting, db=None: [])
+    with pytest.raises(MCPError) as caught:
+        await server._on_list_tools(None, None)
+    assert caught.value.error.code == INTERNAL_ERROR
+    assert caught.value.error.data["error"] == "auth_unavailable"
+    assert "value-to-keep-out" not in caught.value.error.message
+
+
+async def test_a_listing_on_the_control_lane_answers_a_database_error_the_same_way(env, on, monkeypatch):
+    @contextmanager
+    def fails_on_exit():
+        yield FakeSession("mcp")
+        raise db_error()
+
+    monkeypatch.setattr(server, "mcp_db_session", fails_on_exit)
+    monkeypatch.setattr(adapter, "list_tools_for", lambda principal, setting, db=None: [])
+    with pytest.raises(MCPError) as caught:
+        await server._on_list_tools(None, None)
+    assert caught.value.error.data["error"] == "auth_unavailable"
 
 
 # ── the MCP engine ───────────────────────────────────────────────────────
@@ -1359,7 +1658,10 @@ def test_mcp_engine_settings(monkeypatch):
     monkeypatch.setattr(app_db, "create_engine", fake_create_engine)
     monkeypatch.setattr(app_db, "_listen_for_search_path", lambda schema: None)
     assert app_db._create_mcp_engine() == "engine"
-    assert captured["pool_size"] == settings.mcp_max_tool_calls_per_pod + MCP_CONTROL_WORKERS + MCP_VERIFY_WORKERS
+    assert captured["pool_size"] == (
+        settings.mcp_max_tool_calls_per_pod + MCP_CONTROL_WORKERS + MCP_VERIFY_WORKERS + MCP_OAUTH_WORKERS
+    )
+    assert captured["hide_parameters"] is True
     assert captured["max_overflow"] == 0 and captured["pool_timeout"] == 5 and captured["pool_pre_ping"] is True
     assert captured["pool_recycle"] == settings.db_pool_recycle_seconds
     assert captured["connect_args"] == {"application_name": "ai_service_mcp", "connect_timeout": 5, "keepalives_idle": 30,
@@ -1369,7 +1671,7 @@ def test_mcp_engine_settings(monkeypatch):
 def test_lane_connections_are_computed_not_settable():
     settings = Settings()
     settings.mcp_max_tool_calls_per_pod = 4
-    assert settings.mcp_lane_connections() == 8
+    assert settings.mcp_lane_connections() == 10
     assert "mcp_lane_connections" not in Settings.model_fields
 
 
@@ -1439,7 +1741,7 @@ def pg(monkeypatch):
     with admin.connect() as conn:
         conn.execute(text(f'CREATE SCHEMA "{schema}"'))
     url = f"{PG_URL}{'&' if '?' in PG_URL else '?'}options=-csearch_path%3D{schema}"
-    settings = SimpleNamespace(build_sqlalchemy_url=lambda: url, mcp_lane_connections=lambda: 8, db_schema=None,
+    settings = SimpleNamespace(build_sqlalchemy_url=lambda: url, mcp_lane_connections=lambda: 10, db_schema=None,
                                db_pool_recycle_seconds=1800, db_pool_size=5, db_max_overflow=10,
                                db_pool_timeout_seconds=30)
     monkeypatch.setattr(app_db, "get_settings", lambda: settings)
@@ -1487,9 +1789,9 @@ def test_mcp_engine_is_created_once_across_threads(pg, monkeypatch):
     engines[0].dispose()
 
 
-async def test_pool_invariant_at_full_load_on_real_postgres(pg, monkeypatch):
+async def test_pool_invariant_with_every_lane_in_use_on_real_postgres(pg, monkeypatch):
     """
-    Every lane at capacity: MCP engine never above 8 and no checkout waits. The main
+    Every lane in use: the MCP engine stays within its pool and no checkout waits. The main
     engine is touched only through internal_auth, whose credential read this tool makes.
     """
     from app.services import internal_auth
@@ -1550,6 +1852,13 @@ async def test_pool_invariant_at_full_load_on_real_postgres(pg, monkeypatch):
 
         await lanes.verify_lane().run(check)
 
+    async def oauth_work():
+        async def check():
+            with app_db.mcp_db_session() as db:
+                db.execute(text("SELECT pg_sleep(0.02)")).scalar()
+
+        await lanes.oauth_lane().run(check)
+
     lanes.start(lane_settings())
     try:
         tools = []
@@ -1557,13 +1866,14 @@ async def test_pool_invariant_at_full_load_on_real_postgres(pg, monkeypatch):
             tools += [server._on_call_tool(None, params()) for _ in range(4)]
             tools += [server._on_list_tools(None, None) for _ in range(6)]
             tools += [check_token() for _ in range(10)]
+            tools += [oauth_work() for _ in range(3)]
         results = await asyncio.gather(*tools, return_exceptions=True)
     finally:
         await lanes.stop()
 
     failures = [r for r in results if isinstance(r, BaseException)]
     assert failures == []
-    assert 1 < peak["out"] <= 8
+    assert 1 < peak["out"] <= 10
     assert peak["wait"] < 0.1
     assert pool.checkedout() == 0
     assert main_sites and all(main_sites)

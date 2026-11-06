@@ -90,7 +90,8 @@ _ENSURE_TABLE_STATEMENTS = [
 
     # Issued access + refresh tokens, stored as SHA-256 hashes. ``pair_id`` ties
     # an access token to the refresh token minted with it, so revoking either
-    # kills both (RFC 7009 guidance).
+    # kills both (RFC 7009 guidance). A rotation keeps the pair id, so it names
+    # one connection for as long as that connection lasts.
     """
     CREATE TABLE IF NOT EXISTS mcp_oauth_token (
         token_hash           VARCHAR(255) PRIMARY KEY,

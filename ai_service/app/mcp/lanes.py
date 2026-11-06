@@ -1,14 +1,15 @@
 """
 Worker threads that run MCP work away from the main event loop.
 
-A worker is one daemon thread running one asyncio event loop forever, doing one call
-at a time, so sync database code in that call blocks that worker and nothing else.
-Three lanes exist per pod, and each worker has one connection in the MCP engine's pool:
+These tools run on worker threads. A worker is one daemon thread running one asyncio
+event loop forever, doing one call at a time. Four lanes exist per pod, and each
+worker has one connection in the MCP engine's pool:
 
 - tool: the read-only CRM tools. As many workers as the pod's tool call limit, so a
   call the gate admitted always finds one.
-- control: tool listings and the guides' authorization. A few may wait for a worker.
-- verify: the bearer token check. More may wait, for about as long.
+- control: tool listings and the guides' authorization.
+- verify: the bearer token check.
+- oauth: the database work of the OAuth routes, the consent page and the MCP settings routes.
 
 A worker goes back on its lane only when the call has really ended on its thread. A
 reply can leave earlier, but the worker stays out until the thread is free.
@@ -25,7 +26,7 @@ from collections import deque
 from concurrent.futures import ThreadPoolExecutor
 from typing import Any, Awaitable, Callable, Deque, List, Optional, Set, Tuple
 
-from ..config import MCP_CONTROL_WORKERS, MCP_VERIFY_WORKERS, Settings, get_settings
+from ..config import MCP_CONTROL_WORKERS, MCP_OAUTH_WORKERS, MCP_VERIFY_WORKERS, Settings, get_settings
 
 logger = logging.getLogger(__name__)
 
@@ -34,6 +35,12 @@ CONTROL_WAITERS = 16
 CONTROL_WAIT_S = 5.0
 VERIFY_WAITERS = 32
 VERIFY_WAIT_S = 5.0
+OAUTH_WAITERS = VERIFY_WAITERS
+OAUTH_WAIT_S = 5.0
+#: Registrations on the OAuth lane.
+OAUTH_REGISTER_LIMIT = 2
+#: Limits the OAuth reads. A write is left to answer, so a client never hears "busy" about one that went through.
+OAUTH_READ_LIMIT_S = 10.0
 STOP_GRACE_S = 2.0
 
 
@@ -60,7 +67,7 @@ class Worker:
         return self.thread.is_alive()
 
     def stop(self) -> None:
-        """Cancel what is running and end the thread. A thread blocked in sync code ends when it can."""
+        """Cancel what is running and end the thread once its call has returned."""
         try:
             self.loop.call_soon_threadsafe(self._shut_down)
         except RuntimeError:
@@ -225,6 +232,7 @@ class WorkerLane:
 _tool: Optional[WorkerLane] = None
 _control: Optional[WorkerLane] = None
 _verify: Optional[WorkerLane] = None
+_oauth: Optional[WorkerLane] = None
 
 
 def active() -> bool:
@@ -246,32 +254,38 @@ def verify_lane() -> WorkerLane:
     return _verify
 
 
+def oauth_lane() -> WorkerLane:
+    assert _oauth is not None
+    return _oauth
+
+
 def start(settings: Optional[Settings] = None) -> None:
-    """Start the three lanes, unless the flag is off or the gate that bounds them is off."""
-    global _tool, _control, _verify
+    """Start the lanes, unless the flag is off or the gate that bounds them is off."""
+    global _tool, _control, _verify, _oauth
     settings = settings or get_settings()
     if _tool is not None or not settings.mcp_off_loop_enabled or settings.mcp_max_tool_calls_per_pod <= 0:
         return
     tool = WorkerLane("mcp-tool", settings.mcp_max_tool_calls_per_pod)
     control = WorkerLane("mcp-control", MCP_CONTROL_WORKERS, CONTROL_WAITERS, CONTROL_WAIT_S)
     verify = WorkerLane("mcp-verify", MCP_VERIFY_WORKERS, VERIFY_WAITERS, VERIFY_WAIT_S)
-    _tool, _control, _verify = tool, control, verify
+    oauth = WorkerLane("mcp-oauth", MCP_OAUTH_WORKERS, OAUTH_WAITERS, OAUTH_WAIT_S)
+    _tool, _control, _verify, _oauth = tool, control, verify, oauth
 
 
 async def stop(grace_s: float = STOP_GRACE_S) -> None:
-    """Stop the lanes. A worker still blocked after the grace is left behind; its daemon thread holds nothing up."""
-    global _tool, _control, _verify
-    workers = [w for lane in (_tool, _control, _verify) if lane is not None for w in lane.workers()]
-    _tool = _control = _verify = None
+    """Stop the lanes, waiting up to the grace for each worker to end."""
+    global _tool, _control, _verify, _oauth
+    workers = [w for lane in (_tool, _control, _verify, _oauth) if lane is not None for w in lane.workers()]
+    _tool = _control = _verify = _oauth = None
     for worker in workers:
         worker.stop()
     loop = asyncio.get_running_loop()
     deadline = loop.time() + grace_s
     while any(w.is_alive() for w in workers) and loop.time() < deadline:
         await asyncio.sleep(0.02)
-    stuck = sum(1 for w in workers if w.is_alive())
-    if stuck:
-        logger.warning("mcp lanes stopped with %d worker(s) still busy", stuck)
+    busy = sum(1 for w in workers if w.is_alive())
+    if busy:
+        logger.warning("mcp lanes stopped with %d worker(s) still busy", busy)
 
 
 __all__ = [
@@ -280,6 +294,7 @@ __all__ = [
     "WorkerLane",
     "active",
     "control_lane",
+    "oauth_lane",
     "start",
     "stop",
     "submit",

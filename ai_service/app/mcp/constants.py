@@ -687,11 +687,22 @@ OFF_LOOP_TOOLS = frozenset({"crm_leads", "crm_calls", "crm_meetings", "crm_messa
 
 #: How long a client waits for a tool on the lane. Above any single CRM hop.
 TOOL_LANE_DEADLINE_S = 200
+#: How much longer a client waits for a tool that finished by the deadline and is writing its audit row.
+TOOL_LANE_FINISH_GRACE_S = 5
 REASON_TOOL_TIMEOUT = "tool_timeout"
 TOOL_TIMEOUT_MESSAGE = (
     "This read took longer than {limit} seconds and was stopped. Nothing changed. "
     "Try again with a shorter date range or fewer records."
 )
+
+
+#: The wait a busy or unavailable answer gives, spread so that clients do not come back together.
+BUSY_RETRY_LOW_S = 10
+BUSY_RETRY_HIGH_S = 30
+
+
+def busy_retry_after_s() -> int:
+    return random.randint(BUSY_RETRY_LOW_S, BUSY_RETRY_HIGH_S)
 
 
 def retry_payload(code: str, message: str, low: int, high: int, **extra: Any) -> Dict[str, Any]:
@@ -714,7 +725,7 @@ def rate_limited_payload(limit: int) -> Dict[str, Any]:
 
 
 def server_busy_payload() -> Dict[str, Any]:
-    return retry_payload(REASON_SERVER_BUSY, SERVER_BUSY_MESSAGE, 10, 30)
+    return retry_payload(REASON_SERVER_BUSY, SERVER_BUSY_MESSAGE, BUSY_RETRY_LOW_S, BUSY_RETRY_HIGH_S)
 
 
 def tool_timeout_payload(limit_s: int = TOOL_LANE_DEADLINE_S) -> Dict[str, Any]:
@@ -753,6 +764,9 @@ __all__ = [
     "REASON_AUTH_UNAVAILABLE",
     "RETRYABLE_REASONS",
     "RETRYABLE_MESSAGES",
+    "BUSY_RETRY_HIGH_S",
+    "BUSY_RETRY_LOW_S",
+    "busy_retry_after_s",
     "retry_payload",
     "REASON_RATE_LIMITED",
     "REASON_SERVER_BUSY",
@@ -760,6 +774,7 @@ __all__ = [
     "server_busy_payload",
     "OFF_LOOP_TOOLS",
     "TOOL_LANE_DEADLINE_S",
+    "TOOL_LANE_FINISH_GRACE_S",
     "REASON_TOOL_TIMEOUT",
     "tool_timeout_payload",
 ]

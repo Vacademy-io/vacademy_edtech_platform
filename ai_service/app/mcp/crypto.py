@@ -19,6 +19,7 @@ import base64
 import hashlib
 import hmac
 import logging
+import re
 import secrets
 from typing import Optional
 
@@ -32,10 +33,18 @@ ACCESS_TOKEN_PREFIX = "vcm_at_"
 REFRESH_TOKEN_PREFIX = "vcm_rt_"
 AUTH_CODE_PREFIX = "vcm_ac_"
 
+#: What ``new_token`` makes for an access token: the prefix and 32 bytes in unpadded url-safe base64.
+_ACCESS_TOKEN_RE = re.compile(rf"{ACCESS_TOKEN_PREFIX}[A-Za-z0-9_-]{{43}}")
+
 
 def new_token(prefix: str) -> str:
     """A 256-bit URL-safe secret. Well past the 128-bit floor RFC 6749 sets."""
     return f"{prefix}{secrets.token_urlsafe(32)}"
+
+
+def has_access_token_shape(token: str) -> bool:
+    """False for a value this server cannot have issued as an access token."""
+    return _ACCESS_TOKEN_RE.fullmatch(token) is not None
 
 
 def hash_token(token: str) -> str:
@@ -96,6 +105,7 @@ __all__ = [
     "REFRESH_TOKEN_PREFIX",
     "AUTH_CODE_PREFIX",
     "new_token",
+    "has_access_token_shape",
     "hash_token",
     "tokens_equal",
     "TokenCipher",

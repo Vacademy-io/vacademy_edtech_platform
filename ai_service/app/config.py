@@ -35,9 +35,10 @@ _load_env_file()
 _LEGACY_JWT_SECRET_FALLBACK = "357638792F423F4428472B4B6250655368566D597133743677397A2443264629"
 
 
-#: Worker threads on the MCP control and verify lanes (app/mcp/lanes.py).
+#: Worker threads on the MCP control, verify and OAuth lanes (app/mcp/lanes.py).
 MCP_CONTROL_WORKERS = 2
 MCP_VERIFY_WORKERS = 2
+MCP_OAUTH_WORKERS = 2
 
 
 class Settings(BaseSettings):
@@ -326,15 +327,15 @@ class Settings(BaseSettings):
     mcp_gate_waiters_per_pod: int = int(os.getenv("MCP_GATE_WAITERS_PER_POD", "8"))
     # Main-pool connections a tool call may not take, left for the rest of the service.
     mcp_pool_reserve: int = int(os.getenv("MCP_POOL_RESERVE", "2"))
-    # Runs the CRM read tools, tool listings and the bearer token check on their own threads and
-    # engine. Off, or with the pod limit at 0, all of that stays on the main event loop.
+    # Runs the CRM read tools, tool listings, the bearer token check and the OAuth database work on
+    # their own threads and engine. Off, or with the pod limit at 0, all of that stays on the main event loop.
     mcp_off_loop_enabled: bool = os.getenv("MCP_OFF_LOOP_ENABLED", "true").lower() == "true"
 
     model_config = SettingsConfigDict(env_file=None, extra="ignore")
 
     def mcp_lane_connections(self) -> int:
         """The MCP engine's pool: one connection per worker thread, so a worker never waits for one."""
-        return self.mcp_max_tool_calls_per_pod + MCP_CONTROL_WORKERS + MCP_VERIFY_WORKERS
+        return self.mcp_max_tool_calls_per_pod + MCP_CONTROL_WORKERS + MCP_VERIFY_WORKERS + MCP_OAUTH_WORKERS
 
     def resolve_mcp_encryption_key(self) -> str:
         """

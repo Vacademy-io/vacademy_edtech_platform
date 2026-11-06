@@ -2,8 +2,9 @@
 Persistence for the MCP OAuth store.
 
 Plain ``text()`` SQL against the shared admin_core DB, in the style of the other
-ai_service repositories. Every method takes an explicit Session so the caller
-owns the transaction boundary.
+ai_service repositories. Every method takes an explicit Session. A write commits
+when it is done; with ``commit=False`` it stays in the session's open transaction,
+for a caller whose several writes take effect together.
 
 Invariants this layer enforces:
   * issued tokens and auth codes are persisted as SHA-256 hashes / opaque ids,
@@ -334,6 +335,8 @@ class McpOAuthRepository:
         return txn
 
     def get_txn(self, txn: str) -> Optional[Dict[str, Any]]:
+        if "\x00" in txn:
+            return None
         row = self.db.execute(
             text(
                 "SELECT txn, client_id, redirect_uri, redirect_uri_provided, code_challenge, "
@@ -357,7 +360,7 @@ class McpOAuthRepository:
             "consumed_at": row["consumed_at"],
         }
 
-    def consume_txn(self, txn: str) -> bool:
+    def consume_txn(self, txn: str, *, commit: bool = True) -> bool:
         """Mark a pending authorization used. False if already consumed/expired."""
         result = self.db.execute(
             text(
@@ -366,7 +369,8 @@ class McpOAuthRepository:
             ),
             {"txn": txn, "now": _now()},
         )
-        self.db.commit()
+        if commit:
+            self.db.commit()
         return (result.rowcount or 0) > 0
 
     # ── authorization codes ──────────────────────────────────────────────
@@ -385,6 +389,7 @@ class McpOAuthRepository:
         platform_access_token: Optional[str],
         platform_refresh_token: Optional[str],
         ttl_seconds: int,
+        commit: bool = True,
     ) -> None:
         self.db.execute(
             text(
@@ -410,7 +415,8 @@ class McpOAuthRepository:
                 "exp": _now() + timedelta(seconds=ttl_seconds),
             },
         )
-        self.db.commit()
+        if commit:
+            self.db.commit()
 
     def get_code(self, code: str) -> Optional[Dict[str, Any]]:
         row = self.db.execute(
@@ -439,7 +445,7 @@ class McpOAuthRepository:
             "used_at": row["used_at"],
         }
 
-    def consume_code(self, code: str) -> bool:
+    def consume_code(self, code: str, *, commit: bool = True) -> bool:
         """Single-use redemption. False when already redeemed or expired."""
         result = self.db.execute(
             text(
@@ -448,7 +454,8 @@ class McpOAuthRepository:
             ),
             {"code": hash_token(code), "now": _now()},
         )
-        self.db.commit()
+        if commit:
+            self.db.commit()
         return (result.rowcount or 0) > 0
 
     # ── tokens ───────────────────────────────────────────────────────────
@@ -467,6 +474,7 @@ class McpOAuthRepository:
         platform_access_token: Optional[str],
         platform_refresh_token: Optional[str],
         ttl_seconds: int,
+        commit: bool = True,
     ) -> None:
         self.db.execute(
             text(
@@ -491,7 +499,8 @@ class McpOAuthRepository:
                 "exp": _now() + timedelta(seconds=ttl_seconds),
             },
         )
-        self.db.commit()
+        if commit:
+            self.db.commit()
 
     def get_token(self, token: str, kind: str) -> Optional[Dict[str, Any]]:
         row = self.db.execute(
@@ -532,7 +541,7 @@ class McpOAuthRepository:
             self.db.commit()
         except Exception as exc:  # noqa: BLE001
             self.db.rollback()
-            logger.debug("touch_token failed: %s", exc)
+            logger.debug("touch_token failed: %s", type(exc).__name__)
 
     def update_platform_access_token(self, token_hash: str, platform_access_token: str) -> None:
         """Persist a platform JWT we just refreshed, so the next call reuses it."""
@@ -542,8 +551,26 @@ class McpOAuthRepository:
         )
         self.db.commit()
 
-    def revoke_pair(self, pair_id: str) -> None:
-        """Revoke an access token and its sibling refresh token together."""
+    def lock_pair(self, pair_id: str, institute_id: Optional[str] = None) -> None:
+        """Lock the pair's live rows, always in token_hash order, until the transaction ends."""
+        where, params = "pair_id = :pair AND revoked_at IS NULL", {"pair": pair_id}
+        if institute_id is not None:
+            where, params = f"{where} AND institute_id = :inst", {**params, "inst": institute_id}
+        self.db.execute(
+            text(f"SELECT 1 FROM mcp_oauth_token WHERE {where} ORDER BY token_hash FOR UPDATE"), params
+        ).all()
+
+    def _lock_pair_after_any_rotation(self, pair_id: str, institute_id: Optional[str] = None) -> None:
+        """
+        The first lock waits for a rotation of this pair that is under way. Tokens that
+        rotation issued carry the same pair id and only a later statement can see them,
+        so the second lock takes them too.
+        """
+        self.lock_pair(pair_id, institute_id)
+        self.lock_pair(pair_id, institute_id)
+
+    def revoke_locked_pair(self, pair_id: str) -> None:
+        """Revoke the pair's live rows, which this transaction has locked with ``lock_pair``."""
         self.db.execute(
             text(
                 "UPDATE mcp_oauth_token SET revoked_at = :now "
@@ -551,9 +578,14 @@ class McpOAuthRepository:
             ),
             {"pair": pair_id, "now": _now()},
         )
+
+    def revoke_pair(self, pair_id: str) -> None:
+        """Revoke an access token and its sibling refresh token together."""
+        self._lock_pair_after_any_rotation(pair_id)
+        self.revoke_locked_pair(pair_id)
         self.db.commit()
 
-    def consume_refresh_token(self, token: str) -> bool:
+    def consume_refresh_token(self, token: str, *, commit: bool = True) -> bool:
         """Rotation: a refresh token may be redeemed exactly once."""
         result = self.db.execute(
             text(
@@ -563,7 +595,8 @@ class McpOAuthRepository:
             ),
             {"hash": hash_token(token), "now": _now()},
         )
-        self.db.commit()
+        if commit:
+            self.db.commit()
         return (result.rowcount or 0) > 0
 
     def list_connections(self, institute_id: str) -> List[Dict[str, Any]]:
@@ -595,6 +628,7 @@ class McpOAuthRepository:
 
     def revoke_connection(self, institute_id: str, pair_id: str) -> bool:
         """Institute-scoped revoke, so one admin cannot kill another's grant."""
+        self._lock_pair_after_any_rotation(pair_id, institute_id)
         result = self.db.execute(
             text(
                 "UPDATE mcp_oauth_token SET revoked_at = :now "
@@ -644,7 +678,7 @@ class McpOAuthRepository:
             self.db.commit()
         except Exception as exc:  # noqa: BLE001
             self.db.rollback()
-            logger.warning("mcp_tool_call_log insert failed: %s", exc)
+            logger.warning("mcp_tool_call_log insert failed: %s", type(exc).__name__)
 
 
 __all__ = ["McpOAuthRepository"]

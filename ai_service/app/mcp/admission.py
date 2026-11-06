@@ -1,16 +1,14 @@
 """
 How many MCP tool calls run at once on this pod, and the guard in front of the endpoint.
 
-``McpAdmission`` admits a tool call up to a limit per pod and per institute, and
-while the main database pool has room. A call over a limit waits a few seconds,
-holding no connection and no thread, then either runs or gets a retryable error.
-A refused call writes no audit row and never reaches the tool layer, so a
+``McpAdmission`` admits a tool call within the limits set by ``MCP_MAX_TOOL_CALLS_PER_POD``,
+``MCP_MAX_TOOL_CALLS_PER_INSTITUTE`` and ``MCP_POOL_RESERVE``. A call over a limit waits up
+to ``MCP_GATE_MAX_WAIT_S``, holding no connection and no thread, then either runs or gets a
+retryable error. A refused call writes no audit row and never reaches the tool layer, so a
 confirm_token it carried is not read or spent.
 
-``McpEdgeGuard`` stands in front of the bearer token check, which needs a database
-connection. With the lanes running (app/mcp/lanes.py) it does that check on a worker
-thread and answers HTTP 429 when the check cannot finish. Otherwise it answers 429
-when the main pool is nearly out of connections.
+``McpEdgeGuard`` wraps the MCP app and looks after the bearer token check. A caller the
+check cannot answer gets HTTP 429 with a retry time, never a 401.
 
 The state is plain ints, a deque and futures. It is touched only on the main event
 loop, with no await between a check and the take that follows it.
@@ -34,7 +32,15 @@ from starlette._utils import get_route_path
 from ..config import Settings, get_settings
 from ..db import get_engine, mcp_pool_checked_out
 from . import lanes
-from .constants import REASON_RATE_LIMITED, REASON_SERVER_BUSY, rate_limited_payload, server_busy_payload
+from .constants import (
+    MCP_EXPOSED_TOOLS,
+    REASON_RATE_LIMITED,
+    REASON_SERVER_BUSY,
+    busy_retry_after_s,
+    rate_limited_payload,
+    server_busy_payload,
+)
+from .crypto import has_access_token_shape
 from .oauth_provider import check_access_token_off_loop, verified_token
 
 logger = logging.getLogger(__name__)
@@ -47,17 +53,8 @@ REJECT_LOG_EVERY_S = 30.0
 _REJECT_LOG_MAX_KEYS = 1024
 
 EDGE_MIN_FREE_CONNECTIONS = 2
-EDGE_RETRY_AFTER_S = 10
 EDGE_REJECT = "edge_busy"
-_EDGE_BODY = json.dumps({
-    "jsonrpc": "2.0",
-    "id": None,
-    "error": {
-        "code": -32000,
-        "message": f"Vacademy is busy right now. Retry after {EDGE_RETRY_AFTER_S} seconds.",
-        "data": {"error": REASON_SERVER_BUSY, "retry_after_s": EDGE_RETRY_AFTER_S},
-    },
-}).encode()
+OAUTH_REJECT = "oauth_busy"
 
 #: The header is read before the token is checked, so only a date-shaped value is
 #: kept and the number of distinct values per interval is bounded.
@@ -257,9 +254,11 @@ class McpAdmission:
             if len(self._reject_logged_at) >= _REJECT_LOG_MAX_KEYS:
                 self._reject_logged_at.clear()
         self._reject_logged_at[key] = now + REJECT_LOG_EVERY_S
+        # The name comes from the client and the gate runs before the tool is looked up.
+        logged_tool = tool if tool is None or tool in MCP_EXPOSED_TOOLS else "other"
         logger.warning(
             "mcp_reject code=%s institute=%s tool=%s running=%d waiting=%d institute_running=%d pool_out=%s",
-            code, institute_id, tool, self.running, len(self._waiters),
+            code, institute_id, logged_tool, self.running, len(self._waiters),
             self.running_by_institute.get(institute_id or "", 0), self._pool_checked_out(),
         )
 
@@ -285,6 +284,10 @@ class McpAdmission:
     def note_edge_refusal(self) -> None:
         self._by_reject[EDGE_REJECT] += 1
         self._log_reject(EDGE_REJECT, None, None)
+
+    def note_oauth_refusal(self) -> None:
+        self._by_reject[OAUTH_REJECT] += 1
+        self._log_reject(OAUTH_REJECT, None, None)
 
     def note_protocol_version(self, raw: Optional[bytes]) -> None:
         if raw is None:
@@ -342,25 +345,27 @@ def reset_instance() -> McpAdmission:
 
 class McpEdgeGuard:
     """
-    Wraps the MCP app. With the lanes running, a bearer POST to the MCP endpoint has
-    its token checked on a worker thread, and any answer, valid or not, goes on to the
-    SDK, so a bad token still gets its 401. A full queue, a timeout or a database error
-    gets HTTP 429. Without the lanes, that POST gets 429 when the main pool has fewer
-    than two connections free.
+    Wraps the MCP app. With the lanes running (app/mcp/lanes.py) a bearer token is
+    checked on a worker thread and the answer goes on to the SDK, so a bad token still
+    gets its 401. A value that cannot be an issued token needs no check and goes on as
+    not valid. When the check cannot answer, or without the lanes when the main pool is
+    short of connections, the caller gets HTTP 429 with a retry time.
 
-    The request body is never read. Everything else passes through: the OAuth routes,
-    GET, DELETE, and requests with no token, which still get the SDK's 401.
+    The request body is never read. Requests with no bearer token pass through, and
+    still get the SDK's 401 where one is required.
     """
 
     def __init__(self, app: Any):
         self.app = app
 
     async def __call__(self, scope: Any, receive: Any, send: Any) -> None:
-        if not self._applies(scope):
+        endpoint_post = self._applies(scope)
+        if not endpoint_post and not (lanes.active() and _has_bearer(scope)):
             await self.app(scope, receive, send)
             return
         gate = instance()
-        gate.note_protocol_version(_header(scope, b"mcp-protocol-version"))
+        if endpoint_post:
+            gate.note_protocol_version(_header(scope, b"mcp-protocol-version"))
         if lanes.active():
             await self._check_off_loop(gate, scope, receive, send)
             return
@@ -372,14 +377,16 @@ class McpEdgeGuard:
     async def _check_off_loop(self, gate: McpAdmission, scope: Any, receive: Any, send: Any) -> None:
         # Same slice as the SDK's bearer backend, so verify_token finds this answer.
         token = _header(scope, b"authorization")[7:].decode("latin-1")
-        try:
-            checked = await check_access_token_off_loop(token)
-        except Exception as exc:  # noqa: BLE001
-            if not isinstance(exc, lanes.LaneBusy):
-                logger.warning("mcp edge could not check a token: %s", type(exc).__name__)
-            gate.note_edge_refusal()
-            await _send_busy(send)
-            return
+        checked = None
+        if has_access_token_shape(token):
+            try:
+                checked = await check_access_token_off_loop(token)
+            except Exception as exc:  # noqa: BLE001
+                if not isinstance(exc, lanes.LaneBusy):
+                    logger.warning("mcp edge could not check a token: %s", type(exc).__name__)
+                gate.note_edge_refusal()
+                await _send_busy(send)
+                return
         reset = verified_token.set((token, checked))
         try:
             await self.app(scope, receive, send)
@@ -390,10 +397,7 @@ class McpEdgeGuard:
     def _applies(scope: Any) -> bool:
         if scope.get("type") != "http" or scope.get("method") != "POST":
             return False
-        if get_route_path(scope) not in ("", "/"):
-            return False
-        authorization = _header(scope, b"authorization")
-        return authorization is not None and authorization[:7].lower() == b"bearer "
+        return get_route_path(scope) in ("", "/") and _has_bearer(scope)
 
 
 def _header(scope: Any, name: bytes) -> Optional[bytes]:
@@ -403,17 +407,34 @@ def _header(scope: Any, name: bytes) -> Optional[bytes]:
     return None
 
 
+def _has_bearer(scope: Any) -> bool:
+    if scope.get("type") != "http":
+        return False
+    authorization = _header(scope, b"authorization")
+    return authorization is not None and authorization[:7].lower() == b"bearer "
+
+
 async def _send_busy(send: Any) -> None:
+    retry_after_s = busy_retry_after_s()
+    body = json.dumps({
+        "jsonrpc": "2.0",
+        "id": None,
+        "error": {
+            "code": -32000,
+            "message": f"Vacademy is busy right now. Retry after {retry_after_s} seconds.",
+            "data": {"error": REASON_SERVER_BUSY, "retry_after_s": retry_after_s},
+        },
+    }).encode()
     await send({
         "type": "http.response.start",
         "status": 429,
         "headers": [
             (b"content-type", b"application/json"),
-            (b"retry-after", str(EDGE_RETRY_AFTER_S).encode()),
-            (b"content-length", str(len(_EDGE_BODY)).encode()),
+            (b"retry-after", str(retry_after_s).encode()),
+            (b"content-length", str(len(body)).encode()),
         ],
     })
-    await send({"type": "http.response.body", "body": _EDGE_BODY})
+    await send({"type": "http.response.body", "body": body})
 
 
 def log_stats(gate: McpAdmission) -> None:

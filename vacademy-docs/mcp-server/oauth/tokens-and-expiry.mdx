@@ -32,6 +32,16 @@ A refresh token can be used only one time. When the app uses it:
 
 If the same refresh token is sent again, it is refused, and the app has to sign in again.
 
+A connection stays the same connection across refreshes, so **Revoke** in [Active connections](/mcp-server/settings/connections-and-revoking) ends it even if the app has just refreshed or is refreshing at that moment: the refresh is refused with `invalid_grant`, or the tokens it returned are already revoked, and the app has to sign in again.
+
+An app that revokes through the OAuth revocation endpoint should send its current refresh token. Revoking a refresh token that has already been used, or an access token that has expired, ends nothing, and the connection keeps working.
+
+## When the server is busy
+
+If the server can't complete a sign-in, token or revocation request just now, it answers HTTP 503 with a `Retry-After` header and `error: temporarily_unavailable`. This doesn't mean a token is invalid. Wait that long and send the same request again. On the sign-in step, the browser may instead return to the app with `error=temporarily_unavailable`, and the person can start again from the app.
+
+A request that can't work however often it is sent gets its own error instead of this one. A value that is too long or not allowed gets `invalid_client_metadata` when the app registers and `invalid_request` at sign-in, and a client ID that is unknown or can't be used gets `invalid_client` at the token step, `unauthorized_client` at revocation and `invalid_request` at sign-in. See [Errors](/mcp-server/usage/errors#bad-requests).
+
 ## The person's own sign-in
 
 The connection works through the approving person's own account. While the connection is in use, the server keeps that account's sign-in renewed in the background.

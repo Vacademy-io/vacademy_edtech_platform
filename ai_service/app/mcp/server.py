@@ -21,6 +21,7 @@ from __future__ import annotations
 import asyncio
 import json
 import logging
+import threading
 import time
 from typing import Any, Awaitable, Callable, Dict, Optional, Tuple, TypeVar
 
@@ -47,6 +48,7 @@ from mcp.types import (
     TextContent,
 )
 from pydantic import AnyHttpUrl
+from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
 from starlette.applications import Starlette
 
@@ -58,6 +60,8 @@ from ..services.institute_setting_reader import SettingReadError
 from . import adapter, admission, guides, lanes
 from .access import check_mcp_access, load_mcp_setting, setting_for_tool_gate
 from .constants import (
+    BUSY_RETRY_HIGH_S,
+    BUSY_RETRY_LOW_S,
     DENIAL_MESSAGES,
     MCP_SCOPE_READ,
     OFF_LOOP_TOOLS,
@@ -67,13 +71,14 @@ from .constants import (
     RETRYABLE_MESSAGES,
     RETRYABLE_REASONS,
     TOOL_LANE_DEADLINE_S,
+    TOOL_LANE_FINISH_GRACE_S,
     retry_payload,
     server_busy_payload,
     tool_timeout_payload,
 )
 from .crypto import TokenCipher
 from .institute_scope import institute_from_resource, request_institute_id
-from .oauth_provider import VacademyAccessToken, VacademyOAuthProvider
+from .oauth_provider import VacademyAccessToken, VacademyOAuthProvider, answer_oauth_busy
 from .principal import build_pinned_principal, refresh_platform_token
 from .repository import McpOAuthRepository
 
@@ -200,8 +205,14 @@ class McpAuthError(Exception):
 
 def _unavailable(reason: str) -> McpAuthError:
     """The server could not decide, so the call did not run. Nothing about the caller is implied."""
-    payload = retry_payload(reason, RETRYABLE_MESSAGES[reason], 10, 30)
+    payload = retry_payload(reason, RETRYABLE_MESSAGES[reason], BUSY_RETRY_LOW_S, BUSY_RETRY_HIGH_S)
     return McpAuthError(reason, payload["message"], payload=payload)
+
+
+def _could_not_answer(exc: Exception) -> McpAuthError:
+    """A database error or an unreadable answer before the tool ran. Only its type is logged."""
+    logger.warning("MCP request stopped before the tool: %s", type(exc).__name__)
+    return _unavailable(REASON_AUTH_UNAVAILABLE)
 
 
 def _raise_if_unavailable(exc: McpAuthError) -> None:
@@ -247,6 +258,8 @@ async def _authorize(db: Session, settings: Settings) -> Tuple[PinnedPrincipal, 
     except AuthServiceUnavailable as exc:
         logger.warning("MCP authorization could not check the session: %s", exc)
         raise _unavailable(REASON_AUTH_UNAVAILABLE) from exc
+    except (SQLAlchemyError, ValueError) as exc:
+        raise _could_not_answer(exc) from exc
 
 
 async def _authorize_chain(db: Session, settings: Settings) -> Tuple[PinnedPrincipal, dict, VacademyAccessToken, str]:
@@ -311,13 +324,16 @@ async def _authorize_chain(db: Session, settings: Settings) -> Tuple[PinnedPrinc
 
 async def _on_control_lane(body: Callable[[Callable[[], Any]], Awaitable[T]]) -> T:
     """``body(session_factory)`` on the control lane when the lanes run, otherwise right here."""
-    if not lanes.active():
-        return await body(db_session)
     try:
+        if not lanes.active():
+            return await body(db_session)
         return await lanes.control_lane().run(lambda: body(mcp_db_session))
     except lanes.LaneBusy as exc:
         payload = server_busy_payload()
         raise MCPError(code=INTERNAL_ERROR, message=payload["message"], data=payload) from exc
+    except (SQLAlchemyError, ValueError) as exc:
+        unavailable = _could_not_answer(exc)
+        raise MCPError(code=INTERNAL_ERROR, message=unavailable.message, data=unavailable.payload) from exc
 
 
 async def _on_list_tools(ctx, params: Optional[PaginatedRequestParams]) -> ListToolsResult:
@@ -356,13 +372,41 @@ async def _on_call_tool(ctx, params: CallToolRequestParams) -> CallToolResult:
         gate.leave(institute_id)
 
 
+class _LaneCallEnd:
+    """
+    How a lane call ended, decided once. The tool's thread and the main loop meet at the
+    deadline, and whichever claims first sets both the client's answer and the audit row.
+    """
+
+    def __init__(self) -> None:
+        self._lock = threading.Lock()
+        self._finished = False
+        self.stop_code: Optional[str] = None
+
+    def stop(self, code: str) -> bool:
+        """From the main loop. False when the tool finished first, so its own answer stands."""
+        with self._lock:
+            if self._finished:
+                return False
+            self.stop_code = self.stop_code or code
+            return True
+
+    def finish(self) -> None:
+        """From the tool's thread, before its audit row. A call already stopped ends as cancelled instead."""
+        with self._lock:
+            if self.stop_code is None:
+                self._finished = True
+                return
+        raise asyncio.CancelledError()
+
+
 async def _call_on_tool_lane(
     gate: admission.McpAdmission, institute_id: str, params: CallToolRequestParams
 ) -> CallToolResult:
     """
-    A read on a worker thread. The client always gets an answer by the deadline, but
-    the slot and the worker come back only when the thread has really finished, so a
-    call stuck in sync code keeps counting against the limits.
+    A read on a worker thread. The client gets an answer by the deadline, or a moment
+    after it when the tool had already finished by then. The slot and the worker come
+    back when the thread has finished.
     """
     rejection = await gate.enter(institute_id, params.name, uses_main_pool=False)
     if rejection:
@@ -377,18 +421,18 @@ async def _call_on_tool_lane(
         lane.checkin(worker)
         gate.leave(institute_id, uses_main_pool=False)
 
-    cancel_code = {"code": "cancelled"}
-    result, cancel = lanes.submit(
-        worker, lambda: _run_call(params, mcp_db_session, cancel_code=cancel_code), on_finish
-    )
+    end = _LaneCallEnd()
+    result, cancel = lanes.submit(worker, lambda: _run_call(params, mcp_db_session, lane_end=end), on_finish)
     try:
         done, _ = await asyncio.wait({result}, timeout=TOOL_LANE_DEADLINE_S)
+        if not done and not end.stop(REASON_TOOL_TIMEOUT):
+            done, _ = await asyncio.wait({result}, timeout=TOOL_LANE_FINISH_GRACE_S)
     except asyncio.CancelledError:
+        end.stop("cancelled")
         result.cancel()
         cancel()
         raise
     if not done:
-        cancel_code["code"] = REASON_TOOL_TIMEOUT
         result.cancel()
         cancel()
         logger.warning("MCP tool %s passed its deadline for institute %s", params.name, institute_id)
@@ -419,51 +463,70 @@ def _audit_cancelled(
                 duration_ms=duration_ms,
             )
     except Exception as exc:  # noqa: BLE001
-        logger.warning("MCP audit of a stopped call failed: %s", exc)
+        logger.warning("MCP audit of a stopped call failed: %s", type(exc).__name__)
 
 
 async def _run_call(
-    params: CallToolRequestParams, session_factory, cancel_code: Optional[Dict[str, str]] = None
+    params: CallToolRequestParams, session_factory, lane_end: Optional[_LaneCallEnd] = None
 ) -> CallToolResult:
-    """``cancel_code``, for lane tools only, holds the audit code to write if the tool is cancelled."""
+    """``lane_end``, for lane tools only, holds the audit code to write if the tool is cancelled."""
     settings_obj = _settings()
-    with session_factory() as db:
-        try:
-            principal, setting, token, platform_token = await _authorize(db, settings_obj)
-        except McpAuthError as exc:
-            return CallToolResult(
-                content=[TextContent(type="text", text=json.dumps(exc.payload) if exc.payload else exc.message)],
-                is_error=True,
-            )
+    tool_began = False
+    try:
+        with session_factory() as db:
+            try:
+                principal, setting, token, platform_token = await _authorize(db, settings_obj)
+            except McpAuthError as exc:
+                return _auth_error_result(exc)
 
-        repo = McpOAuthRepository(db, TokenCipher(settings_obj.resolve_mcp_encryption_key()))
-        client = repo.get_client(token.client_id)
-        # Authorization is done, so a tool that starts with HTTP holds no connection during it.
-        db.commit()
+            repo = McpOAuthRepository(db, TokenCipher(settings_obj.resolve_mcp_encryption_key()))
+            client = repo.get_client(token.client_id)
+            # Authorization is done, so a tool that starts with HTTP holds no connection during it.
+            db.commit()
 
-        started = time.monotonic()
-        try:
-            return await adapter.call_tool(
-                name=params.name,
-                arguments=params.arguments,
-                principal=principal,
-                platform_token=platform_token,
-                db=db,
-                mcp_setting=setting,
-                repo=repo,
-                client_id=token.client_id,
-                client_name=(client or {}).get("client_name"),
-            )
-        except asyncio.CancelledError:
-            if cancel_code is not None:
-                duration_ms = int((time.monotonic() - started) * 1000)
-                try:
-                    db.rollback()
-                except Exception as exc:  # noqa: BLE001
-                    logger.warning("MCP rollback of a stopped call failed: %s", exc)
-                _audit_cancelled(settings_obj, principal, token.client_id, (client or {}).get("client_name"),
-                                 params, cancel_code["code"], duration_ms)
+            tool_began = True
+            started = time.monotonic()
+            try:
+                return await adapter.call_tool(
+                    name=params.name,
+                    arguments=params.arguments,
+                    principal=principal,
+                    platform_token=platform_token,
+                    db=db,
+                    mcp_setting=setting,
+                    repo=repo,
+                    client_id=token.client_id,
+                    client_name=(client or {}).get("client_name"),
+                    before_audit=lane_end.finish if lane_end is not None else None,
+                )
+            except asyncio.CancelledError:
+                if lane_end is not None:
+                    duration_ms = int((time.monotonic() - started) * 1000)
+                    try:
+                        db.rollback()
+                    except Exception as exc:  # noqa: BLE001
+                        logger.warning("MCP rollback of a stopped call failed: %s", type(exc).__name__)
+                    _audit_cancelled(settings_obj, principal, token.client_id, (client or {}).get("client_name"),
+                                     params, lane_end.stop_code or "cancelled", duration_ms)
+                raise
+    except (SQLAlchemyError, ValueError) as exc:
+        if not tool_began:
+            return _auth_error_result(_could_not_answer(exc))
+        if not isinstance(exc, SQLAlchemyError):
             raise
+        # The tool ran, so "it did not run, repeat it" would not be true.
+        logger.warning("MCP tool %s ended with %s", params.name, type(exc).__name__)
+        return CallToolResult(
+            content=[TextContent(type="text", text=json.dumps({"error": "tool_failed", "tool": params.name}))],
+            is_error=True,
+        )
+
+
+def _auth_error_result(exc: McpAuthError) -> CallToolResult:
+    return CallToolResult(
+        content=[TextContent(type="text", text=json.dumps(exc.payload) if exc.payload else exc.message)],
+        is_error=True,
+    )
 
 
 # ── prompts + resources: the design playbook and patterns ─────────────────
@@ -583,7 +646,7 @@ def build_mcp_asgi_app(settings: Settings, server: Server) -> Starlette:
     provider = VacademyOAuthProvider(settings, TokenCipher(settings.resolve_mcp_encryption_key()))
     issuer = AnyHttpUrl(settings.mcp_issuer_url)
 
-    return server.streamable_http_app(
+    return answer_oauth_busy(server.streamable_http_app(
         streamable_http_path="/",
         # Stateless: no server-side session to pin a client to one replica.
         stateless_http=True,
@@ -609,7 +672,7 @@ def build_mcp_asgi_app(settings: Settings, server: Server) -> Starlette:
         # We sit behind an ingress that terminates TLS and sets its own Host;
         # DNS-rebinding checks here would reject legitimate traffic.
         transport_security=TransportSecuritySettings(enable_dns_rebinding_protection=False),
-    )
+    ))
 
 
 
