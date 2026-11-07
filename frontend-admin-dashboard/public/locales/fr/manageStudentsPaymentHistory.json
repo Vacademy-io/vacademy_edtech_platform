@@ -127,12 +127,12 @@
             "removed": "L'enregistrement du paiement est supprimé définitivement.",
             "split": "Ce paiement couvre {{count}} lignes de cours enregistrées ensemble ; elles sont toutes supprimées, avec leur reçu commun.",
             "balance": "S'il compte encore, le montant est réaffecté au solde et aux échéances de l'apprenant.",
-            "invoice": "La facture-reçu générée pour ce paiement est supprimée et son numéro est libéré pour la prochaine facture."
+            "invoice": "La facture-reçu générée pour ce paiement est supprimée. La réutilisation de son numéro dépend de vos paramètres de facturation."
         },
         "invoice": {
             "removed": "La facture est supprimée définitivement.",
             "balance": "Une facture impayée ne compte plus dans le solde de l'apprenant.",
-            "number": "Son numéro de facture est libéré et attribué à la prochaine facture."
+            "number": "La réutilisation de son numéro de facture dépend de vos paramètres de facturation."
         },
         "auditLog": "Une trace de la suppression est conservée dans le journal d'activité administrateur.",
         "typePrefix": "Saisissez",

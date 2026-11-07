@@ -431,6 +431,24 @@ export function InvoiceNumberingSection({ value, onChange }: Props) {
                             onCheckedChange={(checked) => onChange({ sanitizeTokens: checked })}
                         />
                     </div>
+
+                    <div className="flex items-center justify-between rounded-md border border-neutral-200 p-3">
+                        <div className="space-y-0.5 pr-4">
+                            <Label htmlFor="invoice-never-reuse">
+                                {t('counter.neverReuse.label')}
+                            </Label>
+                            <p className="text-caption text-neutral-500">
+                                {t('counter.neverReuse.hint')}
+                            </p>
+                        </div>
+                        <Switch
+                            id="invoice-never-reuse"
+                            checked={value.neverReuseDeletedNumbers}
+                            onCheckedChange={(checked) =>
+                                onChange({ neverReuseDeletedNumbers: checked })
+                            }
+                        />
+                    </div>
                 </CardContent>
             </Card>
         </div>

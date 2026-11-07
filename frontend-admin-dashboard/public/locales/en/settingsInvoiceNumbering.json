@@ -36,7 +36,7 @@
     },
     "counter": {
         "title": "Counter",
-        "description": "Controls the sequence number. Existing invoices are never renumbered, and a number is never reused.",
+        "description": "Controls the sequence number. Existing invoices are never renumbered.",
         "scope": {
             "label": "Restart the counter",
             "options": {
@@ -93,6 +93,10 @@
         "sanitize": {
             "label": "Clean up text values",
             "hint": "Converts names to capitals and removes spaces, accents and punctuation — “Rahul Sharma” becomes RAHULSHARMA."
+        },
+        "neverReuse": {
+            "label": "Never reuse deleted numbers",
+            "hint": "When an invoice or receipt is permanently deleted, its number is retired and the next one continues after it. Turn off to give the deleted number to the next invoice."
         }
     }
 }

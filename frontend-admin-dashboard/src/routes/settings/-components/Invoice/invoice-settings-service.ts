@@ -88,6 +88,11 @@ export interface InvoiceNumberingConfig {
      * or below what has already been issued is ignored rather than reusing a number.
      */
     startFrom: number;
+    /**
+     * On: a number freed by a permanently deleted invoice is never issued again. Off: the next
+     * invoice takes it back, so the series has no gaps.
+     */
+    neverReuseDeletedNumbers: boolean;
 }
 
 /** Matches the backend legacy default — reproduces the old hardcoded `INV-yyyyMMdd-0001`. */
@@ -99,6 +104,7 @@ export const DEFAULT_NUMBERING: InvoiceNumberingConfig = {
     fyStartMonth: 4,
     sanitizeTokens: true,
     startFrom: 0,
+    neverReuseDeletedNumbers: true,
 };
 
 /** One entry in the click-to-insert palette, served by `GET /numbering/tokens`. */
@@ -338,6 +344,8 @@ const normalizeNumbering = (raw: unknown): InvoiceNumberingConfig => {
         fyStartMonth: clampInt(base.fyStartMonth, 1, 12, DEFAULT_NUMBERING.fyStartMonth),
         sanitizeTokens: base.sanitizeTokens ?? DEFAULT_NUMBERING.sanitizeTokens,
         startFrom: Math.max(0, Number(base.startFrom) || 0),
+        neverReuseDeletedNumbers:
+            base.neverReuseDeletedNumbers ?? DEFAULT_NUMBERING.neverReuseDeletedNumbers,
     };
 };
 
