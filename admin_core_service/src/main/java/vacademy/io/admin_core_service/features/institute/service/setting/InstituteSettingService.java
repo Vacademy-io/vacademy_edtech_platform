@@ -253,6 +253,8 @@ public class InstituteSettingService {
         // Floor for the sequence, for institutes continuing a series from another accounting
         // system. 0 = no floor; it can only push the next number forward, never backwards.
         numbering.put("startFrom", 0);
+        // A number freed by a permanent delete stays retired; off re-issues it.
+        numbering.put("neverReuseDeletedNumbers", true);
         defaultData.put("numbering", numbering);
         GenericSettingRequest request = GenericSettingRequest.builder()
                 .settingName("Invoice Setting")

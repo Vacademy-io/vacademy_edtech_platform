@@ -126,12 +126,12 @@
             "removed": "The payment record is removed for good.",
             "split": "This payment covers {{count}} course entries recorded together; all of them, and their shared receipt, are deleted together.",
             "balance": "If it still counts, the amount goes back onto the learner's balance and installments.",
-            "invoice": "The receipt invoice generated for it is deleted, and its number is freed for the next invoice."
+            "invoice": "The receipt invoice generated for it is deleted. Whether its number is used again depends on your Invoice Settings."
         },
         "invoice": {
             "removed": "The invoice is removed for good.",
             "balance": "An unpaid bill stops counting towards the learner's balance.",
-            "number": "Its invoice number is freed and given to the next invoice."
+            "number": "Whether its invoice number is used again depends on your Invoice Settings."
         },
         "auditLog": "A record of the deletion is kept in the admin activity log.",
         "typePrefix": "Type",

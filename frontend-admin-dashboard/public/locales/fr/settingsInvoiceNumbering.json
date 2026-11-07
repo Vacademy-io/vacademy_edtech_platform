@@ -37,7 +37,7 @@
     },
     "counter": {
         "title": "Compteur",
-        "description": "Contrôle le numéro de séquence. Les factures existantes ne sont jamais renumérotées, et un numéro n'est jamais réutilisé.",
+        "description": "Contrôle le numéro de séquence. Les factures existantes ne sont jamais renumérotées.",
         "scope": {
             "label": "Réinitialiser le compteur",
             "options": {
@@ -94,6 +94,10 @@
         "sanitize": {
             "label": "Nettoyer les valeurs textuelles",
             "hint": "Convertit les noms en majuscules et supprime les espaces, accents et ponctuations — « Rahul Sharma » devient RAHULSHARMA."
+        },
+        "neverReuse": {
+            "label": "Ne jamais réutiliser les numéros supprimés",
+            "hint": "Lorsqu’une facture ou un reçu est supprimé définitivement, son numéro est retiré et la numérotation continue après lui. Désactivez cette option pour attribuer le numéro supprimé à la facture suivante."
         }
     }
 }

@@ -22,10 +22,10 @@ import java.util.UUID;
  * Allocates and renders invoice numbers according to the institute's configured strategy
  * ({@code INVOICE_SETTING.numbering}).
  *
- * <p>The counter is {@code MAX(invoice.seq_no) + 1} for the (institute, reset window) — it
- * lives on the invoice rows themselves, not in a side table, so it can never drift from the
- * invoice list and a number is only ever consumed by an invoice that actually exists (no
- * gaps). Concurrency is settled by the {@code uq_invoice_institute_number} constraint at
+ * <p>The counter is {@code MAX(invoice.seq_no) + 1} for the (institute, reset window), read from
+ * the invoice rows themselves. Numbers freed by a permanent delete are recorded in
+ * {@code invoice_released_number} and, per {@link InvoiceNumberConfig#isNeverReuseDeletedNumbers()},
+ * either stay retired (the counter also stays above them) or are re-issued. Concurrency is settled by the {@code uq_invoice_institute_number} constraint at
  * INSERT time rather than by reserving up front; see
  * {@link #nextAfterCollision} for the retry contract.
  *
@@ -76,8 +76,9 @@ public class InvoiceNumberService {
     /**
      * A position freed by a permanent invoice delete in THIS series, if one is waiting — the
      * lowest first, so the series closes its gaps in order. Returns null (and generation counts on
-     * from MAX as always) when nothing was freed, when the freed position sits below the
-     * institute's start-number floor, or when its rendered number is somehow taken.
+     * as always) when the institute retires deleted numbers, when nothing was freed, when the
+     * freed position sits below the institute's start-number floor, or when its rendered number
+     * is somehow taken.
      *
      * <p>Only positions recorded by {@code PaymentDeletionService} are considered, never arbitrary
      * gaps: an admin who set the start number to 100 after issuing 1-5 must not get 6-99 back.
@@ -86,7 +87,8 @@ public class InvoiceNumberService {
      */
     private InvoiceNumberAllocation reuseReleased(InvoiceNumberConfig config, InvoiceNumberContext context,
                                                   String scopeKey) {
-        if (entityManager == null || !StringUtils.hasText(context.getInstituteId())) {
+        if (config.isNeverReuseDeletedNumbers() || entityManager == null
+                || !StringUtils.hasText(context.getInstituteId())) {
             return null;
         }
         try {
@@ -137,7 +139,7 @@ public class InvoiceNumberService {
     }
 
     /**
-     * Next sequence position: one past the highest issued in this window, but never below the
+     * Next sequence position: one past the highest used in this window, but never below the
      * institute's configured {@code startFrom} floor.
      *
      * <p>{@code startFrom} is a FLOOR, not a hard set — that is what makes it safe to expose to
@@ -145,8 +147,39 @@ public class InvoiceNumberService {
      * reusing a number that is already on a customer's tax document.
      */
     private long nextSeq(InvoiceNumberConfig config, String instituteId, String scopeKey) {
-        long next = invoiceRepository.highestSeqNo(instituteId, scopeKey) + 1;
+        long next = highestUsedSeq(config, instituteId, scopeKey) + 1;
         return Math.max(next, config.getStartFrom());
+    }
+
+    /**
+     * The highest position on an invoice in this window. When deleted numbers are retired, also
+     * the highest position ever freed: deleting the newest invoice lowers MAX(seq_no), so MAX
+     * alone would hand that number straight back.
+     */
+    private long highestUsedSeq(InvoiceNumberConfig config, String instituteId, String scopeKey) {
+        long issued = invoiceRepository.highestSeqNo(instituteId, scopeKey);
+        return config.isNeverReuseDeletedNumbers()
+                ? Math.max(issued, highestReleasedSeq(instituteId, scopeKey))
+                : issued;
+    }
+
+    private long highestReleasedSeq(String instituteId, String scopeKey) {
+        if (entityManager == null || !StringUtils.hasText(instituteId)) {
+            return 0;
+        }
+        try {
+            Object highest = entityManager.createNativeQuery(
+                            "SELECT COALESCE(MAX(r.seq_no), 0) FROM invoice_released_number r "
+                                    + "WHERE r.institute_id = ?1 AND r.seq_scope_key = ?2")
+                    .setParameter(1, instituteId)
+                    .setParameter(2, scopeKey)
+                    .getSingleResult();
+            return highest instanceof Number n ? n.longValue() : 0;
+        } catch (Exception e) {
+            // Same stance as reuseReleased: a failed lookup must not stop an invoice being issued.
+            log.warn("Could not read released invoice numbers for institute {}: {}", instituteId, e.getMessage());
+            return 0;
+        }
     }
 
     /**
@@ -215,7 +248,7 @@ public class InvoiceNumberService {
     public long highestIssuedSequence(InvoiceNumberConfig config, String instituteId, LocalDate date) {
         InvoiceNumberConfig effective = resolveUsableConfig(config);
         LocalDate on = date != null ? date : LocalDate.now();
-        return invoiceRepository.highestSeqNo(instituteId, effective.getSeqScope().scopeKey(on));
+        return highestUsedSeq(effective, instituteId, effective.getSeqScope().scopeKey(on));
     }
 
     /**
@@ -248,7 +281,7 @@ public class InvoiceNumberService {
             warnings.add("This institute has already issued up to #" + highestIssued
                     + " in the current period, so a start number of " + candidate.getStartFrom()
                     + " is ignored — numbering continues from #" + nextSequence
-                    + ". Numbers are never reused.");
+                    + "." + (candidate.isNeverReuseDeletedNumbers() ? " Numbers are never reused." : ""));
         }
 
         return InvoiceNumberingDTOs.PreviewResponse.builder()
@@ -334,6 +367,7 @@ public class InvoiceNumberService {
         // Keep the admin's scope so the counter they have been using stays the one we read.
         fallback.setSeqScope(config.getSeqScope() != null
                 ? config.getSeqScope() : fallback.getSeqScope());
+        fallback.setNeverReuseDeletedNumbers(config.isNeverReuseDeletedNumbers());
         return fallback;
     }
 }

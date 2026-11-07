@@ -462,8 +462,8 @@ public class PaymentDeletionService {
     /**
      * An invoice and the rows hanging off it. Returns how many invoice rows were deleted.
      *
-     * <p>Its number is recorded as released first (V531 {@code invoice_released_number}), so the
-     * next invoice in the same series re-issues it instead of leaving a hole in the sequence.
+     * <p>Its number is recorded as released first (V531 {@code invoice_released_number}), so
+     * {@code InvoiceNumberService} can retire it or re-issue it, as the institute has chosen.
      * Legacy invoices with no sequence position (pre-V432) have nothing to release.
      */
     private int removeInvoiceRows(String invoiceId) {

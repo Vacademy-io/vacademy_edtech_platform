@@ -65,6 +65,14 @@ public class InvoiceNumberConfig {
     private long startFrom;
 
     /**
+     * On by default: a number freed by a permanent delete stays retired and the series counts on
+     * past it, so one number can never sit on two learners' receipts. Off: the next document in
+     * the series takes the freed number back, keeping the series free of gaps.
+     */
+    @Builder.Default
+    private boolean neverReuseDeletedNumbers = true;
+
+    /**
      * Extra counters picked per learner, read from {@code INVOICE_SETTING.numberingSeries}
      * (outside {@code numbering}, which the settings screen rewrites from a fixed key list).
      * The first series whose rule matches the learner numbers the document from its own
@@ -141,6 +149,7 @@ public class InvoiceNumberConfig {
                 .fyStartMonth(fyStartMonth)
                 .sanitizeTokens(sanitizeTokens)
                 .startFrom(Math.max(0, s.getStartFrom()))
+                .neverReuseDeletedNumbers(neverReuseDeletedNumbers)
                 .build();
     }
 
@@ -163,6 +172,7 @@ public class InvoiceNumberConfig {
                 .fyStartMonth(fyStartMonth)
                 .sanitizeTokens(sanitizeTokens)
                 .startFrom(startFrom)
+                .neverReuseDeletedNumbers(neverReuseDeletedNumbers)
                 .build();
     }
 
@@ -212,6 +222,7 @@ public class InvoiceNumberConfig {
                 .fyStartMonth(fyStart)
                 .sanitizeTokens(asBool(numbering.get("sanitizeTokens"), true))
                 .startFrom(Math.max(0, asLong(numbering.get("startFrom"), 0)))
+                .neverReuseDeletedNumbers(asBool(numbering.get("neverReuseDeletedNumbers"), true))
                 .series(parseSeries(invoiceSettings.get("numberingSeries")))
                 .seriesPolicy(parsePolicy(invoiceSettings.get("numberingSeriesPolicy")))
                 .build();

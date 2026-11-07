@@ -355,6 +355,8 @@ function getInvoiceSettingsSections(t: TFunction): SettingsSectionGroup[] {
 const RISKY_TOKEN_PATTERN =
     /\{\{\s*(learner_name|learner_initials|learner_state|enrollment_no|plan_name|course_name|level_name|session_name)\b/;
 
+// neverReuseDeletedNumbers is left out on purpose: it does not change how numbers look, and the
+// dialog this gates is a before/after of the format.
 const numberingChanged = (a: InvoiceNumberingConfig, b: InvoiceNumberingConfig) =>
     a.format !== b.format ||
     a.seqPadding !== b.seqPadding ||
