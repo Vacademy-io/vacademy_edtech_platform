@@ -39,9 +39,12 @@ import { getTerminology } from '@/components/common/layout-container/sidebar/uti
 import {
     getCustomFieldSettingsFromCache,
     type CustomField,
+    type CustomFieldFullConfig,
+    type CustomFieldType,
     type FieldGroup,
 } from '@/services/custom-field-settings';
 import { getFieldsForLocation, type FieldForLocation } from '@/lib/custom-fields/utils';
+import { CustomFieldRenderer } from '@/components/common/custom-fields/CustomFieldRenderer';
 import { getSystemFieldColumnVisibility } from '@/components/design-system/utils/constants/system-field-columns';
 import { cn } from '@/lib/utils';
 
@@ -157,6 +160,57 @@ const FullWidth = ({ children }: { children: React.ReactNode }) => (
     <div className="efp-phone w-full">{children}</div>
 );
 
+// The parts of a custom field definition the edit form reads. CustomField,
+// FixedField, GroupField and FieldForLocation all satisfy it.
+type EditableCustomField = {
+    id: string;
+    name: string;
+    type?: CustomFieldType | string;
+    options?: string[];
+    fieldConfig?: CustomFieldFullConfig;
+    required: boolean;
+};
+
+// Which control to draw for a field, given what is already stored in it. A typed
+// control is used only when it can show the stored value as-is; anything it would
+// misread falls back to the plain text box this form always used, so opening the
+// dialog never blanks or rewrites an existing answer.
+//  - phone: always text. react-phone-input-2 reads a bare "98765…" as dial code +98
+//    and rewrites it on any keystroke; stored numbers are mixed-format.
+//  - email / url: text, so a stored value that fails the browser's format check
+//    can't block an Enter-key submit.
+//  - date / number / checkbox / multi_select: typed only when the value parses
+//    for that control (or is empty).
+const controlTypeFor = (fieldType: string | undefined, value: string): string => {
+    const raw = String(fieldType ?? 'text')
+        .trim()
+        .toLowerCase();
+    const type = raw === 'textfield' ? 'text' : raw;
+    const v = value.trim();
+    switch (type) {
+        case 'phone':
+        case 'email':
+        case 'url':
+            return 'text';
+        case 'date':
+            return !v || !Number.isNaN(new Date(v).getTime()) ? 'date' : 'text';
+        case 'number':
+            return !v || Number.isFinite(Number(v)) ? 'number' : 'text';
+        case 'checkbox':
+            return !v || v === 'true' || v === 'false' ? 'checkbox' : 'text';
+        case 'multi_select': {
+            if (!v) return 'multi_select';
+            try {
+                return Array.isArray(JSON.parse(v)) ? 'multi_select' : 'text';
+            } catch {
+                return 'text';
+            }
+        }
+        default:
+            return type || 'text';
+    }
+};
+
 // ── Main component ───────────────────────────────────────────────────────────
 
 export const EditStudentDetails = () => {
@@ -213,8 +267,61 @@ export const EditStudentDetails = () => {
         return { customFields: fields, fieldGroups: filteredGroups, individualFields };
     }, []);
 
+    // Full definition of every field the settings know about, keyed by id. The
+    // Learner's List lookup (FieldForLocation) drops fieldConfig, which a file
+    // field needs for its allowed types / size limit, so the renderer reads here.
+    const fieldDefsById = useMemo(() => {
+        const map = new Map<string, EditableCustomField>();
+        const settings = getCustomFieldSettingsFromCache();
+        if (!settings) return map;
+        [
+            ...settings.customFields,
+            ...settings.fixedFields,
+            ...settings.fieldGroups.flatMap((group) => group.fields),
+        ].forEach((field) => {
+            if (!map.has(field.id)) map.set(field.id, field);
+        });
+        return map;
+    }, []);
+
+    // Fields switched off for the Learner's List (e.g. added only on an audience
+    // form / invite / product page) that this learner has filled. The Overview
+    // lists these too, so they must be editable here — otherwise a value the admin
+    // can see (e.g. a Branch dropdown from a lead form) cannot be changed. Same
+    // filter as the Overview: skip answers that only repeat the learner's name,
+    // email or phone. Only ids in settings.customFields are offered, because the
+    // save call drops every other id (see useEditStudentDetails).
+    const filledOtherFields = useMemo(() => {
+        const settings = getCustomFieldSettingsFromCache();
+        if (!settings || !selectedStudent) return [];
+        const shownIds = new Set([
+            ...customFieldsData.individualFields.map((f) => f.id),
+            ...customFieldsData.fieldGroups.flatMap((g) => g.fields.map((f) => f.id)),
+        ]);
+        // Same source the Overview reads, so both list exactly the same fields.
+        const stored = selectedStudent.custom_fields || studentDetails?.custom_fields || {};
+        const lastTen = (v?: string | null) => (v ?? '').replace(/\D/g, '').slice(-10);
+        const learnerPhone = lastTen(
+            studentDetails?.mobile_number || selectedStudent.mobile_number
+        );
+        const learnerNameAndEmail = [selectedStudent.full_name, selectedStudent.email]
+            .map((v) => (v || '').trim().toLowerCase())
+            .filter(Boolean);
+        const seen = new Set<string>();
+        return settings.customFields.filter((field) => {
+            if (shownIds.has(field.id) || seen.has(field.id)) return false;
+            seen.add(field.id);
+            const value = String(stored[field.id] ?? '').trim();
+            if (!value) return false;
+            if (learnerNameAndEmail.includes(value.toLowerCase())) return false;
+            return !(learnerPhone.length === 10 && lastTen(value) === learnerPhone);
+        });
+    }, [customFieldsData, selectedStudent, studentDetails]);
+
     const hasCustomFields =
-        customFieldsData.fieldGroups.length > 0 || customFieldsData.individualFields.length > 0;
+        customFieldsData.fieldGroups.length > 0 ||
+        customFieldsData.individualFields.length > 0 ||
+        filledOtherFields.length > 0;
 
     // Gate the optional system fields (address, institute, parents/guardians) by
     // the SAME visibility toggle the Overview uses — a field turned off in
@@ -764,89 +871,73 @@ export const EditStudentDetails = () => {
         />
     );
 
-    // Accepts EITHER shape — grouped fields come through as CustomField[] while
-    // ungrouped fields are FieldForLocation[]; the two differ only in fields this
-    // function never reads (e.g. groupName: string|null vs string|undefined). It
-    // only uses id/name/type/options/required, common to both, so the union is safe.
-    const renderCustomField = (customField: CustomField | FieldForLocation) => {
-        if (customField.type === 'dropdown') {
-            const dropdownOptions =
-                customField.options?.map((option) => ({ id: option, name: option })) || [];
-            return (
-                <FormField
-                    key={customField.id}
-                    control={form.control}
-                    name="custom_fields"
-                    render={({ field }) => {
-                        const currentValue = field.value?.[customField.id];
-                        const selectedOption = currentValue
-                            ? { id: currentValue, name: currentValue }
-                            : undefined;
-                        return (
-                            <FormItem className="w-full sm:w-full">
-                                <FormControl>
-                                    <div className="flex w-full flex-col gap-1">
+    // Renders each field as the control its type calls for — dropdown, radio,
+    // file upload, date picker, multi-select, checkbox, textarea — through the
+    // shared CustomFieldRenderer (case-insensitive, so DROPDOWN and dropdown both
+    // work). Previously only lower-case 'dropdown' got a picker and every other
+    // type, including an upper-case DROPDOWN, fell back to a plain text box.
+    const renderCustomField = (listed: CustomField | FieldForLocation | EditableCustomField) => {
+        const customField: EditableCustomField = fieldDefsById.get(listed.id) ?? listed;
+        return (
+            <FormField
+                key={customField.id}
+                control={form.control}
+                name="custom_fields"
+                render={({ field }) => {
+                    const currentValue = field.value?.[customField.id] ?? '';
+                    // Pick the control from the value stored when the dialog opened, not
+                    // the live value, so the control never swaps while the admin types.
+                    const storedValue = String(
+                        form.formState.defaultValues?.custom_fields?.[customField.id] ?? ''
+                    );
+                    const controlType = controlTypeFor(customField.type, storedValue);
+                    // The checkbox control prints its own label next to the box.
+                    const showLabel = controlType !== 'checkbox';
+                    // Keep a stored answer selectable even when it is no longer one of
+                    // the configured options, so opening the dialog never blanks it.
+                    const baseOptions = customField.options ?? [];
+                    const options =
+                        (controlType === 'dropdown' || controlType === 'radio') &&
+                        storedValue &&
+                        !baseOptions.includes(storedValue)
+                            ? [storedValue, ...baseOptions]
+                            : baseOptions;
+                    return (
+                        <FormItem className="w-full sm:w-full">
+                            <FormControl>
+                                <div className="flex w-full flex-col gap-1">
+                                    {showLabel && (
                                         <label className="text-sm font-medium text-neutral-700">
                                             {customField.name}
                                             {customField.required && (
                                                 <span className="ml-1 text-danger-500">*</span>
                                             )}
                                         </label>
-                                        <MyDropdown
-                                            currentValue={selectedOption}
-                                            dropdownList={dropdownOptions}
-                                            handleChange={(value) => {
-                                                if (typeof value === 'object' && 'id' in value) {
-                                                    const next = {
-                                                        ...(field.value || {}),
-                                                        [customField.id]: value.id,
-                                                    };
-                                                    field.onChange(next);
-                                                }
-                                            }}
-                                            placeholder={t('customField.selectPlaceholder', {
-                                                name: customField.name,
-                                            })}
-                                            required={customField.required}
-                                            disable={false}
-                                        />
-                                    </div>
-                                </FormControl>
-                            </FormItem>
-                        );
-                    }}
-                />
-            );
-        }
-
-        return (
-            <FormField
-                key={customField.id}
-                control={form.control}
-                name="custom_fields"
-                render={({ field }) => (
-                    <FormItem className="w-full sm:w-full">
-                        <FormControl>
-                            <MyInput
-                                inputType={customField.type === 'number' ? 'number' : 'text'}
-                                label={customField.name}
-                                inputPlaceholder={t('customField.enterPlaceholder', {
-                                    name: customField.name,
-                                })}
-                                input={field.value?.[customField.id] || ''}
-                                onChangeFunction={(e) => {
-                                    const next = {
-                                        ...(field.value || {}),
-                                        [customField.id]: e.target.value,
-                                    };
-                                    field.onChange(next);
-                                }}
-                                required={customField.required}
-                                className="w-full sm:w-full"
-                            />
-                        </FormControl>
-                    </FormItem>
-                )}
+                                    )}
+                                    <CustomFieldRenderer
+                                        type={controlType}
+                                        name={customField.name}
+                                        value={currentValue}
+                                        onChange={(value) =>
+                                            field.onChange({
+                                                ...(field.value || {}),
+                                                [customField.id]: value,
+                                            })
+                                        }
+                                        options={options}
+                                        config={customField.fieldConfig}
+                                        // A file input can't be pre-filled, so a native
+                                        // `required` would block an Enter-key submit even
+                                        // when a file is already stored.
+                                        required={
+                                            controlType === 'file' ? false : customField.required
+                                        }
+                                    />
+                                </div>
+                            </FormControl>
+                        </FormItem>
+                    );
+                }}
             />
         );
     };
@@ -1057,6 +1148,11 @@ export const EditStudentDetails = () => {
                                     {customFieldsData.individualFields.map((cf) =>
                                         renderCustomField(cf)
                                     )}
+                                </div>
+                            )}
+                            {filledOtherFields.length > 0 && (
+                                <div className="flex flex-col gap-4">
+                                    {filledOtherFields.map((cf) => renderCustomField(cf))}
                                 </div>
                             )}
                         </FormCard>
