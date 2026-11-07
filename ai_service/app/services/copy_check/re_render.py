@@ -140,6 +140,8 @@ def apply_overrides(verdicts: list[dict[str, Any]], overrides: list[dict[str, An
         edits = o.get("annotation_edits") or []
         if edits:
             v["annotations"] = _apply_annotation_edits(list(v.get("annotations") or []), edits, qid)
+            # The teacher has decided what stays: nothing removed is drawn back.
+            v["annotations_edited"] = True
 
     if counted:
         _apply_counted(verdicts, counted, api_copy)

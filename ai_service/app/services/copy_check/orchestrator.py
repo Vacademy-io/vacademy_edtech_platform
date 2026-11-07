@@ -23,7 +23,7 @@ from ..api_key_resolver import ApiKeyResolver
 from ..chat_llm_client import ChatLLMClient
 from ...repositories.copy_check_rubric_repository import CopyCheckRubricRepository
 from ...repositories import copy_check_render_snapshot_repository as render_snapshot
-from . import annotator, answer_language, callbacks, cancellation, deduction_check, deduction_scheme, evaluation_table, language_check, language_feedback, language_vision, locate, math_reread, option_letter, orientation, typed_answers, vision_transcript
+from . import annotator, answer_language, callbacks, cancellation, copy_structure, deduction_check, deduction_scheme, evaluation_table, language_check, language_feedback, language_vision, locate, math_reread, option_letter, orientation, typed_answers, vision_transcript
 from .choice_groups import counted_awarded, counted_flags, resolve_paper_max
 from .failure import (
     COPY_UNREADABLE,
@@ -767,6 +767,7 @@ async def run(req: dict[str, Any], job_id: str, db: Session) -> str:
         # mostly in a language the check cannot read is refused, not billed.
         # Detection off, failed, or English: everything below runs as before.
         page_images: Optional[dict[str, Any]] = None
+        samples: Optional[dict[str, Any]] = None
         reading_ctx = req.get("exam_context")
         if not answer_language.of(reading_ctx) and answer_language.detection_enabled():
             cancellation.check(job_id, process_id)
@@ -877,6 +878,34 @@ async def run(req: dict[str, Any], job_id: str, db: Session) -> str:
                 llm, questions, layout_map, eval_model,
                 institute_id=institute_id, token_sink=grader,
             )
+        # 2b-bis. The copy's structure: which rows hold each objective answer and
+        # how each page is laid out. Steers the grader to the right row and the
+        # renderer's layout (copy_structure.py). Partner copies stay as they
+        # are; a written paper never takes this path.
+        structure_answers: dict[str, list[str]] = {}
+        structure_pinned: set[str] = set()
+        structure_misses = 0
+        structure_checked = 0
+        if not is_api_actor(billing["billing_actor"]):
+            cancellation.check(job_id, process_id)
+            if (samples is None and copy_structure.enabled()
+                    and sum(1 for q in questions if copy_structure.is_objective(q)) >= copy_structure.MIN_OBJECTIVE_QUESTIONS):
+                try:
+                    samples = await answer_language.sample_images(
+                        pdf_url, [str(p.get("page_id")) for p in layout_map.get("pages") or []])
+                except Exception:
+                    logger.warning("Copy structure: could not render pages; reading the rows only", exc_info=True)
+            structure = await copy_structure.analyse(
+                llm, questions, layout_map, samples, eval_model,
+                institute_id=institute_id, token_sink=grader,
+            )
+            if structure:
+                # Saved on the layout so a teacher's re-draw lays the page out the same way.
+                layout_map["structure"] = structure
+                structure_answers = dict(structure.get("answers") or {})
+                structure_pinned = set(structure.get("pinned") or [])
+                if hasattr(grader, "token_budget"):
+                    grader.token_budget += copy_structure.TOKENS_ALLOWANCE
         # The per-question budget was sized before the page count was known;
         # the page-level steps and the cut checks must not starve the last
         # questions of the paper (a 43-question copy ran dry on question 42).
@@ -955,11 +984,22 @@ async def run(req: dict[str, Any], job_id: str, db: Session) -> str:
         # What each question callback said first: enforcement below may change
         # the mark, and the callback is then sent again (T0.21).
         sent: dict[str, tuple[float, list[Any]]] = {}
+        # Verdicts the grader twice placed off the student's numbered row. Moved
+        # only once the whole copy is graded: a structure the grader goes on to
+        # disagree with must not have changed a single mark.
+        to_pin: list[tuple[dict[str, Any], list[str], dict[str, Any]]] = []
         for index, q in enumerate(questions):
             q["neighbour_labels"] = [lbl for i, lbl in enumerate(all_labels) if i != index][:80]
             cancellation.check(job_id, process_id)
             qid = str(q["question_id"])
             page_ids = locate.pages_for_question(qid, located, question_order, all_page_ids)
+            expected_rows = structure_answers.get(qid) or []
+            q["answer_rows_hint"] = expected_rows
+            q.pop("answer_rows_missed", None)
+            if expected_rows and page_ids is not None and not all(
+                    any(r.startswith(f"{pid}_") for pid in page_ids) for r in expected_rows):
+                # The locator's pages must not hide the rows the grader is pointed at.
+                page_ids = None
             narrowed = page_ids is not None and len(page_ids) < len(all_page_ids)
             try:
                 rubric = await rubric_resolver.resolve(q, preferred_model)
@@ -979,8 +1019,39 @@ async def run(req: dict[str, Any], job_id: str, db: Session) -> str:
                     )
                     raw = await grader.grade_question(q, rubric, layout_map, preferred_model)
                 verdict = attach_criteria_max(validate_and_cap(raw, q, layout_map), rubric)
-                if option_letter.honour_option_letter(verdict, q):
+                pin_later = False
+                if expected_rows:
+                    structure_checked += 1
+                    missed = copy_structure.off_target(verdict, expected_rows)
+                    if missed:
+                        structure_misses += 1
+                        logger.info("Q%s: marked %s, the copy's structure says %s; asking again",
+                                    qid, missed, expected_rows)
+                        q["answer_rows_missed"] = missed
+                        try:
+                            raw = await grader.grade_question(q, rubric, layout_map, preferred_model, page_ids)
+                            verdict = attach_criteria_max(validate_and_cap(raw, q, layout_map), rubric)
+                        except cancellation.Cancelled:
+                            raise
+                        except Exception:
+                            logger.warning("Q%s: second ask failed; keeping the first verdict", qid, exc_info=True)
+                        pin_later = bool(qid in structure_pinned and copy_structure.off_target(verdict, expected_rows))
+                    if (structure_checked >= copy_structure.MIN_CHECKS_BEFORE_DOUBT
+                            and structure_misses > copy_structure.MAX_MISS_SHARE * structure_checked):
+                        # The grader is not this wrong this often: the structure is.
+                        logger.warning("Copy structure disagreed with the grader on %d/%d answers; no longer using it",
+                                       structure_misses, structure_checked)
+                        structure_answers = {}
+                        structure_pinned = set()
+                        # Nor does a teacher's re-draw go by its rows. A list page is still a list.
+                        layout_map["structure"] = dict(layout_map["structure"], answers={}, pinned=[])
+                if pin_later:
+                    # Judged against the key after the move (below the loop).
+                    to_pin.append((verdict, expected_rows, q))
+                elif option_letter.honour_option_letter(verdict, q):
                     logger.info("Q%s: the chosen option is the key's - full marks", qid)
+                elif option_letter.refuse_wrong_option(verdict, q):
+                    logger.info("Q%s: the chosen option is not the key's - no marks", qid)
                 elif checker is not None:
                     if scheme and language_feedback.devanagari_share(verdict.get("answer_rows"), layout_map) > 0.5:
                         # A Hindi answer on a scheme paper: the cut-check "found a
@@ -1007,7 +1078,8 @@ async def run(req: dict[str, Any], job_id: str, db: Session) -> str:
                     rubric = await rubric_resolver.resolve(q, eval_model)
                     raw = await grader.grade_question(q, rubric, layout_map, eval_model, page_ids)
                     verdict = attach_criteria_max(validate_and_cap(raw, q, layout_map), rubric)
-                    option_letter.honour_option_letter(verdict, q)
+                    if not option_letter.honour_option_letter(verdict, q):
+                        option_letter.refuse_wrong_option(verdict, q)
                 except cancellation.Cancelled:
                     raise
                 except Exception as retry_err:
@@ -1049,6 +1121,26 @@ async def run(req: dict[str, Any], job_id: str, db: Session) -> str:
             # The language paragraph rides on the callback only: enforcement
             # below may build a deduction reason from the verdict's feedback,
             # and a language slip is never a reason for lost marks.
+            reported = verdict
+            if qid in language_found:
+                reported = dict(verdict, feedback=language_feedback.with_language_feedback(
+                    verdict.get("feedback"), language_found[qid]))
+            await callbacks.question_done(
+                callback_base, process_id, job_id, reported, rubric_version=rubric_version,
+            )
+
+        for verdict, expected_rows, q in to_pin:
+            qid = str(q["question_id"])
+            try:
+                if qid in structure_pinned:
+                    copy_structure.pin_to_rows(verdict, expected_rows, layout_map, q)
+                if not option_letter.honour_option_letter(verdict, q):
+                    option_letter.refuse_wrong_option(verdict, q)
+            except Exception:
+                # The grader's verdict was reported already and stands.
+                logger.warning("Q%s: could not move the verdict to its row", qid, exc_info=True)
+                continue
+            sent[qid] = (float(verdict.get("marks_awarded") or 0), list(verdict.get("annotations") or []))
             reported = verdict
             if qid in language_found:
                 reported = dict(verdict, feedback=language_feedback.with_language_feedback(
