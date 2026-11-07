@@ -18,9 +18,6 @@ public interface UserRepository extends CrudRepository<User, String> {
         @EntityGraph(attributePaths = { "roles", "roles.role", "roles.role.authorities" })
         Optional<User> findByUsername(String username);
 
-        @Query("SELECT u.username FROM User u WHERE u.username IN :usernames")
-        List<String> findExistingUsernames(@Param("usernames") List<String> usernames);
-
         /**
          * Every user holding one of these roles at this institute.
          *

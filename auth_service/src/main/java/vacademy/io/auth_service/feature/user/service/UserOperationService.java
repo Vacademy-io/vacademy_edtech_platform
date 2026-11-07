@@ -44,6 +44,9 @@ public class UserOperationService {
     private UserRepository userRepository;
 
     @Autowired
+    private vacademy.io.auth_service.feature.user.repository.UsernameLookupRepository usernameLookupRepository;
+
+    @Autowired
     private InstituteInternalService instituteInternalService;
 
     @Autowired
@@ -387,7 +390,7 @@ public class UserOperationService {
         if (wanted.size() > 500) {
             throw new VacademyException("At most 500 usernames can be checked at a time");
         }
-        return userRepository.findExistingUsernames(wanted);
+        return usernameLookupRepository.findExistingUsernames(wanted);
     }
 
     /**
