@@ -261,6 +261,8 @@ export const TRIGGER_EVENTS = [
     'FOLLOW_UP_DUE',
     'FOLLOW_UP_OVERDUE',
     'LEAD_STATUS_CHANGED',
+    // An existing lead sent a new enquiry (repeat / duplicate from any source).
+    'LEAD_REATTEMPT',
 ] as const;
 
 // Execution Log types

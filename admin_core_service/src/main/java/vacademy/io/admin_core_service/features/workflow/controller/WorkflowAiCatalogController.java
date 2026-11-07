@@ -1,5 +1,7 @@
 package vacademy.io.admin_core_service.features.workflow.controller;
 
+import vacademy.io.admin_core_service.features.workflow.service.PrebuiltQueryOutputs;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
@@ -226,27 +228,27 @@ public class WorkflowAiCatalogController {
         List<Map<String, Object>> q = new ArrayList<>();
         q.add(query("fetch_audience_responses_filtered",
                 List.of("instituteId"), List.of("audienceId", "daysAgo", "startDate", "endDate"),
-                List.of("leads"),
+                PrebuiltQueryOutputs.keysOf("fetch_audience_responses_filtered").orElseThrow(),
                 "leads[]: email, parentEmail, parentName, mobileNumber, userId, instituteName + all custom fields in RAW case"));
         q.add(query("getAudienceResponsesByDayDifference",
                 List.of("instituteId", "audienceId", "daysAgo"), List.of("conversionStatus"),
-                List.of("leads"),
+                PrebuiltQueryOutputs.keysOf("getAudienceResponsesByDayDifference").orElseThrow(),
                 "leads[]: same as filtered but custom-field keys are LOWERCASED. Matches responses exactly N days ago."));
         q.add(query("fetch_batch_attendance_report",
                 List.of("instituteId"), List.of("batchId", "daysBack"),
-                List.of("students", "totalStudents", "batchCount", "startDate", "endDate"),
+                PrebuiltQueryOutputs.keysOf("fetch_batch_attendance_report").orElseThrow(),
                 "students[]: studentId, fullName, email, mobileNumber, attendancePercentage, sessionsAttended, totalDurationMinutes, totalChats, totalHandRaises, parentsEmail, guardianEmail, sessionsTableHtml (camelCase)"));
         q.add(query("fetch_students_by_batch",
                 List.of("instituteId"), List.of("batchId"),
-                List.of("students", "totalStudents"),
+                PrebuiltQueryOutputs.keysOf("fetch_students_by_batch").orElseThrow(),
                 "students[]: userId, fullName, email, mobileNumber, parentsEmail, guardianEmail (camelCase; lightweight, no attendance)"));
         q.add(query("fetch_ssigm_by_package",
                 List.of("instituteId"), List.of("batchId", "statusList"),
-                List.of("ssigm_list", "mapping_count"),
+                PrebuiltQueryOutputs.keysOf("fetch_ssigm_by_package").orElseThrow(),
                 "ssigm_list[]: mapping_id, user_id, expiry_date, full_name, mobile_number, email, username, package_session_id (snake_case)"));
         q.add(query("getUpcomingAutopayCharges",
                 List.of("packageSessionIds"), List.of("daysAhead", "trialOnly"),
-                List.of("autopayDueList", "autopayDueCount"),
+                PrebuiltQueryOutputs.keysOf("getUpcomingAutopayCharges").orElseThrow(),
                 "autopayDueList[]: userPlanId, userId, name, mobileNumber, username, nextChargeAt, "
                         + "endDate, chargeDate ('11 Aug 2026' label), isTrial. THE audience for pre-charge "
                         + "notices ('we auto-deduct tomorrow'): plans whose next charge is exactly daysAhead "
@@ -258,7 +260,7 @@ public class WorkflowAiCatalogController {
                         + "cannot serve both; split the workflow rather than reword one template."));
         q.add(query("getManualRenewalDuePlans",
                 List.of("packageSessionIds"), List.of("daysAhead", "graceDays"),
-                List.of("manualRenewalList", "manualRenewalCount"),
+                PrebuiltQueryOutputs.keysOf("getManualRenewalDuePlans").orElseThrow(),
                 "manualRenewalList[]: userPlanId, userId, name, mobileNumber, username, planStatus, "
                         + "endDate, endDateLabel ('11 Aug 2026'). THE audience for 'pay to continue your "
                         + "membership' messages: plans ending within daysAhead days (default 1) or ended up "
@@ -266,7 +268,7 @@ public class WorkflowAiCatalogController {
                         + "CANCELED / PAYMENT_FAILED / EXPIRED). Message link: manage-page base + username."));
         q.add(query("getSSIGMByStatusAndPackageSessionIds",
                 List.of("instituteId", "packageSessionIds", "statusList"), List.of(),
-                List.of("ssigmList"),
+                PrebuiltQueryOutputs.keysOf("getSSIGMByStatusAndPackageSessionIds").orElseThrow(),
                 "ssigmList[]: ssigmId, userId, name, mobileNumber, email, username, packageSessionId, "
                         + "enrolledDate, expiryDate, remainingDays, daysPastExpiry (camelCase). THE roster for "
                         + "per-day sequences: enrolledDate drives day-in-program filters, expiryDate drives "
@@ -274,15 +276,15 @@ public class WorkflowAiCatalogController {
                         + "e.g. \"#ctx['psIds']\" from a trigger settings row."));
         q.add(query("fetch_institute_admin_emails",
                 List.of("instituteId"), List.of("roles"),
-                List.of("adminContacts"),
+                PrebuiltQueryOutputs.keysOf("fetch_institute_admin_emails").orElseThrow(),
                 "adminContacts[]: userId, email, fullName, mobileNumber, role (roles default 'ADMIN,TEACHER')"));
         q.add(query("fetch_expiring_memberships",
                 List.of("instituteId"), List.of("daysUntilExpiry"),
-                List.of("expiringMemberships", "expiringCount"),
+                PrebuiltQueryOutputs.keysOf("fetch_expiring_memberships").orElseThrow(),
                 "expiringMemberships[]: userPlanId, userId, email, fullName, mobileNumber, endDate (institute-scoped, ACTIVE plans expiring within N days)"));
         q.add(query("fetch_live_session_attendance",
                 List.of("sessionId", "scheduleId"), List.of(),
-                List.of("presentStudents", "absentStudents", "presentCount", "absentCount", "sessionTitle"),
+                PrebuiltQueryOutputs.keysOf("fetch_live_session_attendance").orElseThrow(),
                 "present/absentStudents[]: fullName, email, mobileNumber, joinTime, attendedMinutes, attendancePercentage, attendanceBlockHtml"));
         q.add(query("fetch_enrollment_details",
                 List.of("userId"), List.of("packageSessionId", "packageSessionIds", "instituteId"),
@@ -290,7 +292,7 @@ public class WorkflowAiCatalogController {
                 "flat camelCase map of the learner's enrollment + payment status; used to gate abandoned-cart / webhook flows"));
         q.add(query("getUpcomingFeeInstallments",
                 List.of("instituteId"), List.of("daysBeforeWindow", "daysAfterWindow"),
-                List.of("feePaymentList"),
+                PrebuiltQueryOutputs.keysOf("getUpcomingFeeInstallments").orElseThrow(),
                 "feePaymentList[]: learner fee installments due in the window (camelCase)"));
         return q;
     }
@@ -323,6 +325,9 @@ public class WorkflowAiCatalogController {
         t.add(trigger("LEAD_ASSIGNED_TO_COUNSELOR", "AUDIENCE", "audienceId or poolId",
                 keysOf("LEAD_ASSIGNED_TO_COUNSELOR"),
                 "Flat lead keys (leadName, leadEmail, leadMobile, counselorEmail...) — no 'user' object. Idempotency person = #ctx['leadId']."));
+        t.add(trigger("LEAD_REATTEMPT", "AUDIENCE", "audienceId of the list the new enquiry came in on (or null=all), or poolId",
+                keysOf("LEAD_REATTEMPT"),
+                "An existing lead enquired again (repeat / duplicate from any source). Same flat lead keys as LEAD_ASSIGNED_TO_COUNSELOR; counselorEmail is the lead's owner, so a send to the counsellor uses #ctx['counselorEmail']. reattemptSource / reattemptEmail / reattemptMobile describe the new enquiry. Fires once per new enquiry: idempotency = #ctx['reattemptResponseId']."));
         return t;
     }
 

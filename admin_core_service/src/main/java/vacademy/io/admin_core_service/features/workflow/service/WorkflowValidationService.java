@@ -136,7 +136,63 @@ public class WorkflowValidationService {
             validateTriggerContextKeys(dto, errors);
         }
 
+        validateQueryResultKeyReads(dto, errors);
+
         return errors;
+    }
+
+    /**
+     * A QUERY node puts the query's own result keys on the context (e.g. {@code adminContacts})
+     * and never stores anything under its {@code resultKey}. A send node whose {@code on} reads
+     * that resultKey, or the default {@code queryResult}, therefore gets nothing and sends
+     * nothing while the run still reports success. The builder used to offer exactly that
+     * expression, which silently stopped an institute's new-lead team email. Flagged as an
+     * ERROR unless the trigger or a catalogued query in this graph really emits the key.
+     */
+    private void validateQueryResultKeyReads(WorkflowBuilderDTO dto, List<ValidationError> errors) {
+        Set<String> phantom = new LinkedHashSet<>();
+        Set<String> real = new LinkedHashSet<>();
+        List<String> hints = new ArrayList<>();
+        for (WorkflowBuilderDTO.NodeDTO node : dto.getNodes()) {
+            if (!"QUERY".equalsIgnoreCase(node.getNodeType()) || !(node.getConfig() instanceof Map<?, ?> config)) {
+                continue;
+            }
+            phantom.add("queryResult");
+            phantom.add("queryResultCount");
+            if (config.get("resultKey") instanceof String rk && !rk.isBlank()) {
+                phantom.add(rk.trim());
+                phantom.add(rk.trim() + "Count");
+            }
+            if (config.get("prebuiltKey") instanceof String pk) {
+                PrebuiltQueryOutputs.keysOf(pk).ifPresent(keys -> {
+                    real.addAll(keys);
+                    hints.add(pk.trim() + " -> #ctx['" + keys.get(0) + "']");
+                });
+            }
+        }
+        if (phantom.isEmpty()) {
+            return;
+        }
+        if (dto.getTrigger() != null) {
+            Set<String> emitted = triggerContextKeyRegistry.emittedKeys(dto.getTrigger().getTriggerEventName());
+            if (emitted != null) real.addAll(emitted);
+        }
+        for (WorkflowBuilderDTO.NodeDTO node : dto.getNodes()) {
+            if (!(node.getConfig() instanceof Map<?, ?> config)) continue;
+            if (!(config.get("on") instanceof String onExpr) || onExpr.isBlank()) continue;
+            List<String> bad = TriggerContextKeyRegistry.referencedCtxKeys(onExpr).stream()
+                    .filter(phantom::contains)
+                    .filter(k -> !real.contains(k))
+                    .toList();
+            if (!bad.isEmpty()) {
+                errors.add(new ValidationError(node.getId(), "config.on",
+                        "'on' reads #ctx" + bad + ", but a QUERY node never stores its result there"
+                                + " (resultKey is not used), so this node would send nothing."
+                                + (hints.isEmpty() ? " Read the query's own output key instead."
+                                        : " Use the query's own list: " + String.join(", ", hints)),
+                        "ERROR"));
+            }
+        }
     }
 
     /**

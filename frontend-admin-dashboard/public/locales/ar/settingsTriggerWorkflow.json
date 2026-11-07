@@ -24,7 +24,8 @@
             "leadTatOverdue": "تجاوز مهلة العميل المحتمل",
             "followUpDue": "المتابعة مستحقة",
             "followUpOverdue": "تأخرت المتابعة",
-            "leadStatusChanged": "تغيرت حالة العميل المحتمل"
+            "leadStatusChanged": "تغيرت حالة العميل المحتمل",
+            "leadReattempt": "أرسل العميل المحتمل استفسارًا جديدًا (إعادة محاولة)"
         }
     },
     "statusGate": {

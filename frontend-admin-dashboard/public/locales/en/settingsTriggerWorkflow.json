@@ -24,7 +24,8 @@
             "leadTatOverdue": "Lead TAT overdue",
             "followUpDue": "Follow-up due",
             "followUpOverdue": "Follow-up overdue",
-            "leadStatusChanged": "Lead status changed"
+            "leadStatusChanged": "Lead status changed",
+            "leadReattempt": "Lead enquired again (reattempt)"
         }
     },
     "statusGate": {

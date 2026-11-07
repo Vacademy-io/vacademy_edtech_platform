@@ -24,7 +24,8 @@
             "leadTatOverdue": "लीड TAT ओवरड्यू",
             "followUpDue": "फॉलो-अप ड्यू",
             "followUpOverdue": "फॉलो-अप ओवरड्यू",
-            "leadStatusChanged": "लीड की स्थिति बदली गई"
+            "leadStatusChanged": "लीड की स्थिति बदली गई",
+            "leadReattempt": "लीड ने दोबारा पूछताछ की (रीअटेम्प्ट)"
         }
     },
     "statusGate": {
