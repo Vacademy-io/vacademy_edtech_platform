@@ -1,0 +1,34 @@
+{
+    "heading": "Examiner la demande de congé",
+    "actions": {
+        "close": "Fermer",
+        "reject": "Refuser",
+        "rejecting": "Refus en cours…",
+        "approve": "Approuver",
+        "approving": "Approbation en cours…"
+    },
+    "fields": {
+        "employee": "Employé",
+        "leaveType": "Type de congé",
+        "dates": "Dates",
+        "totalDays": "Total des jours",
+        "halfDay": "demi-journée",
+        "reasonGiven": "Motif indiqué",
+        "rejectionReason": "Motif du refus",
+        "rejectionReasonPlaceholder": "Pourquoi cette demande est refusée",
+        "rejectionReasonDescription": "Obligatoire en cas de refus. Ignoré en cas d'approbation."
+    },
+    "approvalNotice": "L'approbation crée un enregistrement de présence ON_LEAVE pour chacun de ces jours. Le solde de l'employé et le verrouillage de la paie du mois sont revérifiés au moment de l'approbation — si le solde est épuisé ou si le mois est verrouillé, l'approbation est refusée et le motif s'affiche ici.",
+    "toast": {
+        "approved": "Congé approuvé",
+        "rejected": "Congé refusé"
+    },
+    "errors": {
+        "approveFailed": "Impossible d'approuver ce congé.",
+        "rejectFailed": "Impossible de refuser ce congé."
+    },
+    "validation": {
+        "reasonRequired": "Indiquez un motif — il est affiché à l'employé avec le refus.",
+        "reasonTooLong": "Limitez le motif à 500 caractères"
+    }
+}

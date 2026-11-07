@@ -6,6 +6,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import vacademy.io.admin_core_service.features.learner_tracking.dto.QuestionSlideActivityLogDTO;
+import vacademy.io.admin_core_service.features.learner_quiz.answerkey.AnswerKeyAccess;
 import vacademy.io.admin_core_service.features.learner_tracking.dto.ActivityLogDTO;
 import vacademy.io.admin_core_service.features.learner_tracking.entity.ActivityLog;
 import vacademy.io.admin_core_service.features.learner_tracking.entity.QuestionSlideTracked;
@@ -34,6 +35,7 @@ public class QuestionSlideActivityLogService {
     private final SlideRepository slideRepository;
     private final QuestionSlideRepository questionSlideRepository;
     private final AutoEvaluationScorer autoEvaluationScorer;
+    private final AnswerKeyAccess answerKeyAccess;
 
     public void addQuestionSlideActivityLog(ActivityLog activityLog,
             List<QuestionSlideActivityLogDTO> questionSlideActivityLogDTOS) {
@@ -122,6 +124,6 @@ public class QuestionSlideActivityLogService {
             CustomUserDetails userDetails) {
         Page<ActivityLog> activityLogs = activityLogRepository.findActivityLogsWithQuestionSlides(userId, slideId,
                 pageable);
-        return activityLogs.map(activityLog -> activityLog.toActivityLogDTO());
+        return activityLogs.map(activityLog -> answerKeyAccess.withoutQuizSidesWhenStripping(activityLog.toActivityLogDTO()));
     }
 }

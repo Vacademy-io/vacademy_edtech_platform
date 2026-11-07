@@ -1,4 +1,6 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 
@@ -24,7 +26,42 @@ const exampleData = {
   }
 };
 
+interface ProcessStep {
+  key: string;
+  label: string;
+  description: string;
+}
+
+const buildProcessSteps = (t: TFunction): ProcessStep[] => [
+  {
+    key: 'fetchQuestions',
+    label: t('process.steps.fetchQuestions.label'),
+    description: t('process.steps.fetchQuestions.description'),
+  },
+  {
+    key: 'createOptionsMap',
+    label: t('process.steps.createOptionsMap.label'),
+    description: t('process.steps.createOptionsMap.description'),
+  },
+  {
+    key: 'parseResponse',
+    label: t('process.steps.parseResponse.label'),
+    description: t('process.steps.parseResponse.description'),
+  },
+  {
+    key: 'mapIdsToContent',
+    label: t('process.steps.mapIdsToContent.label'),
+    description: t('process.steps.mapIdsToContent.description'),
+  },
+  {
+    key: 'displayEnhancedUi',
+    label: t('process.steps.displayEnhancedUi.label'),
+    description: t('process.steps.displayEnhancedUi.description'),
+  },
+];
+
 export const OptionMappingDemo: React.FC = () => {
+  const { t } = useTranslation('assessmentOptionMappingDemo');
   const { response, questionData } = exampleData;
 
   // Simulate the parsing process
@@ -33,11 +70,13 @@ export const OptionMappingDemo: React.FC = () => {
     questionData.optionsMap.get(optionId) || optionId
   );
 
+  const processSteps = buildProcessSteps(t);
+
   return (
     <div className="space-y-6">
       <div className="text-center">
-        <h2 className="text-2xl font-bold text-gray-900 mb-2">Option ID Mapping Demo</h2>
-        <p className="text-gray-600">How option IDs are mapped to human-readable content</p>
+        <h2 className="text-2xl font-bold text-gray-900 mb-2">{t('title')}</h2>
+        <p className="text-gray-600">{t('subtitle')}</p>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -45,23 +84,23 @@ export const OptionMappingDemo: React.FC = () => {
         <Card>
           <CardHeader>
             <CardTitle className="text-lg font-semibold text-red-700">
-              ❌ Before (Raw Option IDs)
+              ❌ {t('before.title')}
             </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
               <div>
-                <div className="text-sm font-medium text-gray-700 mb-2">Question:</div>
+                <div className="text-sm font-medium text-gray-700 mb-2">{t('common.questionLabel')}</div>
                 <div className="p-3 bg-gray-50 rounded-lg">
                   <p className="text-sm">{questionData.questionContent}</p>
                 </div>
               </div>
 
               <div>
-                <div className="text-sm font-medium text-gray-700 mb-2">Response:</div>
+                <div className="text-sm font-medium text-gray-700 mb-2">{t('common.responseLabel')}</div>
                 <div className="p-3 bg-red-50 rounded-lg border border-red-200">
                   <p className="text-sm font-mono text-red-800">
-                    Selected options: {selectedOptionIds.join(', ')}
+                    {t('before.selectedOptions', { ids: selectedOptionIds.join(', ') })}
                   </p>
                 </div>
               </div>
@@ -73,23 +112,23 @@ export const OptionMappingDemo: React.FC = () => {
         <Card>
           <CardHeader>
             <CardTitle className="text-lg font-semibold text-green-700">
-              ✅ After (Mapped Content)
+              ✅ {t('after.title')}
             </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
               <div>
-                <div className="text-sm font-medium text-gray-700 mb-2">Question:</div>
+                <div className="text-sm font-medium text-gray-700 mb-2">{t('common.questionLabel')}</div>
                 <div className="p-3 bg-gray-50 rounded-lg">
                   <p className="text-sm">{questionData.questionContent}</p>
                 </div>
               </div>
 
               <div>
-                <div className="text-sm font-medium text-gray-700 mb-2">Response:</div>
+                <div className="text-sm font-medium text-gray-700 mb-2">{t('common.responseLabel')}</div>
                 <div className="p-3 bg-green-50 rounded-lg border border-green-200">
                   <p className="text-sm font-medium text-green-800">
-                    Selected: {selectedOptions.join(', ')}
+                    {t('after.selected', { options: selectedOptions.join(', ') })}
                   </p>
                 </div>
               </div>
@@ -101,11 +140,11 @@ export const OptionMappingDemo: React.FC = () => {
       {/* All Options Display */}
       <Card>
         <CardHeader>
-          <CardTitle className="text-lg font-semibold">All Available Options</CardTitle>
+          <CardTitle className="text-lg font-semibold">{t('allOptions.title')}</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="space-y-2">
-            {Array.from(questionData.optionsMap.entries()).map(([optionId, optionContent], index) => (
+            {Array.from(questionData.optionsMap.entries()).map(([optionId, optionContent]) => (
               <div
                 key={optionId}
                 className={`p-3 rounded-lg border text-sm ${
@@ -121,7 +160,7 @@ export const OptionMappingDemo: React.FC = () => {
                   </div>
                   {selectedOptionIds.includes(optionId) && (
                     <Badge variant="outline" className="text-xs">
-                      Selected
+                      {t('allOptions.selectedBadge')}
                     </Badge>
                   )}
                 </div>
@@ -133,13 +172,13 @@ export const OptionMappingDemo: React.FC = () => {
 
       {/* Process Explanation */}
       <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-        <h3 className="font-semibold text-blue-900 mb-2">🔄 Mapping Process:</h3>
+        <h3 className="font-semibold text-blue-900 mb-2">🔄 {t('process.title')}</h3>
         <ol className="text-sm text-blue-800 space-y-1 list-decimal list-inside">
-          <li><strong>Fetch Questions API:</strong> Get questions with options from the backend</li>
-          <li><strong>Create Options Map:</strong> Map option IDs to their content text</li>
-          <li><strong>Parse Response:</strong> Extract selected option IDs from user response</li>
-          <li><strong>Map IDs to Content:</strong> Replace option IDs with human-readable text</li>
-          <li><strong>Display Enhanced UI:</strong> Show actual question content and selected options</li>
+          {processSteps.map((step) => (
+            <li key={step.key}>
+              <strong>{step.label}</strong> {step.description}
+            </li>
+          ))}
         </ol>
       </div>
     </div>

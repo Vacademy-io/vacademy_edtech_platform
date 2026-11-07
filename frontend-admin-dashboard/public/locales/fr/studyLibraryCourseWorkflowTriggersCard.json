@@ -1,0 +1,24 @@
+{
+    "title": "Déclencheurs de workflow",
+    "loading": "Chargement…",
+    "description": "Exécutez automatiquement un workflow lorsqu'un événement se produit pour ce cours — par ex. inscrire l'apprenant dans votre LMS lorsqu'il s'inscrit ici. Choisissez l'événement et le workflow ; ajoutez-en autant que nécessaire.",
+    "noWorkflows": "Aucun workflow dans cet établissement pour le moment — créez-en un d'abord dans Automatisations.",
+    "noTriggersYet": "Aucun déclencheur de workflow pour le moment.",
+    "whenEventPlaceholder": "Quand… (événement)",
+    "runWorkflowPlaceholder": "Exécuter le workflow…",
+    "removeTrigger": "Supprimer le déclencheur",
+    "addTrigger": "Ajouter un déclencheur",
+    "saving": "Enregistrement…",
+    "saveTriggers": "Enregistrer les déclencheurs",
+    "cancel": "Annuler",
+    "confirmDialog": {
+        "title": "Mettre à jour les automatisations de ce cours ?",
+        "description": "Cela modifie les workflows exécutés pour ce cours et prend effet immédiatement. Les workflows que vous avez ajoutés commenceront à se déclencher sur leurs événements (par ex. inscription) ; ceux que vous avez supprimés s'arrêteront. Assurez-vous que la liste est correcte avant d'enregistrer.",
+        "yesSave": "Oui, enregistrer"
+    },
+    "toast": {
+        "loadFailed": "Échec du chargement des déclencheurs de workflow",
+        "saveSuccess": "Déclencheurs de workflow enregistrés ({{created}} ajoutés, {{removed}} supprimés).",
+        "saveFailed": "Échec de l'enregistrement des déclencheurs de workflow"
+    }
+}

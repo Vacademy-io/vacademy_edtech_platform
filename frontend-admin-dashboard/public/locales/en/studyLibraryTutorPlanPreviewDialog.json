@@ -1,0 +1,16 @@
+{
+    "playTitle": "Play this board as the learner sees it",
+    "play": "Play",
+    "couldNotLoadPlan": "Could not load the plan",
+    "teachingPlan": "Teaching plan",
+    "loadingPlan": "Loading plan…",
+    "objectives": "Objectives",
+    "boardTitle": "Board {{order}}: {{title}}",
+    "estimatedMinutes_one": "~{{count}} min",
+    "estimatedMinutes_other": "~{{count}} min",
+    "boardAfterConcept": "Board after concept {{order}}: {{title}}",
+    "teacherSays": "Teacher says:",
+    "checkLabel": "Check · {{type}}",
+    "expectedLabel": "Expected: {{expected}}",
+    "notesLabel": "Notes:"
+}

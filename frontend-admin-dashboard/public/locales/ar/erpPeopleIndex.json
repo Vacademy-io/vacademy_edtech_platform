@@ -1,0 +1,41 @@
+{
+    "navHeading": "الأفراد",
+    "heading": "الموظفون",
+    "subheading": "ملفات الموارد البشرية لكل من في كشف رواتبك — الأقسام والمسميات الوظيفية وحالة التوظيف.",
+    "addFromStaff": "إضافة من الطاقم",
+    "addEmployee": "إضافة موظف",
+    "employee": "موظف",
+    "table": {
+        "code": "الرمز",
+        "name": "الاسم",
+        "department": "القسم",
+        "designation": "المسمى الوظيفي",
+        "status": "الحالة",
+        "type": "النوع",
+        "joined": "تاريخ الالتحاق"
+    },
+    "filters": {
+        "status": "الحالة",
+        "department": "القسم",
+        "designation": "المسمى الوظيفي",
+        "employmentType": "نوع التوظيف"
+    },
+    "matchCount_zero": "لا يوجد موظفون مطابقون",
+    "matchCount_one": "موظف واحد مطابق",
+    "matchCount_two": "موظفان مطابقان",
+    "matchCount_few": "{{count}} موظفين مطابقين",
+    "matchCount_many": "{{count}} موظفًا مطابقًا",
+    "matchCount_other": "{{count}} موظف مطابق",
+    "clearFilters": "مسح الفلاتر",
+    "errors": {
+        "load": "تعذر تحميل الموظفين."
+    },
+    "empty": {
+        "noMatchTitle": "لا يوجد موظفون يطابقون هذه الفلاتر",
+        "noMatchDescription": "جرّب مسح أحدها.",
+        "noneTitle": "لا توجد ملفات موظفين بعد",
+        "noneDescription": "هناك طريقتان لإضافة الأشخاص: إنشاء ملف موارد بشرية لشخص موجود بالفعل في فريقك من تغطية الموظفين (الأسرع — يعيد استخدام حسابه)، أو إضافة موظف يدويًا إذا كان لديك معرف مستخدمه على المنصة."
+    },
+    "openStaffCoverage": "فتح تغطية الموظفين",
+    "addEmployeeManually": "إضافة موظف يدويًا"
+}

@@ -1,0 +1,98 @@
+{
+    "statusBadge": {
+        "wrapped": "Terminé",
+        "halted": "Interrompu",
+        "inProduction": "En production"
+    },
+    "actions": {
+        "stopProduction": "Arrêter la production",
+        "auditTooltip": "Ouvrir l'audit développeur — voir le parcours complet du pipeline, les modèles, configurations et URL",
+        "audit": "Audit"
+    },
+    "haltedBanner": {
+        "title": "Production interrompue",
+        "description": "Le pipeline a échoué avant l'assemblage du montage final. La nouvelle tentative reprend au dernier point de contrôle enregistré — les étapes déjà terminées ne sont pas refaites.",
+        "retry": "Relancer la production"
+    },
+    "stagesList": {
+        "heading": "Planning de production",
+        "pipelineLabel": "Pipeline",
+        "shotPlannerFirst": "ShotPlanner en premier"
+    },
+    "stats": {
+        "heading": "Budget de production",
+        "tokens": "Jetons",
+        "estCost": "Coût estimé",
+        "stills": "Images fixes",
+        "aiVideo": "Vidéo IA",
+        "aiVideoTooltip": "Plans générés par Veo (fal.ai). Chacun coûte entre {{min}} et {{max}} crédits — plafond de {{cap}}/vidéo.",
+        "aiVideoShots_one": "{{count}} plan",
+        "aiVideoShots_many": "{{count}} de plans",
+        "aiVideoShots_other": "{{count}} plans"
+    },
+    "assets": {
+        "heading": "Ressources de production",
+        "screenplay": "Scénario",
+        "narration": "Narration",
+        "wordTimings": "Minutage des mots",
+        "finalCut": "Montage final",
+        "empty": "Les ressources apparaîtront au fur et à mesure de la production…"
+    },
+    "actionsCard": {
+        "heading": "Actions"
+    },
+    "share": {
+        "label": "URL partageable",
+        "copyLinkTitle": "Copier le lien"
+    },
+    "embed": {
+        "getEmbedCode": "Obtenir le code d'intégration",
+        "heading": "Code d'intégration",
+        "copied": "Copié",
+        "copy": "Copier"
+    },
+    "edit": {
+        "openInEditor": "Ouvrir dans l'éditeur"
+    },
+    "render": {
+        "downloadMp4": "Télécharger le MP4",
+        "clearTitle": "Effacer la vidéo mise en cache pour la re-générer",
+        "startingRender": "Démarrage du rendu…",
+        "mastering": "Finalisation en cours…",
+        "masteringPercent": "Finalisation en cours… {{percent}} %",
+        "masterTheCut": "Finaliser le montage (MP4)",
+        "retry": "Réessayer",
+        "timedOut": "Le rendu a expiré. Veuillez réessayer.",
+        "readyToast": "La vidéo est prête à être téléchargée !",
+        "failedGeneric": "Échec du rendu",
+        "failedToast": "Échec du rendu de la vidéo",
+        "startedToast": "Le rendu de la vidéo a démarré. Cela peut prendre quelques minutes.",
+        "failedToStart": "Échec du démarrage du rendu",
+        "failedToStartToast": "Échec du démarrage du rendu de la vidéo",
+        "clearedToast": "Vidéo mise en cache effacée. Vous pouvez relancer le rendu.",
+        "failedToClear": "Échec de l'effacement de la vidéo mise en cache"
+    },
+    "counters": {
+        "sources_one": "{{count}} source",
+        "sources_many": "{{count}} de sources",
+        "sources_other": "{{count}} sources",
+        "screenshots_one": "{{count}} 📸",
+        "screenshots_many": "{{count}} 📸",
+        "screenshots_other": "{{count}} 📸",
+        "urls_one": "{{count}} URL",
+        "urls_many": "{{count}} URL",
+        "urls_other": "{{count}} URL",
+        "shots_one": "{{count}} plan",
+        "shots_many": "{{count}} de plans",
+        "shots_other": "{{count}} plans",
+        "intrinsic_one": "{{count}} intr.",
+        "intrinsic_many": "{{count}} intr.",
+        "intrinsic_other": "{{count}} intr.",
+        "words_one": "{{count}} mot",
+        "words_many": "{{count}} de mots",
+        "words_other": "{{count}} mots",
+        "silent_one": "{{count}} silencieux",
+        "silent_many": "{{count}} silencieux",
+        "silent_other": "{{count}} silencieux"
+    }
+}

@@ -7,6 +7,7 @@
  */
 
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { cn } from '@/lib/utils';
 import { SidebarItemsType } from '@/types/layout-container/layout-container-types';
 import { SidebarItem } from './sidebar-item';
@@ -36,6 +37,7 @@ import {
     ClipboardText,
     VideoCamera,
     ShieldCheck,
+    LockKey,
     Funnel,
     GraduationCap,
     Users,
@@ -59,8 +61,11 @@ import { MyInput } from '@/components/design-system/input';
 import { SupportPanel } from '@/components/common/support/SupportPanel';
 import { useSupportConfig } from '@/services/support';
 import { getRecentTabs, type RecentTabEntry } from './recent-tabs-store';
-import { parseSidebarLink } from './helper';
-import { Link, useNavigate } from '@tanstack/react-router';
+import { parseSidebarLink, pickActiveSidebarLink } from './helper';
+import { filterRecentEntries } from '@/lib/capabilities/nav-access';
+import { useEntitlement } from '@/lib/capabilities/use-entitlement';
+import { filterSettingsTabs } from '@/routes/settings/-utils/settings-entitlements';
+import { Link, useLocation, useNavigate } from '@tanstack/react-router';
 import { useRouter, useRouterState } from '@tanstack/react-router';
 import { getCategoryColors } from './sidebar-colors';
 import type { CategoryId } from './category-rail';
@@ -115,6 +120,7 @@ export const SidebarPanel: React.FC<SidebarPanelProps> = ({
     logoHeightPx = null,
     stackNameBelowLogo = false,
 }) => {
+    const { t } = useTranslation('sidebarPanel');
     const navigate = useNavigate();
     const router = useRouter();
     const currentRoute = router.state.location.pathname;
@@ -131,7 +137,20 @@ export const SidebarPanel: React.FC<SidebarPanelProps> = ({
                   return (!show || show === instituteId) && category === activeCategory;
               });
 
-    const recentTabs = activeCategory === 'RECENT' ? getRecentTabs() : [];
+    // Recent offers only what the sidebar shows right now and is not locked: an
+    // entry recorded before a tab was hidden, locked or left the plan would
+    // otherwise be a way around it. Settings screens follow the rail's gear rule.
+    const hasSettings = sidebarItems.some((item) => item.id === 'settings');
+    const recentTabs =
+        activeCategory === 'RECENT'
+            ? filterRecentEntries(getRecentTabs(), sidebarItems, {
+                  instituteId,
+                  sidebarCategories: roleDisplay?.sidebarCategories,
+                  canOpenSettings: hasSettings
+                      ? roleDisplay?.ui?.showSettings !== false
+                      : roleDisplay?.ui?.showSettings === true,
+              })
+            : [];
 
     // On mobile, the panel is always rendered at full width inside the Sheet
     const panelOpen = isMobile ? true : isOpen;
@@ -150,8 +169,12 @@ export const SidebarPanel: React.FC<SidebarPanelProps> = ({
     const logoSpansFullWidth =
         logoWidthPx != null && logoWidthPx >= PANEL_WIDTH_PX && logoHeightPx == null;
 
-    // Settings tabs for the SETTINGS category
-    const settingsTabs = activeCategory === 'SETTINGS' ? getAvailableSettingsTabs() : [];
+    // Settings tabs for the SETTINGS category (MANAGED: only the plan's screens)
+    const entitlement = useEntitlement();
+    const settingsTabs =
+        activeCategory === 'SETTINGS'
+            ? filterSettingsTabs(getAvailableSettingsTabs(), entitlement)
+            : [];
     // Reactively read the selectedTab search param from the URL
     const routerState = useRouterState({ select: (s) => s.location.search });
     const activeSettingsTab =
@@ -207,7 +230,7 @@ export const SidebarPanel: React.FC<SidebarPanelProps> = ({
                                 return (
                                     <img
                                         src={instituteLogo}
-                                        alt="logo"
+                                        alt={t('logoAlt')}
                                         className="object-contain"
                                         style={{
                                             width: logoSpansFullWidth
@@ -250,9 +273,9 @@ export const SidebarPanel: React.FC<SidebarPanelProps> = ({
                     )}
                 </div>
                 {isPartnershipLinkage && mainInstituteName && (
-                    <div className="flex items-center gap-2 px-4 pb-3 pl-14 text-neutral-500">
+                    <div className="flex items-center gap-2 px-4 pb-3 ps-14 text-neutral-500">
                         <span className="whitespace-nowrap text-[10px] font-medium text-neutral-500">
-                            Powered by
+                            {t('poweredBy')}
                         </span>
                         {mainInstituteLogoUrl ? (
                             <div className="flex shrink-0 items-center justify-center overflow-hidden rounded">
@@ -286,11 +309,7 @@ export const SidebarPanel: React.FC<SidebarPanelProps> = ({
                         onItemClick={onItemClick}
                     />
                 ) : activeCategory === 'RECENT' ? (
-                    <RecentTabsList
-                        entries={recentTabs}
-                        currentRoute={currentRoute}
-                        onItemClick={onItemClick}
-                    />
+                    <RecentTabsList entries={recentTabs} onItemClick={onItemClick} />
                 ) : (
                     <SidebarMenu className="flex flex-col gap-0.5">
                         {filteredItems.map((obj, key) => (
@@ -324,18 +343,25 @@ export const SidebarPanel: React.FC<SidebarPanelProps> = ({
 
 interface RecentTabsListProps {
     entries: RecentTabEntry[];
-    currentRoute: string;
     onItemClick?: () => void;
 }
 
-const RecentTabsList: React.FC<RecentTabsListProps> = ({ entries, currentRoute, onItemClick }) => {
+const RecentTabsList: React.FC<RecentTabsListProps> = ({ entries, onItemClick }) => {
+    const { t } = useTranslation('sidebarPanel');
+    // Recorded routes carry their query (?status=…&lock=status), so match them the
+    // way the panel does rather than by pathname.
+    const { pathname, search } = useLocation();
+    const activeRoute = pickActiveSidebarLink(
+        entries.map((entry) => entry.route),
+        pathname,
+        search as Record<string, unknown>
+    );
+
     if (entries.length === 0) {
         return (
             <div className="flex flex-col items-center justify-center gap-2 px-4 py-8 text-center">
-                <p className="text-xs text-neutral-400">No recent tabs</p>
-                <p className="text-[10px] text-neutral-300">
-                    Navigate to pages and they'll appear here
-                </p>
+                <p className="text-xs text-neutral-400">{t('recentTabs.emptyTitle')}</p>
+                <p className="text-[10px] text-neutral-300">{t('recentTabs.emptyDescription')}</p>
             </div>
         );
     }
@@ -343,11 +369,11 @@ const RecentTabsList: React.FC<RecentTabsListProps> = ({ entries, currentRoute, 
     return (
         <div className="flex flex-col gap-0.5">
             <p className="px-3 pb-1 pt-2 text-[10px] font-semibold uppercase tracking-wider text-neutral-400">
-                Recently Visited
+                {t('recentTabs.heading')}
             </p>
             {entries.map((entry, idx) => {
                 const colors = getCategoryColors(entry.category);
-                const isActive = currentRoute.includes(entry.route);
+                const isActive = entry.route === activeRoute;
                 // Recorded routes can include a query ("/settings?selectedTab=…").
                 const { to: entryTo, search: entrySearch } = parseSidebarLink(entry.route);
                 return (
@@ -380,20 +406,23 @@ const RecentTabsList: React.FC<RecentTabsListProps> = ({ entries, currentRoute, 
 
 // ─── Support Options ───────────────────────────────────────────
 
-const SUPPORT_PLAN_SHORT: Record<string, string> = {
-    DEDICATED: 'Dedicated',
-    PREMIUM: 'Premium',
-    AVERAGE: 'Average',
-    LOW: 'Low',
-    NONE: 'No plan',
+/** Maps a support-plan key to its translation key under `support.plan.*`. */
+const SUPPORT_PLAN_TRANSLATION_KEY: Record<string, string> = {
+    DEDICATED: 'support.plan.dedicated',
+    PREMIUM: 'support.plan.premium',
+    AVERAGE: 'support.plan.average',
+    LOW: 'support.plan.low',
+    NONE: 'support.plan.none',
 };
 
 function SupportOptions() {
+    const { t } = useTranslation('sidebarPanel');
     const [open, setOpen] = React.useState(false);
     const [hover, setHover] = React.useState(false);
     const config = useSupportConfig();
     const planKey = config.data?.plan?.key;
-    const planLabel = planKey ? SUPPORT_PLAN_SHORT[planKey] ?? planKey : null;
+    const planLabelKey = planKey ? SUPPORT_PLAN_TRANSLATION_KEY[planKey] : null;
+    const planLabel = planLabelKey ? t(planLabelKey) : planKey ?? null;
 
     return (
         <>
@@ -414,12 +443,12 @@ function SupportOptions() {
                         hover ? 'text-teal-600' : 'text-neutral-500'
                     )}
                 >
-                    Support
+                    {t('support.button')}
                 </span>
                 {planLabel ? (
                     <span
-                        className="ml-auto rounded-full bg-primary-50 px-2 py-0.5 text-xs font-medium text-primary-500"
-                        title={`${planLabel} support plan`}
+                        className="ms-auto rounded-full bg-primary-50 px-2 py-0.5 text-xs font-medium text-primary-500"
+                        title={t('support.planTooltip', { plan: planLabel })}
                     >
                         {planLabel}
                     </span>
@@ -472,6 +501,7 @@ export const SETTINGS_TAB_ICONS: Record<string, React.FC<IconProps>> = {
     integrations: Megaphone,
     youtube: YoutubeLogo,
     gtmSettings: Tag,
+    security: LockKey,
 };
 
 interface SettingsTabsListProps {
@@ -481,6 +511,8 @@ interface SettingsTabsListProps {
 }
 
 const SettingsTabsList: React.FC<SettingsTabsListProps> = ({ tabs, activeTab, onItemClick }) => {
+    const { t } = useTranslation('sidebarPanel');
+
     // Group by domain, then by group, driven by the fixed order arrays —
     // never by this array's authoring order, which is free to change.
     const groupedByDomain = React.useMemo(() => {
@@ -498,7 +530,7 @@ const SettingsTabsList: React.FC<SettingsTabsListProps> = ({ tabs, activeTab, on
     // other domain starts collapsed to just its header, so the resting view
     // is 7 short lines instead of a full 37-item scroll.
     const activeDomain = React.useMemo(
-        () => tabs.find((t) => t.tab === activeTab)?.domain,
+        () => tabs.find((tab) => tab.tab === activeTab)?.domain,
         [tabs, activeTab]
     );
     const [expandedDomains, setExpandedDomains] = React.useState<Set<string>>(
@@ -528,10 +560,10 @@ const SettingsTabsList: React.FC<SettingsTabsListProps> = ({ tabs, activeTab, on
                     inputType="text"
                     input={query}
                     onChangeFunction={(e) => setQuery(e.target.value)}
-                    inputPlaceholder="Search settings"
-                    className="h-8 pl-8 text-caption"
+                    inputPlaceholder={t('settings.searchPlaceholder')}
+                    className="h-8 ps-8 text-caption"
                 />
-                <MagnifyingGlass className="absolute left-4 top-1/2 size-3.5 -translate-y-1/2 text-neutral-400" />
+                <MagnifyingGlass className="absolute start-4 top-1/2 size-3.5 -translate-y-1/2 text-neutral-400" />
             </div>
             {SETTINGS_DOMAIN_ORDER.map((domain) => {
                 const groups = groupedByDomain.get(domain);

@@ -1,0 +1,51 @@
+{
+    "title": "Paramètres du flux",
+    "close": "Fermer",
+    "description": "Qui prévenir lorsque le chatbot ne peut pas répondre et transfère une conversation à une personne. Ces mêmes conversations apparaissent comme <0>Sans réponse</0> dans la boîte de réception WhatsApp jusqu’à ce que quelqu’un réponde.",
+    "email": {
+        "sectionLabel": "Destinataires e-mail",
+        "placeholder": "admin@yourinstitute.com",
+        "emptyText": "Aucune adresse pour l’instant.",
+        "invalidError": "Cela ne ressemble pas à une adresse e-mail",
+        "template": {
+            "label": "Modèle d’e-mail",
+            "emptyOption": "Mise en page intégrée (aucun modèle)",
+            "hint": "Restez sur la mise en page intégrée et nous composerons l’e-mail pour vous."
+        }
+    },
+    "whatsapp": {
+        "sectionLabel": "Destinataires WhatsApp",
+        "placeholder": "919812345678",
+        "emptyText": "Aucun numéro pour l’instant.",
+        "invalidError": "Saisissez un numéro complet avec l’indicatif du pays",
+        "template": {
+            "label": "Modèle WhatsApp",
+            "emptyOption": "— Sélectionnez un modèle approuvé —",
+            "hint": "Seuls les modèles APPROUVÉS sont listés."
+        },
+        "warning": "Choisissez un modèle WhatsApp — sans cela, ces numéros ne recevront aucun message. WhatsApp n’autorise les messages initiés par l’entreprise qu’à partir d’un modèle approuvé."
+    },
+    "variables": {
+        "title": "Espaces réservés disponibles",
+        "hint": "Nommez les variables de votre modèle pour qu’elles correspondent à celles-ci et elles seront remplies automatiquement."
+    },
+    "delivery": {
+        "sendAlerts": "Envoyer ces alertes lors du transfert",
+        "renotifyLabel": "Ne pas relancer la même conversation pendant (minutes)",
+        "renotifyHint": "Un apprenant qui continue de poser des questions sans réponse ne génère toujours qu’un seul rappel, pas une avalanche."
+    },
+    "done": "Terminé",
+    "recipient": {
+        "remove": "Supprimer {{value}}",
+        "add": "Ajouter",
+        "alreadyOnList": "Déjà dans la liste"
+    },
+    "template": {
+        "loading": "Chargement des modèles…",
+        "orphanOption": "{{value}} (introuvable)",
+        "orphanHint": "« {{value}} » ne fait plus partie des modèles de cet établissement."
+    },
+    "toast": {
+        "loadTemplatesError": "Impossible de charger les modèles de notification"
+    }
+}

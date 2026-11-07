@@ -1,0 +1,39 @@
+{
+    "title": "Chatbot Flows",
+    "subtitle": "Create automated WhatsApp conversation flows",
+    "newFlow": "New Flow",
+    "aiPaused": {
+        "title": "AI Reply steps are paused — this institute has no AI credits.",
+        "body": "The rest of every flow still runs. AI Reply steps stop calling the model and hand the conversation to a human in the WhatsApp Inbox until you top up.",
+        "seeUsage": "See AI usage"
+    },
+    "tabs": {
+        "flows": "Flows",
+        "usage": "AI Usage"
+    },
+    "loading": "Loading...",
+    "empty": {
+        "message": "No flows yet. Create your first chatbot flow!",
+        "cta": "Create Flow"
+    },
+    "toast": {
+        "loadFailed": "Failed to load flows",
+        "duplicated": "Flow duplicated",
+        "duplicateFailed": "Failed to duplicate",
+        "archived": "Flow archived",
+        "archiveFailed": "Failed to archive",
+        "deactivated": "Flow deactivated",
+        "activated": "Flow activated",
+        "toggleFailed": "Failed"
+    },
+    "confirmArchive": "Archive this flow?",
+    "updated": "Updated: {{date}}",
+    "notAvailable": "N/A",
+    "actions": {
+        "deactivate": "Deactivate",
+        "activate": "Activate",
+        "sessionsAndAnalytics": "Sessions & Analytics",
+        "duplicate": "Duplicate",
+        "archive": "Archive"
+    }
+}

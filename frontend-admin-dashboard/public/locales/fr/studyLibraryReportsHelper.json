@@ -1,0 +1,9 @@
+{
+    "zeroMinutes": "0 min",
+    "units": {
+        "day": "j",
+        "hour": "h",
+        "minute": "min",
+        "second": "s"
+    }
+}

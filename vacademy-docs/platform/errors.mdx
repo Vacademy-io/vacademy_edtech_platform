@@ -1,0 +1,51 @@
+---
+title: "Errors"
+description: "Every error has the same shape and a stable code."
+---
+
+Errors use standard HTTP status codes and always return this body:
+
+```json
+{
+  "error": {
+    "code": "invalid_request",
+    "message": "page_size must be between 1 and 100.",
+    "request_id": "req_3f2a9c1d7e5b4a608f1e2d3c4b5a6978",
+    "details": { "param": "page_size" }
+  }
+}
+```
+
+- **`code`** is stable. Branch on it.
+- **`message`** is a sentence for logs. Its wording may change.
+- **`request_id`** is also in the `X-Request-Id` header. Quote it when you contact [support@vacademy.io](mailto:support@vacademy.io).
+- **`details`** is present only when there is more to say (table below).
+
+Error responses carry `Cache-Control: no-store`.
+
+## Codes
+
+| HTTP | Code | `details` | What to do |
+|---|---|---|---|
+| 400 | `invalid_request` | `param` | Fix the parameter or field it names: a non-numeric `page`, `page_size` outside 1-100, an unknown `sort`, `availability`, `badge` or `price`, a negative or non-numeric `price_min` / `price_max`, a `custom` token without a colon, a `facets` value other than true/false, an invalid enquiry field. Also returned for malformed JSON. |
+| 415 | `invalid_request` | | Send `POST /leads` with `Content-Type: application/json`. |
+| 401 | `missing_api_key` | | Send the key in `X-API-Key` (or `Authorization: Bearer`). |
+| 401 | `invalid_api_key` | | Not a `vak_pub_` key, or unknown, revoked or expired. Check it in the dashboard. |
+| 403 | `product_not_enabled` | | The key belongs to another Vacademy API. Use a Catalogue API key. |
+| 403 | `insufficient_scope` | `required_scope` | The key lacks `catalog:read` or `leads:write`. |
+| 403 | `origin_not_allowed` | `origin` | A browser call from a host that is not a verified website. Verify it, or call from your server. See [Keys and websites](/keys-and-websites#where-to-call-from). |
+| 404 | `not_found` | | No such course or learning path for this institute (not published, or wrong id), or no such endpoint. |
+| 405 | `method_not_allowed` | | Wrong HTTP method for this path. |
+| 429 | `rate_limited` | `limit_per_minute` | Wait the seconds in `Retry-After`, then retry. See [Rate limits](/platform/rate-limits-and-caching). |
+| 500 | `internal_error` | | Retry with backoff. If it persists, contact support with the `request_id`. |
+| 503 | `auth_unavailable` | | Keys could not be checked for a moment. Retry after `Retry-After` seconds (5). |
+
+## Retrying
+
+Retry `429`, `500` and `503` with backoff (respect `Retry-After`; else 1 s, 2 s, 4 s… up to a minute). Other `4xx` errors fail again until the request changes.
+
+`POST /leads` is safe to retry: a repeat of an enquiry that was already saved returns `200 {"status": "duplicate"}`.
+
+<Note>
+In browser JavaScript, cross-origin responses do not expose `Retry-After` or `X-Request-Id` to your code. Use `error.request_id` from the body, and wait 60 seconds after a `429` (limits reset each clock minute). Server-side code can read every header.
+</Note>

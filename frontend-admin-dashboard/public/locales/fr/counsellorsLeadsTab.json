@@ -1,0 +1,23 @@
+{
+    "loading": "Chargement des prospects…",
+    "empty": "Aucun prospect ouvert.",
+    "table": {
+        "expandRow": "Développer la ligne",
+        "lead": "Prospect",
+        "status": "Statut",
+        "score": "Score",
+        "campaign": "Campagne",
+        "assigned": "Assigné",
+        "actions": "Actions",
+        "hideTransferHistory": "Masquer l'historique des transferts",
+        "showTransferHistory": "Afficher l'historique des transferts",
+        "transferHistory": "Historique des transferts",
+        "openLead": "Ouvrir le prospect",
+        "call": "Appeler",
+        "reassign": "Réassigner"
+    },
+    "pagination": {
+        "showingRange": "Affichage de {{from}}–{{to}} sur {{total}}",
+        "loadingSuffix": " · chargement…"
+    }
+}

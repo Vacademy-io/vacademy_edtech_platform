@@ -1,0 +1,22 @@
+---
+title: "Changelog"
+description: "What changed in the Evalezy Evaluation API, newest first."
+icon: "clock-rotate-left"
+---
+
+The API is versioned in the URL (`/v1`). Within `v1` we only make **additive** changes: new endpoints, new optional fields, new error codes and new values in lists of statuses or warnings. Error codes and field names never change once published. Build your integration to ignore fields it does not know.
+
+<Update label="2026-10-02 launch" description="v1">
+  First public release of the Evaluation API at `https://api.evalezy.com/v1`.
+
+  - **Exams and questions:** create, read, edit, open and delete exams, with questions, sections, answer keys, model answers and rubrics. The `POST /exams` response includes a `quote` with your rate for the exam's unit, for example `{"unit": "page", "credits_per_page": 1, "rate_source": "standard"}`. Exams created through the API also appear in your institute's Vacademy dashboard, tagged Source: API.
+  - **Candidates:** upsert by your own `external_id`, search, register on exams.
+  - **Uploads:** presigned PDF uploads (up to 100 files per call, 50 MB each), checked for type, size and page count.
+  - **Submissions:** handwritten copies (one PDF) and typed answers, with fixed-price quotes, queue position and estimated ready time, re-evaluate, cancel and delete.
+  - **Results:** question-wise marks, feedback, criteria, extracted answers, review flags and the checked copy as PDF. `GET /exams/{id}/results` returns all results of an exam in one paginated call (`limit` 1 to 50, default 20; filters `finalized`, `updated_since`, `include`). `format=csv` answers `422 feature_not_available` for now.
+  - **Review and finalize:** marks overrides, approval, finalize and unfinalize. AI marks stay drafts until you finalize.
+  - **Lists:** `GET /exams`, `GET /exams/{id}/candidates`, `GET /exams/{id}/submissions` and the cross-exam feed `GET /submissions`, all with cursors and `updated_since`. See [Pagination and syncing](/platform/pagination).
+  - **Credits:** `GET /credits` and `POST /credits/quote`. See [Pricing](/platform/pricing).
+  - **Plain text everywhere:** text you send is stored and returned as plain text, never rendered as HTML. In typed long answers, angle brackets such as `x < 5 and y > 3` are kept as text. A NUL character (U+0000) anywhere in a request body is refused with `422 validation_failed` and field code `invalid_characters`.
+  - **Platform:** `GET /me`, per-key scopes, [rate limits and daily quotas](/platform/rate-limits), [`Idempotency-Key`](/platform/idempotency) on every `POST`, one [error envelope](/platform/errors) with a `request_id`, and the OpenAPI document at `/v1/openapi.json`.
+</Update>

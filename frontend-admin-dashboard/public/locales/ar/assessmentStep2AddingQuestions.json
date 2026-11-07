@@ -1,0 +1,39 @@
+{
+    "header": {
+        "title": "إضافة أسئلة",
+        "subtitle": "أضف أقسامًا وأسئلة إلى تقييمك. قم بتحميل ورقة أسئلة أو أنشئها يدويًا أو أنشئها باستخدام الذكاء الاصطناعي.",
+        "update": "تحديث",
+        "next": "التالي"
+    },
+    "sectionDefaultName": "القسم {{number}}",
+    "durationSettings": {
+        "title": "إعدادات المدة",
+        "description": "اختر كيفية توزيع الوقت في تقييمك.",
+        "options": {
+            "entireSurvey": "الاستبيان بالكامل",
+            "entireAssessment": "التقييم بالكامل",
+            "sectionWise": "حسب القسم",
+            "questionWise": "حسب السؤال"
+        },
+        "info": {
+            "entireTestSurvey": "حدد وقتًا واحدًا للاستبيان بالكامل.",
+            "entireTestAssessment": "حدد وقتًا واحدًا للتقييم بالكامل.",
+            "sectionWise": "خصص وقتًا محددًا لكل قسم. ستكون المدة الإجمالية للتقييم مجموع أوقات جميع الأقسام.",
+            "questionWise": "حدد حدود وقت فردية لكل سؤال في علامة التبويب الأقسام."
+        },
+        "entireTestDuration": {
+            "label": "مدة الاختبار بالكامل",
+            "placeholderZero": "00",
+            "hrsUnit": "س",
+            "minUnit": "د"
+        }
+    },
+    "addSectionButton": "إضافة قسم",
+    "toasts": {
+        "updateSuccess": "تم تحديث بيانات الخطوة 2 بنجاح!",
+        "saveSuccess": "تم حفظ بيانات الخطوة 2 بنجاح!"
+    },
+    "errors": {
+        "saveFailed": "فشل حفظ الأسئلة."
+    }
+}

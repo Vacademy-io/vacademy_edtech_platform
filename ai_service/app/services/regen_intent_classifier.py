@@ -1,6 +1,7 @@
 """Regen intent classifier — decides between deterministic DOM patch and full LLM remake.
 
-A tiny Gemini Flash call (~$0.0002, ~1s) takes the user's edit instruction
+A tiny classifier call (the 'video' default model, GLM at low effort, with one
+retry on Gemini Flash) takes the user's edit instruction
 plus a compact shot summary (NOT the full HTML — that's what made the regen
 prompt the wrong shape in the first place) and returns structured intent:
 
@@ -26,15 +27,30 @@ from __future__ import annotations
 import json
 import logging
 import re
+import time
+from concurrent.futures import ThreadPoolExecutor, TimeoutError as FutureTimeout
 from typing import Any, Dict, List, Optional
 
 import requests
 
+from ..constants.model_defaults import NON_GLM_FALLBACK
+
 logger = logging.getLogger(__name__)
 
-# Cheap + capable enough for structured classification. NOT the regen-output
-# model — that one is tier-aware. This is always Flash.
-_CLASSIFIER_MODEL = "google/gemini-2.5-flash"
+# The classifier model is the ai_model_defaults 'video' default (GLM), NOT the
+# regen-output model — that one is tier-aware. On a timeout, error or bad JSON
+# it retries once on NON_GLM_FALLBACK. The primary leg gets at most this share
+# of the caller's budget so the retry still fits inside it.
+_PRIMARY_BUDGET_SHARE = 2 / 3
+# The answer is ~150 tokens; GLM's reasoning counts against max_tokens.
+_MAX_TOKENS = 2000
+# Sent explicitly: on the OpenRouter failover leg a payload with no reasoning
+# object runs GLM at its heavy default.
+_REASONING = {"effort": "low"}
+# Each leg runs here so the caller's budget is a hard wall-clock limit, even
+# when post_chat_sync's own gateway failover would double a timeout. A leg
+# abandoned at its deadline finishes on its own within its httpx timeout.
+_POOL = ThreadPoolExecutor(max_workers=8, thread_name_prefix="regen-intent")
 
 # Confidence below which we treat an op as too risky to apply deterministically.
 # Caller falls through to the LLM path for these.
@@ -133,6 +149,42 @@ def build_shot_summary(
     return "\n".join(parts) or "(empty shot summary)"
 
 
+def _request_classification(
+    model: str, user_message: str, openrouter_api_key: str, timeout_s: float
+) -> Dict[str, Any]:
+    """One classifier call → the parsed JSON with a valid `intent` (raises
+    on any failure, so the caller can move to the next model)."""
+    from .llm_router import post_chat_sync
+
+    payload: Dict[str, Any] = {
+        "model": model,
+        "messages": [
+            {"role": "system", "content": _SYSTEM_PROMPT},
+            {"role": "user", "content": user_message},
+        ],
+        "temperature": 0.1,
+        "max_tokens": _MAX_TOKENS,
+        "response_format": {"type": "json_object"},
+    }
+    if model != NON_GLM_FALLBACK:
+        # The Gemini Flash fallback leg sends none, as before: an effort would
+        # turn its thinking on and slow the retry.
+        payload["reasoning"] = dict(_REASONING)
+
+    response = post_chat_sync(api_key=openrouter_api_key, payload=payload, timeout=timeout_s)
+    if response.status_code != 200:
+        raise RuntimeError(f"non-200: {response.status_code} {response.text[:200]}")
+    raw = response.json()["choices"][0]["message"]["content"]
+    parsed = json.loads(_strip_code_fence(raw or ""))
+    if not isinstance(parsed, dict):
+        raise ValueError(f"classifier JSON is not an object: {type(parsed).__name__}")
+    intent = (parsed.get("intent") or "").strip().lower()
+    if intent not in ("targeted_patch", "full_remake"):
+        raise ValueError(f"invalid intent value: {intent!r}")
+    parsed["intent"] = intent
+    return parsed
+
+
 def classify_intent(
     *,
     user_instruction: str,
@@ -140,10 +192,11 @@ def classify_intent(
     openrouter_api_key: str,
     timeout_s: float = 12.0,
 ) -> Optional[Dict[str, Any]]:
-    """Call Flash classifier. Returns parsed dict, or None on any failure.
+    """Call the classifier. Returns parsed dict, or None on any failure.
 
     Caller treats None as "skip the fast path, go straight to LLM regen."
-    Designed to fail closed — a slow/broken classifier never blocks regen.
+    Designed to fail closed — a slow/broken classifier never blocks regen,
+    and both legs together stay inside `timeout_s`.
     """
     if not user_instruction or not user_instruction.strip():
         return None
@@ -157,45 +210,37 @@ def classify_intent(
     )
 
     try:
-        response = requests.post(
-            "https://openrouter.ai/api/v1/chat/completions",
-            headers={
-                "Authorization": f"Bearer {openrouter_api_key}",
-                "Content-Type": "application/json",
-                "HTTP-Referer": "https://vacademy.io",
-            },
-            json={
-                "model": _CLASSIFIER_MODEL,
-                "messages": [
-                    {"role": "system", "content": _SYSTEM_PROMPT},
-                    {"role": "user", "content": user_message},
-                ],
-                "temperature": 0.1,
-                "response_format": {"type": "json_object"},
-            },
-            timeout=timeout_s,
-        )
-    except Exception as e:
-        logger.warning(f"[regen_intent] classifier request failed: {e}")
-        return None
+        from ..constants.models import get_use_case_model_chain
 
-    if response.status_code != 200:
-        logger.warning(
-            f"[regen_intent] classifier non-200: {response.status_code} {response.text[:200]}"
-        )
-        return None
+        chain = get_use_case_model_chain("video")
+    except Exception as e:  # noqa: BLE001
+        logger.warning(f"[regen_intent] model lookup failed ({e}); using {NON_GLM_FALLBACK}")
+        chain = [NON_GLM_FALLBACK]
 
-    try:
-        raw = response.json()["choices"][0]["message"]["content"]
-        parsed = json.loads(_strip_code_fence(raw))
-    except Exception as e:
-        logger.warning(f"[regen_intent] could not parse classifier JSON: {e}")
-        return None
+    deadline = time.monotonic() + timeout_s
+    parsed: Optional[Dict[str, Any]] = None
+    for i, model in enumerate(chain):
+        budget = deadline - time.monotonic()
+        if i == 0 and len(chain) > 1:
+            budget = min(budget, timeout_s * _PRIMARY_BUDGET_SHARE)
+        if budget <= 0:
+            break
+        future = _POOL.submit(_request_classification, model, user_message, openrouter_api_key, budget)
+        try:
+            parsed = future.result(timeout=budget)
+        except FutureTimeout:
+            logger.warning(f"[regen_intent] classifier on {model} timed out after {budget:.1f}s")
+            continue
+        except Exception as e:
+            logger.warning(f"[regen_intent] classifier on {model} failed: {e}")
+            continue
+        if i > 0:
+            logger.info(f"[regen_intent] classified by fallback model {model}")
+        break
 
-    intent = (parsed.get("intent") or "").strip().lower()
-    if intent not in ("targeted_patch", "full_remake"):
-        logger.warning(f"[regen_intent] invalid intent value: {intent!r}")
+    if parsed is None:
         return None
+    intent = parsed["intent"]
 
     ops_in = parsed.get("patch_ops") or []
     ops_out: List[Dict[str, Any]] = []

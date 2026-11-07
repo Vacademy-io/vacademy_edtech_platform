@@ -1,0 +1,21 @@
+{
+    "heading": "Record session",
+    "cancel": "Cancel",
+    "pickOutcomeFirst": "Pick an outcome first",
+    "saving": "Saving…",
+    "save": "Save",
+    "sessionRecorded": "Session recorded",
+    "markedNoShow": "Marked as a no-show",
+    "saveFailed": "Couldn't save this session. Please try again.",
+    "sessionFallback": "Session",
+    "menteeFallback": "your mentee",
+    "withMentee": "with",
+    "whatHappened": "What happened?",
+    "outcomeWentAhead": "It went ahead",
+    "outcomeNoShow": "They didn't show",
+    "topicLabel": "Topic covered (optional)",
+    "topicPlaceholder": "e.g. Rotational motion",
+    "notesLabel": "Notes (optional)",
+    "notesPlaceholder": "Progress, blockers, what to do before the next session…",
+    "notesHelp": "Visible to you and your admins. Never shown to the learner."
+}

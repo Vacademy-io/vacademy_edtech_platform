@@ -1,0 +1,12 @@
+{
+    "header": {
+        "title": "Real-Time Active",
+        "subtitle": "Users currently online"
+    },
+    "stats": {
+        "liveUpdates": "Live updates"
+    },
+    "error": {
+        "widgetName": "real-time active users"
+    }
+}

@@ -1,0 +1,20 @@
+{
+    "coachingDrillIn": {
+        "loading": "جارٍ تحميل التوجيه…",
+        "noAnalyzedCalls": "لا توجد مكالمات محلَّلة بعد — لا يوجد توجيه لهذا الموظف.",
+        "weakestLabel": "الأضعف:",
+        "scoreOutOfTen": "{{score}}/10"
+    },
+    "workPatterns": {
+        "sectionTitle": "أنماط عمل المستشارين",
+        "emptyMessage": "لا يوجد نشاط للمستشارين في هذه الفترة.",
+        "columns": {
+            "counsellor": "المستشار",
+            "leadsDispositioned": "العملاء المحتملون المعالجون",
+            "calls": "المكالمات",
+            "connected": "المتصلة",
+            "reach": "معدل الوصول"
+        },
+        "improveHeading": "ما يمكنهم تحسينه"
+    }
+}

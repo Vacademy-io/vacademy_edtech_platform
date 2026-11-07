@@ -1,0 +1,261 @@
+{
+  "common": {
+    "correct": "सही",
+    "incorrect": "गलत",
+    "skipped": "छोड़ा गया",
+    "notAnswered": "उत्तर नहीं दिया",
+    "download": "डाउनलोड करें",
+    "downloadingEllipsis": "डाउनलोड हो रहा है…",
+    "loadingEllipsis": "लोड हो रहा है…",
+    "tryAgain": "फिर से प्रयास करें",
+    "view": "देखें",
+    "accuracy": "सटीकता",
+    "timeTaken": "लिया गया समय",
+    "you": "आप",
+    "marks": "अंक",
+    "percentile": "पर्सेंटाइल",
+    "excellent": "उत्कृष्ट",
+    "good": "अच्छा",
+    "average": "औसत",
+    "low": "कम",
+    "yourResponse": "आपकी प्रतिक्रिया",
+    "explanation": "व्याख्या",
+    "resultReport": "परिणाम रिपोर्ट",
+    "classAverageValue": "कक्षा का औसत: {{value}}",
+    "studentsCount_one": "{{count}} विद्यार्थी",
+    "studentsCount_other": "{{count}} विद्यार्थी"
+  },
+  "annotatedCopyDialog": {
+    "title": "एनोटेट की गई उत्तर प्रति",
+    "toastError": "एनोटेट की गई प्रति लोड नहीं हो सकी।"
+  },
+  "attemptPapersCard": {
+    "title": "आपके पेपर",
+    "opening": "खोला जा रहा है...",
+    "errors": {
+      "fileUnavailable": "यह फ़ाइल अब उपलब्ध नहीं है।",
+      "popupBlocked": "आपके ब्राउज़र ने पॉप-अप को ब्लॉक कर दिया। इस साइट के लिए पॉप-अप की अनुमति दें और फिर से प्रयास करें।",
+      "openFailed": "यह फ़ाइल नहीं खोली जा सकी। कृपया फिर से प्रयास करें।"
+    }
+  },
+  "evaluatedReportDialog": {
+    "defaultTitle": "मूल्यांकित उत्तर",
+    "downloadError": "फ़ाइल डाउनलोड नहीं हो सकी।",
+    "evaluatorRemark": "मूल्यांकनकर्ता की टिप्पणी"
+  },
+  "comparisonDashboard": {
+    "errors": {
+      "fileNotAvailable": "फ़ाइल उपलब्ध नहीं है।",
+      "openFileFailed": "फ़ाइल नहीं खोली जा सकी।",
+      "downloadReportFailed": "रिपोर्ट डाउनलोड नहीं हो सकी।"
+    },
+    "empty": {
+      "title": "अभी तक कोई तुलना डेटा नहीं है",
+      "description": "आपके प्रयास का मूल्यांकन होने और परिणाम जारी होने के बाद बैच तुलना यहाँ दिखाई देगी।",
+      "noQuestionsTitle": "इस सेक्शन में कोई प्रश्न नहीं है",
+      "noQuestionsDescription": "अपने बाकी उत्तरों की समीक्षा के लिए कोई दूसरा सेक्शन टैब चुनें।"
+    },
+    "masthead": {
+      "reportType": "व्यक्तिगत प्रदर्शन रिपोर्ट",
+      "attempted": "{{date}} को प्रयास किया",
+      "submitted": "{{time}} पर सबमिट किया"
+    },
+    "reportOptionsAriaLabel": "रिपोर्ट विकल्प",
+    "menu": {
+      "downloadReport": "रिपोर्ट डाउनलोड करें",
+      "yourSubmission": "आपकी सबमिशन",
+      "viewEvaluated": "मूल्यांकित उत्तर देखें",
+      "viewSubmitted": "सबमिट किया गया उत्तर देखें",
+      "viewResultReport": "परिणाम रिपोर्ट देखें",
+      "viewAnnotatedCopy": "एनोटेट की गई प्रति देखें"
+    },
+    "stats": {
+      "yourScore": "आपका स्कोर",
+      "classRank": "कक्षा में रैंक",
+      "of": "{{count}} में से",
+      "classAccuracy": "कक्षा {{pct}}%",
+      "classDuration": "कक्षा {{duration}}",
+      "highest": "सर्वाधिक",
+      "lowest": "न्यूनतम",
+      "participants": "प्रतिभागी"
+    },
+    "sections": {
+      "whereYouStand": "आप कहाँ खड़े हैं — कुल (कुल {{maxMarks}} में से)",
+      "summaryTitle": "आपके प्रदर्शन का सारांश",
+      "vsClassAverage": "आप बनाम कक्षा का औसत",
+      "sectionWisePerformance": "सेक्शन-वार प्रदर्शन",
+      "marksDistribution": "अंकों का वितरण — सभी विद्यार्थी",
+      "leaderboardPosition": "लीडरबोर्ड — आपकी स्थिति",
+      "reviewAndPractice": "समीक्षा और अभ्यास",
+      "answerReview": "उत्तर समीक्षा",
+      "easyMissesCount": "आसान चूकें — {{count}}",
+      "easyMissesNone": "आसान चूकें — कोई नहीं",
+      "expertiseCount": "आपकी विशेषज्ञता — {{count}}",
+      "expertiseNone": "आपकी विशेषज्ञता — कोई नहीं"
+    },
+    "summary": {
+      "strengthsLead": "आपकी ताकत।",
+      "strengthsText": "{{section}} आपका सबसे अच्छा क्षेत्र है — कक्षा के औसत से लगभग {{delta}} अंक अधिक।",
+      "weaknessLead": "सुधार के लिए मुख्य क्षेत्र।",
+      "weaknessText": "{{section}} — कक्षा के औसत से लगभग {{delta}} अंक कम, इस पेपर में सबसे बड़ा अंतर।",
+      "paceLead": "आपकी गति।",
+      "paceTextAhead": "आपने {{duration}} में परीक्षा पूरी की, जो {{avgDuration}} के कक्षा औसत से तेज़ है।",
+      "paceTextBehind": "आपने {{duration}} में परीक्षा पूरी की, जबकि कक्षा का औसत {{avgDuration}} है।"
+    },
+    "compare": {
+      "you": "आप {{value}}",
+      "avg": "औसत {{value}}"
+    },
+    "leaderboard": {
+      "rankOf": "रैंक #{{rank}}, कुल {{total}} में से",
+      "rank": "रैंक",
+      "student": "विद्यार्थी",
+      "time": "समय"
+    },
+    "review": {
+      "everyQuestionDesc": "आपकी प्रतिक्रिया, सही उत्तर, और बाकी कक्षा ने कैसे उत्तर दिया — हर प्रश्न के साथ।",
+      "viewAnswerReview": "उत्तर समीक्षा देखें",
+      "noEasyMisses": "आपने कोई ऐसा प्रश्न नहीं चूका जिसे अधिकांश कक्षा ने सही उत्तर दिया हो — आपके अंक पेपर के कठिन हिस्से में छूटे।",
+      "noExpertise": "अभी तक कोई ऐसा प्रश्न नहीं है जिसमें आप अधिकांश कक्षा से आगे रहे हों — कठिन सवालों का अभ्यास जारी रखें।",
+      "pctOfClassCorrect": "कक्षा ने सही उत्तर दिया",
+      "moreInAnswerReview": "+ {{count}} और, नीचे उत्तर समीक्षा में",
+      "questionsCount_one": "{{count}} प्रश्न",
+      "questionsCount_other": "{{count}} प्रश्न",
+      "classPctCorrect": "कक्षा का {{pct}}% सही",
+      "yourResponse": "आपकी प्रतिक्रिया",
+      "marksAwardedDirectly": "सीधे दिए गए अंक ({{value}})",
+      "notAttempted": "प्रयास नहीं किया गया",
+      "correctAnswer": "सही उत्तर",
+      "feedback": "फ़ीडबैक",
+      "aiAssistedReviewed": "AI-सहायता प्राप्त, शिक्षक द्वारा समीक्षित",
+      "aiAssisted": "AI-सहायता प्राप्त",
+      "criteria": "मानदंड",
+      "reason": "कारण",
+      "howClassAnswered": "कक्षा ने कैसे उत्तर दिया"
+    }
+  },
+  "marksBreakdown": {
+    "partiallyCorrect": "आंशिक रूप से सही",
+    "wrongResponse": "गलत उत्तर"
+  },
+  "marksChip": {
+    "markLabel_one": "अंक",
+    "markLabel_other": "अंक"
+  },
+  "marksDistributionChart": {
+    "yourScoreRange": "आपकी स्कोर रेंज",
+    "restOfBatch": "बाकी बैच"
+  },
+  "pdfDownloadButton": {
+    "downloading": "डाउनलोड हो रहा है...",
+    "downloadFailed": "डाउनलोड विफल",
+    "downloadPdf": "PDF डाउनलोड करें"
+  },
+  "performanceBand": {
+    "tooltip": {
+      "classTopper": "कक्षा में टॉपर: {{value}}",
+      "you": "आप: {{value}}"
+    },
+    "legend": {
+      "classAverage": "कक्षा का औसत",
+      "classTopper": "कक्षा का टॉपर"
+    }
+  },
+  "pieChart": {
+    "noData": "पाई चार्ट के लिए कोई डेटा उपलब्ध नहीं है"
+  },
+  "questionResponseRenderer": {
+    "noResponse": "कोई प्रतिक्रिया नहीं",
+    "noOptionSelected": "कोई विकल्प नहीं चुना गया",
+    "noOptionsSelected": "कोई विकल्प नहीं चुने गए",
+    "hiddenWord": "छिपा हुआ",
+    "sampleWord": "नमूना",
+    "testsFraction": "{{passed}}/{{total}} टेस्ट",
+    "scorePts": "· {{score}} अंक",
+    "pasteAttempts_one": "{{count}} पेस्ट प्रयास",
+    "pasteAttempts_other": "{{count}} पेस्ट प्रयास",
+    "testCasesPassed": "उत्तीर्ण टेस्ट केस:",
+    "sampleFraction": "नमूना: {{passed}}/{{total}}",
+    "timeTakenLabel": "लिया गया समय:",
+    "msValue": "{{value}} ms",
+    "msAllowed": "/ {{value}} ms की अनुमति है",
+    "memoryLabel": "मेमोरी:",
+    "kbValue": "{{value}} KB",
+    "kbAllowed": "/ {{value}} KB की अनुमति है",
+    "showSourceCode": "सबमिट किया गया सोर्स कोड दिखाएँ",
+    "testCasesHeading": "टेस्ट केस",
+    "testNumber": "टेस्ट {{number}}",
+    "hiddenParenthetical": "(छिपा हुआ)",
+    "noCorrectAnswerProvided": "कोई सही उत्तर नहीं दिया गया",
+    "noAnswerProvided": "कोई उत्तर नहीं दिया गया",
+    "noCorrectOptionsProvided": "कोई सही विकल्प नहीं दिए गए",
+    "codingTestCaseSummary": "{{visible}} दिखने वाले + {{hidden}} छिपे टेस्ट केस — प्रतिक्रिया पैनल में परिणाम देखें।",
+    "errorDisplayingResponse": "प्रतिक्रिया दिखाने में त्रुटि",
+    "errorDisplayingCorrectAnswer": "सही उत्तर दिखाने में त्रुटि"
+  },
+  "responseBreakdown": {
+    "errorDisplayingResponseWithError": "प्रतिक्रिया दिखाने में त्रुटि: {{error}}",
+    "errorDisplayingCorrectAnswerWithError": "सही उत्तर दिखाने में त्रुटि: {{error}}"
+  },
+  "sectionComparisonTable": {
+    "section": "सेक्शन",
+    "yourMarks": "आपके अंक",
+    "total": "कुल",
+    "classAvg": "कक्षा औसत",
+    "classMax": "कक्षा में उच्चतम",
+    "cutOff": "कट-ऑफ",
+    "status": "स्थिति",
+    "pass": "उत्तीर्ण",
+    "fail": "अनुत्तीर्ण"
+  },
+  "surveyReportDialog": {
+    "title": "सर्वे रिपोर्ट",
+    "responseNotAvailable": "प्रतिक्रिया उपलब्ध नहीं है",
+    "errorParsingResponse": "प्रतिक्रिया पार्स करने में त्रुटि",
+    "noSurveyData": "कोई सर्वे डेटा उपलब्ध नहीं है"
+  },
+  "testReportDialog": {
+    "navHeadingReport": "रिपोर्ट",
+    "attemptDate": "प्रयास की तारीख़",
+    "duration": "अवधि",
+    "startTime": "प्रारंभ समय",
+    "endTime": "समाप्ति समय",
+    "subjectLabel": "{{subject}}: {{name}}",
+    "papers": {
+      "answerSheetLabel": "आपकी उत्तर पुस्तिका",
+      "answerSheetDescription": "आपके द्वारा जमा किया गया पेपर, जैसा आपके संस्थान ने स्कैन किया।",
+      "checkedCopyLabel": "जाँची गई प्रति",
+      "checkedCopyDescription": "मूल्यांकनकर्ता के अंकों और टिप्पणियों सहित आपकी उत्तर पुस्तिका।",
+      "resultReportDescription": "आपके संस्थान द्वारा तैयार परिणाम रिपोर्ट।"
+    },
+    "yourScore": "आपका स्कोर",
+    "marksFraction": "{{achieved}} / {{total}} अंक",
+    "veryGood": "बहुत अच्छा",
+    "needsImprovement": "सुधार की आवश्यकता है",
+    "classRank": "कक्षा रैंक",
+    "notAvailable": "उपलब्ध नहीं",
+    "topPercentile": "शीर्ष {{pct}}% पर्सेंटाइल",
+    "quickStats": "त्वरित आँकड़े",
+    "performanceAnalytics": "प्रदर्शन विश्लेषण",
+    "performanceAnalyticsDesc": "आपकी प्रतिक्रियाओं और अंकों का विस्तृत विवरण",
+    "responseBreakdown": "प्रतिक्रिया विवरण",
+    "attemptedCount": "प्रयास किया गया: {{count}}",
+    "skippedCount": "छोड़ा गया: {{count}}",
+    "marksBreakdown": "अंकों का विवरण",
+    "partial": "आंशिक",
+    "marksAwardedWithPlus": "{{count}} (+{{marks}})",
+    "marksAwardedPlain": "{{count}} ({{marks}})",
+    "answerReview": "उत्तर समीक्षा",
+    "answerReviewDesc": "आपकी प्रतिक्रियाओं का विस्तृत विश्लेषण",
+    "sectionTotal": "सेक्शन कुल: {{marks}} अंक",
+    "questionNumber": "प्रश्न {{number}}",
+    "correctAnswerLabel": "सही उत्तर",
+    "evaluatorFeedback": "मूल्यांकनकर्ता की प्रतिक्रिया",
+    "noQuestionsAvailable": "समीक्षा के लिए कोई प्रश्न उपलब्ध नहीं है",
+    "exporting": "निर्यात हो रहा है...",
+    "exportReport": "रिपोर्ट निर्यात करें",
+    "viewEvaluatedCopy": "मूल्यांकित प्रति देखें",
+    "close": "बंद करें",
+    "evaluatedFileName": "मूल्यांकित फ़ाइल.pdf"
+  }
+}

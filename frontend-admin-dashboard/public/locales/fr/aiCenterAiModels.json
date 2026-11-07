@@ -1,0 +1,29 @@
+{
+    "models": {
+        "glm53Flash": {
+            "name": "GLM 5.3 Flash",
+            "description": "Z.ai — recommandé, lit l'écriture manuscrite"
+        },
+        "claudeOpus45": {
+            "name": "Claude Opus 4.5",
+            "description": "Anthropic"
+        },
+        "gemini3ProPreview": {
+            "name": "Gemini 3 Pro Preview",
+            "description": "Google"
+        },
+        "gemini31ProPreview": {
+            "name": "Gemini 3.1 Pro Preview",
+            "description": "Google"
+        },
+        "gpt54": {
+            "name": "GPT-5.4",
+            "description": "OpenAI"
+        }
+    },
+    "fallbackDescription": "Modèle d'IA",
+    "platformDefault": {
+        "name": "Valeur par défaut de la plateforme",
+        "description": "recommandé — le modèle choisi par l'administrateur de la plateforme pour la correction des copies"
+    }
+}

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Check, CircleNotch } from '@phosphor-icons/react';
+import { Check, CircleNotch, CaretDown } from '@phosphor-icons/react';
 import { toast } from 'sonner';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { LeadStatusChip } from '@/components/shared/lead-status-chip';
@@ -17,6 +17,8 @@ interface LeadStatusSelectProps {
     /** Called after a successful update so the caller can refetch its list. */
     onUpdated?: () => void;
     size?: 'sm' | 'md';
+    /** Show a ▾ after the chip so it reads as a dropdown. */
+    caret?: boolean;
 }
 
 /**
@@ -30,6 +32,7 @@ export function LeadStatusSelect({
     statuses,
     onUpdated,
     size = 'sm',
+    caret = false,
 }: LeadStatusSelectProps) {
     const [open, setOpen] = useState(false);
     const [isUpdating, setIsUpdating] = useState(false);
@@ -93,6 +96,7 @@ export function LeadStatusSelect({
                             Set status
                         </span>
                     )}
+                    {caret && !isUpdating && <CaretDown className="size-3 text-neutral-400" />}
                     {isUpdating && <CircleNotch className="size-3 animate-spin text-neutral-400" />}
                 </button>
             </PopoverTrigger>

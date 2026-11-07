@@ -1,0 +1,108 @@
+---
+title: "Cursor"
+description: "Add your institute's server to Cursor's mcp.json, sign in on your admin portal, and use the tools from the Agent."
+icon: "arrow-pointer"
+---
+
+Cursor connects to Vacademy MCP as a remote server. You add the server URL to Cursor's MCP settings file and sign in through your browser.
+
+The hint in your admin portal mentions `claude mcp add`. That command is for Claude Code. Cursor uses `mcp.json`, as shown here.
+
+<Note>
+Menus may move. These steps match Cursor's MCP documentation as of October 2026. See [Model Context Protocol in Cursor](https://cursor.com/docs/context/mcp).
+</Note>
+
+## Add the server
+
+Copy the server URL from **Settings → MCP Server** in your admin portal. Then add it to one of Cursor's `mcp.json` files:
+
+| File | Use it for |
+| :--- | :--- |
+| `~/.cursor/mcp.json` | You, in every project |
+| `.cursor/mcp.json` in a project | Everyone working in that project |
+
+```json ~/.cursor/mcp.json
+{
+  "mcpServers": {
+    "vacademy": {
+      "url": "https://<your backend>/ai-service/mcp/i/<institute_id>"
+    }
+  }
+}
+```
+
+If the file already has other servers, add the `vacademy` entry next to them inside `mcpServers`.
+
+The file holds only the URL, never a token, so a project file is safe to commit. Each person still signs in as themselves.
+
+## Sign in
+
+<Steps>
+  <Step title="Open the server in Cursor">
+    Cursor picks up the new server. Find it where Cursor lists MCP servers (at the time of writing, **Customize** in the sidebar) and make sure it is enabled.
+  </Step>
+  <Step title="Approve in your browser">
+    When Cursor starts the sign-in, a browser tab opens on **your institute's admin portal**. Sign in with your own account and click **Approve**.
+  </Step>
+  <Step title="Check the connection">
+    In the Agent chat, ask:
+
+    ```text
+    Who am I connected as?
+    ```
+
+    Cursor calls the `whoami` tool to answer. In Cursor's MCP settings, the server should show its tools. Only `whoami`? Every area is Off for your role.
+  </Step>
+</Steps>
+
+No client ID is needed. Cursor registers itself.
+
+## Approvals
+
+By default, Cursor asks before each MCP tool runs. Keep it that way for edit tools. If you use an auto-approve or allowlist mode, allow only tools that read.
+
+On top of Cursor's approval, live edits that are turned on separately (opt-in), and anything that contacts a lead, show a preview and wait for your yes in the chat. A few edits apply directly: invite page and form edits (Courses Edit), and a course's images or intro video. See [Confirmations](/mcp-server/usage/confirmations) and [Risk levels](/mcp-server/settings/risk-levels).
+
+## Good uses in Cursor
+
+Cursor is handy when you have files open, such as a design export, a syllabus or a CSV.
+
+```text
+Using the HTML in ./landing/index.html, add it as a page on our website as a draft and wire its enquiry button to the "Open Day 2026" lead campaign.
+```
+
+```text
+Create a WhatsApp follow-up automation for new enquiries, as a draft. Use our existing templates if one fits.
+```
+
+## Using a fixed client ID
+
+Only needed if your organisation requires every app to use a pre-registered client.
+
+<Steps>
+  <Step title="Admin: create a client ID for Cursor">
+    In **Settings → MCP Server → Client IDs for other apps**, click **Add a client ID for another app**. Name it *Cursor* and add Cursor's redirect URLs, separated by a comma:
+
+    ```text
+    http://localhost:8787/callback, https://www.cursor.com/agents/mcp/oauth/callback
+    ```
+
+    Cursor documents these two addresses (the desktop app and Cursor's web agents). Check Cursor's MCP docs in case they have changed.
+  </Step>
+  <Step title="Add the client ID to mcp.json">
+    ```json ~/.cursor/mcp.json
+    {
+      "mcpServers": {
+        "vacademy": {
+          "url": "https://<your backend>/ai-service/mcp/i/<institute_id>",
+          "auth": {
+            "CLIENT_ID": "<client id>"
+          }
+        }
+      }
+    }
+    ```
+
+    There is no client secret.
+  </Step>
+</Steps>

@@ -1,0 +1,21 @@
+{
+    "pageTitle": "Bulk Content Upload",
+    "pageDescription": "Upload a zip of folders and files into a course in one go.",
+    "tabs": {
+        "single": "Single {{term}}",
+        "multiple": "Multiple {{term}}",
+        "csv": "By spreadsheet (CSV)"
+    },
+    "multi": {
+        "heading": "One zip, many {{term}}",
+        "description": "Name each top-level folder after a {{term}}. The content inside is matched to that {{term}}'s existing structure automatically — you'll review everything before anything is uploaded."
+    },
+    "single": {
+        "heading": "Where should this content go?",
+        "description": "Pick the {{term}} (and batch) this zip belongs to. The folder structure inside the zip becomes the {{term}} structure."
+    },
+    "selectPlaceholder": "Select {{term}}",
+    "searchPlaceholder": "Search {{term}}…",
+    "noneFound": "No {{term}} found.",
+    "pickersEmptyState": "Select a {{course}}, {{session}} and {{level}} to start uploading."
+}

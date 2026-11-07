@@ -1,0 +1,39 @@
+{
+    "header": {
+        "title": "Ajouter des questions",
+        "subtitle": "Ajoutez des sections et des questions à votre évaluation. Importez un sujet, créez-le manuellement ou générez-le avec l'IA.",
+        "update": "Mettre à jour",
+        "next": "Suivant"
+    },
+    "sectionDefaultName": "Section {{number}}",
+    "durationSettings": {
+        "title": "Paramètres de durée",
+        "description": "Choisissez comment le temps est réparti dans votre évaluation.",
+        "options": {
+            "entireSurvey": "Sondage entier",
+            "entireAssessment": "Évaluation entière",
+            "sectionWise": "Par section",
+            "questionWise": "Par question"
+        },
+        "info": {
+            "entireTestSurvey": "Définissez une seule limite de temps pour l'ensemble du sondage.",
+            "entireTestAssessment": "Définissez une seule limite de temps pour l'ensemble de l'évaluation.",
+            "sectionWise": "Attribuez une durée spécifique à chaque section. La durée totale de l'évaluation correspondra à la somme des durées de toutes les sections.",
+            "questionWise": "Définissez des limites de temps individuelles pour chaque question dans l'onglet Sections."
+        },
+        "entireTestDuration": {
+            "label": "Durée totale du test",
+            "placeholderZero": "00",
+            "hrsUnit": "h",
+            "minUnit": "min"
+        }
+    },
+    "addSectionButton": "Ajouter une section",
+    "toasts": {
+        "updateSuccess": "Les données de l'étape 2 ont été mises à jour avec succès !",
+        "saveSuccess": "Les données de l'étape 2 ont été enregistrées avec succès !"
+    },
+    "errors": {
+        "saveFailed": "Échec de l'enregistrement des questions."
+    }
+}

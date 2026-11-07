@@ -1,0 +1,148 @@
+{
+    "pageTitle": "حضور الحصص المباشرة",
+    "pageDescription": "تتبع وإدارة حضور الطلاب للحصص المباشرة",
+    "navHeading": "متتبع الحضور",
+    "duration": {
+        "minutes": "{{count}} د",
+        "hoursOnly": "{{count}} س",
+        "hoursMinutes": "{{hours}} س {{minutes}} د"
+    },
+    "time": {
+        "am": "ص",
+        "pm": "م"
+    },
+    "sessionColumns": {
+        "class": "الحصة",
+        "date": "التاريخ",
+        "time": "الوقت",
+        "status": "الحالة"
+    },
+    "status": {
+        "present": "حاضر",
+        "absent": "غائب"
+    },
+    "modal": {
+        "loadingAttendance": "جارٍ تحميل الحضور…",
+        "classAttendanceTitle": "{{name}} - حضور الحصص",
+        "attendanceLabel": "الحضور",
+        "totalClasses": "إجمالي الحصص",
+        "noSessions": "لم يتم العثور على جلسات لهذا المتعلم",
+        "classCount_zero": "لا حصص",
+        "classCount_one": "حصة واحدة",
+        "classCount_two": "حصتان",
+        "classCount_few": "{{count}} حصص",
+        "classCount_many": "{{count}} حصة",
+        "classCount_other": "{{count}} حصة"
+    },
+    "exportButton": {
+        "exporting": "جارٍ التصدير...",
+        "export": "تصدير CSV"
+    },
+    "filters": {
+        "searchLabel": "بحث",
+        "searchPlaceholder": "ابحث عن الطلاب...",
+        "clearFilters": "مسح الفلاتر",
+        "allBatches": "جميع الدفعات",
+        "selectLabel": "اختر {{term}}"
+    },
+    "studentsCount": {
+        "loading": "جارٍ تحميل الطلاب...",
+        "showing": "عرض",
+        "of": "من",
+        "students_zero": "لا طلاب",
+        "students_one": "طالب",
+        "students_two": "طالبان",
+        "students_few": "طلاب",
+        "students_many": "طالبًا",
+        "students_other": "طالب"
+    },
+    "errors": {
+        "title": "خطأ في تحميل بيانات الحضور",
+        "description": "يرجى تحديث الصفحة أو تعديل الفلاتر"
+    },
+    "empty": {
+        "title": "لم يتم العثور على طلاب",
+        "description": "حاول تعديل بحثك أو معايير الفلترة",
+        "clearAll": "مسح جميع الفلاتر"
+    },
+    "bulk": {
+        "selected": "محدد",
+        "reset": "إعادة تعيين",
+        "exportAccountDetails": "تصدير تفاصيل الحساب",
+        "exportData": "تصدير البيانات",
+        "bulkActions": "إجراءات جماعية"
+    },
+    "exportDialog": {
+        "heading": "تصدير حضور CSV",
+        "cancel": "إلغاء",
+        "downloadCsv": "تنزيل CSV",
+        "description": "اختر سجلات الحضور المراد تضمينها في التصدير.",
+        "scope": {
+            "both": {
+                "label": "الحاضرون والغائبون",
+                "desc": "تضمين الحصص التي تم حضورها وتفويتها (افتراضي)"
+            },
+            "present": {
+                "label": "الحاضرون فقط",
+                "desc": "الحصص التي حضرها المتعلم فقط"
+            },
+            "absent": {
+                "label": "الغائبون فقط",
+                "desc": "الحصص التي فوّتها المتعلم فقط"
+            }
+        }
+    },
+    "table": {
+        "detailsHeader": "التفاصيل",
+        "viewDetails": "عرض تفاصيل المتعلم",
+        "learnerName": "اسم المتعلم",
+        "sortLearnerName": "ترتيب حسب اسم المتعلم",
+        "username": "اسم المستخدم",
+        "mobileNumber": "رقم الجوال",
+        "email": "البريد الإلكتروني",
+        "avgDuration": "متوسط المدة",
+        "liveClassesAttendance": "الحصص المباشرة والحضور",
+        "attended": "حضر",
+        "viewMore": "عرض المزيد"
+    },
+    "toasts": {
+        "accountDetailsSuccess": "تم تصدير تفاصيل الحساب بنجاح",
+        "accountDetailsFailure": "فشل تصدير تفاصيل الحساب",
+        "fullDataSuccess": "تم تصدير بيانات الحضور بنجاح",
+        "fullDataFailure": "فشل تصدير بيانات الحضور"
+    },
+    "csv": {
+        "name": "الاسم",
+        "email": "البريد الإلكتروني",
+        "mobileNumber": "رقم الجوال",
+        "enrollmentNumber": "رقم التسجيل",
+        "course": "الدورة",
+        "gender": "الجنس",
+        "enrollmentStatus": "حالة التسجيل",
+        "attendancePercent": "نسبة الحضور %",
+        "classesAttended": "الحصص المحضورة",
+        "avgDuration": "متوسط المدة"
+    },
+    "dateFilter": {
+        "label": "نطاق التاريخ",
+        "custom": "مخصص",
+        "pickCustomRange": "اختر نطاقًا مخصصًا",
+        "days_zero": "لا أيام",
+        "days_one": "يوم واحد",
+        "days_two": "يومان",
+        "days_few": "{{count}} أيام",
+        "days_many": "{{count}} يومًا",
+        "days_other": "{{count}} يوم"
+    },
+    "batchDropdown": {
+        "clearCount": "مسح ({{count}})",
+        "searchPlaceholder": "بحث...",
+        "noBatchesFound": "لم يتم العثور على دفعات",
+        "batchesSelected_zero": "لا دفعات محددة",
+        "batchesSelected_one": "دفعة واحدة محددة",
+        "batchesSelected_two": "دفعتان محددتان",
+        "batchesSelected_few": "{{count}} دفعات محددة",
+        "batchesSelected_many": "{{count}} دفعة محددة",
+        "batchesSelected_other": "{{count}} دفعة محددة"
+    }
+}

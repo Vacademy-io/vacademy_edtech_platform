@@ -1,6 +1,7 @@
 import { Badge } from '@/components/ui/badge';
 import { TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { PaginatedResponse } from '@/types/assessments/question-paper-template';
+import { useTranslation } from 'react-i18next';
 
 export const TabListComponent = ({
     selectedTab,
@@ -11,6 +12,7 @@ export const TabListComponent = ({
     questionPaperList: PaginatedResponse;
     questionPaperFavouriteList: PaginatedResponse | null;
 }) => {
+    const { t } = useTranslation('assessmentTabListComponent');
     return (
         <TabsList className="inline-flex h-auto justify-start gap-4 rounded-none border-b !bg-transparent p-0">
             <TabsTrigger
@@ -21,9 +23,11 @@ export const TabListComponent = ({
                         : 'border-none bg-transparent'
                 }`}
             >
-                <span className={`${selectedTab === 'All' ? 'text-primary-500' : ''}`}>All</span>
+                <span className={`${selectedTab === 'All' ? 'text-primary-500' : ''}`}>
+                    {t('all')}
+                </span>
                 <Badge
-                    className="rounded-[10px] bg-primary-500 p-0 px-2 text-[9px] text-white"
+                    className="rounded-lg bg-primary-500 p-0 px-2 text-2xs text-white"
                     variant="outline"
                 >
                     {questionPaperList.total_elements}
@@ -38,10 +42,10 @@ export const TabListComponent = ({
                 }`}
             >
                 <span className={`${selectedTab === 'Favourites' ? 'text-primary-500' : ''}`}>
-                    Favourites
+                    {t('favourites')}
                 </span>
                 <Badge
-                    className="rounded-[10px] bg-primary-500 p-0 px-2 text-[9px] text-white"
+                    className="rounded-lg bg-primary-500 p-0 px-2 text-2xs text-white"
                     variant="outline"
                 >
                     {questionPaperFavouriteList?.content?.length ?? 0}

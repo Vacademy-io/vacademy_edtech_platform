@@ -35,18 +35,20 @@ const splitCsv = (value: string): string[] =>
         .map((part) => part.trim())
         .filter(Boolean);
 
+const optionValueOf = (option: unknown): string => {
+    if (typeof option === 'string' || typeof option === 'number') return String(option);
+    if (option && typeof option === 'object') {
+        const record = option as Record<string, unknown>;
+        const value = record.value ?? record.label ?? record.name;
+        return value === undefined || value === null ? '' : String(value);
+    }
+    return '';
+};
+
 const fromParsed = (parsed: unknown): string[] => {
     if (Array.isArray(parsed)) {
         return parsed
-            .map((option) => {
-                if (typeof option === 'string' || typeof option === 'number') return String(option);
-                if (option && typeof option === 'object') {
-                    const record = option as Record<string, unknown>;
-                    const value = record.value ?? record.label ?? record.name;
-                    return value === undefined || value === null ? '' : String(value);
-                }
-                return '';
-            })
+            .map(optionValueOf)
             .map((value) => value.trim())
             .filter(Boolean);
     }
@@ -104,17 +106,57 @@ export const configHoldsOptions = (config?: string | null): boolean => {
     }
 };
 
+/**
+ * Options with the parent value each one belongs to. A dependent (cascading)
+ * dropdown stores `{"options":[{"value":"PDF Query","parent":"Banking"}, …],
+ * "parentFieldKey":"…"}`; an option without `parent` shows for every parent
+ * value. Every other shape carries no parents and reads exactly as
+ * `parseFieldOptions` does.
+ */
+const parseOptionEntries = (config?: string | null): Array<{ value: string; parent?: string }> => {
+    const raw = typeof config === 'string' ? config.trim() : '';
+    if (!raw) return [];
+    try {
+        const parsed = JSON.parse(raw);
+        const list = Array.isArray(parsed)
+            ? parsed
+            : parsed && typeof parsed === 'object' && Array.isArray(parsed.options)
+              ? (parsed.options as unknown[])
+              : null;
+        if (list) {
+            return list
+                .map((option) => {
+                    const parent =
+                        option && typeof option === 'object'
+                            ? (option as Record<string, unknown>).parent
+                            : undefined;
+                    return {
+                        value: optionValueOf(option).trim(),
+                        ...(typeof parent === 'string' && parent.trim()
+                            ? { parent: parent.trim() }
+                            : {}),
+                    };
+                })
+                .filter((entry) => entry.value);
+        }
+    } catch {
+        // Not JSON — handled by the legacy path below.
+    }
+    return parseFieldOptions(config).map((value) => ({ value }));
+};
+
 /** Options shaped for the campaign form's field array. */
 export const parseFieldOptionsForForm = (
     config: string | null | undefined,
     idPrefix: string | number,
     disabled = true
-): Array<{ id: string; value: string; disabled?: boolean }> | undefined => {
-    const values = parseFieldOptions(config);
-    if (values.length === 0) return undefined;
-    return values.map((value, index) => ({
+): Array<{ id: string; value: string; parent?: string; disabled?: boolean }> | undefined => {
+    const entries = parseOptionEntries(config);
+    if (entries.length === 0) return undefined;
+    return entries.map(({ value, parent }, index) => ({
         id: `${idPrefix}_opt_${index}`,
         value,
+        ...(parent ? { parent } : {}),
         ...(disabled ? { disabled: true } : {}),
     }));
 };

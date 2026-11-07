@@ -1,0 +1,10 @@
+{
+    "courseSettings": "Course settings",
+    "passwordsWillBeReset": "Existing LMS users' passwords will be reset on enrolment for this course.",
+    "existingUsersLeftUntouched": "Existing LMS users will be left untouched for this course.",
+    "couldNotSaveSetting": "Couldn't save the setting. Please try again.",
+    "existingLmsUsers": "Existing LMS users",
+    "resetPasswordOnEnrolment": "Reset their password on enrolment",
+    "resetPasswordDescription": "When someone enrols and already has an account on the connected LMS, overwrite that account's password with the one from here. Leave this off to enrol them into the course without changing the password they already have — the safe choice for a migration, where existing accounts must not be disturbed.",
+    "emailUnchangedDescription": "Their email is how the LMS account is found, so it is never changed. Only the password is overwritten — their name and other profile details are left as-is."
+}

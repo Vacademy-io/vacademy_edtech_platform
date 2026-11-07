@@ -1,7 +1,7 @@
 import { LayoutContainer } from '@/components/common/layout-container/layout-container';
 import { createLazyFileRoute, useNavigate } from '@tanstack/react-router';
 import { Helmet } from 'react-helmet';
-import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useId, useMemo, useCallback, useRef } from 'react';
 import { MyButton } from '@/components/design-system/button';
 import {
     ArrowLeft,
@@ -26,6 +26,7 @@ import {
     Upload,
 } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { useTranslation } from 'react-i18next';
 import {
     Accordion,
     AccordionContent,
@@ -191,6 +192,7 @@ const SortableSessionItem = ({
     setEditSessionTitle,
     children,
 }: SortableSessionItemProps) => {
+    const { t } = useTranslation('studyLibraryCourseOutlineViewer');
     const isEditing = editingSessionId === session.sessionId;
     const {
         attributes,
@@ -259,7 +261,7 @@ const SortableSessionItem = ({
                                             onStartEdit(session.sessionId, session.sessionTitle);
                                         }}
                                         className="rounded p-1 text-xs text-indigo-600 hover:bg-indigo-50 opacity-0 group-hover:opacity-100 transition-opacity"
-                                        title="Edit"
+                                        title={t('session.edit')}
                                     >
                                         <Edit2 className="h-3.5 w-3.5" />
                                     </button>
@@ -269,7 +271,7 @@ const SortableSessionItem = ({
                                             onDelete(session.sessionId);
                                         }}
                                         className="rounded p-1 text-xs text-red-600 hover:bg-red-50 opacity-0 group-hover:opacity-100 transition-opacity"
-                                        title="Delete"
+                                        title={t('session.delete')}
                                     >
                                         <Trash2 className="h-3.5 w-3.5" />
                                     </button>
@@ -283,7 +285,7 @@ const SortableSessionItem = ({
                                             handleSaveEdit();
                                         }}
                                         className="rounded p-1 text-xs text-indigo-600 hover:bg-indigo-50"
-                                        title="Save"
+                                        title={t('session.save')}
                                     >
                                         <CheckCircle className="h-3.5 w-3.5" />
                                     </button>
@@ -293,14 +295,14 @@ const SortableSessionItem = ({
                                             onCancelEdit();
                                         }}
                                         className="rounded p-1 text-xs text-neutral-600 hover:bg-neutral-100"
-                                        title="Cancel"
+                                        title={t('session.cancel')}
                                     >
                                         <X className="h-3.5 w-3.5" />
                                     </button>
                                 </div>
                             )}
                             <div className="text-xs text-neutral-500">
-                                {completedCount}/{session.slides.length} pages
+                                {t('session.pagesProgress', { completed: completedCount, count: session.slides.length })}
                             </div>
                             {session.progress < 100 && (
                                 <CircularProgress value={session.progress} size={32} strokeWidth={3} />
@@ -377,6 +379,7 @@ const processDocumentContent = (content: string): string => {
 };
 
 const SortableSlideItem = React.memo(({ slide, onEdit, onDelete, getSlideIcon, onRegenerate, onContentEdit }: SortableSlideItemProps) => {
+    const { t } = useTranslation('studyLibraryCourseOutlineViewer');
     const [isEditing, setIsEditing] = useState(false);
     const [editValue, setEditValue] = useState(slide.slideTitle);
     const [codeContent, setCodeContent] = useState('');
@@ -390,6 +393,12 @@ const SortableSlideItem = React.memo(({ slide, onEdit, onDelete, getSlideIcon, o
     const [uploadedVideoFile, setUploadedVideoFile] = useState<File | null>(null);
     const [uploadedVideoUrl, setUploadedVideoUrl] = useState<string>('');
     const fileInputRef = useRef<HTMLInputElement>(null);
+
+    /* Radio groups are document-wide: every completed slide renders its quiz
+     * editor at once, so a bare `correct-${qIndex}` made question 1 of slide A
+     * and question 1 of slide B one group — picking an answer in one silently
+     * unchecked the other. Scope the group to this slide's component instance. */
+    const quizGroupId = useId();
 
     const {
         attributes,
@@ -666,7 +675,7 @@ const SortableSlideItem = React.memo(({ slide, onEdit, onDelete, getSlideIcon, o
 
     const renderSlideContent = () => {
         if (!slide.content) {
-            return <div className="text-center text-neutral-500 py-8">No content available</div>;
+            return <div className="text-center text-neutral-500 py-8">{t('slide.noContent')}</div>;
         }
 
         const { slideType, content } = slide;
@@ -886,7 +895,7 @@ const SortableSlideItem = React.memo(({ slide, onEdit, onDelete, getSlideIcon, o
                             onContentEdit(slide.id, updatedContent);
                         }
                     } else {
-                        alert('Please select a video file');
+                        alert(t('slide.selectVideoFileAlert'));
                     }
                 }
                 // Reset input
@@ -911,16 +920,16 @@ const SortableSlideItem = React.memo(({ slide, onEdit, onDelete, getSlideIcon, o
                                 <div className="bg-neutral-100 px-4 py-2 border-b flex items-center justify-between flex-shrink-0">
                                     <div className="flex items-center gap-2">
                                         <Code className="h-4 w-4 text-green-600" />
-                                        <span className="text-sm font-semibold">Code Editor</span>
+                                        <span className="text-sm font-semibold">{t('slide.codeEditor')}</span>
                                     </div>
                                     {onRegenerate && (
                                         <button
                                             onClick={() => onRegenerate(slide.id, 'code')}
                                             className="rounded p-1.5 text-xs text-indigo-600 hover:bg-indigo-50 transition-colors flex items-center gap-1"
-                                            title="Regenerate Code"
+                                            title={t('slide.regenerateCode')}
                                         >
                                             <RefreshCw className="h-3.5 w-3.5" />
-                                            <span>Regenerate</span>
+                                            <span>{t('slide.regenerate')}</span>
                                         </button>
                                     )}
                                 </div>
@@ -953,13 +962,13 @@ const SortableSlideItem = React.memo(({ slide, onEdit, onDelete, getSlideIcon, o
                                 <div className="bg-neutral-100 px-4 py-2 border-b flex items-center justify-between flex-shrink-0">
                                     <div className="flex items-center gap-2">
                                         <Video className="h-4 w-4 text-red-600" />
-                                        <span className="text-sm font-semibold">Video Player</span>
+                                        <span className="text-sm font-semibold">{t('slide.videoPlayer')}</span>
                                     </div>
                                     <div className="flex items-center gap-2">
                                         <button
                                             onClick={handleUploadClick}
                                             className="rounded p-1.5 text-xs text-indigo-600 hover:bg-indigo-50 transition-colors flex items-center gap-1"
-                                            title="Upload Video from Device"
+                                            title={t('slide.uploadVideoFromDevice')}
                                         >
                                             <Upload className="h-3.5 w-3.5" />
                                         </button>
@@ -973,7 +982,7 @@ const SortableSlideItem = React.memo(({ slide, onEdit, onDelete, getSlideIcon, o
                                         <button
                                             onClick={handleOpenVideoUrlDialog}
                                             className="rounded p-1.5 text-xs text-indigo-600 hover:bg-indigo-50 transition-colors flex items-center gap-1"
-                                            title="Add Video URL"
+                                            title={t('slide.addVideoUrl')}
                                         >
                                             <Link className="h-3.5 w-3.5" />
                                         </button>
@@ -981,10 +990,10 @@ const SortableSlideItem = React.memo(({ slide, onEdit, onDelete, getSlideIcon, o
                                             <button
                                                 onClick={() => onRegenerate(slide.id, 'video')}
                                                 className="rounded p-1.5 text-xs text-indigo-600 hover:bg-indigo-50 transition-colors flex items-center gap-1"
-                                                title="Regenerate Video"
+                                                title={t('slide.regenerateVideo')}
                                             >
                                                 <RefreshCw className="h-3.5 w-3.5" />
-                                                <span>Regenerate</span>
+                                                <span>{t('slide.regenerate')}</span>
                                             </button>
                                         )}
                                     </div>
@@ -1016,8 +1025,8 @@ const SortableSlideItem = React.memo(({ slide, onEdit, onDelete, getSlideIcon, o
                                         <div className="w-full aspect-video bg-black flex items-center justify-center min-h-[300px]">
                                             <div className="text-center text-white">
                                                 <Video className="h-16 w-16 mx-auto mb-4 opacity-50" />
-                                                <p className="text-lg">Video Player</p>
-                                                <p className="text-sm opacity-75">Click the upload or URL icon to add a video</p>
+                                                <p className="text-lg">{t('slide.videoPlayer')}</p>
+                                                <p className="text-sm opacity-75">{t('slide.uploadOrUrlHint')}</p>
                                             </div>
                                         </div>
                                     )}
@@ -1029,15 +1038,15 @@ const SortableSlideItem = React.memo(({ slide, onEdit, onDelete, getSlideIcon, o
                     <Dialog open={videoUrlDialogOpen} onOpenChange={setVideoUrlDialogOpen}>
                         <DialogContent className="sm:max-w-[500px]">
                             <DialogHeader>
-                                <DialogTitle>Add Video URL</DialogTitle>
+                                <DialogTitle>{t('slide.addVideoUrl')}</DialogTitle>
                             </DialogHeader>
                             <div className="py-4">
-                                <Label className="text-sm font-medium mb-2 block">Video URL</Label>
+                                <Label className="text-sm font-medium mb-2 block">{t('slide.videoUrlLabel')}</Label>
                                 <Input
                                     type="url"
                                     value={tempVideoUrl}
                                     onChange={(e) => setTempVideoUrl(e.target.value)}
-                                    placeholder="https://www.youtube.com/watch?v=..."
+                                    placeholder={t('slide.videoUrlPlaceholder')}
                                     className="w-full"
                                 />
                             </div>
@@ -1046,7 +1055,7 @@ const SortableSlideItem = React.memo(({ slide, onEdit, onDelete, getSlideIcon, o
                                     buttonType="primary"
                                     onClick={handleSaveVideoUrl}
                                 >
-                                    Save
+                                    {t('slide.save')}
                                 </MyButton>
                             </DialogFooter>
                         </DialogContent>
@@ -1069,17 +1078,17 @@ const SortableSlideItem = React.memo(({ slide, onEdit, onDelete, getSlideIcon, o
                             <div className="flex items-center gap-2">
                                 <FileText className="h-4 w-4 text-blue-600" />
                                 <span className="text-sm font-semibold text-neutral-900">
-                                    {slideType === 'objectives' ? 'Learning Objectives' : 'Document'}
+                                    {slideType === 'objectives' ? t('slide.learningObjectives') : t('slide.document')}
                                 </span>
                             </div>
                             {onRegenerate && (
                                 <button
                                     onClick={() => onRegenerate(slide.id)}
                                     className="rounded p-1.5 text-xs text-indigo-600 hover:bg-indigo-50 transition-colors flex items-center gap-1"
-                                    title="Regenerate"
+                                    title={t('slide.regenerate')}
                                 >
                                     <RefreshCw className="h-3.5 w-3.5" />
-                                    <span>Regenerate</span>
+                                    <span>{t('slide.regenerate')}</span>
                                 </button>
                             )}
                         </div>
@@ -1112,23 +1121,23 @@ const SortableSlideItem = React.memo(({ slide, onEdit, onDelete, getSlideIcon, o
                             <div className="aspect-video w-full rounded-lg bg-black flex items-center justify-center">
                                 <div className="text-center text-white">
                                     <Video className="h-16 w-16 mx-auto mb-4 opacity-50" />
-                                    <p className="text-lg">Video Player</p>
-                                    <p className="text-sm opacity-75">Video will be displayed here</p>
+                                    <p className="text-lg">{t('slide.videoPlayer')}</p>
+                                    <p className="text-sm opacity-75">{t('slide.videoWillBeDisplayed')}</p>
                                 </div>
                             </div>
                         )}
                         {script && (
                             <div className="mt-4 p-4 bg-white rounded-lg">
                                 <div className="flex items-center justify-between mb-2">
-                                    <h4 className="font-semibold">Video Script</h4>
+                                    <h4 className="font-semibold">{t('slide.videoScript')}</h4>
                                     {onRegenerate && (
                                         <button
                                             onClick={() => onRegenerate(slide.id)}
                                             className="rounded p-1.5 text-xs text-indigo-600 hover:bg-indigo-50 transition-colors flex items-center gap-1"
-                                            title="Regenerate Video Script"
+                                            title={t('slide.regenerateVideoScript')}
                                         >
                                             <RefreshCw className="h-3.5 w-3.5" />
-                                            <span>Regenerate</span>
+                                            <span>{t('slide.regenerate')}</span>
                                         </button>
                                     )}
                                 </div>
@@ -1152,16 +1161,16 @@ const SortableSlideItem = React.memo(({ slide, onEdit, onDelete, getSlideIcon, o
                         <div className="flex items-center justify-between">
                             <div className="flex items-center gap-2">
                                 <Code className="h-4 w-4 text-green-600" />
-                                <span className="text-sm font-semibold text-neutral-900">Code Editor</span>
+                                <span className="text-sm font-semibold text-neutral-900">{t('slide.codeEditor')}</span>
                             </div>
                             {onRegenerate && (
                                 <button
                                     onClick={() => onRegenerate(slide.id)}
                                     className="rounded p-1.5 text-xs text-indigo-600 hover:bg-indigo-50 transition-colors flex items-center gap-1"
-                                    title="Regenerate Code"
+                                    title={t('slide.regenerateCode')}
                                 >
                                     <RefreshCw className="h-3.5 w-3.5" />
-                                    <span>Regenerate</span>
+                                    <span>{t('slide.regenerate')}</span>
                                 </button>
                             )}
                         </div>
@@ -1194,7 +1203,7 @@ const SortableSlideItem = React.memo(({ slide, onEdit, onDelete, getSlideIcon, o
                         >
                             <div className="bg-neutral-100 px-4 py-2 border-b flex items-center gap-2 flex-shrink-0">
                                 <Code className="h-4 w-4 text-green-600" />
-                                <span className="text-sm font-semibold">Code Editor</span>
+                                <span className="text-sm font-semibold">{t('slide.codeEditor')}</span>
                             </div>
                             <div className="flex-1 overflow-hidden" style={{ minHeight: 0 }}>
                                 <Editor
@@ -1223,7 +1232,7 @@ const SortableSlideItem = React.memo(({ slide, onEdit, onDelete, getSlideIcon, o
                         >
                             <div className="bg-neutral-100 px-4 py-2 border-b flex items-center gap-2 flex-shrink-0">
                                 <Video className="h-4 w-4 text-red-600" />
-                                <span className="text-sm font-semibold">Video Player</span>
+                                <span className="text-sm font-semibold">{t('slide.videoPlayer')}</span>
                             </div>
                             <div className="flex-1 overflow-auto">
                                 {videoUrl ? (
@@ -1239,8 +1248,8 @@ const SortableSlideItem = React.memo(({ slide, onEdit, onDelete, getSlideIcon, o
                                     <div className="w-full aspect-video bg-black flex items-center justify-center min-h-[300px]">
                                         <div className="text-center text-white">
                                             <Video className="h-16 w-16 mx-auto mb-4 opacity-50" />
-                                            <p className="text-lg">Video Player</p>
-                                            <p className="text-sm opacity-75">Video will be displayed here</p>
+                                            <p className="text-lg">{t('slide.videoPlayer')}</p>
+                                            <p className="text-sm opacity-75">{t('slide.videoWillBeDisplayed')}</p>
                                         </div>
                                     </div>
                                 )}
@@ -1373,25 +1382,25 @@ const SortableSlideItem = React.memo(({ slide, onEdit, onDelete, getSlideIcon, o
                     <div className="flex items-center justify-between mb-4">
                         <div className="flex items-center gap-2">
                             <FileQuestion className="h-4 w-4 text-purple-600" />
-                            <Label className="text-sm font-semibold text-neutral-900">Quiz Content</Label>
+                            <Label className="text-sm font-semibold text-neutral-900">{t('quiz.content')}</Label>
                         </div>
                         <div className="flex items-center gap-2">
                             <button
                                 onClick={addQuestion}
                                 className="flex items-center gap-1.5 rounded px-3 py-1.5 text-xs font-medium text-indigo-600 hover:bg-indigo-50 transition-colors border border-indigo-200"
-                                title="Add Question"
+                                title={t('quiz.addQuestion')}
                             >
                                 <span>+</span>
-                                Add Question
+                                {t('quiz.addQuestion')}
                             </button>
                             {onRegenerate && (
                                 <button
                                     onClick={() => onRegenerate(slide.id)}
                                     className="rounded p-1.5 text-xs text-indigo-600 hover:bg-indigo-50 transition-colors flex items-center gap-1"
-                                    title="Regenerate Quiz"
+                                    title={t('slide.regenerateQuiz')}
                                 >
                                     <RefreshCw className="h-3.5 w-3.5" />
-                                    <span>Regenerate</span>
+                                    <span>{t('slide.regenerate')}</span>
                                 </button>
                             )}
                         </div>
@@ -1399,7 +1408,7 @@ const SortableSlideItem = React.memo(({ slide, onEdit, onDelete, getSlideIcon, o
                     <div className="space-y-6">
                         {quizQuestions.length === 0 ? (
                             <div className="text-center py-8 text-neutral-500">
-                                <p className="mb-4">No questions yet. Click "Add Question" to get started.</p>
+                                <p className="mb-4">{t('quiz.noQuestions')}</p>
                             </div>
                         ) : (
                             <>
@@ -1412,37 +1421,37 @@ const SortableSlideItem = React.memo(({ slide, onEdit, onDelete, getSlideIcon, o
                                         className="bg-white rounded-lg border border-neutral-200 p-4 space-y-4"
                                     >
                                         <div className="flex items-center justify-between">
-                                            <h4 className="text-sm font-semibold text-neutral-900">Question {qIndex + 1}</h4>
+                                            <h4 className="text-sm font-semibold text-neutral-900">{t('quiz.questionLabel', { number: qIndex + 1 })}</h4>
                                             <button
                                                 onClick={() => deleteQuestion(qIndex)}
                                                 className="text-xs text-red-600 hover:text-red-700 hover:bg-red-50 rounded px-2 py-1 transition-colors"
-                                                title="Delete Question"
+                                                title={t('quiz.delete')}
                                             >
-                                                Delete
+                                                {t('quiz.delete')}
                                             </button>
                                         </div>
 
                                         <div>
-                                            <Label className="text-xs text-neutral-700 mb-1 block">Question Text</Label>
+                                            <Label className="text-xs text-neutral-700 mb-1 block">{t('quiz.questionText')}</Label>
                                             <Textarea
                                                 value={question.question || ''}
                                                 onChange={(e) => {
                                                     updateQuestion(qIndex, 'question', e.target.value);
                                                     setTimeout(saveQuizQuestions, 100);
                                                 }}
-                                                placeholder="Enter your question here..."
+                                                placeholder={t('quiz.questionPlaceholder')}
                                                 className="min-h-[80px] text-sm"
                                             />
                                         </div>
 
                                         <div>
-                                            <Label className="text-xs text-neutral-700 mb-2 block">Options</Label>
+                                            <Label className="text-xs text-neutral-700 mb-2 block">{t('quiz.options')}</Label>
                                             <div className="space-y-2">
                                                 {(question.options || []).map((option, optIndex) => (
                                                     <div key={optIndex} className="flex items-center gap-2">
                                                         <input
                                                             type="radio"
-                                                            name={`correct-${qIndex}`}
+                                                            name={`correct-${quizGroupId}-${qIndex}`}
                                                             checked={Number(question.correctAnswerIndex ?? 0) === optIndex}
                                                             onChange={() => {
                                                                 updateQuestion(qIndex, 'correctAnswerIndex', optIndex);
@@ -1458,7 +1467,7 @@ const SortableSlideItem = React.memo(({ slide, onEdit, onDelete, getSlideIcon, o
                                                                 updateQuestion(qIndex, 'options', newOptions);
                                                                 setTimeout(saveQuizQuestions, 100);
                                                             }}
-                                                            placeholder={`Option ${optIndex + 1}`}
+                                                            placeholder={t('quiz.optionPlaceholder', { number: optIndex + 1 })}
                                                             className="flex-1 text-sm"
                                                         />
                                                         {(question.options || []).length > 2 && (
@@ -1468,7 +1477,7 @@ const SortableSlideItem = React.memo(({ slide, onEdit, onDelete, getSlideIcon, o
                                                                     setTimeout(saveQuizQuestions, 100);
                                                                 }}
                                                                 className="text-xs text-red-600 hover:text-red-700 px-2 py-1"
-                                                                title="Remove Option"
+                                                                title={t('quiz.removeOption')}
                                                             >
                                                                 ×
                                                             </button>
@@ -1482,7 +1491,7 @@ const SortableSlideItem = React.memo(({ slide, onEdit, onDelete, getSlideIcon, o
                                                     }}
                                                     className="text-xs text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50 rounded px-2 py-1 transition-colors"
                                                 >
-                                                    + Add Option
+                                                    {t('quiz.addOption')}
                                                 </button>
                                             </div>
                                         </div>
@@ -1493,10 +1502,10 @@ const SortableSlideItem = React.memo(({ slide, onEdit, onDelete, getSlideIcon, o
                                     <button
                                         onClick={addQuestion}
                                         className="flex items-center gap-1.5 rounded px-3 py-1.5 text-xs font-medium text-indigo-600 hover:bg-indigo-50 transition-colors border border-indigo-200"
-                                        title="Add Question"
+                                        title={t('quiz.addQuestion')}
                                     >
                                         <span>+</span>
-                                        Add Question
+                                        {t('quiz.addQuestion')}
                                     </button>
                                 </div>
                             </>
@@ -1515,17 +1524,17 @@ const SortableSlideItem = React.memo(({ slide, onEdit, onDelete, getSlideIcon, o
                             <div className="flex items-center gap-2">
                                 <FileText className="h-4 w-4 text-purple-600" />
                                 <span className="text-sm font-semibold text-neutral-900">
-                                    {slideType === 'homework' ? 'Homework' : 'Assignment'}
+                                    {slideType === 'homework' ? t('slide.homework') : t('slide.assignment')}
                                 </span>
                             </div>
                             {onRegenerate && (
                                 <button
                                     onClick={() => onRegenerate(slide.id)}
                                     className="rounded p-1.5 text-xs text-indigo-600 hover:bg-indigo-50 transition-colors flex items-center gap-1"
-                                    title="Regenerate Assignment"
+                                    title={t('slide.regenerateAssignment')}
                                 >
                                     <RefreshCw className="h-3.5 w-3.5" />
-                                    <span>Regenerate</span>
+                                    <span>{t('slide.regenerate')}</span>
                                 </button>
                             )}
                         </div>
@@ -1544,15 +1553,15 @@ const SortableSlideItem = React.memo(({ slide, onEdit, onDelete, getSlideIcon, o
             return (
                 <div className="mt-3 ml-8 bg-neutral-50 rounded-md border border-neutral-200 p-4">
                     <div className="flex items-center justify-between mb-4">
-                        <h3 className="text-xl font-semibold">Solution Code</h3>
+                        <h3 className="text-xl font-semibold">{t('slide.solutionCode')}</h3>
                         {onRegenerate && (
                             <button
                                 onClick={() => onRegenerate(slide.id)}
                                 className="rounded p-1.5 text-xs text-indigo-600 hover:bg-indigo-50 transition-colors flex items-center gap-1"
-                                title="Regenerate Solution"
+                                title={t('slide.regenerateSolution')}
                             >
                                 <RefreshCw className="h-3.5 w-3.5" />
-                                <span>Regenerate</span>
+                                <span>{t('slide.regenerate')}</span>
                             </button>
                         )}
                     </div>
@@ -1612,14 +1621,14 @@ const SortableSlideItem = React.memo(({ slide, onEdit, onDelete, getSlideIcon, o
                             <button
                                 onClick={handleSaveEdit}
                                 className="rounded p-1 text-xs text-indigo-600 hover:bg-indigo-50"
-                                title="Save"
+                                title={t('slide.save')}
                             >
                                 <CheckCircle className="h-3.5 w-3.5" />
                             </button>
                             <button
                                 onClick={handleCancelEdit}
                                 className="rounded p-1 text-xs text-neutral-600 hover:bg-neutral-100"
-                                title="Cancel"
+                                title={t('slide.cancel')}
                             >
                                 <X className="h-3.5 w-3.5" />
                             </button>
@@ -1629,14 +1638,14 @@ const SortableSlideItem = React.memo(({ slide, onEdit, onDelete, getSlideIcon, o
                             <button
                                 onClick={() => setIsEditing(true)}
                                 className="rounded p-1 text-xs text-indigo-600 hover:bg-indigo-50 opacity-0 group-hover:opacity-100 transition-opacity"
-                                title="Edit"
+                                title={t('slide.edit')}
                             >
                                 <Edit2 className="h-3.5 w-3.5" />
                             </button>
                             <button
                                 onClick={() => onDelete(slide.id)}
                                 className="rounded p-1 text-xs text-red-600 hover:bg-red-50 opacity-0 group-hover:opacity-100 transition-opacity"
-                                title="Delete"
+                                title={t('slide.delete')}
                             >
                                 <Trash2 className="h-3.5 w-3.5" />
                             </button>
@@ -1654,16 +1663,16 @@ const SortableSlideItem = React.memo(({ slide, onEdit, onDelete, getSlideIcon, o
                 <Dialog open={videoUrlDialogOpen} onOpenChange={setVideoUrlDialogOpen}>
                     <DialogContent className="sm:max-w-[500px]">
                         <DialogHeader>
-                            <DialogTitle>Add Video URL</DialogTitle>
+                            <DialogTitle>{t('slide.addVideoUrl')}</DialogTitle>
                         </DialogHeader>
                         <div className="py-4">
-                            <Label htmlFor="video-url-input" className="text-sm font-medium mb-2 block">Video URL</Label>
+                            <Label htmlFor="video-url-input" className="text-sm font-medium mb-2 block">{t('slide.videoUrlLabel')}</Label>
                             <Input
                                 id="video-url-input"
                                 type="url"
                                 value={videoUrlInput}
                                 onChange={(e) => setVideoUrlInput(e.target.value)}
-                                placeholder="https://www.youtube.com/watch?v=..."
+                                placeholder={t('slide.videoUrlPlaceholder')}
                                 className="w-full"
                             />
                         </div>
@@ -1702,7 +1711,7 @@ const SortableSlideItem = React.memo(({ slide, onEdit, onDelete, getSlideIcon, o
                                     setVideoUrlDialogOpen(false);
                                 }}
                             >
-                                Save
+                                {t('slide.save')}
                             </MyButton>
                         </DialogFooter>
                     </DialogContent>
@@ -1715,6 +1724,7 @@ const SortableSlideItem = React.memo(({ slide, onEdit, onDelete, getSlideIcon, o
 SortableSlideItem.displayName = 'SortableSlideItem';
 
 function RouteComponent() {
+    const { t } = useTranslation('studyLibraryCourseOutlineViewer');
     const navigate = useNavigate();
     const [slides, setSlides] = useState<SlideGeneration[]>([]);
     const [expandedSessions, setExpandedSessions] = useState<Set<string>>(new Set());
@@ -1806,7 +1816,7 @@ function RouteComponent() {
 
             return {
                 sessionId,
-                sessionTitle: firstSlide?.sessionTitle || 'Untitled Session',
+                sessionTitle: firstSlide?.sessionTitle || t('session.untitled'),
                 slides: sessionSlides,
                 progress,
             };
@@ -1917,7 +1927,7 @@ function RouteComponent() {
     };
 
     const handleSessionDelete = (sessionId: string) => {
-        if (confirm('Are you sure you want to delete this session?')) {
+        if (confirm(t('session.confirmDelete'))) {
             setSlides((prev) => prev.filter((slide) => slide.sessionId !== sessionId));
         }
     };
@@ -1961,7 +1971,7 @@ function RouteComponent() {
     };
 
     const handleSlideDelete = (slideId: string) => {
-        if (confirm(`Are you sure you want to delete this ${getTerminology(ContentTerms.Slides, SystemTerms.Slides).toLowerCase()}?`)) {
+        if (confirm(t('slide.confirmDelete', { term: getTerminology(ContentTerms.Slides, SystemTerms.Slides).toLowerCase() }))) {
             setSlides((prev) => prev.filter((slide) => slide.id !== slideId));
         }
     };
@@ -1999,7 +2009,7 @@ function RouteComponent() {
             if (section === 'video') {
                 // If already regenerated twice, prevent further regeneration
                 if (regenerationCount >= 2) {
-                    alert('You have already regenerated this video content twice. Further regeneration is not allowed.');
+                    alert(t('regenerationLimitAlert.video'));
                     return;
                 }
                 // Show warning inside the regenerate dialog for video
@@ -2028,7 +2038,7 @@ function RouteComponent() {
 
         // If already regenerated twice, prevent further regeneration
         if ((isDocumentWithImage || isVideoType) && regenerationCount >= 2) {
-            alert('You have already regenerated this content twice. Further regeneration is not allowed.');
+            alert(t('regenerationLimitAlert.generic'));
             return;
         }
 
@@ -2119,8 +2129,8 @@ function RouteComponent() {
     return (
         <LayoutContainer>
             <Helmet>
-                <title>Course Content Viewer</title>
-                <meta name="description" content="View your generated course content" />
+                <title>{t('meta.title')}</title>
+                <meta name="description" content={t('meta.description')} />
             </Helmet>
 
             <div className="min-h-screen bg-gradient-to-b from-indigo-50 via-white to-purple-50">
@@ -2138,7 +2148,7 @@ function RouteComponent() {
                                 className="flex items-center gap-2 text-sm font-medium text-neutral-600 transition-colors hover:text-indigo-600"
                             >
                                 <ArrowLeft className="h-4 w-4" />
-                                Back to Course Library
+                                {t('header.backToLibrary')}
                             </button>
 
                             {/* Create CTA Button */}
@@ -2149,16 +2159,16 @@ function RouteComponent() {
                                     console.log('Create course');
                                 }}
                             >
-                                Create
+                                {t('header.create')}
                             </MyButton>
                         </div>
 
                         <div>
                             <h1 className="mb-2 text-3xl font-semibold text-neutral-900">
-                                Final Step: Confirm Your Course
+                                {t('header.heading')}
                             </h1>
                             <p className="text-base text-gray-600">
-                                Review the complete course content carefully. Make any last edits before creating your course.
+                                {t('header.subheading')}
                             </p>
                         </div>
                     </motion.div>
@@ -2167,9 +2177,9 @@ function RouteComponent() {
                     {sessionsWithProgress.length === 0 ? (
                         <div className="rounded-xl bg-white p-6 shadow-md">
                             <div className="text-center py-12">
-                                <p className="text-neutral-600 mb-4">No course content available.</p>
+                                <p className="text-neutral-600 mb-4">{t('empty.noContent')}</p>
                                 <p className="text-sm text-neutral-500">
-                                    Please generate course content first from the generating page.
+                                    {t('empty.generateFirst')}
                                 </p>
                             </div>
                         </div>
@@ -2247,14 +2257,20 @@ function RouteComponent() {
             <Dialog open={regenerateWarningDialogOpen} onOpenChange={setRegenerateWarningDialogOpen}>
                 <DialogContent className="sm:max-w-[500px]">
                     <DialogHeader>
-                        <DialogTitle>Regeneration Limit Warning</DialogTitle>
+                        <DialogTitle>{t('regenerateWarningDialog.title')}</DialogTitle>
                         <DialogDescription>
-                            You can only regenerate this content twice. This is your {slides.find(s => s.id === pendingRegenerateSlideId)?.regenerationCount === 0 ? 'first' : 'second'} regeneration.
+                            {t('regenerateWarningDialog.description', {
+                                replace: {
+                                    ordinal: slides.find(s => s.id === pendingRegenerateSlideId)?.regenerationCount === 0
+                                        ? t('ordinal.first')
+                                        : t('ordinal.second'),
+                                },
+                            })}
                         </DialogDescription>
                     </DialogHeader>
                     <div className="py-4">
                         <p className="text-sm text-neutral-600">
-                            Please review your content carefully before proceeding. After two regenerations, you will not be able to regenerate this content again.
+                            {t('regenerateWarningDialog.body')}
                         </p>
                     </div>
                     <DialogFooter>
@@ -2262,13 +2278,13 @@ function RouteComponent() {
                             buttonType="secondary"
                             onClick={handleCancelRegenerateWarning}
                         >
-                            Cancel
+                            {t('regenerateWarningDialog.cancel')}
                         </MyButton>
                         <MyButton
                             buttonType="primary"
                             onClick={handleConfirmRegenerateWarning}
                         >
-                            Proceed
+                            {t('regenerateWarningDialog.proceed')}
                         </MyButton>
                     </DialogFooter>
                 </DialogContent>
@@ -2285,7 +2301,7 @@ function RouteComponent() {
             }}>
                 <DialogContent className="w-[80vw] max-w-[80vw] max-h-[90vh] flex flex-col p-0">
                     <DialogHeader className="px-6 pt-6 pb-4 flex-shrink-0 border-b">
-                        <DialogTitle>Regenerate Page</DialogTitle>
+                        <DialogTitle>{t('regenerateDialog.title')}</DialogTitle>
                     </DialogHeader>
                     <div className="flex-1 overflow-y-auto px-6 py-4 space-y-4 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
                         {(() => {
@@ -2316,10 +2332,14 @@ function RouteComponent() {
                                             </div>
                                             <div className="flex-1">
                                                 <h4 className="text-sm font-semibold text-amber-800 mb-1">
-                                                    Regeneration Limit Warning
+                                                    {t('regenerateDialog.warningTitle')}
                                                 </h4>
                                                 <p className="text-sm text-amber-700">
-                                                    You can regenerate this content only twice. This is your {regenerationCount === 0 ? 'first' : 'second'} regeneration. After two regenerations, you will not be able to regenerate this content again.
+                                                    {t('regenerateDialog.warningBody', {
+                                                        replace: {
+                                                            ordinal: regenerationCount === 0 ? t('ordinal.first') : t('ordinal.second'),
+                                                        },
+                                                    })}
                                                 </p>
                                             </div>
                                         </div>
@@ -2333,7 +2353,7 @@ function RouteComponent() {
                                 ref={regenerationPromptTextareaRef}
                                 value={regenerationPrompt}
                                 onChange={(e) => setRegenerationPrompt(e.target.value)}
-                                placeholder="Enter a prompt describing how you want this page to be regenerated... (Optional - leave empty for simple regeneration)"
+                                placeholder={t('regenerateDialog.promptPlaceholder')}
                                 className="min-h-[150px] text-sm"
                             />
                         </div>
@@ -2343,7 +2363,7 @@ function RouteComponent() {
                             buttonType="primary"
                             onClick={handleConfirmRegenerate}
                         >
-                            Regenerate
+                            {t('regenerateDialog.regenerate')}
                         </MyButton>
                     </div>
                 </DialogContent>
@@ -2356,9 +2376,9 @@ function RouteComponent() {
             >
                 <DialogContent className="max-w-md">
                     <DialogHeader>
-                        <DialogTitle>Go Back to Course Library?</DialogTitle>
+                        <DialogTitle>{t('backToLibraryDialog.title')}</DialogTitle>
                         <DialogDescription className="text-neutral-600">
-                            Are you sure you want to go back to course library? You can either discard your current course or save it to drafts.
+                            {t('backToLibraryDialog.description')}
                         </DialogDescription>
                     </DialogHeader>
                     <div className="flex items-center justify-end gap-3 mt-6 pt-4 border-t border-neutral-200">
@@ -2367,21 +2387,21 @@ function RouteComponent() {
                             onClick={() => setBackToLibraryDialogOpen(false)}
                             className="min-w-[100px]"
                         >
-                            Cancel
+                            {t('backToLibraryDialog.cancel')}
                         </MyButton>
                         <MyButton
                             buttonType="secondary"
                             onClick={handleDiscardCourse}
                             className="min-w-[120px] border-red-300 text-red-600 hover:text-red-700 hover:bg-red-50 hover:border-red-400"
                         >
-                            Discard Course
+                            {t('backToLibraryDialog.discard')}
                         </MyButton>
                         <MyButton
                             buttonType="primary"
                             onClick={handleSaveToDrafts}
                             className="min-w-[130px]"
                         >
-                            Save to Drafts
+                            {t('backToLibraryDialog.saveToDrafts')}
                         </MyButton>
                     </div>
                 </DialogContent>

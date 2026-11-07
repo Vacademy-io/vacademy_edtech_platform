@@ -1,0 +1,74 @@
+{
+    "header": {
+        "title": "CRM Intelligence",
+        "description": "When enabled, call recordings are automatically transcribed (Hindi & English) and analyzed by AI — producing a summary, action items, an outcome status, and two 0–10 ratings (how well the caller advanced their goal, and how the call landed for the lead). Each analyzed call deducts AI credits."
+    },
+    "status": {
+        "enabled": "Enabled",
+        "disabled": "Disabled"
+    },
+    "callAnalysis": {
+        "title": "Call Analysis",
+        "description": "Choose which call sources are analyzed and the thresholds that gate it.",
+        "analyzeRecordings": "Analyze call recordings",
+        "sourcesLabel": "Sources",
+        "sources": {
+            "manual": {
+                "label": "Manual uploads",
+                "help": "Recordings a counsellor uploads for an off-platform call."
+            },
+            "telephony": {
+                "label": "Telephony calls",
+                "help": "Calls placed through Exotel / Airtel etc."
+            },
+            "ai": {
+                "label": "AI agent calls",
+                "help": "Calls placed by the AI voice agent (Aavtaar)."
+            }
+        },
+        "minDuration": {
+            "label": "Minimum call seconds",
+            "hint": "Skip calls shorter than this — usually voicemail blips."
+        },
+        "analyzeNotConnected": "Also analyze calls that didn’t connect"
+    },
+    "rubric": {
+        "title": "Scoring Rubric",
+        "description": "These are the sales-call skills the AI grades each rep on. The call objective is inferred from the conversation (an optional hint nudges it); each quality below is scored 0–10 within the caller’s rating, and drives the “Skill breakdown” in Coaching. Changes apply to calls analyzed after you save — use “Re-analyze” on a past call to rescore it against a new rubric.",
+        "objectiveHint": {
+            "label": "Objective hint (optional)",
+            "placeholder": "e.g. book a campus demo"
+        },
+        "ratedMetrics": {
+            "label": "Rated metrics",
+            "description": "Add any metric your sales team cares about. The <1>meaning</1> you write is sent to the AI so it grades a custom metric exactly the way you define it."
+        },
+        "metric": {
+            "keyPlaceholder": "Metric (e.g. objection_handling)",
+            "descriptionFallbackPlaceholder": "What does this metric mean? (used by the AI to grade it)"
+        },
+        "addMetric": "Add metric"
+    },
+    "save": {
+        "saving": "Saving…",
+        "button": "Save CRM intelligence settings"
+    },
+    "toasts": {
+        "saveSuccess": "CRM intelligence settings saved",
+        "saveFailed": "Failed to save CRM intelligence settings"
+    },
+    "qualityDescriptions": {
+        "rapport": "Building trust early — warm opening, using the lead’s name, matching their tone.",
+        "needs_discovery": "Asking questions to uncover the lead’s goals, situation and pain before pitching.",
+        "objection_handling": "Acknowledging and resolving concerns (price, timing, trust) instead of talking past them.",
+        "next_step_secured": "Locking a concrete next action — demo booked, callback time set, payment link sent.",
+        "value_articulation": "Explaining the offering’s value in terms relevant to this lead’s needs.",
+        "pitch_clarity": "Presenting the course/offer clearly and concisely, without rambling.",
+        "active_listening": "Letting the lead speak, not interrupting, and reflecting back what they said.",
+        "urgency_creation": "Giving a genuine reason to act now (limited seats, deadline, current offer).",
+        "closing": "Asking for the commitment and driving toward a clear decision.",
+        "talk_listen_balance": "A healthy talk-vs-listen ratio — not dominating the call.",
+        "follow_up_commitment": "Getting the lead to agree to a specific follow-up, not a vague “maybe”.",
+        "tone_confidence": "Speaking with confidence, energy and professionalism throughout."
+    }
+}

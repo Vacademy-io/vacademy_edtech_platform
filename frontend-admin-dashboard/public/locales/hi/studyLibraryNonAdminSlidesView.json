@@ -1,0 +1,6 @@
+{
+    "switchToInstructorView": "प्रशिक्षक दृश्य पर स्विच करें",
+    "switchToLearnerView": "शिक्षार्थी दृश्य पर स्विच करें",
+    "readOnlyCourseBanner": "यह कोर्स {{status}} है। आप केवल सामग्री देख सकते हैं और शंकाओं के उत्तर दे सकते हैं।",
+    "unsavedChangesBanner": "\"{{slideTitle}}\" में आपके बिना सहेजे गए परिवर्तन हैं। स्लाइड बदलने से पहले सहेजना न भूलें।"
+}

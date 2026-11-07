@@ -3,6 +3,7 @@ import { Dispatch, SetStateAction } from 'react';
 import { toast } from 'sonner';
 import { UseMutationResult } from '@tanstack/react-query';
 import { AxiosResponse } from 'axios';
+import type { TFunction } from 'i18next';
 
 export const handleAddReply = async ({
     replyData,
@@ -11,6 +12,7 @@ export const handleAddReply = async ({
     setShowInput,
     refetch,
     id,
+    t,
 }: {
     replyData: DoubtType;
     addReply: UseMutationResult<AxiosResponse<DoubtType>, Error, DoubtType>;
@@ -18,6 +20,7 @@ export const handleAddReply = async ({
     setShowInput?: Dispatch<SetStateAction<boolean>>;
     refetch?: () => void;
     id?: string;
+    t: TFunction;
 }) => {
     if (id) {
         replyData.id = id;
@@ -29,7 +32,7 @@ export const handleAddReply = async ({
             if (refetch) refetch();
         },
         onError: () => {
-            toast.error('Error adding doubt');
+            toast.error(t('studyLibraryHandleAddReply:toast.errorAddingDoubt'));
         },
     });
 };

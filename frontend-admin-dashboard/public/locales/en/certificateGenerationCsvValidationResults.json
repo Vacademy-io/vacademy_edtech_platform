@@ -1,0 +1,19 @@
+{
+    "validationPassed": "CSV Validation Passed",
+    "validationFailed": "CSV Validation Failed",
+    "errorsCount_one": "{{count}} error",
+    "errorsCount_other": "{{count}} errors",
+    "warningsCount_one": "{{count}} warning",
+    "warningsCount_other": "{{count}} warnings",
+    "allChecksPassed": "All checks passed successfully",
+    "hideDetails": "Hide Details",
+    "showDetails": "Show Details",
+    "errorsHeading": "Errors ({{count}})",
+    "warningsHeading": "Warnings ({{count}})",
+    "requirementsHeading": "CSV Requirements:",
+    "requirementFirstColumns": "First 3 columns must be: user_id, enrollment_number, student_name",
+    "requirementAllSelectedIncluded": "All selected students must be included in the CSV",
+    "requirementNoExtraStudents": "No additional students beyond those selected",
+    "requirementUniqueHeaders": "Headers after the 3rd column must be unique",
+    "requirementFileSize": "File size must not exceed 1MB"
+}

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Clock, CheckCircle, XCircle, CaretRight } from "@phosphor-icons/react";
+import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import ReactMarkdown from "react-markdown";
@@ -21,6 +22,7 @@ export const QuizComponent: React.FC<QuizComponentProps> = ({
   onSubmit,
   disabled = false,
 }) => {
+  const { t } = useTranslation("chatFeatureB");
   const [answers, setAnswers] = useState<Record<string, number>>({});
   const [startTime] = useState(Date.now());
   const [timeRemaining, setTimeRemaining] = useState<number | null>(
@@ -148,7 +150,7 @@ export const QuizComponent: React.FC<QuizComponentProps> = ({
       <div className="bg-background rounded-lg p-4 mb-4">
         <div className="flex items-start gap-2 mb-3">
           <span className="bg-primary/10 text-primary text-xs font-bold px-2 py-0.5 rounded">
-            Q{currentQuestion + 1}
+            {t("quiz.questionLabel", { number: currentQuestion + 1 })}
           </span>
         </div>
         
@@ -210,9 +212,9 @@ export const QuizComponent: React.FC<QuizComponentProps> = ({
       {/* Navigation & Submit */}
       <div className="flex items-center justify-between">
         <div className="text-xs text-muted-foreground">
-          {answeredCount} of {quizData.total_questions} answered
+          {t("quiz.answeredCount", { answered: answeredCount, total: quizData.total_questions })}
         </div>
-        
+
         <div className="flex items-center gap-2">
           {currentQuestion > 0 && (
             <Button
@@ -221,17 +223,17 @@ export const QuizComponent: React.FC<QuizComponentProps> = ({
               onClick={goToPrevQuestion}
               className="h-8"
             >
-              Previous
+              {t("quiz.previous")}
             </Button>
           )}
-          
+
           {currentQuestion < quizData.questions.length - 1 ? (
             <Button
               size="sm"
               onClick={goToNextQuestion}
               className="h-8"
             >
-              Next <CaretRight className="h-4 w-4 ms-1" />
+              {t("quiz.next")} <CaretRight className="h-4 w-4 ms-1" />
             </Button>
           ) : (
             <Button
@@ -240,7 +242,7 @@ export const QuizComponent: React.FC<QuizComponentProps> = ({
               disabled={!allAnswered || isSubmitted || disabled}
               className="h-8 bg-green-600 hover:bg-green-700"
             >
-              {isSubmitted ? "Submitted" : "Submit Quiz"}
+              {isSubmitted ? t("quiz.submitted") : t("quiz.submitQuiz")}
             </Button>
           )}
         </div>

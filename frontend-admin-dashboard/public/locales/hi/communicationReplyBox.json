@@ -1,0 +1,81 @@
+{
+    "toast": {
+        "loadTemplatesFailed": "टेम्पलेट लोड करने में विफल",
+        "fileTooLarge": "{{fileName}} की साइज़ {{fileSize}} है। WhatsApp {{kindLabel}} के लिए अधिकतम {{limit}} की अनुमति देता है।",
+        "uploadFailed": "अपलोड विफल हुआ। कृपया फिर से प्रयास करें।",
+        "noPublicLink": "अपलोड की गई फ़ाइल के लिए सार्वजनिक लिंक नहीं मिल सका।",
+        "downgradedToDocument": "WhatsApp {{fileType}} को {{asLabel}} के रूप में नहीं दिखा सकता, इसलिए इसे दस्तावेज़ के रूप में भेजा जाएगा।",
+        "voiceNotesUnavailable": "वॉइस नोट्स के लिए अपडेटेड नोटिफिकेशन सेवा चाहिए। यह सुविधा बन चुकी है पर अभी तैनात नहीं हुई है।",
+        "unsupportedRecordingFormat": "यह ब्राउज़र केवल WebM ऑडियो रिकॉर्ड कर सकता है, जिसे WhatsApp अस्वीकार करता है। Chrome 126+, Safari या Firefox आज़माएं।",
+        "micAccessDenied": "माइक्रोफ़ोन तक पहुंच नहीं मिली। ब्राउज़र की अनुमति जांचें।",
+        "attachmentsUnavailable": "अटैचमेंट के लिए अपडेटेड नोटिफिकेशन सेवा चाहिए। यह सुविधा बन चुकी है पर अभी तैनात नहीं हुई है।",
+        "messageNotSent": "संदेश नहीं भेजा गया",
+        "notDeliveredNote": "इसे चैट में 'डिलीवर नहीं हुआ' के रूप में चिह्नित किया गया है।",
+        "templateSent": "टेम्पलेट \"{{name}}\" भेजा गया",
+        "templateNotSent": "टेम्पलेट \"{{name}}\" नहीं भेजा जा सका",
+        "providerRejectedNoReason": "प्रदाता ने बिना कारण बताए भेजना अस्वीकार कर दिया।",
+        "couldNotSendTemplate": "टेम्पलेट \"{{name}}\" नहीं भेजा जा सका",
+        "templateHeaderFileMissing": "टेम्पलेट \"{{name}}\" के हेडर में {{kind}} चाहिए, लेकिन टेम्पलेट पर कोई सहेजा नहीं है। पहले WhatsApp Templates खोलकर उसके लिए {{kind}} अपलोड करें।"
+    },
+    "mediaKindPlural": {
+        "document": "दस्तावेज़",
+        "image": "छवियां",
+        "video": "वीडियो",
+        "audio": "ऑडियो"
+    },
+    "mediaKindLabel": {
+        "document": "दस्तावेज़",
+        "image": "छवि",
+        "video": "वीडियो",
+        "audio": "ऑडियो"
+    },
+    "downgradeAsLabel": {
+        "image": "फ़ोटो",
+        "video": "वीडियो",
+        "audio": "ऑडियो"
+    },
+    "thisFormat": "यह प्रारूप",
+    "sentAsDocument": "दस्तावेज़ के रूप में भेजा गया",
+    "audioNoCaption": "WhatsApp ऑडियो बिना कैप्शन के भेजता है",
+    "windowClosed": {
+        "title": "24 घंटे की जवाब देने की समय-सीमा समाप्त हो गई है।",
+        "body": "जब तक वे आपको दोबारा संदेश नहीं भेजते, WhatsApp सामान्य संदेश और अटैचमेंट अस्वीकार कर देगा — एक स्वीकृत",
+        "linkText": "टेम्पलेट",
+        "suffix": "भेजें।"
+    },
+    "templateLabel": "[टेम्पलेट: {{name}}]",
+    "templateShortLabel": "[टेम्पलेट] {{name}}",
+    "removeAttachment": "अटैचमेंट हटाएं",
+    "recordingInProgress": "वॉइस नोट रिकॉर्ड हो रहा है · {{duration}}",
+    "cancel": "रद्द करें",
+    "sendTemplateTooltip": "टेम्पलेट भेजें (24 घंटे की सीमा के बाहर के संदेशों के लिए)",
+    "sendTemplateHeader": "टेम्पलेट भेजें (24 घंटे की सीमा के बाहर)",
+    "searchTemplatesPlaceholder": "टेम्पलेट खोजें...",
+    "noApprovedTemplates": "कोई स्वीकृत टेम्पलेट नहीं मिला",
+    "captionPlaceholder": "कैप्शन जोड़ें...",
+    "messagePlaceholder": "संदेश लिखें...",
+    "attachTooltip": "फ़ोटो, वीडियो या दस्तावेज़ अटैच करें",
+    "attachmentsUnavailableTooltip": "अटैचमेंट के लिए अपडेटेड नोटिफिकेशन सेवा चाहिए — अभी तैनात नहीं हुई",
+    "stopRecordingTooltip": "रोकें और रिकॉर्डिंग अटैच करें",
+    "recordVoiceNoteTooltip": "वॉइस नोट रिकॉर्ड करें",
+    "templateDialog": {
+        "heading": "टेम्पलेट भेजें",
+        "to": "प्राप्तकर्ता {{phone}}",
+        "valuesLabel": "मान भरें",
+        "valueFallback": "मान {{n}}",
+        "valuePlaceholder": "जैसे {{value}}",
+        "missingValues_one": "{{count}} मान अभी खाली है",
+        "missingValues_other": "{{count}} मान अभी खाली हैं",
+        "headerMissing": "इस टेम्पलेट के हेडर में {{kind}} चाहिए, लेकिन इस पर कोई सहेजा नहीं है। पहले WhatsApp Templates खोलकर {{kind}} अपलोड करें।",
+        "note": "संपर्क को ठीक यही संदेश मिलेगा। भेजते समय टेम्पलेट संपादित नहीं किए जा सकते।",
+        "emptyBody": "इस टेम्पलेट में कोई संदेश नहीं है।",
+        "media": {
+            "image": "छवि",
+            "video": "वीडियो",
+            "document": "दस्तावेज़"
+        },
+        "cancel": "रद्द करें",
+        "send": "टेम्पलेट भेजें",
+        "sending": "भेजा जा रहा है…"
+    }
+}

@@ -1,4 +1,5 @@
 import React, { useState, useRef, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useIsMobile, useIsTablet } from '@/hooks/use-mobile';
 import { Card } from '@/components/ui/card';
 import { JupyterNotebookSlide } from './jupyter-notebook-slide';
@@ -88,6 +89,7 @@ export const SplitScreenSlide: React.FC<SplitScreenSlideProps> = ({
     onDataChange,
     currentSlideId,
 }) => {
+    const { t } = useTranslation('studyLibrarySplitScreenSlide');
     // Determine layout direction from splitScreenData (for code editor config)
     const layout = (splitScreenData as any).layout || 'split-right';
     const isCodeOnRight = layout === 'split-right';
@@ -146,7 +148,7 @@ export const SplitScreenSlide: React.FC<SplitScreenSlideProps> = ({
         ? {
               id: splitScreenData.videoSlideId,
               source_id: splitScreenData.videoSlideId,
-              title: splitScreenData.originalVideoData.title || 'Video',
+              title: splitScreenData.originalVideoData.title || t('videoFallbackTitle'),
               description: splitScreenData.originalVideoData.description || '',
               source_type: (splitScreenData.originalVideoData.source_type as any) || 'VIDEO',
               status: 'DRAFT',
@@ -157,7 +159,7 @@ export const SplitScreenSlide: React.FC<SplitScreenSlideProps> = ({
                       ? undefined
                       : {
                             id: crypto.randomUUID(),
-                            title: splitScreenData.originalVideoData.title || 'Video',
+                            title: splitScreenData.originalVideoData.title || t('videoFallbackTitle'),
                             description: splitScreenData.originalVideoData.description || '',
                             url: splitScreenData.originalVideoData.url || '',
                             published_url: splitScreenData.originalVideoData.url || '',
@@ -258,7 +260,7 @@ export const SplitScreenSlide: React.FC<SplitScreenSlideProps> = ({
                     <div className="flex h-full items-center justify-center">
                         <div className="text-center">
                             <AlertCircle className="mx-auto mb-2 size-8 text-red-500" />
-                            <p className="text-red-600">Unknown split screen type</p>
+                            <p className="text-red-600">{t('unknownSplitScreenType')}</p>
                         </div>
                     </div>
                 );
@@ -273,13 +275,10 @@ export const SplitScreenSlide: React.FC<SplitScreenSlideProps> = ({
                         <div className="mx-auto mb-4 flex size-16 items-center justify-center rounded-full bg-red-100">
                             <AlertCircle className="size-8 text-red-600" />
                         </div>
-                        <h3 className="mb-2 text-lg font-semibold">Video Not Found</h3>
-                        <p className="text-gray-600">
-                            The video slide for this split screen could not be found. Please check
-                            if the video slide still exists.
-                        </p>
+                        <h3 className="mb-2 text-lg font-semibold">{t('videoNotFoundTitle')}</h3>
+                        <p className="text-gray-600">{t('videoNotFoundDescription')}</p>
                         <p className="mt-2 text-sm text-gray-500">
-                            Video ID: {splitScreenData.videoSlideId}
+                            {t('videoIdLabel', { videoId: splitScreenData.videoSlideId })}
                         </p>
                     </div>
                 </Card>
@@ -296,7 +295,7 @@ export const SplitScreenSlide: React.FC<SplitScreenSlideProps> = ({
                         <Split className="size-4 text-blue-600" />
                     </div>
                     <div>
-                        <h3 className="font-semibold">Split Screen Mode</h3>
+                        <h3 className="font-semibold">{t('splitScreenModeTitle')}</h3>
                     </div>
                 </div>
                 <div className="flex items-center space-x-2">
@@ -325,7 +324,7 @@ export const SplitScreenSlide: React.FC<SplitScreenSlideProps> = ({
                         >
                             <div className="border-b bg-gray-50 p-2">
                                 <h4 className="font-medium text-gray-700">
-                                    {videoSlide.title || 'Untitled Video'}
+                                    {videoSlide.title || t('untitledVideo')}
                                 </h4>
                             </div>
                             <div className="flex-1 overflow-hidden p-2 sm:p-4">
@@ -337,11 +336,10 @@ export const SplitScreenSlide: React.FC<SplitScreenSlideProps> = ({
                                         <div className="flex flex-col items-center gap-3">
                                             <div className="size-12 animate-spin rounded-full border-y-2 border-primary-500"></div>
                                             <p className="text-sm text-gray-600">
-                                                Video is being generated...
+                                                {t('videoBeingGenerated')}
                                             </p>
                                             <p className="text-xs text-gray-500">
-                                                This may take a few minutes. Please check back
-                                                later.
+                                                {t('videoBeingGeneratedHint')}
                                             </p>
                                         </div>
                                     </div>
@@ -411,7 +409,7 @@ export const SplitScreenSlide: React.FC<SplitScreenSlideProps> = ({
                         >
                             <div className="border-b bg-gray-50 p-2">
                                 <h4 className="font-medium text-gray-700">
-                                    {videoSlide.title || 'Untitled Video'}
+                                    {videoSlide.title || t('untitledVideo')}
                                 </h4>
                             </div>
                             <div className="flex-1 overflow-hidden p-2 sm:p-4">
@@ -423,11 +421,10 @@ export const SplitScreenSlide: React.FC<SplitScreenSlideProps> = ({
                                         <div className="flex flex-col items-center gap-3">
                                             <div className="size-12 animate-spin rounded-full border-y-2 border-primary-500"></div>
                                             <p className="text-sm text-gray-600">
-                                                Video is being generated...
+                                                {t('videoBeingGenerated')}
                                             </p>
                                             <p className="text-xs text-gray-500">
-                                                This may take a few minutes. Please check back
-                                                later.
+                                                {t('videoBeingGeneratedHint')}
                                             </p>
                                         </div>
                                     </div>

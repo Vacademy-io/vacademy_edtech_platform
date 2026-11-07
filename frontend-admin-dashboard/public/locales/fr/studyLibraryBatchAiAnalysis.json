@@ -1,0 +1,62 @@
+{
+    "description": "Générez un rapport IA pour chaque apprenant actif des groupes sélectionnés.",
+    "form": {
+        "startDateRequired": "La date de début est requise",
+        "endDateRequired": "La date de fin est requise",
+        "dateRangeTooLong": "L'écart entre la date de début et la date de fin doit être inférieur à un mois.",
+        "errorsHeading": "Veuillez corriger les erreurs suivantes :",
+        "batchRequired": "Sélectionnez au moins un groupe"
+    },
+    "range": {
+        "label": "Période :",
+        "last7Days": "7 derniers jours",
+        "hide": "Masquer",
+        "change": "Modifier"
+    },
+    "actions": {
+        "loadingLearners": "Chargement des apprenants…",
+        "generating": "Génération en cours…",
+        "generateReports": "Générer les rapports IA",
+        "stop": "Arrêter",
+        "retryFailed": "Réessayer les échecs",
+        "view": "Voir",
+        "exportCsv": "Exporter en CSV"
+    },
+    "toast": {
+        "resolveBatchFailed": "Sélectionnez au moins un groupe.",
+        "noActiveLearners": "Aucun apprenant actif trouvé dans ce groupe.",
+        "generationFinished": "Génération des rapports du groupe terminée.",
+        "loadLearnersFailed": "Échec du chargement des apprenants du groupe.",
+        "stopping": "Arrêt après l'apprenant en cours…",
+        "reselectRequired": "Resélectionnez le groupe et la période pour réessayer.",
+        "reportNotReady": "Le rapport n'est pas encore prêt à être consulté.",
+        "loadReportFailed": "Échec du chargement du rapport.",
+        "generationStartFailed": "Impossible de démarrer la génération",
+        "generationFailedOrTimedOut": "Échec de la génération ou délai dépassé"
+    },
+    "progress": {
+        "doneCount": "{{done}}/{{total}} terminés",
+        "completedCount_one": "{{count}} terminé",
+        "completedCount_many": "{{count}} terminés",
+        "completedCount_other": "{{count}} terminés",
+        "failedCount_one": "{{count}} échoué",
+        "failedCount_many": "{{count}} échoués",
+        "failedCount_other": "{{count}} échoués"
+    },
+    "status": {
+        "queued": "En attente",
+        "generating": "En cours",
+        "completed": "Terminé",
+        "failed": "Échoué"
+    },
+    "csv": {
+        "fileStem": "analyse-ia",
+        "title": "Génération des rapports IA",
+        "name": "Nom",
+        "email": "E-mail",
+        "status": "Statut",
+        "processId": "Id du rapport",
+        "error": "Erreur",
+        "exportSuccess": "CSV exporté"
+    }
+}

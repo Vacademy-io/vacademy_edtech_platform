@@ -1,0 +1,81 @@
+{
+    "dialog": {
+        "title": "Bulk Import Admissions",
+        "description": "Upload CSV, optionally choose class, preview and confirm import"
+    },
+    "steps": {
+        "label": "Step {{number}}"
+    },
+    "upload": {
+        "templateHint": "Download CSV template and upload filled learner responses",
+        "downloadTemplateButton": "Download Template",
+        "clickToUpload": "Click to upload `.csv` file",
+        "rowsSummary": "Valid rows: {{validCount}} | Skipped rows: {{skippedCount}}"
+    },
+    "classStep": {
+        "description": "Select class/batch required for submitting admissions. If you skip, the first available option will be used.",
+        "noClassOption": "No class selected"
+    },
+    "preview": {
+        "summary_one": "Previewing {{count}} valid row",
+        "summary_other": "Previewing {{count}} valid rows",
+        "columns": {
+            "studentName": "Student Name",
+            "gender": "Gender",
+            "dateOfBirth": "Date of Birth",
+            "fatherName": "Father Name",
+            "fatherEmail": "Father Email",
+            "fatherMobile": "Father Mobile",
+            "motherName": "Mother Name",
+            "motherEmail": "Mother Email",
+            "motherMobile": "Mother Mobile",
+            "guardianName": "Guardian Name",
+            "guardianMobile": "Guardian Mobile",
+            "status": "Status",
+            "source": "Source"
+        }
+    },
+    "actions": {
+        "back": "Back",
+        "cancel": "Cancel",
+        "next": "Next",
+        "confirmImport": "Confirm Import",
+        "importing": "Importing..."
+    },
+    "errors": {
+        "onlyCsvSupported": "Only .csv files are supported",
+        "missingColumns": "Missing required column(s): {{columns}}",
+        "failedToParseCsv": "Failed to parse CSV",
+        "instituteNotLoaded": "Institute details not loaded",
+        "sessionRequired": "Session is required",
+        "selectClassRequired": "Please select a class/batch"
+    },
+    "toast": {
+        "importSuccess_one": "Imported {{count}} admission ({{failedCount}} failed)",
+        "importSuccess_other": "Imported {{count}} admissions ({{failedCount}} failed)",
+        "importError": "Failed to import admissions"
+    },
+    "genderLabel": {
+        "MALE": "Male",
+        "FEMALE": "Female",
+        "OTHER": "Other"
+    },
+    "statusLabel": {
+        "NEW": "New",
+        "CONTACTED": "Contacted",
+        "QUALIFIED": "Qualified",
+        "NOT_ELIGIBLE": "Not Eligible",
+        "FOLLOW_UP": "Follow up",
+        "CLOSED": "Closed",
+        "CONVERTED": "Converted",
+        "ADMITTED": "Admitted"
+    },
+    "sourceLabel": {
+        "WEBSITE": "Website",
+        "GOOGLE_ADS": "Google Ads",
+        "FACEBOOK": "Facebook",
+        "INSTAGRAM": "Instagram",
+        "REFERRAL": "Referral",
+        "OTHER": "Other"
+    }
+}

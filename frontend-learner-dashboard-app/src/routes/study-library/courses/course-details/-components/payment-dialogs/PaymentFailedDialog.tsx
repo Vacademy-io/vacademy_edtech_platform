@@ -82,8 +82,8 @@ export const PaymentFailedDialog: React.FC<PaymentFailedDialogProps> = ({
               {t("payment.failed.description")}
             </p>
             
-            <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
-              <div className="flex items-center space-x-2 text-red-800 mb-2">
+            <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6 space-y-2">
+              <div className="flex items-center gap-x-2 text-red-800">
                 <XCircle className="w-4 h-4" />
                 <span className="text-sm font-medium">{t("payment.failed.nextTitle")}</span>
               </div>

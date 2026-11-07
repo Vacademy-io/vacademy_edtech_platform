@@ -23,6 +23,8 @@ public class UserPlanDTO {
     private String id;
     private String userId;
     private String paymentPlanId;
+    /** Copies bought on this line; null on DTOs built before V640 reads as 1. */
+    private Integer quantity;
     private String planJson;
 
     private String appliedCouponDiscountId;
@@ -35,6 +37,11 @@ public class UserPlanDTO {
      * no coupon was applied at enrollment.
      */
     private CouponSnapshotDTO appliedCoupon;
+
+    /** Admin who attached the discount (ad-hoc or a picked coupon); null for learner coupons. */
+    private String discountGrantedByUserId;
+    private Date discountGrantedAt;
+    private Integer discountCyclesApplied;
 
     private String enrollInviteId;
 

@@ -34,9 +34,10 @@ pnpm --version
 echo "Installing dependencies..."
 pnpm install --frozen-lockfile
 
-# Typecheck + bundle. `pnpm run build` runs tsc and vite build CONCURRENTLY
-# (see package.json) and fails if either fails, so wall-clock is max(tsc, vite)
-# instead of the sum. Do not split these back into two serial steps.
+# Typecheck + bundle. `pnpm run build` is `build:tsc && build:vite` — SERIAL on
+# purpose (468dca774c: running them concurrently over-committed the 8 GB builder).
+# build:tsc is TypeScript 7's native compiler (the `typescript-native` alias),
+# which needs no Node heap flag and about a quarter of the CPU time of tsc 5.x.
 echo "Typechecking and building application..."
 pnpm run build
 

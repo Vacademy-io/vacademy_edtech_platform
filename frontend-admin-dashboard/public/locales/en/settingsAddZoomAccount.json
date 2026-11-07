@@ -1,0 +1,75 @@
+{
+    "dialog": {
+        "titleCreate": "Add Zoom account",
+        "titleEdit": "Edit Zoom account",
+        "description": "Paste your Server-to-Server OAuth app credentials from the Zoom Marketplace. A per-account Meeting SDK app is optional (see below). Apps must live in the same Zoom account.",
+        "editWarning": "Leave secret fields blank to keep the existing values."
+    },
+    "sections": {
+        "s2sCredentials": {
+            "title": "S2S OAuth credentials"
+        },
+        "sdkCredentials": {
+            "title": "Meeting SDK credentials (optional)",
+            "description": "Leave blank to use a platform-provided shared Meeting SDK app. For anonymous learner joins, the Meeting SDK app must belong to this same Zoom account — add your own SDK app here unless your platform has a shared one configured."
+        },
+        "webhook": {
+            "title": "Webhook (optional — required later for attendance/recordings)"
+        }
+    },
+    "fields": {
+        "label": {
+            "label": "Label",
+            "placeholder": "e.g. Main academy account"
+        },
+        "zoomAccountId": {
+            "label": "Zoom Account ID"
+        },
+        "s2sClientId": {
+            "label": "S2S Client ID"
+        },
+        "s2sClientSecret": {
+            "label": "S2S Client Secret"
+        },
+        "sdkClientKey": {
+            "label": "SDK Client Key"
+        },
+        "sdkClientSecret": {
+            "label": "SDK Client Secret"
+        },
+        "webhookToken": {
+            "label": "Webhook Verification Token",
+            "placeholder": "Copy from Zoom Marketplace → your S2S app → Feature → Event Subscriptions"
+        },
+        "common": {
+            "leaveBlankToKeepExisting": "Leave blank to keep existing"
+        }
+    },
+    "setDefault": {
+        "title": "Set as default account",
+        "description": "The default is preselected when admins create a new Zoom meeting."
+    },
+    "footer": {
+        "testConnection": "Test connection",
+        "cancel": "Cancel",
+        "addAccount": "Add account",
+        "saveChanges": "Save changes"
+    },
+    "common": {
+        "show": "Show",
+        "hide": "Hide"
+    },
+    "validation": {
+        "required": "Required"
+    },
+    "toasts": {
+        "accountAdded": "Zoom account added",
+        "accountUpdated": "Zoom account updated",
+        "saveFailed": "Failed to save Zoom account",
+        "connected": "Connected as {{email}}",
+        "connectedWithPlan": "Connected as {{email}} ({{planType}})",
+        "unknownAccount": "unknown",
+        "connectionFailed": "Connection failed",
+        "connectionTestFailed": "Connection test failed"
+    }
+}

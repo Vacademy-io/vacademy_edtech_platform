@@ -2,6 +2,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, ClockCounterClockwise, ChartBar } from '@phosphor-icons/react';
 import { Link } from '@tanstack/react-router';
+import { useTranslation } from 'react-i18next';
 
 interface AfterLectureViewProps {
     onBack: () => void;
@@ -9,18 +10,20 @@ interface AfterLectureViewProps {
 }
 
 export function AfterLectureView({ onBack, onViewLogs }: AfterLectureViewProps) {
+    const { t } = useTranslation('instructorCopilotAfterLectureView');
+
     const cards = [
         {
-            title: 'Previous Lecture Logs',
-            description: 'View history of your recorded and transcribed sessions.',
+            title: t('cards.logs.title'),
+            description: t('cards.logs.description'),
             icon: ClockCounterClockwise,
             color: 'text-blue-500',
             bgColor: 'bg-blue-50 dark:bg-blue-900/20',
             onClick: onViewLogs,
         },
         {
-            title: 'Analyse your lecture',
-            description: 'Get deep insights and feedback on your teaching style.',
+            title: t('cards.analyse.title'),
+            description: t('cards.analyse.description'),
             icon: ChartBar,
             color: 'text-green-500',
             bgColor: 'bg-green-50 dark:bg-green-900/20',
@@ -33,13 +36,13 @@ export function AfterLectureView({ onBack, onViewLogs }: AfterLectureViewProps) 
             <div className="flex items-center gap-4">
                 <Button variant="ghost" size="sm" onClick={onBack} className="gap-2">
                     <ArrowLeft size={16} />
-                    Back to Lecture Modes
+                    {t('backButton')}
                 </Button>
                 <div>
                     <h2 className="text-2xl font-bold text-slate-900 dark:text-slate-100">
-                        After Lecture
+                        {t('heading')}
                     </h2>
-                    <p className="text-sm text-slate-500">Review and analysis</p>
+                    <p className="text-sm text-slate-500">{t('subtitle')}</p>
                 </div>
             </div>
 

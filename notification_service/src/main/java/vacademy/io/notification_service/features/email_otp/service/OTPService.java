@@ -1,5 +1,6 @@
 package vacademy.io.notification_service.features.email_otp.service;
 
+import vacademy.io.common.core.internal_api_wrapper.ProductConfigClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -28,6 +29,9 @@ public class OTPService {
     @Autowired
     OriginInstituteResolver originInstituteResolver;
 
+    @Autowired
+    ProductConfigClient productConfigClient;
+
     public static String generateOTP(int length) {
         ThreadLocalRandom random = ThreadLocalRandom.current();
         StringBuilder otp = new StringBuilder();
@@ -38,6 +42,11 @@ public class OTPService {
     }
 
     public Boolean sendEmailOtp(String to, String subject, String service, String name, String instituteId) {
+        return sendEmailOtp(to, subject, service, name, instituteId, null);
+    }
+
+    public Boolean sendEmailOtp(String to, String subject, String service, String name, String instituteId,
+            String product) {
         // Signup and resend flows call /v1/send-email-otp straight from the browser and several
         // omitted the instituteId query param, which silently downgraded a white-labelled portal's
         // OTP to the platform sender and Vacademy branding. Recover it from the request host when
@@ -48,7 +57,8 @@ public class OTPService {
         }
         EmailOtp otp = createNewOTP(to, service);
         try {
-            emailService.sendEmailOtp(to, subject, service, name, otp.getOtp(), instituteId);
+            OtpBrand brand = productConfigClient.get(product).map(OtpBrand::of).orElse(null);
+            emailService.sendEmailOtp(to, subject, service, name, otp.getOtp(), instituteId, brand);
         } catch (Exception e) {
             return false;
         }

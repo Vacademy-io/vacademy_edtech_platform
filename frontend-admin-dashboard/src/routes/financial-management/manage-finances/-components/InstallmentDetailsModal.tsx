@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import dayjs from 'dayjs';
+import { useTranslation } from 'react-i18next';
 import { DashboardLoader } from '@/components/core/dashboard-loader';
 import {
     Dialog,
@@ -54,6 +55,7 @@ export function InstallmentDetailsModal({
     studentName,
     cpoName,
 }: InstallmentDetailsModalProps) {
+    const { t } = useTranslation('financialManagementInstallmentDetailsModal');
     const { data, isLoading, error } = useQuery({
         queryKey: getInstallmentDetailsQueryKey(studentId, cpoId),
         queryFn: () => fetchInstallmentDetails(studentId, cpoId),
@@ -67,7 +69,7 @@ export function InstallmentDetailsModal({
                 {/* Header */}
                 <DialogHeader className="px-6 pt-6 pb-4 border-b border-gray-100">
                     <DialogTitle className="text-lg font-bold text-gray-800">
-                        Installment Details
+                        {t('installmentDetails')}
                     </DialogTitle>
                     <DialogDescription className="mt-1 text-sm text-gray-500">
                         <span className="font-semibold text-gray-700">{studentName}</span>
@@ -91,7 +93,7 @@ export function InstallmentDetailsModal({
                     {error && (
                         <div className="rounded-lg border border-red-200 bg-red-50 p-6 text-center">
                             <p className="text-sm font-medium text-red-800">
-                                Unable to load installment details. Please try again.
+                                {t('errors.unableToLoad')}
                             </p>
                         </div>
                     )}
@@ -99,7 +101,7 @@ export function InstallmentDetailsModal({
                     {data && data.length === 0 && (
                         <div className="rounded-lg border border-gray-200 bg-gray-50 p-8 text-center">
                             <p className="text-sm font-medium text-gray-600">
-                                No installments found for this payment group.
+                                {t('empty.noInstallmentsFound')}
                             </p>
                         </div>
                     )}
@@ -110,28 +112,28 @@ export function InstallmentDetailsModal({
                                 <thead>
                                     <tr className="border-b-2 border-gray-200 bg-gray-50/80">
                                         <th className="py-3 px-4 text-[11px] font-semibold text-gray-500 uppercase tracking-wider">
-                                            Fee Type
+                                            {t('table.feeType')}
                                         </th>
                                         <th className="py-3 px-4 text-[11px] font-semibold text-gray-500 uppercase tracking-wider">
-                                            Inst #
+                                            {t('table.instNumber')}
                                         </th>
                                         <th className="py-3 px-4 text-[11px] font-semibold text-gray-500 uppercase tracking-wider">
-                                            Expected
+                                            {t('table.expected')}
                                         </th>
                                         <th className="py-3 px-4 text-[11px] font-semibold text-gray-500 uppercase tracking-wider">
-                                            Discount
+                                            {t('table.discount')}
                                         </th>
                                         <th className="py-3 px-4 text-[11px] font-semibold text-gray-500 uppercase tracking-wider">
-                                            Paid
+                                            {t('table.paid')}
                                         </th>
                                         <th className="py-3 px-4 text-[11px] font-semibold text-gray-500 uppercase tracking-wider">
-                                            Due
+                                            {t('table.due')}
                                         </th>
                                         <th className="py-3 px-4 text-[11px] font-semibold text-gray-500 uppercase tracking-wider">
-                                            Due Date
+                                            {t('table.dueDate')}
                                         </th>
                                         <th className="py-3 px-4 text-[11px] font-semibold text-gray-500 uppercase tracking-wider">
-                                            Status
+                                            {t('table.status')}
                                         </th>
                                     </tr>
                                 </thead>

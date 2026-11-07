@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useRouterState } from '@tanstack/react-router';
 import { useQuery } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 import {
     ArrowClockwise,
     ArrowsInSimple,
@@ -23,6 +24,7 @@ import authenticatedAxiosInstance from '@/lib/auth/axiosInstance';
 import { ASSISTANT_CAPABILITIES } from '@/constants/urls';
 import { useSelectedStudentMirrorStore } from '@/stores/assistant/selected-student-mirror';
 import { useVacademyAssistant } from './useVacademyAssistant';
+import { useInstituteChatbotName } from './useInstituteChatbotName';
 import { useAssistDock } from '@/components/assist-dock/store';
 import type { AssistantAction, AssistantCapabilities, AssistantMessage } from './types';
 import ReactMarkdown from 'react-markdown';
@@ -37,7 +39,6 @@ const PUBLIC_PREFIXES = [
     '/landing',
     '/pricing',
     '/content',
-    '/evaluator-ai',
     '/vim/onboarding',
     '/vim/login',
     '/vim/waitlist',
@@ -91,6 +92,8 @@ const FALLBACK_SUGGESTIONS = [
 ];
 
 export function VacademyAssistant() {
+    const { t } = useTranslation('dashboardIndex');
+    const chatbotName = useInstituteChatbotName();
     const pathname = useRouterState({ select: (s) => s.location.pathname });
     const [input, setInput] = useState('');
     const [expanded, setExpanded] = useState(false);
@@ -193,18 +196,20 @@ export function VacademyAssistant() {
         >
             {/* Header */}
             <div className="flex shrink-0 items-center justify-between gap-2 border-b border-neutral-200 bg-primary-500 px-4 py-3 text-white">
-                <div className="flex items-center gap-2">
-                    <div className="flex size-8 items-center justify-center rounded-full bg-white/20">
+                <div className="flex min-w-0 flex-1 items-center gap-2">
+                    <div className="flex size-8 shrink-0 items-center justify-center rounded-full bg-white/20">
                         <Sparkle size={18} weight="fill" />
                     </div>
-                    <div>
-                        <p className="text-body font-semibold leading-tight">Vacademy Assistant</p>
+                    <div className="min-w-0">
+                        <p className="break-words text-body font-semibold leading-tight">
+                            {chatbotName}
+                        </p>
                         <p className="text-caption text-white/80">
                             {isBusy ? 'Thinking…' : 'Here to help'}
                         </p>
                     </div>
                 </div>
-                <div className="flex items-center gap-1">
+                <div className="flex shrink-0 items-center gap-1">
                     <button
                         type="button"
                         aria-label={expanded ? 'Shrink panel' : 'Expand panel'}
@@ -267,7 +272,7 @@ export function VacademyAssistant() {
                                 </ul>
                             ) : (
                                 <p className="text-caption text-neutral-500">
-                                    Ask me how or where to do anything in Vacademy.
+                                    {t('assistant.helpDescription')}
                                 </p>
                             )}
                             <div className="mt-1 flex flex-col gap-2">

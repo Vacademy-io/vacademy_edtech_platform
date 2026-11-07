@@ -1,0 +1,72 @@
+---
+title: "Drafts vs live"
+description: "Which AI changes are saved as drafts for a person to publish, and which reach learners, visitors or leads straight away."
+icon: "file-pen"
+---
+
+When an AI app changes something in your institute, one question matters most: **does anyone outside see it yet?**
+
+Every edit in **Settings → MCP Server** carries a badge that answers that question, such as **Drafts only** or **Changes live**. [Risk levels](/mcp-server/settings/risk-levels) explains each badge. This page walks through the areas, with examples.
+
+<Note>
+Live edits that are turned on separately (opt-in), and every CRM action that contacts a lead, show you a preview and wait for your yes in the chat. A few edits apply directly: invite page and form edits (Courses Edit), and a course's images or intro video. See [Confirmations](/mcp-server/usage/confirmations).
+</Note>
+
+## Area by area
+
+<AccordionGroup>
+  <Accordion title="Website" icon="globe">
+    - **Build and edit pages** (*Drafts only*). Every page, section, colour, font and form link is saved as a draft. The live site does not change. The AI app gives you an editor link so you can review the draft and publish it from **Manage Pages** in your admin portal. When the AI app says a draft is "ready", it has only been checked. It is **not** live.
+    - **Import Figma designs** (*Drafts only*). Turns a Figma design that your AI app read into a draft site.
+    - **Set up folders, course tags and product pages** (*Adds to live data*, opt-in). Adds the course data a design needs. New folders start **hidden** and new product pages start as **drafts**. But tags added to a live course change your site's filters at once, and a course added to an active store page is on sale at once. It shows a plan first and never deletes or renames anything.
+    - **Publish and roll back** (*Changes live*, opt-in). Puts a checked draft live, or brings back an earlier published version, after your yes. The site is live only when the AI app reports that the publish succeeded.
+  </Accordion>
+  <Accordion title="Lead forms" icon="clipboard-list">
+    - **Create campaigns and add fields** (*Adds only*). Creates lead campaigns, adds fields to their forms and can send one test lead. A campaign is a real record, not a draft, so it can receive leads as soon as a form points to it. Nothing is removed from here.
+  </Accordion>
+  <Accordion title="Automations" icon="diagram-project">
+    - **Draft automations** (*Drafts only*). Saves workflows as **drafts**. A draft automation never runs. It starts working only when someone opens it in the builder and publishes it. Published automations can't be changed or removed from here.
+    - The AI app can also create **new** email and WhatsApp templates an automation needs. New WhatsApp templates go to Meta for approval. Existing templates are never changed.
+  </Accordion>
+  <Accordion title="Blog" icon="newspaper">
+    - **Draft posts** (*Drafts only*). Posts are saved as drafts in **Manage Pages → Blog**. A draft is never shown on your website until someone presses Publish. Published posts can't be changed from here.
+  </Accordion>
+  <Accordion title="Courses" icon="book">
+    - **Content (chapters, slides)** (*Drafts only*). New courses are created as **drafts** and only draft courses can be edited. Slides are drafts unless you ask for them to be published. A course goes live only when an admin approves it in your admin portal. One exception, by design: the course's preview image, banner and intro video can be set on live courses too.
+    - **Drip release rules** (*Not-live courses only*). Sets release rules on courses that are not live yet. Never touches the institute-wide drip switches.
+    - **Invite links, pricing and enrolment forms** (*Changes live*). Creates invite links and payment plans. Edits to an invite's page and registration form apply right away, on live courses too. Payment plans are never edited or removed.
+    - **Structure and depth** (*Changes live*, opt-in). Changes how many levels a course has, or regroups it, after a preview and your yes. On a live course, learners see the new structure at once and keep their progress. Nothing is copied or deleted.
+  </Accordion>
+  <Accordion title="Learners" icon="user-graduate">
+    - **Enrol into courses** (*Changes live*, opt-in). Enrols learners after a preview and your yes. Learners get access at once. Never removes anyone from a course. It asks you each time whether to send the welcome email and the login-details email.
+    - **Edit learner details** (*Changes live*, opt-in). Changes a learner's details after showing you before → after. Applies right away. Email and username can never be changed from here.
+  </Accordion>
+  <Accordion title="CRM" icon="address-book">
+    The CRM areas show in **Settings → MCP Server** for every institute, but the AI app gets CRM tools only when your plan includes the CRM. Without it, the tools do not appear (or answer `module_not_enabled` if called). Every CRM edit is turned on separately (opt-in).
+
+    - **Notes, logged calls and follow-ups** add records to the lead's history straight away. They change nothing that exists.
+    - **Status, owner, tier, tags and details** change the lead itself, as your team sees it in your admin portal. Changes to existing data show a preview first. A status change can start the automations set up for that status, and the preview says so.
+    - **Calls, AI calls, WhatsApp messages and meeting bookings** contact the lead. They always show a preview first, and each yes sends exactly once.
+  </Accordion>
+</AccordionGroup>
+
+## Why drafts are the default
+
+Most of what an AI app builds, such as a website, a course, a blog post or an automation, is best reviewed by a person before anyone else sees it. So those tools are built so they **cannot** publish:
+
+- You can let an AI app work for an hour on a new site without any risk to the live one.
+- You review the result in the same editor your team already uses.
+- You publish with the same button as always.
+
+If you want the AI app to publish websites too, an admin can turn on **Publish and roll back**. It still needs your yes for each publish.
+
+## Where to find what the AI app made
+
+- **Website and blog drafts:** open the editor link the AI app gives you, or open **Manage Pages**.
+- **Automations:** open the automation builder. New ones show as **Draft**.
+- **Courses:** draft courses appear in your course list as drafts until approved.
+- **Learners and CRM:** the change shows in the learner's or lead's record, as with any change your team makes.
+
+<Tip>
+Ask the AI app: "List everything you changed in this chat, with links." It can only report what its tools returned. So when it matters, check in your admin portal as well.
+</Tip>

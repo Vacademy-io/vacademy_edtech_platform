@@ -1,0 +1,81 @@
+{
+    "dialog": {
+        "title": "Trigger workflow",
+        "descriptionPrefix": "Run an automation for",
+        "descriptionSuffix": "when a lead event fires."
+    },
+    "actionType": {
+        "label": "What do you want to do?",
+        "communication": {
+            "title": "Communication",
+            "description": "Send an email or WhatsApp message."
+        },
+        "payload": {
+            "title": "Paste data to payload",
+            "description": "POST the event data to a URL."
+        }
+    },
+    "event": {
+        "label": "Trigger on which event?",
+        "placeholder": "Select a lead event",
+        "options": {
+            "leadAssignedToCounselor": "Lead assigned to counselor",
+            "leadTatReminderBefore": "Lead TAT reminder (before breach)",
+            "leadTatOverdue": "Lead TAT overdue",
+            "followUpDue": "Follow-up due",
+            "followUpOverdue": "Follow-up overdue",
+            "leadStatusChanged": "Lead status changed"
+        }
+    },
+    "statusGate": {
+        "label": "When status changes to",
+        "placeholder": "Any status",
+        "anyStatusChange": "Any status change",
+        "hint": "Matches the lead's new status. Pick a status to fire only on that change, or keep “Any status change”."
+    },
+    "channel": {
+        "label": "Channel",
+        "email": "Email",
+        "whatsapp": "WhatsApp"
+    },
+    "recipient": {
+        "label": "Send notification to",
+        "counselor": "Assigned counsellor (default)",
+        "lead": "Lead's own contact"
+    },
+    "template": {
+        "label": "Template",
+        "createSample": "Create sample template",
+        "creatingSample": "Creating sample…",
+        "placeholder": "Select a template",
+        "emptyText": "No template matches your search.",
+        "noneFoundEmail": "No email templates found. Click \"Create sample template\" above for a ready-made starter.",
+        "noneFoundWhatsapp": "No WhatsApp templates found. Create an approved WhatsApp template first."
+    },
+    "payload": {
+        "label": "Destination URL",
+        "placeholder": "https://example.com/webhook",
+        "hint": "The event's context (lead, counselor, pool, etc.) is POSTed as JSON."
+    },
+    "name": {
+        "label": "Workflow name",
+        "placeholder": "e.g. Notify parent on follow-up due"
+    },
+    "description": {
+        "label": "Description",
+        "optional": "(optional)",
+        "placeholder": "What does this workflow do?"
+    },
+    "footer": {
+        "cancel": "Cancel",
+        "creating": "Creating…",
+        "create": "Create workflow"
+    },
+    "toasts": {
+        "sampleCreated": "Sample template \"{{name}}\" created",
+        "noSampleTemplate": "No sample template available for this event.",
+        "sampleCreateFailed": "Failed to create template",
+        "workflowCreated": "Workflow created",
+        "workflowCreateFailed": "Failed to create workflow"
+    }
+}

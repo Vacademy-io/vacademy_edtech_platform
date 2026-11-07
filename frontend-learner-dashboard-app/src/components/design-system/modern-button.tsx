@@ -1,6 +1,7 @@
 import { cn } from "@/lib/utils";
 import { forwardRef } from "react";
 import { Slot } from "@radix-ui/react-slot";
+import { useTranslation } from "react-i18next";
 
 export interface ModernButtonProps
   extends React.ButtonHTMLAttributes<HTMLButtonElement> {
@@ -61,8 +62,9 @@ const ModernButton = forwardRef<HTMLButtonElement, ModernButtonProps>(
     disabled,
     ...props
   }, ref) => {
+    const { t } = useTranslation("uiAtomsA");
     const Comp = asChild ? Slot : "button";
-    
+
     // Use size-based rounding if no specific rounding is provided
     const roundingClass = rounded ? modernButtonVariants.rounded[rounded] : "";
     
@@ -83,7 +85,7 @@ const ModernButton = forwardRef<HTMLButtonElement, ModernButtonProps>(
         {isLoading ? (
           <>
             <div className="me-2 h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
-            Loading...
+            {t("modernButton.loading")}
           </>
         ) : (
           <>

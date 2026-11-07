@@ -1,0 +1,29 @@
+{
+    "header": {
+        "title": "Meet your cast · {{count}}"
+    },
+    "voice": {
+        "autoOption": "Auto voice",
+        "ariaLabel": "Voice for {{name}}"
+    },
+    "redo": {
+        "button": "Redo",
+        "placeholder": "What should change? e.g. older, warmer smile, formal saree…"
+    },
+    "upload": {
+        "uploading": "Uploading…",
+        "replace": "Replace",
+        "useMyImage": "Use my image"
+    },
+    "footer": {
+        "changesSummary_one": "{{count}} change will be applied before filming.",
+        "changesSummary_other": "{{count}} changes will be applied before filming.",
+        "noChanges": "These faces will appear in every scene.",
+        "submitDefault": "Approve cast & film",
+        "submitWithChanges_one": "Update {{count}} & film",
+        "submitWithChanges_other": "Update {{count}} & film"
+    },
+    "toast": {
+        "uploadFailed": "Upload failed. Try a smaller image."
+    }
+}

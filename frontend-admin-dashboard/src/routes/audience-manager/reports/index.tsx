@@ -8,6 +8,7 @@ import { z } from 'zod';
 export const REPORT_TABS = [
     'overview',
     'sources',
+    'utm',
     'funnel',
     'dispositions',
     'calling',
@@ -16,8 +17,10 @@ export const REPORT_TABS = [
     'activity',
     'followups',
     'counsellors',
+    'conversions',
     'manager',
     'revenue',
+    'admissions',
     'cohort',
     'forecast',
     'custom',

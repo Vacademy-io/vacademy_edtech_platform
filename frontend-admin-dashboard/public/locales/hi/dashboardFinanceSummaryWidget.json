@@ -1,0 +1,12 @@
+{
+    "header": {
+        "title": "वित्त सारांश",
+        "description": "एक नज़र में पैसों का प्रवाह",
+        "openButton": "खोलें"
+    },
+    "tiles": {
+        "outstanding": "बकाया",
+        "overdue": "अतिदेय",
+        "approvals": "अनुमोदन"
+    }
+}

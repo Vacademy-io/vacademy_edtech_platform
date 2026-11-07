@@ -1,3 +1,4 @@
+import type { ProctoringConfigWire } from './proctoring';
 export interface Instructions {
     id: string;
     type: string;
@@ -60,7 +61,8 @@ export interface SavedData {
     assessment_visibility: string;
     expected_participants: string | null;
     duration_distribution: 'ASSESSMENT' | 'QUESTION' | 'SECTION';
-    omr_mode: string | null;
+    /** OMR sheet (pen & paper) mode; the backend sends a Boolean (null on older assessments). */
+    omr_mode: boolean | null;
     boundation_end_date: string;
     assessment_url: string;
     duration: number;
@@ -84,6 +86,8 @@ export interface SavedData {
     pre_batch_registrations: PreBatchRegistration[];
     registration_close_date: string | null;
     notifications: AssessmentNotification;
+    /** Effective proctoring config (V48). Absent/NONE on older assessments. */
+    proctoring_config?: ProctoringConfigWire | null;
 }
 
 export interface Section {

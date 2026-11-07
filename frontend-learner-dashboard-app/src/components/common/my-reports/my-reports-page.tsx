@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { useNavigate } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import {
@@ -20,8 +21,9 @@ import {
 } from "@/components/ui/card";
 import { MyButton } from "@/components/design-system/button";
 import { useReportStore } from "@/stores/report-store";
-import { X, Sparkle } from "@phosphor-icons/react";
+import { Sparkle } from "@phosphor-icons/react";
 import { useEffect } from "react";
+import { useNavHeadingStore } from "@/stores/layout-container/useNavHeadingStore";
 import {
   fetchActivityInsights,
   insightTypeLabel,
@@ -54,8 +56,8 @@ function reportLabel(report: ReportListItem): string {
 function EmptyState({ title, message }: { title: string; message: string }) {
   return (
     <div className="flex items-center justify-center min-h-reg-400 px-6">
-      <div className="text-center">
-        <h2 className="text-xl font-semibold text-neutral-700 mb-2">{title}</h2>
+      <div className="text-center space-y-2">
+        <h2 className="text-xl font-semibold text-neutral-700">{title}</h2>
         <p className="text-neutral-500">{message}</p>
       </div>
     </div>
@@ -89,6 +91,7 @@ function TabButton({
 type ReportsTab = "term" | "activity";
 
 export default function MyReportsPage() {
+  const { t } = useTranslation("layoutCommonB");
   const navigate = useNavigate();
   const { permissions, isLoading: permissionsLoading } =
     useStudentPermissions();
@@ -96,6 +99,11 @@ export default function MyReportsPage() {
   const [currentPage, setCurrentPage] = useState(0);
   const [activeTab, setActiveTab] = useState<ReportsTab>("term");
   const [insightsPage, setInsightsPage] = useState(0);
+  const { setNavHeading } = useNavHeadingStore();
+
+  useEffect(() => {
+    setNavHeading(t("myReportsPage.header.title"));
+  }, [setNavHeading, t]);
 
   // No separate switch for insights: reaching My Reports at all already requires
   // the canViewReports permission, and that is the decision an institute makes.
@@ -170,16 +178,16 @@ export default function MyReportsPage() {
     if (error) {
       return (
         <EmptyState
-          title="Error Loading Reports"
-          message="Please try again later."
+          title={t("myReportsPage.errorLoading.title")}
+          message={t("myReportsPage.errorLoading.message")}
         />
       );
     }
     if (termReports.length === 0) {
       return (
         <EmptyState
-          title="No Reports Found"
-          message="You don't have any reports yet."
+          title={t("myReportsPage.emptyTerm.title")}
+          message={t("myReportsPage.emptyTerm.message")}
         />
       );
     }
@@ -195,13 +203,13 @@ export default function MyReportsPage() {
                 <CardTitle className="text-lg">{reportLabel(report)}</CardTitle>
                 <CardDescription>
                   {report.created_at
-                    ? `Created: ${safeFormatDate(report.created_at)}`
+                    ? t("myReportsPage.term.created", { date: safeFormatDate(report.created_at) })
                     : ""}
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="flex justify-between items-center">
-                  <div className="flex items-center gap-2">
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <div className="flex flex-wrap items-center gap-2">
                     <span
                       className={`px-2 py-1 rounded-full text-xs font-medium ${
                         report.status === "COMPLETED"
@@ -209,11 +217,13 @@ export default function MyReportsPage() {
                           : "bg-yellow-100 text-yellow-800"
                       }`}
                     >
-                      {report.status}
+                      {report.status === "COMPLETED"
+                        ? t("myReportsPage.term.statusReady")
+                        : t("myReportsPage.term.statusPreparing")}
                     </span>
                     {report.report_version === "v2" && (
                       <span className="px-2 py-1 rounded-full text-xs font-medium bg-primary-50 text-primary-600 border border-primary-200">
-                        Comprehensive
+                        {t("myReportsPage.term.comprehensive")}
                       </span>
                     )}
                   </div>
@@ -222,7 +232,7 @@ export default function MyReportsPage() {
                     size="sm"
                     buttonType="secondary"
                   >
-                    View Details
+                    {t("myReportsPage.term.viewDetails")}
                   </MyButton>
                 </div>
               </CardContent>
@@ -248,8 +258,8 @@ export default function MyReportsPage() {
     if (insights.length === 0) {
       return (
         <EmptyState
-          title="No Activity Insights Yet"
-          message="Insights appear here after you complete a quiz, question or assignment. They're prepared shortly after you submit."
+          title={t("myReportsPage.emptyActivity.title")}
+          message={t("myReportsPage.emptyActivity.message")}
         />
       );
     }
@@ -281,7 +291,7 @@ export default function MyReportsPage() {
                     size="sm"
                     buttonType="secondary"
                   >
-                    View Insights
+                    {t("myReportsPage.activity.viewInsights")}
                   </MyButton>
                 </div>
               </CardContent>
@@ -306,46 +316,34 @@ export default function MyReportsPage() {
     <div className="min-h-screen bg-gray-50/50 pb-24 md:pb-8">
       <div className="bg-white border-b border-gray-200 sticky top-0 z-30">
         <div className="w-full py-4 px-4">
-          <div className="flex items-center justify-between w-full">
-            <div className="flex items-center gap-4">
-              <button
-                onClick={handleClose}
-                className="p-2 hover:bg-gray-100 rounded-full transition-colors text-gray-600 md:hidden"
-              >
-                <X size={24} />
-              </button>
-              <h1 className="text-xl md:text-2xl font-bold text-gray-900">
-                My Reports
-              </h1>
-            </div>
-            <div className="hidden md:flex gap-3">
-              <MyButton
-                type="button"
-                scale="medium"
-                buttonType="secondary"
-                layoutVariant="default"
-                onClick={handleClose}
-              >
-                Back to Dashboard
-              </MyButton>
-            </div>
-          </div>
-
           {showTabs && (
-            <div className="mt-4 flex gap-1 border-b border-gray-200">
-              <TabButton
-                active={activeTab === "term"}
-                onClick={() => setActiveTab("term")}
-              >
-                Progress Reports
-              </TabButton>
-              <TabButton
-                active={activeTab === "activity"}
-                onClick={() => setActiveTab("activity")}
-              >
-                <Sparkle size={14} weight="fill" className="text-primary-500" />
-                Activity Insights
-              </TabButton>
+            <div className="flex items-end justify-between gap-3 border-b border-gray-200">
+              <div className="flex gap-1">
+                <TabButton
+                  active={activeTab === "term"}
+                  onClick={() => setActiveTab("term")}
+                >
+                  {t("myReportsPage.header.progressReportsTab")}
+                </TabButton>
+                <TabButton
+                  active={activeTab === "activity"}
+                  onClick={() => setActiveTab("activity")}
+                >
+                  <Sparkle size={14} weight="fill" className="text-primary-500" />
+                  {t("myReportsPage.header.activityInsightsTab")}
+                </TabButton>
+              </div>
+              <div className="mb-2 hidden md:block">
+                <MyButton
+                  type="button"
+                  scale="medium"
+                  buttonType="secondary"
+                  layoutVariant="default"
+                  onClick={handleClose}
+                >
+                  {t("myReportsPage.header.backToDashboard")}
+                </MyButton>
+              </div>
             </div>
           )}
         </div>

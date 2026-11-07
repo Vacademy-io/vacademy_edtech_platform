@@ -1,0 +1,14 @@
+{
+    "noLiveTests": "No tests are currently live.",
+    "noUpcomingTests": "No upcoming tests scheduled.",
+    "noPreviousTests": "No previous tests available.",
+    "noDraftTests": "No draft tests available.",
+    "mode": "Mode",
+    "type": "Type",
+    "assessmentsList": "Assessments List",
+    "helmet": {
+        "title": "Evaluate Tests",
+        "description": "This page shows the list of all the schedules tests and also an assessment can be scheduled here."
+    },
+    "noCourseDialogType": "Creating assessment"
+}

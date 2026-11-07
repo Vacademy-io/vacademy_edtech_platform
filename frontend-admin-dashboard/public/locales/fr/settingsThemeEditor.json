@@ -1,0 +1,110 @@
+{
+    "hexColorPlaceholder": "Couleur hexadécimale",
+    "toasts": {
+        "themeUpdated": "Thème mis à jour",
+        "saveFailed": "Impossible d'enregistrer le thème. Veuillez réessayer."
+    },
+    "brandColor": {
+        "heading": "Couleur de marque",
+        "description": "Votre couleur principale — elle détermine les boutons, les liens et les mises en valeur dans l'application apprenant et le tableau de bord admin.",
+        "selectThemeAriaLabel": "Sélectionner le thème {{name}}",
+        "customAriaLabel": "Utiliser une couleur de marque personnalisée",
+        "custom": "Personnalisé",
+        "customBrandColorAriaLabel": "Couleur de marque personnalisée"
+    },
+    "font": {
+        "heading": "Police",
+        "description": "La police utilisée dans l'application apprenant et le tableau de bord admin.",
+        "specimen": "Aa Bb Cc 123"
+    },
+    "background": {
+        "heading": "Fond de page",
+        "description": "La toile de fond de votre contenu — blanche par défaut dans les deux applications. Les cartes et les menus restent blancs, donc une teinte de marque claire apparaît comme un léger lavis.",
+        "custom": "Personnalisé",
+        "whiteDefault": "Blanc (par défaut)",
+        "resetToWhite": "Revenir au blanc",
+        "colorAriaLabel": "Couleur de fond de page",
+        "tooDarkWarning": "Cette couleur est trop sombre pour un fond de page — le texte reste foncé, ce qui peut nuire à la lisibilité. Choisissez une teinte plus claire.",
+        "cardPreviewTitle": "Carte",
+        "cardPreviewSubtitle": "Reste blanche sur la page teintée.",
+        "suggestions": {
+            "white": "Blanc",
+            "brandTint": "Teinte de marque",
+            "brandTintDeeper": "Teinte de marque (plus soutenue)",
+            "warmCream": "Crème chaude",
+            "coolGrey": "Gris froid"
+        }
+    },
+    "accentColors": {
+        "heading": "Couleurs secondaire et tertiaire",
+        "description": "Couleurs d'accent complémentaires utilisées dans l'application apprenant (badges, mises en valeur secondaires). Générées automatiquement à partir de votre couleur de marque, sauf si vous en définissez une ici — le tableau de bord admin ne les utilise pas.",
+        "secondaryLabel": "Couleur secondaire",
+        "tertiaryLabel": "Couleur tertiaire",
+        "resetToAuto": "Revenir à l'automatique",
+        "customize": "Personnaliser",
+        "colorAriaLabel": "Couleur {{label}}",
+        "autoDerived": "Automatique — dérivée de votre couleur de marque."
+    },
+    "sidebar": {
+        "heading": "Couleur de la barre latérale",
+        "description": "Donnez à votre barre latérale son propre style, indépendant de la couleur de marque — comme les thèmes de barre latérale de Slack.",
+        "selectPresetAriaLabel": "Sélectionner la barre latérale {{label}}",
+        "custom": "Personnalisé",
+        "customDescription": "Choisissez chaque couleur vous-même.",
+        "selectCustomAriaLabel": "Sélectionner la barre latérale personnalisée",
+        "colorFields": {
+            "surface": "Surface",
+            "surfaceHover": "Surface au survol",
+            "active": "Élément actif",
+            "activeText": "Texte actif",
+            "text": "Texte"
+        },
+        "colorAriaLabel": "Couleur {{label}}",
+        "previewLabels": {
+            "dashboard": "Tableau de bord",
+            "courses": "Cours",
+            "learners": "Apprenants"
+        }
+    },
+    "save": {
+        "saving": "Enregistrement…",
+        "save": "Enregistrer le thème"
+    },
+    "common": {
+        "defaultSuffix": "Par défaut"
+    },
+    "learnerUi": {
+        "heading": "Apparence de l'application apprenant",
+        "description": "Forme, espacement et style de surface pour l'application apprenant. Ces réglages s'appliquent à ce que voient vos apprenants — le tableau de bord admin n'est pas affecté.",
+        "corners": {
+            "label": "Style des coins",
+            "help": "Arrondi des cartes, boutons et champs. Les avatars et pastilles restent ronds.",
+            "sharp": "Net",
+            "rounded": "Arrondi",
+            "pill": "Doux"
+        },
+        "density": {
+            "label": "Densité",
+            "help": "Marge des cartes, espacement entre éléments et hauteur des contrôles.",
+            "compact": "Compact",
+            "default": "Par défaut",
+            "comfortable": "Confortable"
+        },
+        "gradient": {
+            "label": "Style de surface",
+            "help": "Intensité des dégradés de marque sur les cartes et bannières.",
+            "flat": "Plat",
+            "subtle": "Subtil",
+            "full": "Complet"
+        },
+        "skin": {
+            "label": "Thème visuel",
+            "help": "Langage visuel global de l'application apprenant.",
+            "default": "Par défaut",
+            "vibrant": "Vif",
+            "play": "Play",
+            "cleanerPlay": "Cleaner Play",
+            "corporate": "Entreprise"
+        }
+    }
+}

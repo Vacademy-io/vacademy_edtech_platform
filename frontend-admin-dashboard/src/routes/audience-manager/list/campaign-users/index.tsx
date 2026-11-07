@@ -13,13 +13,30 @@ import {
     getTerminologyPlural,
 } from '@/components/common/layout-container/sidebar/utils';
 import { OtherTerms, SystemTerms } from '@/routes/settings/-components/NamingSettings';
+import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
+import i18n from '@/i18n';
 
-const campaignUsersSearchSchema = z.object({
-    campaignId: z.string().min(1, 'Campaign ID is required'),
-    campaignName: z.string().optional(),
-    customFields: z.string().optional(), // JSON string of custom fields
-    campaignType: z.string().optional(),
-});
+const NAMESPACE = 'audienceManagerCampaignUsersIndex';
+
+/**
+ * Fallback translate function for the zod search-param schema, which is
+ * built at module scope (outside any React render tree) so it cannot use
+ * the `useTranslation` hook. Uses the shared i18next singleton directly.
+ */
+const globalT: TFunction = ((key: string, options?: Record<string, unknown>) =>
+    i18n.t(key, { ns: NAMESPACE, ...options })) as TFunction;
+
+function buildCampaignUsersSearchSchema(t: TFunction) {
+    return z.object({
+        campaignId: z.string().min(1, t('schema.campaignIdRequired')),
+        campaignName: z.string().optional(),
+        customFields: z.string().optional(), // JSON string of custom fields
+        campaignType: z.string().optional(),
+    });
+}
+
+const campaignUsersSearchSchema = buildCampaignUsersSearchSchema(globalT);
 
 export const Route = createFileRoute('/audience-manager/list/campaign-users/')({
     component: CampaignUsersPage,
@@ -27,13 +44,16 @@ export const Route = createFileRoute('/audience-manager/list/campaign-users/')({
 });
 
 export function CampaignUsersPage() {
+    const { t } = useTranslation(NAMESPACE);
     const { setNavHeading } = useNavHeadingStore();
     const search = useSearch({ from: Route.id });
     const navigate = useNavigate();
+    const audienceTerm = getTerminology(OtherTerms.AudienceList, SystemTerms.AudienceList);
+    const audienceTermPlural = getTerminologyPlural(OtherTerms.AudienceList, SystemTerms.AudienceList);
 
     useEffect(() => {
-        setNavHeading(`${getTerminology(OtherTerms.AudienceList, SystemTerms.AudienceList)} Users`);
-    }, [setNavHeading]);
+        setNavHeading(t('navHeading', { audienceTerm }));
+    }, [setNavHeading, t, audienceTerm]);
 
     const handleBack = () => {
         // Both routes are in the generated tree now, so this navigation is fully typed.
@@ -44,10 +64,10 @@ export function CampaignUsersPage() {
     return (
         <LayoutContainer>
             <Helmet>
-                <title>{`${getTerminology(OtherTerms.AudienceList, SystemTerms.AudienceList)} Users`}</title>
+                <title>{t('helmet.title', { audienceTerm })}</title>
                 <meta
                     name="description"
-                    content={`View users enrolled in the ${getTerminology(OtherTerms.AudienceList, SystemTerms.AudienceList).toLowerCase()}.`}
+                    content={t('helmet.description', { audienceTerm: audienceTerm.toLowerCase() })}
                 />
             </Helmet>
             <div className="flex w-full flex-col gap-6">
@@ -58,7 +78,7 @@ export function CampaignUsersPage() {
                     className="w-fit text-neutral-600 hover:text-neutral-900"
                 >
                     <CaretLeft className="mr-1.5 size-4" />
-                    {`Back to ${getTerminologyPlural(OtherTerms.AudienceList, SystemTerms.AudienceList)}`}
+                    {t('backButton', { audienceTermPlural })}
                 </Button>
                 {search.campaignId ? (
                     <CampaignUsersTable
@@ -69,7 +89,7 @@ export function CampaignUsersPage() {
                     />
                 ) : (
                     <div className="flex w-full flex-col items-center justify-center gap-2 py-20">
-                        <p className="text-danger-600">Campaign ID is required</p>
+                        <p className="text-danger-600">{t('missingCampaignId')}</p>
                     </div>
                 )}
             </div>

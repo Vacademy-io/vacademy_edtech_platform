@@ -1,0 +1,27 @@
+{
+    "trigger": {
+        "createLink": "Create {{term}} Link"
+    },
+    "dialog": {
+        "title": "Select Course and Batches"
+    },
+    "courseSelect": {
+        "label": "Select {{term}}",
+        "placeholder": "Choose a course"
+    },
+    "addBatch": {
+        "heading": "Add Batch",
+        "sessionPlaceholder": "Select session",
+        "levelPlaceholder": "Select level",
+        "button": "Add Batch"
+    },
+    "selectedBatches": {
+        "heading": "Selected Batches",
+        "parentHint": "(Select parent batch - parent batch's details will be used as invite link details)",
+        "parentBadge": "Parent batch"
+    },
+    "actions": {
+        "cancel": "Cancel",
+        "continue": "Continue"
+    }
+}

@@ -1,0 +1,24 @@
+{
+    "unsupportedFormat": "Votre navigateur ne prend pas en charge la balise vidéo ou le format de cette vidéo.",
+    "controls": {
+        "play": "Lecture",
+        "pause": "Pause",
+        "mute": "Couper le son",
+        "unmute": "Rétablir le son",
+        "fullScreen": "Plein écran",
+        "exitFullScreen": "Quitter le plein écran",
+        "moreOptions": "Plus d'options",
+        "rewindSeconds_one": "Reculer de {{count}} seconde",
+        "rewindSeconds_many": "Reculer de {{count}} secondes",
+        "rewindSeconds_other": "Reculer de {{count}} secondes",
+        "forwardSeconds_one": "Avancer de {{count}} seconde",
+        "forwardSeconds_many": "Avancer de {{count}} secondes",
+        "forwardSeconds_other": "Avancer de {{count}} secondes"
+    },
+    "menu": {
+        "playbackSpeed": "Vitesse de lecture",
+        "normalSpeed": "Normal",
+        "pictureInPicture": "Image dans l'image",
+        "download": "Télécharger"
+    }
+}

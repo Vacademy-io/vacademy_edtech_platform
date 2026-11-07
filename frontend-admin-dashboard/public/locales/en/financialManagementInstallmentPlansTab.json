@@ -1,0 +1,68 @@
+{
+    "feeType": {
+        "installmentCount_one": "{{count}} installment",
+        "installmentCount_other": "{{count}} installments",
+        "refundable": "Refundable",
+        "penalty": "Penalty {{percent}}%",
+        "loadingInstallments": "Loading installments...",
+        "columns": {
+            "number": "#",
+            "amount": "Amount",
+            "startDate": "Start Date",
+            "endDate": "End Date",
+            "dueDate": "Due Date",
+            "status": "Status"
+        },
+        "total": "Total",
+        "noSchedule": "No installment schedule — one-time payment of {{amount}}"
+    },
+    "package": {
+        "totalLabel": "<b>{{amount}}</b> total",
+        "feeTypeCount_one": "{{count}} fee type",
+        "feeTypeCount_other": "{{count}} fee types"
+    },
+    "header": {
+        "title": "Fee Plan",
+        "subtitle": "Manage fee plans with fee types and installment schedules."
+    },
+    "filters": {
+        "allClasses": "All Classes"
+    },
+    "actions": {
+        "createPlan": "Create Plan"
+    },
+    "loading": "Loading fee plans...",
+    "error": {
+        "prefix": "Failed to load fee plan.",
+        "genericMessage": "Please try again."
+    },
+    "empty": {
+        "title": "No fee plan found.",
+        "hint": "Click <b>{{createPlan}}</b> to add the first one."
+    },
+    "summary": {
+        "packageCount_one": "Showing {{count}} package",
+        "packageCount_other": "Showing {{count}} packages"
+    },
+    "redesign": {
+        "feeTypesHeading": "Fee types & installment schedules",
+        "stats": {
+            "plans": "Fee plans",
+            "plansDetail": "{{count}} active",
+            "avg": "Average plan value",
+            "avgDetail": "Across {{count}} plans with a fee",
+            "feeTypes": "Fee types in use",
+            "feeTypesDetail": "Distinct fee types across these plans",
+            "classes": "{{batches}} linked",
+            "classesDetail": "Linked to at least one plan",
+            "unlinked_one": "{{count}} plan has no {{batch}} linked",
+            "unlinked_other": "{{count}} plans have no {{batch}} linked"
+        },
+        "views": {
+            "all": "All plans"
+        },
+        "searchPlaceholder": "Search plan or fee type",
+        "sessionAria": "Session",
+        "noMatch": "No fee plans match this search."
+    }
+}

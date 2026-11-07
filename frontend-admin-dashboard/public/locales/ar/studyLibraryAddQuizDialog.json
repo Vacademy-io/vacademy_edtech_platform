@@ -1,0 +1,32 @@
+{
+    "quizTitle": "الاختبار {{number}}",
+    "quizQuestionVariantTitle": "سؤال الاختبار",
+    "sections": {
+        "quickAccess": "وصول سريع",
+        "writingSkills": "مهارات الكتابة",
+        "readingSkills": "مهارات القراءة"
+    },
+    "questionTypes": {
+        "mcqSingle": "اختيار من متعدد (إجابة واحدة صحيحة)",
+        "mcqMultiple": "اختيار من متعدد (أكثر من إجابة صحيحة)",
+        "numerical": "رقمي",
+        "trueFalse": "صح أو خطأ",
+        "longAnswer": "إجابة طويلة",
+        "singleWord": "كلمة واحدة",
+        "comprehensionMcqSingle": "استيعاب - اختيار من متعدد (إجابة واحدة صحيحة)",
+        "comprehensionMcqMultiple": "استيعاب - اختيار من متعدد (أكثر من إجابة صحيحة)",
+        "comprehensionNumeric": "استيعاب رقمي"
+    },
+    "errors": {
+        "noQuestions": "لم يتم توفير أي أسئلة لإنشاء الاختبار.",
+        "addFailed": "فشل في إضافة الاختبار",
+        "addAtLeastOneQuestion": "يرجى إضافة سؤال واحد على الأقل قبل إنشاء الاختبار.",
+        "questionNameRequired": "يجب أن يكون لكل الأسئلة اسم سؤال.",
+        "slideCreationFailed": "فشل إنشاء شريحة الاختبار."
+    },
+    "toasts": {
+        "quizAdded": "تمت إضافة الاختبار بنجاح!",
+        "quizCreated": "تم إنشاء الاختبار بنجاح!",
+        "previewUpdateIssue": "تم إنشاء الاختبار، ولكن حدثت مشكلة أثناء تحديث المعاينة. يرجى تحديث الصفحة."
+    }
+}

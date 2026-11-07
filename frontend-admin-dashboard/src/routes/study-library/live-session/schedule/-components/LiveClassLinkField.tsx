@@ -3,6 +3,7 @@ import { MyInput } from '@/components/design-system/input';
 import { MyButton } from '@/components/design-system/button';
 import { MyDialog } from '@/components/design-system/dialog';
 import { Calendar, Repeat, CalendarDays, RefreshCw } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 type RecurrenceScope = 'ONLY_THIS' | 'ALL_FUTURE' | 'CURRENT_DAY_ALL_SESSIONS' | 'ALL_FUTURE_ALL_SESSIONS';
 
@@ -14,9 +15,11 @@ interface LiveClassLinkFieldProps {
     dayName?: string;
 }
 
-export const LiveClassLinkField = ({ value, onChange, onApplyWithScope, isEdit, dayName = 'this day' }: LiveClassLinkFieldProps) => {
+export const LiveClassLinkField = ({ value, onChange, onApplyWithScope, isEdit, dayName }: LiveClassLinkFieldProps) => {
+    const { t } = useTranslation('studyLibraryLiveClassLinkField');
     const [isDialogOpen, setIsDialogOpen] = useState(false);
     const [selectedScope, setSelectedScope] = useState<RecurrenceScope | null>(null);
+    const resolvedDayName = dayName ?? t('defaultDayName');
 
     const handleApplyClick = () => {
         setIsDialogOpen(true);
@@ -34,7 +37,7 @@ export const LiveClassLinkField = ({ value, onChange, onApplyWithScope, isEdit, 
             <div className="flex-1 space-y-1">
                 <MyInput
                     inputType="text"
-                    inputPlaceholder="Enter live class URL"
+                    inputPlaceholder={t('urlInputPlaceholder')}
                     input={value}
                     onChangeFunction={(e) => onChange(e.target.value)}
                     className="w-full"
@@ -47,14 +50,14 @@ export const LiveClassLinkField = ({ value, onChange, onApplyWithScope, isEdit, 
                     onClick={handleApplyClick}
                     className="h-10 px-4"
                 >
-                    Apply
+                    {t('actions.apply')}
                 </MyButton>
             )}
 
             <MyDialog
                 open={isDialogOpen}
                 onOpenChange={setIsDialogOpen}
-                heading="Where do you want to apply this new link?"
+                heading={t('dialog.heading')}
                 className="w-[600px]"
             >
                 <div className="space-y-6">
@@ -69,9 +72,9 @@ export const LiveClassLinkField = ({ value, onChange, onApplyWithScope, isEdit, 
                                     <Calendar className="size-6" />
                                 </div>
                                 <div>
-                                    <h3 className="font-semibold text-gray-900">Only This Session</h3>
-                                    <p className="mt-1 text-sm text-gray-500">Apply the new link only for this particular session</p>
-                                    <p className="mt-2 text-xs font-medium text-gray-400">Example: Only this {dayName} session will have the new link</p>
+                                    <h3 className="font-semibold text-gray-900">{t('options.onlyThis.title')}</h3>
+                                    <p className="mt-1 text-sm text-gray-500">{t('options.onlyThis.description')}</p>
+                                    <p className="mt-2 text-xs font-medium text-gray-400">{t('options.onlyThis.example', { dayName: resolvedDayName })}</p>
                                 </div>
                             </div>
                         </div>
@@ -86,9 +89,9 @@ export const LiveClassLinkField = ({ value, onChange, onApplyWithScope, isEdit, 
                                     <CalendarDays className="size-6" />
                                 </div>
                                 <div>
-                                    <h3 className="font-semibold text-gray-900">Current {dayName} All Sessions</h3>
-                                    <p className="mt-1 text-sm text-gray-500">Apply the new link for all sessions on this {dayName}</p>
-                                    <p className="mt-2 text-xs font-medium text-gray-400">Example: All sessions on this {dayName} will have the new link</p>
+                                    <h3 className="font-semibold text-gray-900">{t('options.currentDayAllSessions.title', { dayName: resolvedDayName })}</h3>
+                                    <p className="mt-1 text-sm text-gray-500">{t('options.currentDayAllSessions.description', { dayName: resolvedDayName })}</p>
+                                    <p className="mt-2 text-xs font-medium text-gray-400">{t('options.currentDayAllSessions.example', { dayName: resolvedDayName })}</p>
                                 </div>
                             </div>
                         </div>
@@ -103,9 +106,9 @@ export const LiveClassLinkField = ({ value, onChange, onApplyWithScope, isEdit, 
                                     <Repeat className="size-6" />
                                 </div>
                                 <div>
-                                    <h3 className="font-semibold text-gray-900">All Upcoming Sessions</h3>
-                                    <p className="mt-1 text-sm text-gray-500">Apply the new link for today and all future sessions at this time slot</p>
-                                    <p className="mt-2 text-xs font-medium text-gray-400">Example: All upcoming {dayName}s at this session time will have the new link</p>
+                                    <h3 className="font-semibold text-gray-900">{t('options.allFuture.title')}</h3>
+                                    <p className="mt-1 text-sm text-gray-500">{t('options.allFuture.description')}</p>
+                                    <p className="mt-2 text-xs font-medium text-gray-400">{t('options.allFuture.example', { dayName: resolvedDayName })}</p>
                                 </div>
                             </div>
                         </div>
@@ -120,9 +123,9 @@ export const LiveClassLinkField = ({ value, onChange, onApplyWithScope, isEdit, 
                                     <RefreshCw className="size-6" />
                                 </div>
                                 <div>
-                                    <h3 className="font-semibold text-gray-900">Upcoming {dayName}s All Sessions</h3>
-                                    <p className="mt-1 text-sm text-gray-500">Apply the new link for all sessions on all upcoming {dayName}s</p>
-                                    <p className="mt-2 text-xs font-medium text-gray-400">Example: All sessions on every future {dayName} will have the new link</p>
+                                    <h3 className="font-semibold text-gray-900">{t('options.allFutureAllSessions.title', { dayName: resolvedDayName })}</h3>
+                                    <p className="mt-1 text-sm text-gray-500">{t('options.allFutureAllSessions.description', { dayName: resolvedDayName })}</p>
+                                    <p className="mt-2 text-xs font-medium text-gray-400">{t('options.allFutureAllSessions.example', { dayName: resolvedDayName })}</p>
                                 </div>
                             </div>
                         </div>
@@ -133,14 +136,14 @@ export const LiveClassLinkField = ({ value, onChange, onApplyWithScope, isEdit, 
                             buttonType="secondary"
                             onClick={() => setIsDialogOpen(false)}
                         >
-                            Cancel
+                            {t('actions.cancel')}
                         </MyButton>
                         <MyButton
                             buttonType="primary"
                             onClick={handleConfirm}
                             disable={!selectedScope}
                         >
-                            Confirm & Apply
+                            {t('actions.confirmAndApply')}
                         </MyButton>
                     </div>
                 </div>

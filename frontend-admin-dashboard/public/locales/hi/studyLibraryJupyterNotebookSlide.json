@@ -1,0 +1,23 @@
+{
+    "errors": {
+        "urlRequired": "कृपया नोटबुक URL दर्ज करें",
+        "urlInvalid": "कृपया एक मान्य URL दर्ज करें",
+        "loadFailed": "नोटबुक लोड करने में विफल। कृपया URL जाँचें और फिर से प्रयास करें।"
+    },
+    "toast": {
+        "saveSuccess": "नोटबुक कॉन्फ़िगरेशन सफलतापूर्वक सहेजा गया!"
+    },
+    "configureTitle": "Jupyter नोटबुक कॉन्फ़िगर करें",
+    "configureDescription": "इस स्लाइड में एम्बेड करने के लिए अपना Jupyter नोटबुक URL दर्ज करें।",
+    "projectNameLabel": "प्रोजेक्ट नाम (वैकल्पिक)",
+    "projectNamePlaceholder": "मेरा Jupyter प्रोजेक्ट",
+    "notebookUrlLabel": "नोटबुक URL *",
+    "previewNotebook": "नोटबुक पूर्वावलोकन करें",
+    "notConfiguredTitle": "कोई नोटबुक कॉन्फ़िगर नहीं है",
+    "notConfiguredDescription": "इस स्लाइड के लिए अभी तक कोई नोटबुक URL कॉन्फ़िगर नहीं किया गया है।",
+    "configureNotebook": "नोटबुक कॉन्फ़िगर करें",
+    "defaultProjectName": "Jupyter नोटबुक",
+    "notebookLabel": "नोटबुक",
+    "open": "खोलें",
+    "edit": "संपादित करें"
+}

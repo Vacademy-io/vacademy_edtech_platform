@@ -5,6 +5,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
+import { useTranslation } from 'react-i18next';
 import { useInvitesForPackageSession } from '../../../-hooks/useInvitesForPackageSession';
 
 interface Props {
@@ -20,6 +21,7 @@ export const InvitePickerDropdown = ({
     value,
     onValueChange,
 }: Props) => {
+    const { t } = useTranslation('manageStudentsInvitePickerDropdown');
     const { data, isLoading } = useInvitesForPackageSession({
         instituteId,
         packageSessionId,
@@ -37,7 +39,7 @@ export const InvitePickerDropdown = ({
     if (isLoading) {
         return (
             <div className="flex h-9 items-center rounded-md border border-neutral-200 bg-neutral-50 px-3 text-xs text-neutral-400">
-                Loading invites…
+                {t('loading')}
             </div>
         );
     }
@@ -55,11 +57,11 @@ export const InvitePickerDropdown = ({
             }}
         >
             <SelectTrigger>
-                <SelectValue placeholder="Auto (default invite)" />
+                <SelectValue placeholder={t('placeholder')} />
             </SelectTrigger>
             <SelectContent className="z-popover-above-modal">
                 <SelectItem value="__auto__">
-                    <span className="text-neutral-500 italic">Auto-resolve default invite</span>
+                    <span className="text-neutral-500 italic">{t('autoResolveOption')}</span>
                 </SelectItem>
                 {invites.map((invite) => (
                     <SelectItem key={invite.id} value={invite.id}>
@@ -76,7 +78,7 @@ export const InvitePickerDropdown = ({
                 ))}
                 {invites.length === 0 && (
                     <div className="px-3 py-2 text-xs text-neutral-400">
-                        No active invites found for this course
+                        {t('emptyState')}
                     </div>
                 )}
             </SelectContent>

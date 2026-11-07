@@ -1,0 +1,57 @@
+{
+    "menu": {
+        "viewDetails": "Voir les détails de l'évaluation",
+        "deleteAssessment": "Supprimer l'évaluation"
+    },
+    "common": {
+        "open": "Ouvrir",
+        "attention": "Attention"
+    },
+    "reminderMessage": {
+        "prefix": "Un rappel d'évaluation sera envoyé à tous les",
+        "participantsCount_one": "{{count}} participant",
+        "participantsCount_many": "{{count}} participants",
+        "participantsCount_other": "{{count}} participants",
+        "suffix": "qui ne se sont pas encore présentés parmi les lots assignés."
+    },
+    "dialogs": {
+        "reminder": {
+            "title": "Envoyer un rappel",
+            "send": "Envoyer"
+        },
+        "delete": {
+            "title": "Supprimer l'évaluation",
+            "confirmPrefix": "Êtes-vous sûr de vouloir supprimer",
+            "confirmSuffix": " ?",
+            "delete": "Supprimer"
+        },
+        "pause": {
+            "title": "Suspendre le statut en direct",
+            "dateLabel": "Date",
+            "datePlaceholder": "Date",
+            "pauseUntilLabel": "Suspendre jusqu'à",
+            "timePlaceholder": "Heure",
+            "pause": "Suspendre"
+        },
+        "resume": {
+            "title": "Reprendre le statut en direct",
+            "confirmPrefix": "Voulez-vous reprendre votre évaluation en direct",
+            "sampleAssessmentName": "The Human Eye and The Colourful World",
+            "confirmSuffix": " ?",
+            "resume": "Reprendre"
+        },
+        "reopen": {
+            "title": "Rouvrir l'évaluation",
+            "selectDateTime": "Sélectionnez la date et l'heure de réouverture de l'évaluation",
+            "startDateTimeLabel": "Date et heure de début",
+            "endDateTimeLabel": "Date et heure de fin",
+            "datePlaceholder": "Date",
+            "timePlaceholder": "Heure",
+            "reopen": "Rouvrir"
+        }
+    },
+    "toasts": {
+        "deleteSuccess": "L'évaluation a été supprimée avec succès !",
+        "slidesDeleteFailed": "L'évaluation a été supprimée, mais ses diapositives de cours n'ont pas pu être retirées."
+    }
+}

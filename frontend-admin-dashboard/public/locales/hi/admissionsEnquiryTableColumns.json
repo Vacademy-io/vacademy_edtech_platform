@@ -1,0 +1,45 @@
+{
+    "aria": {
+        "selectAll": "सभी चुनें",
+        "selectRow": "पंक्ति चुनें",
+        "openMenu": "मेनू खोलें"
+    },
+    "columns": {
+        "serialNumber": "क्र.सं.",
+        "class": "कक्षा",
+        "studentName": "{{learnerLabel}} का नाम",
+        "gender": "लिंग",
+        "dateOfBirth": "जन्म तिथि",
+        "parentName": "अभिभावक का नाम",
+        "parentEmail": "अभिभावक का ईमेल",
+        "parentMobile": "अभिभावक का मोबाइल",
+        "trackingId": "ट्रैकिंग आईडी",
+        "status": "स्थिति",
+        "source": "स्रोत",
+        "counsellor": "काउंसलर",
+        "leadInterestScore": "लीड रुचि स्कोर",
+        "actions": "कार्रवाई"
+    },
+    "status": {
+        "new": "नया",
+        "contacted": "संपर्क किया गया",
+        "qualified": "योग्य",
+        "notEligible": "अपात्र",
+        "followUp": "फॉलो अप",
+        "closed": "बंद",
+        "converted": "परिवर्तित",
+        "admitted": "प्रवेशित"
+    },
+    "source": {
+        "website": "वेबसाइट",
+        "googleAds": "गूगल विज्ञापन",
+        "facebook": "फेसबुक",
+        "instagram": "इंस्टाग्राम",
+        "referral": "रेफरल",
+        "other": "अन्य"
+    },
+    "actionsMenu": {
+        "viewDetails": "विवरण देखें",
+        "activityLog": "गतिविधि लॉग"
+    }
+}

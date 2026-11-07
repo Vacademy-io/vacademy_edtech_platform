@@ -1,0 +1,87 @@
+{
+    "summaryView": {
+        "overview": "نظرة عامة",
+        "keyTakeaways": "أهم النقاط"
+    },
+    "flashcardsView": {
+        "questionLabel": "سؤال",
+        "answerLabel": "إجابة",
+        "clickToFlip": "انقر للتقليب",
+        "previous": "السابق",
+        "next": "التالي",
+        "cardCounter": "البطاقة {{current}} من {{total}}"
+    },
+    "classworkView": {
+        "emptyState": "لم يتم تعيين أي نشاط صفي"
+    },
+    "homeworkView": {
+        "emptyState": "لم يتم تعيين أي واجب منزلي"
+    },
+    "toasts": {
+        "instituteDetailsUnavailable": "تفاصيل المؤسسة غير متوفرة",
+        "quizGenerationStarted": "بدأ إنشاء الاختبار! جاري استطلاع النتائج...",
+        "quizGeneratedSuccess": "تم إنشاء الاختبار بنجاح!",
+        "quizSavedFailed": "تم إنشاء الاختبار ولكن تعذر حفظه في السجل",
+        "quizTimedOut": "انتهت مهلة إنشاء الاختبار",
+        "quizGenerationFailedPoll": "فشل إنشاء الاختبار",
+        "quizGenerationFailedStart": "فشل بدء إنشاء الاختبار",
+        "noNotesAvailable": "لا توجد ملاحظات متاحة للتنزيل",
+        "notesDownloadSuccess": "تم تنزيل ملف PDF للملاحظات بنجاح!",
+        "notesDownloadFailed": "فشل إنشاء ملف PDF للملاحظات",
+        "noSummaryAvailable": "لا يوجد ملخص متاح للتنزيل",
+        "summaryDownloadSuccess": "تم تنزيل ملف PDF للملخص بنجاح!",
+        "summaryDownloadFailed": "فشل إنشاء ملف PDF للملخص",
+        "noQuizAvailable": "لا يوجد اختبار متاح للتنزيل",
+        "noClassworkAvailable": "لا يوجد نشاط صفي متاح للتنزيل",
+        "classworkDownloadSuccess": "تم تنزيل ملف PDF للنشاط الصفي بنجاح!",
+        "classworkDownloadFailed": "فشل إنشاء ملف PDF للنشاط الصفي",
+        "noHomeworkAvailable": "لا يوجد واجب منزلي متاح للتنزيل",
+        "homeworkDownloadSuccess": "تم تنزيل ملف PDF للواجب المنزلي بنجاح!",
+        "homeworkDownloadFailed": "فشل إنشاء ملف PDF للواجب المنزلي",
+        "generatingPlaceholder": "جاري إنشاء {{label}}... (TODO)"
+    },
+    "tabs": {
+        "transcription": {
+            "label": "النسخ الكتابي",
+            "description": "النسخ الكتابي الكامل للصوت"
+        },
+        "notes": {
+            "label": "الملاحظات",
+            "description": "ملاحظات منظمة من المحتوى"
+        },
+        "summary": {
+            "label": "الملخص",
+            "description": "ملخص مُنشأ بالذكاء الاصطناعي للنقاط الرئيسية"
+        },
+        "flashcards": {
+            "label": "البطاقات التعليمية",
+            "description": "بطاقات تعليمية للمراجعة"
+        },
+        "quiz": {
+            "label": "الاختبار",
+            "description": "أسئلة اختبار مُنشأة تلقائيًا"
+        },
+        "slides": {
+            "label": "الشرائح",
+            "description": "مخطط شرائح العرض التقديمي"
+        },
+        "videos": {
+            "label": "أفكار فيديو",
+            "description": "اقتراحات محتوى فيديو"
+        },
+        "homework": {
+            "label": "الواجب المنزلي",
+            "description": "أفكار مهام الواجب المنزلي"
+        },
+        "classwork": {
+            "label": "النشاط الصفي",
+            "description": "أفكار أنشطة داخل الصف"
+        }
+    },
+    "emptyState": {
+        "title": "لم يتم إنشاء {{label}} بعد",
+        "hint": "أنشئ {{label}} من نسختك الكتابية لتظهر المحتويات هنا.",
+        "generateButton": "إنشاء {{label}}"
+    },
+    "downloadButton": "تنزيل ملف PDF"
+}

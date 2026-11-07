@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "@tanstack/react-router";
 import { CalendarPlus, ChatCircle } from "@phosphor-icons/react";
+import { useTranslation } from "react-i18next";
 import { reportApiError } from "@/lib/report-api-error";
 import { MyButton } from "@/components/design-system/button";
 import { ModernCard, ModernCardContent } from "@/components/design-system/modern-card";
@@ -16,6 +17,7 @@ export function MentorCard({
     mentor: MyMentor;
     instituteId: string | undefined;
 }) {
+    const { t } = useTranslation("miscRoutesA");
     const navigate = useNavigate();
     const [messaging, setMessaging] = useState(false);
     const canBook = !!mentor.booking_page_slug && !!instituteId;
@@ -51,7 +53,7 @@ export function MentorCard({
                 // forbids) — "try again" would be a lie.
                 fallbackMessage: describeDirectChatError(
                     error,
-                    "Couldn't open the chat. Please try again.",
+                    t("myMentors.mentorCard.chatOpenFailed"),
                 ),
             });
         } finally {
@@ -71,7 +73,7 @@ export function MentorCard({
                         />
                         <div className="flex min-w-0 flex-col">
                             <span className="truncate text-body font-semibold text-neutral-700">
-                                {mentor.display_name || mentor.name || "Mentor"}
+                                {mentor.display_name || mentor.name || t("myMentors.common.mentor")}
                             </span>
                             {mentor.title && (
                                 <span className="truncate text-caption text-neutral-500">
@@ -116,7 +118,7 @@ export function MentorCard({
                                 disable={!canBook}
                                 className="flex-1"
                             >
-                                <CalendarPlus size={16} /> Book session
+                                <CalendarPlus size={16} /> {t("myMentors.mentorCard.bookSession")}
                             </MyButton>
                             {chat.enabled && (
                                 <MyButton
@@ -127,13 +129,13 @@ export function MentorCard({
                                     disable={messaging}
                                     className="flex-1"
                                 >
-                                    <ChatCircle size={16} /> Message
+                                    <ChatCircle size={16} /> {t("myMentors.mentorCard.message")}
                                 </MyButton>
                             )}
                         </div>
                         {!canBook && (
                             <span className="text-caption text-neutral-400">
-                                Booking not set up yet
+                                {t("myMentors.mentorCard.bookingNotSetUp")}
                             </span>
                         )}
                     </div>

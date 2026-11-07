@@ -7,6 +7,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import vacademy.io.common.common.dto.CustomFieldValueDTO;
+import vacademy.io.common.payment.dto.AdminDiscountRequestDTO;
 
 import java.util.List;
 
@@ -92,6 +93,13 @@ public class AssignmentItemDTO {
      * when it can't, which is the correct guard against a half-configured request.
      */
     private boolean skipSubOrg;
+
+    /**
+     * Optional discount the admin gives every learner of this assignment (ONE_TIME /
+     * SUBSCRIPTION plans only). Each learner's user_plan gets its own ADMIN discount
+     * row; a picked coupon uses one redemption per learner.
+     */
+    private AdminDiscountRequestDTO adminDiscount;
 
     @Data
     @Builder

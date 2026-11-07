@@ -1,0 +1,17 @@
+{
+    "front": "الأمام",
+    "back": "الخلف",
+    "noContent": "لا يوجد محتوى",
+    "clickToFlip": "انقر للقلب",
+    "clickToFlipBack": "انقر للقلب إلى الخلف",
+    "flashcard": "بطاقة تعليمية",
+    "imageAspectRatioTitle": "نسبة أبعاد الصورة",
+    "imageAspectRatioOriginal": "الصورة: أصلية",
+    "imageAspectRatioValue": "الصورة: {{label}}",
+    "preview": "معاينة",
+    "edit": "تعديل",
+    "frontLabel": "الأمام (سؤال / مصطلح)",
+    "backLabel": "الخلف (إجابة / تعريف)",
+    "frontPlaceholder": "الأمام — أضف نصًا و/أو صورة…",
+    "backPlaceholder": "الخلف — أضف نصًا و/أو صورة…"
+}

@@ -1,0 +1,96 @@
+{
+    "basics": {
+        "title": {
+            "required": "Give the announcement a title.",
+            "tooLong": "Keep the title under 500 characters."
+        },
+        "content": {
+            "required": "Write the announcement content."
+        },
+        "previewText": {
+            "missingWarning": "No preview text — inboxes will fall back to the first line of your content."
+        }
+    },
+    "recipients": {
+        "noAudience": "Add at least one audience — nobody receives this yet.",
+        "audienceLabel": "Audience {{index}}",
+        "role": {
+            "required": "{{label}}: pick a role."
+        },
+        "batches": {
+            "required": "{{label}}: select at least one batch."
+        },
+        "orgRole": {
+            "required": "{{label}}: pick Admin or Learner for the sub-organisation batches."
+        },
+        "users": {
+            "required": "{{label}}: add at least one user id or email."
+        },
+        "tags": {
+            "required": "{{label}}: select at least one tag."
+        },
+        "campaign": {
+            "required": "{{label}}: pick a campaign."
+        },
+        "filters": {
+            "required": "{{label}}: configure at least one field filter."
+        },
+        "incompleteFilterWarning": "{{label}}: an incomplete field filter will be ignored.",
+        "emptyExclusionWarning": "{{label}}: an empty exclusion will be ignored."
+    },
+    "placements": {
+        "noneChosen": "Choose at least one place for this announcement to appear.",
+        "systemAlert": {
+            "priority": "System Alert: choose a priority."
+        },
+        "dashboardPin": {
+            "position": "Dashboard Pin: choose a position.",
+            "startRequired": "Dashboard Pin: set a start time.",
+            "endRequired": "Dashboard Pin: set an end time.",
+            "endAfterStart": "Dashboard Pin: the end time must be after the start."
+        },
+        "appOverlay": {
+            "invalidDate": "App Overlay: enter a valid date and time.",
+            "mustBeFuture": "App Overlay: “show until” must be in the future.",
+            "priorityRange": "App Overlay: priority must be between 1 and 10."
+        },
+        "resources": {
+            "folderNameRequired": "Resources: enter a folder name."
+        },
+        "community": {
+            "typeRequired": "Community: choose a community type."
+        },
+        "tasks": {
+            "titleRequired": "Tasks: enter a task title.",
+            "slidesRequired": "Tasks: add at least one slide.",
+            "goLiveRequired": "Tasks: set a go-live time.",
+            "deadlineRequired": "Tasks: set a deadline.",
+            "deadlineAfterGoLive": "Tasks: the deadline must be after go-live."
+        }
+    },
+    "delivery": {
+        "noChannelWarning": "No delivery channel selected — this will only appear inside the product, with no push, email or WhatsApp.",
+        "push": {
+            "titleRequired": "Push notification: a title is required.",
+            "bodyRequired": "Push notification: a body is required.",
+            "titleTruncated": "Push titles over 50 characters get truncated on most devices.",
+            "bodyTruncated": "Push bodies over 150 characters get truncated on most devices."
+        },
+        "email": {
+            "noVerifiedSender": "Email: no verified sender address is configured for this institute.",
+            "chooseSender": "Email: choose the address this is sent from."
+        },
+        "whatsapp": {
+            "chooseTemplate": "WhatsApp: choose an approved template.",
+            "templateNoLongerApproved": "WhatsApp: the selected template is no longer approved — pick another.",
+            "mediaUrlRequired": "WhatsApp: this template has a media header, so a media URL is required.",
+            "variableRequired": "WhatsApp: fill in the “{{name}}” variable.",
+            "variableCustomRequired": "WhatsApp: enter the custom text for “{{name}}”."
+        },
+        "schedule": {
+            "pickDateTime": "Schedule: pick the date and time to send.",
+            "pastTimeWarning": "The scheduled time is in the past for your local clock — check the timezone.",
+            "cronRequired": "Schedule: a cron expression is required for recurring sends."
+        }
+    }
+}

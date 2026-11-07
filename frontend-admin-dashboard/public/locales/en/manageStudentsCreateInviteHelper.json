@@ -1,0 +1,15 @@
+{
+    "planDescription": {
+        "complexPaymentOption": "Complex payment option (installments).",
+        "donation": "Access to donation plan.",
+        "free": "Access to free plan.",
+        "oneTime": "Access to one time payment plan.",
+        "subscription": "Access to subscription plan."
+    },
+    "planOption": {
+        "fallbackTitle": "{{name}} - Option {{number}}"
+    },
+    "referral": {
+        "defaultBonusContentTitle": "Bonus Content"
+    }
+}

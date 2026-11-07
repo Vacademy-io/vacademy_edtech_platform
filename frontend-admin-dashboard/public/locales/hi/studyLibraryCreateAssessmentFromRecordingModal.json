@@ -1,0 +1,120 @@
+{
+    "dialog": {
+        "headingPreview": "असेसमेंट पूर्वावलोकन",
+        "headingCreate": "रिकॉर्डिंग से असेसमेंट बनाएं",
+        "close": "बंद करें",
+        "cancel": "रद्द करें"
+    },
+    "toast": {
+        "generatedQuestions_one": "{{count}} प्रश्न तैयार किया गया",
+        "generatedQuestions_other": "{{count}} प्रश्न तैयार किए गए",
+        "generationFailed": "जनरेशन विफल",
+        "createFailed": "असेसमेंट नहीं बन सका",
+        "dateTimeRequired": "प्रारंभ और समाप्ति दिनांक-समय आवश्यक हैं",
+        "endAfterStart": "समाप्ति दिनांक-समय, प्रारंभ के बाद होनी चाहिए",
+        "questionCountRange": "प्रश्नों की संख्या 1 से 50 के बीच होनी चाहिए",
+        "pickQuestionType": "कम से कम एक प्रश्न प्रकार चुनें",
+        "publishSuccess": "असेसमेंट प्रकाशित हो गया",
+        "publishFailed": "असेसमेंट प्रकाशित नहीं हो सका"
+    },
+    "loading": {
+        "generating_one": "AI से {{count}} प्रश्न तैयार हो रहा है",
+        "generating_other": "AI से {{count}} प्रश्न तैयार हो रहे हैं",
+        "withIllustrations": " + चित्रण",
+        "hintWithImages": "आमतौर पर 30–90 सेकंड लगते हैं — LLM उन कुछ प्रश्नों को चुनता है जहाँ आरेख सहायक हो, और केवल उन्हीं का चित्रण करता है। कृपया इस विंडो को बंद न करें।",
+        "hintPlain": "आमतौर पर 15–45 सेकंड लगते हैं। कृपया इस विंडो को बंद न करें।"
+    },
+    "failure": {
+        "title": "जनरेशन विफल",
+        "unknownError": "अज्ञात त्रुटि",
+        "tryAgain": "फिर से प्रयास करें"
+    },
+    "generate": "असेसमेंट तैयार करें",
+    "picker": {
+        "pickTypes": "प्रश्न प्रकार चुनें",
+        "selectedCount_one": "{{count}} चयनित",
+        "selectedCount_other": "{{count}} चयनित",
+        "note": "नोट: LLM फ़िलहाल विश्वसनीय रूप से केवल MCQ ही जनरेट करता है। अन्य प्रकार आपके असेसमेंट के साथ सहेजे जाते हैं, लेकिन प्रॉम्प्ट समर्थन आने तक MCQ के रूप में ही आ सकते हैं।",
+        "howMany": "कितने प्रश्न चाहिए?",
+        "rangeHint": "1 से 50 के बीच। इसे अगले चरण में भी बदला जा सकता है।",
+        "includeImages": "प्रश्नों और विकल्पों के लिए चित्रण तैयार करें"
+    },
+    "form": {
+        "titleGroup": "शीर्षक",
+        "titleLabel": "असेसमेंट शीर्षक",
+        "titlePlaceholderLoading": "ट्रांसक्रिप्ट से सुझाव दिया जा रहा है…",
+        "titlePlaceholderEmpty": "लेक्चर से स्वतः जनरेट करने के लिए खाली छोड़ें",
+        "scheduleGroup": "शेड्यूल",
+        "startLabel": "प्रारंभ दिनांक और समय",
+        "endLabel": "समाप्ति दिनांक और समय",
+        "timezoneHint": "समय आपके स्थानीय समय क्षेत्र में दिखाए गए हैं:",
+        "markingGroup": "अंकन",
+        "marksLabel": "प्रति प्रश्न अंक",
+        "durationLabel": "पूरी परीक्षा की अवधि",
+        "negativeMarkingLabel": "नकारात्मक अंकन सक्षम करें",
+        "deductLabel": "काटें",
+        "perWrongAnswer": "प्रति गलत उत्तर",
+        "attemptsGroup": "प्रयास और पूर्वावलोकन",
+        "reattemptLabel": "अनुमत पुनः प्रयास",
+        "reattemptHint": "पहले सबमिशन के बाद के प्रयास। 0 = केवल एक प्रयास।",
+        "previewTimeLabel": "पूर्वावलोकन समय (मिनट)",
+        "previewTimeHint": "टाइमर शुरू होने से पहले निर्देश/कवर स्क्रीन का समय।",
+        "contentGroup": "सामग्री और पहुँच",
+        "numQuestionsLabel": "प्रश्नों की संख्या",
+        "fixedAtGeneration": "जनरेशन के समय तय",
+        "visibilityLabel": "दृश्यता",
+        "visibilityPrivate": "निजी",
+        "visibilityPrivateHint": "केवल बैच तक",
+        "visibilityPublic": "सार्वजनिक",
+        "visibilityPublicHint": "खुली पहुँच"
+    },
+    "context": {
+        "hideBatchList": "बैच सूची छिपाएं",
+        "viewBatches": "जुड़े बैच देखें",
+        "assignedToBatches_one": "{{count}} बैच को सौंपा गया",
+        "assignedToBatches_other": "{{count}} बैचों को सौंपा गया",
+        "noBatches": "कोई बैच नहीं जोड़ा गया — असेसमेंट अपने आप असाइन नहीं होगा",
+        "languageHint": "प्रश्न {{language}} में तैयार किए जाएंगे।"
+    },
+    "duration": {
+        "hoursAria": "घंटे",
+        "hoursUnit": "घं",
+        "minutesAria": "मिनट",
+        "minutesUnit": "मि"
+    },
+    "preview": {
+        "untitled": "शीर्षकहीन",
+        "titleAria": "असेसमेंट शीर्षक",
+        "questionsCount_one": "{{count}} प्रश्न",
+        "questionsCount_other": "{{count}} प्रश्न",
+        "batchesCount_one": "{{count}} बैच",
+        "batchesCount_other": "{{count}} बैच",
+        "assignedBatchesHeader": "सौंपे गए बैच ({{count}})",
+        "publishedBanner_one": "संस्थान के असेसमेंट टैब में प्रकाशित — {{count}} बैच में पंजीकृत।",
+        "publishedBanner_other": "संस्थान के असेसमेंट टैब में प्रकाशित — {{count}} बैचों में पंजीकृत।",
+        "reviewHintPrefix": "ऊपर दिए गए प्रश्नों की समीक्षा करें। शीर्षक, शेड्यूल और अंकन सेट करने के लिए",
+        "reviewHintSuffix": "खोलें — आप उसी डायलॉग से प्रकाशित कर सकते हैं।",
+        "addToCourse": "कोर्स में जोड़ें",
+        "createAssessment": "असेसमेंट बनाएं",
+        "addToCourseAsSlide": "स्लाइड के रूप में कोर्स में जोड़ें",
+        "defaultTitle": "असेसमेंट"
+    },
+    "config": {
+        "heading": "असेसमेंट बनाएं",
+        "description": "शीर्षक, शेड्यूल, अंकन और दृश्यता सेट करें — ये प्रकाशन कॉल पर ओवरराइड के रूप में जाते हैं, इसलिए यहाँ जो आप देखते हैं वही शिक्षार्थियों को मिलेगा।",
+        "cancel": "रद्द करें",
+        "publishing": "प्रकाशित हो रहा है…",
+        "publish": "असेसमेंट प्रकाशित करें"
+    },
+    "questions": {
+        "empty": "अभी पूर्वावलोकन के लिए कोई प्रश्न नहीं है।",
+        "multipleChoice": "बहुविकल्पीय",
+        "questionLabel": "प्रश्न {{number}}",
+        "difficultyMedium": "मध्यम",
+        "answer": "उत्तर",
+        "why": "क्यों:"
+    },
+    "timezone": {
+        "fallback": "आपका स्थानीय समय क्षेत्र"
+    }
+}

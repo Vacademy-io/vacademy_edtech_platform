@@ -70,8 +70,8 @@ export const EnrollmentPaymentDialog: React.FC<EnrollmentPaymentRouterProps> = (
     return (
       <div className="fixed inset-0 z-50 bg-black/60 animate-fade-in flex items-center justify-center">
         <div className="bg-white rounded-lg p-6 max-w-sm">
-          <div className="text-center">
-            <SpinnerGap className="w-8 h-8 animate-spin mx-auto mb-4 text-primary-600" />
+          <div className="text-center space-y-4">
+            <SpinnerGap className="w-8 h-8 animate-spin mx-auto text-primary-600" />
             <p className="text-gray-600">Loading enrollment options...</p>
           </div>
         </div>
@@ -83,9 +83,9 @@ export const EnrollmentPaymentDialog: React.FC<EnrollmentPaymentRouterProps> = (
     return (
       <div className="fixed inset-0 z-50 bg-black/60 animate-fade-in flex items-center justify-center">
         <div className="bg-white rounded-lg p-6 max-w-sm">
-          <div className="text-center">
-            <h3 className="text-lg font-semibold mb-4">Enrollment Error</h3>
-            <p className="text-red-600 mb-4">{error}</p>
+          <div className="text-center space-y-4">
+            <h3 className="text-lg font-semibold">Enrollment Error</h3>
+            <p className="text-red-600">{error}</p>
             <Button onClick={fetchEnrollmentData} variant="outline">
               Try Again
             </Button>
@@ -177,9 +177,9 @@ export const EnrollmentPaymentDialog: React.FC<EnrollmentPaymentRouterProps> = (
     return (
       <div className="fixed inset-0 z-50 bg-black/60 animate-fade-in flex items-center justify-center">
         <div className="bg-white rounded-lg p-6 max-w-sm">
-          <div className="text-center">
-            <h3 className="text-lg font-semibold mb-4">Enrollment Error</h3>
-            <p className="text-red-600 mb-4">{error}</p>
+          <div className="text-center space-y-4">
+            <h3 className="text-lg font-semibold">Enrollment Error</h3>
+            <p className="text-red-600">{error}</p>
             <Button onClick={fetchEnrollmentData} variant="outline">
               Try Again
             </Button>

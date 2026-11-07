@@ -1,4 +1,5 @@
 import { useMutation, useQueryClient, useSuspenseQuery } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 import { Route } from '..';
 import { useInstituteQuery } from '@/services/student-list-section/getInstituteDetails';
 import {
@@ -35,7 +36,6 @@ import { sectionsEditQuestionFormSchema } from '../-utils/sections-edit-question
 import { z } from 'zod';
 import { Button } from '@/components/ui/button';
 import { Sortable, SortableDragHandle, SortableItem } from '@/components/ui/sortable';
-import { Separator } from '@/components/ui/separator';
 import { MainViewComponentFactory } from './QuestionPaperTemplatesTypes/MainViewComponentFactory';
 import { PPTComponentFactory } from './QuestionPaperTemplatesTypes/PPTComponentFactory';
 import { Dialog, DialogContent, DialogTrigger } from '@/components/ui/dialog';
@@ -49,6 +49,7 @@ import { AssessmentDetailQuestions } from '../-utils/assessment-details-interfac
 import { transformResponseDataToMyQuestionsSchema } from '@/routes/assessment/question-papers/-utils/helper';
 import { MyQuestion } from '@/types/assessments/question-paper-form';
 import { QuestionType } from '@/constants/dummy-data';
+import { sanitizeRichHtml } from '@/lib/sanitize-html';
 
 interface Announcement {
     id: string;
@@ -58,6 +59,7 @@ interface Announcement {
 
 export type sectionsEditQuestionFormType = z.infer<typeof sectionsEditQuestionFormSchema>;
 const AssessmentPreview = ({ handleCloseDialog }: { handleCloseDialog: () => void }) => {
+    const { t } = useTranslation('assessmentPreview');
     const queryClient = useQueryClient();
     const { assessmentId, examType } = Route.useParams();
     const { data: instituteDetails } = useSuspenseQuery(useInstituteQuery());
@@ -215,7 +217,7 @@ const AssessmentPreview = ({ handleCloseDialog }: { handleCloseDialog: () => voi
             queryClient.invalidateQueries({ queryKey: ['GET_ASSESSMENT_DETAILS'] });
             queryClient.invalidateQueries({ queryKey: ['GET_QUESTIONS_DATA_FOR_SECTIONS'] });
             handleCloseDialog();
-            toast.success('Question paper for this assessment has been updated successfully!', {
+            toast.success(t('toasts.updateSuccess'), {
                 className: 'success-toast',
                 duration: 2000,
             });
@@ -235,7 +237,7 @@ const AssessmentPreview = ({ handleCloseDialog }: { handleCloseDialog: () => voi
 
     const onInvalid = (err: unknown) => {
         console.error(err);
-        toast.error('some of your questions are incomplete or needs attentions!', {
+        toast.error(t('toasts.incompleteQuestions'), {
             className: 'error-toast',
             duration: 2000,
         });
@@ -326,61 +328,59 @@ const AssessmentPreview = ({ handleCloseDialog }: { handleCloseDialog: () => voi
 
     if (isLoading || isQuestionsLoading) return <DashboardLoader />;
     return (
-        <div className="flex flex-col">
-            <div className="flex h-20 items-center justify-between bg-primary-100 p-6">
-                <div className="flex items-center">
-                    <h1 className="text-sm font-semibold">Join Link:</h1>
-                    <div className="flex items-center gap-8">
-                        <div className="flex items-center gap-4">
-                            <span className="px-3 py-2 text-sm underline">
-                                {joinLink}
-                            </span>
+        <div className="flex min-h-0 flex-1 flex-col">
+            {/* One compact band instead of a fixed h-20 with p-6: the join link and QR
+                are reference material, not the point of this screen. */}
+            {/* One header strip, not two. The join link and QR sat in a primary-100 band
+                with Save/Exit stacked in a second primary-50 band underneath — roughly 110px
+                of chrome for a link and three buttons, and at narrow widths the second band
+                read as an empty cream slab because its contents are right-aligned. */}
+            <div className="flex flex-wrap items-center justify-between gap-3 bg-primary-100 px-5 py-2.5">
+                <div className="flex min-w-0 items-center gap-3">
+                    <h1 className="shrink-0 text-caption font-semibold">
+                        {t('header.joinLinkLabel')}
+                    </h1>
+                    <div className="flex min-w-0 items-center gap-8">
+                        <div className="flex min-w-0 items-center gap-2">
+                            <span className="truncate text-caption underline">{joinLink}</span>
                             <MyButton
                                 type="button"
                                 scale="small"
                                 buttonType="secondary"
-                                className="h-9 min-w-10"
+                                className="!h-8 !min-w-0 px-2"
                                 onClick={() => copyToClipboard(joinLink)}
                             >
-                                <Copy size={32} />
+                                <Copy size={16} />
                             </MyButton>
                         </div>
                     </div>
                 </div>
-                <div className="flex items-center gap-4">
-                    <QRCode
-                        value={joinLink}
-                        className="size-14"
-                        id={`qr-code-svg-participants`}
-                    />
+                <div className="flex shrink-0 items-center gap-2">
+                    <QRCode value={joinLink} className="size-9" id={`qr-code-svg-participants`} />
                     <MyButton
                         type="button"
                         scale="small"
                         buttonType="secondary"
-                        className="h-9 min-w-10"
+                        className="!h-8 !min-w-0 px-2"
                         onClick={() => handleDownloadQRCode('qr-code-svg-participants')}
                     >
-                        <DownloadSimple size={32} />
+                        <DownloadSimple size={16} />
                     </MyButton>
-                </div>
-            </div>
-            <Tabs value={selectedSection} onValueChange={handleSectionChange}>
-                <div className="flex items-center justify-end gap-4 bg-primary-50 p-4">
                     <Dialog>
                         <DialogTrigger className="cursor-pointer rounded-full border p-2">
                             <SpeakerLow size={20} />
                         </DialogTrigger>
-                        <DialogContent className="no-scrollbar !m-0 flex h-[80vh] !w-full !max-w-[80vw] flex-col gap-4 overflow-y-auto !p-0">
+                        <DialogContent className="no-scrollbar !m-0 flex h-[80vh] !w-full !max-w-[80vw] flex-col gap-4 overflow-hidden !p-0">{/* design-lint-ignore: vh/vw dialog sizing matches MyDialog primitive */}
                             <h1 className="h-14 bg-primary-50 p-4 font-semibold text-primary-500">
-                                Live Assessment Announcement
+                                {t('announcementDialog.title')}
                             </h1>
                             <AnnouncementComponent
                                 announcementList={announcementList}
                                 setAnnouncementList={setAnnouncementList}
                             />
-                            <div className="flex max-h-screen flex-col gap-4 overflow-y-auto p-4 pt-0">
+                            <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto p-4 pt-0">
                                 {announcementList.length === 0 ? (
-                                    <p className="text-center">No Announcement Exists</p>
+                                    <p className="text-center">{t('announcementDialog.empty')}</p>
                                 ) : (
                                     announcementList?.map((announcement: Announcement) => (
                                         <Card
@@ -393,7 +393,9 @@ const AssessmentPreview = ({ handleCloseDialog }: { handleCloseDialog: () => voi
                                                 </CardTitle>
                                                 <CardDescription
                                                     dangerouslySetInnerHTML={{
-                                                        __html: announcement.instructions || '',
+                                                        __html: sanitizeRichHtml(
+                                                            announcement.instructions
+                                                        ),
                                                     }}
                                                 />
                                             </CardHeader>
@@ -404,7 +406,7 @@ const AssessmentPreview = ({ handleCloseDialog }: { handleCloseDialog: () => voi
                                                     className="text-neutral-400"
                                                 />
                                                 <span className="text-sm text-neutral-600">
-                                                    Today, 11:28 AM
+                                                    {t('announcementDialog.timestampPlaceholder')}
                                                 </span>
                                             </p>
                                         </Card>
@@ -415,32 +417,38 @@ const AssessmentPreview = ({ handleCloseDialog }: { handleCloseDialog: () => voi
                     </Dialog>
                     <MyButton
                         type="button"
-                        scale="large"
-                        buttonType="secondary"
+                        scale="medium"
+                        buttonType="primary"
                         layoutVariant="default"
-                        className="text-sm"
+                        className="px-5 text-sm sm:!min-w-0"
                         onClick={form.handleSubmit(onSubmit, onInvalid)}
                     >
-                        Save
+                        {t('actions.save')}
                     </MyButton>
                     <MyButton
                         type="submit"
-                        scale="large"
+                        scale="medium"
                         buttonType="secondary"
                         layoutVariant="default"
-                        className="text-sm"
+                        className="px-5 text-sm sm:!min-w-0"
                         onClick={handleCloseDialog}
                     >
-                        Exit
+                        {t('actions.exit')}
                     </MyButton>
                 </div>
-                <div className="bg-neutral-50 p-4">
+            </div>
+            <Tabs
+                value={selectedSection}
+                onValueChange={handleSectionChange}
+                className="flex min-h-0 flex-1 flex-col"
+            >
+                <div className="shrink-0 bg-neutral-50 px-5 pt-3">
                     <TabsList className="flex w-fit justify-start rounded-none border-b bg-neutral-50">
                         {assessmentDetails[1]?.saved_data?.sections?.map((section) => (
                             <TabsTrigger
                                 key={section.id}
                                 value={section.id}
-                                className={`flex gap-1.5 rounded-none px-12 py-2 !shadow-none ${
+                                className={`flex gap-1.5 rounded-none px-6 py-2 !shadow-none ${
                                     selectedSection === section.id
                                         ? 'rounded-t-sm border border-primary-200 !border-b-neutral-200 !bg-primary-50'
                                         : 'border-none bg-transparent'
@@ -452,18 +460,24 @@ const AssessmentPreview = ({ handleCloseDialog }: { handleCloseDialog: () => voi
                     </TabsList>
                 </div>
                 <FormProvider {...form}>
-                    <form className="no-scrollbar h-screen space-y-8 overflow-y-auto px-4">
-                        <TabsContent value={selectedSection}>
-                            <div className="flex h-screen items-start">
-                                <div className="mt-4 flex w-40 flex-col items-center justify-center gap-2">
+                    {/* No h-screen: this form lives inside a 90vh dialog, so a 100vh child
+                        overflowed the dialog by itself and turned the whole preview into one
+                        long scroll. Height comes from the content; the dialog scrolls. */}
+                    <form className="no-scrollbar flex min-h-0 flex-1 flex-col px-4 pb-4">
+                        <TabsContent
+                            value={selectedSection}
+                            className="flex min-h-0 flex-1 overflow-hidden"
+                        >
+                            <div className="flex min-h-0 w-full flex-1 items-stretch">
+                                <div className="flex min-h-0 w-44 shrink-0 flex-col items-center justify-start gap-2 border-r border-neutral-200 bg-neutral-50 px-2 pt-4">
                                     <Button
                                         type="button"
                                         className="max-w-sm bg-primary-500 text-xs text-white shadow-none"
                                         onClick={addQuestionToSelectedSection}
                                     >
-                                        Add Question
+                                        {t('actions.addQuestion')}
                                     </Button>
-                                    <div className="flex h-[325vh] w-40 flex-col items-start justify-between gap-4 overflow-x-hidden overflow-y-scroll p-2">
+                                    <div className="flex min-h-0 w-40 flex-1 flex-col items-start justify-start gap-3 overflow-y-auto overflow-x-hidden p-2">
                                         <Sortable
                                             value={
                                                 form.getValues(
@@ -527,12 +541,18 @@ const AssessmentPreview = ({ handleCloseDialog }: { handleCloseDialog: () => voi
                                                                                 {getValues(
                                                                                     `sections.${selectedSectionIndex}.questions.${index}.questionType`
                                                                                 ) === 'MCQS'
-                                                                                    ? 'MCQ (Single Correct)'
+                                                                                    ? t(
+                                                                                          'questionTypes.mcqSingleCorrect'
+                                                                                      )
                                                                                     : getValues(
                                                                                             `sections.${selectedSectionIndex}.questions.${index}.questionType`
                                                                                         ) === 'MCQM'
-                                                                                      ? 'MCQ (Multiple Correct)'
-                                                                                      : 'MCQ (Multiple Correct)'}
+                                                                                      ? t(
+                                                                                            'questionTypes.mcqMultipleCorrect'
+                                                                                        )
+                                                                                      : t(
+                                                                                            'questionTypes.mcqMultipleCorrect'
+                                                                                        )}
                                                                             </h1>
                                                                             <SortableDragHandle
                                                                                 variant="outline"
@@ -573,29 +593,31 @@ const AssessmentPreview = ({ handleCloseDialog }: { handleCloseDialog: () => voi
                                         </Sortable>
                                     </div>
                                 </div>
-                                <Separator orientation="vertical" className="min-h-screen" />
-                                {currentSectionQuestions.length === 0 ? (
-                                    <div className="flex h-screen w-screen items-center justify-center">
-                                        <h1>No Question Exists.</h1>
-                                    </div>
-                                ) : (
-                                    <MainViewComponentFactory
-                                        type={
-                                            getValues(
-                                                `sections.${selectedSectionIndex}.questions.${currentQuestionIndex}.questionType`
-                                            ) as QuestionType
-                                        }
-                                        props={{
-                                            form: form,
-                                            selectedSection: selectedSection,
-                                            currentQuestionIndexes: currentQuestionIndexes,
-                                            setCurrentQuestionIndexes: setCurrentQuestionIndexes,
-                                            currentQuestionIndex: currentQuestionIndex,
-                                            className: 'ml-6 flex w-full flex-col gap-6 pr-6 pt-4',
-                                            selectedSectionIndex: selectedSectionIndex,
-                                        }}
-                                    />
-                                )}
+                                <div className="min-h-0 flex-1 overflow-y-auto px-1">
+                                    {currentSectionQuestions.length === 0 ? (
+                                        <div className="flex size-full items-center justify-center py-16">
+                                            <h1>{t('emptyStates.noQuestions')}</h1>
+                                        </div>
+                                    ) : (
+                                        <MainViewComponentFactory
+                                            type={
+                                                getValues(
+                                                    `sections.${selectedSectionIndex}.questions.${currentQuestionIndex}.questionType`
+                                                ) as QuestionType
+                                            }
+                                            props={{
+                                                form: form,
+                                                selectedSection: selectedSection,
+                                                currentQuestionIndexes: currentQuestionIndexes,
+                                                setCurrentQuestionIndexes:
+                                                    setCurrentQuestionIndexes,
+                                                currentQuestionIndex: currentQuestionIndex,
+                                                className: 'flex w-full flex-col gap-6 px-5 pt-4',
+                                                selectedSectionIndex: selectedSectionIndex,
+                                            }}
+                                        />
+                                    )}
+                                </div>
                             </div>
                         </TabsContent>
                     </form>

@@ -1,0 +1,7 @@
+{
+    "noAccess": {
+        "title": "You don't have access to HR records",
+        "description": "Employee, salary and payroll data is limited to HR roles. Ask an institute admin to give your account an HR role if you need it."
+    },
+    "retry": "Retry"
+}

@@ -335,6 +335,34 @@ jobs:
           sed -i "s|defaultUploadedPresentation=https://[^/]*/|defaultUploadedPresentation=https://$DOMAIN/|g" \
               /etc/bigbluebutton/bbb-web.properties 2>/dev/null || true
 
+          # Step 6: TURN / coturn — NOT covered by the sweep in Step 2.
+          # That sweep walks directories and filters by extension; /etc/turnserver.conf
+          # is under none of those directories and /etc/haproxy/haproxy.cfg matches none
+          # of those extensions, so the snapshot's build-time IP survived here on EVERY
+          # restore. coturn then cannot bind a foreign address and exits, which silently
+          # kills audio/video for every learner behind a UDP-blocking firewall while
+          # everyone on a permissive network is unaffected.
+          if [ -f /etc/turnserver.conf ]; then
+            for old in $(grep -oP '^\s*(listening-ip|relay-ip|allowed-peer-ip)=\K[\d.]+' \
+                         /etc/turnserver.conf 2>/dev/null | grep -v '^127\.' | sort -u); do
+              if [ "$old" != "$NEW_IP" ]; then
+                echo "  TURN: $old -> $NEW_IP"
+                sed -i "s/\b$old\b/$NEW_IP/g" /etc/turnserver.conf
+              fi
+            done
+            grep -q '^listening-ip=127\.0\.0\.1' /etc/turnserver.conf || \
+              sed -i "/^listening-ip=$NEW_IP/a listening-ip=127.0.0.1" /etc/turnserver.conf
+            systemctl restart coturn 2>/dev/null || true
+            echo "  coturn: $(systemctl is-active coturn 2>/dev/null)"
+          fi
+
+          # Pin haproxy's TURN backend to loopback — IP-proof from here on.
+          if [ -f /etc/haproxy/haproxy.cfg ]; then
+            sed -i 's|^\(\s*server localhost \)[0-9.]\+:3478|\1127.0.0.1:3478|' /etc/haproxy/haproxy.cfg
+            haproxy -c -f /etc/haproxy/haproxy.cfg >/dev/null 2>&1 \
+              && systemctl reload haproxy 2>/dev/null || echo "  WARNING: haproxy config test failed"
+          fi
+
           echo "BBB IP fix complete: $DOMAIN ($NEW_IP)"
           SCRIPT
 
@@ -368,17 +396,16 @@ jobs:
           SSH_OPTS="-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o ConnectTimeout=15"
 
           echo "[${{ matrix.slug }}] Shipping recording hook + heal service + health dashboard files to $IP"
-          ssh $SSH_OPTS root@$IP "mkdir -p /tmp/vacademy-bbb"
-          scp $SSH_OPTS \
-            bigbluebutton-server/post-publish-s3-upload.sh \
-            bigbluebutton-server/install-recording-hook.sh \
-            bigbluebutton-server/bbb-heal-service.py \
-            bigbluebutton-server/bbb-heal-service.service \
-            bigbluebutton-server/vacademy-heal.nginx \
-            bigbluebutton-server/bbb-health-dashboard.py \
-            bigbluebutton-server/bbb-health-dashboard.service \
-            bigbluebutton-server/vacademy-health.nginx \
-            root@$IP:/tmp/vacademy-bbb/
+          # Copy the WHOLE directory rather than a hand-maintained file list.
+          # install-recording-hook.sh reads several paths relative to its own
+          # directory — systemd/bbb-rap-resque-worker.service.d/lowprio.conf, the
+          # highprio.conf drop-ins, bbb-recording-drain.sh, bbb-rap-autotune.sh and
+          # their units — none of which were in the old explicit list, so step 9/10
+          # died on `cp: cannot stat` and took the whole start job down with it.
+          # A recursive copy means adding a file to the repo can never again break
+          # the daily start.
+          ssh $SSH_OPTS root@$IP "rm -rf /tmp/vacademy-bbb && mkdir -p /tmp/vacademy-bbb"
+          scp -r $SSH_OPTS bigbluebutton-server/* root@$IP:/tmp/vacademy-bbb/
 
           # Read BBB secret from the running server — no need to store per-server secrets in GitHub
           echo "[${{ matrix.slug }}] Reading BBB secret from server"
@@ -403,6 +430,105 @@ jobs:
             "curl -sf -o /dev/null -w '%{http_code}' 'http://127.0.0.1:9092/api/metrics?token=$HEALTH_DASHBOARD_TOKEN' || true"
 
           echo "[${{ matrix.slug }}] Recording hook + heal service + health dashboard synced successfully"
+
+      - name: Sync per-institute custom live-class domains
+        # Aliases resolve to the PRIMARY pool server only (BbbServerRouter.isPrimary),
+        # so there is nothing to do on any other server in the pool.
+        #
+        # `!cancelled()` deliberately decouples this from the recording-hook step:
+        # those are unrelated concerns, and a recording-pipeline problem should not
+        # leave an institute's live-class domain pointing at a dead IP. The job still
+        # reports failure if the earlier step failed.
+        if: "!cancelled() && steps.check.outputs.skip != 'true' && matrix.priority == 1"
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.BBB_SSH_PRIVATE_KEY }}
+          INTERNAL_SERVICE_TOKEN: ${{ secrets.INTERNAL_SERVICE_TOKEN }}
+          CF_TOKEN: ${{ secrets.BBB_CLOUDFLARE_API_TOKEN }}
+          VACADEMY_BACKEND_URL: ${{ vars.VACADEMY_BACKEND_URL }}
+        run: |
+          set -uo pipefail
+          # GitHub runs this step as `bash -e {0}`, so ANY failing command — a jq
+          # parse error, a transient curl — aborts before the explicit guards below
+          # can turn it into a warning. This step does its own error handling and
+          # decides deliberately what is fatal, so -e is turned off here.
+          set +e
+          IP="${{ steps.poweron.outputs.server_ip }}"
+          [ -z "$IP" ] && IP="${{ steps.create.outputs.server_ip }}"
+          BACKEND_URL="${VACADEMY_BACKEND_URL:-https://backend-stage.vacademy.io}"
+
+          mkdir -p ~/.ssh; echo "$SSH_PRIVATE_KEY" > ~/.ssh/id_rsa; chmod 600 ~/.ssh/id_rsa
+          SSH_OPTS="-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o ConnectTimeout=15"
+
+          # ── Fetch the configured hostnames from admin_core ──────────────
+          RESP=$(curl -s --max-time 30 -w '\n%{http_code}' \
+            -H "X-Internal-Service-Token: $INTERNAL_SERVICE_TOKEN" \
+            "$BACKEND_URL/admin-core-service/bbb/custom-domains" || true)
+          CODE=$(echo "$RESP" | tail -1)
+          BODY=$(echo "$RESP" | sed '$d')
+
+          if [ "$CODE" != "200" ]; then
+            # Deliberately a SKIP, not a failure and not an empty list. Running the
+            # installer with no aliases would reset server_name to canonical-only and
+            # take working institute domains offline just because the API blipped.
+            echo "::warning::Could not fetch custom domains (HTTP $CODE) — leaving the snapshot's existing domain config untouched."
+            exit 0
+          fi
+
+          DOMAINS=$(echo "$BODY" | jq -r '.domains[]?' | tr '\n' ' ')
+          echo "[${{ matrix.slug }}] custom domains: ${DOMAINS:-<none>}"
+
+          # ── Point each alias at this server's new IP ────────────────────
+          if [ -n "$DOMAINS" ]; then
+            ZONES=$(curl -s --max-time 30 -H "Authorization: Bearer $CF_TOKEN" \
+              "${{ env.CF_API }}/zones?per_page=50" | jq -c '[.result[] | {name, id}]')
+            for HOST in $DOMAINS; do
+              # Longest-suffix match, so sub.school.co.in picks school.co.in.
+              # `. as $z` matters: inside `$h | endswith(...)` the input is the
+              # STRING $h, so a bare .name there indexes a string and jq errors out,
+              # which would silently send every host down the warn-and-skip path.
+              ZONE_ID=$(echo "$ZONES" | jq -r --arg h "$HOST" \
+                '[.[] | . as $z | select(($h == $z.name) or ($h | endswith("." + $z.name)))]
+                 | sort_by(.name | length) | last | .id // empty')
+              if [ -z "$ZONE_ID" ]; then
+                echo "::warning::No Cloudflare zone for $HOST — skipping its DNS record."
+                continue
+              fi
+              REC=$(curl -s -H "Authorization: Bearer $CF_TOKEN" \
+                "${{ env.CF_API }}/zones/$ZONE_ID/dns_records?type=A&name=$HOST" | jq -r '.result[0].id // empty')
+              # proxied:false is required — WebRTC negotiates media against the real
+              # origin IP, which an orange-cloud record would hide.
+              DATA="{\"type\":\"A\",\"name\":\"$HOST\",\"content\":\"$IP\",\"ttl\":120,\"proxied\":false}"
+              if [ -n "$REC" ]; then
+                OK=$(curl -s -X PUT "${{ env.CF_API }}/zones/$ZONE_ID/dns_records/$REC" \
+                  -H "Authorization: Bearer $CF_TOKEN" -H "Content-Type: application/json" -d "$DATA" | jq -r '.success')
+              else
+                OK=$(curl -s -X POST "${{ env.CF_API }}/zones/$ZONE_ID/dns_records" \
+                  -H "Authorization: Bearer $CF_TOKEN" -H "Content-Type: application/json" -d "$DATA" | jq -r '.success')
+              fi
+              if [ "$OK" = "true" ]; then
+                echo "  $HOST -> $IP"
+              else
+                echo "::warning::DNS update failed for $HOST (Cloudflare success=${OK:-<no response>})"
+              fi
+            done
+          fi
+
+          # ── Refresh the DNS-01 credentials, then apply on the box ───────
+          printf 'dns_cloudflare_api_token = %s\n' "$CF_TOKEN" | \
+            ssh $SSH_OPTS root@$IP 'umask 077; cat > /etc/letsencrypt/cloudflare.ini && chmod 600 /etc/letsencrypt/cloudflare.ini' \
+            || echo "::warning::Could not refresh cloudflare.ini — certificate expansion may be skipped on the box."
+
+          if ! scp $SSH_OPTS bigbluebutton-server/install-custom-domains.sh root@$IP:/tmp/; then
+            echo "::error::Could not copy install-custom-domains.sh to $IP"
+            exit 1
+          fi
+          CSV=$(echo "$DOMAINS" | tr ' ' ',' | sed 's/,$//')
+          # This one IS fatal: nginx server_name and the certificate are what make
+          # the alias reachable at all, and the script rolls itself back on failure.
+          if ! ssh $SSH_OPTS root@$IP "bash /tmp/install-custom-domains.sh '${{ matrix.domain }}' '$CSV'"; then
+            echo "::error::install-custom-domains.sh failed on $IP — the canonical domain is unaffected, but institute domains may not be served."
+            exit 1
+          fi
 
       - name: Summary
         if: steps.check.outputs.skip != 'true'

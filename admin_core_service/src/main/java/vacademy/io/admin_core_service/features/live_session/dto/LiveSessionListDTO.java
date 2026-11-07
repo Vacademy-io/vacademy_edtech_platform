@@ -47,6 +47,15 @@ public class LiveSessionListDTO {
     // DEFAULT | PRE_JOINING — drives the learner waiting-room-window join button.
     private String waitingRoomType;
     private List<PackageSessionInfo> packageSessionDetails;
+    /**
+     * Instructors / presenters of the class (V524), for the learner card.
+     *
+     * <p>Populated only on the learner-facing lists, and omitted entirely when
+     * null thanks to the class-level {@code NON_NULL} include — so the admin
+     * lists' payloads are byte-for-byte what they were before this field
+     * existed.
+     */
+    private List<LiveSessionInstructorDTO> instructors;
 
     public LiveSessionListDTO(String sessionId, Integer waitingRoomTime, String thumbnailFileId,
             String backgroundScoreFileId, String sessionStreamingServiceType, String scheduleId,

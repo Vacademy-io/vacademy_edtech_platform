@@ -1,0 +1,32 @@
+{
+    "dialog": {
+        "defaultReportTitle": "Rapport d'évaluation"
+    },
+    "header": {
+        "defaultTitle": "Évaluation du cours",
+        "export": "Exporter"
+    },
+    "info": {
+        "lectureTitle": "Titre du cours :",
+        "duration": "Durée :",
+        "evaluationDate": "Date d'évaluation :",
+        "notAvailable": "N/D"
+    },
+    "score": {
+        "totalScore": "Score total",
+        "criterionScore": "(Score : {{score}})"
+    },
+    "performance": {
+        "needsImprovement": "À améliorer",
+        "average": "Moyen",
+        "good": "Bon",
+        "excellent": "Excellent"
+    },
+    "criteria": {
+        "heading": "Critères d'évaluation",
+        "scopeOfImprovement": "Pistes d'amélioration :"
+    },
+    "summary": {
+        "heading": "Résumé"
+    }
+}

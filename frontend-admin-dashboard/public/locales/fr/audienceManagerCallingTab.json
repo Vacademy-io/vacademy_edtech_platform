@@ -1,0 +1,95 @@
+{
+    "empty": {
+        "pickInstitute": "Sélectionnez un établissement pour consulter les rapports d'appels.",
+        "noCallsInRange": "Aucun appel sur cette période.",
+        "noCounsellorActivity": "Aucune activité d'appel de conseiller sur cette période."
+    },
+    "deployPending": {
+        "title": "Les rapports d'appels ne sont pas encore disponibles sur ce serveur",
+        "description": "Les points de terminaison de reporting n'ont pas encore été déployés dans cet environnement. Revenez après la prochaine version du backend."
+    },
+    "error": {
+        "loadFailed": "Impossible de charger ce rapport.",
+        "retry": "Réessayer"
+    },
+    "kpi": {
+        "totalDials": {
+            "label": "Total des appels sortants",
+            "sub_one": "sur {{count}} jour",
+            "sub_many": "sur {{count}} jours",
+            "sub_other": "sur {{count}} jours"
+        },
+        "connected": {
+            "label": "Connectés",
+            "sub_one": "sur {{dials}} appel sortant",
+            "sub_many": "sur {{dials}} appels sortants",
+            "sub_other": "sur {{dials}} appels sortants"
+        },
+        "connectRate": {
+            "label": "Taux de connexion",
+            "sub": "connectés ÷ appels sortants"
+        },
+        "talkTime": {
+            "label": "Temps de conversation",
+            "sub": "heures : minutes"
+        }
+    },
+    "dailyChart": {
+        "heading": "Activité d'appels quotidienne",
+        "legendDials": "Appels sortants",
+        "legendConnected": "Connectés",
+        "ariaLabel": "Appels sortants et connectés par jour",
+        "exportCsv": "Exporter en CSV"
+    },
+    "counsellorTable": {
+        "heading": "Performance des appels par conseiller",
+        "exportCsv": "Exporter en CSV",
+        "headers": {
+            "counsellor": "Conseiller",
+            "dials": "Appels sortants",
+            "connected": "Connectés",
+            "connectRate": "Connexion %",
+            "talkTime": "Temps de conversation",
+            "avgCall": "Appel moyen",
+            "outcomes": "Résultats"
+        }
+    },
+    "heatmap": {
+        "heading": "Carte thermique des horaires d'appel",
+        "timezoneNote": "Jour × heure, selon le fuseau horaire des rapports de votre établissement",
+        "legendFewer": "Moins",
+        "legendMore": "Plus",
+        "days": {
+            "mon": "lun.",
+            "tue": "mar.",
+            "wed": "mer.",
+            "thu": "jeu.",
+            "fri": "ven.",
+            "sat": "sam.",
+            "sun": "dim."
+        },
+        "tooltip": {
+            "noDials": "{{day}} {{hour}} — aucun appel sortant",
+            "withDials_one": "{{day}} {{hour}} — {{count}} appel sortant · {{pct}}% connectés",
+            "withDials_many": "{{day}} {{hour}} — {{count}} appels sortants · {{pct}}% connectés",
+            "withDials_other": "{{day}} {{hour}} — {{count}} appels sortants · {{pct}}% connectés"
+        }
+    },
+    "csv": {
+        "daily": {
+            "date": "Date",
+            "dials": "Appels sortants",
+            "connected": "Connectés",
+            "connectRate": "Taux de connexion (%)",
+            "talkTime": "Temps de conversation (secondes)"
+        },
+        "counsellor": {
+            "counsellor": "Conseiller",
+            "dials": "Appels sortants",
+            "connected": "Connectés",
+            "connectRate": "Taux de connexion (%)",
+            "talkTime": "Temps de conversation (secondes)",
+            "avgCall": "Appel moyen (secondes)"
+        }
+    }
+}

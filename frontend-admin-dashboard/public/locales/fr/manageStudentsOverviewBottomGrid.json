@@ -1,0 +1,19 @@
+{
+    "enrolment": {
+        "heading": "Détails de l'inscription",
+        "rows": {
+            "plan": "Formule",
+            "enrollmentNo": "N° d'inscription",
+            "session": "Session",
+            "gender": "Genre",
+            "school": "École"
+        }
+    },
+    "contact": {
+        "heading": "Contact",
+        "rows": {
+            "mobileNo": "N° de mobile",
+            "email": "E-mail"
+        }
+    }
+}

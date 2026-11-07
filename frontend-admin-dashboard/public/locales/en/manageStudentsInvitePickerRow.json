@@ -1,0 +1,54 @@
+{
+    "badge": {
+        "auto": "Auto (Default)",
+        "selectedFallback": "Selected invite"
+    },
+    "actions": {
+        "change": "Change",
+        "close": "Close"
+    },
+    "autoOption": {
+        "title": "Auto (Default)",
+        "description": "Backend will use/create the default invite automatically"
+    },
+    "divider": "or select specific invite",
+    "search": {
+        "placeholder": "Search invites..."
+    },
+    "codeLabel": "Code: {{code}}",
+    "list": {
+        "empty": "No invites found for this course",
+        "bundled_one": "Bundled ({{count}} course)",
+        "bundled_other": "Bundled ({{count}} courses)"
+    },
+    "errors": {
+        "loadInviteDetailsFailed": "Failed to load invite details. Please try again."
+    },
+    "summary": {
+        "invite": {
+            "label": "Invite",
+            "bundled": "Bundled invite (multi-course)"
+        },
+        "paymentOption": {
+            "label": "Payment Option",
+            "approvalRequired": "Approval req.",
+            "none": "No payment option resolved"
+        },
+        "plan": {
+            "label": "Plan",
+            "priceLabel": "Price:",
+            "validity_one": "{{count}} day validity",
+            "validity_other": "{{count}} days validity",
+            "none": "No plan — this invite cannot enrol anyone until a price is set"
+        },
+        "access": {
+            "label": "Access",
+            "days_one": "{{count}} day",
+            "days_other": "{{count}} days",
+            "unlimited": "Unlimited",
+            "from": "From {{date}}",
+            "to": "to {{date}}",
+            "overrideLabel": "Override access days:"
+        }
+    }
+}

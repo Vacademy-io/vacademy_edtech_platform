@@ -1,0 +1,18 @@
+{
+    "noAttemptsYet": "لا محاولات بعد — سيظهر توزيع الدرجات بمجرد أن يقدّم المتعلمون إجاباتهم.",
+    "scoreSpread": "توزيع الدرجات",
+    "learnersCount_zero": "لا متعلمين",
+    "learnersCount_one": "متعلم واحد",
+    "learnersCount_two": "متعلمان",
+    "learnersCount_few": "{{count}} متعلمين",
+    "learnersCount_many": "{{count}} متعلمًا",
+    "learnersCount_other": "{{count}} متعلم",
+    "bucketTitle_zero": "{{from}}–{{to}}٪: لا متعلمين",
+    "bucketTitle_one": "{{from}}–{{to}}٪: متعلم واحد",
+    "bucketTitle_two": "{{from}}–{{to}}٪: متعلمان",
+    "bucketTitle_few": "{{from}}–{{to}}٪: {{count}} متعلمين",
+    "bucketTitle_many": "{{from}}–{{to}}٪: {{count}} متعلمًا",
+    "bucketTitle_other": "{{from}}–{{to}}٪: {{count}} متعلم",
+    "passMark": "النجاح {{percentage}}٪",
+    "axisCaption": "الدرجة (٪) — كل عمود يغطي 10 نقاط"
+}

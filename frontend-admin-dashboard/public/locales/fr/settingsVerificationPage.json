@@ -1,0 +1,67 @@
+{
+    "header": {
+        "title": "Page de vérification",
+        "description": "La lecture du code sur un certificat ouvre cette page. Elle est hébergée sur votre propre portail et ne nécessite aucune connexion, afin que toute personne détenant le certificat puisse le vérifier."
+    },
+    "modeSection": {
+        "title": "Ce que le code ouvre",
+        "options": {
+            "page": {
+                "title": "Page de vérification",
+                "hint": "La page hébergée ci-dessous. Fonctionne sur tout téléphone, rien à entretenir."
+            },
+            "document": {
+                "title": "Votre propre document",
+                "hint": "Importez un PDF et placez-y des champs dynamiques, comme sur un certificat."
+            }
+        },
+        "uploadButton": "Importer un PDF",
+        "uploadingButton": "Lecture du PDF…",
+        "placeFieldsButton": "Placer les champs",
+        "documentAlt": "Document de vérification",
+        "fieldsHint": "Les champs que vous placez sont remplis lors d'un scan — le numéro de certificat, le cours, le nom de l'apprenant tel qu'affiché sur la page. Seule la première page devient le document.",
+        "uploadHint": "Importez le PDF que vous souhaitez montrer aux gens. Sa première page devient un canevas sur lequel vous pouvez déposer des champs dynamiques, exactement comme sur un certificat.",
+        "fallbackWarning": "Tant que vous n'avez pas importé de document, les scans continuent d'ouvrir la page de vérification ci-dessous — la vérification ne se rompt donc jamais pendant que vous configurez ceci."
+    },
+    "address": {
+        "label": "Adresse",
+        "unset": "Définissez l'adresse de votre portail apprenant dans Tableau de bord → Modifier le profil de l'établissement et cette page passera sur votre propre domaine. En attendant, les scans sont vérifiés sur l'adresse de la plateforme."
+    },
+    "customUrl": {
+        "part1": "Les scans ouvrent actuellement un lien défini précédemment :",
+        "part2": ". Cette page ne reçoit que le numéro de certificat, qui n'est pas une preuve d'identité, et ne peut donc pas prouver que le certificat est authentique.",
+        "useMyPortal": "Utiliser plutôt mon portail"
+    },
+    "headline": {
+        "label": "Titre",
+        "hintPart1": "La ligne sous le sceau. Si vide, utilise « ",
+        "hintPart2": " »."
+    },
+    "note": {
+        "label": "Votre message (facultatif)",
+        "placeholder": "ex. Des questions sur ce certificat ? registrar@example.com",
+        "hint": "Affiché sur la page ci-dessous. Toute personne disposant du lien peut le lire, donc gardez-le public."
+    },
+    "detailsList": {
+        "label": "Ce que la page indique",
+        "courseName": "Nom du cours",
+        "issueDate": "Date de délivrance",
+        "completionPercentage": "Pourcentage de complétion",
+        "hint": "Le nom du destinataire (partiellement masqué) et le numéro de certificat sont toujours affichés — ce sont eux qui relient la page au certificat détenu par quelqu'un."
+    },
+    "preview": {
+        "sectionTitle": "Ce qu'un scan affiche",
+        "defaultInstituteName": "Votre établissement",
+        "defaultHeadline": "Ce certificat est authentique",
+        "verifiedBy": "Vérifié par",
+        "issuedTo": "Délivré à",
+        "issuedToValue": "A··· S·····",
+        "course": "Cours",
+        "courseValue": "Introduction au cours d'exemple",
+        "certificateNumber": "Numéro de certificat",
+        "issuedOn": "Délivré le",
+        "issuedOnValue": "14 août 2026",
+        "completion": "Complétion",
+        "completionValue": "92 %"
+    }
+}

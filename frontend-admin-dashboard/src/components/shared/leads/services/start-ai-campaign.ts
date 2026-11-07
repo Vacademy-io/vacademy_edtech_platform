@@ -1,5 +1,5 @@
 import authenticatedAxiosInstance from '@/lib/auth/axiosInstance';
-import { TELEPHONY_AI_CALL_CAMPAIGN } from '@/constants/urls';
+import { BASE_URL, TELEPHONY_AI_CALL_CAMPAIGN } from '@/constants/urls';
 
 export interface StartAiCampaignRequest {
     /** The audience/campaign id (a lead list). */
@@ -75,4 +75,91 @@ export const fetchAiCampaignStatus = async (
         { params: { instituteId, sinceEpochMs } }
     );
     return data ?? [];
+};
+
+// ── Bulk-run progress, read from the QUEUE ──────────────────────────────────
+//
+// The older `/campaign/{id}/status` endpoint reads the CALL LOG, which only knows
+// about calls that have already dialled. Against a fleet that carries a few calls at
+// once, a 100-lead run showed three rows and no trace of the other ninety-seven — and
+// a lead the queue cancelled or expired never produced a call-log row at all, so a
+// progress bar counting them could never reach its own total.
+
+export interface BulkRunSummary {
+    audienceId: string;
+    /** Everything the run enqueued. The honest denominator. */
+    total: number;
+    waiting: number;
+    /** Handed to the provider and still on a line. */
+    dialing: number;
+    completed: number;
+    /** Ended without a call: cancelled, expired, or failed to place. */
+    dropped: number;
+    finished: number;
+    runFinished: boolean;
+    /** Rough wait for what is still queued, in minutes. */
+    etaMinutes: number;
+    byStatus?: Record<string, number>;
+}
+
+export interface BulkRunItem {
+    id: string;
+    responseId?: string | null;
+    userId?: string | null;
+    phoneNumber?: string | null;
+    agentName?: string | null;
+    status: string;
+    statusReason?: string | null;
+    /** Place in this institute's lane. Only set while still waiting. */
+    aheadInLane?: number | null;
+    etaMinutes?: number | null;
+    /** The live call behind a DIALED row — the queue row alone cannot tell you. */
+    callStatus?: string | null;
+    callDurationSeconds?: number | null;
+    live?: boolean;
+    callLogId?: string | null;
+}
+
+const AI_QUEUE_BASE = `${BASE_URL}/admin-core-service/v1/telephony/ai-queue`;
+
+export const fetchBulkRunSummary = async (
+    audienceId: string,
+    instituteId: string
+): Promise<BulkRunSummary> => {
+    const { data } = await authenticatedAxiosInstance.get<BulkRunSummary>(
+        `${AI_QUEUE_BASE}/bulk-run`,
+        { params: { instituteId, audienceId } }
+    );
+    return data;
+};
+
+export const fetchBulkRunItems = async (
+    audienceId: string,
+    instituteId: string,
+    size = 200
+): Promise<BulkRunItem[]> => {
+    const { data } = await authenticatedAxiosInstance.get<{ content?: BulkRunItem[] }>(
+        `${AI_QUEUE_BASE}/bulk-run/items`,
+        { params: { instituteId, audienceId, page: 0, size } }
+    );
+    return data?.content ?? [];
+};
+
+/**
+ * Stop the calls a bulk run still has waiting.
+ *
+ * Scoped to this run by `sourceRef`. The unscoped form of this endpoint cancels every
+ * waiting call the institute has — other campaigns, automations, counsellors' own
+ * clicks — which is never what someone stopping one campaign means.
+ */
+export const cancelBulkRun = async (
+    audienceId: string,
+    instituteId: string
+): Promise<{ cancelled: number }> => {
+    const { data } = await authenticatedAxiosInstance.post(
+        `${AI_QUEUE_BASE}/cancel`,
+        { sourceRef: audienceId, reason: 'Cancelled from the campaign progress dialog' },
+        { params: { instituteId } }
+    );
+    return data;
 };

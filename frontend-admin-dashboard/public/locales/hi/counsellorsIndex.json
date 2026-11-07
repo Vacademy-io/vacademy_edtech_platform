@@ -1,0 +1,79 @@
+{
+    "featureDisabled": {
+        "title": "काउंसलर पेज सक्षम नहीं है",
+        "settingsLabel": "काउंसलर वर्कबेंच"
+    },
+    "toast": {
+        "markedActive": "सक्रिय के रूप में चिह्नित किया गया",
+        "statusChangeError": "स्थिति नहीं बदली जा सकी",
+        "loadLeadsError": "खुली पूछताछ लोड नहीं हो सकीं",
+        "markedInactive": "निष्क्रिय के रूप में चिह्नित किया गया",
+        "markInactiveError": "निष्क्रिय के रूप में चिह्नित नहीं किया जा सका"
+    },
+    "header": {
+        "breadcrumbFallback": "काउंसलिंग टीम",
+        "titleFallback": "काउंसलर",
+        "subtitle": "उस व्यक्ति की पूछताछ और हाल की गतिविधि देखने के लिए कोई भी कार्ड क्लिक करें।"
+    },
+    "stats": {
+        "counsellors": "काउंसलर",
+        "active": "सक्रिय",
+        "assignedLeads": "असाइन की गई पूछताछ"
+    },
+    "search": {
+        "placeholder": "नाम या ईमेल से खोजें…"
+    },
+    "statusFilter": {
+        "all": "सभी",
+        "active": "सक्रिय",
+        "inactive": "निष्क्रिय"
+    },
+    "targets": {
+        "setTargets": "लक्ष्य सेट करें"
+    },
+    "viewMode": {
+        "ariaLabel": "व्यू मोड",
+        "cardTitle": "कार्ड व्यू",
+        "cards": "कार्ड",
+        "listTitle": "सूची व्यू",
+        "list": "सूची"
+    },
+    "list": {
+        "loading": "काउंसलर लोड हो रहे हैं…",
+        "emptyTeam": "इस टीम में अभी तक कोई काउंसलर नहीं है। उन्हें प्रबंधित संस्थान → टीमें → ऑर्ग चार्ट के तहत जोड़ें।",
+        "emptyFiltered": "आपके फ़िल्टर से कोई मेल नहीं खाता।"
+    },
+    "pagination": {
+        "showing": "{{total}} में से {{from}}–{{to}} दिखाया जा रहा है",
+        "loadingSuffix": " · लोड हो रहा है…"
+    },
+    "card": {
+        "unnamed": "अनाम",
+        "assignedLeads": "असाइन की गई पूछताछ",
+        "team": "टीम",
+        "targets": "लक्ष्य",
+        "active": "सक्रिय",
+        "inactive": "निष्क्रिय",
+        "reassignLeads": "पूछताछ पुनः असाइन करें",
+        "markInactive": "निष्क्रिय चिह्नित करें",
+        "markActive": "सक्रिय चिह्नित करें",
+        "confirmMarkActive": "क्या {{name}} को फिर से सक्रिय चिह्नित करें?"
+    },
+    "table": {
+        "colCounsellor": "काउंसलर",
+        "colTeam": "टीम",
+        "colRating": "रेटिंग",
+        "colAssignedLeads": "असाइन की गई पूछताछ",
+        "colTargets": "लक्ष्य",
+        "colStatus": "स्थिति",
+        "colActions": "कार्रवाई"
+    },
+    "drawer": {
+        "tabLeads": "पूछताछ ({{count}})",
+        "tabActivity": "गतिविधि",
+        "tabCalls": "कॉल",
+        "tabCoaching": "कोचिंग",
+        "tabPerformance": "प्रदर्शन",
+        "tabTargets": "लक्ष्य"
+    }
+}

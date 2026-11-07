@@ -1,0 +1,236 @@
+{
+    "common": {
+        "sourceList": "Liste source",
+        "resultKey": "Clé de résultat",
+        "templateVariables": "Variables du modèle",
+        "selectANode": "Sélectionnez un nœud à configurer",
+        "nodeName": "Nom du nœud",
+        "nodeNamePlaceholder": "Entrez le nom du nœud",
+        "requiredParameters": "Paramètres requis",
+        "autoFilled": "Rempli automatiquement depuis le contexte du workflow",
+        "pickOrTypeValueFor": "Choisissez ou saisissez une valeur pour {{param}}...",
+        "enterParam": "Entrez {{param}}...",
+        "deleteNode": "Supprimer le nœud",
+        "configurationJson": "Configuration (JSON)"
+    },
+    "triggerScope": {
+        "noScope": "Cet événement se déclenche pour tout l'institut — il n'y a rien à cibler."
+    },
+    "trigger": {
+        "triggerEvent": "Événement déclencheur",
+        "selectEvent": "Sélectionnez un événement..."
+    },
+    "email": {
+        "sendEmailsTo": "Envoyer les e-mails à",
+        "selectDataSource": "Sélectionnez une source de données...",
+        "respondentEmails": "E-mails des répondants (depuis le déclencheur)",
+        "respondentEmailsDesc": "E-mail préconstruit avec destinataire/objet/corps depuis la soumission du formulaire",
+        "adminEmails": "E-mails des administrateurs (depuis le déclencheur)",
+        "adminEmailsDesc": "Notifications par e-mail pour les administrateurs",
+        "audienceLeads": "Prospects de l'audience (depuis la requête)",
+        "audienceLeadsDesc": "Liste des prospects avec les données des champs personnalisés",
+        "students": "Étudiants (depuis la requête)",
+        "studentsDesc": "Liste des étudiants avec nom, e-mail, téléphone",
+        "enrolledStudents": "Étudiants inscrits (depuis la requête)",
+        "enrolledStudentsDesc": "Liste des étudiants inscrits avec nom, e-mail, mobile",
+        "queryResults": "Résultats de la requête ({{queryKey}})",
+        "queryResultsDesc": "Résultats du nœud de requête",
+        "connectUpstreamData": "Connectez un nœud Déclencheur ou Requête en amont pour détecter automatiquement les sources de données.",
+        "pickRecipients": "Choisissez une liste de destinataires...",
+        "emailTemplate": "Modèle d'e-mail",
+        "emailTemplateOptional": "(facultatif — ignorez pour utiliser l'e-mail préconstruit de la source de données)",
+        "noTemplatePlaceholder": "Aucun modèle (utiliser l'objet/corps de la source de données)",
+        "noTemplateSearchEmpty": "Aucun modèle d'e-mail ne correspond à votre recherche.",
+        "sendToField": "Champ de destination",
+        "sendToFieldHint": "(quel champ e-mail utiliser pour chaque élément)",
+        "autoDetectToEmail": "Détection automatique (to, email)",
+        "studentEmail": "E-mail de l'étudiant",
+        "fatherParentEmail": "E-mail du père/parent",
+        "guardianEmail": "E-mail du tuteur",
+        "motherEmail": "E-mail de la mère",
+        "toPrebuiltRecipient": "To (destinataire préconstruit)",
+        "templateVariablesHint": "Associez chaque espace réservé du modèle à un champ de données. Sélectionnez dans la liste ou saisissez un nom de champ personnalisé.",
+        "selectAField": "Sélectionnez un champ...",
+        "itemFieldsGroup": "Champs de l'élément (depuis la liste)",
+        "contextFieldsGroup": "Champs de contexte / déclencheur",
+        "customFieldsGroup": "Champs personnalisés (saisir le nom manuellement)",
+        "typeCustomFieldBelow": "Saisissez le nom du champ personnalisé ci-dessous",
+        "customValue": "Personnalisé : {{value}}",
+        "customFieldPlaceholder": "Ou saisissez un nom de champ personnalisé (ex. Nom complet, Numéro de téléphone)",
+        "field": {
+            "recipientEmail": "E-mail du destinataire",
+            "emailSubject": "Objet de l'e-mail",
+            "email": "E-mail",
+            "parentEmail": "E-mail du parent",
+            "parentName": "Nom du parent",
+            "mobileNumber": "Numéro de mobile",
+            "userId": "ID utilisateur",
+            "studentName": "Nom de l'étudiant",
+            "studentEmail": "E-mail de l'étudiant",
+            "enrollmentNumber": "Numéro d'inscription",
+            "attendancePercentage": "Pourcentage de présence",
+            "totalDuration": "Durée totale (min)",
+            "chatCount": "Nombre de messages",
+            "handRaiseCount": "Nombre de mains levées",
+            "sessionsAttended": "Sessions suivies",
+            "reportStartDate": "Date de début du rapport",
+            "reportEndDate": "Date de fin du rapport",
+            "fullName": "Nom complet",
+            "username": "Nom d'utilisateur",
+            "batchId": "ID du lot"
+        },
+        "context": {
+            "instituteName": "Nom de l'institut (auto)",
+            "instituteId": "ID de l'institut (auto)",
+            "learnerUsername": "Nom d'utilisateur de l'apprenant (depuis le déclencheur)",
+            "learnerPassword": "Mot de passe de l'apprenant (depuis le déclencheur)",
+            "learnerFullName": "Nom complet de l'apprenant (depuis le déclencheur)",
+            "learnerEmail": "E-mail de l'apprenant (depuis le déclencheur)",
+            "learnerMobile": "Mobile de l'apprenant (depuis le déclencheur)",
+            "liveSessionTitle": "Titre de la session en direct (depuis le déclencheur)",
+            "sessionStartTime": "Heure de début de la session (depuis le déclencheur)",
+            "sessionMeetLink": "Lien de la session (depuis le déclencheur)",
+            "campaignName": "Nom de la campagne (depuis le déclencheur)",
+            "submissionTime": "Heure de soumission (depuis le déclencheur)"
+        }
+    },
+    "whatsapp": {
+        "template": "Modèle WhatsApp",
+        "selectTemplate": "Sélectionnez un modèle...",
+        "noTemplateSearchEmpty": "Aucun modèle WhatsApp ne correspond à votre recherche.",
+        "sendTo": "Envoyer le WhatsApp à",
+        "selectRecipients": "Sélectionnez les destinataires...",
+        "connectUpstreamRecipients": "Connectez un nœud Déclencheur ou Requête en amont pour détecter automatiquement les destinataires.",
+        "leadSubmitter": "Auteur du prospect (depuis le déclencheur)",
+        "leadSubmitterDesc": "L'unique utilisateur ayant soumis le formulaire — son numéro de mobile est utilisé",
+        "audienceLeads": "Prospects de l'audience (depuis la requête)",
+        "audienceLeadsDesc": "Prospects avec téléphone dans les champs personnalisés",
+        "students": "Étudiants (depuis la requête)",
+        "studentsDesc": "Étudiants avec numéro de mobile",
+        "enrolledStudents": "Étudiants inscrits (depuis la requête)",
+        "enrolledStudentsDesc": "Étudiants inscrits avec numéro de mobile",
+        "queryResults": "Résultats de la requête ({{queryKey}})",
+        "queryResultsDesc": "Résultats du nœud de requête",
+        "valueForField": "Valeur pour {{field}}..."
+    },
+    "http": {
+        "requestType": "Type de requête",
+        "externalApi": "API externe",
+        "internalService": "Service interne",
+        "url": "URL",
+        "internalUrlPlaceholder": "/admin-core-service/v1/...",
+        "externalUrlPlaceholder": "https://api.example.com/endpoint",
+        "method": "Méthode",
+        "headers": "En-têtes",
+        "optional": "(facultatif)",
+        "queryParameters": "Paramètres de requête",
+        "requestBody": "Corps de la requête",
+        "requestBodyJson": "(JSON)",
+        "resultKeyHint": "La réponse sera disponible sous #ctx['{{resultKey}}']['body']",
+        "condition": "Condition",
+        "conditionHint": "(facultatif — ignorer la requête si faux)",
+        "conditionPlaceholder": "Laisser vide pour toujours exécuter"
+    },
+    "query": {
+        "query": "Requête",
+        "selectQuery": "Sélectionnez une requête...",
+        "optionalFilters": "Filtres facultatifs",
+        "optional": "(facultatif)"
+    },
+    "delay": {
+        "waitMode": "Mode d'attente",
+        "fixedDuration": "Durée fixe",
+        "untilNextWeekday": "Jusqu'au prochain jour de la semaine",
+        "waitFor": "Attendre",
+        "pauseResumeAfter_one": "Le workflow se mettra en pause et reprendra automatiquement après {{count}} jour.",
+        "pauseResumeAfter_many": "Le workflow se mettra en pause et reprendra automatiquement après {{count}} jours.",
+        "pauseResumeAfter_other": "Le workflow se mettra en pause et reprendra automatiquement après {{count}} jours.",
+        "waitUntilNext": "Attendre jusqu'au prochain",
+        "timezone": "Fuseau horaire",
+        "pausesUntil": "Se met en pause jusqu'au prochain {{day}} à {{time}}. Un événement le même jour de la semaine attend une semaine complète.",
+        "day": {
+            "monday": "Lundi",
+            "tuesday": "Mardi",
+            "wednesday": "Mercredi",
+            "thursday": "Jeudi",
+            "friday": "Vendredi",
+            "saturday": "Samedi",
+            "sunday": "Dimanche"
+        },
+        "unit": {
+            "seconds": "Secondes",
+            "minutes": "Minutes",
+            "hours": "Heures",
+            "days": "Jours"
+        }
+    },
+    "filter": {
+        "pickListToFilter": "Choisissez une liste à filtrer...",
+        "keepItemsWhere": "Conserver les éléments où",
+        "saveFilteredListAs": "Enregistrer la liste filtrée sous"
+    },
+    "aggregate": {
+        "pickListToAggregate": "Choisissez une liste à agréger...",
+        "operations": "Opérations"
+    },
+    "condition": {
+        "trueLabel": "Libellé Vrai",
+        "falseLabel": "Libellé Faux"
+    },
+    "loop": {
+        "sourceExpression": "Expression source",
+        "pickListVariable": "Choisissez une variable de liste...",
+        "itemVariableName": "Nom de la variable d'élément",
+        "itemVariableHint": "Accédez à chaque élément dans les nœuds en aval sous #ctx['{variableName}']",
+        "outputKey": "Clé de sortie"
+    },
+    "merge": {
+        "waitForNodeIds": "IDs des nœuds à attendre (séparés par des virgules)",
+        "waitForHint": "IDs des nœuds en amont dont la sortie doit être présente avant de continuer.",
+        "strategy": "Stratégie",
+        "waitAll": "Attendre TOUS les nœuds en amont",
+        "waitAny": "Continuer quand N'IMPORTE LEQUEL des nœuds en amont se termine"
+    },
+    "scheduleTask": {
+        "delayDuration": "Durée du délai (ISO-8601)",
+        "delayDurationHint": "PT1H = 1 heure, P3D = 3 jours, PT30M = 30 minutes",
+        "targetWorkflowId": "ID du workflow cible (facultatif)",
+        "targetWorkflowIdPlaceholder": "Laisser vide pour le workflow actuel",
+        "contextKeysToForward": "Clés de contexte à transmettre (séparées par des virgules)"
+    },
+    "updateRecord": {
+        "table": "Table",
+        "selectTable": "Sélectionnez une table...",
+        "findRecordsWhere": "Rechercher les enregistrements où",
+        "setValuesTo": "Définir les valeurs sur",
+        "columnPlaceholder": "colonne",
+        "matchValuePlaceholder": "valeur de correspondance",
+        "newValuePlaceholder": "nouvelle valeur"
+    },
+    "pushNotification": {
+        "title": "Titre",
+        "titlePlaceholder": "Nouveau devoir publié !",
+        "body": "Corps",
+        "bodyPlaceholder": "Découvrez le nouveau devoir dans votre cours",
+        "recipientTokens": "Jetons des destinataires",
+        "recipientTokensPlaceholder": "Choisissez une liste de jetons FCM...",
+        "dataPayload": "Charge utile de données (JSON, facultatif)"
+    },
+    "leadStatus": {
+        "label": "Statut du prospect",
+        "selectStatus": "Sélectionnez un statut..."
+    },
+    "callAi": {
+        "agent": "Agent",
+        "selectAgent": "Sélectionnez un agent...",
+        "infoPrefix": "Les agents sont enregistrés dans Paramètres → Appels IA (Campagnes / Agents IA). Le résultat de l'appel revient sous",
+        "infoOutcomeSuffix": "(ASSIGN | STOP | RETRY),",
+        "infoAnd": "et",
+        "provider": "Fournisseur (facultatif)",
+        "instituteDefault": "Par défaut de l'institut",
+        "instituteDefaultWithProvider": "Par défaut de l'institut ({{provider}})",
+        "ignoreAssignedGuardLabel": "Appeler aussi les prospects déjà pris en charge par un conseiller",
+        "ignoreAssignedGuardHint": "Désactivé par défaut : le bot ignore les prospects déjà pris en charge par un conseiller. Activez ceci pour les workflows ciblant délibérément des prospects déjà pris en charge — par ex. rappeler un prospect qu'un conseiller vient de marquer DNP — sinon le nœud s'arrêtera sans composer. Les plafonds d'appels quotidiens s'appliquent toujours.",
+        "extraMetadata": "Métadonnées supplémentaires pour l'agent (JSON, facultatif)"
+    }
+}

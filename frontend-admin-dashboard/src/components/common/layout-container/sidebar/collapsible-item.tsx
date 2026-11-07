@@ -3,14 +3,13 @@ import { ChevronDown } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import React from 'react';
 import { SidebarItemProps } from '../../../../types/layout-container/layout-container-types';
-import { Link } from '@tanstack/react-router';
-import { useRouter } from '@tanstack/react-router';
+import { Link, useLocation } from '@tanstack/react-router';
 import { cn } from '@/lib/utils';
 import { LockKey } from '@phosphor-icons/react';
 import { useNavigate } from '@tanstack/react-router';
 import { getCategoryColors } from './sidebar-colors';
 import { recordRecentTab } from './recent-tabs-store';
-import { parseSidebarLink } from './helper';
+import { parseSidebarLink, pickActiveSidebarLink } from './helper';
 
 export const CollapsibleItem = ({
     icon,
@@ -23,23 +22,18 @@ export const CollapsibleItem = ({
     const [hover, setHover] = useState<boolean>(false);
     const [isOpen, setIsOpen] = useState(false);
     const navigate = useNavigate();
-    const router = useRouter();
     const colors = getCategoryColors(category as 'CRM' | 'LMS' | 'AI');
 
-    const currentRoute = router.state.location.pathname;
+    // useLocation, not router.state: a filter change only rewrites the query, and
+    // the highlight has to follow it.
+    const { pathname: currentRoute, search: currentSearch } = useLocation();
 
-    const isSubLinkActive = (link: string) =>
-        currentRoute === link || currentRoute.startsWith(link + '/');
-
-    // Most-specific match wins: pick the subItem whose link is the longest prefix of currentRoute
-    const activeSubLink = (() => {
-        const matches =
-            subItems?.filter((item) => item.subItemLink && isSubLinkActive(item.subItemLink)) ?? [];
-        if (!matches.length) return null;
-        return matches.reduce((a, b) =>
-            (a.subItemLink?.length ?? 0) >= (b.subItemLink?.length ?? 0) ? a : b
-        ).subItemLink;
-    })();
+    // Most-specific match wins; see pickActiveSidebarLink for pinned (`lock=`) sub-tabs.
+    const activeSubLink = pickActiveSidebarLink(
+        subItems?.map((item) => item.subItemLink) ?? [],
+        currentRoute,
+        currentSearch as Record<string, unknown>
+    );
 
     const routeMatches = !!activeSubLink || currentRoute === to;
 

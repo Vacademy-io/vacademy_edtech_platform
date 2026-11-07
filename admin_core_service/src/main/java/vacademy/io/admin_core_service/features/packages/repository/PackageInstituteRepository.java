@@ -12,4 +12,8 @@ public interface PackageInstituteRepository extends JpaRepository<PackageInstitu
     Optional<PackageInstitute> findByPackageIdAndInstituteId(@Param("packageId") String packageId, @Param("instituteId") String instituteId);
 
     Optional<PackageInstitute> findTopByPackageEntity_IdOrderByCreatedAtDesc(String packageId);
+
+    /** Whether the package is linked to the institute. Safe with duplicate link rows (no unique key). */
+    @Query("SELECT COUNT(pi) > 0 FROM PackageInstitute pi WHERE pi.packageEntity.id = :packageId AND pi.instituteEntity.id = :instituteId")
+    boolean existsLink(@Param("packageId") String packageId, @Param("instituteId") String instituteId);
 }

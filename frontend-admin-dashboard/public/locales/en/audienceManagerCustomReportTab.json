@@ -1,0 +1,21 @@
+{
+    "buildSection": {
+        "title": "Build a report",
+        "groupByLabel": "Group by (dimensions)",
+        "measuresLabel": "Measures",
+        "filtersHeading": "Filters",
+        "runButton": "Run report",
+        "pickHint": "Pick at least one dimension and one measure."
+    },
+    "resultSection": {
+        "title": "Result",
+        "matrixViewLabel": "Matrix view",
+        "emptyHint": "No rows match this spec.",
+        "totalColumn": "Total",
+        "matrixCaption": "{{measure}} by {{rowDim}} (rows) × {{colDim}} (columns).",
+        "truncatedMatrix_one": "Built from the first {{count}} row — refine your filters to narrow the result.",
+        "truncatedMatrix_other": "Built from the first {{count}} rows — refine your filters to narrow the result.",
+        "truncatedTable_one": "Showing the first {{count}} row — refine your filters to narrow the result.",
+        "truncatedTable_other": "Showing the first {{count}} rows — refine your filters to narrow the result."
+    }
+}

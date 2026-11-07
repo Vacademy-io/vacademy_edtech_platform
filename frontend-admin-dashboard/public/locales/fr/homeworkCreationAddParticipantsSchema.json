@@ -1,0 +1,6 @@
+{
+    "validation": {
+        "endDateAfterStartDate": "La date de fin doit être postérieure à la date de début.",
+        "startDateRequired": "La date de début des inscriptions est obligatoire pour un test ouvert."
+    }
+}

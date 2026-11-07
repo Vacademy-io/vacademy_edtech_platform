@@ -1,0 +1,25 @@
+{
+    "title": "Variables du modèle",
+    "helper": "Choisissez ce qui remplit chaque espace du message pour chaque prospect.",
+    "preview": "Aperçu du message",
+    "pickerLabel": "Valeur de la variable {{key}}",
+    "placeholder": "Choisir une valeur",
+    "groups": {
+        "lead": "Informations du prospect",
+        "form": "Champs du formulaire"
+    },
+    "lead": {
+        "leadName": "Nom du prospect",
+        "email": "E-mail du prospect",
+        "phone": "Téléphone du prospect",
+        "listName": "Nom de la liste de prospects",
+        "submittedOn": "Date de soumission",
+        "instituteName": "Nom de l'institut"
+    },
+    "loadingFields": "Chargement des champs du formulaire…",
+    "noFormFields": "Ce formulaire n'a aucun champ personnalisé",
+    "customText": "Texte personnalisé…",
+    "customTextPlaceholder": "Le même texte pour chaque prospect",
+    "incomplete": "Choisissez une valeur pour chaque variable — WhatsApp rejette le message tant que l'une d'elles reste vide.",
+    "allMapped": "Chaque variable a une valeur."
+}

@@ -1,0 +1,26 @@
+{
+    "updateBatch": {
+        "successTitle": "Success",
+        "successDescription": "Successfully updated batches for selected students",
+        "errorTitle": "Error",
+        "errorDescription": "Failed to update batches. Please try again."
+    },
+    "extendSession": {
+        "successTitle": "Success",
+        "successDescription": "Successfully extended sessions for selected students",
+        "errorTitle": "Error",
+        "errorDescription": "Failed to extend sessions. Please try again."
+    },
+    "terminate": {
+        "successTitle": "Success",
+        "successDescription": "Successfully terminated registrations for selected students",
+        "errorTitle": "Error",
+        "errorDescription": "Failed to terminate registrations. Please try again."
+    },
+    "delete": {
+        "successTitle": "Success",
+        "successDescription": "Successfully deleted selected students",
+        "errorTitle": "Error",
+        "errorDescription": "Failed to delete students. Please try again."
+    }
+}

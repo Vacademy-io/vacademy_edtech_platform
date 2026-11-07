@@ -1,0 +1,54 @@
+{
+    "title": "محركات التفاعل",
+    "subtitle": "مساعدون بالذكاء الاصطناعي، كلٌّ يعمل على هدف واحد. يقررون من يُتواصل معه ومتى وماذا يُقال؛ وأنت توافق على الرسائل.",
+    "actions": {
+        "taskInbox": "صندوق المهام",
+        "newEngine": "محرك جديد",
+        "createFirstEngine": "أنشئ محركك الأول"
+    },
+    "error": "تعذّر تحميل المحركات. يرجى تحديث الصفحة.",
+    "empty": {
+        "title": "لا توجد محركات بعد",
+        "description": "أنشئ محركًا لهدف واحد — مثل إعادة التفاعل مع {{term}} غير النشطين أو تحدٍّ لمدة 14 يومًا. يقوم بصياغة كل رسالة لتراجعها قبل الإرسال."
+    },
+    "card": {
+        "noChannels": "لا توجد قنوات مفعّلة",
+        "cadence": "كل {{hours}} ساعة",
+        "lastRun": "Last check-in {{when}}",
+        "stats": {
+            "members": "members",
+            "drafted": "drafted · 30d",
+            "completed": "completed · 30d",
+            "failed": "failed · 30d"
+        },
+        "hint": {
+            "templatesPending": "Approve a WhatsApp template to go live",
+            "dryRun": "Dry run: drafts are simulated, nothing is sent",
+            "draft": "أضف الأشخاص، ثم ابدأ تشغيلًا تجريبيًا أو فعّل"
+        }
+    },
+    "toolbar": {
+        "search": "Search engines by name or objective",
+        "allChannels": "All channels",
+        "anyLanguage": "Any language",
+        "showArchived": "Show archived",
+        "cards": "Cards",
+        "table": "Table"
+    },
+    "filteredEmpty": {
+        "title": "No engines match these filters",
+        "clear": "Clear filters"
+    },
+    "table": {
+        "engine": "Engine",
+        "status": "Status",
+        "channels": "Channels",
+        "language": "Language",
+        "cadence": "Cadence",
+        "members": "Members",
+        "drafted": "Drafted · 30d",
+        "completed": "Completed · 30d",
+        "lastRun": "Last check-in"
+    },
+    "retry": "إعادة المحاولة"
+}

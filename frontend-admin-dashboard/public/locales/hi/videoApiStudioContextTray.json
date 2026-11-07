@@ -1,0 +1,47 @@
+{
+    "refs": {
+        "label_one": "संदर्भ ({{count}})",
+        "label_other": "संदर्भ ({{count}})",
+        "removeAria": "{{fileName}} हटाएं"
+    },
+    "sources": {
+        "label_one": "स्रोत ({{count}})",
+        "label_other": "स्रोत ({{count}})",
+        "unknown": "अज्ञात",
+        "removeAria": "{{name}} हटाएं"
+    },
+    "audio": {
+        "label": "ऑडियो",
+        "original": "मूल",
+        "originalTitleAvailable": "अपने स्रोत क्लिप का मूल ऑडियो उपयोग करें",
+        "originalTitleUnavailable": "मूल ऑडियो केवल एक स्रोत क्लिप के साथ उपलब्ध है",
+        "aiNarration": "AI कथन",
+        "muteTtsDuringSourceClips": "स्रोत क्लिप के दौरान TTS म्यूट करें"
+    },
+    "smartPlan": {
+        "label": "स्मार्ट प्लान",
+        "analyzing": "प्रॉम्प्ट का विश्लेषण हो रहा है…",
+        "captureWebsite": "वेबसाइट कैप्चर करें",
+        "skipWebsite": "वेबसाइट छोड़ें",
+        "webSearch": "वेब खोज",
+        "skipSearch": "खोज छोड़ें",
+        "muteTtsOnClips": "क्लिप पर TTS म्यूट करें",
+        "ttsOverClips": "क्लिप पर TTS",
+        "muteTtsTitle": "स्रोत-क्लिप शॉट्स के दौरान TTS कथन म्यूट करें ताकि डेमो का मूल ऑडियो चले",
+        "overlayInfographics": "ओवरले इन्फोग्राफिक्स",
+        "sideInfographics": "साइड इन्फोग्राफिक्स",
+        "overlayTitle": "डेमो फुटेज के ऊपर इन्फोग्राफिक्स तैराएं (साइड-बाय-साइड कार्ड के बजाय)",
+        "manual": "मैन्युअल",
+        "auto": "स्वतः",
+        "hideWhy": "कारण छुपाएं ▴",
+        "why": "क्यों? ▾"
+    },
+    "webCapture": {
+        "label": "वेब कैप्चर",
+        "ignoredTitle": "{{url}} — नज़रअंदाज़ किया गया (अभी भी प्रॉम्प्ट में है, कैप्चर नहीं हुआ)",
+        "activeTitle": "{{url}} — स्क्रीनशॉट + छवियां कैप्चर करके संदर्भ के रूप में उपयोग की जाएंगी",
+        "undo": "पूर्ववत करें",
+        "reEnableAria": "{{host}} के लिए कैप्चर फिर से सक्षम करें",
+        "skipAria": "{{host}} के लिए कैप्चर छोड़ें"
+    }
+}

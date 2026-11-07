@@ -1,0 +1,18 @@
+{
+    "title": "Intégration Zoom",
+    "description": "Connectez un ou plusieurs comptes Zoom afin que les administrateurs puissent créer des réunions Zoom directement depuis l'assistant de cours en direct, les apprenants pouvant les rejoindre facilement via le Meeting SDK intégré.",
+    "connectButton": "Se connecter avec Zoom",
+    "addManuallyButton": "Ajouter manuellement",
+    "retry": "Réessayer",
+    "errors": {
+        "loadAccounts": "Échec du chargement des comptes Zoom.",
+        "connectionFailed": "Échec de la connexion à Zoom ({{reason}}). Veuillez réessayer.",
+        "connectionStartFailed": "Impossible de démarrer la connexion à Zoom. Veuillez réessayer."
+    },
+    "toasts": {
+        "connected": "Connexion à Zoom réussie."
+    },
+    "retentionNotice": {
+        "text": "Les enregistrements cloud Zoom expirent par défaut après <strong>30 jours</strong> (puis restent 30 jours dans la corbeille avant suppression définitive). Pour conserver les enregistrements au-delà de cette période, utilisez « Sync to Vacademy S3 » sur chaque enregistrement depuis la vue de session — bientôt disponible dans une prochaine version. Pour l'instant, la politique de conservation par défaut de Zoom s'applique ; vous pouvez la prolonger depuis les paramètres de votre compte Zoom."
+    }
+}

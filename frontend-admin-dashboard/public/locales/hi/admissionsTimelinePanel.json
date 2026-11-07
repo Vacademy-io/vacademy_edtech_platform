@@ -1,0 +1,40 @@
+{
+    "header": {
+        "title": "गतिविधि और नोट्स"
+    },
+    "loading": "गतिविधि लोड हो रही है…",
+    "error": "गतिविधि समयरेखा लोड करने में विफल।",
+    "empty": {
+        "title": "अभी तक कोई गतिविधि नहीं",
+        "description": "नोट्स, स्थिति परिवर्तन और अन्य घटनाएं यहां दिखाई देंगी"
+    },
+    "pagination": {
+        "pageInfo": "पृष्ठ {{current}} / {{total}}",
+        "previous": "पिछला",
+        "next": "अगला"
+    },
+    "event": {
+        "actorPrefix": "द्वारा",
+        "viewMore": "अधिक देखें",
+        "viewLess": "कम देखें"
+    },
+    "addNote": {
+        "collapsedPlaceholder": "नोट जोड़ें या गतिविधि दर्ज करें…",
+        "notePlaceholder": "अपना नोट यहां लिखें…",
+        "submitHint": "सबमिट करने के लिए Ctrl+Enter दबाएं",
+        "cancel": "रद्द करें",
+        "submit": "नोट जोड़ें",
+        "submitting": "सहेजा जा रहा है…",
+        "actionTypes": {
+            "note": "नोट",
+            "callLog": "कॉल लॉग",
+            "followUp": "फॉलो अप",
+            "meeting": "मीटिंग"
+        },
+        "toast": {
+            "success": "नोट सफलतापूर्वक जोड़ा गया",
+            "error": "नोट जोड़ने में विफल। कृपया पुनः प्रयास करें।",
+            "emptyWarning": "कृपया एक नोट दर्ज करें या रिकॉर्डिंग जोड़ें"
+        }
+    }
+}

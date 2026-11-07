@@ -1,0 +1,12 @@
+{
+    "heading": "Partagez les informations de votre organisation",
+    "logoAlt": "logo",
+    "instituteNameLabel": "Nom de l'établissement",
+    "instituteNamePlaceholder": "Nom de l'établissement",
+    "instituteTypeLabel": "Type d'établissement",
+    "continue": "Continuer",
+    "schema": {
+        "instituteNameRequired": "Le nom de l'établissement est requis",
+        "instituteTypeRequired": "Veuillez sélectionner le type d'établissement"
+    }
+}

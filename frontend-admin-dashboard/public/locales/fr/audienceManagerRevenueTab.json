@@ -1,0 +1,56 @@
+{
+    "column": {
+        "revenue": "Revenu",
+        "payments": "Paiements",
+        "source": "Source",
+        "counsellor": "Conseiller"
+    },
+    "kpi": {
+        "revenueSub": "{{payments}} paiements de {{students}} étudiants sur la période"
+    },
+    "dailyRevenue": {
+        "title": "Revenu quotidien",
+        "barTooltip_one": "{{date}} : {{amount}} ({{count}} paiement)",
+        "barTooltip_many": "{{date}} : {{amount}} ({{count}} paiements)",
+        "barTooltip_other": "{{date}} : {{amount}} ({{count}} paiements)",
+        "hoverAmount_one": "{{amount}} · {{count}} paiement",
+        "hoverAmount_many": "{{amount}} · {{count}} paiements",
+        "hoverAmount_other": "{{amount}} · {{count}} paiements",
+        "footnote": "Chaque paiement compte au jour où il a été payé (la date de transaction saisie pour les paiements manuels)."
+    },
+    "bySource": {
+        "title": "Revenu par source"
+    },
+    "byCounsellor": {
+        "title": "Revenu par conseiller",
+        "footnote": "Montants reçus sur la période, y compris les échéances d'étudiants inscrits plus tôt. Les inscriptions et les frais sont dans l'onglet Inscriptions."
+    },
+    "payments": {
+        "title": "Paiements — {{name}}",
+        "rowHint": "Cliquez sur un conseiller pour voir les paiements derrière son montant.",
+        "summary_one": "{{count}} paiement · {{amount}}",
+        "summary_other": "{{count}} paiements · {{amount}}",
+        "loading": "Chargement des paiements…",
+        "empty": "Aucun paiement pour {{name}} sur cette période.",
+        "close": "Fermer",
+        "total": "Total",
+        "enteredOn": "saisi le {{date}}",
+        "truncated": "Affichage des {{shown}} derniers paiements sur {{count}}. Exportez ou réduisez la période pour tout voir.",
+        "headers": {
+            "date": "Date de paiement",
+            "student": "Étudiant",
+            "phone": "Téléphone",
+            "courses": "Cours",
+            "amount": "Montant",
+            "mode": "Mode",
+            "reference": "Référence",
+            "receipt": "N° de reçu",
+            "source": "Source",
+            "enteredOn": "Saisi le"
+        }
+    },
+    "empty": {
+        "noRevenue": "Aucun revenu sur cette période.",
+        "noCounsellorRevenue": "Aucun revenu attribué à un conseiller sur cette période."
+    }
+}

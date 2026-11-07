@@ -1,0 +1,44 @@
+{
+    "dialog": {
+        "headingEdit": "Edit salary component",
+        "headingNew": "Add salary component",
+        "cancel": "Cancel",
+        "saving": "Saving…",
+        "saveChanges": "Save changes",
+        "createComponent": "Create component"
+    },
+    "toast": {
+        "updated": "Component updated",
+        "created": "Component created",
+        "saveError": "Could not save the salary component."
+    },
+    "info": "TDS, PF, ESI and PT are system components — payroll creates them for you when it runs. Don't add them here, or an employee ends up with the deduction twice.",
+    "form": {
+        "nameLabel": "Name",
+        "namePlaceholder": "House rent allowance",
+        "codeLabel": "Code",
+        "codePlaceholder": "HRA",
+        "codeDescription": "The payroll engine matches on this — e.g. BASIC, HRA.",
+        "typeLabel": "Type",
+        "categoryLabel": "Category",
+        "displayOrderLabel": "Display order",
+        "displayOrderPlaceholder": "10",
+        "displayOrderDescription": "Lower numbers appear higher on the payslip.",
+        "glAccountLabel": "GL account code",
+        "glAccountPlaceholder": "5100",
+        "glAccountDescription": "Where this component posts in the accounting journal. Blank uses the default for its type.",
+        "taxableLabel": "Taxable",
+        "statutoryLabel": "Statutory",
+        "descriptionLabel": "Description",
+        "descriptionPlaceholder": "What this component is for, so the next admin doesn't have to guess."
+    },
+    "validation": {
+        "nameRequired": "Give the component a name",
+        "codeMin": "Codes are at least 2 characters",
+        "codePattern": "Uppercase letters, digits and underscores only — no spaces (e.g. BASIC, HRA, SPECIAL_ALLOWANCE)",
+        "descriptionMax": "Keep the description under 500 characters",
+        "wholeNumbers": "Whole numbers only",
+        "glAccountMax": "That looks too long for an account code",
+        "codeDuplicate": "Another component already uses this code"
+    }
+}

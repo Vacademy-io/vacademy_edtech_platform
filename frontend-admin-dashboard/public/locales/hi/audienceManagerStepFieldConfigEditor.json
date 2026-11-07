@@ -1,0 +1,13 @@
+{
+    "untitledField": "बिना नाम वाला फ़ील्ड",
+    "newFieldBadge": "(नया)",
+    "mandatoryLabel": "अनिवार्य",
+    "hiddenLabel": "छिपा हुआ",
+    "accessButton": "पहुँच",
+    "emptyState": "अभी तक कोई फ़ील्ड संलग्न नहीं है। कोई मौजूदा कस्टम फ़ील्ड संलग्न करें या नया बनाएं।",
+    "pickerPlaceholderEmpty": "संलग्न करने के लिए और फ़ील्ड नहीं हैं",
+    "pickerPlaceholderDefault": "मौजूदा फ़ील्ड संलग्न करें…",
+    "attachButton": "संलग्न करें",
+    "attachButtonWithCount": "संलग्न करें ({{count}})",
+    "createNewFieldButton": "नया फ़ील्ड बनाएं"
+}

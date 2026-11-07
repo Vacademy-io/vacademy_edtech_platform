@@ -1,0 +1,281 @@
+{
+    "scene": {
+        "label": "दृश्य {{index}}",
+        "dataNotAvailable": "दृश्य का डेटा उपलब्ध नहीं है।"
+    },
+    "stateBadge": {
+        "wrapped": "पूर्ण",
+        "inProduction": "निर्माणाधीन",
+        "scheduled": "निर्धारित",
+        "cut": "निर्माण से हटाया गया",
+        "reshoot": "फिर से शूट आवश्यक"
+    },
+    "runSummary": {
+        "productionBudget": "निर्माण बजट",
+        "totalTokens": "कुल टोकन",
+        "promptTokens": "· प्रॉम्प्ट",
+        "completionTokens": "· पूर्णता",
+        "imagesGenerated": "जनरेट की गई छवियाँ",
+        "ttsCharacters": "TTS वर्ण",
+        "estimatedCost": "अनुमानित लागत",
+        "elapsed": "बीता समय",
+        "noTokenData": "इस रन के लिए टोकन और लागत टेलीमेट्री सहेजी नहीं गई थी। (टोकन हिसाब जोड़े जाने से पहले की पुरानी वीडियो।)",
+        "cumulativeNote": "पूरे रन के लिए संचयी। स्टेज-वार विवरण अभी उपलब्ध नहीं है।",
+        "artifacts": "फ़ाइलें",
+        "run": "रन"
+    },
+    "artifactLabel": {
+        "script": "स्क्रिप्ट",
+        "narration": "कथन",
+        "wordTimings": "शब्द टाइमिंग",
+        "timeline": "टाइमलाइन",
+        "renderedMp4": "रेंडर किया गया MP4",
+        "audio": "ऑडियो"
+    },
+    "shotPlanner": {
+        "legacyRun": "इस वीडियो के लिए ShotPlanner नहीं चला — यह एक v2 (लीगेसी) पाइपलाइन रन है।",
+        "awaitingBrief": "शॉट प्लान करने से पहले ब्रीफ़ के लॉक होने का इंतज़ार है।",
+        "inProduction": "ShotPlanner LLM को कॉल कर रहा है — यह एक ही चरण में intent_role, audio_policy, background_treatment, transition_in और किसी भी प्लान-स्तरीय recurring_motifs के साथ पूरी शॉट सूची जनरेट करता है।",
+        "planSummary": "प्लान सारांश",
+        "shots": "शॉट",
+        "narrated": "कथित",
+        "intrinsic": "अंतर्निहित",
+        "recurringMotifs": "आवर्ती रूपांकन",
+        "noMotifs": "प्लानर ने इस वीडियो के लिए कोई क्रॉस-शॉट रूपांकन दर्ज नहीं किया।",
+        "where": "कहाँ:",
+        "when": "कब:",
+        "distribution": "वितरण",
+        "intentRoles": "इरादा भूमिकाएँ",
+        "backgrounds": "पृष्ठभूमियाँ (≤2 अनुबंध)",
+        "shotGrid": "शॉट ग्रिड ({{count}})"
+    },
+    "narrationWriter": {
+        "legacyRun": "NarrationWriter नहीं चला — यह एक v2 पाइपलाइन रन है (मोनोलिथिक Narration नोड यही काम करता है)।",
+        "waitingForShotPlan": "राइटर्स रूम शॉट प्लान का इंतज़ार कर रहा है।",
+        "inProduction": "NarrationWriter एक ही LLM कॉल में प्रति-शॉट कथन लिख रहा है। हर शॉट को ~150 wpm × अवधि के हिसाब से बजट की गई पंक्ति मिलती है; intrinsic_only शॉट्स को खाली स्ट्रिंग मिलती है और प्रति-शॉट TTS छोड़ दिया जाता है।",
+        "authoredCopy": "लिखा गया कॉपी",
+        "totalWords": "कुल शब्द",
+        "shotsVoiced": "आवाज़ दिए गए शॉट",
+        "avgWordsPerShot": "औसत शब्द/शॉट",
+        "silentShots_one": "{{count}} शॉट मौन रखा गया (intrinsic_only — Veo ऑडियो / सोर्स क्लिप अकेले चलता है)।",
+        "silentShots_other": "{{count}} शॉट मौन रखे गए (intrinsic_only — Veo ऑडियो / सोर्स क्लिप अकेले चलता है)।",
+        "perShotWordCount": "प्रति-शॉट शब्द संख्या",
+        "noShotsAuthored": "अभी तक कोई शॉट नहीं लिखा गया।",
+        "masterConcat": "मास्टर संयोजन"
+    },
+    "beats": {
+        "noRun": "इस वीडियो के लिए BeatPlanner नहीं चला।",
+        "notStarted": "बीट प्लान अभी शुरू नहीं हुआ है।",
+        "inProduction": "BeatPlanner कहानी के बीट्स की रूपरेखा बना रहा है। डायरेक्टर इन्हें शॉट सीमाओं की योजना के फ्रेम के रूप में उपयोग करेगा — अवधि अनुमान ~150 शब्द/मिनट पर कैलिब्रेट किए गए हैं।",
+        "planHeading": "बीट प्लान",
+        "summary_one": "{{count}} बीट डायरेक्टर के शॉट प्लान को फ़ीड कर रहा है।",
+        "summary_other": "{{count}} बीट्स डायरेक्टर के शॉट प्लान को फ़ीड कर रहे हैं।",
+        "planLocked": "बीट प्लान लॉक कर दिया गया। TTS से पहले शॉट्स तय करने के लिए डायरेक्टर ने इन बीट्स का उपयोग किया।",
+        "wpmNote": " अवधि अनुमान {{wpm}} wpm पर।",
+        "beatFallbackLabel": "बीट {{number}}"
+    },
+    "pitch": {
+        "brief": "ब्रीफ़",
+        "promptUnavailable": "इस रन के लिए प्रॉम्प्ट टेक्स्ट उपलब्ध नहीं है।",
+        "briefCaption": "मूल प्रॉम्प्ट जिसने इस निर्माण को संचालित किया।",
+        "configuration": "कॉन्फ़िगरेशन",
+        "configUnavailable": "इस रन के लिए कॉन्फ़िगरेशन स्नैपशॉट सहेजा नहीं गया। (पुराने वीडियो /status में user_selections स्नैपशॉट से पहले के हैं।)",
+        "advanced": "उन्नत",
+        "noAdvancedOverrides": "कोई उन्नत ओवरराइड दर्ज नहीं किया गया।",
+        "field": {
+            "contentType": "कंटेंट प्रकार",
+            "qualityTier": "गुणवत्ता स्तर",
+            "orientation": "ओरिएंटेशन",
+            "targetDuration": "लक्ष्य अवधि",
+            "targetAudience": "लक्षित दर्शक",
+            "language": "भाषा",
+            "voice": "आवाज़",
+            "voiceId": "आवाज़ ID",
+            "captions": "कैप्शन",
+            "backgroundMusic": "पृष्ठभूमि संगीत",
+            "soundEffects": "ध्वनि प्रभाव",
+            "hostAvatar": "होस्ट अवतार",
+            "referenceFiles": "संदर्भ फ़ाइलें",
+            "targetStage": "लक्ष्य चरण",
+            "model": "मॉडल",
+            "htmlQuality": "HTML गुणवत्ता",
+            "subShotsEnabled": "सब-शॉट सक्षम",
+            "routingOverrides": "रूटिंग ओवरराइड",
+            "visualPreferences": "विज़ुअल प्राथमिकताएँ",
+            "avatarImageUrl": "अवतार छवि URL",
+            "inputVideoIds": "इनपुट वीडियो ID",
+            "inputVideoAudio": "इनपुट वीडियो ऑडियो",
+            "muteTtsOnSourceClips": "सोर्स क्लिप पर TTS म्यूट करें",
+            "backgroundMusicVolume": "पृष्ठभूमि संगीत वॉल्यूम"
+        }
+    },
+    "format": {
+        "on": "चालू",
+        "off": "बंद",
+        "none": "कोई नहीं",
+        "avatarWithId": "अवतार ({{id}})",
+        "avatar": "अवतार",
+        "rawClips": "रॉ क्लिप"
+    },
+    "research": {
+        "notNeeded": "इस ब्रीफ़ के लिए किसी बाहरी शोध की आवश्यकता नहीं थी।",
+        "notOpened": "शोध डेस्क अभी नहीं खुला है।",
+        "investigating": "स्रोतों की जाँच हो रही है… इंटेंट राउटर के अपना विश्लेषण पूरा करने पर परिणाम दिखने लगेंगे।",
+        "urlsScraped": "स्क्रैप किए गए URL",
+        "pageCaptures": "पेज कैप्चर",
+        "captureAlt": "कैप्चर {{number}}",
+        "scrapedExcerpt": "स्क्रैप किया गया अंश",
+        "webSearchQuery": "वेब खोज क्वेरी",
+        "synthesizedAnswer": "संश्लेषित उत्तर",
+        "citedSources": "उद्धृत स्रोत",
+        "noArtifacts": "शोध पूरा हो गया, लेकिन इस रन के लिए कैप्चर की गई फ़ाइलें उपलब्ध नहीं हैं।"
+    },
+    "screenplay": {
+        "notFinished": "स्क्रीनप्ले अभी पूरा नहीं हुआ है — जब तक राइटर्स रूम कथन तैयार करता है, थोड़ा इंतज़ार करें।",
+        "openRawFile": "रॉ फ़ाइल खोलें",
+        "copied": "कॉपी हो गया!",
+        "copyScript": "स्क्रिप्ट कॉपी करें",
+        "loading": "स्क्रीनप्ले लोड हो रहा है…",
+        "urlUnavailable": "इस रन के लिए स्क्रीनप्ले URL उपलब्ध नहीं है। कथन ऑडियो + शब्द टाइमिंग अब भी Narration नोड से उपलब्ध हैं।",
+        "previewFailed": "इनलाइन पूर्वावलोकन लोड नहीं हो सका। स्क्रीनप्ले सीधे देखने के लिए ऊपर <bold>रॉ फ़ाइल खोलें</bold> का उपयोग करें।",
+        "previewFailedNote": "(S3 CORS, नेटवर्क में रुकावट, या फ़ाइल अब सहेजे गए URL पर मौजूद नहीं है।)",
+        "couldNotLoad": "स्क्रीनप्ले टेक्स्ट लोड नहीं हो सका।"
+    },
+    "narration": {
+        "notRecorded": "कथन अभी रिकॉर्ड नहीं हुआ है।",
+        "voiceover": "वॉइसओवर",
+        "openAudioFile": "ऑडियो फ़ाइल खोलें"
+    },
+    "wordTimings": {
+        "heading": "शब्द टाइमिंग",
+        "count_one": "{{count}} शब्द",
+        "count_other": "{{count}} शब्द",
+        "loading": "टाइमिंग लोड हो रही है…",
+        "couldNotLoad": "टाइमिंग लोड नहीं हो सकी।"
+    },
+    "storyboard": {
+        "notMapped": "स्टोरीबोर्ड अभी मैप नहीं हुआ है — डायरेक्टर अभी भी शॉट प्लान कर रहा है।",
+        "noSceneDetails": "शॉट प्लान अंतिम रूप दिया गया — इस रन के लिए दृश्य विवरण उपलब्ध नहीं हैं, लेकिन हर दृश्य डायग्राम में अपने खुद के नोड के रूप में दिखता रहेगा।",
+        "scenesMapped_one": "{{count}} दृश्य मैप किया गया",
+        "scenesMapped_other": "{{count}} दृश्य मैप किए गए"
+    },
+    "filming": {
+        "scenesWrapped": "दृश्य पूर्ण हुए",
+        "scenesFilmed": "दृश्य फ़िल्माए गए",
+        "wrappedNoCounters": "फ़िल्मांकन पूर्ण हुआ — इस रन के लिए प्रति-दृश्य काउंटर उपलब्ध नहीं हैं।",
+        "notStarted": "फ़िल्मांकन अभी शुरू नहीं हुआ है।",
+        "diagramHint": "तियर-Premium और उससे ऊपर हर दृश्य डायग्राम में अपने खुद के नोड के रूप में दिखता है — उसका कथन अंश और स्टिल देखने के लिए वहाँ किसी भी दृश्य पर क्लिक करें।"
+    },
+    "sceneDetail": {
+        "intentRoleTitle": "इरादा भूमिका: {{value}}",
+        "backgroundTreatmentTitle": "पृष्ठभूमि उपचार: {{value}}",
+        "transitionInTitle": "प्रवेश ट्रांज़िशन: {{value}}",
+        "bgPrefix": "पृष्ठभूमि ·",
+        "aiVideoBadge": "AI वीडियो",
+        "aiVideoTitle": "fal.ai Veo 3.1 Lite द्वारा जनरेट किया गया",
+        "intrinsicAudioBadge": "अंतर्निहित ऑडियो",
+        "intrinsicAudioTitle": "audio_policy=intrinsic_only — इस विंडो में मुख्य कथन म्यूट है; शॉट का अपना ऑडियो अकेले चलता है।",
+        "aiVideoHeading": "AI-जनरेटेड वीडियो शॉट",
+        "aiVideoBody": "यह शॉट fal.ai Veo से जनरेट किया गया था। लागत प्रति-वीडियो AI वीडियो सीमा में जुड़ती है। एडिटर में संपादित करने पर Veo कॉल फिर से चलती है।",
+        "intrinsicHeading": "केवल अंतर्निहित ऑडियो नीति",
+        "intrinsicBody": "इस दृश्य की [{{start}}s, {{end}}s] विंडो में मुख्य कथन म्यूट है। शॉट अपना ({{audioSource}}) ऑडियो अकेले चलाता है। प्रति-शॉट TTS छोड़ दिया गया — इस पैनल से नहीं, सोर्स एसेट के ज़रिए फिर से कथन करें।",
+        "veoGeneratedAudio": "Veo-जनरेटेड ऑडियो",
+        "sourceClipAudio": "सोर्स क्लिप ऑडियो",
+        "liveProgress": "लाइव प्रगति",
+        "elapsedSuffix": "{{sec}}s बीते",
+        "currentSubstage": "वर्तमान उप-चरण:",
+        "regenAttempts": "गेट के अनुसार पुनर्जनन प्रयास",
+        "verdictLog": "फ़ैसला लॉग",
+        "verdict": {
+            "pass": "पास",
+            "shippedOriginal": "मूल भेजा गया"
+        },
+        "externalCalls": "बाहरी कॉल",
+        "callState": {
+            "done": "पूर्ण",
+            "failed": "विफल",
+            "polling": "पोलिंग",
+            "queued": "कतार में"
+        },
+        "sceneAlt": "दृश्य {{number}}",
+        "textDrivenScene": "टेक्स्ट-आधारित दृश्य — इस बीट में कोई स्टिल या B-roll नहीं",
+        "assets": "फ़ाइलें",
+        "stillLabel": "स्टिल",
+        "brollClipLabel": "B-roll क्लिप",
+        "productionError": "निर्माण त्रुटि"
+    },
+    "sceneNarration": {
+        "heading": "कथन",
+        "plannerBrief": "प्लानर ब्रीफ़",
+        "spokenNarration": "बोला गया कथन",
+        "intrinsicNote": "intrinsic_only शॉट — कोई प्रति-शॉट कथन नहीं लिखा गया। शॉट का अपना ऑडियो अकेले चलता है।"
+    },
+    "perShotAudio": {
+        "heading": "प्रति-शॉट वॉइसओवर",
+        "mp3": "mp3",
+        "wordTimings": "शब्द टाइमिंग",
+        "scriptTxt": "script.txt"
+    },
+    "aiVideoTelemetry": {
+        "heading": "AI वीडियो टेलीमेट्री",
+        "cost": "लागत",
+        "elapsed": "बीता समय",
+        "veoAudio": "Veo ऑडियो",
+        "on": "चालू",
+        "off": "बंद",
+        "openVeoOutput": "Veo आउटपुट खोलें",
+        "segments_one": "सेगमेंट ({{count}})",
+        "segments_other": "सेगमेंट ({{count}})",
+        "seg": "सेग",
+        "cached": "कैश किया गया"
+    },
+    "regenerate": {
+        "describeChangeError": "पुनर्जनन से पहले बताएं कि क्या बदलना है।",
+        "regenerationFailedFallback": "पुनर्जनन विफल हुआ",
+        "successToast": "दृश्य फिर से जनरेट किया गया। बदलाव देखने के लिए MP4 फिर से रेंडर करें।",
+        "saveFailedFallback": "सहेजना विफल हुआ",
+        "cta": "इस दृश्य को AI से फिर से जनरेट करें",
+        "heading": "दृश्य {{number}} फिर से जनरेट करें",
+        "close": "बंद करें",
+        "placeholder": "क्या बदलना है बताएं… जैसे 'शीर्षक को हरा करें और सबटाइटल के लिए हल्का फ़ेड-इन जोड़ें'",
+        "readyNotice": "✓ नया संस्करण तैयार है। लागू करने के लिए स्वीकार करें, या अलग प्रॉम्प्ट आज़माने के लिए हटाएं।",
+        "acceptSave": "स्वीकार करें और सहेजें",
+        "discard": "हटाएं",
+        "generating": "जनरेट हो रहा है… (10–60s)",
+        "generate": "जनरेट करें",
+        "footerNote": "AI केवल इस शॉट के HTML को फिर से लिखता है — कथन, टाइमिंग और अन्य शॉट अपरिवर्तित रहते हैं। स्वीकार करने के बाद परिणाम देखने के लिए MP4 फिर से रेंडर करें।"
+    },
+    "htmlPreviewTitle": "दृश्य {{number}} HTML",
+    "narrationPlayer": {
+        "pause": "रोकें",
+        "play": "कथन के साथ यह बीट चलाएं",
+        "playbackErrorFallback": "प्लेबैक शुरू नहीं हो सका"
+    },
+    "talent": {
+        "noHost": "इस रन के लिए कोई होस्ट कॉन्फ़िगर नहीं किया गया।",
+        "onCallSheet": "टैलेंट कॉल शीट पर है — स्टोरीबोर्ड लॉक होने के बाद रिकॉर्डिंग शुरू होती है।",
+        "takesRecorded": "रिकॉर्ड किए गए टेक",
+        "inProductionNote": "हर टेक Seedream पहचान छवि को कथन ऑडियो के एक हिस्से के साथ जोड़ता है, फिर fal.ai लिप-सिंक किया गया टॉकिंग हेड जनरेट करता है। एवतार बैच पूरा होते ही प्रति-टेक पूर्वावलोकन दिखने लगते हैं।",
+        "takesInTheCan": "पूरे हो चुके टेक",
+        "takesCount_one": "{{count}} टेक",
+        "takesCount_other": "{{count}} टेक",
+        "takeAlt": "टेक {{number}}",
+        "noPreview": "कोई पूर्वावलोकन नहीं",
+        "takeLabel": "टेक {{number}}",
+        "wrappedNoPreviews": "प्रदर्शन पूर्ण हो गया है — इस रन के लिए प्रति-टेक पूर्वावलोकन उपलब्ध नहीं हैं।"
+    },
+    "score": {
+        "noScore": "इस रन के लिए कोई पृष्ठभूमि संगीत जनरेट नहीं किया गया।",
+        "notArrived": "संगीतकार अभी सेट पर नहीं पहुंचा है।",
+        "chunksComposed": "बनाए गए हिस्से",
+        "inProductionNote": "Google Lyria संगीत को हिस्सों में (लगभग 30s प्रत्येक) जनरेट करता है, फिर एक रेंडर वर्कर उन्हें जोड़कर कथन के साथ चलने वाला अंतिम ट्रैक बनाता है।",
+        "defaultLabel": "पृष्ठभूमि संगीत",
+        "wrappedNote": "संगीत पूर्ण हुआ — मिश्रित ट्रैक अंतिम कट में जोड़ा गया है।",
+        "composedIn_one": "Lyria के ज़रिए {{count}} हिस्से में बनाया गया।",
+        "composedIn_other": "Lyria के ज़रिए {{count}} हिस्सों में बनाया गया।"
+    },
+    "finalCut": {
+        "notAssembled": "अंतिम कट अभी असेंबल नहीं हुआ है।",
+        "description": "अंतिम कट वह असेंबल की गई टाइमलाइन + वॉइसओवर है। फ़ाइनल कट नोड पर मौजूद एम्बेडेड प्लेयर में वही कंटेंट है; वहाँ <bold>फ़ुलस्क्रीन देखें</bold> पर क्लिक करने से पूर्ण दृश्य खुलता है।"
+    }
+}

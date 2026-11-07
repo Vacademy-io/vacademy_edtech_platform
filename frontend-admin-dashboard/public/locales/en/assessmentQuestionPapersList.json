@@ -1,0 +1,32 @@
+{
+    "config": {
+        "backToList": "Back to list",
+        "createdOn": "Created on {{date}}",
+        "selectQuestionCount": "How many questions to include?",
+        "modeAll": "All Questions",
+        "modeRandom": "Random Selection",
+        "modeTags": "Random by Tag",
+        "modeManual": "Select Manually",
+        "modeManualHint": "— pick specific questions on the next screen",
+        "randomPlaceholder": "e.g. 20",
+        "questionsLabel": "questions",
+        "tagAvailable_one": "{{count}} available",
+        "tagAvailable_other": "{{count}} available",
+        "total": "Total",
+        "totalQuestions_one": "{{count}} question",
+        "totalQuestions_other": "{{count}} questions",
+        "cancel": "Cancel",
+        "chooseQuestions": "Choose Questions",
+        "addRandomCount_one": "Add {{count}} Random Question",
+        "addRandomCount_other": "Add {{count}} Random Questions",
+        "addAllQuestions": "Add All Questions"
+    },
+    "list": {
+        "viewButton": "View",
+        "deleteQuestionPaper": "Delete Question Paper",
+        "createdOnLabel": "Created On:",
+        "notAvailable": "N/A",
+        "yearClassLabel": "Year/Class:",
+        "subjectLabel": "Subject:"
+    }
+}

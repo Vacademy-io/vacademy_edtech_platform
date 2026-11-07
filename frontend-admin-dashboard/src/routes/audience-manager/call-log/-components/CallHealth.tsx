@@ -34,6 +34,8 @@ import type { ReactNode } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { CaretDown, Copy, WarningCircle } from '@phosphor-icons/react';
 import { toast } from 'sonner';
+import { Trans, useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 import { cn } from '@/lib/utils';
 import { MyButton } from '@/components/design-system/button';
 import {
@@ -64,42 +66,52 @@ import {
  * rule is identical (first fault in CALL_FAULT_CODES order, which IS the bot's
  * HEADLINE_PRIORITY). The sheet still prefers the bot's own `headlineText`.
  */
-const HEADLINE_TEXT: Record<string, string> = {
-    CRASH: 'Pipeline crashed mid-call',
-    TTS_WEDGE: 'Voice synthesis stalled — caller heard silence',
-    REPLY_UNPLAYED: 'A reply was never played to the caller',
-    ANSWER_DELETED: 'Caller answers were discarded before the agent saw them',
-    BOT_SILENT: 'The agent never spoke — the caller heard nothing',
-    REPLY_LOOP: 'The agent kept restarting the same reply',
-    HANDBACK_LOOP: 'The agent had nothing to say and kept asking the caller to talk',
-    DEAD_AIR: 'Long silence during the call',
-    FALSE_REASK: 'Agent re-asked for answers it had already heard',
-    LIKELY_MACHINE: 'Probably an answering machine, not a person',
-    STT_DEAF: 'Speech recognition reconnected mid-call',
-    SLOW_TTS: 'Slow voice synthesis',
-    SLOW_LLM: 'Slow agent responses',
-    TRANSFER_FAILED: 'Human transfer was requested but failed',
-    PROMPT_UNFILLED: 'Agent prompt has unresolved placeholders',
-};
+function buildHeadlineText(t: TFunction): Record<string, string> {
+    return {
+        CRASH: t('headline.crash'),
+        TTS_WEDGE: t('headline.ttsWedge'),
+        REPLY_UNPLAYED: t('headline.replyUnplayed'),
+        ANSWER_DELETED: t('headline.answerDeleted'),
+        BOT_SILENT: t('headline.botSilent'),
+        REPLY_LOOP: t('headline.replyLoop'),
+        OPENING_REPLAYED: t('headline.openingReplayed'),
+        HANDBACK_LOOP: t('headline.handbackLoop'),
+        CALLER_IGNORED: t('headline.callerIgnored'),
+        REPEATED_LINE: t('headline.repeatedLine'),
+        DEAD_AIR: t('headline.deadAir'),
+        FALSE_REASK: t('headline.falseReask'),
+        LIKELY_MACHINE: t('headline.likelyMachine'),
+        STT_DEAF: t('headline.sttDeaf'),
+        SLOW_TTS: t('headline.slowTts'),
+        SLOW_LLM: t('headline.slowLlm'),
+        TRANSFER_FAILED: t('headline.transferFailed'),
+        PROMPT_UNFILLED: t('headline.promptUnfilled'),
+    };
+}
 
 /** Short label for chips and lists (the headline sentence is the long form). */
-const FAULT_LABEL: Record<string, string> = {
-    CRASH: 'Crash',
-    TTS_WEDGE: 'TTS wedge',
-    REPLY_UNPLAYED: 'Reply unplayed',
-    ANSWER_DELETED: 'Answers deleted',
-    BOT_SILENT: 'Agent silent',
-    REPLY_LOOP: 'Reply loop',
-    HANDBACK_LOOP: 'Nothing to say',
-    DEAD_AIR: 'Dead air',
-    FALSE_REASK: 'False re-ask',
-    LIKELY_MACHINE: 'Likely machine',
-    STT_DEAF: 'STT deaf',
-    SLOW_TTS: 'Slow TTS',
-    SLOW_LLM: 'Slow LLM',
-    TRANSFER_FAILED: 'Transfer failed',
-    PROMPT_UNFILLED: 'Prompt unfilled',
-};
+function buildFaultLabel(t: TFunction): Record<string, string> {
+    return {
+        CRASH: t('faultLabel.crash'),
+        TTS_WEDGE: t('faultLabel.ttsWedge'),
+        REPLY_UNPLAYED: t('faultLabel.replyUnplayed'),
+        ANSWER_DELETED: t('faultLabel.answerDeleted'),
+        BOT_SILENT: t('faultLabel.botSilent'),
+        REPLY_LOOP: t('faultLabel.replyLoop'),
+        OPENING_REPLAYED: t('faultLabel.openingReplayed'),
+        HANDBACK_LOOP: t('faultLabel.handbackLoop'),
+        CALLER_IGNORED: t('faultLabel.callerIgnored'),
+        REPEATED_LINE: t('faultLabel.repeatedLine'),
+        DEAD_AIR: t('faultLabel.deadAir'),
+        FALSE_REASK: t('faultLabel.falseReask'),
+        LIKELY_MACHINE: t('faultLabel.likelyMachine'),
+        STT_DEAF: t('faultLabel.sttDeaf'),
+        SLOW_TTS: t('faultLabel.slowTts'),
+        SLOW_LLM: t('faultLabel.slowLlm'),
+        TRANSFER_FAILED: t('faultLabel.transferFailed'),
+        PROMPT_UNFILLED: t('faultLabel.promptUnfilled'),
+    };
+}
 
 /**
  * Faults derived from a heuristic rather than a measurement — the bot marks the
@@ -109,24 +121,25 @@ const FAULT_LABEL: Record<string, string> = {
  */
 const INFERRED_FAULTS = new Set<string>(['LIKELY_MACHINE', 'FALSE_REASK']);
 
-const HEALTH_TONE: Record<
-    CallHealthVerdict | 'UNKNOWN',
-    { dot: string; chip: string; label: string }
-> = {
-    GREEN: { dot: 'bg-success-500', chip: 'bg-success-50 text-success-700', label: 'Healthy' },
-    AMBER: { dot: 'bg-warning-500', chip: 'bg-warning-50 text-warning-700', label: 'Degraded' },
-    RED: { dot: 'bg-danger-500', chip: 'bg-danger-50 text-danger-600', label: 'Broken' },
+/** CSS tone only (dot / chip background+text) — never user-facing text, so not translated. */
+const HEALTH_TONE: Record<CallHealthVerdict | 'UNKNOWN', { dot: string; chip: string }> = {
+    GREEN: { dot: 'bg-success-500', chip: 'bg-success-50 text-success-700' },
+    AMBER: { dot: 'bg-warning-500', chip: 'bg-warning-50 text-warning-700' },
+    RED: { dot: 'bg-danger-500', chip: 'bg-danger-50 text-danger-600' },
     // Grey, NEVER green: we did not measure this call, which is not the same as
     // the call being fine.
-    UNKNOWN: {
-        dot: 'bg-neutral-300',
-        chip: 'bg-neutral-100 text-neutral-600',
-        label: 'Not reported',
-    },
+    UNKNOWN: { dot: 'bg-neutral-300', chip: 'bg-neutral-100 text-neutral-600' },
 };
 
-const NOT_REPORTED_HINT =
-    'Call health not reported — this call ran before diagnostics shipped, or the bot sent no verdict.';
+/** The human label for a verdict — kept separate from HEALTH_TONE so the CSS-only map above never needs a translator. */
+function buildHealthLabel(t: TFunction): Record<CallHealthVerdict | 'UNKNOWN', string> {
+    return {
+        GREEN: t('health.healthy'),
+        AMBER: t('health.degraded'),
+        RED: t('health.broken'),
+        UNKNOWN: t('health.notReported'),
+    };
+}
 
 // ── Pure formatting / evidence helpers ─────────────────────────────────────
 
@@ -135,10 +148,10 @@ function secs(v: number | null | undefined): string | null {
     return `${v < 1 ? v.toFixed(2) : v.toFixed(1)}s`;
 }
 
-/** "3 stalls" / "1 stall" / null when zero or unknown (nothing to say). */
-function count(n: number | null | undefined, one: string, many?: string): string | null {
+/** Translated "{{count}} X" via CLDR plural forms, or null when zero/unknown (nothing to say). */
+function pluralCount(t: TFunction, key: string, n: number | null | undefined): string | null {
     if (n == null || n <= 0) return null;
-    return `${n} ${n === 1 ? one : many ?? `${one}s`}`;
+    return t(key, { count: n });
 }
 
 /** Faults in the bot's headline priority order; unknown (newer-bot) codes last. */
@@ -149,16 +162,16 @@ export function orderedFaults(faults: string[]): string[] {
 }
 
 /** The bot's headline rule, applied to a row that only carries its fault codes. */
-function deriveHeadlineText(faults: string[]): string | null {
+function deriveHeadlineText(faults: string[], headlineText: Record<string, string>): string | null {
     const first = orderedFaults(faults)[0];
-    return first ? HEADLINE_TEXT[first] ?? first : null;
+    return first ? headlineText[first] ?? first : null;
 }
 
 /**
  * The specific numbers behind a fired fault — "TTS_WEDGE: 3 stalls, 1 wedge,
  * worst dead air 10.4s". Without these the chip is just a mood.
  */
-function faultEvidence(code: string, d: CallDiagnostics): string[] {
+function faultEvidence(t: TFunction, code: string, d: CallDiagnostics): string[] {
     const tts = d.tts ?? {};
     const playout = d.playout ?? {};
     const turn = d.turnTaking ?? {};
@@ -169,116 +182,150 @@ function faultEvidence(code: string, d: CallDiagnostics): string[] {
 
     switch (code) {
         case 'CRASH':
-            out.push(infra.crash ? `error: ${infra.crash}` : null);
+            out.push(infra.crash ? t('evidence.crashError', { error: infra.crash }) : null);
             break;
         case 'TTS_WEDGE':
             out.push(
-                count(tts.stalls, 'stall'),
-                count(tts.wedges, 'wedge'),
-                count(tts.wedgeReconnects, 'socket rebuild'),
-                count(tts.silentGenerations, 'silent generation'),
-                count(tts.letterlessSkipped, 'letterless chunk skipped'),
-                tts.stallCapHit ? 'stall cap hit — silent from then on' : null,
-                latency.deadAirMax != null ? `worst dead air ${secs(latency.deadAirMax)}` : null
+                pluralCount(t, 'evidence.stall', tts.stalls),
+                pluralCount(t, 'evidence.wedge', tts.wedges),
+                pluralCount(t, 'evidence.socketRebuild', tts.wedgeReconnects),
+                pluralCount(t, 'evidence.silentGeneration', tts.silentGenerations),
+                pluralCount(t, 'evidence.letterlessChunkSkipped', tts.letterlessSkipped),
+                tts.stallCapHit ? t('evidence.stallCapHit') : null,
+                latency.deadAirMax != null
+                    ? t('evidence.worstDeadAir', { secs: secs(latency.deadAirMax) })
+                    : null
             );
             break;
         case 'REPLY_UNPLAYED':
             out.push(
                 playout.repliesNeverPlayed != null
-                    ? `${playout.repliesNeverPlayed} of ${playout.repliesGenerated ?? '?'} replies never reached the caller`
+                    ? t('evidence.repliesNeverPlayed', {
+                          count: playout.repliesNeverPlayed,
+                          total: playout.repliesGenerated ?? '?',
+                      })
                     : null
             );
             break;
         case 'ANSWER_DELETED':
             out.push(
                 turn.answersDeleted == null
-                    ? 'not measured on this call'
-                    : count(
-                          turn.answersDeleted,
-                          'caller answer discarded',
-                          'caller answers discarded'
-                      ),
+                    ? t('evidence.notMeasured')
+                    : pluralCount(t, 'evidence.answerDiscarded', turn.answersDeleted),
                 turn.answersDeletedSamples?.length
-                    ? `${turn.answersDeletedSamples.length} captured verbatim (below)`
+                    ? t('evidence.capturedVerbatim', { count: turn.answersDeletedSamples.length })
                     : null
             );
             break;
         case 'HANDBACK_LOOP':
             out.push(
-                turn.handbacks
-                    ? count(turn.handbacks, 'turn answered with “you talk”', 'turns answered with “you talk”')
-                    : null,
+                turn.handbacks ? pluralCount(t, 'evidence.handbackTurn', turn.handbacks) : null,
                 turn.repeatsSuppressed
-                    ? `${turn.repeatsSuppressed} sentence(s) suppressed as already-said`
+                    ? pluralCount(t, 'evidence.sentenceSuppressed', turn.repeatsSuppressed)
                     : null,
                 turn.repeatEscalations
-                    ? `${turn.repeatEscalations} said anyway to break the loop`
+                    ? t('evidence.saidAnyway', { count: turn.repeatEscalations })
+                    : null
+            );
+            break;
+        case 'OPENING_REPLAYED':
+            out.push(
+                turn.openingReplays
+                    ? pluralCount(t, 'evidence.openingReplayed', turn.openingReplays)
+                    : null
+            );
+            break;
+        case 'REPEATED_LINE':
+            out.push(
+                turn.repeatedLines
+                    ? pluralCount(t, 'evidence.repeatedLine', turn.repeatedLines)
+                    : null,
+                turn.repeatedLineSamples?.[0]
+                    ? t('evidence.repeatedLineSample', { text: turn.repeatedLineSamples[0] })
                     : null
             );
             break;
         case 'REPLY_LOOP':
             out.push(
                 turn.maxReplyRestarts != null
-                    ? `same reply restarted ${turn.maxReplyRestarts}x in a row`
+                    ? t('evidence.replyRestarted', { count: turn.maxReplyRestarts })
                     : null,
                 turn.repeatsSuppressed
-                    ? `${turn.repeatsSuppressed} repeated line(s) suppressed`
+                    ? pluralCount(t, 'evidence.repeatedLineSuppressed', turn.repeatsSuppressed)
                     : null
             );
             break;
         case 'BOT_SILENT':
-            out.push('the agent produced no audio at all');
+            out.push(t('evidence.botSilent'));
             break;
         case 'DEAD_AIR':
             out.push(
-                latency.deadAirMax != null ? `worst gap ${secs(latency.deadAirMax)}` : null,
-                latency.deadAirP95 != null ? `p95 ${secs(latency.deadAirP95)}` : null
+                latency.deadAirMax != null
+                    ? t('evidence.worstGap', { secs: secs(latency.deadAirMax) })
+                    : null,
+                latency.deadAirP95 != null
+                    ? t('evidence.p95', { secs: secs(latency.deadAirP95) })
+                    : null
             );
             break;
         case 'FALSE_REASK':
             out.push(
                 turn.orphanFalseReasks != null
-                    ? `${turn.orphanFalseReasks} of ${turn.orphanReasks ?? '?'} re-asks fired after the answer had already landed`
+                    ? t('evidence.falseReask', {
+                          count: turn.orphanFalseReasks,
+                          total: turn.orphanReasks ?? '?',
+                      })
                     : null
             );
             break;
         case 'LIKELY_MACHINE':
             out.push(
-                machine.score != null ? `score ${machine.score}` : null,
-                machine.markers?.length ? `markers: ${machine.markers.join(', ')}` : null,
+                machine.score != null ? t('evidence.machineScore', { score: machine.score }) : null,
+                machine.markers?.length
+                    ? t('evidence.machineMarkers', { markers: machine.markers.join(', ') })
+                    : null,
                 machine.firstUserSecs != null
-                    ? `first caller audio ${secs(machine.firstUserSecs)}`
+                    ? t('evidence.firstCallerAudio', { secs: secs(machine.firstUserSecs) })
                     : null,
                 machine.longestUserSecs != null
-                    ? `longest caller turn ${secs(machine.longestUserSecs)}`
+                    ? t('evidence.longestCallerTurn', { secs: secs(machine.longestUserSecs) })
                     : null,
-                count(turn.userTurns, 'caller turn'),
-                turn.bargeIns === 0 ? 'no barge-ins' : count(turn.bargeIns, 'barge-in')
+                pluralCount(t, 'evidence.callerTurn', turn.userTurns),
+                turn.bargeIns === 0
+                    ? t('evidence.noBargeIns')
+                    : pluralCount(t, 'evidence.bargeIn', turn.bargeIns)
             );
             break;
         case 'STT_DEAF':
-            out.push(count(infra.sttReconnects, 'speech-recognition reconnect'));
+            out.push(pluralCount(t, 'evidence.sttReconnect', infra.sttReconnects));
+            break;
+        case 'CALLER_IGNORED':
+            out.push(pluralCount(t, 'evidence.swallowedTurn', turn.swallowedTurns));
             break;
         case 'SLOW_TTS':
             out.push(
-                tts.ttfbP50 != null ? `p50 ${secs(tts.ttfbP50)}` : null,
-                tts.ttfbP95 != null ? `p95 ${secs(tts.ttfbP95)}` : null,
-                tts.ttfbMax != null ? `max ${secs(tts.ttfbMax)}` : null
+                tts.ttfbP50 != null ? t('evidence.p50', { secs: secs(tts.ttfbP50) }) : null,
+                tts.ttfbP95 != null ? t('evidence.p95', { secs: secs(tts.ttfbP95) }) : null,
+                tts.ttfbMax != null ? t('evidence.max', { secs: secs(tts.ttfbMax) }) : null
             );
             break;
         case 'SLOW_LLM':
             out.push(
-                latency.llmTtfbP50 != null ? `p50 ${secs(latency.llmTtfbP50)}` : null,
-                latency.llmTtfbP95 != null ? `p95 ${secs(latency.llmTtfbP95)}` : null
+                latency.llmTtfbP50 != null
+                    ? t('evidence.p50', { secs: secs(latency.llmTtfbP50) })
+                    : null,
+                latency.llmTtfbP95 != null
+                    ? t('evidence.p95', { secs: secs(latency.llmTtfbP95) })
+                    : null
             );
             break;
         case 'TRANSFER_FAILED':
-            out.push('transfer requested, never registered with the provider');
+            out.push(t('evidence.transferFailed'));
             break;
         case 'PROMPT_UNFILLED':
             out.push(
                 infra.promptUnfilled?.length
-                    ? `unresolved: ${infra.promptUnfilled.join(', ')}`
+                    ? t('evidence.promptUnresolved', { fields: infra.promptUnfilled.join(', ') })
                     : null
             );
             break;
@@ -331,6 +378,7 @@ export function CallHealthCell({
     row: CallRow;
     onOpen: () => void;
 }) {
+    const { t } = useTranslation('audienceManagerCallHealth');
     const cached = useQuery({
         queryKey: callDetailKey(instituteId, row.id),
         queryFn: () => fetchCallDetail(instituteId, row.id),
@@ -341,10 +389,7 @@ export function CallHealthCell({
 
     if (row.call_type !== 'AI') {
         return (
-            <span
-                className="text-xs text-neutral-400"
-                title="Only AI calls report technical health"
-            >
+            <span className="text-xs text-neutral-400" title={t('cell.onlyAiTitle')}>
                 —
             </span>
         );
@@ -359,25 +404,28 @@ export function CallHealthCell({
             rowCallFaults(detail ?? {})
         )
     );
-    const tone = HEALTH_TONE[health ?? 'UNKNOWN'];
-    const headline = detail?.diag_headline_text ?? deriveHeadlineText(faults);
+    const healthLabel = buildHealthLabel(t);
+    const verdictLabel = healthLabel[health ?? 'UNKNOWN'];
+    const headline = detail?.diag_headline_text ?? deriveHeadlineText(faults, buildHeadlineText(t));
 
     // Three greys, and they are NOT the same claim: we have a verdict; we asked
     // and there was none; we have not asked yet. Labelling the third "not
     // reported" would be the exact dishonesty this panel exists to end.
-    const label = health ? headline ?? tone.label : detail ? tone.label : 'Check health';
+    const label = health ? headline ?? verdictLabel : detail ? verdictLabel : t('cell.checkHealth');
     const title = health
-        ? `${tone.label}${headline ? ` — ${headline}` : ' — no faults detected'}. Click for technical details.`
+        ? headline
+            ? t('cell.titleWithHeadline', { label: verdictLabel, headline })
+            : t('cell.titleNoFaults', { label: verdictLabel })
         : detail
-          ? NOT_REPORTED_HINT
-          : 'Technical report not loaded for this row — click to fetch this call’s health.';
+          ? t('notReportedHint')
+          : t('cell.reportNotLoaded');
 
     return (
         <button
             type="button"
             onClick={onOpen}
             title={title}
-            aria-label={`Call health: ${health ? tone.label : label}`}
+            aria-label={t('cell.ariaLabel', { label: health ? verdictLabel : label })}
             className="inline-flex max-w-40 items-center gap-1.5 rounded-full px-1 py-0.5 text-xs font-medium text-neutral-600 hover:bg-neutral-100"
         >
             <HealthDot health={health} />
@@ -413,12 +461,13 @@ function SectionTitle({ children }: { children: ReactNode }) {
 }
 
 function InferredTag() {
+    const { t } = useTranslation('audienceManagerCallHealth');
     return (
         <span
             className="rounded-sm bg-neutral-100 px-1.5 py-0.5 text-caption font-medium text-neutral-600"
-            title="Inferred from a heuristic, not measured. Treat as evidence, not fact."
+            title={t('inferredTag.tooltip')}
         >
-            inferred
+            {t('inferredTag.label')}
         </span>
     );
 }
@@ -431,12 +480,14 @@ function InferredTag() {
 function Stat({
     label,
     value,
-    empty = 'not measured',
+    empty,
 }: {
     label: string;
     value: string | null;
     empty?: string;
 }) {
+    const { t } = useTranslation('audienceManagerCallHealth');
+    const emptyText = empty ?? t('stat.notMeasured');
     return (
         <div className="flex flex-col gap-0.5">
             <span className="text-caption uppercase tracking-wide text-neutral-500">{label}</span>
@@ -446,7 +497,7 @@ function Stat({
                     value ? 'text-neutral-800' : 'text-neutral-400'
                 )}
             >
-                {value ?? empty}
+                {value ?? emptyText}
             </span>
         </div>
     );
@@ -464,14 +515,21 @@ function FaultBlock({
     /** Numbers exist but this role may not see them (masked-numbers setting). */
     withheld?: boolean;
 }) {
+    const { t } = useTranslation('audienceManagerCallHealth');
     // WITHHELD IS NOT "NOT MEASURED". In summary-only mode `d` is empty, so every
     // evidence line would fall through to its absent-value copy and print
     // "not measured on this call" — while the fault FIRING proves the opposite
     // (a live call reported ANSWER_DELETED with 14 deleted answers and the sheet
     // still said "not measured"). Suppress the lines instead of asserting
     // something false; the sheet already explains the withholding once, globally.
-    const evidence = withheld ? [] : faultEvidence(code, d);
+    const evidence = withheld ? [] : faultEvidence(t, code, d);
     const tone = level === 'RED' ? HEALTH_TONE.RED : HEALTH_TONE.AMBER;
+    const healthLabel = buildHealthLabel(t);
+    // Raw "RED"/"AMBER" is backend jargon, not a display string — show its
+    // translated verdict word, falling back to the raw level for any future
+    // value this dashboard doesn't know about yet.
+    const levelLabel =
+        level === 'RED' ? healthLabel.RED : level === 'AMBER' ? healthLabel.AMBER : level;
     return (
         <div className="flex flex-col gap-1 rounded-md border border-neutral-200 bg-neutral-50 p-3">
             <div className="flex flex-wrap items-center gap-2">
@@ -484,18 +542,17 @@ function FaultBlock({
                             tone.chip
                         )}
                     >
-                        {level}
+                        {levelLabel}
                     </span>
                 )}
                 <span className="text-sm font-semibold text-neutral-900">
-                    {FAULT_LABEL[code] ?? code}
+                    {buildFaultLabel(t)[code] ?? code}
                 </span>
                 <span className="text-caption text-neutral-400">{code}</span>
                 {INFERRED_FAULTS.has(code) && <InferredTag />}
             </div>
             <p className="text-sm text-neutral-600">
-                {HEADLINE_TEXT[code] ??
-                    'Unrecognised fault code — this call was reported by a newer bot than this dashboard knows about.'}
+                {buildHeadlineText(t)[code] ?? t('faultBlock.unrecognisedCode')}
             </p>
             {evidence.length > 0 && (
                 <p className="text-xs text-neutral-500">{evidence.join(' · ')}</p>
@@ -506,26 +563,25 @@ function FaultBlock({
 
 /** Verbatim caller answers the aggregator dropped — the highest-signal block here. */
 function DeletedAnswers({ d }: { d: CallDiagnostics }) {
+    const { t } = useTranslation('audienceManagerCallHealth');
     const turn = d.turnTaking ?? {};
     const deleted = turn.answersDeleted;
     const samples = turn.answersDeletedSamples ?? [];
 
     return (
         <section className="flex flex-col gap-2">
-            <SectionTitle>Caller answers discarded</SectionTitle>
+            <SectionTitle>{t('deletedAnswers.title')}</SectionTitle>
             {deleted == null ? (
                 // NOT MEASURED. Rendering this as "0" is how a fleet chart claims
                 // "fixed" about something that was never looked at.
                 <p className="text-sm text-neutral-400">
-                    not measured on this call
+                    {t('deletedAnswers.notMeasured')}
                     <span className="ml-1 text-neutral-400">
-                        (the bot did not reconcile what it heard against what the agent received)
+                        {t('deletedAnswers.notMeasuredHint')}
                     </span>
                 </p>
             ) : deleted === 0 ? (
-                <p className="text-sm text-neutral-600">
-                    None — every caller answer reached the agent.
-                </p>
+                <p className="text-sm text-neutral-600">{t('deletedAnswers.none')}</p>
             ) : (
                 <div className="flex flex-col gap-2">
                     {/* "or the transcript or the report" was wrong: the bot derives
@@ -533,9 +589,12 @@ function DeletedAnswers({ d }: { d: CallDiagnostics }) {
                         answer is always in both. What it never reached is the MODEL,
                         which is why nothing in the call could respond to it. */}
                     <p className="text-sm text-neutral-700">
-                        <span className="font-semibold text-danger-600">{deleted}</span> answer
-                        {deleted === 1 ? '' : 's'} reached the transcript but never the agent, so
-                        nothing in the call could respond to {deleted === 1 ? 'it' : 'them'}.
+                        <Trans
+                            t={t}
+                            i18nKey="deletedAnswers.reachedTranscript"
+                            count={deleted}
+                            components={{ bold: <span className="font-semibold text-danger-600" /> }}
+                        />
                     </p>
                     {samples.length > 0 && (
                         <ul className="flex flex-col gap-1">
@@ -565,16 +624,13 @@ function DeletedAnswers({ d }: { d: CallDiagnostics }) {
  * measured loss must stay on the page — so it is reported as what it is.
  */
 function LostFragments({ turn }: { turn: NonNullable<CallDiagnostics['turnTaking']> }) {
+    const { t } = useTranslation('audienceManagerCallHealth');
     const lost = turn.fragmentsLost;
     if (lost == null || lost === 0) return null;
     const samples = turn.fragmentsLostSamples ?? [];
     return (
         <div className="flex flex-col gap-1 border-t border-neutral-100 pt-2">
-            <p className="text-xs text-neutral-500">
-                Also lost: {lost} part-word scrap{lost === 1 ? '' : 's'} too small to have
-                carried an answer (a syllable of something the caller broke off). Not counted
-                as a discarded answer.
-            </p>
+            <p className="text-xs text-neutral-500">{t('lostFragments.summary', { count: lost })}</p>
             {samples.length > 0 && (
                 <p className="text-xs text-neutral-600">
                     {samples.map((s) => `“${s}”`).join(' · ')}
@@ -585,27 +641,28 @@ function LostFragments({ turn }: { turn: NonNullable<CallDiagnostics['turnTaking
 }
 
 function RawJsonBlock({ diagnostics }: { diagnostics: CallDiagnostics }) {
+    const { t } = useTranslation('audienceManagerCallHealth');
     const json = JSON.stringify(diagnostics, null, 2);
     const copy = async () => {
         try {
             await navigator.clipboard.writeText(json);
-            toast.success('Diagnostics JSON copied');
+            toast.success(t('rawJson.copiedToast'));
         } catch {
-            toast.error('Could not copy — select the text and copy manually.');
+            toast.error(t('rawJson.copyErrorToast'));
         }
     };
     return (
         <details className="rounded-md border border-neutral-200">
             <summary className="flex cursor-pointer items-center gap-1.5 px-3 py-2 text-xs font-medium text-neutral-600">
                 <CaretDown size={12} weight="bold" />
-                Raw diagnostics JSON
+                {t('rawJson.summary')}
             </summary>
             <div className="flex flex-col gap-2 border-t border-neutral-200 p-3">
                 <div>
                     <MyButton buttonType="secondary" scale="small" onAsyncClick={copy}>
                         <span className="flex items-center gap-1.5">
                             <Copy size={14} />
-                            Copy for an engineer
+                            {t('rawJson.copyButton')}
                         </span>
                     </MyButton>
                 </div>
@@ -630,13 +687,15 @@ function RawJsonBlock({ diagnostics }: { diagnostics: CallDiagnostics }) {
  * would say it. OPEN means the dispatch job has not reached it yet - which reads as
  * "queued", not as "open", to anyone who has not seen engagement_action.
  */
-const ACTION_STATUS: Record<string, { label: string; tone: string }> = {
-    OPEN: { label: 'Queued', tone: 'text-neutral-500' },
-    DISPATCHING: { label: 'Sending', tone: 'text-neutral-500' },
-    SENT: { label: 'Sent', tone: 'text-success-600' },
-    FAILED: { label: 'Failed', tone: 'text-danger-600' },
-    EXPIRED: { label: 'Expired unsent', tone: 'text-warning-600' },
-};
+function buildActionStatus(t: TFunction): Record<string, { label: string; tone: string }> {
+    return {
+        OPEN: { label: t('actionStatus.queued'), tone: 'text-neutral-500' },
+        DISPATCHING: { label: t('actionStatus.sending'), tone: 'text-neutral-500' },
+        SENT: { label: t('actionStatus.sent'), tone: 'text-success-600' },
+        FAILED: { label: t('actionStatus.failed'), tone: 'text-danger-600' },
+        EXPIRED: { label: t('actionStatus.expiredUnsent'), tone: 'text-warning-600' },
+    };
+}
 
 export function CallHealthSheet({
     instituteId,
@@ -647,6 +706,7 @@ export function CallHealthSheet({
     call: CallRow | null;
     onClose: () => void;
 }) {
+    const { t } = useTranslation('audienceManagerCallHealth');
     const detailQuery = useQuery({
         queryKey: callDetailKey(instituteId, call?.id ?? ''),
         queryFn: () => fetchCallDetail(instituteId, call!.id),
@@ -671,7 +731,8 @@ export function CallHealthSheet({
     const d = detail?.diagnostics ?? null;
     // Verdict ladder: full blob → the summary fields every viewer gets → the row.
     const health = d?.health ?? rowCallHealth(detail ?? {}) ?? (call ? rowCallHealth(call) : null);
-    const tone = HEALTH_TONE[health ?? 'UNKNOWN'];
+    const healthLabel = buildHealthLabel(t);
+    const verdictLabel = healthLabel[health ?? 'UNKNOWN'];
     const faults = orderedFaults(
         firstNonEmpty(d?.faults, rowCallFaults(detail ?? {}), call ? rowCallFaults(call) : [])
     );
@@ -679,8 +740,8 @@ export function CallHealthSheet({
     const headlineText =
         d?.headlineText ??
         detail?.diag_headline_text ??
-        deriveHeadlineText(faults) ??
-        (health === 'GREEN' ? 'No faults detected' : null);
+        deriveHeadlineText(faults, buildHeadlineText(t)) ??
+        (health === 'GREEN' ? t('sheet.noFaultsDetected') : null);
     /** Verdict known, but the numbers behind it withheld (masked-numbers setting). */
     const summaryOnly = !d && (health != null || faults.length > 0);
     const latency = d?.latency ?? {};
@@ -702,11 +763,8 @@ export function CallHealthSheet({
                 className="flex w-full flex-col gap-4 overflow-y-auto sm:max-w-xl"
             >
                 <SheetHeader>
-                    <SheetTitle className="text-base">Call health</SheetTitle>
-                    <SheetDescription className="text-xs">
-                        Technical post-mortem for this call. Internal debugging detail — not
-                        lead-facing.
-                    </SheetDescription>
+                    <SheetTitle className="text-base">{t('sheet.title')}</SheetTitle>
+                    <SheetDescription className="text-xs">{t('sheet.description')}</SheetDescription>
                 </SheetHeader>
 
                 {/* What the call promised. First question anyone asks after a call
@@ -714,10 +772,10 @@ export function CallHealthSheet({
                     reading engagement_action by hand. */}
                 {actions.length > 0 && (
                     <section className="flex flex-col gap-2 rounded-lg border border-neutral-200 p-4">
-                        <p className="text-sm font-medium">What this call promised</p>
+                        <p className="text-sm font-medium">{t('sheet.promisedTitle')}</p>
                         {actions.map((a) => {
-                            const st = ACTION_STATUS[(a.status || '').toUpperCase()] ?? {
-                                label: a.status || 'Unknown',
+                            const st = buildActionStatus(t)[(a.status || '').toUpperCase()] ?? {
+                                label: a.status || t('actionStatus.unknown'),
                                 tone: 'text-neutral-500',
                             };
                             return (
@@ -725,8 +783,10 @@ export function CallHealthSheet({
                                     <div className="flex items-center justify-between gap-2">
                                         <span className="text-xs">
                                             {a.action_type === 'BOOK_MEETING'
-                                                ? 'Book a meeting'
-                                                : (a.channel === 'EMAIL' ? 'Email' : 'WhatsApp') +
+                                                ? t('sheet.bookMeeting')
+                                                : (a.channel === 'EMAIL'
+                                                      ? t('sheet.email')
+                                                      : t('sheet.whatsapp')) +
                                                   (a.template_name ? ' · ' + a.template_name : '')}
                                         </span>
                                         <span className={'text-xs font-medium ' + st.tone}>
@@ -741,10 +801,7 @@ export function CallHealthSheet({
                                 </div>
                             );
                         })}
-                        <p className="text-xs text-neutral-500">
-                            Queued sends go out within a couple of minutes. A failure here is
-                            the vendor&apos;s own reason, verbatim.
-                        </p>
+                        <p className="text-xs text-neutral-500">{t('sheet.queuedHint')}</p>
                     </section>
                 )}
 
@@ -752,22 +809,25 @@ export function CallHealthSheet({
                 <section className="flex flex-col gap-2 rounded-lg border border-neutral-200 p-4">
                     <div className="flex items-center gap-2">
                         <HealthDot health={health} className="size-3" />
+                        {/* Was rendering the raw backend enum ("GREEN"/"AMBER"/"RED") —
+                            unreadable outside English. Shows the translated verdict word
+                            instead; the duplicate label span below is gone since it would
+                            now just repeat this one. */}
                         <span className="text-lg font-bold tracking-tight text-neutral-900">
-                            {detailQuery.isLoading ? 'CHECKING…' : health ?? 'NOT REPORTED'}
+                            {detailQuery.isLoading ? t('sheet.checking') : verdictLabel}
                         </span>
-                        {health && <span className="text-xs text-neutral-500">{tone.label}</span>}
                     </div>
                     <p className="text-sm text-neutral-700">
                         {detailQuery.isLoading
-                            ? 'Loading diagnostics…'
-                            : headlineText ?? NOT_REPORTED_HINT}
+                            ? t('sheet.loadingDiagnostics')
+                            : headlineText ?? t('notReportedHint')}
                     </p>
                     {faults.length > 0 && (
                         <div className="flex flex-wrap gap-1.5">
                             {faults.map((f) => (
                                 <span
                                     key={f}
-                                    title={HEADLINE_TEXT[f] ?? f}
+                                    title={buildHeadlineText(t)[f] ?? f}
                                     className={cn(
                                         'inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium',
                                         // Neutral when per-fault levels weren't served, so an
@@ -775,10 +835,10 @@ export function CallHealthSheet({
                                         faultChipTone(d?.faultLevels?.[f])
                                     )}
                                 >
-                                    {FAULT_LABEL[f] ?? f}
+                                    {buildFaultLabel(t)[f] ?? f}
                                     {INFERRED_FAULTS.has(f) && (
                                         <span className="text-caption font-normal opacity-70">
-                                            inferred
+                                            {t('inferredTag.label')}
                                         </span>
                                     )}
                                 </span>
@@ -787,8 +847,12 @@ export function CallHealthSheet({
                     )}
                     {call && (
                         <p className="text-caption text-neutral-400">
-                            {call.lead_name || call.lead_number || 'Lead'} · call {call.id}
-                            {rulesVersion != null && ` · rules v${rulesVersion}`}
+                            {t('sheet.callIdLine', {
+                                lead: call.lead_name || call.lead_number || t('sheet.leadFallback'),
+                                id: call.id,
+                            })}
+                            {rulesVersion != null &&
+                                t('sheet.rulesVersionSuffix', { version: rulesVersion })}
                         </p>
                     )}
                 </section>
@@ -799,38 +863,34 @@ export function CallHealthSheet({
                     // The verdict is public; the numbers behind it are not. Say which,
                     // so "no detail" is never mistaken for "nothing happened".
                     <section className="flex flex-col gap-2">
-                        <SectionTitle>What happened</SectionTitle>
+                        <SectionTitle>{t('sheet.whatHappenedTitle')}</SectionTitle>
                         {faults.map((f) => (
                             <FaultBlock key={f} code={f} level={undefined} d={{}} withheld />
                         ))}
                         <p className="rounded-md border border-dashed border-neutral-300 p-3 text-xs text-neutral-500">
-                            The numbers behind this verdict — timings, counters and the discarded
-                            caller answers — are withheld for your role: they include verbatim
-                            caller speech. They ride the same setting as unmasked phone numbers,
-                            under Settings → Display Settings → Call Log phone numbers.
+                            {t('sheet.withheldHint')}
                         </p>
                     </section>
                 ) : !d ? (
                     <div className="flex flex-col items-center gap-2 rounded-lg border border-dashed border-neutral-300 p-6 text-center">
                         <WarningCircle size={24} className="text-neutral-400" />
                         <p className="text-sm font-medium text-neutral-700">
-                            No technical report for this call
+                            {t('sheet.noReportTitle')}
                         </p>
                         <p className="max-w-sm text-xs text-neutral-500">
                             {detailQuery.isError
-                                ? 'The call detail could not be loaded, so no diagnostics are available.'
-                                : 'Diagnostics are recorded by the AI voice agent from rules v1 onward. Calls placed before it shipped, and human calls, have nothing to show here.'}
+                                ? t('sheet.noReportErrorHint')
+                                : t('sheet.noReportEmptyHint')}
                         </p>
                     </div>
                 ) : (
                     <>
                         {/* What happened — fired faults, in priority order, with numbers. */}
                         <section className="flex flex-col gap-2">
-                            <SectionTitle>What happened</SectionTitle>
+                            <SectionTitle>{t('sheet.whatHappenedTitle')}</SectionTitle>
                             {faults.length === 0 ? (
                                 <p className="text-sm text-neutral-600">
-                                    No faults fired. Every rule in v{d.rulesVersion ?? 1} stayed
-                                    under threshold.
+                                    {t('sheet.noFaultsFired', { version: d.rulesVersion ?? 1 })}
                                 </p>
                             ) : (
                                 faults.map((f) => (
@@ -839,8 +899,7 @@ export function CallHealthSheet({
                             )}
                             {d.error && (
                                 <p className="text-xs text-danger-600">
-                                    The bot&apos;s own diagnostics build failed ({d.error}) — the
-                                    numbers below may be incomplete.
+                                    {t('sheet.diagBuildFailed', { error: d.error })}
                                 </p>
                             )}
                         </section>
@@ -850,30 +909,30 @@ export function CallHealthSheet({
 
                         {/* Timings. */}
                         <section className="flex flex-col gap-2">
-                            <SectionTitle>Timings</SectionTitle>
+                            <SectionTitle>{t('sheet.timingsTitle')}</SectionTitle>
                             <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-                                <Stat label="LLM ttfb p50" value={secs(latency.llmTtfbP50)} />
-                                <Stat label="LLM ttfb p95" value={secs(latency.llmTtfbP95)} />
-                                <Stat label="TTS ttfb p50" value={secs(tts.ttfbP50)} />
-                                <Stat label="TTS ttfb p95" value={secs(tts.ttfbP95)} />
-                                <Stat label="STT ttfb p50" value={secs(latency.sttTtfbP50)} />
-                                <Stat label="STT ttfb p95" value={secs(latency.sttTtfbP95)} />
-                                <Stat label="Dead air p95" value={secs(latency.deadAirP95)} />
-                                <Stat label="Worst dead air" value={secs(latency.deadAirMax)} />
+                                <Stat label={t('sheet.llmTtfbP50')} value={secs(latency.llmTtfbP50)} />
+                                <Stat label={t('sheet.llmTtfbP95')} value={secs(latency.llmTtfbP95)} />
+                                <Stat label={t('sheet.ttsTtfbP50')} value={secs(tts.ttfbP50)} />
+                                <Stat label={t('sheet.ttsTtfbP95')} value={secs(tts.ttfbP95)} />
+                                <Stat label={t('sheet.sttTtfbP50')} value={secs(latency.sttTtfbP50)} />
+                                <Stat label={t('sheet.sttTtfbP95')} value={secs(latency.sttTtfbP95)} />
+                                <Stat label={t('sheet.deadAirP95')} value={secs(latency.deadAirP95)} />
+                                <Stat label={t('sheet.worstDeadAir')} value={secs(latency.deadAirMax)} />
                                 <Stat
-                                    label="Greet path"
+                                    label={t('sheet.greetPath')}
                                     value={setup.greetPath ?? null}
-                                    empty="not reported"
+                                    empty={t('sheet.notReportedEmpty')}
                                 />
                                 <Stat
-                                    label="Greet delay"
+                                    label={t('sheet.greetDelay')}
                                     value={secs(setup.greetDelaySecs)}
-                                    empty="not reported"
+                                    empty={t('sheet.notReportedEmpty')}
                                 />
                                 <Stat
-                                    label="Setup"
+                                    label={t('sheet.setup')}
                                     value={secs(setup.setupSecs)}
-                                    empty="not reported"
+                                    empty={t('sheet.notReportedEmpty')}
                                 />
                             </div>
                         </section>
@@ -890,7 +949,7 @@ export function CallHealthSheet({
                             rows that matter off the screen. */}
                         {detail?.tts_cache_active ? (
                         <section className="flex flex-col gap-2">
-                            <SectionTitle>Speech cache</SectionTitle>
+                            <SectionTitle>{t('sheet.speechCacheTitle')}</SectionTitle>
                             <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
                                 {/* The section only renders when the cache RAN, so
                                     a 0 here is a genuine reading — it served
@@ -898,21 +957,27 @@ export function CallHealthSheet({
                                     "Saved on this call" can still be blank: edge is
                                     free and smallest has no confirmed invoice rate,
                                     so there a hit buys latency, not rupees. */}
-                                <Stat label="Served from cache" value={fmtCount(tts.cacheHits)} />
-                                <Stat label="Synthesized" value={fmtCount(tts.cacheMisses)} />
-                                <Stat label="Hit rate" value={pct(tts.cacheHitRate)} />
                                 <Stat
-                                    label="Characters saved"
+                                    label={t('sheet.servedFromCache')}
+                                    value={fmtCount(tts.cacheHits)}
+                                />
+                                <Stat label={t('sheet.synthesized')} value={fmtCount(tts.cacheMisses)} />
+                                <Stat label={t('sheet.hitRate')} value={pct(tts.cacheHitRate)} />
+                                <Stat
+                                    label={t('sheet.charactersSaved')}
                                     value={fmtCount(tts.cacheCharsSaved)}
                                 />
-                                <Stat label="Audio replayed" value={secs(tts.cacheSecsSaved)} />
                                 <Stat
-                                    label="Saved on this call"
+                                    label={t('sheet.audioReplayed')}
+                                    value={secs(tts.cacheSecsSaved)}
+                                />
+                                <Stat
+                                    label={t('sheet.savedOnThisCall')}
                                     value={inr(call?.ttsCacheSavedInr)}
                                     // Blank on edge (free) and smallest (no
                                     // confirmed invoice rate) — there a hit buys
                                     // latency, not rupees.
-                                    empty="not priced"
+                                    empty={t('sheet.notPriced')}
                                 />
                             </div>
                         </section>
@@ -920,34 +985,49 @@ export function CallHealthSheet({
 
                         {/* Raw counters, for the questions the faults didn't answer. */}
                         <section className="flex flex-col gap-2">
-                            <SectionTitle>Signals</SectionTitle>
+                            <SectionTitle>{t('sheet.signalsTitle')}</SectionTitle>
                             <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-                                <Stat label="Caller turns" value={fmtCount(turn.userTurns)} />
-                                <Stat label="Agent turns" value={fmtCount(turn.botTurns)} />
-                                <Stat label="Barge-ins" value={fmtCount(turn.bargeIns)} />
-                                <Stat label="Nudges" value={fmtCount(turn.nudges)} />
+                                <Stat label={t('sheet.callerTurns')} value={fmtCount(turn.userTurns)} />
+                                <Stat label={t('sheet.agentTurns')} value={fmtCount(turn.botTurns)} />
+                                <Stat label={t('sheet.bargeIns')} value={fmtCount(turn.bargeIns)} />
+                                <Stat label={t('sheet.nudges')} value={fmtCount(turn.nudges)} />
                                 <Stat
-                                    label="Replies played"
+                                    label={t('sheet.repliesPlayed')}
                                     value={
                                         playout.repliesGenerated == null
                                             ? null
-                                            : `${playout.repliesGenerated - (playout.repliesNeverPlayed ?? 0)} of ${playout.repliesGenerated}`
+                                            : t('sheet.repliesPlayedValue', {
+                                                  played:
+                                                      playout.repliesGenerated -
+                                                      (playout.repliesNeverPlayed ?? 0),
+                                                  total: playout.repliesGenerated,
+                                              })
                                     }
                                 />
-                                <Stat label="TTS stalls" value={fmtCount(tts.stalls)} />
-                                <Stat label="TTS wedges" value={fmtCount(tts.wedges)} />
+                                <Stat label={t('sheet.ttsStalls')} value={fmtCount(tts.stalls)} />
+                                <Stat label={t('sheet.ttsWedges')} value={fmtCount(tts.wedges)} />
                                 <Stat
-                                    label="STT reconnects"
+                                    label={t('sheet.sttReconnects')}
                                     value={fmtCount(infra.sttReconnects)}
                                 />
-                                <Stat label="Ended by" value={endedBy(turn)} empty="not reported" />
+                                <Stat
+                                    label={t('sheet.endedBy')}
+                                    value={endedBy(t, turn)}
+                                    empty={t('sheet.notReportedEmpty')}
+                                />
                             </div>
                             {d.machine && (
                                 <p className="flex flex-wrap items-center gap-1.5 text-xs text-neutral-500">
-                                    <span>Answering-machine score {d.machine.score ?? '—'}</span>
+                                    <span>
+                                        {t('sheet.machineScore', { score: d.machine.score ?? '—' })}
+                                    </span>
                                     {d.machine.src === 'inferred' && <InferredTag />}
                                     {d.machine.markers?.length ? (
-                                        <span>· markers: {d.machine.markers.join(', ')}</span>
+                                        <span>
+                                            {t('sheet.machineMarkersSuffix', {
+                                                markers: d.machine.markers.join(', '),
+                                            })}
+                                        </span>
                                     ) : null}
                                 </p>
                             )}
@@ -978,9 +1058,9 @@ function fmtCount(n: number | null | undefined): string | null {
 }
 
 /** How the call terminated, when the bot reported either termination flag. */
-function endedBy(turn: NonNullable<CallDiagnostics['turnTaking']>): string | null {
-    if (turn.idleHangup) return 'idle hang-up';
-    if (turn.capFarewell) return 'turn cap';
+function endedBy(t: TFunction, turn: NonNullable<CallDiagnostics['turnTaking']>): string | null {
+    if (turn.idleHangup) return t('endedBy.idleHangup');
+    if (turn.capFarewell) return t('endedBy.turnCap');
     if (turn.idleHangup == null && turn.capFarewell == null) return null;
-    return 'normal end';
+    return t('endedBy.normalEnd');
 }

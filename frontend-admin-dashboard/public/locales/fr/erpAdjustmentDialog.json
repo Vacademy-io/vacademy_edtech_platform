@@ -1,0 +1,58 @@
+{
+    "dialog": {
+        "heading": "Ajouter un ajustement — {{month}}"
+    },
+    "actions": {
+        "cancel": "Annuler",
+        "adding": "Ajout…",
+        "addAdjustment": "Ajouter l'ajustement"
+    },
+    "fields": {
+        "employee": {
+            "label": "Employé"
+        },
+        "type": {
+            "label": "Type"
+        },
+        "code": {
+            "label": "Code",
+            "placeholder": "INCENTIVE",
+            "description": "Devient le code du composant sur le bulletin de paie."
+        },
+        "label": {
+            "label": "Libellé",
+            "placeholder": "Prime de performance T2",
+            "description": "Ce que l'employé voit sur son bulletin de paie."
+        },
+        "amount": {
+            "label": "Montant",
+            "placeholder": "5000",
+            "description": "Toujours un nombre positif — le type détermine le sens."
+        },
+        "currency": {
+            "label": "Devise"
+        },
+        "runScope": {
+            "label": "Portée du cycle"
+        },
+        "notes": {
+            "label": "Notes",
+            "placeholder": "Contexte interne — pourquoi cela a été accordé ou récupéré."
+        }
+    },
+    "toast": {
+        "added": "Ajustement ajouté"
+    },
+    "errors": {
+        "addFailed": "Impossible d'ajouter l'ajustement."
+    },
+    "validation": {
+        "employeeRequired": "Choisissez un employé",
+        "codeMinLength": "Les codes comptent au moins 2 caractères",
+        "codeFormat": "Lettres majuscules, chiffres et underscores uniquement — pas d'espaces (ex. INCENTIVE, ARREARS)",
+        "labelRequired": "Donnez un libellé que l'employé reconnaîtra",
+        "amountRequired": "Saisissez le montant",
+        "amountPositive": "Saisissez un montant supérieur à zéro",
+        "notesMaxLength": "Limitez les notes à 500 caractères"
+    }
+}

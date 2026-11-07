@@ -1,0 +1,32 @@
+{
+    "dialog": {
+        "defaultReportTitle": "मूल्यांकन रिपोर्ट"
+    },
+    "header": {
+        "defaultTitle": "व्याख्यान मूल्यांकन",
+        "export": "निर्यात करें"
+    },
+    "info": {
+        "lectureTitle": "व्याख्यान शीर्षक:",
+        "duration": "अवधि:",
+        "evaluationDate": "मूल्यांकन तिथि:",
+        "notAvailable": "उपलब्ध नहीं"
+    },
+    "score": {
+        "totalScore": "कुल स्कोर",
+        "criterionScore": "(स्कोर: {{score}})"
+    },
+    "performance": {
+        "needsImprovement": "सुधार की आवश्यकता है",
+        "average": "औसत",
+        "good": "अच्छा",
+        "excellent": "उत्कृष्ट"
+    },
+    "criteria": {
+        "heading": "मूल्यांकन मानदंड",
+        "scopeOfImprovement": "सुधार की गुंजाइश:"
+    },
+    "summary": {
+        "heading": "सारांश"
+    }
+}

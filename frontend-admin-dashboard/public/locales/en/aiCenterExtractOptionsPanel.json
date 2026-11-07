@@ -1,0 +1,30 @@
+{
+    "title": "Read the whole paper as it is",
+    "subtitle": "Nothing is generated or rewritten. Every question is taken from the file, with its answers where the paper prints them.",
+    "captures": {
+        "questions": "Every question, in the paper's own numbering and sections",
+        "options": "All options, exactly as printed",
+        "passages": "Comprehension passages, case studies and data tables attached to their questions",
+        "key": "The printed answer key, mapped onto the options",
+        "solutions": "Printed solutions and explanations, kept with each question",
+        "marks": "Marks and negative marking where the paper states them"
+    },
+    "notesLabel": "Notes for the reader (optional)",
+    "notesPlaceholder": "e.g. only Section B · answers are printed in the margin · skip the practice questions",
+    "cta": "Extract all questions",
+    "cost": "{{base}} credit + {{perQuestion}} per question — a {{typicalQuestions}}-question paper is about {{typical}} credits.",
+    "costOcr": "Scanned (photo) PDFs add {{perPage}} per page for reading the scan.",
+    "costBands": "Credits by paper size: {{bands}}.",
+    "bandUpTo": "up to {{upto}} questions",
+    "bandRange": "{{from}}–{{upto}}",
+    "bandOpen": "{{from}}+",
+    "found": "{{questions}} questions found across {{pages}} pages — {{credits}} credits will be deducted when you extract.",
+    "foundScan": "Scanned paper ({{pages}} pages) — the question count will be known after reading; credits by paper size below, plus the per-page OCR charge.",
+    "foundOcr_one": "{{count}} page was read by OCR (included).",
+    "foundOcr_other": "{{count}} pages were read by OCR (included).",
+    "foundMarking": "Marking found: +{{marks}} per correct, −{{negative}} per wrong — applied to every question.",
+    "sectionsQuestion": "This paper has {{count}} sections ({{names}}). How should the assessment be built?",
+    "sectionsSplit": "One section per paper section ({{count}} sections, with their own marks)",
+    "sectionsSingle": "All questions in a single section",
+    "foundDuration": "Time allowed: {{hrs}} h {{min}} min — set as the test duration."
+}

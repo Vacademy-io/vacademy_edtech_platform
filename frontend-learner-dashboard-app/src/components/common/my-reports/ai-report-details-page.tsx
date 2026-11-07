@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslation } from "react-i18next";
 import ReactMarkdown from "react-markdown";
 import remarkBreaks from "remark-breaks";
 import { Progress } from "@/components/ui/progress";
@@ -90,6 +91,15 @@ const BLOOM_BG: Record<string, string> = {
 export default function AIReportDetailsPage({
   report, assessmentId, assessmentName, attemptId, instituteId, comparisonData, subtitle,
 }: AIReportDetailsPageProps) {
+  const { t } = useTranslation("layoutCommonB");
+  const BLOOM_LABELS: Record<string, string> = {
+    remember: t("aiReportDetails.bloomLevels.remember"),
+    understand: t("aiReportDetails.bloomLevels.understand"),
+    apply: t("aiReportDetails.bloomLevels.apply"),
+    analyze: t("aiReportDetails.bloomLevels.analyze"),
+    evaluate: t("aiReportDetails.bloomLevels.evaluate"),
+    create: t("aiReportDetails.bloomLevels.create"),
+  };
   const [flashIdx, setFlashIdx] = useState(0);
   const [showAnswer, setShowAnswer] = useState(false);
   const [downloading, setDownloading] = useState(false);
@@ -126,7 +136,7 @@ export default function AIReportDetailsPage({
         .filter(l => report.blooms_taxonomy?.[l])
         .map(l => {
           const d = report.blooms_taxonomy![l]!;
-          return { level: l.charAt(0).toUpperCase() + l.slice(1), key: l,
+          return { level: BLOOM_LABELS[l] ?? l, key: l,
             accuracy: d.total > 0 ? Math.round((d.correct / d.total) * 100) : 0,
             correct: d.correct, total: d.total };
         })
@@ -145,14 +155,14 @@ export default function AIReportDetailsPage({
         <div>
           <h1 className="text-xl font-bold">{assessmentName}</h1>
           <p className="text-sm text-muted-foreground">
-            {subtitle ?? "Personalized Performance Analysis"}
+            {subtitle ?? t("aiReportDetails.defaultSubtitle")}
           </p>
         </div>
         {assessmentId && (
           <Button variant="outline" size="sm" onClick={handleDownload} disabled={downloading}
             className={`gap-1.5 ${dlError ? "border-destructive text-destructive" : ""}`}>
             {downloading ? <SpinnerGap className="h-4 w-4 animate-spin" /> : <DownloadSimple className="h-4 w-4" />}
-            {downloading ? "Generating..." : dlError ? "Failed" : "Download PDF"}
+            {downloading ? t("aiReportDetails.generating") : dlError ? t("aiReportDetails.failed") : t("aiReportDetails.downloadPdf")}
           </Button>
         )}
       </div>
@@ -166,21 +176,21 @@ export default function AIReportDetailsPage({
               <div className="text-2xl font-bold text-emerald-600 font-mono">
                 {comparisonData.student_marks ?? 0}/{comparisonData.total_marks ?? 0}
               </div>
-              <div className="text-3xs text-muted-foreground uppercase tracking-wide mt-1">Marks Obtained</div>
+              <div className="text-3xs text-muted-foreground uppercase tracking-wide mt-1">{t("aiReportDetails.scoreOverview.marksObtained")}</div>
             </div>
             <div className="text-center p-4 bg-white border rounded-xl">
               <div className="text-2xl font-bold text-violet-600 font-mono">
                 #{comparisonData.student_rank ?? "-"}
               </div>
               <div className="text-3xs text-muted-foreground uppercase tracking-wide mt-1">
-                Rank (of {comparisonData.total_participants ?? "-"})
+                {t("aiReportDetails.scoreOverview.rankOf", { total: comparisonData.total_participants ?? "-" })}
               </div>
             </div>
             <div className="text-center p-4 bg-white border rounded-xl">
               <div className="text-2xl font-bold text-cyan-600 font-mono">
                 {comparisonData.student_percentile ?? 0}%
               </div>
-              <div className="text-3xs text-muted-foreground uppercase tracking-wide mt-1">Percentile</div>
+              <div className="text-3xs text-muted-foreground uppercase tracking-wide mt-1">{t("aiReportDetails.scoreOverview.percentile")}</div>
             </div>
           </div>
         )}
@@ -188,38 +198,38 @@ export default function AIReportDetailsPage({
         {/* You vs Class */}
         {comparisonData && (
           <Card>
-            <CardHeader className="pb-2"><CardTitle className="text-base">📊 Your Performance vs Class</CardTitle></CardHeader>
+            <CardHeader className="pb-2"><CardTitle className="text-base">{t("aiReportDetails.vsClass.title")}</CardTitle></CardHeader>
             <CardContent>
               <div className="grid md:grid-cols-2 gap-4">
                 {/* Marks comparison */}
                 <div className="p-3 bg-gray-50 rounded-lg">
-                  <p className="text-xs text-muted-foreground mb-2">Marks (You vs Class Avg)</p>
+                  <p className="text-xs text-muted-foreground mb-2">{t("aiReportDetails.vsClass.marksCaption")}</p>
                   <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
                     <div className="h-full bg-emerald-500 rounded-full"
                       style={{ width: `${comparisonData.total_marks > 0 ? (comparisonData.student_marks / comparisonData.total_marks) * 100 : 0}%` }} />
                   </div>
                   <div className="flex justify-between text-xs mt-1.5">
-                    <span className="text-emerald-600 font-bold">You: {comparisonData.student_marks ?? 0}</span>
-                    <span className="text-muted-foreground">Avg: {comparisonData.average_marks ?? 0}</span>
+                    <span className="text-emerald-600 font-bold">{t("aiReportDetails.vsClass.you", { value: comparisonData.student_marks ?? 0 })}</span>
+                    <span className="text-muted-foreground">{t("aiReportDetails.vsClass.avg", { value: comparisonData.average_marks ?? 0 })}</span>
                   </div>
                 </div>
                 {/* Accuracy comparison */}
                 <div className="p-3 bg-gray-50 rounded-lg">
-                  <p className="text-xs text-muted-foreground mb-2">Accuracy (You vs Class Avg)</p>
+                  <p className="text-xs text-muted-foreground mb-2">{t("aiReportDetails.vsClass.accuracyCaption")}</p>
                   <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
                     <div className="h-full bg-blue-500 rounded-full"
                       style={{ width: `${comparisonData.student_accuracy ?? 0}%` }} />
                   </div>
                   <div className="flex justify-between text-xs mt-1.5">
-                    <span className="text-blue-600 font-bold">You: {comparisonData.student_accuracy ?? 0}%</span>
-                    <span className="text-muted-foreground">Avg: {comparisonData.class_accuracy ?? 0}%</span>
+                    <span className="text-blue-600 font-bold">{t("aiReportDetails.vsClass.you", { value: `${comparisonData.student_accuracy ?? 0}%` })}</span>
+                    <span className="text-muted-foreground">{t("aiReportDetails.vsClass.avg", { value: `${comparisonData.class_accuracy ?? 0}%` })}</span>
                   </div>
                 </div>
               </div>
               <div className="flex gap-6 text-xs text-muted-foreground mt-3">
-                <span><b>Highest:</b> {comparisonData.highest_marks ?? "-"}</span>
-                <span><b>Lowest:</b> {comparisonData.lowest_marks ?? "-"}</span>
-                <span><b>Participants:</b> {comparisonData.total_participants ?? "-"}</span>
+                <span><b>{t("aiReportDetails.vsClass.highest")}</b> {comparisonData.highest_marks ?? "-"}</span>
+                <span><b>{t("aiReportDetails.vsClass.lowest")}</b> {comparisonData.lowest_marks ?? "-"}</span>
+                <span><b>{t("aiReportDetails.vsClass.participants")}</b> {comparisonData.total_participants ?? "-"}</span>
               </div>
             </CardContent>
           </Card>
@@ -228,22 +238,22 @@ export default function AIReportDetailsPage({
         {/* Leaderboard */}
         {comparisonData?.leaderboard && (
           <Card>
-            <CardHeader className="pb-2"><CardTitle className="text-base">🏅 Leaderboard (Your Position)</CardTitle></CardHeader>
+            <CardHeader className="pb-2"><CardTitle className="text-base">{t("aiReportDetails.leaderboard.title")}</CardTitle></CardHeader>
             <CardContent>
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b text-muted-foreground">
-                    <th className="pb-2 text-start font-medium">Rank</th>
-                    <th className="pb-2 text-start font-medium">Student</th>
-                    <th className="pb-2 text-center font-medium">Marks</th>
-                    <th className="pb-2 text-center font-medium">Percentile</th>
+                    <th className="pb-2 text-start font-medium">{t("aiReportDetails.leaderboard.rank")}</th>
+                    <th className="pb-2 text-start font-medium">{t("aiReportDetails.leaderboard.student")}</th>
+                    <th className="pb-2 text-center font-medium">{t("aiReportDetails.leaderboard.marks")}</th>
+                    <th className="pb-2 text-center font-medium">{t("aiReportDetails.leaderboard.percentile")}</th>
                   </tr>
                 </thead>
                 <tbody>
                   {comparisonData.leaderboard.top_ranks?.map((e: any, i: number) => (
                     <tr key={`top-${i}`} className={`border-b ${e.rank === comparisonData.student_rank ? "bg-amber-50" : ""}`}>
                       <td className="py-2 font-medium">{e.rank}</td>
-                      <td className="py-2">{e.rank === comparisonData.student_rank ? `>> ${e.student_name} (You)` : e.student_name}</td>
+                      <td className="py-2">{e.rank === comparisonData.student_rank ? t("aiReportDetails.leaderboard.youMarker", { name: e.student_name }) : e.student_name}</td>
                       <td className="py-2 text-center font-mono font-bold text-emerald-600">{e.achieved_marks}/{comparisonData.total_marks ?? ""}</td>
                       <td className="py-2 text-center">{e.percentile}%</td>
                     </tr>
@@ -254,7 +264,7 @@ export default function AIReportDetailsPage({
                   {comparisonData.leaderboard.surrounding_ranks?.map((e: any, i: number) => (
                     <tr key={`sur-${i}`} className={`border-b ${e.rank === comparisonData.student_rank ? "bg-amber-50" : ""}`}>
                       <td className="py-2 font-medium">{e.rank}</td>
-                      <td className="py-2">{e.rank === comparisonData.student_rank ? `>> ${e.student_name} (You)` : e.student_name}</td>
+                      <td className="py-2">{e.rank === comparisonData.student_rank ? t("aiReportDetails.leaderboard.youMarker", { name: e.student_name }) : e.student_name}</td>
                       <td className="py-2 text-center font-mono font-bold text-emerald-600">{e.achieved_marks}/{comparisonData.total_marks ?? ""}</td>
                       <td className="py-2 text-center">{e.percentile}%</td>
                     </tr>
@@ -262,7 +272,9 @@ export default function AIReportDetailsPage({
                 </tbody>
               </table>
               <p className="text-center text-xs text-muted-foreground mt-3">
-                Your rank: <b className="text-violet-600">#{comparisonData.student_rank ?? "-"}</b> of {comparisonData.total_participants ?? "-"} students
+                {t("aiReportDetails.leaderboard.yourRankPrefix")}{" "}
+                <b className="text-violet-600">#{comparisonData.student_rank ?? "-"}</b>{" "}
+                {t("aiReportDetails.leaderboard.ofNStudents", { total: comparisonData.total_participants ?? "-" })}
               </p>
             </CardContent>
           </Card>
@@ -271,7 +283,7 @@ export default function AIReportDetailsPage({
         {/* Performance Analysis */}
         {report.performance_analysis && (
           <Card>
-            <CardHeader className="pb-2"><CardTitle className="text-base">📊 Performance Analysis</CardTitle></CardHeader>
+            <CardHeader className="pb-2"><CardTitle className="text-base">{t("aiReportDetails.performanceAnalysis.title")}</CardTitle></CardHeader>
             <CardContent className="prose prose-sm max-w-none text-muted-foreground">
               <ReactMarkdown remarkPlugins={[remarkBreaks]}>{report.performance_analysis}</ReactMarkdown>
             </CardContent>
@@ -282,8 +294,8 @@ export default function AIReportDetailsPage({
         {report.confidence_estimation && (
           <Card>
             <CardHeader className="pb-1">
-              <CardTitle className="text-base">🎯 Confidence Estimation</CardTitle>
-              <p className="text-xs text-muted-foreground mt-0.5">Estimated confidence based on response time, answer patterns, and question difficulty.</p>
+              <CardTitle className="text-base">{t("aiReportDetails.confidence.title")}</CardTitle>
+              <p className="text-xs text-muted-foreground mt-0.5">{t("aiReportDetails.confidence.caption")}</p>
             </CardHeader>
             <CardContent>
               <div className="flex items-center gap-6 mb-4">
@@ -300,10 +312,10 @@ export default function AIReportDetailsPage({
                 </div>
                 <div className="grid grid-cols-2 gap-x-6 gap-y-1 text-sm flex-1">
                   {[
-                    { l: "High conf & correct", v: report.confidence_estimation.high_confidence_correct, c: "bg-emerald-500" },
-                    { l: "High conf & wrong", v: report.confidence_estimation.high_confidence_wrong, c: "bg-red-500" },
-                    { l: "Low conf & correct", v: report.confidence_estimation.low_confidence_correct, c: "bg-amber-500" },
-                    { l: "Likely guessed", v: report.confidence_estimation.guessed_correct, c: "bg-gray-400" },
+                    { l: t("aiReportDetails.confidence.highConfCorrect"), v: report.confidence_estimation.high_confidence_correct, c: "bg-emerald-500" },
+                    { l: t("aiReportDetails.confidence.highConfWrong"), v: report.confidence_estimation.high_confidence_wrong, c: "bg-red-500" },
+                    { l: t("aiReportDetails.confidence.lowConfCorrect"), v: report.confidence_estimation.low_confidence_correct, c: "bg-amber-500" },
+                    { l: t("aiReportDetails.confidence.likelyGuessed"), v: report.confidence_estimation.guessed_correct, c: "bg-gray-400" },
                   ].map(s => (
                     <div key={s.l} className="flex items-center gap-1.5">
                       <span className={`w-2 h-2 rounded-full ${s.c}`} />
@@ -315,18 +327,18 @@ export default function AIReportDetailsPage({
               </div>
               {report.confidence_estimation.insight && (
                 <div className="text-sm text-muted-foreground bg-violet-50 border-s-3 border-violet-400 p-3 rounded-md mb-3">
-                  <b className="text-violet-600">AI Insight:</b> {report.confidence_estimation.insight}
+                  <b className="text-violet-600">{t("aiReportDetails.confidence.aiInsight")}</b> {report.confidence_estimation.insight}
                 </div>
               )}
               {confEntries.length > 0 && (
-                <div>
-                  <p className="text-3xs uppercase tracking-wider text-muted-foreground font-semibold mb-2">Confidence Per Question</p>
+                <div className="space-y-2">
+                  <p className="text-3xs uppercase tracking-wider text-muted-foreground font-semibold">{t("aiReportDetails.confidence.perQuestion")}</p>
                   <div className="grid grid-cols-5 gap-2">
                     {confEntries.map(([q, c]) => (
                       <div key={q} className={`rounded-lg p-2 text-center border ${c >= 70 ? "bg-emerald-50 border-emerald-200" : c >= 40 ? "bg-amber-50 border-amber-200" : "bg-red-50 border-red-200"}`}>
                         <p className="text-3xs text-muted-foreground">{q}</p>
                         <p className={`text-lg font-bold font-mono ${c >= 70 ? "text-emerald-600" : c >= 40 ? "text-amber-600" : "text-red-500"}`}>{c}%</p>
-                        <p className={`text-3xs font-bold ${c >= 70 ? "text-emerald-600" : c >= 40 ? "text-amber-600" : "text-red-500"}`}>{c >= 70 ? "HIGH" : c >= 40 ? "MED" : "LOW"}</p>
+                        <p className={`text-3xs font-bold ${c >= 70 ? "text-emerald-600" : c >= 40 ? "text-amber-600" : "text-red-500"}`}>{c >= 70 ? t("aiReportDetails.confidence.high") : c >= 40 ? t("aiReportDetails.confidence.medium") : t("aiReportDetails.confidence.low")}</p>
                       </div>
                     ))}
                   </div>
@@ -340,8 +352,8 @@ export default function AIReportDetailsPage({
         {radarData && radarData.length >= 3 && (
           <Card>
             <CardHeader className="pb-1">
-              <CardTitle className="text-base">🧠 Topic Analysis</CardTitle>
-              <p className="text-xs text-muted-foreground mt-0.5">How you performed across different topics covered in this assessment.</p>
+              <CardTitle className="text-base">{t("aiReportDetails.topicAnalysis.title")}</CardTitle>
+              <p className="text-xs text-muted-foreground mt-0.5">{t("aiReportDetails.topicAnalysis.caption")}</p>
             </CardHeader>
             <CardContent>
               <ResponsiveContainer width="100%" height={300}>
@@ -355,12 +367,12 @@ export default function AIReportDetailsPage({
               <div className="overflow-x-auto mt-2">
                 <table className="w-full text-sm">
                   <thead><tr className="border-b text-muted-foreground">
-                    <th className="pb-2 text-start font-medium">Topic</th>
-                    <th className="pb-2 text-center font-medium">Qs</th>
-                    <th className="pb-2 text-center font-medium">Correct</th>
-                    <th className="pb-2 text-center font-medium">Accuracy</th>
-                    <th className="pb-2 text-center font-medium">Avg Time</th>
-                    <th className="pb-2 text-center font-medium">Mastery</th>
+                    <th className="pb-2 text-start font-medium">{t("aiReportDetails.topicAnalysis.table.topic")}</th>
+                    <th className="pb-2 text-center font-medium">{t("aiReportDetails.topicAnalysis.table.questions")}</th>
+                    <th className="pb-2 text-center font-medium">{t("aiReportDetails.topicAnalysis.table.correct")}</th>
+                    <th className="pb-2 text-center font-medium">{t("aiReportDetails.topicAnalysis.table.accuracy")}</th>
+                    <th className="pb-2 text-center font-medium">{t("aiReportDetails.topicAnalysis.table.avgTime")}</th>
+                    <th className="pb-2 text-center font-medium">{t("aiReportDetails.topicAnalysis.table.mastery")}</th>
                   </tr></thead>
                   <tbody>
                     {report.topic_analysis!.map((t, i) => (
@@ -389,11 +401,11 @@ export default function AIReportDetailsPage({
           <div className="grid md:grid-cols-2 gap-4">
             {strengths.length > 0 && (
               <Card>
-                <CardHeader className="pb-2"><CardTitle className="text-base text-emerald-600">💪 Strengths</CardTitle></CardHeader>
+                <CardHeader className="pb-2"><CardTitle className="text-base text-emerald-600">{t("aiReportDetails.strengths.title")}</CardTitle></CardHeader>
                 <CardContent className="space-y-3">
                   {strengths.map(([t, s]) => (
-                    <div key={t}>
-                      <div className="flex justify-between text-sm mb-1"><span>{t}</span><span className="font-mono font-bold text-emerald-600">{s}%</span></div>
+                    <div className="space-y-1" key={t}>
+                      <div className="flex justify-between text-sm"><span>{t}</span><span className="font-mono font-bold text-emerald-600">{s}%</span></div>
                       <Progress value={s} className="h-2 [&>div]:bg-emerald-500 bg-emerald-100" />
                     </div>
                   ))}
@@ -402,11 +414,11 @@ export default function AIReportDetailsPage({
             )}
             {weaknesses.length > 0 && (
               <Card>
-                <CardHeader className="pb-2"><CardTitle className="text-base text-red-500">🎯 Weaknesses</CardTitle></CardHeader>
+                <CardHeader className="pb-2"><CardTitle className="text-base text-red-500">{t("aiReportDetails.weaknesses.title")}</CardTitle></CardHeader>
                 <CardContent className="space-y-3">
                   {weaknesses.map(([t, s]) => (
-                    <div key={t}>
-                      <div className="flex justify-between text-sm mb-1"><span>{t}</span><span className="font-mono font-bold text-red-500">{s}%</span></div>
+                    <div className="space-y-1" key={t}>
+                      <div className="flex justify-between text-sm"><span>{t}</span><span className="font-mono font-bold text-red-500">{s}%</span></div>
                       <Progress value={s} className="h-2 [&>div]:bg-red-500 bg-red-100" />
                     </div>
                   ))}
@@ -420,11 +432,11 @@ export default function AIReportDetailsPage({
         {bloomsData.length > 0 && (
           <Card>
             <CardHeader className="pb-1">
-              <CardTitle className="text-base">🎓 Bloom's Taxonomy</CardTitle>
-              <p className="text-xs text-muted-foreground mt-0.5">How you performed at different thinking levels — from basic recall to higher-order analysis and problem solving.</p>
+              <CardTitle className="text-base">{t("aiReportDetails.bloomsTaxonomy.title")}</CardTitle>
+              <p className="text-xs text-muted-foreground mt-0.5">{t("aiReportDetails.bloomsTaxonomy.caption")}</p>
             </CardHeader>
             <CardContent>
-              <p className="text-3xs uppercase tracking-wider text-muted-foreground font-semibold mb-3">Performance by Cognitive Level</p>
+              <p className="text-3xs uppercase tracking-wider text-muted-foreground font-semibold mb-3">{t("aiReportDetails.bloomsTaxonomy.performanceByLevel")}</p>
               <div className="space-y-2.5 mb-5">
                 {bloomsData.map(d => (
                   <div key={d.key} className="flex items-center gap-3">
@@ -456,19 +468,19 @@ export default function AIReportDetailsPage({
         {report.misconception_analysis && report.misconception_analysis.length > 0 && (
           <Card>
             <CardHeader className="pb-1">
-              <CardTitle className="text-base">🔍 Misconception Analysis</CardTitle>
-              <p className="text-xs text-muted-foreground mt-0.5">Questions you got wrong and the specific conceptual errors behind each mistake.</p>
+              <CardTitle className="text-base">{t("aiReportDetails.misconceptions.title")}</CardTitle>
+              <p className="text-xs text-muted-foreground mt-0.5">{t("aiReportDetails.misconceptions.caption")}</p>
             </CardHeader>
             <CardContent className="space-y-3">
               {report.misconception_analysis.map((m, i) => (
                 <div key={i} className="border border-red-200 bg-red-50/60 rounded-xl p-4">
                   <p className="font-semibold text-sm mb-2">{m.question_summary}</p>
                   <div className="flex gap-4 text-xs mb-2">
-                    <span className="text-red-500"><b>Your Answer:</b> {m.student_answer}</span>
-                    <span className="text-emerald-600"><b>Correct:</b> {m.correct_answer}</span>
+                    <span className="text-red-500"><b>{t("aiReportDetails.misconceptions.yourAnswer")}</b> {m.student_answer}</span>
+                    <span className="text-emerald-600"><b>{t("aiReportDetails.misconceptions.correct")}</b> {m.correct_answer}</span>
                   </div>
                   <div className="text-xs bg-orange-50 border-s-3 border-orange-400 p-2.5 rounded mb-1.5">
-                    <b className="text-orange-500">Misconception:</b> {m.misconception}
+                    <b className="text-orange-500">{t("aiReportDetails.misconceptions.misconceptionLabel")}</b> {m.misconception}
                   </div>
                   <p className="text-xs text-blue-500">{m.remediation}</p>
                 </div>
@@ -480,14 +492,14 @@ export default function AIReportDetailsPage({
         {/* Behavioral Insights */}
         {report.behavioral_insights && (
           <Card>
-            <CardHeader className="pb-2"><CardTitle className="text-base">🧩 Behavioral Insights</CardTitle></CardHeader>
+            <CardHeader className="pb-2"><CardTitle className="text-base">{t("aiReportDetails.behavioralInsights.title")}</CardTitle></CardHeader>
             <CardContent>
               <div className="grid md:grid-cols-2 gap-3">
                 {([
-                  { k: "time_management", l: "⏱️ Time Management", c: "border-blue-500 bg-blue-50/50", tc: "text-blue-600" },
-                  { k: "fatigue_indicator", l: "😴 Fatigue Indicator", c: "border-red-500 bg-red-50/50", tc: "text-red-500" },
-                  { k: "difficulty_response", l: "📈 Difficulty Response", c: "border-orange-500 bg-orange-50/50", tc: "text-orange-500" },
-                  { k: "skip_pattern", l: "⏭️ Skip Pattern", c: "border-gray-400 bg-gray-50/50", tc: "text-gray-500" },
+                  { k: "time_management", l: t("aiReportDetails.behavioralInsights.timeManagement"), c: "border-blue-500 bg-blue-50/50", tc: "text-blue-600" },
+                  { k: "fatigue_indicator", l: t("aiReportDetails.behavioralInsights.fatigueIndicator"), c: "border-red-500 bg-red-50/50", tc: "text-red-500" },
+                  { k: "difficulty_response", l: t("aiReportDetails.behavioralInsights.difficultyResponse"), c: "border-orange-500 bg-orange-50/50", tc: "text-orange-500" },
+                  { k: "skip_pattern", l: t("aiReportDetails.behavioralInsights.skipPattern"), c: "border-gray-400 bg-gray-50/50", tc: "text-gray-500" },
                 ] as const).map(item => {
                   const val = report.behavioral_insights?.[item.k as keyof typeof report.behavioral_insights];
                   if (!val) return null;
@@ -506,7 +518,7 @@ export default function AIReportDetailsPage({
         {/* Recommended Learning Path */}
         {report.recommended_learning_path && report.recommended_learning_path.length > 0 && (
           <Card>
-            <CardHeader className="pb-2"><CardTitle className="text-base">🗺️ Recommended Learning Path</CardTitle></CardHeader>
+            <CardHeader className="pb-2"><CardTitle className="text-base">{t("aiReportDetails.learningPath.title")}</CardTitle></CardHeader>
             <CardContent className="space-y-4">
               {report.recommended_learning_path.map(s => (
                 <div key={s.priority} className="flex gap-3">
@@ -526,7 +538,7 @@ export default function AIReportDetailsPage({
         {/* Areas of Improvement / Improvement Path */}
         {report.areas_of_improvement && (
           <Card>
-            <CardHeader className="pb-2"><CardTitle className="text-base">📝 Areas of Improvement</CardTitle></CardHeader>
+            <CardHeader className="pb-2"><CardTitle className="text-base">{t("aiReportDetails.areasOfImprovement.title")}</CardTitle></CardHeader>
             <CardContent className="prose prose-sm max-w-none text-muted-foreground">
               <ReactMarkdown remarkPlugins={[remarkBreaks]}>{report.areas_of_improvement}</ReactMarkdown>
             </CardContent>
@@ -534,7 +546,7 @@ export default function AIReportDetailsPage({
         )}
         {report.improvement_path && (
           <Card>
-            <CardHeader className="pb-2"><CardTitle className="text-base">🚀 Improvement Path</CardTitle></CardHeader>
+            <CardHeader className="pb-2"><CardTitle className="text-base">{t("aiReportDetails.improvementPath.title")}</CardTitle></CardHeader>
             <CardContent className="prose prose-sm max-w-none text-muted-foreground">
               <ReactMarkdown remarkPlugins={[remarkBreaks]}>{report.improvement_path}</ReactMarkdown>
             </CardContent>
@@ -546,7 +558,7 @@ export default function AIReportDetailsPage({
           <Card>
             <CardHeader className="pb-2">
               <CardTitle className="text-base flex items-center gap-2">
-                🃏 Flashcards <span className="text-sm font-normal text-muted-foreground">({flashIdx + 1}/{report.flashcards.length})</span>
+                {t("aiReportDetails.flashcards.title")} <span className="text-sm font-normal text-muted-foreground">({flashIdx + 1}/{report.flashcards.length})</span>
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -557,7 +569,7 @@ export default function AIReportDetailsPage({
                 >
                   <div className="text-center">
                     <p className={`text-xs font-semibold uppercase tracking-wider mb-2 ${showAnswer ? "text-emerald-600" : "text-violet-600"}`}>
-                      {showAnswer ? "Answer" : "Question"}
+                      {showAnswer ? t("aiReportDetails.flashcards.answer") : t("aiReportDetails.flashcards.question")}
                     </p>
                     <div className="prose prose-sm max-w-none">
                       <ReactMarkdown remarkPlugins={[remarkBreaks]}>{showAnswer ? fc.back : fc.front}</ReactMarkdown>
@@ -568,7 +580,7 @@ export default function AIReportDetailsPage({
                   <Button variant="outline" size="sm" onClick={() => { setFlashIdx(p => p === 0 ? report.flashcards.length - 1 : p - 1); setShowAnswer(false); }}
                     disabled={report.flashcards.length <= 1}><CaretLeft size={16} /></Button>
                   <Button variant="outline" size="sm" onClick={() => setShowAnswer(!showAnswer)}>
-                    <ArrowCounterClockwise size={14} className="me-1" /> Flip
+                    <ArrowCounterClockwise size={14} className="me-1" /> {t("aiReportDetails.flashcards.flip")}
                   </Button>
                   <Button variant="outline" size="sm" onClick={() => { setFlashIdx(p => p === report.flashcards.length - 1 ? 0 : p + 1); setShowAnswer(false); }}
                     disabled={report.flashcards.length <= 1}><CaretRight size={16} /></Button>

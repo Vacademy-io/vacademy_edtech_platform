@@ -1,0 +1,45 @@
+{
+    "title": "Admissions",
+    "empty": "Aucune admission sur cette période.",
+    "column": {
+        "admissions": "Admissions",
+        "fees": "Frais",
+        "paid": "Payé",
+        "due": "Dû",
+        "share": "% du total",
+        "month": "Mois",
+        "source": "Source",
+        "courseTag": "Groupe de cours",
+        "course": "Cours",
+        "counsellor": "Conseiller",
+        "total": "Total"
+    },
+    "kpi": {
+        "multiCourse_one": "{{count}} élève a suivi plus d'un cours",
+        "multiCourse_other": "{{count}} élèves ont suivi plus d'un cours",
+        "feesSub": "Plans de frais de ces admissions, après remise",
+        "collected": "Encaissé",
+        "collectedSub": "Part payée des frais",
+        "avgFee": "Frais moyens par admission"
+    },
+    "sections": {
+        "byMonth": "Admissions par mois",
+        "bySource": "Admissions par source",
+        "byCourseTag": "Admissions par groupe de cours",
+        "byCourse": "Admissions par cours",
+        "byCounsellor": "Admissions par conseiller",
+        "byField": "Admissions par {{field}}",
+        "byFieldUnset": "Admissions par agence"
+    },
+    "labels": {
+        "noTag": "Sans groupe",
+        "noEnquiry": "Sans demande",
+        "unassigned": "Non attribué",
+        "notSet": "Non renseigné"
+    },
+    "footnotes": {
+        "mainCourse": "Un élève inscrit à plusieurs cours en même temps est compté une fois, dans le cours dont le groupe vient en premier dans Paramètres → Rapports → Ordre des groupes de cours (sinon le premier cours inscrit). Les groupes de cours sont les tags de cours.",
+        "fieldHint": "Choisissez le champ selon lequel répartir les admissions (par exemple l'agence) dans Paramètres → Rapports → Champ des admissions.",
+        "definitions": "Une admission est un élève inscrit pendant un mois de la période choisie. Les frais sont ses plans de frais pour ces inscriptions (hors échéances annulées, invalidées ou exonérées) ; payé est ce qui a été encaissé à ce jour ; dû = frais moins payé."
+    }
+}

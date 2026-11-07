@@ -1,0 +1,19 @@
+{
+    "header": {
+        "title": "Centre d'apprentissage",
+        "description": "Gérez les {{courseTerm}}s, les {{sessionTerm}}s et les supports pédagogiques"
+    },
+    "features": {
+        "studyLibrary": {
+            "title": "Bibliothèque d'étude",
+            "description": "Accédez aux supports de cours et aux ressources"
+        },
+        "liveSessions": {
+            "description": "Gérer les sessions d'enseignement en direct"
+        },
+        "batchManagement": {
+            "titleTemplate": "Gestion des {{term}}",
+            "description": "Organiser les élèves en groupes"
+        }
+    }
+}

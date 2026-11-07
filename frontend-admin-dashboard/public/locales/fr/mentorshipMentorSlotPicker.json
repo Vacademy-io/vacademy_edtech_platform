@@ -1,0 +1,8 @@
+{
+    "noBookingPage": "Ce mentor n'a pas encore de page de réservation, il n'y a donc aucun créneau à choisir. Activez d'abord la réservation pour lui depuis la liste des mentors.",
+    "previousWeek": "Semaine précédente",
+    "nextWeek": "Semaine suivante",
+    "couldNotLoadSlots": "Impossible de charger les créneaux disponibles.",
+    "retry": "Réessayer",
+    "noFreeSlots": "Aucun créneau libre cette semaine. Essayez la semaine suivante, ou élargissez la disponibilité du mentor."
+}

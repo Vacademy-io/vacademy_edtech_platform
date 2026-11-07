@@ -1,0 +1,11 @@
+{
+    "presets": {
+        "today": "आज",
+        "week": "7 दिन",
+        "fortnight": "15 दिन",
+        "month": "30 दिन"
+    },
+    "custom": "कस्टम",
+    "startDate": "आरंभ तिथि",
+    "endDate": "समाप्ति तिथि"
+}

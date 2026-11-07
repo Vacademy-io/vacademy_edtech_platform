@@ -1,5 +1,6 @@
 import { MyDialog } from '@/components/design-system/dialog';
 import { toast } from 'sonner';
+import { useTranslation } from 'react-i18next';
 import { useEnrollRequestsDialogStore } from '../bulk-actions-store';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { AxiosError } from 'axios';
@@ -18,6 +19,7 @@ export interface EnrollRequestAcceptData {
 }
 
 export const AcceptRequestDialog = () => {
+    const { t } = useTranslation('manageStudentsAcceptRequestDialog');
     const { isAcceptRequestOpen, bulkActionInfo, selectedStudent, closeAllDialogs } =
         useEnrollRequestsDialogStore();
     const queryClient = useQueryClient();
@@ -51,7 +53,7 @@ export const AcceptRequestDialog = () => {
             return getApproveEnrollmentRequestsData({ enrollRequestData });
         },
         onSuccess: () => {
-            toast.success('Request accepted successfully');
+            toast.success(t('toasts.acceptSuccess'));
             // Refresh the students list so approved learners drop out of the
             // "Pending for Approval" view (matches the useBulkOperations convention).
             queryClient.invalidateQueries({ queryKey: ['students'] });
@@ -59,9 +61,9 @@ export const AcceptRequestDialog = () => {
         },
         onError: (error: unknown) => {
             if (error instanceof AxiosError) {
-                toast.error('Failed to accept request');
+                toast.error(t('toasts.acceptFailed'));
             } else {
-                toast.error('An unexpected error occurred', {
+                toast.error(t('toasts.unexpectedError'), {
                     className: 'error-toast',
                     duration: 2000,
                 });
@@ -85,7 +87,7 @@ export const AcceptRequestDialog = () => {
 
     return (
         <MyDialog
-            heading="Accept Request"
+            heading={t('dialog.title')}
             open={isAcceptRequestOpen}
             onOpenChange={closeAllDialogs}
             footer={
@@ -94,36 +96,34 @@ export const AcceptRequestDialog = () => {
                         className="rounded-lg border border-neutral-300 px-4 py-2 text-neutral-600 hover:bg-neutral-100"
                         onClick={closeAllDialogs}
                     >
-                        Cancel
+                        {t('buttons.cancel')}
                     </button>
                     <button
                         className="hover:bg-primary-600 rounded-lg bg-primary-500 px-4 py-2 text-white"
                         onClick={selectedStudent ? handleAcceptRequest : handleAcceptRequestBulk}
                     >
-                        Accept Request
+                        {t('buttons.accept')}
                     </button>
                 </div>
             }
         >
             <div className="flex flex-col gap-4">
                 <p className="text-neutral-600">
-                    Are you sure you want to accept request for{' '}
-                    {selectedStudent?.full_name || bulkActionInfo?.displayText}?
+                    {t('dialog.confirmText', {
+                        name: selectedStudent?.full_name || bulkActionInfo?.displayText,
+                    })}
                 </p>
                 {pendingForApprovalStudentsBulk && pendingForApprovalStudentsBulk?.length > 0 && (
                     <p className="text-sm text-red-500">
-                        *Note: Payment is still pending for {pendingForApprovalStudentsBulk?.length}{' '}
-                        students
+                        {t('dialog.paymentPendingBulk', {
+                            count: pendingForApprovalStudentsBulk?.length,
+                        })}
                     </p>
                 )}
                 {selectedStudent && selectedStudent.payment_status === 'PAYMENT_PENDING' && (
-                    <p className="text-sm text-red-500">
-                        *Note: Payment is still pending for this student
-                    </p>
+                    <p className="text-sm text-red-500">{t('dialog.paymentPendingSingle')}</p>
                 )}
-                <p className="text-sm text-neutral-500">
-                    This will accept the request to the selected students via email.
-                </p>
+                <p className="text-sm text-neutral-500">{t('dialog.emailNotice')}</p>
             </div>
         </MyDialog>
     );

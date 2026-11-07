@@ -1,0 +1,17 @@
+{
+    "android": "Android",
+    "appNameSuffix": "{{platformName}} app",
+    "back": "Back",
+    "getTheAdminApp": "Get the Admin app",
+    "installAppDescription": "Install the Vacademy Admin app on your phone. Choose your platform to get the download link over WhatsApp.",
+    "invalidMobileNumber": "Enter a valid mobile number (with country code for non-India numbers).",
+    "ios": "iOS",
+    "linkSendFailedToast": "Could not send the link. Please try again.",
+    "linkSentToast": "Link sent — check WhatsApp on that number.",
+    "mobileNumberLabel": "Mobile number",
+    "mobileNumberPlaceholder": "e.g. 9876543210",
+    "sendLink": "Send link",
+    "sendOverWhatsappNote": "We'll send the app link to your mobile number over WhatsApp.",
+    "sendTheAppLink": "Send the app link",
+    "sending": "Sending…"
+}

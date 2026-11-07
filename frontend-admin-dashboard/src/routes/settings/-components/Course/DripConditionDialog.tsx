@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { MyDialog } from '@/components/design-system/dialog';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
@@ -25,7 +26,7 @@ import {
     createDefaultRule,
     getRuleTypeDisplayName,
 } from '@/utils/drip-conditions';
-import { AlertTriangle, Trash2, Calendar, Target, Lock, Eye } from 'lucide-react';
+import { Warning, Trash, Calendar, Target, Lock, Eye } from '@phosphor-icons/react';
 import { MyButton } from '@/components/design-system/button';
 import { useInstituteDetailsStore } from '@/stores/students/students-list/useInstituteDetailsStore';
 import { getTerminology, getTerminologyPlural } from '@/components/common/layout-container/sidebar/utils';
@@ -46,6 +47,7 @@ export const DripConditionDialog: React.FC<DripConditionDialogProps> = ({
     condition,
     mode,
 }) => {
+    const { t } = useTranslation('settingsDripCondition');
     const [formData, setFormData] = useState<Partial<DripCondition>>(createEmptyDripCondition());
     const [errors, setErrors] = useState<string[]>([]);
     const { getCourseFromPackage } = useInstituteDetailsStore();
@@ -135,28 +137,28 @@ export const DripConditionDialog: React.FC<DripConditionDialogProps> = ({
         <MyDialog
             open={open}
             onOpenChange={onClose}
-            heading={mode === 'add' ? 'Add Drip Condition' : 'Edit Drip Condition'}
+            heading={mode === 'add' ? t('dialog.title.add') : t('dialog.title.edit')}
             dialogWidth="max-w-4xl"
             footer={
                 <div className="flex justify-end gap-2">
                     <Button variant="outline" onClick={onClose}>
-                        Cancel
+                        {t('footer.cancel')}
                     </Button>
                     <MyButton onClick={handleSave} className="bg-primary-500">
-                        {mode === 'add' ? 'Add Condition' : 'Save Changes'}
+                        {mode === 'add' ? t('footer.addCondition') : t('footer.saveChanges')}
                     </MyButton>
                 </div>
             }
         >
             <div className="space-y-6">
                 <div className="text-sm text-muted-foreground">
-                    Configure content release rules for specific packages, chapters, or slides.
+                    {t('dialog.description')}
                 </div>
 
                 {/* Error Display */}
                 {errors.length > 0 && (
                     <Alert variant="destructive">
-                        <AlertTriangle className="size-4" />
+                        <Warning className="size-4" />
                         <AlertDescription>
                             <ul className="list-disc pl-4">
                                 {errors.map((error, index) => (
@@ -172,7 +174,7 @@ export const DripConditionDialog: React.FC<DripConditionDialogProps> = ({
                     <div className="grid grid-cols-2 gap-4">
                         {/* Level Selection */}
                         <div className="space-y-2">
-                            <Label htmlFor="level">Content Level</Label>
+                            <Label htmlFor="level">{t('basicSettings.level.label')}</Label>
                             <Select
                                 value={formData.level}
                                 onValueChange={(value) =>
@@ -184,13 +186,13 @@ export const DripConditionDialog: React.FC<DripConditionDialogProps> = ({
                                 }
                             >
                                 <SelectTrigger>
-                                    <SelectValue placeholder="Select level" />
+                                    <SelectValue placeholder={t('basicSettings.level.placeholder')} />
                                 </SelectTrigger>
                                 <SelectContent>
                                     <SelectItem value="package">
                                         <div className="flex items-center gap-2">
                                             <Target className="size-4" />
-                                            Package (Template)
+                                            {t('basicSettings.level.package')}
                                         </div>
                                     </SelectItem>
                                     <SelectItem value="chapter">
@@ -213,10 +215,20 @@ export const DripConditionDialog: React.FC<DripConditionDialogProps> = ({
                         <div className="space-y-2">
                             <Label htmlFor="level-id">
                                 {formData.level === 'package'
-                                    ? 'Package'
+                                    ? t('basicSettings.levelId.packageLabel')
                                     : formData.level === 'chapter'
-                                      ? `${getTerminology(ContentTerms.Chapter, SystemTerms.Chapter)} ID`
-                                      : `${getTerminology(ContentTerms.Slide, SystemTerms.Slide)} ID`}
+                                      ? t('basicSettings.levelId.idLabel', {
+                                            term: getTerminology(
+                                                ContentTerms.Chapter,
+                                                SystemTerms.Chapter
+                                            ),
+                                        })
+                                      : t('basicSettings.levelId.idLabel', {
+                                            term: getTerminology(
+                                                ContentTerms.Slide,
+                                                SystemTerms.Slide
+                                            ),
+                                        })}
                             </Label>
                             {formData.level === 'package' ? (
                                 <Select
@@ -229,7 +241,9 @@ export const DripConditionDialog: React.FC<DripConditionDialogProps> = ({
                                     }
                                 >
                                     <SelectTrigger>
-                                        <SelectValue placeholder="Select package" />
+                                        <SelectValue
+                                            placeholder={t('basicSettings.levelId.packagePlaceholder')}
+                                        />
                                     </SelectTrigger>
                                     <SelectContent>
                                         {packageList.map((pkg) => (
@@ -242,7 +256,7 @@ export const DripConditionDialog: React.FC<DripConditionDialogProps> = ({
                             ) : (
                                 <Input
                                     id="level-id"
-                                    placeholder="Enter ID"
+                                    placeholder={t('basicSettings.levelId.idPlaceholder')}
                                     value={formData.level_id}
                                     onChange={(e) =>
                                         setFormData((prev) => ({
@@ -258,7 +272,7 @@ export const DripConditionDialog: React.FC<DripConditionDialogProps> = ({
                     {/* Target (for package level only) */}
                     {formData.level === 'package' && (
                         <div className="space-y-2">
-                            <Label htmlFor="target">Apply To</Label>
+                            <Label htmlFor="target">{t('basicSettings.target.label')}</Label>
                             <Select
                                 value={formData.drip_condition?.[0]?.target}
                                 onValueChange={(value) =>
@@ -278,23 +292,36 @@ export const DripConditionDialog: React.FC<DripConditionDialogProps> = ({
                                 }
                             >
                                 <SelectTrigger>
-                                    <SelectValue placeholder="Select target" />
+                                    <SelectValue placeholder={t('basicSettings.target.placeholder')} />
                                 </SelectTrigger>
                                 <SelectContent>
-                                    <SelectItem value="chapter">{`All ${getTerminologyPlural(ContentTerms.Chapter, SystemTerms.Chapter)}`}</SelectItem>
-                                    <SelectItem value="slide">{`All ${getTerminologyPlural(ContentTerms.Slide, SystemTerms.Slide)}`}</SelectItem>
+                                    <SelectItem value="chapter">
+                                        {t('basicSettings.target.allItems', {
+                                            term: getTerminologyPlural(
+                                                ContentTerms.Chapter,
+                                                SystemTerms.Chapter
+                                            ),
+                                        })}
+                                    </SelectItem>
+                                    <SelectItem value="slide">
+                                        {t('basicSettings.target.allItems', {
+                                            term: getTerminologyPlural(
+                                                ContentTerms.Slide,
+                                                SystemTerms.Slide
+                                            ),
+                                        })}
+                                    </SelectItem>
                                 </SelectContent>
                             </Select>
                             <p className="text-xs text-muted-foreground">
-                                This drip condition will apply as a template to all items of this
-                                type within the package.
+                                {t('basicSettings.target.hint')}
                             </p>
                         </div>
                     )}
 
                     {/* Behavior */}
                     <div className="space-y-2">
-                        <Label htmlFor="behavior">Behavior</Label>
+                        <Label htmlFor="behavior">{t('basicSettings.behavior.label')}</Label>
                         <Select
                             value={formData.drip_condition?.[0]?.behavior}
                             onValueChange={(value) =>
@@ -317,26 +344,26 @@ export const DripConditionDialog: React.FC<DripConditionDialogProps> = ({
                             }
                         >
                             <SelectTrigger>
-                                <SelectValue placeholder="Select behavior" />
+                                <SelectValue placeholder={t('basicSettings.behavior.placeholder')} />
                             </SelectTrigger>
                             <SelectContent>
                                 <SelectItem value="lock">
                                     <div className="flex items-center gap-2">
                                         <Lock className="size-4" />
-                                        Lock - Visible but not accessible
+                                        {t('basicSettings.behavior.lock')}
                                     </div>
                                 </SelectItem>
                                 <SelectItem value="hide">
                                     <div className="flex items-center gap-2">
                                         <Eye className="size-4" />
-                                        Hide - Completely hidden
+                                        {t('basicSettings.behavior.hide')}
                                     </div>
                                 </SelectItem>
                                 <SelectItem value="both">
                                     <div className="flex items-center gap-2">
                                         <Lock className="size-4" />
                                         <Eye className="size-4" />
-                                        Both - Progressive unlock
+                                        {t('basicSettings.behavior.both')}
                                     </div>
                                 </SelectItem>
                             </SelectContent>
@@ -346,9 +373,9 @@ export const DripConditionDialog: React.FC<DripConditionDialogProps> = ({
                     {/* Enabled Toggle */}
                     <div className="flex items-center justify-between rounded-lg border p-4">
                         <div className="space-y-0.5">
-                            <Label>Enable Condition</Label>
+                            <Label>{t('basicSettings.enabled.label')}</Label>
                             <p className="text-sm text-muted-foreground">
-                                Activate this drip condition
+                                {t('basicSettings.enabled.hint')}
                             </p>
                         </div>
                         <Switch
@@ -364,25 +391,29 @@ export const DripConditionDialog: React.FC<DripConditionDialogProps> = ({
                 <div className="space-y-4">
                     <div className="flex items-center justify-between">
                         <div>
-                            <Label className="text-base">Rules</Label>
-                            <p className="text-sm text-muted-foreground">
-                                All rules must be satisfied for content to unlock
-                            </p>
+                            <Label className="text-base">{t('rules.title')}</Label>
+                            <p className="text-sm text-muted-foreground">{t('rules.hint')}</p>
                         </div>
                         <Select onValueChange={(value) => addRule(value as DripConditionRuleType)}>
                             <SelectTrigger className="w-48">
-                                <SelectValue placeholder="Add Rule" />
+                                <SelectValue placeholder={t('rules.addPlaceholder')} />
                             </SelectTrigger>
                             <SelectContent>
                                 <SelectItem value="date_based">
                                     <div className="flex items-center gap-2">
                                         <Calendar className="size-4" />
-                                        Date-Based
+                                        {t('rules.types.dateBased')}
                                     </div>
                                 </SelectItem>
-                                <SelectItem value="completion_based">Completion-Based</SelectItem>
-                                <SelectItem value="prerequisite">Prerequisite</SelectItem>
-                                <SelectItem value="sequential">Sequential</SelectItem>
+                                <SelectItem value="completion_based">
+                                    {t('rules.types.completionBased')}
+                                </SelectItem>
+                                <SelectItem value="prerequisite">
+                                    {t('rules.types.prerequisite')}
+                                </SelectItem>
+                                <SelectItem value="sequential">
+                                    {t('rules.types.sequential')}
+                                </SelectItem>
                             </SelectContent>
                         </Select>
                     </div>
@@ -403,9 +434,7 @@ export const DripConditionDialog: React.FC<DripConditionDialogProps> = ({
 
                         {formData.drip_condition?.[0]?.rules.length === 0 && (
                             <div className="rounded-lg border border-dashed p-8 text-center">
-                                <p className="text-sm text-muted-foreground">
-                                    No rules added yet. Add at least one rule to continue.
-                                </p>
+                                <p className="text-sm text-muted-foreground">{t('rules.empty')}</p>
                             </div>
                         )}
                     </div>
@@ -424,6 +453,7 @@ interface RuleEditorProps {
 }
 
 const RuleEditor: React.FC<RuleEditorProps> = ({ rule, index, onUpdate, onRemove }) => {
+    const { t } = useTranslation('settingsDripCondition');
     const updateParams = (key: string, value: string | number | string[]) => {
         onUpdate(index, {
             ...rule,
@@ -444,14 +474,14 @@ const RuleEditor: React.FC<RuleEditorProps> = ({ rule, index, onUpdate, onRemove
                     onClick={() => onRemove(index)}
                     className="size-8 p-0 text-red-600 hover:bg-red-50"
                 >
-                    <Trash2 className="size-4" />
+                    <Trash className="size-4" />
                 </Button>
             </div>
 
             {/* Date-Based Rule */}
             {rule.type === 'date_based' && (
                 <div className="space-y-2">
-                    <Label>Unlock Date & Time</Label>
+                    <Label>{t('ruleEditor.dateBased.label')}</Label>
                     <Input
                         type="datetime-local"
                         value={
@@ -472,7 +502,7 @@ const RuleEditor: React.FC<RuleEditorProps> = ({ rule, index, onUpdate, onRemove
             {rule.type === 'completion_based' && (
                 <div className="space-y-3">
                     <div className="space-y-2">
-                        <Label>Metric Type</Label>
+                        <Label>{t('ruleEditor.completionBased.metricLabel')}</Label>
                         <Select
                             value={(rule.params as { metric: string }).metric}
                             onValueChange={(value) => updateParams('metric', value)}
@@ -481,9 +511,11 @@ const RuleEditor: React.FC<RuleEditorProps> = ({ rule, index, onUpdate, onRemove
                                 <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
-                                <SelectItem value="average_of_all">Average of All Items</SelectItem>
+                                <SelectItem value="average_of_all">
+                                    {t('ruleEditor.completionBased.averageOfAll')}
+                                </SelectItem>
                                 <SelectItem value="average_of_last_n">
-                                    Average of Last N Items
+                                    {t('ruleEditor.completionBased.averageOfLastN')}
                                 </SelectItem>
                             </SelectContent>
                         </Select>
@@ -491,7 +523,7 @@ const RuleEditor: React.FC<RuleEditorProps> = ({ rule, index, onUpdate, onRemove
 
                     {(rule.params as { metric: string }).metric === 'average_of_last_n' && (
                         <div className="space-y-2">
-                            <Label>Number of Items (N)</Label>
+                            <Label>{t('ruleEditor.completionBased.countLabel')}</Label>
                             <Input
                                 type="number"
                                 min="1"
@@ -502,7 +534,7 @@ const RuleEditor: React.FC<RuleEditorProps> = ({ rule, index, onUpdate, onRemove
                     )}
 
                     <div className="space-y-2">
-                        <Label>Threshold (%)</Label>
+                        <Label>{t('ruleEditor.completionBased.thresholdLabel')}</Label>
                         <Input
                             type="number"
                             min="0"
@@ -518,7 +550,7 @@ const RuleEditor: React.FC<RuleEditorProps> = ({ rule, index, onUpdate, onRemove
             {rule.type === 'prerequisite' && (
                 <div className="space-y-3">
                     <div className="space-y-2">
-                        <Label>Prerequisite Type</Label>
+                        <Label>{t('ruleEditor.prerequisite.typeLabel')}</Label>
                         <Select
                             value={
                                 (rule.params as { required_chapters?: string[] }).required_chapters
@@ -553,16 +585,30 @@ const RuleEditor: React.FC<RuleEditorProps> = ({ rule, index, onUpdate, onRemove
                                 <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
-                                <SelectItem value="chapters">{`Required ${getTerminologyPlural(ContentTerms.Chapter, SystemTerms.Chapter)}`}</SelectItem>
-                                <SelectItem value="slides">{`Required ${getTerminologyPlural(ContentTerms.Slide, SystemTerms.Slide)}`}</SelectItem>
+                                <SelectItem value="chapters">
+                                    {t('ruleEditor.prerequisite.requiredItems', {
+                                        term: getTerminologyPlural(
+                                            ContentTerms.Chapter,
+                                            SystemTerms.Chapter
+                                        ),
+                                    })}
+                                </SelectItem>
+                                <SelectItem value="slides">
+                                    {t('ruleEditor.prerequisite.requiredItems', {
+                                        term: getTerminologyPlural(
+                                            ContentTerms.Slide,
+                                            SystemTerms.Slide
+                                        ),
+                                    })}
+                                </SelectItem>
                             </SelectContent>
                         </Select>
                     </div>
 
                     <div className="space-y-2">
-                        <Label>Item IDs (comma-separated)</Label>
+                        <Label>{t('ruleEditor.prerequisite.itemIdsLabel')}</Label>
                         <Input
-                            placeholder="chapter-1, chapter-2, chapter-3"
+                            placeholder={t('ruleEditor.prerequisite.itemIdsPlaceholder')}
                             value={
                                 (
                                     rule.params as {
@@ -593,7 +639,7 @@ const RuleEditor: React.FC<RuleEditorProps> = ({ rule, index, onUpdate, onRemove
                     </div>
 
                     <div className="space-y-2">
-                        <Label>Completion Threshold (%)</Label>
+                        <Label>{t('ruleEditor.prerequisite.thresholdLabel')}</Label>
                         <Input
                             type="number"
                             min="0"
@@ -608,7 +654,7 @@ const RuleEditor: React.FC<RuleEditorProps> = ({ rule, index, onUpdate, onRemove
             {/* Sequential Rule */}
             {rule.type === 'sequential' && (
                 <div className="space-y-2">
-                    <Label>Completion Threshold (%)</Label>
+                    <Label>{t('ruleEditor.sequential.thresholdLabel')}</Label>
                     <Input
                         type="number"
                         min="0"
@@ -617,7 +663,7 @@ const RuleEditor: React.FC<RuleEditorProps> = ({ rule, index, onUpdate, onRemove
                         onChange={(e) => updateParams('threshold', parseInt(e.target.value))}
                     />
                     <p className="text-xs text-muted-foreground">
-                        Previous item must be completed to this threshold
+                        {t('ruleEditor.sequential.hint')}
                     </p>
                 </div>
             )}

@@ -1,0 +1,81 @@
+{
+    "dialog": {
+        "title": "Configurer le workflow",
+        "description": "Configurez un message automatique pour <bold>« {{audienceName}} »</bold>. Pour des flux plus complexes (délais, conditions, plusieurs étapes), utilisez le générateur de workflow complet."
+    },
+    "kind": {
+        "label": "Type de workflow",
+        "confirmation": {
+            "title": "Confirmation",
+            "description": "Envoyé immédiatement lorsqu'un prospect soumet le formulaire."
+        },
+        "followup": {
+            "title": "Relance",
+            "description": "Envoyé N jours après qu'un prospect soumette le formulaire."
+        }
+    },
+    "fields": {
+        "followupDays": {
+            "label": "Envoyer la relance combien de jours après la soumission ?",
+            "helper": "Le workflow s'exécute quotidiennement à 9h00 (heure de l'Inde) et envoie un message aux prospects dont la date de soumission remonte exactement à ce nombre de jours. Pour envoyer sur plusieurs jours (par ex. jour 3 ET jour 7), créez des workflows distincts pour chacun."
+        },
+        "name": {
+            "label": "Nom du workflow",
+            "placeholder": "ex. E-mail de bienvenue pour les nouveaux prospects"
+        },
+        "description": {
+            "label": "Description",
+            "optional": "(facultatif)",
+            "placeholder": "Que fait ce workflow ?"
+        },
+        "channel": {
+            "label": "Envoyer via",
+            "email": "E-mail uniquement",
+            "whatsapp": "WhatsApp uniquement",
+            "both": "E-mail + WhatsApp",
+            "helper": "Touchez les prospects par e-mail, WhatsApp, ou les deux."
+        },
+        "template": {
+            "label": "Modèle d'e-mail",
+            "loading": "Chargement des modèles...",
+            "placeholder": "-- Sélectionner un modèle --",
+            "noneFound": "Aucun modèle d'e-mail trouvé. Créez-en un dans la section Communications d'abord.",
+            "untitledFallback": "Sans titre"
+        },
+        "whatsappTemplate": {
+            "label": "Modèle WhatsApp",
+            "placeholder": "-- Sélectionner un modèle WhatsApp --",
+            "noneFound": "Aucun modèle WhatsApp approuvé trouvé. Ils sont synchronisés depuis Meta — ouvrez Communication → Modèles WhatsApp et lancez la synchronisation, ou faites d'abord approuver le modèle dans Meta.",
+            "helper": "Ses variables sont renseignées automatiquement à partir des champs de chaque prospect."
+        }
+    },
+    "nameSuggestion": {
+        "confirmation": "{{audienceName}} — confirmation",
+        "followup_one": "{{audienceName}} — relance après {{count}} jour",
+        "followup_many": "{{audienceName}} — relance après {{count}} jours",
+        "followup_other": "{{audienceName}} — relance après {{count}} jours"
+    },
+    "actions": {
+        "cancel": "Annuler",
+        "submit": "Créer le workflow",
+        "submitting": "Création en cours..."
+    },
+    "toast": {
+        "success": "Workflow créé",
+        "errorFallback": "Échec de la création du workflow"
+    },
+    "dto": {
+        "confirmation": {
+            "descriptionFallback": "Envoyer un message de confirmation lorsqu'un prospect soumet « {{audienceName}} »",
+            "triggerNodeName": "Déclencheur : formulaire d'audience soumis"
+        },
+        "followup": {
+            "descriptionFallback_one": "Envoyer un message de relance aux prospects ayant soumis « {{audienceName}} » il y a exactement {{count}} jour",
+            "descriptionFallback_many": "Envoyer un message de relance aux prospects ayant soumis « {{audienceName}} » il y a exactement {{count}} jours",
+            "descriptionFallback_other": "Envoyer un message de relance aux prospects ayant soumis « {{audienceName}} » il y a exactement {{count}} jours",
+            "queryNodeName": "Récupérer les prospects récents"
+        },
+        "sendNodeName": "Envoyer : {{templateName}}",
+        "sendWhatsappNodeName": "WhatsApp : {{templateName}}"
+    }
+}

@@ -22,6 +22,7 @@ import vacademy.io.auth_service.feature.notification.service.NotificationService
 import vacademy.io.auth_service.feature.user.util.RandomCredentialGenerator;
 import vacademy.io.common.auth.entity.*;
 import vacademy.io.common.auth.enums.UserRoleStatus;
+import vacademy.io.common.auth.service.UserRoleService;
 import vacademy.io.common.auth.repository.UserPermissionRepository;
 import vacademy.io.common.auth.repository.UserRepository;
 import vacademy.io.common.auth.repository.UserRoleRepository;
@@ -76,10 +77,15 @@ public class AdminOAuth2Manager {
 
         List<UserRole> userRoles = userRoleRepository.findByUser(user);
 
-        if (!userRoles.isEmpty()) {
-            userRoleRepository.updateUserRoleStatusByInstituteIdAndUserId(UserRoleStatus.ACTIVE.name(),
-                    userRoles.get(0).getInstituteId(), List.of(user.getId()));
-        }
+        // Accept a pending invite on first Google sign-in — only INVITED rows, and only in an
+        // institute where the user still has access. The old blanket update re-activated every
+        // role in whichever institute came first, which let a disabled member re-enable
+        // themselves just by signing in with Google.
+        userRoles.stream()
+                .filter(UserRoleService::grantsAccess)
+                .findFirst()
+                .ifPresent(role -> userRoleRepository.activateInvitedRolesByInstituteIdAndUserId(
+                        role.getInstituteId(), List.of(user.getId())));
         List<String> userPermissions = userPermissionRepository.findByUserId(user.getId()).stream()
                 .map(UserPermission::getPermissionId).toList();
         RefreshToken refreshToken = refreshTokenService.createRefreshToken(user.getUsername(), "oauth2-client");

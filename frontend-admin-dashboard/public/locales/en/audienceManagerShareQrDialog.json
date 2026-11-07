@@ -1,0 +1,48 @@
+{
+    "dialogTitle": "Share QR Code",
+    "dialogDescription": "Anyone who scans this opens \"{{campaignName}}\" straight away — no app, no login.",
+    "qrTitle": "QR code for {{campaignName}}",
+    "scanPrompt": "Scan with any phone camera to open the form",
+    "linkLabel": "Form link",
+    "shortLink": {
+        "label": "Short link",
+        "generating": "Creating a short link…",
+        "unavailable": "A short link isn't available right now. The form link above works exactly the same.",
+        "useInQr": "Encode the short link in the QR code",
+        "useInQrHint": "Fewer characters means a coarser pattern that scans from further away — but the code then goes through a redirect that can be switched off later."
+    },
+    "missingLink": "This audience list has no shareable link yet. Save the campaign and try again.",
+    "actions": {
+        "copyLink": "Copy link",
+        "copyShortLink": "Copy short link",
+        "copied": "Copied",
+        "downloadPng": "Download PNG",
+        "downloadSvg": "Download SVG",
+        "print": "Print"
+    },
+    "noExpiry": {
+        "title": "This QR code never expires",
+        "body": "It encodes the form's own address rather than a short link, so there is no redirect in between that anyone can switch off. Print it once and it keeps working."
+    },
+    "shortLinkInQr": {
+        "title": "This QR code depends on the short link",
+        "body": "It points at the short link rather than the form itself, so switching that link off later stops every printed copy. For posters and standees, leave this off."
+    },
+    "print": {
+        "eyebrow": "Scan to register",
+        "cta": "Point your phone camera at the code"
+    },
+    "toasts": {
+        "linkCopied": "Form link copied",
+        "copyFailed": "Could not copy the link",
+        "downloaded": "QR code downloaded",
+        "downloadFailed": "Could not generate the QR image",
+        "printFailed": "Could not open the print view",
+        "popupBlocked": "Allow pop-ups for this site to print the QR code",
+        "shortLinkCopied": "Short link copied"
+    },
+    "defaults": {
+        "campaignName": "this audience list",
+        "fileSlug": "audience-form"
+    }
+}

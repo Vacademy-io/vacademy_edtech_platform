@@ -1,6 +1,8 @@
 import { getInstituteId } from '@/constants/helper';
 import { useFileUpload } from '@/hooks/use-file-upload';
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 import {
     handleQueryGetListIndividualTopics,
     handleSortSplitPDF,
@@ -33,34 +35,40 @@ const ACCEPTED_EXTENSIONS = ['pdf', 'doc', 'docx', 'ppt', 'pptx', 'html'];
 type Phase = 'idle' | 'uploading' | 'processing' | 'ready' | 'generating' | 'done';
 type FilterMode = 'topic' | 'pages' | 'questionNo';
 
-const FILTER_OPTIONS: Array<{
+type FilterOption = {
     value: FilterMode;
     label: string;
     description: string;
     placeholder: string;
-}> = [
+};
+
+const buildFilterOptions = (t: TFunction): FilterOption[] => [
     {
         value: 'topic',
-        label: 'Specific topics',
-        description: 'Pull questions tagged to topics you name.',
-        placeholder:
-            'e.g. questions covering photosynthesis, the factors that affect it, and its importance in ecosystems',
+        label: t('filterOptions.topic.label'),
+        description: t('filterOptions.topic.description'),
+        placeholder: t('filterOptions.topic.placeholder'),
     },
     {
         value: 'pages',
-        label: 'Specific pages',
-        description: 'Pull questions from a page range you specify.',
-        placeholder: 'e.g. questions from pages 5–10 covering photosynthesis',
+        label: t('filterOptions.pages.label'),
+        description: t('filterOptions.pages.description'),
+        placeholder: t('filterOptions.pages.placeholder'),
     },
     {
         value: 'questionNo',
-        label: 'A set of question numbers',
-        description: 'Pull a specific set of questions by topic or count.',
-        placeholder: 'e.g. 10 questions focused on photosynthesis',
+        label: t('filterOptions.questionNo.label'),
+        description: t('filterOptions.questionNo.description'),
+        placeholder: t('filterOptions.questionNo.placeholder'),
     },
 ];
 
 const SortAndSplitTopicQuestions = () => {
+    const { t } = useTranslation([
+        'aiCenterSortAndSplitTopicQuestions',
+        'aiCenterQuestionConfigPanel',
+    ]);
+    const FILTER_OPTIONS = useMemo(() => buildFilterOptions(t), [t]);
     const [filterMode, setFilterMode] = useState<FilterMode>('topic');
     const [prompt, setPrompt] = useState('');
     const queryClient = useQueryClient();
@@ -95,13 +103,13 @@ const SortAndSplitTopicQuestions = () => {
     useEffect(() => {
         if (!pendingTaskId || !Array.isArray(recentTasksData)) return;
         const match = recentTasksData.find(
-            (t: AITaskIndividualListInterface) => t.id === pendingTaskId
+            (task: AITaskIndividualListInterface) => task.id === pendingTaskId
         );
         if (!match) return;
         if (match.status === 'COMPLETED') {
             setReadyTask(match);
         } else if (match.status === 'FAILED') {
-            setErrorMessage("We couldn't finish this pull. Want to try again?");
+            setErrorMessage(t('errors.pullFailed'));
             setPendingTaskId(null);
         }
     }, [recentTasksData, pendingTaskId]);
@@ -143,7 +151,7 @@ const SortAndSplitTopicQuestions = () => {
             setLoader(false);
             setKey(null);
             setPhase('idle');
-            setErrorMessage("We couldn't extract these questions. Try refining the description?");
+            setErrorMessage(t('errors.extractFailed'));
         },
     });
 
@@ -157,6 +165,7 @@ const SortAndSplitTopicQuestions = () => {
     const handleGenerate = () => {
         if (!uploadedFilePDFId) return;
         const configPrompt = buildQuestionPrompt(
+            t,
             numQuestions,
             questionType,
             difficulty,
@@ -177,11 +186,11 @@ const SortAndSplitTopicQuestions = () => {
     const processFile = async (file: File) => {
         const ext = file.name.split('.').pop()?.toLowerCase() ?? '';
         if (!ACCEPTED_EXTENSIONS.includes(ext)) {
-            setErrorMessage(`We can't read .${ext} files. Try PDF, Word, or PowerPoint.`);
+            setErrorMessage(t('errors.unsupportedFormat', { ext }));
             return;
         }
         if (!prompt.trim()) {
-            setErrorMessage('Tell us what to pull out first, then drop your file.');
+            setErrorMessage(t('errors.missingPrompt'));
             return;
         }
         setErrorMessage(null);
@@ -197,7 +206,7 @@ const SortAndSplitTopicQuestions = () => {
                 sourceId: 'STUDENTS',
             });
             if (!fileId) {
-                setErrorMessage("Upload didn't complete. Want to try again?");
+                setErrorMessage(t('errors.uploadIncomplete'));
                 resetFile();
                 return;
             }
@@ -207,12 +216,12 @@ const SortAndSplitTopicQuestions = () => {
                 setUploadedFilePDFId(response.pdf_id);
                 setPhase('ready');
             } else {
-                setErrorMessage("We couldn't read this file. Try a different one?");
+                setErrorMessage(t('errors.readFailed'));
                 resetFile();
             }
         } catch (err) {
             console.error(err);
-            setErrorMessage('Something went wrong reading your file. Try again?');
+            setErrorMessage(t('errors.genericFailure'));
             resetFile();
         }
     };
@@ -235,26 +244,23 @@ const SortAndSplitTopicQuestions = () => {
     const isWorking = phase === 'uploading' || phase === 'processing' || phase === 'generating';
     const workingLabel =
         phase === 'uploading'
-            ? 'Reading your file…'
+            ? t('upload.workingUploading')
             : phase === 'processing'
-              ? 'Getting your document ready…'
+              ? t('upload.workingProcessing')
               : phase === 'generating'
-                ? 'Pulling out the questions you asked for — usually ~30 seconds.'
+                ? t('upload.workingGenerating')
                 : '';
 
     return (
         <div className="flex w-full flex-col gap-8 px-4 pb-12 sm:px-8">
             <header className="flex flex-col gap-1">
                 <h1 className="text-2xl font-semibold text-gray-900 sm:text-3xl">
-                    Pull Specific Questions
+                    {t('header.title')}
                 </h1>
-                <p className="text-sm text-gray-500">
-                    Tell us what you want, then drop a question paper. We&apos;ll pull exactly
-                    those questions out.
-                </p>
+                <p className="text-sm text-gray-500">{t('header.subtitle')}</p>
             </header>
 
-            <Section step={1} title="What would you like to pull out?">
+            <Section step={1} title={t('sections.step1Title')}>
                 <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
                     {FILTER_OPTIONS.map((opt) => {
                         const active = opt.value === filterMode;
@@ -286,7 +292,7 @@ const SortAndSplitTopicQuestions = () => {
                 </div>
             </Section>
 
-            <Section step={2} title="Describe what you want">
+            <Section step={2} title={t('sections.step2Title')}>
                 <textarea
                     value={prompt}
                     onChange={(e) => setPrompt(e.target.value)}
@@ -297,7 +303,7 @@ const SortAndSplitTopicQuestions = () => {
                 />
             </Section>
 
-            <Section step={3} title="Drop your file">
+            <Section step={3} title={t('sections.step3Title')}>
                 {!fileChosen ? (
                     <div
                         onDragOver={(e) => {
@@ -318,11 +324,9 @@ const SortAndSplitTopicQuestions = () => {
                         </div>
                         <div className="flex flex-col gap-1">
                             <p className="text-sm font-medium text-gray-900">
-                                Drop your file here, or click to choose
+                                {t('upload.dropTitle')}
                             </p>
-                            <p className="text-xs text-neutral-500">
-                                PDF, Word, or PowerPoint with questions inside.
-                            </p>
+                            <p className="text-xs text-neutral-500">{t('upload.dropSubtitle')}</p>
                         </div>
                     </div>
                 ) : (
@@ -337,11 +341,11 @@ const SortAndSplitTopicQuestions = () => {
                                         {fileName}
                                     </span>
                                     <span className="text-xs text-neutral-500">
-                                        {phase === 'uploading' && 'Uploading…'}
-                                        {phase === 'processing' && 'Reading…'}
-                                        {phase === 'ready' && 'Ready to extract'}
-                                        {phase === 'generating' && 'Extracting…'}
-                                        {phase === 'done' && 'Done'}
+                                        {phase === 'uploading' && t('upload.statusUploading')}
+                                        {phase === 'processing' && t('upload.statusProcessing')}
+                                        {phase === 'ready' && t('upload.statusReady')}
+                                        {phase === 'generating' && t('upload.statusGenerating')}
+                                        {phase === 'done' && t('upload.statusDone')}
                                     </span>
                                 </div>
                             </div>
@@ -350,7 +354,7 @@ const SortAndSplitTopicQuestions = () => {
                                     type="button"
                                     onClick={resetFile}
                                     className="rounded-md p-1.5 text-neutral-400 transition-colors hover:bg-neutral-100 hover:text-neutral-700"
-                                    aria-label="Remove file"
+                                    aria-label={t('upload.removeAriaLabel')}
                                 >
                                     <X size={18} />
                                 </button>
@@ -362,7 +366,7 @@ const SortAndSplitTopicQuestions = () => {
                                 readyTask={readyTask}
                                 openPreview={openPreviewDialog}
                                 setOpenPreview={setOpenPreviewDialog}
-                                heading="Vsmart Organizer"
+                                heading={t('generate.doneHeading')}
                                 onDraftAnother={() => {
                                     setReadyTask(null);
                                     setPendingTaskId(null);
@@ -378,8 +382,8 @@ const SortAndSplitTopicQuestions = () => {
                             />
                         ) : phase === 'generating' || (pendingTaskId && !readyTask) ? (
                             <GeneratingState
-                                title="Pulling out the questions you asked for"
-                                subtitle="Reading and selecting the matching questions. Usually ~30 seconds."
+                                title={t('generate.generatingTitle')}
+                                subtitle={t('generate.generatingSubtitle')}
                             />
                         ) : isWorking ? (
                             <div className="flex items-center gap-3 rounded-xl border border-blue-100 bg-blue-50 p-4">
@@ -397,7 +401,7 @@ const SortAndSplitTopicQuestions = () => {
                                 language={language}
                                 setLanguage={setLanguage}
                                 onSubmit={handleGenerate}
-                                ctaLabel="Pull questions"
+                                ctaLabel={t('generate.ctaLabel')}
                             />
                         ) : null}
                     </div>
@@ -420,14 +424,14 @@ const SortAndSplitTopicQuestions = () => {
 
             <RecentFilesPanel
                 tasks={recentTasks}
-                title="Your recent pulls"
-                fallbackLabel="Extracted set"
-                emptyHint="Your extracted question sets will appear here. Tell us what you want above, then drop a file."
+                title={t('recentFiles.title')}
+                fallbackLabel={t('recentFiles.fallbackLabel')}
+                emptyHint={t('recentFiles.emptyHint')}
                 onOpenAll={() => setEnableTasksDialog(true)}
             />
 
             <AITasksList
-                heading="Vsmart Organizer"
+                heading={t('tasksList.heading')}
                 enableDialog={enableTasksDialog}
                 setEnableDialog={setEnableTasksDialog}
             />

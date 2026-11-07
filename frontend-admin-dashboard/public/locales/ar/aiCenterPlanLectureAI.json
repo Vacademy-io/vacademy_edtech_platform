@@ -1,0 +1,69 @@
+{
+    "header": {
+        "title": "مخطِّط الدروس",
+        "subtitle": "أخبرنا بما ينبغي أن يتعلمه الطلاب، وسنعدّ لك خطة يمكنك تنقيحها."
+    },
+    "steps": {
+        "goal": {
+            "title": "ماذا ينبغي أن يتعلم الطلاب أو يكونوا قادرين على فعله؟",
+            "hint": "كلما كان هدفك أوضح، كانت الخطة أفضل.",
+            "placeholder": "بنهاية هذه المحاضرة، ينبغي أن يفهم الطلاب عملية التمثيل الضوئي وأن يكونوا قادرين على شرح أهميتها في النظام البيئي.",
+            "requiredError": "يرجى وصف ما ينبغي أن يتعلمه الطلاب."
+        },
+        "audience": {
+            "title": "من الذي تُدرّسه، ولأي مدة؟",
+            "classLabel": "الصف",
+            "classPlaceholder": "مثال: الصف الثامن",
+            "classRequiredError": "يرجى إدخال الصف",
+            "durationLabel": "المدة",
+            "hoursPlaceholder": "0",
+            "minutesPlaceholder": "40",
+            "hoursUnit": "ساعات",
+            "minutesUnit": "دقائق"
+        },
+        "refine": {
+            "title": "اضبط الأسلوب",
+            "hint": "اختياري — لقد اخترنا لك إعدادات افتراضية مناسبة.",
+            "teachingStyleLabel": "أسلوب التدريس",
+            "languageLabel": "اللغة",
+            "questionsToggleLabel": "تضمين أسئلة في الخطة",
+            "questionsToggleDescription": "أضِف أسئلة نقاش أو أسئلة للتحقق من الفهم في كل جزء.",
+            "homeworkToggleLabel": "تضمين واجب منزلي",
+            "homeworkToggleDescription": "أضِف واجبًا قصيرًا يمكن للطلاب إنجازه بعد المحاضرة."
+        }
+    },
+    "teachingMethodOptions": {
+        "conceptFirst": "المفهوم أولًا",
+        "storytelling": "سرد قصصي",
+        "problemSolution": "مشكلة ثم حل",
+        "questionLed": "قائم على الأسئلة",
+        "stepByStepTutorial": "درس تعليمي خطوة بخطوة",
+        "gamified": "أسلوب تفاعلي (ألعاب)",
+        "caseBasedLearning": "تعلّم قائم على دراسة حالات"
+    },
+    "languageOptions": {
+        "english": "الإنجليزية",
+        "hindi": "الهندية"
+    },
+    "errors": {
+        "generateFailed": "تعذّر علينا إعداد خطة. هل تريد المحاولة مرة أخرى؟",
+        "taskFailed": "تعذّر علينا إنهاء هذه الخطة. هل تريد المحاولة مرة أخرى؟"
+    },
+    "actions": {
+        "draftMyPlan": "أعدّ خطتي"
+    },
+    "generating": {
+        "title": "جارٍ إعداد خطتك",
+        "subtitle": "يتم تنظيم المحاضرة إلى أجزاء واضحة. يستغرق ذلك عادةً حوالي 30 ثانية."
+    },
+    "draftingDone": {
+        "title": "إليك خطة الدرس التي أعددناها",
+        "subtitle": "افتحها لمراجعة الجدول الزمني أو تعديل أي جزء أو تصديرها."
+    },
+    "recentFiles": {
+        "title": "خططك الأخيرة",
+        "fallbackLabel": "خطة درس",
+        "emptyHint": "ستظهر خطط دروسك هنا. أعدّ خطتك الأولى أعلاه."
+    },
+    "productName": "Vsmart Lecturer"
+}

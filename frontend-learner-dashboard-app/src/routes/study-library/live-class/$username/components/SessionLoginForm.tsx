@@ -36,6 +36,9 @@ import { fetchAndStoreStudentDetails } from "@/services/studentDetails";
 import { getStudentDisplaySettings } from "@/services/student-display-settings";
 import { identifyUser } from "@/lib/analytics";
 import { EMAIL_OTP_VERIFICATION_ENABLED } from "@/constants/feature-flags";
+import { useTranslation } from "react-i18next";
+import { getTerminology } from "@/components/common/layout-container/sidebar/utils";
+import { ContentTerms, SystemTerms } from "@/types/naming-settings";
 
 // Schemas for form validation
 const usernameSchema = z.object({
@@ -88,15 +91,28 @@ interface SessionLoginFormProps {
   onNavigate?: () => void;
   /** Success-toast subtitle; defaults to the live-session wording. */
   successToastDescription?: string;
+  /**
+   * Which passwordless landing route hosts the form (GO, LIVE_CLASS, SUBSCRIPTIONS,
+   * SUB_ORG_LEARNERS, PROFILE_EDIT). Sent with the trusted login so an institute that
+   * requires login codes can let chosen routes keep working from the username alone.
+   */
+  linkRoute?: LoginLinkRoute;
 }
+
+export type LoginLinkRoute = "GO" | "LIVE_CLASS" | "SUBSCRIPTIONS" | "SUB_ORG_LEARNERS" | "PROFILE_EDIT";
 
 export const SessionLoginForm: React.FC<SessionLoginFormProps> = ({
   username: urlUsername,
   instituteId,
   onLoginSuccess,
   onNavigate,
-  successToastDescription = "Welcome to your live session",
+  successToastDescription,
+  linkRoute = "LIVE_CLASS",
 }) => {
+  const { t } = useTranslation("study");
+  const liveSession = getTerminology(ContentTerms.LiveSession, SystemTerms.LiveSession);
+  const resolvedSuccessToastDescription =
+    successToastDescription ?? t("liveClass.loginForm.toast.welcome", { liveSession: liveSession.toLowerCase() });
   const [step, setStep] = useState<"username" | "otp">("username");
   const [userDetails, setUserDetails] = useState<UserDetails | null>(null);
   const [otpValues, setOtpValues] = useState<string[]>(Array(6).fill(""));
@@ -135,10 +151,11 @@ export const SessionLoginForm: React.FC<SessionLoginFormProps> = ({
       // If email OTP verification is disabled, use trusted login
       if (!EMAIL_OTP_VERIFICATION_ENABLED) {
         try {
-          toast.info("Logging in...");
+          toast.info(t("liveClass.loginForm.toast.loggingIn"));
           const response = await axios.post(LOGIN_BY_USERNAME_TRUSTED, {
             username: data.username,
             institute_id: instituteId,
+            route: linkRoute,
           });
 
           if (response.data.accessToken) {
@@ -179,11 +196,11 @@ export const SessionLoginForm: React.FC<SessionLoginFormProps> = ({
               try {
                 await fetchAndStoreStudentDetails(resolvedInstituteId, userId);
               } catch {
-                toast.error("Failed to fetch student details");
+                toast.error(t("liveClass.loginForm.toast.studentDetailsFailed"));
               }
 
-              toast.success("Login successful! Redirecting...", {
-                description: successToastDescription,
+              toast.success(t("liveClass.loginForm.toast.loginSuccessTitle"), {
+                description: resolvedSuccessToastDescription,
               });
 
               if (onNavigate) {
@@ -200,8 +217,16 @@ export const SessionLoginForm: React.FC<SessionLoginFormProps> = ({
           }
         } catch (error) {
           console.error("Trusted login failed:", error);
-          toast.error("Login failed. Please try again later.", {
-            description: "Email service is temporarily unavailable.",
+          // 401 = the institute requires a login code (?lc=) and this link has
+          // none, or its code expired. The root route already tried any code.
+          if (axios.isAxiosError(error) && error.response?.status === 401) {
+            toast.error(t("liveClass.loginForm.toast.linkExpired"), {
+              description: t("liveClass.loginForm.toast.linkExpiredDescription"),
+            });
+            return;
+          }
+          toast.error(t("liveClass.loginForm.toast.loginFailedLater"), {
+            description: t("liveClass.loginForm.toast.emailServiceUnavailable"),
           });
         }
         return;
@@ -215,17 +240,17 @@ export const SessionLoginForm: React.FC<SessionLoginFormProps> = ({
         });
 
         setStep("otp");
-        toast.success("We have sent an OTP! Please check your email.");
+        toast.success(t("liveClass.loginForm.toast.otpSent"));
       } catch (error) {
         console.error("Failed to send OTP:", error);
-        toast.error("Failed to send OTP", {
-          description: "Please try again",
+        toast.error(t("liveClass.loginForm.toast.otpSendFailed"), {
+          description: t("liveClass.loginForm.toast.tryAgain"),
         });
       }
     },
     onError: (error: unknown) => {
       console.error("User lookup error:", error);
-      let errorMessage = "User not found";
+      let errorMessage = t("liveClass.loginForm.toast.userNotFound");
       if (error && typeof error === "object" && "response" in error) {
         const responseError = error as {
           response?: { data?: { message?: string; ex?: string } };
@@ -233,9 +258,9 @@ export const SessionLoginForm: React.FC<SessionLoginFormProps> = ({
         errorMessage =
           responseError.response?.data?.message ||
           responseError.response?.data?.ex ||
-          "User not found";
+          t("liveClass.loginForm.toast.userNotFound");
       }
-      toast.error("Failed to find user", {
+      toast.error(t("liveClass.loginForm.toast.userLookupFailed"), {
         description: errorMessage,
       });
     },
@@ -256,7 +281,7 @@ export const SessionLoginForm: React.FC<SessionLoginFormProps> = ({
   // Handle OTP verification with new API flow
   const handleOtpVerified = async () => {
     if (!userDetails || otpValues.join("").length !== 6) {
-      toast.error("Please enter the complete 6-digit OTP");
+      toast.error(t("liveClass.loginForm.toast.otpIncomplete"));
       return;
     }
 
@@ -270,7 +295,7 @@ export const SessionLoginForm: React.FC<SessionLoginFormProps> = ({
       });
 
       if (response.data.accessToken) {
-        toast.success("OTP verified successfully!");
+        toast.success(t("liveClass.loginForm.toast.otpVerified"));
         // Store tokens
         await setTokenInStorage(
           TokenKey.accessToken,
@@ -304,11 +329,11 @@ export const SessionLoginForm: React.FC<SessionLoginFormProps> = ({
           try {
             await fetchAndStoreStudentDetails(resolvedInstituteId, userId);
           } catch {
-            toast.error("Failed to fetch student details");
+            toast.error(t("liveClass.loginForm.toast.studentDetailsFailed"));
           }
 
-          toast.success("Login successful! Redirecting...", {
-            description: successToastDescription,
+          toast.success(t("liveClass.loginForm.toast.loginSuccessTitle"), {
+            description: resolvedSuccessToastDescription,
           });
 
           // Navigate to live class route (or the host page's own destination)
@@ -324,15 +349,15 @@ export const SessionLoginForm: React.FC<SessionLoginFormProps> = ({
           // Call success callback
           onLoginSuccess();
         } else {
-          toast.error("Invalid user data received");
-          throw new Error("Invalid user data received");
+          toast.error(t("liveClass.loginForm.toast.invalidUserData"));
+          throw new Error(t("liveClass.loginForm.toast.invalidUserData"));
         }
       } else {
-        toast.error("Login failed. Please try again.");
+        toast.error(t("liveClass.loginForm.toast.loginFailedRetry"));
       }
     } catch (error) {
       console.error("Login failed:", error);
-      toast.error("Invalid OTP. Please try again.");
+      toast.error(t("liveClass.loginForm.toast.otpInvalid"));
       // Reset OTP values on error
       setOtpValues(Array(6).fill(""));
       otpInputRefs.current[0]?.focus();
@@ -389,13 +414,13 @@ export const SessionLoginForm: React.FC<SessionLoginFormProps> = ({
     <div className="w-full max-w-md mx-auto space-y-6">
       <div className="text-center space-y-2">
         <h2 className="text-2xl font-semibold text-gray-900">
-          Login to View Sessions
+          {t("liveClass.loginForm.heading")}
         </h2>
         <p className="text-sm text-gray-600">
           {getUserDetailsMutation.isPending && step === "username"
-            ? "Loading user details..."
+            ? t("liveClass.loginForm.loadingUserDetails")
             : step === "username"
-            ? "Enter your username to access the live session"
+            ? t("liveClass.loginForm.subtitle", { liveSession: liveSession.toLowerCase() })
             : ``}
         </p>
       </div>
@@ -411,10 +436,10 @@ export const SessionLoginForm: React.FC<SessionLoginFormProps> = ({
             <Shield className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
             <div>
               <h4 className="font-medium text-blue-800 text-sm">
-                Quick Login Mode
+                {t("liveClass.loginForm.quickLoginTitle")}
               </h4>
               <p className="text-blue-700 text-sm mt-1">
-                You'll be logged in directly without email verification.
+                {t("liveClass.loginForm.quickLoginDescription")}
               </p>
             </div>
           </div>
@@ -429,7 +454,7 @@ export const SessionLoginForm: React.FC<SessionLoginFormProps> = ({
           className="flex flex-col items-center space-y-4"
         >
           <ArrowsClockwise className="w-8 h-8 animate-spin text-gray-600" />
-          <p className="text-sm text-gray-600">Finding user details...</p>
+          <p className="text-sm text-gray-600">{t("liveClass.loginForm.findingUserDetails")}</p>
         </motion.div>
       ) : step === "username" ? (
         <motion.div
@@ -447,14 +472,14 @@ export const SessionLoginForm: React.FC<SessionLoginFormProps> = ({
                 name="username"
                 render={({ field }) => (
                   <FormItem>
-                    <Label htmlFor="username">Username</Label>
+                    <Label htmlFor="username">{t("liveClass.loginForm.usernameLabel")}</Label>
                     <FormControl>
                       <div className="relative">
                         <Input
                           {...field}
                           id="username"
                           type="text"
-                          placeholder="Enter your username"
+                          placeholder={t("liveClass.loginForm.usernamePlaceholder")}
                           className="h-11 pe-10"
                           disabled={getUserDetailsMutation.isPending}
                         />
@@ -474,12 +499,12 @@ export const SessionLoginForm: React.FC<SessionLoginFormProps> = ({
                 {getUserDetailsMutation.isPending ? (
                   <div className="flex items-center space-x-2">
                     <ArrowsClockwise className="w-4 h-4 animate-spin" />
-                    <span>Finding User...</span>
+                    <span>{t("liveClass.loginForm.findingUser")}</span>
                   </div>
                 ) : (
                   <div className="flex items-center space-x-2">
                     <Shield className="w-4 h-4" />
-                    <span>Continue</span>
+                    <span>{t("liveClass.loginForm.continue")}</span>
                   </div>
                 )}
               </Button>
@@ -499,9 +524,9 @@ export const SessionLoginForm: React.FC<SessionLoginFormProps> = ({
               <Shield className="w-6 h-6 text-gray-700" />
             </div>
             <div className="space-y-1">
-              <h3 className="text-lg font-semibold text-gray-900">Enter OTP</h3>
+              <h3 className="text-lg font-semibold text-gray-900">{t("liveClass.loginForm.enterOtp")}</h3>
               <p className="text-sm text-gray-600">
-                We've sent a 6-digit code to{" "}
+                {t("liveClass.loginForm.otpSentTo")}{" "}
                 <span className="font-medium">{userDetails?.email}</span>
               </p>
             </div>
@@ -534,10 +559,10 @@ export const SessionLoginForm: React.FC<SessionLoginFormProps> = ({
               {isVerifyingOtp ? (
                 <>
                   <ArrowsClockwise className="w-4 h-4 me-2 animate-spin" />
-                  Verifying...
+                  {t("liveClass.loginForm.verifying")}
                 </>
               ) : (
-                "Verify & Continue"
+                t("liveClass.loginForm.verifyAndContinue")
               )}
             </Button>
           </div>

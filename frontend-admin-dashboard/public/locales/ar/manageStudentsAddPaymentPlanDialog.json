@@ -1,0 +1,11 @@
+{
+    "errors": {
+        "generic": "خطأ في {{operation}}",
+        "operations": {
+            "savePaymentPlan": "حفظ خطة الدفع"
+        }
+    },
+    "success": {
+        "feePlanCreated": "تم إنشاء خطة الرسوم — اخترها من قائمة الخطط"
+    }
+}

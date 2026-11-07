@@ -1,6 +1,9 @@
 import { createLazyFileRoute, useNavigate, useParams } from '@tanstack/react-router';
+import { ShiftsTodayCard } from './-components/ShiftsTodayCard';
+import { CounsellorsEnhancedHeader } from './-components/CounsellorsEnhancedHeader';
 import { useEffect, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 import { LayoutContainer } from '@/components/common/layout-container/layout-container';
 import { useNavHeadingStore } from '@/stores/layout-container/useNavHeadingStore';
 import { getInstituteId } from '@/constants/helper';
@@ -81,11 +84,12 @@ function isCounsellorsPageEnabled(): boolean {
  * gate-then-page wrapper without duplicating the feature-disabled check.
  */
 export function CounsellorsRouteWrapper() {
+    const { t } = useTranslation('counsellorsIndex');
     if (!isCounsellorsPageEnabled()) {
         return (
             <FeatureDisabledNotice
-                title="Counsellors page is not enabled"
-                settingsLabel="Counsellor workbench"
+                title={t('featureDisabled.title')}
+                settingsLabel={t('featureDisabled.settingsLabel')}
             />
         );
     }
@@ -107,6 +111,7 @@ function RouteComponent() {
  * they land directly on that counsellor's leads + activity.
  */
 export function WorkbenchPage() {
+    const { t } = useTranslation('counsellorsIndex');
     const { setNavHeading } = useNavHeadingStore();
     const instituteId = getInstituteId();
     const queryClient = useQueryClient();
@@ -292,11 +297,11 @@ export function WorkbenchPage() {
             queryClient.invalidateQueries({
                 queryKey: ['workbench-counsellors-candidates', instituteId],
             });
-            toast.success('Marked active');
+            toast.success(t('toast.markedActive'));
         },
         onError: (e) => {
             const msg = (e as { response?: { data?: { ex?: string } } })?.response?.data?.ex;
-            toast.error(msg ?? 'Could not change status');
+            toast.error(msg ?? t('toast.statusChangeError'));
         },
     });
 
@@ -336,7 +341,7 @@ export function WorkbenchPage() {
             setReassignOpen(true);
         } catch (e) {
             const msg = (e as { response?: { data?: { ex?: string } } })?.response?.data?.ex;
-            toast.error(msg ?? 'Could not load open leads');
+            toast.error(msg ?? t('toast.loadLeadsError'));
         } finally {
             setPendingMarkInactiveId(null);
         }
@@ -393,13 +398,13 @@ export function WorkbenchPage() {
         if (!instituteId || !reassignFromUserId) return;
         try {
             await setCounsellorStatus(reassignFromUserId, instituteId, 'INACTIVE');
-            toast.success('Marked inactive');
+            toast.success(t('toast.markedInactive'));
             handleReassignComplete();
             setReassignOpen(false);
             setReassignMarkInactive(false);
         } catch (e) {
             const msg = (e as { response?: { data?: { ex?: string } } })?.response?.data?.ex;
-            toast.error(msg ?? 'Could not mark inactive');
+            toast.error(msg ?? t('toast.markInactiveError'));
         }
     }
 
@@ -423,37 +428,40 @@ export function WorkbenchPage() {
             <div className="mb-5 flex flex-wrap items-end justify-between gap-4">
                 <div>
                     <div className="text-caption text-neutral-500">
-                        {teamQuery.data?.ancestor_names?.join(' › ') || 'Counselling team'}
+                        {teamQuery.data?.ancestor_names?.join(' › ') ||
+                            t('header.breadcrumbFallback')}
                     </div>
                     <h1 className="text-h1 font-medium text-neutral-900">
-                        {teamQuery.data?.team_name ?? 'Counsellors'}
+                        {teamQuery.data?.team_name ?? t('header.titleFallback')}
                     </h1>
-                    <p className="mt-1 text-subtitle text-neutral-500">
-                        Click any card to see that person’s leads and recent activity.
-                    </p>
+                    <p className="mt-1 text-subtitle text-neutral-500">{t('header.subtitle')}</p>
                 </div>
                 <div className="flex flex-wrap gap-2">
-                    <StatChip icon={UsersThree} label="Counsellors" value={totalCounsellors} />
-                    <StatChip icon={Crown} label="Active" value={activeCount} tone="success" />
+                    <StatChip icon={UsersThree} label={t('stats.counsellors')} value={totalCounsellors} />
+                    <StatChip icon={Crown} label={t('stats.active')} value={activeCount} tone="success" />
                     <StatChip
                         icon={ChatCircleText}
-                        label="Assigned leads"
+                        label={t('stats.assignedLeads')}
                         value={totalOpenLeads}
                         tone="primary"
                     />
                 </div>
             </div>
 
+            {/* Summary header. */}
+            <CounsellorsEnhancedHeader counsellors={statSource} />
+            <ShiftsTodayCard counsellors={statSource} />
+
             {/* ── Search + filter bar ────────────────────────────── */}
             <div className="mb-4 flex flex-wrap items-center gap-3">
                 <div className="relative min-w-64 flex-1 sm:flex-none">
                     <MagnifyingGlass
                         size={16}
-                        className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400"
+                        className="absolute start-3 top-1/2 -translate-y-1/2 text-neutral-400"
                     />
                     <input
-                        className="w-full rounded-md border border-neutral-300 py-2 pl-9 pr-3 text-body"
-                        placeholder="Search by name or email…"
+                        className="w-full rounded-md border border-neutral-300 py-2 ps-9 pe-3 text-body"
+                        placeholder={t('search.placeholder')}
                         value={searchInput}
                         onChange={(e) => setSearchInput(e.target.value)}
                     />
@@ -471,7 +479,7 @@ export function WorkbenchPage() {
                                     : 'bg-white text-neutral-700 hover:bg-neutral-50'
                             )}
                         >
-                            {s}
+                            {t(`statusFilter.${s}`)}
                         </button>
                     ))}
                 </div>
@@ -481,17 +489,17 @@ export function WorkbenchPage() {
                     onClick={() => setTargetsDialogOpen(true)}
                     className="flex items-center gap-1.5 rounded-md border border-primary-300 bg-primary-50 px-3 py-1.5 text-caption font-medium text-primary-700 hover:bg-primary-100"
                 >
-                    <Target size={14} /> Set targets
+                    <Target size={14} /> {t('targets.setTargets')}
                 </button>
                 <div
-                    className="ml-auto flex overflow-hidden rounded-md border border-neutral-300"
+                    className="ms-auto flex overflow-hidden rounded-md border border-neutral-300"
                     role="group"
-                    aria-label="View mode"
+                    aria-label={t('viewMode.ariaLabel')}
                 >
                     <button
                         type="button"
                         onClick={() => changeViewMode('cards')}
-                        title="Card view"
+                        title={t('viewMode.cardTitle')}
                         aria-pressed={viewMode === 'cards'}
                         className={cn(
                             'flex items-center gap-1.5 px-3 py-1.5 text-caption font-medium',
@@ -500,12 +508,12 @@ export function WorkbenchPage() {
                                 : 'bg-white text-neutral-700 hover:bg-neutral-50'
                         )}
                     >
-                        <SquaresFour size={14} /> Cards
+                        <SquaresFour size={14} /> {t('viewMode.cards')}
                     </button>
                     <button
                         type="button"
                         onClick={() => changeViewMode('list')}
-                        title="List view"
+                        title={t('viewMode.listTitle')}
                         aria-pressed={viewMode === 'list'}
                         className={cn(
                             'flex items-center gap-1.5 px-3 py-1.5 text-caption font-medium',
@@ -514,7 +522,7 @@ export function WorkbenchPage() {
                                 : 'bg-white text-neutral-700 hover:bg-neutral-50'
                         )}
                     >
-                        <ListIcon size={14} /> List
+                        <ListIcon size={14} /> {t('viewMode.list')}
                     </button>
                 </div>
             </div>
@@ -522,13 +530,13 @@ export function WorkbenchPage() {
             {/* ── Counsellor cards grid ──────────────────────────── */}
             {counsellorsQuery.isLoading ? (
                 <div className="rounded-md border border-neutral-200 bg-white p-8 text-center text-subtitle text-neutral-500">
-                    Loading counsellors…
+                    {t('list.loading')}
                 </div>
             ) : counsellors.length === 0 ? (
                 <div className="rounded-md border border-neutral-200 bg-white p-8 text-center text-subtitle text-neutral-500">
                     {totalCounsellors === 0 && !search && statusFilter === 'all'
-                        ? 'No counsellors in this team yet. Add them under Manage Institute → Teams → Org Chart.'
-                        : 'No one matches your filters.'}
+                        ? t('list.emptyTeam')
+                        : t('list.emptyFiltered')}
                 </div>
             ) : viewMode === 'list' ? (
                 <CounsellorTable
@@ -583,9 +591,12 @@ export function WorkbenchPage() {
             {totalCounsellors > pageSize && (
                 <div className="mt-4 flex items-center justify-between">
                     <span className="text-caption text-neutral-500">
-                        Showing {page * pageSize + 1}–
-                        {Math.min((page + 1) * pageSize, totalCounsellors)} of {totalCounsellors}
-                        {counsellorsQuery.isFetching ? ' · loading…' : ''}
+                        {t('pagination.showing', {
+                            from: page * pageSize + 1,
+                            to: Math.min((page + 1) * pageSize, totalCounsellors),
+                            total: totalCounsellors,
+                        })}
+                        {counsellorsQuery.isFetching ? t('pagination.loadingSuffix') : ''}
                     </span>
                     <MyPagination
                         currentPage={page}
@@ -703,7 +714,8 @@ function CounsellorCard({
     onReassignLeads: () => void;
     statusLoading: boolean;
 }) {
-    const name = counsellor.full_name || 'Unnamed';
+    const { t } = useTranslation('counsellorsIndex');
+    const name = counsellor.full_name || t('card.unnamed');
     return (
         <button
             type="button"
@@ -741,13 +753,13 @@ function CounsellorCard({
 
             <div className="grid grid-cols-2 gap-3 border-t border-neutral-100 bg-neutral-50 px-4 py-2.5 text-caption">
                 <div>
-                    <div className="text-neutral-500">Assigned leads</div>
+                    <div className="text-neutral-500">{t('card.assignedLeads')}</div>
                     <div className="text-body font-semibold text-neutral-900">
                         {counsellor.open_leads_count}
                     </div>
                 </div>
                 <div>
-                    <div className="text-neutral-500">Team</div>
+                    <div className="text-neutral-500">{t('card.team')}</div>
                     <div className="truncate text-body font-medium text-neutral-700">
                         {counsellor.team_name ?? '—'}
                     </div>
@@ -755,7 +767,7 @@ function CounsellorCard({
             </div>
 
             <div className="border-t border-neutral-100 px-4 py-2.5">
-                <div className="mb-1.5 text-caption text-neutral-500">Targets</div>
+                <div className="mb-1.5 text-caption text-neutral-500">{t('card.targets')}</div>
                 <TargetProgress items={progress} compact loading={progressLoading} />
             </div>
 
@@ -772,7 +784,7 @@ function CounsellorCard({
                             counsellor.is_active ? 'bg-success-500' : 'bg-neutral-400'
                         )}
                     />
-                    {counsellor.is_active ? 'Active' : 'Inactive'}
+                    {counsellor.is_active ? t('card.active') : t('card.inactive')}
                 </span>
                 <span className="flex items-center gap-1">
                     {!counsellor.is_active && counsellor.open_leads_count > 0 && (
@@ -785,7 +797,7 @@ function CounsellorCard({
                             disabled={statusLoading}
                             className="rounded-md px-2.5 py-1 text-caption font-medium text-primary-700 transition-colors hover:bg-primary-50"
                         >
-                            Reassign leads
+                            {t('card.reassignLeads')}
                         </button>
                     )}
                     <button
@@ -797,7 +809,7 @@ function CounsellorCard({
                             // is a direct flip, so keep the confirm prompt there.
                             if (counsellor.is_active) {
                                 onToggleStatus();
-                            } else if (window.confirm(`Mark ${name} active again?`)) {
+                            } else if (window.confirm(t('card.confirmMarkActive', { name }))) {
                                 onToggleStatus();
                             }
                         }}
@@ -809,7 +821,11 @@ function CounsellorCard({
                                 : 'text-success-700 hover:bg-success-50'
                         )}
                     >
-                        {statusLoading ? '…' : counsellor.is_active ? 'Mark inactive' : 'Mark active'}
+                        {statusLoading
+                            ? '…'
+                            : counsellor.is_active
+                              ? t('card.markInactive')
+                              : t('card.markActive')}
                     </button>
                 </span>
             </div>
@@ -839,23 +855,24 @@ function CounsellorTable({
     /** Bulk-move a counsellor's open leads — surfaced for INACTIVE rows. */
     onReassignLeads: (userId: string) => void;
 }) {
+    const { t } = useTranslation('counsellorsIndex');
     return (
         <div className="overflow-auto rounded-md border border-neutral-200 bg-white">
             <table className="w-full text-body">
                 <thead className="border-b border-neutral-200 bg-neutral-50 text-caption uppercase tracking-wide text-neutral-500">
                     <tr>
-                        <th className="px-3 py-2.5 text-left">Counsellor</th>
-                        <th className="px-3 py-2.5 text-left">Team</th>
-                        <th className="px-3 py-2.5 text-right">Rating</th>
-                        <th className="px-3 py-2.5 text-right">Assigned leads</th>
-                        <th className="px-3 py-2.5 text-left">Targets</th>
-                        <th className="px-3 py-2.5 text-left">Status</th>
-                        <th className="px-3 py-2.5 text-right">Actions</th>
+                        <th className="px-3 py-2.5 text-start">{t('table.colCounsellor')}</th>
+                        <th className="px-3 py-2.5 text-start">{t('table.colTeam')}</th>
+                        <th className="px-3 py-2.5 text-end">{t('table.colRating')}</th>
+                        <th className="px-3 py-2.5 text-end">{t('table.colAssignedLeads')}</th>
+                        <th className="px-3 py-2.5 text-start">{t('table.colTargets')}</th>
+                        <th className="px-3 py-2.5 text-start">{t('table.colStatus')}</th>
+                        <th className="px-3 py-2.5 text-end">{t('table.colActions')}</th>
                     </tr>
                 </thead>
                 <tbody>
                     {counsellors.map((c) => {
-                        const name = c.full_name || 'Unnamed';
+                        const name = c.full_name || t('card.unnamed');
                         const pending = statusPendingId === c.user_id;
                         return (
                             <tr
@@ -914,10 +931,10 @@ function CounsellorTable({
                                                 c.is_active ? 'bg-success-500' : 'bg-neutral-400'
                                             )}
                                         />
-                                        {c.is_active ? 'Active' : 'Inactive'}
+                                        {c.is_active ? t('card.active') : t('card.inactive')}
                                     </span>
                                 </td>
-                                <td className="px-3 py-2.5 text-right">
+                                <td className="px-3 py-2.5 text-end">
                                     {!c.is_active && c.open_leads_count > 0 && (
                                         <button
                                             type="button"
@@ -928,7 +945,7 @@ function CounsellorTable({
                                             disabled={pending}
                                             className="rounded-md px-2.5 py-1 text-caption font-medium text-primary-700 transition-colors hover:bg-primary-50"
                                         >
-                                            Reassign leads
+                                            {t('card.reassignLeads')}
                                         </button>
                                     )}
                                     <button
@@ -942,7 +959,9 @@ function CounsellorTable({
                                             if (c.is_active) {
                                                 onToggleStatus(c.user_id, !c.is_active);
                                             } else if (
-                                                window.confirm(`Mark ${name} active again?`)
+                                                window.confirm(
+                                                    t('card.confirmMarkActive', { name })
+                                                )
                                             ) {
                                                 onToggleStatus(c.user_id, !c.is_active);
                                             }
@@ -958,8 +977,8 @@ function CounsellorTable({
                                         {pending
                                             ? '…'
                                             : c.is_active
-                                              ? 'Mark inactive'
-                                              : 'Mark active'}
+                                              ? t('card.markInactive')
+                                              : t('card.markActive')}
                                     </button>
                                 </td>
                             </tr>
@@ -990,6 +1009,7 @@ function DetailDrawer({
     instituteId: string;
     onReassign: (lead: WorkbenchLead) => void;
 }) {
+    const { t } = useTranslation('counsellorsIndex');
     // Coaching tab only exists when the institute has Call Intelligence on.
     // (Hook must run before the early return below — Rules of Hooks.)
     const callIntelligenceEnabled = useCallIntelligenceEnabled();
@@ -998,7 +1018,7 @@ function DetailDrawer({
     // (state cleared as the sheet starts to fade out); the early-return
     // keeps the closing frame clean.
     if (!counsellor) return null;
-    const name = counsellor.full_name || 'Unnamed';
+    const name = counsellor.full_name || t('card.unnamed');
     return (
         <Sheet open={open} onOpenChange={onOpenChange}>
             <SheetContent side="right" className="flex w-full flex-col gap-0 p-0 sm:max-w-3xl">
@@ -1025,25 +1045,25 @@ function DetailDrawer({
                 >
                     <TabsList className="m-3 gap-2">
                         <TabsTrigger value="leads">
-                            <ChatCircleText size={14} className="mr-1.5" /> Leads (
-                            {counsellor.open_leads_count})
+                            <ChatCircleText size={14} className="me-1.5" />{' '}
+                            {t('drawer.tabLeads', { count: counsellor.open_leads_count })}
                         </TabsTrigger>
                         <TabsTrigger value="activity">
-                            <ArrowsClockwise size={14} className="mr-1.5" /> Activity
+                            <ArrowsClockwise size={14} className="me-1.5" /> {t('drawer.tabActivity')}
                         </TabsTrigger>
                         <TabsTrigger value="calls">
-                            <Phone size={14} className="mr-1.5" /> Calls
+                            <Phone size={14} className="me-1.5" /> {t('drawer.tabCalls')}
                         </TabsTrigger>
                         {callIntelligenceEnabled && (
                             <TabsTrigger value="coaching">
-                                <Sparkle size={14} className="mr-1.5" /> Coaching
+                                <Sparkle size={14} className="me-1.5" /> {t('drawer.tabCoaching')}
                             </TabsTrigger>
                         )}
                         <TabsTrigger value="performance">
-                            <ChartLineUp size={14} className="mr-1.5" /> Performance
+                            <ChartLineUp size={14} className="me-1.5" /> {t('drawer.tabPerformance')}
                         </TabsTrigger>
                         <TabsTrigger value="targets">
-                            <Target size={14} className="mr-1.5" /> Targets
+                            <Target size={14} className="me-1.5" /> {t('drawer.tabTargets')}
                         </TabsTrigger>
                     </TabsList>
                     <div className="min-h-0 flex-1 overflow-auto px-4 pb-4">

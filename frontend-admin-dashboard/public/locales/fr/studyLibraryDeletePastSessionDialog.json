@@ -1,0 +1,18 @@
+{
+    "title": "Supprimer ce {{term}} passé ?",
+    "description": "Ce {{term}} sera retiré de la liste des cours passés pour tout le monde, avec la présence, les enregistrements et les avis affichés pour lui. Impossible d’annuler depuis le tableau de bord.",
+    "points": {
+        "onlyThisOccurrence": "Seul ce {{term}} est supprimé. Les autres cours de la série restent inchangés.",
+        "noNotification": "Les apprenants ne seront pas notifiés.",
+        "audited": "Votre nom et l’heure seront enregistrés dans le journal d’activité."
+    },
+    "actions": {
+        "cancel": "Annuler",
+        "delete": "Supprimer {{term}}",
+        "deleting": "Suppression…"
+    },
+    "toast": {
+        "deleted": "{{term}} supprimé",
+        "deleteFailed": "Échec de la suppression. Veuillez réessayer."
+    }
+}

@@ -1,0 +1,15 @@
+{
+    "actions": {
+        "close": "बंद करें"
+    },
+    "viewer": {
+        "allQuestions": "सभी प्रश्न",
+        "selectedQuestions": "चयनित प्रश्न"
+    },
+    "copyConfirm": {
+        "title": "सूचना",
+        "message": "क्या आप वाकई चयनित टेक्स्ट को कॉपी करना चाहते हैं?",
+        "no": "नहीं",
+        "yes": "हां"
+    }
+}

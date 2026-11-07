@@ -1,0 +1,53 @@
+{
+    "dialog": {
+        "titleSelectPlan": "Select Payment Plan",
+        "titleConfigureReferral": "Configure Referral for {{planName}}",
+        "descriptionSelectPlan": "Choose which payment plan to configure referral settings for",
+        "descriptionSelectReferral": "Choose a referral program for this payment plan"
+    },
+    "planList": {
+        "empty": "No payment plans available",
+        "noReferralConfigured": "No referral configured"
+    },
+    "currentReferral": {
+        "configuredLabel": "Currently Configured: {{name}}",
+        "changeHint": "Click on a different referral below to change, or remove current one",
+        "remove": "Remove"
+    },
+    "referralList": {
+        "empty": "No referral programs available",
+        "currentBadge": "Current"
+    },
+    "refereeBenefit": {
+        "label": "Referee Gets:",
+        "freeDays_one": "{{count}} free day",
+        "freeDays_other": "{{count}} free days",
+        "bonusContentDefaultTitle": "Bonus Content",
+        "contentTypePrefix": "Type:",
+        "contentTypeLink": "External Link",
+        "contentTypeFile": "File Upload",
+        "templatePrefix": "Template:",
+        "discountPercentage": "{{value}}% discount",
+        "discountFixed": "₹{{value}} discount",
+        "pointsSystemTitle": "Points System",
+        "pointsPerReferral_one": "{{count}} point per referral",
+        "pointsPerReferral_other": "{{count}} points per referral",
+        "genericOff": "{{value}} off"
+    },
+    "referrerBenefit": {
+        "label": "Referrer Gets:",
+        "refCount_one": "{{count}} ref",
+        "refCount_other": "{{count}} refs",
+        "typePoints": "Points",
+        "typeContent": "Content",
+        "typeReward": "Reward",
+        "noRewards": "No rewards",
+        "moreCount": "+{{count}} more"
+    },
+    "vesting": {
+        "label": "{{count}}d vesting"
+    },
+    "actions": {
+        "addNewReferral": "+ Add New Referral Program"
+    }
+}

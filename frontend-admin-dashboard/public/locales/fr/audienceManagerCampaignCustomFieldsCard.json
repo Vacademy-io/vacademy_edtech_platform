@@ -1,0 +1,14 @@
+{
+    "header": {
+        "title": "Personnaliser le formulaire de campagne",
+        "description": "Configurez les champs que les étudiants devront remplir. Les champs des paramètres sont chargés automatiquement."
+    },
+    "sharedFieldNotice_one": "Ce champ est partagé avec {{count}} autre formulaire{{names}}. Son type, son libellé et ses options ne sont stockés qu'une seule fois : les modifier ici les modifie donc aussi là-bas.",
+    "sharedFieldNotice_many": "Ce champ est partagé avec {{count}} d'autres formulaires{{names}}. Son type, son libellé et ses options ne sont stockés qu'une seule fois : les modifier ici les modifie donc aussi là-bas.",
+    "sharedFieldNotice_other": "Ce champ est partagé avec {{count}} autres formulaires{{names}}. Son type, son libellé et ses options ne sont stockés qu'une seule fois : les modifier ici les modifie donc aussi là-bas.",
+    "actions": {
+        "addPhoneNumber": "Ajouter un numéro de téléphone",
+        "addCustomField": "Ajouter un champ personnalisé",
+        "previewForm": "Aperçu du formulaire d'inscription"
+    }
+}

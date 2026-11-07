@@ -1,0 +1,34 @@
+{
+    "toast": {
+        "approved": "Ajustement approuvé",
+        "rejected": "Ajustement rejeté",
+        "reviewFailed": "Échec de l'examen de l'ajustement"
+    },
+    "errors": {
+        "unableToLoad": "Impossible de charger les approbations en attente",
+        "tryAgain": "Veuillez réessayer."
+    },
+    "empty": {
+        "noPendingApprovals": "Aucune approbation en attente",
+        "allReviewed": "Toutes les demandes d'ajustement ont été examinées."
+    },
+    "table": {
+        "student": "Élève",
+        "feeType": "Type de frais",
+        "cpoPlan": "CPO / Plan",
+        "type": "Type",
+        "expected": "Attendu",
+        "amount": "Montant",
+        "reason": "Motif",
+        "dueDate": "Date d'échéance",
+        "actions": "Actions"
+    },
+    "adjustmentType": {
+        "concession": "Concession",
+        "penalty": "Pénalité"
+    },
+    "actions": {
+        "approve": "Approuver",
+        "reject": "Rejeter"
+    }
+}

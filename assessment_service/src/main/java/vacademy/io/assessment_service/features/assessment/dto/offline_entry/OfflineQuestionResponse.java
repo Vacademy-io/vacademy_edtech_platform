@@ -18,4 +18,8 @@ public class OfflineQuestionResponse {
     private String type;
     @Builder.Default
     private List<String> optionIds = new ArrayList<>();
+    /** Typed answer (ONE_WORD, LONG_ANSWER); null for option questions. */
+    private String answer;
+    /** Numeric answer (NUMERIC); null otherwise. */
+    private Double validAnswer;
 }

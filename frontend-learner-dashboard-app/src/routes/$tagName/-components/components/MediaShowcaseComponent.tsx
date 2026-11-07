@@ -1,5 +1,7 @@
 import React, { useState, useEffect ,useMemo} from "react";
-import { useNavigate } from "@tanstack/react-router";
+import { FitImage } from "@/components/common/fit-image/FitImage";
+import { useSiteNavigate } from "../../-utils/catalogue-route-search";
+import { useTranslation } from "react-i18next";
 import { getPublicUrlWithoutLogin } from "@/services/upload_file";
 import { useDomainRouting } from "@/hooks/use-domain-routing";
 import { Play, Pause } from "@phosphor-icons/react";
@@ -36,6 +38,7 @@ interface MediaItemComponentProps {
 }
 
 const MediaItemComponent: React.FC<MediaItemComponentProps> = ({ item, roundedEdges }) => {
+  const { t } = useTranslation("coursePlayerB");
   const [resolvedUrl, setResolvedUrl] = useState<string>("");
   const [hasTriedLoading, setHasTriedLoading] = useState(false);
   const [videoLoadError, setVideoLoadError] = useState(false);
@@ -115,10 +118,10 @@ const MediaItemComponent: React.FC<MediaItemComponentProps> = ({ item, roundedEd
   const renderYouTubePlayer = () => {
     const embedUrl = convertToYouTubeEmbedUrl(resolvedUrl);
     return (
-      <div className={`relative w-full aspect-video bg-black overflow-hidden ${roundedEdges ? 'rounded-lg' : 'rounded-none'}`}>
+      <div className={`relative w-full aspect-video bg-black overflow-hidden ${roundedEdges ? 'rounded-catalogue-md' : 'rounded-none'}`}>
         <iframe
           src={embedUrl}
-          title={item.caption || "Video"}
+          title={item.caption || t("mediaShowcase.defaultVideoTitle")}
           frameBorder="0"
           allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share; fullscreen"
           allowFullScreen
@@ -133,10 +136,10 @@ const MediaItemComponent: React.FC<MediaItemComponentProps> = ({ item, roundedEd
   const renderVimeoPlayer = () => {
     const embedUrl = convertToVimeoEmbedUrl(resolvedUrl);
     return (
-      <div className={`relative w-full aspect-video bg-black overflow-hidden ${roundedEdges ? 'rounded-lg' : 'rounded-none'}`}>
+      <div className={`relative w-full aspect-video bg-black overflow-hidden ${roundedEdges ? 'rounded-catalogue-md' : 'rounded-none'}`}>
         <iframe
           src={embedUrl}
-          title={item.caption || "Video"}
+          title={item.caption || t("mediaShowcase.defaultVideoTitle")}
           frameBorder="0"
           allow="autoplay; fullscreen; picture-in-picture"
           allowFullScreen
@@ -150,7 +153,7 @@ const MediaItemComponent: React.FC<MediaItemComponentProps> = ({ item, roundedEd
   // Render native video player for uploaded videos
   const renderNativeVideoPlayer = () => {
     return (
-      <div className={`relative w-full aspect-video bg-black overflow-hidden ${roundedEdges ? 'rounded-lg' : 'rounded-none'}`}>
+      <div className={`relative w-full aspect-video bg-black overflow-hidden ${roundedEdges ? 'rounded-catalogue-md' : 'rounded-none'}`}>
         <video
           src={resolvedUrl}
           controls
@@ -174,10 +177,10 @@ const MediaItemComponent: React.FC<MediaItemComponentProps> = ({ item, roundedEd
   // Render video fallback (placeholder with play icon)
   const renderVideoFallback = () => {
     return (
-      <div className={`relative w-full aspect-video bg-gradient-to-br from-gray-700 to-gray-900 flex items-center justify-center ${roundedEdges ? 'rounded-lg' : 'rounded-none'}`}>
-        <div className="flex flex-col items-center justify-center text-white/70">
-          <Play className="w-16 h-16 mb-2 opacity-50" />
-          <p className="text-sm">Video unavailable</p>
+      <div className={`relative w-full aspect-video bg-gradient-to-br from-gray-700 to-gray-900 flex items-center justify-center ${roundedEdges ? 'rounded-catalogue-md' : 'rounded-none'}`}>
+        <div className="flex flex-col items-center justify-center text-white/70 gap-2">
+          <Play className="w-16 h-16 opacity-50" />
+          <p className="text-sm">{t("mediaShowcase.videoUnavailable")}</p>
         </div>
       </div>
     );
@@ -187,10 +190,10 @@ const MediaItemComponent: React.FC<MediaItemComponentProps> = ({ item, roundedEd
   const renderImage = () => {
     const imageSrc = resolvedUrl || "/api/placeholder/400/300";
     return (
-      <img
+      <FitImage
         src={imageSrc}
         alt={item.caption}
-        className={`w-full aspect-video object-cover shadow-lg ${roundedEdges ? 'rounded-lg' : 'rounded-none'}`}
+        className={`w-full aspect-video shadow-lg ${roundedEdges ? 'rounded-catalogue-md' : 'rounded-none'}`}
         onError={(e) => {
           if (!hasTriedLoading) {
             e.currentTarget.src = "/api/placeholder/400/300";
@@ -206,8 +209,8 @@ const MediaItemComponent: React.FC<MediaItemComponentProps> = ({ item, roundedEd
   // Loading state
   if (isLoading) {
     return (
-      <div className={`relative w-full aspect-video max-w-4xl mx-auto bg-gray-200 animate-pulse flex items-center justify-center ${roundedEdges ? 'rounded-lg' : 'rounded-none'}`}>
-        <div className="text-gray-400 text-sm">Loading...</div>
+      <div className={`relative w-full aspect-video max-w-4xl mx-auto bg-gray-200 animate-pulse flex items-center justify-center ${roundedEdges ? 'rounded-catalogue-md' : 'rounded-none'}`}>
+        <div className="text-gray-400 text-sm">{t("mediaShowcase.loading")}</div>
       </div>
     );
   }
@@ -230,7 +233,7 @@ const MediaItemComponent: React.FC<MediaItemComponentProps> = ({ item, roundedEd
       ) : (
         renderImage()
       )}
-      <div className={`absolute bottom-0 start-0 end-0 bg-black bg-opacity-50 text-white p-4 ${roundedEdges ? 'rounded-b-lg' : 'rounded-b-none'
+      <div className={`absolute bottom-0 start-0 end-0 bg-black bg-opacity-50 text-white p-4 ${roundedEdges ? 'rounded-b-catalogue-md' : 'rounded-b-none'
         }`}>
         <p className="text-sm font-medium">{item.caption}</p>
       </div>
@@ -264,6 +267,7 @@ export const MediaShowcaseComponent: React.FC<MediaShowcaseProps> = ({
   autoplay = false,
   autoplayInterval = 3000,
 }) => {
+  const { t } = useTranslation("coursePlayerB");
   const [isPaused, setIsPaused] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
   const [prefersReducedMotion, setPrefersReducedMotion] = useState(false);
@@ -276,7 +280,7 @@ export const MediaShowcaseComponent: React.FC<MediaShowcaseProps> = ({
     return () => mq.removeEventListener('change', apply);
   }, []);
 
-  const navigate = useNavigate();
+  const siteNavigate = useSiteNavigate();
   const domainRouting = useDomainRouting();
   const { roundedEdges = true } = styles;
 
@@ -431,7 +435,7 @@ export const MediaShowcaseComponent: React.FC<MediaShowcaseProps> = ({
     switch (button.action) {
       case "navigate":
         if (button.target) {
-          navigate({ to: button.target });
+          void siteNavigate(button.target);
         }
         break;
       case "openLeadCollection":
@@ -496,7 +500,7 @@ export const MediaShowcaseComponent: React.FC<MediaShowcaseProps> = ({
         className="w-full relative"
         style={{ width: '100%', overflow: 'hidden' }}
         aria-roledescription="carousel"
-        aria-label="Highlights"
+        aria-label={t("mediaShowcase.highlightsAriaLabel")}
         // Pause while the visitor is actually reading/interacting; focusin
         // covers keyboard users, who cannot hover.
         onMouseEnter={() => setIsHovered(true)}
@@ -534,7 +538,7 @@ export const MediaShowcaseComponent: React.FC<MediaShowcaseProps> = ({
                   {/* Use actual img tag for better performance and preloading */}
                   <img
                     src={backgroundUrl}
-                    alt={slide.heading || `Slide ${index + 1}`}
+                    alt={slide.heading || t("mediaShowcase.slideAlt", { number: index + 1 })}
                     className="absolute inset-0 w-full h-full object-cover"
                     style={{
                       objectFit: 'cover',
@@ -594,7 +598,7 @@ export const MediaShowcaseComponent: React.FC<MediaShowcaseProps> = ({
                           e.stopPropagation();
                           handleButtonClick(slide.button);
                         }}
-                        className="px-4 py-2 sm:px-8 sm:py-4 text-sm sm:text-lg font-semibold text-white rounded-md hover:opacity-90 transition-opacity shadow-lg cursor-pointer"
+                        className="px-4 py-2 sm:px-8 sm:py-4 text-sm sm:text-lg font-semibold text-white rounded-catalogue-sm hover:opacity-90 transition-opacity shadow-lg cursor-pointer"
                         style={{
                           backgroundColor: slide.button.backgroundColor || (domainRouting.instituteThemeCode ? `hsl(var(--primary))` : "#2563eb"), // design-lint-ignore: page-builder default color
                           zIndex: 20,
@@ -616,7 +620,7 @@ export const MediaShowcaseComponent: React.FC<MediaShowcaseProps> = ({
               <button
                 onClick={prevSlide}
                 className="absolute start-4 top-1/2 transform -translate-y-1/2 bg-white bg-opacity-80 hover:bg-opacity-100 text-gray-800 p-2 sm:p-3 rounded-full shadow-lg transition-all z-20"
-                aria-label="Previous slide"
+                aria-label={t("common.previousSlide")}
               >
                 <svg className="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
@@ -625,7 +629,7 @@ export const MediaShowcaseComponent: React.FC<MediaShowcaseProps> = ({
               <button
                 onClick={nextSlide}
                 className="absolute end-4 top-1/2 transform -translate-y-1/2 bg-white bg-opacity-80 hover:bg-opacity-100 text-gray-800 p-2 sm:p-3 rounded-full shadow-lg transition-all z-20"
-                aria-label="Next slide"
+                aria-label={t("common.nextSlide")}
               >
                 <svg className="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
@@ -648,7 +652,7 @@ export const MediaShowcaseComponent: React.FC<MediaShowcaseProps> = ({
                       ? "bg-white"
                       : "bg-white bg-opacity-50 hover:bg-opacity-75"
                   }`}
-                  aria-label={`Go to slide ${index + 1}`}
+                  aria-label={t("mediaShowcase.goToSlide", { number: index + 1 })}
                 />
               ))}
               {/* WCAG 2.2.2 — auto-advancing content needs a pause control.
@@ -658,7 +662,7 @@ export const MediaShowcaseComponent: React.FC<MediaShowcaseProps> = ({
                 <button
                   type="button"
                   onClick={() => setIsPaused((v) => !v)}
-                  aria-label={isPaused ? "Resume automatic slideshow" : "Pause automatic slideshow"}
+                  aria-label={isPaused ? t("mediaShowcase.resumeSlideshow") : t("mediaShowcase.pauseSlideshow")}
                   className="ms-2 inline-flex size-7 items-center justify-center rounded-full bg-white/25 text-white backdrop-blur-sm transition-colors hover:bg-white/40 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
                 >
                   {isPaused
@@ -685,7 +689,7 @@ export const MediaShowcaseComponent: React.FC<MediaShowcaseProps> = ({
   
   return (
     <section
-      className={`w-full py-6 sm:py-8 ${roundedEdges ? "rounded-lg" : ""} bg-catalogue-bg-subtle`}
+      className={`w-full py-6 sm:py-8 ${roundedEdges ? "rounded-catalogue-md" : ""} bg-catalogue-bg-subtle`}
     >
       <div className="w-full px-4 sm:px-6 lg:px-8">
         {/* Header */}

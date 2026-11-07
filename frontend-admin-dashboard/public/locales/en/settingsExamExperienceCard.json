@@ -1,0 +1,35 @@
+{
+    "header": {
+        "title": "Live Test Experience",
+        "description": "Controls what learners see while attempting an assessment, on both web and mobile."
+    },
+    "calculator": {
+        "label": "Calculator",
+        "description": "Show an on-screen calculator inside the test.",
+        "typeLabel": "Calculator type",
+        "typePlaceholder": "Select calculator type",
+        "basic": "Basic (four function)",
+        "scientific": "Scientific (JEE / NEET style)",
+        "hint": "Scientific adds trigonometry and its inverses, logarithms, powers and roots, factorial, π and e, and a DEG/RAD toggle."
+    },
+    "scratchpad": {
+        "label": "Scratchpad",
+        "description": "A rough-work notepad. Its contents are never submitted with the paper."
+    },
+    "questionPalette": {
+        "label": "Question palette",
+        "description": "Lets learners jump between questions and see answered / marked status.",
+        "viewLabel": "Default view",
+        "viewPlaceholder": "Select default view",
+        "grid": "Grid of question numbers",
+        "list": "List with question preview"
+    },
+    "markingScheme": {
+        "label": "Show marking scheme on each question",
+        "description": "Displays the marks awarded and deducted beside every question."
+    },
+    "mobileNav": {
+        "label": "Hide app navigation on mobile",
+        "description": "During a live test on a phone, hide the chatbot launcher and other app chrome so only the assessment is visible."
+    }
+}

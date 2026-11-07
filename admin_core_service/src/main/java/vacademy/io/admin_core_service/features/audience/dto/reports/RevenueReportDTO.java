@@ -17,7 +17,8 @@ import java.util.List;
  *     - payment_status = 'PAID', AND
  *     - the paying user is a lead of this institute whose {@code user_lead_profile.conversion_status}
  *       = 'CONVERTED' (the same user the conversion is stamped on), AND
- *     - the payment's {@code created_at} falls in the [from, to) window (institute TZ).
+ *     - the payment's day falls in the [from, to) window (institute TZ): the transaction date typed
+ *       in for a hand-recorded (MANUAL / OFFLINE) payment, else the day it was recorded.
  *
  * Source / counsellor attribution uses the lead profile's denormalized
  * {@code best_source_type} / {@code assigned_counselor_id} — the same identity the rest of the

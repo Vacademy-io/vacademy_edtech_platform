@@ -1,0 +1,95 @@
+{
+  "appId": "io.shikshanationapp.com",
+  "productName": "Shiksha Nation",
+  "directories": {
+    "buildResources": "resources",
+    "output": "dist-mas-dev"
+  },
+  "files": [
+    "assets/**/*",
+    "build/**/*",
+    "app/**/*",
+    "capacitor.config.*",
+    "electron-flavor.json",
+    "package.json",
+    {
+      "from": "node_modules",
+      "filter": [
+        "**/*",
+        "!electron/dist/**/*",
+        "!electron/**/*",
+        "!electron-builder/**/*",
+        "!app-builder-lib/**/*",
+        "!electron-osx-sign/**/*",
+        "!electron-rebuild/**/*",
+        "!**/*.md",
+        "!**/*.map",
+        "!**/test/**",
+        "!**/tests/**",
+        "!**/.bin/**",
+        "!app-builder-bin/**/*",
+        "!7zip-bin/**/*",
+        "!lzma-native/**/*",
+        "!iconv-corefoundation/**/*",
+        "!node-notifier/vendor/notifu/**/*",
+        "!node-notifier/vendor/snoreToast/**/*"
+      ]
+    }
+  ],
+  "asar": true,
+  "asarUnpack": [
+    "**/*.node"
+  ],
+  "compression": "normal",
+  "nodeGypRebuild": false,
+  "buildDependenciesFromSource": false,
+  "npmRebuild": false,
+  "mas": {
+    "category": "public.app-category.education",
+    "icon": "assets/shiksha_nation.icns",
+    "target": [
+      {
+        "target": "pkg",
+        "arch": [
+          "arm64"
+        ]
+      }
+    ],
+    "type": "distribution",
+    "entitlements": "entitlements.mas.plist",
+    "entitlementsInherit": "entitlements.mas.inherit.plist",
+    "provisioningProfile": "embedded.provisionprofile",
+    "hardenedRuntime": false,
+    "identity": "Saurabh Kumar (7XKD5M7288)",
+    "minimumSystemVersion": "12.0",
+    "entitlementsLoginHelper": "entitlements.mas.loginhelper.plist"
+  },
+  "extraMetadata": {
+    "version": "1.0"
+  },
+  "buildVersion": "4",
+  "mac": {
+    "category": "public.app-category.education",
+    "icon": "assets/shiksha_nation.icns",
+    "minimumSystemVersion": "12.0"
+  },
+  "masDev": {
+    "category": "public.app-category.education",
+    "icon": "assets/shiksha_nation.icns",
+    "target": [
+      {
+        "target": "dir",
+        "arch": [
+          "arm64"
+        ]
+      }
+    ],
+    "type": "development",
+    "entitlements": "entitlements.mas.plist",
+    "entitlementsInherit": "entitlements.mas.inherit.plist",
+    "provisioningProfile": "embedded-sn-dev.provisionprofile",
+    "hardenedRuntime": false,
+    "identity": "Apple Development: Saurabh Kumar (525UG6QDB6)",
+    "minimumSystemVersion": "12.0"
+  }
+}

@@ -12,6 +12,7 @@ import {
 } from '@/services/ai-credits/get-ai-credits';
 import DOMPurify from 'dompurify';
 import { toast } from 'sonner';
+import { useTranslation } from 'react-i18next';
 
 import { getInstituteId } from '@/constants/helper';
 import {
@@ -27,16 +28,15 @@ import { useSessionHandlers } from './hooks/useSessionHandlers';
 import { useMetadataHandlers } from './hooks/useMetadataHandlers';
 import { useContentGeneration } from './hooks/useContentGeneration';
 import { useCourseCreation } from './hooks/useCourseCreation';
-import { getUserRoles, getTokenFromCookie } from '@/lib/auth/sessionUtility';
-import { TokenKey } from '@/constants/auth/tokens';
+import { getRolesForCurrentInstitute } from '@/lib/auth/instituteUtils';
 import { getSessionsWithProgress } from './utils/sessionUtils';
 import { generateSlideContent } from './utils/mockSlideContent';
 import { extractSlideTitlesFromSlides } from '../../shared/utils/slides';
 import { isYouTubeUrl, getYouTubeEmbedUrl } from '../../shared/utils/youtube';
 import { SlideGeneration, SlideType, QuizQuestion, SessionProgress } from '../../shared/types';
 import {
-    DEFAULT_QUIZ_QUESTIONS,
-    DEFAULT_SELECTED_ANSWERS,
+    buildDefaultQuizQuestions,
+    buildDefaultSelectedAnswers,
     DEFAULT_SOLUTION_CODE,
 } from '../../shared/constants';
 import {
@@ -231,6 +231,7 @@ export const Route = createFileRoute('/study-library/ai-copilot/course-outline/g
 // SortableSessionItem and SortableSlideItem are now imported from ./components
 
 export function RouteComponent() {
+    const { t } = useTranslation('studyLibraryGenerating');
     const navigate = useNavigate();
     const { setOpen } = useSidebar();
     const [slides, setSlides] = useState<SlideGeneration[]>([]);
@@ -293,10 +294,15 @@ export function RouteComponent() {
     const resizeContainerRef = useRef<HTMLDivElement>(null);
     const [isEditMode, setIsEditMode] = useState(true); // View/Edit mode toggle
     const [isDarkTheme, setIsDarkTheme] = useState(false); // Theme toggle
-    const [quizQuestions, setQuizQuestions] = useState<QuizQuestion[]>(DEFAULT_QUIZ_QUESTIONS);
+    const defaultQuizQuestions = useMemo(() => buildDefaultQuizQuestions(t), [t]);
+    const defaultSelectedAnswers = useMemo(
+        () => buildDefaultSelectedAnswers(defaultQuizQuestions),
+        [defaultQuizQuestions]
+    );
+    const [quizQuestions, setQuizQuestions] = useState<QuizQuestion[]>(defaultQuizQuestions);
     const [currentQuizQuestionIndex, setCurrentQuizQuestionIndex] = useState(0);
     const [selectedQuizAnswers, setSelectedQuizAnswers] = useState<Record<number, string>>(() => ({
-        ...DEFAULT_SELECTED_ANSWERS,
+        ...defaultSelectedAnswers,
     }));
     const currentQuizQuestion = quizQuestions[currentQuizQuestionIndex];
     const [outlineTodos, setOutlineTodos] = useState<any[]>([]); // Store todos from outline generation
@@ -347,10 +353,8 @@ export function RouteComponent() {
 
     // Detect roles on mount
     useEffect(() => {
-        const token = getTokenFromCookie(TokenKey.accessToken);
-        if (token) {
-            setRoles(getUserRoles(token));
-        }
+        // Current institute only — an ADMIN elsewhere is still a TEACHER here.
+        setRoles(getRolesForCurrentInstitute());
     }, []);
 
     const isTeacher = roles.includes('TEACHER') && !roles.includes('ADMIN');
@@ -364,12 +368,12 @@ export function RouteComponent() {
     // Memoize sessions with progress - ensure it's always an array
     const sessionsWithProgress = useMemo(() => {
         try {
-            return getSessionsWithProgress(slides);
+            return getSessionsWithProgress(slides, t);
         } catch (error) {
             console.error('Error getting sessions with progress:', error);
             return [];
         }
-    }, [slides]);
+    }, [slides, t]);
 
     // Custom hooks for handlers
     const slideHandlers = useSlideHandlers(slides, setSlides);
@@ -412,7 +416,11 @@ export function RouteComponent() {
     const { handleConfirmGenerateCourseAssets } = contentGenerationHandlers;
 
     // Course creation hook
-    const courseCreationHandlers = useCourseCreation(courseMetadata, sessionsWithProgress);
+    const courseCreationHandlers = useCourseCreation(
+        courseMetadata,
+        sessionsWithProgress,
+        outlineTodos
+    );
     const { handleCreateCourse, isCreatingCourse, creationProgress } = courseCreationHandlers;
 
     // Keep all sessions always expanded - only run once when slides are first loaded
@@ -614,7 +622,7 @@ export function RouteComponent() {
                             if (draft.isContentGenerated) setIsContentGenerated(true);
                             setIsGenerating(false);
                             setGenerationProgress('');
-                            toast.success('Draft restored');
+                            toast.success(t('toast.draftRestored'));
                             return;
                         }
                     } catch {
@@ -625,7 +633,7 @@ export function RouteComponent() {
                 // Get courseConfig from sessionStorage (do NOT remove yet — only after success)
                 const courseConfigStr = sessionStorage.getItem('courseConfig');
                 if (!courseConfigStr) {
-                    toast.error('Course configuration not found. Please start over.');
+                    toast.error(t('toast.courseConfigMissing'));
                     navigate({ to: '/study-library/ai-copilot' });
                     return;
                 }
@@ -634,11 +642,11 @@ export function RouteComponent() {
 
                 const instituteId = getInstituteId();
                 if (!instituteId) {
-                    toast.error('Institute ID not found. Please login again.');
+                    toast.error(t('toast.instituteIdMissing'));
                     return;
                 }
 
-                setGenerationProgress('Building prompt from configuration...');
+                setGenerationProgress(t('progress.buildingPrompt'));
 
                 // Debug: Log courseConfig structure
                 console.log('Course Config:', courseConfig);
@@ -872,10 +880,14 @@ export function RouteComponent() {
                     sessionStorage.removeItem('courseKbGrounding');
                 }
 
-                if (numChapters) {
+                // A knowledge base decides the course's shape: never send
+                // chapter / slide counts for a KB-grounded course (the server
+                // ignores them as well). Prompt-only courses keep the controls.
+                const kbBound = !!courseConfig.kbGrounding?.knowledge_base_id;
+                if (!kbBound && numChapters) {
                     payload.generation_options.num_chapters = parseInt(numChapters);
                 }
-                if (totalSlides) {
+                if (!kbBound && totalSlides) {
                     payload.generation_options.num_slides = totalSlides;
                 }
                 if (courseLength) {
@@ -897,7 +909,7 @@ export function RouteComponent() {
                 console.log('URL:', apiUrl);
                 console.log('Payload:', JSON.stringify(payload, null, 2));
 
-                setGenerationProgress('Connecting to AI service...');
+                setGenerationProgress(t('progress.connecting'));
 
                 // Make SSE API call
                 const response = await fetch(apiUrl, {
@@ -925,10 +937,7 @@ export function RouteComponent() {
                         } catch {
                             /* non-JSON body */
                         }
-                        throw new Error(
-                            detail ||
-                                "Your institute's AI credits are insufficient to generate a course outline. Please top up credits to continue."
-                        );
+                        throw new Error(detail || t('toast.insufficientCredits'));
                     }
                     throw new Error(
                         `HTTP ${response.status}: ${response.statusText}. ${errorText}`
@@ -942,7 +951,7 @@ export function RouteComponent() {
                     throw new Error('No response body');
                 }
 
-                setGenerationProgress('Generating course outline...');
+                setGenerationProgress(t('progress.generatingOutline'));
 
                 // Read SSE stream
                 let buffer = '';
@@ -1045,7 +1054,7 @@ export function RouteComponent() {
                                 // Stop countdown and hide loader immediately when data arrives
                                 setIsGenerating(false);
                                 setEstimatedTimeRemaining(0);
-                                setGenerationProgress('Complete!');
+                                setGenerationProgress(t('progress.complete'));
 
                                 // Only clear sessionStorage after successful load
                                 sessionStorage.removeItem('courseConfig');
@@ -1054,9 +1063,12 @@ export function RouteComponent() {
                                 console.error('Error:', e);
                                 console.error('Raw data:', data);
                                 setIsGenerating(false);
-                                toast.error(`${e instanceof Error ? e.message : 'Unknown error'}`, {
-                                    duration: 8000,
-                                });
+                                toast.error(
+                                    `${e instanceof Error ? e.message : t('common.unknownError')}`,
+                                    {
+                                        duration: 8000,
+                                    }
+                                );
                             }
                         }
                     }
@@ -1071,7 +1083,10 @@ export function RouteComponent() {
                 // Preserve any partial data that may have already been set
                 setIsGenerating(false);
                 toast.error(
-                    `Failed to generate course outline: ${error instanceof Error ? error.message : 'Unknown error'}`,
+                    t('toast.generateOutlineFailed', {
+                        message:
+                            error instanceof Error ? error.message : t('common.unknownError'),
+                    }),
                     { duration: 8000 }
                 );
             }
@@ -1196,9 +1211,11 @@ export function RouteComponent() {
                     progress: 0,
                     content:
                         todo.prompt ||
-                        `<h2>${todo.title || todo.name}</h2><p>No prompt available</p>`, // Show the prompt in content
+                        `<h2>${todo.title || todo.name}</h2><p>${t('defaultContent.noPromptAvailable')}</p>`, // Show the prompt in content
                     topicIndex: todoIndex,
-                    prompt: todo.prompt || `Content for ${todo.title || todo.name}`, // Keep prompt in prompt field too
+                    prompt:
+                        todo.prompt ||
+                        t('defaultContent.contentFor', { title: todo.title || todo.name }), // Keep prompt in prompt field too
                 });
             });
         });
@@ -1295,7 +1312,7 @@ export function RouteComponent() {
         const slideTitles = extractSlideTitlesFromSlides(session.slides);
 
         // Pre-fill prompt with a default based on chapter data
-        const defaultPrompt = `Regenerate the ${getTerminology(ContentTerms.Chapters, SystemTerms.Chapters).toLowerCase()} "${session.sessionTitle}"${slideTitles.length > 0 ? ` with the following ${getTerminologyPlural(ContentTerms.Slides, SystemTerms.Slides).toLowerCase()}: ${slideTitles.join(', ')}.` : `.`}`;
+        const defaultPrompt = `${t('regeneratePrompt.base', { chapter: getTerminology(ContentTerms.Chapters, SystemTerms.Chapters).toLowerCase(), title: session.sessionTitle })}${slideTitles.length > 0 ? t('regeneratePrompt.withSlides', { slides: getTerminologyPlural(ContentTerms.Slides, SystemTerms.Slides).toLowerCase(), titles: slideTitles.join(', ') }) : t('regeneratePrompt.noSlides')}`;
         setRegenerateSessionPrompt(defaultPrompt);
 
         // Default chapter length (we don't have duration info in SessionProgress)
@@ -1530,13 +1547,13 @@ export function RouteComponent() {
                     setDocumentContent(slide.content);
                 } else {
                     // Sample generated content - in real app, this would come from AI generation
-                    setDocumentContent(`<h2>Learning Objectives</h2>
+                    setDocumentContent(`<h2>${t('defaultContent.learningObjectivesTitle')}</h2>
 <ul>
-<li>Understand the key concepts and principles covered in this session</li>
-<li>Apply the learned techniques to solve practical problems</li>
-<li>Demonstrate proficiency in the core topics discussed</li>
+<li>${t('defaultContent.learningObjectiveItem1')}</li>
+<li>${t('defaultContent.learningObjectiveItem2')}</li>
+<li>${t('defaultContent.learningObjectiveItem3')}</li>
 </ul>
-<p>These objectives are designed to guide your learning journey and help you achieve mastery of the subject matter.</p>`);
+<p>${t('defaultContent.learningObjectivesFooter')}</p>`);
                 }
             } else if (
                 slide.slideType === 'topic' ||
@@ -1557,7 +1574,7 @@ export function RouteComponent() {
                     setCodeContent(slide.content || '// Start writing your code here');
                 }
             } else if (slide.slideType === 'homework' || slide.slideType === 'assignment') {
-                setHomeworkQuestion('What is the main concept covered in this session?');
+                setHomeworkQuestion(t('defaultContent.homeworkQuestion'));
                 setHomeworkAnswer(slide.content || '');
                 setHomeworkAnswerType('text');
             } else if (slide.slideType === 'quiz') {
@@ -1569,23 +1586,23 @@ export function RouteComponent() {
                             setSelectedQuizAnswers(
                                 parsed.answers && Object.keys(parsed.answers).length > 0
                                     ? parsed.answers
-                                    : { ...DEFAULT_SELECTED_ANSWERS }
+                                    : { ...defaultSelectedAnswers }
                             );
                         } else if (Array.isArray(parsed)) {
                             setQuizQuestions(parsed);
-                            setSelectedQuizAnswers({ ...DEFAULT_SELECTED_ANSWERS });
+                            setSelectedQuizAnswers({ ...defaultSelectedAnswers });
                         } else {
-                            setQuizQuestions(DEFAULT_QUIZ_QUESTIONS);
-                            setSelectedQuizAnswers(DEFAULT_SELECTED_ANSWERS);
+                            setQuizQuestions(defaultQuizQuestions);
+                            setSelectedQuizAnswers(defaultSelectedAnswers);
                         }
                     } catch (error) {
                         console.error('Failed to parse quiz content:', error);
-                        setQuizQuestions(DEFAULT_QUIZ_QUESTIONS);
-                        setSelectedQuizAnswers({ ...DEFAULT_SELECTED_ANSWERS });
+                        setQuizQuestions(defaultQuizQuestions);
+                        setSelectedQuizAnswers({ ...defaultSelectedAnswers });
                     }
                 } else {
-                    setQuizQuestions(DEFAULT_QUIZ_QUESTIONS);
-                    setSelectedQuizAnswers({ ...DEFAULT_SELECTED_ANSWERS });
+                    setQuizQuestions(defaultQuizQuestions);
+                    setSelectedQuizAnswers({ ...defaultSelectedAnswers });
                 }
                 setCurrentQuizQuestionIndex(0);
             }
@@ -1763,8 +1780,11 @@ export function RouteComponent() {
         if (!isGeneratingContent) return undefined;
         const real = slides.filter((s: SlideGeneration) => s.slideTitle !== '_placeholder_');
         if (real.length === 0) return undefined;
-        return `${real.filter((s: SlideGeneration) => s.status === 'completed').length} of ${real.length}`;
-    }, [isGeneratingContent, slides]);
+        return t('progress.completedOfTotal', {
+            completed: real.filter((s: SlideGeneration) => s.status === 'completed').length,
+            total: real.length,
+        });
+    }, [isGeneratingContent, slides, t]);
 
     const handleBack = () => {
         if (isBusyGenerating) {
@@ -1796,7 +1816,7 @@ export function RouteComponent() {
             timestamp: new Date().toISOString(),
         };
         localStorage.setItem('aiCourseDraft', JSON.stringify(draftData));
-        toast.success('Course draft saved');
+        toast.success(t('toast.courseDraftSaved'));
         setBackToLibraryDialogOpen(false);
         navigate({ to: '/study-library/ai-copilot' });
     };
@@ -1825,7 +1845,11 @@ export function RouteComponent() {
         return (
             <LayoutContainer>
                 <Helmet>
-                    <title>{`Generating ${getTerminology(ContentTerms.Course, SystemTerms.Course)} Outline...`}</title>
+                    <title>
+                        {t('page.generatingOutlineTitle', {
+                            course: getTerminology(ContentTerms.Course, SystemTerms.Course),
+                        })}
+                    </title>
                 </Helmet>
                 <OutlineGeneratingLoader estimatedTimeRemaining={estimatedTimeRemaining} />
                 <LeaveDuringGenerationDialog
@@ -1844,12 +1868,11 @@ export function RouteComponent() {
             <LayoutContainer>
                 <Helmet>
                     <title>
-                        {isGeneratingContent ? 'Generating Content...' : 'Edit Course Content'}
+                        {isGeneratingContent
+                            ? t('page.generatingContentTitle')
+                            : t('page.editCourseContentTitle')}
                     </title>
-                    <meta
-                        name="description"
-                        content="Review and edit your AI-generated course content."
-                    />
+                    <meta name="description" content={t('page.editContentMeta')} />
                 </Helmet>
                 <SplitViewLayout
                     sessionsWithProgress={sessionsWithProgress}
@@ -1904,11 +1927,12 @@ export function RouteComponent() {
     return (
         <LayoutContainer>
             <Helmet>
-                <title>{`Review ${getTerminology(ContentTerms.Course, SystemTerms.Course)} Outline`}</title>
-                <meta
-                    name="description"
-                    content="Review and refine your AI-generated course outline."
-                />
+                <title>
+                    {t('page.reviewOutlineTitle', {
+                        course: getTerminology(ContentTerms.Course, SystemTerms.Course),
+                    })}
+                </title>
+                <meta name="description" content={t('page.reviewOutlineMeta')} />
             </Helmet>
             <div className="min-h-screen bg-gradient-to-b from-indigo-50 via-white to-purple-50">
                 <div className="mx-auto max-w-[1600px] px-3 py-4 sm:p-6 lg:px-8">
@@ -1925,8 +1949,15 @@ export function RouteComponent() {
                                 className="flex items-center gap-2 self-start text-sm font-medium text-neutral-600 transition-colors hover:text-indigo-600"
                             >
                                 <ArrowLeft className="size-4" />
-                                <span className="hidden sm:inline">{`Back to Create ${getTerminology(ContentTerms.Course, SystemTerms.Course)}`}</span>
-                                <span className="sm:hidden">Back</span>
+                                <span className="hidden sm:inline">
+                                    {t('page.backToCreate', {
+                                        course: getTerminology(
+                                            ContentTerms.Course,
+                                            SystemTerms.Course
+                                        ),
+                                    })}
+                                </span>
+                                <span className="sm:hidden">{t('page.back')}</span>
                             </button>
 
                             {/* Action Buttons - Top Right */}
@@ -1938,7 +1969,7 @@ export function RouteComponent() {
                                         className="min-w-[140px]"
                                     >
                                         <Loader2 className="mr-1 size-4 animate-spin" />
-                                        Generating...
+                                        {t('page.generatingButton')}
                                     </MyButton>
                                 ) : isContentGenerated ? (
                                     <MyButton
@@ -1957,8 +1988,18 @@ export function RouteComponent() {
                                             <CheckCircle className="mr-1 size-4" />
                                         )}
                                         {isAdmin
-                                            ? `Create ${getTerminology(ContentTerms.Course, SystemTerms.Course)}`
-                                            : `Create Draft ${getTerminology(ContentTerms.Course, SystemTerms.Course)}`}
+                                            ? t('page.createCourse', {
+                                                  course: getTerminology(
+                                                      ContentTerms.Course,
+                                                      SystemTerms.Course
+                                                  ),
+                                              })
+                                            : t('page.createDraftCourse', {
+                                                  course: getTerminology(
+                                                      ContentTerms.Course,
+                                                      SystemTerms.Course
+                                                  ),
+                                              })}
                                     </MyButton>
                                 ) : (
                                     <MyButton
@@ -1974,7 +2015,7 @@ export function RouteComponent() {
                                         className="min-w-[180px]"
                                     >
                                         <Sparkles className="mr-1 size-4" />
-                                        Generate Page Content
+                                        {t('page.generatePageContent')}
                                     </MyButton>
                                 )}
                             </div>
@@ -1982,13 +2023,15 @@ export function RouteComponent() {
 
                         <div>
                             <h1 className="mb-2 text-xl font-semibold text-neutral-900 sm:text-2xl lg:text-3xl">
-                                Step 1: Review Your{' '}
-                                {getTerminology(ContentTerms.Course, SystemTerms.Course)} Outline
+                                {t('page.stepReviewHeading', {
+                                    course: getTerminology(
+                                        ContentTerms.Course,
+                                        SystemTerms.Course
+                                    ),
+                                })}
                             </h1>
                             <p className="text-sm text-gray-600 sm:text-base">
-                                Review the course outline, topics, and objectives generated for your
-                                course. Once everything looks right, click Generate to begin
-                                creating your course materials.
+                                {t('page.stepReviewSubtitle')}
                             </p>
                         </div>
                     </motion.div>
@@ -2006,8 +2049,18 @@ export function RouteComponent() {
                                 <h2 className="flex items-center gap-2 text-lg font-semibold text-neutral-900 sm:text-2xl">
                                     <Layers className="size-5 text-indigo-600 sm:size-6" />
                                     {isContentGenerated
-                                        ? `${getTerminology(ContentTerms.Course, SystemTerms.Course)} Content`
-                                        : `${getTerminology(ContentTerms.Course, SystemTerms.Course)} Outline`}
+                                        ? t('page.contentHeading', {
+                                              course: getTerminology(
+                                                  ContentTerms.Course,
+                                                  SystemTerms.Course
+                                              ),
+                                          })
+                                        : t('page.outlineHeading', {
+                                              course: getTerminology(
+                                                  ContentTerms.Course,
+                                                  SystemTerms.Course
+                                              ),
+                                          })}
                                 </h2>
                                 <div className="flex gap-2">
                                     <MyButton
@@ -2018,12 +2071,12 @@ export function RouteComponent() {
                                         {isAllExpanded ? (
                                             <>
                                                 <ChevronsUp className="size-3" />
-                                                Collapse All
+                                                {t('page.collapseAll')}
                                             </>
                                         ) : (
                                             <>
                                                 <ChevronsDown className="size-3" />
-                                                Expand All
+                                                {t('page.expandAll')}
                                             </>
                                         )}
                                     </MyButton>
@@ -2047,10 +2100,7 @@ export function RouteComponent() {
                                     {!Array.isArray(sessionsWithProgress) ||
                                     sessionsWithProgress.length === 0 ? (
                                         <div className="py-8 text-center text-neutral-500">
-                                            <span>
-                                                No sessions available. Please try refreshing the
-                                                page.
-                                            </span>
+                                            <span>{t('page.noSessions')}</span>
                                         </div>
                                     ) : (
                                         <Accordion
@@ -2144,7 +2194,7 @@ export function RouteComponent() {
                                                                             }}
                                                                         >
                                                                             <Plus className="size-4" />
-                                                                            Add Page
+                                                                            {t('page.addPage')}
                                                                         </button>
                                                                     </div>
                                                                 </SortableContext>
@@ -2164,7 +2214,12 @@ export function RouteComponent() {
                                 className="mt-4 flex w-full items-center justify-center gap-2 rounded-md border-2 border-dashed border-neutral-300 bg-neutral-50 px-4 py-3 text-sm font-medium text-neutral-600 transition-colors hover:border-indigo-400 hover:bg-indigo-50"
                             >
                                 <Plus className="size-4" />
-                                {`Add ${getTerminology(ContentTerms.Chapters, SystemTerms.Chapters)}`}
+                                {t('page.addChapter', {
+                                    chapter: getTerminology(
+                                        ContentTerms.Chapters,
+                                        SystemTerms.Chapters
+                                    ),
+                                })}
                             </button>
                         </motion.div>
 
@@ -2180,7 +2235,7 @@ export function RouteComponent() {
                                 <div className="rounded-xl bg-white p-4 shadow-md">
                                     <div className="mb-3 flex items-center justify-between">
                                         <label className="text-base font-bold text-neutral-900">
-                                            Course name
+                                            {t('metadata.courseName')}
                                         </label>
                                         <div className="flex gap-2">
                                             {editingMetadataField !== 'course_name' && (
@@ -2192,7 +2247,7 @@ export function RouteComponent() {
                                                         )
                                                     }
                                                     className="rounded p-1 text-xs text-indigo-600 hover:bg-indigo-50"
-                                                    title="Edit"
+                                                    title={t('common.edit')}
                                                 >
                                                     <Pencil className="size-3" />
                                                 </button>
@@ -2218,14 +2273,14 @@ export function RouteComponent() {
                                                         handleSaveMetadataEdit('course_name')
                                                     }
                                                 >
-                                                    Save
+                                                    {t('common.save')}
                                                 </MyButton>
                                                 <MyButton
                                                     buttonType="secondary"
                                                     scale="small"
                                                     onClick={handleCancelMetadataEdit}
                                                 >
-                                                    Cancel
+                                                    {t('common.cancel')}
                                                 </MyButton>
                                             </div>
                                         </div>
@@ -2242,7 +2297,7 @@ export function RouteComponent() {
                                 <div className="rounded-xl bg-white p-4 shadow-md">
                                     <div className="mb-3 flex items-center justify-between">
                                         <label className="text-base font-bold text-neutral-900">
-                                            Description
+                                            {t('metadata.description')}
                                         </label>
                                         <div className="flex gap-2">
                                             {editingMetadataField !== 'description' && (
@@ -2259,7 +2314,7 @@ export function RouteComponent() {
                                                         );
                                                     }}
                                                     className="rounded p-1 text-xs text-indigo-600 hover:bg-indigo-50"
-                                                    title="Edit"
+                                                    title={t('common.edit')}
                                                 >
                                                     <Pencil className="size-3" />
                                                 </button>
@@ -2285,14 +2340,14 @@ export function RouteComponent() {
                                                         handleSaveMetadataEdit('description')
                                                     }
                                                 >
-                                                    Save
+                                                    {t('common.save')}
                                                 </MyButton>
                                                 <MyButton
                                                     buttonType="secondary"
                                                     scale="small"
                                                     onClick={handleCancelMetadataEdit}
                                                 >
-                                                    Cancel
+                                                    {t('common.cancel')}
                                                 </MyButton>
                                             </div>
                                         </div>
@@ -2313,7 +2368,7 @@ export function RouteComponent() {
                                 <div className="rounded-xl bg-white p-4 shadow-md">
                                     <div className="mb-3 flex items-center justify-between">
                                         <label className="text-base font-bold text-neutral-900">
-                                            Level
+                                            {t('metadata.level')}
                                         </label>
                                     </div>
                                     <Select
@@ -2326,7 +2381,7 @@ export function RouteComponent() {
                                         }}
                                     >
                                         <SelectTrigger className="w-full text-sm">
-                                            <SelectValue placeholder="Select level" />
+                                            <SelectValue placeholder={t('metadata.selectLevel')} />
                                         </SelectTrigger>
                                         <SelectContent>
                                             {instituteLevels.length > 0 ? (
@@ -2338,14 +2393,16 @@ export function RouteComponent() {
                                             ) : (
                                                 <>
                                                     <SelectItem value="Beginner">
-                                                        Beginner
+                                                        {t('metadata.levelBeginner')}
                                                     </SelectItem>
-                                                    <SelectItem value="Basic">Basic</SelectItem>
+                                                    <SelectItem value="Basic">
+                                                        {t('metadata.levelBasic')}
+                                                    </SelectItem>
                                                     <SelectItem value="Intermediate">
-                                                        Intermediate
+                                                        {t('metadata.levelIntermediate')}
                                                     </SelectItem>
                                                     <SelectItem value="Advanced">
-                                                        Advanced
+                                                        {t('metadata.levelAdvanced')}
                                                     </SelectItem>
                                                 </>
                                             )}
@@ -2359,7 +2416,7 @@ export function RouteComponent() {
                                 <div className="rounded-xl bg-white p-4 shadow-md">
                                     <div className="mb-3 flex items-center justify-between">
                                         <label className="text-base font-bold text-neutral-900">
-                                            Course tags
+                                            {t('metadata.courseTags')}
                                         </label>
                                         <div className="flex gap-2">
                                             {editingMetadataField !== 'tags' && (
@@ -2371,7 +2428,7 @@ export function RouteComponent() {
                                                         )
                                                     }
                                                     className="rounded p-1 text-xs text-indigo-600 hover:bg-indigo-50"
-                                                    title="Edit"
+                                                    title={t('common.edit')}
                                                 >
                                                     <Pencil className="size-3" />
                                                 </button>
@@ -2385,7 +2442,7 @@ export function RouteComponent() {
                                                 onChange={(e) =>
                                                     setMetadataEditValues({ tags: e.target.value })
                                                 }
-                                                placeholder="Enter tags separated by commas"
+                                                placeholder={t('metadata.tagsPlaceholder')}
                                                 className="min-h-[60px] text-sm"
                                             />
                                             <div className="flex gap-2">
@@ -2395,8 +2452,8 @@ export function RouteComponent() {
                                                     onClick={() => {
                                                         const tags = metadataEditValues.tags
                                                             .split(',')
-                                                            .map((t: string) => t.trim())
-                                                            .filter((t: string) => t);
+                                                            .map((tag: string) => tag.trim())
+                                                            .filter((tag: string) => tag);
                                                         setCourseMetadata((prev: any) => ({
                                                             ...prev,
                                                             tags,
@@ -2404,14 +2461,14 @@ export function RouteComponent() {
                                                         handleSaveMetadataEdit('tags');
                                                     }}
                                                 >
-                                                    Save
+                                                    {t('common.save')}
                                                 </MyButton>
                                                 <MyButton
                                                     buttonType="secondary"
                                                     scale="small"
                                                     onClick={handleCancelMetadataEdit}
                                                 >
-                                                    Cancel
+                                                    {t('common.cancel')}
                                                 </MyButton>
                                             </div>
                                         </div>
@@ -2438,10 +2495,10 @@ export function RouteComponent() {
                                 <div className="mb-3 flex items-center justify-between">
                                     <div>
                                         <label className="text-base font-bold text-neutral-900">
-                                            Course preview image
+                                            {t('metadata.coursePreviewImage')}
                                         </label>
                                         <p className="mt-1 text-xs text-neutral-500">
-                                            Thumbnail shown on course cards
+                                            {t('metadata.coursePreviewImageHint')}
                                         </p>
                                     </div>
                                 </div>
@@ -2451,7 +2508,7 @@ export function RouteComponent() {
                                             <div className="aspect-[16/9] w-full overflow-hidden rounded-lg">
                                                 <img
                                                     src={courseMetadata.previewImageUrl}
-                                                    alt="Course preview"
+                                                    alt={t('metadata.coursePreviewAlt')}
                                                     className="size-full object-cover"
                                                 />
                                             </div>
@@ -2463,7 +2520,7 @@ export function RouteComponent() {
                                                     }));
                                                 }}
                                                 className="absolute right-2 top-2 rounded-full bg-red-500 p-1 text-white hover:bg-red-600"
-                                                title="Remove image"
+                                                title={t('metadata.removeImage')}
                                             >
                                                 <X className="size-3" />
                                             </button>
@@ -2486,7 +2543,7 @@ export function RouteComponent() {
                                                             }
                                                         }}
                                                     />
-                                                    Upload
+                                                    {t('common.upload')}
                                                 </label>
                                             </div>
                                         </div>
@@ -2509,10 +2566,10 @@ export function RouteComponent() {
                                             />
                                             <ImageIcon className="mb-2 size-8 text-neutral-400" />
                                             <span className="text-sm font-medium text-neutral-600">
-                                                Click to upload preview image
+                                                {t('metadata.clickToUploadPreview')}
                                             </span>
                                             <span className="mt-1 text-xs text-neutral-500">
-                                                Thumbnail for course card
+                                                {t('metadata.thumbnailForCard')}
                                             </span>
                                         </label>
                                     )}
@@ -2524,10 +2581,10 @@ export function RouteComponent() {
                                 <div className="mb-3 flex items-center justify-between">
                                     <div>
                                         <label className="text-base font-bold text-neutral-900">
-                                            Course banner image
+                                            {t('metadata.courseBannerImage')}
                                         </label>
                                         <p className="mt-1 text-xs text-neutral-500">
-                                            Wide header image on course detail page
+                                            {t('metadata.courseBannerHint')}
                                         </p>
                                     </div>
                                 </div>
@@ -2537,7 +2594,7 @@ export function RouteComponent() {
                                             <div className="aspect-[16/9] w-full overflow-hidden rounded-lg">
                                                 <img
                                                     src={courseMetadata.bannerImageUrl}
-                                                    alt="Course banner"
+                                                    alt={t('metadata.courseBannerAlt')}
                                                     className="size-full object-cover"
                                                 />
                                             </div>
@@ -2549,7 +2606,7 @@ export function RouteComponent() {
                                                     }));
                                                 }}
                                                 className="absolute right-2 top-2 rounded-full bg-red-500 p-1 text-white hover:bg-red-600"
-                                                title="Remove image"
+                                                title={t('metadata.removeImage')}
                                             >
                                                 <X className="size-3" />
                                             </button>
@@ -2572,7 +2629,7 @@ export function RouteComponent() {
                                                             }
                                                         }}
                                                     />
-                                                    Upload
+                                                    {t('common.upload')}
                                                 </label>
                                             </div>
                                         </div>
@@ -2595,10 +2652,10 @@ export function RouteComponent() {
                                             />
                                             <ImageIcon className="mb-2 size-8 text-neutral-400" />
                                             <span className="text-sm font-medium text-neutral-600">
-                                                Click to upload banner image
+                                                {t('metadata.clickToUploadBanner')}
                                             </span>
                                             <span className="mt-1 text-xs text-neutral-500">
-                                                Wide header for course detail page
+                                                {t('metadata.wideHeaderHint')}
                                             </span>
                                         </label>
                                     )}
@@ -2610,15 +2667,15 @@ export function RouteComponent() {
                                 <div className="mb-3 flex items-center justify-between">
                                     <div>
                                         <label className="text-base font-bold text-neutral-900">
-                                            Course Media
+                                            {t('metadata.courseMedia')}
                                         </label>
                                         <p className="mt-1 text-xs text-neutral-500">
-                                            Featured image or video for course page
+                                            {t('metadata.courseMediaHint')}
                                             {!courseMetadata?.courseMedia &&
                                                 (courseMetadata?.mediaImageUrl ||
                                                     courseMetadata?.bannerImageUrl ||
                                                     courseMetadata?.previewImageUrl) &&
-                                                ' - Using fallback image'}
+                                                t('metadata.usingFallbackImage')}
                                         </p>
                                     </div>
                                 </div>
@@ -2656,7 +2713,7 @@ export function RouteComponent() {
                                                             courseMetadata?.bannerImageUrl ||
                                                             courseMetadata?.previewImageUrl
                                                         }
-                                                        alt="Course media"
+                                                        alt={t('metadata.courseMediaAlt')}
                                                         className="size-full object-cover"
                                                     />
                                                 </div>
@@ -2670,7 +2727,7 @@ export function RouteComponent() {
                                                     }))
                                                 }
                                                 className="absolute right-2 top-2 rounded-full bg-red-500 p-1 text-white hover:bg-red-600"
-                                                title="Remove media"
+                                                title={t('metadata.removeMedia')}
                                             >
                                                 <X className="size-3" />
                                             </button>
@@ -2699,14 +2756,14 @@ export function RouteComponent() {
                                                             }
                                                         }}
                                                     />
-                                                    Upload
+                                                    {t('common.upload')}
                                                 </label>
                                                 <button
                                                     onClick={() => setMediaEditMode('youtube')}
                                                     className="flex items-center gap-1.5 rounded-md border border-neutral-300 bg-white px-3 py-1.5 text-xs font-medium text-neutral-700 transition-colors hover:bg-neutral-50"
                                                 >
                                                     <Video className="size-3" />
-                                                    YouTube Link
+                                                    {t('metadata.youtubeLink')}
                                                 </button>
                                             </div>
                                         </div>
@@ -2715,7 +2772,7 @@ export function RouteComponent() {
                                             {mediaEditMode === 'youtube' ? (
                                                 <div className="space-y-2">
                                                     <Input
-                                                        placeholder="Paste YouTube URL here"
+                                                        placeholder={t('metadata.pasteYoutubeUrl')}
                                                         className="text-sm"
                                                         onKeyDown={(e) => {
                                                             if (e.key === 'Enter') {
@@ -2775,14 +2832,14 @@ export function RouteComponent() {
                                                                 }
                                                             }}
                                                         >
-                                                            Save
+                                                            {t('common.save')}
                                                         </MyButton>
                                                         <MyButton
                                                             buttonType="secondary"
                                                             scale="small"
                                                             onClick={() => setMediaEditMode(null)}
                                                         >
-                                                            Cancel
+                                                            {t('common.cancel')}
                                                         </MyButton>
                                                     </div>
                                                 </div>
@@ -2815,14 +2872,14 @@ export function RouteComponent() {
                                                             }}
                                                         />
                                                         <ImageIcon className="size-4" />
-                                                        Upload Image or Video
+                                                        {t('metadata.uploadImageOrVideo')}
                                                     </label>
                                                     <button
                                                         onClick={() => setMediaEditMode('youtube')}
                                                         className="flex w-full items-center justify-center gap-2 rounded-lg border border-neutral-300 bg-white px-4 py-2 text-sm font-medium text-neutral-700 transition-colors hover:bg-neutral-50"
                                                     >
                                                         <Video className="size-4" />
-                                                        Add YouTube Link
+                                                        {t('metadata.addYoutubeLink')}
                                                     </button>
                                                 </>
                                             )}
@@ -2836,7 +2893,7 @@ export function RouteComponent() {
                                 <div className="rounded-xl bg-white p-4 shadow-md">
                                     <div className="mb-3 flex items-center justify-between">
                                         <label className="text-base font-bold text-neutral-900">
-                                            What learners will gain
+                                            {t('metadata.whatLearnersGain')}
                                         </label>
                                         <div className="flex gap-2">
                                             {editingMetadataField !== 'why_learn_html' && (
@@ -2848,7 +2905,7 @@ export function RouteComponent() {
                                                         )
                                                     }
                                                     className="rounded p-1 text-xs text-indigo-600 hover:bg-indigo-50"
-                                                    title="Edit"
+                                                    title={t('common.edit')}
                                                 >
                                                     <Pencil className="size-3" />
                                                 </button>
@@ -2874,14 +2931,14 @@ export function RouteComponent() {
                                                         handleSaveMetadataEdit('why_learn_html')
                                                     }
                                                 >
-                                                    Save
+                                                    {t('common.save')}
                                                 </MyButton>
                                                 <MyButton
                                                     buttonType="secondary"
                                                     scale="small"
                                                     onClick={handleCancelMetadataEdit}
                                                 >
-                                                    Cancel
+                                                    {t('common.cancel')}
                                                 </MyButton>
                                             </div>
                                         </div>
@@ -2903,7 +2960,7 @@ export function RouteComponent() {
                                 <div className="rounded-xl bg-white p-4 shadow-md">
                                     <div className="mb-3 flex items-center justify-between">
                                         <label className="text-base font-bold text-neutral-900">
-                                            Who Should Join
+                                            {t('metadata.whoShouldJoin')}
                                         </label>
                                         <div className="flex gap-2">
                                             {editingMetadataField !== 'who_should_learn_html' && (
@@ -2915,7 +2972,7 @@ export function RouteComponent() {
                                                         )
                                                     }
                                                     className="rounded p-1 text-xs text-indigo-600 hover:bg-indigo-50"
-                                                    title="Edit"
+                                                    title={t('common.edit')}
                                                 >
                                                     <Pencil className="size-3" />
                                                 </button>
@@ -2945,14 +3002,14 @@ export function RouteComponent() {
                                                         )
                                                     }
                                                 >
-                                                    Save
+                                                    {t('common.save')}
                                                 </MyButton>
                                                 <MyButton
                                                     buttonType="secondary"
                                                     scale="small"
                                                     onClick={handleCancelMetadataEdit}
                                                 >
-                                                    Cancel
+                                                    {t('common.cancel')}
                                                 </MyButton>
                                             </div>
                                         </div>
@@ -2974,7 +3031,7 @@ export function RouteComponent() {
                                 <div className="rounded-xl bg-white p-4 shadow-md">
                                     <div className="mb-3 flex items-center justify-between">
                                         <label className="text-base font-bold text-neutral-900">
-                                            About the Course
+                                            {t('metadata.aboutCourse')}
                                         </label>
                                         <div className="flex gap-2">
                                             {editingMetadataField !== 'about_the_course_html' && (
@@ -2986,7 +3043,7 @@ export function RouteComponent() {
                                                         )
                                                     }
                                                     className="rounded p-1 text-xs text-indigo-600 hover:bg-indigo-50"
-                                                    title="Edit"
+                                                    title={t('common.edit')}
                                                 >
                                                     <Pencil className="size-3" />
                                                 </button>
@@ -3016,14 +3073,14 @@ export function RouteComponent() {
                                                         )
                                                     }
                                                 >
-                                                    Save
+                                                    {t('common.save')}
                                                 </MyButton>
                                                 <MyButton
                                                     buttonType="secondary"
                                                     scale="small"
                                                     onClick={handleCancelMetadataEdit}
                                                 >
-                                                    Cancel
+                                                    {t('common.cancel')}
                                                 </MyButton>
                                             </div>
                                         </div>
@@ -3048,8 +3105,8 @@ export function RouteComponent() {
                         onOpenChange={(open) => {
                             if (!open) {
                                 setViewingSlide(null);
-                                setQuizQuestions(DEFAULT_QUIZ_QUESTIONS);
-                                setSelectedQuizAnswers({ ...DEFAULT_SELECTED_ANSWERS });
+                                setQuizQuestions(defaultQuizQuestions);
+                                setSelectedQuizAnswers({ ...defaultSelectedAnswers });
                                 setCurrentQuizQuestionIndex(0);
                             }
                         }}
@@ -3069,7 +3126,9 @@ export function RouteComponent() {
                                                 <HtmlDocField
                                                     value={documentContent}
                                                     onChange={setDocumentContent}
-                                                    placeholder="Enter document content..."
+                                                    placeholder={t(
+                                                        'slideDialog.enterDocumentContent'
+                                                    )}
                                                     minHeight={500}
                                                 />
                                             </div>
@@ -3094,7 +3153,7 @@ export function RouteComponent() {
                                                         <div className="flex items-center gap-3">
                                                             <div className="flex items-center gap-2 text-sm font-semibold text-neutral-900">
                                                                 <Code className="size-4" />
-                                                                <span>Code Editor</span>
+                                                                <span>{t('slideDialog.codeEditor')}</span>
                                                             </div>
                                                             <span
                                                                 className={`rounded-full px-3 py-1 text-xs font-semibold ${
@@ -3104,8 +3163,8 @@ export function RouteComponent() {
                                                                 }`}
                                                             >
                                                                 {isEditMode
-                                                                    ? 'Edit Mode'
-                                                                    : 'View Mode'}
+                                                                    ? t('slideDialog.editMode')
+                                                                    : t('slideDialog.viewMode')}
                                                             </span>
                                                         </div>
                                                         <div className="flex items-center gap-2">
@@ -3114,13 +3173,13 @@ export function RouteComponent() {
                                                                 className="flex items-center gap-2 rounded bg-green-600 px-3 py-1.5 text-sm font-medium text-white transition-colors hover:bg-green-700"
                                                             >
                                                                 <Play className="size-4" />
-                                                                Run
+                                                                {t('slideDialog.run')}
                                                             </button>
                                                             <DropdownMenu>
                                                                 <DropdownMenuTrigger asChild>
                                                                     <button className="flex items-center gap-2 rounded border border-neutral-300 bg-white px-3 py-1.5 text-sm font-medium transition-colors hover:bg-neutral-50">
                                                                         <Settings className="size-4" />
-                                                                        Settings
+                                                                        {t('slideDialog.settings')}
                                                                         <ChevronDown className="size-3" />
                                                                     </button>
                                                                 </DropdownMenuTrigger>
@@ -3141,7 +3200,9 @@ export function RouteComponent() {
                                                                         <div className="flex items-center gap-2">
                                                                             <Eye className="size-4" />
                                                                             <span>
-                                                                                View/Edit Mode
+                                                                                {t(
+                                                                                    'slideDialog.viewEditMode'
+                                                                                )}
                                                                             </span>
                                                                         </div>
                                                                         {isEditMode && (
@@ -3168,8 +3229,12 @@ export function RouteComponent() {
                                                                         <Sun className="size-4" />
                                                                         <span>
                                                                             {isDarkTheme
-                                                                                ? 'Switch to Light Theme'
-                                                                                : 'Switch to Dark Theme'}
+                                                                                ? t(
+                                                                                      'slideDialog.switchToLightTheme'
+                                                                                  )
+                                                                                : t(
+                                                                                      'slideDialog.switchToDarkTheme'
+                                                                                  )}
                                                                         </span>
                                                                     </DropdownMenuItem>
 
@@ -3181,7 +3246,11 @@ export function RouteComponent() {
                                                                         className="flex items-center gap-2"
                                                                     >
                                                                         <Copy className="size-4" />
-                                                                        <span>Copy Code</span>
+                                                                        <span>
+                                                                            {t(
+                                                                                'slideDialog.copyCode'
+                                                                            )}
+                                                                        </span>
                                                                     </DropdownMenuItem>
 
                                                                     {/* Download Code */}
@@ -3190,7 +3259,11 @@ export function RouteComponent() {
                                                                         className="flex items-center gap-2"
                                                                     >
                                                                         <Download className="size-4" />
-                                                                        <span>Download Code</span>
+                                                                        <span>
+                                                                            {t(
+                                                                                'slideDialog.downloadCode'
+                                                                            )}
+                                                                        </span>
                                                                     </DropdownMenuItem>
                                                                 </DropdownMenuContent>
                                                             </DropdownMenu>
@@ -3239,10 +3312,10 @@ export function RouteComponent() {
                                                         <div className="px-6 text-center text-white">
                                                             <Video className="mx-auto mb-2 size-16 opacity-50" />
                                                             <p className="text-sm opacity-75">
-                                                                Video Player
+                                                                {t('slideDialog.videoPlayer')}
                                                             </p>
                                                             <p className="mt-2 text-xs opacity-50">
-                                                                Video will be displayed here
+                                                                {t('slideDialog.videoWillDisplay')}
                                                             </p>
                                                         </div>
                                                     </div>
@@ -3256,11 +3329,13 @@ export function RouteComponent() {
                                                 <div className="flex items-start justify-between gap-4">
                                                     <div className="flex-1">
                                                         <Label className="text-base font-semibold">
-                                                            Question:
+                                                            {t('slideDialog.question')}
                                                         </Label>
                                                         <p className="mt-2 text-neutral-700">
                                                             {currentQuizQuestion?.question ??
-                                                                'No question available'}
+                                                                t(
+                                                                    'slideDialog.noQuestionAvailable'
+                                                                )}
                                                         </p>
                                                     </div>
                                                     <div className="flex items-center gap-3">
@@ -3272,7 +3347,9 @@ export function RouteComponent() {
                                                                 currentQuizQuestionIndex === 0
                                                             }
                                                             className="flex size-9 items-center justify-center rounded-full border border-neutral-300 bg-white text-neutral-600 transition-colors hover:border-emerald-400 hover:text-emerald-600 disabled:cursor-not-allowed disabled:opacity-40"
-                                                            aria-label="Previous question"
+                                                            aria-label={t(
+                                                                'slideDialog.previousQuestion'
+                                                            )}
                                                         >
                                                             <ChevronLeft className="size-4" />
                                                         </button>
@@ -3290,7 +3367,9 @@ export function RouteComponent() {
                                                                     quizQuestions.length - 1
                                                             }
                                                             className="flex size-9 items-center justify-center rounded-full border border-neutral-300 bg-white text-neutral-600 transition-colors hover:border-emerald-400 hover:text-emerald-600 disabled:cursor-not-allowed disabled:opacity-40"
-                                                            aria-label="Next question"
+                                                            aria-label={t(
+                                                                'slideDialog.nextQuestion'
+                                                            )}
                                                         >
                                                             <ChevronRight className="size-4" />
                                                         </button>
@@ -3349,7 +3428,7 @@ export function RouteComponent() {
                                                     </RadioGroup>
                                                 ) : (
                                                     <p className="text-sm text-neutral-500">
-                                                        No questions available for this quiz yet.
+                                                        {t('slideDialog.noQuestionsYet')}
                                                     </p>
                                                 )}
                                             </div>
@@ -3361,21 +3440,23 @@ export function RouteComponent() {
                                             <div className="space-y-4">
                                                 <div>
                                                     <Label className="text-base font-semibold">
-                                                        Question:
+                                                        {t('slideDialog.question')}
                                                     </Label>
                                                     <Textarea
                                                         value={homeworkQuestion}
                                                         onChange={(e) =>
                                                             setHomeworkQuestion(e.target.value)
                                                         }
-                                                        placeholder="Enter assignment question..."
+                                                        placeholder={t(
+                                                            'slideDialog.enterAssignmentQuestion'
+                                                        )}
                                                         className="mt-2 min-h-[100px]"
                                                     />
                                                 </div>
                                                 <div>
                                                     <div className="mb-2 flex items-center gap-4">
                                                         <Label className="text-base font-semibold">
-                                                            Answer:
+                                                            {t('slideDialog.answer')}
                                                         </Label>
                                                         <div className="flex gap-2">
                                                             <button
@@ -3388,7 +3469,7 @@ export function RouteComponent() {
                                                                         : 'bg-neutral-100 text-neutral-700'
                                                                 }`}
                                                             >
-                                                                Text
+                                                                {t('slideDialog.text')}
                                                             </button>
                                                             <button
                                                                 onClick={() =>
@@ -3400,7 +3481,7 @@ export function RouteComponent() {
                                                                         : 'bg-neutral-100 text-neutral-700'
                                                                 }`}
                                                             >
-                                                                Code Editor
+                                                                {t('slideDialog.codeEditor')}
                                                             </button>
                                                         </div>
                                                     </div>
@@ -3446,8 +3527,8 @@ export function RouteComponent() {
                                                 <div className="border-b bg-neutral-100 px-4 py-2">
                                                     <span className="text-sm font-medium">
                                                         {viewingSlide.slideType === 'solution'
-                                                            ? 'Solution Code'
-                                                            : 'Code Editor'}
+                                                            ? t('slideDialog.solutionCode')
+                                                            : t('slideDialog.codeEditor')}
                                                     </span>
                                                 </div>
                                                 <Editor
@@ -3479,7 +3560,7 @@ export function RouteComponent() {
                                                 setViewingSlide(null);
                                             }}
                                         >
-                                            Save
+                                            {t('common.save')}
                                         </MyButton>
                                     </div>
                                 </>
@@ -3518,7 +3599,7 @@ export function RouteComponent() {
                                     const slideTitles = extractSlideTitlesFromSlides(
                                         session.slides
                                     );
-                                    const defaultPrompt = `Regenerate the ${getTerminology(ContentTerms.Chapters, SystemTerms.Chapters).toLowerCase()} "${session.sessionTitle}"${slideTitles.length > 0 ? ` with the following ${getTerminologyPlural(ContentTerms.Slides, SystemTerms.Slides).toLowerCase()}: ${slideTitles.join(', ')}.` : `.`}`;
+                                    const defaultPrompt = `${t('regeneratePrompt.base', { chapter: getTerminology(ContentTerms.Chapters, SystemTerms.Chapters).toLowerCase(), title: session.sessionTitle })}${slideTitles.length > 0 ? t('regeneratePrompt.withSlides', { slides: getTerminologyPlural(ContentTerms.Slides, SystemTerms.Slides).toLowerCase(), titles: slideTitles.join(', ') }) : t('regeneratePrompt.noSlides')}`;
                                     setRegenerateSessionPrompt(defaultPrompt);
                                     setRegenerateSessionTopics(slideTitles);
                                     setRegenerateSessionNumberOfTopics(

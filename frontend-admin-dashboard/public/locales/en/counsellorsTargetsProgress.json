@@ -1,0 +1,13 @@
+{
+    "noTargetSet": "No target set",
+    "metricFull": {
+        "CONVERSIONS": "Conversions",
+        "LEADS_ASSIGNED": "Leads assigned",
+        "CALLS_MADE": "Calls made"
+    },
+    "metricShort": {
+        "CONVERSIONS": "Conv",
+        "LEADS_ASSIGNED": "Leads",
+        "CALLS_MADE": "Calls"
+    }
+}

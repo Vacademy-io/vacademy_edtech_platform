@@ -1,0 +1,37 @@
+{
+    "header": {
+        "title": "रचनात्मक दिशा"
+    },
+    "fields": {
+        "controlling_idea": {
+            "label": "मुख्य विचार",
+            "hint": "वह एक तर्क जो वीडियो प्रस्तुत करता है"
+        },
+        "tonal_register": {
+            "label": "लहजा",
+            "hint": "जैसे आत्मविश्वासी, चंचल, वृत्तचित्र-शैली"
+        },
+        "emotional_arc": {
+            "label": "भावनात्मक चाप",
+            "hint": "से → तक"
+        },
+        "visual_metaphor": {
+            "label": "दृश्य रूपक",
+            "hint": "एनिमेट किया जा सकने वाला विचार"
+        },
+        "signature_device": {
+            "label": "विशिष्ट शैली तत्व",
+            "hint": "एक बार-बार आने वाला दृश्य संकेत"
+        }
+    },
+    "directions": {
+        "draftLabel": "दिशा {{letter}} · ड्राफ़्ट",
+        "label": "दिशा {{letter}}",
+        "draftWhyThisWorks": "ड्राफ़्ट दिशा।"
+    },
+    "actions": {
+        "letAiDecide": "AI को तय करने दें",
+        "saveAndContinue": "सहेजें और जारी रखें",
+        "approveDirection": "दिशा स्वीकृत करें"
+    }
+}

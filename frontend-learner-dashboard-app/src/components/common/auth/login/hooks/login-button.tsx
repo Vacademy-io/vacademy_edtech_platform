@@ -28,12 +28,25 @@ export class SessionLimitError extends Error {
     }
 }
 
+// The credentials were right, but the account belongs to another institute than the
+// portal being signed into. Not a credentials failure: retrying other casings of the
+// same password cannot help.
+export class PortalAccessError extends Error {
+    constructor(message: string) {
+        super(message);
+        this.name = "PortalAccessError";
+    }
+}
+
+const NOT_A_PORTAL_MEMBER_MARKER = "not registered with this institute";
+
 // Single credential attempt against the login endpoint. Returns the parsed
 // token payload, or throws (SessionLimitError for a valid-but-capped account,
 // a plain Error for any other failure).
 async function attemptLogin(
     userName: string,
     password: string,
+    portalInstituteId?: string | null,
 ): Promise<z.infer<typeof loginResponseSchema>> {
     const response = await fetch(LOGIN_URL, {
         method: "POST",
@@ -45,10 +58,20 @@ async function attemptLogin(
             password: password,
             client_name: "ADMIN_PORTAL",
             // institute_id: INSTITUTE_ID,
+            // Login pages only: lets the server keep a white-label portal to its own learners.
+            ...(portalInstituteId && { portal_institute_id: portalInstituteId }),
         }),
     });
 
     if (!response.ok) {
+        const body = await response.json().catch(() => null);
+        const serverMessage: unknown = body?.ex;
+        if (
+            typeof serverMessage === "string" &&
+            serverMessage.includes(NOT_A_PORTAL_MEMBER_MARKER)
+        ) {
+            throw new PortalAccessError(serverMessage);
+        }
         throw new Error("Login failed");
     }
 
@@ -67,6 +90,7 @@ async function loginUser(
     username: string,
     password: string,
     convertToLowercase?: boolean | null,
+    portalInstituteId?: string | null,
 ): Promise<z.infer<typeof loginResponseSchema>> {
     let tokenData: z.infer<typeof loginResponseSchema>;
 
@@ -78,17 +102,18 @@ async function loginUser(
             tokenData = await attemptLogin(
                 username.toLowerCase(),
                 password.toLowerCase(),
+                portalInstituteId,
             );
         } catch (error) {
             // A capped-but-valid account isn't a credentials failure — don't
             // retry, surface the session-limit dialog instead.
-            if (error instanceof SessionLimitError) {
+            if (error instanceof SessionLimitError || error instanceof PortalAccessError) {
                 throw error;
             }
-            tokenData = await attemptLogin(username, password);
+            tokenData = await attemptLogin(username, password, portalInstituteId);
         }
     } else {
-        tokenData = await attemptLogin(username, password);
+        tokenData = await attemptLogin(username, password, portalInstituteId);
     }
 
     // --- BUG FIX: Save tokens and instituteId to storage ---

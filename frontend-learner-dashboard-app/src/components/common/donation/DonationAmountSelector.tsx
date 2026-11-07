@@ -1,4 +1,5 @@
 import React from "react";
+import { useTranslation } from "react-i18next";
 import { formatCurrency, getCurrencySymbol } from "../../../routes/study-library/courses/course-details/-services/enrollment-api";
 
 interface DonationAmountSelectorProps {
@@ -22,6 +23,7 @@ export const DonationAmountSelector: React.FC<DonationAmountSelectorProps> = ({
   onAmountSelect,
   onCustomAmountChange,
 }) => {
+  const { t } = useTranslation("layoutCommonB");
   // Check if the current amount selection is valid
   const isAmountValid = () => {
     if (selectedAmount === 'other') {
@@ -63,14 +65,17 @@ export const DonationAmountSelector: React.FC<DonationAmountSelectorProps> = ({
             onKeyPress={(e) => { if (e.key === 'Enter' || e.key === ' ') onAmountSelect('other'); }}
             style={{ gridColumn: 'span 2' }}
           >
-            Other
+            {t("donation.amountSelector.other")}
           </div>
         )}
         {selectedAmount === 'other' && (
           <input
             type="number"
             min="0"
-            placeholder={`${getCurrencySymbol(currency)} (min ${formatCurrency(minimumAmount, currency)})`}
+            placeholder={t("donation.amountSelector.customAmountPlaceholder", {
+              symbol: getCurrencySymbol(currency),
+              minAmount: formatCurrency(minimumAmount, currency),
+            })}
             className="border rounded p-2 text-xs w-full mt-1 mb-1 col-span-2 h-12"
             value={customAmount}
             onChange={(e) => onCustomAmountChange(e.target.value)}

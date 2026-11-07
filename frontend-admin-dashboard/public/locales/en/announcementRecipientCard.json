@@ -1,0 +1,90 @@
+{
+    "ruleTypes": {
+        "role": "Everyone with a role",
+        "packageSession": "Specific batches",
+        "packageSessionSpecific": "Specific {{batchNounPlural}}",
+        "user": "Specific people",
+        "tag": "People with tags",
+        "audience": "A campaign audience",
+        "customFieldFilter": "People matching field values"
+    },
+    "removeAudience": "Remove audience {{index}}",
+    "role": {
+        "label": "Role",
+        "placeholder": "Choose a role",
+        "admins": "Admins"
+    },
+    "packageSession": {
+        "orgRoleLabel": "Who inside the sub-organisation?",
+        "orgRolePlaceholder": "Choose Admin or Learner",
+        "orgRoleLearners": "Learners",
+        "orgRoleAdmins": "Admins",
+        "orgRoleHint": "One or more selected {{batchNounPlural}} belong to a sub-organisation, which needs an explicit role."
+    },
+    "user": {
+        "label": "User ids or emails",
+        "placeholder": "Paste ids or emails, separated by commas",
+        "add": "Add",
+        "remove": "Remove {{id}}"
+    },
+    "tag": {
+        "label": "Tags",
+        "scopeAll": "All tags",
+        "scopeDefault": "Default tags",
+        "scopeInstitute": "Institute tags",
+        "loading": "Loading tags…",
+        "placeholder": "Select one or more tags",
+        "hintPrefix": "Anyone carrying",
+        "hintAny": "any",
+        "hintSuffix": "of the selected tags receives this."
+    },
+    "audience": {
+        "label": "Campaigns",
+        "loading": "Loading campaigns…",
+        "placeholder": "Select one or more campaigns",
+        "searchPlaceholder": "Search campaigns…",
+        "emptyText": "No campaigns found.",
+        "hint": "Anyone in any of the selected campaigns receives this."
+    },
+    "customFieldFilter": {
+        "hintPrefix": "Everyone whose profile matches the filters below receives this. Add them under",
+        "hintRefine": "Refine"
+    },
+    "refine": {
+        "toggle": "Refine — field filters and exclusions",
+        "fieldFiltersLabel": "Field filters",
+        "addFilter": "Add filter",
+        "noCustomFields": "No custom fields are configured for this institute.",
+        "noFilters": "No filters — everyone above is included.",
+        "chooseField": "Choose a field",
+        "removeFilter": "Remove filter",
+        "selectValues": "Select values",
+        "enterNumber": "Enter a number",
+        "operatorEquals": "Equals",
+        "operatorContains": "Contains",
+        "operatorStartsWith": "Starts with",
+        "operatorEndsWith": "Ends with",
+        "valueToMatch": "Value to match",
+        "exclusionsLabel": "Exclusions",
+        "addExclusion": "Add exclusion",
+        "noExclusions": "Nobody is excluded from this audience.",
+        "exclusionRole": "Role",
+        "exclusionTag": "Tag",
+        "exclusionUser": "User",
+        "selectRole": "Select a role",
+        "removeExclusion": "Remove exclusion",
+        "selectBatch": "Select a {{batchNoun}}",
+        "searchBatches": "Search {{batchNounPlural}}…",
+        "noBatchesFound": "No {{batchNounPlural}} found.",
+        "selectTag": "Select a tag",
+        "searchTags": "Search tags…",
+        "noTagsFound": "No tags found.",
+        "userIdOrEmail": "User id or email"
+    },
+    "reach": {
+        "estimating": "Estimating reach…",
+        "unavailable": "Reach estimate unavailable.",
+        "summary_one": "About {{formattedCount}} person carries the tags selected across this announcement.",
+        "summary_other": "About {{formattedCount}} people carry the tags selected across this announcement."
+    }
+}

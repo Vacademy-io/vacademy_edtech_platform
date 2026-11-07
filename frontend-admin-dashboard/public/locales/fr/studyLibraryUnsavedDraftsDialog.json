@@ -1,0 +1,22 @@
+{
+    "heading": "Modifications non enregistrées",
+    "keptOnDeviceHint": "Conservé uniquement sur cet appareil — se déconnecter ou effacer les données du navigateur fera perdre ces modifications. Ouvrez un {{slideTerm}} pour l'enregistrer.",
+    "keepInBrowser": "Conserver dans le navigateur",
+    "discardChanges": "Annuler les modifications",
+    "close": "Fermer",
+    "unsavedEditsHintLeave": "Ces {{slidesTermPlural}} contiennent des modifications non enregistrées dans la base de données. Cliquez sur l'une d'elles pour l'ouvrir, ou choisissez quoi faire avant de quitter.",
+    "unsavedEditsHintReview": "Ces {{slidesTermPlural}} contiennent des modifications non enregistrées dans la base de données. Cliquez sur l'une d'elles pour l'ouvrir et l'enregistrer.",
+    "untitled": "Sans titre",
+    "editedAgo": "modifié {{timeAgo}}",
+    "noUnsavedChanges": "Aucune modification non enregistrée dans ce cours.",
+    "justNow": "à l'instant",
+    "minAgo_one": "il y a {{count}} min",
+    "minAgo_many": "il y a {{count}} min",
+    "minAgo_other": "il y a {{count}} min",
+    "hrAgo_one": "il y a {{count}} h",
+    "hrAgo_many": "il y a {{count}} h",
+    "hrAgo_other": "il y a {{count}} h",
+    "dayAgo_one": "il y a {{count}} jour",
+    "dayAgo_many": "il y a {{count}} jours",
+    "dayAgo_other": "il y a {{count}} jours"
+}

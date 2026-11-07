@@ -1,0 +1,19 @@
+{
+    "card": {
+        "title": "Concurrent Session Limit",
+        "description": "Control the maximum number of active sessions a learner can have at the same time."
+    },
+    "field": {
+        "label": "Max Active Sessions",
+        "hint": "0 means unlimited (no restriction)"
+    },
+    "button": {
+        "save": "Save",
+        "saving": "Saving..."
+    },
+    "toasts": {
+        "saveSuccess": "Concurrent session limit updated successfully",
+        "saveFailed": "Failed to update session limit",
+        "syncFailed": "Setting saved but sync to auth-service failed. It may take a moment to take effect."
+    }
+}

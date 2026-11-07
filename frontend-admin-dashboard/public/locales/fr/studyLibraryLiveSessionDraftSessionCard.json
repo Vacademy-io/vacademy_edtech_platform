@@ -1,0 +1,10 @@
+{
+    "viewDetails": "Voir les détails",
+    "editLiveSession": "Modifier la session en direct",
+    "deleteLiveSession": "Supprimer la session en direct",
+    "startDateTime": "Date et heure de début :",
+    "lastEntry": "Dernière entrée :",
+    "meetingType": "Type de réunion :",
+    "joinLink": "Lien de connexion :",
+    "notAvailable": "N/A"
+}

@@ -294,6 +294,15 @@ public class LearnerAssessmentAttemptStartManager {
         if (maybeAttempt.isEmpty()) throw new VacademyException("Student attempt not found");
         StudentAttempt studentAttempt = maybeAttempt.get();
 
+        // The attempt id is the only input here, and `user` used to be ignored entirely
+        // — so any authenticated caller could flip another learner's PREVIEW attempt to
+        // LIVE and reset its start time out from under them.
+        //
+        // Checked BEFORE the idempotent replay below: that path returns the attempt's
+        // real startTime and registration id, so letting a non-owner reach it would leak
+        // another learner's exam state even though it mutates nothing.
+        LearnerAssessmentAttemptStatusManager.assertOwnershipOrStaff(studentAttempt, user, "start-assessment");
+
         if (AssessmentAttemptEnum.LIVE.name().equals(studentAttempt.getStatus()) && studentAttempt.getStartTime() != null)
             return ResponseEntity.ok(buildStartAssessmentResponse(studentAttempt, studentAttempt.getStartTime()));
 

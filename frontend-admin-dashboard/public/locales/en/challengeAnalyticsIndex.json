@@ -1,0 +1,17 @@
+{
+    "pageHeading": "Challenge Analytics Dashboard",
+    "pageTitle": "Challenge Analytics Dashboard | Vacademy",
+    "metaDescription": "Track parent engagement across challenge programs with actionable insights",
+    "loadingTemplates": "Loading analytics templates...",
+    "centerFilterLabel": "Center",
+    "tabs": {
+        "overview": "Overview",
+        "centers": "Centers",
+        "participation": "Participation",
+        "churn": "Churn",
+        "referrals": "Referrals",
+        "leaderboard": "Leaderboard",
+        "completions": "Completions",
+        "templates": "Templates"
+    }
+}

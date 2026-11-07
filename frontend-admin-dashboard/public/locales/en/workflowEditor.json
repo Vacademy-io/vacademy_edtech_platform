@@ -1,0 +1,4 @@
+{
+    "loadingWorkflow": "Loading workflow...",
+    "failedToLoad": "Failed to load workflow: {{message}}"
+}

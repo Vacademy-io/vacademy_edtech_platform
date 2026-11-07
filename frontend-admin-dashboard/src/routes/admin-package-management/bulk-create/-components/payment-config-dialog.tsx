@@ -22,6 +22,8 @@ import { PaymentConfig, PaymentType, PaymentOptionItem } from '../-types/bulk-cr
 import { currencyOptions } from '@/routes/settings/-constants/payments';
 import { getCurrencySymbol } from '@/routes/settings/-components/Payment/utils/utils';
 import { formatPlanPrice } from '@/utils/finance-utils';
+import { getTerminology } from '@/components/common/layout-container/sidebar/utils';
+import { ContentTerms, SystemTerms } from '@/routes/settings/-components/NamingSettings';
 
 interface PaymentConfigDialogProps {
     open: boolean;
@@ -85,7 +87,12 @@ export function PaymentConfigDialog({
                 <DialogHeader>
                     <DialogTitle>Configure Payment</DialogTitle>
                     <DialogDescription>
-                        Set up pricing and payment options for this course.
+                        Set up pricing and payment options for this{' '}
+                        {getTerminology(
+                            ContentTerms.Course,
+                            SystemTerms.Course
+                        ).toLocaleLowerCase()}
+                        .
                     </DialogDescription>
                 </DialogHeader>
 

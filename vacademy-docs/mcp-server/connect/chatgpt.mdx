@@ -1,0 +1,92 @@
+---
+title: "ChatGPT"
+description: "Add your institute's server to ChatGPT as a custom MCP server, then sign in on your admin portal."
+icon: "comment-dots"
+---
+
+ChatGPT connects to Vacademy MCP as a **custom MCP server** (OpenAI has also called these *apps*, *connectors* and *plugins*). You add the server URL, choose OAuth, and sign in.
+
+<Warning>
+OpenAI is still changing this area. Menu names, plan availability and what is allowed differ between accounts and change often. Check OpenAI's current help before you start: [Developer mode and MCP apps in ChatGPT](https://help.openai.com/en/articles/12584461) and [Connect from ChatGPT](https://developers.openai.com/apps-sdk/deploy/connect-chatgpt).
+</Warning>
+
+## Before you start
+
+- An admin has turned the server on and allowed your role. See the [Quickstart](/mcp-server/quickstart).
+- You have the **server URL** from **Settings → MCP Server**. It looks like `https://<your backend>/ai-service/mcp/i/<institute_id>`.
+- You are using ChatGPT **on the web**.
+- Your ChatGPT plan allows custom MCP apps. At the time of writing, OpenAI offers full MCP support, including actions that change data, as a beta on **Business**, **Enterprise** and **Edu**. Other plans may be limited to reading, or may not offer it. On a workspace plan, your ChatGPT workspace admin may need to allow it first.
+
+## Steps
+
+<Steps>
+  <Step title="Open Plugins">
+    In ChatGPT on the web, open **Plugins** (`chatgpt.com/plugins`) and click **+**, then **Add custom MCP server**.
+
+    If you don't see this option, your account may first need **developer mode**. On some accounts it is under **Settings → Apps → Advanced settings**.
+
+    - **Business:** only workspace admins and owners can use developer mode. Each one turns it on for themselves.
+    - **Enterprise and Edu:** your workspace admin can give developer mode to selected people.
+
+    If you still don't see it, ask your ChatGPT workspace admin.
+  </Step>
+  <Step title="Name it and add the URL">
+    - **Name:** your institute's name, so you recognise it in chats.
+    - **Description:** for example *Our institute's courses, website, learners and leads*.
+    - **Connection:** choose the public endpoint option and paste the server URL.
+    - **Authentication:** **OAuth**.
+
+    Review the warning, select **I understand and want to continue**, and create it.
+  </Step>
+  <Step title="Sign in and approve">
+    ChatGPT sends you to **your institute's admin portal**. Sign in with your own account and click **Approve**. ChatGPT then reads the list of tools you are allowed to use.
+  </Step>
+  <Step title="Use it in a chat">
+    Start a new chat and pick your server from the message box (for example with **+**, or by typing `@` and its name, depending on your account). Then ask:
+
+    ```text
+    Who am I connected as?
+    ```
+  </Step>
+</Steps>
+
+<Note>
+No client ID is needed. Let ChatGPT register itself. If you must use a fixed client, an admin copies the callback URL shown in ChatGPT's app settings and creates a client ID with it under **Settings → MCP Server → Client IDs for other apps**. Leave the secret empty. Menus and callback formats change; see [OpenAI's auth guide](https://developers.openai.com/apps-sdk/build/auth).
+</Note>
+
+## Things to know
+
+- **ChatGPT asks before it changes things.** By default ChatGPT asks you to allow actions that write data. On top of that, most of Vacademy's live edits show a preview and wait for you to confirm in the chat. See [Confirmations](/mcp-server/usage/confirmations).
+- **Tool list is read when you connect.** If an admin turns on a new area, open the connection under **Plugins** and select **Refresh**, or reconnect, so ChatGPT sees the new tools. Areas that are switched off stop working at once, without a refresh.
+- **Each person signs in.** In a workspace, everyone who uses the server connects with their own account, and the AI app acts as them.
+
+## Example prompts
+
+```text
+Summarise this week's leads by campaign and tell me which campaign is growing fastest.
+```
+
+```text
+Write a blog post about choosing between JEE and NEET for Class 11 students and save it as a draft.
+```
+
+```text
+Find the learner Priya Sharma and show me which courses she's enrolled in.
+```
+
+## If it does not work
+
+<AccordionGroup>
+  <Accordion title="I can't find where to add a custom MCP server">
+    Your plan or workspace may not offer it, or your workspace admin has not allowed it. Check OpenAI's help article linked above. You can use [Claude](/mcp-server/connect/claude) or [Cursor](/mcp-server/connect/cursor) in the meantime.
+  </Accordion>
+  <Accordion title="The server is added but shows no tools">
+    - **No tools at all:** the server is off, the settings were not saved, or your role is not under **Who can connect**.
+    - **Only `whoami` (Who is connected):** you are connected, but every area is Off for your role. Ask an admin to set one to View.
+
+    Then select **Refresh** on the connection under **Plugins**.
+  </Accordion>
+  <Accordion title="Approving fails">
+    Read the message on the approval page. You may be signed in to another institute, the request may have expired (requests last 15 minutes), or your role may not be allowed.
+  </Accordion>
+</AccordionGroup>

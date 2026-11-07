@@ -1,0 +1,70 @@
+{
+    "toast": {
+        "allAlreadySelected": "الجميع المطابقون لهذا الفلتر كانوا محددين بالفعل",
+        "selectedMore_zero": "لم يتم تحديد أي طالب إضافي",
+        "selectedMore_one": "تم تحديد طالب واحد إضافي",
+        "selectedMore_two": "تم تحديد طالبين إضافيين",
+        "selectedMore_few": "تم تحديد {{count}} طلاب إضافيين",
+        "selectedMore_many": "تم تحديد {{count}} طالبًا إضافيًا",
+        "selectedMore_other": "تم تحديد {{count}} طالب إضافي",
+        "selectAllFailed": "تعذّر تحميل كل طالب مطابق"
+    },
+    "searchPlaceholder": "ابحث بالاسم",
+    "batchFilter": {
+        "label": "الدفعة",
+        "placeholder": "ابحث عن الدفعات…"
+    },
+    "selectedSummary": {
+        "count_zero": "لم يتم تحديد أي طالب",
+        "count_one": "تم تحديد طالب واحد",
+        "count_two": "تم تحديد طالبين",
+        "count_few": "تم تحديد {{count}} طلاب",
+        "count_many": "تم تحديد {{count}} طالبًا",
+        "count_other": "تم تحديد {{count}} طالب",
+        "clearAll": "مسح الكل",
+        "removeAria": "إزالة {{name}}",
+        "more_zero": "+{{count}}",
+        "more_one": "+{{count}} آخر",
+        "more_two": "+{{count}} آخرَين",
+        "more_few": "+{{count}} آخرين",
+        "more_many": "+{{count}} آخرين",
+        "more_other": "+{{count}} آخرين"
+    },
+    "pageSelection": {
+        "selectAllAria": "تحديد كل طالب في هذه الصفحة",
+        "selectAll": "تحديد الكل في هذه الصفحة",
+        "deselectAll": "إلغاء تحديد الكل في هذه الصفحة",
+        "selectAllCount": "تحديد الكل في هذه الصفحة ({{count}})",
+        "deselectAllCount": "إلغاء تحديد الكل في هذه الصفحة ({{count}})"
+    },
+    "selectAllMatching": {
+        "selecting": "جارٍ التحديد…",
+        "button_zero": "تحديد كل المطابقين",
+        "button_one": "تحديد المطابق الواحد",
+        "button_two": "تحديد المطابقَين",
+        "button_few": "تحديد جميع المطابقين ({{count}})",
+        "button_many": "تحديد جميع المطابقين ({{count}})",
+        "button_other": "تحديد جميع المطابقين ({{count}})",
+        "blocked_zero": "لا تطابقات — صفّ حسب الدفعة لتحديدهم جميعًا دفعة واحدة (بحد أقصى {{max}})",
+        "blocked_one": "تطابق واحد — صفّ حسب الدفعة لتحديدهم جميعًا دفعة واحدة (بحد أقصى {{max}})",
+        "blocked_two": "تطابقان — صفّ حسب الدفعة لتحديدهم جميعًا دفعة واحدة (بحد أقصى {{max}})",
+        "blocked_few": "{{count}} تطابقات — صفّ حسب الدفعة لتحديدهم جميعًا دفعة واحدة (بحد أقصى {{max}})",
+        "blocked_many": "{{count}} تطابقًا — صفّ حسب الدفعة لتحديدهم جميعًا دفعة واحدة (بحد أقصى {{max}})",
+        "blocked_other": "{{count}} تطابق — صفّ حسب الدفعة لتحديدهم جميعًا دفعة واحدة (بحد أقصى {{max}})"
+    },
+    "results": {
+        "loading": "جارٍ تحميل الطلاب…",
+        "loadError": "تعذّر تحميل الطلاب.",
+        "retry": "إعادة المحاولة",
+        "emptyFiltered": "لا يوجد طلاب مسجلون يطابقون هذا الفلتر",
+        "emptyAll": "لا يوجد طلاب مسجلون بعد",
+        "selectRowAria": "تحديد {{name}}"
+    },
+    "pagination": {
+        "range": "{{start}}–{{end}} من {{total}}",
+        "updating": "جارٍ التحديث…",
+        "previousAria": "الصفحة السابقة",
+        "nextAria": "الصفحة التالية",
+        "pageOf": "{{page}} / {{total}}"
+    }
+}

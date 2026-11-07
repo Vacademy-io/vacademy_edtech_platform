@@ -8,6 +8,7 @@ import { AI_SERVICE_BASE_URL } from '@/constants/urls';
 // import cycle: formatters → language store → i18n/locales, none touch axios.
 import { getActiveLocale } from '@/lib/formatters';
 import { recordApiSample } from '@/lib/perf/network-health';
+import { handleAiUsageLimitError, handleAiUsageWarningResponse } from '@/lib/ai-usage-limit';
 import {
     getTokenFromCookie,
     isTokenExpired,
@@ -190,6 +191,9 @@ authenticatedAxiosInstance.interceptors.request.use(
 authenticatedAxiosInstance.interceptors.response.use(
     (response) => {
         recordPerfSample(response.config as TimedRequestConfig, response.status, response.headers);
+        // Soft AI usage-limit warning (X-AI-Usage-Warning) -> one toast per use case
+        // per session. Read-only on the response; never throws.
+        handleAiUsageWarningResponse(response.headers);
         return response;
     },
     async (error) => {
@@ -212,6 +216,14 @@ authenticatedAxiosInstance.interceptors.response.use(
                 statusText: response?.statusText,
                 data: response?.data,
             });
+        }
+
+        // An AI call refused by an institute/platform usage limit (429 with
+        // error AI_USAGE_LIMIT): open the "limit reached" modal, then reject the
+        // original error as before. Any other 429 is untouched.
+        if (response?.status === 429) {
+            await handleAiUsageLimitError(error);
+            return Promise.reject(error);
         }
 
         // Handle 511 Network Authentication Required
@@ -257,6 +269,25 @@ authenticatedAxiosInstance.interceptors.response.use(
 
         // Handle 401 Unauthorized
         if (response?.status === 401) {
+            // A 401 carrying a structured backend body is a business rejection an endpoint chose
+            // ("Authentication required" from a widget/support/roadmap controller), NOT a dead
+            // session — the same distinction the 511 branch above already draws. A genuinely
+            // expired token never lands here: JwtAuthFilter throws VacademyException("Expired
+            // Token"), which is a 510. Logging out on these would end the session over one
+            // endpoint's own permission check.
+            const structured = response?.data;
+            if (
+                structured &&
+                typeof structured === 'object' &&
+                (structured.ex || structured.responseCode || structured.message)
+            ) {
+                console.warn(
+                    '[Axios Response] 401 with backend exception details - NOT logging out:',
+                    structured
+                );
+                return Promise.reject(error);
+            }
+
             // A 401 from the AI service (separate auth) must not log the user
             // out of the whole app — reject so the local caller can handle it.
             if (shouldSkipAuthLogout(error.config)) {
@@ -277,8 +308,30 @@ authenticatedAxiosInstance.interceptors.response.use(
 
         // Handle 403 Forbidden
         if (response?.status === 403) {
-            // Don't log 403 errors as they're expected for some institute details requests
-            return Promise.reject(new Error('You do not have permission to perform this action.'));
+            // An admin disabled or removed this member ("Disable access" / "Delete member" on
+            // Teams). The backend sends this code only for that case — never for an
+            // auth-service blip — so it is safe to end the session here.
+            if (response?.data?.error === 'ACCESS_REVOKED') {
+                captureForcedLogout('Forced logout: team access revoked', {
+                    level: 'info',
+                    extra: { requestUrl: error.config?.url },
+                });
+                removeCookiesAndLogout();
+                return Promise.reject(
+                    new Error('Your access to this institute has been disabled.')
+                );
+            }
+            // Don't log 403 errors as they're expected for some institute details requests.
+            //
+            // Reject the AxiosError itself rather than a bare Error. A 403 is how the backend says
+            // WHY it refused — chat's CHAT_DISABLED / DM_NOT_ALLOWED, an audience report the caller
+            // isn't scoped to — and replacing it dropped `response.status` and `response.data` on
+            // the floor, so every caller checking `error.response?.status === 403` was dead code and
+            // reason codes could never be read. The friendly sentence is kept as the error's own
+            // message, which is all the replacement ever carried, so `err.message` callers are
+            // unaffected.
+            error.message = 'You do not have permission to perform this action.';
+            return Promise.reject(error);
         }
 
         // Handle other authentication-related errors

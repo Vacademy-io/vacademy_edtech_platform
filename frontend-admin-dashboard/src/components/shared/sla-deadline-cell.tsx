@@ -1,5 +1,8 @@
 import { formatDistanceStrict } from 'date-fns';
 import { cn } from '@/lib/utils';
+import { isAdminForInstitute } from '@/lib/auth/roleUtils';
+import { getCurrentInstituteId } from '@/lib/auth/instituteUtils';
+import { TatDueOverridePopover } from '@/components/shared/tat-due-override-popover';
 
 /** Parse a backend ISO string into a Date, treating missing TZ markers as UTC.
  *  Mirrors the normalisation in formatClock so both render paths agree. */
@@ -35,6 +38,12 @@ interface SlaDeadlineCellProps {
     baselineAt?: string | null;
     /** Which display semantic to use. Defaults to 'deadline' to preserve Follow-up by behaviour. */
     mode?: 'response' | 'deadline';
+    /** `response` mode: the lead's audience_response id — enables the admin "change deadline" pencil. */
+    responseId?: string | null;
+    /** `response` mode: the deadline was set by hand by an admin. */
+    dueOverridden?: boolean | null;
+    /** Lead is Lost / Converted (backend `sla_closed`): off the SLA clock, never Pending / Overdue. */
+    closed?: boolean | null;
 }
 
 /** Format an ISO timestamp as "23 May, 5:30 PM" in the user's locale.
@@ -61,6 +70,9 @@ export function SlaDeadlineCell({
     respondedAt,
     baselineAt,
     mode = 'deadline',
+    responseId,
+    dueOverridden,
+    closed,
 }: SlaDeadlineCellProps) {
     // ── RESPONSE MODE — Reach-out-in column ──────────────────────────────────
     // Show the counsellor's contact time + how long it took relative to submitted_at.
@@ -93,24 +105,57 @@ export function SlaDeadlineCell({
             }
         }
 
-        // Not contacted yet
-        const dueMs = dueAt ? new Date(dueAt).getTime() : NaN;
-        const pastTat = (!Number.isNaN(dueMs) && dueMs < Date.now()) || !!overdue;
+        // Lost / converted before anyone logged contact: there is nothing left to reach out
+        // for, so neither Pending nor Overdue applies.
+        if (closed) return <span className="text-sm text-neutral-400">Closed</span>;
+
+        // Not contacted yet. Show the deadline itself — with working hours it is no longer
+        // simply "submitted + N hours" (e.g. an evening lead is due 10:00 the next morning).
+        const dueDate = parseTs(dueAt);
+        const dueFmt = dueAt ? formatClock(dueAt) : null;
+        const pastTat = (dueDate !== null && dueDate.getTime() < Date.now()) || !!overdue;
+        const canEdit = !!responseId && isAdminForInstitute(getCurrentInstituteId());
+        const dueLine = dueFmt ? (
+            <span
+                className={cn(
+                    'flex items-center gap-1 text-xs',
+                    pastTat ? 'text-danger-600' : 'text-neutral-500'
+                )}
+            >
+                {pastTat ? 'was due' : 'by'} {dueFmt}
+                {dueOverridden && <span className="text-neutral-400">(set manually)</span>}
+                {canEdit && (
+                    <TatDueOverridePopover
+                        responseId={responseId as string}
+                        dueDate={dueDate}
+                        overridden={dueOverridden}
+                    />
+                )}
+            </span>
+        ) : null;
         if (pastTat) {
             return (
                 <div className="flex flex-col gap-0.5">
                     <span className="text-sm font-medium text-danger-600">Overdue</span>
-                    <span className="text-xs text-danger-600">No contact yet</span>
+                    {dueLine ?? <span className="text-xs text-danger-600">No contact yet</span>}
                 </div>
             );
         }
-        return <span className="text-sm text-neutral-400">Pending</span>;
+        return (
+            <div className="flex flex-col gap-0.5">
+                <span className="text-sm text-neutral-400">Pending</span>
+                {dueLine}
+            </div>
+        );
     }
 
     // ── DEADLINE MODE — Follow-up by column ──────────────────────────────────
     if (!dueAt) return <span className="text-sm text-neutral-400">—</span>;
     const abs = formatClock(dueAt);
     if (!abs) return <span className="text-sm text-neutral-400">—</span>;
+
+    // A callback still scheduled on a closed lead is moot — show it muted, never Overdue.
+    if (closed) return <span className="text-sm text-neutral-400">{abs}</span>;
 
     const isPast = new Date(dueAt).getTime() < Date.now() || !!overdue;
 

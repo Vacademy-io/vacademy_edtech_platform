@@ -1,0 +1,41 @@
+{
+    "systemFields": {
+        "fullName": "Nom complet",
+        "email": "E-mail",
+        "mobileNumber": "Numéro de mobile",
+        "username": "Nom d'utilisateur",
+        "userId": "ID utilisateur",
+        "dateOfBirth": "Date de naissance",
+        "gender": "Genre",
+        "address": "Adresse",
+        "city": "Ville",
+        "region": "Région / État",
+        "pinCode": "Code postal"
+    },
+    "sources": {
+        "systemField": "Champ système",
+        "customField": "Champ personnalisé",
+        "session": "Variable de session",
+        "context": "Contexte (téléphone, instituteId, …)",
+        "fixed": "Valeur fixe"
+    },
+    "emptyState": "Aucune correspondance pour le moment. Ajoutez-en une pour résoudre un {{placeholder}} à partir des données utilisateur avec une valeur par défaut.",
+    "placeholderName": "nomDuPlaceholder",
+    "remove": "Supprimer",
+    "selectSystemField": "— Sélectionner un champ système —",
+    "selectCustomField": "— Sélectionner un champ personnalisé —",
+    "loadingCustomFields": "Chargement…",
+    "customFieldOption": "{{name}} ({{type}})",
+    "noCustomFieldsFound": "Aucun champ personnalisé trouvé pour cet établissement.",
+    "loadError": "Erreur : {{message}}",
+    "retry": "Réessayer",
+    "fieldPlaceholder": {
+        "fixed": "Valeur littérale",
+        "context": "phone | instituteId | userId | messageText",
+        "session": "clé de variable de session"
+    },
+    "defaultValuePlaceholder": "Valeur par défaut (utilisée si la valeur est manquante)",
+    "addVariable": "Ajouter une variable",
+    "noInstituteId": "Aucun instituteId disponible",
+    "loadCustomFieldsFailed": "Échec du chargement des champs personnalisés"
+}

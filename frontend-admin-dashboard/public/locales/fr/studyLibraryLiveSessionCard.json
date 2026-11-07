@@ -1,0 +1,35 @@
+{
+    "meta": {
+        "meetingType": "Type de réunion",
+        "lastEntry": "Dernière entrée",
+        "date": "Date",
+        "time": "Heure de début",
+        "teacherUnassigned": "Non attribué",
+        "teacherUnknown": "Enseignant inconnu"
+    },
+    "batches": {
+        "more": "+{{count}} de plus",
+        "less": "Afficher moins"
+    },
+    "actions": {
+        "openSession": "Ouvrir la session",
+        "copyJoinLink": "Copier le lien de participation",
+        "generateQrCode": "Générer un QR code",
+        "downloadQrCode": "Télécharger le QR code",
+        "viewParticipants": "Voir les détails des participants",
+        "viewDetails": "Voir les détails",
+        "editSession": "Modifier {{term}}",
+        "deleteSession": "Supprimer {{term}}",
+        "startAsHost": "Démarrer en tant qu’hôte",
+        "openClassLink": "Ouvrir le lien du cours"
+    },
+    "qrHeading": "QR code de participation",
+    "earlyStart": {
+        "title": "Démarrer ce cours en avance ?",
+        "bodyWithTime": "Ce cours commence dans {{time}}. Démarrer maintenant crée la salle de réunion — les apprenants ayant le lien pourraient rejoindre avant que vous soyez prêt.",
+        "body": "Ce cours n'a pas encore commencé. Démarrer maintenant crée la salle de réunion.",
+        "cancel": "Annuler",
+        "confirm": "Démarrer quand même"
+    },
+    "privateLinkWarning": "Ce lien ne fonctionne que pour les apprenants déjà inscrits à ce groupe. Pour le partager plus largement, modifiez la session et passez son accès à Public."
+}

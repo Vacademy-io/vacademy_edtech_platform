@@ -1,0 +1,42 @@
+{
+    "sessionLabelDefault": "डिफ़ॉल्ट",
+    "selectedRow": {
+        "loadingInvite": "आमंत्रण लोड हो रहा है…",
+        "selectingInvite": "आमंत्रण चुना जा रहा है…",
+        "invitesCount_one": "{{count}} आमंत्रण",
+        "invitesCount_other": "{{count}} आमंत्रण",
+        "free": "मुफ़्त",
+        "preselected": "पूर्व-चयनित",
+        "noMatchingPaymentOption": "इस आमंत्रण और सत्र के लिए कोई मेल खाता भुगतान विकल्प नहीं मिला।",
+        "noActiveInvite": "इस सत्र के लिए कोई सक्रिय आमंत्रण नहीं मिला। पहले एक आमंत्रण बनाएँ।"
+    },
+    "tabs": {
+        "courses": "पाठ्यक्रम",
+        "suggestions": "सुझाव"
+    },
+    "selectedCourses": {
+        "heading": "चयनित पाठ्यक्रम",
+        "addMore": "और जोड़ें",
+        "combinedTotal": "कुल मिलाकर:",
+        "newestFirst": "नए पहले",
+        "oldestFirst": "पुराने पहले",
+        "newestFirstHint": "सबसे नया अपलोड हुआ कोर्स सबसे ऊपर",
+        "oldestFirstHint": "सबसे पुराना अपलोड हुआ कोर्स सबसे ऊपर",
+        "sortFailed": "कोर्स सॉर्ट नहीं हो पाए। फिर से कोशिश करें।"
+    },
+    "browser": {
+        "searchPlaceholder": "पाठ्यक्रम या बैच खोजें…",
+        "selectAll": "+ सभी चुनें ({{count}})",
+        "refresh": "रीफ़्रेश करें",
+        "loadingSessions": "सत्र लोड हो रहे हैं…",
+        "noSessionsMatch": "\"{{query}}\" से मेल खाने वाला कोई सत्र नहीं मिला",
+        "noActiveSessions": "कोई सक्रिय सत्र नहीं मिला।",
+        "otherGroup": "अन्य",
+        "added": "जोड़ा गया",
+        "add": "जोड़ें",
+        "loadingMore": "और लोड हो रहा है…",
+        "loadMore_one": "और लोड करें ({{count}} शेष)",
+        "loadMore_other": "और लोड करें ({{count}} शेष)",
+        "footerHint": "{{total}} में से {{loaded}} सत्र लोड हुए · {{selected}} चयनित"
+    }
+}

@@ -35,25 +35,33 @@ import { isNullOrEmptyOrUndefined } from "@/lib/utils";
 import { computeAttendanceStats } from "@/services/attendance/useAttendanceStats";
 import { getTerminology, getTerminologyPlural } from "@/components/common/layout-container/sidebar/utils";
 import { ContentTerms, SystemTerms } from "@/types/naming-settings";
+import { useTranslation } from "react-i18next";
 
 export const Route = createFileRoute("/learning-centre/attendance/")({
   component: RouteComponent,
 });
 
 function RouteComponent() {
+  const { t } = useTranslation("miscRoutesB");
   const { setNavHeading } = useNavHeadingStore();
   useEffect(() => {
-    setNavHeading("My Attendance");
-  }, [setNavHeading]);
+    setNavHeading(t("learningCentreAttendance.navHeading"));
+  }, [setNavHeading, t]);
 
   const [dateRange, setDateRange] = useState<{ from?: Date; to?: Date }>({});
   const [selectedBatchId, setSelectedBatchId] = useState<string | null>(null);
   const { data: batches } = useGetBatchesQuery();
 
+  const allBatchesLabel = t("learningCentreAttendance.filters.allBatches", {
+    batches: getTerminologyPlural(ContentTerms.Batch, SystemTerms.Batch),
+  });
+  const liveClass = getTerminology(ContentTerms.LiveSession, SystemTerms.LiveSession);
+  const liveClasses = getTerminologyPlural(ContentTerms.LiveSession, SystemTerms.LiveSession);
+
   // Extract batch options for dropdown
   const batchOptions = useMemo(() => {
     if (!batches || !Array.isArray(batches))
-      return [{ label: `All ${getTerminologyPlural(ContentTerms.Batch, SystemTerms.Batch)}`, value: null }];
+      return [{ label: allBatchesLabel, value: null }];
 
     const extractedBatches = batches.flatMap((batchData: BatchData) =>
       batchData.batches.map((batch: BatchType) => ({
@@ -62,8 +70,8 @@ function RouteComponent() {
       }))
     );
 
-    return [{ label: `All ${getTerminologyPlural(ContentTerms.Batch, SystemTerms.Batch)}`, value: null }, ...extractedBatches];
-  }, [batches]);
+    return [{ label: allBatchesLabel, value: null }, ...extractedBatches];
+  }, [batches, allBatchesLabel]);
 
   // Set the first batch as default when batches are loaded
   useEffect(() => {
@@ -157,12 +165,12 @@ function RouteComponent() {
   };
 
   const selectedBatchLabel = useMemo(() => {
-    if (!selectedBatchId) return `All ${getTerminologyPlural(ContentTerms.Batch, SystemTerms.Batch)}`;
+    if (!selectedBatchId) return allBatchesLabel;
     const selectedBatch = batchOptions.find(
       (option) => option.value === selectedBatchId
     );
-    return selectedBatch?.label || `All ${getTerminologyPlural(ContentTerms.Batch, SystemTerms.Batch)}`;
-  }, [selectedBatchId, batchOptions]);
+    return selectedBatch?.label || allBatchesLabel;
+  }, [selectedBatchId, batchOptions, allBatchesLabel]);
 
   const attendanceStats = useMemo(() => {
     if (!attendanceData?.schedules) return null;
@@ -172,10 +180,13 @@ function RouteComponent() {
   return (
     <LayoutContainer>
       <Helmet>
-        <title>{document?.title || "My Attendance"}</title>
+        <title>{document?.title || t("learningCentreAttendance.pageTitle")}</title>
         <meta
           name="description"
-          content="Track your attendance for live classes and sessions"
+          content={t("learningCentreAttendance.metaDescription", {
+            liveClasses: getTerminologyPlural(ContentTerms.LiveSession, SystemTerms.LiveSession),
+            sessions: getTerminologyPlural(ContentTerms.Session, SystemTerms.Session),
+          })}
         />
       </Helmet>
 
@@ -199,7 +210,7 @@ function RouteComponent() {
                 {attendanceStats?.attendancePercentage ?? 0}%
               </div>
             )}
-            <div className="mt-1 text-xs text-neutral-500">Overall %</div>
+            <div className="mt-1 text-xs text-neutral-500">{t("learningCentreAttendance.stats.overallPercent")}</div>
           </div>
           <div className="rounded-lg border border-neutral-200 bg-white p-3 text-center">
             {isLoading ? (
@@ -219,7 +230,7 @@ function RouteComponent() {
                 {attendanceStats?.currentStreak ?? 0}
               </div>
             )}
-            <div className="mt-1 text-xs text-neutral-500">Day Streak</div>
+            <div className="mt-1 text-xs text-neutral-500">{t("learningCentreAttendance.stats.dayStreak")}</div>
           </div>
           <div className="rounded-lg border border-neutral-200 bg-white p-3 text-center">
             {isLoading ? (
@@ -229,7 +240,7 @@ function RouteComponent() {
                 {attendanceStats?.presentDays ?? 0}
               </div>
             )}
-            <div className="mt-1 text-xs text-neutral-500">Days Present</div>
+            <div className="mt-1 text-xs text-neutral-500">{t("learningCentreAttendance.stats.daysPresent")}</div>
           </div>
           <div className="rounded-lg border border-neutral-200 bg-white p-3 text-center">
             {isLoading ? (
@@ -239,13 +250,13 @@ function RouteComponent() {
                 {attendanceStats?.absentDays ?? 0}
               </div>
             )}
-            <div className="mt-1 text-xs text-neutral-500">Days Absent</div>
+            <div className="mt-1 text-xs text-neutral-500">{t("learningCentreAttendance.stats.daysAbsent")}</div>
           </div>
         </div>
 
         {/* Filters card */}
         <div className="rounded-lg border border-neutral-200 bg-white p-4">
-          <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+          <div className="grid grid-cols-1 gap-stack md:grid-cols-2">
             {/* Date Range */}
             <RangeDateFilter range={dateRange} onChange={setDateRange} />
 
@@ -253,6 +264,7 @@ function RouteComponent() {
             <BatchDropdown
               label={getTerminology(ContentTerms.Batch, SystemTerms.Batch)}
               value={selectedBatchLabel}
+              isAllSelected={selectedBatchId === null}
               options={batchOptions}
               onSelect={(batchId) => setSelectedBatchId(batchId)}
             />
@@ -265,7 +277,7 @@ function RouteComponent() {
                 onClick={clearFilters}
                 className="inline-flex items-center rounded-md bg-neutral-100 px-3 py-2 text-sm font-medium text-neutral-700 hover:bg-neutral-200"
               >
-                Clear Filters
+                {t("learningCentreAttendance.filters.clear")}
               </button>
             </div>
           )}
@@ -278,19 +290,19 @@ function RouteComponent() {
           ) : error ? (
             <ErrorState
               variant="inline"
-              message={(error as Error)?.message || "Could not load attendance data."}
+              message={(error as Error)?.message || t("learningCentreAttendance.error")}
             />
           ) : !isNullOrEmptyOrUndefined(paginatedData) ? (
             <div className="space-y-3">
               {paginatedData?.map((cls, idx) => (
                 <div
                   key={idx}
-                  className="rounded-lg border border-neutral-200 bg-white p-3"
+                  className="rounded-lg border border-neutral-200 bg-white p-3 space-y-2"
                 >
-                  <div className="mb-2 text-sm font-semibold text-neutral-800">
+                  <div className="text-sm font-semibold text-neutral-800">
                     {cls.sessionTitle}
                   </div>
-                  <div className="mb-2 text-xs text-neutral-600">
+                  <div className="text-xs text-neutral-600">
                     {formatDate(cls.meetingDate)}
                   </div>
                   <div className="flex flex-wrap gap-2">
@@ -302,7 +314,9 @@ function RouteComponent() {
                           : "bg-info-50 text-info-600",
                       )}
                     >
-                      {cls.accessLevel === "private" ? "Private" : "Public"}
+                      {cls.accessLevel === "private"
+                        ? t("learningCentreAttendance.accessLevel.private")
+                        : t("learningCentreAttendance.accessLevel.public")}
                     </span>
                     <span
                       className={cn(
@@ -314,7 +328,9 @@ function RouteComponent() {
                             : "bg-neutral-100 text-neutral-500",
                       )}
                     >
-                      {cls.attendanceStatus === "UNMARKED" ? "Unmarked" : cls.attendanceStatus}
+                      {cls.attendanceStatus === "UNMARKED"
+                        ? t("learningCentreAttendance.status.unmarked")
+                        : cls.attendanceStatus}
                     </span>
                   </div>
                 </div>
@@ -324,9 +340,9 @@ function RouteComponent() {
             <EmptyState
               compact
               icon={CalendarX}
-              title="No classes found"
-              description="No classes match the selected filters. Try a different date range."
-              action={{ label: "Clear filters", onClick: clearFilters }}
+              title={t("learningCentreAttendance.empty.title", { liveClasses })}
+              description={t("learningCentreAttendance.empty.description", { liveClasses })}
+              action={{ label: t("learningCentreAttendance.empty.clearFilters"), onClick: clearFilters }}
               className="rounded-lg border border-neutral-200 bg-white"
             />
           )}
@@ -348,10 +364,10 @@ function RouteComponent() {
                   {/* Batch column removed: the attendance API does not return a
                       per-row batch, and printing the filter label here showed
                       false data for every row. */}
-                  <th className="px-4 py-3">Live Class Title</th>
-                  <th className="px-4 py-3">Date &amp; Time</th>
-                  <th className="px-4 py-3">Class Type</th>
-                  <th className="px-4 py-3">Attendance</th>
+                  <th className="px-4 py-3">{t("learningCentreAttendance.table.liveClassTitle", { liveClass })}</th>
+                  <th className="px-4 py-3">{t("learningCentreAttendance.table.dateTime")}</th>
+                  <th className="px-4 py-3">{t("learningCentreAttendance.table.classType", { liveClass })}</th>
+                  <th className="px-4 py-3">{t("learningCentreAttendance.table.attendance")}</th>
                 </tr>
               </thead>
               <tbody>
@@ -366,7 +382,7 @@ function RouteComponent() {
                     <td colSpan={4} className="p-4">
                       <ErrorState
                         variant="inline"
-                        message={(error as Error)?.message || "Could not load attendance data."}
+                        message={(error as Error)?.message || t("learningCentreAttendance.error")}
                       />
                     </td>
                   </tr>
@@ -399,7 +415,9 @@ function RouteComponent() {
                               : "bg-info-50 text-info-600",
                           )}
                         >
-                          {cls.accessLevel === "private" ? "Private" : "Public"}
+                          {cls.accessLevel === "private"
+                            ? t("learningCentreAttendance.accessLevel.private")
+                            : t("learningCentreAttendance.accessLevel.public")}
                         </span>
                       </td>
                       <td className="px-4 py-3">
@@ -413,7 +431,9 @@ function RouteComponent() {
                                 : "bg-neutral-100 text-neutral-500",
                           )}
                         >
-                          {cls.attendanceStatus === "UNMARKED" ? "Unmarked" : cls.attendanceStatus}
+                          {cls.attendanceStatus === "UNMARKED"
+                            ? t("learningCentreAttendance.status.unmarked")
+                            : cls.attendanceStatus}
                         </span>
                       </td>
                     </tr>
@@ -424,9 +444,9 @@ function RouteComponent() {
                       <EmptyState
                         compact
                         icon={CalendarX}
-                        title="No classes found"
-                        description="No classes match the selected filters. Try a different date range."
-                        action={{ label: "Clear filters", onClick: clearFilters }}
+                        title={t("learningCentreAttendance.empty.title", { liveClasses })}
+                        description={t("learningCentreAttendance.empty.description", { liveClasses })}
+                        action={{ label: t("learningCentreAttendance.empty.clearFilters"), onClick: clearFilters }}
                       />
                     </td>
                   </tr>
@@ -455,7 +475,27 @@ interface RangeDateFilterProps {
 }
 
 function RangeDateFilter({ range, onChange }: RangeDateFilterProps) {
+  const { t } = useTranslation("miscRoutesB");
   const { from, to } = range;
+  const presets = [
+    { label: t("learningCentreAttendance.filters.dateRange.pastDay"), from: startOfDay(subDays(new Date(), 1)) },
+    {
+      label: t("learningCentreAttendance.filters.dateRange.pastWeek"),
+      from: startOfDay(subDays(new Date(), 7)),
+    },
+    {
+      label: t("learningCentreAttendance.filters.dateRange.pastMonth"),
+      from: startOfDay(subMonths(new Date(), 1)),
+    },
+    {
+      label: t("learningCentreAttendance.filters.dateRange.pastSixMonths"),
+      from: startOfDay(subMonths(new Date(), 6)),
+    },
+    {
+      label: t("learningCentreAttendance.filters.dateRange.pastYear"),
+      from: startOfDay(subYears(new Date(), 1)),
+    },
+  ];
   return (
     <div className="w-full">
       <Popover>
@@ -469,19 +509,20 @@ function RangeDateFilter({ range, onChange }: RangeDateFilterProps) {
             )}
           >
             {from && to ? (
-              <>
-                {formatDate(from)} to {formatDate(to)}
-              </>
+              t("learningCentreAttendance.filters.dateRange.range", {
+                from: formatDate(from),
+                to: formatDate(to),
+              })
             ) : from ? (
-              <>From {formatDate(from)}</>
+              t("learningCentreAttendance.filters.dateRange.from", { date: formatDate(from) })
             ) : (
-              <>Select date range</>
+              t("learningCentreAttendance.filters.dateRange.placeholder")
             )}
             <CalendarBlank className="ms-2 size-4 text-neutral-500" />
           </button>
         </PopoverTrigger>
         <PopoverContent className="w-dialog-lg p-3 sm:w-auto" align="start">
-          <div className="flex flex-col gap-3 sm:flex-row">
+          <div className="flex flex-col gap-stack sm:flex-row">
             <Calendar
               mode="range"
               selected={range}
@@ -493,27 +534,9 @@ function RangeDateFilter({ range, onChange }: RangeDateFilterProps) {
             {/* Quick presets */}
             <div className="flex flex-col gap-2 pt-1">
               <h4 className="mb-1 text-xs font-medium text-neutral-500">
-                Quick Select
+                {t("learningCentreAttendance.filters.dateRange.quickSelect")}
               </h4>
-              {[
-                { label: "Past Day", from: startOfDay(subDays(new Date(), 1)) },
-                {
-                  label: "Past Week",
-                  from: startOfDay(subDays(new Date(), 7)),
-                },
-                {
-                  label: "Past Month",
-                  from: startOfDay(subMonths(new Date(), 1)),
-                },
-                {
-                  label: "Past 6 Months",
-                  from: startOfDay(subMonths(new Date(), 6)),
-                },
-                {
-                  label: "Past Year",
-                  from: startOfDay(subYears(new Date(), 1)),
-                },
-              ].map((preset) => (
+              {presets.map((preset) => (
                 <button
                   key={preset.label}
                   onClick={() =>
@@ -535,6 +558,7 @@ function RangeDateFilter({ range, onChange }: RangeDateFilterProps) {
 interface BatchDropdownProps {
   label: string;
   value: string;
+  isAllSelected: boolean;
   options: Array<{ label: string; value: string | null }>;
   onSelect: (batchId: string | null) => void;
 }
@@ -542,6 +566,7 @@ interface BatchDropdownProps {
 function BatchDropdown({
   label,
   value,
+  isAllSelected,
   options,
   onSelect,
 }: BatchDropdownProps) {
@@ -553,7 +578,7 @@ function BatchDropdown({
             type="button"
             className={cn(
               "flex h-11 w-full items-center justify-between rounded-md border border-neutral-300 bg-white px-3 py-2 text-sm",
-              value !== `All ${getTerminologyPlural(ContentTerms.Batch, SystemTerms.Batch)}`
+              !isAllSelected
                 ? "text-neutral-900"
                 : "text-neutral-500",
               "focus-visible:border-primary-500 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary-500",

@@ -1,0 +1,37 @@
+{
+    "loading": "جارٍ تحميل النشاط…",
+    "error": "تعذّر تحميل النشاط. حاول التحديث.",
+    "empty": "لا يوجد نشاط خلال آخر 30 يومًا.",
+    "inbound": "وارد",
+    "outbound": "صادر",
+    "actions": {
+        "call": "مكالمة",
+        "followupCreated": "تم إنشاء متابعة",
+        "followupClosed": "تم إغلاق المتابعة",
+        "noteAdded": "تمت إضافة ملاحظة",
+        "leadTransferredOut": "تم تحويل العميل المحتمل",
+        "leadTransferredIn": "تم استلام عميل محتمل",
+        "statusChanged": "تم تغيير الحالة"
+    },
+    "relativeTime": {
+        "justNow": "الآن",
+        "minutesAgo_zero": "قبل {{count}} دقيقة",
+        "minutesAgo_one": "قبل دقيقة",
+        "minutesAgo_two": "قبل دقيقتين",
+        "minutesAgo_few": "قبل {{count}} دقائق",
+        "minutesAgo_many": "قبل {{count}} دقيقة",
+        "minutesAgo_other": "قبل {{count}} دقيقة",
+        "hoursAgo_zero": "قبل {{count}} ساعة",
+        "hoursAgo_one": "قبل ساعة",
+        "hoursAgo_two": "قبل ساعتين",
+        "hoursAgo_few": "قبل {{count}} ساعات",
+        "hoursAgo_many": "قبل {{count}} ساعة",
+        "hoursAgo_other": "قبل {{count}} ساعة",
+        "daysAgo_zero": "قبل {{count}} يوم",
+        "daysAgo_one": "قبل يوم",
+        "daysAgo_two": "قبل يومين",
+        "daysAgo_few": "قبل {{count}} أيام",
+        "daysAgo_many": "قبل {{count}} يومًا",
+        "daysAgo_other": "قبل {{count}} يوم"
+    }
+}

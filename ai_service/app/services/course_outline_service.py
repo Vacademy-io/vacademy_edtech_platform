@@ -3,7 +3,7 @@ from __future__ import annotations
 import json
 import logging
 import asyncio
-from typing import Optional, AsyncGenerator
+from typing import Any, Optional, AsyncGenerator
 from uuid import uuid4
 
 from ..domain.course_metadata import CourseMetadata
@@ -47,8 +47,12 @@ class CourseOutlineGenerationService:
         content_generation_service: Optional[ContentGenerationService] = None,
         db_session: Optional[Session] = None,
         institute_settings_service: Optional[InstituteSettingsService] = None,
+        metering: Any = None,
     ) -> None:
         self._llm_client = llm_client
+        # Usage-event attribution (MeteringContext.from_request from the
+        # router when it has one); never changes a charge.
+        self._metering = metering
         self._metadata_port = metadata_port
         self._prompt_builder = prompt_builder
         self._parser = parser
@@ -58,6 +62,71 @@ class CourseOutlineGenerationService:
         self._institute_settings_service = institute_settings_service
         self._llm_client = llm_client  # Store for content generation service
         # Note: content_generation_service will be initialized later in generate_content_from_coursetree if needed
+
+    def _meter(self, user_id: Optional[str]) -> Any:
+        """The router's verified metering context (JWT), else an UNVERIFIED
+        one: these routes take user_id from the body/query, so it is kept only
+        as usage_context.claimed_user_id and never becomes the event actor."""
+        try:
+            ctx = getattr(self, "_metering", None)
+            if ctx is not None:
+                return ctx
+            from .ai_billing import metering_unverified
+            return metering_unverified(user_id, surface="ADMIN_APP")
+        except Exception:  # noqa: BLE001 - attribution must never cost a charge
+            return None
+
+    def _resolve_outline_llm(self, request: CourseOutlineRequest):
+        """(openai_key, gemini_key, model, fallback_models) for an outline call.
+
+        Model precedence: request.model (wizard pick; honoured when it is an
+        active registry model) > institute/user ai_api_keys.default_model >
+        the 'outline' use case row > GLM — with the use case chain behind it
+        as failover. Keys keep the ApiKeyResolver waterfall (user > institute
+        > env)."""
+        from ..config import get_settings
+        from .model_selection import resolve_models
+
+        settings = get_settings()
+        openai_key = settings.openrouter_api_key
+        gemini_key = settings.gemini_api_key
+        if not self._db_session:
+            from .model_selection import resolve_model_sync
+            primary, chain = resolve_model_sync("outline", request.model)
+            return openai_key, gemini_key, primary, chain
+
+        byo_model = None
+        try:
+            key_resolver = ApiKeyResolver(self._db_session)
+            openai_key, gemini_key, _resolved = key_resolver.resolve_keys(
+                institute_id=request.institute_id,
+                user_id=request.user_id,
+                request_model=request.model,
+            )
+            if not request.model:
+                byo_model = key_resolver.byo_default_model(request.institute_id, request.user_id)
+        except Exception as e:  # noqa: BLE001
+            logger.warning(f"Failed to resolve API keys: {str(e)}, using environment defaults")
+
+        primary, chain = resolve_models(self._db_session, "outline", request.model)
+        if byo_model:
+            return openai_key, gemini_key, byo_model, [m for m in [primary, *chain] if m != byo_model]
+        return openai_key, gemini_key, primary, chain
+
+    async def _outline_llm_call(self, prompt, model, api_key, fallback_models, with_usage: bool):
+        """generate_outline[_with_usage] with the failover chain, tolerating
+        OutlineLLMClient implementations that predate `fallback_models`."""
+        method = (
+            self._llm_client.generate_outline_with_usage if with_usage
+            else self._llm_client.generate_outline
+        )
+        if fallback_models:
+            try:
+                return await method(prompt=prompt, model=model, api_key=api_key, fallback_models=fallback_models)
+            except TypeError as exc:
+                if "fallback_models" not in str(exc):
+                    raise
+        return await method(prompt=prompt, model=model, api_key=api_key)
 
     def _apply_kb_grounding(self, request: CourseOutlineRequest) -> bool:
         """Ground the outline in a knowledge base's topic tree.
@@ -139,6 +208,19 @@ class CourseOutlineGenerationService:
                     institute_id=request.institute_id,
                     node_ids=grounding.node_ids,
                 )
+                # Sections too large for one slide's grounding budget become
+                # "Part i of n" slides, each owning a window of the section's
+                # chunks — otherwise a big section is taught from its first
+                # 28k characters and the rest silently disappears.
+                parts_by_node = (
+                    course_grounding.plan_section_parts(
+                        db,
+                        kb_id=grounding.knowledge_base_id,
+                        institute_id=request.institute_id,
+                        sections=picked["sections"],
+                    )
+                    if picked else {}
+                )
         except Exception as e:  # noqa: BLE001
             logger.warning(f"Deterministic KB outline unavailable ({e}); using LLM outline")
             return None
@@ -156,10 +238,26 @@ class CourseOutlineGenerationService:
             chapter_title = (topic.get("title") or "").strip() or f"Section {ci}"
             # A topic with no subtopics still becomes a chapter with one slide
             # teaching the topic itself.
-            slides = topic.get("subtopics") or [topic]
+            slides: list = []
+            for node in (topic.get("subtopics") or [topic]):
+                parts = parts_by_node.get(node.get("id") or "")
+                if not parts:
+                    slides.append(node)
+                    continue
+                base_title = (node.get("title") or "").strip() or chapter_title
+                for part in parts:
+                    slides.append({
+                        **node,
+                        "title": f"{base_title} (Part {part['index']} of {part['count']})",
+                        "page_start": part.get("page_start") or node.get("page_start"),
+                        "page_end": part.get("page_end") or node.get("page_end"),
+                        "_part": part,
+                        "_base_title": base_title,
+                    })
             slide_nodes: list = []
             for si, node in enumerate(slides, start=1):
                 title = (node.get("title") or "").strip() or f"{chapter_title} — part {si}"
+                part = node.get("_part")
                 pages = ""
                 if node.get("page_start"):
                     pages = (
@@ -193,6 +291,13 @@ class CourseOutlineGenerationService:
                             "own order and terminology, and do not add topics from "
                             "outside it."
                             + (f" Section overview: {summary}" if summary else "")
+                            + (
+                                f" This slide is part {part['index']} of {part['count']} of the "
+                                f"section '{node.get('_base_title')}': teach only the passages "
+                                "provided for this part, and do not summarise or repeat the "
+                                "other parts."
+                                if part else ""
+                            )
                         ),
                         order=len(todos) + 1,
                         chapter_name=chapter_title,
@@ -200,6 +305,15 @@ class CourseOutlineGenerationService:
                             "node_id": node.get("id"),
                             "kb_page_start": node.get("page_start"),
                             "kb_page_end": node.get("page_end"),
+                            **(
+                                {
+                                    "kb_chunk_from": part["chunk_from"],
+                                    "kb_chunk_to": part["chunk_to"],
+                                    "kb_part_index": part["index"],
+                                    "kb_part_count": part["count"],
+                                }
+                                if part else {}
+                            ),
                         },
                     )
                 )
@@ -219,6 +333,11 @@ class CourseOutlineGenerationService:
                 f"Outline built directly from the material's own structure: "
                 f"{len(sections)} section(s), {len(todos)} slide(s), in the "
                 "source's order with its original titles."
+                + (
+                    f" {len(parts_by_node)} large section(s) were split into parts so "
+                    "every slide fits its own material."
+                    if parts_by_node else ""
+                )
             ),
             tree=[
                 CourseNode(
@@ -250,8 +369,8 @@ class CourseOutlineGenerationService:
             ),
         )
         logger.info(
-            "Deterministic KB outline: %d chapters / %d slides from %s",
-            len(sections), len(todos), picked["kb_name"],
+            "Deterministic KB outline: %d chapters / %d slides (%d sections split) from %s",
+            len(sections), len(todos), len(parts_by_node), picked["kb_name"],
         )
         return response
 
@@ -319,6 +438,9 @@ class CourseOutlineGenerationService:
                             node_id=(todo.metadata or {}).get("node_id"),
                             page_start=(todo.metadata or {}).get("kb_page_start"),
                             page_end=(todo.metadata or {}).get("kb_page_end"),
+                            # Split sections: only this part's chunk window.
+                            chunk_from=(todo.metadata or {}).get("kb_chunk_from"),
+                            chunk_to=(todo.metadata or {}).get("kb_chunk_to"),
                         )
                 except Exception:  # noqa: BLE001
                     logger.warning("KB grounding failed for %s", todo.path, exc_info=True)
@@ -352,11 +474,25 @@ class CourseOutlineGenerationService:
                 with db_session() as db:
                     repo = KbRepository(db)
                     kb = repo.get_kb(kb_id, institute_id)
+                    # A course built from a few chapters of a textbook library
+                    # must only sweep THOSE chapters: every chapter is its own
+                    # source restarting at page 1, and an unscoped census would
+                    # hand other chapters' opening pages to these slides as
+                    # "uncovered" material. Slides carry their node ids; nodes
+                    # of an authored tree carry their source.
+                    slide_nodes = [
+                        (t.metadata or {}).get("node_id") for t in content_todos
+                        if (t.metadata or {}).get("node_id")
+                    ]
+                    sweep_sources = (
+                        repo.get_node_source_ids(kb_id, slide_nodes) if kb and slide_nodes else []
+                    )
                     all_chunks = (
                         repo.get_all_chunk_summaries(
                             kb_id=kb_id,
                             institute_id=kb["institute_id"],
                             limit=course_grounding.MAX_SWEEP_CHUNKS,
+                            source_ids=sweep_sources or None,
                         )
                         if kb
                         else []
@@ -473,50 +609,20 @@ class CourseOutlineGenerationService:
             ai_course_prompt=ai_course_prompt
         )
 
-        # Resolve API keys (request -> database -> defaults)
-        openai_key = None
-        gemini_key = None
-        model = request.model
-        
-        if self._db_session:
-            try:
-                key_resolver = ApiKeyResolver(self._db_session)
-                openai_key, gemini_key, model = key_resolver.resolve_keys(
-                    institute_id=request.institute_id,
-                    user_id=request.user_id,
-                    request_model=request.model
-                )
-                if not model:
-                    from ..services.ai_models_service import AIModelsService
-                    model = request.model or AIModelsService(self._db_session).get_models_for_use_case("outline").default_model.model_id
-            except Exception as e:
-                logger.warning(f"Failed to resolve API keys: {str(e)}, using environment defaults")
-                # Fallback to environment defaults
-                from ..config import get_settings
-                settings = get_settings()
-                openai_key = settings.openrouter_api_key
-                gemini_key = settings.gemini_api_key
-                model = request.model or settings.llm_default_model
-        else:
-            # No DB session, use environment defaults only
-            from ..config import get_settings
-            settings = get_settings()
-            openai_key = settings.openrouter_api_key
-            gemini_key = settings.gemini_api_key
-            model = request.model or settings.llm_default_model
+        # Resolve API key + model: request model > institute/user default >
+        # the 'outline' use case (super-admin portal; GLM by default).
+        openai_key, gemini_key, model, fallback_models = self._resolve_outline_llm(request)
 
         # Generate outline and capture token usage
         if hasattr(self._llm_client, 'generate_outline_with_usage'):
-            raw_output, usage_info = await self._llm_client.generate_outline_with_usage(
-                prompt=prompt,
-                model=model,
-                api_key=openai_key,
+            raw_output, usage_info = await self._outline_llm_call(
+                prompt, model, openai_key, fallback_models, with_usage=True,
             )
 
             # Parametric course_outline charge: max(flat DB rate, actual tokens).
             # Best-effort on a fresh session; idempotent per request.
             if usage_info:
-                from .ai_billing import record_tool_billing
+                from .ai_billing import UC, record_tool_billing
                 request_id = str(uuid4())
                 record_tool_billing(
                     tool_key="course_outline",
@@ -529,13 +635,14 @@ class CourseOutlineGenerationService:
                     user_id=request.user_id,
                     request_id=request_id,
                     idempotency_key=f"course_outline:{request_id}",
+                    use_case=UC.COURSE_OUTLINE,
+                    metering=self._meter(request.user_id),
+                    usage_context={"request_id": request_id},
                 )
         else:
             # Fallback for clients that don't support usage tracking
-            raw_output = await self._llm_client.generate_outline(
-                prompt=prompt,
-                model=model,
-                api_key=openai_key,
+            raw_output = await self._outline_llm_call(
+                prompt, model, openai_key, fallback_models, with_usage=False,
             )
 
         outline_response = self._parser.parse(raw_output)
@@ -564,21 +671,7 @@ class CourseOutlineGenerationService:
                 )
                 
                 # Record image generation token usage
-                if self._db_session and image_usage and image_usage.get("total_tokens", 0) > 0:
-                    try:
-                        token_service = TokenUsageService(self._db_session)
-                        token_service.record_usage_and_deduct_credits(
-                            api_provider=ApiProvider.GEMINI,
-                            prompt_tokens=image_usage.get("prompt_tokens", 0),
-                            completion_tokens=image_usage.get("completion_tokens", 0),
-                            total_tokens=image_usage.get("total_tokens", 0),
-                            request_type=RequestType.IMAGE,
-                            institute_id=request.institute_id,
-                            user_id=request.user_id,
-                            model="google/gemini-3.1-flash-image",
-                        )
-                    except Exception as e:
-                        logger.warning(f"Failed to record image token usage: {str(e)}")
+                self._bill_outline_images(request, image_usage, [banner_url, preview_url, media_url])
                 
                 # Update metadata with image URLs if generation was successful
                 if banner_url:
@@ -655,37 +748,9 @@ class CourseOutlineGenerationService:
             ai_course_prompt=ai_course_prompt
         )
 
-        # Resolve API keys (request -> database -> defaults)
-        openai_key = None
-        gemini_key = None
-        model = request.model
-        
-        if self._db_session:
-            try:
-                key_resolver = ApiKeyResolver(self._db_session)
-                openai_key, gemini_key, model = key_resolver.resolve_keys(
-                    institute_id=request.institute_id,
-                    user_id=request.user_id,
-                    request_model=request.model
-                )
-                if not model:
-                    from ..services.ai_models_service import AIModelsService
-                    model = request.model or AIModelsService(self._db_session).get_models_for_use_case("outline").default_model.model_id
-            except Exception as e:
-                logger.warning(f"Failed to resolve API keys: {str(e)}, using environment defaults")
-                # Fallback to environment defaults
-                from ..config import get_settings
-                settings = get_settings()
-                openai_key = settings.openrouter_api_key
-                gemini_key = settings.gemini_api_key
-                model = request.model or settings.llm_default_model
-        else:
-            # No DB session, use environment defaults only
-            from ..config import get_settings
-            settings = get_settings()
-            openai_key = settings.openrouter_api_key
-            gemini_key = settings.gemini_api_key
-            model = request.model or settings.llm_default_model
+        # Resolve API key + model: request model > institute/user default >
+        # the 'outline' use case (super-admin portal; GLM by default).
+        openai_key, gemini_key, model, fallback_models = self._resolve_outline_llm(request)
 
         # (requestId already emitted at the top, before grounding)
 
@@ -694,16 +759,14 @@ class CourseOutlineGenerationService:
         try:
             # Generate outline and capture token usage
             if hasattr(self._llm_client, 'generate_outline_with_usage'):
-                full_content, usage_info = await self._llm_client.generate_outline_with_usage(
-                    prompt=prompt,
-                    model=model,
-                    api_key=openai_key,
+                full_content, usage_info = await self._outline_llm_call(
+                    prompt, model, openai_key, fallback_models, with_usage=True,
                 )
 
                 # Parametric course_outline charge: max(flat DB rate, actual
                 # tokens). Best-effort on a fresh session; idempotent per request.
                 if usage_info:
-                    from .ai_billing import record_tool_billing
+                    from .ai_billing import UC, record_tool_billing
                     record_tool_billing(
                         tool_key="course_outline",
                         tool_params={},
@@ -715,13 +778,14 @@ class CourseOutlineGenerationService:
                         user_id=request.user_id,
                         request_id=request_id,
                         idempotency_key=f"course_outline:{request_id}",
+                        use_case=UC.COURSE_OUTLINE,
+                        metering=self._meter(request.user_id),
+                        usage_context={"request_id": request_id},
                     )
             else:
                 # Fallback for clients that don't support usage tracking
-                full_content = await self._llm_client.generate_outline(
-                    prompt=prompt,
-                    model=model,
-                    api_key=openai_key,
+                full_content = await self._outline_llm_call(
+                    prompt, model, openai_key, fallback_models, with_usage=False,
                 )
 
             # Yield some thinking-like events to simulate streaming
@@ -759,22 +823,9 @@ class CourseOutlineGenerationService:
                     )
                     
                     # Record image generation token usage
-                    if self._db_session and image_usage and image_usage.get("total_tokens", 0) > 0:
-                        try:
-                            token_service = TokenUsageService(self._db_session)
-                            token_service.record_usage_and_deduct_credits(
-                                api_provider=ApiProvider.GEMINI,
-                                prompt_tokens=image_usage.get("prompt_tokens", 0),
-                                completion_tokens=image_usage.get("completion_tokens", 0),
-                                total_tokens=image_usage.get("total_tokens", 0),
-                                request_type=RequestType.IMAGE,
-                                institute_id=request.institute_id,
-                                user_id=request.user_id,
-                                model="google/gemini-3.1-flash-image",
-                                request_id=request_id,
-                            )
-                        except Exception as e:
-                            logger.warning(f"Failed to record image token usage: {str(e)}")
+                    self._bill_outline_images(
+                        request, image_usage, [banner_url, preview_url, media_url], request_id=request_id,
+                    )
 
                     # Update metadata with image URLs if generation was successful
                     if banner_url:
@@ -931,15 +982,19 @@ class CourseOutlineGenerationService:
             
             # Create or update content generation service with DB session and IDs
             if not self._content_generation_service:
+                from .ai_billing import supported_kwargs
                 from .content_generation_service import ContentGenerationService
                 self._content_generation_service = ContentGenerationService(
                     llm_client=self._llm_client,
                     db_session=self._db_session,
                     institute_id=extracted_institute_id,
                     user_id=extracted_user_id,
+                    **supported_kwargs(ContentGenerationService, {"metering": getattr(self, "_metering", None)}),
                 )
             else:
                 # Update existing service with IDs and DB session
+                if getattr(self, "_metering", None) is not None:
+                    self._content_generation_service._metering = self._metering
                 self._content_generation_service._institute_id = extracted_institute_id or self._content_generation_service._institute_id
                 self._content_generation_service._user_id = extracted_user_id or self._content_generation_service._user_id
                 self._content_generation_service._db_session = self._db_session or self._content_generation_service._db_session
@@ -1348,6 +1403,76 @@ class CourseOutlineGenerationService:
                 "type": "ERROR",
                 "message": f"Failed to generate content: {str(e)}"
             })
+
+    def _bill_outline_images(self, request, image_usage, urls, request_id: Optional[str] = None) -> None:
+        """Charge the course banner / preview / media images.
+
+        billing.image_registry_pricing off (default) and shadow: exactly as
+        before — one IMAGE row under the historical gemini label, and only when
+        the image calls reported tokens (dedicated image models report none, so
+        those images went unbilled). Shadow also logs what registry pricing
+        would charge. On: every image that came back is charged at the
+        registry price of the model that drew it (`image.model`), tokens or not.
+        """
+        if not self._db_session:
+            return
+        usage = image_usage or {}
+        count = sum(1 for u in (urls or []) if u)
+        charge = None
+        model = None
+        if count:
+            try:
+                from .image_model_resolver import PRICING_OFF, image_pricing_mode, plan_image_charge
+                from .image_service import resolve_image_model
+
+                # Off (default): one cached settings read and nothing else, as before.
+                if image_pricing_mode() != PRICING_OFF:
+                    model = resolve_image_model()
+                    charge = plan_image_charge(model, count, feature="course_outline_image")
+            except Exception as e:  # noqa: BLE001
+                logger.warning(f"Image pricing plan failed ({e}); billing outline images as before")
+                charge = None
+        from .ai_billing import UC, metering_kwargs, supported_kwargs
+        meter = metering_kwargs(UC.CONTENT_IMAGE, self._meter(request.user_id),
+                                {"feature": "course_outline_image", "image_count": count, "request_id": request_id})
+        if charge is not None and charge.precomputed_credits is not None:
+            try:
+                _tus = TokenUsageService(self._db_session)
+                _tus.record_usage_and_deduct_credits(
+                    api_provider=ApiProvider.OPENAI,  # via OpenRouter
+                    prompt_tokens=usage.get("prompt_tokens", 0),
+                    completion_tokens=usage.get("completion_tokens", 0),
+                    total_tokens=usage.get("total_tokens", 0),
+                    request_type=RequestType.IMAGE,
+                    institute_id=request.institute_id,
+                    user_id=request.user_id,
+                    model=model,
+                    request_id=request_id,
+                    metadata=charge.metadata({"feature": "course_outline_image", "image_count": count}),
+                    precomputed_credits=charge.precomputed_credits,
+                    **supported_kwargs(_tus.record_usage_and_deduct_credits, meter),
+                )
+            except Exception as e:
+                logger.warning(f"Failed to record image token usage: {str(e)}")
+            return
+        if image_usage and usage.get("total_tokens", 0) > 0:
+            try:
+                token_service = TokenUsageService(self._db_session)
+                token_service.record_usage_and_deduct_credits(
+                    api_provider=ApiProvider.GEMINI,
+                    prompt_tokens=usage.get("prompt_tokens", 0),
+                    completion_tokens=usage.get("completion_tokens", 0),
+                    total_tokens=usage.get("total_tokens", 0),
+                    request_type=RequestType.IMAGE,
+                    institute_id=request.institute_id,
+                    user_id=request.user_id,
+                    model="google/gemini-3.1-flash-image",
+                    request_id=request_id,
+                    metadata=charge.metadata(None) if charge is not None else None,
+                    **supported_kwargs(token_service.record_usage_and_deduct_credits, meter),
+                )
+            except Exception as e:
+                logger.warning(f"Failed to record image token usage: {str(e)}")
 
     def _apply_structure_options(self, outline_response: CourseOutlineResponse, request) -> CourseOutlineResponse:
         """Chapter-level deliverables chosen in the create-course UI.

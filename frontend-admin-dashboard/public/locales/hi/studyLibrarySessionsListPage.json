@@ -1,0 +1,76 @@
+{
+    "filterBarSearchPlaceholder": "सत्र खोजें...",
+    "chips": {
+        "search": "खोजें",
+        "date": "तारीख़",
+        "time": "समय",
+        "meetingType": "मीटिंग प्रकार",
+        "subject": "विषय",
+        "access": "एक्सेस",
+        "platform": "प्लेटफ़ॉर्म",
+        "clearAria": "{{label}} हटाएं",
+        "clearAll": "सभी हटाएं"
+    },
+    "dateRange": {
+        "from": "{{date}} से",
+        "to": "{{date}} तक",
+        "selectRange": "तारीख़ सीमा चुनें",
+        "quickSelect": "त्वरित चयन",
+        "today": "आज",
+        "next": "अगले",
+        "past": "पिछले",
+        "daysPreset_one": "{{direction}} {{count}} दिन",
+        "daysPreset_other": "{{direction}} {{count}} दिन",
+        "customRange": "कस्टम सीमा",
+        "startDate": "प्रारंभ तिथि",
+        "endDate": "समाप्ति तिथि",
+        "clear": "साफ़ करें",
+        "done": "पूर्ण"
+    },
+    "filters": {
+        "button": "फ़िल्टर",
+        "heading": "फ़िल्टर",
+        "reset": "रीसेट",
+        "timeOfDay": "दिन का समय",
+        "startTimeAria": "प्रारंभ समय",
+        "endTimeAria": "समाप्ति समय",
+        "meetingType": "मीटिंग प्रकार",
+        "all": "सभी",
+        "once": "एक बार",
+        "weekly": "साप्ताहिक",
+        "custom": "कस्टम",
+        "accessType": "एक्सेस प्रकार",
+        "platform": "प्लेटफ़ॉर्म",
+        "searchBatchesPlaceholder": "{{batches}} खोजें…",
+        "noMatches": "कोई मेल नहीं मिला",
+        "cancel": "रद्द करें",
+        "apply": "लागू करें",
+        "selectedCount_one": "{{count}} चयनित",
+        "selectedCount_other": "{{count}} चयनित"
+    },
+    "platformLabels": {
+        "zoom": "ज़ूम",
+        "googleMeet": "गूगल मीट",
+        "youtube": "यूट्यूब",
+        "bbb": "वेकेडमी मीट",
+        "zoho": "ज़ोहो",
+        "other": "अन्य"
+    },
+    "sessions": {
+        "loading": "सत्र लोड हो रहे हैं...",
+        "error": "सत्र लोड करने में त्रुटि: {{message}}",
+        "tabLabels": {
+            "live": "लाइव",
+            "upcoming": "आगामी",
+            "past": "पिछले",
+            "draft": "ड्राफ़्ट"
+        },
+        "emptyTitle": "कोई {{tab}} सत्र नहीं",
+        "emptyDraftBody": "कोई ड्राफ़्ट सत्र नहीं मिला। शुरू करने के लिए नया सत्र बनाएं।",
+        "emptyDefaultBody": "शिक्षार्थियों से रीयल टाइम में जुड़ने के लिए अपनी पहली लाइव क्लास शेड्यूल करें।",
+        "emptyPage": "इस पृष्ठ पर कोई {{tab}} सत्र नहीं है।",
+        "showingRange": "{{total}} में से {{from}} से {{to}} {{term}} दिखाए जा रहे हैं"
+    },
+    "settingsButtonLabel": "लाइव सत्र सेटिंग्स",
+    "scheduleButton": "शेड्यूल करें"
+}

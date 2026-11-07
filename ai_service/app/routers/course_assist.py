@@ -5,7 +5,9 @@ Two small prompt-in endpoints:
   POST /course/assist/v1/text   → rich-HTML copy for one course field
   POST /course/assist/v1/image  → preview/banner/media artwork, returned base64
 
-Pricing is flat by product spec: any text = 1 credit, any image = 5 credits.
+Pricing is flat by product spec: any text = 1 credit, any image = 5 credits
+(with billing.image_registry_pricing = on, an image is priced from the model
+registry instead).
 Affordability is gated up-front (402); the charge lands post-success as a
 precomputed deduction (allow_negative, so delivered work is never silently
 unbilled if a concurrent spend raced the pre-flight). Both the pre-flight and
@@ -24,31 +26,65 @@ import os
 import re
 import uuid
 from decimal import Decimal
-from typing import Optional
+from typing import Any, Optional
 
 import httpx
+from ..services.llm_router import ChainExhausted, chat_with_chain, post_chat
+from ..services.use_case_chat import models_for
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Request, status
 from pydantic import BaseModel, Field
 
 from ..core.security import get_current_user
 from ..db import db_session
 from ..models.ai_token_usage import RequestType
-from ..schemas.credits import CreditDeductRequest
+from ..schemas.credits import CreditDeductRequest  # noqa: F401
+from ..services.ai_billing import UC
 from ..services.credit_service import CreditService
+from ..services.image_model_resolver import (
+    COURSE_ASSIST_IMAGE, PRICING_ON, PRICING_SHADOW, image_model_for, plan_image_charge,
+)
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/course/assist", tags=["course-assist"])
 
-# Copywriting wants a strong instruction-follower; images route the Google
-# image model through OpenRouter's billed account (free-tier direct quota is 0).
-_TEXT_MODEL = os.getenv("COURSE_ASSIST_TEXT_MODEL") or "anthropic/claude-sonnet-5"
-_IMAGE_MODEL = os.getenv("COURSE_ASSIST_IMAGE_MODEL") or "google/gemini-3.1-flash-image"
+# Copywriting runs on the 'course_assist' use case (ai_model_defaults, set in
+# the super-admin portal; GLM by default) with its fallback chain;
+# COURSE_ASSIST_TEXT_MODEL, when set, is tried first (emergency override).
+# Images route the Google image model through OpenRouter's billed account
+# (free-tier direct quota is 0). COURSE_ASSIST_IMAGE_MODEL (env) wins, else the
+# 'course_assist_image' use case, else the literal; chat-completions image
+# models only (the call sends `modalities`).
+_TEXT_USE_CASE = "course_assist"
+_TEXT_MODEL_ENV = "COURSE_ASSIST_TEXT_MODEL"
+_IMAGE_MODEL_ENV = os.getenv("COURSE_ASSIST_IMAGE_MODEL")
+_IMAGE_MODEL_DEFAULT = "google/gemini-3.1-flash-image"
+_IMAGE_MODEL = _IMAGE_MODEL_ENV or _IMAGE_MODEL_DEFAULT
 _OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions"
 
 _TEXT_COST = Decimal("1")
 _IMAGE_COST = Decimal("5")
+
+
+def _image_model() -> str:
+    return _IMAGE_MODEL_ENV or image_model_for(COURSE_ASSIST_IMAGE, _IMAGE_MODEL_DEFAULT)
+
+
+def _image_cost(model: str) -> Decimal:
+    """Credits for one image: the flat product price, unless
+    billing.image_registry_pricing is 'on' and the registry can price the
+    model ('shadow' only logs the registry figure). Never raises."""
+    try:
+        charge = plan_image_charge(model, 1, feature="course_assist_image")
+    except Exception as e:  # noqa: BLE001
+        logger.warning("[course-assist] image pricing plan failed (%s); flat price", e)
+        return _IMAGE_COST
+    if charge.mode == PRICING_SHADOW and charge.would_be_credits is not None:
+        logger.info("[course-assist] image would_be_credits=%s (charged %s)", charge.would_be_credits, _IMAGE_COST)
+    if charge.mode == PRICING_ON and charge.precomputed_credits is not None:
+        return charge.precomputed_credits
+    return _IMAGE_COST
 
 _IMAGE_ASPECTS = {"16:9", "4:3", "1:1", "3:4", "9:16", "3:2", "2:3"}
 
@@ -129,6 +165,12 @@ def _principal(current_user) -> tuple[str, Optional[str]]:
     return institute_id, getattr(current_user, "user_id", None)
 
 
+def _metering(request: Optional[Request], institute_id: str, current_user: Any, user_id: Optional[str]) -> Any:
+    """Usage-event attribution (never changes a charge)."""
+    from ..services.ai_billing import metering_from_request, metering_user
+    return metering_from_request(request, institute_id, user=current_user) or metering_user(user_id, surface="ADMIN_APP")
+
+
 def _require_balance(institute_id: str, cost: Decimal, label: str) -> None:
     """Pre-flight affordability gate on a short-lived session, so no
     transaction stays open across the (up to 90s) provider call."""
@@ -153,13 +195,26 @@ def _charge(
     model: str,
     description: str,
     run_id: str,
-) -> None:
+    *,
+    use_case: Optional[str] = None,
+    metering: Any = None,
+    usage_context: Optional[dict] = None,
+) -> Decimal:
     """Flat post-success charge on a fresh session (mirrors ai_billing) — a
     failed deduction rolls back whole, never leaving a balance decrement
-    without its ledger row. Best-effort: delivered work is still returned."""
+    without its ledger row. Best-effort: delivered work is still returned.
+
+    Returns what the wallet was actually charged: 0 when an AI plan includes
+    the use or its allowance paid (the list price is still metered), the
+    flat cost when the deduction failed (as reported before)."""
     try:
+        from ..services.ai_billing import build_deduct_request, metering_kwargs
+        # Usage-event attribution only (optional request fields; the charge and
+        # the ledger row are exactly as before).
+        meter = metering_kwargs(use_case, metering, usage_context)
         with db_session() as db:
-            CreditService(db).deduct_credits(CreditDeductRequest(
+            res = CreditService(db).deduct_credits(build_deduct_request(
+                meter,
                 institute_id=institute_id,
                 request_type=request_type.value,
                 model=model,
@@ -169,8 +224,11 @@ def _charge(
                 user_id=user_id,
                 allow_negative=True,
             ))
+        deducted = getattr(res, "credits_deducted", None)
+        return Decimal(str(deducted)) if deducted is not None else cost
     except Exception as e:  # noqa: BLE001
         logger.error("[course-assist] charge failed (institute=%s, %s): %s", institute_id, description, e)
+        return cost
 
 
 def _sanitize_html(value: str) -> str:
@@ -210,11 +268,7 @@ async def _openrouter_chat(payload: dict) -> httpx.Response:
         raise HTTPException(status_code=503, detail="AI provider is not configured.")
     try:
         async with httpx.AsyncClient(timeout=90.0) as client:
-            return await client.post(
-                _OPENROUTER_URL,
-                headers={"Authorization": f"Bearer {key}", "Content-Type": "application/json"},
-                json=payload,
-            )
+            return await post_chat(client, payload, key)
     except httpx.TimeoutException:
         raise HTTPException(status_code=504, detail="Generation timed out. Please try again.")
     except httpx.HTTPError as e:
@@ -222,49 +276,64 @@ async def _openrouter_chat(payload: dict) -> httpx.Response:
         raise HTTPException(status_code=502, detail="Generation failed. Please try again.")
 
 
+async def _text_chat(payload: dict):
+    """One copywriting call through the model chain (GLM gets reasoning low and
+    max_tokens headroom on both gateway legs). Raises 503/502 HTTPExceptions."""
+    from ..config import get_settings
+    key = getattr(get_settings(), "openrouter_api_key", None)
+    if not key:
+        raise HTTPException(status_code=503, detail="AI provider is not configured.")
+    try:
+        return await chat_with_chain(
+            payload, _TEXT_USE_CASE, models=models_for(_TEXT_USE_CASE, env=_TEXT_MODEL_ENV),
+            api_key=key, timeout=90.0,
+        )
+    except ChainExhausted as e:
+        logger.error("[course-assist] text generation failed: %s", e)
+        raise HTTPException(status_code=502, detail="Text generation failed. Please try again.")
+
+
 @router.post("/v1/text", response_model=AssistTextResponse)
 async def generate_field_text(
     body: AssistTextRequest,
     current_user=Depends(get_current_user),
+    request: Request = None,
 ) -> AssistTextResponse:
     institute_id, user_id = _principal(current_user)
     if not body.prompt.strip():
         raise HTTPException(status_code=400, detail="A prompt is required.")
     _require_balance(institute_id, _TEXT_COST, "generating this text")
 
-    resp = await _openrouter_chat({
-        "model": _TEXT_MODEL,
+    result = await _text_chat({
         "messages": [{"role": "user", "content": _build_text_prompt(body)}],
         "temperature": 0.7,
     })
-    if resp.status_code != 200:
-        logger.error("[course-assist] text %s: %s", resp.status_code, resp.text[:300])
-        raise HTTPException(status_code=502, detail="Text generation failed. Please try again.")
-    try:
-        content = resp.json()["choices"][0]["message"]["content"] or ""
-    except Exception:  # noqa: BLE001
-        content = ""
-    html = _sanitize_html(content)
+    html = _sanitize_html(result.content)
     if not html:
         raise HTTPException(status_code=502, detail="Text generation returned no content. Please try again.")
 
     run_id = uuid.uuid4().hex
-    _charge(
-        institute_id, user_id, _TEXT_COST, RequestType.CONTENT, _TEXT_MODEL,
+    charged = _charge(
+        institute_id, user_id, _TEXT_COST, RequestType.CONTENT, result.model,
         f"Course field AI assist: {body.field or 'text'}", run_id,
+        use_case=UC.COURSE_ASSIST, metering=_metering(request, institute_id, current_user, user_id),
+        usage_context={"field": body.field, "course_name": body.course_name, "run_id": run_id},
     )
-    return AssistTextResponse(html=html, model=_TEXT_MODEL, credits_charged=float(_TEXT_COST))
+    return AssistTextResponse(html=html, model=result.model, credits_charged=float(charged))
 
 
 @router.post("/v1/image", response_model=AssistImageResponse)
 async def generate_field_image(
     body: AssistImageRequest,
     current_user=Depends(get_current_user),
+    request: Request = None,
 ) -> AssistImageResponse:
     institute_id, user_id = _principal(current_user)
     if not body.prompt.strip():
         raise HTTPException(status_code=400, detail="A prompt is required.")
-    _require_balance(institute_id, _IMAGE_COST, "generating this image")
+    image_model = _image_model()
+    image_cost = _image_cost(image_model)
+    _require_balance(institute_id, image_cost, "generating this image")
 
     kind_brief = _IMAGE_KIND_BRIEFS.get(body.kind or "", _IMAGE_KIND_BRIEFS["media"])
     prompt = (
@@ -296,7 +365,7 @@ async def generate_field_image(
             {"type": "image_url", "image_url": {"url": logo_url}},
         ]
     resp = await _openrouter_chat({
-        "model": _IMAGE_MODEL,
+        "model": image_model,
         "messages": [{"role": "user", "content": content}],
         "modalities": ["image"],
         "image_config": {"aspect_ratio": aspect},
@@ -339,10 +408,12 @@ async def generate_field_image(
         raise HTTPException(status_code=502, detail="Image generation returned malformed data. Please try again.")
 
     run_id = uuid.uuid4().hex
-    _charge(
-        institute_id, user_id, _IMAGE_COST, RequestType.IMAGE, _IMAGE_MODEL,
+    charged = _charge(
+        institute_id, user_id, image_cost, RequestType.IMAGE, image_model,
         f"Course image AI assist: {body.kind or 'image'}", run_id,
+        use_case=UC.COURSE_ASSIST_IMAGE, metering=_metering(request, institute_id, current_user, user_id),
+        usage_context={"kind": body.kind, "course_name": body.course_name, "run_id": run_id},
     )
     return AssistImageResponse(
-        image_base64=image_b64, mime_type=mime_type, model=_IMAGE_MODEL, credits_charged=float(_IMAGE_COST),
+        image_base64=image_b64, mime_type=mime_type, model=image_model, credits_charged=float(charged),
     )

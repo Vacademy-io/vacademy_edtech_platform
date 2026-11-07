@@ -1,0 +1,15 @@
+{
+    "title": "اختر إعدادات الخصم",
+    "description": "اختر كوبون خصم أو أنشئ كوبونًا جديدًا",
+    "badge": {
+        "active": "نشط"
+    },
+    "discount": {
+        "percentOff": "خصم {{value}}%",
+        "rupeesOff": "خصم ₹{{value}}",
+        "expires": "تنتهي الصلاحية: {{date}}"
+    },
+    "actions": {
+        "addNew": "+ إضافة خصم جديد"
+    }
+}

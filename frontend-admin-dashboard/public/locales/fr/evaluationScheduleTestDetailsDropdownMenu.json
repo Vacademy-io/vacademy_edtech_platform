@@ -1,0 +1,39 @@
+{
+    "viewAssessmentDetails": "Voir les détails de l'évaluation",
+    "deleteAssessment": "Supprimer l'évaluation",
+    "open": "Ouvrir",
+    "attention": "Attention",
+    "sendReminder": "Envoyer un rappel",
+    "reminderBody": {
+        "prefix": "Un rappel d'évaluation sera envoyé à tous les",
+        "participantCount_one": "{{count}} participant",
+        "participantCount_many": "{{count}} de participants",
+        "participantCount_other": "{{count}} participants",
+        "suffix": "qui ne se sont pas encore présentés dans les groupes concernés."
+    },
+    "send": "Envoyer",
+    "toasts": {
+        "slideDeleteFailed": "Évaluation supprimée, mais ses diapositives de cours n'ont pas pu être retirées.",
+        "deleteSuccess": "L'évaluation a été supprimée avec succès !"
+    },
+    "deleteConfirm": {
+        "prefix": "Voulez-vous vraiment supprimer"
+    },
+    "delete": "Supprimer",
+    "pauseLiveStatus": "Suspendre le statut en direct",
+    "date": "Date",
+    "pauseUntil": "Suspendre jusqu'au",
+    "time": "Heure",
+    "pause": "Suspendre",
+    "resumeLiveStatus": "Reprendre le statut en direct",
+    "resumeConfirm": {
+        "prefix": "Voulez-vous reprendre votre évaluation en direct",
+        "assessmentName": "The Human Eye and The Colourful World"
+    },
+    "resume": "Reprendre",
+    "reopenAssessment": "Rouvrir l'évaluation",
+    "selectReopenDateTime": "Sélectionnez la date et l'heure de réouverture de l'évaluation",
+    "startDateTime": "Date et heure de début",
+    "endDateTime": "Date et heure de fin",
+    "reopen": "Rouvrir"
+}

@@ -1,0 +1,22 @@
+{
+    "header": {
+        "title": "إعدادات الإحالة",
+        "description": "قم بتكوين برامج الإحالة لكل خطة دفع في رابط الدعوة الخاص بك"
+    },
+    "card": {
+        "title": "تكوين إحالة الخطط",
+        "configuredBadge": "تم تكوين {{configured}}/{{total}}",
+        "applyToAll": "تطبيق على الكل",
+        "configureReferrals": "تكوين الإحالات"
+    },
+    "emptyStates": {
+        "noPlanSelected": "الرجاء اختيار خطة دفع أولاً",
+        "noPaymentOptions": "لا توجد خيارات دفع متاحة للتكوين"
+    },
+    "planList": {
+        "heading": "خطط الدفع:",
+        "referralLabel": "الإحالة: {{name}}",
+        "noReferralConfigured": "لم يتم تكوين أي إحالة",
+        "unknownReferral": "إحالة غير معروفة"
+    }
+}

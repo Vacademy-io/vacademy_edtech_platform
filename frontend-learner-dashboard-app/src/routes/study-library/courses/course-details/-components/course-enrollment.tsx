@@ -1,4 +1,5 @@
 import { GraduationCap } from "@phosphor-icons/react";
+import { useTranslation } from "react-i18next";
 import {
   Select,
   SelectContent,
@@ -9,7 +10,10 @@ import {
 import { Button } from "@/components/ui/button";
 // Note: Select imports kept for the Batch/Subgroup dropdown below
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { getTerminology } from "@/components/common/layout-container/sidebar/utils";
+import {
+  getTerminology,
+  getTerminologyPlural,
+} from "@/components/common/layout-container/sidebar/utils";
 import { ContentTerms, RoleTerms, SystemTerms } from "@/types/naming-settings";
 import { shouldHidePaidPurchaseUI } from "@/utils/ios-iap-compliance";
 
@@ -113,6 +117,7 @@ export const CourseEnrollment = ({
   onBatchChange,
   onEnrollmentClick,
 }: CourseEnrollmentProps) => {
+  const { t } = useTranslation("courseDetailsA");
   if (!showCourseConfiguration) return null;
 
   const safeEnrolledSessions = enrolledSessions || [];
@@ -210,8 +215,9 @@ export const CourseEnrollment = ({
             />
           </div>
           <CardTitle className="text-sm font-bold">
-            {getTerminology(ContentTerms.Course, SystemTerms.Course)}{" "}
-            Configuration
+            {t("enrollment.configurationTitle", {
+              course: getTerminology(ContentTerms.Course, SystemTerms.Course),
+            })}
           </CardTitle>
         </div>
       </CardHeader>
@@ -221,21 +227,22 @@ export const CourseEnrollment = ({
           <div className="space-y-2.5">
             {/* Preview notice for ALL tab - only show if user is not enrolled */}
             {showPreviewNotice && (
-              <div className="p-2 bg-blue-50/80 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-md text-sm">
-                <div className="flex items-center space-x-2 text-blue-700 dark:text-blue-300 font-medium mb-1">
+              <div className="p-2 bg-blue-50/80 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-md text-sm space-y-1">
+                <div className="flex items-center gap-x-2 text-blue-700 dark:text-blue-300 font-medium">
                   <div className="w-1.5 h-1.5 bg-blue-500 rounded-full"></div>
                   <span>
-                    {getTerminology(ContentTerms.Course, SystemTerms.Course)}{" "}
-                    Preview Mode
+                    {t("enrollment.previewMode", {
+                      course: getTerminology(ContentTerms.Course, SystemTerms.Course),
+                    })}
                   </span>
                 </div>
                 <p className="text-blue-600/90 dark:text-blue-400 ps-3.5 text-xs leading-relaxed">
-                  Browse structure. Enroll to access{" "}
-                  {getTerminology(
-                    ContentTerms.Slides,
-                    SystemTerms.Slides,
-                  ).toLocaleLowerCase()}
-                  s and materials.
+                  {t("enrollment.previewNotice", {
+                    slides: getTerminologyPlural(
+                      ContentTerms.Slides,
+                      SystemTerms.Slides,
+                    ).toLocaleLowerCase(),
+                  })}
                 </p>
               </div>
             )}
@@ -284,14 +291,14 @@ export const CourseEnrollment = ({
                 selectedLevel && (
                   <div className="flex flex-col gap-1.5 sm:col-span-2">
                     <span className="text-xs font-medium text-muted-foreground ms-1">
-                      Class / Section
+                      {t("enrollment.classSection")}
                     </span>
                     <Select
                       value={selectedBatchId}
                       onValueChange={onBatchChange}
                     >
                       <SelectTrigger className="w-full bg-background">
-                        <SelectValue placeholder="Select class or section" />
+                        <SelectValue placeholder={t("enrollment.classSectionPlaceholder")} />
                       </SelectTrigger>
                       <SelectContent>
                         {batchOptions.map((option) => (
@@ -306,28 +313,34 @@ export const CourseEnrollment = ({
             </div>
           </div>
         ) : (
-          <div className="p-4 bg-yellow-50/50 dark:bg-yellow-900/10 border border-yellow-200 dark:border-yellow-800 rounded-lg">
-            <div className="flex items-center space-x-2 mb-1.5">
+          <div className="p-4 bg-yellow-50/50 dark:bg-yellow-900/10 border border-yellow-200 dark:border-yellow-800 rounded-lg space-y-1.5">
+            <div className="flex items-center gap-x-2">
               <div className="w-1.5 h-1.5 bg-yellow-500 rounded-full"></div>
               <span className="text-sm font-medium text-yellow-800 dark:text-yellow-200">
                 {selectedTab === "ALL"
-                  ? `No active ${getTerminology(
-                      ContentTerms.Session,
-                      SystemTerms.Session,
-                    ).toLocaleLowerCase()}s`
-                  : `Not enrolled`}
+                  ? t("enrollment.noActiveSessions", {
+                      sessions: getTerminologyPlural(
+                        ContentTerms.Session,
+                        SystemTerms.Session,
+                      ).toLocaleLowerCase(),
+                    })
+                  : t("enrollment.notEnrolled")}
               </span>
             </div>
             <p className="text-xs text-yellow-700 dark:text-yellow-400 ps-3.5 leading-relaxed">
               {selectedTab === "ALL"
-                ? `This ${getTerminology(
-                    ContentTerms.Course,
-                    SystemTerms.Course,
-                  ).toLocaleLowerCase()} requires configuration.`
-                : `Please contact your ${getTerminology(
-                    RoleTerms.Teacher,
-                    SystemTerms.Teacher,
-                  ).toLocaleLowerCase()} to get enrolled.`}
+                ? t("enrollment.requiresConfiguration", {
+                    course: getTerminology(
+                      ContentTerms.Course,
+                      SystemTerms.Course,
+                    ).toLocaleLowerCase(),
+                  })
+                : t("enrollment.contactTeacherToEnroll", {
+                    teacher: getTerminology(
+                      RoleTerms.Teacher,
+                      SystemTerms.Teacher,
+                    ).toLocaleLowerCase(),
+                  })}
             </p>
           </div>
         )}
@@ -348,7 +361,7 @@ export const CourseEnrollment = ({
                   className="w-full font-semibold shadow-sm"
                   onClick={onEnrollmentClick}
                 >
-                  Enroll Now
+                  {t("enrollment.enrollNow")}
                 </Button>
               </div>
             );

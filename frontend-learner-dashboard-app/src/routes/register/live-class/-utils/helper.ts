@@ -1,4 +1,10 @@
 import { CustomField, RegistrationFormValues } from "../-types/type";
+import { isBlankPhone } from "@/lib/phone-validation";
+import {
+  getFieldRenderType,
+  FieldRenderType,
+} from "@/components/common/enroll-by-invite/-utils/custom-field-helpers";
+
 export interface GuestRegistrationRequestDTO {
   session_id: string;
   email: string;
@@ -41,6 +47,33 @@ export interface CollectPublicUserDataDTO {
   }[];
 }
 
+/**
+ * A value that is nothing but a country dial code — "+91", "91", "+1" — which is what
+ * react-phone-input-2 leaves in the box when a learner opens an optional phone field and enters
+ * nothing. Deliberately narrower than {@link isBlankPhone}: this only ever matches a bare
+ * (optionally +-prefixed) run of at most 3 digits, so no answer a person actually typed can be
+ * mistaken for it and blanked.
+ */
+const isDialCodeOnly = (value: string): boolean => /^\+?\d{0,3}$/.test(value.trim());
+
+/**
+ * The value to send for one answered field.
+ *
+ * A registration form is free to make its phone field optional, and the phone widget keeps the
+ * selected country's dial code in the box — so a phone field the learner skipped reads back as
+ * "+91" rather than "". Stored as-is it is a junk phone number on the CRM lead, and sent as the
+ * identity it is shared by everyone who skipped the field. Blank is blank.
+ */
+const answerValue = (field: CustomField, raw: unknown): string => {
+  const value = String(raw);
+  if (
+    getFieldRenderType(field.fieldKey, field.fieldType) === FieldRenderType.PHONE &&
+    isDialCodeOnly(value)
+  ) {
+    return "";
+  }
+  return value;
+};
 export const transformToGuestRegistrationDTO = (
   formValues: RegistrationFormValues,
   sessionId: string,
@@ -64,7 +97,7 @@ export const transformToGuestRegistrationDTO = (
     }
   }
 
-  const mobileNumber =
+  const rawMobileNumber =
     extractFieldValue(
       formValues,
       customFields,
@@ -74,6 +107,9 @@ export const transformToGuestRegistrationDTO = (
       "mobile",
       "contact_number"
     ) || "";
+  // A dial-code-only value means the learner skipped an optional phone field, not that they
+  // can be identified or reached by that country code.
+  const mobileNumber = isBlankPhone(rawMobileNumber) ? "" : rawMobileNumber;
 
   const dto: GuestRegistrationRequestDTO = {
     session_id: sessionId,
@@ -89,7 +125,7 @@ export const transformToGuestRegistrationDTO = (
     if (value !== undefined && value !== null) {
       dto.custom_fields.push({
         customFieldId: field.id,
-        value: String(value),
+        value: answerValue(field, value),
       });
     }
   }
@@ -190,7 +226,7 @@ export const transformToCollectPublicUserDataDTO = (
         type_id: sessionId,
         source_type: null,
         source_id: null,
-        value: String(value),
+        value: answerValue(field, value),
       });
     }
   }

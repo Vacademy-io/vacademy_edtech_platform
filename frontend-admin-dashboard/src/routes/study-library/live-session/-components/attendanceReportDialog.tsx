@@ -1,4 +1,5 @@
 import { MyDialog } from '@/components/design-system/dialog';
+import { useTranslation } from 'react-i18next';
 
 export default function AttendanceReportDialog({
     open,
@@ -7,9 +8,10 @@ export default function AttendanceReportDialog({
     open: boolean;
     setOpen: (open: boolean) => void;
 }) {
+    const { t } = useTranslation('studyLibraryAttendanceReportDialog');
     return (
-        <MyDialog heading="Attendance Report" open={open} onOpenChange={setOpen}>
-            this is the attendance report dialog
+        <MyDialog heading={t('heading')} open={open} onOpenChange={setOpen}>
+            {t('body')}
         </MyDialog>
     );
 }

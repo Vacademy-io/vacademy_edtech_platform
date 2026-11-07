@@ -1,0 +1,86 @@
+{
+    "linkForm": {
+        "cancel": "إلغاء",
+        "linking": "جارٍ الربط…",
+        "linkButton": "ربط {{person}}"
+    },
+    "backTrail": {
+        "label": "رجوع — عرض {{name}}"
+    },
+    "roles": {
+        "guardian": "ولي الأمر",
+        "student": "الطالب"
+    },
+    "fallback": {
+        "thisLearner": "هذا المتعلم",
+        "thisGuardian": "ولي الأمر هذا"
+    },
+    "toast": {
+        "copiedToClipboard": "تم نسخ {{field}} إلى الحافظة!",
+        "copyFailed": "فشل نسخ {{field}}",
+        "guardianLinked": "تم ربط ولي الأمر",
+        "studentLinked": "تم ربط الطالب",
+        "guardianCredentialsSentTo": "تم إرسال بيانات اعتماد ولي الأمر إلى {{email}}",
+        "guardianCredentialsSent": "تم إرسال بيانات اعتماد ولي الأمر",
+        "guardianCredentialsNotSent": "تعذر إرسال بيانات اعتماد ولي الأمر",
+        "guardianCredentialsSendFailed": "فشل إرسال بيانات اعتماد ولي الأمر",
+        "linkGuardianFailedDefault": "فشل ربط ولي الأمر."
+    },
+    "toastFields": {
+        "studentUsername": "اسم مستخدم الطالب",
+        "studentPassword": "كلمة مرور الطالب",
+        "username": "اسم المستخدم",
+        "email": "البريد الإلكتروني",
+        "password": "كلمة المرور"
+    },
+    "fields": {
+        "username": "اسم المستخدم",
+        "password": "كلمة المرور",
+        "name": "الاسم",
+        "email": "البريد الإلكتروني",
+        "mobile": "رقم الجوال"
+    },
+    "status": {
+        "loading": "جارٍ التحميل…",
+        "notFound": "غير موجود",
+        "passwordNotFound": "كلمة المرور غير موجودة"
+    },
+    "ownLogin": {
+        "passwordHidden": "عرض كلمات المرور معطّل لهذه المؤسسة — فعّله من الإعدادات ← عرض الأدوار لرؤية بيانات دخول هذا الطالب هنا.",
+        "heading": "بيانات دخول هذا الطالب"
+    },
+    "errors": {
+        "loadGuardianInfo": "تعذر تحميل معلومات ولي الأمر"
+    },
+    "guardianHero": {
+        "eyebrow": "ملف ولي الأمر",
+        "title": "هذا ملف تعريف لولي أمر",
+        "linkedToChildren_zero": "غير مرتبط بأي طفل ({{count}})",
+        "linkedToChildren_one": "مرتبط بطفل واحد ({{count}})",
+        "linkedToChildren_two": "مرتبط بطفلين ({{count}})",
+        "linkedToChildren_few": "مرتبط بـ {{count}} أطفال",
+        "linkedToChildren_many": "مرتبط بـ {{count}} طفلاً",
+        "linkedToChildren_other": "مرتبط بـ {{count}} طفل"
+    },
+    "linkedChildren": {
+        "heading": "الأطفال المرتبطون",
+        "addChild": "إضافة طفل",
+        "viewLearnerTooltip": "عرض معلومات ولي أمر هذا المتعلم"
+    },
+    "noGuardian": {
+        "title": "لا يوجد ولي أمر مرتبط بعد",
+        "hint": "اربط ولي أمر موجودًا، أو أضف واحدًا جديدًا، من هنا مباشرة."
+    },
+    "linkGuardianSection": {
+        "heading": "ربط ولي أمر",
+        "addGuardian": "إضافة ولي أمر"
+    },
+    "guardianSection": {
+        "heading": "ولي الأمر",
+        "shareCredentialsTooltip": "أرسل بيانات الاعتماد هذه بالبريد الإلكتروني ليتمكن ولي الأمر من تسجيل الدخول إلى بوابة أولياء الأمور",
+        "shareCredentials": "مشاركة بيانات الاعتماد",
+        "sending": "جارٍ الإرسال…",
+        "viewProfileTooltip": "عرض الملف الشخصي لولي الأمر هذا",
+        "viewProfileLink": "عرض ملف ولي الأمر ←"
+    }
+}

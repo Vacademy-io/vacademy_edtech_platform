@@ -1,0 +1,54 @@
+{
+    "emptyState": "Aucun compte Google Workspace n'est encore connecté. Cliquez sur \"Connecter Google Workspace\" pour activer Google Meet pour cet établissement.",
+    "toasts": {
+        "updateFailed": "Impossible de mettre à jour le compte",
+        "connectedAs": "Connecté en tant que {{email}}",
+        "connectionFailed": "Échec de la connexion",
+        "connectionTestFailed": "Échec du test de connexion",
+        "disconnected": "{{email}} déconnecté",
+        "disconnectFailed": "Échec de la déconnexion",
+        "openJoinEnabled": "Les nouvelles réunions utiliseront l'accès ouvert (toute personne disposant du lien)",
+        "setDefault": "{{email}} est désormais le compte par défaut",
+        "autoRecordingDisabled": "Enregistrement automatique désactivé",
+        "autoRecordingEnabled": "Enregistrement automatique activé (nécessite une édition Workspace compatible avec l'enregistrement)",
+        "requireKnockEnabled": "Les nouvelles réunions exigeront que les invités frappent avant d'entrer"
+    },
+    "badges": {
+        "default": "Par défaut",
+        "autoRecord": "Enregistrement auto",
+        "reconnectNeeded": "Reconnexion requise"
+    },
+    "accessLabel": {
+        "open": "Accès ouvert",
+        "restricted": "Restreint",
+        "knock": "Frapper pour rejoindre"
+    },
+    "row": {
+        "lastVerified": "· dernière vérification le {{date}}",
+        "actionsAriaLabel": "Actions du compte"
+    },
+    "menu": {
+        "testConnection": "Tester la connexion",
+        "setAsDefault": "Définir par défaut",
+        "disableAutoRecording": "Désactiver l'enregistrement automatique",
+        "enableAutoRecording": "Activer l'enregistrement automatique",
+        "requireKnock": "Exiger de frapper (Approuvé)",
+        "allowOpenJoin": "Autoriser l'accès ouvert…",
+        "disconnect": "Déconnecter"
+    },
+    "dialogs": {
+        "disconnect": {
+            "title": "Déconnecter Google Workspace ?",
+            "description": "{{email}} sera déconnecté et son accès révoqué. Les sessions en direct existantes ne seront pas affectées, mais vous ne pourrez pas créer de nouvelles sessions Google Meet tant que vous ne vous serez pas reconnecté.",
+            "confirm": "Déconnecter"
+        },
+        "openAccess": {
+            "title": "Autoriser l'accès ouvert ?",
+            "description": "Avec l'accès ouvert, <1>toute personne disposant du lien de la réunion peut la rejoindre sans frapper</1> — un lien Google Meet est une simple URL sans code d'accès. N'utilisez cette option que si vous êtes certain que le lien n'est partagé qu'avec les apprenants inscrits via Vacademy. Vous pouvez revenir à \"exiger de frapper\" à tout moment.",
+            "confirm": "Autoriser l'accès ouvert"
+        }
+    },
+    "actions": {
+        "cancel": "Annuler"
+    }
+}

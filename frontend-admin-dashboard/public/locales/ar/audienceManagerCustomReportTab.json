@@ -1,0 +1,29 @@
+{
+    "buildSection": {
+        "title": "إنشاء تقرير",
+        "groupByLabel": "التجميع حسب (الأبعاد)",
+        "measuresLabel": "المقاييس",
+        "filtersHeading": "عوامل التصفية",
+        "runButton": "تشغيل التقرير",
+        "pickHint": "اختر بُعدًا واحدًا ومقياسًا واحدًا على الأقل."
+    },
+    "resultSection": {
+        "title": "النتيجة",
+        "matrixViewLabel": "عرض المصفوفة",
+        "emptyHint": "لا توجد صفوف مطابقة لهذا المواصفات.",
+        "totalColumn": "الإجمالي",
+        "matrixCaption": "{{measure}} حسب {{rowDim}} (الصفوف) × {{colDim}} (الأعمدة).",
+        "truncatedMatrix_zero": "لم يُبنَ من {{count}} صفوف — نقّح عوامل التصفية لتضييق النتيجة.",
+        "truncatedMatrix_one": "مبني من أول {{count}} صف — نقّح عوامل التصفية لتضييق النتيجة.",
+        "truncatedMatrix_two": "مبني من أول {{count}} صفّين — نقّح عوامل التصفية لتضييق النتيجة.",
+        "truncatedMatrix_few": "مبني من أول {{count}} صفوف — نقّح عوامل التصفية لتضييق النتيجة.",
+        "truncatedMatrix_many": "مبني من أول {{count}} صفًا — نقّح عوامل التصفية لتضييق النتيجة.",
+        "truncatedMatrix_other": "مبني من أول {{count}} صف — نقّح عوامل التصفية لتضييق النتيجة.",
+        "truncatedTable_zero": "لا تُعرض {{count}} صفوف — نقّح عوامل التصفية لتضييق النتيجة.",
+        "truncatedTable_one": "يُعرض أول {{count}} صف — نقّح عوامل التصفية لتضييق النتيجة.",
+        "truncatedTable_two": "يُعرض أول {{count}} صفّين — نقّح عوامل التصفية لتضييق النتيجة.",
+        "truncatedTable_few": "تُعرض أول {{count}} صفوف — نقّح عوامل التصفية لتضييق النتيجة.",
+        "truncatedTable_many": "تُعرض أول {{count}} صفًا — نقّح عوامل التصفية لتضييق النتيجة.",
+        "truncatedTable_other": "تُعرض أول {{count}} صف — نقّح عوامل التصفية لتضييق النتيجة."
+    }
+}

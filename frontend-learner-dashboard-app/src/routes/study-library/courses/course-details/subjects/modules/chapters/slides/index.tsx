@@ -33,6 +33,7 @@ import { getModuleName } from "@/utils/study-library/get-name-by-id/getModuleNam
 import { getSubjectName } from "@/utils/study-library/get-name-by-id/getSubjectNameById";
 import { getChapterName } from "@/utils/study-library/get-name-by-id/getChapterById";
 import { useContentStore } from "@/stores/study-library/chapter-sidebar-store";
+import { useLessonNotesStore } from "@/stores/study-library/lesson-notes-store";
 import useSidebarBranding from "@/components/common/layout-container/sidebar/useSidebar";
 import { InitStudyLibraryProvider } from "@/providers/study-library/init-study-library-provider";
 import { ModulesWithChaptersProvider } from "@/providers/study-library/modules-with-chapters-provider";
@@ -42,10 +43,7 @@ import { useModulesWithChaptersStore, ModulesWithChapters } from "@/stores/study
 import { useDripConditionStore } from "@/stores/study-library/drip-conditions-store";
 import { useCourseDripSchedule } from "@/hooks/use-course-drip-schedule";
 import { useDripConditions } from "@/hooks/use-drip-conditions";
-import {
-  evaluateDripCondition,
-  type LearnerProgressData,
-} from "@/utils/drip-conditions";
+import { evaluateListedItem } from "@/utils/drip-conditions";
 import {
   shouldFilterItem,
   isItemLocked,
@@ -149,21 +147,40 @@ interface ChapterSearchParams {
   chapterId: string;
   slideId: string;
   sessionId: string;
+  // Citation deep links from the chat: open a PDF at this page (1-based) or a
+  // video / audio at this second. Applied once, then cleared from the URL.
+  page?: number;
+  t?: number;
 }
+
+// A deep-link number param: finite and positive, else dropped. Accepts the
+// numeric strings a hand-edited URL can carry as well as parsed numbers.
+const positiveNumberParam = (value: unknown): number | undefined => {
+  const n =
+    typeof value === "string" && value.trim() !== "" ? Number(value) : value;
+  return typeof n === "number" && Number.isFinite(n) && n > 0 ? n : undefined;
+};
 
 export const Route = createFileRoute(
   "/study-library/courses/course-details/subjects/modules/chapters/slides/"
 )({
   component: Slides,
-  validateSearch: (search: Record<string, unknown>): ChapterSearchParams => ({
-    courseId: search.courseId as string,
-    levelId: search.levelId as string | undefined,
-    subjectId: search.subjectId as string,
-    moduleId: search.moduleId as string,
-    chapterId: search.chapterId as string,
-    slideId: search.slideId as string,
-    sessionId: search.sessionId as string,
-  }),
+  validateSearch: (search: Record<string, unknown>): ChapterSearchParams => {
+    const page = positiveNumberParam(search.page);
+    const t = positiveNumberParam(search.t);
+    return {
+      courseId: search.courseId as string,
+      levelId: search.levelId as string | undefined,
+      subjectId: search.subjectId as string,
+      moduleId: search.moduleId as string,
+      chapterId: search.chapterId as string,
+      slideId: search.slideId as string,
+      sessionId: search.sessionId as string,
+      // Pages are whole; a fractional page (2.5) means its page (2).
+      ...(page !== undefined && page >= 1 && { page: Math.floor(page) }),
+      ...(t !== undefined && { t }),
+    };
+  },
 });
 
 // ── Module Accordion Item ────────────────────────────────────────────────────
@@ -265,11 +282,46 @@ const ModuleAccordionItem = ({
 // ────────────────────────────────────────────────────────────────────────────
 
 function Slides() {
-  const { courseId, levelId, subjectId, moduleId, chapterId, slideId, sessionId } =
-    Route.useSearch();
+  const {
+    courseId,
+    levelId,
+    subjectId,
+    moduleId,
+    chapterId,
+    slideId,
+    sessionId,
+    page: deepLinkPage,
+    t: deepLinkTime,
+  } = Route.useSearch();
 
   const { setOpen: setAppSidebarOpen } = useSidebar();
   const navigate = useNavigate();
+
+  // Citation deep link (?page / ?t) for the slide named in the URL. The viewer
+  // applies it once when that slide is on screen; the params are then dropped
+  // with a replace navigation so a refresh resumes from saved progress.
+  const slideStartAt = useMemo(
+    () =>
+      slideId && (deepLinkPage !== undefined || deepLinkTime !== undefined)
+        ? { slideId, page: deepLinkPage, t: deepLinkTime }
+        : undefined,
+    [slideId, deepLinkPage, deepLinkTime]
+  );
+  const handleSlideStartApplied = useCallback(() => {
+    navigate({
+      to: "/study-library/courses/course-details/subjects/modules/chapters/slides",
+      search: {
+        courseId,
+        levelId,
+        subjectId,
+        moduleId,
+        chapterId,
+        slideId,
+        sessionId,
+      },
+      replace: true,
+    });
+  }, [navigate, courseId, levelId, subjectId, moduleId, chapterId, slideId, sessionId]);
 
   // Tracks the URL slideId the slide-selection effect last resolved against, so
   // a re-run can tell "the learner navigated (slideId changed)" apart from "the
@@ -319,6 +371,11 @@ function Slides() {
     setCurrentPackageSessionId,
   } = useContentStore();
 
+  // The active slide belongs to this visit. Left in the store, it is what the
+  // viewer would open on the next visit, to any course, before that visit's own
+  // slide is resolved.
+  useEffect(() => () => setActiveItem(null), [setActiveItem]);
+
   // Keep the content store in sync with the course currently being viewed so
   // that doubts are raised/filtered against THIS course's package session
   // (the URL's sessionId), not the learner's default first enrollment.
@@ -326,7 +383,7 @@ function Slides() {
     setCurrentPackageSessionId(resolvedSessionId || null);
   }, [resolvedSessionId, setCurrentPackageSessionId]);
 
-  const { slides } = useSlides(chapterId || "");
+  const { slides, isLoading: slidesLoading } = useSlides(chapterId || "");
   const { studyLibraryData } = useStudyLibraryStore();
   const { modulesWithChaptersData, setModulesWithChaptersData } = useModulesWithChaptersStore();
 
@@ -406,20 +463,14 @@ function Slides() {
   // not on the slide rows — same source the course page reads.
   const dripSchedule = useCourseDripSchedule(courseId, resolvedSessionId);
   const { conditionFor: dripConditionFor, now: dripNow } = dripSchedule;
-  // Anchors plus the first-item strictness flag, spread into every
-  // LearnerProgressData below. strictFirstItem rides the same opt-in as the
-  // rest: institutes that have not turned this on keep today's behaviour.
+  // Day-1 anchors for day-wise rules, spread into every LearnerProgressData
+  // below.
   const dripAnchors = useMemo(
     () => ({
       enrollmentDate: dripSchedule.enrollmentDate,
       sessionStartDate: dripSchedule.sessionStartDate,
-      strictFirstItem: dripSchedule.applyConfiguredRules,
     }),
-    [
-      dripSchedule.enrollmentDate,
-      dripSchedule.sessionStartDate,
-      dripSchedule.applyConfiguredRules,
-    ],
+    [dripSchedule.enrollmentDate, dripSchedule.sessionStartDate],
   );
 
   const { condition: slideCondition } = useDripConditions(
@@ -552,7 +603,7 @@ function Slides() {
         source_type: "FEEDBACK",
         source_id: "",
         image_file_id: "",
-        description: "Provide feedback for this chapter",
+        description: `Provide feedback for this ${getTerminology(ContentTerms.Chapters, SystemTerms.Chapters).toLocaleLowerCase()}`,
         status: "ACTIVE",
         slide_order: slides.length + 1,
         percentage_completed: 0,
@@ -568,111 +619,45 @@ function Slides() {
         { isLocked: boolean; isHidden: boolean; unlockMessage: string | null }
       > = {};
 
-      // Build comprehensive prerequisite completions map with BOTH chapters and slides
-      const prerequisiteCompletions: Record<string, number> = {};
-
-      // 1. Add all chapters and their progress
-      if (modulesWithChaptersData) {
-        modulesWithChaptersData.forEach((module) => {
-          module.chapters.forEach((chapter) => {
-            // Calculate chapter progress from its slides (if available in current context)
-            // For now, use 0 as default - will be updated when we have slide data loaded
-            prerequisiteCompletions[chapter.id] = 0;
-          });
+      // Chapters count as 0 until their slides are loaded; this chapter comes
+      // from its own slides. The slides themselves are added per slide below.
+      const chapterCompletions: Record<string, number> = {};
+      modulesWithChaptersData?.forEach((module) => {
+        module.chapters.forEach((chapter) => {
+          chapterCompletions[chapter.id] = 0;
         });
-      }
-
-      // 2. Add all slides from current chapter and their progress
-      slides.forEach((slide: Slide) => {
-        prerequisiteCompletions[slide.id] = slide.percentage_completed || 0;
       });
-
-      // 3. Calculate chapter progress for current chapter based on its slides
       if (chapterId) {
-        const chapterProgress = calculateOverallCompletion(slides);
-        prerequisiteCompletions[chapterId] = chapterProgress;
+        chapterCompletions[chapterId] = calculateOverallCompletion(slides);
       }
+
+      const listed = slides.map((slide: Slide) => ({
+        id: slide.id,
+        percentage: slide.percentage_completed || 0,
+        rowCondition: slide.drip_condition || slide.drip_condition_json,
+      }));
+      const dripRules = {
+        // Admin-configured conditions win over anything stamped on the row.
+        conditionFor: dripConditionFor,
+        courseCondition: slideCondition,
+        // `isDrippingEnable` owns the original row-level path; a configured
+        // condition has already cleared the new path's opt-in in conditionFor.
+        rowLevelEnabled: isDrippingEnable,
+        ...dripAnchors,
+        now: dripNow ? new Date(dripNow) : new Date(),
+      };
 
       // Evaluate drip conditions for each slide
       accessibleSlides = slides.filter((slide: Slide, index: number) => {
-        const previousSlide = index > 0 ? slides[index - 1] : null;
-        const progressData: LearnerProgressData = {
-          percentageCompleted: slide.percentage_completed || 0,
-          previousItemId: previousSlide?.id,
-          previousItemCompletion: previousSlide?.percentage_completed || 0,
-          itemIndex: index,
-          prerequisiteCompletions,
-          // Completion of every slide before this one, in slide_order.
-          recentScores: slides
-            .slice(0, index)
-            .map((s: Slide) => s.percentage_completed || 0),
-          ...dripAnchors,
-        };
-
-        // Check if this slide has its own drip condition (check both fields)
-        let slideDripCondition = null;
-        const dripConditionData =
-          slide.drip_condition || slide.drip_condition_json;
-
-        if (dripConditionData) {
-          try {
-            const parsed =
-              typeof dripConditionData === "string"
-                ? JSON.parse(dripConditionData)
-                : dripConditionData;
-
-            // Handle array of conditions - filter for enabled slide conditions
-            if (Array.isArray(parsed)) {
-              slideDripCondition =
-                parsed.find(
-                  (cond) =>
-                    (cond.target === "slide" || !cond.target) &&
-                    cond.is_enabled !== false
-                ) || null;
-            } else if (parsed && typeof parsed === "object") {
-              // Single condition - check if enabled and for slides
-              if (
-                (parsed.target === "slide" || !parsed.target) &&
-                parsed.is_enabled !== false
-              ) {
-                slideDripCondition = parsed;
-              }
-            }
-          } catch (e) {
-            console.error("Failed to parse slide drip condition:", e);
-          }
-        }
-
-        // Admin-configured conditions win over anything stamped on the row.
-        const configuredCondition = dripConditionFor("slide", slide.id);
-        const conditionToUse =
-          configuredCondition || slideDripCondition || slideCondition;
-        const hasCondition =
-          !!configuredCondition || !!slideDripCondition || !!slideCondition;
-
-        // `isDrippingEnable` owns the original row-level path; a configured
-        // condition has already cleared the new path's opt-in in conditionFor.
-        const shouldEvaluate =
-          (isDrippingEnable || !!configuredCondition) &&
-          hasCondition &&
-          conditionToUse?.is_enabled !== false;
-
-        const evaluation =
-          shouldEvaluate && conditionToUse
-            ? evaluateDripCondition(
-                conditionToUse,
-                progressData,
-                dripNow ? new Date(dripNow) : new Date(),
-              )
-            : {
-              isLocked: false,
-              isHidden: false,
-              unlockMessage: null,
-            };
+        const evaluation = evaluateListedItem(
+          "slide",
+          listed,
+          index,
+          dripRules,
+          chapterCompletions,
+        );
         evaluations[slide.id] = evaluation; // Store evaluation for this slide
-        const shouldHide = shouldFilterItem(evaluation);
-
-        return !shouldHide; // Keep slide if not hidden
+        return !shouldFilterItem(evaluation); // Keep slide if not hidden
       });
 
       // Store evaluations for all accessible slides
@@ -1016,6 +1001,7 @@ function Slides() {
                 matchingBatch.package_dto?.package_name || "";
               const levelNameFromBatch = matchingBatch.level?.level_name || "";
               setCourseName(courseNameFromBatch);
+              useLessonNotesStore.getState().setCourseName(courseNameFromBatch || null);
               setLevelName(levelNameFromBatch);
             }
           }
@@ -1923,7 +1909,7 @@ function Slides() {
                   source_type: "FEEDBACK",
                   source_id: "",
                   image_file_id: "",
-                  description: "Provide feedback for this chapter",
+                  description: `Provide feedback for this ${getTerminology(ContentTerms.Chapters, SystemTerms.Chapters).toLocaleLowerCase()}`,
                   status: "ACTIVE",
                   slide_order: slides?.length ? slides.length + 1 : 1,
                   percentage_completed: 0,
@@ -1999,6 +1985,9 @@ function Slides() {
             ) : (
               <SlideMaterial
                 onNavigateToSlide={handleNavigateToSlide}
+                slidesLoading={slidesLoading}
+                startAt={slideStartAt}
+                onStartAtApplied={handleSlideStartApplied}
                 standaloneNav={hideSlidesSidebar}
                 manualCompletion={manualCompletion}
                 completionContext={{

@@ -1,0 +1,26 @@
+{
+    "editHeading": "Modifier le service",
+    "addHeading": "Ajouter un service",
+    "cancel": "Annuler",
+    "saveChanges": "Enregistrer les modifications",
+    "saving": "Enregistrement…",
+    "noParent": "Aucun service parent (niveau supérieur)",
+    "fields": {
+        "nameLabel": "Nom",
+        "namePlaceholder": "ex. Académique",
+        "codeLabel": "Code",
+        "codePlaceholder": "ex. ACAD",
+        "codeHelp": "Code court utilisé dans les rapports et les exports de paie.",
+        "parentLabel": "Service parent",
+        "descriptionLabel": "Description",
+        "descriptionPlaceholder": "Ce dont ce service est responsable"
+    },
+    "toasts": {
+        "updated": "Service mis à jour",
+        "added": "Service ajouté"
+    },
+    "errors": {
+        "nameRequired": "Donnez un nom au service",
+        "saveFailed": "Impossible d'enregistrer ce service"
+    }
+}

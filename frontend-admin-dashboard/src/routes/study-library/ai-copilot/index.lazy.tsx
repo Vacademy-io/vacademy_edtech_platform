@@ -2,6 +2,8 @@ import { LayoutContainer } from '@/components/common/layout-container/layout-con
 import { useNavigate, createLazyFileRoute } from '@tanstack/react-router';
 import { Helmet } from 'react-helmet';
 import { useState, useCallback, useEffect, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 import { useNavHeadingStore } from '@/stores/layout-container/useNavHeadingStore';
 import { useSidebar } from '@/components/ui/sidebar';
 import { MyButton } from '@/components/design-system/button';
@@ -83,12 +85,14 @@ export const Route = createLazyFileRoute('/study-library/ai-copilot/')({
     component: RouteComponent,
 });
 
-const examplePrompts = [
-    'Create a beginner-level Python Programming course for aspiring developers',
-    'Design an end-to-end Machine Learning curriculum using Python and Scikit-Learn',
-    'Build a Cloud Computing Fundamentals course covering AWS, Azure, and GCP basics',
-    'Develop a Data Engineering course focusing on ETL pipelines and SQL concepts',
-];
+function buildExamplePrompts(t: TFunction): string[] {
+    return [
+        t('examplePrompts.python'),
+        t('examplePrompts.ml'),
+        t('examplePrompts.cloud'),
+        t('examplePrompts.dataEngineering'),
+    ];
+}
 
 interface PrerequisiteFile {
     file: File;
@@ -147,6 +151,8 @@ const BubbleButton = ({
 };
 
 function RouteComponent() {
+    const { t, i18n } = useTranslation('studyLibraryAiCopilotIndex');
+    const examplePrompts = buildExamplePrompts(t);
     const navigate = useNavigate();
     const { setNavHeading } = useNavHeadingStore();
     const { setOpen } = useSidebar();
@@ -263,6 +269,9 @@ function RouteComponent() {
     // Chapter/slide counts start at '5', so "still empty?" can never detect an
     // untouched control. Track the teacher's own choice explicitly instead.
     const structureChosenByUser = useRef(false);
+    // With a knowledge base attached the material decides the structure, so
+    // the chapter / slides-per-chapter controls are hidden and never sent.
+    const kbBound = !!kbGrounding?.knowledge_base_id;
     const [referenceFiles, setReferenceFiles] = useState<PrerequisiteFile[]>([]);
     const [referenceUrls, setReferenceUrls] = useState<PrerequisiteUrl[]>([]);
     const [newReferenceUrl, setNewReferenceUrl] = useState('');
@@ -272,12 +281,15 @@ function RouteComponent() {
     // Course-wide enrichments woven into every generated HTML document slide.
     const [documentContentTypes, setDocumentContentTypes] = useState<string[]>(['notes']);
     // Course structure: where quizzes live, chapter deliverables, figure sourcing.
-    const [quizPlacement, setQuizPlacement] = useState<
-        'PER_TOPIC' | 'CHAPTER' | 'BOTH' | 'NONE'
-    >('PER_TOPIC');
+    const [quizPlacement, setQuizPlacement] = useState<'PER_TOPIC' | 'CHAPTER' | 'BOTH' | 'NONE'>(
+        'PER_TOPIC'
+    );
     // null = let the AI decide from the prompt (legacy keyword detection)
     const [includeChapterAssignment, setIncludeChapterAssignment] = useState<boolean | null>(null);
     const [includeChapterVideo, setIncludeChapterVideo] = useState(false);
+    // Live AI Tutor: compile every slide into a teaching plan right after the
+    // course is created, and enable tutor mode on the new course.
+    const [personalizedTeaching, setPersonalizedTeaching] = useState(true);
     const [figuresPolicy, setFiguresPolicy] = useState<'PREFER' | 'REQUIRE' | 'GENERATED_ONLY'>(
         'PREFER'
     );
@@ -413,37 +425,34 @@ function RouteComponent() {
                 payload,
                 { params: { institute_id: instituteId } }
             );
-            toast.success(`${type === 'openai' ? 'OpenRouter' : 'Gemini'} key saved!`);
+            const keyTypeLabel = type === 'openai' ? t('keyTypes.openai') : t('keyTypes.gemini');
+            toast.success(t('toasts.keySaved', { keyType: keyTypeLabel }));
             if (type === 'openai') setOpenaiKey('');
             else setGeminiKey('');
             await checkUserKeys();
             fetchUsage();
         } catch (error) {
-            toast.error('Failed to save key');
+            toast.error(t('toasts.keySaveFailed'));
         }
     };
 
     const handleDeleteUserKey = async (type: 'openai' | 'gemini') => {
         if (!userId) return;
-        if (
-            !confirm(
-                `Are you sure you want to delete the ${type === 'openai' ? 'OpenRouter' : 'Gemini'} key ? `
-            )
-        )
-            return;
+        const keyTypeLabel = type === 'openai' ? t('keyTypes.openai') : t('keyTypes.gemini');
+        if (!confirm(t('toasts.deleteKeyConfirm', { keyType: keyTypeLabel }))) return;
 
         try {
             await authenticatedAxiosInstance.delete(
                 `${AI_SERVICE_BASE_URL} /api-keys/v1 / user / ${userId}/delete`
             );
-            toast.success(`${type === 'openai' ? 'OpenRouter' : 'Gemini'} key deleted`);
+            toast.success(t('toasts.keyDeleted', { keyType: keyTypeLabel }));
             await checkUserKeys();
         } catch (error: any) {
             console.error('Error deleting user key:', error);
             if (error.response?.status === 404) {
-                toast.error('No keys found to delete');
+                toast.error(t('toasts.noKeysFound'));
             } else {
-                toast.error('Failed to delete key');
+                toast.error(t('toasts.keyDeleteFailed'));
             }
         }
     };
@@ -516,14 +525,19 @@ function RouteComponent() {
                         rejection.errors.forEach((error: any) => {
                             if (error.code === 'file-too-large') {
                                 alert(
-                                    `File "${rejection.file.name}" exceeds the maximum size of 512 MB`
+                                    t('toasts.fileTooLarge', { fileName: rejection.file.name })
                                 );
                             } else if (error.code === 'file-invalid-type') {
                                 alert(
-                                    `File "${rejection.file.name}" is not a valid type. Only PDF, DOC, DOCX, CSV, and XLSX files are allowed.`
+                                    t('toasts.fileInvalidType', { fileName: rejection.file.name })
                                 );
                             } else {
-                                alert(`Error with file "${rejection.file.name}": ${error.message}`);
+                                alert(
+                                    t('toasts.fileError', {
+                                        fileName: rejection.file.name,
+                                        message: error.message,
+                                    })
+                                );
                             }
                         });
                     }
@@ -533,7 +547,7 @@ function RouteComponent() {
             const maxFileSize = 512 * 1024 * 1024;
             const validFiles = acceptedFiles.filter((file) => {
                 if (file.size > maxFileSize) {
-                    alert(`File "${file.name}" exceeds the maximum size of 512 MB`);
+                    alert(t('toasts.fileTooLarge', { fileName: file.name }));
                     return false;
                 }
                 return true;
@@ -544,14 +558,10 @@ function RouteComponent() {
             if (currentFileCount + newFileCount > 5) {
                 const remainingSlots = 5 - currentFileCount;
                 if (remainingSlots > 0) {
-                    alert(
-                        `You can only upload up to 5 files. ${remainingSlots} slot(s) remaining. Only the first ${remainingSlots} file(s) will be added.`
-                    );
+                    alert(t('toasts.fileLimitPartial', { remaining: remainingSlots }));
                     validFiles.splice(remainingSlots);
                 } else {
-                    alert(
-                        'You have already reached the maximum limit of 5 files. Please remove some files before adding new ones.'
-                    );
+                    alert(t('toasts.fileLimitReached'));
                     return;
                 }
             }
@@ -608,10 +618,10 @@ function RouteComponent() {
                         content: data.content,
                     },
                 ]);
-                toast.success('URL added and content fetched successfully');
+                toast.success(t('toasts.urlAddedSuccess'));
             } catch (error) {
                 console.error('Failed to scrape URL:', error);
-                toast.error('Could not fetch URL content, but added as reference');
+                toast.error(t('toasts.urlFetchFailed'));
                 // Add without content if scraping fails
                 setReferenceUrls((prev) => [
                     ...prev,
@@ -636,14 +646,19 @@ function RouteComponent() {
                         rejection.errors.forEach((error: any) => {
                             if (error.code === 'file-too-large') {
                                 alert(
-                                    `File "${rejection.file.name}" exceeds the maximum size of 512 MB`
+                                    t('toasts.fileTooLarge', { fileName: rejection.file.name })
                                 );
                             } else if (error.code === 'file-invalid-type') {
                                 alert(
-                                    `File "${rejection.file.name}" is not a valid type. Only PDF, DOC, DOCX, CSV, and XLSX files are allowed.`
+                                    t('toasts.fileInvalidType', { fileName: rejection.file.name })
                                 );
                             } else {
-                                alert(`Error with file "${rejection.file.name}": ${error.message}`);
+                                alert(
+                                    t('toasts.fileError', {
+                                        fileName: rejection.file.name,
+                                        message: error.message,
+                                    })
+                                );
                             }
                         });
                     }
@@ -653,7 +668,7 @@ function RouteComponent() {
             const maxFileSize = 512 * 1024 * 1024;
             const validFiles = acceptedFiles.filter((file) => {
                 if (file.size > maxFileSize) {
-                    alert(`File "${file.name}" exceeds the maximum size of 512 MB`);
+                    alert(t('toasts.fileTooLarge', { fileName: file.name }));
                     return false;
                 }
                 return true;
@@ -664,14 +679,10 @@ function RouteComponent() {
             if (currentFileCount + newFileCount > 5) {
                 const remainingSlots = 5 - currentFileCount;
                 if (remainingSlots > 0) {
-                    alert(
-                        `You can only upload up to 5 files. ${remainingSlots} slot(s) remaining. Only the first ${remainingSlots} file(s) will be added.`
-                    );
+                    alert(t('toasts.fileLimitPartial', { remaining: remainingSlots }));
                     validFiles.splice(remainingSlots);
                 } else {
-                    alert(
-                        'You have already reached the maximum limit of 5 files. Please remove some files before adding new ones.'
-                    );
+                    alert(t('toasts.fileLimitReached'));
                     return;
                 }
             }
@@ -710,12 +721,12 @@ function RouteComponent() {
 
     const handleSubmitCourseConfig = () => {
         if (!courseGoal.trim()) {
-            alert('Please enter a course goal');
+            alert(t('toasts.enterCourseGoal'));
             return;
         }
 
         if (includeCodeSnippets && !programmingLanguage) {
-            alert('Please select a programming language when code snippets are enabled');
+            alert(t('toasts.selectProgrammingLanguage'));
             return;
         }
 
@@ -737,7 +748,7 @@ function RouteComponent() {
         // Only PDFs are content-ingested (MathPix is PDF-only); tell the user
         // their other reference files won't shape the course.
         if (referenceFiles.length > pdfReferenceFiles.length) {
-            toast('Only PDF references are used to build the course; other files were ignored.');
+            toast(t('toasts.onlyPdfUsed'));
         }
         if (pdfReferenceFiles.length > 0 && userId) {
             setIsUploadingReferences(true);
@@ -761,15 +772,13 @@ function RouteComponent() {
                 );
                 referenceDocumentFileIds = uploaded.filter((id): id is string => !!id);
                 if (referenceDocumentFileIds.length < pdfReferenceFiles.length) {
-                    toast.error('Some reference PDFs could not be uploaded and were skipped.');
+                    toast.error(t('toasts.somePdfUploadFailed'));
                 }
             } finally {
                 setIsUploadingReferences(false);
             }
         } else if (pdfReferenceFiles.length > 0) {
-            toast.error(
-                'Could not upload reference PDFs (missing user id); continuing without them.'
-            );
+            toast.error(t('toasts.pdfUploadMissingUser'));
         }
 
         // Prepare context from references
@@ -808,14 +817,14 @@ function RouteComponent() {
                 programmingLanguage: includeCodeSnippets ? programmingLanguage : undefined,
             },
             durationFormatStructure: {
-                numberOfSessions: finalChapterCount ? parseInt(finalChapterCount) : undefined,
+                numberOfSessions:
+                    !kbBound && finalChapterCount ? parseInt(finalChapterCount) : undefined,
                 sessionLength: finalCourseLength || undefined,
                 includeQuizzes,
                 includeHomework,
                 includeSolutions,
-                topicsPerSession: finalSlidesPerChapter
-                    ? parseInt(finalSlidesPerChapter)
-                    : undefined,
+                topicsPerSession:
+                    !kbBound && finalSlidesPerChapter ? parseInt(finalSlidesPerChapter) : undefined,
                 numberOfSubjects: numberOfSubjects ? parseInt(numberOfSubjects) : undefined,
                 numberOfModules: numberOfModules ? parseInt(numberOfModules) : undefined,
             },
@@ -830,6 +839,7 @@ function RouteComponent() {
                 includeChapterVideo,
                 figuresPolicy,
                 dedupeRepetition,
+                personalizedTeaching,
             },
             referenceDocumentFileIds,
             kbGrounding,
@@ -847,6 +857,9 @@ function RouteComponent() {
 
         console.log('Generating course with config:', courseConfig);
         sessionStorage.setItem('courseConfig', JSON.stringify(courseConfig));
+        // The generating page deletes courseConfig once the outline loads;
+        // the AI-teacher choice must outlive it (read at course creation).
+        sessionStorage.setItem('coursePersonalizedTeaching', personalizedTeaching ? '1' : '0');
         // Clear any previous draft since we're starting fresh
         localStorage.removeItem('aiCourseDraft');
         setShowConfirmDialog(false);
@@ -875,11 +888,8 @@ function RouteComponent() {
     return (
         <LayoutContainer>
             <Helmet>
-                <title>{`Create with ${aiName}`}</title>
-                <meta
-                    name="description"
-                    content={`Create courses with ${aiName} using natural language prompts.`}
-                />
+                <title>{t('helmet.title', { aiName })}</title>
+                <meta name="description" content={t('helmet.description', { aiName })} />
             </Helmet>
             {/* min-h + my-auto centers the form when it fits and lets the page
                 scroll when it's taller than the viewport (e.g. once the AI Video
@@ -897,13 +907,10 @@ function RouteComponent() {
                         <div className="mb-2 flex items-center justify-center gap-2">
                             <Sparkles className="size-5 text-indigo-500 sm:size-6" />
                             <h1 className="text-xl font-semibold text-neutral-900 sm:text-2xl">
-                                Create with {aiName}
+                                {t('header.title', { aiName })}
                             </h1>
                         </div>
-                        <p className="text-sm text-gray-600">
-                            Describe your course idea and let {aiName} generate a complete learning
-                            experience
-                        </p>
+                        <p className="text-sm text-gray-600">{t('header.subtitle', { aiName })}</p>
                     </motion.div>
 
                     {/* Resume Draft Banner */}
@@ -921,11 +928,14 @@ function RouteComponent() {
                                     </div>
                                     <div>
                                         <p className="line-clamp-1 text-sm font-medium text-neutral-900">
-                                            {savedDraft.draftTitle || 'Untitled Course'}
+                                            {savedDraft.draftTitle || t('draftBanner.untitled')}
                                         </p>
                                         <p className="text-xs text-neutral-500">
-                                            Draft saved{' '}
-                                            {new Date(savedDraft.timestamp).toLocaleDateString()}
+                                            {t('draftBanner.savedOn', {
+                                                date: new Date(
+                                                    savedDraft.timestamp
+                                                ).toLocaleDateString(i18n.language),
+                                            })}
                                         </p>
                                     </div>
                                 </div>
@@ -937,14 +947,14 @@ function RouteComponent() {
                                         className="h-8 text-xs text-neutral-500 hover:text-red-600"
                                     >
                                         <Trash2 className="mr-1 size-3" />
-                                        Discard
+                                        {t('draftBanner.discard')}
                                     </Button>
                                     <Button
                                         size="sm"
                                         onClick={handleResumeDraft}
                                         className="h-8 bg-indigo-600 text-xs text-white hover:bg-indigo-700"
                                     >
-                                        Resume
+                                        {t('draftBanner.resume')}
                                     </Button>
                                 </div>
                             </div>
@@ -984,7 +994,7 @@ function RouteComponent() {
                             <Textarea
                                 value={courseGoal}
                                 onChange={(e) => setCourseGoal(e.target.value)}
-                                placeholder="Describe your course goal... e.g., 'Create a comprehensive Python programming course for beginners covering basics to advanced topics'"
+                                placeholder={t('form.courseGoalPlaceholder')}
                                 className="min-h-[100px] w-full resize-none border-neutral-200 focus:border-indigo-300 focus:ring-indigo-200"
                             />
                         </div>
@@ -992,7 +1002,7 @@ function RouteComponent() {
                         {/* Bubbles Row 1 - Core Settings */}
                         <div className="mb-1">
                             <span className="text-[10px] font-medium uppercase tracking-wider text-neutral-400">
-                                Course Settings
+                                {t('form.courseSettings')}
                             </span>
                         </div>
                         <div className="mb-3 flex flex-wrap gap-2">
@@ -1001,7 +1011,7 @@ function RouteComponent() {
                                 <SelectTrigger className="h-8 w-auto rounded-full border-neutral-200 bg-white px-3 text-xs">
                                     <div className="flex items-center gap-1.5">
                                         <Layers className="size-3.5 text-neutral-500" />
-                                        <SelectValue placeholder="Skill Level" />
+                                        <SelectValue placeholder={t('form.skillLevelPlaceholder')} />
                                     </div>
                                 </SelectTrigger>
                                 <SelectContent>
@@ -1013,11 +1023,15 @@ function RouteComponent() {
                                         ))
                                     ) : (
                                         <>
-                                            <SelectItem value="beginner">Beginner</SelectItem>
-                                            <SelectItem value="intermediate">
-                                                Intermediate
+                                            <SelectItem value="beginner">
+                                                {t('form.skillLevels.beginner')}
                                             </SelectItem>
-                                            <SelectItem value="advanced">Advanced</SelectItem>
+                                            <SelectItem value="intermediate">
+                                                {t('form.skillLevels.intermediate')}
+                                            </SelectItem>
+                                            <SelectItem value="advanced">
+                                                {t('form.skillLevels.advanced')}
+                                            </SelectItem>
                                         </>
                                     )}
                                 </SelectContent>
@@ -1028,14 +1042,14 @@ function RouteComponent() {
                                 <SelectTrigger className="h-8 w-auto rounded-full border-neutral-200 bg-white px-3 text-xs">
                                     <div className="flex items-center gap-1.5">
                                         <Sparkles className="size-3.5 text-neutral-500" />
-                                        <SelectValue placeholder="AI Model" />
+                                        <SelectValue placeholder={t('form.aiModelPlaceholder')} />
                                     </div>
                                 </SelectTrigger>
                                 <SelectContent>
-                                    <SelectItem value="auto">Auto (Smart)</SelectItem>
+                                    <SelectItem value="auto">{t('form.autoSmart')}</SelectItem>
                                     {isLoadingModels ? (
                                         <div className="px-2 py-1.5 text-xs text-gray-500">
-                                            Loading...
+                                            {t('form.loading')}
                                         </div>
                                     ) : modelsList && modelsList.models.length > 0 ? (
                                         modelsList.models.map((model) => (
@@ -1060,49 +1074,60 @@ function RouteComponent() {
                                 </SelectContent>
                             </Select>
 
-                            {/* Number of Chapters Dropdown */}
-                            <Select
-                                value={numberOfChapters}
-                                onValueChange={(v) => {
-                                    structureChosenByUser.current = true;
-                                    setNumberOfChapters(v);
-                                    if (v !== 'custom') setCustomChapterCount('');
-                                }}
-                            >
-                                <SelectTrigger className="h-8 w-auto rounded-full border-neutral-200 bg-white px-3 text-xs">
-                                    <div className="flex items-center gap-1.5">
-                                        <BookOpen className="size-3.5 text-neutral-500" />
-                                        {numberOfChapters === 'custom' && customChapterCount ? (
-                                            <span>
-                                                {customChapterCount}{' '}
-                                                {getTerminologyPlural(
-                                                    ContentTerms.Chapters,
-                                                    SystemTerms.Chapters
+                            {kbBound ? (
+                                <span className="inline-flex h-8 items-center rounded-full border border-neutral-200 bg-neutral-50 px-3 text-xs text-neutral-600">
+                                    {t('form.structureFollowsKb')}
+                                </span>
+                            ) : (
+                                <>
+                                    {/* Number of Chapters Dropdown */}
+                                    <Select
+                                        value={numberOfChapters}
+                                        onValueChange={(v) => {
+                                            structureChosenByUser.current = true;
+                                            setNumberOfChapters(v);
+                                            if (v !== 'custom') setCustomChapterCount('');
+                                        }}
+                                    >
+                                        <SelectTrigger className="h-8 w-auto rounded-full border-neutral-200 bg-white px-3 text-xs">
+                                            <div className="flex items-center gap-1.5">
+                                                <BookOpen className="size-3.5 text-neutral-500" />
+                                                {numberOfChapters === 'custom' &&
+                                                customChapterCount ? (
+                                                    <span>
+                                                        {customChapterCount}{' '}
+                                                        {getTerminologyPlural(
+                                                            ContentTerms.Chapters,
+                                                            SystemTerms.Chapters
+                                                        )}
+                                                    </span>
+                                                ) : (
+                                                    <SelectValue
+                                                        placeholder={getTerminologyPlural(
+                                                            ContentTerms.Chapters,
+                                                            SystemTerms.Chapters
+                                                        )}
+                                                    />
                                                 )}
-                                            </span>
-                                        ) : (
-                                            <SelectValue
-                                                placeholder={getTerminologyPlural(
-                                                    ContentTerms.Chapters,
-                                                    SystemTerms.Chapters
-                                                )}
-                                            />
-                                        )}
-                                    </div>
-                                </SelectTrigger>
-                                <SelectContent>
-                                    {[3, 4, 5, 6, 7, 8, 10, 12, 15, 20].map((num) => (
-                                        <SelectItem key={num} value={num.toString()}>
-                                            {num}{' '}
-                                            {getTerminologyPlural(
-                                                ContentTerms.Chapters,
-                                                SystemTerms.Chapters
-                                            )}
-                                        </SelectItem>
-                                    ))}
-                                    <SelectItem value="custom">Custom...</SelectItem>
-                                </SelectContent>
-                            </Select>
+                                            </div>
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            {[3, 4, 5, 6, 7, 8, 10, 12, 15, 20].map((num) => (
+                                                <SelectItem key={num} value={num.toString()}>
+                                                    {num}{' '}
+                                                    {getTerminologyPlural(
+                                                        ContentTerms.Chapters,
+                                                        SystemTerms.Chapters
+                                                    )}
+                                                </SelectItem>
+                                            ))}
+                                            <SelectItem value="custom">
+                                                {t('form.custom')}
+                                            </SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                </>
+                            )}
 
                             {/* Course Length Dropdown */}
                             <Select
@@ -1116,86 +1141,112 @@ function RouteComponent() {
                                     <div className="flex items-center gap-1.5">
                                         <Clock className="size-3.5 text-neutral-500" />
                                         {chapterLength === 'custom' && customChapterLength ? (
-                                            <span>{customChapterLength} min</span>
+                                            <span>
+                                                {t('form.durationCustomMinutes', {
+                                                    minutes: customChapterLength,
+                                                })}
+                                            </span>
                                         ) : (
-                                            <SelectValue placeholder="Duration" />
+                                            <SelectValue placeholder={t('form.durationPlaceholder')} />
                                         )}
                                     </div>
                                 </SelectTrigger>
                                 <SelectContent>
-                                    <SelectItem value="30">30 min</SelectItem>
-                                    <SelectItem value="45">45 min</SelectItem>
-                                    <SelectItem value="60">60 min</SelectItem>
-                                    <SelectItem value="90">90 min</SelectItem>
-                                    <SelectItem value="120">2 hours</SelectItem>
+                                    <SelectItem value="30">
+                                        {t('form.durationOptions.min30')}
+                                    </SelectItem>
+                                    <SelectItem value="45">
+                                        {t('form.durationOptions.min45')}
+                                    </SelectItem>
+                                    <SelectItem value="60">
+                                        {t('form.durationOptions.min60')}
+                                    </SelectItem>
+                                    <SelectItem value="90">
+                                        {t('form.durationOptions.min90')}
+                                    </SelectItem>
+                                    <SelectItem value="120">
+                                        {t('form.durationOptions.hours2')}
+                                    </SelectItem>
                                     <SelectItem value="custom">Custom...</SelectItem>
                                 </SelectContent>
                             </Select>
 
-                            {/* Slides per Chapter Dropdown */}
-                            <Select
-                                value={slidesPerChapter}
-                                onValueChange={(v) => {
-                                    structureChosenByUser.current = true;
-                                    setSlidesPerChapter(v);
-                                    if (v !== 'custom') setCustomSlidesPerChapter('');
-                                }}
-                            >
-                                <SelectTrigger className="h-8 w-auto rounded-full border-neutral-200 bg-white px-3 text-xs">
-                                    <div className="flex items-center gap-1.5">
-                                        <FileText className="size-3.5 text-neutral-500" />
-                                        {slidesPerChapter === 'custom' && customSlidesPerChapter ? (
-                                            <span>
-                                                {customSlidesPerChapter}{' '}
-                                                {getTerminologyPlural(
-                                                    ContentTerms.Slides,
-                                                    SystemTerms.Slides
+                            {!kbBound && (
+                                <>
+                                    {/* Slides per Chapter Dropdown */}
+                                    <Select
+                                        value={slidesPerChapter}
+                                        onValueChange={(v) => {
+                                            structureChosenByUser.current = true;
+                                            setSlidesPerChapter(v);
+                                            if (v !== 'custom') setCustomSlidesPerChapter('');
+                                        }}
+                                    >
+                                        <SelectTrigger className="h-8 w-auto rounded-full border-neutral-200 bg-white px-3 text-xs">
+                                            <div className="flex items-center gap-1.5">
+                                                <FileText className="size-3.5 text-neutral-500" />
+                                                {slidesPerChapter === 'custom' &&
+                                                customSlidesPerChapter ? (
+                                                    <span>
+                                                        {customSlidesPerChapter}{' '}
+                                                        {getTerminologyPlural(
+                                                            ContentTerms.Slides,
+                                                            SystemTerms.Slides
+                                                        )}
+                                                        /
+                                                        {getTerminology(
+                                                            ContentTerms.Chapters,
+                                                            SystemTerms.Chapters
+                                                        )}
+                                                    </span>
+                                                ) : (
+                                                    <SelectValue
+                                                        placeholder={`${getTerminologyPlural(ContentTerms.Slides, SystemTerms.Slides)}/${getTerminology(ContentTerms.Chapters, SystemTerms.Chapters)}`}
+                                                    />
                                                 )}
-                                                /
-                                                {getTerminology(
-                                                    ContentTerms.Chapters,
-                                                    SystemTerms.Chapters
-                                                )}
-                                            </span>
-                                        ) : (
-                                            <SelectValue
-                                                placeholder={`${getTerminologyPlural(ContentTerms.Slides, SystemTerms.Slides)}/${getTerminology(ContentTerms.Chapters, SystemTerms.Chapters)}`}
-                                            />
-                                        )}
-                                    </div>
-                                </SelectTrigger>
-                                <SelectContent>
-                                    {[3, 4, 5, 6, 7, 8, 10].map((num) => (
-                                        <SelectItem key={num} value={num.toString()}>
-                                            {num}{' '}
-                                            {getTerminologyPlural(
-                                                ContentTerms.Slides,
-                                                SystemTerms.Slides
-                                            )}
-                                            /
-                                            {getTerminology(
-                                                ContentTerms.Chapters,
-                                                SystemTerms.Chapters
-                                            )}
-                                        </SelectItem>
-                                    ))}
-                                    <SelectItem value="custom">Custom...</SelectItem>
-                                </SelectContent>
-                            </Select>
+                                            </div>
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            {[3, 4, 5, 6, 7, 8, 10].map((num) => (
+                                                <SelectItem key={num} value={num.toString()}>
+                                                    {num}{' '}
+                                                    {getTerminologyPlural(
+                                                        ContentTerms.Slides,
+                                                        SystemTerms.Slides
+                                                    )}
+                                                    /
+                                                    {getTerminology(
+                                                        ContentTerms.Chapters,
+                                                        SystemTerms.Chapters
+                                                    )}
+                                                </SelectItem>
+                                            ))}
+                                            <SelectItem value="custom">
+                                                {t('form.custom')}
+                                            </SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                </>
+                            )}
                         </div>
 
                         {/* Custom inputs for chapters/duration/slides if needed */}
-                        {(numberOfChapters === 'custom' ||
+                        {((!kbBound && numberOfChapters === 'custom') ||
                             chapterLength === 'custom' ||
-                            slidesPerChapter === 'custom') && (
+                            (!kbBound && slidesPerChapter === 'custom')) && (
                             <div className="mb-3 flex gap-2">
-                                {numberOfChapters === 'custom' && (
+                                {!kbBound && numberOfChapters === 'custom' && (
                                     <Input
                                         type="number"
                                         min={1}
                                         value={customChapterCount}
                                         onChange={(e) => setCustomChapterCount(e.target.value)}
-                                        placeholder={`Number of ${getTerminologyPlural(ContentTerms.Chapters, SystemTerms.Chapters).toLowerCase()}`}
+                                        placeholder={t('form.numberOfChapters', {
+                                            chapters: getTerminologyPlural(
+                                                ContentTerms.Chapters,
+                                                SystemTerms.Chapters
+                                            ).toLowerCase(),
+                                        })}
                                         className="h-8 w-40 text-xs"
                                     />
                                 )}
@@ -1205,17 +1256,26 @@ function RouteComponent() {
                                         min={1}
                                         value={customChapterLength}
                                         onChange={(e) => setCustomChapterLength(e.target.value)}
-                                        placeholder="Duration (minutes)"
+                                        placeholder={t('form.durationInputPlaceholder')}
                                         className="h-8 w-36 text-xs"
                                     />
                                 )}
-                                {slidesPerChapter === 'custom' && (
+                                {!kbBound && slidesPerChapter === 'custom' && (
                                     <Input
                                         type="number"
                                         min={1}
                                         value={customSlidesPerChapter}
                                         onChange={(e) => setCustomSlidesPerChapter(e.target.value)}
-                                        placeholder={`${getTerminologyPlural(ContentTerms.Slides, SystemTerms.Slides)} per ${getTerminology(ContentTerms.Chapters, SystemTerms.Chapters).toLowerCase()}`}
+                                        placeholder={t('form.slidesPerChapterInputPlaceholder', {
+                                            slides: getTerminologyPlural(
+                                                ContentTerms.Slides,
+                                                SystemTerms.Slides
+                                            ),
+                                            chapter: getTerminology(
+                                                ContentTerms.Chapters,
+                                                SystemTerms.Chapters
+                                            ).toLowerCase(),
+                                        })}
                                         className="h-8 w-40 text-xs"
                                     />
                                 )}
@@ -1241,17 +1301,17 @@ function RouteComponent() {
                         {/* Bubbles Row 2 - Content Options & Actions */}
                         <div className="mb-1">
                             <span className="text-[10px] font-medium uppercase tracking-wider text-neutral-400">
-                                Additional Options
+                                {t('form.additionalOptions')}
                             </span>
                         </div>
                         <div className="mb-4 flex flex-wrap gap-2">
                             {/* Content Options Bubble */}
                             <BubbleButton
                                 icon={Lightbulb}
-                                label="Content Options"
+                                label={t('form.contentOptionsLabel')}
                                 value={
                                     activeContentOptions > 0
-                                        ? `${activeContentOptions} selected`
+                                        ? t('form.selectedCount', { count: activeContentOptions })
                                         : undefined
                                 }
                                 onClick={() => setShowContentDialog(true)}
@@ -1262,10 +1322,10 @@ function RouteComponent() {
                             {courseDepth > 3 && (
                                 <BubbleButton
                                     icon={Layers}
-                                    label="Structure"
+                                    label={t('form.structureLabel')}
                                     value={
                                         numberOfModules || numberOfSubjects
-                                            ? 'Configured'
+                                            ? t('form.configured')
                                             : undefined
                                     }
                                     onClick={() => setShowStructureDialog(true)}
@@ -1276,7 +1336,7 @@ function RouteComponent() {
                             {/* References Bubble */}
                             <BubbleButton
                                 icon={Link}
-                                label="References"
+                                label={t('form.referencesLabel')}
                                 value={totalReferences > 0 ? `${totalReferences}` : undefined}
                                 onClick={() => setShowReferencesDialog(true)}
                                 isActive={totalReferences > 0}
@@ -1285,7 +1345,7 @@ function RouteComponent() {
                             {/* API Keys Bubble */}
                             <BubbleButton
                                 icon={Key}
-                                label="API Keys"
+                                label={t('form.apiKeysLabel')}
                                 onClick={() => setShowKeysDialog(true)}
                                 status={
                                     userKeysStatus.hasOpenAI || userKeysStatus.hasGemini
@@ -1307,10 +1367,10 @@ function RouteComponent() {
                                 generated HTML document slide. */}
                             <div className="rounded-lg border border-neutral-200 bg-white p-3">
                                 <div className="mb-1 text-subtitle font-semibold text-neutral-600">
-                                    Document content
+                                    {t('form.documentContent.title')}
                                 </div>
                                 <p className="mb-2 text-caption text-neutral-400">
-                                    Woven into every generated document slide.
+                                    {t('form.documentContent.caption')}
                                 </p>
                                 {/* Flow template: one click applies the standard
                                     per-topic teaching flow, in order. */}
@@ -1325,7 +1385,7 @@ function RouteComponent() {
                                                 : 'border-neutral-300 bg-white text-neutral-600 hover:border-primary-300'
                                         )}
                                     >
-                                        Custom
+                                        {t('form.documentContent.customButton')}
                                     </button>
                                     <button
                                         type="button"
@@ -1336,23 +1396,47 @@ function RouteComponent() {
                                                 ? 'border-primary-500 bg-primary-50 text-primary-500'
                                                 : 'border-neutral-300 bg-white text-neutral-600 hover:border-primary-300'
                                         )}
-                                        title="Why it matters → Short notes → High-yield point → Visual/process → Application → Flashcards → Mini quiz → Summary"
+                                        title={t('form.documentContent.standardFlowTooltip')}
                                     >
-                                        Standard learning flow
+                                        {t('form.documentContent.standardFlowButton')}
                                     </button>
                                 </div>
                                 <div className="flex flex-wrap gap-2">
                                     {[
-                                        { key: 'why_it_matters', label: 'Why it matters' },
-                                        { key: 'notes', label: 'Short notes' },
-                                        { key: 'high_yield', label: 'High-yield point' },
-                                        { key: 'visual_process', label: 'Visual / process' },
-                                        { key: 'application', label: 'Application' },
-                                        { key: 'flashcards', label: 'Flashcards' },
-                                        { key: 'quiz', label: 'Quiz' },
-                                        { key: 'summary', label: 'Summary' },
-                                        { key: 'practical_examples', label: 'Practical examples' },
-                                        { key: 'interactive_games', label: 'Interactive games' },
+                                        {
+                                            key: 'why_it_matters',
+                                            label: t('form.documentContent.types.whyItMatters'),
+                                        },
+                                        { key: 'notes', label: t('form.documentContent.types.notes') },
+                                        {
+                                            key: 'high_yield',
+                                            label: t('form.documentContent.types.highYield'),
+                                        },
+                                        {
+                                            key: 'visual_process',
+                                            label: t('form.documentContent.types.visualProcess'),
+                                        },
+                                        {
+                                            key: 'application',
+                                            label: t('form.documentContent.types.application'),
+                                        },
+                                        {
+                                            key: 'flashcards',
+                                            label: t('form.documentContent.types.flashcards'),
+                                        },
+                                        { key: 'quiz', label: t('form.documentContent.types.quiz') },
+                                        {
+                                            key: 'summary',
+                                            label: t('form.documentContent.types.summary'),
+                                        },
+                                        {
+                                            key: 'practical_examples',
+                                            label: t('form.documentContent.types.practicalExamples'),
+                                        },
+                                        {
+                                            key: 'interactive_games',
+                                            label: t('form.documentContent.types.interactiveGames'),
+                                        },
                                     ].map((ct) => {
                                         const on = documentContentTypes.includes(ct.key);
                                         return (
@@ -1384,17 +1468,35 @@ function RouteComponent() {
                                 and how figures are sourced. */}
                             <div className="mt-3 rounded-lg border border-neutral-200 bg-white p-3">
                                 <div className="mb-1 text-subtitle font-semibold text-neutral-600">
-                                    Course structure
+                                    {t('form.courseStructure.title')}
                                 </div>
                                 <div className="mb-2">
-                                    <p className="mb-1 text-caption text-neutral-400">Quizzes</p>
+                                    <p className="mb-1 text-caption text-neutral-400">
+                                        {t('form.courseStructure.quizzesCaption')}
+                                    </p>
                                     <div className="flex flex-wrap gap-2">
                                         {(
                                             [
-                                                { key: 'PER_TOPIC', label: 'Mini quiz per topic' },
-                                                { key: 'CHAPTER', label: 'One chapter quiz' },
-                                                { key: 'BOTH', label: 'Both' },
-                                                { key: 'NONE', label: 'No quizzes' },
+                                                {
+                                                    key: 'PER_TOPIC',
+                                                    label: t(
+                                                        'form.courseStructure.quizPlacement.perTopic'
+                                                    ),
+                                                },
+                                                {
+                                                    key: 'CHAPTER',
+                                                    label: t(
+                                                        'form.courseStructure.quizPlacement.chapter'
+                                                    ),
+                                                },
+                                                {
+                                                    key: 'BOTH',
+                                                    label: t('form.courseStructure.quizPlacement.both'),
+                                                },
+                                                {
+                                                    key: 'NONE',
+                                                    label: t('form.courseStructure.quizPlacement.none'),
+                                                },
                                             ] as const
                                         ).map((opt) => (
                                             <button
@@ -1415,22 +1517,35 @@ function RouteComponent() {
                                 </div>
                                 <div className="mb-2">
                                     <p className="mb-1 text-caption text-neutral-400">
-                                        Chapter deliverables
+                                        {t('form.courseStructure.chapterDeliverablesCaption')}
                                     </p>
                                     <div className="flex flex-wrap gap-2">
                                         {(
                                             [
-                                                { key: null, label: 'Assignment: auto' },
-                                                { key: true, label: 'Assignment + solution' },
-                                                { key: false, label: 'No assignment' },
+                                                {
+                                                    key: null,
+                                                    label: t(
+                                                        'form.courseStructure.chapterAssignment.auto'
+                                                    ),
+                                                },
+                                                {
+                                                    key: true,
+                                                    label: t(
+                                                        'form.courseStructure.chapterAssignment.withSolution'
+                                                    ),
+                                                },
+                                                {
+                                                    key: false,
+                                                    label: t(
+                                                        'form.courseStructure.chapterAssignment.none'
+                                                    ),
+                                                },
                                             ] as const
                                         ).map((opt) => (
                                             <button
                                                 key={String(opt.key)}
                                                 type="button"
-                                                onClick={() =>
-                                                    setIncludeChapterAssignment(opt.key)
-                                                }
+                                                onClick={() => setIncludeChapterAssignment(opt.key)}
                                                 className={cn(
                                                     'rounded-full border px-3 py-1 text-caption transition-colors',
                                                     includeChapterAssignment === opt.key
@@ -1451,12 +1566,25 @@ function RouteComponent() {
                                                     : 'border-neutral-300 bg-white text-neutral-600 hover:border-primary-300'
                                             )}
                                         >
-                                            Chapter video
+                                            {t('form.courseStructure.chapterVideo')}
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={() => setPersonalizedTeaching((v) => !v)}
+                                            title={t('form.courseStructure.aiTeacherTooltip')}
+                                            className={cn(
+                                                'rounded-full border px-3 py-1 text-caption transition-colors',
+                                                personalizedTeaching
+                                                    ? 'border-primary-500 bg-primary-500 text-white'
+                                                    : 'border-neutral-300 bg-white text-neutral-600 hover:border-primary-300'
+                                            )}
+                                        >
+                                            {t('form.courseStructure.aiTeacher')}
                                         </button>
                                         <button
                                             type="button"
                                             onClick={() => setDedupeRepetition((v) => !v)}
-                                            title="After all slides generate, slides that repeat material another slide in the chapter already covers are rewritten once."
+                                            title={t('form.courseStructure.reduceRepetitionTooltip')}
                                             className={cn(
                                                 'rounded-full border px-3 py-1 text-caption transition-colors',
                                                 dedupeRepetition
@@ -1464,28 +1592,32 @@ function RouteComponent() {
                                                     : 'border-neutral-300 bg-white text-neutral-600 hover:border-primary-300'
                                             )}
                                         >
-                                            Reduce repetition (2nd pass)
+                                            {t('form.courseStructure.reduceRepetition')}
                                         </button>
                                     </div>
                                 </div>
                                 <div>
                                     <p className="mb-1 text-caption text-neutral-400">
-                                        Diagrams &amp; figures
+                                        {t('form.courseStructure.figuresCaption')}
                                     </p>
                                     <div className="flex flex-wrap gap-2">
                                         {(
                                             [
                                                 {
                                                     key: 'PREFER',
-                                                    label: 'Prefer source figures',
+                                                    label: t('form.courseStructure.figuresPolicy.prefer'),
                                                 },
                                                 {
                                                     key: 'REQUIRE',
-                                                    label: 'Source figures required',
+                                                    label: t(
+                                                        'form.courseStructure.figuresPolicy.require'
+                                                    ),
                                                 },
                                                 {
                                                     key: 'GENERATED_ONLY',
-                                                    label: 'Generated only',
+                                                    label: t(
+                                                        'form.courseStructure.figuresPolicy.generatedOnly'
+                                                    ),
                                                 },
                                             ] as const
                                         ).map((opt) => (
@@ -1516,7 +1648,7 @@ function RouteComponent() {
                             className="w-full shadow-lg shadow-indigo-200"
                         >
                             <Sparkles className="mr-2 size-4" />
-                            Generate Course Outline
+                            {t('form.generateButton')}
                         </MyButton>
                     </motion.div>
                 </div>
@@ -1528,9 +1660,9 @@ function RouteComponent() {
                     <DialogHeader>
                         <DialogTitle className="flex items-center gap-2">
                             <Lightbulb className="size-5 text-indigo-600" />
-                            Content Options
+                            {t('contentDialog.title')}
                         </DialogTitle>
-                        <DialogDescription>Select what to include in your course</DialogDescription>
+                        <DialogDescription>{t('contentDialog.description')}</DialogDescription>
                     </DialogHeader>
                     <div className="space-y-3 py-4">
                         <div className="grid grid-cols-2 gap-3">
@@ -1541,7 +1673,9 @@ function RouteComponent() {
                                         setIncludeDiagrams(checked === true)
                                     }
                                 />
-                                <span className="text-sm">Diagrams</span>
+                                <span className="text-sm">
+                                    {t('contentDialog.options.diagrams')}
+                                </span>
                             </label>
                             <label className="flex cursor-pointer items-center gap-2">
                                 <Checkbox
@@ -1550,7 +1684,9 @@ function RouteComponent() {
                                         setIncludeCodeSnippets(checked === true)
                                     }
                                 />
-                                <span className="text-sm">Code Snippets</span>
+                                <span className="text-sm">
+                                    {t('contentDialog.options.codeSnippets')}
+                                </span>
                             </label>
                             <label className="flex cursor-pointer items-center gap-2">
                                 <Checkbox
@@ -1559,7 +1695,9 @@ function RouteComponent() {
                                         setIncludePracticeProblems(checked === true)
                                     }
                                 />
-                                <span className="text-sm">Practice Problems</span>
+                                <span className="text-sm">
+                                    {t('contentDialog.options.practiceProblems')}
+                                </span>
                             </label>
                             <label className="flex cursor-pointer items-center gap-2">
                                 <Checkbox
@@ -1568,7 +1706,7 @@ function RouteComponent() {
                                         setIncludeQuizzes(checked === true)
                                     }
                                 />
-                                <span className="text-sm">Quizzes</span>
+                                <span className="text-sm">{t('contentDialog.options.quizzes')}</span>
                             </label>
                             <label className="flex cursor-pointer items-center gap-2">
                                 <Checkbox
@@ -1577,7 +1715,9 @@ function RouteComponent() {
                                         setIncludeHomework(checked === true)
                                     }
                                 />
-                                <span className="text-sm">Assignments</span>
+                                <span className="text-sm">
+                                    {t('contentDialog.options.assignments')}
+                                </span>
                             </label>
                             <label className="flex cursor-pointer items-center gap-2">
                                 <Checkbox
@@ -1586,7 +1726,9 @@ function RouteComponent() {
                                         setIncludeSolutions(checked === true)
                                     }
                                 />
-                                <span className="text-sm">Solutions</span>
+                                <span className="text-sm">
+                                    {t('contentDialog.options.solutions')}
+                                </span>
                             </label>
                             <label className="flex cursor-pointer items-center gap-2">
                                 <Checkbox
@@ -1595,7 +1737,9 @@ function RouteComponent() {
                                         setIncludeYouTubeVideo(checked === true)
                                     }
                                 />
-                                <span className="text-sm">YouTube Videos</span>
+                                <span className="text-sm">
+                                    {t('contentDialog.options.youtubeVideos')}
+                                </span>
                             </label>
                             <label className="flex cursor-pointer items-center gap-2">
                                 <Checkbox
@@ -1604,7 +1748,9 @@ function RouteComponent() {
                                         setIncludeAIGeneratedVideo(checked === true)
                                     }
                                 />
-                                <span className="text-sm">AI Videos</span>
+                                <span className="text-sm">
+                                    {t('contentDialog.options.aiVideos')}
+                                </span>
                             </label>
                             <label className="flex cursor-pointer items-center gap-2">
                                 <Checkbox
@@ -1613,7 +1759,9 @@ function RouteComponent() {
                                         setIncludeAISlides(checked === true)
                                     }
                                 />
-                                <span className="text-sm">AI Slides</span>
+                                <span className="text-sm">
+                                    {t('contentDialog.options.aiSlides')}
+                                </span>
                             </label>
                             <label className="flex cursor-pointer items-center gap-2">
                                 <Checkbox
@@ -1622,19 +1770,25 @@ function RouteComponent() {
                                         setIncludeAIStorybook(checked === true)
                                     }
                                 />
-                                <span className="text-sm">AI Storybook</span>
+                                <span className="text-sm">
+                                    {t('contentDialog.options.aiStorybook')}
+                                </span>
                             </label>
                         </div>
 
                         {includeCodeSnippets && (
                             <div className="border-t pt-2">
-                                <Label className="mb-2 block text-sm">Programming Language</Label>
+                                <Label className="mb-2 block text-sm">
+                                    {t('contentDialog.programmingLanguage')}
+                                </Label>
                                 <Select
                                     value={programmingLanguage}
                                     onValueChange={setProgrammingLanguage}
                                 >
                                     <SelectTrigger className="w-full">
-                                        <SelectValue placeholder="Select language" />
+                                        <SelectValue
+                                            placeholder={t('contentDialog.selectLanguagePlaceholder')}
+                                        />
                                     </SelectTrigger>
                                     <SelectContent>
                                         <SelectItem value="python">Python</SelectItem>
@@ -1656,7 +1810,7 @@ function RouteComponent() {
                     </div>
                     <DialogFooter>
                         <MyButton buttonType="primary" onClick={() => setShowContentDialog(false)}>
-                            Done
+                            {t('contentDialog.done')}
                         </MyButton>
                     </DialogFooter>
                 </DialogContent>
@@ -1668,21 +1822,33 @@ function RouteComponent() {
                     <DialogHeader>
                         <DialogTitle className="flex items-center gap-2">
                             <Layers className="size-5 text-indigo-600" />
-                            Course Structure
+                            {t('structureDialog.title')}
                         </DialogTitle>
-                        <DialogDescription>Configure advanced course hierarchy</DialogDescription>
+                        <DialogDescription>{t('structureDialog.description')}</DialogDescription>
                     </DialogHeader>
                     <div className="space-y-4 py-4">
                         {courseDepth > 4 && (
                             <div>
-                                <Label className="mb-2 block text-sm">{`Number of ${getTerminologyPlural(ContentTerms.Subject, SystemTerms.Subject)}`}</Label>
+                                <Label className="mb-2 block text-sm">
+                                    {t('structureDialog.numberOf', {
+                                        term: getTerminologyPlural(
+                                            ContentTerms.Subject,
+                                            SystemTerms.Subject
+                                        ),
+                                    })}
+                                </Label>
                                 <Select
                                     value={numberOfSubjects}
                                     onValueChange={setNumberOfSubjects}
                                 >
                                     <SelectTrigger className="w-full">
                                         <SelectValue
-                                            placeholder={`Select ${getTerminologyPlural(ContentTerms.Subject, SystemTerms.Subject).toLowerCase()}`}
+                                            placeholder={t('structureDialog.selectPlaceholder', {
+                                                term: getTerminologyPlural(
+                                                    ContentTerms.Subject,
+                                                    SystemTerms.Subject
+                                                ).toLowerCase(),
+                                            })}
                                         />
                                     </SelectTrigger>
                                     <SelectContent>
@@ -1707,16 +1873,22 @@ function RouteComponent() {
                         {courseDepth > 3 && (
                             <div>
                                 <Label className="mb-2 block text-sm">
-                                    Number of{' '}
-                                    {getTerminologyPlural(
-                                        ContentTerms.Modules,
-                                        SystemTerms.Modules
-                                    )}
+                                    {t('structureDialog.numberOf', {
+                                        term: getTerminologyPlural(
+                                            ContentTerms.Modules,
+                                            SystemTerms.Modules
+                                        ),
+                                    })}
                                 </Label>
                                 <Select value={numberOfModules} onValueChange={setNumberOfModules}>
                                     <SelectTrigger className="w-full">
                                         <SelectValue
-                                            placeholder={`Select ${getTerminologyPlural(ContentTerms.Modules, SystemTerms.Modules).toLowerCase()}`}
+                                            placeholder={t('structureDialog.selectPlaceholder', {
+                                                term: getTerminologyPlural(
+                                                    ContentTerms.Modules,
+                                                    SystemTerms.Modules
+                                                ).toLowerCase(),
+                                            })}
                                         />
                                     </SelectTrigger>
                                     <SelectContent>
@@ -1739,7 +1911,7 @@ function RouteComponent() {
                             buttonType="primary"
                             onClick={() => setShowStructureDialog(false)}
                         >
-                            Done
+                            {t('structureDialog.done')}
                         </MyButton>
                     </DialogFooter>
                 </DialogContent>
@@ -1751,16 +1923,16 @@ function RouteComponent() {
                     <DialogHeader>
                         <DialogTitle className="flex items-center gap-2">
                             <Link className="size-5 text-indigo-600" />
-                            References
+                            {t('referencesDialog.title')}
                         </DialogTitle>
-                        <DialogDescription>
-                            Add URLs or files for the AI to reference
-                        </DialogDescription>
+                        <DialogDescription>{t('referencesDialog.description')}</DialogDescription>
                     </DialogHeader>
                     <div className="max-h-[400px] space-y-4 overflow-y-auto py-4">
                         {/* URL Input */}
                         <div>
-                            <Label className="mb-2 block text-sm">Add URL</Label>
+                            <Label className="mb-2 block text-sm">
+                                {t('referencesDialog.addUrlLabel')}
+                            </Label>
                             <div className="flex gap-2">
                                 <Input
                                     value={newReferenceUrl}
@@ -1771,7 +1943,7 @@ function RouteComponent() {
                                             handleAddReferenceUrl();
                                         }
                                     }}
-                                    placeholder="https://example.com"
+                                    placeholder={t('referencesDialog.urlPlaceholder')}
                                     className="flex-1"
                                 />
                                 <Button
@@ -1811,8 +1983,8 @@ function RouteComponent() {
                                             }}
                                             title={
                                                 url.content
-                                                    ? 'Click to view content'
-                                                    : 'No content fetched'
+                                                    ? t('referencesDialog.clickToView')
+                                                    : t('referencesDialog.noContentFetched')
                                             }
                                             disabled={!url.content}
                                         >
@@ -1835,7 +2007,9 @@ function RouteComponent() {
 
                         {/* File Upload */}
                         <div>
-                            <Label className="mb-2 block text-sm">Upload Files</Label>
+                            <Label className="mb-2 block text-sm">
+                                {t('referencesDialog.uploadFilesLabel')}
+                            </Label>
                             <div
                                 {...getReferenceRootProps()}
                                 className={cn(
@@ -1848,7 +2022,7 @@ function RouteComponent() {
                                 <input {...getReferenceInputProps()} />
                                 <Upload className="size-5 text-neutral-400" />
                                 <span className="text-xs text-neutral-500">
-                                    Drop files or click (PDF, DOC, CSV, XLSX)
+                                    {t('referencesDialog.dropzoneHint')}
                                 </span>
                             </div>
                         </div>
@@ -1882,7 +2056,7 @@ function RouteComponent() {
                             buttonType="primary"
                             onClick={() => setShowReferencesDialog(false)}
                         >
-                            Done
+                            {t('referencesDialog.done')}
                         </MyButton>
                     </DialogFooter>
                 </DialogContent>
@@ -1896,14 +2070,16 @@ function RouteComponent() {
                 <DialogContent className="flex max-h-[80vh] max-w-2xl flex-col">
                     <DialogHeader>
                         <DialogTitle className="truncate pr-8">
-                            {viewingReference?.title || 'Reference Content'}
+                            {viewingReference?.title || t('referenceContentDialog.titleFallback')}
                         </DialogTitle>
                     </DialogHeader>
                     <div className="flex-1 overflow-y-auto whitespace-pre-wrap rounded-md border bg-neutral-50 p-4 font-mono text-sm">
                         {viewingReference?.content}
                     </div>
                     <DialogFooter>
-                        <Button onClick={() => setViewingReference(null)}>Close</Button>
+                        <Button onClick={() => setViewingReference(null)}>
+                            {t('referenceContentDialog.close')}
+                        </Button>
                     </DialogFooter>
                 </DialogContent>
             </Dialog>
@@ -1914,19 +2090,19 @@ function RouteComponent() {
                     <DialogHeader>
                         <DialogTitle className="flex items-center gap-2">
                             <Key className="size-5 text-indigo-600" />
-                            API Keys
+                            {t('keysDialog.title')}
                         </DialogTitle>
-                        <DialogDescription>Add your API keys for AI generation</DialogDescription>
+                        <DialogDescription>{t('keysDialog.description')}</DialogDescription>
                     </DialogHeader>
                     <div className="space-y-4 py-4">
                         {/* OpenRouter Key */}
                         <div>
                             <div className="mb-2 flex items-center justify-between">
-                                <Label className="text-sm">OpenRouter API Key</Label>
+                                <Label className="text-sm">{t('keysDialog.openRouterLabel')}</Label>
                                 {userKeysStatus.hasOpenAI && (
                                     <span className="flex items-center gap-1 text-xs text-green-600">
                                         <CheckCircle className="size-3" />
-                                        Added
+                                        {t('keysDialog.added')}
                                     </span>
                                 )}
                             </div>
@@ -1935,7 +2111,7 @@ function RouteComponent() {
                                     type="password"
                                     value={openaiKey}
                                     onChange={(e) => setOpenaiKey(e.target.value)}
-                                    placeholder="sk-..."
+                                    placeholder={t('keysDialog.openRouterPlaceholder')}
                                     className="flex-1"
                                     disabled={userKeysStatus.hasOpenAI}
                                     {...noAutofillProps('password')}
@@ -1965,11 +2141,11 @@ function RouteComponent() {
                         {/* Gemini Key */}
                         <div>
                             <div className="mb-2 flex items-center justify-between">
-                                <Label className="text-sm">Gemini API Key</Label>
+                                <Label className="text-sm">{t('keysDialog.geminiLabel')}</Label>
                                 {userKeysStatus.hasGemini && (
                                     <span className="flex items-center gap-1 text-xs text-green-600">
                                         <CheckCircle className="size-3" />
-                                        Added
+                                        {t('keysDialog.added')}
                                     </span>
                                 )}
                             </div>
@@ -1978,7 +2154,7 @@ function RouteComponent() {
                                     type="password"
                                     value={geminiKey}
                                     onChange={(e) => setGeminiKey(e.target.value)}
-                                    placeholder="AIza..."
+                                    placeholder={t('keysDialog.geminiPlaceholder')}
                                     className="flex-1"
                                     disabled={userKeysStatus.hasGemini}
                                     {...noAutofillProps('password')}
@@ -2008,7 +2184,8 @@ function RouteComponent() {
                         {/* Info Box */}
                         <div className="rounded-lg border border-indigo-100 bg-indigo-50 p-3">
                             <p className="text-xs text-indigo-700">
-                                <strong>How to get keys:</strong> Visit{' '}
+                                <strong>{t('keysDialog.infoHow')}</strong>{' '}
+                                {t('keysDialog.infoVisit')}{' '}
                                 <a
                                     href="https://openrouter.ai"
                                     target="_blank"
@@ -2017,21 +2194,21 @@ function RouteComponent() {
                                 >
                                     openrouter.ai
                                 </a>{' '}
-                                or{' '}
+                                {t('keysDialog.infoOr')}{' '}
                                 <a
                                     href="https://aistudio.google.com/app/apikey"
                                     target="_blank"
                                     rel="noopener noreferrer"
                                     className="underline"
                                 >
-                                    Google AI Studio
+                                    {t('keysDialog.googleAiStudio')}
                                 </a>
                             </p>
                         </div>
                     </div>
                     <DialogFooter>
                         <MyButton buttonType="primary" onClick={() => setShowKeysDialog(false)}>
-                            Done
+                            {t('keysDialog.done')}
                         </MyButton>
                     </DialogFooter>
                 </DialogContent>
@@ -2046,12 +2223,11 @@ function RouteComponent() {
                                 <AlertTriangle className="size-5 text-amber-600" />
                             </div>
                             <DialogTitle className="text-xl font-semibold text-neutral-900">
-                                Review Course Details
+                                {t('confirmDialog.title')}
                             </DialogTitle>
                         </div>
                         <DialogDescription className="pt-2 text-sm text-neutral-600">
-                            Please review your course configuration below. Once you proceed, you
-                            won't be able to return and edit this information.
+                            {t('confirmDialog.description')}
                         </DialogDescription>
                     </DialogHeader>
 
@@ -2059,10 +2235,10 @@ function RouteComponent() {
                         <div className="space-y-4 py-4">
                             <div>
                                 <h4 className="mb-2 text-sm font-semibold text-neutral-900">
-                                    Course Goal
+                                    {t('confirmDialog.courseGoal')}
                                 </h4>
                                 <p className="rounded-md border border-neutral-200 bg-neutral-50 p-3 text-sm text-neutral-600">
-                                    {courseGoal || 'Not provided'}
+                                    {courseGoal || t('confirmDialog.notProvided')}
                                 </p>
                             </div>
 
@@ -2071,25 +2247,21 @@ function RouteComponent() {
                                 is always stated, loudly when absent. */}
                             <div>
                                 <h4 className="mb-2 text-sm font-semibold text-neutral-900">
-                                    Source Material
+                                    {t('confirmDialog.sourceMaterial')}
                                 </h4>
                                 {kbGrounding?.knowledge_base_id ? (
                                     <p className="rounded-md border border-success-200 bg-success-50 p-3 text-sm text-success-700">
-                                        Built from your selected knowledge base — the outline
-                                        mirrors its sections and every page is written from its
-                                        content.
+                                        {t('confirmDialog.sourceKb')}
                                     </p>
                                 ) : referenceFiles.length > 0 ? (
                                     <p className="rounded-md border border-success-200 bg-success-50 p-3 text-sm text-success-700">
-                                        Grounded in {referenceFiles.length} uploaded reference
-                                        document(s).
+                                        {t('confirmDialog.sourceFiles', {
+                                            count: referenceFiles.length,
+                                        })}
                                     </p>
                                 ) : (
                                     <p className="rounded-md border border-warning-200 bg-warning-50 p-3 text-sm text-warning-700">
-                                        No source material selected — the AI will write this
-                                        course from its own general knowledge. To build it from
-                                        your own material, go back and pick a knowledge base or
-                                        upload a reference document.
+                                        {t('confirmDialog.sourceNone')}
                                     </p>
                                 )}
                             </div>
@@ -2097,7 +2269,7 @@ function RouteComponent() {
                             {learningOutcome && (
                                 <div>
                                     <h4 className="mb-2 text-sm font-semibold text-neutral-900">
-                                        Learning Outcome
+                                        {t('confirmDialog.learningOutcome')}
                                     </h4>
                                     <p className="rounded-md border border-neutral-200 bg-neutral-50 p-3 text-sm text-neutral-600">
                                         {learningOutcome}
@@ -2109,7 +2281,7 @@ function RouteComponent() {
                                 {skillLevel && (
                                     <div>
                                         <h4 className="mb-1 text-sm font-semibold text-neutral-900">
-                                            Skill Level
+                                            {t('confirmDialog.skillLevel')}
                                         </h4>
                                         <p className="text-sm capitalize text-neutral-600">
                                             {instituteLevels.find((l) => l.id === skillLevel)
@@ -2120,7 +2292,12 @@ function RouteComponent() {
                                 {numberOfSubjects && (
                                     <div>
                                         <h4 className="mb-1 text-sm font-semibold text-neutral-900">
-                                            {`Number of ${getTerminologyPlural(ContentTerms.Subject, SystemTerms.Subject)}`}
+                                            {t('confirmDialog.numberOf', {
+                                                term: getTerminologyPlural(
+                                                    ContentTerms.Subject,
+                                                    SystemTerms.Subject
+                                                ),
+                                            })}
                                         </h4>
                                         <p className="text-sm text-neutral-600">
                                             {numberOfSubjects}
@@ -2130,25 +2307,46 @@ function RouteComponent() {
                                 {numberOfModules && (
                                     <div>
                                         <h4 className="mb-1 text-sm font-semibold text-neutral-900">
-                                            Number of{' '}
-                                            {getTerminologyPlural(
-                                                ContentTerms.Modules,
-                                                SystemTerms.Modules
-                                            )}
+                                            {t('confirmDialog.numberOf', {
+                                                term: getTerminologyPlural(
+                                                    ContentTerms.Modules,
+                                                    SystemTerms.Modules
+                                                ),
+                                            })}
                                         </h4>
                                         <p className="text-sm text-neutral-600">
                                             {numberOfModules}
                                         </p>
                                     </div>
                                 )}
-                                {numberOfChapters && (
+                                {kbBound && (
                                     <div>
                                         <h4 className="mb-1 text-sm font-semibold text-neutral-900">
-                                            Number of{' '}
-                                            {getTerminologyPlural(
-                                                ContentTerms.Chapters,
-                                                SystemTerms.Chapters
-                                            )}
+                                            {t('confirmDialog.structure')}
+                                        </h4>
+                                        <p className="text-sm text-neutral-600">
+                                            {t('confirmDialog.structureFollowsKbDetail', {
+                                                chapter: getTerminology(
+                                                    ContentTerms.Chapters,
+                                                    SystemTerms.Chapters
+                                                ).toLowerCase(),
+                                                slides: getTerminologyPlural(
+                                                    ContentTerms.Slides,
+                                                    SystemTerms.Slides
+                                                ).toLowerCase(),
+                                            })}
+                                        </p>
+                                    </div>
+                                )}
+                                {!kbBound && numberOfChapters && (
+                                    <div>
+                                        <h4 className="mb-1 text-sm font-semibold text-neutral-900">
+                                            {t('confirmDialog.numberOf', {
+                                                term: getTerminologyPlural(
+                                                    ContentTerms.Chapters,
+                                                    SystemTerms.Chapters
+                                                ),
+                                            })}
                                         </h4>
                                         <p className="text-sm text-neutral-600">
                                             {numberOfChapters}
@@ -2158,29 +2356,34 @@ function RouteComponent() {
                                 {(chapterLength || customChapterLength) && (
                                     <div>
                                         <h4 className="mb-1 text-sm font-semibold text-neutral-900">
-                                            Course Length
+                                            {t('confirmDialog.courseLength')}
                                         </h4>
                                         <p className="text-sm text-neutral-600">
                                             {chapterLength === 'custom'
-                                                ? `${customChapterLength} minutes`
+                                                ? t('confirmDialog.minutes', {
+                                                      count: Number(customChapterLength) || 0,
+                                                  })
                                                 : chapterLength
-                                                  ? `${chapterLength} minutes`
+                                                  ? t('confirmDialog.minutes', {
+                                                        count: Number(chapterLength) || 0,
+                                                    })
                                                   : ''}
                                         </p>
                                     </div>
                                 )}
-                                {slidesPerChapter && (
+                                {!kbBound && slidesPerChapter && (
                                     <div>
                                         <h4 className="mb-1 text-sm font-semibold text-neutral-900">
-                                            {getTerminologyPlural(
-                                                ContentTerms.Slides,
-                                                SystemTerms.Slides
-                                            )}{' '}
-                                            per{' '}
-                                            {getTerminology(
-                                                ContentTerms.Chapters,
-                                                SystemTerms.Chapters
-                                            )}
+                                            {t('confirmDialog.slidesPerChapter', {
+                                                slides: getTerminologyPlural(
+                                                    ContentTerms.Slides,
+                                                    SystemTerms.Slides
+                                                ),
+                                                chapter: getTerminology(
+                                                    ContentTerms.Chapters,
+                                                    SystemTerms.Chapters
+                                                ),
+                                            })}
                                         </h4>
                                         <p className="text-sm text-neutral-600">
                                             {slidesPerChapter}
@@ -2192,60 +2395,62 @@ function RouteComponent() {
                             {activeContentOptions > 0 && (
                                 <div>
                                     <h4 className="mb-2 text-sm font-semibold text-neutral-900">
-                                        What to Include
+                                        {t('confirmDialog.whatToInclude')}
                                     </h4>
                                     <div className="flex flex-wrap gap-2">
                                         {includeDiagrams && (
                                             <span className="rounded-md bg-indigo-50 px-2.5 py-1 text-xs text-indigo-700">
-                                                Diagrams
+                                                {t('confirmDialog.options.diagrams')}
                                             </span>
                                         )}
                                         {includeCodeSnippets && (
                                             <span className="rounded-md bg-indigo-50 px-2.5 py-1 text-xs text-indigo-700">
-                                                Code Snippets
                                                 {programmingLanguage
-                                                    ? ` (${programmingLanguage})`
-                                                    : ''}
+                                                    ? t(
+                                                          'confirmDialog.options.codeSnippetsWithLang',
+                                                          { language: programmingLanguage }
+                                                      )
+                                                    : t('confirmDialog.options.codeSnippets')}
                                             </span>
                                         )}
                                         {includePracticeProblems && (
                                             <span className="rounded-md bg-indigo-50 px-2.5 py-1 text-xs text-indigo-700">
-                                                Practice Problems
+                                                {t('confirmDialog.options.practiceProblems')}
                                             </span>
                                         )}
                                         {includeQuizzes && (
                                             <span className="rounded-md bg-indigo-50 px-2.5 py-1 text-xs text-indigo-700">
-                                                Quizzes
+                                                {t('confirmDialog.options.quizzes')}
                                             </span>
                                         )}
                                         {includeHomework && (
                                             <span className="rounded-md bg-indigo-50 px-2.5 py-1 text-xs text-indigo-700">
-                                                Assignments
+                                                {t('confirmDialog.options.assignments')}
                                             </span>
                                         )}
                                         {includeSolutions && (
                                             <span className="rounded-md bg-indigo-50 px-2.5 py-1 text-xs text-indigo-700">
-                                                Solutions
+                                                {t('confirmDialog.options.solutions')}
                                             </span>
                                         )}
                                         {includeYouTubeVideo && (
                                             <span className="rounded-md bg-indigo-50 px-2.5 py-1 text-xs text-indigo-700">
-                                                YouTube Video
+                                                {t('confirmDialog.options.youtubeVideo')}
                                             </span>
                                         )}
                                         {includeAIGeneratedVideo && (
                                             <span className="rounded-md bg-indigo-50 px-2.5 py-1 text-xs text-indigo-700">
-                                                AI Generated Video
+                                                {t('confirmDialog.options.aiGeneratedVideo')}
                                             </span>
                                         )}
                                         {includeAISlides && (
                                             <span className="rounded-md bg-indigo-50 px-2.5 py-1 text-xs text-indigo-700">
-                                                AI Slides
+                                                {t('confirmDialog.options.aiSlides')}
                                             </span>
                                         )}
                                         {includeAIStorybook && (
                                             <span className="rounded-md bg-indigo-50 px-2.5 py-1 text-xs text-indigo-700">
-                                                AI Storybook
+                                                {t('confirmDialog.options.aiStorybook')}
                                             </span>
                                         )}
                                     </div>
@@ -2255,24 +2460,21 @@ function RouteComponent() {
                             {totalReferences > 0 && (
                                 <div>
                                     <h4 className="mb-2 text-sm font-semibold text-neutral-900">
-                                        References
+                                        {t('confirmDialog.references')}
                                     </h4>
                                     <div className="space-y-2">
                                         {referenceUrls.length > 0 && (
                                             <p className="text-sm text-neutral-600">
-                                                <span className="font-medium">
-                                                    {referenceUrls.length}
-                                                </span>{' '}
-                                                URL{referenceUrls.length !== 1 ? 's' : ''} added
+                                                {t('confirmDialog.urlsAdded', {
+                                                    count: referenceUrls.length,
+                                                })}
                                             </p>
                                         )}
                                         {referenceFiles.length > 0 && (
                                             <p className="text-sm text-neutral-600">
-                                                <span className="font-medium">
-                                                    {referenceFiles.length}
-                                                </span>{' '}
-                                                file{referenceFiles.length !== 1 ? 's' : ''}{' '}
-                                                uploaded
+                                                {t('confirmDialog.filesUploaded', {
+                                                    count: referenceFiles.length,
+                                                })}
                                             </p>
                                         )}
                                     </div>
@@ -2285,6 +2487,7 @@ function RouteComponent() {
                         <ToolCostBadge
                             credits={outlineCost.credits}
                             sufficient={outlineCost.sufficient}
+                            coverage={outlineCost.coverage}
                             loading={outlineCost.isLoading}
                             className="max-sm:self-start sm:mr-auto"
                         />
@@ -2292,14 +2495,16 @@ function RouteComponent() {
                             buttonType="secondary"
                             onClick={() => setShowConfirmDialog(false)}
                         >
-                            Go back and Edit
+                            {t('confirmDialog.goBack')}
                         </MyButton>
                         <MyButton
                             buttonType="primary"
                             onClick={handleConfirmGenerate}
                             disabled={isUploadingReferences}
                         >
-                            {isUploadingReferences ? 'Uploading references…' : 'Continue'}
+                            {isUploadingReferences
+                                ? t('confirmDialog.uploadingReferences')
+                                : t('confirmDialog.continue')}
                         </MyButton>
                     </DialogFooter>
                 </DialogContent>

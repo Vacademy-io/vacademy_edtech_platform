@@ -1,0 +1,184 @@
+[
+ {
+  "key": "jee-main-mathematics",
+  "exam": "JEE_MAIN",
+  "subject": "Mathematics",
+  "session": "2026",
+  "sources": [
+   {
+    "title": "Mathematics",
+    "url": "https://cdnbbsr.s3waas.gov.in/s3f8e59f4b2fe7c5705bf878bbd494ccdf/uploads/2025/10/202510311323551056.pdf",
+    "pages": "1-2"
+   }
+  ]
+ },
+ {
+  "key": "jee-main-physics",
+  "exam": "JEE_MAIN",
+  "subject": "Physics",
+  "session": "2026",
+  "sources": [
+   {
+    "title": "Physics",
+    "url": "https://cdnbbsr.s3waas.gov.in/s3f8e59f4b2fe7c5705bf878bbd494ccdf/uploads/2025/10/202510311323551056.pdf",
+    "pages": "3-6"
+   }
+  ]
+ },
+ {
+  "key": "jee-main-chemistry",
+  "exam": "JEE_MAIN",
+  "subject": "Chemistry",
+  "session": "2026",
+  "sources": [
+   {
+    "title": "Chemistry",
+    "url": "https://cdnbbsr.s3waas.gov.in/s3f8e59f4b2fe7c5705bf878bbd494ccdf/uploads/2025/10/202510311323551056.pdf",
+    "pages": "7-11"
+   }
+  ]
+ },
+ {
+  "key": "neet-physics",
+  "exam": "NEET",
+  "subject": "Physics",
+  "session": "2026",
+  "sources": [
+   {
+    "title": "Physics",
+    "url": "https://cdnbbsr.s3waas.gov.in/s37bc1ec1d9c3426357e69acd5bf320061/uploads/2026/01/20260102588210790.pdf",
+    "pages": "1-5"
+   }
+  ]
+ },
+ {
+  "key": "neet-chemistry",
+  "exam": "NEET",
+  "subject": "Chemistry",
+  "session": "2026",
+  "sources": [
+   {
+    "title": "Chemistry",
+    "url": "https://cdnbbsr.s3waas.gov.in/s37bc1ec1d9c3426357e69acd5bf320061/uploads/2026/01/20260102588210790.pdf",
+    "pages": "6-11"
+   }
+  ]
+ },
+ {
+  "key": "neet-biology",
+  "exam": "NEET",
+  "subject": "Biology",
+  "session": "2026",
+  "sources": [
+   {
+    "title": "Biology",
+    "url": "https://cdnbbsr.s3waas.gov.in/s37bc1ec1d9c3426357e69acd5bf320061/uploads/2026/01/20260102588210790.pdf",
+    "pages": "12-15"
+   }
+  ]
+ },
+ {
+  "key": "icse-10-physics",
+  "board": "ICSE",
+  "class": "10",
+  "subject": "Physics",
+  "session": "2027",
+  "sources": [
+   {
+    "title": "Physics",
+    "path": "downloads/icse-10-physics.pdf"
+   }
+  ]
+ },
+ {
+  "key": "icse-10-chemistry",
+  "board": "ICSE",
+  "class": "10",
+  "subject": "Chemistry",
+  "session": "2027",
+  "sources": [
+   {
+    "title": "Chemistry",
+    "path": "downloads/icse-10-chemistry.pdf"
+   }
+  ]
+ },
+ {
+  "key": "icse-10-biology",
+  "board": "ICSE",
+  "class": "10",
+  "subject": "Biology",
+  "session": "2027",
+  "sources": [
+   {
+    "title": "Biology",
+    "path": "downloads/icse-10-biology.pdf"
+   }
+  ]
+ },
+ {
+  "key": "icse-10-mathematics",
+  "board": "ICSE",
+  "class": "10",
+  "subject": "Mathematics",
+  "session": "2027",
+  "sources": [
+   {
+    "title": "Mathematics",
+    "path": "downloads/icse-10-mathematics.pdf"
+   }
+  ]
+ },
+ {
+  "key": "isc-12-physics",
+  "board": "ICSE",
+  "class": "12",
+  "subject": "Physics",
+  "session": "2027",
+  "sources": [
+   {
+    "title": "Physics",
+    "path": "downloads/isc-12-physics.pdf"
+   }
+  ]
+ },
+ {
+  "key": "isc-12-chemistry",
+  "board": "ICSE",
+  "class": "12",
+  "subject": "Chemistry",
+  "session": "2027",
+  "sources": [
+   {
+    "title": "Chemistry",
+    "path": "downloads/isc-12-chemistry.pdf"
+   }
+  ]
+ },
+ {
+  "key": "isc-12-mathematics",
+  "board": "ICSE",
+  "class": "12",
+  "subject": "Mathematics",
+  "session": "2027",
+  "sources": [
+   {
+    "title": "Mathematics",
+    "path": "downloads/isc-12-mathematics.pdf"
+   }
+  ]
+ },
+ {
+  "key": "isc-12-biology",
+  "board": "ICSE",
+  "class": "12",
+  "subject": "Biology",
+  "session": "2027",
+  "sources": [
+   {
+    "title": "Biology",
+    "path": "downloads/isc-12-biology.pdf"
+   }
+  ]
+ }
+]

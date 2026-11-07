@@ -1,0 +1,60 @@
+{
+    "trigger": "Edit Details",
+    "dialogHeading": "Edit Lead Profile",
+    "cancel": "Cancel",
+    "saving": "Saving…",
+    "saveChanges": "Save Changes",
+    "toast": {
+        "updateSuccess": "Lead profile updated",
+        "updateError": "Failed to update lead profile"
+    },
+    "validation": {
+        "required": "This field is required",
+        "invalidEmail": "Invalid email address",
+        "invalidEmailShort": "Invalid email"
+    },
+    "sections": {
+        "identity": {
+            "title": "Identity",
+            "helper": "Their name and basic info."
+        },
+        "contact": {
+            "title": "Contact",
+            "helper": "Primary channels for reach-out."
+        },
+        "guardian": {
+            "title": "Guardian",
+            "helper": "Parent / guardian contact (optional)."
+        },
+        "additional": {
+            "title": "Additional Details",
+            "helper": "Answers captured on the lead form."
+        }
+    },
+    "fields": {
+        "fullName": {
+            "label": "Full Name",
+            "placeholder": "Full name"
+        },
+        "email": {
+            "label": "Email",
+            "placeholder": "name@example.com"
+        },
+        "mobile": {
+            "label": "Mobile Number",
+            "placeholder": "123 456 7890"
+        },
+        "guardianName": {
+            "label": "Guardian Name",
+            "placeholder": "Guardian name"
+        },
+        "guardianMobile": {
+            "label": "Guardian Mobile",
+            "placeholder": "123 456 7890"
+        },
+        "guardianEmail": {
+            "label": "Guardian Email",
+            "placeholder": "guardian@example.com"
+        }
+    }
+}

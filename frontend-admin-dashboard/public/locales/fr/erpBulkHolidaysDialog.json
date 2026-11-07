@@ -1,0 +1,28 @@
+{
+    "heading": "Ajouter plusieurs jours fériés",
+    "actions": {
+        "cancel": "Annuler",
+        "importing": "Importation…",
+        "importHolidays": "Importer les jours fériés",
+        "removeRow": "Supprimer cette ligne",
+        "addRow": "Ajouter une autre ligne"
+    },
+    "fields": {
+        "name": "Nom",
+        "namePlaceholder": "Fête de la République",
+        "date": "Date"
+    },
+    "skipNotice": "Une date déjà présente dans le calendrier est ignorée plutôt que dupliquée — le message de résultat vous indique combien. Les lignes vides sont ignorées.",
+    "toast": {
+        "imported_one": "{{count}} jour férié importé",
+        "imported_many": "{{count}} jours fériés importés",
+        "imported_other": "{{count}} jours fériés importés"
+    },
+    "errors": {
+        "importFailed": "Impossible d'importer les jours fériés."
+    },
+    "validation": {
+        "atLeastOne": "Ajoutez au moins un jour férié — un nom et une date.",
+        "incompleteRow": "Chaque ligne doit avoir un nom et une date. Supprimez les lignes dont vous ne voulez pas."
+    }
+}

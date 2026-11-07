@@ -11,8 +11,12 @@ Run:
 from __future__ import annotations
 
 import sys
+import time as _real_time
+from types import SimpleNamespace
 from contextlib import contextmanager
 from pathlib import Path
+
+import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent))
 
@@ -40,8 +44,19 @@ def _install_fakes(fail_times: int):
 
     S.db_session = fake_session
     S.AiTaskRepository = FakeRepo
+    # A stand-in for the module's `time`, never the global time module: assigning
+    # time.sleep itself made every later test in the run sleep for 0 s.
+    S.time = SimpleNamespace(**{n: getattr(_real_time, n) for n in dir(_real_time) if not n.startswith("__")})
     S.time.sleep = lambda *_a, **_k: calls.__setitem__("sleep", calls["sleep"] + 1)
     return calls
+
+
+@pytest.fixture(autouse=True)
+def _restore_module():
+    """Undo _install_fakes after each test (pytest runs; main() needs no cleanup)."""
+    saved = (S.db_session, S.AiTaskRepository, S.time)
+    yield
+    S.db_session, S.AiTaskRepository, S.time = saved
 
 
 def test_succeeds_after_transient_failures() -> None:

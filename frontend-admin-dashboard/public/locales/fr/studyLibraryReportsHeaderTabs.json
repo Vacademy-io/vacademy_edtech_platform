@@ -1,0 +1,21 @@
+{
+    "tabs": {
+        "batch": "Groupe",
+        "liveClasses": "Cours en direct",
+        "leaderboard": "Classement"
+    },
+    "reportSettings": "Paramètres des rapports",
+    "reportsSettingsHeading": "Paramètres des rapports",
+    "generateTypeReports": "Générer des rapports {{type}}",
+    "sendReportsToStudentViaMail": "Envoyer les rapports à l'étudiant par e-mail",
+    "sendReportsToStudentViaWhatsapp": "Envoyer les rapports à l'étudiant via WhatsApp",
+    "sendReportsToParentViaMail": "Envoyer les rapports au parent/tuteur par e-mail",
+    "sendReportsToParentViaWhatsapp": "Envoyer les rapports au parent/tuteur via WhatsApp",
+    "studentLearningProgressReport": "Rapport de progression d'apprentissage de l'étudiant",
+    "batchLearningProgressReport": "Rapport de progression d'apprentissage du groupe",
+    "saveChanges": "Enregistrer les modifications",
+    "toast": {
+        "settingsUpdated": "Paramètres mis à jour !",
+        "updateFailed": "Échec de la mise à jour"
+    }
+}

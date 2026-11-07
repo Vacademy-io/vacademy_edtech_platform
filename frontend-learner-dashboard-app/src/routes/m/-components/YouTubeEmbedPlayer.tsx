@@ -1,5 +1,9 @@
 import React from "react";
-import { getYouTubeEmbedOrigin } from "@/utils/youtube-embed";
+import { useTranslation } from "react-i18next";
+import {
+    getYouTubeEmbedOrigin,
+    routeYouTubeEmbedThroughBridge,
+} from "@/utils/youtube-embed";
 
 interface YouTubeEmbedPlayerProps {
     url: string;
@@ -42,18 +46,21 @@ function convertToYouTubeEmbedUrl(url: string): string {
     });
 
     // Use youtube-nocookie.com for privacy-enhanced mode (less branding)
-    return `https://www.youtube-nocookie.com/embed/${videoId}?${params.toString()}`;
+    return routeYouTubeEmbedThroughBridge(
+        `https://www.youtube-nocookie.com/embed/${videoId}?${params.toString()}`,
+    );
 }
 
 export const YouTubeEmbedPlayer: React.FC<YouTubeEmbedPlayerProps> = ({
     url,
-    title = "Video",
+    title,
     className = "",
 }) => {
+    const { t } = useTranslation("miscRoutesA");
     if (!url || !isYouTubeUrl(url)) {
         return (
             <div className="flex items-center justify-center h-screen-40 sm:h-screen-50 bg-white/5 rounded-lg sm:rounded-xl p-4 sm:p-8">
-                <p className="text-white/50 text-sm sm:text-base">Invalid YouTube URL</p>
+                <p className="text-white/50 text-sm sm:text-base">{t("media.invalidYoutubeUrl")}</p>
             </div>
         );
     }
@@ -65,7 +72,7 @@ export const YouTubeEmbedPlayer: React.FC<YouTubeEmbedPlayerProps> = ({
             <div className="relative aspect-video">
                 <iframe
                     src={embedUrl}
-                    title={title}
+                    title={title || t("media.video")}
                     frameBorder="0"
                     allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share; fullscreen"
                     allowFullScreen

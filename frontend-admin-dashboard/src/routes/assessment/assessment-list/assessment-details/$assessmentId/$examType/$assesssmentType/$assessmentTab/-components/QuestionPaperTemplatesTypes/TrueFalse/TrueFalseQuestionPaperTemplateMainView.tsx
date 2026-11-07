@@ -12,6 +12,7 @@ import SelectField from '@/components/design-system/select-field';
 import { MainViewQuillEditor } from '@/components/quill/MainViewQuillEditor';
 import { QUESTION_TYPES } from '@/constants/dummy-data';
 import { useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { SectionQuestionPaperFormProps } from '../../../-utils/assessment-question-paper';
 import { formatStructure } from '@/routes/assessment/question-papers/-utils/helper';
 
@@ -35,9 +36,10 @@ export const TrueFalseQuestionPaperTemplateMainView = ({
     className,
     selectedSectionIndex,
 }: SectionQuestionPaperFormProps) => {
+    const { t } = useTranslation('assessmentTrueFalseTemplateList');
     const { control, getValues, setValue } = form;
-    const answersType = 'Answer:';
-    const explanationsType = 'Explanation:';
+    const answersType = t('trueFalseOptions.answerLabel');
+    const explanationsType = t('explanationSection.label');
     const optionsType = '';
     const questionsType = '';
 
@@ -91,13 +93,13 @@ export const TrueFalseQuestionPaperTemplateMainView = ({
                     <PopoverContent>
                         <div className="mb-2 flex flex-col gap-4">
                             <div className="flex w-full items-center justify-between">
-                                <h1 className="text-primary-500">Questions Settings</h1>
+                                <h1 className="text-primary-500">{t('settingsPopover.title')}</h1>
                                 <PopoverClose>
                                     <X size={16} />
                                 </PopoverClose>
                             </div>
                             <SelectField
-                                label="Question Type"
+                                label={t('settingsPopover.questionTypeLabel')}
                                 name={`questions.${currentQuestionIndex}.questionType`}
                                 options={QUESTION_TYPES.map((option, index) => ({
                                     value: option.code,
@@ -114,7 +116,7 @@ export const TrueFalseQuestionPaperTemplateMainView = ({
             </div>
             <div className="flex w-full flex-col !flex-nowrap items-start gap-1">
                 <span>
-                    Question&nbsp;
+                    {t('questionHeader.questionLabel')}&nbsp;
                     {questionsType
                         ? formatStructure(questionsType, currentQuestionIndex + 1)
                         : currentQuestionIndex + 1}
@@ -147,10 +149,12 @@ export const TrueFalseQuestionPaperTemplateMainView = ({
                         <div className="flex w-full items-center gap-4">
                             <div className="flex size-10 items-center justify-center rounded-full bg-white px-3">
                                 <span className="!p-0 text-sm">
-                                    {optionsType ? formatStructure(optionsType, 'a') : '(a.)'}
+                                    {optionsType
+                                        ? formatStructure(optionsType, 'a')
+                                        : t('trueFalseOption.markerFallback', { label: 'a' })}
                                 </span>
                             </div>
-                            <div>{option1.name}</div>
+                            <div>{t('trueFalseOption.trueLabel')}</div>
                             {/* <FormField
                                 control={control}
                                 name={`questions.${currentQuestionIndex}.singleChoiceOptions.${0}.name`}
@@ -195,10 +199,12 @@ export const TrueFalseQuestionPaperTemplateMainView = ({
                         <div className="flex w-full items-center gap-4">
                             <div className="flex size-10 items-center justify-center rounded-full bg-white px-3">
                                 <span className="!p-0 text-sm">
-                                    {optionsType ? formatStructure(optionsType, 'b') : '(b.)'}
+                                    {optionsType
+                                        ? formatStructure(optionsType, 'b')
+                                        : t('trueFalseOption.markerFallback', { label: 'b' })}
                                 </span>
                             </div>
-                            <div>{option2.name}</div>
+                            <div>{t('trueFalseOption.falseLabel')}</div>
                             {/* <FormField
                                 control={control}
                                 name={`questions.${currentQuestionIndex}.singleChoiceOptions.${1}.name`}

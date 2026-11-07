@@ -1,0 +1,14 @@
+{
+    "courseDetails": "Détails du cours",
+    "editYourCourseMetadata": "Modifiez les métadonnées de votre cours",
+    "courseThumbnail": "Vignette du cours",
+    "courseThumbnailAlt": "Vignette du cours",
+    "courseName": "Nom du cours",
+    "enterCourseName": "Saisissez le nom du cours",
+    "courseDescription": "Description du cours",
+    "enterCourseDescription": "Saisissez la description du cours",
+    "tags": "Étiquettes",
+    "addTags": "Ajouter des étiquettes...",
+    "cancel": "Annuler",
+    "saveChanges": "Enregistrer les modifications"
+}

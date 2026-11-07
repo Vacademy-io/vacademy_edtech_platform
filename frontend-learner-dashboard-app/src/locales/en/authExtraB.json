@@ -1,0 +1,108 @@
+{
+  "common": {
+    "emailInvalid": "Please enter a valid email address",
+    "fullNameMinLength": "Full name must be at least 2 characters",
+    "usernameMinLength": "Username must be at least 3 characters",
+    "passwordMinLength": "Password must be at least 8 characters",
+    "passwordsDontMatch": "Passwords don't match",
+    "registerFailed": "Failed to register user",
+    "creatingAccount": "Creating Account...",
+    "createAccount": "Create Account",
+    "back": "Back",
+    "verifyContinue": "Verify & Continue",
+    "completeYourProfileTitle": "Complete Your Profile",
+    "fullNameLabel": "Full Name",
+    "fullNamePlaceholder": "Your full name",
+    "usernameLabel": "Username *",
+    "usernamePlaceholder": "Choose a username",
+    "passwordLabel": "Password *",
+    "passwordPlaceholder": "Create a password",
+    "confirmPasswordLabel": "Confirm Password *",
+    "confirmPasswordPlaceholder": "Confirm your password",
+    "resendSuccessToast": "Verification code resent!",
+    "resendFailedToast": "Failed to resend verification code",
+    "invalidOtpToast": "Invalid verification code"
+  },
+  "validation": {
+    "usernameMaxLength": "Username must be less than 30 characters",
+    "fullNameMaxLength": "Full name must be less than 100 characters",
+    "passwordComplexity": "Password must contain at least one uppercase letter, one lowercase letter, and one number",
+    "instituteIdInvalid": "Invalid institute ID",
+    "emailFormatError": "Invalid email format",
+    "usernameFormatError": "Invalid username format",
+    "fullNameFormatError": "Invalid full name format",
+    "passwordFormatError": "Invalid password format",
+    "instituteIdFormatError": "Invalid institute ID format",
+    "generalFailed": "Validation failed"
+  },
+  "emailOtpSignup": {
+    "toast": {
+      "alreadyEnrolled": "User already enrolled. Please sign in instead.",
+      "otpIncomplete": "Please enter the complete 6-digit code",
+      "emailVerified": "Email verified successfully!",
+      "accountCreated": "Account created successfully!",
+      "accountCreateFailed": "Failed to create account"
+    },
+    "otpStep": {
+      "checkEmail": "Check your email",
+      "codeSentTo": "We've sent a 6-digit code to",
+      "backToEmail": "Back to email",
+      "resendIn": "Resend in {{seconds}}s",
+      "resendCode": "Resend code",
+      "verifying": "Verifying...",
+      "verifyOtp": "Verify OTP"
+    },
+    "finalStep": {
+      "subtitle": "Please provide your details to complete registration",
+      "fullNameLabelRequired": "Full Name *",
+      "fullNamePlaceholderEnter": "Enter your full name",
+      "showPassword": "Show password",
+      "hidePassword": "Hide password",
+      "showConfirmPassword": "Show confirm password",
+      "hideConfirmPassword": "Hide confirm password"
+    },
+    "successStep": {
+      "title": "Account Created Successfully!",
+      "subtitle": "Welcome to our platform"
+    }
+  },
+  "githubSignup": {
+    "otpLengthError": "OTP must be 6 digits",
+    "toast": {
+      "oauthFailed": "Failed to authenticate with GitHub",
+      "otpSent": "Verification code sent to your email!",
+      "sendOtpFailed": "Failed to send verification code"
+    },
+    "processing": "Processing...",
+    "otpVerification": {
+      "title": "Verify Your Email",
+      "subtitleSentTo": "We've sent a verification code to",
+      "codeLabel": "Verification Code",
+      "codePlaceholder": "Enter 6-digit code",
+      "resendIn": "Resend code in {{seconds}}s",
+      "resendPrompt": "Didn't receive the code? Resend"
+    },
+    "credentialsStep": {
+      "subtitle": "We've got your name from GitHub. Please set your username and password."
+    },
+    "emailOtpStep": {
+      "title": "Email Verification Required",
+      "subtitle": "Your GitHub email is private. Please provide an email address to continue.",
+      "emailLabel": "Email Address *",
+      "emailPlaceholder": "Enter your email address"
+    },
+    "button": "Continue with GitHub"
+  },
+  "googleSignup": {
+    "toast": {
+      "oauthFailed": "Failed to authenticate with Google"
+    },
+    "connecting": "Connecting to Google...",
+    "credentialsStep": {
+      "subtitle": "We've got your name from Google. Please set your username and password."
+    },
+    "button": "Continue with Google",
+    "testButton": "🧪 Test Direct Registration",
+    "backToOptions": "← Back to options"
+  }
+}

@@ -8,7 +8,7 @@
  * workflow JSON it would from the full wizard.
  */
 
-import { USE_CASE_TEMPLATES } from '@/routes/workflow/create/-components/use-case-templates';
+import { getUseCaseTemplates } from '@/routes/workflow/create/-components/use-case-templates';
 import type { WorkflowBuilderDTO, WorkflowBuilderNode, WorkflowBuilderEdge } from '@/types/workflow/workflow-types';
 import { buildRecipeMarker, type AutomationRecipe } from './automation-recipes';
 
@@ -164,7 +164,7 @@ export function buildRecipeWorkflow(
         generatedNodes = generated.nodes;
         generatedEdges = generated.edges;
     } else {
-        const template = USE_CASE_TEMPLATES.find((t) => t.id === recipe.useCaseTemplateId);
+        const template = getUseCaseTemplates().find((t) => t.id === recipe.useCaseTemplateId);
         if (!template) {
             throw new Error(`Unknown use-case template: ${recipe.useCaseTemplateId}`);
         }

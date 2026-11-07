@@ -1,11 +1,12 @@
+import { useTranslation } from "react-i18next";
 import { cn } from "@/lib/utils";
 import { useAssessmentStore } from "@/stores/assessment-store";
 import { QuestionDto } from "@/types/assessment";
 import { QuestionHtmlContent } from "./question-html-content";
 import {
   getQuestionStatus,
+  getQuestionStatusLabel,
   QUESTION_STATUS_GRID_CLASS,
-  QUESTION_STATUS_LABEL,
   QUESTION_STATUS_LIST_CLASS,
 } from "./question-status-colors";
 
@@ -15,6 +16,7 @@ interface QuestionListViewProps {
 }
 
 export function QuestionListView({ onSelect }: QuestionListViewProps) {
+  const { t } = useTranslation("questionTest");
   const {
     assessment,
     currentSection,
@@ -48,7 +50,10 @@ export function QuestionListView({ onSelect }: QuestionListViewProps) {
             key={question.question_id}
             type="button"
             disabled={isTimeUp}
-            aria-label={`Question ${index + 1}, ${QUESTION_STATUS_LABEL[status]}`}
+            aria-label={t("questionList.itemAriaLabel", {
+              number: index + 1,
+              status: getQuestionStatusLabel(status, t),
+            })}
             aria-current={isActive ? "true" : undefined}
             onClick={() => handleQuestionClick(question)}
             className={cn(

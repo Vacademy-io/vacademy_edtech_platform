@@ -1,0 +1,96 @@
+{
+    "actionConfig": {
+        "leadSubmitted": "लीड सबमिट की गई",
+        "counselorAssigned": "काउंसलर असाइन किया गया",
+        "statusChanged": "स्थिति बदली गई",
+        "scoreUpdated": "स्कोर अपडेट किया गया",
+        "manualScoreUpdate": "मैनुअल स्कोर",
+        "followup": "फॉलो-अप",
+        "reachout": "संपर्क",
+        "leadConverted": "परिवर्तित",
+        "leadLost": "लीड खो गई",
+        "duplicateMerged": "डुप्लिकेट मर्ज किया गया",
+        "paymentReceived": "भुगतान प्राप्त हुआ",
+        "enrollmentCompleted": "नामांकित",
+        "note": "नोट",
+        "call": "कॉल",
+        "callMade": "आउटबाउंड कॉल",
+        "walkInNote": "वॉक-इन नोट",
+        "followupScheduled": "फॉलो-अप शेड्यूल किया गया",
+        "statusChange": "स्थिति बदली गई",
+        "fallback": "इवेंट",
+        "reEnquiry": "फिर से संपर्क किया",
+        "reattempt": "दोबारा पूछताछ"
+    },
+    "statusChangeMeta": {
+        "previous": "पिछला"
+    },
+    "counselorMeta": {
+        "unknown": "अज्ञात",
+        "autoPool": "स्वचालित (पूल)",
+        "manual": "मैनुअल"
+    },
+    "callStatus": {
+        "connected": "कनेक्ट हुआ",
+        "noAnswer": "कोई जवाब नहीं",
+        "busy": "व्यस्त",
+        "failed": "विफल",
+        "cancelled": "रद्द",
+        "inProgress": "प्रगति में",
+        "ringing": "रिंग हो रही है",
+        "queued": "कतार में"
+    },
+    "callOutcome": {
+        "connected": "कनेक्ट हुआ",
+        "noAnswer": "कोई जवाब नहीं",
+        "busy": "व्यस्त",
+        "leftVoicemail": "वॉइसमेल छोड़ा गया",
+        "callBackLater": "बाद में कॉल करें",
+        "notReachable": "पहुंच से बाहर",
+        "switchedOff": "स्विच ऑफ",
+        "wrongNumber": "गलत नंबर",
+        "interested": "रुचि है",
+        "notInterested": "रुचि नहीं है",
+        "followUpScheduled": "फॉलो-अप शेड्यूल किया गया",
+        "demoScheduled": "डेमो शेड्यूल किया गया",
+        "converted": "परिवर्तित",
+        "doNotCall": "कॉल न करें"
+    },
+    "duration": {
+        "zero": "0से",
+        "secondsOnly_one": "{{count}}से",
+        "secondsOnly_other": "{{count}}से",
+        "minutesSeconds": "{{minutes}}मि {{seconds}}से"
+    },
+    "callRecording": {
+        "from": "· {{caller}} से",
+        "download": "डाउनलोड करें",
+        "loading": "लोड हो रहा है…",
+        "playRecording": "रिकॉर्डिंग चलाएं",
+        "addNote": "नोट जोड़ें"
+    },
+    "emptyState": {
+        "title": "अभी तक कोई इवेंट नहीं",
+        "description": "लीड के आगे बढ़ने के साथ इवेंट यहां दिखाई देंगे — सबमिशन, स्कोर, नोट्स और अधिक"
+    },
+    "noProfileLinked": "कोई लीड प्रोफ़ाइल लिंक नहीं है",
+    "errorState": {
+        "title": "इवेंट लोड करने में विफल",
+        "retry": "पुनः प्रयास करें"
+    },
+    "eventRow": {
+        "byPrefix": "द्वारा",
+        "system": "सिस्टम",
+        "activity": "गतिविधि"
+    },
+    "pagination": {
+        "pageOf": "{{current}} / {{total}}",
+        "prev": "पिछला",
+        "next": "अगला"
+    },
+    "header": {
+        "title": "लीड यात्रा",
+        "refresh": "रीफ्रेश करें",
+        "refreshAria": "यात्रा इवेंट रीफ्रेश करें"
+    }
+}

@@ -1,0 +1,19 @@
+{
+    "tabs": {
+        "outline": "المخطط",
+        "contentStructure": "هيكل المحتوى",
+        "assessment": "التقييم",
+        "quizResults": "نتائج الاختبار",
+        "planning": "التخطيط",
+        "activity": "النشاط",
+        "pulse": "النبض",
+        "reports": "التقارير",
+        "certificates": "الشهادات",
+        "downloads": "التنزيلات",
+        "settings": "الإعدادات",
+        "discussion": "المناقشة",
+        "tutorMode": "وضع المعلم",
+        "aiKnowledge": "معرفة الذكاء الاصطناعي",
+        "engagement": "المشاركة"
+    }
+}

@@ -1,0 +1,37 @@
+{
+    "dialog": {
+        "editHeading": "تعديل شرط التنقيط",
+        "addHeading": "إضافة شرط تنقيط",
+        "course": "الدورة: {{packageName}}",
+        "enableTargetCondition": "تفعيل شرط التنقيط لـ {{target}}",
+        "enableTargetConditionHint": "يتحكم في ما إذا كان شرط التنقيط الخاص بـ {{target}} نشطًا"
+    },
+    "form": {
+        "targetContent": "المحتوى المستهدف",
+        "selectTarget": "اختر الهدف",
+        "appliesToAll": "سيتم تطبيق هذا الشرط على جميع عناصر {{level}} في هذه الدورة",
+        "behavior": "السلوك",
+        "selectBehavior": "اختر السلوك",
+        "unlockRule": "قاعدة إلغاء القفل",
+        "noRuleConfigured": "لم يتم تكوين أي قاعدة. يرجى تكوين قاعدة إلغاء قفل أدناه.",
+        "releaseDate": "تاريخ الإصدار",
+        "metric": "المقياس",
+        "averageOfAll": "متوسط الكل",
+        "averageOfLastN": "متوسط آخر N",
+        "count": "العدد",
+        "thresholdPercent": "الحد الأدنى %"
+    },
+    "behaviorOptions": {
+        "lock": "قفل (يظهر لكن يمنع الوصول)",
+        "hide": "إخفاء (مخفي بالكامل)"
+    },
+    "ruleTypes": {
+        "dateBased": "على أساس التاريخ",
+        "completionBased": "على أساس الإتمام"
+    },
+    "actions": {
+        "cancel": "إلغاء",
+        "updateCondition": "تحديث الشرط",
+        "addCondition": "إضافة الشرط"
+    }
+}

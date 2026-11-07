@@ -29,10 +29,25 @@ public class TaxRegimeFactory {
      * @throws VacademyException if no engine is found for the country code
      */
     public TaxRegimeEngine getEngine(String countryCode) {
-        TaxRegimeEngine engine = engineMap.get(countryCode);
+        TaxRegimeEngine engine = engineMap.get(normalize(countryCode));
         if (engine == null) {
             throw new VacademyException("No tax engine found for country code: " + countryCode);
         }
         return engine;
+    }
+
+    /**
+     * Institutes configure common aliases; engines register ISO alpha-3. Public
+     * so anything else keying off a configured country code (payroll currency,
+     * statutory exports) resolves aliases the same way this factory does.
+     */
+    public static String normalize(String countryCode) {
+        if (countryCode == null) return "";
+        return switch (countryCode.trim().toUpperCase()) {
+            case "IN", "INDIA" -> "IND";
+            case "UAE", "AE" -> "ARE";
+            case "KSA", "SA", "SAUDI" -> "SAU";
+            default -> countryCode.trim().toUpperCase();
+        };
     }
 }

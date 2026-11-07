@@ -6,12 +6,18 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 import vacademy.io.admin_core_service.features.auth_service.service.AuthService;
+import vacademy.io.admin_core_service.features.institute.service.setting.InstituteSettingService;
 import vacademy.io.admin_core_service.features.institute_learner.entity.StudentSessionInstituteGroupMapping;
 import vacademy.io.admin_core_service.features.institute_learner.enums.LearnerSessionStatusEnum;
 import vacademy.io.admin_core_service.features.institute_learner.manager.LearnerTerminationWorkflowHelper;
 import vacademy.io.admin_core_service.features.institute_learner.repository.StudentSessionRepository;
 import vacademy.io.admin_core_service.features.learner_management.dto.*;
 import vacademy.io.admin_core_service.features.packages.service.PackageSessionService;
+import vacademy.io.admin_core_service.features.stock_hold.service.StockHoldService;
+import vacademy.io.admin_core_service.features.suborg.service.SubOrgExitService;
+import vacademy.io.admin_core_service.features.user_subscription.entity.UserPlan;
+import vacademy.io.admin_core_service.features.user_subscription.repository.UserPlanRepository;
+import vacademy.io.admin_core_service.features.user_subscription.service.PaymentDeletionService;
 import vacademy.io.admin_core_service.features.user_subscription.service.UserPlanService;
 import vacademy.io.common.auth.dto.UserDTO;
 import vacademy.io.common.exceptions.VacademyException;
@@ -43,9 +49,19 @@ public class BulkDeassignmentService {
     private final AuthService authService;
     private final PackageSessionService packageSessionService;
     private final LearnerTerminationWorkflowHelper learnerTerminationWorkflowHelper;
+    private final InstituteSettingService instituteSettingService;
+    private final PaymentDeletionService paymentDeletionService;
+    private final CourseRemovalHistoryService courseRemovalHistoryService;
+    private final StockHoldService stockHoldService;
+    private final UserPlanRepository userPlanRepository;
+    private final SubOrgExitService subOrgExitService;
 
     private static final String MODE_SOFT = "SOFT";
     private static final String MODE_HARD = "HARD";
+
+    /** Institute setting {@code {enabled, required}} for the HARD-terminate reason box. */
+    private static final String TERMINATION_REASON_SETTING = "LEARNER_TERMINATION_REASON";
+    private static final int MAX_REASON_LENGTH = 1000;
 
     /**
      * Main entry point for bulk de-assignment.
@@ -61,6 +77,18 @@ public class BulkDeassignmentService {
         String mode = StringUtils.hasText(options.getMode())
                 ? options.getMode()
                 : MODE_SOFT;
+
+        if (MODE_HARD.equals(mode)) {
+            validateTerminationReason(request.getInstituteId(), options.getReason());
+        }
+
+        // HARD-only. Checked up front (dry run too) so a role without the permission is told
+        // before anything is terminated.
+        boolean deleteHistory = MODE_HARD.equals(mode) && options.isDeletePaymentHistory();
+        if (deleteHistory && !paymentDeletionService.canDelete(adminUserId, request.getInstituteId())) {
+            throw new VacademyException("Deleting payment history is turned off for your role. An admin can "
+                    + "turn on payment deletion under Settings → Display Settings → Learner Management.");
+        }
 
         // SOFT-only "last access date" override. HARD ignores it (access is revoked now).
         Date accessTillDate = MODE_HARD.equals(mode)
@@ -89,12 +117,37 @@ public class BulkDeassignmentService {
         // workflow is fired inside UserPlanService.cancelUserPlan.
         Map<String, List<String>> terminatedPackageSessionsByUser = new LinkedHashMap<>();
 
+        // Deleting payment history removes all of a learner's selected courses together, so their
+        // enrolments are looked up before any of them is touched.
+        Map<String, LearnerHistory> historyByUser = new HashMap<>();
+        if (deleteHistory) {
+            for (String userId : allUserIds) {
+                historyByUser.put(userId, resolveSelection(userId, request.getPackageSessionIds(),
+                        request.getInstituteId()));
+            }
+        }
+
         for (String packageSessionId : request.getPackageSessionIds()) {
             for (String userId : allUserIds) {
+                // Read first: a hard terminate on a plan deletes the mapping that says who they were.
+                Optional<SubOrgExitService.Membership> subOrgMembership = dryRun
+                        ? Optional.empty()
+                        : subOrgExitService.captureMembership(userId, packageSessionId, request.getInstituteId());
                 BulkDeassignResponseDTO.DeassignResultItemDTO result = processDeassignment(userId, userMap,
                         packageSessionId,
-                        request.getInstituteId(), mode, accessTillDate, dryRun);
+                        request.getInstituteId(), mode, accessTillDate, dryRun, historyByUser.get(userId),
+                        adminUserId);
                 results.add(result);
+
+                if (subOrgMembership.isPresent() && "SUCCESS".equals(result.getStatus())) {
+                    if (MODE_HARD.equals(mode)) {
+                        subOrgExitService.onHardExit(userId, packageSessionId, request.getInstituteId(),
+                                adminUserId, subOrgMembership.get());
+                    } else {
+                        subOrgExitService.onSoftCancel(userId, packageSessionId, request.getInstituteId(),
+                                adminUserId, subOrgMembership.get(), accessTillDate);
+                    }
+                }
 
                 if (!dryRun && MODE_HARD.equals(mode) && "SUCCESS".equals(result.getStatus())) {
                     terminatedPackageSessionsByUser
@@ -130,7 +183,109 @@ public class BulkDeassignmentService {
                         userId, packageSessionIds, instituteId, adminUserId));
     }
 
+    /**
+     * Hard-terminates people leaving because their sub-org admin left. Same removal as a hard
+     * de-assign, LEARNER_TERMINATION included, but it does not report them as individually removed.
+     */
+    public List<BulkDeassignResponseDTO.DeassignResultItemDTO> terminateForSubOrgExit(
+            List<String> userIds, String packageSessionId, String instituteId, String actorUserId) {
+        if (CollectionUtils.isEmpty(userIds)) {
+            return List.of();
+        }
+        Map<String, UserDTO> userMap = fetchUserDetails(new LinkedHashSet<>(userIds));
+        List<BulkDeassignResponseDTO.DeassignResultItemDTO> results = new ArrayList<>();
+        Map<String, List<String>> terminated = new LinkedHashMap<>();
+        for (String userId : userIds) {
+            BulkDeassignResponseDTO.DeassignResultItemDTO result = processDeassignment(userId, userMap,
+                    packageSessionId, instituteId, MODE_HARD, null, false, null, actorUserId);
+            results.add(result);
+            if ("SUCCESS".equals(result.getStatus())) {
+                terminated.put(userId, List.of(packageSessionId));
+            }
+        }
+        fireTerminationWorkflows(terminated, instituteId, actorUserId);
+        return results;
+    }
+
     // ========================= PRIVATE METHODS =========================
+
+    /**
+     * One learner's courses picked for "delete payment history". Courses tied together (an
+     * admission package, a shared receipt — {@link PaymentDeletionService#linkedPlans}) are removed
+     * together, in one transaction: the first of them processed deletes the group and the rest
+     * report its outcome. Every other course is removed on its own, as before.
+     */
+    private static final class LearnerHistory {
+        final Map<String, StudentSessionInstituteGroupMapping> mappingBySession = new HashMap<>();
+        /** plan → the selected plans removed with it (it included) */
+        Map<String, List<String>> groups;
+        Map<String, PaymentDeletionService.PlanHistory> previews;
+        final Map<String, Map<String, Object>> deleted = new HashMap<>();
+        final Map<String, String> errors = new HashMap<>();
+        final Set<String> reportedPlans = new HashSet<>();
+        /** Sessions already processed: a repeated one finds no active enrolment, as a fresh lookup would. */
+        final Set<String> usedSessions = new HashSet<>();
+
+        List<String> planIds() {
+            return mappingBySession.values().stream().map(StudentSessionInstituteGroupMapping::getUserPlanId)
+                    .filter(StringUtils::hasText).distinct().toList();
+        }
+    }
+
+    private List<String> groupOf(LearnerHistory history, String userPlanId) {
+        if (history.groups == null) {
+            // Built in full before it is kept, so a failed lookup is retried rather than left half done.
+            Map<String, List<String>> groups = new HashMap<>();
+            Set<String> selected = new LinkedHashSet<>(history.planIds());
+            for (String planId : selected) {
+                if (groups.containsKey(planId)) continue;
+                List<String> group = new ArrayList<>();
+                Deque<String> todo = new ArrayDeque<>(List.of(planId));
+                while (!todo.isEmpty()) {
+                    String next = todo.pop();
+                    if (group.contains(next)) continue;
+                    group.add(next);
+                    for (String linked : paymentDeletionService.linkedPlans(next)) {
+                        // A linked course that is not selected stays out: the preview refuses the group.
+                        if (selected.contains(linked) && !group.contains(linked)) todo.push(linked);
+                    }
+                }
+                group.forEach(member -> groups.put(member, group));
+            }
+            history.groups = groups;
+        }
+        return history.groups.get(userPlanId);
+    }
+
+    private LearnerHistory resolveSelection(String userId, List<String> packageSessionIds, String instituteId) {
+        LearnerHistory history = new LearnerHistory();
+        for (String packageSessionId : packageSessionIds) {
+            studentSessionRepository.findTopByPackageSessionIdAndUserIdAndStatusIn(packageSessionId, instituteId,
+                            userId, List.of(LearnerSessionStatusEnum.ACTIVE.name()))
+                    .ifPresent(mapping -> history.mappingBySession.put(packageSessionId, mapping));
+        }
+        return history;
+    }
+
+    /** Why this course's history cannot be deleted, or null. A refused course holds back its group. */
+    private String historyBlocker(LearnerHistory history, String userPlanId, String instituteId) {
+        if (history.previews == null) {
+            Map<String, PaymentDeletionService.PlanHistory> previews = new HashMap<>();
+            for (String planId : history.planIds()) {
+                previews.put(planId,
+                        paymentDeletionService.previewPlanHistory(planId, instituteId, groupOf(history, planId)));
+            }
+            history.previews = previews;
+        }
+        String own = history.previews.get(userPlanId).blocker();
+        if (own != null) return own;
+        boolean otherRefused = groupOf(history, userPlanId).stream()
+                .anyMatch(planId -> history.previews.get(planId).blocker() != null);
+        return otherRefused
+                ? "Not removed: this course shares its package or receipts with another selected course whose "
+                        + "payment history cannot be deleted (see its row), and they can only be removed together."
+                : null;
+    }
 
     /**
      * Parse the SOFT-mode "last access date" the frontend sends. Accepts either a
@@ -187,6 +342,36 @@ public class BulkDeassignmentService {
                 mapping.getId(), accessTillDate);
     }
 
+    /**
+     * Enforces the institute's LEARNER_TERMINATION_REASON setting server-side, so a
+     * "required" reason cannot be skipped by calling the API directly. Checked on the
+     * dry run too, so the preview step already fails instead of the final confirm.
+     */
+    private void validateTerminationReason(String instituteId, String reason) {
+        if (StringUtils.hasText(reason) && reason.trim().length() > MAX_REASON_LENGTH) {
+            throw new VacademyException("Reason cannot be longer than " + MAX_REASON_LENGTH + " characters");
+        }
+        if (!StringUtils.hasText(reason) && isTerminationReasonRequired(instituteId)) {
+            throw new VacademyException("A reason is required to terminate a learner from a course");
+        }
+    }
+
+    /** Required only when the setting is enabled and marked required; absent setting = optional. */
+    private boolean isTerminationReasonRequired(String instituteId) {
+        try {
+            Object setting = instituteSettingService.getSettingByInstituteIdAndKey(
+                    instituteId, TERMINATION_REASON_SETTING);
+            if (setting instanceof Map<?, ?> map) {
+                return !Boolean.FALSE.equals(map.get("enabled"))
+                        && Boolean.TRUE.equals(map.get("required"));
+            }
+        } catch (Exception e) {
+            log.warn("Could not read {} for institute {}: {}", TERMINATION_REASON_SETTING, instituteId,
+                    e.getMessage());
+        }
+        return false;
+    }
+
     private void validateRequest(BulkDeassignRequestDTO request) {
         if (!StringUtils.hasText(request.getInstituteId())) {
             throw new VacademyException("institute_id is required");
@@ -240,14 +425,22 @@ public class BulkDeassignmentService {
             String instituteId,
             String mode,
             Date accessTillDate,
-            boolean dryRun) {
+            boolean dryRun,
+            LearnerHistory history,
+            String adminUserId) {
 
         String userEmail = userMap.containsKey(userId) ? userMap.get(userId).getEmail() : null;
+        // Set only when the payment history is deleted too (HARD + permission checked up front).
+        boolean deleteHistory = history != null;
 
         try {
-            // Find active mapping for this user + packageSession
-            Optional<StudentSessionInstituteGroupMapping> mappingOpt = studentSessionRepository
-                    .findTopByPackageSessionIdAndUserIdAndStatusIn(
+            // Find active mapping for this user + packageSession. With delete-history it was looked
+            // up before anything ran: an earlier course of this learner may have removed it already.
+            Optional<StudentSessionInstituteGroupMapping> mappingOpt = deleteHistory
+                    ? (history.usedSessions.add(packageSessionId)
+                            ? Optional.ofNullable(history.mappingBySession.get(packageSessionId))
+                            : Optional.empty())
+                    : studentSessionRepository.findTopByPackageSessionIdAndUserIdAndStatusIn(
                             packageSessionId, instituteId, userId,
                             List.of(LearnerSessionStatusEnum.ACTIVE.name()));
 
@@ -297,14 +490,33 @@ public class BulkDeassignmentService {
                     softMessage = "soft-cancel (access already ended " + accessTillDate
                             + " — learner will be marked INACTIVE for this course)";
                 }
+                String message = "Would " + (MODE_HARD.equals(mode)
+                        ? "terminate immediately"
+                        : softMessage);
+                if (deleteHistory && StringUtils.hasText(userPlanId)) {
+                    String blocker = historyBlocker(history, userPlanId, instituteId);
+                    if (blocker != null) {
+                        return BulkDeassignResponseDTO.DeassignResultItemDTO.builder()
+                                .userId(userId).userEmail(userEmail)
+                                .packageSessionId(packageSessionId)
+                                .status("FAILED").actionTaken("NONE")
+                                .userPlanId(userPlanId)
+                                .message(blocker)
+                                .warning(warning)
+                                .build();
+                    }
+                    PaymentDeletionService.PlanHistory preview = history.previews.get(userPlanId);
+                    message += " and permanently delete its payment history: " + preview.payments()
+                            + " payment(s) worth " + preview.paidAmount().stripTrailingZeros().toPlainString()
+                            + ", " + preview.installments() + " installment(s), " + preview.invoices()
+                            + " invoice(s)";
+                }
                 return BulkDeassignResponseDTO.DeassignResultItemDTO.builder()
                         .userId(userId).userEmail(userEmail)
                         .packageSessionId(packageSessionId)
                         .status("SUCCESS").actionTaken(actionDesc)
                         .userPlanId(userPlanId)
-                        .message("Would " + (MODE_HARD.equals(mode)
-                                ? "terminate immediately"
-                                : softMessage))
+                        .message(message)
                         .warning(warning)
                         .build();
             }
@@ -312,8 +524,45 @@ public class BulkDeassignmentService {
             // Actually perform the cancellation
             boolean hard = MODE_HARD.equals(mode);
             boolean slotFreed = false;
+            String historyMessage = null;
             if (StringUtils.hasText(userPlanId)) {
-                userPlanService.cancelUserPlan(userPlanId, hard);
+                if (hard && deleteHistory) {
+                    // Another selected course on the same plan already removed it, and this enrolment
+                    // with it — reported as before, when it was looked up afresh.
+                    if (history.reportedPlans.contains(userPlanId)) {
+                        return BulkDeassignResponseDTO.DeassignResultItemDTO.builder()
+                                .userId(userId).userEmail(userEmail)
+                                .packageSessionId(packageSessionId)
+                                .status("SKIPPED").actionTaken("NONE")
+                                .message("No active enrollment found")
+                                .build();
+                    }
+                    // The first course of a group removes the whole group; the rest report the outcome.
+                    if (!history.deleted.containsKey(userPlanId) && !history.errors.containsKey(userPlanId)) {
+                        List<String> group = groupOf(history, userPlanId);
+                        try {
+                            history.deleted.putAll(courseRemovalHistoryService
+                                    .terminateAndDeleteHistory(group, instituteId, adminUserId));
+                        } catch (Exception e) {
+                            String reason = e.getMessage() != null ? e.getMessage() : "Payment history could not be deleted";
+                            // A group shares one outcome; say so, since the reason may be another course's.
+                            String error = group.size() > 1
+                                    ? "Not removed: this course shares its package or receipts with other selected "
+                                            + "courses, which are removed together, and one of them was refused — " + reason
+                                    : reason;
+                            group.forEach(planId -> history.errors.put(planId, error));
+                        }
+                    }
+                    if (history.errors.containsKey(userPlanId)) {
+                        throw new VacademyException(history.errors.get(userPlanId));
+                    }
+                    history.reportedPlans.add(userPlanId);
+                    Map<String, Object> deleted = history.deleted.get(userPlanId);
+                    historyMessage = "Payment history deleted: " + deleted.get("payments_deleted")
+                            + " payment(s), " + deleted.get("installments_deleted") + " installment(s)";
+                } else {
+                    userPlanService.cancelUserPlan(userPlanId, hard);
+                }
                 slotFreed = hard; // Only hard terminate actually frees the slot
                 // SOFT keeps the ACTIVE mapping (cancelUserPlan leaves it untouched).
                 // When the admin picked a "last access date", override the mapping's
@@ -346,9 +595,16 @@ public class BulkDeassignmentService {
                         userId, packageSessionId, mode, accessTillDate);
             }
 
-            // Only increment inventory when the slot is actually freed
+            // Only give stock back when the slot is actually freed. A plan with stock_hold rows
+            // gets back exactly what it took, once — cancelUserPlan above may already have
+            // restored it, and restoreForPlan then just reports the plan as handled. Plans from
+            // before V640 have no rows and keep the old increment, by the plan's quantity.
             if (slotFreed) {
-                packageSessionService.incrementAvailability(packageSessionId, 1);
+                boolean restored = StringUtils.hasText(userPlanId)
+                        && stockHoldService.restoreForPlan(userPlanId, packageSessionId);
+                if (!restored) {
+                    packageSessionService.incrementAvailability(packageSessionId, legacyQuantity(userPlanId));
+                }
             }
 
             String actionTaken = MODE_HARD.equals(mode)
@@ -360,6 +616,7 @@ public class BulkDeassignmentService {
                     .packageSessionId(packageSessionId)
                     .status("SUCCESS").actionTaken(actionTaken)
                     .userPlanId(userPlanId)
+                    .message(historyMessage)
                     .warning(warning)
                     .build();
 
@@ -372,6 +629,22 @@ public class BulkDeassignmentService {
                     .status("FAILED").actionTaken("NONE")
                     .message(e.getMessage())
                     .build();
+        }
+    }
+
+    /** Copies the plan bought (1 when there is no plan, or it was deleted with its history). */
+    private int legacyQuantity(String userPlanId) {
+        if (!StringUtils.hasText(userPlanId)) {
+            return 1;
+        }
+        try {
+            return userPlanRepository.findById(userPlanId)
+                    .map(UserPlan::getQuantity)
+                    .filter(q -> q != null && q > 0)
+                    .orElse(1);
+        } catch (Exception e) {
+            log.warn("Could not read quantity of plan {}; giving back 1: {}", userPlanId, e.getMessage());
+            return 1;
         }
     }
 

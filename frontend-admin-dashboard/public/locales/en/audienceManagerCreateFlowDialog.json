@@ -1,0 +1,27 @@
+{
+    "heading": "Create Onboarding Flow",
+    "fields": {
+        "name": {
+            "label": "Flow name",
+            "placeholder": "e.g. New Student Onboarding"
+        },
+        "description": {
+            "label": "Description",
+            "placeholder": "What this flow is for (optional)"
+        }
+    },
+    "actions": {
+        "cancel": "Cancel",
+        "createFlow": "Create Flow",
+        "creating": "Creating…"
+    },
+    "validation": {
+        "nameRequired": "Flow name is required",
+        "nameMaxLength": "Keep it under 150 characters",
+        "descriptionMaxLength": "Keep it under 1000 characters"
+    },
+    "toasts": {
+        "created": "Onboarding flow created",
+        "createError": "Could not create the flow. Please try again."
+    }
+}

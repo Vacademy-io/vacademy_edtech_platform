@@ -1,0 +1,35 @@
+{
+    "tabs": {
+        "inApp": "In-app",
+        "push": "Push",
+        "email": "Email",
+        "whatsapp": "WhatsApp"
+    },
+    "device": {
+        "mobile": "Mobile",
+        "desktop": "Desktop"
+    },
+    "inApp": {
+        "badge": "Announcement",
+        "pinned": "Pinned",
+        "titlePlaceholder": "Your announcement title",
+        "contentPlaceholder": "Your message appears here as learners will read it."
+    },
+    "push": {
+        "senderPlaceholder": "Your app",
+        "titlePlaceholder": "Push title",
+        "bodyPlaceholder": "Push body appears here."
+    },
+    "whatsapp": {
+        "noTemplate": "Pick an approved WhatsApp template on the Delivery step to preview it here.",
+        "titleFallback": "Announcement title",
+        "contentFallback": "Announcement content",
+        "senderFallback": "Sender"
+    },
+    "email": {
+        "fromPrefix": "From: {{sender}}",
+        "senderPlaceholder": "Your institute",
+        "noSubject": "(No subject)",
+        "iframeTitle": "Email preview"
+    }
+}

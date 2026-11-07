@@ -1,0 +1,50 @@
+{
+    "collapsed": {
+        "expandHistory": "توسيع السجل",
+        "newVideo": "فيديو جديد"
+    },
+    "header": {
+        "title": "السجل",
+        "collapseHistory": "طي السجل"
+    },
+    "newVideoButton": "فيديو جديد",
+    "empty": {
+        "title": "لا توجد مقاطع فيديو بعد",
+        "subtitle": "ستظهر مقاطع الفيديو التي تنشئها هنا"
+    },
+    "item": {
+        "retry": "إعادة المحاولة"
+    },
+    "deleteDialog": {
+        "title": "هل تريد حذف الفيديو؟",
+        "description": "سيؤدي هذا إلى إزالة \"{{name}}\" نهائيًا من سجلك.",
+        "cancel": "إلغاء",
+        "confirm": "حذف"
+    },
+    "pagination": {
+        "prev": "السابق",
+        "next": "التالي",
+        "pageIndicator": "{{current}} / {{total}}"
+    },
+    "relativeTime": {
+        "justNow": "الآن",
+        "minutesAgo_zero": "منذ أقل من {{count}} دقيقة",
+        "minutesAgo_one": "منذ {{count}} دقيقة",
+        "minutesAgo_two": "منذ {{count}} دقيقتين",
+        "minutesAgo_few": "منذ {{count}} دقائق",
+        "minutesAgo_many": "منذ {{count}} دقيقة",
+        "minutesAgo_other": "منذ {{count}} دقيقة",
+        "hoursAgo_zero": "منذ أقل من {{count}} ساعة",
+        "hoursAgo_one": "منذ {{count}} ساعة",
+        "hoursAgo_two": "منذ {{count}} ساعتين",
+        "hoursAgo_few": "منذ {{count}} ساعات",
+        "hoursAgo_many": "منذ {{count}} ساعة",
+        "hoursAgo_other": "منذ {{count}} ساعة",
+        "daysAgo_zero": "منذ أقل من {{count}} يوم",
+        "daysAgo_one": "منذ {{count}} يوم",
+        "daysAgo_two": "منذ {{count}} يومين",
+        "daysAgo_few": "منذ {{count}} أيام",
+        "daysAgo_many": "منذ {{count}} يومًا",
+        "daysAgo_other": "منذ {{count}} يوم"
+    }
+}

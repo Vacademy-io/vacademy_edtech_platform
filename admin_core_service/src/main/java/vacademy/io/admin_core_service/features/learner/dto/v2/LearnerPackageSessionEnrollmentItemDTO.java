@@ -26,6 +26,10 @@ public class LearnerPackageSessionEnrollmentItemDTO {
     @JsonProperty("refer_request")
     private ReferRequestDTO referRequest;
 
+    /**
+     * Copies of this item. Null means 1. Above 1 only for one-time items that are not a
+     * charge (shipping / deposit); see MultiPackageLearnerEnrollService.
+     */
     @JsonProperty("requested_quantity")
     private Integer requestedQuantity;
 }

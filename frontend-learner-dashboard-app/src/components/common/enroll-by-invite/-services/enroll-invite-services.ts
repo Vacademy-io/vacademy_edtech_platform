@@ -1,9 +1,11 @@
+import { isBlankPhone } from "@/lib/phone-validation";
 import {
   BASE_URL,
   ENROLL_OPEN_STUDENT_URL,
   ENROLL_USER_INVITE_PAYMENT_URL,
   GET_PAYMENT_GATEWAY_DETAILS_URL,
   PEYMENT_LOG_STATUS_URL,
+  STOCK_HOLD_RELEASE_URL,
   ENROLLMENT_FORM_SUBMIT,
   ENROLLMENT_POLICY_URL,
   CPO_OPEN_DUES_URL,
@@ -186,7 +188,12 @@ const getPhoneField = (registrationData: RegistrationDataType): string => {
       value.render_type || getFieldRenderType(key, value.type || "text");
     return renderType === FieldRenderType.PHONE;
   });
-  return phoneEntry ? phoneEntry[1].value : "";
+  const value = phoneEntry ? phoneEntry[1].value : "";
+  // A form may leave its phone field optional, and the phone widget keeps the selected
+  // country's dial code in the box — so a skipped field reads back as "+91". Storing that as
+  // the learner's mobile number, or handing it to a payment gateway as their contact, is worse
+  // than storing nothing.
+  return isBlankPhone(value) ? "" : value;
 };
 
 /**
@@ -616,6 +623,27 @@ export const handleGetPaymentCompletionStatus = ({
     queryFn: () => getPaymentCompletionStatus({ paymentLogId }),
     staleTime: 60 * 60 * 1000,
   };
+};
+
+/**
+ * Puts back the stock held for an unpaid order. Call it, without awaiting, when
+ * the learner closes the gateway window: the server only releases holds on an
+ * order that is still unpaid, needs no login, and expires the rest on its own
+ * after 30 minutes. It never throws, so it can never get in the way of the
+ * "payment cancelled" handling that follows.
+ */
+export const releaseStockHold = async (
+  paymentLogId: string | null | undefined,
+): Promise<void> => {
+  const id = paymentLogId?.trim();
+  if (!id) return;
+  try {
+    await axios.post(STOCK_HOLD_RELEASE_URL, null, {
+      params: { paymentLogId: id },
+    });
+  } catch (error) {
+    console.warn("[releaseStockHold] Could not release the stock hold:", error);
+  }
 };
 
 // Enrollment Policy API 

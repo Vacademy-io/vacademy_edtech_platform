@@ -1,0 +1,14 @@
+{
+    "header": {
+        "title": "Classement"
+    },
+    "toasts": {
+        "pdfExportSuccess": "Les données du classement ont été exportées avec succès au format PDF",
+        "csvExportSuccess": "Les données du classement ont été exportées avec succès au format CSV"
+    },
+    "studentCard": {
+        "duration": "{{minutes}} min {{seconds}} s",
+        "percentile": "Centile",
+        "marks": "Notes"
+    }
+}

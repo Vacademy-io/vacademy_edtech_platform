@@ -1,0 +1,43 @@
+{
+    "loading": "Chargement des paramètres CGU...",
+    "toggle": {
+        "enabled": "Activé",
+        "disabled": "Désactivé"
+    },
+    "documentCard": {
+        "title": "Conditions générales pour les étudiants",
+        "description": "Activez les conditions générales pour exiger que les apprenants signent numériquement l'accord avant de pouvoir accéder au contenu de leur tableau de bord.",
+        "pdfLabel": "PDF des conditions générales",
+        "pdfDescription": "Téléversez le document PDF de base. Lorsqu'un apprenant l'accepte, son nom et la date seront ajoutés sous forme de nouvelle page.",
+        "currentlyUploaded": "PDF actuellement téléversé",
+        "viewDocument": "Voir le document CGU",
+        "remove": "Supprimer",
+        "acceptFormatMsg": "Format pris en charge : PDF",
+        "uploading": "Téléversement du PDF...",
+        "nameLabel": "Nom de l'apprenant sur la signature",
+        "nameDescription": "Choisissez comment le nom de l'apprenant est saisi lorsqu'il signe les conditions générales.",
+        "prefillLabel": "Pré-remplir le nom de l'apprenant (non modifiable)",
+        "prefillHintOn": "Le nom enregistré de l'apprenant sera automatiquement rempli et verrouillé sur le champ de signature.",
+        "prefillHintOff": "L'apprenant devra saisir son nom complet manuellement lors de la signature."
+    },
+    "notifyCard": {
+        "title": "Notifier lors de la signature",
+        "description": "Envoyer une notification par e-mail avec le lien du PDF signé chaque fois qu'un étudiant accepte les conditions générales.",
+        "recipientEmailsLabel": "E-mails des destinataires",
+        "recipientEmailsPlaceholder": "admin@example.com, hr@example.com",
+        "recipientEmailsHint": "Séparez plusieurs adresses e-mail par des virgules. Chaque adresse recevra le lien du PDF signé."
+    },
+    "actions": {
+        "save": "Enregistrer les paramètres",
+        "saving": "Enregistrement..."
+    },
+    "toasts": {
+        "saveSuccess": "Paramètres des conditions générales enregistrés",
+        "saveError": "Échec de l'enregistrement des paramètres CGU",
+        "missingFile": "Veuillez téléverser un fichier PDF pour activer les conditions générales",
+        "missingEmails": "Veuillez saisir au moins un e-mail de destinataire pour les notifications",
+        "invalidFileType": "Seuls les fichiers PDF sont pris en charge",
+        "uploadSuccess": "PDF téléversé avec succès",
+        "uploadError": "Échec du téléversement du fichier PDF"
+    }
+}

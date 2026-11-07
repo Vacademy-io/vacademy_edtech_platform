@@ -13,6 +13,17 @@
  * admin-tunable now and may diverge from what was shipped at build time.
  */
 
+import type { TFunction } from 'i18next';
+
+/**
+ * Namespace for this module's translated suffix words — see
+ * src/locales/en/videoApiStudioCredits.json. Callers resolve keys against
+ * this namespace explicitly (fully-qualified `${NS}:key` lookups) by adding
+ * 'videoApiStudioCredits' to their own `useTranslation()` namespace array
+ * and threading the resulting `t` in via `FormatCreditsOptions.t`.
+ */
+const NS = 'videoApiStudioCredits';
+
 /** Default ratio matching V252's seed row (100 × 1.5 = 150).
  *  Used when callers don't have access to the React Query hook
  *  (non-component code paths). Components should prefer
@@ -30,6 +41,11 @@ export interface FormatCreditsOptions {
     suffix?: 'credits' | 'cr' | '';
     /** When true, append the singular form for n=1 ("1 credit"). */
     pluralAware?: boolean;
+    /** i18next `t` bound to (or including) the 'videoApiStudioCredits'
+     *  namespace, used to translate the suffix word. When omitted, falls
+     *  back to the English literal so call sites that haven't been
+     *  threaded through yet keep working exactly as before. */
+    t?: TFunction;
 }
 
 const _pickDefaultPrecision = (credits: number): number => {
@@ -52,7 +68,16 @@ export const formatCredits = (credits: number, opts: FormatCreditsOptions = {}):
     const suffix = opts.suffix ?? 'credits';
     const rounded = credits.toFixed(precision);
     const isOne = opts.pluralAware && Math.abs(parseFloat(rounded) - 1) < 0.0001;
-    const renderedSuffix = !suffix ? '' : suffix === 'credits' && isOne ? ' credit' : ` ${suffix}`;
+    const { t } = opts;
+    const suffixWord = (key: 'suffixSingular' | 'suffixFull' | 'suffixCompact', fallback: string) =>
+        t ? t(`${NS}:${key}`) : fallback;
+    const renderedSuffix = !suffix
+        ? ''
+        : suffix === 'credits' && isOne
+          ? ` ${suffixWord('suffixSingular', 'credit')}`
+          : suffix === 'credits'
+            ? ` ${suffixWord('suffixFull', 'credits')}`
+            : ` ${suffixWord('suffixCompact', 'cr')}`;
     return `${rounded}${renderedSuffix}`;
 };
 

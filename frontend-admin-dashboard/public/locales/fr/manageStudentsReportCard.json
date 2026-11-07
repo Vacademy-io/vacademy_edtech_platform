@@ -1,0 +1,148 @@
+{
+    "student": {
+        "fallbackName": "l'élève"
+    },
+    "masthead": {
+        "instituteFallback": "Établissement",
+        "progressReportFallback": "Bulletin de progression"
+    },
+    "verdict": {
+        "studentFallback": "Élève",
+        "rollLabel": "Matricule {{roll}}",
+        "enrolmentLabel": "Inscription {{no}}",
+        "generatedLabel": "Généré le {{date}}"
+    },
+    "common": {
+        "stats": {
+            "present": "Présent",
+            "absent": "Absent",
+            "late": "En retard",
+            "attended": "Suivi",
+            "missed": "Manqué",
+            "attendance": "Présence",
+            "totalSessions": "Séances totales",
+            "totalClasses": "Cours totaux",
+            "assigned": "Assigné",
+            "submitted": "Soumis",
+            "onTime": "À temps",
+            "pending": "En attente",
+            "avgScore": "Score moyen",
+            "resolved": "Résolu"
+        },
+        "headings": {
+            "attendance": "Présence",
+            "strengths": "Points forts",
+            "areasToImprove": "Axes d'amélioration",
+            "liveClasses": "Cours en direct",
+            "assignments": "Devoirs",
+            "achievements": "Réussites",
+            "courseProgress": "Progression du cours",
+            "studyHabits": "Habitudes d'étude"
+        }
+    },
+    "attendance": {
+        "vsLastPeriod": "par rapport à la période précédente"
+    },
+    "thinking": {
+        "heading": "Comment {{name}} raisonne",
+        "fromAnalysis_one": "d'après l'analyse IA de {{count}} tentative récente",
+        "fromAnalysis_many": "d'après l'analyse IA de {{count}} tentatives récentes",
+        "fromAnalysis_other": "d'après l'analyse IA de {{count}} tentatives récentes",
+        "profileTitle": "Profil des compétences cognitives",
+        "profileCaption": "Précision selon les niveaux cognitifs (taxonomie de Bloom)",
+        "confidenceTitle": "Certitudes vs. suppositions",
+        "confidenceCaption": "Calibration de la confiance sur les questions traitées",
+        "confidentlyRight": "Sûr et juste",
+        "rightButUnsure": "Juste mais incertain",
+        "confidentlyWrong": "Sûr mais faux",
+        "confidenceLabel": "confiance",
+        "radarAriaLabel": "Graphique radar des compétences cognitives",
+        "donutAriaLabel": "Anneau de calibration de la confiance"
+    },
+    "bloomLevels": {
+        "remember": "Mémoriser",
+        "understand": "Comprendre",
+        "apply": "Appliquer",
+        "analyze": "Analyser",
+        "evaluate": "Évaluer",
+        "create": "Créer"
+    },
+    "topicMastery": {
+        "title": "Maîtrise des sujets",
+        "caption": "précision par sujet, toutes les tentatives de la période"
+    },
+    "subjects": {
+        "title": "Notes par matière",
+        "caption": "sur l'ensemble des évaluations, devoirs, quiz et questions",
+        "vsClassCaption": "Performance par matière vs. moyenne de classe",
+        "vsClassSuffix": "classe {{value}}%"
+    },
+    "assessments": {
+        "title": "Évaluations",
+        "caption": "{{count}} sur la période",
+        "rank": "Rang {{rank}}"
+    },
+    "trend": {
+        "title": "Évolution des notes",
+        "classAverage": "Moyenne de la classe",
+        "ariaLabel": "Note à chaque évaluation comparée à la moyenne de la classe"
+    },
+    "gradeMix": {
+        "title": "Notes obtenues",
+        "summary_one": "{{good}} évaluation sur {{total}} avec la note B ou plus",
+        "summary_other": "{{good}} évaluations sur {{total}} avec la note B ou plus",
+        "testCount_one": "{{count}} évaluation",
+        "testCount_other": "{{count}} évaluations",
+        "range": {
+            "ap": "90 % et plus",
+            "a": "80–89 %",
+            "bp": "70–79 %",
+            "b": "60–69 %",
+            "c": "50–59 %",
+            "d": "moins de 50 %"
+        }
+    },
+    "misconceptions": {
+        "title": "Prochaines pistes de travail",
+        "caption": "erreurs de compréhension précises et comment les corriger"
+    },
+    "habits": {
+        "caption": "Minutes d'étude quotidiennes sur la période",
+        "longestStreak": "Plus longue série",
+        "streakDay_one": "jour",
+        "streakDay_many": "jours",
+        "streakDay_other": "jours",
+        "consistency": "Régularité",
+        "activeDaysOf": "Jours actifs / {{total}}"
+    },
+    "achievements": {
+        "caption": "Badges et certificats obtenus"
+    },
+    "courseProgress": {
+        "percentComplete": "{{percentage}}% terminé au total"
+    },
+    "doubts": {
+        "title": "Questions et engagement",
+        "questionsAsked": "Questions posées",
+        "avgResolutionTime": "Temps de résolution moyen",
+        "hoursSuffix": "h"
+    },
+    "aiInsights": {
+        "whatWeNoticed": "Ce que nous avons remarqué",
+        "recommendedNextSteps": "Prochaines étapes recommandées",
+        "priorityMedium": "Moyenne",
+        "summary": "Résumé IA"
+    },
+    "narrative": {
+        "detailedAnalysis": "Analyse détaillée",
+        "learningFrequency": "Fréquence d'apprentissage",
+        "progress": "Progression",
+        "effortVsOutput": "Effort vs. résultat",
+        "topicsImproving": "Sujets en progrès",
+        "topicsNeedingAttention": "Sujets à surveiller",
+        "actionChecklist": "Liste d'actions"
+    },
+    "sparkline": {
+        "minutesTooltip": "{{minutes}} min"
+    }
+}

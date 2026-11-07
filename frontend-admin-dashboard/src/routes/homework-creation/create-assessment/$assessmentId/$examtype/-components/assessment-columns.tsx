@@ -1,3 +1,4 @@
+import type { TFunction } from 'i18next';
 import { ColumnDef } from '@tanstack/react-table';
 import { CaretUp, CaretDown } from '@phosphor-icons/react';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -18,7 +19,12 @@ const BatchCell = ({ package_session_id }: { package_session_id: string }) => {
     );
 };
 
-export const myAssessmentColumns: ColumnDef<StudentTable>[] = [
+// This column-definition array is built by a factory function that takes a
+// `t` (TFunction, from `useTranslation('homeworkCreationAssessmentColumns')`)
+// rather than being a plain module-scope constant, so header labels and the
+// sort-direction dropdown stay reactive to language switches. The call site
+// builds the columns inside the component with `buildMyAssessmentColumns(t)`.
+export const buildMyAssessmentColumns = (t: TFunction): ColumnDef<StudentTable>[] => [
     {
         id: 'checkbox',
         header: ({ table }) => (
@@ -43,13 +49,16 @@ export const myAssessmentColumns: ColumnDef<StudentTable>[] = [
             return (
                 <div className="relative">
                     <MyDropdown
-                        dropdownList={['ASC', 'DESC']}
+                        dropdownList={[
+                            { value: 'ASC', label: t('sort.ascending') },
+                            { value: 'DESC', label: t('sort.descending') },
+                        ]}
                         onSelect={(value) => {
                             meta.onSort?.('full_name', value);
                         }}
                     >
                         <button className="flex w-full cursor-pointer items-center justify-between">
-                            <div>Name</div>
+                            <div>{t('columns.name')}</div>
                             <div>
                                 <CaretUp />
                                 <CaretDown />
@@ -62,35 +71,35 @@ export const myAssessmentColumns: ColumnDef<StudentTable>[] = [
     },
     {
         accessorKey: 'package_session_id',
-        header: 'Batch',
+        header: t('columns.batch'),
         cell: ({ row }) => <BatchCell package_session_id={row.original.package_session_id} />,
     },
     {
         accessorKey: 'institute_enrollment_id',
-        header: 'Enrollment Number',
+        header: t('columns.enrollmentNumber'),
     },
     {
         accessorKey: 'linked_institute_name',
-        header: 'College/School',
+        header: t('columns.collegeSchool'),
     },
     {
         accessorKey: 'gender',
-        header: 'Gender',
+        header: t('columns.gender'),
     },
     {
         accessorKey: 'mobile_number',
-        header: 'Mobile Number',
+        header: t('columns.mobileNumber'),
     },
     {
         accessorKey: 'email',
-        header: 'Email ID',
+        header: t('columns.emailId'),
     },
     {
         accessorKey: 'city',
-        header: 'City',
+        header: t('columns.city'),
     },
     {
         accessorKey: 'region',
-        header: 'State',
+        header: t('columns.state'),
     },
 ];

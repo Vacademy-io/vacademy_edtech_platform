@@ -1,0 +1,108 @@
+{
+    "history": {
+        "empty": "No AI usage yet",
+        "emptyFiltered": "No usage matches these filters",
+        "error": "Could not load usage history. Please try again later.",
+        "prev": "Prev",
+        "next": "Next",
+        "pageOf": "{{page}} / {{pages}}",
+        "balanceAfter": "Bal: {{balance}}",
+        "otherUsage": "AI usage",
+        "showDetails": "Show details",
+        "hideDetails": "Hide details"
+    },
+    "filters": {
+        "allUsers": "All users",
+        "allRoles": "All roles",
+        "allFeatures": "All features",
+        "user": "User",
+        "role": "Role",
+        "feature": "Feature",
+        "clear": "Clear",
+        "export": "Export CSV",
+        "exporting": "Exporting…",
+        "exportFailed": "Could not export usage",
+        "exportFailedHint": "Please try again in a moment."
+    },
+    "amount": {
+        "included": "Included",
+        "free": "Free",
+        "ownKey": "Own key",
+        "notCharged": "Not charged (low balance)",
+        "refunded": "{{credits}} refunded",
+        "includedInPlan": "Included in plan",
+        "fromAllowance": "From plan allowance",
+        "splitAllowance": "{{credits}} from plan allowance"
+    },
+    "details": {
+        "promptTokens": "Input tokens",
+        "completionTokens": "Output tokens",
+        "cachedTokens": "Cached tokens",
+        "images": "Images",
+        "seconds": "Seconds",
+        "minutes": "Minutes",
+        "characters": "Characters",
+        "listCredits": "List price",
+        "charged": "Charged",
+        "refundedCredits": "Refunded",
+        "batch": "Batch",
+        "model": "Model",
+        "onBehalfOf": "For",
+        "byUser": "By",
+        "realCost": "Vendor cost (staff only)",
+        "status": "Status",
+        "fromAllowance": "From plan allowance"
+    },
+    "ledger": {
+        "usage": "Usage",
+        "grant": "Grant",
+        "adminGrant": "Admin Grant",
+        "adminDeduction": "Admin adjustment",
+        "refund": "Refund",
+        "purchase": "Purchase",
+        "transaction": "Transaction"
+    },
+    "roleClass": {
+        "ADMIN": "Admin",
+        "TEACHER": "Teacher",
+        "STAFF": "Staff",
+        "PARENT": "Parent",
+        "LEARNER": "Learner",
+        "SYSTEM": "System",
+        "API_KEY": "API key",
+        "PUBLIC": "Public",
+        "UNKNOWN": "Unknown"
+    },
+    "surface": {
+        "ADMIN_APP": "Admin app",
+        "LEARNER_APP": "Learner app",
+        "PUBLIC": "Public page",
+        "PARTNER_API": "Partner API",
+        "WHATSAPP": "WhatsApp",
+        "PHONE": "Phone",
+        "SCHEDULED": "Scheduled",
+        "INTERNAL": "Internal",
+        "UNKNOWN": "Unknown"
+    },
+    "analytics": {
+        "byFeature": "By feature",
+        "byRole": "By role",
+        "topUsers": "Top users",
+        "dailyTrend": "Daily trend",
+        "charged": "Charged",
+        "list": "List price",
+        "credits": "{{credits}} credits",
+        "events": "Uses: {{count}}",
+        "total": "{{credits}} credits · uses: {{events}}",
+        "empty": "No AI usage in this period",
+        "error": "Could not load analytics. Please try again later.",
+        "dayTooltip": "{{date}}: {{credits}}"
+    },
+    "plan": {
+        "grace": "Grace period",
+        "periodEnds": "Period ends {{date}}",
+        "allowance": "Plan allowance",
+        "allowanceLeft": "{{remaining}} of {{total}} left",
+        "includedCount": "Included features: {{count}}"
+    }
+}

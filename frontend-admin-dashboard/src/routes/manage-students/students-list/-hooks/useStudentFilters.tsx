@@ -1,6 +1,8 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import { StudentFilterRequest } from '@/types/student-table-types';
 import { useInstituteDetailsStore } from '@/stores/students/students-list/useInstituteDetailsStore';
+import { getBatchOwnName } from '@/utils/helpers/student-management/batch-display-name';
 import { getCurrentInstituteId } from '@/lib/auth/instituteUtils';
 import { useSelectedSessionStore } from '@/stores/study-library/selected-session-store';
 import {
@@ -16,11 +18,19 @@ import {
     sentinelLabel,
     splitLegacyAndTyped,
 } from '@/components/shared/leads/custom-field-filter-encoding';
+import { readUtmSelection, toUtmFiltersPayload } from '@/components/shared/leads/utm-filter-encoding';
 
 export const ALL_SESSIONS_ID = '__ALL__';
+export const TERMINATED_STATUS = 'TERMINATED';
+// payment_log.payment_status values the Payment Status filter can match.
+export const PAYMENT_STATUS_IDS = ['PAID', 'FAILED', 'PAYMENT_PENDING'];
+// ssigm.type values for checkouts that never completed. These rows sit in the INVITED
+// session with the real batch in destination_package_session_id.
+export const CART_TYPE_IDS = ['ABANDONED_CART', 'PAYMENT_FAILED'];
 
 export const useStudentFilters = (options: { allowAllSessions?: boolean } = {}) => {
     const { allowAllSessions = false } = options;
+    const { t } = useTranslation('manageStudentsUseStudentFilters');
     const navigate = useNavigate();
     const searchParams = useSearch({ strict: false }) as Record<string, any>;
     const INSTITUTE_ID = getCurrentInstituteId();
@@ -51,9 +61,24 @@ export const useStudentFilters = (options: { allowAllSessions?: boolean } = {}) 
     const [searchFilter, setSearchFilter] = useState('');
     const [clearFilters, setClearFilters] = useState<boolean>(false);
     const hasInitializedFilters = useRef(false);
+    // Statuses sent when the admin hasn't picked any. A search by name/email also includes
+    // TERMINATED, so a member removed from every batch is still findable without first
+    // guessing to pick Terminated in the Status filter; the unsearched list is unchanged.
+    const defaultStatusesFor = (name?: string): string[] => {
+        const base: string[] = instituteDetails?.student_statuses || [];
+        return name?.trim() && !base.includes(TERMINATED_STATUS)
+            ? [...base, TERMINATED_STATUS]
+            : base;
+    };
+    const hasExplicitStatusFilter = () =>
+        columnFilters.some(
+            (f) => (f.id === 'statuses' || f.id === 'approval_statuses') && f.value.length > 0
+        );
     const buildAllOption = (): DropdownItemType => ({
         id: ALL_SESSIONS_ID,
-        name: `All ${getTerminologyPlural(ContentTerms.Session, SystemTerms.Session)}`,
+        name: t('sessionSelector.allOption', {
+            term: getTerminologyPlural(ContentTerms.Session, SystemTerms.Session),
+        }),
     });
     const buildSessionList = (): DropdownItemType[] => {
         const sessions = getAllSessions().map((session) => ({
@@ -255,15 +280,31 @@ export const useStudentFilters = (options: { allowAllSessions?: boolean } = {}) 
             }
         }
 
-        // Batch filter from URL
-        if (searchParams.batch) {
-            const batches = Array.isArray(searchParams.batch) ? searchParams.batch : [searchParams.batch];
-            const batchOptions = instituteDetails.batches_for_sessions
-                ?.filter((batch) => batches.includes(batch.id))
-                .map((batch) => ({
-                    id: batch.id,
-                    label: batch.package_dto?.package_name || batch.id,
-                })) || [];
+        // Batch filter from URL. The label is the batch's own name where it has
+        // one — labelling it with the course name gave every batch of a course an
+        // identical chip, so the chip never said which batch was being shown.
+        // ?batchName= selects every batch carrying that name, across all courses,
+        // so a sidebar tab like "Flexi Student" keeps up with batches created
+        // later instead of freezing a list of ids. Those batches all share the
+        // name, so their chips are labelled by course.
+        const toList = (v: unknown): string[] =>
+            v ? (Array.isArray(v) ? v : [v]).map((x) => String(x)) : [];
+        const batchIds = toList(searchParams.batch);
+        const batchNames = toList(searchParams.batchName).map((n) => n.trim().toLowerCase());
+        if (batchIds.length > 0 || batchNames.length > 0) {
+            const batchOptions =
+                instituteDetails.batches_for_sessions
+                    ?.filter(
+                        (batch) =>
+                            batchIds.includes(batch.id) ||
+                            batchNames.includes((batch.name ?? '').trim().toLowerCase())
+                    )
+                    .map((batch) => ({
+                        id: batch.id,
+                        label: batchIds.includes(batch.id)
+                            ? getBatchOwnName(batch) || batch.package_dto?.package_name || batch.id
+                            : batch.package_dto?.package_name || getBatchOwnName(batch) || batch.id,
+                    })) || [];
             if (batchOptions.length > 0) {
                 initialFilters.push({ id: 'batch', value: batchOptions });
             }
@@ -276,7 +317,7 @@ export const useStudentFilters = (options: { allowAllSessions?: boolean } = {}) 
                 : [searchParams.sessionExpiry];
             const expiryOptions = expiries.map((days) => ({
                 id: String(days),
-                label: `${days} Days`,
+                label: t('filterOptions.sessionExpiryDays', { count: Number(days) }),
             }));
             if (expiryOptions.length > 0) {
                 initialFilters.push({ id: 'session_expiry_days', value: expiryOptions });
@@ -291,15 +332,29 @@ export const useStudentFilters = (options: { allowAllSessions?: boolean } = {}) 
             const name = searchParams.name as string;
             setSearchInput(name);
             setSearchFilter(name);
-            setAppliedFilters((prev) => ({ ...prev, name }));
+            setAppliedFilters((prev) => ({
+                ...prev,
+                name,
+                ...(!searchParams.status && !searchParams.approvalStatus
+                    ? { statuses: defaultStatusesFor(name) }
+                    : {}),
+            }));
         }
 
         // Payment Status filter from URL
         if (searchParams.paymentStatus) {
-            const statuses = Array.isArray(searchParams.paymentStatus) ? searchParams.paymentStatus : [searchParams.paymentStatus];
-            const options = statuses.map((status: string) => ({
+            // Values are payment_log.payment_status: PAID / FAILED / PAYMENT_PENDING.
+            const statuses = toList(searchParams.paymentStatus).filter((status) =>
+                PAYMENT_STATUS_IDS.includes(status)
+            );
+            const options = statuses.map((status) => ({
                 id: status,
-                label: status === 'PAID' ? 'Paid' : status === 'failed' ? 'Failed' : 'Payment Failed',
+                label:
+                    status === 'PAID'
+                        ? t('filterOptions.paymentStatus.paid')
+                        : status === 'FAILED'
+                          ? t('filterOptions.paymentStatus.failed')
+                          : t('filterOptions.paymentStatus.pending'),
             }));
             if (options.length > 0) {
                 initialFilters.push({ id: 'payment_statuses', value: options });
@@ -311,20 +366,28 @@ export const useStudentFilters = (options: { allowAllSessions?: boolean } = {}) 
             const statuses = Array.isArray(searchParams.approvalStatus) ? searchParams.approvalStatus : [searchParams.approvalStatus];
             const options = statuses.map((status: string) => ({
                 id: status,
-                label: status === 'PENDING_FOR_APPROVAL' ? 'Pending for Approval' : 'Invited',
+                label:
+                    status === 'PENDING_FOR_APPROVAL'
+                        ? t('filterOptions.approvalStatus.pending')
+                        : t('filterOptions.approvalStatus.invited'),
             }));
             if (options.length > 0) {
                 initialFilters.push({ id: 'approval_statuses', value: options });
             }
         }
 
-        // Learner Type filter from URL (e.g., ABANDONED_CART)
-        if (searchParams.learnerType) {
-            const learnerType = searchParams.learnerType;
-            const options = [{
-                id: learnerType,
-                label: learnerType === 'ABANDONED_CART' ? 'Abandoned Cart' : learnerType,
-            }];
+        // Cart Status filter from URL (ABANDONED_CART / PAYMENT_FAILED enrollment rows)
+        const learnerTypesFromUrl = toList(searchParams.learnerType).filter((type) =>
+            CART_TYPE_IDS.includes(type)
+        );
+        if (learnerTypesFromUrl.length > 0) {
+            const options = learnerTypesFromUrl.map((type) => ({
+                id: type,
+                label:
+                    type === 'ABANDONED_CART'
+                        ? t('filterOptions.learnerType.abandonedCart')
+                        : t('filterOptions.learnerType.paymentFailed'),
+            }));
             initialFilters.push({ id: 'learner_type', value: options });
         }
 
@@ -420,7 +483,9 @@ export const useStudentFilters = (options: { allowAllSessions?: boolean } = {}) 
             if (statusesToApply.length > 0 || approvalStatusesToApply.length > 0) {
                 finalStatusesToApply = [...statusesToApply, ...approvalStatusesToApply];
             } else {
-                finalStatusesToApply = instituteDetails?.student_statuses || [];
+                finalStatusesToApply = defaultStatusesFor(
+                    (searchParams.name as string) || searchFilter
+                );
             }
 
             const genderFilter = initialFilters.find((filter) => filter.id === 'gender');
@@ -441,19 +506,19 @@ export const useStudentFilters = (options: { allowAllSessions?: boolean } = {}) 
             // Special handling for Invited/Pending statuses:
             // These students might not be assigned to a batch yet, so we must clear the batch filter
             // to allow global search across the institute for these statuses.
-            // Handle learner type filter (e.g., ABANDONED_CART) - need this early for package_session_ids logic
+            // Cart Status filter (ABANDONED_CART / PAYMENT_FAILED) - need this early for package_session_ids logic
             const learnerTypeFilter = initialFilters.find((filter) => filter.id === 'learner_type');
-            const learnerTypeToApply = learnerTypeFilter?.value[0]?.id || undefined;
+            const learnerTypesToApply = learnerTypeFilter?.value.map((option) => option.id) || [];
 
-            // If ABANDONED_CART is selected, package_session_ids should be empty
-            const isAbandonedCart = learnerTypeToApply === 'ABANDONED_CART';
+            // Cart rows sit in the INVITED session, so package_session_ids must be empty
+            const isCartFilter = learnerTypesToApply.length > 0;
 
             // Store original pksids for destination_package_session_ids before clearing
             const originalPksids = [...pksids];
 
-            // For ABANDONED_CART, calculate destination_package_session_ids
+            // For cart rows, match the real batch via destination_package_session_ids
             let destinationPksids: string[] = [];
-            if (isAbandonedCart) {
+            if (isCartFilter) {
                 // If user selected specific batches, use those; otherwise use all batches for current session
                 const batchFilter = initialFilters.find((filter) => filter.id === 'batch');
                 const selectedBatchIds = batchFilter?.value.map((option) => option.id);
@@ -462,7 +527,7 @@ export const useStudentFilters = (options: { allowAllSessions?: boolean } = {}) 
                     : originalPksids;
             }
 
-            if (finalStatusesToApply.some(s => ['INVITED', 'PENDING_FOR_APPROVAL'].includes(s)) || isAbandonedCart) {
+            if (finalStatusesToApply.some(s => ['INVITED', 'PENDING_FOR_APPROVAL'].includes(s)) || isCartFilter) {
                 pksids = [];
             }
 
@@ -516,13 +581,13 @@ export const useStudentFilters = (options: { allowAllSessions?: boolean } = {}) 
                 // Use URL value directly — searchFilter state hasn't flushed yet within this effect.
                 name: (searchParams.name as string) || searchFilter || '',
                 package_session_ids: pksids,
-                destination_package_session_ids: isAbandonedCart ? destinationPksids : [],
+                destination_package_session_ids: isCartFilter ? destinationPksids : [],
                 gender: gendersToApply,
                 statuses: finalStatusesToApply,
                 session_expiry_days: sessionExpiryDays,
                 sub_org_user_types: rolesToApply,
                 payment_statuses: paymentStatusesToApply,
-                type: learnerTypeToApply,
+                types: learnerTypesToApply,
                 // approval_statuses is removed, merged into statuses
                 ...(Object.keys(legacyCfFilters).length > 0
                     ? { custom_field_filters: legacyCfFilters }
@@ -551,6 +616,7 @@ export const useStudentFilters = (options: { allowAllSessions?: boolean } = {}) 
                 const currentParams = new URLSearchParams(window.location.search);
                 currentParams.delete('session');
                 currentParams.delete('batch');
+                currentParams.delete('batchName');
                 const newUrl = `${window.location.pathname}?${currentParams.toString()}`;
                 window.history.replaceState({}, '', newUrl);
                 return;
@@ -583,6 +649,7 @@ export const useStudentFilters = (options: { allowAllSessions?: boolean } = {}) 
                 const currentParams = new URLSearchParams(window.location.search);
                 currentParams.set('session', session.id);
                 currentParams.delete('batch'); // Clear batch from URL
+                currentParams.delete('batchName');
                 const newUrl = `${window.location.pathname}?${currentParams.toString()}`;
                 window.history.replaceState({}, '', newUrl);
             }
@@ -629,7 +696,7 @@ export const useStudentFilters = (options: { allowAllSessions?: boolean } = {}) 
 
         // If NO status filters are selected (regular or approval), default to ACTIVE/INACTIVE
         if (finalStatusesToApply.length === 0) {
-            finalStatusesToApply = instituteDetails?.student_statuses || [];
+            finalStatusesToApply = defaultStatusesFor(searchFilter);
         }
 
         // Handle Package Session IDs
@@ -644,20 +711,20 @@ export const useStudentFilters = (options: { allowAllSessions?: boolean } = {}) 
             ['INVITED', 'PENDING_FOR_APPROVAL', 'Invited', 'Pending for Approval'].includes(s)
         );
 
-        // Get Learner Type filter (e.g., ABANDONED_CART) - need this early for package_session_ids logic
+        // Cart Status filter (ABANDONED_CART / PAYMENT_FAILED) - need this early for package_session_ids logic
         const learnerTypeFilter = columnFilters.find((filter) => filter.id === 'learner_type');
-        const learnerType = learnerTypeFilter?.value[0]?.id || undefined;
+        const learnerTypes = learnerTypeFilter?.value.map((option) => option.id) || [];
 
-        // If ABANDONED_CART is selected, package_session_ids should be empty
-        const isAbandonedCart = learnerType === 'ABANDONED_CART';
+        // Cart rows sit in the INVITED session, so package_session_ids must be empty
+        const isCartFilter = learnerTypes.length > 0;
 
         // Get selected batch IDs from filter
         const selectedBatchIds = columnFilters.find((filter) => filter.id === 'batch')?.value.map((option) => option.id);
 
-        if (hasSpecialStatus || isAbandonedCart) {
+        if (hasSpecialStatus || isCartFilter) {
             finalPackageSessionIds = [];
-            // For ABANDONED_CART, set destination_package_session_ids
-            if (isAbandonedCart) {
+            // For cart rows, match the real batch via destination_package_session_ids
+            if (isCartFilter) {
                 // If user selected specific batches, use those; otherwise use all batches
                 destinationPackageSessionIds = selectedBatchIds && selectedBatchIds.length > 0 
                     ? selectedBatchIds 
@@ -670,6 +737,21 @@ export const useStudentFilters = (options: { allowAllSessions?: boolean } = {}) 
         // Get Payment Statuses
         const paymentFilter = columnFilters.find((filter) => filter.id === 'payment_statuses');
         const paymentStatuses = paymentFilter ? paymentFilter.value.map((opt) => opt.id) : [];
+
+        // Membership (Trial / Paid) — learner-only, so the backend drops audience-only rows
+        // whenever it is set: someone with no plan is neither.
+        const membershipFilter = columnFilters.find((filter) => filter.id === 'membership_types');
+        const membershipTypes = membershipFilter ? membershipFilter.value.map((opt) => opt.id) : [];
+
+        // Joined -> the existing start_date/end_date range over ssigm.enrolled_date. The
+        // control encodes its selection as "from:DD/MM/YYYY" / "to:DD/MM/YYYY"; the API wants
+        // YYYY-MM-DD, so convert here rather than teaching the shared control a second format.
+        const joinedFilter = columnFilters.find((filter) => filter.id === 'joined_range');
+        const joinedValues = joinedFilter ? joinedFilter.value.map((opt) => opt.id) : [];
+        const joinedFrom = toIsoDate(joinedValues.find((v) => v.startsWith('from:'))?.slice(5));
+        const joinedTo = toIsoDate(joinedValues.find((v) => v.startsWith('to:'))?.slice(3));
+        const joinedRange =
+            joinedFrom && joinedTo ? { start_date: joinedFrom, end_date: joinedTo } : {};
 
         // Handle custom field filters — keyed by custom_field.id, matching the
         // backend's StudentListFilter.customFieldFilters (Map<String, List<String>>).
@@ -716,7 +798,7 @@ export const useStudentFilters = (options: { allowAllSessions?: boolean } = {}) 
         const newFilters: StudentFilterRequest = {
             name: searchFilter,
             package_session_ids: finalPackageSessionIds,
-            destination_package_session_ids: isAbandonedCart ? destinationPackageSessionIds : [],
+            destination_package_session_ids: isCartFilter ? destinationPackageSessionIds : [],
             gender: gendersToApply,
             statuses: finalStatusesToApply,
             session_expiry_days: sessionExpiryDays || [],
@@ -725,7 +807,9 @@ export const useStudentFilters = (options: { allowAllSessions?: boolean } = {}) 
             group_ids: [],
             sort_columns: {},
             payment_statuses: paymentStatuses,
-            type: learnerType,
+            types: learnerTypes,
+            ...(membershipTypes.length > 0 ? { membership_types: membershipTypes } : {}),
+            ...joinedRange,
             ...(enrollInviteIds.length > 0 ? { enroll_invite_ids: enrollInviteIds } : {}),
             ...(audienceIds.length > 0 ? { audience_ids: audienceIds } : {}),
             ...(subOrgIds.length > 0 ? { sub_org_ids: subOrgIds } : {}),
@@ -736,6 +820,10 @@ export const useStudentFilters = (options: { allowAllSessions?: boolean } = {}) 
                 ? { custom_field_typed_filters: typedCfFilters }
                 : {}),
         };
+        // Campaign (UTM) filters ride columnFilters under `utm:<dimension>`
+        // (set by the UtmFilterControls pills) and apply with the same button.
+        const utmFilters = toUtmFiltersPayload(readUtmSelection(columnFilters));
+        if (utmFilters) newFilters.utm_filters = utmFilters;
 
         setAppliedFilters(newFilters);
 
@@ -748,6 +836,7 @@ export const useStudentFilters = (options: { allowAllSessions?: boolean } = {}) 
         currentParams.delete('gender');
         currentParams.delete('status');
         currentParams.delete('batch');
+        currentParams.delete('batchName');
         currentParams.delete('sessionExpiry');
         currentParams.delete('learnerType');
         currentParams.delete('paymentStatus');
@@ -814,8 +903,8 @@ export const useStudentFilters = (options: { allowAllSessions?: boolean } = {}) 
             [...new Set(approvalStatusesToApply)].forEach(status => currentParams.append('approvalStatus', status));
         }
 
-        if (learnerType) {
-            currentParams.set('learnerType', learnerType);
+        if (learnerTypes.length > 0) {
+            [...new Set(learnerTypes)].forEach((type) => currentParams.append('learnerType', type));
         }
 
         if (audienceIds.length > 0) {
@@ -885,6 +974,7 @@ export const useStudentFilters = (options: { allowAllSessions?: boolean } = {}) 
         currentParams.delete('gender');
         currentParams.delete('status');
         currentParams.delete('batch');
+        currentParams.delete('batchName');
         currentParams.delete('sessionExpiry');
         currentParams.delete('paymentStatus');
         currentParams.delete('approvalStatus');
@@ -927,7 +1017,7 @@ export const useStudentFilters = (options: { allowAllSessions?: boolean } = {}) 
             group_ids: [],
             sort_columns: {},
             payment_statuses: [],
-            type: undefined,
+            types: [],
         };
 
         setAppliedFilters(newFilters);
@@ -953,6 +1043,7 @@ export const useStudentFilters = (options: { allowAllSessions?: boolean } = {}) 
         setAppliedFilters((prev) => ({
             ...prev,
             name: searchInput,
+            ...(hasExplicitStatusFilter() ? {} : { statuses: defaultStatusesFor(searchInput) }),
         }));
     };
 
@@ -969,6 +1060,7 @@ export const useStudentFilters = (options: { allowAllSessions?: boolean } = {}) 
         setAppliedFilters((prev) => ({
             ...prev,
             name: '',
+            ...(hasExplicitStatusFilter() ? {} : { statuses: defaultStatusesFor('') }),
         }));
     };
 
@@ -1018,3 +1110,11 @@ export const useStudentFilters = (options: { allowAllSessions?: boolean } = {}) 
         rangeCustomFields,
     };
 };
+
+/** "DD/MM/YYYY" (what the shared date-range control emits) -> "YYYY-MM-DD". */
+function toIsoDate(value?: string): string | undefined {
+    if (!value) return undefined;
+    const [day, month, year] = value.split('/');
+    if (!day || !month || !year) return undefined;
+    return `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+}

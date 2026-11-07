@@ -1,0 +1,78 @@
+{
+    "title": "Paramètres d'exportation",
+    "sections": {
+        "layout": "Paramètres de mise en page",
+        "display": "Paramètres d'affichage",
+        "paper": "Paramètres du papier",
+        "customFields": "Paramètres des champs personnalisés",
+        "advanced": "Paramètres avancés"
+    },
+    "layout": {
+        "columnsPerPage": "Colonnes par page",
+        "spaceForRoughWork": "Espace pour le brouillon",
+        "roughWorkPosition": {
+            "none": "Aucun",
+            "bottom": "En bas"
+        },
+        "roughWorkSize": {
+            "label": "Taille de l'espace de brouillon",
+            "small": "Petit (50 mm)",
+            "medium": "Moyen (100 mm)",
+            "large": "Grand (150 mm)"
+        },
+        "pagePadding": {
+            "label": "Marge de page",
+            "low": "Faible (10 mm)",
+            "medium": "Moyenne (20 mm)",
+            "high": "Élevée (30 mm)"
+        },
+        "fontSize": {
+            "label": "Taille de police",
+            "small": "Petite (10 pt)",
+            "medium": "Moyenne (12 pt)",
+            "large": "Grande (14 pt)"
+        },
+        "imageSize": {
+            "label": "Taille de l'image",
+            "maintainAspectRatio": "Conserver le rapport d'aspect de l'image"
+        }
+    },
+    "display": {
+        "showInstitutionLetterhead": "Afficher l'en-tête de l'établissement",
+        "showFirstPageInstructions": "Afficher les instructions sur la première page",
+        "showAdaptiveMarkingRules": "Afficher les règles de notation adaptative - Évaluation complète",
+        "showSectionInstructions": "Afficher les instructions par section",
+        "showSectionDuration": "Afficher la durée par section",
+        "showMarksPerQuestion": "Afficher les points par question",
+        "showAdaptiveMarkingRulesSection": "Afficher les règles de notation adaptative - Par section",
+        "showCheckboxesBeforeOptions": "Afficher les cases à cocher avant les options",
+        "showPageNumbers": "Afficher les numéros de page"
+    },
+    "paper": {
+        "createSets": "Créer des jeux de sujets d'examen",
+        "includeQuestionSetCode": "Inclure le code du jeu de questions",
+        "randomizeQuestions": "Randomiser les questions",
+        "randomizeOptions": "Randomiser les options"
+    },
+    "customFields": {
+        "include": "Inclure des champs de saisie personnalisés",
+        "selectTypePlaceholder": "Sélectionner le type de champ",
+        "type": {
+            "blank": "Vide (par défaut)",
+            "blocks": "Blocs",
+            "input": "Zone de saisie",
+            "checkbox": "Case à cocher"
+        },
+        "newFieldPlaceholder": "Saisir le libellé du nouveau champ",
+        "add": "Ajouter"
+    },
+    "advanced": {
+        "answerSpacing": "Espacement des réponses",
+        "customSpacing": "Espacement personnalisé",
+        "customSpacingHint": "Configurer un espace personnalisé pour les réponses."
+    },
+    "actions": {
+        "cancel": "Annuler",
+        "save": "Enregistrer"
+    }
+}

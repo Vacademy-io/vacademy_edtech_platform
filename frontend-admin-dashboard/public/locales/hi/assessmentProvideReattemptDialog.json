@@ -1,0 +1,13 @@
+{
+    "dialogHeading": "पुनः प्रयास प्रदान करें",
+    "confirmTitlePrefix": "क्या आप वाकई चयनित",
+    "confirmTitleSuffix": "को पुनः प्रयास देना चाहते हैं?",
+    "inputLabel": "दिए जाने वाले प्रयासों की संख्या",
+    "inputPlaceholder": "1",
+    "inputError": "1 से 20 के बीच की पूर्ण संख्या दर्ज करें",
+    "doneButton": "हो गया",
+    "toastSuccess_one": "{{count}} प्रयास चयनित प्रतिभागी(यों) को प्रदान किया गया।",
+    "toastSuccess_other": "{{count}} प्रयास चयनित प्रतिभागी(यों) को प्रदान किए गए।",
+    "toastErrorBulk": "चयनित प्रतिभागियों के पंजीकरण की पहचान नहीं हो सकी।",
+    "toastErrorSingle": "इस प्रतिभागी के पंजीकरण की पहचान नहीं हो सकी।"
+}

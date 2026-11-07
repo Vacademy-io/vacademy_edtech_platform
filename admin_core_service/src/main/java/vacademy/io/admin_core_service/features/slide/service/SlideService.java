@@ -16,6 +16,7 @@ import vacademy.io.admin_core_service.features.chapter.repository.ChapterReposit
 import vacademy.io.admin_core_service.features.chapter.repository.ChapterToSlidesRepository;
 import vacademy.io.admin_core_service.features.common.entity.RichTextData;
 import vacademy.io.admin_core_service.features.common.enums.StatusEnum;
+import vacademy.io.admin_core_service.features.course_knowledge.service.ContentIndexMarker;
 import vacademy.io.admin_core_service.features.learner_offline.service.OfflineManifestVersionService;
 import vacademy.io.admin_core_service.features.learner_tracking.service.LearnerTrackingAsyncService;
 import vacademy.io.admin_core_service.features.common.constants.ValidStatusListConstants;
@@ -53,6 +54,7 @@ public class SlideService {
     private final QuestionSlideRepository questionSlideRepository;
     private final AssignmentSlideRepository assignmentSlideRepository;
     private final QuizSlideRepository quizSlideRepository;
+    private final TeachingPlanStaleMarker teachingPlanStaleMarker;
     private final VideoSlideQuestionRepository videoSlideQuestionRepository;
     private final HtmlVideoSlideRepository htmlVideoSlideRepository;
     private final ScormSlideRepository scormSlideRepository;
@@ -66,6 +68,7 @@ public class SlideService {
     private final CopiedSlideStatusResolver copiedSlideStatusResolver;
     private final ChapterPackageSessionMappingRepository chapterPackageSessionMappingRepository;
     private final OfflineManifestVersionService offlineManifestVersionService;
+    private final ContentIndexMarker contentIndexMarker;
 
     @Transactional
     public String addOrUpdateDocumentSlide(AddDocumentSlideDTO addDocumentSlideDTO,
@@ -94,6 +97,8 @@ public class SlideService {
         }
         learnerTrackingAsyncService.updateLearnerOperationsForBatch("SLIDE", slideId, SlideTypeEnum.DOCUMENT.name(),
                 chapterId, moduleId, subjectId, packageSessionId);
+        teachingPlanStaleMarker.markStaleIfPublished(slideId, addDocumentSlideDTO.getStatus());
+        contentIndexMarker.mark(slideId, chapterId, "SLIDE_UPDATED_DOCUMENT");
         bumpOfflineManifest(chapterId, addDocumentSlideDTO.getStatus(), "SLIDE_UPDATED_DOCUMENT");
         return slideId;
     }
@@ -125,6 +130,8 @@ public class SlideService {
         }
         learnerTrackingAsyncService.updateLearnerOperationsForBatch("SLIDE", slideId, SlideTypeEnum.VIDEO.name(),
                 chapterId, moduleId, subjectId, packageSessionId);
+        teachingPlanStaleMarker.markStaleIfPublished(slideId, addVideoSlideDTO.getStatus());
+        contentIndexMarker.mark(slideId, chapterId, "SLIDE_UPDATED_VIDEO");
         bumpOfflineManifest(chapterId, addVideoSlideDTO.getStatus(), "SLIDE_UPDATED_VIDEO");
         return slideId;
     }
@@ -177,6 +184,7 @@ public class SlideService {
         Optional.ofNullable(documentSlideDTO.getTitle()).filter(t -> !t.isEmpty()).ifPresent(documentSlide::setTitle);
         Optional.ofNullable(documentSlideDTO.getCoverFileId()).filter(c -> !c.isEmpty())
                 .ifPresent(documentSlide::setCoverFileId);
+        guardFileBackedDocumentReference(documentSlide.getType(), documentSlideDTO);
         if (status.equalsIgnoreCase(SlideStatus.PUBLISHED.name())) {
             handlePublishedDocumentSlide(documentSlide, documentSlideDTO);
         } else if (status.equalsIgnoreCase(SlideStatus.DRAFT.name())) {
@@ -201,6 +209,7 @@ public class SlideService {
         // Adds here persist straight through the repositories rather than saveSlide(),
         // so this path needs its own bump.
         bumpOfflineManifest(chapterId, addDocumentSlideDTO.getStatus(), "SLIDE_ADDED_DOCUMENT");
+        contentIndexMarker.mark(slide.getId(), chapterId, "SLIDE_ADDED_DOCUMENT");
         return slide.getId();
     }
 
@@ -215,6 +224,7 @@ public class SlideService {
                 new ChapterToSlides(chapter, slide, addVideoSlideDTO.getSlideOrder(), addVideoSlideDTO.getStatus()));
         notifyIfPublished(addVideoSlideDTO.getStatus(), addVideoSlideDTO.isNotify(), instituteId, chapterToSlides);
         bumpOfflineManifest(chapterId, addVideoSlideDTO.getStatus(), "SLIDE_ADDED_VIDEO");
+        contentIndexMarker.mark(slide.getId(), chapterId, "SLIDE_ADDED_VIDEO");
         return slide.getId();
     }
 
@@ -248,6 +258,7 @@ public class SlideService {
         }
         learnerTrackingAsyncService.updateLearnerOperationsForBatch("SLIDE", slideId, SlideTypeEnum.SCORM.name(),
                 chapterId, moduleId, subjectId, packageSessionId);
+        contentIndexMarker.mark(slideId, chapterId, "SLIDE_UPDATED_SCORM");
         return slideId;
     }
 
@@ -274,6 +285,7 @@ public class SlideService {
         ChapterToSlides chapterToSlides = chapterToSlidesRepository.save(
                 new ChapterToSlides(chapter, slide, addScormSlideDTO.getSlideOrder(), addScormSlideDTO.getStatus()));
         notifyIfPublished(addScormSlideDTO.getStatus(), addScormSlideDTO.isNotify(), instituteId, chapterToSlides);
+        contentIndexMarker.mark(slide.getId(), chapterId, "SLIDE_ADDED_SCORM");
         return slide.getId();
     }
 
@@ -324,6 +336,8 @@ public class SlideService {
         // what a learner's offline manifest should contain for every package
         // session this chapter belongs to.
         bumpOfflineManifest(chapterId, status, "SLIDE_STATUS_" + status);
+        // Publish, unpublish and delete all change what course knowledge may answer from.
+        contentIndexMarker.mark(slideId, chapterId, "SLIDE_STATUS_" + status);
         return "Slide status updated successfully";
     }
 
@@ -429,6 +443,7 @@ public class SlideService {
 
         chapterToSlidesRepository
                 .save(new ChapterToSlides(chapter, newSlide, resolveSlideOrder(newChapterId, position), copiedStatus));
+        contentIndexMarker.mark(newSlide.getId(), newChapterId, "SLIDE_COPIED");
 
         // A copied ASSESSMENT slide keeps the same assessmentId but lands in a new
         // batch. Register that assessment to the target batch so it shows up for
@@ -587,6 +602,9 @@ public class SlideService {
         chapterToSlidesRepository.save(newMapping);
 
         deleteMapping(slideId, oldChapterId);
+        // Both chapters: the new one may sit in another course, and the old mapping is DELETED now.
+        contentIndexMarker.mark(slideId, newChapterId, "SLIDE_MOVED");
+        contentIndexMarker.mark(slideId, oldChapterId, "SLIDE_MOVED");
 
         // A moved ASSESSMENT slide now lives in a new batch. Register its assessment
         // to the target batch so it appears for those learners / in that course's
@@ -612,6 +630,7 @@ public class SlideService {
         ChapterToSlides chapterToSlides = getChapterToSlides(chapterId, slideId);
         chapterToSlides.setStatus(SlideStatus.DELETED.name());
         chapterToSlidesRepository.save(chapterToSlides);
+        contentIndexMarker.mark(slideId, chapterId, "SLIDE_UNMAPPED");
         return "Slide deleted successfully.";
     }
 
@@ -648,6 +667,27 @@ public class SlideService {
     // server-side backstop that would have prevented the silent slide-wipe incidents.
     private static final int PUBLISHED_SHRINK_GUARD_MIN_CHARS = 2000;
     private static final double PUBLISHED_SHRINK_GUARD_RATIO = 0.25;
+
+    // PDF / PPT_ANIM slides store a file id / deck base URL, never HTML. An editor-based
+    // save path that misses this sends editor HTML instead (the empty-document shell, or
+    // the previous slide's text), and the wipe guards below can't see it: a URL is far
+    // under their size floor and has no blocks to lose. Refuse it outright — and not as a
+    // 409, which the publish dialog would offer to force through.
+    private static final Set<String> FILE_BACKED_DOCUMENT_TYPES = Set.of("PDF", "PPT_ANIM");
+
+    private void guardFileBackedDocumentReference(String type, DocumentSlideDTO documentSlideDTO) {
+        if (type == null || !FILE_BACKED_DOCUMENT_TYPES.contains(type.toUpperCase())) {
+            return;
+        }
+        if (looksLikeHtml(documentSlideDTO.getData()) || looksLikeHtml(documentSlideDTO.getPublishedData())) {
+            throw new VacademyException(HttpStatus.BAD_REQUEST,
+                    "A " + type + " slide must reference a file, not document content.");
+        }
+    }
+
+    private static boolean looksLikeHtml(String value) {
+        return value != null && value.stripLeading().startsWith("<");
+    }
 
     public void handlePublishedDocumentSlide(DocumentSlide documentSlide, DocumentSlideDTO documentSlideDTO) {
         String newPublishedData;
@@ -889,6 +929,7 @@ public class SlideService {
         // Update slides with source IDs and save ChapterToSlides
         slideRepository.saveAll(persistedSlides);
         chapterToSlidesRepository.saveAll(newChapterToSlides);
+        contentIndexMarker.markChapter(newChapter.getId(), "CHAPTER_COPIED");
 
         // log.info("Copied {} slides from chapter {} to chapter {}",
         // newSlides.size(), oldChapter.getId(), newChapter.getId());
@@ -1196,6 +1237,7 @@ public class SlideService {
             newQuizSlide.setMarksPerQuestion(quizSlide.getMarksPerQuestion() != null ? quizSlide.getMarksPerQuestion() : 1.0);
             newQuizSlide.setNegativeMarking(quizSlide.getNegativeMarking() != null ? quizSlide.getNegativeMarking() : 0.0);
             newQuizSlide.setPassPercentage(quizSlide.getPassPercentage());
+            newQuizSlide.setPartialMarking(Boolean.TRUE.equals(quizSlide.getPartialMarking()));
             newQuizSlide.setReAttemptCount(quizSlide.getReAttemptCount());
             if (quizSlide.getDescriptionRichText() != null) {
                 newQuizSlide.setDescriptionRichText(copyRichText(quizSlide.getDescriptionRichText()));
@@ -1426,6 +1468,7 @@ public class SlideService {
         // Every slide type's "add" path funnels through here — a new published slide
         // changes the offline manifest for this chapter.
         bumpOfflineManifest(chapterId, status, "SLIDE_ADDED");
+        contentIndexMarker.mark(slide.getId(), chapterId, "SLIDE_ADDED");
         return slide.getId();
     }
 
@@ -1478,6 +1521,10 @@ public class SlideService {
         // Shared edit path for question/quiz/assignment/audio slides — the content a
         // learner already downloaded just changed.
         bumpOfflineManifest(chapterId, status, "SLIDE_UPDATED");
+        // Quiz / HTML-video / question edits reach the tutor through this path:
+        // the compiled teaching plan (and its answer key) is now behind.
+        teachingPlanStaleMarker.markStaleIfPublished(slide.getId(), status);
+        contentIndexMarker.mark(slide.getId(), chapterId, "SLIDE_UPDATED");
         return slide;
     }
 

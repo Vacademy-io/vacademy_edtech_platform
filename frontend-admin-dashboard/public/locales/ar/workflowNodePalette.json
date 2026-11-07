@@ -1,0 +1,12 @@
+{
+    "addNodes": "إضافة عُقد",
+    "searchPlaceholder": "البحث عن العُقد...",
+    "categories": {
+        "Triggers": "المشغّلات",
+        "Data": "البيانات",
+        "Actions": "الإجراءات",
+        "Notifications": "الإشعارات",
+        "Integrations": "التكاملات",
+        "Logic": "المنطق"
+    }
+}

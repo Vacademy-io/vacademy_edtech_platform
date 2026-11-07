@@ -4,6 +4,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import vacademy.io.admin_core_service.features.admin_activity_logs.annotation.Auditable;
 import vacademy.io.admin_core_service.features.counsellor_workbench.dto.*;
 import vacademy.io.admin_core_service.features.counsellor_workbench.service.CounsellorReassignService;
 import vacademy.io.admin_core_service.features.counsellor_workbench.service.CounsellorWorkbenchService;
@@ -47,6 +48,10 @@ public class CounsellorWorkbenchController {
      * exists on {@link WorkbenchConfig} and Jackson skips unknown properties).
      */
     @PutMapping("/config")
+    @Auditable(
+            entityType = "COUNSELLOR_WORKBENCH_CONFIG",
+            action = "UPDATE",
+            descriptionExpr = "'updated counsellor workbench settings'")
     public ResponseEntity<WorkbenchConfig> updateConfig(@RequestBody WorkbenchConfig request) {
         boolean hasRatingFields = request.getStrategyType() != null
                 || request.getStartingRating() != null
@@ -149,6 +154,12 @@ public class CounsellorWorkbenchController {
     // ────────────────────────────────────────────────────────────────
 
     @PatchMapping("/counsellors/{userId}/status")
+    @Auditable(
+            entityType = "COUNSELLOR",
+            action = "STATUS_CHANGE",
+            entityIdExpr = "#userId",
+            descriptionExpr = "'changed status of counsellor ' + @crmAuditNarrator.personFor(#userId) "
+                    + "+ (#request?.status != null ? ' to ' + #request.status : '')")
     public ResponseEntity<StatusChangeResponseDTO> setStatus(
             @PathVariable String userId,
             @RequestBody SetStatusRequest request,
@@ -169,6 +180,16 @@ public class CounsellorWorkbenchController {
     }
 
     @PostMapping("/reassign")
+    @Auditable(
+            entityType = "LEAD",
+            action = "REASSIGN",
+            // The same service also serves /reassign/preview; a dry run moved
+            // nothing and must not be recorded as if it had.
+            conditionExpr = "#result?.body?.dryRun != true",
+            descriptionExpr = "'reassigned ' + (#result?.body?.totalLeads ?: 0) + ' lead(s) from ' "
+                    + "+ @crmAuditNarrator.personFor(#request?.fromUserId) "
+                    + "+ (#request?.targetUserId != null ? ' to ' "
+                    + "+ @crmAuditNarrator.personFor(#request.targetUserId) : '')")
     public ResponseEntity<ReassignResultDTO> reassign(
             @RequestBody ReassignRequest request,
             @RequestAttribute("user") CustomUserDetails user) {
@@ -187,6 +208,13 @@ public class CounsellorWorkbenchController {
     }
 
     @PostMapping("/assign")
+    @Auditable(
+            entityType = "LEAD",
+            action = "ASSIGN",
+            conditionExpr = "#result?.body?.dryRun != true",
+            descriptionExpr = "'assigned ' + (#result?.body?.totalLeads ?: 0) + ' lead(s)' "
+                    + "+ (#request?.targetUserId != null ? ' to ' "
+                    + "+ @crmAuditNarrator.personFor(#request.targetUserId) : '')")
     public ResponseEntity<AssignLeadsResultDTO> assign(
             @RequestBody AssignLeadsRequest request,
             @RequestAttribute("user") CustomUserDetails user) {

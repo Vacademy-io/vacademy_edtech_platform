@@ -1,0 +1,28 @@
+{
+    "header": {
+        "title": "إدارة {{term}}",
+        "counts": {
+            "total": "الإجمالي",
+            "active": "نشط",
+            "inactive": "غير نشط",
+            "invited": "مدعوون"
+        },
+        "actions": {
+            "invite": "دعوة",
+            "enroll": "تسجيل",
+            "enrollType": "تسجيل {{term}}",
+            "noCourseContent": "يجب عليك إنشاء دورة وإضافة مادة دراسية إليها قبل القيام بذلك"
+        }
+    },
+    "inviteLinksDialog": {
+        "invitePage": "صفحة الدعوة",
+        "unknownSession": "جلسة غير معروفة",
+        "dialogTitle": "📨 روابط الدعوة - {{sessionName}}",
+        "unknownLevel": "مستوى غير معروف",
+        "courseLabel": "الدورة:",
+        "levelLabel": "المستوى:",
+        "sessionLabel": "الجلسة:",
+        "inviteLinkLabel": "رابط الدعوة:",
+        "noBatchesFound": "لم يتم العثور على دفعات لهذه الجلسة"
+    }
+}

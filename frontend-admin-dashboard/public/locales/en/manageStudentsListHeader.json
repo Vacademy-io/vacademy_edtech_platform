@@ -1,0 +1,28 @@
+{
+    "header": {
+        "title": "{{term}} Management",
+        "counts": {
+            "total": "Total",
+            "active": "Active",
+            "inactive": "Inactive",
+            "invited": "Invited"
+        },
+        "actions": {
+            "invite": "Invite",
+            "enroll": "Enroll",
+            "enrollType": "Enroll {{term}}",
+            "noCourseContent": "You need to create a course and add a subject in it before"
+        }
+    },
+    "inviteLinksDialog": {
+        "invitePage": "Invite Page",
+        "unknownSession": "Unknown Session",
+        "dialogTitle": "📨 Invite Links - {{sessionName}}",
+        "unknownLevel": "Unknown Level",
+        "courseLabel": "Course:",
+        "levelLabel": "Level:",
+        "sessionLabel": "Session:",
+        "inviteLinkLabel": "Invite Link:",
+        "noBatchesFound": "No batches found for this session"
+    }
+}

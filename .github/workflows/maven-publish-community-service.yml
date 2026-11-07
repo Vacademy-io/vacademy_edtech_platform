@@ -120,7 +120,9 @@ jobs:
             SENTRY_DSN=${{ secrets.SENTRY_DSN }} \
             OPENROUTER_API_KEY=${{ secrets.OPENROUTER_API_KEY }} \
             SENTRY_AUTH_TOKEN=${{ secrets.SENTRY_AUTH_TOKEN }} \
-            GH_ACTION_TOKEN=${{ secrets.GH_ACTION_TOKEN }}
+            GH_ACTION_TOKEN=${{ secrets.GH_ACTION_TOKEN }} \
+            INTERNAL_SERVICE_TOKEN=${{ secrets.INTERNAL_SERVICE_TOKEN }} \
+            BBB_GITHUB_REPO=Vacademy-io/vacademy_edtech_platform
 
       - name: Restart deployment
         if: (github.event_name == 'push' || github.event_name == 'workflow_dispatch')

@@ -1,0 +1,19 @@
+{
+    "title": "Modifier {{name}}",
+    "subtitle": "Choisissez un responsable ou modifiez le libellé du poste.",
+    "reportsTo": "Relève de",
+    "noManager": "Aucun responsable — sommet de l'équipe",
+    "reportsToHint": "Ses subordonnés directs (et cette personne) sont masqués de cette liste pour éviter les boucles.",
+    "positionLabel": "Libellé du poste",
+    "optional": "(facultatif)",
+    "positionLabelPlaceholder": "ex. Responsable des ventes, Chef conseiller",
+    "toast": {
+        "updated": "Mis à jour",
+        "saveFailed": "Impossible d'enregistrer"
+    },
+    "actions": {
+        "cancel": "Annuler",
+        "saving": "Enregistrement…",
+        "saveChanges": "Enregistrer les modifications"
+    }
+}

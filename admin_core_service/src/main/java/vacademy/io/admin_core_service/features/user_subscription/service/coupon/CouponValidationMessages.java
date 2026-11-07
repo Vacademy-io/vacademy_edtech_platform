@@ -17,6 +17,8 @@ public final class CouponValidationMessages {
     public static final String NOT_APPLICABLE = "COUPON_NOT_APPLICABLE";
     public static final String NOT_FOR_PLAN_TYPE = "COUPON_NOT_FOR_PLAN_TYPE";
     public static final String DISCOUNT_MISSING = "COUPON_DISCOUNT_NOT_CONFIGURED";
+    /** Basket is smaller than the coupon's minimum — see CouponCode.minItems. */
+    public static final String BELOW_MIN_ITEMS = "COUPON_BELOW_MIN_ITEMS";
 
     private CouponValidationMessages() {}
 }

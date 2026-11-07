@@ -1,0 +1,6 @@
+{
+    "loading": "Loading invites…",
+    "placeholder": "Auto (default invite)",
+    "autoResolveOption": "Auto-resolve default invite",
+    "emptyState": "No active invites found for this course"
+}

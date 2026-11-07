@@ -5,6 +5,9 @@ interface MediaRefsStore {
   currentYoutubeTime: number;
   currentUploadedVideoTime: number;
   navigationTrigger: number;
+  /** Pauses whichever video player is on screen; null when none is. */
+  pauseActiveMedia: (() => void) | null;
+  setPauseActiveMedia: (pause: (() => void) | null) => void;
   // Media length/duration variables
   currentYoutubeVideoLength: number;
   currentPdfLength: number;
@@ -25,12 +28,14 @@ export const useMediaRefsStore = create<MediaRefsStore>((set) => ({
   currentYoutubeTime: 0,
   currentUploadedVideoTime: 0,
   navigationTrigger: 0,
+  pauseActiveMedia: null,
   // Media length/duration values
   currentYoutubeVideoLength: 0,
   currentPdfLength: 0,
   currentCustomVideoLength: 0,
 
   // Setters
+  setPauseActiveMedia: (pause) => set({ pauseActiveMedia: pause }),
   setCurrentPdfPage: (page: number) => set({ currentPdfPage: page }),
   setCurrentYoutubeTime: (time: number) => set({ currentYoutubeTime: time }),
   setCurrentUploadedVideoTime: (time: number) => set({ currentUploadedVideoTime: time }),

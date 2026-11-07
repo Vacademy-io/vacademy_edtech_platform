@@ -1,0 +1,14 @@
+{
+    "activeUsers": "सक्रिय उपयोगकर्ता",
+    "reachedSuffix": "{{total}} में से पहुंचे",
+    "usersReached": "पहुंचे उपयोगकर्ता",
+    "totalUniqueUsers": "कुल अद्वितीय उपयोगकर्ता",
+    "totalMessages": "कुल संदेश",
+    "sentAndReceived": "भेजे और प्राप्त किए गए",
+    "responseRate": "प्रतिक्रिया दर",
+    "overallEngagement": "समग्र सहभागिता",
+    "completionRate": "पूर्णता दर",
+    "challengeCompleted": "चुनौती पूर्ण हुई",
+    "totalDays": "कुल दिन",
+    "challengeDuration": "चुनौती की अवधि"
+}

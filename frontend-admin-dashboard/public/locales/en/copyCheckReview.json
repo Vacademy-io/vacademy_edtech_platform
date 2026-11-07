@@ -1,0 +1,100 @@
+{
+    "penStyle": {
+        "title": "Pen on the checked copy",
+        "hint": "How the AI writes marks and remarks on the student's copy.",
+        "ink": "Ink colour",
+        "font": "Handwriting",
+        "size": "Size",
+        "inks": {
+            "RED": "Red",
+            "BLUE": "Blue",
+            "GREEN": "Green",
+            "BLACK": "Black",
+            "PURPLE": "Purple"
+        },
+        "fonts": {
+            "DAWNING_OF_A_NEW_DAY": "Teacher (default)",
+            "COVERED_BY_YOUR_GRACE": "Natural",
+            "OVER_THE_RAINBOW": "Scrawled",
+            "CAVEAT": "Quick",
+            "CEDARVILLE_CURSIVE": "Cursive",
+            "KALAM": "Classic (Kalam)",
+            "PATRICK_HAND": "Classic (Patrick Hand)",
+            "ARCHITECTS_DAUGHTER": "Classic (Architects Daughter)"
+        },
+        "sizes": {
+            "SMALL": "Small",
+            "MEDIUM": "Medium",
+            "LARGE": "Large"
+        },
+        "sample": "Good work · 4/5",
+        "customInk": "Custom",
+        "darkness": "How dark",
+        "darknessLight": "Light",
+        "darknessDark": "Dark",
+        "saveHint": "Copies use this pen once you save these settings.",
+        "previewButton": "See how it will look",
+        "previewTitle": "How a checked copy will look",
+        "previewNote": "A sample page, drawn the same way as a real checked copy. Remarks on real copies come from the AI check.",
+        "previewLoading": "Drawing the page…",
+        "previewError": "Could not draw the preview.",
+        "previewRetry": "Try again",
+        "previewAlt": "Sample answer page marked with the chosen pen"
+    },
+    "redraw": {
+        "button": "Update checked copy",
+        "staleBanner": "You changed marks, remarks or pen notes. Update the checked copy so the student's PDF shows them.",
+        "dialogTitle": "Update checked copy",
+        "dialogHint": "The copy is drawn again with your corrections. Marks, remarks and pen notes you changed replace the AI's; everything else stays where it was.",
+        "keepPen": "Keep the pen this copy was checked with",
+        "layout": "Remarks",
+        "layoutKeep": "As checked",
+        "layoutInside": "On the copy",
+        "layoutOutside": "Beside the copy",
+        "cancel": "Cancel",
+        "submit": "Update copy",
+        "working": "Drawing the copy...",
+        "done": "Checked copy updated",
+        "failed": "Could not update the checked copy. Please try again."
+    },
+    "notes": {
+        "title": "Pen notes on the copy",
+        "hint": "Remove a note or rewrite it. Applied when you update the checked copy.",
+        "empty": "The AI wrote no notes for this question.",
+        "remove": "Remove",
+        "undo": "Keep",
+        "removed": "Removed",
+        "edit": "Rewrite",
+        "editPlaceholder": "What the note should say",
+        "styles": {
+            "tick": "Tick",
+            "cross": "Cross",
+            "circle": "Circle",
+            "strike": "Strike-through",
+            "strikethrough": "Strike-through",
+            "underline": "Underline",
+            "margin_note": "Margin note",
+            "region_note": "Note",
+            "brace": "Bracket",
+            "summary": "Summary",
+            "feedback": "Remark",
+            "deduction_reason": "Deduction reason",
+            "language": "Language mark",
+            "other": "Mark"
+        }
+    },
+    "manual": {
+        "remarksFor": "Remarks for Q{{number}}",
+        "remarksPlaceholder": "Remarks for this question (optional)",
+        "overallRemarks": "Remarks"
+    },
+    "aiImport": {
+        "button": "Bring AI marks",
+        "working": "Bringing AI marks...",
+        "hint": "Put the AI check's ticks, notes and marks on this copy so you can move, edit or delete them.",
+        "done": "{{marks}} AI marks placed on the copy; {{questions}} question marks filled in. Move, edit or delete them like your own.",
+        "none": "This copy has no finished AI check yet.",
+        "already": "AI marks are already on this copy.",
+        "failed": "Could not bring the AI marks. Please try again."
+    }
+}

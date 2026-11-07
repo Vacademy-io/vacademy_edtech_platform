@@ -1,0 +1,48 @@
+{
+    "heading": "Generate coding question with AI",
+    "errors": {
+        "generationFailed": "Generation failed. Please try again."
+    },
+    "working": {
+        "generating": "Generating the question…",
+        "verifying": "Verifying test cases against the reference solution…",
+        "etaHint": "This usually takes 10–30 seconds."
+    },
+    "review": {
+        "testFallbackLabel": "Test",
+        "summaryLine_one": "{{languages}} · {{count}} test case · model {{model}}",
+        "summaryLine_other": "{{languages}} · {{count}} test cases · model {{model}}",
+        "verifySummary_one": "Ran the reference solution against the {{count}} test: {{passed}} matched",
+        "verifySummary_other": "Ran the reference solution against all {{count}} tests: {{passed}} matched",
+        "autoCorrectSuffix_one": " · {{count}} will be auto-corrected to the reference output",
+        "autoCorrectSuffix_other": " · {{count}} will be auto-corrected to the reference output",
+        "status": {
+            "verified": "(verified)",
+            "errored": "(solution errored — kept AI output)",
+            "mismatch": "(mismatch — using reference output)"
+        },
+        "aiExpected": "AI expected",
+        "referenceOutput": "Reference output",
+        "empty": "(empty)",
+        "applyHint": "Apply to load this into the Problem / Test Cases / Settings / Starter Code tabs, where you can review and edit before saving."
+    },
+    "input": {
+        "describeLabel": "Describe the problem",
+        "describePlaceholder": "e.g. Given an array and a target, return the indices of the two numbers that add up to the target. Rough is fine — the AI fills in the I/O format, tests, and starter code.",
+        "languagesLabel": "Languages",
+        "difficultyLabel": "Difficulty",
+        "difficulties": {
+            "easy": "Easy",
+            "medium": "Medium",
+            "hard": "Hard"
+        },
+        "testCasesLabel": "Test cases",
+        "insufficientCredits": "Not enough AI credits for this action."
+    },
+    "footer": {
+        "startOver": "Start over",
+        "applyToQuestion": "Apply to question",
+        "cancel": "Cancel",
+        "generate": "Generate"
+    }
+}

@@ -1,0 +1,13 @@
+{
+    "provideReattempt": "السماح بمحاولة إعادة",
+    "revaluate": "إعادة التقييم",
+    "questionWise": "حسب السؤال",
+    "entireAssessment": "التقييم الكامل",
+    "releaseResult": "نشر النتيجة",
+    "studentsCount_zero": "لا يوجد طلاب ({{count}})",
+    "studentsCount_one": "طالب واحد ({{count}})",
+    "studentsCount_two": "طالبان ({{count}})",
+    "studentsCount_few": "{{count}} طلاب",
+    "studentsCount_many": "{{count}} طالبًا",
+    "studentsCount_other": "{{count}} طالب"
+}

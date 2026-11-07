@@ -1,0 +1,12 @@
+{
+    "adjustmentType": {
+        "earning": "अर्जन",
+        "deduction": "कटौती"
+    },
+    "runScope": {
+        "regular": "नियमित",
+        "offCycle": "ऑफ-साइकल",
+        "fnf": "फुल एंड फाइनल",
+        "bonus": "बोनस"
+    }
+}

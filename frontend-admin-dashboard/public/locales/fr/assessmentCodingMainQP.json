@@ -1,0 +1,8 @@
+{
+    "emptyState": {
+        "noQuestions": "Veuillez ajouter une question pour afficher les détails de la question"
+    },
+    "survey": {
+        "notSupported": "Les questions de codage ne sont pas prises en charge dans les enquêtes."
+    }
+}

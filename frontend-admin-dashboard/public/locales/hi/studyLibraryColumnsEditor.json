@@ -1,0 +1,14 @@
+{
+    "columnsLayout": "कॉलम लेआउट",
+    "columnsCount_one": "{{count}} कॉलम",
+    "columnsCount_other": "{{count}} कॉलम",
+    "gapTight": "संकुचित",
+    "gapNormal": "सामान्य",
+    "gapWide": "चौड़ा",
+    "gapExtraWide": "अतिरिक्त चौड़ा",
+    "preview": "पूर्वावलोकन",
+    "edit": "संपादित करें",
+    "columnLabel": "कॉलम {{number}}",
+    "columnPlaceholder": "कॉलम {{number}} — टेक्स्ट और/या छवि…",
+    "emptyColumn": "कॉलम खाली है"
+}

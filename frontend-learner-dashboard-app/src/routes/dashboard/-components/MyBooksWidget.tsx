@@ -7,6 +7,9 @@ import { BASE_URL, urlPublicCourseDetails } from "@/constants/urls";
 import authenticatedAxiosInstance from "@/lib/auth/axiosInstance";
 import { cn } from "@/lib/utils";
 import { BookOpen, CaretLeft, CaretRight } from "@phosphor-icons/react";
+import { usePlayTheme } from "@/hooks/use-play-theme";
+import { useCleanerPlayTheme } from "@/hooks/use-cleaner-play-theme";
+import iconBooks from "@/assets/cleaner-play/icon-books.webp";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { shouldHidePaidPurchaseUI } from "@/utils/ios-iap-compliance";
@@ -27,6 +30,8 @@ export const MyBooksWidget: React.FC<MyBooksWidgetProps> = ({ className }) => {
     const { t } = useTranslation("dashboard");
     const [initialLoading, setInitialLoading] = useState(true);
     const [loading, setLoading] = useState(false);
+    const isPlay = usePlayTheme();
+    const isCleanerPlay = useCleanerPlayTheme();
     const [books, setBooks] = useState<BookPackage[]>([]);
     const [activeTab, setActiveTab] = useState("purchased");
     const [page, setPage] = useState(0);
@@ -141,10 +146,10 @@ export const MyBooksWidget: React.FC<MyBooksWidgetProps> = ({ className }) => {
     if (initialLoading) {
         return (
             <Card className={cn("border border-border shadow-sm bg-card", "cp-card", className)}>
-                <CardHeader className="p-4 pb-2">
+                <CardHeader className="p-card pb-2">
                     <Skeleton className="h-5 w-32" />
                 </CardHeader>
-                <CardContent className="p-4">
+                <CardContent className="p-card">
                     <Skeleton className="h-16 w-full rounded-lg" />
                 </CardContent>
             </Card>
@@ -158,13 +163,22 @@ export const MyBooksWidget: React.FC<MyBooksWidgetProps> = ({ className }) => {
 
     return (
         <Card className={cn("border border-border shadow-sm bg-card", "cp-card", className)}>
-            <CardHeader className="p-4 pb-2">
+            <CardHeader className="p-card pb-2">
                 <CardTitle className="text-sm font-bold flex items-center gap-2 text-primary uppercase">
-                    <BookOpen className="w-5 h-5" />
+                    {isPlay || isCleanerPlay ? (
+                        <img
+                            src={iconBooks}
+                            alt=""
+                            aria-hidden="true"
+                            className="h-9 w-9 object-contain"
+                        />
+                    ) : (
+                        <BookOpen className="w-5 h-5" />
+                    )}
                     {t("books.title")}
                 </CardTitle>
             </CardHeader>
-            <CardContent className="p-4 pt-0">
+            <CardContent className="p-card pt-0">
                 <Tabs value={activeTab} className="w-full" onValueChange={(v) => {
                     setActiveTab(v);
                     setPage(0);

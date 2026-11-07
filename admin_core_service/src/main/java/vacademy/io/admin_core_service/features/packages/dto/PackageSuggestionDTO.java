@@ -20,9 +20,14 @@ public class PackageSuggestionDTO {
     private String levelName;
     private String sessionId;
     private String sessionName;
+    /**
+     * The batch's own name. Null when the batch was never named — the caller then
+     * falls back to level + course, which is all that was ever sent before.
+     */
+    private String batchName;
 
     public PackageSuggestionDTO(String packageId, String packageName, String packageSessionId, String levelId,
-            String levelName, String sessionId, String sessionName) {
+            String levelName, String sessionId, String sessionName, String batchName) {
         this.packageId = packageId;
         this.packageName = packageName;
         this.packageSessionId = packageSessionId;
@@ -30,5 +35,6 @@ public class PackageSuggestionDTO {
         this.levelName = levelName;
         this.sessionId = sessionId;
         this.sessionName = sessionName;
+        this.batchName = batchName;
     }
 }

@@ -1,0 +1,73 @@
+{
+    "header": {
+        "configureTitle": "Configurer : {{label}}"
+    },
+    "batchPicker": {
+        "singleLabel": "À quel groupe cela doit-il s'appliquer ?",
+        "multiLabel": "À quels groupes cela doit-il s'appliquer ? (Sélectionnez-en un ou plusieurs)",
+        "pickOption": "— Choisir un groupe —",
+        "loading": "Chargement des groupes…",
+        "empty": "Aucun groupe trouvé pour le moment.",
+        "untitled": "Groupe sans titre"
+    },
+    "templateQuestion": {
+        "label": "Quel message envoyer ?"
+    },
+    "templateDropdown": {
+        "loadFailedTitle": "Impossible de charger vos modèles d'e-mail.",
+        "loadFailedHint": "Il peut s'agir d'un problème réseau ou votre session a expiré.",
+        "tryAgain": "Réessayer",
+        "loading": "Chargement de vos messages…",
+        "emptyOption": "Aucun message pour l'instant — utilisez l'exemple ci-dessous",
+        "pickOption": "— Choisir un message —",
+        "emptyHint": "Vous n'avez pas encore créé de message e-mail — pas de souci, cliquez ci-dessous pour ajouter un modèle prêt à l'emploi à votre bibliothèque.",
+        "sample": {
+            "adding": "Ajout en cours…",
+            "addWhenEmpty": "Ajouter le message exemple : « {{name}} »",
+            "addWhenExists": "Vous n'en avez pas ? Utilisez notre exemple : « {{name}} »",
+            "hint": "Nous l'ajouterons à votre bibliothèque de modèles — vous pourrez le modifier plus tard."
+        },
+        "noTemplatesNoSample": "Vous n'avez encore enregistré aucun message e-mail. Allez dans <1>Paramètres → Paramètres des modèles</1> pour en créer un, puis revenez ici."
+    },
+    "daysAfter": {
+        "label": "Combien de jours après qu'une personne remplit le formulaire faut-il envoyer le suivi ?",
+        "suffix": "jour(s) plus tard"
+    },
+    "daysBefore": {
+        "label": "Combien de jours avant l'expiration devons-nous envoyer le rappel ?",
+        "suffix": "jour(s) avant"
+    },
+    "schedule": {
+        "label": "Quand cela doit-il s'exécuter ?",
+        "every": "Chaque",
+        "day": "jour",
+        "week": "semaine",
+        "on": "le",
+        "at": "à",
+        "am": "AM",
+        "pm": "PM",
+        "timezoneNote": "Fuseau horaire : heure standard de l'Inde (IST)"
+    },
+    "dayOptions": {
+        "monday": "Lundi",
+        "tuesday": "Mardi",
+        "wednesday": "Mercredi",
+        "thursday": "Jeudi",
+        "friday": "Vendredi",
+        "saturday": "Samedi",
+        "sunday": "Dimanche"
+    },
+    "actions": {
+        "cancel": "Annuler",
+        "turningOn": "Activation…",
+        "turnOn": "Activer l'automatisation"
+    },
+    "toasts": {
+        "noSampleTemplate": "Aucun modèle d'exemple disponible pour cette recette pour l'instant.",
+        "sampleAdded": "« {{name}} » ajouté à votre bibliothèque de modèles.",
+        "sampleAddFailed": "Impossible d'ajouter le modèle d'exemple. Veuillez réessayer.",
+        "noInstitute": "Impossible de déterminer votre établissement. Veuillez recharger la page et réessayer.",
+        "automationOn": "Automatisation activée.",
+        "saveFailed": "Impossible d'activer l'automatisation : {{message}}"
+    }
+}

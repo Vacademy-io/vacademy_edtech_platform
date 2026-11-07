@@ -1,0 +1,14 @@
+{
+    "showReplies_zero": "عرض الردود ({{count}})",
+    "showReplies_one": "عرض رد واحد ({{count}})",
+    "showReplies_two": "عرض ردين ({{count}})",
+    "showReplies_few": "عرض {{count}} ردود",
+    "showReplies_many": "عرض {{count}} ردًا",
+    "showReplies_other": "عرض {{count}} رد",
+    "hideReplies_zero": "إخفاء الردود ({{count}})",
+    "hideReplies_one": "إخفاء رد واحد ({{count}})",
+    "hideReplies_two": "إخفاء ردين ({{count}})",
+    "hideReplies_few": "إخفاء {{count}} ردود",
+    "hideReplies_many": "إخفاء {{count}} ردًا",
+    "hideReplies_other": "إخفاء {{count}} رد"
+}

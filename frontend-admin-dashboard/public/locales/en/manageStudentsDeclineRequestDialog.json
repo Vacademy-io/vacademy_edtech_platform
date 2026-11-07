@@ -1,0 +1,15 @@
+{
+    "dialog": {
+        "title": "Decline Request",
+        "confirmText": "Are you sure you want to decline request for {{name}}?",
+        "emailNotice": "This will decline the request to the selected students via email."
+    },
+    "buttons": {
+        "cancel": "Cancel",
+        "decline": "Decline Request"
+    },
+    "toasts": {
+        "declineSuccess": "Request declined successfully",
+        "declineFailed": "Failed to decline request"
+    }
+}

@@ -16,6 +16,10 @@ export interface LearnerAccessChangeRequest {
     extend_by_days?: number;
     access_days_from_enrollment?: number;
     new_expiry_date?: string;
+    /** Move the learner's join date (enrolment date). Independent of the expiry fields. */
+    new_join_date?: string;
+    /** Whether the plan's term and next charge follow the join date. Defaults to true. */
+    shift_plan_window?: boolean;
     make_unlimited?: boolean;
     extend_from_today?: boolean;
     reactivate_expired?: boolean;
@@ -32,6 +36,9 @@ export interface LearnerAccessChangeItem {
     action: string | null;
     previous_expiry_date: string | null;
     new_expiry_date: string | null;
+    previous_join_date?: string | null;
+    new_join_date?: string | null;
+    new_plan_end_date?: string | null;
     days_delta: number | null;
     /** Days left after the change; null means unlimited. */
     remaining_days: number | null;
@@ -58,6 +65,9 @@ export interface LearnerAccessLogEntry {
     action: string;
     previous_expiry_date: string | null;
     new_expiry_date: string | null;
+    previous_join_date?: string | null;
+    new_join_date?: string | null;
+    new_plan_end_date?: string | null;
     days_delta: number | null;
     access_days: number | null;
     user_plan_id: string | null;

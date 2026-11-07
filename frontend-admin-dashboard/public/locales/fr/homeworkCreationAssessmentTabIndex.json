@@ -1,0 +1,31 @@
+{
+    "heading": {
+        "title": "Détails du devoir"
+    },
+    "helmet": {
+        "title": "Détails du devoir",
+        "description": "Cette page affiche tous les détails relatifs à ce devoir."
+    },
+    "actions": {
+        "previewHomework": "Aperçu du devoir",
+        "exportOffline": "Exporter hors ligne",
+        "noSectionsError": "Aucune section n'a été ajoutée pour ce devoir."
+    },
+    "badge": {
+        "visibility": {
+            "PRIVATE": "Privé",
+            "PUBLIC": "Public"
+        },
+        "status": {
+            "COMPLETED": "Terminé"
+        }
+    },
+    "tabs": {
+        "overview": "Aperçu",
+        "submissions": "Soumissions",
+        "basicInfo": "Informations de base",
+        "questions": "Questions",
+        "participants": "Participants",
+        "accessControl": "Contrôle d'accès"
+    }
+}

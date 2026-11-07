@@ -1,4 +1,5 @@
 import React from "react";
+import { useTranslation } from "react-i18next";
 import { BannerProps } from "../../-types/course-catalogue-types";
 
 export const BannerComponent: React.FC<BannerProps> = ({
@@ -6,6 +7,8 @@ export const BannerComponent: React.FC<BannerProps> = ({
   media,
   alignment,
 }) => {
+  const { t } = useTranslation("coursePlayerB");
+
   const getAlignmentClass = () => {
     switch (alignment) {
       case "left":
@@ -25,7 +28,7 @@ export const BannerComponent: React.FC<BannerProps> = ({
         <div className="absolute inset-0">
           <img
             src={media.url}
-            alt="Banner"
+            alt={t("banner.alt")}
             className="w-full h-full object-cover"
             onError={(e) => {
               e.currentTarget.style.display = "none";

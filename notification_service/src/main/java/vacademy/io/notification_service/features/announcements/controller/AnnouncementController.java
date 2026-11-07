@@ -6,10 +6,14 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
+import vacademy.io.common.auth.model.CustomUserDetails;
 import vacademy.io.notification_service.features.announcements.dto.*;
 import vacademy.io.notification_service.features.announcements.enums.AnnouncementStatus;
 import vacademy.io.notification_service.features.announcements.enums.ModeType;
+import vacademy.io.notification_service.features.announcements.security.AnnouncementAccessGuard;
+import vacademy.io.notification_service.features.announcements.service.AnnouncementDeliveryService;
 import vacademy.io.notification_service.features.announcements.service.AnnouncementService;
 import vacademy.io.notification_service.features.announcements.service.EmailConfigurationService;
 
@@ -30,6 +34,10 @@ public class AnnouncementController {
 
     private final AnnouncementService announcementService;
     private final EmailConfigurationService emailConfigurationService;
+    private final AnnouncementDeliveryService deliveryService;
+    // Everything except creation is an admin-dashboard call and checks its caller; creation
+    // stays open for the services that POST announcements without a user token.
+    private final AnnouncementAccessGuard accessGuard;
 
     /**
      * Create a new announcement - Main API for other services
@@ -52,7 +60,10 @@ public class AnnouncementController {
      */
     @GetMapping("/{announcementId}")
     public ResponseEntity<AnnouncementResponse> getAnnouncement(
+            @AuthenticationPrincipal CustomUserDetails user,
+            @RequestHeader(value = "clientId", required = false) String clientId,
             @PathVariable @NotBlank(message = "Announcement ID is required") String announcementId) {
+        accessGuard.requireStaffForAnnouncement(user, clientId, announcementId);
         try {
             AnnouncementResponse response = announcementService.getAnnouncement(announcementId);
             return ResponseEntity.ok(response);
@@ -67,11 +78,14 @@ public class AnnouncementController {
      */
     @GetMapping("/institute/{instituteId}")
     public ResponseEntity<Page<AnnouncementResponse>> getAnnouncementsByInstitute(
+            @AuthenticationPrincipal CustomUserDetails user,
+            @RequestHeader(value = "clientId", required = false) String clientId,
             @PathVariable String instituteId,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size,
             @RequestParam(required = false) String status) {
 
+        accessGuard.requireStaff(user, clientId, instituteId);
         try {
             Pageable pageable = PageRequest.of(page, size);
             Page<AnnouncementResponse> response;
@@ -96,11 +110,14 @@ public class AnnouncementController {
      */
     @GetMapping("/institute/{instituteId}/planned")
     public ResponseEntity<Page<AnnouncementCalendarItem>> getPlannedAnnouncements(
+            @AuthenticationPrincipal CustomUserDetails user,
+            @RequestHeader(value = "clientId", required = false) String clientId,
             @PathVariable String instituteId,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size,
             @RequestParam(required = false) String from,
             @RequestParam(required = false) String to) {
+        accessGuard.requireStaff(user, clientId, instituteId);
         try {
             Pageable pageable = PageRequest.of(page, size);
             java.time.LocalDateTime fromDate = parseFlexibleDateTime(from);
@@ -118,11 +135,14 @@ public class AnnouncementController {
      */
     @GetMapping("/institute/{instituteId}/past")
     public ResponseEntity<Page<AnnouncementCalendarItem>> getPastAnnouncements(
+            @AuthenticationPrincipal CustomUserDetails user,
+            @RequestHeader(value = "clientId", required = false) String clientId,
             @PathVariable String instituteId,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size,
             @RequestParam(required = false) String from,
             @RequestParam(required = false) String to) {
+        accessGuard.requireStaff(user, clientId, instituteId);
         try {
             Pageable pageable = PageRequest.of(page, size);
             java.time.LocalDateTime fromDate = parseFlexibleDateTime(from);
@@ -159,8 +179,11 @@ public class AnnouncementController {
      */
     @PutMapping("/{announcementId}")
     public ResponseEntity<AnnouncementResponse> updateAnnouncement(
+            @AuthenticationPrincipal CustomUserDetails user,
+            @RequestHeader(value = "clientId", required = false) String clientId,
             @PathVariable @NotBlank(message = "Announcement ID is required") String announcementId,
             @Valid @RequestBody CreateAnnouncementRequest request) {
+        accessGuard.requireStaffForAnnouncement(user, clientId, announcementId);
         try {
             AnnouncementResponse response = announcementService.updateAnnouncement(announcementId, request);
             return ResponseEntity.ok(response);
@@ -175,9 +198,11 @@ public class AnnouncementController {
      */
     @PutMapping("/{announcementId}/status")
     public ResponseEntity<AnnouncementResponse> updateAnnouncementStatus(
+            @AuthenticationPrincipal CustomUserDetails user,
+            @RequestHeader(value = "clientId", required = false) String clientId,
             @PathVariable String announcementId,
             @RequestBody Map<String, String> statusUpdate) {
-
+        accessGuard.requireStaffForAnnouncement(user, clientId, announcementId);
         try {
             String statusValue = statusUpdate.get("status");
             AnnouncementStatus status = AnnouncementStatus.valueOf(statusValue.toUpperCase());
@@ -194,7 +219,11 @@ public class AnnouncementController {
      * Delete announcement
      */
     @DeleteMapping("/{announcementId}")
-    public ResponseEntity<Void> deleteAnnouncement(@PathVariable String announcementId) {
+    public ResponseEntity<Void> deleteAnnouncement(
+            @AuthenticationPrincipal CustomUserDetails user,
+            @RequestHeader(value = "clientId", required = false) String clientId,
+            @PathVariable String announcementId) {
+        accessGuard.requireStaffForAnnouncement(user, clientId, announcementId);
         try {
             announcementService.deleteAnnouncement(announcementId);
             return ResponseEntity.noContent().build();
@@ -209,8 +238,11 @@ public class AnnouncementController {
      */
     @PostMapping("/{announcementId}/submit-approval")
     public ResponseEntity<AnnouncementResponse> submitForApproval(
+            @AuthenticationPrincipal CustomUserDetails user,
+            @RequestHeader(value = "clientId", required = false) String clientId,
             @PathVariable String announcementId,
             @RequestParam String submittedByRole) {
+        accessGuard.requireStaffForAnnouncement(user, clientId, announcementId);
         try {
             AnnouncementResponse response = announcementService.submitForApproval(announcementId, submittedByRole);
             return ResponseEntity.ok(response);
@@ -225,10 +257,14 @@ public class AnnouncementController {
      */
     @PostMapping("/{announcementId}/approve")
     public ResponseEntity<AnnouncementResponse> approveAnnouncement(
+            @AuthenticationPrincipal CustomUserDetails user,
+            @RequestHeader(value = "clientId", required = false) String clientId,
             @PathVariable String announcementId,
-            @RequestParam String approvedByRole) {
+            // Ignored: the role comes from the caller's token. Kept so existing clients still bind.
+            @RequestParam(required = false) String approvedByRole) {
+        accessGuard.requireAdminForAnnouncement(user, clientId, announcementId);
         try {
-            AnnouncementResponse response = announcementService.approveAnnouncement(announcementId, approvedByRole);
+            AnnouncementResponse response = announcementService.approveAnnouncement(announcementId, "ADMIN");
             return ResponseEntity.ok(response);
         } catch (Exception e) {
             log.error("Error approving announcement: {}", announcementId, e);
@@ -241,7 +277,10 @@ public class AnnouncementController {
      */
     @GetMapping("/email-configurations/{instituteId}")
     public ResponseEntity<List<EmailConfigDTO>> getEmailConfigurations(
+            @AuthenticationPrincipal CustomUserDetails user,
+            @RequestHeader(value = "clientId", required = false) String clientId,
             @PathVariable String instituteId) {
+        accessGuard.requireStaff(user, clientId, instituteId);
         try {
             List<EmailConfigDTO> configurations = emailConfigurationService.getEmailConfigurations(instituteId);
             return ResponseEntity.ok(configurations);
@@ -331,9 +370,13 @@ public class AnnouncementController {
      */
     @PostMapping("/email-configurations/{instituteId}")
     public ResponseEntity<?> addEmailConfiguration(
+            @AuthenticationPrincipal CustomUserDetails user,
+            @RequestHeader(value = "clientId", required = false) String clientId,
             @PathVariable String instituteId,
             @RequestBody EmailConfigDTO emailConfig,
             @RequestHeader(value = "Authorization", required = false) String authToken) {
+        // Staff, not ADMIN-only: non-admin roles can be given the Settings page (ui.showSettings).
+        accessGuard.requireStaff(user, clientId, instituteId);
         try {
             log.info("Received request to add email configuration for institute: {}, config: {}", instituteId, emailConfig);
             log.info("Auth token provided: {}", authToken != null ? "Yes" : "No");
@@ -370,10 +413,14 @@ public class AnnouncementController {
      */
     @PutMapping("/email-configurations/{instituteId}/{emailType}")
     public ResponseEntity<?> updateEmailConfiguration(
+            @AuthenticationPrincipal CustomUserDetails user,
+            @RequestHeader(value = "clientId", required = false) String clientId,
             @PathVariable String instituteId,
             @PathVariable String emailType,
             @RequestBody EmailConfigDTO emailConfig,
             @RequestHeader(value = "Authorization", required = false) String authToken) {
+        // Staff, not ADMIN-only: non-admin roles can be given the Settings page (ui.showSettings).
+        accessGuard.requireStaff(user, clientId, instituteId);
         try {
             String token = null;
             if (authToken != null && authToken.startsWith("Bearer ")) {
@@ -400,9 +447,13 @@ public class AnnouncementController {
      */
     @DeleteMapping("/email-configurations/{instituteId}/{emailType}")
     public ResponseEntity<?> deleteEmailConfiguration(
+            @AuthenticationPrincipal CustomUserDetails user,
+            @RequestHeader(value = "clientId", required = false) String clientId,
             @PathVariable String instituteId,
             @PathVariable String emailType,
             @RequestHeader(value = "Authorization", required = false) String authToken) {
+        // Staff, not ADMIN-only: non-admin roles can be given the Settings page (ui.showSettings).
+        accessGuard.requireStaff(user, clientId, instituteId);
         try {
             String token = null;
             if (authToken != null && authToken.startsWith("Bearer ")) {
@@ -429,11 +480,15 @@ public class AnnouncementController {
      */
     @PostMapping("/{announcementId}/reject")
     public ResponseEntity<AnnouncementResponse> rejectAnnouncement(
+            @AuthenticationPrincipal CustomUserDetails user,
+            @RequestHeader(value = "clientId", required = false) String clientId,
             @PathVariable String announcementId,
-            @RequestParam String rejectedByRole,
+            // Ignored: the role comes from the caller's token. Kept so existing clients still bind.
+            @RequestParam(required = false) String rejectedByRole,
             @RequestParam(required = false) String reason) {
+        accessGuard.requireAdminForAnnouncement(user, clientId, announcementId);
         try {
-            AnnouncementResponse response = announcementService.rejectAnnouncement(announcementId, rejectedByRole, reason);
+            AnnouncementResponse response = announcementService.rejectAnnouncement(announcementId, "ADMIN", reason);
             return ResponseEntity.ok(response);
         } catch (Exception e) {
             log.error("Error rejecting announcement: {}", announcementId, e);
@@ -445,7 +500,11 @@ public class AnnouncementController {
      * Manually trigger announcement delivery (for testing/admin use)
      */
     @PostMapping("/{announcementId}/deliver")
-    public ResponseEntity<Map<String, String>> deliverAnnouncement(@PathVariable String announcementId) {
+    public ResponseEntity<Map<String, String>> deliverAnnouncement(
+            @AuthenticationPrincipal CustomUserDetails user,
+            @RequestHeader(value = "clientId", required = false) String clientId,
+            @PathVariable String announcementId) {
+        accessGuard.requireStaffForAnnouncement(user, clientId, announcementId);
         try {
             // Guard: delivery will internally be a no-op if pending approval or rejected
             announcementService.processAnnouncementDelivery(announcementId);
@@ -458,10 +517,70 @@ public class AnnouncementController {
     }
 
     /**
+     * Who an unsaved announcement would reach — the create / edit forms call this with the
+     * recipients they would submit. Nothing is saved or sent.
+     */
+    @PostMapping("/recipients/preview")
+    public ResponseEntity<RecipientPreviewResponse> previewRecipients(
+            @AuthenticationPrincipal CustomUserDetails user,
+            @RequestHeader(value = "clientId", required = false) String clientId,
+            @Valid @RequestBody RecipientPreviewRequest request) {
+        accessGuard.requireStaff(user, clientId, request.getInstituteId());
+        try {
+            return ResponseEntity.ok(announcementService.previewRecipients(request));
+        } catch (Exception e) {
+            log.error("Error previewing recipients for institute: {}", request.getInstituteId(), e);
+            return ResponseEntity.badRequest().build();
+        }
+    }
+
+    /**
+     * Who a saved (e.g. scheduled) announcement would reach if it were delivered now. Unlike
+     * {@code /{id}/recipients}, which lists messages already created by a send.
+     */
+    @GetMapping("/{announcementId}/recipients/preview")
+    public ResponseEntity<RecipientPreviewResponse> previewAnnouncementRecipients(
+            @AuthenticationPrincipal CustomUserDetails user,
+            @RequestHeader(value = "clientId", required = false) String clientId,
+            @PathVariable String announcementId,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size) {
+        accessGuard.requireStaffForAnnouncement(user, clientId, announcementId);
+        try {
+            return ResponseEntity.ok(announcementService.previewRecipients(announcementId, page, size));
+        } catch (Exception e) {
+            log.error("Error previewing recipients for announcement: {}", announcementId, e);
+            return ResponseEntity.badRequest().build();
+        }
+    }
+
+    /**
+     * Send the announcement's email to a few test addresses (max 10). Works for drafts and saved
+     * announcements alike; nothing is persisted and the real audience is not contacted.
+     */
+    @PostMapping("/test-send")
+    public ResponseEntity<TestSendAnnouncementResponse> testSendAnnouncement(
+            @AuthenticationPrincipal CustomUserDetails user,
+            @RequestHeader(value = "clientId", required = false) String clientId,
+            @Valid @RequestBody TestSendAnnouncementRequest request) {
+        accessGuard.requireStaff(user, clientId, request.getInstituteId());
+        try {
+            return ResponseEntity.ok(deliveryService.sendTestEmails(request));
+        } catch (Exception e) {
+            log.error("Error sending test announcement for institute: {}", request.getInstituteId(), e);
+            return ResponseEntity.badRequest().build();
+        }
+    }
+
+    /**
      * Get announcement delivery statistics
      */
     @GetMapping("/{announcementId}/stats")
-    public ResponseEntity<AnnouncementResponse.AnnouncementStatsResponse> getAnnouncementStats(@PathVariable String announcementId) {
+    public ResponseEntity<AnnouncementResponse.AnnouncementStatsResponse> getAnnouncementStats(
+            @AuthenticationPrincipal CustomUserDetails user,
+            @RequestHeader(value = "clientId", required = false) String clientId,
+            @PathVariable String announcementId) {
+        accessGuard.requireStaffForAnnouncement(user, clientId, announcementId);
         try {
             return ResponseEntity.ok(announcementService.getAnnouncementStats(announcementId));
         } catch (Exception e) {
@@ -476,10 +595,13 @@ public class AnnouncementController {
      */
     @GetMapping("/{announcementId}/recipients")
     public ResponseEntity<Page<AnnouncementRecipientInteractionResponse>> getRecipientInteractions(
+            @AuthenticationPrincipal CustomUserDetails user,
+            @RequestHeader(value = "clientId", required = false) String clientId,
             @PathVariable String announcementId,
             @RequestParam(required = false) String modeType,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size) {
+        accessGuard.requireStaffForAnnouncement(user, clientId, announcementId);
         try {
             ModeType mode = modeType != null ? ModeType.valueOf(modeType.toUpperCase()) : null;
             Pageable pageable = PageRequest.of(page, size);
@@ -494,7 +616,11 @@ public class AnnouncementController {
      * Debug endpoint to check email tracking data for an announcement
      */
     @GetMapping("/{announcementId}/debug-email-tracking")
-    public ResponseEntity<?> debugEmailTracking(@PathVariable String announcementId) {
+    public ResponseEntity<?> debugEmailTracking(
+            @AuthenticationPrincipal CustomUserDetails user,
+            @RequestHeader(value = "clientId", required = false) String clientId,
+            @PathVariable String announcementId) {
+        accessGuard.requireStaffForAnnouncement(user, clientId, announcementId);
         try {
             return ResponseEntity.ok(announcementService.debugEmailTracking(announcementId));
         } catch (Exception e) {
@@ -507,7 +633,11 @@ public class AnnouncementController {
      * Test endpoint to check institute settings parsing
      */
     @GetMapping("/email-configurations/{instituteId}/test-settings")
-    public ResponseEntity<?> testSettingsParsing(@PathVariable String instituteId) {
+    public ResponseEntity<?> testSettingsParsing(
+            @AuthenticationPrincipal CustomUserDetails user,
+            @RequestHeader(value = "clientId", required = false) String clientId,
+            @PathVariable String instituteId) {
+        accessGuard.requireStaff(user, clientId, instituteId);
         try {
             // Use the existing getEmailConfigurations method to test parsing
             List<EmailConfigDTO> configs = emailConfigurationService.getEmailConfigurations(instituteId);
@@ -529,8 +659,11 @@ public class AnnouncementController {
      */
     @PostMapping("/email-configurations/{instituteId}/restore-defaults")
     public ResponseEntity<?> restoreDefaultEmailConfigurations(
+            @AuthenticationPrincipal CustomUserDetails user,
+            @RequestHeader(value = "clientId", required = false) String clientId,
             @PathVariable String instituteId,
             @RequestHeader(value = "Authorization", required = false) String authToken) {
+        accessGuard.requireAdmin(user, clientId, instituteId);
         try {
             log.info("Restoring default email configurations for institute: {}", instituteId);
 

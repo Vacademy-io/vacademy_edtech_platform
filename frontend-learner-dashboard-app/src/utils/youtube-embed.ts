@@ -1,3 +1,5 @@
+import { Capacitor } from "@capacitor/core";
+
 /**
  * Helpers for embedding YouTube inside the Capacitor WebView / Electron shell.
  *
@@ -40,5 +42,31 @@ export function appendYouTubeEmbedOrigin(embedUrl: string): string {
     widget_referrer: origin,
   });
   const separator = embedUrl.includes("?") ? "&" : "?";
-  return `${embedUrl}${separator}${params.toString()}`;
+  return routeYouTubeEmbedThroughBridge(`${embedUrl}${separator}${params.toString()}`);
+}
+
+/**
+ * The origin params above are not enough on native iOS: YouTube also checks the
+ * Referer header, and WebKit sends none from capacitor://localhost, so the
+ * embed still fails with Error 153. There the player is served through
+ * functions/embed/[videoId].ts on an https learner host, which nests the real
+ * embed and relays the IFrame API's messages. Every learner host runs that same
+ * Pages project; a fixed one keeps the app independent of a brand's DNS.
+ */
+const YOUTUBE_BRIDGE_ORIGIN =
+  import.meta.env.VITE_YOUTUBE_BRIDGE_ORIGIN || "https://learner.vacademy.io";
+
+/** IFrame API `host` for native iOS; undefined (YouTube's own host) everywhere else. */
+export function getYouTubeBridgeHost(): string | undefined {
+  return Capacitor.getPlatform() === "ios" ? YOUTUBE_BRIDGE_ORIGIN : undefined;
+}
+
+/** Points a raw youtube.com / youtube-nocookie.com `/embed/` URL at the bridge on native iOS. */
+export function routeYouTubeEmbedThroughBridge(embedUrl: string): string {
+  const host = getYouTubeBridgeHost();
+  if (!host) return embedUrl;
+  return embedUrl.replace(
+    /^https:\/\/www\.youtube(?:-nocookie)?\.com\/embed\//,
+    `${host}/embed/`,
+  );
 }

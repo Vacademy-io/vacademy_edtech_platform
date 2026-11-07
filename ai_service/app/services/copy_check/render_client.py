@@ -19,6 +19,10 @@ class OcrCancelled(Exception):
     """Raised by submit_and_wait when the caller's cancellation_check fires."""
 
 
+class RenderWorkerBusy(Exception):
+    """render_worker answered 429: every job slot is taken right now."""
+
+
 class CopyCheckRenderClient:
     def __init__(self, base_url: str, render_key: str = ""):
         self.base_url = base_url.rstrip("/")
@@ -44,8 +48,46 @@ class CopyCheckRenderClient:
                 json=payload,
                 headers=self._headers(),
             )
+            if resp.status_code == 429:
+                raise RenderWorkerBusy(resp.text[:200])
             resp.raise_for_status()
             return resp.json()["job_id"]
+
+    async def submit_when_free(
+        self,
+        pdf_url: str,
+        dpi: int = 200,
+        busy_wait: float = 600.0,
+        retry_interval: float = 10.0,
+        cancellation_check: Optional[Callable[[], bool]] = None,
+    ) -> str:
+        """Submit, waiting out a busy render_worker instead of failing.
+
+        render_worker runs at most MAX_CONCURRENT_JOBS (2 in prod) of ANY kind
+        - slide renders, KB indexing, transcription and these OCR jobs share
+        the slots - and answers 429 past that. Before this a bulk check with
+        three copies in flight failed every third copy on the spot; a copy is
+        not wrong because the worker is busy, so wait for a slot.
+        """
+        deadline = asyncio.get_event_loop().time() + busy_wait
+        waited = False
+        while True:
+            try:
+                job_id = await self.submit(pdf_url, dpi=dpi)
+                if waited:
+                    logger.info("render_worker slot freed; OCR job %s submitted", job_id)
+                return job_id
+            except RenderWorkerBusy as busy:
+                if asyncio.get_event_loop().time() > deadline:
+                    raise TimeoutError(
+                        f"render_worker stayed busy for {int(busy_wait)}s: {busy}"
+                    ) from busy
+                if cancellation_check is not None and cancellation_check():
+                    raise OcrCancelled("cancelled while waiting for a render_worker slot")
+                if not waited:
+                    logger.info("render_worker busy (%s); waiting for a slot", busy)
+                waited = True
+                await asyncio.sleep(retry_interval)
 
     async def get_status(self, job_id: str) -> dict[str, Any]:
         async with httpx.AsyncClient(timeout=15) as client:
@@ -71,7 +113,7 @@ class CopyCheckRenderClient:
         this so a stop request mid-OCR aborts in ≤poll_interval seconds
         instead of waiting for the full OCR job to complete (#19).
         """
-        job_id = await self.submit(pdf_url, dpi=dpi)
+        job_id = await self.submit_when_free(pdf_url, dpi=dpi, cancellation_check=cancellation_check)
         deadline = asyncio.get_event_loop().time() + timeout
         while True:
             if cancellation_check is not None and cancellation_check():

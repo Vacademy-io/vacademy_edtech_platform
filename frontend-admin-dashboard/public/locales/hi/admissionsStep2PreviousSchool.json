@@ -1,0 +1,71 @@
+{
+    "previousSchool": {
+        "heading": "पिछले स्कूल का विवरण",
+        "schoolName": {
+            "label": "स्कूल का नाम",
+            "placeholder": "पिछले स्कूल का नाम दर्ज करें"
+        },
+        "previousClass": {
+            "label": "पिछली कक्षा",
+            "placeholder": "कक्षा चुनें"
+        },
+        "board": {
+            "label": "बोर्ड",
+            "placeholder": "बोर्ड चुनें"
+        },
+        "yearOfPassing": {
+            "label": "उत्तीर्ण होने का वर्ष",
+            "placeholder": "YYYY"
+        },
+        "percentage": {
+            "label": "प्रतिशत",
+            "placeholder": "%"
+        },
+        "percentageScience": {
+            "label": "विज्ञान में प्रतिशत",
+            "placeholder": "%"
+        },
+        "percentageMaths": {
+            "label": "गणित में प्रतिशत",
+            "placeholder": "%"
+        },
+        "previousAdmissionNo": {
+            "label": "पिछला प्रवेश क्रमांक",
+            "placeholder": "क्रमांक दर्ज करें"
+        }
+    },
+    "otherDetails": {
+        "heading": "अन्य विवरण",
+        "religion": {
+            "label": "धर्म",
+            "placeholder": "धर्म दर्ज करें"
+        },
+        "caste": {
+            "label": "जाति",
+            "placeholder": "जाति दर्ज करें"
+        },
+        "motherTongue": {
+            "label": "मातृभाषा",
+            "placeholder": "मातृभाषा दर्ज करें"
+        },
+        "bloodGroup": {
+            "label": "रक्त समूह",
+            "placeholder": "समूह चुनें"
+        },
+        "nationality": {
+            "label": "राष्ट्रीयता",
+            "placeholder": "जैसे भारतीय"
+        },
+        "howDidYouKnow": {
+            "label": "आपको हमारे बारे में कैसे पता चला",
+            "placeholder": "विकल्प चुनें",
+            "options": {
+                "socialMedia": "सोशल मीडिया",
+                "friendsFamily": "मित्र/परिवार",
+                "advertisement": "विज्ञापन",
+                "website": "वेबसाइट",
+                "other": "अन्य"
+            }
+        }
+    }
+}

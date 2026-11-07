@@ -1,0 +1,7 @@
+{
+    "increaseAssessmentTime": "Augmenter le temps d'évaluation",
+    "closeSubmission": "Clôturer la soumission",
+    "studentsCount_one": "{{count}} étudiant",
+    "studentsCount_many": "{{count}} d'étudiants",
+    "studentsCount_other": "{{count}} étudiants"
+}

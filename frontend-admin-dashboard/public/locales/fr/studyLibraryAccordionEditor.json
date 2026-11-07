@@ -1,0 +1,13 @@
+{
+    "heading": "Accordéon",
+    "addSection": "Ajouter une section",
+    "tabs": {
+        "preview": "Aperçu",
+        "edit": "Modifier"
+    },
+    "sectionNumber": "Section {{number}}",
+    "sectionTitlePlaceholder": "Titre de la section…",
+    "sectionContentPlaceholder": "Contenu de la section — ajoutez du texte et/ou une image…",
+    "removeSection": "Supprimer la section",
+    "emptySection": "Section vide"
+}

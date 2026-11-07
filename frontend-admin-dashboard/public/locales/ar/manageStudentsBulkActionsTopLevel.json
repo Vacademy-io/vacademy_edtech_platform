@@ -1,0 +1,10 @@
+{
+    "selectedCount_zero": "محدد",
+    "selectedCount_one": "محدد",
+    "selectedCount_two": "محددان",
+    "selectedCount_few": "محددة",
+    "selectedCount_many": "محددًا",
+    "selectedCount_other": "محدد",
+    "reset": "إعادة تعيين",
+    "bulkActions": "إجراءات جماعية"
+}

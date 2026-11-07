@@ -1,0 +1,55 @@
+{
+    "restriction": {
+        "banner": "Editing Restricted: This course is {{status}}.",
+        "statusPublished": "published",
+        "statusUnderReview": "under review",
+        "publishedHint": "Go to My Courses to create an editable copy.",
+        "reviewHint": "You cannot edit the content while it's under review."
+    },
+    "addedToCatalog": "Added to catalog",
+    "offlineSettings": "Offline settings",
+    "advancedIds": {
+        "moreOptions": "More options",
+        "title": "Advanced",
+        "notAvailable": "{{label}} is not available",
+        "copied": "{{label}} copied",
+        "copyFailed": "Failed to copy",
+        "courseId": "{{course}} ID",
+        "packageSessionId": "Package Session ID",
+        "sessionId": "{{session}} ID",
+        "levelId": "{{level}} ID"
+    },
+    "viewLess": "View less",
+    "viewMore": "View more",
+    "youtubePlayerTitle": "YouTube video player",
+    "videoNotSupported": "Your browser does not support the video tag.",
+    "courseBannerAlt": "{{course}} Banner",
+    "batchSubgroup": "Batch / Subgroup",
+    "selectBatch": "Select batch",
+    "errorLoadingSlideCounts": "Error loading slide counts",
+    "courseHighlights": "{{course}} highlights",
+    "whatYoullLearn": "What you'll learn?",
+    "aboutThis": "About this {{course}}",
+    "whoShouldJoin": "Who should join?",
+    "authors": "Authors",
+    "loadingInstructors": "Loading instructors...",
+    "dripCondition": {
+        "saveFailed": "Failed to save drip condition. Please try again.",
+        "updateFailed": "Failed to update drip condition. Please try again.",
+        "deleteFailed": "Failed to delete drip condition. Please try again."
+    },
+    "slideType": {
+        "aiContent": "AI Content",
+        "video": "Video",
+        "codeEditor": "Code Editor",
+        "pdf": "PDF",
+        "document": "Document",
+        "presentation": "Presentation",
+        "jupyterNotebook": "Jupyter Notebook",
+        "scratchProject": "Scratch Project",
+        "question": "Question",
+        "quiz": "Quiz",
+        "assignment": "Assignment",
+        "defaultSlide": "Slide"
+    }
+}

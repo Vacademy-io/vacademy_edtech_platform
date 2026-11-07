@@ -1,0 +1,61 @@
+{
+    "heading": "Modèles WhatsApp",
+    "subheading": "WhatsApp proactif nécessite des modèles approuvés par Meta. L'IA les propose ; vous approuvez et soumettez ; Meta les examine.",
+    "emptyState": "Aucun modèle pour l'instant. Laissez l'IA en proposer quelques-uns d'après le brief de ce moteur.",
+    "actions": {
+        "checkMeta": "Vérifier Meta",
+        "moreOptions": "Plus d'options",
+        "thinking": "Réflexion en cours…",
+        "proposeTemplates": "Proposer des modèles",
+        "edit": "Modifier",
+        "approve": "Approuver",
+        "submitToMeta": "Soumettre à Meta",
+        "withdraw": "Retirer",
+        "cancel": "Annuler"
+    },
+    "errors": {
+        "loadFailed": "Impossible de charger les modèles. Veuillez réessayer."
+    },
+    "proposalCard": {
+        "round": "cycle {{value}}",
+        "variables": "Variables : {{list}}",
+        "metaRejected": "Meta : {{reason}}",
+        "metaRecategorised": "Meta l'a approuvé mais dans la catégorie <b>{{metaCategory}}</b> (vous aviez proposé {{proposedCategory}}). Il est utilisable ; demandez des alternatives si la catégorie compte."
+    },
+    "editDialog": {
+        "heading": "Modifier le modèle",
+        "bodyLabel": "Corps (utilisez {{p1}}, {{p2}} … pour les variables)",
+        "categoryLabel": "Catégorie",
+        "variablesLabel": "Variables (une par {{n}}, dans l'ordre) + une valeur d'exemple montrée à un relecteur Meta",
+        "namePlaceholder": "nom",
+        "samplePlaceholder": "ex. Aïsha",
+        "addVariable": "+ Ajouter une variable",
+        "footerLabel": "Pied de page (facultatif, ≤60 caractères)",
+        "saving": "Enregistrement…",
+        "saveChanges": "Enregistrer les modifications",
+        "errors": {
+            "bodyEmpty": "Le corps est vide.",
+            "bodyTooLong": "Le corps dépasse la limite de 1024 caractères de WhatsApp.",
+            "placeholderZero": "Les variables commencent à {{p1}} — {{p0}} n'est pas autorisé.",
+            "placeholderMissing": "La variable {{placeholder}} est manquante — elles doivent être séquentielles à partir de 1.",
+            "variableRowMismatch": "Le corps contient {{variables}} mais {{rows}}. Ils doivent correspondre.",
+            "variableCount_one": "{{count}} variable",
+            "variableCount_many": "{{count}} de variables",
+            "variableCount_other": "{{count}} variables",
+            "rowCount_one": "{{count}} ligne",
+            "rowCount_many": "{{count}} de lignes",
+            "rowCount_other": "{{count}} lignes"
+        },
+        "charCount": "{{count}} / 1024 characters",
+        "removeVariable": "Remove variable"
+    },
+    "proposalCount_one": "{{count}} proposal",
+    "proposalCount_other": "{{count}} proposals",
+    "flow": {
+        "propose": "AI proposes",
+        "approve": "You edit & approve",
+        "submit": "Submit to Meta",
+        "meta": "Meta approves",
+        "send": "Engine can send"
+    }
+}

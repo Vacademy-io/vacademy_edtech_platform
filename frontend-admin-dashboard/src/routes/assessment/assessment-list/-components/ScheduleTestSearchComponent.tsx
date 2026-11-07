@@ -1,5 +1,6 @@
 import { Input } from '@/components/ui/input';
 import { MagnifyingGlass, XCircle } from '@phosphor-icons/react';
+import { useTranslation } from 'react-i18next';
 
 interface ScheduleTestSearchComponent {
     onSearch: (searchValue: string) => void;
@@ -14,6 +15,7 @@ export const ScheduleTestSearchComponent = ({
     setSearchText,
     clearSearch,
 }: ScheduleTestSearchComponent) => {
+    const { t } = useTranslation('assessmentScheduleTestSearchComponent');
     const handleSearch = (e: React.KeyboardEvent<HTMLInputElement>) => {
         if (e.key === 'Enter') {
             onSearch(searchText);
@@ -28,7 +30,7 @@ export const ScheduleTestSearchComponent = ({
                 value={searchText}
                 onChange={(e) => setSearchText(e.target.value)}
                 onKeyDown={handleSearch}
-                placeholder="Search Question Paper"
+                placeholder={t('searchPlaceholder')}
                 className="pl-8 pr-12"
             />
             {searchText && (

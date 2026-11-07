@@ -13,21 +13,27 @@ import {
     SelectValue,
 } from '@/components/ui/select';
 import { getCurrentInstituteId } from '@/lib/auth/instituteUtils';
-import { useLeadCounsellorOptions } from '@/hooks/use-lead-counsellor-options';
 import {
     fetchTelephonyConfig,
     fetchTelephonyProviders,
     fetchCounsellorEndpoints,
+    fetchEndpointEligibleUsers,
     upsertCounsellorEndpoint,
     deleteCounsellorEndpoint,
     type TelephonyCounsellorEndpoint,
+    type TelephonyEndpointUser,
 } from '../-services/telephony-admin';
 
 /**
- * Per-counsellor extension/DID mapping for providers without a number pool
- * (Airtel). Hidden for pooled providers (Exotel uses the Numbers card instead).
- * Pick a counsellor and enter the extension their provider gave them — outbound
- * calls dial from it, and inbound CDRs/recordings are attributed back through it.
+ * Per-user extension/DID mapping for providers without a number pool (Airtel).
+ * Hidden for pooled providers (Exotel uses the Numbers card instead). Pick a
+ * person and enter the extension their provider gave them — outbound calls dial
+ * from it, and inbound CDRs/recordings are attributed back through it.
+ *
+ * The picker offers counsellors AND admins. It used to offer only counsellors,
+ * so an admin had no extension and every call they placed failed at origination
+ * — including calls to learners from the LMS side-view, where there is no
+ * counsellor in the flow at all.
  */
 export function TelephonyCounsellorMapCard() {
     const instituteId = getCurrentInstituteId() ?? '';
@@ -51,15 +57,20 @@ export function TelephonyCounsellorMapCard() {
         provider.capabilities.includes('OUTBOUND_CALL') &&
         !provider.capabilities.includes('NUMBER_POOL');
 
-    // Routing CONFIG picker — assignable mode so an ADMIN who also holds the
-    // COUNSELLOR role can still map any counsellor, not just their hierarchy.
-    const { options: counsellors, isLoading: counsellorsLoading } = useLeadCounsellorOptions({
-        assignable: true,
+    // Phone-system roster, not a lead-routing one: counsellors + admins, never
+    // hierarchy-scoped. An admin mapping extensions must see everyone who can dial.
+    const eligibleUsersQuery = useQuery({
+        queryKey: ['telephony-endpoint-eligible-users', instituteId],
+        queryFn: () => fetchEndpointEligibleUsers(instituteId),
+        enabled: !!instituteId,
+        staleTime: 5 * 60 * 1000,
     });
-    const nameById = useMemo(
-        () => new Map(counsellors.map((c) => [c.id, c.full_name])),
-        [counsellors]
+    const eligibleUsers: TelephonyEndpointUser[] = useMemo(
+        () => eligibleUsersQuery.data ?? [],
+        [eligibleUsersQuery.data]
     );
+    const usersLoading = eligibleUsersQuery.isLoading;
+    const userById = useMemo(() => new Map(eligibleUsers.map((u) => [u.id, u])), [eligibleUsers]);
 
     const endpointsQuery = useQuery({
         queryKey: ['telephony-counsellor-endpoints', instituteId, providerType],
@@ -104,7 +115,7 @@ export function TelephonyCounsellorMapCard() {
         onError: () => toast.error('Failed to remove mapping'),
     });
 
-    // When a counsellor with an existing mapping is picked, pre-fill the form.
+    // When someone with an existing mapping is picked, pre-fill the form.
     const onPickCounsellor = (id: string) => {
         setCounsellorUserId(id);
         const existing = endpointsQuery.data?.find((e) => e.counsellorUserId === id);
@@ -115,11 +126,11 @@ export function TelephonyCounsellorMapCard() {
 
     const onSave = () => {
         if (!counsellorUserId) {
-            toast.error('Pick a counsellor');
+            toast.error('Pick a counsellor or admin');
             return;
         }
         if (!extension.trim()) {
-            toast.error('Enter the counsellor’s extension');
+            toast.error('Enter their extension');
             return;
         }
         saveMutation.mutate({
@@ -141,12 +152,11 @@ export function TelephonyCounsellorMapCard() {
             <div className="mb-4 flex items-center gap-2">
                 <IdentificationBadge className="size-5 text-primary-600" />
                 <div>
-                    <h2 className="text-base font-semibold text-neutral-900">
-                        Counsellor extensions
-                    </h2>
+                    <h2 className="text-base font-semibold text-neutral-900">User extensions</h2>
                     <p className="text-sm text-neutral-500">
-                        Map each counsellor to the extension {provider?.displayName} gave them.
-                        Calls dial from it, and recordings are matched back to the right person.
+                        Map each counsellor or admin to the extension {provider?.displayName} gave
+                        them. Calls dial from it, and recordings are matched back to the right
+                        person. An admin needs one too before they can call a learner.
                     </p>
                 </div>
             </div>
@@ -157,8 +167,10 @@ export function TelephonyCounsellorMapCard() {
                     {endpoints.map((e) => (
                         <div key={e.id} className="flex items-center justify-between px-3 py-2">
                             <div className="flex flex-col">
-                                <span className="text-sm font-medium text-neutral-900">
-                                    {nameById.get(e.counsellorUserId) ?? e.counsellorUserId}
+                                <span className="flex items-center gap-1.5 text-sm font-medium text-neutral-900">
+                                    {userById.get(e.counsellorUserId)?.fullName ??
+                                        e.counsellorUserId}
+                                    <RoleBadges roles={userById.get(e.counsellorUserId)?.roles} />
                                 </span>
                                 <span className="text-xs text-neutral-500">
                                     Ext {e.extension}
@@ -180,24 +192,27 @@ export function TelephonyCounsellorMapCard() {
                 </div>
             ) : (
                 <p className="mb-4 text-sm text-neutral-500">
-                    No counsellors mapped yet — add one below so they can place calls.
+                    Nobody mapped yet — add someone below so they can place calls.
                 </p>
             )}
 
             {/* Add / edit a mapping */}
             <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
                 <div className="space-y-1.5">
-                    <Label>Counsellor</Label>
+                    <Label>Counsellor or admin</Label>
                     <Select value={counsellorUserId} onValueChange={onPickCounsellor}>
                         <SelectTrigger className="h-10">
                             <SelectValue
-                                placeholder={counsellorsLoading ? 'Loading…' : 'Select a counsellor'}
+                                placeholder={usersLoading ? 'Loading…' : 'Select a person'}
                             />
                         </SelectTrigger>
                         <SelectContent>
-                            {counsellors.map((c) => (
-                                <SelectItem key={c.id} value={c.id}>
-                                    {c.full_name}
+                            {eligibleUsers.map((u) => (
+                                <SelectItem key={u.id} value={u.id}>
+                                    <span className="flex items-center gap-1.5">
+                                        {u.fullName}
+                                        <RoleBadges roles={u.roles} />
+                                    </span>
                                 </SelectItem>
                             ))}
                         </SelectContent>
@@ -243,5 +258,30 @@ export function TelephonyCounsellorMapCard() {
                 </Button>
             </div>
         </div>
+    );
+}
+
+/**
+ * Role chips next to a name — the list mixes counsellors and admins, so whoever
+ * is mapping extensions can tell them apart at a glance. Only the two roles this
+ * picker selects on are shown; any other role a user holds is noise here.
+ */
+function RoleBadges({ roles }: { roles?: string[] | null }) {
+    if (!roles || roles.length === 0) return null;
+    const shown: string[] = [];
+    if (roles.includes('ADMIN')) shown.push('Admin');
+    if (roles.includes('COUNSELLOR') || roles.includes('COUNSELOR')) shown.push('Counsellor');
+    if (shown.length === 0) return null;
+    return (
+        <>
+            {shown.map((label) => (
+                <span
+                    key={label}
+                    className="rounded-full bg-neutral-100 px-1.5 py-0.5 text-[10px] font-medium text-neutral-600"
+                >
+                    {label}
+                </span>
+            ))}
+        </>
     );
 }

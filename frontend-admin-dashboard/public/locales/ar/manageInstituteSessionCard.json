@@ -1,0 +1,23 @@
+{
+    "toast": {
+        "sessionEditedSuccess": "تم تعديل {{term}} بنجاح",
+        "sessionEditFailed": "فشل تعديل {{term}}"
+    },
+    "button": {
+        "saveChanges": "حفظ التغييرات"
+    },
+    "card": {
+        "startDate": "تاريخ البدء",
+        "editButton": "تعديل {{term}}",
+        "deleteButton": "حذف {{term}}",
+        "active": "Active",
+        "inactive": "Inactive",
+        "courseCount_one": "{{count}} {{term}}",
+        "courseCount_other": "{{count}} {{term}}",
+        "batchCount_one": "{{count}} active {{term}}",
+        "batchCount_other": "{{count}} active {{term}}",
+        "moreActions": "More actions",
+        "hiddenLevel": "Hidden in this session",
+        "noCourses": "No {{term}} in this session yet."
+    }
+}

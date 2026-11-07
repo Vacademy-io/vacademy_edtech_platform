@@ -29,9 +29,22 @@ from typing import Any, Callable, Dict, List, Optional, Tuple
 PROMPT_VERSION = "c1"
 
 # Default model + pricing — caller normally passes the matrix-resolved model.
-_DEFAULT_MODEL = "google/gemini-2.5-pro"
-_DEFAULT_INPUT_COST_PER_M = 1.25
-_DEFAULT_OUTPUT_COST_PER_M = 5.0
+# None lets the client pick the registry's video default (the GLM chain).
+_DEFAULT_MODEL: Optional[str] = None
+# Fallback price per 1M tokens (the GLM rate) when the registry can't be read;
+# shared with the visual reviewer. The estimate feeds the critic's run cost cap.
+try:
+    from shot_visual_reviewer import (
+        _DEFAULT_INPUT_COST_PER_M,
+        _DEFAULT_OUTPUT_COST_PER_M,
+        model_cost_per_m as _model_cost_per_m,
+    )
+except ImportError:  # pragma: no cover - module sits next to this file
+    _DEFAULT_INPUT_COST_PER_M = 0.027
+    _DEFAULT_OUTPUT_COST_PER_M = 0.49
+
+    def _model_cost_per_m(model):  # type: ignore[misc]
+        return _DEFAULT_INPUT_COST_PER_M, _DEFAULT_OUTPUT_COST_PER_M
 
 # Below this min-score, the shot is "competent but flat" → fire one elevation regen.
 DEFAULT_MIN_SCORE = 3
@@ -237,8 +250,9 @@ def critique_shot(
     model: Optional[str] = _DEFAULT_MODEL,
     max_tokens: int = 900,
     temperature: float = 0.3,
-    input_cost_per_m: float = _DEFAULT_INPUT_COST_PER_M,
-    output_cost_per_m: float = _DEFAULT_OUTPUT_COST_PER_M,
+    # None = the model's registry price (GLM constants when unreadable).
+    input_cost_per_m: Optional[float] = None,
+    output_cost_per_m: Optional[float] = None,
 ) -> Dict[str, Any]:
     """Score one shot's creativity 0-5 on four dimensions + emit an elevation
     suggestion. Never raises — every error path returns a passing no-op record so
@@ -250,6 +264,10 @@ def critique_shot(
     """
     if not (html or "").strip():
         return _no_op_record(model=model, error="empty html")
+    if input_cost_per_m is None or output_cost_per_m is None:
+        _in_m, _out_m = _model_cost_per_m(model)
+        input_cost_per_m = _in_m if input_cost_per_m is None else input_cost_per_m
+        output_cost_per_m = _out_m if output_cost_per_m is None else output_cost_per_m
 
     user_text = _build_user_prompt(
         shot=shot,

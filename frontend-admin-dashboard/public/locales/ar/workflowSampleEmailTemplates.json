@@ -1,0 +1,259 @@
+{
+    "common": {
+        "footer": "مع أطيب التحيات،<br/>{{instituteName}}"
+    },
+    "emailBatchStudents": {
+        "subject": "تحديث مهم لك، {{fullName}}",
+        "greeting": "مرحبًا {{fullName}}،",
+        "body1": "لدينا تحديث مهم لك. يرجى مراجعة لوحة التحكم الخاصة بك لمزيد من التفاصيل.",
+        "body2": "إذا كان لديك أي أسئلة، فلا تتردد في التواصل معنا."
+    },
+    "welcomeEnrolledStudent": {
+        "subject": "مرحبًا بك {{fullName}}! تم تأكيد تسجيلك",
+        "heroTitle": "مرحبًا بك معنا!",
+        "greeting": "مرحبًا {{fullName}}،",
+        "body1": "تهانينا! تم تأكيد تسجيلك. يسعدنا انضمامك إلينا.",
+        "credentialsHeading": "بيانات تسجيل الدخول الخاصة بك",
+        "usernameLabel": "اسم المستخدم:",
+        "usernameValue": "{{username}}",
+        "passwordLabel": "كلمة المرور:",
+        "passwordValue": "{{password}}",
+        "credentialsNote": "يرجى تغيير كلمة المرور بعد تسجيل الدخول لأول مرة.",
+        "nextStepsIntro": "إليك الخطوات التالية:",
+        "step1": "سجّل الدخول إلى لوحة تحكم الطالب باستخدام البيانات أعلاه",
+        "step2": "أكمل ملفك الشخصي",
+        "step3": "استكشف دوراتك وموادك",
+        "body2": "إذا احتجت إلى مساعدة للبدء، فريقنا هنا من أجلك."
+    },
+    "emailParentsBatch": {
+        "subject": "تحديث بخصوص {{fullName}}",
+        "greeting": "عزيزي ولي الأمر،",
+        "body1": "نود إعلامك بتحديث مهم يتعلق بطفلك <strong>{{fullName}}</strong>.",
+        "body2": "يرجى مراجعة بوابة الطالب للحصول على التفاصيل أو التواصل معنا إذا كانت لديك أسئلة."
+    },
+    "terminationNotice": {
+        "subject": "{{fullName}}، تم تحديث عضويتك",
+        "greeting": "مرحبًا {{fullName}}،",
+        "body1": "نكتب إليك لإعلامك بأن حالة عضويتك قد تم تحديثها. تمت إزالة صلاحية وصولك من المؤسسة.",
+        "body2": "إذا كنت تعتقد أن هذا خطأ أو لديك أسئلة، يرجى التواصل مع المسؤول."
+    },
+    "audienceLeadConfirmation": {
+        "subject": "شكرًا لاهتمامك، {{parentName}}!",
+        "heroTitle": "شكرًا لك!",
+        "greeting": "مرحبًا {{parentName}}،",
+        "body1": "شكرًا لاهتمامك! لقد استلمنا استفسارك وسيتواصل فريقنا معك قريبًا.",
+        "body2": "في غضون ذلك، لا تتردد في تصفح موقعنا لمعرفة المزيد عن برامجنا."
+    },
+    "leadFollowupEmail": {
+        "subject": "{{parentName}}، متابعة بخصوص استفسارك",
+        "greeting": "مرحبًا {{parentName}}،",
+        "body1": "لاحظنا أنك أبديت اهتمامًا مؤخرًا ببرامجنا. أردنا المتابعة لمعرفة إن كانت لديك أي أسئلة.",
+        "body2": "فريقنا جاهز لمساعدتك في:",
+        "item1": "معلومات الدورات وتفاصيل المنهج",
+        "item2": "هيكل الرسوم وخيارات الدفع",
+        "item3": "عملية القبول والجداول الزمنية",
+        "body3": "ما عليك سوى الرد على هذا البريد الإلكتروني أو الاتصال بنا للبدء!"
+    },
+    "paymentFailedEmail": {
+        "subject": "{{fullName}}، مشكلة في الدفع - يتطلب إجراءً",
+        "bannerTitle": "فشل الدفع",
+        "bannerBody": "تعذّرت معالجة دفعتك الأخيرة.",
+        "greetingLabel": "مرحبًا",
+        "greetingName": "{{fullName}}",
+        "body1": "لم نتمكن من معالجة دفعتك. قد يحدث هذا بسبب عدم كفاية الرصيد أو انتهاء صلاحية البطاقة أو مشكلة مصرفية مؤقتة.",
+        "nextStepsHeading": "الخطوات التالية:",
+        "step1": "تحقق من تفاصيل وسيلة الدفع الخاصة بك",
+        "step2": "تأكد من توفر رصيد كافٍ",
+        "step3": "أعد محاولة الدفع من لوحة التحكم الخاصة بك",
+        "body2": "إذا استمرت المشكلة، يرجى التواصل مع فريق الدعم لدينا."
+    },
+    "abandonedCartReminder": {
+        "subject": "{{fullName}}، أنت على وشك الانتهاء! أكمل تسجيلك",
+        "greeting": "مرحبًا {{fullName}}،",
+        "body1": "لاحظنا أنك بدأت تسجيلك لكنك لم تكمل الدفع. مكانك ما زال متاحًا!",
+        "body2": "أكمل تسجيلك الآن لتأمين مكانك والبدء فورًا.",
+        "cta": "إكمال التسجيل",
+        "footNote": "إذا كانت لديك أسئلة حول الرسوم أو تحتاج إلى مساعدة، فقط رد على هذا البريد الإلكتروني."
+    },
+    "sessionStartReminder": {
+        "subject": "{{fullName}}، حصتك المباشرة تبدأ الآن!",
+        "bannerTitle": "الحصة المباشرة تبدأ الآن!",
+        "greetingLabel": "مرحبًا",
+        "greetingName": "{{fullName}}",
+        "body1": "حصتك المباشرة تبدأ الآن. انضم الآن حتى لا يفوتك شيء!",
+        "body2": "تأكد من أن اتصالك بالإنترنت مستقر وأن الصوت/الفيديو يعملان.",
+        "signoff": "نراك هناك!"
+    },
+    "postSessionFollowup": {
+        "subject": "{{fullName}}، اكتملت الحصة - التسجيل والخطوات التالية",
+        "greeting": "مرحبًا {{fullName}}،",
+        "body1": "شكرًا لحضورك حصة اليوم! إليك ملخص سريع:",
+        "item1": "سيكون تسجيل الحصة متاحًا في لوحة التحكم الخاصة بك",
+        "item2": "راجع المواد التي تمت مشاركتها خلال الحصة",
+        "item3": "أكمل أي واجبات قبل الحصة القادمة",
+        "body2": "يسعدنا سماع ملاحظاتك. يرجى تخصيص لحظة لمشاركة آرائك.",
+        "signoff": "نراك في المرة القادمة!<br/>{{instituteName}}"
+    },
+    "scheduledFeeReminder": {
+        "subject": "تذكير بدفع الرسوم - {{dueDate}}",
+        "bannerTitle": "تذكير بدفع الرسوم",
+        "greetingLabel": "عزيزي",
+        "greetingName": "{{recipientName}}",
+        "body1": "هذا تذكير بدفعة الرسوم القادمة لـ <strong>{{studentName}}</strong>.",
+        "dueDateLabel": "تاريخ الاستحقاق",
+        "dueDateValue": "{{dueDate}}",
+        "totalAmountLabel": "المبلغ الإجمالي",
+        "totalAmountValue": "{{amountExpected}}",
+        "alreadyPaidLabel": "المدفوع بالفعل",
+        "alreadyPaidValue": "{{amountPaid}}",
+        "remainingLabel": "المتبقي",
+        "remainingValue": "{{remainingAmount}}",
+        "body2": "يرجى التأكد من إتمام الدفع قبل تاريخ الاستحقاق لتجنب أي رسوم تأخير."
+    },
+    "scheduledBatchReport": {
+        "subject": "{{fullName}}، تقرير الحضور الخاص بك ({{startDate}} - {{endDate}})",
+        "heading": "تقرير الحضور",
+        "intro": "مرحبًا <strong>{{fullName}}</strong>، إليك ملخص حضورك من <strong>{{startDate}}</strong> إلى <strong>{{endDate}}</strong>:",
+        "percentValue": "{{attendancePercentage}}",
+        "attendanceRateLabel": "نسبة الحضور",
+        "sessionsSummary": "حضرت {{sessionsAttended}} من أصل {{totalSessions}} حصص &middot; بإجمالي {{totalDurationMinutes}} دقيقة",
+        "sessionDetailsHeading": "تفاصيل الحصص",
+        "cta": "عرض التقرير الكامل وتنزيل PDF",
+        "body1": "الحضور المنتظم هو مفتاح النجاح.",
+        "concentrationScoreLabel": "* درجة التركيز",
+        "concentrationScoreBody": "= 80 نقطة لوقت الحضور + 20 نقطة للتفاعلات (الدردشات، المداخلات، رفع اليد، الرموز التعبيرية، الاستطلاعات). راجع التقرير الكامل للاطلاع على التفاصيل لكل حصة."
+    },
+    "scheduledEngagementSummary": {
+        "subject": "{{fullName}}، تقرير تفاعلك الأسبوعي",
+        "heading": "تقرير التفاعل الأسبوعي",
+        "intro": "مرحبًا <strong>{{fullName}}</strong>، إليك كيف تفاعلت هذا الأسبوع:",
+        "percentValue": "{{attendancePercentage}}",
+        "attendanceLabel": "الحضور",
+        "sessionsValue": "{{sessionsAttended}}/{{totalSessions}}",
+        "sessionsLabel": "الحصص",
+        "minutesValue": "{{totalDurationMinutes}}",
+        "minutesLabel": "الدقائق",
+        "chatsValue": "{{totalChats}}",
+        "chatsLabel": "الدردشات",
+        "sessionDetailsHeading": "تفاصيل الحصص",
+        "period": "الفترة: من {{startDate}} إلى {{endDate}}",
+        "signoff": "استمر في التعلم!<br/>{{instituteName}}"
+    },
+    "scheduledParentsAttendance": {
+        "subject": "تحديث حضور {{fullName}} الأسبوعي ({{startDate}} - {{endDate}})",
+        "heading": "تحديث الحضور الأسبوعي",
+        "greeting": "عزيزي ولي الأمر،",
+        "intro": "إليك ملخص الحضور الأسبوعي لـ <strong>{{fullName}}</strong> ({{startDate}} - {{endDate}}):",
+        "percentValue": "{{attendancePercentage}}",
+        "attendanceRateLabel": "نسبة الحضور",
+        "sessionsSummary": "حضر {{sessionsAttended}} من أصل {{totalSessions}} حصص",
+        "sessionDetailsHeading": "تفاصيل الحصص",
+        "body1": "إذا كانت لديك أي مخاوف بشأن الحضور، يرجى التواصل معنا."
+    },
+    "membershipExpiryReminder": {
+        "subject": "{{fullName}}، عضويتك على وشك الانتهاء قريبًا",
+        "bannerTitle": "العضوية على وشك الانتهاء",
+        "greetingLabel": "مرحبًا",
+        "greetingName": "{{fullName}}",
+        "body1": "عضويتك على وشك الانتهاء. جدّدها الآن لمواصلة الوصول دون انقطاع إلى جميع دوراتك وموادك.",
+        "cta": "جدّد الآن",
+        "footNote": "لا تفقد تقدمك! التجديد يستغرق دقيقة واحدة فقط."
+    },
+    "scheduledExpiryCheck": {
+        "subject": "{{fullName}}، جدّد عضويتك",
+        "greeting": "مرحبًا {{fullName}}،",
+        "body1": "ستنتهي عضويتك قريبًا. جدّدها اليوم لمواصلة الوصول إلى دوراتك دون انقطاع.",
+        "body2": "تواصل معنا إذا كانت لديك أي أسئلة حول خيارات التجديد."
+    },
+    "assessmentCreatedNotify": {
+        "subject": "{{fullName}}، يتوفر تقييم جديد لك",
+        "bannerTitle": "يتوفر تقييم جديد",
+        "greetingLabel": "مرحبًا",
+        "greetingName": "{{fullName}}",
+        "body1": "تم نشر تقييم جديد لك. سجّل الدخول إلى لوحة التحكم الخاصة بك لعرض التفاصيل وبدء التقييم.",
+        "goodLuck": "بالتوفيق!"
+    },
+    "assessmentEmailBatch": {
+        "subject": "{{fullName}}، تم إرسال التقييم بنجاح",
+        "heroTitle": "تم إرسال التقييم!",
+        "greetingLabel": "مرحبًا",
+        "greetingName": "{{fullName}}",
+        "body1": "تم إرسال تقييمك بنجاح. سيتم مشاركة النتائج بمجرد اكتمال التقييم."
+    },
+    "inviteNotifyBatch": {
+        "subject": "فرصة تسجيل جديدة",
+        "greeting": "مرحبًا {{fullName}}،",
+        "body1": "تم إنشاء دعوة تسجيل جديدة. راجع لوحة التحكم الخاصة بك للحصول على التفاصيل وتعليمات التسجيل."
+    },
+    "scheduledAudienceFollowup": {
+        "subject": "{{parentName}}، لم نسمع منك",
+        "greeting": "مرحبًا {{parentName}}،",
+        "body1": "لاحظنا أنك استفسرت مؤخرًا عن برامجنا. أردنا التحقق إن كانت لديك أي أسئلة أو تحتاج إلى مزيد من المعلومات.",
+        "body2": "فريق القبول لدينا سعيد بمساعدتك في أي شيء تحتاجه. فقط رد على هذا البريد الإلكتروني!"
+    },
+    "liveSessionRecapPresent": {
+        "subject": "شكرًا لحضورك {{sessionTitle}}",
+        "heroTitle": "سررنا برؤيتك!",
+        "greeting": "مرحبًا {{fullName}}،",
+        "body1": "شكرًا لحضورك <strong>{{sessionTitle}}</strong> في {{date}} الساعة {{time}}. نأمل أن تكون قد استفدت.",
+        "body2": "واصل الانتظام — نراك في الحصة القادمة!"
+    },
+    "liveSessionRecapAbsent": {
+        "subject": "لقد فاتتك {{sessionTitle}}",
+        "heroTitle": "افتقدناك!",
+        "greeting": "مرحبًا {{fullName}}،",
+        "body1": "لاحظنا أنك لم تتمكن من الانضمام إلى <strong>{{sessionTitle}}</strong> في {{date}} الساعة {{time}}.",
+        "body2": "لا مشكلة — احرص على حضور الحصة المباشرة القادمة حتى لا تتأخر."
+    },
+    "leadAssignedToCounselor": {
+        "subject": "تم تعيين عميل محتمل جديد: {{leadName}}",
+        "greeting": "مرحبًا {{counselorName}}،",
+        "body1": "تم تعيين عميل محتمل جديد لك.",
+        "nameLabel": "الاسم:",
+        "nameValue": "{{leadName}}",
+        "mobileLabel": "الجوال:",
+        "mobileValue": "{{leadMobile}}",
+        "emailLabel": "البريد الإلكتروني:",
+        "emailValue": "{{leadEmail}}",
+        "campaignLabel": "الحملة:",
+        "campaignValue": "{{campaignName}}",
+        "body2": "يرجى التواصل خلال {{tat}}."
+    },
+    "leadTatReminderBefore": {
+        "subject": "تذكير: رد على {{leadName}} خلال {{minutesToBreach}} دقيقة",
+        "heading": "عميل محتمل بانتظار ردك",
+        "greeting": "مرحبًا {{counselorName}}،",
+        "body1": "يحتاج هذا العميل المحتمل إلى رد خلال <strong>{{minutesToBreach}} دقيقة</strong>:",
+        "leadName": "{{leadName}}",
+        "leadMobile": "{{leadMobile}}",
+        "campaignLine": "الحملة: {{campaignName}}",
+        "dueAtLine": "موعد استحقاق SLA: {{dueAt}}"
+    },
+    "leadTatOverdue": {
+        "subject": "متأخر: لم يتم التواصل مع {{leadName}}",
+        "heading": "تجاوز مهلة SLA للعميل المحتمل",
+        "body1": "مرحبًا {{counselorName}}، لقد انقضى الموعد النهائي لـ SLA لهذا العميل المحتمل:",
+        "leadName": "{{leadName}}",
+        "leadMobile": "{{leadMobile}}",
+        "campaignLine": "الحملة: {{campaignName}}",
+        "dueAtLine": "تاريخ الاستحقاق: {{dueAt}}",
+        "body2": "يرجى اتخاذ إجراء بشأن هذا العميل المحتمل في أقرب وقت ممكن."
+    },
+    "followUpDue": {
+        "subject": "متابعة مستحقة لـ {{leadName}}",
+        "heading": "متابعة مستحقة",
+        "body1": "مرحبًا {{counselorName}}، متابعتك القادمة لـ <strong>{{leadName}}</strong> ({{leadMobile}}) مستحقة خلال <strong>{{minutesToBreach}}</strong> دقيقة (في {{dueAt}})."
+    },
+    "followUpOverdue": {
+        "subject": "متابعة متأخرة لـ {{leadName}}",
+        "heading": "متابعة متأخرة",
+        "body1": "مرحبًا {{counselorName}}، المتابعة الخاصة بـ <strong>{{leadName}}</strong> ({{leadMobile}}) متأخرة (كانت مستحقة في {{dueAt}}).",
+        "body2": "يرجى اتخاذ إجراء بشأن هذا العميل المحتمل الآن."
+    },
+    "leadStatusChanged": {
+        "subject": "تم تحديث حالة العميل المحتمل: {{leadName}} → {{newStatus}}",
+        "heading": "تم تحديث حالة العميل المحتمل",
+        "greeting": "مرحبًا {{counselorName}}،",
+        "body1": "تغيرت حالة <strong>{{leadName}}</strong> من <strong>{{oldStatus}}</strong> إلى <strong>{{newStatus}}</strong> (<em>{{changeType}}</em>)."
+    }
+}

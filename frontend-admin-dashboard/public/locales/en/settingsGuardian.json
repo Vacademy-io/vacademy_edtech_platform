@@ -1,0 +1,104 @@
+{
+    "toasts": {
+        "settingsSaved": "Guardian settings saved",
+        "saveFailed": "Failed to save guardian settings"
+    },
+    "enableCard": {
+        "title": "Guardian Setting",
+        "description": "Controls whether guardian-student linking (bulk assignment, student side-view, and backfill) is available institute-wide. Disabling hides all guardian-linking UI without deleting existing links.",
+        "loading": "Loading guardian settings…",
+        "enabledLabel": "Enable Guardian Linking",
+        "disabledLabel": "Guardian Linking Disabled"
+    },
+    "parentPortal": {
+        "title": "Parent Portal",
+        "description": "Let linked guardians monitor their child's progress, attendance, tests, live classes, fees, and rewards from the learner app. This is separate from guardian linking above — turn it on and choose which sections parents can see.",
+        "loading": "Loading…",
+        "enabledLabel": "Parent Portal Enabled",
+        "disabledLabel": "Parent Portal Disabled",
+        "sectionsVisible": "Sections visible to parents",
+        "viewSwitching": "View switching",
+        "viewAsChildLabel": "Parent can open student view (read-only)",
+        "switchToParentLabel": "Student can switch to their parent portal",
+        "modules": {
+            "overview": "Overview",
+            "attendance": "Attendance",
+            "liveSessions": "Live Classes",
+            "assessments": "Tests",
+            "progress": "Progress",
+            "payments": "Fees",
+            "badges": "Rewards & Badges",
+            "certificates": "Certificates",
+            "reports": "Report Cards"
+        }
+    },
+    "credentialEmail": {
+        "title": "Guardian Credential Email",
+        "description": "Optionally email login credentials whenever a new guardian account is created — whether via bulk assignment, the student side-view's \"Add Guardian\" action, or a backfill run.",
+        "sendToggleLabel": "Send credential email when a guardian account is created",
+        "sendToLabel": "Send to",
+        "studentButton": "Student",
+        "guardianButton": "Guardian",
+        "studentHint": "Sends to the student's own email. Recommended for backfill, since a backfilled guardian's email is a placeholder address that can't receive mail.",
+        "guardianHint": "Sends to the guardian's own email — meaningful for link/add-guardian flows where a real guardian email was provided; not deliverable for backfilled (placeholder) guardians."
+    },
+    "save": {
+        "saving": "Saving…",
+        "save": "Save"
+    },
+    "backfillEnrolled": {
+        "title": "Backfill Existing Students",
+        "description": "Create a guardian account for every enrolled student in this institute that doesn't already have one linked. Students that already have a guardian are skipped and untouched.",
+        "dialogHeading": "Run guardian backfill?",
+        "emptyState": "Every student already has a guardian linked. Nothing to backfill.",
+        "awaiting": "awaiting a guardian"
+    },
+    "backfillLeads": {
+        "title": "Backfill Leads' Guardians",
+        "description": "Create a guardian account for every lead in this institute whose student side already has a real account but no guardian linked — reaches leads that haven't been enrolled yet. Leads that already have a guardian are skipped and untouched.",
+        "dialogHeading": "Run leads guardian backfill?",
+        "emptyState": "Every lead already has a guardian linked. Nothing to backfill.",
+        "awaiting": "awaiting a guardian (leads)"
+    },
+    "backfill": {
+        "checkingFor": "Checking for {{awaitingLabel}}…",
+        "studentsAwaiting_one": "{{count}} student {{awaitingLabel}}",
+        "studentsAwaiting_other": "{{count}} students {{awaitingLabel}}",
+        "moreNotShown": "+{{count}} more not shown",
+        "progressLine": "{{done}} of {{total}} processed ({{created}} created, {{skipped}} skipped) — running in batches, this may take a while for a large institute.",
+        "runButton": "Run Backfill",
+        "runningButton": "Running Backfill…",
+        "completeToast": "{{title}} complete: {{created}} created, {{skipped}} skipped out of {{total}} eligible.",
+        "failedToast": "{{title}} failed"
+    },
+    "backfillDialog": {
+        "cancel": "Cancel",
+        "confirm": "Confirm",
+        "bodyPrefix": "This will create a guardian account for",
+        "studentCount_one": "{{count}} student",
+        "studentCount_other": "{{count}} students",
+        "bodySuffix_one": "in this institute that doesn't already have one linked. Students that already have a guardian are skipped and untouched.",
+        "bodySuffix_other": "in this institute that don't already have one linked. Students that already have a guardian are skipped and untouched."
+    },
+    "export": {
+        "title": "Export Guardian Credentials",
+        "description": "Download a CSV of every linked guardian's login details (one row per guardian, with their linked students). Useful for distributing parent-portal logins in bulk — especially for backfilled guardians, whose placeholder email address can't receive the credential email.",
+        "warning": "This file contains plaintext passwords. Handle and share it carefully.",
+        "button": "Export Credentials CSV",
+        "exporting": "Exporting…",
+        "successToast": "Guardian credentials exported",
+        "errorToast": "Failed to export guardian credentials"
+    },
+    "credentialTemplate": {
+        "label": "Credential Email Template",
+        "generateTitle": "Generate a sample guardian credential email template with placeholders pre-filled",
+        "generateButton": "Generate sample",
+        "generating": "Generating…",
+        "loading": "Loading template selection…",
+        "placeholder": "No template selected — credential emails are skipped until one is chosen",
+        "updateSuccessToast": "Guardian credential email template updated",
+        "updateErrorToast": "Failed to update guardian credential email template",
+        "createSuccessToast": "Sample guardian credential template created",
+        "createErrorToast": "Failed to generate sample template. Please try again."
+    }
+}

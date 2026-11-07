@@ -328,7 +328,7 @@ export const SubjectMaterial = () => {
                 open={isSubjectOpen}
                 onOpenChange={() => toggleSubject(subject.id)}
               >
-                <CollapsibleTrigger className="group flex w-full items-center rounded-lg px-3 py-2 text-start text-sm font-semibold text-neutral-700 transition-all duration-200 hover:bg-gradient-to-r hover:from-primary-50/60 hover:to-blue-50/40 hover:border-primary-200/60 border border-transparent focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-1">
+                <CollapsibleTrigger className="group flex w-full items-center rounded-lg px-3 py-2 text-start text-sm font-semibold text-neutral-700 transition-all duration-200 hover:bg-gradient-to-r hover:from-primary-50/60 hover:to-info-50/40 hover:border-primary-200/60 border border-transparent focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-1">
                   <div className="flex min-w-0 flex-1 items-center gap-2.5">
                     {isSubjectOpen ? (
                       <CaretDown
@@ -384,7 +384,7 @@ export const SubjectMaterial = () => {
                             open={isModuleOpen}
                             onOpenChange={() => toggleModule(mod.module.id)}
                           >
-                            <CollapsibleTrigger className="group flex w-full items-center rounded-md px-2.5 py-1.5 text-start text-sm font-medium text-neutral-600 transition-all duration-200 hover:bg-gradient-to-r hover:from-blue-50/70 hover:to-indigo-50/50 hover:border-blue-200/60 border border-transparent focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 focus-visible:ring-offset-1">
+                            <CollapsibleTrigger className="group flex w-full items-center rounded-md px-2.5 py-1.5 text-start text-sm font-medium text-neutral-600 transition-all duration-200 hover:bg-gradient-to-r hover:from-info-50/70 hover:to-indigo-50/50 hover:border-blue-200/60 border border-transparent focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 focus-visible:ring-offset-1">
                               <div className="flex min-w-0 flex-1 items-center gap-2">
                                 {isModuleOpen ? (
                                   <CaretDown
@@ -397,7 +397,7 @@ export const SubjectMaterial = () => {
                                     className="shrink-0 text-neutral-500 group-hover:text-blue-600 transition-colors"
                                   />
                                 )}
-                                <div className="flex items-center justify-center w-5 h-5 rounded bg-gradient-to-br from-blue-500 to-blue-600 text-white">
+                                <div className="flex items-center justify-center w-5 h-5 rounded bg-gradient-to-br from-info-500 to-info-600 text-white">
                                   <FileText size={12} />
                                 </div>
                                 <span className="w-6 shrink-0 text-center font-mono text-xs font-medium text-neutral-500 bg-neutral-100 rounded px-1">
@@ -427,7 +427,7 @@ export const SubjectMaterial = () => {
                               className={`py-1 ${moduleContentIndent}`}
                             >
                               <div className="space-y-0.5 border-s-2 border-blue-200/40 ps-2.5 relative">
-                                <div className="absolute start-0 top-0 w-0.5 h-full bg-gradient-to-b from-blue-300/60 to-transparent"></div>
+                                <div className="absolute start-0 top-0 w-0.5 h-full bg-gradient-to-b from-info-300/60 to-transparent"></div>
                                 {(mod.chapters ?? []).map((ch, chIdx) => {
                                   const isChapterOpen = openChapters.has(ch.id);
 
@@ -440,7 +440,7 @@ export const SubjectMaterial = () => {
                                         getSlidesWithChapterId(ch.id);
                                       }}
                                     >
-                                      <CollapsibleTrigger className="group flex w-full items-center rounded-md px-2 py-1 text-start text-sm text-neutral-600 transition-all duration-200 hover:bg-gradient-to-r hover:from-green-50/70 hover:to-emerald-50/50 hover:border-green-200/60 border border-transparent focus:outline-none focus-visible:ring-2 focus-visible:ring-green-400 focus-visible:ring-offset-1">
+                                      <CollapsibleTrigger className="group flex w-full items-center rounded-md px-2 py-1 text-start text-sm text-neutral-600 transition-all duration-200 hover:bg-gradient-to-r hover:from-success-50/70 hover:to-success-50/50 hover:border-green-200/60 border border-transparent focus:outline-none focus-visible:ring-2 focus-visible:ring-green-400 focus-visible:ring-offset-1">
                                         <div className="flex min-w-0 flex-1 items-center gap-1.5">
                                           {isChapterOpen ? (
                                             <CaretDown
@@ -453,7 +453,7 @@ export const SubjectMaterial = () => {
                                               className="shrink-0 text-neutral-500 group-hover:text-green-600 transition-colors"
                                             />
                                           )}
-                                          <div className="flex items-center justify-center w-4 h-4 rounded bg-gradient-to-br from-green-500 to-green-600 text-white">
+                                          <div className="flex items-center justify-center w-4 h-4 rounded bg-gradient-to-br from-success-500 to-success-600 text-white">
                                             <PresentationChart size={10} />
                                           </div>
                                           <span className="text-xs w-5 shrink-0 text-center font-mono text-neutral-500 bg-neutral-100 rounded px-0.5">
@@ -481,7 +481,7 @@ export const SubjectMaterial = () => {
                                       </CollapsibleTrigger>
                                       <CollapsibleContent>
                                         <div className="space-y-px ms-5 border-s border-green-200/50 py-1 ps-2 relative">
-                                          <div className="absolute start-0 top-0 w-px h-full bg-gradient-to-b from-green-300/50 to-transparent"></div>
+                                          <div className="absolute start-0 top-0 w-px h-full bg-gradient-to-b from-success-300/50 to-transparent"></div>
                                           {(slidesMap[ch.id] ?? []).length ===
                                           0 ? (
                                             <div className="text-xs px-2 py-1 text-neutral-400 italic bg-neutral-50/50 rounded">
@@ -494,7 +494,7 @@ export const SubjectMaterial = () => {
                                               (slide, sIdx) => (
                                                 <div
                                                   key={slide.id}
-                                                  className="group flex cursor-pointer items-center gap-1.5 px-2 py-1 text-xs text-neutral-500 rounded hover:bg-gradient-to-r hover:from-amber-50/60 hover:to-orange-50/40 hover:border-amber-200/40 border border-transparent transition-all duration-200"
+                                                  className="group flex cursor-pointer items-center gap-1.5 px-2 py-1 text-xs text-neutral-500 rounded hover:bg-gradient-to-r hover:from-warning-50/60 hover:to-primary-50/40 hover:border-amber-200/40 border border-transparent transition-all duration-200"
                                                   onClick={() => {
                                                     handleSlideNavigation(
                                                       subject.id,
@@ -540,9 +540,9 @@ export const SubjectMaterial = () => {
       </div>
     ),
     [TabType.TEACHERS]: (
-      <div className="rounded-lg bg-gradient-to-br from-white to-neutral-50/50 border border-neutral-200 p-6 text-sm text-neutral-600">
-        <div className="flex items-center gap-3 mb-3">
-          <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center">
+      <div className="rounded-lg bg-gradient-to-br from-white to-neutral-50/50 border border-neutral-200 p-6 text-sm text-neutral-600 space-y-stack">
+        <div className="flex items-center gap-3">
+          <div className="w-8 h-8 rounded-full bg-gradient-to-br from-info-500 to-info-600 flex items-center justify-center">
             <span className="text-white text-xs font-bold">T</span>
           </div>
           <span className="font-medium text-neutral-700">
@@ -560,9 +560,9 @@ export const SubjectMaterial = () => {
       </div>
     ),
     [TabType.ASSESSMENT]: (
-      <div className="rounded-lg bg-gradient-to-br from-white to-neutral-50/50 border border-neutral-200 p-6 text-sm text-neutral-600">
-        <div className="flex items-center gap-3 mb-3">
-          <div className="w-8 h-8 rounded-full bg-gradient-to-br from-green-500 to-green-600 flex items-center justify-center">
+      <div className="rounded-lg bg-gradient-to-br from-white to-neutral-50/50 border border-neutral-200 p-6 text-sm text-neutral-600 space-y-stack">
+        <div className="flex items-center gap-3">
+          <div className="w-8 h-8 rounded-full bg-gradient-to-br from-success-500 to-success-600 flex items-center justify-center">
             <span className="text-white text-xs font-bold">A</span>
           </div>
           <span className="font-medium text-neutral-700">
@@ -591,7 +591,7 @@ export const SubjectMaterial = () => {
                 value={tab.value}
                 className={`data-[state=active]:text-primary data-[state=active]:border-primary hover:text-primary -mb-px px-3 
                                 py-2 text-sm font-medium transition-all duration-200 
-                                hover:bg-gradient-to-r hover:from-primary-50/60 hover:to-blue-50/40 focus-visible:ring-2 focus-visible:ring-primary-300 focus-visible:ring-offset-1
+                                hover:bg-gradient-to-r hover:from-primary-50/60 hover:to-info-50/40 focus-visible:ring-2 focus-visible:ring-primary-300 focus-visible:ring-offset-1
                                 data-[state=active]:rounded-t-lg data-[state=active]:border-b-2 data-[state=active]:bg-gradient-to-r data-[state=active]:from-white data-[state=active]:to-primary-50/30 data-[state=inactive]:text-neutral-500 data-[state=inactive]:hover:rounded-t-lg`}
               >
                 {tab.label}

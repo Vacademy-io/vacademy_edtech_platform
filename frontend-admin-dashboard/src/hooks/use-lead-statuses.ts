@@ -25,6 +25,8 @@ export interface LeadStatus {
     display_order: number;
     is_default: boolean;
     is_active: boolean;
+    /** Offered in the Lead Status filter dropdowns. Independent of is_active. Absent = shown. */
+    show_in_filter?: boolean;
     /** System default (New/Converted/Lost) — editable but not deletable. */
     is_system: boolean;
 }
@@ -37,6 +39,7 @@ export interface LeadStatusDraft {
     color: string;
     display_order: number;
     is_default: boolean;
+    show_in_filter?: boolean;
     is_system?: boolean;
 }
 
@@ -63,6 +66,7 @@ export async function fetchLeadStatuses(): Promise<LeadStatus[]> {
 
 export function useLeadStatuses(options?: { skip?: boolean }): {
     statuses: LeadStatus[];
+    filterStatuses: LeadStatus[];
     isLoading: boolean;
 } {
     const { data, isLoading } = useQuery({
@@ -72,7 +76,15 @@ export function useLeadStatuses(options?: { skip?: boolean }): {
         gcTime: 10 * 60 * 1000,
         enabled: !options?.skip,
     });
-    return { statuses: data ?? [], isLoading };
+    const statuses = data ?? [];
+    return {
+        statuses,
+        // Statuses an institute chose to offer in the Lead Status FILTER. A status kept
+        // out of here is still assignable and still renders on the leads carrying it —
+        // only the filter list drops it. Undefined (pre-migration payloads) means shown.
+        filterStatuses: statuses.filter((s) => s.show_in_filter !== false),
+        isLoading,
+    };
 }
 
 async function createLeadStatus(payload: LeadStatusDraft): Promise<void> {

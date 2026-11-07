@@ -1,0 +1,110 @@
+{
+    "hexColorPlaceholder": "Hex color",
+    "toasts": {
+        "themeUpdated": "Theme updated",
+        "saveFailed": "Could not save the theme. Please try again."
+    },
+    "brandColor": {
+        "heading": "Brand color",
+        "description": "Your primary color — drives buttons, links, and highlights across the learner app and admin dashboard.",
+        "selectThemeAriaLabel": "Select {{name}} theme",
+        "customAriaLabel": "Use a custom brand color",
+        "custom": "Custom",
+        "customBrandColorAriaLabel": "Custom brand color"
+    },
+    "font": {
+        "heading": "Font",
+        "description": "The typeface used across the learner app and admin dashboard.",
+        "specimen": "Aa Bb Cc 123"
+    },
+    "background": {
+        "heading": "Page background",
+        "description": "The canvas behind your content — white by default in both apps. Cards and menus stay white, so a light brand tint reads as a subtle wash.",
+        "custom": "Custom",
+        "whiteDefault": "White (default)",
+        "resetToWhite": "Reset to white",
+        "colorAriaLabel": "Page background color",
+        "tooDarkWarning": "This is dark for a page background — body text stays dark, so it may be hard to read. Pick a lighter tint.",
+        "cardPreviewTitle": "Card",
+        "cardPreviewSubtitle": "Stays white on the tinted page.",
+        "suggestions": {
+            "white": "White",
+            "brandTint": "Brand tint",
+            "brandTintDeeper": "Brand tint (deeper)",
+            "warmCream": "Warm cream",
+            "coolGrey": "Cool grey"
+        }
+    },
+    "accentColors": {
+        "heading": "Secondary & tertiary colors",
+        "description": "Supporting accent colors used across the learner app (badges, secondary highlights). Auto-generated from your brand color unless you set one here — the admin dashboard doesn't use these.",
+        "secondaryLabel": "Secondary color",
+        "tertiaryLabel": "Tertiary color",
+        "resetToAuto": "Reset to auto",
+        "customize": "Customize",
+        "colorAriaLabel": "{{label}} color",
+        "autoDerived": "Auto — derived from your brand color."
+    },
+    "sidebar": {
+        "heading": "Sidebar color",
+        "description": "Give your sidebar its own look, independent of the brand color — like Slack's sidebar themes.",
+        "selectPresetAriaLabel": "Select {{label}} sidebar",
+        "custom": "Custom",
+        "customDescription": "Pick every color yourself.",
+        "selectCustomAriaLabel": "Select Custom sidebar",
+        "colorFields": {
+            "surface": "Surface",
+            "surfaceHover": "Surface hover",
+            "active": "Active item",
+            "activeText": "Active text",
+            "text": "Text"
+        },
+        "colorAriaLabel": "{{label}} color",
+        "previewLabels": {
+            "dashboard": "Dashboard",
+            "courses": "Courses",
+            "learners": "Learners"
+        }
+    },
+    "save": {
+        "saving": "Saving…",
+        "save": "Save theme"
+    },
+    "common": {
+        "defaultSuffix": "Default"
+    },
+    "learnerUi": {
+        "heading": "Learner app appearance",
+        "description": "Shape, spacing and surface style for the learner app. These apply to what your learners see — the admin dashboard is unaffected.",
+        "corners": {
+            "label": "Corner style",
+            "help": "How rounded cards, buttons and inputs are. Avatars and pills stay circular.",
+            "sharp": "Sharp",
+            "rounded": "Rounded",
+            "pill": "Soft"
+        },
+        "density": {
+            "label": "Density",
+            "help": "Card padding, spacing between elements, and control height.",
+            "compact": "Compact",
+            "default": "Default",
+            "comfortable": "Comfortable"
+        },
+        "gradient": {
+            "label": "Surface style",
+            "help": "How strongly brand gradients show on cards and banners.",
+            "flat": "Flat",
+            "subtle": "Subtle",
+            "full": "Full"
+        },
+        "skin": {
+            "label": "Theme skin",
+            "help": "The overall visual language of the learner app.",
+            "default": "Default",
+            "vibrant": "Vibrant",
+            "play": "Play",
+            "cleanerPlay": "Cleaner Play",
+            "corporate": "Corporate"
+        }
+    }
+}

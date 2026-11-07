@@ -29,6 +29,14 @@ export interface SavePaymentOptionRequest {
     require_approval: boolean;
     payment_plans: PaymentPlanApi[];
     payment_option_metadata_json: string;
+    /** Option-level master switch for plan change. */
+    plan_change_allowed?: boolean;
+    /**
+     * Regional (country-based) pricing. Omitted = leave as is (the backend null-guards both).
+     * Saving with it on makes the backend create an automatic price per plan per currency.
+     */
+    regional_pricing_enabled?: boolean;
+    regional_pricing_currencies?: string[];
 }
 
 export interface GetPaymentOptionsRequest {
@@ -172,6 +180,7 @@ export const transformLocalPlanToApiFormat = (localPlan: PaymentPlan): PaymentPl
         tag: localPlan.tag || 'free',
         type: localPlan.type.toUpperCase() as PaymentPlanType,
         feature_json: JSON.stringify(localPlan.features || []),
+        plan_change_allowed: localPlan.config?.planChangeAllowed ?? false,
     };
 };
 
@@ -212,9 +221,15 @@ export const transformApiPlanToLocalFormat = (apiPlan: PaymentPlanApi): PaymentP
                 ...upfront,
                 accessType: apiPlan.validity_in_days == null ? 'lifetime' : 'limited',
                 validityDays: apiPlan.validity_in_days ?? undefined,
+                // Round-tripped so the next save updates this plan instead of replacing it.
+                planId: apiPlan.id,
             },
         };
     }
+
+    // A one-time option has exactly one plan, so its switchable flag lives on that plan
+    // and is surfaced at config level for the editor to bind a single checkbox to.
+    config = { ...config, planChangeAllowed: apiPlan.plan_change_allowed ?? false };
 
     return {
         id: apiPlan.id || '',
@@ -266,6 +281,12 @@ export const transformLocalPlanToApiFormatArray = (localPlan: PaymentPlan): Paym
             }
 
             return {
+                // Carrying the id back is what makes an edit an UPDATE rather than a
+                // replace. The backend's editPaymentPlans treats an id-less plan as new
+                // and soft-deletes every stored plan not resent by id, so dropping it
+                // here retired the whole ladder and minted fresh ids on every save —
+                // orphaning user_plan.plan_id and wiping each plan's switchable flag.
+                id: interval.id || undefined,
                 name: interval.title || '',
                 status: 'ACTIVE',
                 validity_in_days,
@@ -276,6 +297,7 @@ export const transformLocalPlanToApiFormatArray = (localPlan: PaymentPlan): Paym
                 tag: localPlan.tag || 'free',
                 type: (localPlan.type?.toUpperCase() as PaymentPlanType) || 'SUBSCRIPTION',
                 feature_json: JSON.stringify(interval.features || localPlan.features || []),
+                plan_change_allowed: interval.planChangeAllowed ?? false,
             };
         });
     }
@@ -293,6 +315,9 @@ export const transformLocalPlanToApiFormatArray = (localPlan: PaymentPlan): Paym
         }
         return [
             {
+                // Same reason as the subscription branch: without the id the backend
+                // retires the stored plan and mints a new one on every save.
+                id: localPlan.config?.upfront?.planId || undefined,
                 name: localPlan.name,
                 status: 'ACTIVE',
                 // null = lifetime access. This used to be hardcoded to 365, so every
@@ -306,6 +331,7 @@ export const transformLocalPlanToApiFormatArray = (localPlan: PaymentPlan): Paym
                 tag: localPlan.tag || 'free',
                 type: (localPlan.type?.toUpperCase() as PaymentPlanType) || 'UPFRONT',
                 feature_json: JSON.stringify(localPlan.features || []),
+                plan_change_allowed: localPlan.config?.planChangeAllowed ?? false,
             },
         ];
     }

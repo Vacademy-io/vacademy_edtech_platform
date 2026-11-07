@@ -1,0 +1,51 @@
+{
+    "trigger": {
+        "title": "إضافة مقطع فيديو مصدر",
+        "ariaLabel": "إضافة فيديو مصدر"
+    },
+    "heading": {
+        "title": "فيديوهات المصدر",
+        "description": "لقطات تجريبية أو صوت بودكاست تُستخدم داخل الفيديو المُنشأ."
+    },
+    "processing": {
+        "label": "قيد المعالجة"
+    },
+    "available": {
+        "label": "المتاحة",
+        "allSelected": "تم اختيار جميع الفيديوهات المتاحة.",
+        "durationSeconds": "{{seconds}} ث"
+    },
+    "limit": {
+        "message_zero": "بحد أقصى {{count}} مصادر.",
+        "message_one": "بحد أقصى مصدر واحد ({{count}}).",
+        "message_two": "بحد أقصى مصدرين ({{count}}).",
+        "message_few": "بحد أقصى {{count}} مصادر.",
+        "message_many": "بحد أقصى {{count}} مصدرًا.",
+        "message_other": "بحد أقصى {{count}} مصدر."
+    },
+    "modes": {
+        "demo": "عرض توضيحي",
+        "podcast": "بودكاست",
+        "photo": "صورة",
+        "screenshot": "لقطة شاشة",
+        "diagram": "مخطط"
+    },
+    "upload": {
+        "namePlaceholder": "اسم الفيديو",
+        "typeLabel": "النوع:",
+        "confirm": "رفع وفهرسة",
+        "uploading": "جارٍ الرفع…",
+        "cancel": "إلغاء",
+        "dropCta": "ارفع فيديو (≤500 ميجابايت) أو صورة (≤10 ميجابايت)"
+    },
+    "errors": {
+        "videoTooLarge": "الفيديو كبير جدًا. الحد الأقصى 500 ميجابايت.",
+        "imageTooLarge": "الصورة كبيرة جدًا. الحد الأقصى 10 ميجابايت.",
+        "unsupportedFormat": "صيغة غير مدعومة. استخدم MP4/WebM/MOV أو PNG/JPEG/WebP.",
+        "uploadFailed": "فشل الرفع",
+        "urlFailed": "فشل الحصول على الرابط"
+    },
+    "success": {
+        "uploaded": "تم رفع \"{{name}}\" — بدأت الفهرسة"
+    }
+}

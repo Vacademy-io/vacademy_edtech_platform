@@ -1,5 +1,9 @@
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { getQuestionDataForSection } from '../-services/assessment-services';
+import {
+    optionsFromQuestionData,
+    type QuestionOptionView,
+} from '@/components/common/assessment/question-options-list';
 
 interface QuestionData {
     question_id: string;
@@ -9,7 +13,16 @@ interface QuestionData {
     question_type: string;
     question_duration: string | number;
     marking_json: string;
+    evaluation_json?: string | null;
+    // The preview DTO fills options_with_explanation; plain `options` stays empty.
+    options?: Array<{ id?: string | null; text?: { content?: string | null } | null }>;
+    options_with_explanation?: Array<{
+        id?: string | null;
+        text?: { content?: string | null } | null;
+    }>;
 }
+
+export type AdaptiveMarkingOption = QuestionOptionView;
 
 export interface AdaptiveMarking {
     questionId: string;
@@ -21,6 +34,7 @@ export interface AdaptiveMarking {
         hrs: string;
         min: string;
     };
+    options?: AdaptiveMarkingOption[];
 }
 
 export const useQuestionsForSection = (
@@ -40,8 +54,10 @@ export const useQuestionsForSection = (
             const markingJson = questionData.marking_json
                 ? JSON.parse(questionData.marking_json)
                 : {};
+            const options: AdaptiveMarkingOption[] = optionsFromQuestionData(questionData);
             return {
                 questionId: questionData.question_id || '',
+                options,
                 questionName: questionData.question?.content || '',
                 questionType: questionData.question_type || '',
                 questionMark: markingJson.data?.totalMark || '0',

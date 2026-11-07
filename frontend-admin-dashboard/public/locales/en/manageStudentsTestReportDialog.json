@@ -1,0 +1,45 @@
+{
+    "title": "Student Test Report",
+    "toast": {
+        "exportPdfSuccess": "Test report data for PDF exported successfully!"
+    },
+    "info": {
+        "subject": "Subject:",
+        "attemptDate": "Attempt Date:",
+        "marks": "Marks:",
+        "completionTime": "Completion Time:",
+        "minutes": "{{value}} min",
+        "startTime": "Start Time:",
+        "endTime": "End Time:"
+    },
+    "score": {
+        "heading": "Score Report",
+        "rank": "Rank",
+        "percentile": "Percentile",
+        "marks": "Marks"
+    },
+    "response": {
+        "heading": "Response Breakdown",
+        "attempted": "Attempted:",
+        "skipped": "Skipped:"
+    },
+    "marksBreakdown": {
+        "heading": "Marks Breakdown",
+        "correctRespondents": "Correct Respondents:",
+        "partiallyCorrectRespondents": "Partially Correct Respondents:",
+        "wrongRespondents": "Wrong Respondents:",
+        "skipped": "Skipped:"
+    },
+    "review": {
+        "heading": "Answer Review",
+        "question": "Question ({{number}}.)",
+        "timeTakenSeconds_one": "{{count}} sec",
+        "timeTakenSeconds_other": "{{count}} sec",
+        "studentAnswer": "Student answer:",
+        "marksLabel": "{{marks}} Marks",
+        "correctAnswer": "Correct answer:",
+        "explanation": "Explanation:",
+        "noResponse": "No response",
+        "empty": "No answer review available"
+    }
+}

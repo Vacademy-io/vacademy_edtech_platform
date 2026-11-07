@@ -1,0 +1,53 @@
+{
+    "unknownDate": "غير معروف",
+    "noDescription": "لا يوجد وصف متاح",
+    "type": "النوع:",
+    "schedules": "الجداول الزمنية",
+    "cronBadge": "CRON",
+    "lastRun": "آخر تشغيل: {{time}}",
+    "nextRun": "التشغيل التالي: {{time}}",
+    "andMore_zero": "و{{count}} أخرى…",
+    "andMore_one": "وواحد آخر…",
+    "andMore_two": "واثنان آخران…",
+    "andMore_few": "و{{count}} أخرى…",
+    "andMore_many": "و{{count}} أخرى…",
+    "andMore_other": "و{{count}} أخرى…",
+    "noScheduleAdded": "لم تتم إضافة جدول زمني",
+    "trigger": "المُشغّل",
+    "appliesTo": "ينطبق على: {{type}}",
+    "noTriggerDetails": "لا توجد تفاصيل للمُشغّل",
+    "created": "أُنشئ {{time}}",
+    "updated": "حُدّث {{time}}",
+    "cron": {
+        "am": "ص",
+        "pm": "م",
+        "everyDayAt": "كل يوم في {{time}}",
+        "everyDaysAt": "كل {{days}} في {{time}}",
+        "onDayOfEveryMonthAt": "في اليوم {{day}} من كل شهر في {{time}}",
+        "onDayOfMonthsAt": "في اليوم {{day}} من {{months}} في {{time}}",
+        "everyDayOfMonthsAt": "كل يوم من {{months}} في {{time}}",
+        "days": {
+            "sunday": "الأحد",
+            "monday": "الاثنين",
+            "tuesday": "الثلاثاء",
+            "wednesday": "الأربعاء",
+            "thursday": "الخميس",
+            "friday": "الجمعة",
+            "saturday": "السبت"
+        },
+        "months": {
+            "january": "يناير",
+            "february": "فبراير",
+            "march": "مارس",
+            "april": "أبريل",
+            "may": "مايو",
+            "june": "يونيو",
+            "july": "يوليو",
+            "august": "أغسطس",
+            "september": "سبتمبر",
+            "october": "أكتوبر",
+            "november": "نوفمبر",
+            "december": "ديسمبر"
+        }
+    }
+}

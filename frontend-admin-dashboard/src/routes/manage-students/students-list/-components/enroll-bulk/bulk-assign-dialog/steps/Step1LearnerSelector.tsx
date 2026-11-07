@@ -1,4 +1,5 @@
 import { useState, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -39,6 +40,7 @@ export const Step1LearnerSelector = ({
     guardianLinkErrors,
     onClearGuardianLinkError,
 }: Props) => {
+    const { t } = useTranslation('manageStudentsStep1LearnerSelector');
     const { enabled: guardianLinkingEnabled, isLoading: guardianSettingsLoading } = useParentSettings();
     const showGuardianControls = guardianLinkingEnabled && !guardianSettingsLoading;
     const [searchQuery, setSearchQuery] = useState('');
@@ -102,7 +104,7 @@ export const Step1LearnerSelector = ({
         l.type === 'existing' ? l.name || l.email : l.newUser.full_name || l.newUser.email;
 
     const getLearnerSub = (l: SelectedLearner) =>
-        l.type === 'existing' ? l.email : '(new user)';
+        l.type === 'existing' ? l.email : t('chip.newUser');
 
     const updateParentLink = (index: number, next: ParentLinkChoice) => {
         const nextLearners = [...selectedLearners];
@@ -117,7 +119,7 @@ export const Step1LearnerSelector = ({
             {selectedLearners.length > 0 && (
                 <div className="rounded-lg border border-neutral-200 bg-neutral-50 p-3">
                     <p className="mb-2 text-xs font-semibold text-neutral-500 uppercase tracking-wide">
-                        {selectedLearners.length} learner{selectedLearners.length !== 1 ? 's' : ''} selected
+                        {t('summary.learnersSelected', { count: selectedLearners.length })}
                     </p>
                     <div className={cn(showGuardianControls ? 'flex flex-col gap-2' : 'flex flex-wrap gap-2')}>
                         {selectedLearners.map((l, idx) => {
@@ -133,14 +135,14 @@ export const Step1LearnerSelector = ({
                                     <div>
                                         <span className="font-medium">{getLearnerLabel(l)}</span>
                                         <span className={`ml-1 ${isBeingEdited ? 'text-warning-500' : 'text-primary-400'}`}>
-                                            {isBeingEdited ? '(editing…)' : getLearnerSub(l)}
+                                            {isBeingEdited ? t('chip.editing') : getLearnerSub(l)}
                                         </span>
                                     </div>
                                     {l.type === 'new' && !isBeingEdited && (
                                         <button
                                             onClick={() => startEditing(idx)}
                                             className="ml-1 rounded-full text-primary-400 hover:text-primary-700"
-                                            title="Edit"
+                                            title={t('chip.editTitle')}
                                         >
                                             <PencilSimple size={12} weight="bold" />
                                         </button>
@@ -155,7 +157,7 @@ export const Step1LearnerSelector = ({
                                                 ? 'text-warning-500 hover:text-warning-700'
                                                 : 'text-primary-400 hover:text-primary-700'
                                         }`}
-                                        title="Remove"
+                                        title={t('chip.removeTitle')}
                                     >
                                         <X size={12} weight="bold" />
                                     </button>
@@ -197,21 +199,23 @@ export const Step1LearnerSelector = ({
                 <TabsList className="grid h-auto w-full grid-cols-2 gap-1 sm:flex sm:h-9 sm:gap-0">
                     <TabsTrigger value="search" className="min-w-0 justify-center text-xs sm:flex-1 sm:text-sm">
                         <MagnifyingGlass size={14} className="mr-1.5 shrink-0" />
-                        <span className="truncate">Search Existing</span>
+                        <span className="truncate">{t('tabs.search')}</span>
                     </TabsTrigger>
                     <TabsTrigger value="from_course" className="min-w-0 justify-center text-xs sm:flex-1 sm:text-sm">
                         <UserPlus size={14} className="mr-1.5 shrink-0" />
                         <span className="truncate">
-                            From {getTerminology(ContentTerms.Course, SystemTerms.Course)}
+                            {t('tabs.fromCourse', {
+                                term: getTerminology(ContentTerms.Course, SystemTerms.Course),
+                            })}
                         </span>
                     </TabsTrigger>
                     <TabsTrigger value="csv" className="min-w-0 justify-center text-xs sm:flex-1 sm:text-sm">
                         <Upload size={14} className="mr-1.5 shrink-0" />
-                        <span className="truncate">Import CSV</span>
+                        <span className="truncate">{t('tabs.csv')}</span>
                     </TabsTrigger>
                     <TabsTrigger value="manual" className="min-w-0 justify-center text-xs sm:flex-1 sm:text-sm">
                         <UserPlus size={14} className="mr-1.5 shrink-0" />
-                        <span className="truncate">Add Manually</span>
+                        <span className="truncate">{t('tabs.manual')}</span>
                     </TabsTrigger>
                 </TabsList>
 
@@ -226,12 +230,12 @@ export const Step1LearnerSelector = ({
                             ref={searchRef}
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
-                            placeholder="Search by name, email, or username…"
+                            placeholder={t('search.placeholder')}
                             className="pl-9"
                         />
                     </div>
                     {isFetching && (
-                        <p className="mt-3 text-xs text-neutral-400">Searching…</p>
+                        <p className="mt-3 text-xs text-neutral-400">{t('search.searching')}</p>
                     )}
                     {!isFetching && suggestedUsers && suggestedUsers.length > 0 && (
                         <div className="mt-2 rounded-lg border border-neutral-200 bg-white shadow-sm">
@@ -253,10 +257,10 @@ export const Step1LearnerSelector = ({
                                             <p className="text-xs text-neutral-400">{u.email}</p>
                                         </div>
                                         {alreadyAdded ? (
-                                            <Badge variant="secondary">Added</Badge>
+                                            <Badge variant="secondary">{t('search.added')}</Badge>
                                         ) : (
                                             <span className="text-xs font-medium text-primary-500">
-                                                + Add
+                                                {t('search.addAction')}
                                             </span>
                                         )}
                                     </button>
@@ -266,12 +270,12 @@ export const Step1LearnerSelector = ({
                     )}
                     {!isFetching && searchQuery.length >= 2 && (!suggestedUsers || suggestedUsers.length === 0) && (
                         <p className="mt-4 text-center text-sm text-neutral-400">
-                            No students found matching "{searchQuery}"
+                            {t('search.noResults', { query: searchQuery })}
                         </p>
                     )}
                     {searchQuery.length < 2 && (
                         <p className="mt-4 text-center text-sm text-neutral-400">
-                            Type at least 2 characters to search
+                            {t('search.minChars')}
                         </p>
                     )}
                 </TabsContent>

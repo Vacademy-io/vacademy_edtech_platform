@@ -5,6 +5,8 @@ import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Component;
 import vacademy.io.common.auth.constants.AuthConstant;
@@ -22,9 +24,16 @@ import java.util.function.Function;
 @Component
 public class JwtService {
 
+    public static final String SECRET_KEY_ENV = "JWT_SECRET_KEY";
 
-    //todo: remove secret from here
-    public static final String secretKey = "357638792F423F4428472B4B6250655368566D597133743677397A2443264629";
+    // Legacy platform signing key. It is public (this repo is public), so anyone can mint a
+    // token with it. Kept only as the fallback until JWT_SECRET_KEY is set on every service
+    // and ai_service at once; setting a different value there is the rotation.
+    private static final String LEGACY_SECRET_KEY = "357638792F423F4428472B4B6250655368566D597133743677397A2443264629";
+
+    // Read once at class load. Also read directly by VimotionSignupTokenService and
+    // LiveActivityStreamTokenService, so they follow the same key.
+    public static final String secretKey = resolveSecretKey(System.getenv(SECRET_KEY_ENV));
 
 
     public String extractUsername(String token) {
@@ -92,6 +101,38 @@ public class JwtService {
     private Key getSignInKey() {
         byte[] keyBytes = Decoders.BASE64.decode(secretKey);
         return Keys.hmacShaKeyFor(keyBytes);
+    }
+
+    /**
+     * JWT_SECRET_KEY when it is set; the legacy key only when it is unset or blank. A value
+     * that is set but not usable as an HS256 key (same BASE64 decoding as getSignInKey, at
+     * least 256 bits) FAILS STARTUP rather than falling back: ai_service uses the env value
+     * as given, so a silent fallback would leave Java on the public key and split the two
+     * on every token. Never logs the value.
+     */
+    static String resolveSecretKey(String fromEnv) {
+        Logger log = LoggerFactory.getLogger(JwtService.class);
+        String candidate = fromEnv == null ? "" : fromEnv.trim();
+        if (candidate.isEmpty()) {
+            log.warn("{} is not set; signing JWTs with the legacy built-in key, which is public. "
+                    + "Set {} on every service and ai_service together to rotate.", SECRET_KEY_ENV, SECRET_KEY_ENV);
+            return LEGACY_SECRET_KEY;
+        }
+        try {
+            Keys.hmacShaKeyFor(Decoders.BASE64.decode(candidate));
+        } catch (RuntimeException e) {
+            log.error("{} is set but is not a usable HS256 key ({}); refusing to start. It must be BASE64 "
+                    + "(hex works) of at least 32 bytes, e.g. `openssl rand -hex 32`.",
+                    SECRET_KEY_ENV, e.getClass().getSimpleName());
+            throw new IllegalStateException(SECRET_KEY_ENV + " is set but is not a usable HS256 key ("
+                    + e.getClass().getSimpleName() + ")");
+        }
+        if (LEGACY_SECRET_KEY.equals(candidate)) {
+            log.warn("{} equals the legacy built-in key, which is public; rotate it.", SECRET_KEY_ENV);
+        } else {
+            log.info("Signing JWTs with the key from {}.", SECRET_KEY_ENV);
+        }
+        return candidate;
     }
 
 

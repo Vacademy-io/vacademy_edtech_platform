@@ -1,0 +1,23 @@
+{
+    "header": {
+        "title": "Utilisateurs actuellement actifs",
+        "subtitle": "Sessions et activité des utilisateurs en temps réel"
+    },
+    "stats": {
+        "onlineNow": "En ligne maintenant",
+        "moreUsers_one": "+{{count}} utilisateur de plus en ligne",
+        "moreUsers_many": "+{{count}} utilisateurs de plus en ligne",
+        "moreUsers_other": "+{{count}} utilisateurs de plus en ligne"
+    },
+    "error": {
+        "message": "Échec du chargement des utilisateurs actifs"
+    },
+    "empty": {
+        "message": "Aucun utilisateur actif pour le moment"
+    },
+    "device": {
+        "desktop": "Ordinateur",
+        "mobile": "Mobile",
+        "tablet": "Tablette"
+    }
+}

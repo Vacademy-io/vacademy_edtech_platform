@@ -1,0 +1,61 @@
+{
+    "validation": {
+        "amountNonNegative": "Saisissez un montant nul ou positif"
+    },
+    "oldRegimeFields": {
+        "section_80c": {
+            "label": "Assurance-vie, PPF, ELSS, principal de prêt immobilier",
+            "hint": "Article 80C · plafonné au plafond légal"
+        },
+        "section_80d": {
+            "label": "Primes d'assurance santé",
+            "hint": "Article 80D · pour vous et vos personnes à charge"
+        },
+        "section_80ccd1b": {
+            "label": "Cotisation NPS supplémentaire",
+            "hint": "Article 80CCD(1B) · en plus de 80C"
+        },
+        "section_80e": {
+            "label": "Intérêts payés sur un prêt étudiant",
+            "hint": "Article 80E"
+        },
+        "hra_rent_paid": {
+            "label": "Loyer payé cette année",
+            "hint": "Loyer total de l'année, pas par mois"
+        }
+    },
+    "toast": {
+        "saved": "Votre déclaration est enregistrée"
+    },
+    "errors": {
+        "saveFailed": "Impossible d'enregistrer votre déclaration.",
+        "loadFailed": "Impossible de charger votre déclaration."
+    },
+    "intro": "Indiquez à la paie ce que vous prévoyez de déclarer cette année fiscale, afin que l'impôt retenu chaque mois soit proche de ce que vous devrez réellement. La déclaration est une déclaration d'intention — votre équipe RH vérifie les justificatifs séparément.",
+    "financialYearLabel": "Année fiscale",
+    "lockedNotice": {
+        "verified": "Votre équipe RH a vérifié cette déclaration, elle ne peut donc plus être modifiée ici. Si quelque chose doit être corrigé, demandez-leur.",
+        "locked": "Votre équipe RH a verrouillé cette déclaration, elle ne peut donc plus être modifiée ici. Si quelque chose doit être corrigé, demandez-leur."
+    },
+    "whichRegime": "Quel régime souhaitez-vous ?",
+    "regimeCards": {
+        "new": {
+            "title": "Nouveau régime",
+            "blurb": "Taux d'imposition plus bas, mais presque aucune déduction — vous ne déclarez rien et payez un pourcentage plus faible."
+        },
+        "old": {
+            "title": "Ancien régime",
+            "blurb": "Taux plus élevés, mais vous pouvez déclarer 80C, 80D et HRA en fonction de vos dépenses réelles."
+        }
+    },
+    "newRegimeNote": "Rien à déclarer sous le nouveau régime — ses taux plus bas supposent déjà qu'aucune déduction n'est réclamée. Enregistrez et la paie utilisera les tranches du nouveau régime pour le reste de l'année.",
+    "metroCheckbox": {
+        "label": "Je loue dans une ville métropolitaine",
+        "hint": "Delhi, Mumbai, Kolkata ou Chennai. Cela change la part de votre loyer qui compte."
+    },
+    "hraNote": "Vous ne déclarez pas directement un montant HRA — la paie calcule la part exonérée à partir du loyer payé, de votre composante HRA et du fait que vous soyez ou non dans une ville métropolitaine.",
+    "saving": "Enregistrement…",
+    "updateDeclaration": "Mettre à jour ma déclaration",
+    "saveDeclaration": "Enregistrer ma déclaration",
+    "keepReceiptsNote": "Vous pouvez modifier ceci jusqu'à ce que votre équipe RH le vérifie. Conservez les reçus — ils demanderont des justificatifs avant la clôture de l'année."
+}

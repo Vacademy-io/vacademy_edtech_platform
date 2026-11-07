@@ -1,0 +1,28 @@
+{
+    "instituteLogoAlt": "संस्थान लोगो",
+    "continueWithGoogle": "Google से जारी रखें",
+    "continueWithGithub": "GitHub से जारी रखें",
+    "orContinueWith": "या इसके साथ जारी रखें",
+    "usernamePlaceholder": "अपना उपयोगकर्ता नाम दर्ज करें",
+    "usernameLabel": "उपयोगकर्ता नाम",
+    "passwordLabel": "पासवर्ड",
+    "forgotPassword": "पासवर्ड भूल गए?",
+    "useEmailOtp": "ईमेल OTP का उपयोग करें",
+    "usePhoneOtp": "फ़ोन OTP का उपयोग करें",
+    "loggingIn": "लॉग इन हो रहा है...",
+    "login": "लॉगिन",
+    "noAccount": "खाता नहीं है?",
+    "createOne": "एक बनाएं",
+    "termsAndConditions": "नियम एवं शर्तें",
+    "privacyPolicy": "गोपनीयता नीति",
+    "errors": {
+        "accessDeniedTitle": "पहुंच अस्वीकृत",
+        "studentAccessDenied": "छात्रों को व्यवस्थापक पोर्टल तक पहुंचने की अनुमति नहीं है। कृपया अपने व्यवस्थापक से संपर्क करें।",
+        "adminRoleRequired": "इस पोर्टल के लिए ADMIN अधिकार आवश्यक हैं। कृपया अपने व्यवस्थापक से संपर्क करें।",
+        "notAllowedPortal": "आपको इस पोर्टल तक पहुंचने की अनुमति नहीं है। कृपया अपने व्यवस्थापक से संपर्क करें।",
+        "loginFailedRetry": "लॉगिन विफल रहा। कृपया पुनः प्रयास करें।",
+        "loginErrorTitle": "लॉगिन त्रुटि",
+        "invalidCredentials": "अमान्य क्रेडेंशियल",
+        "invalidUsernamePassword": "अमान्य उपयोगकर्ता नाम या पासवर्ड"
+    }
+}

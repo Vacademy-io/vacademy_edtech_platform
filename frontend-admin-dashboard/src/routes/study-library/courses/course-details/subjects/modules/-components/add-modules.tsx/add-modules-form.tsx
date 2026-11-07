@@ -16,20 +16,23 @@ import { useState, useRef, useEffect } from 'react';
 import { Image, X } from '@phosphor-icons/react';
 import { getUserId } from '@/utils/userDetails';
 import { useInstitute } from '@/hooks/auth/useInstitute';
+import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 
-const formSchema = z.object({
-    moduleName: z.string().min(1, 'Module name is required'),
-    description: z
-        .string()
-        .max(
-            CONTENT_DESCRIPTION_MAX_LENGTH,
-            `Description must be ${CONTENT_DESCRIPTION_MAX_LENGTH} characters or fewer`
-        )
-        .optional(),
-    thumbnailFile: z.any().optional(),
-});
+const buildFormSchema = (t: TFunction) =>
+    z.object({
+        moduleName: z.string().min(1, t('validation.moduleNameRequired')),
+        description: z
+            .string()
+            .max(
+                CONTENT_DESCRIPTION_MAX_LENGTH,
+                t('validation.descriptionMaxLength', { max: CONTENT_DESCRIPTION_MAX_LENGTH })
+            )
+            .optional(),
+        thumbnailFile: z.any().optional(),
+    });
 
-type FormValues = z.infer<typeof formSchema>;
+type FormValues = z.infer<ReturnType<typeof buildFormSchema>>;
 
 interface AddModulesFormProps {
     initialValues?: Module;
@@ -37,6 +40,8 @@ interface AddModulesFormProps {
 }
 
 export const AddModulesForm = ({ initialValues, onSubmitSuccess }: AddModulesFormProps) => {
+    const { t } = useTranslation('studyLibraryAddModulesForm');
+    const formSchema = buildFormSchema(t);
     const [selectedImage, setSelectedImage] = useState<File | null>(null);
     const [imagePreviewUrl, setImagePreviewUrl] = useState<string>('');
     const [cropperOpen, setCropperOpen] = useState(false);
@@ -168,16 +173,20 @@ export const AddModulesForm = ({ initialValues, onSubmitSuccess }: AddModulesFor
                         <FormItem>
                             <FormControl>
                                 <MyInput
-                                    label={`${getTerminology(
-                                        ContentTerms.Modules,
-                                        SystemTerms.Modules
-                                    )} Name`}
+                                    label={t('moduleNameLabel', {
+                                        term: getTerminology(
+                                            ContentTerms.Modules,
+                                            SystemTerms.Modules
+                                        ),
+                                    })}
                                     required={true}
                                     inputType="text"
-                                    inputPlaceholder={`Enter ${getTerminology(
-                                        ContentTerms.Modules,
-                                        SystemTerms.Modules
-                                    )} name`}
+                                    inputPlaceholder={t('moduleNamePlaceholder', {
+                                        term: getTerminology(
+                                            ContentTerms.Modules,
+                                            SystemTerms.Modules
+                                        ),
+                                    })}
                                     className="w-[352px]"
                                     input={field.value}
                                     onChangeFunction={(e) => field.onChange(e.target.value)}
@@ -194,9 +203,9 @@ export const AddModulesForm = ({ initialValues, onSubmitSuccess }: AddModulesFor
                         <FormItem>
                             <FormControl>
                                 <MyInput
-                                    label="Description (Optional)"
+                                    label={t('descriptionLabel')}
                                     inputType="text"
-                                    inputPlaceholder="Enter module description"
+                                    inputPlaceholder={t('descriptionPlaceholder')}
                                     className="w-[352px]"
                                     input={field.value || ''}
                                     onChangeFunction={(e) => field.onChange(e.target.value)}
@@ -204,13 +213,14 @@ export const AddModulesForm = ({ initialValues, onSubmitSuccess }: AddModulesFor
                                 />
                             </FormControl>
                             <p className="text-caption text-neutral-400">
-                                Shown on the{' '}
-                                {getTerminology(
-                                    ContentTerms.Modules,
-                                    SystemTerms.Modules
-                                ).toLowerCase()}{' '}
-                                card — {(field.value || '').length}/
-                                {CONTENT_DESCRIPTION_MAX_LENGTH} characters
+                                {t('descriptionHint', {
+                                    term: getTerminology(
+                                        ContentTerms.Modules,
+                                        SystemTerms.Modules
+                                    ).toLowerCase(),
+                                    count: (field.value || '').length,
+                                    max: CONTENT_DESCRIPTION_MAX_LENGTH,
+                                })}
                             </p>
                             <FormMessage />
                         </FormItem>
@@ -220,17 +230,19 @@ export const AddModulesForm = ({ initialValues, onSubmitSuccess }: AddModulesFor
                 {/* Thumbnail Image Upload Section */}
                 <div className="flex flex-col gap-2">
                     <label className="text-subtitle font-regular text-neutral-600">
-                        Thumbnail Image
+                        {t('thumbnailImage')}
                     </label>
                     {isLoadingExistingImage ? (
                         <div className="flex h-[120px] w-[200px] items-center justify-center rounded-lg border border-neutral-300 bg-neutral-50">
-                            <div className="text-sm text-neutral-500">Loading thumbnail...</div>
+                            <div className="text-sm text-neutral-500">
+                                {t('loadingThumbnail')}
+                            </div>
                         </div>
                     ) : imagePreviewUrl && !thumbnailRemoved ? (
                         <div className="relative h-[120px] w-[200px] overflow-hidden rounded-lg border border-neutral-300">
                             <img
                                 src={imagePreviewUrl}
-                                alt="Module thumbnail preview"
+                                alt={t('thumbnailPreviewAlt')}
                                 className="size-full object-cover"
                             />
                             <button
@@ -253,9 +265,11 @@ export const AddModulesForm = ({ initialValues, onSubmitSuccess }: AddModulesFor
                         >
                             <div className="flex h-full flex-col items-center justify-center gap-2 text-neutral-500">
                                 <Image className="size-8" />
-                                <span className="text-sm font-medium">Upload Thumbnail</span>
+                                <span className="text-sm font-medium">
+                                    {t('uploadThumbnail')}
+                                </span>
                                 <span className="text-xs text-neutral-400">
-                                    PNG, JPG · 16:9 recommended
+                                    {t('uploadThumbnailHint')}
                                 </span>
                             </div>
                         </FileUploadComponent>
@@ -270,7 +284,7 @@ export const AddModulesForm = ({ initialValues, onSubmitSuccess }: AddModulesFor
                         layoutVariant="default"
                         disabled={isUploading}
                     >
-                        {isUploading ? 'Uploading...' : initialValues ? 'Save Changes' : 'Add'}
+                        {isUploading ? t('uploading') : initialValues ? t('saveChanges') : t('add')}
                     </MyButton>
                 </div>
             </form>
@@ -282,7 +296,7 @@ export const AddModulesForm = ({ initialValues, onSubmitSuccess }: AddModulesFor
                     onOpenChange={setCropperOpen}
                     src={imagePreviewUrl}
                     aspectRatio={16 / 9} // 16:9 ratio to match the display tile (no crop on display)
-                    title="Crop Module Thumbnail"
+                    title={t('cropModuleThumbnail')}
                     outputMimeType="image/jpeg"
                     outputQuality={0.9}
                     onCropped={handleImageCropped}

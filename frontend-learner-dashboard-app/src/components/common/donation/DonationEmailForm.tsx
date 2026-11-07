@@ -1,4 +1,5 @@
 import React from "react";
+import { useTranslation } from "react-i18next";
 import { EnvelopeSimple } from "@phosphor-icons/react";
 import { DonationSummary } from "./DonationSummary";
 
@@ -21,6 +22,7 @@ export const DonationEmailForm: React.FC<DonationEmailFormProps> = ({
   onEmailChange,
   onEdit,
 }) => {
+  const { t } = useTranslation("layoutCommonB");
   return (
     <>
       <DonationSummary
@@ -30,7 +32,7 @@ export const DonationEmailForm: React.FC<DonationEmailFormProps> = ({
         onEdit={onEdit}
       />
       <div className="mb-2">
-        <label className="block text-xs text-gray-600 mb-1" htmlFor="donation-email">Your Email</label>
+        <label className="block text-xs text-gray-600 mb-1" htmlFor="donation-email">{t("donation.emailForm.yourEmail")}</label>
         <div className="relative">
           <span className="absolute start-3 top-1/2 -translate-y-1/2 text-gray-400">
             <EnvelopeSimple size={16} />
@@ -43,10 +45,10 @@ export const DonationEmailForm: React.FC<DonationEmailFormProps> = ({
             }`}
             value={email}
             onChange={(e) => onEmailChange(e.target.value)}
-            placeholder={validationError ? validationError : "you@example.com"}
+            placeholder={validationError ? validationError : t("donation.emailForm.emailPlaceholder")}
           />
         </div>
-        <p className="text-2xs text-gray-400 mt-1">We'll send your receipt to this email address</p>
+        <p className="text-2xs text-gray-400 mt-1">{t("donation.emailForm.receiptNotice")}</p>
       </div>
     </>
   );

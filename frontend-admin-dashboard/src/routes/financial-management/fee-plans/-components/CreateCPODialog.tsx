@@ -1,5 +1,7 @@
 // @ts-nocheck
 import React, { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 import type { CreateCPOPayload } from '../-types/cpo-types';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -11,6 +13,13 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
+import {
+    DEFAULT_FLEXIBLE_DEFAULTS,
+    flexibleDefaultsError,
+    flexibleHasNoSplitFee,
+    type FlexibleDefaultsForm,
+} from '../-utils/flexible-defaults';
+import { FlexibleScheduleSettings } from './FlexibleScheduleSettings';
 
 // ─── Types for the form ─────────────────────────────────────────────────────────
 
@@ -44,7 +53,17 @@ export interface CPOForm {
     feeTypes: FeeTypeForm[];
     /** When true, learners enrolling via this CPO need admin approval before course access. */
     requireApproval?: boolean;
+    /**
+     * FIXED (default): installment dates are part of the plan. FLEXIBLE: the plan holds
+     * fees and amounts only; the admin picks the number of installments and the gap for
+     * each learner at enrollment (docs/CPO_FLEXIBLE_INSTALLMENTS.md).
+     */
+    scheduleMode?: 'FIXED' | 'FLEXIBLE';
+    /** Defaults for a FLEXIBLE plan; prefill the Enroll wizard. */
+    flexibleDefaults?: FlexibleDefaultsForm;
 }
+
+
 
 export interface BatchOption {
     id: string;
@@ -53,86 +72,117 @@ export interface BatchOption {
 
 // ─── Constants ──────────────────────────────────────────────────────────────────
 
-const INSTALLMENT_PRESETS = [
-    { label: 'Annual', count: 1 },
-    { label: 'Half-Yearly', count: 2 },
-    { label: 'Quarterly', count: 4 },
-    { label: 'Monthly', count: 12 },
-    { label: 'Custom', count: null },
-];
+function buildInstallmentPresets(t: TFunction) {
+    return [
+        { label: t('presets.installment.annual'), count: 1 },
+        { label: t('presets.installment.halfYearly'), count: 2 },
+        { label: t('presets.installment.quarterly'), count: 4 },
+        { label: t('presets.installment.monthly'), count: 12 },
+        { label: t('presets.installment.custom'), count: null },
+    ];
+}
 
-const FEE_TYPE_PRESETS = [
-    {
-        label: 'Tuition Fee',
-        name: 'Tuition Fee',
-        code: 'TUITION_FEE',
-        description: 'Regular tuition charges for the academic year',
-        hasInstallment: true,
-        isRefundable: false,
-        hasPenalty: true,
-        penaltyPercentage: 5,
-        noOfInstallments: 4,
-    },
-    {
-        label: 'Exam Fee',
-        name: 'Exam Fee',
-        code: 'EXAM_FEE',
-        description: 'Examination and assessment charges',
-        hasInstallment: false,
-        isRefundable: false,
-        hasPenalty: false,
-        penaltyPercentage: '',
-        noOfInstallments: 1,
-    },
-    {
-        label: 'Library Fee',
-        name: 'Library Fee',
-        code: 'LIBRARY_FEE',
-        description: 'Library access and resource charges',
-        hasInstallment: false,
-        isRefundable: false,
-        hasPenalty: false,
-        penaltyPercentage: '',
-        noOfInstallments: 1,
-    },
-    {
-        label: 'Transport Fee',
-        name: 'Transport Fee',
-        code: 'TRANSPORT_FEE',
-        description: 'School transportation charges',
-        hasInstallment: true,
-        isRefundable: false,
-        hasPenalty: false,
-        penaltyPercentage: '',
-        noOfInstallments: 12,
-    },
-    {
-        label: 'Hostel Fee',
-        name: 'Hostel Fee',
-        code: 'HOSTEL_FEE',
-        description: 'Hostel accommodation charges',
-        hasInstallment: true,
-        isRefundable: true,
-        hasPenalty: false,
-        penaltyPercentage: '',
-        noOfInstallments: 2,
-    },
-    {
-        label: 'Lab Fee',
-        name: 'Lab Fee',
-        code: 'LAB_FEE',
-        description: 'Laboratory usage and material charges',
-        hasInstallment: false,
-        isRefundable: false,
-        hasPenalty: false,
-        penaltyPercentage: '',
-        noOfInstallments: 1,
-    },
-];
+function buildFeeTypePresets(t: TFunction) {
+    const tuitionLabel = t('presets.feeType.tuitionLabel');
+    const examLabel = t('presets.feeType.examLabel');
+    const libraryLabel = t('presets.feeType.libraryLabel');
+    const transportLabel = t('presets.feeType.transportLabel');
+    const hostelLabel = t('presets.feeType.hostelLabel');
+    const labLabel = t('presets.feeType.labLabel');
+    return [
+        {
+            label: tuitionLabel,
+            name: tuitionLabel,
+            code: 'TUITION_FEE',
+            description: t('presets.feeType.tuitionDescription'),
+            hasInstallment: true,
+            isRefundable: false,
+            hasPenalty: true,
+            penaltyPercentage: 5,
+            noOfInstallments: 4,
+        },
+        {
+            label: examLabel,
+            name: examLabel,
+            code: 'EXAM_FEE',
+            description: t('presets.feeType.examDescription'),
+            hasInstallment: false,
+            isRefundable: false,
+            hasPenalty: false,
+            penaltyPercentage: '',
+            noOfInstallments: 1,
+        },
+        {
+            label: libraryLabel,
+            name: libraryLabel,
+            code: 'LIBRARY_FEE',
+            description: t('presets.feeType.libraryDescription'),
+            hasInstallment: false,
+            isRefundable: false,
+            hasPenalty: false,
+            penaltyPercentage: '',
+            noOfInstallments: 1,
+        },
+        {
+            label: transportLabel,
+            name: transportLabel,
+            code: 'TRANSPORT_FEE',
+            description: t('presets.feeType.transportDescription'),
+            hasInstallment: true,
+            isRefundable: false,
+            hasPenalty: false,
+            penaltyPercentage: '',
+            noOfInstallments: 12,
+        },
+        {
+            label: hostelLabel,
+            name: hostelLabel,
+            code: 'HOSTEL_FEE',
+            description: t('presets.feeType.hostelDescription'),
+            hasInstallment: true,
+            isRefundable: true,
+            hasPenalty: false,
+            penaltyPercentage: '',
+            noOfInstallments: 2,
+        },
+        {
+            label: labLabel,
+            name: labLabel,
+            code: 'LAB_FEE',
+            description: t('presets.feeType.labDescription'),
+            hasInstallment: false,
+            isRefundable: false,
+            hasPenalty: false,
+            penaltyPercentage: '',
+            noOfInstallments: 1,
+        },
+    ];
+}
 
 // ─── Payload builder ────────────────────────────────────────────────────────────
 
+/** schedule_mode + flexible_defaults for the create payload; empty for a fixed plan. */
+function flexiblePayload(form: CPOForm): Pick<CreateCPOPayload, 'schedule_mode' | 'flexible_defaults'> {
+    if (form.scheduleMode !== 'FLEXIBLE') return {};
+    const d = form.flexibleDefaults ?? DEFAULT_FLEXIBLE_DEFAULTS;
+    const toInt = (v: number | string) => {
+        const n = Math.floor(Number(v));
+        return Number.isFinite(n) && n > 0 ? n : null;
+    };
+    return {
+        schedule_mode: 'FLEXIBLE',
+        flexible_defaults: {
+            count: toInt(d.count),
+            interval: { unit: d.unit, value: toInt(d.value) ?? 1 },
+            max_count: toInt(d.maxCount),
+        },
+    };
+}
+
 export function buildCreateCPOPayload(form: CPOForm, allBatches: any[] = []): CreateCPOPayload {
+    // A flexible plan carries no installment dates: each fee is either split over the
+    // learner's schedule (has_installment) or paid upfront on the first due date.
+    const flexible = form.scheduleMode === 'FLEXIBLE';
     const expandedIds = new Set<string>(form.packageSessionIds);
     for (const selectedId of form.packageSessionIds) {
         for (const batch of allBatches) {
@@ -151,6 +201,7 @@ export function buildCreateCPOPayload(form: CPOForm, allBatches: any[] = []): Cr
         created_by: null,
         approved_by: null,
         require_approval: !!form.requireApproval,
+        ...flexiblePayload(form),
         fee_types: form.feeTypes.map((ft) => ({
             id: null,
             name: ft.name,
@@ -168,7 +219,7 @@ export function buildCreateCPOPayload(form: CPOForm, allBatches: any[] = []): Cr
                     ? parseFloat(ft.penaltyPercentage as string) || 0
                     : null,
                 status: 'ACTIVE',
-                installments: ft.hasInstallment
+                installments: ft.hasInstallment && !flexible
                     ? ft.installments.map((inst, idx) => ({
                           id: null,
                           installment_number: idx + 1,
@@ -273,14 +324,21 @@ function FeeTypeEditor({
     onChange,
     onRemove,
     canRemove,
+    flexible = false,
 }: {
     feeType: FeeTypeForm;
     index: number;
     onChange: (updated: FeeTypeForm) => void;
     onRemove: () => void;
     canRemove: boolean;
+    /** Flexible plan: no installment table; the toggle chooses split vs upfront. */
+    flexible?: boolean;
 }) {
+    const { t } = useTranslation('financialManagementCreateCpoDialog');
+    const { t: tFlex } = useTranslation('financialManagementFlexibleSchedule');
     const [isExpanded, setIsExpanded] = useState(true);
+    const installmentPresets = React.useMemo(() => buildInstallmentPresets(t), [t]);
+    const feeTypePresets = React.useMemo(() => buildFeeTypePresets(t), [t]);
 
     const update = (field: string, value: any) => {
         onChange({ ...feeType, [field]: value });
@@ -383,13 +441,16 @@ function FeeTypeEditor({
                     </div>
                     <div>
                         <div className="text-sm font-semibold text-gray-900">
-                            {feeType.name || `Fee Type ${index + 1}`}
+                            {feeType.name || t('feeType.defaultName', { index: index + 1 })}
                         </div>
                         {feeType.amount && (
                             <div className="text-xs text-gray-500">
                                 ₹{parseFloat(feeType.amount as string).toLocaleString('en-IN')} ·{' '}
-                                {feeType.installments.length} installment
-                                {feeType.installments.length !== 1 ? 's' : ''}
+                                {flexible
+                                    ? tFlex(feeType.hasInstallment ? 'fee.split' : 'fee.upfront')
+                                    : t('feeType.installmentCount', {
+                                          count: feeType.installments.length,
+                                      })}
                             </div>
                         )}
                     </div>
@@ -403,7 +464,7 @@ function FeeTypeEditor({
                             }}
                             className="cursor-pointer rounded px-2 py-1 text-xs font-medium text-red-500 transition hover:bg-red-50 hover:text-red-700"
                         >
-                            Remove
+                            {t('feeType.remove')}
                         </button>
                     )}
                     <svg
@@ -428,7 +489,7 @@ function FeeTypeEditor({
                     {/* Quick Presets */}
                     <div>
                         <div className="flex flex-wrap gap-1.5">
-                            {FEE_TYPE_PRESETS.map((preset) => (
+                            {feeTypePresets.map((preset) => (
                                 <button
                                     key={preset.label}
                                     type="button"
@@ -445,10 +506,10 @@ function FeeTypeEditor({
                     <div className="grid grid-cols-2 gap-3">
                         <div>
                             <Label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-gray-500">
-                                Fee Name <span className="text-red-500">*</span>
+                                {t('feeType.nameLabel')} <span className="text-red-500">*</span>
                             </Label>
                             <Input
-                                placeholder="e.g. Tuition Fee"
+                                placeholder={t('feeType.namePlaceholder')}
                                 value={feeType.name}
                                 onChange={(e) => update('name', e.target.value)}
                                 className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm outline-none transition focus:border-primary-500"
@@ -456,10 +517,10 @@ function FeeTypeEditor({
                         </div>
                         <div>
                             <Label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-gray-500">
-                                Description
+                                {t('feeType.descriptionLabel')}
                             </Label>
                             <Input
-                                placeholder="Brief description"
+                                placeholder={t('feeType.descriptionPlaceholder')}
                                 value={feeType.description}
                                 onChange={(e) => update('description', e.target.value)}
                                 className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm outline-none transition focus:border-primary-500"
@@ -470,11 +531,11 @@ function FeeTypeEditor({
                     {/* Amount */}
                     <div>
                         <Label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-gray-500">
-                            Total Amount (₹) <span className="text-red-500">*</span>
+                            {t('feeType.totalAmountLabel')} <span className="text-red-500">*</span>
                         </Label>
                         <Input
                             type="number"
-                            placeholder="e.g. 50000"
+                            placeholder={t('feeType.amountPlaceholder')}
                             value={feeType.amount}
                             onChange={(e) => handleAmountChange(e.target.value)}
                             className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm font-semibold outline-none transition focus:border-primary-500"
@@ -489,7 +550,7 @@ function FeeTypeEditor({
                                 onChange={(v) => update('hasInstallment', v)}
                             />
                             <span className="text-sm font-medium text-gray-700">
-                                Has Installments
+                                {flexible ? tFlex('fee.splitToggle') : t('feeType.hasInstallments')}
                             </span>
                         </div>
                         <div className="flex items-center gap-2">
@@ -497,20 +558,24 @@ function FeeTypeEditor({
                                 value={feeType.isRefundable}
                                 onChange={(v) => update('isRefundable', v)}
                             />
-                            <span className="text-sm font-medium text-gray-700">Refundable</span>
+                            <span className="text-sm font-medium text-gray-700">
+                                {t('feeType.refundable')}
+                            </span>
                         </div>
                         <div className="flex items-center gap-2">
                             <Toggle
                                 value={feeType.hasPenalty}
                                 onChange={(v) => update('hasPenalty', v)}
                             />
-                            <span className="text-sm font-medium text-gray-700">Late Penalty</span>
+                            <span className="text-sm font-medium text-gray-700">
+                                {t('feeType.latePenalty')}
+                            </span>
                         </div>
                         {feeType.hasPenalty && (
                             <div className="flex items-center gap-1">
                                 <Input
                                     type="number"
-                                    placeholder="%"
+                                    placeholder={t('feeType.penaltyPlaceholder')}
                                     value={feeType.penaltyPercentage}
                                     onChange={(e) => update('penaltyPercentage', e.target.value)}
                                     className="w-16 rounded-lg border border-gray-200 px-2 py-1 text-sm outline-none transition focus:border-primary-500"
@@ -521,15 +586,15 @@ function FeeTypeEditor({
                     </div>
 
                     {/* Installment Configuration */}
-                    {feeType.hasInstallment && (
+                    {feeType.hasInstallment && !flexible && (
                         <div className="flex flex-col gap-3">
                             {/* Frequency Presets */}
                             <div>
                                 <Label className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-gray-500">
-                                    Payment Frequency
+                                    {t('feeType.paymentFrequency')}
                                 </Label>
                                 <div className="flex flex-wrap gap-2">
-                                    {INSTALLMENT_PRESETS.map((preset) => {
+                                    {installmentPresets.map((preset) => {
                                         const isActive =
                                             preset.count !== null &&
                                             Number(feeType.noOfInstallments) === preset.count;
@@ -547,7 +612,9 @@ function FeeTypeEditor({
                                                 {preset.label}
                                                 {preset.count && (
                                                     <span className="ml-1 opacity-60">
-                                                        ({preset.count}x)
+                                                        {t('feeType.presetMultiplier', {
+                                                            count: preset.count,
+                                                        })}
                                                     </span>
                                                 )}
                                             </button>
@@ -560,7 +627,7 @@ function FeeTypeEditor({
                                         type="number"
                                         min={1}
                                         max={60}
-                                        placeholder="Number of installments"
+                                        placeholder={t('feeType.installmentCountPlaceholder')}
                                         value={feeType.noOfInstallments}
                                         onChange={(e) =>
                                             handleInstallmentCountChange(e.target.value)
@@ -581,27 +648,31 @@ function FeeTypeEditor({
                                         }`}
                                     >
                                         {diff > 0
-                                            ? `₹${diff.toLocaleString('en-IN')} remaining to allocate`
-                                            : `Exceeds total by ₹${Math.abs(diff).toLocaleString('en-IN')}`}
+                                            ? t('feeType.remainingToAllocate', {
+                                                  amount: diff.toLocaleString('en-IN'),
+                                              })
+                                            : t('feeType.exceedsTotal', {
+                                                  amount: Math.abs(diff).toLocaleString('en-IN'),
+                                              })}
                                     </div>
                                 )}
                                 <table className="w-full text-sm">
                                     <thead>
                                         <tr className="border-b border-gray-100 bg-gray-50">
                                             <th className="px-3 py-2 text-left text-xs font-semibold uppercase text-gray-500">
-                                                #
+                                                {t('feeType.columnIndex')}
                                             </th>
                                             <th className="px-3 py-2 text-left text-xs font-semibold uppercase text-gray-500">
-                                                Amount (₹)
+                                                {t('feeType.columnAmount')}
                                             </th>
                                             <th className="px-3 py-2 text-left text-xs font-semibold uppercase text-gray-500">
-                                                Start Date
+                                                {t('feeType.columnStartDate')}
                                             </th>
                                             <th className="px-3 py-2 text-left text-xs font-semibold uppercase text-gray-500">
-                                                End Date
+                                                {t('feeType.columnEndDate')}
                                             </th>
                                             <th className="px-3 py-2 text-left text-xs font-semibold uppercase text-gray-500">
-                                                Due Date
+                                                {t('feeType.columnDueDate')}
                                             </th>
                                         </tr>
                                     </thead>
@@ -674,7 +745,7 @@ function FeeTypeEditor({
                                     <tfoot>
                                         <tr className="bg-gray-50">
                                             <td className="px-3 py-2 font-bold text-gray-700">
-                                                Total
+                                                {t('feeType.total')}
                                             </td>
                                             <td
                                                 className={`px-3 py-2 font-bold ${
@@ -711,6 +782,7 @@ function ClassMultiSelect({
     selectedIds: string[];
     onToggle: (id: string) => void;
 }) {
+    const { t } = useTranslation('financialManagementCreateCpoDialog');
     const [open, setOpen] = useState(false);
     const [search, setSearch] = useState('');
 
@@ -733,7 +805,7 @@ function ClassMultiSelect({
     return (
         <div className="relative">
             <Label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-gray-500">
-                Select Class <span className="text-red-500">*</span>
+                {t('classSelect.label')} <span className="text-red-500">*</span>
             </Label>
             <button
                 type="button"
@@ -742,10 +814,10 @@ function ClassMultiSelect({
             >
                 <span className={selectedIds.length === 0 ? 'text-gray-400' : 'text-gray-700'}>
                     {selectedIds.length === 0
-                        ? 'Select classes...'
+                        ? t('classSelect.placeholder')
                         : selectedLabels.length <= 2
                           ? selectedLabels.join(', ')
-                          : `${selectedLabels.length} classes selected`}
+                          : t('classSelect.selectedBadge', { count: selectedLabels.length })}
                 </span>
                 <svg
                     className={`h-4 w-4 text-gray-400 transition-transform ${open ? 'rotate-180' : ''}`}
@@ -770,17 +842,19 @@ function ClassMultiSelect({
                             autoFocus
                             value={search}
                             onChange={(e) => setSearch(e.target.value)}
-                            placeholder="Search classes..."
+                            placeholder={t('classSelect.searchPlaceholder')}
                             className="w-full rounded-md border border-gray-200 px-2 py-1.5 text-sm outline-none transition focus:border-primary-500 focus:ring-1 focus:ring-primary-200"
                         />
                     </div>
                     <div className="max-h-[200px] overflow-y-auto">
                         {batchOptions.length === 0 && (
-                            <p className="px-3 py-2 text-sm text-gray-400">No classes available</p>
+                            <p className="px-3 py-2 text-sm text-gray-400">
+                                {t('classSelect.noClasses')}
+                            </p>
                         )}
                         {batchOptions.length > 0 && filteredOptions.length === 0 && (
                             <p className="px-3 py-2 text-sm text-gray-400">
-                                No classes match your search
+                                {t('classSelect.noMatch')}
                             </p>
                         )}
                         {filteredOptions.map((opt) => (
@@ -803,7 +877,7 @@ function ClassMultiSelect({
 
             {selectedIds.length > 0 && (
                 <p className="mt-1 text-xs text-gray-500">
-                    {selectedIds.length} class{selectedIds.length !== 1 ? 'es' : ''} selected
+                    {t('classSelect.selectedSummary', { count: selectedIds.length })}
                 </p>
             )}
         </div>
@@ -826,6 +900,8 @@ export default function CreateCPODialog({
     defaultPackageSessionId?: string;
     isSaving?: boolean;
 }) {
+    const { t } = useTranslation('financialManagementCreateCpoDialog');
+    const { t: tFlex } = useTranslation('financialManagementFlexibleSchedule');
     const [form, setForm] = useState<CPOForm>({
         name: '',
         status: 'ACTIVE',
@@ -884,7 +960,9 @@ export default function CreateCPODialog({
         form.packageSessionIds.length > 0 &&
         form.name.trim() !== '' &&
         form.feeTypes.length > 0 &&
-        form.feeTypes.every((ft) => ft.name.trim() !== '' && parseFloat(ft.amount as string) > 0);
+        form.feeTypes.every((ft) => ft.name.trim() !== '' && parseFloat(ft.amount as string) > 0) &&
+        !flexibleDefaultsError(form.scheduleMode, form.flexibleDefaults) &&
+        !flexibleHasNoSplitFee(form.scheduleMode, form.feeTypes);
 
     const totalPackageAmount = form.feeTypes.reduce(
         (sum, ft) => sum + (parseFloat(ft.amount as string) || 0),
@@ -920,9 +998,11 @@ export default function CreateCPODialog({
                     <div className="flex items-center justify-between">
                         <div>
                             <div className="mb-1 text-xs font-semibold uppercase tracking-widest text-primary-500">
-                                Create Plan
+                                {t('dialog.eyebrow')}
                             </div>
-                            <h2 className="text-xl font-extrabold text-gray-900">New Fee Plan</h2>
+                            <h2 className="text-xl font-extrabold text-gray-900">
+                                {t('dialog.title')}
+                            </h2>
                         </div>
                         <button
                             onClick={onClose}
@@ -938,7 +1018,7 @@ export default function CreateCPODialog({
                     <div className="mx-4 flex items-center gap-6 rounded-xl border border-primary-100 bg-primary-100 px-4 py-3">
                         <div className="flex items-center gap-x-2">
                             <div className="text-sm font-bold uppercase tracking-wider text-primary-500">
-                                Fee Types
+                                {t('summary.feeTypes')}
                             </div>
                             <div className="text-lg font-extrabold text-primary-500">
                                 {form.feeTypes.length}
@@ -947,7 +1027,7 @@ export default function CreateCPODialog({
                         <div className="h-8 w-px bg-primary-200" />
                         <div className="flex items-center gap-x-2">
                             <div className="text-sm font-bold uppercase tracking-wider text-primary-500">
-                                Total Amount
+                                {t('summary.totalAmount')}
                             </div>
                             <div className="text-lg font-extrabold text-primary-500">
                                 ₹{totalPackageAmount.toLocaleString('en-IN')}
@@ -956,10 +1036,12 @@ export default function CreateCPODialog({
                         <div className="h-8 w-px bg-primary-200" />
                         <div className="flex items-center gap-x-2">
                             <div className="text-sm font-bold uppercase tracking-wider text-primary-500">
-                                Payment Dates
+                                {t('summary.paymentDates')}
                             </div>
                             <div className="text-lg font-extrabold text-primary-500">
-                                {uniqueInstallmentCount}
+                                {form.scheduleMode === 'FLEXIBLE'
+                                    ? tFlex('perLearner')
+                                    : uniqueInstallmentCount}
                             </div>
                         </div>
                     </div>
@@ -978,10 +1060,10 @@ export default function CreateCPODialog({
                     <div className="grid grid-cols-[1fr_200px] gap-4">
                         <div>
                             <Label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-gray-500">
-                                Package Name <span className="text-red-500">*</span>
+                                {t('packageName.label')} <span className="text-red-500">*</span>
                             </Label>
                             <Input
-                                placeholder="e.g. 2026 Elite Fee Plan"
+                                placeholder={t('packageName.placeholder')}
                                 value={form.name}
                                 onChange={(e) =>
                                     setForm((prev) => ({ ...prev, name: e.target.value }))
@@ -991,7 +1073,7 @@ export default function CreateCPODialog({
                         </div>
                         <div>
                             <Label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-gray-500">
-                                Status
+                                {t('status.label')}
                             </Label>
                             <Select
                                 value={form.status}
@@ -1003,8 +1085,8 @@ export default function CreateCPODialog({
                                     <SelectValue />
                                 </SelectTrigger>
                                 <SelectContent className="z-[1200]">
-                                    <SelectItem value="ACTIVE">Active</SelectItem>
-                                    <SelectItem value="DRAFT">Draft</SelectItem>
+                                    <SelectItem value="ACTIVE">{t('status.active')}</SelectItem>
+                                    <SelectItem value="DRAFT">{t('status.draft')}</SelectItem>
                                 </SelectContent>
                             </Select>
                         </div>
@@ -1014,11 +1096,10 @@ export default function CreateCPODialog({
                     <div className="flex items-start justify-between gap-4 rounded-lg border border-gray-200 px-4 py-3">
                         <div>
                             <Label className="text-sm font-semibold text-gray-800">
-                                Enroll learners on approval
+                                {t('approval.label')}
                             </Label>
                             <p className="mt-0.5 text-xs text-gray-500">
-                                When on, learners who enroll via this plan wait for admin approval
-                                before getting course access.
+                                {t('approval.description')}
                             </p>
                         </div>
                         <Switch
@@ -1029,10 +1110,18 @@ export default function CreateCPODialog({
                         />
                     </div>
 
+                    {/* Fixed dates vs chosen for each learner at enrollment */}
+                    <FlexibleScheduleSettings
+                        form={form}
+                        onChange={(patch) => setForm((prev) => ({ ...prev, ...patch }))}
+                    />
+
                     {/* Fee Types Section */}
                     <div>
                         <div className="mb-3 flex items-center justify-between">
-                            <Label className="text-sm font-bold text-gray-800">Fee Types</Label>
+                            <Label className="text-sm font-bold text-gray-800">
+                                {t('summary.feeTypes')}
+                            </Label>
                             <button
                                 type="button"
                                 onClick={addFeeType}
@@ -1051,7 +1140,7 @@ export default function CreateCPODialog({
                                         d="M12 4v16m8-8H4"
                                     />
                                 </svg>
-                                Add Fee Type
+                                {t('addFeeType')}
                             </button>
                         </div>
 
@@ -1064,6 +1153,7 @@ export default function CreateCPODialog({
                                     onChange={(updated) => updateFeeType(ft.id, updated)}
                                     onRemove={() => removeFeeType(ft.id)}
                                     canRemove={form.feeTypes.length > 1}
+                                    flexible={form.scheduleMode === 'FLEXIBLE'}
                                 />
                             ))}
                         </div>
@@ -1076,7 +1166,7 @@ export default function CreateCPODialog({
                         onClick={onClose}
                         className="cursor-pointer rounded-lg border border-gray-200 px-5 py-2.5 text-sm font-semibold text-gray-600 transition hover:bg-gray-50"
                     >
-                        Cancel
+                        {t('cancel')}
                     </button>
                     <button
                         onClick={() => onSave(form)}
@@ -1087,7 +1177,7 @@ export default function CreateCPODialog({
                                 : 'cursor-not-allowed bg-gray-300'
                         }`}
                     >
-                        {isSaving ? 'Saving...' : 'Save Package'}
+                        {isSaving ? t('saving') : t('savePackage')}
                     </button>
                 </div>
             </div>

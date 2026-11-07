@@ -1,0 +1,12 @@
+{
+    "schema": {
+        "campaignIdRequired": "معرّف الحملة مطلوب"
+    },
+    "navHeading": "مستخدمو {{audienceTerm}}",
+    "helmet": {
+        "title": "مستخدمو {{audienceTerm}}",
+        "description": "عرض المستخدمين المسجلين في {{audienceTerm}}."
+    },
+    "backButton": "العودة إلى {{audienceTermPlural}}",
+    "missingCampaignId": "معرّف الحملة مطلوب"
+}

@@ -1,5 +1,6 @@
 /* eslint-disable */
 import { useState, useEffect, useRef, useCallback } from "react";
+import { Trans, useTranslation } from "react-i18next";
 import { getLearnerTrackingSettings } from "@/services/learner-tracking-settings";
 import {
   Code,
@@ -94,6 +95,7 @@ const PracticeModeView: React.FC<CodeEditorSlideProps> = ({
   published_data,
   documentId,
 }) => {
+  const { t } = useTranslation("libraryCommonA");
   // Whether this user's role is allowed to download the code (admin-configured).
   const { canDownload } = useSlideDownloadPermission();
   const allowCodeDownload = canDownload(SlideDownloadTypeKey.DOCUMENT_CODE);
@@ -633,7 +635,7 @@ const PracticeModeView: React.FC<CodeEditorSlideProps> = ({
     const currentCode = getCurrentCode();
 
     if (!currentCode.trim()) {
-      setOutput("No code to execute. Please write some code first.");
+      setOutput(t("codeExecution.noCodeToExecute"));
       setIsOutputExpanded(true);
       return;
     }
@@ -641,7 +643,7 @@ const PracticeModeView: React.FC<CodeEditorSlideProps> = ({
     setIsRunning(true);
     setIsPyodideLoading(true);
     setIsOutputExpanded(true);
-    setOutput("Loading Python environment...");
+    setOutput(t("codeExecution.loadingPythonEnv"));
 
     // Track code execution activity
     handleActionChange(2); // Action type 2 for running code
@@ -889,23 +891,25 @@ const PracticeModeView: React.FC<CodeEditorSlideProps> = ({
             <div className="p-2">
               <div className="mt-1">
                 <p className="text-xs text-neutral-600">
-                  Just ensuring that you are actively learning, please click the
-                  number{" "}
-                  <span className="text-primary-500">
-                    {Math.max(
-                      ...verificationNumbers.filter(
-                        (n) =>
-                          n !== verificationNumbers[0] ||
-                          (verificationNumbers[0] !== verificationNumbers[1] &&
-                            verificationNumbers[0] !== verificationNumbers[2])
-                      )
-                    )}
-                  </span>{" "}
-                  within{" "}
-                  <span className="text-primary-500">
-                    {verificationCountdown}{" "}
-                  </span>
-                  seconds.
+                  <Trans
+                    t={t}
+                    i18nKey="verification.focusPrompt"
+                    values={{
+                      number: Math.max(
+                        ...verificationNumbers.filter(
+                          (n) =>
+                            n !== verificationNumbers[0] ||
+                            (verificationNumbers[0] !== verificationNumbers[1] &&
+                              verificationNumbers[0] !== verificationNumbers[2])
+                        )
+                      ),
+                      seconds: verificationCountdown,
+                    }}
+                    components={{
+                      1: <span className="text-primary-500" />,
+                      2: <span className="text-primary-500" />,
+                    }}
+                  />
                 </p>
               </div>
               <div className="mt-2 flex justify-center space-x-2">
@@ -927,17 +931,16 @@ const PracticeModeView: React.FC<CodeEditorSlideProps> = ({
       {/* Pause overlay */}
       {isPaused && (
         <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/50">
-          <div className="rounded-lg bg-white p-6 text-center">
-            <h3 className="mb-4 text-lg font-semibold">Code Editor Paused</h3>
-            <p className="mb-4 text-sm text-gray-600">
-              You've switched tabs {tabSwitchCount} times. Please click below to
-              resume coding.
+          <div className="rounded-lg bg-white p-6 text-center space-y-4">
+            <h3 className="text-lg font-semibold">{t("codeEditor.pausedHeading")}</h3>
+            <p className="text-sm text-gray-600">
+              {t("codeEditor.pausedMessage", { count: tabSwitchCount })}
             </p>
             <button
               onClick={handleResumeActivity}
               className="rounded bg-primary-500 px-4 py-2 text-white hover:bg-primary-600"
             >
-              Resume Coding
+              {t("codeEditor.resumeCoding")}
             </button>
           </div>
         </div>
@@ -948,9 +951,9 @@ const PracticeModeView: React.FC<CodeEditorSlideProps> = ({
           <div className="flex flex-col items-center justify-between gap-2 lg:flex-row">
             <div className="flex items-center gap-2">
               <Code className="size-5" />
-              <span className="text-lg font-semibold">Code Editor</span>
+              <span className="text-lg font-semibold">{t("codeEditor.headerTitle")}</span>
               <span className="ms-2 rounded-full bg-gray-100 px-2 py-1 text-xs font-normal text-gray-600">
-                {editorState.viewMode === "edit" ? "Edit Mode" : "View Mode"}
+                {editorState.viewMode === "edit" ? t("codeEditor.editMode") : t("codeEditor.viewMode")}
               </span>
             </div>
 
@@ -962,7 +965,7 @@ const PracticeModeView: React.FC<CodeEditorSlideProps> = ({
                 className="bg-green-600 text-white hover:bg-green-700"
               >
                 <Play className="me-1 size-4" />
-                {isRunning ? "Running..." : "Run"}
+                {isRunning ? t("codeEditor.running") : t("codeEditor.run")}
               </Button>
 
               <DropdownMenu>
@@ -973,7 +976,7 @@ const PracticeModeView: React.FC<CodeEditorSlideProps> = ({
                     onClick={handleUserActivity}
                   >
                     <Gear className="me-1 size-4" />
-                    Settings
+                    {t("codeEditor.settings")}
                     <CaretDown className="ms-1 size-3" />
                   </Button>
                 </DropdownMenuTrigger>
@@ -988,12 +991,12 @@ const PracticeModeView: React.FC<CodeEditorSlideProps> = ({
                     {editorState.theme === "light" ? (
                       <>
                         <Moon className="me-2 size-4" />
-                        Switch to Dark Theme
+                        {t("codeEditor.switchToDark")}
                       </>
                     ) : (
                       <>
                         <Sun className="me-2 size-4" />
-                        Switch to Light Theme
+                        {t("codeEditor.switchToLight")}
                       </>
                     )}
                   </DropdownMenuItem>
@@ -1007,7 +1010,7 @@ const PracticeModeView: React.FC<CodeEditorSlideProps> = ({
                     }}
                   >
                     <Copy className="me-2 size-4" />
-                    Copy Code
+                    {t("codeEditor.copyCode")}
                   </DropdownMenuItem>
 
                   {allowCodeDownload && (
@@ -1018,7 +1021,7 @@ const PracticeModeView: React.FC<CodeEditorSlideProps> = ({
                       }}
                     >
                       <DownloadSimple className="me-2 size-4" />
-                      Download Code
+                      {t("codeEditor.downloadCode")}
                     </DropdownMenuItem>
                   )}
                 </DropdownMenuContent>
@@ -1080,7 +1083,7 @@ const PracticeModeView: React.FC<CodeEditorSlideProps> = ({
                   {/* Output Header */}
                   <div className="flex items-center justify-between border-b bg-gray-50 px-4 py-2 dark:bg-gray-800">
                     <div className="flex items-center gap-2">
-                      <span className="text-sm font-medium">Console</span>
+                      <span className="text-sm font-medium">{t("codeEditor.console")}</span>
                       {output && !isRunning && (
                         <span className="inline-flex size-2 rounded-full bg-green-500"></span>
                       )}
@@ -1113,8 +1116,8 @@ const PracticeModeView: React.FC<CodeEditorSlideProps> = ({
                   <div className="flex-1 overflow-auto bg-gray-900 p-4 font-mono text-sm text-green-400">
                     <pre className="whitespace-pre-wrap">
                       {isPyodideLoading && isRunning
-                        ? "Loading Python environment (this may take a few seconds on first run)..."
-                        : output || 'Click "Run Code" to see output here...'}
+                        ? t("codeExecution.loadingPythonEnvFirstRun")
+                        : output || t("codeExecution.clickRunToSeeOutput")}
                     </pre>
                   </div>
                 </div>
@@ -1130,7 +1133,7 @@ const PracticeModeView: React.FC<CodeEditorSlideProps> = ({
                   onClick={toggleOutputExpanded}
                 >
                   <CaretUp className="me-1 size-4" />
-                  Show Output
+                  {t("codeEditor.showOutput")}
                 </Button>
               </div>
             )}

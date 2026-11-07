@@ -1,10 +1,11 @@
 import { ArrowRight, FileAudio, FileImage, FilePdf, FileText, Sparkle } from '@phosphor-icons/react';
+import { useTranslation } from 'react-i18next';
 import { AITaskIndividualListInterface } from '@/types/ai/generate-assessment/generate-complete-assessment';
 import {
     FileFamily,
+    buildSourceLabel,
     classifyFile,
     relativeTime,
-    sourceLabel,
     statusLabel,
     statusStyles,
     taskDisplayName,
@@ -36,6 +37,8 @@ export const RecentFilesPanel = ({
     onOpenAll,
     overrideIcon,
 }: Props) => {
+    const { t: tFormat } = useTranslation('aiCenterFormat');
+    const sourceLabel = buildSourceLabel(tFormat);
     return (
         <section className="flex flex-col gap-4">
             <div className="flex items-center justify-between">
@@ -68,19 +71,19 @@ export const RecentFilesPanel = ({
                                     </div>
                                     <div className="flex min-w-0 flex-1 flex-col gap-0.5">
                                         <span className="line-clamp-2 text-sm font-medium text-gray-900">
-                                            {taskDisplayName(task, fallbackLabel)}
+                                            {taskDisplayName(task, tFormat, fallbackLabel)}
                                         </span>
                                         <span className="text-xs text-neutral-500">
                                             {sourceLabel[family]} ·{' '}
-                                            {relativeTime(task.updated_at)}
+                                            {relativeTime(task.updated_at, tFormat)}
                                         </span>
                                     </div>
                                     <span
-                                        className={`inline-flex shrink-0 items-center rounded-md px-2 py-0.5 text-[11px] font-medium ring-1 ring-inset ${statusStyles(
+                                        className={`inline-flex shrink-0 items-center rounded-md px-2 py-0.5 text-2xs font-medium ring-1 ring-inset ${statusStyles(
                                             task.status
                                         )}`}
                                     >
-                                        {statusLabel(task.status)}
+                                        {statusLabel(task.status, tFormat)}
                                     </span>
                                 </div>
                                 <div className="flex items-center justify-end gap-1 text-xs text-primary-500 opacity-0 transition-opacity group-hover:opacity-100">

@@ -22,8 +22,9 @@ export interface UpdateStudentCredentialsPayload {
  * only waits on the single-row auth write.
  *
  * A taken username comes back as HTTP 510 (VacademyException's default status)
- * with the reason in `message`; callers should surface that rather than a
- * generic failure.
+ * carrying the platform's ErrorInfo envelope — the reason is in `ex`, NOT in
+ * `message`, which this envelope never has. Callers should surface it rather
+ * than a generic failure.
  */
 export const updateStudentCredentials = async ({
     userId,

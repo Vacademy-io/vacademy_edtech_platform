@@ -1,0 +1,52 @@
+{
+    "header": {
+        "mcqSingleCorrect": "QCM (réponse unique) :",
+        "mcqMultipleCorrect": "QCM (réponses multiples) :",
+        "total": "Total :"
+    },
+    "sectionDescription": {
+        "title": "Description de la section"
+    },
+    "duration": {
+        "sectionDuration": "Durée de la section :",
+        "minutes_one": "{{count}} minute",
+        "minutes_many": "{{count}} minutes",
+        "minutes_other": "{{count}} minutes"
+    },
+    "markingScheme": {
+        "marksPerQuestionDefault": "Points par question (par défaut) :",
+        "negativeMarking": "Points négatifs :",
+        "partialMarking": "Notation partielle :",
+        "cutoffMarking": "Note d'élimination :"
+    },
+    "randomization": {
+        "problemRandomization": "Randomisation des questions :"
+    },
+    "table": {
+        "surveyQuestionsTitle": "Questions du sondage",
+        "adaptiveMarkingRulesTitle": "Règles de notation adaptative",
+        "headers": {
+            "qno": "N° Q.",
+            "question": "Question",
+            "questionType": "Type de question",
+            "marks": "Points",
+            "penalty": "Pénalité",
+            "time": "Durée"
+        },
+        "questionTypeLabels": {
+            "MCQS": "QCM (réponse unique)",
+            "MCQM": "QCM (réponses multiples)",
+            "NUMERIC": "Numérique",
+            "CMCQS": "Compréhension QCM (réponse unique)",
+            "CMCQM": "Compréhension QCM (réponses multiples)",
+            "CNUMERIC": "Compréhension numérique",
+            "ONE_WORD": "Un seul mot",
+            "LONG_ANSWER": "Réponse longue",
+            "TRUE_FALSE": "Vrai/Faux",
+            "CODING": "Programmation"
+        }
+    },
+    "totalMarks": {
+        "label": "Total des points"
+    }
+}

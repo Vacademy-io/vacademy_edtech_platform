@@ -1,0 +1,27 @@
+{
+    "toast": {
+        "saveSuccess": "Course certificate settings saved",
+        "saveFailed": "Could not save course certificate settings"
+    },
+    "instituteState": {
+        "enabled": "enabled",
+        "disabled": "disabled"
+    },
+    "heading": "Certificate Settings for this Course",
+    "cancel": "Cancel",
+    "saving": "Saving…",
+    "save": "Save",
+    "instituteDefaultSummary": "Institute default: certificates are <strong>{{state}}</strong> at <strong>{{pct}}%</strong> completion. Anything you set here applies to this course only.",
+    "certificatesForCourse": "Certificates for this course",
+    "choice": {
+        "inherit": "Use institute default",
+        "enabled": "Enabled",
+        "disabled": "Disabled"
+    },
+    "willReceiveCertificates": "Learners on this course will receive certificates once they pass the threshold.",
+    "noCertificates": "No certificates will be generated for this course.",
+    "instituteDefaultOffException": "The institute default is off — this course is an exception.",
+    "overrideThresholdLabel": "Use a different completion threshold for this course",
+    "percentCompletion": "% completion",
+    "certificateDesign": "Certificate design"
+}

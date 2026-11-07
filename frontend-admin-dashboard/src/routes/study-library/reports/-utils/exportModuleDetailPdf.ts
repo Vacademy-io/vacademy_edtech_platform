@@ -1,5 +1,6 @@
 import autoTable from 'jspdf-autotable';
 import dayjs from 'dayjs';
+import type { TFunction } from 'i18next';
 import {
     createReportDoc,
     drawTitleAndInfo,
@@ -22,6 +23,12 @@ import { ChapterReport } from '../-types/types';
  * old server-rendered HTML→PDF. DEFAULT subjects and redundant term prefixes are
  * suppressed the same way the on-screen dialog does.
  */
+
+/** This file's own i18n namespace — passed explicitly via `{ ns: NAMESPACE }`
+ *  so callers whose bound `t` defaults to a different namespace still resolve
+ *  these keys correctly. Callers must include this namespace in their own
+ *  `useTranslation([...])` array so it's loaded before this runs. */
+const NAMESPACE = 'studyLibraryExportModuleDetailPdf';
 export interface ModuleDetailPdfMeta {
     instituteName: string;
     logoUrl: string | null;
@@ -46,7 +53,11 @@ const isDefaultLevel = (value: string | null | undefined) =>
 const nameHasTermPrefix = (name: string, term: string) =>
     (name ?? '').trim().toLowerCase().startsWith(term.trim().toLowerCase());
 
-export async function exportModuleDetailPdf(meta: ModuleDetailPdfMeta, chapters: ChapterReport) {
+export async function exportModuleDetailPdf(
+    meta: ModuleDetailPdfMeta,
+    chapters: ChapterReport,
+    t: TFunction
+) {
     const doc = createReportDoc();
     const logo = await loadLogo(meta.logoUrl);
     const theme = resolveTheme();
@@ -54,12 +65,18 @@ export async function exportModuleDetailPdf(meta: ModuleDetailPdfMeta, chapters:
     const pageH = doc.internal.pageSize.getHeight();
     const contentW = pageW - 2 * M;
 
-    let y = drawTitleAndInfo(doc, `${meta.moduleTerm} Details Report`, [
-        ...(meta.learnerName ? [{ label: 'Learner', value: meta.learnerName }] : []),
-        { label: meta.courseTerm, value: meta.courseName || '—' },
-        { label: meta.sessionTerm, value: meta.sessionName || '—' },
-        { label: meta.levelTerm, value: meta.levelName || '—' },
-    ]);
+    let y = drawTitleAndInfo(
+        doc,
+        t('detailsReportTitle', { ns: NAMESPACE, term: meta.moduleTerm }),
+        [
+            ...(meta.learnerName
+                ? [{ label: t('learner', { ns: NAMESPACE }), value: meta.learnerName }]
+                : []),
+            { label: meta.courseTerm, value: meta.courseName || '—' },
+            { label: meta.sessionTerm, value: meta.sessionName || '—' },
+            { label: meta.levelTerm, value: meta.levelName || '—' },
+        ]
+    );
 
     // Module (and non-DEFAULT subject) as a prominent, wrapping heading.
     doc.setFont('helvetica', 'bold');
@@ -75,7 +92,11 @@ export async function exportModuleDetailPdf(meta: ModuleDetailPdfMeta, chapters:
         doc.setFont('helvetica', 'normal');
         doc.setFontSize(8.5);
         doc.setTextColor(...MUTED);
-        doc.text(`${meta.subjectTerm}: ${meta.subjectName}`, M, y + 3);
+        doc.text(
+            t('termColonName', { ns: NAMESPACE, term: meta.subjectTerm, name: meta.subjectName }),
+            M,
+            y + 3
+        );
         y += 6;
     }
     y += 4;
@@ -87,19 +108,19 @@ export async function exportModuleDetailPdf(meta: ModuleDetailPdfMeta, chapters:
         }
         const heading = nameHasTermPrefix(chapter.chapter_name, meta.chapterTerm)
             ? chapter.chapter_name
-            : `${meta.chapterTerm}: ${chapter.chapter_name}`;
+            : t('termColonName', { ns: NAMESPACE, term: meta.chapterTerm, name: chapter.chapter_name });
         y = sectionTitle(doc, heading, y, theme);
         autoTable(doc, {
             ...tableBase(theme),
             startY: y,
             head: [
                 [
-                    'Study Slide',
-                    'Type',
-                    'Concentration',
-                    `${meta.batchTerm} Concentration (Avg)`,
-                    'Time Spent',
-                    'Last Active',
+                    t('studySlide', { ns: NAMESPACE }),
+                    t('type', { ns: NAMESPACE }),
+                    t('concentration', { ns: NAMESPACE }),
+                    t('batchConcentrationAvg', { ns: NAMESPACE, batchTerm: meta.batchTerm }),
+                    t('timeSpent', { ns: NAMESPACE }),
+                    t('lastActive', { ns: NAMESPACE }),
                 ],
             ],
             columnStyles: {
@@ -118,13 +139,19 @@ export async function exportModuleDetailPdf(meta: ModuleDetailPdfMeta, chapters:
                     s.avg_concentration_score_by_batch ?? s.avg_concentration_score
                 )} %`,
                 convertMinutesToTimeFormat(s.avg_time_spent ?? 0),
-                s.last_active_date || 'N/A',
+                s.last_active_date || t('notAvailable', { ns: NAMESPACE }),
             ]),
         });
         y = lastY(doc) + 10;
     });
 
-    stampAllPages(doc, meta.instituteName, logo, theme, `${meta.moduleTerm} Details Report`);
+    stampAllPages(
+        doc,
+        meta.instituteName,
+        logo,
+        theme,
+        t('detailsReportTitle', { ns: NAMESPACE, term: meta.moduleTerm })
+    );
     const safe = (meta.learnerName || 'learner').replace(/\s+/g, '-');
     doc.save(`module-details-${safe}-${dayjs().format('YYYYMMDD')}.pdf`);
 }

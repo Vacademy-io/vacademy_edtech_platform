@@ -58,16 +58,32 @@ const testAccessSchema = z.object({
             custom_fields: customFieldsSchema, // Dynamic custom fields
         })
         .superRefine((data, ctx) => {
-            if (data.checked) {
-                const startDate = new Date(data.start_date);
-                const endDate = new Date(data.end_date);
-                if (endDate <= startDate) {
-                    ctx.addIssue({
-                        code: z.ZodIssueCode.custom,
-                        message: 'End date must be greater than start date.',
-                        path: ['end_date'], // Associate the error with `end_date`
-                    });
-                }
+            if (!data.checked) return;
+
+            /**
+             * Blank bounds are legitimate: the backend reads a missing registration
+             * date as "no limit on that side", and `convertDateFormat` deliberately
+             * returns '' for the 9999-12-31 sentinel that mock and practice tests are
+             * stored with. Requiring them here would silently block every Update of a
+             * mock or practice test — and for PRACTICE/SURVEY/MANUAL_UPLOAD_EXAM the
+             * date inputs are not rendered at all (their step_keys omit
+             * registration_open_date), so the error would point at an invisible field.
+             *
+             * The ordering rule is guarded instead: `new Date('')` is an Invalid Date
+             * and every comparison against NaN is false, so the old bare
+             * `endDate <= startDate` silently passed for blanks and read as "checked".
+             */
+            const startDate = new Date(data.start_date);
+            const endDate = new Date(data.end_date);
+            const hasStart = data.start_date !== '' && !Number.isNaN(startDate.getTime());
+            const hasEnd = data.end_date !== '' && !Number.isNaN(endDate.getTime());
+
+            if (hasStart && hasEnd && endDate <= startDate) {
+                ctx.addIssue({
+                    code: z.ZodIssueCode.custom,
+                    message: 'End date must be greater than start date.',
+                    path: ['end_date'], // Associate the error with `end_date`
+                });
             }
         }),
     select_batch: z.object({

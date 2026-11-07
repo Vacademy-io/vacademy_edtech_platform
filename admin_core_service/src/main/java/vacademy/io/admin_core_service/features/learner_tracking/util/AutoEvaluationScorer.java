@@ -6,6 +6,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
+import java.math.BigDecimal;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
@@ -74,6 +75,136 @@ public class AutoEvaluationScorer {
         return key.equals(selected) ? Verdict.CORRECT : Verdict.WRONG;
     }
 
+    /**
+     * The verdict the learner app has always shown for this question type, which is what a
+     * learner must keep seeing now that grading runs here:
+     * <ul>
+     *   <li>multiple-correct questions need the exact key;</li>
+     *   <li>single-select questions accept any keyed option (an author may key two);</li>
+     *   <li>numeric questions compare as numbers, so 2.50 and 2.5 agree, and never read
+     *       their key as positions in an option list;</li>
+     *   <li>free text is not graded, except that typing exactly what a {@code correctAnswers}
+     *       key holds stays correct, as it always has been. Anything else waits for a person
+     *       rather than counting as wrong, since a blank form stores a placeholder there.</li>
+     * </ul>
+     *
+     * <p>Unlike {@link #evaluate(String, String, Supplier)}, this needs the question type and
+     * also reads the question-slide and video key shapes. Callers of {@code evaluate} and
+     * {@link #correctAnswerIds} keep the exact-set rule and the shapes they have always read,
+     * so what they store does not change.
+     */
+    public Verdict evaluateForQuestionType(String questionType, String autoEvaluationJson, String responseJson,
+            Supplier<List<String>> optionIdsInOrder) {
+        Set<String> selected = extractSelectedAnswers(responseJson);
+        if (selected != null && selected.isEmpty()) {
+            return Verdict.SKIPPED;
+        }
+        if (isFreeText(questionType)) {
+            return matchesExplicitTextKey(autoEvaluationJson, selected) ? Verdict.CORRECT : Verdict.UNKNOWN;
+        }
+        boolean numeric = isNumeric(questionType);
+        Set<String> key = extractAnyKey(autoEvaluationJson, numeric ? List::of : optionIdsInOrder);
+        if (key == null || key.isEmpty() || selected == null) {
+            return Verdict.UNKNOWN;
+        }
+        if (numeric) {
+            return selected.size() == 1 && numericMatch(key, selected.iterator().next())
+                    ? Verdict.CORRECT : Verdict.WRONG;
+        }
+        if (isMultiSelect(questionType)) {
+            return key.equals(selected) ? Verdict.CORRECT : Verdict.WRONG;
+        }
+        return selected.size() == 1 && key.containsAll(selected) ? Verdict.CORRECT : Verdict.WRONG;
+    }
+
+    /**
+     * The correct option ids (or numeric values) for this question type, or empty when it
+     * has no machine-readable key. See {@link #evaluateForQuestionType}.
+     */
+    public Set<String> correctAnswerIdsForQuestionType(String questionType, String autoEvaluationJson,
+            Supplier<List<String>> optionIdsInOrder) {
+        if (isFreeText(questionType)) {
+            return Set.of();
+        }
+        Set<String> key = extractAnyKey(autoEvaluationJson, isNumeric(questionType) ? List::of : optionIdsInOrder);
+        return key == null ? Set.of() : key;
+    }
+
+    /**
+     * Whether this key is one the older quiz viewer could read: a top-level
+     * {@code correctAnswers} array. Where it is not, that viewer marked every answer wrong
+     * or could not mark it at all, so only a client's own judgement says what it was shown.
+     */
+    public boolean hasViewerReadableKey(String autoEvaluationJson) {
+        if (autoEvaluationJson == null || autoEvaluationJson.isBlank()) {
+            return false;
+        }
+        try {
+            JsonNode key = objectMapper.readTree(autoEvaluationJson).get("correctAnswers");
+            return key != null && key.isArray() && !key.isEmpty();
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
+    private boolean matchesExplicitTextKey(String autoEvaluationJson, Set<String> selected) {
+        if (selected == null || selected.size() != 1) {
+            return false;
+        }
+        Set<String> key = extractCorrectAnswers(autoEvaluationJson, List::of);
+        return key != null && key.contains(selected.iterator().next());
+    }
+
+    /**
+     * The author's model answer for a free-text question: {@code {"data":{"answer":"..."}}}
+     * or {@code {"data":{"answer":{"content":"..."}}}}. Shown in review, never graded on.
+     */
+    public String modelAnswerText(String autoEvaluationJson) {
+        if (autoEvaluationJson == null || autoEvaluationJson.isBlank()) {
+            return null;
+        }
+        try {
+            JsonNode answer = objectMapper.readTree(autoEvaluationJson).path("data").path("answer");
+            if (answer.isTextual() || answer.isNumber()) {
+                return answer.asText();
+            }
+            JsonNode content = answer.path("content");
+            return content.isTextual() ? content.asText() : null;
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    public static boolean isNumeric(String questionType) {
+        return "NUMERIC".equals(questionType) || "CNUMERIC".equals(questionType);
+    }
+
+    public static boolean isFreeText(String questionType) {
+        return "LONG_ANSWER".equals(questionType) || "ONE_WORD".equals(questionType) || "TEXT".equals(questionType);
+    }
+
+    private static boolean numericMatch(Set<String> key, String given) {
+        BigDecimal value = parseDecimal(given);
+        if (value == null) {
+            return false;
+        }
+        for (String candidate : key) {
+            BigDecimal expected = parseDecimal(candidate);
+            if (expected != null && expected.compareTo(value) == 0) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private static BigDecimal parseDecimal(String value) {
+        try {
+            return new BigDecimal(value.trim());
+        } catch (RuntimeException e) {
+            return null;
+        }
+    }
+
     /** Convenience for questions with no options to index into. */
     public Verdict evaluate(String autoEvaluationJson, String responseJson) {
         return evaluate(autoEvaluationJson, responseJson, List::of);
@@ -91,6 +222,50 @@ public class AutoEvaluationScorer {
         return key == null ? Set.of() : key;
     }
 
+    /**
+     * Share of a question's marks a partially-marked quiz awards: 1 for the exact key,
+     * picked / key-size when the learner chose only correct options but not all of them
+     * (a 1-mark question with two correct options gives 0.5 per option), and 0 as soon
+     * as any wrong option is picked. Mirrors the learner app's scoring.
+     */
+    public static double partialCreditFraction(Set<String> correctIds, Set<String> selectedIds) {
+        // Callers gate on isMultiSelect(questionType): a single-select question keyed with
+        // two acceptable options is graded by the learner app as correct on either one.
+        if (correctIds == null || correctIds.isEmpty() || selectedIds == null || selectedIds.isEmpty()
+                || !correctIds.containsAll(selectedIds)) {
+            return 0.0;
+        }
+        return (double) selectedIds.size() / correctIds.size();
+    }
+
+    /** Question types the learner app renders as tick-any-number checkboxes - the only ones partial marking applies to. */
+    public static boolean isMultiSelect(String questionType) {
+        return "MCQM".equals(questionType) || "CMCQM".equals(questionType);
+    }
+
+    /**
+     * Whether the stored response was scored as partially correct ({@code "isPartial": true},
+     * written by the learner app on partial-marking quizzes). Readers award partial marks
+     * only to these, so switching partial marking on later never re-scores old attempts
+     * behind the learner's back - their own review keeps showing what they were given.
+     */
+    public boolean isMarkedPartial(String responseJson) {
+        if (responseJson == null || responseJson.isBlank() || !responseJson.contains("isPartial")) {
+            return false;
+        }
+        try {
+            JsonNode partial = objectMapper.readTree(responseJson).get("isPartial");
+            return partial != null && partial.asBoolean(false);
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
+    /** Whether this stored response has a shape the selection can be read from. */
+    public boolean recognisesResponse(String responseJson) {
+        return extractSelectedAnswers(responseJson) != null;
+    }
+
     /** The option ids the learner selected; empty when unanswered or unrecognised. */
     public Set<String> selectedAnswerIds(String responseJson) {
         Set<String> selected = extractSelectedAnswers(responseJson);
@@ -98,12 +273,10 @@ public class AutoEvaluationScorer {
     }
 
     /**
-     * Parse the answer key.
-     *
-     * <p>Recognises the flat {@code {"correctAnswers":[...]}} shape written by the quiz and
-     * question-slide authoring flows, and the same key nested under {@code data}. Entries
-     * are normally option ids; the older authoring path stored positional indices, so a
-     * numeric entry that matches no option id is resolved through the option list.
+     * Parse the answer key, in the shapes the quiz authoring flows write: the flat
+     * {@code {"correctAnswers":[...]}} and the same key nested under {@code data}. Entries are
+     * normally option ids; the older authoring path stored positional indices, so a numeric
+     * entry that matches no option id is resolved through the option list.
      *
      * <p>Returns null for the subjective {@code {"data":{"answer":...}}} shape - free text
      * is not something to grade on string equality.
@@ -121,46 +294,91 @@ public class AutoEvaluationScorer {
             if (correctAnswers == null || !correctAnswers.isArray() || correctAnswers.isEmpty()) {
                 return null;
             }
-
-            Set<String> raw = new LinkedHashSet<>();
-            boolean allNumeric = true;
-            for (JsonNode node : correctAnswers) {
-                if (!node.isTextual() && !node.isNumber()) {
-                    return null;
-                }
-                String value = node.asText().trim();
-                if (value.isEmpty()) {
-                    continue;
-                }
-                allNumeric &= node.isNumber() || isNonNegativeInteger(value);
-                raw.add(value);
-            }
-            if (raw.isEmpty()) {
-                return null;
-            }
-            if (!allNumeric) {
-                return raw;
-            }
-
-            // Numeric key: option ids only if they really are the option ids, otherwise
-            // positional indices into the option list.
-            List<String> optionIds = optionIdsInOrder.get();
-            if (optionIds == null || optionIds.isEmpty() || optionIds.containsAll(raw)) {
-                return raw;
-            }
-            Set<String> resolved = new LinkedHashSet<>();
-            for (String value : raw) {
-                int index = Integer.parseInt(value);
-                if (index < 0 || index >= optionIds.size()) {
-                    return null; // key we cannot trust - do not guess
-                }
-                resolved.add(optionIds.get(index));
-            }
-            return resolved;
+            return resolveKeyEntries(correctAnswers, optionIdsInOrder);
         } catch (Exception e) {
             log.warn("[AutoEvaluationScorer] Unparseable auto_evaluation_json: {}", e.getMessage());
             return null;
         }
+    }
+
+    /** As {@link #extractCorrectAnswers}, plus the other shapes listed in {@link #firstKeyField}. */
+    private Set<String> extractAnyKey(String autoEvaluationJson, Supplier<List<String>> optionIdsInOrder) {
+        if (autoEvaluationJson == null || autoEvaluationJson.isBlank()) {
+            return null;
+        }
+        try {
+            JsonNode correctAnswers = firstKeyField(objectMapper.readTree(autoEvaluationJson));
+            if (correctAnswers == null) {
+                return null;
+            }
+            if (correctAnswers.isTextual() || correctAnswers.isNumber()) {
+                String single = correctAnswers.asText().trim();
+                return single.isEmpty() ? null : new LinkedHashSet<>(List.of(single));
+            }
+            if (!correctAnswers.isArray() || correctAnswers.isEmpty()) {
+                return null;
+            }
+            return resolveKeyEntries(correctAnswers, optionIdsInOrder);
+        } catch (Exception e) {
+            log.warn("[AutoEvaluationScorer] Unparseable auto_evaluation_json: {}", e.getMessage());
+            return null;
+        }
+    }
+
+    private Set<String> resolveKeyEntries(JsonNode correctAnswers, Supplier<List<String>> optionIdsInOrder) {
+        Set<String> raw = new LinkedHashSet<>();
+        boolean allNumeric = true;
+        for (JsonNode node : correctAnswers) {
+            if (!node.isTextual() && !node.isNumber()) {
+                return null;
+            }
+            String value = node.asText().trim();
+            if (value.isEmpty()) {
+                continue;
+            }
+            allNumeric &= node.isNumber() || isNonNegativeInteger(value);
+            raw.add(value);
+        }
+        if (raw.isEmpty()) {
+            return null;
+        }
+        if (!allNumeric) {
+            return raw;
+        }
+
+        // Numeric key: option ids only if they really are the option ids, otherwise
+        // positional indices into the option list.
+        List<String> optionIds = optionIdsInOrder.get();
+        if (optionIds == null || optionIds.isEmpty() || optionIds.containsAll(raw)) {
+            return raw;
+        }
+        Set<String> resolved = new LinkedHashSet<>();
+        for (String value : raw) {
+            int index = Integer.parseInt(value);
+            if (index < 0 || index >= optionIds.size()) {
+                return null; // key we cannot trust - do not guess
+            }
+            resolved.add(optionIds.get(index));
+        }
+        return resolved;
+    }
+
+    /**
+     * Where the key lives once question and video slides are included. The quiz authoring
+     * flow writes {@code correctAnswers}; question and video slides write
+     * {@code data.correctOptionIds} or {@code correctOptionId}; numeric questions may write
+     * {@code data.validAnswers}.
+     */
+    private JsonNode firstKeyField(JsonNode root) {
+        JsonNode data = root.path("data");
+        for (JsonNode candidate : List.of(root.path("correctAnswers"), data.path("correctAnswers"),
+                data.path("correctOptionIds"), root.path("correctOptionIds"), data.path("correctOptionId"),
+                root.path("correctOptionId"), data.path("validAnswers"))) {
+            if (!candidate.isMissingNode() && !candidate.isNull()) {
+                return candidate;
+            }
+        }
+        return null;
     }
 
     /**

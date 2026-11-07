@@ -1,0 +1,92 @@
+{
+    "logo": {
+        "label": "लोगो",
+        "alt": "लोगो",
+        "ariaLabel": "लोगो अपलोड करें",
+        "upload": "लोगो अपलोड करें",
+        "uploading": "अपलोड हो रहा है...",
+        "uploadSuccess": "लोगो सफलतापूर्वक अपलोड हुआ",
+        "uploadNoFileId": "अपलोड से फ़ाइल आईडी नहीं मिली",
+        "uploadFailed": "लोगो अपलोड करने में विफल"
+    },
+    "validation": {
+        "nameRequired": "नाम आवश्यक है",
+        "seatRequired": "कम से कम 1 सीट आवश्यक है",
+        "validityRequired": "वैधता कम से कम 1 दिन होनी चाहिए",
+        "roleNameRequired": "भूमिका का नाम आवश्यक है",
+        "selectPackageSession": "कम से कम एक पैकेज सेशन चुनें",
+        "selectCpo": "कृपया {{subOrgTerm}} सब्सक्रिप्शन के लिए एक फीस संरचना (CPO) चुनें",
+        "selectPaymentOption": "कृपया {{subOrgTerm}} एडमिन के लिए एक पेमेंट विकल्प चुनें"
+    },
+    "toast": {
+        "createdWithSubscription": "{{subOrgTerm}} सब्सक्रिप्शन के साथ बनाया गया",
+        "inviteCode": "आमंत्रण कोड: {{code}}",
+        "createFailed": "सब-ऑर्गनाइज़ेशन बनाने में विफल",
+        "createdSuccessfully": "{{subOrgTerm}} सफलतापूर्वक बनाया गया",
+        "roleCreated": "भूमिका सफलतापूर्वक बनाई गई",
+        "roleCreateFailed": "भूमिका बनाने में विफल"
+    },
+    "common": {
+        "cancel": "रद्द करें",
+        "next": "आगे",
+        "back": "पीछे"
+    },
+    "step1": {
+        "title": "{{subOrgTerm}} बनाएं",
+        "description": "चरण 1 का 3: {{subOrgTerm}} विवरण",
+        "nameLabel": "नाम",
+        "namePlaceholder": "{{subOrgTerm}} का नाम"
+    },
+    "step2": {
+        "title": "पैकेज सेशन चुनें",
+        "description": "चरण 2 का 3: असाइन करने के लिए कोर्स चुनें",
+        "loading": "पैकेज सेशन लोड हो रहे हैं...",
+        "empty": "कोई पैकेज सेशन नहीं मिला।",
+        "selectedCount_one": "{{count}} सेशन चुना गया",
+        "selectedCount_other": "{{count}} सेशन चुने गए",
+        "skip": "छोड़ें (कोई सब्सक्रिप्शन नहीं)"
+    },
+    "step3": {
+        "title": "मूल्य निर्धारण और सीटें",
+        "description": "चरण 3 का 3: मूल्य निर्धारण और सीट सीमा कॉन्फ़िगर करें",
+        "paymentTypeLabel": "भुगतान प्रकार",
+        "paymentTypeFree": "मुफ़्त",
+        "paymentTypeOneTime": "एक बार",
+        "paymentTypeSubscription": "सब्सक्रिप्शन",
+        "paymentTypeCpo": "CPO (कस्टम फीस संरचना)",
+        "cpoLabel": "फीस संरचना (CPO) *",
+        "cpoDescription": "इस आमंत्रण से जुड़ने वाला एडमिन CPO किश्तें चुकाता है। शिक्षार्थी स्कोप्ड आमंत्रणों के तहत मुफ़्त में शामिल होते हैं।",
+        "cpoLoading": "फीस संरचनाएं लोड हो रही हैं...",
+        "cpoEmpty": "कोई सक्रिय फीस संरचना नहीं मिली",
+        "cpoPlaceholder": "एक फीस संरचना चुनें",
+        "paymentOptionLabel": "भुगतान विकल्प *",
+        "paymentOptionDescription": "{{subOrgTerm}} एडमिन इस मौजूदा इंस्टीट्यूट पेमेंट विकल्प के माध्यम से भुगतान करता है। कीमत और मुद्रा विकल्प की योजना से आती हैं।",
+        "paymentOptionLoading": "पेमेंट विकल्प लोड हो रहे हैं...",
+        "paymentOptionEmpty": "कोई सक्रिय विकल्प नहीं मिला",
+        "paymentOptionPlaceholder": "एक पेमेंट विकल्प चुनें",
+        "paymentOptionNoneWarning": "कोई सक्रिय {{type}} पेमेंट विकल्प नहीं मिला। पहले पेमेंट सेटिंग्स में एक बनाएं।",
+        "vendorLabel": "पेमेंट वेंडर",
+        "vendorNoneConfigured": "कोई पेमेंट वेंडर कॉन्फ़िगर नहीं है। कृपया पहले सेटिंग्स में एक पेमेंट वेंडर लिंक करें।",
+        "vendorPlaceholder": "पेमेंट वेंडर चुनें",
+        "adminRolesLabel": "एडमिन भूमिकाएं (ऑथ सेवा)",
+        "adminRolesDescription": "इस आमंत्रण से जुड़ने वाले उपयोगकर्ताओं को दी गई भूमिकाएं",
+        "addNewRole": "नई जोड़ें",
+        "roleNamePlaceholder": "भूमिका का नाम दर्ज करें",
+        "createRole": "बनाएं",
+        "noRolesFound": "कोई भूमिका नहीं मिली",
+        "allowedTeamRolesLabel": "अनुमत टीम भूमिकाएं",
+        "allowedTeamRolesDescription": "वे भूमिकाएं जिन्हें {{subOrgTerm}} एडमिन अपनी टीम के सदस्यों को जोड़ते समय चुन सकता है। किसी भी कस्टम भूमिका की अनुमति देने के लिए खाली छोड़ें।",
+        "adminPermissionsLabel": "एडमिन अनुमतियां",
+        "adminPermissionsDescription": "{{subOrgTerm}} एडमिन क्या कर सकता है। पूर्ण एक्सेस (डिफ़ॉल्ट) देने के लिए खाली छोड़ें।",
+        "seatLimitLabel": "सीट सीमा",
+        "seatLimitPlaceholder": "10",
+        "validityLabel": "वैधता (दिन)",
+        "validityPlaceholder": "365",
+        "summaryTitle": "सारांश",
+        "summaryOrganization": "संगठन: {{name}}",
+        "summaryPackageSessions_one": "पैकेज सेशन: {{count}} चयनित",
+        "summaryPackageSessions_other": "पैकेज सेशन: {{count}} चयनित",
+        "summaryPayment": "भुगतान: {{type}} | सीटें: {{seats}} | वैधता: {{days}} दिन",
+        "submit": "{{subOrgTerm}} बनाएं"
+    }
+}

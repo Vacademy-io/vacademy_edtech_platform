@@ -1,0 +1,13 @@
+{
+    "title": "Free Plan Configuration",
+    "courseAccess": {
+        "label": "Course Access *",
+        "unlimited": "Unlimited access",
+        "limited": "Limited access"
+    },
+    "accessDuration": {
+        "label": "Access Duration (Days) *",
+        "placeholder": "Enter number of days"
+    },
+    "accessNote": "Applies when an admin assigns a learner to this plan. Learners who enroll themselves through an invite link take their access days from that invite's Learner Access Duration."
+}

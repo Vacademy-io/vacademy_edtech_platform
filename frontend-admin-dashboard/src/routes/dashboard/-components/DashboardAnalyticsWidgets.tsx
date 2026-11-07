@@ -7,6 +7,7 @@ import { DashboardLoader } from '@/components/core/dashboard-loader';
 import { MyButton } from '@/components/design-system/button';
 import { useRouter } from '@tanstack/react-router';
 import { ArrowSquareOut, ChartBar } from '@phosphor-icons/react';
+import { useTranslation } from 'react-i18next';
 
 // Import key analytics widgets
 import RealTimeActiveUsersWidget from './analytics-widgets/RealTimeActiveUsersWidget';
@@ -20,6 +21,7 @@ const WidgetWrapper = ({ children }: { children: React.ReactNode }) => {
 };
 
 export default function DashboardAnalyticsWidgets() {
+    const { t } = useTranslation('dashboardAnalyticsWidgets');
     const { data: instituteDetails } = useSuspenseQuery(useInstituteQuery());
     const instituteId = instituteDetails?.id || '';
     const router = useRouter();
@@ -29,7 +31,7 @@ export default function DashboardAnalyticsWidgets() {
     };
 
     if (!instituteId) {
-        return <div>Loading analytics...</div>;
+        return <div>{t('loading')}</div>;
     }
 
     return (
@@ -44,9 +46,9 @@ export default function DashboardAnalyticsWidgets() {
                 <div>
                     <h2 className="flex items-center gap-2 text-lg font-semibold text-gray-800">
                         <ChartBar size={20} className="text-primary-500" />
-                        Learner Activity
+                        {t('header.title')}
                     </h2>
-                    <p className="text-sm text-gray-600">Real-time insights and activity trends</p>
+                    <p className="text-sm text-gray-600">{t('header.subtitle')}</p>
                 </div>
                 <MyButton
                     type="button"
@@ -56,7 +58,7 @@ export default function DashboardAnalyticsWidgets() {
                     className="flex items-center gap-2 text-sm"
                     onClick={handleViewFullInsights}
                 >
-                    <span>View Full Insights</span>
+                    <span>{t('actions.viewFullInsights')}</span>
                     <ArrowSquareOut size={16} />
                 </MyButton>
             </motion.div>

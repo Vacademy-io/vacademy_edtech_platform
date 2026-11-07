@@ -1,0 +1,8 @@
+{
+    "columns": {
+        "rank": "الترتيب",
+        "marks": "الدرجات",
+        "percentile": "المئين",
+        "participants": "عدد المشاركين"
+    }
+}

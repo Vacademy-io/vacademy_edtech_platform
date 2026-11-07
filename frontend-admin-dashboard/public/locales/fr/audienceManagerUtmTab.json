@@ -1,0 +1,64 @@
+{
+    "title": "Campagnes (UTM)",
+    "disabled": {
+        "body": "Les liens de campagne (UTM) sont désactivés pour cet établissement. Activez-les pour taguer vos liens et voir quelles campagnes amènent des personnes.",
+        "cta": "Ouvrir les paramètres des liens de campagne"
+    },
+    "kpis": {
+        "people": {
+            "label": "Personnes via campagnes",
+            "sub": "{{touches}} contacts enregistrés"
+        },
+        "enrolled": {
+            "label": "Inscrits aujourd'hui",
+            "sub": "{{rate}} des personnes de campagne",
+            "subNone": "Aucune personne de campagne pour l'instant"
+        },
+        "campaigns": {
+            "label": "Campagnes",
+            "sub": "sur {{sources}} sources"
+        },
+        "coverage": {
+            "label": "Couverture d'attribution",
+            "sub": "{{attributed}} prospects tagués sur {{total}}"
+        },
+        "topCampaign": {
+            "label": "Meilleure campagne",
+            "sub": "{{people}} personnes",
+            "subNone": "Aucune campagne taguée"
+        }
+    },
+    "empty": {
+        "title": "Aucun contact de campagne sur cette période",
+        "body": "Partagez un lien généré avec « Générer un lien UTM » (formulaires d'audience, cours en direct, évaluations, invitations, pages produit, sites catalogue) : les personnes qui arrivent par ce lien apparaîtront ici."
+    },
+    "trend": {
+        "title": "Arrivées quotidiennes par campagne",
+        "peopleLegend": "Personnes",
+        "touchesLegend": "Contacts",
+        "noData": "Aucune donnée pour cette période",
+        "ariaLabel": "Arrivées quotidiennes par campagne"
+    },
+    "breakdown": {
+        "empty": "Rien d'enregistré",
+        "none": "(aucune valeur)"
+    },
+    "table": {
+        "title": "Performance des campagnes",
+        "empty": "Aucune ligne de campagne sur cette période",
+        "noValue": "aucune campagne",
+        "touchesInline": "({{touches}} contacts)",
+        "columns": {
+            "campaign": "Campagne",
+            "source": "Source",
+            "medium": "Support",
+            "channel": "Canal",
+            "people": "Personnes",
+            "touches": "Contacts",
+            "enrolled": "Inscrits",
+            "rate": "% inscrits",
+            "firstSeen": "Première fois",
+            "lastSeen": "Dernière fois"
+        }
+    }
+}

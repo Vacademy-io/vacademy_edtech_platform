@@ -1,0 +1,23 @@
+{
+    "title": "Élèves par étape",
+    "stages": {
+        "ENQUIRY": "Demande",
+        "APPLICATION": "Candidature",
+        "ADMITTED": "Admis"
+    },
+    "emptyState": "Aucun élève à l'étape {{stage}}",
+    "columns": {
+        "index": "#",
+        "studentName": "Nom de l'élève",
+        "parentName": "Nom du parent",
+        "source": "Source",
+        "date": "Date",
+        "stage": "Étape"
+    },
+    "pagination": {
+        "showing": "Affichage de {{from}}–{{to}} sur {{total}}",
+        "pageOf": "Page {{current}} sur {{total}}",
+        "previous": "Précédent",
+        "next": "Suivant"
+    }
+}

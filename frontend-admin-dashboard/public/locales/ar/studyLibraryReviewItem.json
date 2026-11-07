@@ -1,0 +1,43 @@
+{
+    "timeAgo": {
+        "secondsAgo_zero": "منذ أقل من ثانية",
+        "secondsAgo_one": "منذ ثانية واحدة",
+        "secondsAgo_two": "منذ ثانيتين",
+        "secondsAgo_few": "منذ {{count}} ثوانٍ",
+        "secondsAgo_many": "منذ {{count}} ثانية",
+        "secondsAgo_other": "منذ {{count}} ثانية",
+        "minutesAgo_zero": "منذ أقل من دقيقة",
+        "minutesAgo_one": "منذ دقيقة واحدة",
+        "minutesAgo_two": "منذ دقيقتين",
+        "minutesAgo_few": "منذ {{count}} دقائق",
+        "minutesAgo_many": "منذ {{count}} دقيقة",
+        "minutesAgo_other": "منذ {{count}} دقيقة",
+        "hoursAgo_zero": "منذ أقل من ساعة",
+        "hoursAgo_one": "منذ ساعة واحدة",
+        "hoursAgo_two": "منذ ساعتين",
+        "hoursAgo_few": "منذ {{count}} ساعات",
+        "hoursAgo_many": "منذ {{count}} ساعة",
+        "hoursAgo_other": "منذ {{count}} ساعة",
+        "daysAgo_zero": "منذ أقل من يوم",
+        "daysAgo_one": "منذ يوم واحد",
+        "daysAgo_two": "منذ يومين",
+        "daysAgo_few": "منذ {{count}} أيام",
+        "daysAgo_many": "منذ {{count}} يومًا",
+        "daysAgo_other": "منذ {{count}} يوم"
+    },
+    "toasts": {
+        "updateFailed": "فشل تحديث التقييم",
+        "unexpectedError": "حدث خطأ غير متوقع"
+    },
+    "actions": {
+        "approve": "قبول",
+        "decline": "رفض",
+        "delete": "حذف"
+    },
+    "deleteDialog": {
+        "title": "هل أنت متأكد أنك تريد حذف هذا التعليق؟",
+        "description": "لا يمكن التراجع عن هذا الإجراء. سيؤدي هذا إلى حذف هذا التعليق نهائيًا من الدورة.",
+        "cancel": "إلغاء",
+        "confirm": "تأكيد"
+    }
+}

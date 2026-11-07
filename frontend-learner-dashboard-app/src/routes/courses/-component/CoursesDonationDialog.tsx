@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import * as DialogPrimitive from "@radix-ui/react-dialog";
 import { Cross2Icon } from "@radix-ui/react-icons";
 import { MyButton } from "@/components/design-system/button";
@@ -24,6 +25,7 @@ export const CoursesDonationDialog: React.FC<CoursesDonationDialogProps> = ({
   onOpenChange,
   instituteId,
 }) => {
+  const { t } = useTranslation("coursesRouteA");
   const [step, setStep] = useState<'select' | 'email' | 'payment' | 'success'>('select');
   const [selectedAmount, setSelectedAmount] = useState<number | 'other'>(0);
   const [customAmount, setCustomAmount] = useState('');
@@ -68,15 +70,15 @@ export const CoursesDonationDialog: React.FC<CoursesDonationDialogProps> = ({
       
       // Require user to select or enter an amount
       if (amount <= 0) {
-        setValidationError('Please select or enter a donation amount');
+        setValidationError(t("donationDialog.errors.amountRequired"));
         return;
       }
-      
+
       setStep('email');
     } else if (step === 'email') {
       // Validate email
       if (!email || !email.includes('@')) {
-        setValidationError('Please enter a valid email address');
+        setValidationError(t("donationDialog.errors.invalidEmail"));
         return;
       }
       
@@ -153,7 +155,7 @@ export const CoursesDonationDialog: React.FC<CoursesDonationDialogProps> = ({
           <button
             className="absolute end-2 top-2 text-gray-400 hover:text-gray-700 focus:outline-none"
             onClick={handleClose}
-            aria-label="Close"
+            aria-label={t("donationDialog.closeAriaLabel")}
           >
             <Cross2Icon className="h-4 w-4" />
           </button>
@@ -163,7 +165,7 @@ export const CoursesDonationDialog: React.FC<CoursesDonationDialogProps> = ({
               <div className="flex justify-center">
                 <SpinnerGap className="w-12 h-12 text-blue-500 animate-spin" />
               </div>
-              <h2 className="text-xl font-semibold text-gray-700">Loading...</h2>
+              <h2 className="text-xl font-semibold text-gray-700">{t("common.loading")}</h2>
             </div>
           ) : step === 'success' ? (
             <DonationSuccessStep
@@ -222,7 +224,7 @@ export const CoursesDonationDialog: React.FC<CoursesDonationDialogProps> = ({
                     onClick={handleContinue}
                     disabled={false}
                   >
-                    Continue
+                    {t("donationDialog.continueButton")}
                   </MyButton>
                 </div>
               )}

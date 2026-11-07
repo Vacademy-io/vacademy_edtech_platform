@@ -8,6 +8,11 @@ import { Info, MagnifyingGlass } from '@phosphor-icons/react';
 import { useStudyLibraryStore } from '@/stores/study-library/use-study-library-store';
 import { useInstituteDetailsStore } from '@/stores/students/students-list/useInstituteDetailsStore';
 import { useStudyLibraryQuery } from '@/routes/study-library/courses/-services/getStudyLibraryDetails';
+import {
+    getTerminology,
+    getTerminologyPlural,
+} from '@/components/common/layout-container/sidebar/utils';
+import { ContentTerms, SystemTerms } from '@/routes/settings/-components/NamingSettings';
 
 export type CopyContentMode = 'VALUE' | 'REFERENCE';
 
@@ -76,6 +81,16 @@ export const CopyContentDialog = ({
 }: CopyContentDialogProps) => {
     const { studyLibraryData } = useStudyLibraryStore();
     const { instituteDetails } = useInstituteDetailsStore();
+    const courseTerm = getTerminology(ContentTerms.Course, SystemTerms.Course);
+    const courseLower = courseTerm.toLocaleLowerCase();
+    const coursesLower = getTerminologyPlural(
+        ContentTerms.Course,
+        SystemTerms.Course
+    ).toLocaleLowerCase();
+    const chaptersLower = getTerminologyPlural(
+        ContentTerms.Chapters,
+        SystemTerms.Chapters
+    ).toLocaleLowerCase();
     const [search, setSearch] = useState('');
     const [picked, setPicked] = useState<string>(initialSelection?.sourcePackageSessionId ?? '');
     const [mode, setMode] = useState<CopyContentMode>(initialSelection?.mode ?? 'VALUE');
@@ -246,9 +261,9 @@ export const CopyContentDialog = ({
                                     Make a separate copy
                                 </span>
                                 <span className="text-xs text-neutral-500">
-                                    Subjects, modules, chapters and slides are duplicated for
-                                    this course. Editing them here will not affect the original
-                                    course.
+                                    Subjects, modules, {chaptersLower} and slides are duplicated for
+                                    this {courseLower}. Editing them here will not affect the
+                                    original {courseLower}.
                                 </span>
                             </div>
                         </label>
@@ -278,9 +293,9 @@ export const CopyContentDialog = ({
                                     Keep linked to the original
                                 </span>
                                 <span className="text-xs text-neutral-500">
-                                    Both courses use the same lessons behind a different course
-                                    title, description and banner. Any edit in either course is
-                                    reflected in both.
+                                    Both {coursesLower} use the same lessons behind a different{' '}
+                                    {courseLower} title, description and banner. Any edit in either{' '}
+                                    {courseLower} is reflected in both.
                                 </span>
                                 {referenceDisabled && (
                                     <span className="mt-1 text-xs font-medium text-amber-700">
@@ -315,18 +330,20 @@ export const CopyContentDialog = ({
                     >
                         {mode === 'VALUE' ? (
                             <>
-                                After your course is created, the chosen batch&apos;s subjects,
-                                modules, chapters and slides will be duplicated into every
-                                batch of this new course. The copies are independent — editing
-                                content here will not affect the original course.
+                                After your {courseLower} is created, the chosen batch&apos;s
+                                subjects, modules, {chaptersLower} and slides will be duplicated
+                                into every batch of this new {courseLower}. The copies are
+                                independent — editing content here will not affect the original{' '}
+                                {courseLower}.
                             </>
                         ) : (
                             <>
-                                The new course&apos;s batches will stay <strong>linked</strong>{' '}
-                                to the source batch&apos;s subjects, modules, chapters and
-                                slides. Editing content in either course is reflected in the
-                                other. Only the course&apos;s own details (title, description,
-                                banner, tags) stay independent.
+                                The new {courseLower}&apos;s batches will stay{' '}
+                                <strong>linked</strong> to the source batch&apos;s subjects,
+                                modules, {chaptersLower} and slides. Editing content in either{' '}
+                                {courseLower} is reflected in the other. Only the {courseLower}
+                                &apos;s own details (title, description, banner, tags) stay
+                                independent.
                             </>
                         )}
                         <div
@@ -336,8 +353,8 @@ export const CopyContentDialog = ({
                                     : 'mt-1 text-xs text-blue-700'
                             }
                         >
-                            Only batches whose course depth matches your new course (depth{' '}
-                            <strong>{targetDepthLabel}</strong>) can be selected.
+                            Only batches whose {courseLower} depth matches your new {courseLower}{' '}
+                            (depth <strong>{targetDepthLabel}</strong>) can be selected.
                         </div>
                     </AlertDescription>
                 </Alert>
@@ -349,7 +366,7 @@ export const CopyContentDialog = ({
                     />
                     <Input
                         type="text"
-                        placeholder="Search by course, session or level…"
+                        placeholder={`Search by ${courseLower}, session or level…`}
                         value={search}
                         onChange={(e) => setSearch(e.target.value)}
                         className="h-9 pl-7"
@@ -367,9 +384,9 @@ export const CopyContentDialog = ({
                                 const disabled = !option.isSameDepth;
                                 const isPicked = picked === option.packageSessionId;
                                 const tooltip = option.isDepthUnknown
-                                    ? 'Course depth is still loading — try again in a moment.'
+                                    ? `${courseTerm} depth is still loading — try again in a moment.`
                                     : disabled
-                                      ? `Course depth is ${option.courseDepth}, expected ${targetDepthLabel}`
+                                      ? `${courseTerm} depth is ${option.courseDepth}, expected ${targetDepthLabel}`
                                       : undefined;
                                 return (
                                     <li key={option.packageSessionId}>
@@ -425,8 +442,8 @@ export const CopyContentDialog = ({
                     )}
                 </div>
                 <div className="text-xs text-neutral-500">
-                    {sameDepthCount} batch{sameDepthCount === 1 ? '' : 'es'} match the depth
-                    of your new course
+                    {sameDepthCount} batch{sameDepthCount === 1 ? '' : 'es'} match the depth of your
+                    new {courseLower}
                     {unknownDepthCount > 0 && isDepthLoading
                         ? `; ${unknownDepthCount} still resolving depth…`
                         : unknownDepthCount > 0

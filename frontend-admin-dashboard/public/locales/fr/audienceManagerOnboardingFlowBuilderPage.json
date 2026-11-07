@@ -1,0 +1,77 @@
+{
+    "navHeading": {
+        "fallback": "Parcours d'intégration"
+    },
+    "actions": {
+        "backToFlows": "Retour aux parcours d'intégration",
+        "retry": "Réessayer",
+        "activating": "Activation…",
+        "activateFlow": "Activer le parcours",
+        "addStep": "Ajouter une étape",
+        "edit": "Modifier",
+        "cancel": "Annuler",
+        "removing": "Suppression…",
+        "remove": "Supprimer"
+    },
+    "states": {
+        "loadingFlow": "Chargement du parcours…",
+        "loadFlowError": "Impossible de charger ce parcours d'intégration.",
+        "addStepBeforeActivating": "Ajoutez au moins une étape avant d'activer ce parcours.",
+        "loadingSteps": "Chargement des étapes…",
+        "noStepsTitle": "Aucune étape pour l'instant",
+        "noStepsDescription": "Ajoutez la première étape (par ex. un formulaire d'inscription) pour commencer à construire ce parcours."
+    },
+    "tags": {
+        "optional": "Facultatif",
+        "grantsStudentRole": "Attribue le rôle Étudiant",
+        "sendsCredentials": "Envoie les identifiants"
+    },
+    "statusLabels": {
+        "draft": "Brouillon",
+        "active": "Actif",
+        "archived": "Archivé"
+    },
+    "stepTypeLabels": {
+        "FORM": "Formulaire"
+    },
+    "deleteDialog": {
+        "title": "Supprimer cette étape ?",
+        "description": "« {{stepName}} » sera archivée. Les apprenants déjà sur cette étape conservent leur progression, mais elle n'apparaîtra plus pour quiconque commence le parcours après cela."
+    },
+    "toasts": {
+        "reorderError": "Impossible d'enregistrer le nouvel ordre. Annulation en cours.",
+        "stepRemoved": "Étape supprimée",
+        "removeError": "Impossible de supprimer l'étape.",
+        "flowActivated": "Parcours activé",
+        "activateError": "Impossible d'activer le parcours."
+    },
+    "sections": {
+        "steps": "Steps",
+        "stepsDragHint": "Drag the handle to reorder",
+        "howItRuns": "How it runs",
+        "people": "People on this flow"
+    },
+    "meta": {
+        "fields_one": "{{count}} field",
+        "fields_other": "{{count}} fields",
+        "roleEdit": "{{role}} edit",
+        "roleView": "{{role}} view"
+    },
+    "flow": {
+        "startTitle": "Started from a profile",
+        "startText": "Someone picks this flow on a lead or {{learner}} profile",
+        "optional": "Optional — can be skipped",
+        "required": "Required",
+        "doneTitle": "Onboarding complete",
+        "doneText": "The instance is marked Completed"
+    },
+    "people": {
+        "unavailable": "Counts are not available right now.",
+        "status": {
+            "IN_PROGRESS": "In progress",
+            "COMPLETED": "Completed",
+            "ABANDONED": "Abandoned",
+            "CANCELLED": "Cancelled"
+        }
+    }
+}

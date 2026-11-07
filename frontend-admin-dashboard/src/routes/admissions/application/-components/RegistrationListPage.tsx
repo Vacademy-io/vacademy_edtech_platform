@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useNavHeadingStore } from '@/stores/layout-container/useNavHeadingStore';
 import { Helmet } from 'react-helmet';
 import { MyButton } from '@/components/design-system/button';
@@ -30,6 +31,25 @@ import { StudentSidebarProvider } from '@/routes/manage-students/students-list/-
 import { useStudentSidebar } from '@/routes/manage-students/students-list/-context/selected-student-sidebar-context';
 import type { StudentTable } from '@/types/student-table-types';
 import { ApplicationBulkImportDialog } from './ApplicationBulkImportDialog';
+import {
+    CountChip,
+    PillTabs,
+    ScreenHeader,
+    StatusPill,
+    type PillTone,
+} from '@/components/shared/crm-enhance/screen-header';
+
+/** Pill colour per registration status (unknown statuses stay neutral). */
+const statusTone = (status: string): PillTone =>
+    status === 'SUBMITTED'
+        ? 'info'
+        : status === 'ADMITTED' || status === 'APPROVED' || status === 'ADMISSION_COMPLETED'
+          ? 'success'
+          : status === 'PENDING'
+            ? 'warning'
+            : status === 'REJECTED'
+              ? 'danger'
+              : 'neutral';
 
 // Map an Applicant to a minimal StudentTable shape for the sidebar profile header
 const mapApplicantToStudent = (applicant: Applicant): StudentTable =>
@@ -81,6 +101,7 @@ function RegistrationListPageInner({
     setIsSidebarOpen: (open: boolean) => void;
     setSelectedApplicantId: (id: string | null) => void;
 }) {
+    const { t } = useTranslation('admissionsRegistrationListPage');
     const { setSelectedStudent } = useStudentSidebar();
     const { setNavHeading } = useNavHeadingStore();
     const navigate = useNavigate();
@@ -121,14 +142,34 @@ function RegistrationListPageInner({
 
     // Status options for filter
     const statusOptions: MyFilterOption[] = [
-        { id: 'PENDING', name: 'Pending' },
-        { id: 'ADMISSION_COMPLETED', name: 'Completed' },
-        { id: 'REJECTED', name: 'Rejected' },
-        { id: 'ADMITTED', name: 'Admitted' },
+        { id: 'PENDING', name: t('status.pending') },
+        { id: 'ADMISSION_COMPLETED', name: t('status.admissionCompleted') },
+        { id: 'REJECTED', name: t('status.rejected') },
+        { id: 'ADMITTED', name: t('status.admitted') },
     ];
 
+    // Map a raw backend registration-status enum to its translated display
+    // label. Falls back to the raw value for any status the catalog doesn't
+    // yet cover, so an unmapped enum never crashes the render.
+    const STATUS_LABEL_KEYS: Record<string, string> = {
+        SUBMITTED: 'status.submitted',
+        ADMITTED: 'status.admitted',
+        APPROVED: 'status.approved',
+        PENDING: 'status.pending',
+        REJECTED: 'status.rejected',
+        ADMISSION_COMPLETED: 'status.admissionCompleted',
+    };
+    const getStatusLabel = (status: string): string => {
+        const key = STATUS_LABEL_KEYS[status];
+        return key ? t(key) : status;
+    };
+
     // Fetch applicants with filters
-    const { data: applicantsData, isLoading } = useQuery({
+    const {
+        data: applicantsData,
+        isLoading,
+        isError,
+    } = useQuery({
         queryKey: [
             'applicants',
             instituteId,
@@ -165,13 +206,21 @@ function RegistrationListPageInner({
     useEffect(() => {
         setNavHeading(
             <div className="flex items-center gap-2">
-                <span className="text-lg font-semibold">Application Management</span>
+                <span className="text-lg font-semibold">{t('navHeading')}</span>
                 <span className="rounded-full bg-neutral-200 px-2 py-0.5 text-xs font-medium text-neutral-600">
                     {totalElements}
                 </span>
             </div>
         );
-    }, [setNavHeading, totalElements]);
+    }, [setNavHeading, totalElements, t]);
+
+    // Highlighted quick view: "All" with no status picked, the status when exactly one is.
+    const quickStatus =
+        selectedStatuses.length === 0
+            ? 'ALL'
+            : selectedStatuses.length === 1
+              ? selectedStatuses[0]?.id ?? ''
+              : '';
 
     const handleNewRegistration = () => {
         setShowRegistrationTypeModal(true);
@@ -194,7 +243,7 @@ function RegistrationListPageInner({
     const handleSelectEnquiry = (enquiryData: EnquiryDetailsResponse) => {
         // Guard: should not reach here (button is disabled in modal), but double-check
         if (enquiryData.overall_status === 'APPLICATION' || enquiryData.overall_status === 'ADMISSION') {
-            toast.warning('This enquiry has already been converted to an application.');
+            toast.warning(t('toast.enquiryAlreadyConverted'));
             return;
         }
 
@@ -217,45 +266,88 @@ function RegistrationListPageInner({
     return (
         <div className="flex h-full w-full min-w-0 flex-1 flex-col">
             <Helmet>
-                <title>Applications - Admissions</title>
+                <title>{t('pageTitle')}</title>
             </Helmet>
 
-            <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
-                <div className="flex flex-wrap items-center gap-4">
+            <ScreenHeader
+                className="mb-4"
+                icon={FileText}
+                title={t('header.title')}
+                badge={<CountChip>{totalElements.toLocaleString('en-IN')}</CountChip>}
+                subtitle={t('header.subtitle')}
+                actions={
+                    <>
+                        <MyButton
+                            buttonType="secondary"
+                            onClick={() => setIsBulkImportOpen(true)}
+                            disabled={!selectedSessionId}
+                        >
+                            {t('buttons.bulkImport')}
+                        </MyButton>
+                        <MyButton
+                            buttonType="primary"
+                            onClick={handleNewRegistration}
+                            disabled={!selectedSessionId}
+                        >
+                            <Plus className="mr-2 size-4" />
+                            {t('buttons.newApplication')}
+                        </MyButton>
+                    </>
+                }
+            />
+
+            {/* Quick status views — the same Status filter as the dropdown below */}
+            <PillTabs
+                className="mb-4"
+                tabs={[
+                    { key: 'ALL', label: t('quickViews.all') },
+                    ...statusOptions.map((o) => ({ key: o.id, label: o.name })),
+                ]}
+                value={quickStatus}
+                onChange={(key) => {
+                    const option = statusOptions.find((o) => o.id === key);
+                    setSelectedStatuses(option ? [option] : []);
+                    setPageNo(0);
+                }}
+            />
+
+            <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-neutral-200 bg-white p-3 shadow-sm">
+                <div className="flex flex-wrap items-center gap-3">
                     <div className="relative">
                         <MagnifyingGlass className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400" />
                         <input
                             type="text"
-                            placeholder="Search by tracking ID, name..."
-                            className="h-8 w-64 rounded-md border border-neutral-300 pl-10 pr-4 text-sm focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
+                            placeholder={t('search.placeholder')}
+                            className="h-9 w-64 rounded-md border border-neutral-300 pl-10 pr-4 text-sm focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
                         />
                     </div>
 
                     <ScheduleTestFilters
-                        label="Class"
+                        label={t('filters.classLabel')}
                         data={packageSessionOptions}
                         selectedItems={selectedPackageSessions}
                         onSelectionChange={setSelectedPackageSessions}
                     />
 
                     <ScheduleTestFilters
-                        label="Status"
+                        label={t('filters.statusLabel')}
                         data={statusOptions}
                         selectedItems={selectedStatuses}
                         onSelectionChange={setSelectedStatuses}
                     />
                 </div>
 
-                <div className="flex flex-wrap items-center gap-3">
+                <div className="flex flex-wrap items-center gap-2">
+                    <span className="text-caption text-neutral-500">{t('session.newGoTo')}</span>
                     <Select
                         value={selectedSessionId}
                         onValueChange={setSelectedSessionId}
                         defaultValue={sessions[0]?.id}
                     >
-                        <SelectTrigger className="h-10 w-[100px]">
-                            <SelectValue placeholder="Select Session" />
+                        <SelectTrigger className="h-9 w-40">
+                            <SelectValue placeholder={t('session.placeholder')} />
                         </SelectTrigger>
                         <SelectContent>
                             {sessions.map((session) => (
@@ -265,42 +357,30 @@ function RegistrationListPageInner({
                             ))}
                         </SelectContent>
                     </Select>
-
-                    <MyButton
-                        buttonType="primary"
-                        onClick={handleNewRegistration}
-                        disabled={!selectedSessionId}
-                    >
-                        <Plus className="mr-2 size-4" />
-                        New Application
-                    </MyButton>
-                    <MyButton
-                        buttonType="secondary"
-                        onClick={() => setIsBulkImportOpen(true)}
-                        disabled={!selectedSessionId}
-                    >
-                        Bulk Import
-                    </MyButton>
                 </div>
             </div>
 
-            <div className="overflow-x-auto rounded-lg border border-neutral-200 bg-white shadow-sm">
+            <div className="overflow-x-auto rounded-xl border border-neutral-200 bg-white shadow-sm">
                 {isLoading ? (
                     <div className="flex items-center justify-center p-12">
-                        <div className="text-neutral-500">Loading applications...</div>
+                        <div className="text-neutral-500">{t('table.loading')}</div>
+                    </div>
+                ) : isError ? (
+                    <div className="flex items-center justify-center p-12">
+                        <p className="text-danger-600">{t('table.error')}</p>
                     </div>
                 ) : applicants.length === 0 ? (
                     <div className="flex items-center justify-center p-12">
                         <div className="text-center">
-                            <p className="text-neutral-500">No applications found</p>
-                            <p className="text-sm text-neutral-400">Try adjusting your filters</p>
+                            <p className="text-neutral-500">{t('table.empty.title')}</p>
+                            <p className="text-sm text-neutral-400">{t('table.empty.subtitle')}</p>
                             <div className="mt-4 flex justify-center">
                                 <MyButton
                                     buttonType="secondary"
                                     onClick={() => setIsBulkImportOpen(true)}
                                     disabled={!selectedSessionId}
                                 >
-                                    Bulk Import
+                                    {t('buttons.bulkImport')}
                                 </MyButton>
                             </div>
                         </div>
@@ -309,14 +389,14 @@ function RegistrationListPageInner({
                     <table className="w-full text-left text-sm text-neutral-600">
                         <thead className="bg-neutral-50 text-xs font-semibold uppercase text-neutral-500">
                             <tr>
-                                <th className="px-6 py-3">Tracking ID</th>
-                                <th className="px-6 py-3">Student Name</th>
-                                <th className="px-6 py-3">Class</th>
-                                <th className="px-6 py-3">Parent Name</th>
-                                <th className="px-6 py-3">Mobile</th>
-                                <th className="px-6 py-3">Date</th>
-                                <th className="px-6 py-3">Status</th>
-                                <th className="px-6 py-3 text-right">Actions</th>
+                                <th className="px-6 py-3">{t('table.headers.trackingId')}</th>
+                                <th className="px-6 py-3">{t('table.headers.studentName')}</th>
+                                <th className="px-6 py-3">{t('table.headers.class')}</th>
+                                <th className="px-6 py-3">{t('table.headers.parentName')}</th>
+                                <th className="px-6 py-3">{t('table.headers.mobile')}</th>
+                                <th className="px-6 py-3">{t('table.headers.date')}</th>
+                                <th className="px-6 py-3">{t('table.headers.status')}</th>
+                                <th className="px-6 py-3 text-end">{t('table.headers.actions')}</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-neutral-200">
@@ -345,22 +425,9 @@ function RegistrationListPageInner({
                                         {new Date(applicant.created_at).toLocaleDateString()}
                                     </td>
                                     <td className="whitespace-nowrap px-6 py-4">
-                                        <span
-                                            className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium
-                                            ${applicant.overall_status === 'SUBMITTED'
-                                                    ? 'bg-blue-100 text-blue-800'
-                                                    : applicant.overall_status === 'ADMITTED' ||
-                                                        applicant.overall_status === 'APPROVED'
-                                                        ? 'bg-green-100 text-green-800'
-                                                        : applicant.overall_status === 'PENDING'
-                                                            ? 'bg-orange-100 text-orange-800'
-                                                            : applicant.overall_status === 'REJECTED'
-                                                                ? 'bg-red-100 text-red-800'
-                                                                : 'bg-neutral-100 text-neutral-800'
-                                                }`}
-                                        >
-                                            {applicant.overall_status}
-                                        </span>
+                                        <StatusPill tone={statusTone(applicant.overall_status)}>
+                                            {getStatusLabel(applicant.overall_status)}
+                                        </StatusPill>
                                     </td>
                                     <td className="whitespace-nowrap px-6 py-4 text-right">
                                         <button className="text-neutral-400 hover:text-primary-600">
@@ -376,24 +443,29 @@ function RegistrationListPageInner({
 
             <div className="mt-4 flex items-center justify-between text-xs text-neutral-500">
                 <span>
-                    Showing {pageNo * pageSize + 1} to{' '}
-                    {Math.min((pageNo + 1) * pageSize, totalElements)} of {totalElements} entries
+                    {t('pagination.showing', {
+                        from: pageNo * pageSize + 1,
+                        to: Math.min((pageNo + 1) * pageSize, totalElements),
+                        count: totalElements,
+                    })}
                 </span>
                 <div className="flex gap-2">
-                    <button
-                        className="rounded border border-neutral-300 px-2 py-1 disabled:opacity-50"
+                    <MyButton
+                        buttonType="secondary"
+                        scale="small"
                         disabled={pageNo === 0}
                         onClick={() => setPageNo((p) => Math.max(0, p - 1))}
                     >
-                        Previous
-                    </button>
-                    <button
-                        className="rounded border border-neutral-300 px-2 py-1 disabled:opacity-50"
+                        {t('buttons.previous')}
+                    </MyButton>
+                    <MyButton
+                        buttonType="secondary"
+                        scale="small"
                         disabled={pageNo >= totalPages - 1}
                         onClick={() => setPageNo((p) => Math.min(totalPages - 1, p + 1))}
                     >
-                        Next
-                    </button>
+                        {t('buttons.next')}
+                    </MyButton>
                 </div>
             </div>
 
@@ -403,7 +475,7 @@ function RegistrationListPageInner({
                     <div className="w-full max-w-md rounded-lg bg-white p-6 shadow-xl">
                         <div className="mb-4 flex items-center justify-between">
                             <h2 className="text-lg font-semibold text-neutral-900">
-                                Choose Application Type
+                                {t('modal.title')}
                             </h2>
                             <button
                                 onClick={() => setShowRegistrationTypeModal(false)}
@@ -414,7 +486,7 @@ function RegistrationListPageInner({
                         </div>
 
                         <p className="mb-6 text-sm text-neutral-600">
-                            Select how you would like to create a new application
+                            {t('modal.subtitle')}
                         </p>
 
                         <div className="space-y-3">
@@ -427,10 +499,10 @@ function RegistrationListPageInner({
                                 </div>
                                 <div>
                                     <h3 className="font-medium text-neutral-900">
-                                        New Application
+                                        {t('modal.newApplication.title')}
                                     </h3>
                                     <p className="text-sm text-neutral-600">
-                                        Start a fresh application form
+                                        {t('modal.newApplication.description')}
                                     </p>
                                 </div>
                             </button>
@@ -439,13 +511,13 @@ function RegistrationListPageInner({
                                 onClick={handleFromEnquiry}
                                 className="flex w-full items-center gap-4 rounded-lg border border-neutral-200 p-4 text-left transition-all hover:border-primary-500 hover:bg-primary-50"
                             >
-                                <div className="flex size-12 items-center justify-center rounded-full bg-blue-100">
-                                    <FileText className="size-6 text-blue-600" />
+                                <div className="flex size-12 items-center justify-center rounded-full bg-info-50">
+                                    <FileText className="size-6 text-info-600" />
                                 </div>
                                 <div>
-                                    <h3 className="font-medium text-neutral-900">From Enquiry</h3>
+                                    <h3 className="font-medium text-neutral-900">{t('modal.fromEnquiry.title')}</h3>
                                     <p className="text-sm text-neutral-600">
-                                        Create application from existing enquiry
+                                        {t('modal.fromEnquiry.description')}
                                     </p>
                                 </div>
                             </button>
@@ -487,7 +559,7 @@ export function RegistrationListPage() {
                     setIsSidebarOpen={setIsSidebarOpen}
                     setSelectedApplicantId={setSelectedApplicantId}
                 />
-                <StudentSidebar applicantId={selectedApplicantId ?? undefined} className="z-[60]" />
+                <StudentSidebar applicantId={selectedApplicantId ?? undefined} className="z-50" />
             </SidebarProvider>
         </StudentSidebarProvider>
     );

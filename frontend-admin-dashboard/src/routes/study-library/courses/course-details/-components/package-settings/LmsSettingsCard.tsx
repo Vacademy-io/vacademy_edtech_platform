@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -93,6 +94,7 @@ const matchConnectionId = (conns: LmsConnection[], cur: CourseLms): string | nul
  * managed in the "Workflow Triggers" tab. (Connections are managed under Settings → Connect your LMS.)
  */
 export const LmsSettingsCard: React.FC<LmsSettingsCardProps> = ({ packageId, refreshKey }) => {
+    const { t } = useTranslation('studyLibraryLmsSettingsCard');
     const [providers, setProviders] = useState<LmsProvidersResponse | null>(null);
     const [connections, setConnections] = useState<LmsConnection[]>([]);
     const [currentLms, setCurrentLms] = useState<string | null>(null);
@@ -129,11 +131,11 @@ export const LmsSettingsCard: React.FC<LmsSettingsCardProps> = ({ packageId, ref
             );
         } catch (e) {
             console.error('Failed to load LMS info', e);
-            toast.error('Failed to load LMS info');
+            toast.error(t('errors.loadFailed'));
         } finally {
             setLoading(false);
         }
-    }, [packageId]);
+    }, [packageId, t]);
 
     useEffect(() => {
         void load();
@@ -141,10 +143,10 @@ export const LmsSettingsCard: React.FC<LmsSettingsCardProps> = ({ packageId, ref
 
     const friendlyName = useCallback(
         (type: string | null | undefined): string => {
-            if (!type) return 'the built-in Vacademy LMS';
+            if (!type) return t('builtInLms');
             return providers?.providers?.find((p) => p.id === type)?.displayName ?? type;
         },
-        [providers]
+        [providers, t]
     );
 
     const selectedConnection = useMemo(
@@ -152,11 +154,11 @@ export const LmsSettingsCard: React.FC<LmsSettingsCardProps> = ({ packageId, ref
         [connections, connectionId]
     );
     const isMoodle = selectedConnection?.type === 'MOODLE';
-    const courseIdLabel = isMoodle ? 'Moodle course ID' : 'Course ID in the LMS';
+    const courseIdLabel = isMoodle ? t('moodleCourseId') : t('courseIdInLms');
 
     const handleApply = async () => {
         if (!connectionId) {
-            toast.error('Pick an LMS connection first.');
+            toast.error(t('errors.pickConnection'));
             return;
         }
         setApplying(true);
@@ -171,11 +173,13 @@ export const LmsSettingsCard: React.FC<LmsSettingsCardProps> = ({ packageId, ref
                 courseId: courseId.trim() || undefined,
                 extraFields: Object.keys(extra).length ? extra : undefined,
             });
-            toast.success(`This course now syncs with ${friendlyName(selectedConnection?.type)}.`);
+            toast.success(
+                t('toasts.applySuccess', { lmsName: friendlyName(selectedConnection?.type) })
+            );
             await load();
         } catch (e) {
             console.error('Failed to apply LMS connection', e);
-            toast.error(e instanceof Error ? e.message : 'Failed to apply LMS connection');
+            toast.error(e instanceof Error ? e.message : t('errors.applyFailed'));
         } finally {
             setApplying(false);
         }
@@ -186,13 +190,13 @@ export const LmsSettingsCard: React.FC<LmsSettingsCardProps> = ({ packageId, ref
             <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                     <PlugsConnected className="size-5 text-primary-500" weight="fill" />
-                    LMS Integration
+                    {t('title')}
                 </CardTitle>
             </CardHeader>
             <CardContent className="space-y-5">
                 {loading ? (
                     <div className="flex items-center justify-center py-8 text-neutral-500">
-                        <CircleNotch className="mr-2 size-5 animate-spin" /> Loading…
+                        <CircleNotch className="me-2 size-5 animate-spin" /> {t('loading')}
                     </div>
                 ) : (
                     <>
@@ -202,35 +206,35 @@ export const LmsSettingsCard: React.FC<LmsSettingsCardProps> = ({ packageId, ref
                                 weight="fill"
                             />
                             <p className="text-sm text-neutral-600">
-                                When learners enrol in this course, they&apos;re set up in{' '}
+                                {t('enrolSyncNotice.prefix')}{' '}
                                 <span className="font-semibold text-neutral-800">
                                     {friendlyName(currentLms)}
                                 </span>
-                                .
+                                {t('enrolSyncNotice.suffix')}
                             </p>
                         </div>
 
                         {connections.length === 0 ? (
                             <p className="text-sm text-neutral-500">
-                                No LMS connections yet. Add one under{' '}
-                                <span className="font-medium">Settings → Connect your LMS</span>,
-                                then come back to apply it here.
+                                {t('noConnections.prefix')}{' '}
+                                <span className="font-medium">{t('noConnections.settingsPath')}</span>
+                                {t('noConnections.suffix')}
                             </p>
                         ) : (
                             <div className="space-y-4">
                                 <p className="text-sm font-medium text-neutral-700">
-                                    Set up this course&apos;s LMS
+                                    {t('setupHeading')}
                                 </p>
 
                                 <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                                     <div className="space-y-1.5">
-                                        <Label className="text-sm">LMS connection</Label>
+                                        <Label className="text-sm">{t('lmsConnectionLabel')}</Label>
                                         <Select
                                             value={connectionId}
                                             onValueChange={setConnectionId}
                                         >
                                             <SelectTrigger>
-                                                <SelectValue placeholder="Choose a connection" />
+                                                <SelectValue placeholder={t('chooseConnectionPlaceholder')} />
                                             </SelectTrigger>
                                             <SelectContent>
                                                 {connections.map((c) => (
@@ -251,20 +255,21 @@ export const LmsSettingsCard: React.FC<LmsSettingsCardProps> = ({ packageId, ref
                                             value={courseId}
                                             onChange={(e) => setCourseId(e.target.value)}
                                             placeholder={
-                                                isMoodle ? 'e.g. 74' : 'Course id in the LMS'
+                                                isMoodle
+                                                    ? t('moodleCourseIdPlaceholder')
+                                                    : t('courseIdPlaceholder')
                                             }
                                         />
                                         <p className="text-caption text-neutral-400">
-                                            The id of this course in{' '}
-                                            {friendlyName(selectedConnection?.type)}. The site/token
-                                            come from the connection — only the course id changes
-                                            per course.
+                                            {t('courseIdHelp.prefix')}{' '}
+                                            {friendlyName(selectedConnection?.type)}
+                                            {t('courseIdHelp.suffix')}
                                         </p>
                                     </div>
                                 </div>
 
                                 <div className="space-y-2">
-                                    <Label className="text-sm">Additional fields (optional)</Label>
+                                    <Label className="text-sm">{t('additionalFieldsLabel')}</Label>
                                     {extraFields.map((row, i) => (
                                         <div key={i} className="flex items-center gap-2">
                                             <Input
@@ -272,7 +277,7 @@ export const LmsSettingsCard: React.FC<LmsSettingsCardProps> = ({ packageId, ref
                                                 onChange={(e) =>
                                                     updateExtra(i, 'key', e.target.value)
                                                 }
-                                                placeholder="key (e.g. roleId)"
+                                                placeholder={t('fieldKeyPlaceholder')}
                                                 className="md:max-w-xs"
                                             />
                                             <Input
@@ -280,13 +285,13 @@ export const LmsSettingsCard: React.FC<LmsSettingsCardProps> = ({ packageId, ref
                                                 onChange={(e) =>
                                                     updateExtra(i, 'value', e.target.value)
                                                 }
-                                                placeholder="value"
+                                                placeholder={t('fieldValuePlaceholder')}
                                             />
                                             <Button
                                                 variant="ghost"
                                                 size="icon"
                                                 onClick={() => removeExtra(i)}
-                                                aria-label="Remove field"
+                                                aria-label={t('removeFieldAriaLabel')}
                                             >
                                                 <Trash className="size-4 text-danger-500" />
                                             </Button>
@@ -303,11 +308,10 @@ export const LmsSettingsCard: React.FC<LmsSettingsCardProps> = ({ packageId, ref
                                         }
                                         className="gap-1 text-primary-600"
                                     >
-                                        <Plus className="size-4" /> Add field
+                                        <Plus className="size-4" /> {t('addFieldButton')}
                                     </Button>
                                     <p className="text-caption text-neutral-400">
-                                        Any extra key–value pairs are saved into this course&apos;s
-                                        LMS settings JSON (e.g. a custom field a workflow reads).
+                                        {t('additionalFieldsHelp')}
                                     </p>
                                 </div>
 
@@ -322,7 +326,7 @@ export const LmsSettingsCard: React.FC<LmsSettingsCardProps> = ({ packageId, ref
                                         ) : (
                                             <ArrowSquareIn className="size-4" />
                                         )}
-                                        {applying ? 'Applying…' : 'Use this LMS for the course'}
+                                        {applying ? t('applyingButton') : t('applyButton')}
                                     </MyButton>
                                 </div>
                             </div>

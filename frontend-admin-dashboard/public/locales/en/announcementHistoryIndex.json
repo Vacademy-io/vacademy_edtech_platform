@@ -1,0 +1,206 @@
+{
+    "heading": "Announcement History",
+    "tabs": {
+        "all": "All",
+        "planned": "Planned",
+        "past": "Past"
+    },
+    "toolbar": {
+        "searchLabel": "Search title",
+        "searchPlaceholder": "Search…",
+        "statusLabel": "Status",
+        "statusAll": "All",
+        "fromLabel": "From",
+        "toLabel": "To"
+    },
+    "status": {
+        "DRAFT": "Draft",
+        "PENDING_APPROVAL": "Pending approval",
+        "REJECTED": "Rejected",
+        "SCHEDULED": "Scheduled",
+        "ACTIVE": "Active",
+        "INACTIVE": "Inactive",
+        "DELIVERED": "Delivered",
+        "CANCELLED": "Cancelled"
+    },
+    "results_one": "{{count}} result",
+    "results_other": "{{count}} results",
+    "sizeLabel": "Size",
+    "prev": "Prev",
+    "next": "Next",
+    "page": "Page {{page}}",
+    "table": {
+        "title": "Title",
+        "status": "Status",
+        "modes": "Modes",
+        "mediums": "Mediums",
+        "schedule": "Schedule",
+        "createdBy": "Created By",
+        "createdAt": "Created At",
+        "actions": "Actions",
+        "loading": "Loading…",
+        "empty": "No announcements",
+        "recipientsPrefix": "To:",
+        "recipientsMore": "+{{count}} more",
+        "channels": "Sent via",
+        "loadFailed": "Could not load announcements.",
+        "noMatch": "No announcements match this search on this page.",
+        "announcement": "Announcement",
+        "appearsIn": "Appears in · via",
+        "inProductOnly": "In-product only"
+    },
+    "actions": {
+        "view": "View",
+        "stats": "Stats",
+        "approve": "Approve",
+        "reject": "Reject",
+        "deliverNow": "Deliver now",
+        "delete": "Delete",
+        "more": "More actions"
+    },
+    "toasts": {
+        "statsLoadFailed": "Failed to load stats",
+        "approved": "Approved",
+        "approveFailed": "Approve failed",
+        "rejected": "Rejected",
+        "rejectFailed": "Reject failed",
+        "deliveryTriggered": "Delivery triggered",
+        "triggerFailed": "Trigger failed",
+        "deleted": "Deleted",
+        "deleteFailed": "Delete failed"
+    },
+    "detailsDialog": {
+        "title": "Announcement Details",
+        "content": "Content",
+        "modes": "Modes",
+        "mediums": "Mediums",
+        "recipients": "Recipients",
+        "close": "Close",
+        "viewStats": "View delivery stats",
+        "createdLine": "By {{name}} · {{when}}",
+        "system": "System",
+        "createdBy": "Created by",
+        "createdAt": "Created at",
+        "schedule": "Schedule",
+        "noContent": "No message content.",
+        "recipientsCount_one": "Recipients ({{count}})",
+        "recipientsCount_other": "Recipients ({{count}})",
+        "noRecipients": "No recipients."
+    },
+    "statsDialog": {
+        "title": "Delivery Stats",
+        "loading": "Loading statistics...",
+        "overviewTitle": "Delivery overview",
+        "tiles": {
+            "recipients": "Recipients",
+            "delivered": "Delivered",
+            "read": "Read",
+            "failed": "Failed",
+            "dismissed": "Dismissed",
+            "dismissRate": "Dismiss rate"
+        },
+        "emailEventsTitle": "Email events",
+        "viaSes": "via SES",
+        "emailTiles": {
+            "emailsSent": "Emails sent",
+            "delivered": "Delivered",
+            "opened": "Opened",
+            "clicked": "Clicked",
+            "bounced": "Bounced",
+            "rejected": "Rejected",
+            "complained": "Complained",
+            "awaitingEvents": "Awaiting events"
+        },
+        "pendingNote": "Emails were dispatched but no SES events have come back yet. If you're running locally, ensure the SES → SNS → notification_service webhook is configured.",
+        "noEmails": "No emails were sent for this announcement.",
+        "recipientsSection": {
+            "title": "Recipients",
+            "loadFailed": "Failed to load recipients",
+            "loading": "Loading recipients...",
+            "empty": "No recipients found for this announcement.",
+            "table": {
+                "name": "Recipient",
+                "mode": "Mode",
+                "status": "Status",
+                "seenAt": "Seen at",
+                "dismissedAt": "Dismissed at",
+                "deliveredAt": "Delivered at"
+            },
+            "pagePagination": "Page {{page}} of {{totalPages}}",
+            "titleCount_one": "Recipients ({{count}})",
+            "titleCount_other": "Recipients ({{count}})"
+        },
+        "nav": {
+            "recipients": "Recipients",
+            "overview": "Delivery overview",
+            "email": "Email"
+        },
+        "rates": {
+            "delivery": "Delivery rate",
+            "read": "Read rate",
+            "dismiss": "Dismiss rate"
+        }
+    },
+    "rejectDialog": {
+        "title": "Reject Announcement",
+        "reasonPlaceholder": "Reason",
+        "cancel": "Cancel",
+        "reject": "Reject"
+    },
+    "schedule": {
+        "none": "-",
+        "immediate": "Immediate",
+        "oneTime": "One-time",
+        "recurring": "Recurring",
+        "cron": "CRON: {{expr}}",
+        "nextRun": "Next: {{when}}"
+    },
+    "subheading": "Every announcement and system alert sent from this institute, with who received it.",
+    "createAnnouncement": "Create Announcement",
+    "retry": "Retry",
+    "recipients": {
+        "unknownUser": "Unknown user",
+        "unknownBatch": "Batch"
+    },
+    "recipientTypes": {
+        "USER": "User",
+        "ROLE": "Role",
+        "PACKAGE_SESSION": "Batch",
+        "PACKAGE_SESSION_COMMA_SEPARATED_ORG_ROLES": "Batch roles",
+        "TAG": "Tag",
+        "CUSTOM_FIELD_FILTER": "Custom field filter",
+        "AUDIENCE": "Audience"
+    },
+    "roles": {
+        "ADMIN": "Admin",
+        "TEACHER": "Teacher",
+        "STUDENT": "Student",
+        "SYSTEM": "System"
+    },
+    "modes": {
+        "SYSTEM_ALERT": "System alert",
+        "DASHBOARD_PIN": "Dashboard pin",
+        "DM": "Direct message",
+        "STREAM": "Stream",
+        "RESOURCES": "Resources",
+        "COMMUNITY": "Community",
+        "TASKS": "Tasks",
+        "APP_OVERLAY": "App overlay"
+    },
+    "mediums": {
+        "WHATSAPP": "WhatsApp",
+        "PUSH_NOTIFICATION": "Push notification",
+        "EMAIL": "Email"
+    },
+    "messageStatus": {
+        "PENDING": "Pending",
+        "SENT": "Sent",
+        "DELIVERED": "Delivered",
+        "FAILED": "Failed",
+        "READ": "Read"
+    },
+    "deleteDialog": {
+        "title": "Delete announcement?",
+        "description": "\"{{title}}\" will be removed from history. This cannot be undone."
+    }
+}

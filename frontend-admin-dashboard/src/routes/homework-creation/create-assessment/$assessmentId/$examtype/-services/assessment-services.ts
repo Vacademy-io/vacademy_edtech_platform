@@ -14,7 +14,7 @@ import {
     Steps,
 } from '@/types/assessments/assessment-data-type';
 import { z } from 'zod';
-import { BasicInfoFormSchema } from '../-utils/basic-info-form-schema';
+import type { BasicInfoFormSchemaType } from '../-utils/basic-info-form-schema';
 import sectionDetailsSchema from '../-utils/section-details-schema';
 import {
     calculateTotalTime,
@@ -23,7 +23,7 @@ import {
     convertStep2Data,
     convertToUTC,
 } from '../-utils/helper';
-import testAccessSchema from '../-utils/add-participants-schema';
+import type { TestAccessFormValues } from '../-utils/add-participants-schema';
 import { AccessControlFormSchema } from '../-utils/access-control-form-schema';
 import { TestAccessFormType } from '@/types/assessments/assessment-steps';
 import { AssessmentPreviewSectionsInterface } from '@/routes/assessment/assessment-list/assessment-details/$assessmentId/$examType/$assesssmentType/$assessmentTab/-utils/assessment-details-interface';
@@ -134,7 +134,7 @@ function getTestBoundation(
 }
 
 export const handlePostStep1Data = async (
-    data: z.infer<typeof BasicInfoFormSchema>,
+    data: BasicInfoFormSchemaType,
     assessmentId: string | null | undefined,
     instituteId: string | undefined,
     type: string | undefined
@@ -261,7 +261,7 @@ export const convertCustomFields = (customFields: CustomFields): ConvertedCustom
 
 export const handlePostStep3Data = async (
     oldFormData: TestAccessFormType | null,
-    newData: z.infer<typeof testAccessSchema>,
+    newData: TestAccessFormValues,
     assessmentId: string | null,
     instituteId: string | undefined,
     type: string | undefined,

@@ -1,0 +1,29 @@
+{
+    "title": "Ask this knowledge base",
+    "subtitle": "Answers come only from {{kbName}}, with the page they came from.",
+    "emptyState": {
+        "noContent": "Add a document first, then ask questions here to check what the AI understood.",
+        "prompt": "Try asking something you already know the answer to — it is the quickest way to tell whether the material was read properly."
+    },
+    "status": {
+        "searching": "Looking through the material…",
+        "notGrounded": "Nothing in this knowledge base covered that."
+    },
+    "citations": {
+        "heading": "From your material",
+        "figureAlt": "Figure from the source"
+    },
+    "actions": {
+        "clear": "Clear",
+        "ask": "Ask",
+        "asking": "Asking…"
+    },
+    "input": {
+        "placeholder": "Ask anything from this material…",
+        "ariaLabel": "Your question"
+    },
+    "errors": {
+        "default": "Could not answer that. Please try again.",
+        "insufficientCredits": "Not enough credits."
+    }
+}

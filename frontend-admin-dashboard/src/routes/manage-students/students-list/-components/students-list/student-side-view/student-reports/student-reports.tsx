@@ -1,4 +1,5 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useStudentSidebar } from '../../../../-context/selected-student-sidebar-context';
 import { InitiateReportDialog } from './InitiateReportDialog';
 import {
@@ -21,15 +22,20 @@ import {
     XCircle,
     Spinner,
     CircleNotch,
+    ChartLineUp,
     type Icon as PhosphorIcon,
 } from '@phosphor-icons/react';
 import { format } from 'date-fns';
 import { StudentReportDetailsDialog } from './StudentReportDetailsDialog';
 import { ComprehensiveReportDialog } from './ComprehensiveReportDialog';
+import { LearnedFromChatsPanel } from './LearnedFromChatsPanel';
 import { MyButton } from '@/components/design-system/button';
 import { toast } from 'sonner';
-import { getTerminology } from '@/components/common/layout-container/sidebar/utils';
-import { RoleTerms, SystemTerms } from '@/routes/settings/-components/NamingSettings';
+import {
+    getTerminology,
+    getTerminologyPlural,
+} from '@/components/common/layout-container/sidebar/utils';
+import { ContentTerms, RoleTerms, SystemTerms } from '@/routes/settings/-components/NamingSettings';
 import {
     ProfileSectionCard,
     ProfileSkeleton,
@@ -39,8 +45,17 @@ import {
     ProfileHeroStat,
 } from '../profile-ui';
 import { cn } from '@/lib/utils';
+import { StudentReportSnapshot } from './StudentReportSnapshot';
+import { ALL_BATCHES, BatchPicker } from '../BatchPicker';
+import {
+    DEFAULT_TIMELINE,
+    ReportTimelineFilter,
+    resolveTimeline,
+    type TimelineValue,
+} from '@/components/common/report-timeline-filter';
 
 export const StudentReports = () => {
+    const { t } = useTranslation('manageStudentsReports');
     const { selectedStudent } = useStudentSidebar();
     const [reports, setReports] = useState<StudentReport[]>([]);
     const [page, setPage] = useState(0);
@@ -67,6 +82,33 @@ export const StudentReports = () => {
 
     const [pendingProcesses, setPendingProcesses] = useState<string[]>([]);
     const [statusCheckLoading, setStatusCheckLoading] = useState(false);
+
+    // Basic report filters. They also pre-fill "Generate report", so the detailed report
+    // covers what the admin is looking at.
+    const packageSessionIds = useMemo(
+        () =>
+            selectedStudent?.all_package_session_ids?.length
+                ? selectedStudent.all_package_session_ids
+                : selectedStudent?.package_session_id
+                  ? [selectedStudent.package_session_id]
+                  : [],
+        [selectedStudent?.all_package_session_ids, selectedStudent?.package_session_id]
+    );
+    const [batch, setBatch] = useState<string>(ALL_BATCHES);
+    const [timeline, setTimeline] = useState<TimelineValue>(DEFAULT_TIMELINE);
+    const range = resolveTimeline(timeline);
+    // One batch: the picker is hidden, so scope to it rather than to "all".
+    const batchId =
+        batch !== ALL_BATCHES
+            ? batch
+            : packageSessionIds.length === 1
+              ? packageSessionIds[0]
+              : undefined;
+
+    useEffect(() => {
+        setBatch(ALL_BATCHES);
+        // eslint-disable-next-line react-hooks/exhaustive-deps -- reset the filter per learner only
+    }, [selectedStudent?.user_id]);
 
     const checkPendingProcesses = () => {
         const storedProcesses = sessionStorage.getItem('student_analysis_processes');
@@ -165,12 +207,12 @@ export const StudentReports = () => {
                     setSelectedReportName(full.name);
                     setDetailsOpen(true);
                 } else {
-                    toast.error('Report data is not available yet');
+                    toast.error(t('toast.reportDataNotAvailable'));
                 }
             }
         } catch (error) {
             console.error('Failed to fetch report details:', error);
-            toast.error('Failed to load report details');
+            toast.error(t('toast.loadDetailsFailed'));
         } finally {
             setViewLoading(null);
         }
@@ -222,17 +264,17 @@ export const StudentReports = () => {
             }
 
             if (completedCount > 0) {
-                toast.success(`${completedCount} report(s) completed successfully`);
+                toast.success(t('toast.reportsCompleted', { count: completedCount }));
             }
             if (failedCount > 0) {
-                toast.error(`${failedCount} report(s) failed`);
+                toast.error(t('toast.reportsFailed', { count: failedCount }));
             }
             if (stillPendingCount > 0) {
-                toast.info(`${stillPendingCount} report(s) are still processing`);
+                toast.info(t('toast.reportsPending', { count: stillPendingCount }));
             }
         } catch (error) {
             console.error('Error checking statuses:', error);
-            toast.error('Failed to check report statuses');
+            toast.error(t('toast.checkStatusFailed'));
         } finally {
             setStatusCheckLoading(false);
         }
@@ -257,7 +299,7 @@ export const StudentReports = () => {
             {/* Primary action bar */}
             <ProfileActionBar className="justify-between">
                 <span className="text-xs font-medium uppercase tracking-wide text-neutral-400">
-                    {reportLabel} Reports
+                    {t('actionBar.title', { label: reportLabel })}
                 </span>
                 <div className="flex gap-2">
                     {pendingProcesses.length > 0 && (
@@ -268,10 +310,13 @@ export const StudentReports = () => {
                             disabled={statusCheckLoading}
                         >
                             <Clock className="size-3.5" />
-                            {statusCheckLoading ? 'Checking...' : 'Check Status'}
+                            {statusCheckLoading ? t('actionBar.checking') : t('actionBar.checkStatus')}
                         </MyButton>
                     )}
                     <InitiateReportDialog
+                        defaultStartDate={range?.start}
+                        defaultEndDate={range?.end}
+                        defaultBatchId={batchId}
                         onSuccess={() => {
                             fetchReports();
                             checkPendingProcesses();
@@ -280,23 +325,51 @@ export const StudentReports = () => {
                 </div>
             </ProfileActionBar>
 
+            {selectedStudent?.user_id && (
+                <ProfileSectionCard icon={ChartLineUp as PhosphorIcon} heading="Basic report">
+                    <div className="mb-3 flex flex-col gap-2">
+                        <BatchPicker
+                            packageSessionIds={packageSessionIds}
+                            value={batch}
+                            onChange={setBatch}
+                            allLabel={`All ${getTerminologyPlural(ContentTerms.Batch, SystemTerms.Batch).toLowerCase()}`}
+                        />
+                        <ReportTimelineFilter value={timeline} onChange={setTimeline} />
+                    </div>
+                    <StudentReportSnapshot
+                        userId={selectedStudent.user_id}
+                        instituteId={selectedStudent.institute_id}
+                        batchId={batchId}
+                        range={range}
+                        learnerName={selectedStudent.full_name}
+                        packageSessionIds={packageSessionIds}
+                    />
+                </ProfileSectionCard>
+            )}
+
+            {selectedStudent?.user_id && <LearnedFromChatsPanel userId={selectedStudent.user_id} />}
+
+            <span className="mt-1 text-xs font-semibold uppercase tracking-wide text-neutral-400">
+                Detailed reports
+            </span>
+
             {/* Hero stat tiles — visible once data is loaded and there are reports */}
             {!loading && !fetchError && reports.length > 0 && (
                 <div className="flex gap-2">
                     <ProfileHeroStat
-                        label="Processing"
+                        label={t('status.processing')}
                         value={processingCount}
                         tone={processingCount > 0 ? 'warning' : 'neutral'}
                         icon={Spinner as PhosphorIcon}
                     />
                     <ProfileHeroStat
-                        label="Completed"
+                        label={t('status.completed')}
                         value={completedCount}
                         tone={completedCount > 0 ? 'success' : 'neutral'}
                         icon={CheckCircle as PhosphorIcon}
                     />
                     <ProfileHeroStat
-                        label="Failed"
+                        label={t('status.failed')}
                         value={failedCount}
                         tone={failedCount > 0 ? 'danger' : 'neutral'}
                         icon={XCircle as PhosphorIcon}
@@ -310,17 +383,24 @@ export const StudentReports = () => {
             ) : fetchError ? (
                 /* Error state */
                 <ProfileError
-                    title="Couldn't load reports"
-                    hint="Something went wrong while fetching reports. Please try again."
+                    title={t('error.title')}
+                    hint={t('error.hint')}
                     onRetry={fetchReports}
                 />
             ) : reports.length === 0 ? (
                 /* Empty state */
                 <ProfileEmpty
                     icon={FileText as PhosphorIcon}
-                    title="No reports yet"
-                    hint="Generate a new report to analyze learner performance."
-                    action={<InitiateReportDialog onSuccess={fetchReports} />}
+                    title={t('empty.title')}
+                    hint={t('empty.hint')}
+                    action={
+                        <InitiateReportDialog
+                            defaultStartDate={range?.start}
+                            defaultEndDate={range?.end}
+                            defaultBatchId={batchId}
+                            onSuccess={fetchReports}
+                        />
+                    }
                 />
             ) : (
                 /* Report cards grouped by status */
@@ -329,10 +409,10 @@ export const StudentReports = () => {
                         <div key={status} className="flex flex-col gap-2">
                             <span className="text-xs font-semibold uppercase tracking-wide text-neutral-400">
                                 {status === 'PROCESSING'
-                                    ? 'Processing'
+                                    ? t('status.processing')
                                     : status === 'COMPLETED'
-                                      ? 'Completed'
-                                      : 'Failed'}
+                                      ? t('status.completed')
+                                      : t('status.failed')}
                             </span>
                             {items.map((report) => (
                                 <ProfileSectionCard
@@ -356,8 +436,8 @@ export const StudentReports = () => {
                                                     <ArrowRight className="size-3.5" />
                                                 )}
                                                 {viewLoading === report.process_id
-                                                    ? 'Loading…'
-                                                    : 'View'}
+                                                    ? t('card.loading')
+                                                    : t('card.view')}
                                             </MyButton>
                                         ) : undefined
                                     }
@@ -365,8 +445,12 @@ export const StudentReports = () => {
                                     <div className="flex items-center gap-1.5">
                                         <Clock className="size-3.5 text-neutral-400" />
                                         <span className="text-xs text-neutral-500">
-                                            Created{' '}
-                                            {format(new Date(report.created_at), 'MMM d, yyyy')}
+                                            {t('card.createdOn', {
+                                                date: format(
+                                                    new Date(report.created_at),
+                                                    'MMM d, yyyy'
+                                                ),
+                                            })}
                                         </span>
                                         <span
                                             className={cn(
@@ -379,10 +463,10 @@ export const StudentReports = () => {
                                             )}
                                         >
                                             {report.status === 'COMPLETED'
-                                                ? 'Completed'
+                                                ? t('status.completed')
                                                 : report.status === 'FAILED'
-                                                  ? 'Failed'
-                                                  : 'Processing'}
+                                                  ? t('status.failed')
+                                                  : t('status.processing')}
                                         </span>
                                     </div>
                                 </ProfileSectionCard>
@@ -404,7 +488,7 @@ export const StudentReports = () => {
                         <CaretLeft className="size-3.5" />
                     </MyButton>
                     <span className="text-xs font-medium text-neutral-600">
-                        {page + 1} / {totalPages}
+                        {t('pagination.pageOf', { page: page + 1, total: totalPages })}
                     </span>
                     <MyButton
                         buttonType="secondary"
@@ -422,7 +506,7 @@ export const StudentReports = () => {
                 open={detailsOpen}
                 onOpenChange={setDetailsOpen}
                 report={selectedReport}
-                title={selectedReportName || 'Analysis Report'}
+                title={selectedReportName || t('card.defaultTitle')}
             />
 
             {/* V2 comprehensive dialog */}

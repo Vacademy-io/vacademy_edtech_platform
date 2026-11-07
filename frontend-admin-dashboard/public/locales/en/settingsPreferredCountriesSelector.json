@@ -1,0 +1,18 @@
+{
+    "chips": {
+        "defaultTooltip": "Default selected country in phone inputs",
+        "moveUp": "Move up (earlier in order)",
+        "moveDown": "Move down (later in order)",
+        "remove": "Remove"
+    },
+    "emptyState": "No preferred countries selected — phone inputs will fall back to the platform default order.",
+    "trigger": {
+        "selectPlaceholder": "Select countries…",
+        "addOrRemove_one": "Add or remove ({{count}} selected)",
+        "addOrRemove_other": "Add or remove ({{count}} selected)"
+    },
+    "search": {
+        "placeholder": "Search countries…",
+        "empty": "No country found."
+    }
+}

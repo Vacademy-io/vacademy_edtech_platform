@@ -1,0 +1,121 @@
+{
+    "status": {
+        "pending": "L'évaluation n'a pas encore commencé",
+        "inProgress": "Évaluation en cours",
+        "initiated": "L'évaluation a été initiée",
+        "processing": "Traitement de la copie de l'élève",
+        "extracting": "Extraction des réponses de l'élève",
+        "evaluating": "Évaluation des réponses de l'élève",
+        "grading": "Notation des réponses évaluées",
+        "completed": "L'évaluation est terminée",
+        "failed": "L'évaluation a échoué",
+        "cancelled": "L'évaluation a été annulée",
+        "unknown": "Inconnu"
+    },
+    "common": {
+        "loading": "Chargement..."
+    },
+    "nav": {
+        "heading": "Évaluation par IA"
+    },
+    "error": {
+        "title": "Erreur lors du chargement de la progression",
+        "loadFailed": "Échec du chargement de la progression de l'évaluation",
+        "goBack": "Retour"
+    },
+    "toasts": {
+        "evaluationStopped": "Évaluation arrêtée avec succès !",
+        "stopFailed": "Échec de l'arrêt de l'évaluation",
+        "answerSheetUnavailable": "Copie non disponible",
+        "answerSheetLoadFailed": "Échec du chargement de la copie",
+        "evaluationCompleted": "Évaluation terminée avec succès !",
+        "evaluationFailedRetry": "L'évaluation a échoué. Veuillez réessayer.",
+        "marksUpdated": "Note mise à jour",
+        "marksUpdateFailed": "Échec de la mise à jour de la note. Veuillez réessayer."
+    },
+    "header": {
+        "participant": "Participant",
+        "assessment": "Évaluation",
+        "status": "Statut",
+        "duration": "Durée",
+        "progress": "Progression",
+        "stop": "Arrêter",
+        "stopping": "Arrêt en cours..."
+    },
+    "summary": {
+        "totalScore": "Score total",
+        "percentage": "Pourcentage",
+        "completed": "Terminé",
+        "pending": "En attente"
+    },
+    "filters": {
+        "all": "Tout",
+        "completed": "Terminé",
+        "pending": "En attente",
+        "ariaLabel": "Filtrer les questions"
+    },
+    "answerSheet": {
+        "loading": "Chargement...",
+        "button": "Copie",
+        "panelTitle": "Copie de l'élève",
+        "close": "Fermer"
+    },
+    "banners": {
+        "aiDrafted": "L'IA a rédigé cette évaluation. Vérifiez chaque question, ajustez les notes ou les commentaires si nécessaire, puis publiez le résultat.",
+        "needsReview_one": "{{count}} question n'a pas pu être notée automatiquement et nécessite votre relecture. Ouvrez-la ci-dessous pour saisir la note avant de publier le résultat.",
+        "needsReview_many": "{{count}} questions n'ont pas pu être notées automatiquement et nécessitent votre relecture. Ouvrez-les ci-dessous pour saisir les notes avant de publier le résultat.",
+        "needsReview_other": "{{count}} questions n'ont pas pu être notées automatiquement et nécessitent votre relecture. Ouvrez-les ci-dessous pour saisir les notes avant de publier le résultat."
+    },
+    "emptyState": {
+        "all": "Aucune question à afficher",
+        "completed": "Aucune question terminée à afficher",
+        "pending": "Aucune question en attente à afficher"
+    },
+    "question": {
+        "qLabel": "Q{{number}}",
+        "title": "Question {{number}}",
+        "reviewedPrefix": "Relu par vous · ",
+        "completedAt": "Terminé {{time}}",
+        "pendingStatus": "En attente",
+        "failedGradeMessage": "L'IA n'a pas pu noter cette question — relecture nécessaire",
+        "editedBadge": "Modifié",
+        "needsReviewBadge": "Relecture nécessaire",
+        "reviewMeta": {
+            "reviewedViaApiBy": "Revu via l'API par {{reviewer}}",
+            "reviewedViaApi": "Revu via l'API",
+            "reviewedBy": "Revu par {{reviewer}}",
+            "reviewed": "Revu",
+            "approvedViaApiBy": "Approuvé via l'API par {{reviewer}}",
+            "approvedViaApi": "Approuvé via l'API",
+            "approvedBy": "Approuvé par {{reviewer}}",
+            "approved": "Approuvé"
+        }
+    },
+    "teacherReview": {
+        "failedTitle": "Cette question n'a pas été notée automatiquement.",
+        "aiDraftedTitle": "Notes proposées par l'IA",
+        "failedHint": "Saisissez la note et les commentaires pour la noter vous-même.",
+        "aiDraftedHint": "Ajustez la note ou les commentaires si vous n'êtes pas d'accord avec l'IA.",
+        "gradeManually": "Noter manuellement",
+        "edit": "Modifier",
+        "marksLabel": "Note",
+        "feedbackLabel": "Commentaires",
+        "feedbackPlaceholder": "Commentaires pour cette question",
+        "cancel": "Annuler",
+        "save": "Enregistrer la note",
+        "saving": "Enregistrement..."
+    },
+    "details": {
+        "questionHeading": "Question",
+        "correctAnswerHeading": "Bonne réponse",
+        "studentAnswerHeading": "Réponse de l'élève",
+        "feedbackHeading": "Commentaires",
+        "gradingBreakdownHeading": "Détail de la notation"
+    },
+    "table": {
+        "criteria": "Critère",
+        "reason": "Raison",
+        "marks": "Note",
+        "totalMarksAwarded": "Total des points attribués :"
+    }
+}

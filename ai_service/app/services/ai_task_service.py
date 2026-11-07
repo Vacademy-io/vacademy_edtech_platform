@@ -79,20 +79,39 @@ class AiTaskService:
         return self.repo.create(task)
 
 
-def schedule(task_id: str, work: Callable[[], Awaitable[str]]) -> None:
+OnDone = Callable[[AiTaskStatus, Optional[str], Optional[str]], Awaitable[None]]
+
+
+def schedule(
+    task_id: str,
+    work: Callable[[], Awaitable[str]],
+    on_done: Optional[OnDone] = None,
+) -> None:
     """Fire-and-forget the background work for a task.
 
     `work` is a zero-arg coroutine function that performs the actual generation
     and returns the raw result string to persist. It must NOT touch the request
     DB session — the worker opens its own session for the status writes.
+
+    `on_done(status, result_json, status_message)` runs AFTER the final status
+    is written, for side effects that must see the finished row (telling the
+    teacher the job is ready). Its own failure is logged and cannot change the
+    task's outcome.
     """
-    bg = asyncio.create_task(_run(task_id, work))
+    bg = asyncio.create_task(_run(task_id, work, on_done))
     _running.add(bg)
     bg.add_done_callback(_running.discard)
 
 
-async def _run(task_id: str, work: Callable[[], Awaitable[str]]) -> None:
+async def _run(
+    task_id: str,
+    work: Callable[[], Awaitable[str]],
+    on_done: Optional[OnDone] = None,
+) -> None:
     async with _semaphore:
+        final_status = AiTaskStatus.FAILED
+        result_json: Optional[str] = None
+        message: Optional[str] = None
         try:
             result_json = await work()
             if result_json and len(result_json) >= _LARGE_RESULT_WARN_BYTES:
@@ -103,18 +122,25 @@ async def _run(task_id: str, work: Callable[[], Awaitable[str]]) -> None:
                 )
             # Status writes are blocking sync DB I/O — run them off the event
             # loop so they don't stall other concurrent tasks.
+            final_status, message = AiTaskStatus.COMPLETED, "Completed"
             await asyncio.to_thread(
                 _set_status,
                 task_id,
                 AiTaskStatus.COMPLETED,
                 result_json=result_json,
-                status_message="Completed",
+                status_message=message,
             )
         except Exception as exc:  # noqa: BLE001
             logger.exception("AI task %s failed", task_id)
+            message = str(exc)
             await asyncio.to_thread(
-                _set_status, task_id, AiTaskStatus.FAILED, status_message=str(exc)
+                _set_status, task_id, AiTaskStatus.FAILED, status_message=message
             )
+        if on_done is not None:
+            try:
+                await on_done(final_status, result_json, message)
+            except Exception:  # noqa: BLE001
+                logger.exception("AI task %s: on_done hook failed", task_id)
 
 
 def _set_status(

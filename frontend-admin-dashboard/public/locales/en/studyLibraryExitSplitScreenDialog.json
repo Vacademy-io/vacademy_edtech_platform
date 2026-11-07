@@ -1,0 +1,27 @@
+{
+    "toast": {
+        "originalVideoDataNotFound": "Original video data not found",
+        "currentSlideNotFound": "Current slide not found",
+        "originalVideoSlideDataNotFound": "Original video slide data not found",
+        "convertSuccess": "Converted back to video slide successfully!",
+        "convertFailed": "Failed to convert back to video slide"
+    },
+    "trigger": {
+        "removeSplitScreen": "Remove Split Screen"
+    },
+    "dialog": {
+        "title": "Exit Split Screen Mode",
+        "subtitle": "Convert back to a regular video slide",
+        "warningTitle": "Data Loss Warning",
+        "warningBody": "Exiting split screen mode will remove the interactive content and convert this slide back to a regular video slide. The original video will be restored.",
+        "originalVideo": "Original Video",
+        "titleLabel": "Title:",
+        "descriptionLabel": "Description:",
+        "untitled": "Untitled"
+    },
+    "actions": {
+        "cancel": "Cancel",
+        "converting": "Converting...",
+        "convertToVideo": "Convert to Video"
+    }
+}

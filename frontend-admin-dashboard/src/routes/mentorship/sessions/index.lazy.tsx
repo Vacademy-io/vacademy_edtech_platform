@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react';
+import { SessionStatsCounts } from './-components/SessionStatsCounts';
 import { createLazyFileRoute } from '@tanstack/react-router';
-import { CalendarPlus } from '@phosphor-icons/react';
+import { CalendarDots, CalendarPlus } from '@phosphor-icons/react';
+import { useTranslation } from 'react-i18next';
 import { LayoutContainer } from '@/components/common/layout-container/layout-container';
 import { MyButton } from '@/components/design-system/button';
 import { useNavHeadingStore } from '@/stores/layout-container/useNavHeadingStore';
@@ -14,10 +16,11 @@ export const Route = createLazyFileRoute('/mentorship/sessions/')({
 });
 
 function MentorSessionsRoute() {
+    const { t } = useTranslation('mentorshipSessionsIndex');
     const { setNavHeading } = useNavHeadingStore();
     useEffect(() => {
-        setNavHeading(<h1 className="text-lg">Mentorship</h1>);
-    }, [setNavHeading]);
+        setNavHeading(<h1 className="text-lg">{t('navHeading')}</h1>);
+    }, [setNavHeading, t]);
 
     const instituteId = getInstituteId();
     const [scheduleOpen, setScheduleOpen] = useState(false);
@@ -26,19 +29,21 @@ function MentorSessionsRoute() {
         <LayoutContainer>
             <div className="flex flex-col gap-6 p-6">
                 <MentorshipPageHeader
-                    title="Sessions"
-                    subtitle="Track and manage all mentorship sessions"
+                    title={t('title')}
+                    subtitle={t('subtitle')}
+                    icon={CalendarDots}
                 >
                     <MyButton
                         type="button"
                         buttonType="primary"
                         scale="medium"
                         onClick={() => setScheduleOpen(true)}
-                        title="Book a 1:1 between a mentor and a student"
+                        title={t('scheduleButtonTitle')}
                     >
-                        <CalendarPlus size={18} /> Schedule 1:1
+                        <CalendarPlus size={18} /> {t('scheduleButtonLabel')}
                     </MyButton>
                 </MentorshipPageHeader>
+                <SessionStatsCounts instituteId={instituteId} />
                 <MentorSessionsPanel instituteId={instituteId} />
 
                 <ScheduleSessionDialog

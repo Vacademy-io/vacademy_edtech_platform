@@ -1,6 +1,7 @@
 import { MyDialog } from '@/components/design-system/dialog';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Dispatch, SetStateAction, useEffect, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Form, FormControl, FormField, FormItem, FormLabel } from '@/components/ui/form';
@@ -26,6 +27,7 @@ export const CSVFormatDialog = ({
     openDialog: boolean;
     setOpenDialog: Dispatch<SetStateAction<boolean>>;
 }) => {
+    const { t } = useTranslation('manageStudentsCsvFormatDialog');
     const defaultValues = {
         autoGenerateUsername: true,
         autoGeneratePassword: true,
@@ -79,7 +81,7 @@ export const CSVFormatDialog = ({
 
     return (
         <MyDialog
-            heading="Choose CSV Format"
+            heading={t('title')}
             dialogWidth="w-full"
             open={openDialog}
             onOpenChange={handleOpenChange}
@@ -93,7 +95,9 @@ export const CSVFormatDialog = ({
                         className="flex flex-col gap-6"
                     >
                         <div className="flex flex-col gap-4">
-                            <h3 className="font-medium text-neutral-900">Enrollment Preferences</h3>
+                            <h3 className="font-medium text-neutral-900">
+                                {t('sections.enrollmentPreferences')}
+                            </h3>
                             <div className="flex flex-col gap-3">
                                 <FormField
                                     control={form.control}
@@ -107,7 +111,7 @@ export const CSVFormatDialog = ({
                                                 />
                                             </FormControl>
                                             <FormLabel className="font-normal">
-                                                Auto-generate username
+                                                {t('preferences.autoGenerateUsername')}
                                             </FormLabel>
                                         </FormItem>
                                     )}
@@ -125,7 +129,7 @@ export const CSVFormatDialog = ({
                                                 />
                                             </FormControl>
                                             <FormLabel className="font-normal">
-                                                Auto-generate password
+                                                {t('preferences.autoGeneratePassword')}
                                             </FormLabel>
                                         </FormItem>
                                     )}
@@ -143,7 +147,7 @@ export const CSVFormatDialog = ({
                                                 />
                                             </FormControl>
                                             <FormLabel className="font-normal">
-                                                Auto-generate enrollment ID
+                                                {t('preferences.autoGenerateEnrollmentId')}
                                             </FormLabel>
                                         </FormItem>
                                     )}
@@ -162,7 +166,7 @@ export const CSVFormatDialog = ({
                                                     />
                                                 </FormControl>
                                                 <FormLabel className="font-normal">
-                                                    Set common expiry date
+                                                    {t('preferences.setCommonExpiryDate')}
                                                 </FormLabel>
                                             </FormItem>
                                         )}
@@ -178,7 +182,9 @@ export const CSVFormatDialog = ({
                                             </FormItem>
                                         )}
                                     />
-                                    <span className="text-neutral-600">days from today</span>
+                                    <span className="text-neutral-600">
+                                        {t('preferences.daysFromToday')}
+                                    </span>
                                 </div>
 
                                 <div className="flex items-center gap-2">
@@ -194,7 +200,7 @@ export const CSVFormatDialog = ({
                                                     />
                                                 </FormControl>
                                                 <FormLabel className="font-normal">
-                                                    Add student status
+                                                    {t('preferences.addStudentStatus')}
                                                 </FormLabel>
                                             </FormItem>
                                         )}
@@ -209,14 +215,18 @@ export const CSVFormatDialog = ({
                                                     defaultValue={field.value}
                                                 >
                                                     <SelectTrigger className="w-32">
-                                                        <SelectValue placeholder="Select status" />
+                                                        <SelectValue
+                                                            placeholder={t(
+                                                                'preferences.selectStatusPlaceholder'
+                                                            )}
+                                                        />
                                                     </SelectTrigger>
                                                     <SelectContent>
                                                         <SelectItem value="ACTIVE">
-                                                            Active
+                                                            {t('preferences.statusActive')}
                                                         </SelectItem>
                                                         <SelectItem value="INACTIVE">
-                                                            Inactive
+                                                            {t('preferences.statusInactive')}
                                                         </SelectItem>
                                                     </SelectContent>
                                                 </Select>
@@ -229,29 +239,29 @@ export const CSVFormatDialog = ({
 
                         <div className="flex flex-col gap-4">
                             <h3 className="font-medium text-neutral-900">
-                                Optional CSV column selection
+                                {t('sections.optionalColumnSelection')}
                             </h3>
                             <div className="grid grid-cols-2 gap-3">
                                 {[
-                                    { name: 'fatherName', label: " Father/Male Guardian's Name" },
-                                    { name: 'collegeName', label: 'College/School Name' },
-                                    { name: 'motherName', label: "Mother/Female Guardian's Name" },
-                                    { name: 'state', label: 'State' },
+                                    { name: 'fatherName', label: t('columns.fatherName') },
+                                    { name: 'collegeName', label: t('columns.collegeName') },
+                                    { name: 'motherName', label: t('columns.motherName') },
+                                    { name: 'state', label: t('columns.state') },
                                     // { name: 'guardianName', label: "Guardian's Name" },
-                                    { name: 'city', label: 'City' },
-                                    { name: 'fatherEmail', label: "Father/Male Guardian's Email" },
+                                    { name: 'city', label: t('columns.city') },
+                                    { name: 'fatherEmail', label: t('columns.fatherEmail') },
                                     {
                                         name: 'motherEmail',
-                                        label: "Mother/Female Guardian's Email",
+                                        label: t('columns.motherEmail'),
                                     },
-                                    { name: 'pincode', label: 'Pincode' },
+                                    { name: 'pincode', label: t('columns.pincode') },
                                     {
                                         name: 'fatherMobile',
-                                        label: "Father/Male Guardian's Mobile Number",
+                                        label: t('columns.fatherMobile'),
                                     },
                                     {
                                         name: 'motherMobile',
-                                        label: "Mother/Female Guardian's Mobile Number",
+                                        label: t('columns.motherMobile'),
                                     },
                                 ].map((field) => (
                                     <FormField

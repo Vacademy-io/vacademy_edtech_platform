@@ -1,13 +1,17 @@
 import { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
+import { Switch } from '@/components/ui/switch';
 import { Button } from '@/components/ui/button';
 import { MyButton } from '@/components/design-system/button';
+import { SearchableSelect, prefixFirstFilter } from '@/components/design-system/searchable-select';
 import { toast } from 'sonner';
 import { getCurrentInstituteId } from '@/lib/auth/instituteUtils';
+import { formatDateTime } from '@/lib/formatters';
 import {
     Copy,
     Check,
@@ -45,6 +49,15 @@ import {
     resubscribeConnector,
     pollConnectorNow,
     buildGoogleWebhookUrl,
+    connectorDisplayId,
+    campaignRoutesQueryKey,
+    deleteCampaignRoute,
+    fetchCampaignRoutes,
+    updateCampaignRoute,
+    setCampaignAutoLists,
+    type CampaignRoute,
+    type CampaignRoutes,
+    type CampaignRouteUpdate,
     fetchAudienceCustomFields,
     buildFieldMappingJson,
     type MetaPage,
@@ -55,12 +68,22 @@ import {
 } from '../-services/ad-platform-service';
 import { AUDIENCE_CAMPAIGNS_LIST } from '@/constants/urls';
 import authenticatedAxiosInstance from '@/lib/auth/axiosInstance';
+import {
+    buildCampaignTypeFilterOptions,
+    buildDefaultCampaignTypeOptions,
+    filterByCampaignTypes,
+} from '@/routes/audience-manager/list/-utils/campaign-types';
+import { useLeadTerminology } from '@/hooks/use-lead-terminology';
+import { EvaluationApiKeysCard } from './EvaluationApiKeysCard';
+import { CatalogApiCard } from './catalog-api/CatalogApiCard';
 
 // ── Audience list hook ───────────────────────────────────────────────────────
 
 interface AudienceOption {
     id: string;
     name: string;
+    campaignType?: string;
+    status?: string;
 }
 
 function useAudienceList(instituteId: string) {
@@ -73,14 +96,102 @@ function useAudienceList(instituteId: string) {
                 size: 200,
             });
             const items = res.data?.content ?? [];
-            return items.map((c: { id?: string; audience_id?: string; campaign_name: string }) => ({
-                id: c.audience_id ?? c.id ?? '',
-                name: c.campaign_name,
-            }));
+            return items.map(
+                (c: {
+                    id?: string;
+                    audience_id?: string;
+                    campaign_name: string;
+                    campaign_type?: string;
+                    status?: string;
+                }) => ({
+                    id: c.audience_id ?? c.id ?? '',
+                    name: c.campaign_name,
+                    campaignType: c.campaign_type,
+                    status: c.status,
+                })
+            );
         },
         enabled: !!instituteId,
         staleTime: 60_000,
     });
+}
+
+// ── Campaign type → audience picker ─────────────────────────────────────────
+// Picking a campaign type narrows the audience list to audiences of that type.
+// The type is only a filter — it is not saved on the connector. "All campaign
+// types" (the default) lists every audience, as before. Renders two grid cells
+// so it slots into the forms' existing two-column grid.
+
+function AudiencePickerByType({
+    audiences,
+    audienceId,
+    onAudienceChange,
+    audienceLabel,
+    audiencePlaceholder,
+}: {
+    audiences: AudienceOption[];
+    audienceId: string;
+    onAudienceChange: (id: string) => void;
+    audienceLabel: string;
+    audiencePlaceholder: string;
+}) {
+    const { t } = useTranslation('settingsIntegration');
+    const { campaignType: term } = useLeadTerminology();
+    const { t: tCampaignType } = useTranslation('audienceManagerCampaignTypeDropdown');
+    const [campaignType, setCampaignType] = useState('');
+    const typeOptions = buildCampaignTypeFilterOptions(
+        buildDefaultCampaignTypeOptions(tCampaignType),
+        audiences.map((a) => a.campaignType)
+    );
+    const visibleAudiences = filterByCampaignTypes(audiences, campaignType ? [campaignType] : []);
+
+    const handleTypeChange = (type: string) => {
+        setCampaignType(type);
+        // A picked audience of another type would be hidden yet still saved — clear it.
+        const stillVisible = filterByCampaignTypes(audiences, type ? [type] : []).some(
+            (a) => a.id === audienceId
+        );
+        if (audienceId && !stillVisible) onAudienceChange('');
+    };
+
+    return (
+        <>
+            <div className="space-y-1">
+                <Label className="text-xs">{t('campaignTypeFilter.label', { term })}</Label>
+                <select
+                    className="w-full rounded-md border bg-white px-3 py-2 text-sm"
+                    value={campaignType}
+                    onChange={(e) => handleTypeChange(e.target.value)}
+                >
+                    <option value="">{t('campaignTypeFilter.all', { term })}</option>
+                    {typeOptions.map((opt) => (
+                        <option key={opt.value} value={opt.value}>
+                            {opt.label}
+                        </option>
+                    ))}
+                </select>
+            </div>
+            <div className="space-y-1">
+                <Label className="text-xs">{audienceLabel}</Label>
+                <select
+                    className="w-full rounded-md border bg-white px-3 py-2 text-sm"
+                    value={audienceId}
+                    onChange={(e) => onAudienceChange(e.target.value)}
+                >
+                    <option value="">
+                        {visibleAudiences.length === 0 && campaignType
+                            ? t('campaignTypeFilter.noAudiences')
+                            : audiencePlaceholder}
+                    </option>
+                    {visibleAudiences.map((a) => (
+                        <option key={a.id} value={a.id}>
+                            {a.name}
+                        </option>
+                    ))}
+                </select>
+            </div>
+        </>
+    );
 }
 
 // ── Derive a short label from a Lead Gen Form name ──────────────────────────
@@ -110,6 +221,7 @@ function FieldMappingBuilder({
     value: MappingRow[];
     onChange: (rows: MappingRow[]) => void;
 }) {
+    const { t } = useTranslation('settingsIntegration');
     // Auto-populate unmapped platform fields
     useEffect(() => {
         if (platformFields.length > 0 && value.length === 0) {
@@ -134,16 +246,13 @@ function FieldMappingBuilder({
 
     return (
         <div className="space-y-2">
-            <Label className="text-xs font-medium">Field Mapping</Label>
-            <p className="text-xs text-muted-foreground">
-                Map each platform field to an audience custom field. Unmapped fields are kept with
-                original names.
-            </p>
+            <Label className="text-xs font-medium">{t('fieldMapping.label')}</Label>
+            <p className="text-xs text-muted-foreground">{t('fieldMapping.description')}</p>
             <div className="space-y-1.5 rounded-md border bg-neutral-50 p-3">
                 <div className="grid grid-cols-[1fr_24px_1fr] gap-2 text-caption font-medium uppercase tracking-wider text-neutral-400">
-                    <span>Platform Field</span>
+                    <span>{t('fieldMapping.platformField')}</span>
                     <span />
-                    <span>Audience Field</span>
+                    <span>{t('fieldMapping.audienceField')}</span>
                 </div>
                 {value.map((row, idx) => (
                     <div
@@ -160,7 +269,7 @@ function FieldMappingBuilder({
                             value={row.targetFieldName}
                             onChange={(e) => updateRow(idx, e.target.value)}
                         >
-                            <option value="">— skip —</option>
+                            <option value="">{t('fieldMapping.skipOption')}</option>
                             {audienceFields.map((af) => (
                                 <option key={af.id} value={af.fieldName}>
                                     {af.fieldName}
@@ -219,6 +328,7 @@ function ConnectorEditDialog({
     onSave: (rows: KeyValueRow[]) => void;
     isSaving: boolean;
 }) {
+    const { t } = useTranslation('settingsIntegration');
     const [rows, setRows] = useState<KeyValueRow[]>([]);
 
     useEffect(() => {
@@ -254,19 +364,14 @@ function ConnectorEditDialog({
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent className="max-w-xl">
                 <DialogHeader>
-                    <DialogTitle>Edit default values</DialogTitle>
-                    <DialogDescription>
-                        Key/value pairs stamped onto every lead from this connector. Each key
-                        should match an audience custom field name (otherwise the value is just
-                        carried through as raw form data). Form payload values always take
-                        precedence over defaults.
-                    </DialogDescription>
+                    <DialogTitle>{t('editDialog.title')}</DialogTitle>
+                    <DialogDescription>{t('editDialog.description')}</DialogDescription>
                 </DialogHeader>
 
                 <div className="space-y-2">
                     <div className="grid grid-cols-[1fr_1fr_28px] gap-2 text-caption font-medium uppercase tracking-wider text-neutral-400">
-                        <span>Key</span>
-                        <span>Value</span>
+                        <span>{t('editDialog.keyHeader')}</span>
+                        <span>{t('editDialog.valueHeader')}</span>
                         <span />
                     </div>
                     {rows.map((row, idx) => (
@@ -277,18 +382,18 @@ function ConnectorEditDialog({
                             <Input
                                 value={row.key}
                                 onChange={(e) => updateRow(idx, { key: e.target.value })}
-                                placeholder="Audience field name"
+                                placeholder={t('editDialog.keyPlaceholder')}
                             />
                             <Input
                                 value={row.value}
                                 onChange={(e) => updateRow(idx, { value: e.target.value })}
-                                placeholder="Value to stamp"
+                                placeholder={t('editDialog.valuePlaceholder')}
                             />
                             <button
                                 type="button"
                                 onClick={() => removeRow(idx)}
                                 className="text-neutral-400 hover:text-red-600"
-                                title="Remove row"
+                                title={t('editDialog.removeRow')}
                             >
                                 <X className="size-4" />
                             </button>
@@ -296,12 +401,10 @@ function ConnectorEditDialog({
                     ))}
                     <Button variant="outline" size="sm" onClick={addRow} className="gap-1">
                         <Plus className="size-3.5" />
-                        Add field
+                        {t('editDialog.addField')}
                     </Button>
                     {hasDuplicateKeys && (
-                        <p className="text-xs text-red-600">
-                            Duplicate keys detected — only the last value for each key will be kept.
-                        </p>
+                        <p className="text-xs text-red-600">{t('editDialog.duplicateKeys')}</p>
                     )}
                 </div>
 
@@ -311,10 +414,10 @@ function ConnectorEditDialog({
                         onClick={() => onOpenChange(false)}
                         disabled={isSaving}
                     >
-                        Cancel
+                        {t('editDialog.cancel')}
                     </Button>
                     <Button onClick={handleSave} disabled={isSaving}>
-                        {isSaving ? 'Saving…' : 'Save'}
+                        {isSaving ? t('editDialog.saving') : t('editDialog.save')}
                     </Button>
                 </DialogFooter>
             </DialogContent>
@@ -324,9 +427,9 @@ function ConnectorEditDialog({
 
 // ── Connector table ──────────────────────────────────────────────────────────
 
-const VENDOR_LABELS: Record<string, { label: string; color: string; bg: string }> = {
-    META_LEAD_ADS: { label: 'Meta', color: 'text-blue-700', bg: 'bg-blue-100' },
-    GOOGLE_LEAD_ADS: { label: 'Google', color: 'text-red-700', bg: 'bg-red-100' },
+const VENDOR_LABELS: Record<string, { labelKey: string; color: string; bg: string }> = {
+    META_LEAD_ADS: { labelKey: 'vendor.meta', color: 'text-blue-700', bg: 'bg-blue-100' },
+    GOOGLE_LEAD_ADS: { labelKey: 'vendor.google', color: 'text-red-700', bg: 'bg-red-100' },
 };
 
 function ConnectorTable({
@@ -337,6 +440,7 @@ function ConnectorTable({
     onTest,
     onResubscribe,
     onSyncNow,
+    onGoogleSetup,
     testingId,
     syncingId,
 }: {
@@ -347,19 +451,19 @@ function ConnectorTable({
     onTest: (id: string) => void;
     onResubscribe: (id: string) => void;
     onSyncNow: (id: string) => void;
+    onGoogleSetup: (id: string) => void;
     testingId: string | null;
     syncingId: string | null;
 }) {
+    const { t } = useTranslation('settingsIntegration');
     const [copiedId, setCopiedId] = useState<string | null>(null);
     const audienceNameById = new Map(audiences.map((a) => [a.id, a.name]));
 
     if (connectors.length === 0) {
         return (
             <div className="flex flex-col items-center gap-2 rounded-xl border-2 border-dashed border-neutral-200 bg-neutral-50/50 py-8 text-center">
-                <p className="text-sm font-medium text-neutral-500">No connectors yet</p>
-                <p className="text-xs text-neutral-400">
-                    Add a Meta or Google connector below to start receiving leads.
-                </p>
+                <p className="text-sm font-medium text-neutral-500">{t('table.emptyTitle')}</p>
+                <p className="text-xs text-neutral-400">{t('table.emptyDescription')}</p>
             </div>
         );
     }
@@ -372,58 +476,73 @@ function ConnectorTable({
         }
     };
 
+    // Google Ads asks for the key separately from the URL; vendorId is that key.
+    const copyGoogleKey = (c: ConnectorListItem) => {
+        if (c.vendor === 'GOOGLE_LEAD_ADS' && c.vendorId) {
+            navigator.clipboard.writeText(c.vendorId);
+            setCopiedId(`${c.id}:key`);
+            setTimeout(() => setCopiedId(null), 2000);
+        }
+    };
+
     return (
         <div className="overflow-x-auto rounded-lg border">
             <table className="w-full text-left text-sm">
                 <thead className="border-b bg-neutral-50 text-caption text-neutral-500">
                     <tr>
-                        <th className="px-4 py-2">Platform</th>
-                        <th className="px-4 py-2">Form / Campaign</th>
-                        <th className="px-4 py-2">Audience</th>
-                        <th className="px-4 py-2">Source</th>
-                        <th className="px-4 py-2">Status</th>
-                        <th className="px-4 py-2">Webhook</th>
+                        <th className="px-4 py-2">{t('table.headers.platform')}</th>
+                        <th className="px-4 py-2">{t('table.headers.formCampaign')}</th>
+                        <th className="px-4 py-2">{t('table.headers.audience')}</th>
+                        <th className="px-4 py-2">{t('table.headers.source')}</th>
+                        <th className="px-4 py-2">{t('table.headers.connectedOn')}</th>
+                        <th className="px-4 py-2">{t('table.headers.status')}</th>
+                        <th className="px-4 py-2">{t('table.headers.webhook')}</th>
                         <th className="px-4 py-2" />
                     </tr>
                 </thead>
                 <tbody>
                     {connectors.map((c) => {
-                        const v = VENDOR_LABELS[c.vendor] ?? {
-                            label: c.vendor,
-                            color: 'text-neutral-700',
-                            bg: 'bg-neutral-100',
-                        };
+                        const v = VENDOR_LABELS[c.vendor];
+                        const vendorLabel = v ? t(v.labelKey) : c.vendor;
+                        const vendorColor = v?.color ?? 'text-neutral-700';
+                        const vendorBg = v?.bg ?? 'bg-neutral-100';
+                        // A Google connector's form id is its webhook key, a credential: show a
+                        // name instead, and only the key's last four characters.
+                        const displayName =
+                            c.platformFormName ??
+                            (c.vendor === 'GOOGLE_LEAD_ADS' ? t('table.googleUnnamed') : null);
+                        const displayId = connectorDisplayId(c);
                         return (
                             <tr key={c.id} className="border-b last:border-0">
                                 <td className="px-4 py-2.5">
                                     <span
-                                        className={`rounded px-2 py-0.5 text-xs font-medium ${v.bg} ${v.color}`}
+                                        className={`rounded px-2 py-0.5 text-xs font-medium ${vendorBg} ${vendorColor}`}
                                     >
-                                        {v.label}
+                                        {vendorLabel}
                                     </span>
                                 </td>
                                 <td className="max-w-xs px-4 py-2.5 text-sm">
-                                    {c.platformFormName ? (
+                                    {displayName ? (
                                         <>
                                             <div
                                                 className="truncate font-medium"
-                                                title={c.platformFormName}
+                                                title={displayName}
                                             >
-                                                {c.platformFormName}
+                                                {displayName}
                                             </div>
                                             <div
                                                 className="whitespace-nowrap font-mono text-caption text-neutral-400"
-                                                title={c.platformFormId ?? undefined}
+                                                title={displayId ?? undefined}
                                             >
-                                                {c.platformFormId ?? '-'}
+                                                {displayId ?? '-'}
                                             </div>
                                         </>
                                     ) : (
                                         <span
                                             className="whitespace-nowrap font-mono text-caption text-neutral-600"
-                                            title={c.platformFormId ?? undefined}
+                                            title={displayId ?? undefined}
                                         >
-                                            {c.platformFormId ?? '-'}
+                                            {displayId ?? '-'}
                                         </span>
                                     )}
                                 </td>
@@ -452,10 +571,26 @@ function ConnectorTable({
                                 <td className="px-4 py-2.5 text-xs text-neutral-500">
                                     {c.producesSourceType ?? '-'}
                                 </td>
+                                {/* When the link was established. createdAt is the row's own
+                                    creation, so re-authorising an existing connector keeps the
+                                    original date rather than resetting it — which is what
+                                    "when did we connect this form" means. */}
+                                <td
+                                    className="whitespace-nowrap px-4 py-2.5 text-xs text-neutral-500"
+                                    title={c.createdAt ?? undefined}
+                                >
+                                    {c.createdAt
+                                        ? new Date(c.createdAt).toLocaleDateString(undefined, {
+                                              day: 'numeric',
+                                              month: 'short',
+                                              year: 'numeric',
+                                          })
+                                        : t('table.neverConnected')}
+                                </td>
                                 <td className="px-4 py-2.5">
                                     {c.connectionStatus === 'ACTIVE' ? (
                                         <span className="text-xs font-medium text-success-600">
-                                            ACTIVE
+                                            {t('table.statusActive')}
                                         </span>
                                     ) : c.connectionStatus === 'ACTION_REQUIRED' ? (
                                         <span
@@ -463,7 +598,7 @@ function ConnectorTable({
                                             title={c.statusDetail ?? undefined}
                                         >
                                             <Warning className="size-3.5" weight="fill" />
-                                            Action needed
+                                            {t('table.statusActionNeeded')}
                                         </span>
                                     ) : (
                                         <span className="text-xs font-medium text-neutral-400">
@@ -476,23 +611,53 @@ function ConnectorTable({
                                                 {c.statusDetail}
                                             </p>
                                         )}
+                                    {c.vendor === 'GOOGLE_LEAD_ADS' &&
+                                        (c.unmappedCampaigns ?? 0) > 0 && (
+                                            <button
+                                                onClick={() => onGoogleSetup(c.id)}
+                                                className="mt-1 block rounded-full bg-warning-50 px-2 py-0.5 text-caption font-medium text-warning-700 hover:bg-warning-100"
+                                            >
+                                                {t('table.unmappedCampaigns', {
+                                                    count: c.unmappedCampaigns ?? 0,
+                                                })}
+                                            </button>
+                                        )}
                                 </td>
                                 <td className="px-4 py-2.5">
                                     {c.vendor === 'GOOGLE_LEAD_ADS' && c.platformFormId && (
-                                        <button
-                                            onClick={() => copyWebhookUrl(c)}
-                                            className="text-neutral-400 hover:text-neutral-700"
-                                            title="Copy webhook URL"
-                                        >
-                                            {copiedId === c.id ? (
-                                                <Check className="size-4 text-green-600" />
-                                            ) : (
-                                                <Copy className="size-4" />
+                                        <div className="flex items-center gap-3">
+                                            <button
+                                                onClick={() => copyWebhookUrl(c)}
+                                                className="flex items-center gap-1 text-xs text-neutral-400 hover:text-neutral-700"
+                                                title={t('table.copyWebhookUrl')}
+                                            >
+                                                {copiedId === c.id ? (
+                                                    <Check className="size-4 text-green-600" />
+                                                ) : (
+                                                    <Copy className="size-4" />
+                                                )}
+                                                {t('table.urlLabel')}
+                                            </button>
+                                            {c.vendorId && (
+                                                <button
+                                                    onClick={() => copyGoogleKey(c)}
+                                                    className="flex items-center gap-1 text-xs text-neutral-400 hover:text-neutral-700"
+                                                    title={t('table.copyKey')}
+                                                >
+                                                    {copiedId === `${c.id}:key` ? (
+                                                        <Check className="size-4 text-green-600" />
+                                                    ) : (
+                                                        <Copy className="size-4" />
+                                                    )}
+                                                    {t('table.keyLabel')}
+                                                </button>
                                             )}
-                                        </button>
+                                        </div>
                                     )}
                                     {c.vendor === 'META_LEAD_ADS' && (
-                                        <span className="text-xs text-neutral-400">auto</span>
+                                        <span className="text-xs text-neutral-400">
+                                            {t('table.autoLabel')}
+                                        </span>
                                     )}
                                 </td>
                                 <td className="px-4 py-2.5">
@@ -502,7 +667,7 @@ function ConnectorTable({
                                                 onClick={() => onSyncNow(c.id)}
                                                 disabled={syncingId === c.id}
                                                 className="text-neutral-400 hover:text-primary-600 disabled:opacity-50"
-                                                title="Sync leads now (pull the last 24h from Meta)"
+                                                title={t('table.syncNow')}
                                             >
                                                 {syncingId === c.id ? (
                                                     <CircleNotch className="size-4 animate-spin" />
@@ -516,7 +681,7 @@ function ConnectorTable({
                                                 onClick={() => onTest(c.id)}
                                                 disabled={testingId === c.id}
                                                 className="text-neutral-400 hover:text-primary-600 disabled:opacity-50"
-                                                title="Test connection"
+                                                title={t('table.testConnection')}
                                             >
                                                 {testingId === c.id ? (
                                                     <CircleNotch className="size-4 animate-spin" />
@@ -530,22 +695,31 @@ function ConnectorTable({
                                                 <button
                                                     onClick={() => onResubscribe(c.id)}
                                                     className="text-neutral-400 hover:text-success-600"
-                                                    title="Re-subscribe (after granting Full control)"
+                                                    title={t('table.resubscribeTooltip')}
                                                 >
                                                     <ArrowsClockwise className="size-4" />
                                                 </button>
                                             )}
+                                        {c.vendor === 'GOOGLE_LEAD_ADS' && (
+                                            <button
+                                                onClick={() => onGoogleSetup(c.id)}
+                                                className="text-neutral-400 hover:text-primary-600"
+                                                title={t('table.googleSetup')}
+                                            >
+                                                <Pulse className="size-4" />
+                                            </button>
+                                        )}
                                         <button
                                             onClick={() => onEdit(c)}
                                             className="text-neutral-400 hover:text-primary-600"
-                                            title="Edit default values"
+                                            title={t('table.editDefaultValues')}
                                         >
                                             <PencilSimple className="size-4" />
                                         </button>
                                         <button
                                             onClick={() => onDelete(c.id)}
                                             className="text-neutral-400 hover:text-danger-600"
-                                            title="Deactivate connector"
+                                            title={t('table.deactivateConnector')}
                                         >
                                             <Trash className="size-4" />
                                         </button>
@@ -569,12 +743,15 @@ const HEALTH_STATUS_STYLES: Record<string, string> = {
     SKIP: 'text-neutral-400',
 };
 
-const OVERALL_LABELS: Record<string, { label: string; className: string }> = {
-    VERIFIED: { label: 'Verified', className: 'text-success-600' },
-    DEGRADED: { label: 'Degraded', className: 'text-warning-700' },
-    ACTION_REQUIRED: { label: 'Action required', className: 'text-warning-700' },
-    BROKEN: { label: 'Broken', className: 'text-danger-600' },
-    UNKNOWN: { label: 'Unknown', className: 'text-neutral-500' },
+const OVERALL_LABELS: Record<string, { labelKey: string; className: string }> = {
+    VERIFIED: { labelKey: 'health.overall.verified', className: 'text-success-600' },
+    DEGRADED: { labelKey: 'health.overall.degraded', className: 'text-warning-700' },
+    ACTION_REQUIRED: {
+        labelKey: 'health.overall.actionRequired',
+        className: 'text-warning-700',
+    },
+    BROKEN: { labelKey: 'health.overall.broken', className: 'text-danger-600' },
+    UNKNOWN: { labelKey: 'health.overall.unknown', className: 'text-neutral-500' },
 };
 
 function ConnectorHealthDialog({
@@ -588,6 +765,7 @@ function ConnectorHealthDialog({
     onOpenChange: (open: boolean) => void;
     onResubscribe: (id: string) => void;
 }) {
+    const { t } = useTranslation('settingsIntegration');
     if (!health) return null;
     const overall = OVERALL_LABELS[health.overall] ?? OVERALL_LABELS.UNKNOWN!;
     const needsResubscribe = health.checks.some(
@@ -598,15 +776,16 @@ function ConnectorHealthDialog({
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent className="max-w-lg">
                 <DialogHeader>
-                    <DialogTitle>Connection test</DialogTitle>
+                    <DialogTitle>{t('health.dialogTitle')}</DialogTitle>
                     <DialogDescription>
-                        Status:{' '}
+                        {t('health.statusLabel')}{' '}
                         <span className={`font-semibold ${overall.className}`}>
-                            {overall.label}
+                            {t(overall.labelKey)}
                         </span>
                         {health.lastLeadAt && (
                             <>
-                                {' · '}last lead{' '}
+                                {' · '}
+                                {t('health.lastLead')}{' '}
                                 {new Date(health.lastLeadAt).toLocaleString()}
                             </>
                         )}
@@ -650,11 +829,11 @@ function ConnectorHealthDialog({
                             onClick={() => onResubscribe(health.connectorId)}
                         >
                             <ArrowsClockwise className="size-4" />
-                            Re-subscribe
+                            {t('health.resubscribe')}
                         </MyButton>
                     )}
                     <MyButton scale="medium" onClick={() => onOpenChange(false)}>
-                        Close
+                        {t('health.close')}
                     </MyButton>
                 </DialogFooter>
             </DialogContent>
@@ -664,86 +843,745 @@ function ConnectorHealthDialog({
 
 // ── Add Google form ──────────────────────────────────────────────────────────
 
-function AddGoogleForm({ onSaved }: { onSaved: () => void }) {
-    const [googleKey, setGoogleKey] = useState('');
-    const [audienceId, setAudienceId] = useState('');
+/** One read-only value with a copy button — the Google setup panel shows two. */
+function CopyableValue({ label, value }: { label: string; value: string }) {
     const [copied, setCopied] = useState(false);
+    return (
+        <div className="space-y-1">
+            <Label className="text-xs">{label}</Label>
+            <div className="flex items-center gap-2 rounded-md border bg-neutral-50 px-3 py-2">
+                <code className="flex-1 truncate text-xs">{value}</code>
+                <button
+                    onClick={() => {
+                        navigator.clipboard.writeText(value);
+                        setCopied(true);
+                        setTimeout(() => setCopied(false), 2000);
+                    }}
+                    className="shrink-0 text-neutral-500 hover:text-neutral-700"
+                    title={label}
+                >
+                    {copied ? (
+                        <Check className="size-4 text-green-600" />
+                    ) : (
+                        <Copy className="size-4" />
+                    )}
+                </button>
+            </div>
+        </div>
+    );
+}
+
+/** The server sends zone-less LocalDateTime strings; the admin_core JVM runs in UTC. */
+function parseServerUtc(value: string): Date {
+    return new Date(/([zZ]|[+-]\d\d:\d\d)$/.test(value) ? value : `${value}Z`);
+}
+
+/** The Google Ads side of the setup, in the order the admin does it. */
+function GoogleSetupSteps() {
+    const { t } = useTranslation('settingsIntegration');
+    return (
+        <ol className="list-decimal space-y-1.5 ps-5 text-sm text-neutral-700">
+            <li>{t('google.setupStep1')}</li>
+            <li>{t('google.setupStep2')}</li>
+            <li>{t('google.setupStep3')}</li>
+            <li>{t('google.setupStep4')}</li>
+            <li>{t('google.setupStep5')}</li>
+        </ol>
+    );
+}
+
+/**
+ * Whether Google has reached this connector yet and how that went. The webhook stamps
+ * lastCheckedAt on every delivery with a known key; statusDetail says why one failed.
+ */
+function GoogleDeliveryStatus({ connector }: { connector: ConnectorListItem }) {
+    const { t } = useTranslation('settingsIntegration');
+    if (!connector.lastCheckedAt) {
+        return (
+            <div className="flex items-start gap-2 rounded-md border bg-neutral-50 p-3 text-sm text-neutral-600">
+                <CircleNotch className="mt-0.5 size-4 shrink-0 animate-spin" />
+                <span>{t('google.statusWaiting')}</span>
+            </div>
+        );
+    }
+    const when = formatDateTime(parseServerUtc(connector.lastCheckedAt), { second: '2-digit' });
+    if (connector.connectionStatus === 'ACTION_REQUIRED') {
+        return (
+            <div className="flex items-start gap-2 rounded-md border border-warning-200 bg-warning-50 p-3 text-sm text-warning-700">
+                <Warning className="mt-0.5 size-4 shrink-0" weight="fill" />
+                <span>
+                    {connector.statusDetail ?? t('table.statusActionNeeded')}{' '}
+                    <span className="text-caption">({when})</span>
+                </span>
+            </div>
+        );
+    }
+    return (
+        <div className="flex items-start gap-2 rounded-md border border-success-200 bg-success-50 p-3 text-sm text-success-700">
+            <Check className="mt-0.5 size-4 shrink-0" weight="bold" />
+            <span>{t('google.statusReceived', { time: when })}</span>
+        </div>
+    );
+}
+
+/** Rename a Google connector: the list shows this name, never the key (a credential). */
+function GoogleConnectorName({ connector }: { connector: ConnectorListItem }) {
+    const { t } = useTranslation('settingsIntegration');
+    const queryClient = useQueryClient();
+    // null = not edited; the list refetches every few seconds while the dialog is open.
+    const [draft, setDraft] = useState<string | null>(null);
+    const current = connector.platformFormName ?? '';
+    const value = draft ?? current;
+
+    const { mutate: rename, isPending } = useMutation({
+        mutationFn: () => updateConnector(connector.id, { platformFormName: value.trim() }),
+        onSuccess: () => {
+            toast.success(t('google.nameSaved'));
+            setDraft(null);
+            queryClient.invalidateQueries({ queryKey: ['ad-connectors'] });
+        },
+        onError: () => toast.error(t('google.nameSaveError')),
+    });
+
+    return (
+        <div className="space-y-1">
+            <Label className="text-xs">{t('google.connectorNameLabel')}</Label>
+            <div className="flex gap-2">
+                <Input
+                    value={value}
+                    placeholder={t('google.connectorNamePlaceholder')}
+                    onChange={(e) => setDraft(e.target.value)}
+                />
+                <MyButton
+                    buttonType="secondary"
+                    scale="small"
+                    onClick={() => rename()}
+                    disable={isPending || value.trim() === current}
+                >
+                    {isPending ? t('google.saving') : t('google.nameSave')}
+                </MyButton>
+            </div>
+        </div>
+    );
+}
+
+/** Select value meaning "create a new list for this campaign". */
+const CREATE_LIST = '__create_list__';
+
+/** Server message from a failed request, or the fallback. */
+function apiErrorMessage(err: unknown, fallback: string): string {
+    return (
+        (err as { response?: { data?: { message?: string; ex?: string } } })?.response?.data
+            ?.message ??
+        (err as { response?: { data?: { ex?: string } } })?.response?.data?.ex ??
+        fallback
+    );
+}
+
+/**
+ * One campaign's routing row: where its leads go, with an inline "create a new list"
+ * and the option to move the campaign's existing leads along. With `route` null it is
+ * the "add a campaign" row (the admin types a campaign id from Google Ads).
+ */
+function CampaignRouteRow({
+    connectorId,
+    route,
+    mainAudienceId,
+    lists,
+}: {
+    connectorId: string;
+    route: CampaignRoute | null;
+    mainAudienceId: string;
+    lists: AudienceOption[];
+}) {
+    const { t } = useTranslation('settingsIntegration');
+    const { campaignType: term } = useLeadTerminology();
+    const { t: tCampaignType } = useTranslation('audienceManagerCampaignTypeDropdown');
+    const queryClient = useQueryClient();
+    const isNew = route === null;
+    const current = route?.audience_id ?? '';
+    const [campaignId, setCampaignId] = useState('');
+    const [campaignName, setCampaignName] = useState('');
+    const [editingName, setEditingName] = useState(false);
+    const [nameDraft, setNameDraft] = useState('');
+    const [selection, setSelection] = useState(current);
+    const [newListName, setNewListName] = useState('');
+    const [newListType, setNewListType] = useState('');
+    const [moveExisting, setMoveExisting] = useState(true);
+
+    const mainName = lists.find((l) => l.id === mainAudienceId)?.name;
+    const typeOptions = buildCampaignTypeFilterOptions(
+        buildDefaultCampaignTypeOptions(tCampaignType),
+        lists.map((l) => l.campaignType)
+    );
+    const creating = selection === CREATE_LIST;
+    // A new row can be saved with just a name: its list then comes later (or automatically).
+    const dirty = isNew
+        ? !!campaignId.trim() && (!!selection || !!campaignName.trim())
+        : selection !== current;
+    // Where this campaign's existing leads sit today (unmapped = the main list).
+    const effectiveCurrent = current || mainAudienceId;
+    const canMove =
+        !isNew && (route?.lead_count ?? 0) > 0 && (creating || selection !== effectiveCurrent);
+
+    const reset = () => {
+        setSelection(current);
+        setNewListName('');
+        setNewListType('');
+        setMoveExisting(true);
+        if (isNew) {
+            setCampaignId('');
+            setCampaignName('');
+        }
+    };
+
+    const refreshRoutes = () => {
+        queryClient.invalidateQueries({ queryKey: campaignRoutesQueryKey(connectorId) });
+        queryClient.invalidateQueries({ queryKey: ['ad-connectors'] });
+    };
+
+    const { mutate: save, isPending } = useMutation({
+        mutationFn: () => {
+            const update: CampaignRouteUpdate = { move_existing_leads: canMove && moveExisting };
+            if (creating) {
+                update.new_list = {
+                    name: newListName.trim(),
+                    campaign_type: newListType || undefined,
+                };
+            } else if (selection) {
+                update.audience_id = selection;
+            }
+            if (isNew && campaignName.trim()) update.campaign_name = campaignName.trim();
+            return updateCampaignRoute(
+                connectorId,
+                isNew ? campaignId.trim() : route!.campaign_id,
+                update
+            );
+        },
+        onSuccess: (result) => {
+            if (!creating && !selection) {
+                toast.success(t('google.routes.nameSaved'));
+            } else {
+                const listName = creating
+                    ? newListName.trim()
+                    : lists.find((l) => l.id === result.route.audience_id)?.name ?? '';
+                toast.success(t('google.routes.saved', { list: listName }));
+            }
+            if (result.moved_leads > 0) {
+                toast.info(t('google.routes.moved', { count: result.moved_leads }));
+            }
+            if (result.skipped_leads > 0) {
+                toast.warning(t('google.routes.skipped', { count: result.skipped_leads }));
+            }
+            refreshRoutes();
+            if (result.created_audience_id) {
+                queryClient.invalidateQueries({ queryKey: ['audience-list-for-integrations'] });
+            }
+            if (isNew) reset();
+            else {
+                setNewListName('');
+                setNewListType('');
+            }
+        },
+        onError: (err) => toast.error(apiErrorMessage(err, t('google.routes.saveError'))),
+    });
+
+    const { mutate: saveName, isPending: isSavingName } = useMutation({
+        mutationFn: () =>
+            updateCampaignRoute(connectorId, route!.campaign_id, {
+                campaign_name: nameDraft.trim(),
+            }),
+        onSuccess: () => {
+            toast.success(t('google.routes.nameSaved'));
+            setEditingName(false);
+            refreshRoutes();
+            // Naming a campaign also renames its automatically named list.
+            queryClient.invalidateQueries({ queryKey: ['audience-list-for-integrations'] });
+        },
+        onError: (err) => toast.error(apiErrorMessage(err, t('google.routes.saveError'))),
+    });
+
+    const { mutate: remove, isPending: isRemoving } = useMutation({
+        mutationFn: () => deleteCampaignRoute(connectorId, route!.campaign_id),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: campaignRoutesQueryKey(connectorId) });
+            queryClient.invalidateQueries({ queryKey: ['ad-connectors'] });
+        },
+        onError: (err) => toast.error(apiErrorMessage(err, t('google.routes.saveError'))),
+    });
+
+    // Keep the select in step with the server after a save or a refetch.
+    useEffect(() => {
+        setSelection(current);
+    }, [current]);
+
+    return (
+        <div className="space-y-2 p-2.5">
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+                <div className="min-w-0 sm:w-56">
+                    {isNew ? (
+                        <div className="space-y-1.5">
+                            <Input
+                                value={campaignId}
+                                inputMode="numeric"
+                                placeholder={t('google.routes.campaignIdPlaceholder')}
+                                onChange={(e) => setCampaignId(e.target.value.replace(/\D/g, ''))}
+                            />
+                            <Input
+                                value={campaignName}
+                                placeholder={t('google.routes.campaignNamePlaceholder')}
+                                onChange={(e) => setCampaignName(e.target.value)}
+                            />
+                        </div>
+                    ) : (
+                        <>
+                            {editingName ? (
+                                <div className="mb-1 flex items-center gap-1">
+                                    <Input
+                                        value={nameDraft}
+                                        autoFocus
+                                        placeholder={t('google.routes.campaignNamePlaceholder')}
+                                        onChange={(e) => setNameDraft(e.target.value)}
+                                        onKeyDown={(e) => {
+                                            if (e.key === 'Enter') saveName();
+                                            if (e.key === 'Escape') setEditingName(false);
+                                        }}
+                                    />
+                                    <button
+                                        onClick={() => saveName()}
+                                        disabled={isSavingName}
+                                        className="text-primary-500 hover:text-primary-600 disabled:opacity-50"
+                                        title={t('google.routes.save')}
+                                    >
+                                        <Check className="size-4" />
+                                    </button>
+                                    <button
+                                        onClick={() => setEditingName(false)}
+                                        className="text-neutral-400 hover:text-neutral-600"
+                                        title={t('google.routes.cancel')}
+                                    >
+                                        <X className="size-4" />
+                                    </button>
+                                </div>
+                            ) : (
+                                <p className="flex items-center gap-1 text-sm font-medium text-neutral-800">
+                                    <span className="truncate">
+                                        {route!.campaign_name || (
+                                            <span className="font-normal text-neutral-400">
+                                                {t('google.routes.unnamed')}
+                                            </span>
+                                        )}
+                                    </span>
+                                    <button
+                                        onClick={() => {
+                                            setNameDraft(route!.campaign_name ?? '');
+                                            setEditingName(true);
+                                        }}
+                                        className="shrink-0 text-neutral-400 hover:text-primary-500"
+                                        title={t('google.routes.editName')}
+                                        aria-label={t('google.routes.editName')}
+                                    >
+                                        <PencilSimple className="size-3.5" />
+                                    </button>
+                                </p>
+                            )}
+                            <p className="flex items-center gap-1.5 font-mono text-xs text-neutral-700">
+                                {route!.campaign_id}
+                                {!route!.audience_id && (
+                                    <span className="rounded-full bg-warning-50 px-1.5 py-0.5 font-sans text-caption text-warning-700">
+                                        {t('google.routes.notMapped')}
+                                    </span>
+                                )}
+                            </p>
+                            <p className="text-caption text-neutral-500">
+                                {route!.lead_count > 0
+                                    ? t('google.routes.leads', { count: route!.lead_count }) +
+                                      (route!.last_lead_at
+                                          ? ` · ${t('google.routes.lastLead', {
+                                                time: formatDateTime(
+                                                    parseServerUtc(route!.last_lead_at)
+                                                ),
+                                            })}`
+                                          : '')
+                                    : t('google.routes.noLeadsYet')}
+                            </p>
+                        </>
+                    )}
+                </div>
+                <select
+                    className="w-full flex-1 rounded-md border bg-white px-3 py-2 text-sm"
+                    value={selection}
+                    onChange={(e) => {
+                        const value = e.target.value;
+                        setSelection(value);
+                        // A new list is usually named after its campaign.
+                        if (value === CREATE_LIST && !newListName) {
+                            setNewListName((isNew ? campaignName : route!.campaign_name) ?? '');
+                        }
+                    }}
+                    aria-label={t('google.routes.listLabel')}
+                >
+                    {(isNew || !current) && (
+                        <option value="">
+                            {isNew
+                                ? t('google.routes.chooseList')
+                                : t('google.routes.unmappedOption', { list: mainName ?? '' })}
+                        </option>
+                    )}
+                    <option value={mainAudienceId}>
+                        {t('google.routes.mainListOption', { list: mainName ?? '' })}
+                    </option>
+                    {lists
+                        .filter((l) => l.id !== mainAudienceId)
+                        .map((l) => (
+                            <option key={l.id} value={l.id}>
+                                {l.name}
+                            </option>
+                        ))}
+                    <option value={CREATE_LIST}>{t('google.routes.createListOption')}</option>
+                </select>
+                {!isNew && route!.lead_count === 0 && (
+                    <button
+                        onClick={() => remove()}
+                        disabled={isRemoving}
+                        className="text-neutral-400 hover:text-danger-600 disabled:opacity-50"
+                        title={t('google.routes.remove')}
+                    >
+                        <Trash className="size-4" />
+                    </button>
+                )}
+            </div>
+
+            {creating && (
+                <div className="grid gap-2 rounded-md bg-neutral-50 p-2.5 sm:grid-cols-2">
+                    <div className="space-y-1">
+                        <Label className="text-xs">{t('google.routes.newListName')}</Label>
+                        <Input
+                            value={newListName}
+                            placeholder={t('google.routes.newListNamePlaceholder')}
+                            onChange={(e) => setNewListName(e.target.value)}
+                        />
+                    </div>
+                    <div className="space-y-1">
+                        <Label className="text-xs">{t('campaignTypeFilter.label', { term })}</Label>
+                        <select
+                            className="w-full rounded-md border bg-white px-3 py-2 text-sm"
+                            value={newListType}
+                            onChange={(e) => setNewListType(e.target.value)}
+                        >
+                            <option value="">{t('google.routes.sameTypeAsMain')}</option>
+                            {typeOptions.map((opt) => (
+                                <option key={opt.value} value={opt.value}>
+                                    {opt.label}
+                                </option>
+                            ))}
+                        </select>
+                    </div>
+                    <p className="text-caption text-neutral-500 sm:col-span-2">
+                        {t('google.routes.newListHint')}
+                    </p>
+                </div>
+            )}
+
+            {dirty && (
+                <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                    {canMove ? (
+                        <label className="flex items-center gap-2 text-xs text-neutral-700">
+                            <input
+                                type="checkbox"
+                                checked={moveExisting}
+                                onChange={(e) => setMoveExisting(e.target.checked)}
+                            />
+                            {t('google.routes.moveExisting', { count: route!.lead_count })}
+                        </label>
+                    ) : (
+                        <span />
+                    )}
+                    <div className="flex gap-2">
+                        {!isNew && (
+                            <MyButton buttonType="secondary" scale="small" onClick={reset}>
+                                {t('google.routes.cancel')}
+                            </MyButton>
+                        )}
+                        <MyButton
+                            buttonType="primary"
+                            scale="small"
+                            onClick={() => save()}
+                            disable={
+                                isPending ||
+                                (creating && !newListName.trim()) ||
+                                (isNew && !selection && !campaignName.trim())
+                            }
+                        >
+                            {isPending
+                                ? t('google.saving')
+                                : isNew
+                                  ? t('google.routes.add')
+                                  : t('google.routes.save')}
+                        </MyButton>
+                    </div>
+                </div>
+            )}
+        </div>
+    );
+}
+
+/**
+ * Campaign → lead list routing. One Google lead form usually runs in several
+ * campaigns; each campaign can send its leads to its own list (with that list's
+ * workflows and counsellors). Campaigns without a list go to the main list, so a
+ * new campaign never loses a lead.
+ */
+function GoogleCampaignRoutes({
+    connector,
+    audiences,
+}: {
+    connector: ConnectorListItem;
+    audiences: AudienceOption[];
+}) {
+    const { t } = useTranslation('settingsIntegration');
+    const queryClient = useQueryClient();
+    const { data, isLoading } = useQuery({
+        queryKey: campaignRoutesQueryKey(connector.id),
+        queryFn: () => fetchCampaignRoutes(connector.id),
+    });
+    const { mutate: toggleAutoLists, isPending: isTogglingAutoLists } = useMutation({
+        mutationFn: (enabled: boolean) => setCampaignAutoLists(connector.id, enabled),
+        onSuccess: (result: CampaignRoutes) => {
+            queryClient.setQueryData(campaignRoutesQueryKey(connector.id), result);
+            toast.success(
+                t(
+                    result.auto_create_lists
+                        ? 'google.routes.autoListsOn'
+                        : 'google.routes.autoListsOff'
+                )
+            );
+        },
+        onError: (err) => toast.error(apiErrorMessage(err, t('google.routes.saveError'))),
+    });
+    const mainAudienceId = data?.main_audience_id ?? connector.audienceId;
+    const mainName = audiences.find((a) => a.id === mainAudienceId)?.name ?? '';
+    const mainType = audiences.find((a) => a.id === mainAudienceId)?.campaignType?.trim();
+    const routes = data?.routes ?? [];
+    // Leads can only be routed to a live list of the main list's type (Google lists
+    // only, not every website/Facebook list of the institute). A list a campaign is
+    // already routed to stays listed so the row still shows it.
+    const mappedIds = new Set(routes.map((r) => r.audience_id).filter(Boolean));
+    const activeLists = audiences.filter((a) => !a.status || a.status === 'ACTIVE');
+    const sameType = new Set(
+        filterByCampaignTypes(activeLists, mainType ? [mainType] : []).map((a) => a.id)
+    );
+    const lists = activeLists.filter(
+        (a) => sameType.has(a.id) || a.id === mainAudienceId || mappedIds.has(a.id)
+    );
+
+    return (
+        <div className="space-y-1.5">
+            <p className="text-xs font-medium text-neutral-500">{t('google.routes.heading')}</p>
+            <p className="text-caption text-neutral-500">
+                {t('google.routes.hint', { list: mainName })}
+            </p>
+            {data && (
+                <label className="flex items-start gap-2.5 rounded-md border bg-neutral-50 p-2.5">
+                    <Switch
+                        checked={data.auto_create_lists}
+                        disabled={isTogglingAutoLists}
+                        onCheckedChange={(checked) => toggleAutoLists(checked)}
+                        aria-label={t('google.routes.autoListsLabel')}
+                    />
+                    <span className="space-y-0.5">
+                        <span className="block text-sm font-medium text-neutral-800">
+                            {t('google.routes.autoListsLabel')}
+                        </span>
+                        <span className="block text-caption text-neutral-500">
+                            {t('google.routes.autoListsHint')}
+                        </span>
+                    </span>
+                </label>
+            )}
+            {isLoading ? (
+                <div className="flex items-center gap-2 text-sm text-neutral-500">
+                    <CircleNotch className="size-4 animate-spin" />
+                    {t('activeConnectors.loading')}
+                </div>
+            ) : (
+                <div className="divide-y rounded-md border">
+                    {routes.length === 0 && (
+                        <p className="p-2.5 text-caption text-neutral-500">
+                            {t('google.routes.empty')}
+                        </p>
+                    )}
+                    {routes.map((r) => (
+                        <CampaignRouteRow
+                            key={r.campaign_id}
+                            connectorId={connector.id}
+                            route={r}
+                            mainAudienceId={mainAudienceId}
+                            lists={lists}
+                        />
+                    ))}
+                    <div className="bg-neutral-50/50">
+                        <p className="px-2.5 pt-2.5 text-caption font-medium text-neutral-600">
+                            {t('google.routes.addHeading')}
+                        </p>
+                        <CampaignRouteRow
+                            connectorId={connector.id}
+                            route={null}
+                            mainAudienceId={mainAudienceId}
+                            lists={lists}
+                        />
+                    </div>
+                </div>
+            )}
+        </div>
+    );
+}
+
+const GOOGLE_SETUP_DIALOG_CLASS = 'flex max-h-[90vh] w-[95vw] max-w-2xl flex-col'; // design-lint-ignore: viewport-bounded so the guide scrolls on short screens
+
+/**
+ * Setup & status for one Google connector: the two values to paste, the Google Ads
+ * steps, live delivery status (the parent polls the list while this is open) and what
+ * Google's test errors mean. Opens right after a connector is created, and from the row.
+ */
+export function GoogleSetupDialog({
+    connector,
+    audienceName,
+    audiences,
+    open,
+    onOpenChange,
+}: {
+    connector: ConnectorListItem | null;
+    audienceName: string | undefined;
+    audiences: AudienceOption[];
+    open: boolean;
+    onOpenChange: (open: boolean) => void;
+}) {
+    const { t } = useTranslation('settingsIntegration');
+    const googleKey = connector?.vendorId;
+    return (
+        <Dialog open={open} onOpenChange={onOpenChange}>
+            <DialogContent className={GOOGLE_SETUP_DIALOG_CLASS}>
+                <DialogHeader>
+                    <DialogTitle>{t('google.dialogTitle')}</DialogTitle>
+                    <DialogDescription>
+                        {audienceName
+                            ? t('google.dialogDescription', { audience: audienceName })
+                            : t('google.dialogDescriptionNoAudience')}
+                    </DialogDescription>
+                </DialogHeader>
+
+                {/* Header and footer stay put; only the guide scrolls on short screens. */}
+                <div className="-me-2 min-h-0 flex-1 overflow-y-auto pe-2">
+                    {!connector || !googleKey ? (
+                        <div className="flex items-center gap-2 py-4 text-sm text-neutral-500">
+                            <CircleNotch className="size-4 animate-spin" />
+                            {t('activeConnectors.loading')}
+                        </div>
+                    ) : (
+                        <div className="space-y-4">
+                            <GoogleConnectorName connector={connector} />
+                            <div className="grid gap-3 sm:grid-cols-2">
+                                <CopyableValue
+                                    label={t('google.webhookUrlLabel')}
+                                    value={buildGoogleWebhookUrl(googleKey)}
+                                />
+                                <CopyableValue label={t('google.keyLabel')} value={googleKey} />
+                            </div>
+                            <GoogleSetupSteps />
+                            <div className="space-y-1.5">
+                                <p className="text-xs font-medium text-neutral-500">
+                                    {t('google.statusHeading')}
+                                </p>
+                                <GoogleDeliveryStatus connector={connector} />
+                            </div>
+                            <GoogleCampaignRoutes connector={connector} audiences={audiences} />
+                            <div className="space-y-1">
+                                <p className="text-xs font-medium text-neutral-500">
+                                    {t('google.troubleshootHeading')}
+                                </p>
+                                <ul className="list-disc space-y-1 ps-5 text-caption text-neutral-600">
+                                    <li>{t('google.troubleshoot404')}</li>
+                                    <li>{t('google.troubleshoot401')}</li>
+                                    <li>{t('google.troubleshootNoLeads')}</li>
+                                </ul>
+                            </div>
+                        </div>
+                    )}
+                </div>
+
+                <DialogFooter>
+                    <MyButton scale="medium" onClick={() => onOpenChange(false)}>
+                        {t('health.close')}
+                    </MyButton>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
+    );
+}
+
+function AddGoogleForm({ onCreated }: { onCreated: (connectorId: string) => void }) {
+    const { t } = useTranslation('settingsIntegration');
+    const [audienceId, setAudienceId] = useState('');
+    const [name, setName] = useState('');
     const instituteId = getCurrentInstituteId() ?? '';
-    const webhookUrl = googleKey ? buildGoogleWebhookUrl(googleKey) : '';
     const { data: audiences = [] } = useAudienceList(instituteId);
 
     const { mutate: save, isPending } = useMutation({
+        // No googleKey: the server generates it and the setup dialog shows it.
         mutationFn: () =>
             saveGoogleConnector({
                 vendor: 'GOOGLE_LEAD_ADS',
                 instituteId,
                 audienceId,
-                googleKey,
-                platformFormId: googleKey,
+                platformFormName: name.trim() || undefined,
                 producesSourceType: 'GOOGLE_ADS',
             }),
         onSuccess: (result) => {
             toast.success(result.message);
-            setGoogleKey('');
             setAudienceId('');
-            onSaved();
+            setName('');
+            onCreated(result.connector_id);
         },
-        onError: () => toast.error('Failed to save Google connector'),
+        onError: () => toast.error(t('google.saveError')),
     });
 
     return (
         <div className="space-y-3 rounded-lg border bg-white p-4">
             <div className="grid gap-3 sm:grid-cols-2">
+                <AudiencePickerByType
+                    audiences={audiences}
+                    audienceId={audienceId}
+                    onAudienceChange={setAudienceId}
+                    audienceLabel={t('google.audienceLabel')}
+                    audiencePlaceholder={t('google.selectAudiencePlaceholder')}
+                />
                 <div className="space-y-1">
-                    <Label className="text-xs">Google Key</Label>
+                    <Label className="text-xs">{t('google.connectorNameLabel')}</Label>
                     <Input
-                        placeholder="e.g. my-leads-abc123"
-                        value={googleKey}
-                        onChange={(e) => setGoogleKey(e.target.value)}
+                        value={name}
+                        placeholder={t('google.connectorNamePlaceholder')}
+                        onChange={(e) => setName(e.target.value)}
                     />
                 </div>
-                <div className="space-y-1">
-                    <Label className="text-xs">Audience</Label>
-                    <select
-                        className="w-full rounded-md border bg-white px-3 py-2 text-sm"
-                        value={audienceId}
-                        onChange={(e) => setAudienceId(e.target.value)}
-                    >
-                        <option value="">Select audience...</option>
-                        {audiences.map((a) => (
-                            <option key={a.id} value={a.id}>
-                                {a.name}
-                            </option>
-                        ))}
-                    </select>
-                </div>
             </div>
-            {webhookUrl && (
-                <div className="flex items-center gap-2 rounded-md border bg-neutral-50 px-3 py-2">
-                    <code className="flex-1 truncate text-xs">{webhookUrl}</code>
-                    <button
-                        onClick={() => {
-                            navigator.clipboard.writeText(webhookUrl);
-                            setCopied(true);
-                            setTimeout(() => setCopied(false), 2000);
-                        }}
-                        className="shrink-0 text-neutral-500 hover:text-neutral-700"
-                    >
-                        {copied ? (
-                            <Check className="size-4 text-green-600" />
-                        ) : (
-                            <Copy className="size-4" />
-                        )}
-                    </button>
-                </div>
-            )}
+            <div className="rounded-md bg-neutral-50 p-3">
+                <p className="mb-1.5 text-xs font-medium text-neutral-600">
+                    {t('google.howItWorksTitle')}
+                </p>
+                <ol className="list-decimal space-y-1 ps-5 text-xs text-neutral-600">
+                    <li>{t('google.howItWorks1')}</li>
+                    <li>{t('google.howItWorks2')}</li>
+                    <li>{t('google.howItWorks3')}</li>
+                </ol>
+            </div>
             <MyButton
                 buttonType="primary"
                 scale="small"
                 onClick={() => save()}
-                disable={isPending || !googleKey || !audienceId}
+                disable={isPending || !audienceId}
             >
-                {isPending ? 'Saving...' : 'Save'}
+                {isPending ? t('google.saving') : t('google.save')}
             </MyButton>
         </div>
     );
@@ -766,6 +1604,7 @@ function AddMetaForm({
     setSessionKey: (key: string) => void;
     onSaved: () => void;
 }) {
+    const { t } = useTranslation('settingsIntegration');
     const instituteId = getCurrentInstituteId() ?? '';
     const [selectedPageId, setSelectedPageId] = useState('');
     // Pages resolved by ID (fallback when /me/accounts doesn't enumerate a
@@ -844,9 +1683,9 @@ function AddMetaForm({
     useEffect(() => {
         if (formsError && isSessionExpiredError(formsError)) {
             setSessionKey('');
-            toast.error('Your Meta session expired. Please reconnect Meta.');
+            toast.error(t('meta.sessionExpiredReconnect'));
         }
-    }, [formsError, setSessionKey]);
+    }, [formsError, setSessionKey, t]);
 
     // Auto-prefill the stamp value (e.g. "Wakad") from the selected Lead Gen
     // Form name, until the admin types into the value. Picking a different form
@@ -863,7 +1702,7 @@ function AddMetaForm({
         onSuccess: (data) => {
             window.location.href = data.oauth_url;
         },
-        onError: () => toast.error('Failed to start Meta OAuth'),
+        onError: () => toast.error(t('meta.startOauthError')),
     });
 
     const { mutate: saveConnector, isPending: saving } = useMutation({
@@ -913,12 +1752,12 @@ function AddMetaForm({
         onError: (err: unknown) => {
             if (isSessionExpiredError(err)) {
                 setSessionKey('');
-                toast.error('Your Meta session expired. Please reconnect Meta and try again.');
+                toast.error(t('meta.sessionExpiredRetry'));
                 return;
             }
             const msg = (err as { response?: { data?: { message?: string } } })?.response?.data
                 ?.message;
-            toast.error(msg ?? 'Failed to save Meta connector');
+            toast.error(msg ?? t('meta.saveError'));
         },
     });
 
@@ -929,17 +1768,17 @@ function AddMetaForm({
             setManualPages((prev) => [...prev.filter((p) => p.id !== page.id), page]);
             setSelectedPageId(page.id);
             setManualPageId('');
-            toast.success(`Added Page "${page.name}"`);
+            toast.success(t('meta.pageAdded', { name: page.name }));
         },
         onError: (err: unknown) => {
             if (isSessionExpiredError(err)) {
                 setSessionKey('');
-                toast.error('Your Meta session expired. Please reconnect Meta.');
+                toast.error(t('meta.sessionExpiredReconnect'));
                 return;
             }
             const msg = (err as { response?: { data?: { message?: string } } })?.response?.data
                 ?.message;
-            toast.error(msg ?? 'Could not add that Page. Double-check the Page ID.');
+            toast.error(msg ?? t('meta.addPageError'));
         },
     });
 
@@ -958,7 +1797,7 @@ function AddMetaForm({
                 <>
                     {pagesError && (
                         <div className="rounded-md border border-red-100 bg-red-50 p-3 text-sm text-red-600">
-                            Session expired or invalid. Please reconnect.
+                            {t('meta.sessionInvalid')}
                         </div>
                     )}
                     <MyButton
@@ -968,41 +1807,38 @@ function AddMetaForm({
                         disable={initiating}
                     >
                         <ArrowSquareOut className="size-4" />
-                        {initiating ? 'Redirecting...' : 'Connect Meta Account'}
+                        {initiating ? t('meta.redirecting') : t('meta.connectButton')}
                     </MyButton>
-                    <p className="text-xs text-muted-foreground">
-                        After connecting, you can add multiple forms — each linked to a different
-                        audience.
-                    </p>
+                    <p className="text-xs text-muted-foreground">{t('meta.connectHint')}</p>
                 </>
             )}
 
             {loadingPages && sessionKey && (
                 <div className="flex items-center gap-2 text-sm text-muted-foreground">
                     <div className="size-4 animate-spin rounded-full border-2 border-primary-500 border-t-transparent" />
-                    Loading pages...
+                    {t('meta.loadingPages')}
                 </div>
             )}
 
             {isAuthorized && (
                 <>
                     <div className="rounded-md border border-green-100 bg-green-50 p-2 text-xs text-green-700">
-                        Meta connected. Add a form → audience mapping below. You can add multiple.
+                        {t('meta.connectedBanner')}
                     </div>
                     <div className="grid gap-3 sm:grid-cols-2">
                         <div className="space-y-1">
-                            <Label className="text-xs">Facebook Page</Label>
+                            <Label className="text-xs">{t('meta.pageLabel')}</Label>
                             <select
                                 className="w-full rounded-md border bg-white px-3 py-2 text-sm"
                                 value={selectedPageId}
                                 onChange={(e) => setSelectedPageId(e.target.value)}
                             >
-                                <option value="">Select a page...</option>
+                                <option value="">{t('meta.selectPagePlaceholder')}</option>
                                 {effectivePages.map((p: MetaPage) => (
                                     <option key={p.id} value={p.id}>
                                         {p.name}
                                         {p.canReceiveLeads === false
-                                            ? ' — needs Full control'
+                                            ? t('meta.needsFullControl')
                                             : ''}
                                     </option>
                                 ))}
@@ -1026,14 +1862,14 @@ function AddMetaForm({
                             <div className="mt-2 rounded-md border border-dashed border-neutral-200 bg-neutral-50 p-2">
                                 <p className="text-caption text-neutral-500">
                                     {effectivePages.length === 0
-                                        ? "Your Page isn't listed. Paste its Page ID (shown in the Facebook connect dialog, or Page Settings → About)."
-                                        : 'Page not listed? Add it by ID.'}
+                                        ? t('meta.noPageListedHint')
+                                        : t('meta.pageNotListedHint')}
                                 </p>
                                 <div className="mt-2 flex gap-2">
                                     <Input
                                         value={manualPageId}
                                         onChange={(e) => setManualPageId(e.target.value)}
-                                        placeholder="e.g. 336149566246129"
+                                        placeholder={t('meta.pageIdPlaceholder')}
                                         className="text-sm"
                                     />
                                     <MyButton
@@ -1042,83 +1878,75 @@ function AddMetaForm({
                                         onClick={() => addPageById(manualPageId.trim())}
                                         disable={!manualPageId.trim() || resolvingPage}
                                     >
-                                        {resolvingPage ? 'Adding...' : 'Add Page'}
+                                        {resolvingPage ? t('meta.addingPage') : t('meta.addPage')}
                                     </MyButton>
                                 </div>
                             </div>
                         </div>
                         <div className="space-y-1">
-                            <Label className="text-xs">Lead Gen Form</Label>
+                            <Label className="text-xs">{t('meta.leadFormLabel')}</Label>
                             {loadingForms ? (
                                 <div className="flex items-center gap-2 py-2 text-xs text-muted-foreground">
                                     <div className="size-3 animate-spin rounded-full border-2 border-primary-500 border-t-transparent" />
-                                    Loading forms...
+                                    {t('meta.loadingForms')}
                                 </div>
                             ) : forms.length > 0 ? (
-                                <select
-                                    className="w-full rounded-md border bg-white px-3 py-2 text-sm"
+                                <SearchableSelect
+                                    options={forms.map((f) => ({
+                                        label: `${f.name} (${f.id})`,
+                                        value: f.id,
+                                    }))}
                                     value={formId}
-                                    onChange={(e) => selectForm(e.target.value)}
-                                >
-                                    <option value="">Select a form...</option>
-                                    {forms.map((f) => (
-                                        <option key={f.id} value={f.id}>
-                                            {f.name} ({f.id})
-                                        </option>
-                                    ))}
-                                </select>
+                                    onChange={selectForm}
+                                    placeholder={t('meta.selectFormPlaceholder')}
+                                    searchPlaceholder={t('meta.searchFormsPlaceholder')}
+                                    emptyText={t('meta.noFormsMatch')}
+                                    filter={prefixFirstFilter}
+                                    triggerClassName="text-sm"
+                                />
                             ) : (
                                 <>
                                     <Input
                                         placeholder={
                                             selectedPageId
-                                                ? 'Paste your Lead Form ID'
-                                                : 'Select a page first'
+                                                ? t('meta.pasteFormIdPlaceholder')
+                                                : t('meta.selectPageFirstPlaceholder')
                                         }
                                         value={formId}
                                         onChange={(e) => selectForm(e.target.value)}
                                     />
                                     {selectedPageId && (
                                         <p className="mt-1 text-caption text-neutral-500">
-                                            Can&apos;t auto-list this Page&apos;s forms. Paste the
-                                            Lead Form ID — find it in Meta Business Suite → All tools
-                                            → Instant Forms (or your ad&apos;s lead form). Lead
-                                            capture still works once mapped.
+                                            {t('meta.cantAutoListForms')}
                                         </p>
                                     )}
                                 </>
                             )}
                         </div>
+                        <AudiencePickerByType
+                            audiences={audiences}
+                            audienceId={audienceId}
+                            onAudienceChange={selectAudience}
+                            audienceLabel={t('meta.audienceLabel')}
+                            audiencePlaceholder={t('meta.selectAudiencePlaceholder')}
+                        />
                         <div className="space-y-1">
-                            <Label className="text-xs">Audience</Label>
-                            <select
-                                className="w-full rounded-md border bg-white px-3 py-2 text-sm"
-                                value={audienceId}
-                                onChange={(e) => selectAudience(e.target.value)}
-                            >
-                                <option value="">Select audience...</option>
-                                {audiences.map((a) => (
-                                    <option key={a.id} value={a.id}>
-                                        {a.name}
-                                    </option>
-                                ))}
-                            </select>
-                        </div>
-                        <div className="space-y-1">
-                            <Label className="text-xs">Source Type</Label>
+                            <Label className="text-xs">{t('meta.sourceTypeLabel')}</Label>
                             <div className="flex gap-3 pt-2">
-                                {(['FACEBOOK_ADS', 'INSTAGRAM_ADS'] as const).map((t) => (
+                                {(['FACEBOOK_ADS', 'INSTAGRAM_ADS'] as const).map((st) => (
                                     <label
-                                        key={t}
+                                        key={st}
                                         className="flex cursor-pointer items-center gap-1.5 text-xs"
                                     >
                                         <input
                                             type="radio"
                                             name="metaSourceType"
-                                            checked={sourceType === t}
-                                            onChange={() => setSourceType(t)}
+                                            checked={sourceType === st}
+                                            onChange={() => setSourceType(st)}
                                         />
-                                        {t === 'FACEBOOK_ADS' ? 'Facebook' : 'Instagram'}
+                                        {st === 'FACEBOOK_ADS'
+                                            ? t('meta.facebook')
+                                            : t('meta.instagram')}
                                     </label>
                                 ))}
                             </div>
@@ -1131,13 +1959,13 @@ function AddMetaForm({
                     {formId && audienceId && audienceFields.length > 0 && (
                         <div className="grid gap-3 sm:grid-cols-2">
                             <div className="space-y-1">
-                                <Label className="text-caption">Stamp audience field</Label>
+                                <Label className="text-caption">{t('meta.stampFieldLabel')}</Label>
                                 <select
                                     className="w-full rounded-md border bg-white px-3 py-2 text-sm"
                                     value={stampFieldName}
                                     onChange={(e) => setStampFieldName(e.target.value)}
                                 >
-                                    <option value="">— none —</option>
+                                    <option value="">{t('meta.noneOption')}</option>
                                     {audienceFields.map((af) => (
                                         <option key={af.id} value={af.fieldName}>
                                             {af.fieldName}
@@ -1146,9 +1974,9 @@ function AddMetaForm({
                                 </select>
                             </div>
                             <div className="space-y-1">
-                                <Label className="text-caption">Value</Label>
+                                <Label className="text-caption">{t('meta.valueLabel')}</Label>
                                 <Input
-                                    placeholder="Value to stamp"
+                                    placeholder={t('meta.valuePlaceholder')}
                                     value={stampValue}
                                     onChange={(e) => {
                                         setStampValue(e.target.value);
@@ -1156,9 +1984,7 @@ function AddMetaForm({
                                     }}
                                 />
                                 <p className="text-caption text-muted-foreground">
-                                    Pre-filled with the first token of the form name. Stamped
-                                    onto every lead from this connector if a field is selected
-                                    above.
+                                    {t('meta.stampValueHint')}
                                 </p>
                             </div>
                         </div>
@@ -1183,7 +2009,7 @@ function AddMetaForm({
                         onClick={() => saveConnector()}
                         disable={saving || !selectedPageId || !formId || !audienceId}
                     >
-                        {saving ? 'Saving...' : 'Save'}
+                        {saving ? t('meta.saving') : t('meta.save')}
                     </MyButton>
                 </>
             )}
@@ -1194,6 +2020,7 @@ function AddMetaForm({
 // ── Main Integrations Page ───────────────────────────────────────────────────
 
 export default function IntegrationSettings() {
+    const { t } = useTranslation('settingsIntegration');
     const queryClient = useQueryClient();
     const instituteId = getCurrentInstituteId() ?? '';
 
@@ -1213,9 +2040,9 @@ export default function IntegrationSettings() {
     const { data: audiences = [] } = useAudienceList(instituteId);
 
     useEffect(() => {
-        if (oauthError) toast.error(`Meta OAuth failed: ${oauthError}`);
+        if (oauthError) toast.error(t('meta.oauthFailed', { error: oauthError }));
         if (sessionKeyFromUrl) {
-            toast.success('Meta account connected');
+            toast.success(t('toasts.metaAccountConnected'));
             setMetaSessionKey(sessionKeyFromUrl);
         }
         if (sessionKeyFromUrl || oauthError) {
@@ -1224,7 +2051,11 @@ export default function IntegrationSettings() {
             clean.searchParams.delete('error');
             window.history.replaceState({}, '', clean.toString());
         }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [oauthError, sessionKeyFromUrl]);
+
+    // Google connector whose Setup & status dialog is open (also opened right after create).
+    const [googleSetupId, setGoogleSetupId] = useState<string | null>(null);
 
     // Fetch existing connectors
     const {
@@ -1236,15 +2067,19 @@ export default function IntegrationSettings() {
         queryFn: () => listConnectors(instituteId),
         enabled: !!instituteId,
         retry: false,
+        // While the Google setup dialog is open, poll so "Send test data" shows up live.
+        refetchInterval: googleSetupId ? 5000 : false,
     });
+    const googleSetupConnector =
+        (Array.isArray(connectors) ? connectors : []).find((c) => c.id === googleSetupId) ?? null;
 
     const { mutate: deleteConnector } = useMutation({
         mutationFn: deactivateConnector,
         onSuccess: () => {
-            toast.success('Connector deactivated');
+            toast.success(t('toasts.connectorDeactivated'));
             queryClient.invalidateQueries({ queryKey: ['ad-connectors'] });
         },
-        onError: () => toast.error('Failed to deactivate connector'),
+        onError: () => toast.error(t('toasts.deactivateFailed')),
     });
 
     // "Test connection" — runs the live health check and shows the result.
@@ -1260,7 +2095,7 @@ export default function IntegrationSettings() {
             // The server may have flipped the status (e.g. back to ACTIVE) — refetch.
             queryClient.invalidateQueries({ queryKey: ['ad-connectors'] });
         },
-        onError: () => toast.error('Could not run the connection test'),
+        onError: () => toast.error(t('toasts.healthCheckFailed')),
     });
     const testingId = isTesting ? (testingVar ?? null) : null;
 
@@ -1274,7 +2109,7 @@ export default function IntegrationSettings() {
         onError: (err: unknown) => {
             const msg =
                 (err as { response?: { data?: { message?: string } } })?.response?.data
-                    ?.message ?? 'Re-subscribe failed';
+                    ?.message ?? t('toasts.resubscribeFailedFallback');
             toast.error(msg);
         },
     });
@@ -1292,18 +2127,16 @@ export default function IntegrationSettings() {
                 // Backend surfaced a partial sync (window held more than one pull returns).
                 toast.warning(data.message);
             } else if (data.fetched > 0) {
-                toast.success(
-                    `Synced ${data.fetched} lead${data.fetched === 1 ? '' : 's'} from Meta`
-                );
+                toast.success(t('toasts.syncedLeads', { count: data.fetched }));
             } else {
-                toast.info('No new leads from Meta in the last 24 hours');
+                toast.info(t('toasts.noNewLeads'));
             }
             queryClient.invalidateQueries({ queryKey: ['ad-connectors'] });
         },
         onError: (err: unknown) => {
             const msg =
                 (err as { response?: { data?: { message?: string } } })?.response?.data?.message ??
-                'Sync failed';
+                t('toasts.syncFailedFallback');
             toast.error(msg);
         },
     });
@@ -1315,14 +2148,14 @@ export default function IntegrationSettings() {
         mutationFn: (args: { id: string; defaultValuesJson: string }) =>
             updateConnector(args.id, { defaultValuesJson: args.defaultValuesJson }),
         onSuccess: () => {
-            toast.success('Connector updated');
+            toast.success(t('toasts.connectorUpdated'));
             setEditingConnector(null);
             queryClient.invalidateQueries({ queryKey: ['ad-connectors'] });
         },
         onError: (err: unknown) => {
             const msg =
                 (err as { response?: { data?: { message?: string } } })?.response?.data?.message ??
-                'Failed to update connector';
+                t('toasts.updateFailedFallback');
             toast.error(msg);
         },
     });
@@ -1334,12 +2167,8 @@ export default function IntegrationSettings() {
     return (
         <div className="space-y-6 p-6">
             <div>
-                <h2 className="text-lg font-semibold">Ad Platform Integrations</h2>
-                <p className="text-sm text-muted-foreground">
-                    Connect Google Ads and Meta Lead Ads to capture leads into your audiences. Each
-                    form/campaign maps to one audience — add multiple connectors for multiple
-                    audiences.
-                </p>
+                <h2 className="text-lg font-semibold">{t('page.heading')}</h2>
+                <p className="text-sm text-muted-foreground">{t('page.description')}</p>
             </div>
 
             <Separator />
@@ -1347,20 +2176,18 @@ export default function IntegrationSettings() {
             {/* ── Existing connectors ── */}
             <Card>
                 <CardHeader className="pb-3">
-                    <CardTitle className="text-base">Active Connectors</CardTitle>
-                    <CardDescription>
-                        Each row links one ad platform form to one audience.
-                    </CardDescription>
+                    <CardTitle className="text-base">{t('activeConnectors.title')}</CardTitle>
+                    <CardDescription>{t('activeConnectors.description')}</CardDescription>
                 </CardHeader>
                 <CardContent>
                     {isLoading ? (
                         <div className="flex items-center gap-2 py-4 text-sm text-muted-foreground">
                             <div className="size-4 animate-spin rounded-full border-2 border-primary-500 border-t-transparent" />
-                            Loading connectors...
+                            {t('activeConnectors.loading')}
                         </div>
                     ) : connectorsError ? (
                         <div className="rounded-md border border-amber-100 bg-amber-50 p-3 text-sm text-amber-700">
-                            Could not load connectors. The integration API may not be deployed yet.
+                            {t('activeConnectors.loadError')}
                         </div>
                     ) : (
                         <ConnectorTable
@@ -1371,6 +2198,7 @@ export default function IntegrationSettings() {
                             onTest={(id) => testConnector(id)}
                             onResubscribe={(id) => resubscribe(id)}
                             onSyncNow={(id) => syncNow(id)}
+                            onGoogleSetup={(id) => setGoogleSetupId(id)}
                             testingId={testingId}
                             syncingId={syncingId}
                         />
@@ -1381,7 +2209,7 @@ export default function IntegrationSettings() {
             {/* ── Add new connectors ── */}
             <Card>
                 <CardHeader className="pb-3">
-                    <CardTitle className="text-base">Add New Connector</CardTitle>
+                    <CardTitle className="text-base">{t('addConnector.title')}</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-3">
                     <div className="flex gap-2">
@@ -1394,7 +2222,7 @@ export default function IntegrationSettings() {
                             }}
                         >
                             <Plus className="mr-1 size-3.5" />
-                            Meta Lead Ads
+                            {t('addConnector.metaButton')}
                         </Button>
                         <Button
                             variant={showAddGoogle ? 'default' : 'outline'}
@@ -1405,7 +2233,7 @@ export default function IntegrationSettings() {
                             }}
                         >
                             <Plus className="mr-1 size-3.5" />
-                            Google Lead Forms
+                            {t('addConnector.googleButton')}
                         </Button>
                     </div>
 
@@ -1416,9 +2244,23 @@ export default function IntegrationSettings() {
                             onSaved={handleSaved}
                         />
                     )}
-                    {showAddGoogle && <AddGoogleForm onSaved={handleSaved} />}
+                    {showAddGoogle && (
+                        <AddGoogleForm
+                            onCreated={(connectorId) => {
+                                handleSaved();
+                                setShowAddGoogle(false);
+                                setGoogleSetupId(connectorId);
+                            }}
+                        />
+                    )}
                 </CardContent>
             </Card>
+
+            {/* ── AI Evaluation API keys (partner access, spec §6.3) ── */}
+            <EvaluationApiKeysCard />
+
+            {/* ── Catalogue API: own-website course listing + enquiries ── */}
+            <CatalogApiCard />
 
             <ConnectorEditDialog
                 connector={editingConnector}
@@ -1434,6 +2276,20 @@ export default function IntegrationSettings() {
                     })
                 }
                 isSaving={isSavingEdits}
+            />
+
+            <GoogleSetupDialog
+                connector={googleSetupConnector}
+                audienceName={
+                    googleSetupConnector
+                        ? audiences.find((a) => a.id === googleSetupConnector.audienceId)?.name
+                        : undefined
+                }
+                audiences={audiences}
+                open={!!googleSetupId}
+                onOpenChange={(o) => {
+                    if (!o) setGoogleSetupId(null);
+                }}
             />
 
             <ConnectorHealthDialog

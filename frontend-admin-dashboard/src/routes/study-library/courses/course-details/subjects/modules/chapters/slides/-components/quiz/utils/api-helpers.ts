@@ -280,6 +280,7 @@ export interface QuizSettings {
     timeLimitInMinutes?: number | null;
     marksPerQuestion?: number;
     negativeMarking?: number;
+    partialMarking?: boolean;
     passPercentage?: number | null;
     reAttemptCount?: number | null;
 }
@@ -325,6 +326,11 @@ export const createQuizSlidePayload = (
                 settings?.negativeMarking !== undefined
                     ? settings.negativeMarking
                     : (activeItem.quiz_slide?.negative_marking ?? 0),
+            // null = "unchanged": the server keeps the stored setting
+            partial_marking:
+                settings?.partialMarking !== undefined
+                    ? settings.partialMarking
+                    : (activeItem.quiz_slide?.partial_marking ?? null),
             pass_percentage:
                 settings?.passPercentage !== undefined
                     ? settings.passPercentage

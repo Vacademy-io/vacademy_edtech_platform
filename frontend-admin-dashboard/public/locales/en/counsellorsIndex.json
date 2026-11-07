@@ -1,0 +1,79 @@
+{
+    "featureDisabled": {
+        "title": "Counsellors page is not enabled",
+        "settingsLabel": "Counsellor workbench"
+    },
+    "toast": {
+        "markedActive": "Marked active",
+        "statusChangeError": "Could not change status",
+        "loadLeadsError": "Could not load open leads",
+        "markedInactive": "Marked inactive",
+        "markInactiveError": "Could not mark inactive"
+    },
+    "header": {
+        "breadcrumbFallback": "Counselling team",
+        "titleFallback": "Counsellors",
+        "subtitle": "Click any card to see that person's leads and recent activity."
+    },
+    "stats": {
+        "counsellors": "Counsellors",
+        "active": "Active",
+        "assignedLeads": "Assigned leads"
+    },
+    "search": {
+        "placeholder": "Search by name or email…"
+    },
+    "statusFilter": {
+        "all": "All",
+        "active": "Active",
+        "inactive": "Inactive"
+    },
+    "targets": {
+        "setTargets": "Set targets"
+    },
+    "viewMode": {
+        "ariaLabel": "View mode",
+        "cardTitle": "Card view",
+        "cards": "Cards",
+        "listTitle": "List view",
+        "list": "List"
+    },
+    "list": {
+        "loading": "Loading counsellors…",
+        "emptyTeam": "No counsellors in this team yet. Add them under Manage Institute → Teams → Org Chart.",
+        "emptyFiltered": "No one matches your filters."
+    },
+    "pagination": {
+        "showing": "Showing {{from}}–{{to}} of {{total}}",
+        "loadingSuffix": " · loading…"
+    },
+    "card": {
+        "unnamed": "Unnamed",
+        "assignedLeads": "Assigned leads",
+        "team": "Team",
+        "targets": "Targets",
+        "active": "Active",
+        "inactive": "Inactive",
+        "reassignLeads": "Reassign leads",
+        "markInactive": "Mark inactive",
+        "markActive": "Mark active",
+        "confirmMarkActive": "Mark {{name}} active again?"
+    },
+    "table": {
+        "colCounsellor": "Counsellor",
+        "colTeam": "Team",
+        "colRating": "Rating",
+        "colAssignedLeads": "Assigned leads",
+        "colTargets": "Targets",
+        "colStatus": "Status",
+        "colActions": "Actions"
+    },
+    "drawer": {
+        "tabLeads": "Leads ({{count}})",
+        "tabActivity": "Activity",
+        "tabCalls": "Calls",
+        "tabCoaching": "Coaching",
+        "tabPerformance": "Performance",
+        "tabTargets": "Targets"
+    }
+}

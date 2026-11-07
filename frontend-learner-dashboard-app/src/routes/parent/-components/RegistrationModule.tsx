@@ -4,6 +4,7 @@
 
 import { useState, useCallback, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { useTranslation } from "react-i18next";
 import type { ChildProfile } from "@/types/parent-portal";
 import {
   useRegistrationForm,
@@ -40,6 +41,7 @@ interface RegistrationModuleProps {
 }
 
 export function RegistrationModule({ child, title }: RegistrationModuleProps) {
+  const { t } = useTranslation("parent");
   const { data: formData, isLoading } = useRegistrationForm(child.id);
   const saveMutation = useSaveRegistrationSection();
   const submitMutation = useSubmitRegistration();
@@ -112,7 +114,10 @@ export function RegistrationModule({ child, title }: RegistrationModuleProps) {
         is_draft: true,
       },
       {
-        onSuccess: () => toast.success("Draft saved", { duration: 1500 }),
+        onSuccess: () =>
+          toast.success(t("admissionPortal.registration.draftSaved"), {
+            duration: 1500,
+          }),
       }
     );
   }, [formData, section, formValues, saveMutation]);
@@ -125,7 +130,9 @@ export function RegistrationModule({ child, title }: RegistrationModuleProps) {
         field.is_required &&
         !formValues[section.id]?.[field.id]?.trim()
       ) {
-        newErrors[field.id] = `${field.label} is required`;
+        newErrors[field.id] = t("admissionPortal.registration.fieldRequired", {
+          label: field.label,
+        });
       }
     });
     setErrors(newErrors);
@@ -134,7 +141,7 @@ export function RegistrationModule({ child, title }: RegistrationModuleProps) {
 
   const handleNext = () => {
     if (!validateSection()) {
-      toast.error("Please fill all required fields");
+      toast.error(t("admissionPortal.registration.fillRequiredFields"));
       return;
     }
     handleSaveDraft();
@@ -148,14 +155,14 @@ export function RegistrationModule({ child, title }: RegistrationModuleProps) {
 
   const handleSubmit = () => {
     if (!validateSection()) {
-      toast.error("Please fill all required fields");
+      toast.error(t("admissionPortal.registration.fillRequiredFields"));
       return;
     }
     submitMutation.mutate(
       formData!.id,
       {
         onSuccess: () => {
-          toast.success("Registration submitted successfully!");
+          toast.success(t("admissionPortal.registration.submitSuccess"));
         },
       }
     );
@@ -175,7 +182,7 @@ export function RegistrationModule({ child, title }: RegistrationModuleProps) {
           if (response.gateway_url) {
             window.open(response.gateway_url, "_self");
           } else {
-            toast.success("Payment initiated. Redirecting...");
+            toast.success(t("admissionPortal.registration.paymentInitiated"));
           }
         },
       }
@@ -224,10 +231,10 @@ export function RegistrationModule({ child, title }: RegistrationModuleProps) {
               className="mx-auto text-muted-foreground/40 mb-3"
             />
             <p className="text-sm font-medium text-muted-foreground">
-              Registration Unavailable
+              {t("admissionPortal.registration.unavailable")}
             </p>
             <p className="text-xs text-muted-foreground/60 mt-1">
-              Your registration form will be available after the inquiry review is complete.
+              {t("admissionPortal.registration.unavailableBody")}
             </p>
           </CardContent>
         </Card>
@@ -240,10 +247,11 @@ export function RegistrationModule({ child, title }: RegistrationModuleProps) {
       {/* Header */}
       <div>
         <h2 className="text-lg sm:text-xl font-bold text-foreground">
-          {title || "Student Registration"}
+          {title || t("admissionPortal.registration.heading")}
         </h2>
         <p className="text-sm text-muted-foreground mt-0.5">
-          {formData.form_title || "Please complete all required sections below."}
+          {formData.form_title ||
+            t("admissionPortal.registration.subheading")}
         </p>
       </div>
 
@@ -323,7 +331,7 @@ export function RegistrationModule({ child, title }: RegistrationModuleProps) {
           className="gap-1.5 text-xs h-9"
         >
           <CaretLeft size={14} />
-          Previous
+          {t("admissionPortal.registration.previous")}
         </Button>
 
         <div className="flex items-center gap-2">
@@ -339,7 +347,7 @@ export function RegistrationModule({ child, title }: RegistrationModuleProps) {
             ) : (
               <FloppyDisk size={12} />
             )}
-            Save Progress
+            {t("admissionPortal.registration.saveProgress")}
           </Button>
 
           {currentSection < totalSections - 1 ? (
@@ -347,7 +355,7 @@ export function RegistrationModule({ child, title }: RegistrationModuleProps) {
               onClick={handleNext}
               className="gap-1.5 text-xs h-9"
             >
-              Continue
+              {t("admissionPortal.registration.continue")}
               <CaretRight size={14} />
             </Button>
           ) : (
@@ -361,7 +369,7 @@ export function RegistrationModule({ child, title }: RegistrationModuleProps) {
               ) : (
                 <PaperPlaneTilt size={12} />
               )}
-              Submit Application
+              {t("admissionPortal.registration.submitApplication")}
             </Button>
           )}
         </div>
@@ -373,16 +381,16 @@ export function RegistrationModule({ child, title }: RegistrationModuleProps) {
           <CardHeader className="pb-3">
             <CardTitle className="text-base flex items-center gap-2">
               <CreditCard size={18} className="text-primary" />
-              Registration Fee Pending
+              {t("admissionPortal.registration.feePendingTitle")}
             </CardTitle>
             <CardDescription className="text-xs">
-              Please pay the registration fee to complete your application.
+              {t("admissionPortal.registration.feePendingBody")}
             </CardDescription>
           </CardHeader>
           <CardContent className="flex items-center justify-between gap-4">
             <div>
               <p className="text-xs text-muted-foreground uppercase tracking-wider font-semibold">
-                Amount Due
+                {t("admissionPortal.registration.amountDue")}
               </p>
               <p className="text-lg font-bold text-foreground">
                 {paymentSummary?.currency}
@@ -399,7 +407,7 @@ export function RegistrationModule({ child, title }: RegistrationModuleProps) {
               ) : (
                 <CreditCard size={16} />
               )}
-              Pay Fee Now
+              {t("admissionPortal.registration.payFeeNow")}
             </Button>
           </CardContent>
         </Card>
@@ -413,7 +421,7 @@ export function RegistrationModule({ child, title }: RegistrationModuleProps) {
           className="fixed bottom-20 lg:bottom-4 end-4 text-caption text-muted-foreground bg-card/80 backdrop-blur-sm px-3 py-1.5 rounded-full shadow-sm border flex items-center gap-1.5"
         >
           <SpinnerGap size={10} className="animate-spin" />
-          Auto‑saving...
+          {t("admissionPortal.registration.autoSaving")}
         </motion.p>
       )}
     </div>
@@ -439,6 +447,7 @@ interface FormFieldProps {
 }
 
 function FormField({ field, value, onChange, error }: FormFieldProps) {
+  const { t } = useTranslation("parent");
   return (
     <div>
       <label className="text-xs font-medium text-foreground mb-1.5 block">
@@ -452,7 +461,7 @@ function FormField({ field, value, onChange, error }: FormFieldProps) {
           onChange={(e) => onChange(e.target.value)}
           className="w-full h-9 rounded-lg border border-input bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
         >
-          <option value="">Select...</option>
+          <option value="">{t("admissionPortal.registration.selectOption")}</option>
           {field.options.map((opt) => (
             <option key={opt} value={opt}>
               {opt}

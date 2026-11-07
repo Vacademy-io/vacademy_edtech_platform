@@ -1,7 +1,8 @@
 import { ColumnDef } from '@tanstack/react-table';
+import type { TFunction } from 'i18next';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Button } from '@/components/ui/button';
-import { MoreHorizontal } from 'lucide-react';
+import { DotsThree } from '@phosphor-icons/react';
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -61,11 +62,45 @@ const getFieldFromLookup = (
     return lookup.get(identifier) || lookup.get(identifier.toLowerCase());
 };
 
+/** Translated label for a raw `enquiry_status` enum value from the backend. */
+const getEnquiryStatusLabel = (t: TFunction, status?: string | null): string => {
+    if (!status) return '-';
+    const map: Record<string, string> = {
+        NEW: t('admissionsEnquiryTableColumns:status.new'),
+        CONTACTED: t('admissionsEnquiryTableColumns:status.contacted'),
+        QUALIFIED: t('admissionsEnquiryTableColumns:status.qualified'),
+        NOT_ELIGIBLE: t('admissionsEnquiryTableColumns:status.notEligible'),
+        FOLLOW_UP: t('admissionsEnquiryTableColumns:status.followUp'),
+        CLOSED: t('admissionsEnquiryTableColumns:status.closed'),
+        CONVERTED: t('admissionsEnquiryTableColumns:status.converted'),
+        ADMITTED: t('admissionsEnquiryTableColumns:status.admitted'),
+    };
+    // Fall back to the raw value for any status the backend adds before the
+    // frontend catalog is updated, so an unknown status still renders instead
+    // of disappearing.
+    return map[status] ?? status;
+};
+
+/** Translated label for a raw `source_type` enum value from the backend. */
+const getEnquirySourceLabel = (t: TFunction, source?: string | null): string => {
+    if (!source) return '-';
+    const map: Record<string, string> = {
+        WEBSITE: t('admissionsEnquiryTableColumns:source.website'),
+        GOOGLE_ADS: t('admissionsEnquiryTableColumns:source.googleAds'),
+        FACEBOOK: t('admissionsEnquiryTableColumns:source.facebook'),
+        INSTAGRAM: t('admissionsEnquiryTableColumns:source.instagram'),
+        REFERRAL: t('admissionsEnquiryTableColumns:source.referral'),
+        OTHER: t('admissionsEnquiryTableColumns:source.other'),
+    };
+    return map[source] ?? source;
+};
+
 /**
  * Generate dynamic columns based on custom fields from the enquiry
  * Columns are organized logically but flattened (no nested column groups)
  */
 export const generateDynamicColumns = (
+    t: TFunction,
     enquiryCustomFields: Record<string, unknown>[] = [],
     fieldLookup?: Map<string, CustomFieldSetupItem>,
     selectedRows?: Set<string>,
@@ -86,7 +121,7 @@ export const generateDynamicColumns = (
                 onCheckedChange={(value) => {
                     onSelectAll?.(!!value);
                 }}
-                aria-label="Select all"
+                aria-label={t('admissionsEnquiryTableColumns:aria.selectAll')}
             />
         ),
         cell: ({ row }) => (
@@ -95,7 +130,7 @@ export const generateDynamicColumns = (
                 onCheckedChange={(value) => {
                     onRowSelectionChange?.(row.original.id, !!value);
                 }}
-                aria-label="Select row"
+                aria-label={t('admissionsEnquiryTableColumns:aria.selectRow')}
             />
         ),
         size: 50,
@@ -105,7 +140,7 @@ export const generateDynamicColumns = (
     // S.No column
     columns.push({
         accessorKey: 'index',
-        header: 'S.No',
+        header: t('admissionsEnquiryTableColumns:columns.serialNumber'),
         size: 80,
         minSize: 80,
         maxSize: 80,
@@ -118,7 +153,7 @@ export const generateDynamicColumns = (
     // Class column (moved to front for visibility)
     columns.push({
         accessorKey: 'className',
-        header: 'Class',
+        header: t('admissionsEnquiryTableColumns:columns.class'),
         size: 200,
         minSize: 180,
         maxSize: 300,
@@ -132,7 +167,9 @@ export const generateDynamicColumns = (
     // === STUDENT DETAILS GROUP ===
     columns.push({
         accessorKey: 'studentName',
-        header: `${getTerminology(RoleTerms.Learner, SystemTerms.Learner)} Name`,
+        header: t('admissionsEnquiryTableColumns:columns.studentName', {
+            learnerLabel: getTerminology(RoleTerms.Learner, SystemTerms.Learner),
+        }),
         size: 180,
         minSize: 150,
         maxSize: 250,
@@ -148,7 +185,7 @@ export const generateDynamicColumns = (
 
     columns.push({
         accessorKey: 'studentGender',
-        header: 'Gender',
+        header: t('admissionsEnquiryTableColumns:columns.gender'),
         size: 120,
         minSize: 100,
         maxSize: 150,
@@ -159,7 +196,7 @@ export const generateDynamicColumns = (
 
     columns.push({
         accessorKey: 'studentDob',
-        header: 'Date of Birth',
+        header: t('admissionsEnquiryTableColumns:columns.dateOfBirth'),
         size: 140,
         minSize: 120,
         maxSize: 180,
@@ -188,7 +225,7 @@ export const generateDynamicColumns = (
     // === PARENT DETAILS GROUP ===
     columns.push({
         accessorKey: 'parentName',
-        header: 'Parent Name',
+        header: t('admissionsEnquiryTableColumns:columns.parentName'),
         size: 180,
         minSize: 150,
         maxSize: 250,
@@ -199,7 +236,7 @@ export const generateDynamicColumns = (
 
     columns.push({
         accessorKey: 'parentEmail',
-        header: 'Parent Email',
+        header: t('admissionsEnquiryTableColumns:columns.parentEmail'),
         size: 220,
         minSize: 180,
         maxSize: 300,
@@ -210,7 +247,7 @@ export const generateDynamicColumns = (
 
     columns.push({
         accessorKey: 'parentMobile',
-        header: 'Parent Mobile',
+        header: t('admissionsEnquiryTableColumns:columns.parentMobile'),
         size: 150,
         minSize: 120,
         maxSize: 180,
@@ -222,7 +259,7 @@ export const generateDynamicColumns = (
     // === ENQUIRY DETAILS GROUP ===
     columns.push({
         accessorKey: 'trackingId',
-        header: 'Tracking ID',
+        header: t('admissionsEnquiryTableColumns:columns.trackingId'),
         size: 150,
         minSize: 120,
         maxSize: 200,
@@ -235,7 +272,7 @@ export const generateDynamicColumns = (
 
     columns.push({
         accessorKey: 'enquiryStatus',
-        header: 'Status',
+        header: t('admissionsEnquiryTableColumns:columns.status'),
         size: 150,
         minSize: 120,
         maxSize: 180,
@@ -254,7 +291,7 @@ export const generateDynamicColumns = (
                                   : 'bg-gray-100 text-gray-700'
                     }`}
                 >
-                    {row.original.enquiryStatus || '-'}
+                    {getEnquiryStatusLabel(t, row.original.enquiryStatus)}
                 </span>
             </div>
         ),
@@ -262,18 +299,20 @@ export const generateDynamicColumns = (
 
     columns.push({
         accessorKey: 'sourceType',
-        header: 'Source',
+        header: t('admissionsEnquiryTableColumns:columns.source'),
         size: 160,
         minSize: 130,
         maxSize: 200,
         cell: ({ row }) => (
-            <div className="p-3 text-sm text-neutral-700">{row.original.sourceType || '-'}</div>
+            <div className="p-3 text-sm text-neutral-700">
+                {getEnquirySourceLabel(t, row.original.sourceType)}
+            </div>
         ),
     });
 
     columns.push({
         id: 'counsellor',
-        header: 'Counsellor',
+        header: t('admissionsEnquiryTableColumns:columns.counsellor'),
         size: 200,
         minSize: 180,
         maxSize: 250,
@@ -366,7 +405,7 @@ export const generateDynamicColumns = (
     if (showLeadScore) {
         columns.push({
             accessorKey: 'leadScore',
-            header: 'Lead Interest Score',
+            header: t('admissionsEnquiryTableColumns:columns.leadInterestScore'),
             size: 160,
             minSize: 140,
             maxSize: 200,
@@ -381,15 +420,17 @@ export const generateDynamicColumns = (
     // Actions column at the end
     columns.push({
         id: 'actions',
-        header: 'Actions',
+        header: t('admissionsEnquiryTableColumns:columns.actions'),
         size: 100,
         enableResizing: false,
         cell: ({ row }) => (
             <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                     <Button variant="ghost" className="h-8 w-8 p-0">
-                        <span className="sr-only">Open menu</span>
-                        <MoreHorizontal className="h-4 w-4" />
+                        <span className="sr-only">
+                            {t('admissionsEnquiryTableColumns:aria.openMenu')}
+                        </span>
+                        <DotsThree className="h-4 w-4" />
                     </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
@@ -397,13 +438,13 @@ export const generateDynamicColumns = (
                         onClick={() => onViewDetails?.(row.original.id)}
                         className="cursor-pointer"
                     >
-                        View Details
+                        {t('admissionsEnquiryTableColumns:actionsMenu.viewDetails')}
                     </DropdownMenuItem>
                     <DropdownMenuItem
                         onClick={() => onActivityLog?.(row.original.id)}
                         className="cursor-pointer"
                     >
-                        Activity Log
+                        {t('admissionsEnquiryTableColumns:actionsMenu.activityLog')}
                     </DropdownMenuItem>
                 </DropdownMenuContent>
             </DropdownMenu>

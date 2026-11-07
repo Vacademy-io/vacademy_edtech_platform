@@ -1,0 +1,91 @@
+{
+    "waFieldOptions": {
+        "auto": "Auto (match by name)",
+        "recipientName": "Recipient's name",
+        "mentorName": "Mentor's name",
+        "studentName": "Student's name",
+        "sessionTitle": "Session title",
+        "sessionDatetime": "Session date & time",
+        "declineReason": "Decline reason (mentor request)"
+    },
+    "placeholderHint": {
+        "label": "Placeholders:"
+    },
+    "channel": {
+        "email": {
+            "label": "Email",
+            "subjectLabel": "Subject"
+        },
+        "inAppAlert": {
+            "label": "In-app alert",
+            "titleLabel": "Title"
+        },
+        "push": {
+            "label": "Push notification",
+            "titleLabel": "Title"
+        },
+        "messageLabel": "Message",
+        "usesDefault": "Uses the system default message.",
+        "customize": "Customize",
+        "resetToDefault": "Reset to system default"
+    },
+    "whatsapp": {
+        "label": "WhatsApp",
+        "requiresTemplate": "Requires an approved Meta template.",
+        "approvedTemplateLabel": "Approved template",
+        "selectTemplatePlaceholder": "Select an approved template",
+        "noTemplatesFound": "No approved WhatsApp templates found.",
+        "noTemplateMatchesSearch": "No approved template matches your search.",
+        "mapVariables": "Map template variables",
+        "mapVariablesHint": "Leave as “Auto” when the template variable name already matches a mentorship field."
+    },
+    "header": {
+        "title": "Mentorship Settings",
+        "subtitle": "Choose how learners are notified for each mentorship event."
+    },
+    "actions": {
+        "reset": "Reset",
+        "save": "Save changes",
+        "saving": "Saving…"
+    },
+    "toasts": {
+        "saveSuccess": "Mentorship settings saved",
+        "saveError": "Failed to save mentorship settings."
+    },
+    "whoToNotify": "Who to notify",
+    "learnerMessageAndChannels": "Learner message & channels",
+    "assignment": {
+        "title": "Mentor Assigned",
+        "description": "When a mentor is assigned to a student.",
+        "notifyStudent": "Notify the student",
+        "notifyMentor": "Notify the mentor"
+    },
+    "request": {
+        "title": "Mentor Request",
+        "description": "When a learner asks for a mentor from Find a mentor.",
+        "notifyMentorRequested": "Tell the mentor someone requested them",
+        "notifyStudentDeclined": "Tell the learner when you decline",
+        "approvalNote": "Approving sends nothing extra — the learner already gets “You have a new mentor” from the pairing itself.",
+        "declineMessageAndChannels": "Decline message & channels"
+    },
+    "booking": {
+        "title": "Session Booked",
+        "description": "When a learner books a 1:1 session."
+    },
+    "cancellation": {
+        "title": "Session Cancelled",
+        "description": "When a session is cancelled."
+    },
+    "sessionReminder": {
+        "title": "Session Reminder",
+        "description": "Before an upcoming session.",
+        "sendReminders": "Send session reminders",
+        "hoursBeforeSession": "Hours before the session"
+    },
+    "checkinReminder": {
+        "title": "Check-in Nudge",
+        "description": "When a learner hasn't met their mentor for a while.",
+        "sendNudges": "Send check-in nudges",
+        "daysWithoutSession": "Days without a session"
+    }
+}

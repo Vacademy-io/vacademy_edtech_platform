@@ -4,6 +4,7 @@
 import { Dialog, DialogContent, DialogTrigger } from '@/components/ui/dialog';
 import { useMutation } from '@tanstack/react-query';
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { getBatchDetailsListOfIndividualStudents } from '../-services/assessment-details-services';
 import { MyTable } from '@/components/design-system/table';
 import { step3ParticipantsListIndividualStudentColumn } from '../-utils/student-columns';
@@ -24,6 +25,7 @@ export interface AssessmentParticipantsInterface {
 }
 
 export const AssessmentParticipantsIndividualList = ({ type }: { type: string }) => {
+    const { t } = useTranslation('assessmentParticipantsIndividualList');
     const instituteId = getInstituteId();
     const { assessmentId } = Route.useParams();
     const [participantsData, setParticipantsData] = useState([]);
@@ -59,13 +61,13 @@ export const AssessmentParticipantsIndividualList = ({ type }: { type: string })
                         className="text-sm text-primary-500"
                         onClick={handleGetParticipantsDetails}
                     >
-                        View List
+                        {t('trigger.viewList')}
                     </span>
                 </div>
             </DialogTrigger>
-            <DialogContent className="no-scrollbar !m-0 flex h-[90vh] !w-full !max-w-[90vw] flex-col gap-6 overflow-y-auto !p-0">
+            <DialogContent className="no-scrollbar !m-0 flex h-[90vh] !w-full !max-w-[90vw] flex-col gap-6 overflow-y-auto !p-0">{/* design-lint-ignore: vh/vw dialog sizing matches MyDialog primitive */}
                 <h1 className="rounded-t-lg bg-primary-100 p-4 font-semibold text-primary-500">
-                    Individual Learner List
+                    {t('dialog.title')}
                 </h1>
                 {getParticipantsData.status === 'pending' ? (
                     <DashboardLoader />

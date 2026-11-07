@@ -1,0 +1,32 @@
+{
+    "headingAdd": "अवकाश जोड़ें",
+    "headingEdit": "अवकाश संपादित करें",
+    "actions": {
+        "cancel": "रद्द करें",
+        "saving": "सहेजा जा रहा है…",
+        "saveChanges": "परिवर्तन सहेजें",
+        "addHoliday": "अवकाश जोड़ें"
+    },
+    "fields": {
+        "name": "नाम",
+        "namePlaceholder": "स्वतंत्रता दिवस",
+        "date": "तिथि",
+        "type": "प्रकार",
+        "optionalHoliday": "वैकल्पिक अवकाश",
+        "optionalHolidayDescription": "कर्मचारी चुनते हैं कि इसे लेना है या नहीं, आपकी अवकाश नीति द्वारा तय सीमा तक — यह सभी के लिए बंद दिन नहीं है।",
+        "description": "विवरण",
+        "descriptionPlaceholder": "इस दिन के बारे में कर्मचारियों को जो भी जानना चाहिए"
+    },
+    "toast": {
+        "updated": "अवकाश अपडेट किया गया",
+        "added": "अवकाश जोड़ा गया"
+    },
+    "errors": {
+        "saveFailed": "अवकाश सहेजा नहीं जा सका।"
+    },
+    "validation": {
+        "nameRequired": "अवकाश को एक नाम दें",
+        "dateRequired": "तिथि चुनें",
+        "descriptionTooLong": "विवरण को 500 अक्षरों से कम रखें"
+    }
+}

@@ -1,0 +1,86 @@
+{
+    "summary": {
+        "types_one": "{{count}} type selected",
+        "types_other": "{{count}} types selected",
+        "totals": "{{questions}} questions · {{marks}} marks"
+    },
+    "actions": {
+        "expandAll": "Expand all",
+        "collapseAll": "Collapse all",
+        "clearAll": "Clear all"
+    },
+    "subtypesCount_one": "{{count}} subtype",
+    "subtypesCount_other": "{{count}} subtypes",
+    "chips": {
+        "questions_one": "{{count}} Q",
+        "questions_other": "{{count}} Q",
+        "marks_one": "{{count}} mark",
+        "marks_other": "{{count}} marks"
+    },
+    "fields": {
+        "count": "Question count",
+        "marksEach": "Marks / question"
+    },
+    "categories": {
+        "objective": "Multiple choice & objective",
+        "short": "Short answer",
+        "long": "Long answer"
+    },
+    "subtypes": {
+        "mcq_single": {
+            "label": "Single correct option",
+            "hint": "Four options, one right answer.",
+            "instruction": "Choose the correct option."
+        },
+        "mcq_multi": {
+            "label": "Multiple correct options",
+            "hint": "More than one option can be right.",
+            "instruction": "Choose all the correct options."
+        },
+        "assertion_reason": {
+            "label": "Assertion – Reason",
+            "hint": "Two statements; judge each and the link between them.",
+            "instruction": "Read the Assertion (A) and Reason (R) and choose the correct option."
+        },
+        "case_based": {
+            "label": "Case / passage based",
+            "hint": "A short passage followed by a question on it.",
+            "instruction": "Read the passage and answer the question that follows."
+        },
+        "true_false": {
+            "label": "True or false",
+            "hint": "One statement, decide if it holds.",
+            "instruction": "State whether each statement is true or false."
+        },
+        "one_word": {
+            "label": "One word / fill in the blank",
+            "hint": "A term, a value, a name.",
+            "instruction": "Answer in one word or a short phrase."
+        },
+        "numerical_short": {
+            "label": "Numerical (short)",
+            "hint": "A single-step calculation.",
+            "instruction": "Show your working."
+        },
+        "short_answer": {
+            "label": "Short answer",
+            "hint": "About 40–60 words.",
+            "instruction": "Answer in about 40–60 words."
+        },
+        "long_answer": {
+            "label": "Long answer",
+            "hint": "About 100–150 words.",
+            "instruction": "Answer in about 100–150 words."
+        },
+        "very_long_answer": {
+            "label": "Very long answer",
+            "hint": "About 250–300 words, essay style.",
+            "instruction": "Answer in about 250–300 words."
+        },
+        "numerical_long": {
+            "label": "Numerical problem",
+            "hint": "Multi-step, show every step.",
+            "instruction": "Show all the steps of your calculation."
+        }
+    }
+}

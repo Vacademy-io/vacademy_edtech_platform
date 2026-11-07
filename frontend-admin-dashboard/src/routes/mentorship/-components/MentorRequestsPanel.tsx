@@ -3,6 +3,8 @@ import {
     Check,
     ChatCenteredDots,
     Clock,
+    HourglassMedium,
+    Info,
     MagnifyingGlass,
     TrayArrowDown,
     UsersThree,
@@ -10,6 +12,8 @@ import {
     X,
 } from '@phosphor-icons/react';
 import { toast } from 'sonner';
+import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 import { MyButton } from '@/components/design-system/button';
 import { MyDialog } from '@/components/design-system/dialog';
 import { MyInput } from '@/components/design-system/input';
@@ -17,6 +21,10 @@ import { MyPagination } from '@/components/design-system/pagination';
 import { MyTable } from '@/components/design-system/table';
 import { Skeleton } from '@/components/ui/skeleton';
 import type { ColumnDef } from '@tanstack/react-table';
+import { StatStrip } from '@/components/shared/crm-enhance';
+import { instituteTerms } from '@/components/shared/crm-enhance/institute-terms';
+import { cn } from '@/lib/utils';
+import { relativeDay, timeOfDay } from '../-utils/format-session-time';
 import { useDecideMentorRequest, useMentorRequests, useMentors } from '../-hooks/use-mentorship';
 import { MentorshipPageHeader } from './MentorshipPageHeader';
 import type { MentorDTO, MentorRequestDTO } from '../-types/mentorship-types';
@@ -25,17 +33,24 @@ import { reportApiError } from '@/lib/report-api-error';
 
 const PAGE_SIZE = 20;
 
-const TABS = [
-    { key: 'PENDING', label: 'Pending' },
-    { key: 'APPROVED', label: 'Approved' },
-    { key: 'DECLINED', label: 'Declined' },
-    { key: 'CANCELLED', label: 'Withdrawn' },
-] as const;
+const buildTabs = (t: TFunction) =>
+    [
+        { key: 'PENDING' as const, label: t('tabPending') },
+        { key: 'APPROVED' as const, label: t('tabApproved') },
+        { key: 'DECLINED' as const, label: t('tabDeclined') },
+        { key: 'CANCELLED' as const, label: t('tabWithdrawn') },
+    ];
 
-function fmtDate(v?: number | null): string {
+function fmtDate(v?: number | null, locale?: string): string {
     if (!v) return '';
     const d = new Date(v);
-    return Number.isNaN(d.getTime()) ? '' : d.toLocaleString();
+    return Number.isNaN(d.getTime()) ? '' : d.toLocaleString(locale);
+}
+
+/** Whole days since a timestamp, for "waiting 3d" on a pending request. */
+function daysSince(v?: number | null): number {
+    if (!v) return 0;
+    return Math.max(0, Math.floor((Date.now() - v) / 86_400_000));
 }
 
 function initials(name?: string | null): string {
@@ -55,6 +70,9 @@ function initials(name?: string | null): string {
  * Split out of the route so it can be rendered — and tested — without a router.
  */
 export function MentorRequestsPanel({ instituteId }: { instituteId: string | undefined }) {
+    const { t, i18n } = useTranslation('mentorshipMentorRequestsPanel');
+    const { t: tFormat } = useTranslation('mentorshipFormatSessionTimeUtils');
+    const TABS = useMemo(() => buildTabs(t), [t]);
     const [status, setStatus] = useState<string>('PENDING');
     const [page, setPage] = useState(0);
     const [decide, setDecide] = useState<{ request: MentorRequestDTO; approve: boolean } | null>(
@@ -97,7 +115,7 @@ export function MentorRequestsPanel({ instituteId }: { instituteId: string | und
         () => [
             {
                 id: 'learner',
-                header: 'Learner',
+                header: t('columnLearner'),
                 size: 230,
                 cell: ({ row }) => {
                     const r = row.original;
@@ -122,14 +140,14 @@ export function MentorRequestsPanel({ instituteId }: { instituteId: string | und
             },
             {
                 id: 'mentor',
-                header: 'Requested mentor',
+                header: t('columnRequestedMentor'),
                 size: 200,
                 cell: ({ row }) => {
                     const r = row.original;
                     if (!r.mentor_id) {
                         return (
                             <span className="flex w-fit items-center gap-1 rounded-full bg-neutral-100 px-2 py-1 text-caption text-neutral-600">
-                                <UsersThree size={13} /> Any available mentor
+                                <UsersThree size={13} /> {t('anyAvailableMentor')}
                             </span>
                         );
                     }
@@ -142,7 +160,7 @@ export function MentorRequestsPanel({ instituteId }: { instituteId: string | und
                             />
                             <div className="flex min-w-0 flex-col">
                                 <span className="truncate text-body text-neutral-700">
-                                    {r.mentor_name || 'a mentor'}
+                                    {r.mentor_name || t('aMentorFallback')}
                                 </span>
                                 {typeof r.mentor_available_slots === 'number' && (
                                     <span
@@ -153,8 +171,10 @@ export function MentorRequestsPanel({ instituteId }: { instituteId: string | und
                                         }`}
                                     >
                                         {r.mentor_available_slots === 0
-                                            ? 'At their limit'
-                                            : `${r.mentor_available_slots} places left`}
+                                            ? t('atTheirLimit')
+                                            : t('placesLeft', {
+                                                  count: r.mentor_available_slots,
+                                              })}
                                     </span>
                                 )}
                             </div>
@@ -164,7 +184,7 @@ export function MentorRequestsPanel({ instituteId }: { instituteId: string | und
             },
             {
                 id: 'message',
-                header: 'Message',
+                header: t('columnMessage'),
                 size: 240,
                 cell: ({ row }) => {
                     const r = row.original;
@@ -191,7 +211,7 @@ export function MentorRequestsPanel({ instituteId }: { instituteId: string | und
                                     className="line-clamp-2 text-caption text-neutral-400"
                                     title={note}
                                 >
-                                    Note: {note}
+                                    {t('decisionNoteLabel', { note })}
                                 </span>
                             )}
                         </div>
@@ -200,24 +220,41 @@ export function MentorRequestsPanel({ instituteId }: { instituteId: string | und
             },
             {
                 id: 'requested',
-                header: 'Requested',
+                header: t('columnRequested'),
                 size: 160,
-                cell: ({ row }) => (
-                    <span className="flex items-center gap-1 text-caption text-neutral-500">
-                        <Clock size={12} /> {fmtDate(row.original.created_at)}
-                    </span>
-                ),
+                cell: ({ row }) => {
+                    const r = row.original;
+                    const waiting = r.status === 'PENDING' ? daysSince(r.created_at) : 0;
+                    return (
+                        <span
+                            className="flex flex-col"
+                            title={fmtDate(r.created_at, i18n.language)}
+                        >
+                            <span className="flex items-center gap-1 text-caption text-neutral-600">
+                                <Clock size={12} />{' '}
+                                {relativeDay(r.created_at, tFormat, i18n.language)}
+                            </span>
+                            <span className="text-caption text-neutral-400">
+                                {timeOfDay(r.created_at, i18n.language)}
+                                {waiting >= 2 && (
+                                    <b className="font-semibold text-danger-600">
+                                        {' · '}
+                                        {t('waitingDays', { count: waiting })}
+                                    </b>
+                                )}
+                            </span>
+                        </span>
+                    );
+                },
             },
             {
                 id: 'actions',
-                header: 'Decision',
+                header: t('columnDecision'),
                 size: 190,
                 cell: ({ row }) => {
                     const r = row.original;
                     if (r.status !== 'PENDING') {
-                        return (
-                            <StatusBadge status={r.status} decidedAt={r.decided_at} />
-                        );
+                        return <StatusBadge status={r.status} decidedAt={r.decided_at} />;
                     }
                     return (
                         <div className="flex items-center gap-2">
@@ -226,165 +263,229 @@ export function MentorRequestsPanel({ instituteId }: { instituteId: string | und
                                 buttonType="secondary"
                                 scale="small"
                                 onClick={() => setDecide({ request: r, approve: false })}
-                                title="Decline with an optional reason the learner sees"
+                                title={t('declineButtonTitle')}
                             >
-                                <X size={16} /> Decline
+                                <X size={16} /> {t('declineButton')}
                             </MyButton>
                             <MyButton
                                 type="button"
                                 buttonType="primary"
                                 scale="small"
                                 onClick={() => setDecide({ request: r, approve: true })}
-                                title="Pair this learner with a mentor"
+                                title={t('approveButtonTitle')}
                             >
-                                <Check size={16} /> Approve
+                                <Check size={16} /> {t('approveButton')}
                             </MyButton>
                         </div>
                     );
                 },
             },
         ],
-        []
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+        [t, i18n.language]
     );
+
+    // Pending-queue figures, from the page already loaded (the endpoint has no
+    // summary call). The total is the server's; the rest describe this page.
+    const oldest = allRequests.reduce<number | null>(
+        (min, r) => (r.created_at && (min == null || r.created_at < min) ? r.created_at : min),
+        null
+    );
+    const oldestDays = daysSince(oldest);
+    const oldestHours = oldest ? Math.max(0, Math.floor((Date.now() - oldest) / 3_600_000)) : 0;
+    const openEnded = allRequests.filter((r) => !r.mentor_id).length;
+    const learnerTerm = instituteTerms().learner.toLowerCase();
 
     return (
         <div className="flex flex-col gap-6 p-6">
             <MentorshipPageHeader
-                title="Mentor requests"
-                subtitle="Learners who asked for a mentor. Approving pairs them and notifies both sides."
+                title={t('pageTitle')}
+                subtitle={t('pageSubtitle')}
+                icon={TrayArrowDown}
             />
 
-            <div className="flex flex-wrap gap-2 border-b border-neutral-200">
-                {TABS.map((tab) => (
-                    <button
-                        key={tab.key}
-                        type="button"
-                        onClick={() => switchTab(tab.key)}
-                        className={`-mb-px border-b-2 px-3 py-2 text-body transition-colors ${
-                            status === tab.key
-                                ? 'border-primary-500 font-medium text-primary-600'
-                                : 'border-transparent text-neutral-500 hover:text-neutral-700'
-                        }`}
-                    >
-                        {tab.label}
-                        {tab.key === status && (data?.total_elements ?? 0) > 0 && (
-                            <span className="ml-1.5 rounded-full bg-neutral-100 px-1.5 py-0.5 text-caption text-neutral-500">
-                                {data?.total_elements}
-                            </span>
-                        )}
-                    </button>
-                ))}
-            </div>
+            {status === 'PENDING' && !isLoading && !isError && allRequests.length > 0 && (
+                <StatStrip
+                    items={[
+                        {
+                            key: 'waiting',
+                            icon: TrayArrowDown,
+                            tint: 'warning',
+                            label: t('kpiWaitingLabel'),
+                            value: data?.total_elements ?? allRequests.length,
+                            detail: t('kpiWaitingDetail', { count: openEnded }),
+                        },
+                        {
+                            key: 'oldest',
+                            icon: HourglassMedium,
+                            tint: oldestDays >= 2 ? 'danger' : 'info',
+                            label: t('kpiOldestLabel'),
+                            value:
+                                oldestDays >= 1
+                                    ? t('kpiOldestDays', { count: oldestDays })
+                                    : t('kpiOldestHours', { count: oldestHours }),
+                            detail: t('kpiOldestDetail'),
+                        },
+                        {
+                            key: 'openEnded',
+                            icon: UsersThree,
+                            tint: 'primary',
+                            label: t('kpiAnyMentorLabel'),
+                            value: openEnded,
+                            detail: t('kpiAnyMentorDetail'),
+                        },
+                    ]}
+                />
+            )}
 
-            <div className="flex flex-wrap items-center justify-between gap-3">
-                <div className="relative w-full sm:w-80">
-                    <MagnifyingGlass
-                        size={16}
-                        className="pointer-events-none absolute left-3 top-1/2 z-10 -translate-y-1/2 text-neutral-400"
-                    />
-                    <MyInput
-                        input={search}
-                        onChangeFunction={(e: React.ChangeEvent<HTMLInputElement>) =>
-                            setSearch(e.target.value)
-                        }
-                        inputType="text"
-                        inputPlaceholder="Search by learner, mentor or message"
-                        className="pl-9 sm:w-full"
-                    />
-                </div>
-                {query && (
-                    <span className="text-caption text-neutral-500">
-                        {requests.length} of {allRequests.length} on this page match
-                        {' · '}
+            <div className="flex flex-col gap-4 rounded-xl border border-neutral-200 bg-white p-4 shadow-sm">
+                <div className="flex flex-wrap gap-2 border-b border-neutral-200">
+                    {TABS.map((tab) => (
                         <button
+                            key={tab.key}
                             type="button"
-                            className="font-medium text-primary-500 hover:text-primary-600"
+                            onClick={() => switchTab(tab.key)}
+                            className={`-mb-px border-b-2 px-3 py-2 text-body transition-colors ${
+                                status === tab.key
+                                    ? 'border-primary-500 font-medium text-primary-600'
+                                    : 'border-transparent text-neutral-500 hover:text-neutral-700'
+                            }`}
+                        >
+                            {tab.label}
+                            {tab.key === status && (data?.total_elements ?? 0) > 0 && (
+                                <span
+                                    className={cn(
+                                        'ml-1.5 rounded-full px-1.5 py-0.5 text-caption',
+                                        tab.key === 'PENDING'
+                                            ? 'bg-warning-50 text-warning-700'
+                                            : 'bg-neutral-100 text-neutral-500'
+                                    )}
+                                >
+                                    {data?.total_elements}
+                                </span>
+                            )}
+                        </button>
+                    ))}
+                </div>
+
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                    <div className="relative w-full sm:w-80">
+                        <MagnifyingGlass
+                            size={16}
+                            className="pointer-events-none absolute left-3 top-1/2 z-10 -translate-y-1/2 text-neutral-400"
+                        />
+                        <MyInput
+                            input={search}
+                            onChangeFunction={(e: React.ChangeEvent<HTMLInputElement>) =>
+                                setSearch(e.target.value)
+                            }
+                            inputType="text"
+                            inputPlaceholder={t('searchPlaceholder')}
+                            className="pl-9 sm:w-full"
+                        />
+                    </div>
+                    {query && (
+                        <span className="text-caption text-neutral-500">
+                            {t('pageMatchCount', {
+                                visible: requests.length,
+                                count: allRequests.length,
+                            })}
+                            {' · '}
+                            <button
+                                type="button"
+                                className="font-medium text-primary-500 hover:text-primary-600"
+                                onClick={() => setSearch('')}
+                            >
+                                {t('clearButton')}
+                            </button>
+                        </span>
+                    )}
+                </div>
+
+                {isLoading ? (
+                    <div className="flex flex-col gap-3">
+                        {[1, 2, 3].map((i) => (
+                            <div
+                                key={i}
+                                className="flex items-center justify-between gap-4 rounded-lg border border-neutral-200 bg-white p-4"
+                            >
+                                <div className="flex items-center gap-3">
+                                    <Skeleton className="size-10 rounded-full" />
+                                    <div className="flex flex-col gap-1.5">
+                                        <Skeleton className="h-3.5 w-40" />
+                                        <Skeleton className="h-3 w-56" />
+                                    </div>
+                                </div>
+                                <Skeleton className="h-8 w-40" />
+                            </div>
+                        ))}
+                    </div>
+                ) : isError ? (
+                    <div className="flex flex-col items-start gap-3 rounded-lg border border-danger-100 bg-danger-50 p-4">
+                        <div className="flex items-center gap-2">
+                            <WarningCircle size={18} weight="fill" className="text-danger-600" />
+                            <p className="text-body text-danger-600">{t('errorLoadRequests')}</p>
+                        </div>
+                        <MyButton
+                            type="button"
+                            buttonType="secondary"
+                            scale="small"
+                            onClick={() => refetch()}
+                        >
+                            {t('retryButton')}
+                        </MyButton>
+                    </div>
+                ) : allRequests.length === 0 ? (
+                    <EmptyRequests status={status} />
+                ) : requests.length === 0 ? (
+                    <div className="flex flex-col items-center gap-2 rounded-lg border border-dashed border-neutral-200 p-10 text-center">
+                        <MagnifyingGlass size={32} className="text-neutral-300" />
+                        <p className="text-body font-medium text-neutral-700">
+                            {t('noRequestsMatchSearch', { search: search.trim() })}
+                        </p>
+                        <MyButton
+                            type="button"
+                            buttonType="secondary"
+                            scale="small"
                             onClick={() => setSearch('')}
                         >
-                            Clear
-                        </button>
-                    </span>
+                            {t('clearSearchButton')}
+                        </MyButton>
+                    </div>
+                ) : (
+                    <div className="flex flex-col gap-3">
+                        <div className="overflow-hidden rounded-lg border border-neutral-200 bg-white">
+                            <MyTable<MentorRequestDTO>
+                                data={{
+                                    content: requests,
+                                    total_pages: data?.total_pages ?? 1,
+                                    page_no: page,
+                                    page_size: PAGE_SIZE,
+                                    total_elements: data?.total_elements ?? requests.length,
+                                    last: data?.last ?? true,
+                                }}
+                                columns={columns}
+                                isLoading={false}
+                                error={null}
+                                currentPage={page}
+                                scrollable
+                            />
+                        </div>
+                        {!query && (data?.total_pages ?? 0) > 1 && (
+                            <MyPagination
+                                currentPage={page}
+                                totalPages={data?.total_pages ?? 1}
+                                onPageChange={setPage}
+                            />
+                        )}
+                    </div>
                 )}
             </div>
 
-            {isLoading ? (
-                <div className="flex flex-col gap-3">
-                    {[1, 2, 3].map((i) => (
-                        <div
-                            key={i}
-                            className="flex items-center justify-between gap-4 rounded-lg border border-neutral-200 bg-white p-4"
-                        >
-                            <div className="flex items-center gap-3">
-                                <Skeleton className="size-10 rounded-full" />
-                                <div className="flex flex-col gap-1.5">
-                                    <Skeleton className="h-3.5 w-40" />
-                                    <Skeleton className="h-3 w-56" />
-                                </div>
-                            </div>
-                            <Skeleton className="h-8 w-40" />
-                        </div>
-                    ))}
-                </div>
-            ) : isError ? (
-                <div className="flex flex-col items-start gap-3 rounded-lg border border-danger-100 bg-danger-50 p-4">
-                    <div className="flex items-center gap-2">
-                        <WarningCircle size={18} weight="fill" className="text-danger-600" />
-                        <p className="text-body text-danger-600">Couldn&apos;t load requests.</p>
-                    </div>
-                    <MyButton
-                        type="button"
-                        buttonType="secondary"
-                        scale="small"
-                        onClick={() => refetch()}
-                    >
-                        Retry
-                    </MyButton>
-                </div>
-            ) : allRequests.length === 0 ? (
-                <EmptyRequests status={status} />
-            ) : requests.length === 0 ? (
-                <div className="flex flex-col items-center gap-2 rounded-lg border border-dashed border-neutral-200 p-10 text-center">
-                    <MagnifyingGlass size={32} className="text-neutral-300" />
-                    <p className="text-body font-medium text-neutral-700">
-                        No requests on this page match &ldquo;{search.trim()}&rdquo;
-                    </p>
-                    <MyButton
-                        type="button"
-                        buttonType="secondary"
-                        scale="small"
-                        onClick={() => setSearch('')}
-                    >
-                        Clear search
-                    </MyButton>
-                </div>
-            ) : (
-                <div className="flex flex-col gap-3">
-                    <div className="overflow-hidden rounded-lg border border-neutral-200 bg-white shadow-sm">
-                        <MyTable<MentorRequestDTO>
-                            data={{
-                                content: requests,
-                                total_pages: data?.total_pages ?? 1,
-                                page_no: page,
-                                page_size: PAGE_SIZE,
-                                total_elements: data?.total_elements ?? requests.length,
-                                last: data?.last ?? true,
-                            }}
-                            columns={columns}
-                            isLoading={false}
-                            error={null}
-                            currentPage={page}
-                            scrollable
-                        />
-                    </div>
-                    {!query && (data?.total_pages ?? 0) > 1 && (
-                        <MyPagination
-                            currentPage={page}
-                            totalPages={data?.total_pages ?? 1}
-                            onPageChange={setPage}
-                        />
-                    )}
-                </div>
-            )}
+            <p className="flex items-start gap-2 rounded-lg border border-info-100 bg-info-50 px-3 py-2 text-caption text-neutral-600">
+                <Info size={16} className="mt-0.5 shrink-0 text-info-600" />
+                {t('queueNote', { learner: learnerTerm })}
+            </p>
 
             <DecisionDialog
                 instituteId={instituteId}
@@ -398,6 +499,7 @@ export function MentorRequestsPanel({ instituteId }: { instituteId: string | und
 }
 
 function StatusBadge({ status, decidedAt }: { status: string; decidedAt?: number | null }) {
+    const { t, i18n } = useTranslation('mentorshipMentorRequestsPanel');
     const tone =
         status === 'APPROVED'
             ? 'bg-success-50 text-success-600'
@@ -405,27 +507,34 @@ function StatusBadge({ status, decidedAt }: { status: string; decidedAt?: number
               ? 'bg-danger-50 text-danger-600'
               : 'bg-neutral-100 text-neutral-500';
     const label =
-        status === 'APPROVED' ? 'Approved' : status === 'DECLINED' ? 'Declined' : 'Withdrawn';
+        status === 'APPROVED'
+            ? t('statusApproved')
+            : status === 'DECLINED'
+              ? t('statusDeclined')
+              : t('statusWithdrawn');
     return (
         <span className="flex flex-col items-end gap-1">
             <span className={`rounded-full px-2.5 py-1 text-caption ${tone}`}>{label}</span>
             {decidedAt && (
-                <span className="text-caption text-neutral-400">{fmtDate(decidedAt)}</span>
+                <span className="text-caption text-neutral-400">
+                    {fmtDate(decidedAt, i18n.language)}
+                </span>
             )}
         </span>
     );
 }
 
 function EmptyRequests({ status }: { status: string }) {
+    const { t } = useTranslation('mentorshipMentorRequestsPanel');
     const copy =
         status === 'PENDING'
             ? {
-                  title: 'No requests waiting',
-                  body: 'When a learner asks for a mentor from Find a mentor, it lands here for approval.',
+                  title: t('emptyPendingTitle'),
+                  body: t('emptyPendingBody'),
               }
             : {
-                  title: 'Nothing here yet',
-                  body: 'Requests you decide on will show up under this tab.',
+                  title: t('emptyOtherTitle'),
+                  body: t('emptyOtherBody'),
               };
     return (
         <div className="flex flex-col items-center gap-3 rounded-lg border border-dashed border-neutral-200 p-10 text-center">
@@ -452,6 +561,7 @@ function DecisionDialog({
     decision: { request: MentorRequestDTO; approve: boolean } | null;
     onOpenChange: (open: boolean) => void;
 }) {
+    const { t } = useTranslation('mentorshipMentorRequestsPanel');
     const decide = useDecideMentorRequest();
     const mentorsQuery = useMentors(decision?.approve ? instituteId : undefined);
     const [note, setNote] = useState('');
@@ -482,7 +592,7 @@ function DecisionDialog({
     const submit = async () => {
         if (!request || !instituteId) return;
         if (needsMentorPick && !mentorId) {
-            toast.error('Pick a mentor to approve this request');
+            toast.error(t('toastPickMentorFirst'));
             return;
         }
         setSubmitting(true);
@@ -496,7 +606,7 @@ function DecisionDialog({
                     note: note.trim() || undefined,
                 },
             });
-            toast.success(approve ? 'Request approved — mentor assigned' : 'Request declined');
+            toast.success(approve ? t('toastRequestApproved') : t('toastRequestDeclined'));
             onOpenChange(false);
         } catch (error) {
             // The server rejects capacity overflows and already-decided requests with a
@@ -509,8 +619,8 @@ function DecisionDialog({
                 },
                 extra: { requestId: request.id, mentorId: mentorId || request.mentor_id },
                 fallbackMessage: approve
-                    ? 'Failed to approve the request'
-                    : 'Failed to decline the request',
+                    ? t('errorApproveRequest')
+                    : t('errorDeclineRequest'),
             });
         } finally {
             setSubmitting(false);
@@ -521,7 +631,7 @@ function DecisionDialog({
 
     return (
         <MyDialog
-            heading={approve ? 'Approve mentor request' : 'Decline mentor request'}
+            heading={approve ? t('approveDialogHeading') : t('declineDialogHeading')}
             open={!!decision}
             onOpenChange={onOpenChange}
             dialogWidth="max-w-lg"
@@ -533,7 +643,7 @@ function DecisionDialog({
                         scale="medium"
                         onClick={() => onOpenChange(false)}
                     >
-                        Cancel
+                        {t('cancelButton')}
                     </MyButton>
                     <MyButton
                         type="button"
@@ -544,11 +654,11 @@ function DecisionDialog({
                     >
                         {submitting
                             ? approve
-                                ? 'Approving…'
-                                : 'Declining…'
+                                ? t('approvingEllipsis')
+                                : t('decliningEllipsis')
                             : approve
-                              ? 'Approve & assign'
-                              : 'Decline request'}
+                              ? t('approveAndAssignButton')
+                              : t('declineRequestButton')}
                     </MyButton>
                 </div>
             }
@@ -557,19 +667,19 @@ function DecisionDialog({
                 <p className="text-body text-neutral-600">
                     {approve ? (
                         <>
-                            <b>{request.student_name || 'This learner'}</b> will be paired with{' '}
+                            <b>{request.student_name || t('thisLearnerFallback')}</b>{' '}
+                            {t('approveBodyPairedWith')}{' '}
                             {request.mentor_id ? (
-                                <b>{request.mentor_name || 'the requested mentor'}</b>
+                                <b>{request.mentor_name || t('requestedMentorFallback')}</b>
                             ) : (
-                                'the mentor you pick'
+                                t('mentorYouPick')
                             )}
-                            , and both are notified.
+                            {t('approveBodySuffix')}
                         </>
                     ) : (
                         <>
-                            <b>{request.student_name || 'This learner'}</b> will be told their
-                            request wasn&apos;t taken forward. They can request another mentor
-                            afterwards.
+                            <b>{request.student_name || t('thisLearnerFallback')}</b>{' '}
+                            {t('declineBody')}
                         </>
                     )}
                 </p>
@@ -577,7 +687,7 @@ function DecisionDialog({
                 {needsMentorPick && (
                     <div className="flex flex-col gap-2">
                         <span className="text-caption font-semibold uppercase tracking-wide text-neutral-400">
-                            Choose a mentor
+                            {t('chooseMentorLabel')}
                         </span>
                         <div className="relative">
                             <MagnifyingGlass
@@ -590,18 +700,18 @@ function DecisionDialog({
                                     setMentorSearch(e.target.value)
                                 }
                                 inputType="text"
-                                inputPlaceholder="Search by name or expertise"
+                                inputPlaceholder={t('mentorSearchPlaceholder')}
                                 className="pl-9 sm:w-full"
                             />
                         </div>
                         <div className="max-h-56 overflow-y-auto rounded-md border border-neutral-200">
                             {mentorsQuery.isLoading ? (
                                 <div className="p-4 text-body text-neutral-400">
-                                    Loading mentors…
+                                    {t('loadingMentors')}
                                 </div>
                             ) : mentors.length === 0 ? (
                                 <div className="p-4 text-body text-neutral-400">
-                                    No mentors match.
+                                    {t('noMentorsMatch')}
                                 </div>
                             ) : (
                                 mentors.map((m) => (
@@ -624,9 +734,9 @@ function DecisionDialog({
                     }
                     inputType="text"
                     inputPlaceholder={
-                        approve ? 'Optional note for your records' : 'e.g. Try Bhavya for Biology'
+                        approve ? t('noteApprovePlaceholder') : t('noteDeclinePlaceholder')
                     }
-                    label={approve ? 'Internal note (optional)' : 'Reason shown to the learner'}
+                    label={approve ? t('noteApproveLabel') : t('noteDeclineLabel')}
                     className="sm:w-full"
                 />
             </div>
@@ -643,13 +753,14 @@ function MentorOption({
     selected: boolean;
     onSelect: () => void;
 }) {
+    const { t } = useTranslation('mentorshipMentorRequestsPanel');
     const full = !!mentor.at_capacity;
     return (
         <button
             type="button"
             disabled={full}
             onClick={onSelect}
-            title={full ? 'This mentor is at capacity' : undefined}
+            title={full ? t('mentorAtCapacityTitle') : undefined}
             className={`flex w-full items-center justify-between gap-3 border-b border-neutral-100 px-3 py-2 text-left last:border-b-0 ${
                 full
                     ? 'cursor-not-allowed opacity-50'
@@ -666,7 +777,7 @@ function MentorOption({
                 />
                 <span className="flex min-w-0 flex-col">
                     <span className="truncate text-body text-neutral-700">
-                        {mentor.display_name || mentor.name || 'Mentor'}
+                        {mentor.display_name || mentor.name || t('mentorFallback')}
                     </span>
                     <span className="truncate text-caption text-neutral-400">
                         {(mentor.expertise_tags ?? []).slice(0, 3).join(' · ') ||
@@ -677,10 +788,10 @@ function MentorOption({
             </span>
             <span className="shrink-0 text-caption text-neutral-500">
                 {full
-                    ? 'Full'
+                    ? t('fullLabel')
                     : mentor.max_mentees
                       ? `${mentor.assigned_student_count ?? 0}/${mentor.max_mentees}`
-                      : `${mentor.assigned_student_count ?? 0} students`}
+                      : t('studentsCount', { count: mentor.assigned_student_count ?? 0 })}
             </span>
         </button>
     );

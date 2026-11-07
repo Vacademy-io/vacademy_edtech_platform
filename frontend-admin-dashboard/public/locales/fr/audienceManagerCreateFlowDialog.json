@@ -1,0 +1,27 @@
+{
+    "heading": "Créer un parcours d'intégration",
+    "fields": {
+        "name": {
+            "label": "Nom du parcours",
+            "placeholder": "ex. Intégration des nouveaux étudiants"
+        },
+        "description": {
+            "label": "Description",
+            "placeholder": "L'objet de ce parcours (facultatif)"
+        }
+    },
+    "actions": {
+        "cancel": "Annuler",
+        "createFlow": "Créer le parcours",
+        "creating": "Création…"
+    },
+    "validation": {
+        "nameRequired": "Le nom du parcours est requis",
+        "nameMaxLength": "Limitez-le à 150 caractères",
+        "descriptionMaxLength": "Limitez-la à 1000 caractères"
+    },
+    "toasts": {
+        "created": "Parcours d'intégration créé",
+        "createError": "Impossible de créer le parcours. Veuillez réessayer."
+    }
+}

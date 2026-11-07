@@ -1,0 +1,13 @@
+{
+    "menu": {
+        "provideReattempt": "Provide Reattempt",
+        "revaluate": "Revaluate",
+        "questionWise": "Question Wise",
+        "entireAssessment": "Entire Assessment",
+        "releaseResult": "Release Result"
+    },
+    "actionInfo": {
+        "selectedStudents_one": "{{count}} student",
+        "selectedStudents_other": "{{count}} students"
+    }
+}

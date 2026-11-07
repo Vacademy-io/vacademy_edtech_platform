@@ -1,0 +1,41 @@
+{
+  "title": "Autopay & Free Trial",
+  "autoRenew": {
+    "label": "Auto-renew paid subscriptions",
+    "description": "Charge the learner's saved payment method (UPI mandate / card) automatically at each renewal. Learners can cancel anytime."
+  },
+  "trial": {
+    "label": "Free Trial (days)",
+    "placeholder": "0",
+    "helpText": "Give access now and take the first payment after this many days. Leave 0 to charge immediately and renew each cycle."
+  },
+  "authCharge": {
+    "label": "Take an authorization charge",
+    "description": "A nominal amount debited at signup to verify the payment method and register the mandate."
+  },
+  "authAmount": {
+    "label": "Authorization amount",
+    "placeholder": "1",
+    "helpText": "Defaults to 1. Only charged on free-trial signups — without a trial the first real payment registers the mandate itself."
+  },
+  "authRefundable": {
+    "label": "Refund the authorization amount",
+    "description": "Refund it automatically once the mandate is registered. The full plan price is still charged when the trial ends."
+  },
+  "authRequiredWarning": "Free trials need an authorization charge — gateways will not register a mandate on a zero-value order, so autopay cannot be set up for trial signups without one.",
+  "maxAmount": {
+    "label": "Mandate limit (max charge per renewal)",
+    "placeholder": "Defaults to plan price",
+    "helpText": "The mandate authorizes each auto-charge up to this cap, so it must be at least the plan's recurring price. Leave blank to use the plan price; set higher to leave headroom for tax / price changes."
+  },
+  "gracePeriod": {
+    "label": "Grace period (days)",
+    "placeholder": "0",
+    "helpText": "If a renewal payment fails on the due date, keep the learner's access for this many days past expiry while we retry the charge. Access is revoked only if it's still unpaid when the grace period ends. Leave blank for no grace."
+  },
+  "totalDuration": {
+    "label": "Total subscription duration (months)",
+    "placeholder": "Ongoing",
+    "helpText": "Total length of the subscription, e.g. 12 for a 12-month course. Autopay renews until this term is reached, then stops charging — the learner keeps access until the final paid period ends. Leave blank for an open-ended subscription."
+  }
+}

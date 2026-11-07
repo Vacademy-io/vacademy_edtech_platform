@@ -13,12 +13,13 @@ import windowStateKeeper from 'electron-window-state';
 import { join } from 'path';
 import notifier from 'node-notifier';
 import { readFileSync } from 'fs';
+import { getActiveWebDirectory } from './ota';
 
 // Read flavor from electron-flavor.json to determine branding
 const flavorBranding: Record<string, { appName: string; iconBase: string }> = {
   ssdc: { appName: 'SSDC Horizon', iconBase: 'ssdc_horizon' },
   shikshanation: { appName: 'Shiksha Nation', iconBase: 'shiksha_nation' },
-  zoe: { appName: 'ZOE Edtech', iconBase: 'zoe' },
+  zoe: { appName: 'ZOE Online School', iconBase: 'zoe' },
 };
 let currentFlavor = 'ssdc';
 try {
@@ -82,6 +83,7 @@ export class ElectronCapacitorApp {
   ];
   private mainWindowState;
   private loadWebApp;
+  private static pluginsLinked = false;
   private customScheme: string;
 
   constructor(
@@ -102,8 +104,12 @@ export class ElectronCapacitorApp {
     }
 
     // Setup our web app loader, this lets us load apps like react, vue, and angular without changing their build chains.
+    // Store builds (Mac App Store / Microsoft Store) cannot self-update, so they
+    // patch by swapping the WEB BUNDLE instead — see ota.ts. This resolves to the
+    // packaged app/ directory for every other build, and also whenever no OTA
+    // bundle is staged or a staged one turns out to be unusable.
     this.loadWebApp = electronServe({
-      directory: join(app.getAppPath(), 'app'),
+      directory: getActiveWebDirectory(join(app.getAppPath(), 'app')),
       scheme: this.customScheme,
     });
 
@@ -349,8 +355,17 @@ export class ElectronCapacitorApp {
       }
     });
 
-    // Link electron plugins into the system.
-    setupCapacitorElectronPlugins();
+    // Link electron plugins into the system — ONCE per process. init() runs again
+    // from the `activate` handler after the user closes the window with the red
+    // button and re-clicks the Dock icon (macOS keeps the app alive), and
+    // setupCapacitorElectronPlugins() registers an ipcMain.handle() per plugin
+    // method; a second registration throws "Attempted to register a second
+    // handler for 'OfflineMedia-getFreeDiskSpace'", which surfaced as an
+    // unhandled-rejection dialog with no window behind it (SN Mac 1.0.1).
+    if (!ElectronCapacitorApp.pluginsLinked) {
+      setupCapacitorElectronPlugins();
+      ElectronCapacitorApp.pluginsLinked = true;
+    }
 
     // When the web app is loaded we hide the splashscreen if needed and show the mainwindow.
     this.MainWindow.webContents.on('dom-ready', () => {

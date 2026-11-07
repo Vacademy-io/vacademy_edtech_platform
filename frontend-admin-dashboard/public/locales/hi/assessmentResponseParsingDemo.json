@@ -1,0 +1,53 @@
+{
+    "header": {
+        "title": "रिस्पॉन्स पार्सिंग डेमो",
+        "subtitle": "पहले बनाम बाद में: अब रिस्पॉन्स कैसे दिखाए जाते हैं"
+    },
+    "card": {
+        "title": "प्र{{number}}. सर्वे प्रश्न {{number}}",
+        "beforeLabel": "❌ पहले (रॉ JSON):",
+        "afterLabel": "✅ बाद में (पार्स किया गया):",
+        "visited": "देखा गया",
+        "markedForReview": "समीक्षा के लिए चिह्नित",
+        "timeTaken": "लिया गया समय: {{seconds}} सेकंड",
+        "durationLeft": "शेष समय: {{seconds}} सेकंड",
+        "questionId": "प्रश्न आईडी: {{id}}"
+    },
+    "improvements": {
+        "title": "✨ मुख्य सुधार:",
+        "humanReadable": {
+            "bold": "पढ़ने में आसान रिस्पॉन्स",
+            "text": "रॉ JSON के बजाय"
+        },
+        "questionTypeBadges": {
+            "bold": "प्रश्न प्रकार बैज",
+            "text": "आसान पहचान के लिए"
+        },
+        "statusIndicators": {
+            "bold": "रिस्पॉन्स स्थिति संकेतक",
+            "text": "(देखा गया, समीक्षा के लिए चिह्नित)"
+        },
+        "timeTracking": {
+            "bold": "समय ट्रैकिंग",
+            "text": "(लिया गया समय, शेष समय)"
+        },
+        "questionIdReference": {
+            "bold": "प्रश्न आईडी संदर्भ",
+            "text": "डिबगिंग के लिए"
+        },
+        "surveySpecific": {
+            "bold": "सर्वे-विशिष्ट हैंडलिंग",
+            "text": "(सही उत्तरों की आवश्यकता नहीं)"
+        }
+    },
+    "response": {
+        "unknown": "अज्ञात",
+        "unknownType": "अज्ञात रिस्पॉन्स प्रकार",
+        "parseError": "रिस्पॉन्स डेटा पार्स करने में त्रुटि",
+        "selectedOptions": "चयनित विकल्प: {{options}}",
+        "noOptionsSelected": "कोई विकल्प नहीं चुना गया",
+        "answerValue": "उत्तर: {{value}}",
+        "noNumericAnswer": "कोई संख्यात्मक उत्तर नहीं दिया गया",
+        "noTextAnswer": "कोई टेक्स्ट उत्तर नहीं दिया गया"
+    }
+}

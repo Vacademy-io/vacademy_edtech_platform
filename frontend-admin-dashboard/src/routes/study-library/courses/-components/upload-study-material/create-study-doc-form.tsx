@@ -1,4 +1,5 @@
 import { Form, FormControl, FormField, FormItem, FormMessage } from '@/components/ui/form';
+import { useTranslation } from 'react-i18next';
 import { MyDropdown } from '../../../../../components/common/students/enroll-manually/dropdownForPackageItems';
 import { MyButton } from '@/components/design-system/button';
 import { useForm } from 'react-hook-form';
@@ -60,6 +61,7 @@ const formSchema = z.object({
 });
 
 export const CreateStudyDocForm = () => {
+    const { t } = useTranslation('studyLibraryCreateStudyDocForm');
     const {
         getCourseFromPackage,
         getSessionFromPackage,
@@ -161,37 +163,47 @@ export const CreateStudyDocForm = () => {
         {
             fieldName: 'course' as const,
             label: getTerminology(ContentTerms.Course, SystemTerms.Course),
-            placeholder: `Select ${getTerminology(ContentTerms.Course, SystemTerms.Course)}`,
+            placeholder: t('selectPlaceholder', {
+                term: getTerminology(ContentTerms.Course, SystemTerms.Course),
+            }),
             list: courseList,
         },
         {
             fieldName: 'session' as const,
             label: getTerminology(ContentTerms.Session, SystemTerms.Session),
-            placeholder: `Select ${getTerminology(ContentTerms.Session, SystemTerms.Session)}`,
+            placeholder: t('selectPlaceholder', {
+                term: getTerminology(ContentTerms.Session, SystemTerms.Session),
+            }),
             list: sessionList,
         },
         {
             fieldName: 'level' as const,
-            label: 'Year/Class',
-            placeholder: 'Select Year/Class',
+            label: t('yearClass'),
+            placeholder: t('selectPlaceholder', { term: t('yearClass') }),
             list: levelList,
         },
         {
             fieldName: 'subject' as const,
             label: getTerminology(ContentTerms.Subject, SystemTerms.Subject),
-            placeholder: `Select ${getTerminology(ContentTerms.Subject, SystemTerms.Subject)}`,
+            placeholder: t('selectPlaceholder', {
+                term: getTerminology(ContentTerms.Subject, SystemTerms.Subject),
+            }),
             list: formattedSubjectList,
         },
         {
             fieldName: 'module' as const,
             label: getTerminology(ContentTerms.Module, SystemTerms.Module),
-            placeholder: `Select ${getTerminology(ContentTerms.Module, SystemTerms.Module)}`,
+            placeholder: t('selectPlaceholder', {
+                term: getTerminology(ContentTerms.Module, SystemTerms.Module),
+            }),
             list: formattedModuleList || [],
         },
         {
             fieldName: 'chapter' as const,
             label: getTerminology(ContentTerms.Chapter, SystemTerms.Chapter),
-            placeholder: `Select ${getTerminology(ContentTerms.Chapter, SystemTerms.Chapter)}`,
+            placeholder: t('selectPlaceholder', {
+                term: getTerminology(ContentTerms.Chapter, SystemTerms.Chapter),
+            }),
             list: formattedChapterList || [],
         },
     ];
@@ -278,7 +290,7 @@ export const CreateStudyDocForm = () => {
                         scale="large"
                         className="w-full"
                     >
-                        Submit
+                        {t('submit')}
                     </MyButton>
                 </div>
             </form>

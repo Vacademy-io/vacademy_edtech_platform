@@ -46,7 +46,7 @@ public class AiCallCampaignController {
             @RequestParam(value = "preferredNumberId", required = false) String preferredNumberId,
             @RequestBody(required = false) StartBody body,
             @RequestAttribute("user") CustomUserDetails user) {
-        instituteAccessValidator.validateUserAccess(user, instituteId);
+        instituteAccessValidator.requireInstituteStaff(user, instituteId);
         return ResponseEntity.ok(campaignService.startForAudience(
                 instituteId, audienceId, dryRun, campaignId, preferredNumberId,
                 body == null ? null : body.getResponseIds(),
@@ -61,7 +61,7 @@ public class AiCallCampaignController {
             @RequestParam String instituteId,
             @RequestParam("sinceEpochMs") long sinceEpochMs,
             @RequestAttribute("user") CustomUserDetails user) {
-        instituteAccessValidator.validateUserAccess(user, instituteId);
+        instituteAccessValidator.requireInstituteStaff(user, instituteId);
         return ResponseEntity.ok(campaignService.campaignCallStatuses(
                 instituteId, audienceId, sinceEpochMs));
     }

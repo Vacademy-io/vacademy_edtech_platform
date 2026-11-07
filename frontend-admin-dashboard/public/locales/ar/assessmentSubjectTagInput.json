@@ -1,0 +1,7 @@
+{
+    "placeholder": "أضف وسم مادة/موضوع",
+    "removeTag": "إزالة {{tag}}",
+    "noTagsFound": "لم يتم العثور على وسوم.",
+    "createTag": "إنشاء ”{{value}}“",
+    "existingTags": "الوسوم الحالية"
+}

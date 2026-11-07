@@ -1,0 +1,52 @@
+{
+    "badgesStats": {
+        "loading": "Chargement des statistiques des badges…",
+        "heading": "Badges attribués",
+        "totalAwarded": "Total attribué",
+        "learnersRecognised": "Apprenants distingués",
+        "noneAwarded": "Aucun badge attribué pour le moment."
+    },
+    "badgesDialog": {
+        "title": "Badges",
+        "titleWithName": "Badges de {{name}}",
+        "noneEarned": "Aucun badge obtenu pour le moment."
+    },
+    "leaderboardRow": {
+        "viewBadges": "Voir les badges",
+        "points_one": "{{count}} pt",
+        "points_many": "{{count}} pts",
+        "points_other": "{{count}} pts"
+    },
+    "toasts": {
+        "linkCopied": "Lien du classement public copié"
+    },
+    "share": {
+        "dialogTitle": "Classement de l'établissement"
+    },
+    "viewToggle": {
+        "instituteWide": "Établissement entier",
+        "byCourse": "Par cours"
+    },
+    "batchSelector": {
+        "course": "Cours",
+        "selectCourse": "Sélectionner un cours",
+        "searchCourse": "Rechercher un cours...",
+        "session": "Session",
+        "selectSession": "Sélectionner une session",
+        "level": "Niveau",
+        "selectLevel": "Sélectionner un niveau"
+    },
+    "leaderboardPanel": {
+        "instituteWideHeading": "Classement de l'établissement",
+        "courseHeading": "Classement du cours",
+        "learnersCount_one": "{{count}} apprenant",
+        "learnersCount_many": "{{count}} apprenants",
+        "learnersCount_other": "{{count}} apprenants",
+        "copyLink": "Copier le lien",
+        "shareAriaLabel": "Partager le lien du classement public",
+        "selectToView": "Sélectionnez un cours, une session et un niveau pour voir son classement.",
+        "loading": "Chargement du classement…",
+        "noInstituteActivity": "Aucune activité d'apprenant enregistrée pour le moment.",
+        "noBatchActivity": "Aucune activité enregistrée pour ce groupe pour le moment."
+    }
+}

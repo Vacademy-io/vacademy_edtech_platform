@@ -1,0 +1,194 @@
+{
+    "header": {
+        "eyebrow": "Question bank",
+        "title": "Question Papers",
+        "description": "Generate, upload or write papers once and reuse them in any assessment. Newest papers are always at the top.",
+        "addQuestionPaper": "Add question paper"
+    },
+    "stats": {
+        "papers": "Question papers",
+        "papersHint": "Across all levels and subjects",
+        "addedThisWeek": "Added this week",
+        "addedThisWeekMore": "{{count}}+",
+        "vsLastWeek": "vs last week",
+        "sameAsLastWeek": "Same as last week",
+        "nothingNew": "Nothing new yet",
+        "favourites": "Favourites",
+        "favouritesHint": "Pinned for quick reuse",
+        "favouritesEmpty": "Star papers you reuse often"
+    },
+    "tabs": {
+        "all": "All",
+        "favourites": "Favourites"
+    },
+    "chooser": {
+        "heading": "Add a question paper",
+        "subtitle": "How would you like to start?",
+        "footnote": "Whichever way you pick, the paper lands at the top of this list when it's saved.",
+        "ai": {
+            "title": "Generate with AI",
+            "badge": "Fastest",
+            "description": "Pick an NCERT book or your own knowledge base. Choose chapters, question mix and marks — AI writes the paper and you review it before saving.",
+            "tag1": "Curriculum library",
+            "tag2": "Knowledge base",
+            "tag3": "Uses AI credits"
+        },
+        "upload": {
+            "title": "Upload a Word / HTML file",
+            "description": "Import a paper you already have. We read questions marked (1.), options (a.) and Ans: lines, and show you anything we couldn't read.",
+            "tag1": ".docx",
+            "tag2": ".html",
+            "tag3": "Images kept"
+        },
+        "manual": {
+            "title": "Create manually",
+            "description": "Start blank and type the questions yourself — MCQ, true/false, numerical, long answer, comprehension and coding.",
+            "tag1": "10 question types",
+            "tag2": "Same editor as today"
+        }
+    },
+    "form": {
+        "titleLabel": "Paper title",
+        "titlePlaceholder": "e.g. Reasoning — Weekly Test 4",
+        "titleRequired": "Give the paper a title to continue.",
+        "allOptions": "All options",
+        "cancel": "Cancel"
+    },
+    "manual": {
+        "heading": "Create a question paper",
+        "hint": "Level and subject power the filters on this page. You can change all three later.",
+        "continue": "Continue — add questions",
+        "noQuestions": "Add at least one question before saving."
+    },
+    "upload": {
+        "heading": "Upload a question paper",
+        "steps": {
+            "details": "Details & file",
+            "review": "Review questions",
+            "saved": "Saved to list"
+        },
+        "dropTitle": "Drop your .docx or .html file here",
+        "dropBrowse": "or browse from your device",
+        "uploading": "Uploading… {{percent}}%",
+        "processing": "Reading questions… large files can take up to a minute.",
+        "fileRead": "{{size}} MB · read",
+        "removeFile": "Remove file",
+        "zero": {
+            "title": "No questions found in this file",
+            "body": "The file uploaded fine, but none of its lines matched the question format. Most common reasons:",
+            "reason1": "Questions numbered 1. instead of (1.)",
+            "reason2": "All four options on one line — each (a.) needs its own line",
+            "reason3": "Answer written Ans. or Answer - instead of Ans:",
+            "seeFormat": "See the format",
+            "chooseAnother": "Choose another file"
+        },
+        "found": {
+            "cleanTitle_one": "{{count}} question found — it looks good",
+            "cleanTitle_other": "{{count}} questions found — all look good",
+            "cleanBody": "Every question has its options and a correct answer.",
+            "issuesTitle_one": "{{count}} questions found — {{flagged}} needs a look",
+            "issuesTitle_other": "{{count}} questions found — {{flagged}} need a look",
+            "issuesBody": "{{errors}} with errors, {{warnings}} with warnings. You'll choose to skip or fix them on the next step."
+        },
+        "rules": {
+            "title": "How your document should look",
+            "summary": "(1.) · (a.) · Ans: · Exp: · Tags:",
+            "question": "Question",
+            "questionRule": "(1.) then the question text",
+            "options": "Options",
+            "optionsRule": "(a.) (b.) (c.) (d.) — one per line",
+            "answer": "Answer",
+            "answerRule": "Ans: B — needs the colon",
+            "explanation": "Explanation",
+            "explanationRule": "Exp: — optional",
+            "tags": "Tags",
+            "tagsRule": "Tags: Algebra, Trigonometry — optional, comma-separated",
+            "passage": "Passage",
+            "passageRule": "(C1.) passage, then (5 C1.) for its questions",
+            "cantReadTitle": "Things we can't read",
+            "cantRead1": "Word equation objects (MathType) — type maths as text: x², √, α, ≤",
+            "cantRead2": "A bracketed letter inside an option, like \"Both (a) and (c)\"",
+            "example": "Example"
+        },
+        "trouble": {
+            "title": "Having trouble with a .docx file?",
+            "summary": "convert it to HTML",
+            "step1": "Open wordtohtml.net and upload your .docx",
+            "step2": "Turn Embed images on so diagrams come across",
+            "step3": "Download the .html file and upload it here"
+        },
+        "hints": {
+            "chooseFile": "Choose a file to continue",
+            "reading": "Reading your file…",
+            "nothing": "No questions to review",
+            "addTitle": "Add a title, then review",
+            "ready_one": "{{count}} question ready to review",
+            "ready_other": "{{count}} questions ready to review"
+        },
+        "reviewQuestions": "Review questions",
+        "review": {
+            "found": "Questions found",
+            "ready": "Ready",
+            "withErrors": "With errors",
+            "withWarnings": "With warnings",
+            "all": "All {{count}}",
+            "needsAttention": "Needs attention {{count}}",
+            "skipSummary": "{{skip}} to skip · {{kept}} will be saved",
+            "skipAll": "Skip all flagged",
+            "skipNone": "Skip none",
+            "copy": "Copy diagnostics",
+            "copied": "Diagnostic info copied to clipboard",
+            "copyFailed": "Could not copy to clipboard",
+            "error": "Error",
+            "warning": "Warning",
+            "willSkip": "Will be skipped",
+            "skip": "Skip",
+            "back": "Back",
+            "keepAll": "Keep all & fix in editor",
+            "save_one": "Save paper · {{count}} question",
+            "save_other": "Save paper · {{count}} questions"
+        }
+    },
+    "list": {
+        "sort": {
+            "NEWEST": "Newest first",
+            "OLDEST": "Oldest first",
+            "NAME": "Name A–Z",
+            "default": "(default)"
+        },
+        "groups": {
+            "today": "Today",
+            "yesterday": "Yesterday",
+            "thisWeek": "Earlier this week"
+        },
+        "createdToday": "Today, {{time}}",
+        "createdYesterday": "Yesterday, {{time}}",
+        "noLevel": "No level",
+        "noSubject": "No subject",
+        "justAdded": "Just added",
+        "addToFavourites": "Add to favourites",
+        "removeFromFavourites": "Remove from favourites",
+        "addedToFavourites": "Added to favourites",
+        "removedFromFavourites": "Removed from favourites",
+        "moreActions": "More actions",
+        "showing": "Showing {{from}}–{{to}} of {{total}} papers",
+        "clearFilters": "Clear filters",
+        "noMatchTitle": "No papers match your search or filters",
+        "noMatchHint": "Try a different name, or clear the filters.",
+        "noFavouritesTitle": "No favourites yet",
+        "noFavouritesHint": "Tap the star on any paper to pin it here. Favourites stay in All too.",
+        "emptyTitle": "No question papers yet",
+        "emptyHint": "Pick how you want to start. Every paper you add shows up here, newest first.",
+        "deleteTitle": "Delete \"{{title}}\"?",
+        "deleteBody": "It will be removed from your question bank and won't be available for new assessments.",
+        "keepIt": "Keep it",
+        "deletePaper": "Delete paper",
+        "deleted": "\"{{title}}\" deleted",
+        "undo": "Undo",
+        "restored": "Question paper restored"
+    },
+    "toasts": {
+        "added": "\"{{title}}\" added to your question bank",
+        "addedWithSkipped": "\"{{title}}\" added · {{skipped}} skipped"
+    }
+}

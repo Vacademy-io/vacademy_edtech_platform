@@ -1,0 +1,25 @@
+{
+    "header": {
+        "title": "मूल्यांकन प्रतिभागी"
+    },
+    "internalParticipants": {
+        "count_one": "{{count}} प्रतिभागी (आंतरिक)",
+        "count_other": "{{count}} प्रतिभागी (आंतरिक)"
+    },
+    "joinLink": {
+        "title": "जॉइन लिंक",
+        "privateWarning": "यह लिंक तभी काम करता है जब असेसमेंट Public हो। शेयर करने से पहले Step 3 में इसे Public करें।"
+    },
+    "qrCode": {
+        "title": "क्यूआर कोड"
+    },
+    "notifications": {
+        "title": "ईमेल के माध्यम से प्रतिभागियों को सूचित करें:",
+        "whenCreated": "जब मूल्यांकन बनाया जाए:",
+        "beforeLive": "मूल्यांकन लाइव होने से पहले:",
+        "minutesBeforeLive_one": "{{count}} मिनट",
+        "minutesBeforeLive_other": "{{count}} मिनट",
+        "whenLive": "जब मूल्यांकन लाइव हो:",
+        "whenReportsGenerated": "जब मूल्यांकन रिपोर्ट तैयार हो जाए:"
+    }
+}

@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 import { Warning, ArrowDown } from '@phosphor-icons/react';
 import {
     Dialog,
@@ -50,6 +51,7 @@ export function InvoiceNumberingChangeDialog({
     onCancel,
     onConfirm,
 }: Props) {
+    const { t } = useTranslation('settingsInvoiceNumberingChangeDialog');
     const [acknowledged, setAcknowledged] = useState(false);
     const [typed, setTyped] = useState('');
 
@@ -87,10 +89,8 @@ export function InvoiceNumberingChangeDialog({
         <Dialog open={open} onOpenChange={(isOpen) => !isOpen && onCancel()}>
             <DialogContent className="max-w-lg">
                 <DialogHeader>
-                    <DialogTitle>Change invoice numbering?</DialogTitle>
-                    <DialogDescription>
-                        New invoices will use the new format from now on.
-                    </DialogDescription>
+                    <DialogTitle>{t('title')}</DialogTitle>
+                    <DialogDescription>{t('description')}</DialogDescription>
                 </DialogHeader>
 
                 <div className="space-y-4">
@@ -100,7 +100,7 @@ export function InvoiceNumberingChangeDialog({
                     <div className="overflow-hidden rounded-md border border-neutral-200">
                         <div className="space-y-1 p-3">
                             <p className="text-caption font-medium uppercase tracking-wider text-neutral-400">
-                                Last invoice used
+                                {t('before.label')}
                             </p>
                             {/* Deliberately NOT struck through — that would read as "this
                                 invoice is void" rather than "this format is being replaced". */}
@@ -112,7 +112,7 @@ export function InvoiceNumberingChangeDialog({
                             <ArrowDown className="size-4 shrink-0 text-primary-500" />
                             <div className="min-w-0 flex-1 space-y-1">
                                 <p className="text-caption font-medium uppercase tracking-wider text-primary-600">
-                                    Next invoice will be
+                                    {t('after.label')}
                                 </p>
                                 <code className="block break-all font-mono text-body font-medium text-primary-700">
                                     {newExample}
@@ -124,19 +124,14 @@ export function InvoiceNumberingChangeDialog({
                     <p className="text-caption text-neutral-600">
                         {existingCount > 0 ? (
                             <>
-                                The{' '}
+                                {t('impact.prefix')}{' '}
                                 <span className="font-medium text-neutral-800">
                                     {existingCount.toLocaleString()}
                                 </span>{' '}
-                                {existingCount === 1 ? 'invoice' : 'invoices'} already issued keep
-                                their existing numbers — nothing is renumbered, and no number is
-                                ever reused.
+                                {t('impact.suffix', { count: existingCount })}
                             </>
                         ) : (
-                            <>
-                                This institute has not issued any invoices yet, so nothing is
-                                affected by the change.
-                            </>
+                            <>{t('impact.none')}</>
                         )}
                     </p>
 
@@ -146,11 +141,7 @@ export function InvoiceNumberingChangeDialog({
                                 className="mt-0.5 size-4 shrink-0 text-warning-600"
                                 weight="fill"
                             />
-                            <p className="text-caption text-warning-700">
-                                This format produces numbers that are not strictly sequential.
-                                Many tax authorities require invoice numbers to run in an
-                                unbroken sequence — check with your accountant before saving.
-                            </p>
+                            <p className="text-caption text-warning-700">{t('warning.text')}</p>
                         </div>
                     )}
 
@@ -160,8 +151,9 @@ export function InvoiceNumberingChangeDialog({
                     {requiresTypedConfirmation ? (
                         <div className="space-y-1.5">
                             <Label htmlFor="numbering-confirm" className="text-caption">
-                                Type <span className="font-mono font-medium">{CONFIRM_WORD}</span>{' '}
-                                to confirm
+                                {t('confirm.instructionPrefix')}{' '}
+                                <span className="font-mono font-medium">{CONFIRM_WORD}</span>{' '}
+                                {t('confirm.instructionSuffix')}
                             </Label>
                             <Input
                                 id="numbering-confirm"
@@ -182,8 +174,7 @@ export function InvoiceNumberingChangeDialog({
                                 htmlFor="numbering-ack"
                                 className="text-caption font-normal leading-snug text-neutral-600"
                             >
-                                I understand that invoices created from now on will use the new
-                                format.
+                                {t('checkbox.label')}
                             </Label>
                         </div>
                     )}
@@ -191,10 +182,10 @@ export function InvoiceNumberingChangeDialog({
 
                 <DialogFooter className="gap-2">
                     <Button variant="outline" onClick={onCancel} disabled={saving}>
-                        Cancel
+                        {t('footer.cancel')}
                     </Button>
                     <Button onClick={onConfirm} disabled={!canConfirm || saving}>
-                        {saving ? 'Saving…' : 'Save numbering'}
+                        {saving ? t('footer.saving') : t('footer.save')}
                     </Button>
                 </DialogFooter>
             </DialogContent>

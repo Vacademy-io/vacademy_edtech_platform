@@ -1,0 +1,51 @@
+{
+    "header": {
+        "mcqSingleCorrect": "MCQ (एकल सही):",
+        "mcqMultipleCorrect": "MCQ (बहु सही):",
+        "total": "कुल:"
+    },
+    "sectionDescription": {
+        "title": "सेक्शन विवरण"
+    },
+    "duration": {
+        "sectionDuration": "सेक्शन अवधि:",
+        "minutes_one": "{{count}} मिनट",
+        "minutes_other": "{{count}} मिनट"
+    },
+    "markingScheme": {
+        "marksPerQuestionDefault": "प्रति प्रश्न अंक (डिफ़ॉल्ट):",
+        "negativeMarking": "नकारात्मक अंकन:",
+        "partialMarking": "आंशिक अंकन:",
+        "cutoffMarking": "न्यूनतम उत्तीर्ण अंक:"
+    },
+    "randomization": {
+        "problemRandomization": "प्रश्न रैंडमाइज़ेशन:"
+    },
+    "table": {
+        "surveyQuestionsTitle": "सर्वेक्षण प्रश्न",
+        "adaptiveMarkingRulesTitle": "अनुकूली अंकन नियम",
+        "headers": {
+            "qno": "प्र.सं.",
+            "question": "प्रश्न",
+            "questionType": "प्रश्न प्रकार",
+            "marks": "अंक",
+            "penalty": "दंड",
+            "time": "समय"
+        },
+        "questionTypeLabels": {
+            "MCQS": "MCQ (एकल सही)",
+            "MCQM": "MCQ (बहु सही)",
+            "NUMERIC": "संख्यात्मक",
+            "CMCQS": "कॉम्प्रिहेंशन MCQ (एकल सही)",
+            "CMCQM": "कॉम्प्रिहेंशन MCQ (बहु सही)",
+            "CNUMERIC": "कॉम्प्रिहेंशन संख्यात्मक",
+            "ONE_WORD": "एक शब्द",
+            "LONG_ANSWER": "दीर्घ उत्तर",
+            "TRUE_FALSE": "सही/गलत",
+            "CODING": "कोडिंग"
+        }
+    },
+    "totalMarks": {
+        "label": "कुल अंक"
+    }
+}

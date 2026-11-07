@@ -1,0 +1,51 @@
+{
+    "heading": "Générer une question de code avec l'IA",
+    "errors": {
+        "generationFailed": "Échec de la génération. Veuillez réessayer."
+    },
+    "working": {
+        "generating": "Génération de la question…",
+        "verifying": "Vérification des cas de test par rapport à la solution de référence…",
+        "etaHint": "Cela prend généralement 10 à 30 secondes."
+    },
+    "review": {
+        "testFallbackLabel": "Test",
+        "summaryLine_one": "{{languages}} · {{count}} cas de test · modèle {{model}}",
+        "summaryLine_many": "{{languages}} · {{count}} cas de test · modèle {{model}}",
+        "summaryLine_other": "{{languages}} · {{count}} cas de test · modèle {{model}}",
+        "verifySummary_one": "Exécution de la solution de référence sur le test unique : {{passed}} correspondance(s)",
+        "verifySummary_many": "Exécution de la solution de référence sur les {{count}} tests : {{passed}} correspondance(s)",
+        "verifySummary_other": "Exécution de la solution de référence sur les {{count}} tests : {{passed}} correspondance(s)",
+        "autoCorrectSuffix_one": " · {{count}} sera corrigé automatiquement avec la sortie de référence",
+        "autoCorrectSuffix_many": " · {{count}} seront corrigés automatiquement avec la sortie de référence",
+        "autoCorrectSuffix_other": " · {{count}} seront corrigés automatiquement avec la sortie de référence",
+        "status": {
+            "verified": "(vérifié)",
+            "errored": "(erreur de la solution — sortie de l'IA conservée)",
+            "mismatch": "(non-correspondance — utilisation de la sortie de référence)"
+        },
+        "aiExpected": "Attendu par l'IA",
+        "referenceOutput": "Sortie de référence",
+        "empty": "(vide)",
+        "applyHint": "Appliquer pour charger ceci dans les onglets Problème / Cas de test / Paramètres / Code de démarrage, où vous pourrez réviser et modifier avant d'enregistrer."
+    },
+    "input": {
+        "describeLabel": "Décrivez le problème",
+        "describePlaceholder": "ex. Étant donné un tableau et une cible, renvoyez les indices des deux nombres dont la somme est égale à la cible. Une description approximative suffit — l'IA complète le format d'E/S, les tests et le code de démarrage.",
+        "languagesLabel": "Langages",
+        "difficultyLabel": "Difficulté",
+        "difficulties": {
+            "easy": "Facile",
+            "medium": "Moyen",
+            "hard": "Difficile"
+        },
+        "testCasesLabel": "Cas de test",
+        "insufficientCredits": "Crédits IA insuffisants pour cette action."
+    },
+    "footer": {
+        "startOver": "Recommencer",
+        "applyToQuestion": "Appliquer à la question",
+        "cancel": "Annuler",
+        "generate": "Générer"
+    }
+}

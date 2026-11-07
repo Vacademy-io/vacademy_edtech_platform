@@ -27,6 +27,8 @@ import vacademy.io.admin_core_service.features.fee_management.entity.InstituteFe
 import vacademy.io.admin_core_service.features.fee_management.entity.StudentFeePayment;
 import vacademy.io.admin_core_service.features.fee_management.enums.AllocationScope;
 import vacademy.io.admin_core_service.features.fee_management.repository.InstituteFeeTypePriorityRepository;
+import vacademy.io.admin_core_service.features.fee_management.repository.StudentFeePaymentRepository;
+import vacademy.io.admin_core_service.features.fee_management.service.FeeAccessGuard;
 import vacademy.io.admin_core_service.features.fee_management.service.FeeLedgerAllocationService;
 import vacademy.io.admin_core_service.features.fee_management.service.FeeTrackingService;
 import vacademy.io.admin_core_service.features.fee_management.service.StudentFeeAdjustmentService;
@@ -77,11 +79,22 @@ public class FeeTrackingAdminController {
     @Autowired
     private vacademy.io.admin_core_service.features.fee_management.service.AdjustmentHistoryQueryService adjustmentHistoryQueryService;
 
+    // Every route checks the caller first (see FeeAccessGuard for the rule): staff of the
+    // institute that owns the data; the three parent-portal reads also admit the learner
+    // and a linked guardian. Entity-only routes resolve the institute from the entity.
+    @Autowired
+    private FeeAccessGuard feeAccessGuard;
+
+    @Autowired
+    private StudentFeePaymentRepository studentFeePaymentRepository;
+
     @PostMapping("/{userId}/dues")
     public ResponseEntity<StudentDuesPageResponse> getStudentDues(
             @PathVariable("userId") String userId,
             @RequestParam("instituteId") String instituteId,
-            @RequestBody(required = false) DuesFilterRequest filter) {
+            @RequestBody(required = false) DuesFilterRequest filter,
+            @RequestAttribute("user") CustomUserDetails user) {
+        feeAccessGuard.requireStaffOrLearnerSide(user, userId, instituteId);
 
         List<StudentFeePaymentDTO> dues = feeTrackingService.getStudentDues(userId, instituteId);
 
@@ -175,14 +188,18 @@ public class FeeTrackingAdminController {
     @GetMapping("/{userId}/receipts")
     public ResponseEntity<List<StudentFeeAllocationLedgerDTO>> getStudentReceipts(
             @PathVariable("userId") String userId,
-            @RequestParam("instituteId") String instituteId) {
+            @RequestParam("instituteId") String instituteId,
+            @RequestAttribute("user") CustomUserDetails user) {
+        feeAccessGuard.requireStaff(user, instituteId);
         return ResponseEntity.ok(feeTrackingService.getStudentReceipts(userId, instituteId));
     }
 
     @GetMapping("/{userId}/invoice-receipts")
     public ResponseEntity<List<InvoiceReceiptDTO>> getStudentInvoiceReceipts(
             @PathVariable("userId") String userId,
-            @RequestParam("instituteId") String instituteId) {
+            @RequestParam("instituteId") String instituteId,
+            @RequestAttribute("user") CustomUserDetails user) {
+        feeAccessGuard.requireStaffOrLearnerSide(user, userId, instituteId);
         return ResponseEntity.ok(feeTrackingService.getStudentInvoiceReceipts(userId, instituteId));
     }
 
@@ -210,6 +227,11 @@ public class FeeTrackingAdminController {
             return ResponseEntity.badRequest().build();
         }
 
+        // The allocation touches every unpaid bill of the user, so the caller must be staff
+        // of the institute that owns all of them (and of the named institute, if any).
+        feeAccessGuard.requireStaffOfBillsInstitute(user,
+                studentFeePaymentRepository.findByUserIdAndStatusNot(userId, "PAID"), instituteId);
+
         feeLedgerAllocationService.allocatePaymentForUser(userId, amount, instituteId, allocationScope);
         return ResponseEntity.noContent().build();
     }
@@ -233,10 +255,13 @@ public class FeeTrackingAdminController {
         if (request.getAmount() == null || request.getAmount().compareTo(java.math.BigDecimal.ZERO) <= 0) {
             return ResponseEntity.badRequest().build();
         }
+        feeAccessGuard.requireStaffForBills(user, request.getInstituteId(),
+                studentFeePaymentRepository.findAllById(request.getStudentFeePaymentIds()));
 
         String invoiceId = feeLedgerAllocationService.allocatePaymentForSelectedInstallments(
                 userId, request.getInstituteId(), request.getStudentFeePaymentIds(),
-                request.getAmount(), request.getRemarks());
+                request.getAmount(), request.getRemarks(),
+                request.getPaymentDetails(), user != null ? user.getUserId() : null);
 
         if (invoiceId == null) {
             return ResponseEntity.ok(new java.util.HashMap<>());
@@ -262,6 +287,7 @@ public class FeeTrackingAdminController {
             @RequestParam("instituteId") String instituteId,
             @RequestAttribute("user") CustomUserDetails adminUser
     ) {
+        requireStaffForBill(adminUser, instituteId, request.getStudentFeePaymentId());
         AdjustmentType type = AdjustmentType.valueOf(request.getAdjustmentType().toUpperCase());
 
         StudentFeeAdjustmentService.AdjustmentResult result = studentFeeAdjustmentService.submitAdjustment(
@@ -287,6 +313,9 @@ public class FeeTrackingAdminController {
             @RequestParam("instituteId") String instituteId,
             @RequestAttribute("user") CustomUserDetails adminUser
     ) {
+        // Staff here; the service then requires one of the institute's configured
+        // FEE_ADJUSTMENT_SETTINGS.approvalRoles (which may name non-admin roles).
+        requireStaffForBill(adminUser, instituteId, request.getStudentFeePaymentId());
         AdjustmentStatus action = AdjustmentStatus.valueOf(request.getAction().toUpperCase());
 
         StudentFeeAdjustmentService.AdjustmentResult result = studentFeeAdjustmentService.reviewAdjustment(
@@ -310,6 +339,7 @@ public class FeeTrackingAdminController {
             @RequestParam("instituteId") String instituteId,
             @RequestAttribute("user") CustomUserDetails adminUser
     ) {
+        requireStaffForBill(adminUser, instituteId, request.getStudentFeePaymentId());
         StudentFeeAdjustmentService.AdjustmentResult result = studentFeeAdjustmentService.retractAdjustment(
                 request.getStudentFeePaymentId(),
                 instituteId,
@@ -330,6 +360,11 @@ public class FeeTrackingAdminController {
             @RequestParam(value = "page", defaultValue = "0") int page,
             @RequestParam(value = "size", defaultValue = "20") int size,
             @RequestAttribute("user") CustomUserDetails user) {
+        StudentFeePayment bill = studentFeePaymentRepository.findById(installmentId).orElse(null);
+        if (bill == null) {
+            return ResponseEntity.notFound().build();
+        }
+        feeAccessGuard.requireStaffOfBillsInstitute(user, List.of(bill), null);
         if (size <= 0 || size > 100) size = 20;
         if (page < 0) page = 0;
         return ResponseEntity.ok(
@@ -349,6 +384,7 @@ public class FeeTrackingAdminController {
             @RequestBody(required = false) vacademy.io.admin_core_service.features.fee_management.dto.InstituteAdjustmentHistoryFilterDTO filter,
             @RequestParam("instituteId") String instituteId,
             @RequestAttribute("user") CustomUserDetails user) {
+        feeAccessGuard.requireStaff(user, instituteId);
         return ResponseEntity.ok(
                 adjustmentHistoryQueryService.getInstituteHistory(instituteId, filter));
     }
@@ -361,8 +397,20 @@ public class FeeTrackingAdminController {
             @RequestParam("instituteId") String instituteId,
             @RequestAttribute("user") CustomUserDetails adminUser
     ) {
+        feeAccessGuard.requireStaff(adminUser, instituteId);
         List<StudentFeePaymentDTO> pending = feeTrackingService.getPendingAdjustments(instituteId);
         return ResponseEntity.ok(pending);
+    }
+
+    /**
+     * Staff of {@code instituteId}, and the bill (when it exists) belongs to that institute. A
+     * missing bill is left to the service, which reports it as not found.
+     */
+    private void requireStaffForBill(CustomUserDetails user, String instituteId, String studentFeePaymentId) {
+        List<StudentFeePayment> bills = StringUtils.hasText(studentFeePaymentId)
+                ? studentFeePaymentRepository.findById(studentFeePaymentId).map(List::of).orElse(List.of())
+                : List.of();
+        feeAccessGuard.requireStaffForBills(user, instituteId, bills);
     }
 
     private Map<String, Object> buildAdjustmentResponse(
@@ -417,6 +465,7 @@ public class FeeTrackingAdminController {
             @RequestParam("instituteId") String instituteId,
             @RequestBody FeeSearchFilterDTO filter,
             @RequestAttribute("user") CustomUserDetails user) {
+        feeAccessGuard.requireStaff(user, instituteId);
         Page<StudentFeePaymentRowDTO> results = feeTrackingService.searchFeePayments(instituteId, filter);
         return ResponseEntity.ok(results);
     }
@@ -425,6 +474,7 @@ public class FeeTrackingAdminController {
     public ResponseEntity<CollectionDashboardResponseDTO> getCollectionDashboard(
             @RequestBody CollectionDashboardRequestDTO request,
             @RequestAttribute("user") CustomUserDetails user) {
+        feeAccessGuard.requireStaff(user, request.getInstituteId());
         return ResponseEntity.ok(feeTrackingService.getCollectionDashboard(request));
     }
 
@@ -433,12 +483,14 @@ public class FeeTrackingAdminController {
             @RequestParam("studentId") String studentId,
             @RequestParam("cpoId") String cpoId,
             @RequestAttribute("user") CustomUserDetails user) {
+        feeAccessGuard.requireStaffOfPaymentOption(user, cpoId);
         return ResponseEntity.ok(feeTrackingService.getPaymentDetails(studentId, cpoId));
     }
     @GetMapping("/fee-types")
     public ResponseEntity<List<Map<String, String>>> getFeeTypesForInstitute(
             @RequestParam("instituteId") String instituteId,
             @RequestAttribute("user") CustomUserDetails user) {
+        feeAccessGuard.requireStaff(user, instituteId);
         return ResponseEntity.ok(feeTrackingService.getFeeTypesForInstitute(instituteId));
     }
 
@@ -450,6 +502,7 @@ public class FeeTrackingAdminController {
             @RequestParam("instituteId") String instituteId,
             @RequestBody SetPriorityRequest request,
             @RequestAttribute("user") CustomUserDetails user) {
+        feeAccessGuard.requireStaff(user, instituteId);
 
         if (request.getScope() == null || request.getPriorities() == null) {
             return ResponseEntity.badRequest().build();
@@ -479,7 +532,9 @@ public class FeeTrackingAdminController {
     @GetMapping("/priority")
     public ResponseEntity<List<InstituteFeeTypePriorityDTO>> getFeeTypePriority(
             @RequestParam("instituteId") String instituteId,
-            @RequestParam("scope") String scope) {
+            @RequestParam("scope") String scope,
+            @RequestAttribute("user") CustomUserDetails user) {
+        feeAccessGuard.requireStaff(user, instituteId);
 
         String scopeStr;
         try {
@@ -510,11 +565,13 @@ public class FeeTrackingAdminController {
      * @return JSON with download_url, invoice_number, file_name
      */
     @GetMapping("/receipt/{invoiceId}/download-url")
-    public ResponseEntity<?> downloadReceiptPdf(@PathVariable("invoiceId") String invoiceId) {
+    public ResponseEntity<?> downloadReceiptPdf(@PathVariable("invoiceId") String invoiceId,
+                                                @RequestAttribute("user") CustomUserDetails user) {
         Invoice invoice = invoiceRepository.findById(invoiceId).orElse(null);
         if (invoice == null) {
             return ResponseEntity.notFound().build();
         }
+        feeAccessGuard.requireStaffOrLearnerSide(user, invoice.getUserId(), invoice.getInstituteId());
 
         String pdfFileId = invoice.getPdfFileId();
         if (!StringUtils.hasText(pdfFileId)) {
@@ -542,13 +599,17 @@ public class FeeTrackingAdminController {
      */
     @GetMapping("/installment/{installmentId}/receipt-url")
     public ResponseEntity<?> getReceiptUrlForInstallment(
-            @PathVariable("installmentId") String installmentId) {
+            @PathVariable("installmentId") String installmentId,
+            @RequestAttribute("user") CustomUserDetails user) {
         List<InvoiceLineItem> lineItems = invoiceLineItemRepository.findBySourceId(installmentId);
         if (lineItems.isEmpty()) {
             return ResponseEntity.notFound().build();
         }
 
         Invoice invoice = lineItems.get(0).getInvoice();
+        if (invoice != null) {
+            feeAccessGuard.requireStaff(user, invoice.getInstituteId());
+        }
         if (invoice == null || !StringUtils.hasText(invoice.getPdfFileId())) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND)
                     .body(Map.of("error", "No receipt PDF found for this installment"));
@@ -576,13 +637,16 @@ public class FeeTrackingAdminController {
     public ResponseEntity<?> generateInvoiceForInstallments(
             @PathVariable("userId") String userId,
             @RequestParam("instituteId") String instituteId,
-            @RequestBody Map<String, Object> request) {
+            @RequestBody Map<String, Object> request,
+            @RequestAttribute("user") CustomUserDetails user) {
 
         @SuppressWarnings("unchecked")
         List<String> installmentIds = (List<String>) request.get("installment_ids");
         if (installmentIds == null || installmentIds.isEmpty()) {
             return ResponseEntity.badRequest().body(Map.of("error", "installment_ids is required"));
         }
+        feeAccessGuard.requireStaffForBills(user, instituteId,
+                studentFeePaymentRepository.findAllById(installmentIds));
 
         String pdfFileId = schoolFeeReceiptService.generateInvoiceForInstallments(
                 userId, instituteId, installmentIds);

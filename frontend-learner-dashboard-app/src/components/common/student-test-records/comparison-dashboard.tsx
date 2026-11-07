@@ -25,6 +25,8 @@ import {
   DropdownMenuItem,
 } from "@/components/ui/dropdown-menu";
 import { toast } from "sonner";
+import { useTranslation } from "react-i18next";
+import type { TFunction } from "i18next";
 import {
   STUDENT_REPORT_DETAIL_URL,
   GET_QUESTIONS_OF_SECTIONS,
@@ -55,30 +57,30 @@ import { playIllustrations } from "@/assets/play-illustrations";
 // Verdict thresholds mirror getPerformanceLevel in test-report-dialog.tsx.
 // Play-mode variants restate the verdict in play status tokens
 // (success / warn / danger) on top of the default semantic chips.
-function getVerdict(pct: number): {
+function getVerdict(pct: number, t: TFunction): {
   label: string;
   className: string;
 } {
   if (pct >= 90)
     return {
-      label: "Excellent",
+      label: t("common.excellent"),
       className:
         "border-success-200 bg-success-50 text-success-700 [.ui-play_&]:border-transparent [.ui-play_&]:bg-play-success-soft [.ui-play_&]:font-black [.ui-play_&]:text-play-success-soft-ink",
     };
   if (pct >= 60)
     return {
-      label: "Good",
+      label: t("common.good"),
       className:
         "border-success-200 bg-success-50 text-success-700 [.ui-play_&]:border-transparent [.ui-play_&]:bg-play-success-soft [.ui-play_&]:font-black [.ui-play_&]:text-play-success-soft-ink",
     };
   if (pct >= 50)
     return {
-      label: "Average",
+      label: t("common.average"),
       className:
         "border-warning-200 bg-warning-50 text-warning-700 [.ui-play_&]:border-transparent [.ui-play_&]:bg-play-warn [.ui-play_&]:font-black [.ui-play_&]:text-play-ink",
     };
   return {
-    label: "Low",
+    label: t("common.low"),
     className:
       "border-danger-200 bg-danger-50 text-danger-700 [.ui-play_&]:border-transparent [.ui-play_&]:bg-play-danger [.ui-play_&]:font-black [.ui-play_&]:text-white",
   };
@@ -136,6 +138,7 @@ export function ComparisonDashboard({
   instituteId,
   evaluationType,
 }: ComparisonDashboardProps) {
+  const { t } = useTranslation("testRecords");
   // Manual assessments have no per-question learner responses, so the answer
   // review is meaningless there — hide it entirely.
   //
@@ -230,7 +233,7 @@ export function ComparisonDashboard({
     opts: { remark?: string | null; title: string; fallbackName: string }
   ) => {
     if (!fileId || openingFileId) {
-      if (!fileId) toast.error("File not available.");
+      if (!fileId) toast.error(t("comparisonDashboard.errors.fileNotAvailable"));
       return;
     }
     try {
@@ -239,7 +242,7 @@ export function ComparisonDashboard({
       // actual format (the admin may upload a PDF or an image).
       const detail = await getFileDetail(fileId);
       if (!detail?.url) {
-        toast.error("Could not open the file.");
+        toast.error(t("comparisonDashboard.errors.openFileFailed"));
         return;
       }
       setViewerUrl(detail.url);
@@ -249,7 +252,7 @@ export function ComparisonDashboard({
       setViewerTitle(opts.title);
       setViewerOpen(true);
     } catch {
-      toast.error("Could not open the file.");
+      toast.error(t("comparisonDashboard.errors.openFileFailed"));
     } finally {
       setOpeningFileId(null);
     }
@@ -274,7 +277,7 @@ export function ComparisonDashboard({
       document.body.removeChild(link);
       window.URL.revokeObjectURL(url);
     } catch {
-      toast.error("Could not download the report.");
+      toast.error(t("comparisonDashboard.errors.downloadReportFailed"));
     } finally {
       setDownloadingReport(false);
     }
@@ -411,8 +414,8 @@ export function ComparisonDashboard({
     return (
       <EmptyState
         icon={ChartBar}
-        title="No comparison data yet"
-        description="Batch comparison appears here once your attempt has been evaluated and results are released."
+        title={t("comparisonDashboard.empty.title")}
+        description={t("comparisonDashboard.empty.description")}
       />
     );
   }
@@ -449,14 +452,18 @@ export function ComparisonDashboard({
     achieved != null && maxMarks != null
       ? Math.round((achieved / maxMarks) * 100)
       : null;
-  const verdict = scorePct != null ? getVerdict(scorePct) : null;
+  const verdict = scorePct != null ? getVerdict(scorePct, t) : null;
   // "Pass" mirrors the success-tier verdicts (Good / Excellent) above.
   const isPassVerdict = scorePct != null && scorePct >= 60;
 
   // One quiet metadata line under the report title.
   const metaParts = [
-    start_time ? `Attempted ${formatDateTime(start_time)}` : "",
-    submit_time ? `Submitted ${formatTime(submit_time)}` : "",
+    start_time
+      ? t("comparisonDashboard.masthead.attempted", { date: formatDateTime(start_time) })
+      : "",
+    submit_time
+      ? t("comparisonDashboard.masthead.submitted", { time: formatTime(submit_time) })
+      : "",
   ].filter(Boolean);
 
   // Narrative summary, like the printed report's "Summary of your
@@ -478,14 +485,20 @@ export function ComparisonDashboard({
   const summaryItems: { lead: string; text: string }[] = [];
   if (bestSection && bestSection.delta > 0) {
     summaryItems.push({
-      lead: "Your strengths.",
-      text: `${bestSection.name} is your best area — about ${round1(bestSection.delta)} marks above the class average.`,
+      lead: t("comparisonDashboard.summary.strengthsLead"),
+      text: t("comparisonDashboard.summary.strengthsText", {
+        section: bestSection.name,
+        delta: round1(bestSection.delta),
+      }),
     });
   }
   if (weakSection && weakSection.delta < 0) {
     summaryItems.push({
-      lead: "Key area to work on.",
-      text: `${weakSection.name} — about ${round1(Math.abs(weakSection.delta))} marks below the class average, the largest gap on this paper.`,
+      lead: t("comparisonDashboard.summary.weaknessLead"),
+      text: t("comparisonDashboard.summary.weaknessText", {
+        section: weakSection.name,
+        delta: round1(Math.abs(weakSection.delta)),
+      }),
     });
   }
   if (
@@ -496,8 +509,16 @@ export function ComparisonDashboard({
   ) {
     const faster = student_duration < average_duration;
     summaryItems.push({
-      lead: "Your pace.",
-      text: `You finished in ${formatDuration(student_duration)}, ${faster ? "ahead of" : "against"} a class average of ${formatDuration(Math.round(average_duration))}.`,
+      lead: t("comparisonDashboard.summary.paceLead"),
+      text: faster
+        ? t("comparisonDashboard.summary.paceTextAhead", {
+            duration: formatDuration(student_duration),
+            avgDuration: formatDuration(Math.round(average_duration)),
+          })
+        : t("comparisonDashboard.summary.paceTextBehind", {
+            duration: formatDuration(student_duration),
+            avgDuration: formatDuration(Math.round(average_duration)),
+          }),
     });
   }
 
@@ -507,7 +528,7 @@ export function ComparisonDashboard({
       <header className="flex flex-col justify-between gap-4 border-b-2 border-border pb-4 md:flex-row md:items-end">
         <div className="min-w-0">
           <p className="text-3xs font-semibold uppercase tracking-widest text-muted-foreground">
-            Individual Performance Report
+            {t("comparisonDashboard.masthead.reportType")}
           </p>
           <h1 className="mt-1 text-h3 font-semibold text-foreground sm:text-h2">
             {assessmentName}
@@ -521,7 +542,7 @@ export function ComparisonDashboard({
         {isManual ? (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="outline" size="icon" aria-label="Report options">
+              <Button variant="outline" size="icon" aria-label={t("comparisonDashboard.reportOptionsAriaLabel")}>
                 <DotsThreeVertical className="h-5 w-5" weight="bold" />
               </Button>
             </DropdownMenuTrigger>
@@ -531,13 +552,13 @@ export function ComparisonDashboard({
                 disabled={downloadingReport}
               >
                 <DownloadSimple className="me-2 h-4 w-4" />
-                {downloadingReport ? "Downloading…" : "Download report"}
+                {downloadingReport ? t("common.downloadingEllipsis") : t("comparisonDashboard.menu.downloadReport")}
               </DropdownMenuItem>
               <DropdownMenuItem
                 onClick={() =>
                   openInAppViewer(reportFiles.evaluated, {
                     remark: reportFiles.remark,
-                    title: "Evaluated answer",
+                    title: t("evaluatedReportDialog.defaultTitle"),
                     fallbackName: `${assessmentName || "assessment"} - evaluated`,
                   })
                 }
@@ -547,12 +568,12 @@ export function ComparisonDashboard({
                 }
               >
                 <Eye className="me-2 h-4 w-4" />
-                View evaluated
+                {t("comparisonDashboard.menu.viewEvaluated")}
               </DropdownMenuItem>
               <DropdownMenuItem
                 onClick={() =>
                   openInAppViewer(reportFiles.submitted, {
-                    title: "Your submission",
+                    title: t("comparisonDashboard.menu.yourSubmission"),
                     fallbackName: `${assessmentName || "assessment"} - submission`,
                   })
                 }
@@ -562,7 +583,7 @@ export function ComparisonDashboard({
                 }
               >
                 <FileArrowDown className="me-2 h-4 w-4" />
-                View submitted
+                {t("comparisonDashboard.menu.viewSubmitted")}
               </DropdownMenuItem>
               {/* Only when the institute uploaded one — "Download report"
                   above already covers the generated report. */}
@@ -570,20 +591,20 @@ export function ComparisonDashboard({
                 <DropdownMenuItem
                   onClick={() =>
                     openInAppViewer(reportFiles.report, {
-                      title: "Result report",
+                      title: t("common.resultReport"),
                       fallbackName: `${assessmentName || "assessment"} - report`,
                     })
                   }
                   disabled={openingFileId === reportFiles.report}
                 >
                   <Eye className="me-2 h-4 w-4" />
-                  View result report
+                  {t("comparisonDashboard.menu.viewResultReport")}
                 </DropdownMenuItem>
               )}
               {reportFiles.submitted && (
                 <DropdownMenuItem onClick={() => setAnnotatedOpen(true)}>
                   <Sparkle className="me-2 h-4 w-4" />
-                  View annotated copy
+                  {t("comparisonDashboard.menu.viewAnnotatedCopy")}
                 </DropdownMenuItem>
               )}
             </DropdownMenuContent>
@@ -609,10 +630,10 @@ export function ComparisonDashboard({
             "[.ui-vibrant_&]:bg-primary-50"
           )}
         >
-          <CardContent className="flex h-full flex-col justify-between gap-2 p-4">
+          <CardContent className="flex h-full flex-col justify-between gap-2 p-card">
             <div className="flex items-center justify-between gap-2">
               <span className="text-3xs font-semibold uppercase tracking-widest text-muted-foreground [.ui-play_&]:text-play-ink/70">
-                Your score
+                {t("comparisonDashboard.stats.yourScore")}
               </span>
               {isPassVerdict && (
                 <playIllustrations.Winners
@@ -649,29 +670,33 @@ export function ComparisonDashboard({
           </CardContent>
         </Card>
         <StatTile
-          label="Class rank"
+          label={t("comparisonDashboard.stats.classRank")}
           value={student_rank ? `#${student_rank}` : "-"}
-          detail={total_participants ? `of ${total_participants}` : undefined}
+          detail={
+            total_participants
+              ? t("comparisonDashboard.stats.of", { count: total_participants })
+              : undefined
+          }
         />
         <StatTile
-          label="Percentile"
+          label={t("common.percentile")}
           value={
             student_percentile != null ? `${round1(student_percentile)}` : "-"
           }
         />
         <StatTile
-          label="Accuracy"
+          label={t("common.accuracy")}
           value={
             student_accuracy != null ? `${Math.round(student_accuracy)}%` : "-"
           }
           detail={
             class_accuracy != null
-              ? `class ${Math.round(class_accuracy)}%`
+              ? t("comparisonDashboard.stats.classAccuracy", { pct: Math.round(class_accuracy) })
               : undefined
           }
         />
         <StatTile
-          label="Time taken"
+          label={t("common.timeTaken")}
           value={
             student_duration != null && student_duration > 0
               ? formatDuration(student_duration)
@@ -679,7 +704,9 @@ export function ComparisonDashboard({
           }
           detail={
             average_duration != null && average_duration > 0
-              ? `class ${formatDuration(Math.round(average_duration))}`
+              ? t("comparisonDashboard.stats.classDuration", {
+                  duration: formatDuration(Math.round(average_duration)),
+                })
               : undefined
           }
         />
@@ -688,11 +715,11 @@ export function ComparisonDashboard({
       {/* Where you stand — overall score band */}
       {maxMarks != null && achieved != null && (
         <ReportSection
-          title={`Where you stand — overall (out of ${maxMarks})`}
+          title={t("comparisonDashboard.sections.whereYouStand", { maxMarks })}
           aside={
             total_participants ? (
               <span className="text-3xs uppercase tracking-wide text-muted-foreground">
-                {total_participants} students
+                {t("common.studentsCount", { count: total_participants })}
               </span>
             ) : undefined
           }
@@ -709,7 +736,7 @@ export function ComparisonDashboard({
 
       {/* Narrative summary */}
       {summaryItems.length > 0 && (
-        <ReportSection title="Summary of your performance">
+        <ReportSection title={t("comparisonDashboard.sections.summaryTitle")}>
           <ul className="space-y-2">
             {summaryItems.map((item) => (
               <li key={item.lead} className="flex gap-2 text-body text-foreground">
@@ -728,54 +755,58 @@ export function ComparisonDashboard({
       )}
 
       {/* You vs class average */}
-      <ReportSection title="You vs class average">
+      <ReportSection title={t("comparisonDashboard.sections.vsClassAverage")}>
         <div className="grid grid-cols-1 gap-x-8 gap-y-5 md:grid-cols-3">
           <ComparisonBar
-            label="Marks"
+            label={t("common.marks")}
             yourValue={student_marks}
             avgValue={average_marks}
             maxValue={total_marks || highest_marks || 100}
-            yourLabel={`You ${round1(student_marks || 0)}`}
-            avgLabel={`Avg ${round1(average_marks || 0)}`}
+            yourLabel={t("comparisonDashboard.compare.you", { value: round1(student_marks || 0) })}
+            avgLabel={t("comparisonDashboard.compare.avg", { value: round1(average_marks || 0) })}
           />
           {student_accuracy != null && (
             <ComparisonBar
-              label="Accuracy"
+              label={t("common.accuracy")}
               yourValue={student_accuracy}
               avgValue={class_accuracy || 0}
               maxValue={100}
-              yourLabel={`You ${Math.round(student_accuracy)}%`}
-              avgLabel={`Avg ${class_accuracy != null ? Math.round(class_accuracy) : "-"}%`}
+              yourLabel={t("comparisonDashboard.compare.you", { value: `${Math.round(student_accuracy)}%` })}
+              avgLabel={t("comparisonDashboard.compare.avg", {
+                value: `${class_accuracy != null ? Math.round(class_accuracy) : "-"}%`,
+              })}
             />
           )}
           {student_duration != null && student_duration > 0 && (
             <ComparisonBar
-              label="Time taken"
+              label={t("common.timeTaken")}
               yourValue={student_duration}
               avgValue={average_duration}
               maxValue={
                 Math.max(student_duration || 0, average_duration || 0) * 1.2
               }
-              yourLabel={`You ${formatDuration(student_duration)}`}
-              avgLabel={`Avg ${average_duration ? formatDuration(Math.round(average_duration)) : "-"}`}
+              yourLabel={t("comparisonDashboard.compare.you", { value: formatDuration(student_duration) })}
+              avgLabel={t("comparisonDashboard.compare.avg", {
+                value: average_duration ? formatDuration(Math.round(average_duration)) : "-",
+              })}
             />
           )}
         </div>
         <div className="mt-4 flex flex-wrap gap-x-6 gap-y-1 border-t border-border/60 pt-3 text-caption text-muted-foreground">
           <span>
-            Highest{" "}
+            {t("comparisonDashboard.stats.highest")}{" "}
             <span className="font-semibold tabular-nums text-foreground">
               {highest_marks != null ? round1(highest_marks) : "-"}
             </span>
           </span>
           <span>
-            Lowest{" "}
+            {t("comparisonDashboard.stats.lowest")}{" "}
             <span className="font-semibold tabular-nums text-foreground">
               {lowest_marks != null ? round1(lowest_marks) : "-"}
             </span>
           </span>
           <span>
-            Participants{" "}
+            {t("comparisonDashboard.stats.participants")}{" "}
             <span className="font-semibold tabular-nums text-foreground">
               {total_participants || "-"}
             </span>
@@ -785,7 +816,7 @@ export function ComparisonDashboard({
 
       {/* Section-Wise Performance */}
       {section_wise_comparison && section_wise_comparison.length > 0 && (
-        <ReportSection title="Section-wise performance">
+        <ReportSection title={t("comparisonDashboard.sections.sectionWisePerformance")}>
           <SectionComparisonTable
             sections={section_wise_comparison}
             responseCounts={sectionResponseCounts}
@@ -795,7 +826,7 @@ export function ComparisonDashboard({
 
       {/* Marks Distribution */}
       {marks_distribution && marks_distribution.length > 0 && (
-        <ReportSection title="Marks distribution — all students">
+        <ReportSection title={t("comparisonDashboard.sections.marksDistribution")}>
           <MarksDistributionChart
             distribution={marks_distribution}
             studentMarks={student_marks}
@@ -807,12 +838,14 @@ export function ComparisonDashboard({
       {/* Smart Leaderboard */}
       {leaderboard && (
         <ReportSection
-          title="Leaderboard — your position"
+          title={t("comparisonDashboard.sections.leaderboardPosition")}
           aside={
             leaderboard.student_rank != null ? (
               <span className="text-3xs uppercase tracking-wide text-muted-foreground">
-                Rank #{leaderboard.student_rank} of{" "}
-                {leaderboard.total_participants}
+                {t("comparisonDashboard.leaderboard.rankOf", {
+                  rank: leaderboard.student_rank,
+                  total: leaderboard.total_participants,
+                })}
               </span>
             ) : undefined
           }
@@ -822,19 +855,19 @@ export function ComparisonDashboard({
               <thead>
                 <tr className="border-b-2 border-border">
                   <th className="px-3 py-2 text-start text-3xs font-semibold uppercase tracking-widest text-muted-foreground">
-                    Rank
+                    {t("comparisonDashboard.leaderboard.rank")}
                   </th>
                   <th className="px-3 py-2 text-start text-3xs font-semibold uppercase tracking-widest text-muted-foreground">
-                    Student
+                    {t("comparisonDashboard.leaderboard.student")}
                   </th>
                   <th className="px-3 py-2 text-end text-3xs font-semibold uppercase tracking-widest text-muted-foreground">
-                    Marks
+                    {t("common.marks")}
                   </th>
                   <th className="px-3 py-2 text-end text-3xs font-semibold uppercase tracking-widest text-muted-foreground">
-                    Time
+                    {t("comparisonDashboard.leaderboard.time")}
                   </th>
                   <th className="px-3 py-2 text-end text-3xs font-semibold uppercase tracking-widest text-muted-foreground">
-                    Percentile
+                    {t("common.percentile")}
                   </th>
                 </tr>
               </thead>
@@ -871,19 +904,19 @@ export function ComparisonDashboard({
 
       {/* Answer Review — lazy loaded. Shown for MANUAL attempts too so learners
           see their per-question marks, AI/teacher feedback and criteria. */}
-      {!answerReviewOpen ? (
-        <ReportSection title="Review & practice">
+      {/* The institute can hide every per-question item for an assessment (report option). */}
+      {data?.question_wise_hidden ? null : !answerReviewOpen ? (
+        <ReportSection title={t("comparisonDashboard.sections.reviewAndPractice")}>
           <div className="flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
             <p className="text-body text-muted-foreground">
-              Every question with your response, the correct answer, and how the
-              rest of the class answered.
+              {t("comparisonDashboard.review.everyQuestionDesc")}
             </p>
             <Button
               onClick={loadAnswerReview}
               disabled={answerReviewLoading}
               className="whitespace-nowrap"
             >
-              {answerReviewLoading ? "Loading…" : "View Answer Review"}
+              {answerReviewLoading ? t("common.loadingEllipsis") : t("comparisonDashboard.review.viewAnswerReview")}
             </Button>
           </div>
         </ReportSection>
@@ -895,35 +928,40 @@ export function ComparisonDashboard({
               reviewInsights.expertise.length > 0) && (
               <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                 <ReportSection
-                  title={`Easy misses — ${reviewInsights.easyMisses.length || "none"}`}
+                  title={
+                    reviewInsights.easyMisses.length > 0
+                      ? t("comparisonDashboard.sections.easyMissesCount", { count: reviewInsights.easyMisses.length })
+                      : t("comparisonDashboard.sections.easyMissesNone")
+                  }
                   className="border-t-2 border-t-danger-400"
                 >
                   {reviewInsights.easyMisses.length > 0 ? (
                     <InsightList
                       items={reviewInsights.easyMisses}
-                      pctSuffix="of class got it right"
+                      pctSuffix={t("comparisonDashboard.review.pctOfClassCorrect")}
                     />
                   ) : (
                     <p className="text-body text-muted-foreground">
-                      You did not miss any question that most of the class
-                      answered correctly — the marks you dropped were on the
-                      harder end of the paper.
+                      {t("comparisonDashboard.review.noEasyMisses")}
                     </p>
                   )}
                 </ReportSection>
                 <ReportSection
-                  title={`Your expertise — ${reviewInsights.expertise.length || "none"}`}
+                  title={
+                    reviewInsights.expertise.length > 0
+                      ? t("comparisonDashboard.sections.expertiseCount", { count: reviewInsights.expertise.length })
+                      : t("comparisonDashboard.sections.expertiseNone")
+                  }
                   className="border-t-2 border-t-success-400"
                 >
                   {reviewInsights.expertise.length > 0 ? (
                     <InsightList
                       items={reviewInsights.expertise}
-                      pctSuffix="of class got it right"
+                      pctSuffix={t("comparisonDashboard.review.pctOfClassCorrect")}
                     />
                   ) : (
                     <p className="text-body text-muted-foreground">
-                      No question yet where you beat most of the class — keep
-                      practising the tougher problems.
+                      {t("comparisonDashboard.review.noExpertise")}
                     </p>
                   )}
                 </ReportSection>
@@ -958,11 +996,11 @@ export function ComparisonDashboard({
 
           {/* Questions */}
           <ReportSection
-            title="Answer review"
+            title={t("comparisonDashboard.sections.answerReview")}
             aside={
               <span className="text-3xs uppercase tracking-wide text-muted-foreground">
                 {currentSectionQuestions?.length
-                  ? `${currentSectionQuestions.length} questions`
+                  ? t("comparisonDashboard.review.questionsCount", { count: currentSectionQuestions.length })
                   : undefined}
               </span>
             }
@@ -1000,7 +1038,7 @@ export function ComparisonDashboard({
                         <span className="ms-auto inline-flex items-center gap-3 text-caption text-muted-foreground">
                           {classPct != null && (
                             <span className="tabular-nums">
-                              {classPct}% of class correct
+                              {t("comparisonDashboard.review.classPctCorrect", { pct: classPct })}
                             </span>
                           )}
                           {review.time_taken_in_seconds != null &&
@@ -1021,7 +1059,7 @@ export function ComparisonDashboard({
                         {/* Student Response */}
                         <div className="space-y-1.5">
                           <span className="text-3xs font-semibold uppercase tracking-widest text-muted-foreground">
-                            Your response
+                            {t("comparisonDashboard.review.yourResponse")}
                           </span>
                           <Alert
                             className={cn(
@@ -1037,10 +1075,12 @@ export function ComparisonDashboard({
                           >
                             <AlertDescription className="text-body text-foreground">
                               {review.student_response_options
-                                ? renderStudentResponse(review, questionsData)
+                                ? renderStudentResponse(review, questionsData, t)
                                 : review.mark !== 0
-                                  ? `Marks awarded directly (${review.mark > 0 ? "+" : ""}${review.mark})`
-                                  : "Not attempted"}
+                                  ? t("comparisonDashboard.review.marksAwardedDirectly", {
+                                      value: `${review.mark > 0 ? "+" : ""}${review.mark}`,
+                                    })
+                                  : t("comparisonDashboard.review.notAttempted")}
                             </AlertDescription>
                           </Alert>
                         </div>
@@ -1050,11 +1090,11 @@ export function ComparisonDashboard({
                           review.correct_options && (
                             <div className="space-y-1.5">
                               <span className="text-3xs font-semibold uppercase tracking-widest text-muted-foreground">
-                                Correct answer
+                                {t("comparisonDashboard.review.correctAnswer")}
                               </span>
                               <Alert className="border-success-200 border-s-4 border-s-success-500 bg-success-50">
                                 <AlertDescription className="text-body text-foreground">
-                                  {renderCorrectAnswer(review, questionsData)}
+                                  {renderCorrectAnswer(review, questionsData, t)}
                                 </AlertDescription>
                               </Alert>
                             </div>
@@ -1067,7 +1107,7 @@ export function ComparisonDashboard({
                           <div className="space-y-3 border-t border-border/60 pt-4">
                             <div className="flex items-center gap-2">
                               <span className="text-3xs font-semibold uppercase tracking-widest text-muted-foreground">
-                                Feedback
+                                {t("comparisonDashboard.review.feedback")}
                               </span>
                               {(review.evaluation_source === "AI" ||
                                 review.evaluation_source === "AI_REVIEWED") && (
@@ -1077,8 +1117,8 @@ export function ComparisonDashboard({
                                 >
                                   <Sparkle size={12} weight="fill" />
                                   {review.evaluation_source === "AI_REVIEWED"
-                                    ? "AI-assisted, teacher-reviewed"
-                                    : "AI-assisted"}
+                                    ? t("comparisonDashboard.review.aiAssistedReviewed")
+                                    : t("comparisonDashboard.review.aiAssisted")}
                                 </Badge>
                               )}
                             </div>
@@ -1106,13 +1146,13 @@ export function ComparisonDashboard({
                                     <thead className="bg-muted/40">
                                       <tr>
                                         <th className="p-2 text-start text-3xs font-semibold uppercase tracking-widest text-muted-foreground">
-                                          Criteria
+                                          {t("comparisonDashboard.review.criteria")}
                                         </th>
                                         <th className="p-2 text-start text-3xs font-semibold uppercase tracking-widest text-muted-foreground">
-                                          Reason
+                                          {t("comparisonDashboard.review.reason")}
                                         </th>
                                         <th className="p-2 text-end text-3xs font-semibold uppercase tracking-widest text-muted-foreground">
-                                          Marks
+                                          {t("common.marks")}
                                         </th>
                                       </tr>
                                     </thead>
@@ -1149,7 +1189,7 @@ export function ComparisonDashboard({
                           ) && (
                             <div className="space-y-2 border-t border-border/60 pt-4">
                               <span className="text-3xs font-semibold uppercase tracking-widest text-muted-foreground">
-                                How the class answered
+                                {t("comparisonDashboard.review.howClassAnswered")}
                               </span>
                               <div className="space-y-2">
                                 {(() => {
@@ -1178,8 +1218,8 @@ export function ComparisonDashboard({
                                       opt.id
                                     );
                                     return (
-                                      <div key={opt.id}>
-                                        <div className="mb-0.5 flex justify-between gap-2 text-caption">
+                                      <div className="space-y-0.5" key={opt.id}>
+                                        <div className="flex justify-between gap-2 text-caption">
                                           <span
                                             className={cn(
                                               "truncate",
@@ -1222,7 +1262,7 @@ export function ComparisonDashboard({
                         {review.explanation && (
                           <div className="space-y-1.5 border-t border-border/60 pt-4">
                             <span className="text-3xs font-semibold uppercase tracking-widest text-muted-foreground">
-                              Explanation
+                              {t("common.explanation")}
                             </span>
                             <div className="rounded-md bg-muted/40 p-4 text-body leading-relaxed text-neutral-600">
                               {parseHtmlToString(review.explanation)}
@@ -1237,8 +1277,8 @@ export function ComparisonDashboard({
                 <EmptyState
                   compact
                   icon={ListChecks}
-                  title="No questions in this section"
-                  description="Pick another section tab to review the rest of your answers."
+                  title={t("comparisonDashboard.empty.noQuestionsTitle")}
+                  description={t("comparisonDashboard.empty.noQuestionsDescription")}
                 />
               )}
             </div>
@@ -1332,6 +1372,7 @@ function ComparisonBar({
   yourLabel: string;
   avgLabel: string;
 }) {
+  const { t } = useTranslation("testRecords");
   const yourPct = maxValue > 0 ? Math.min((yourValue / maxValue) * 100, 100) : 0;
   const avgPct = maxValue > 0 ? Math.min((avgValue / maxValue) * 100, 100) : 0;
 
@@ -1351,7 +1392,7 @@ function ComparisonBar({
         <div
           className="absolute -top-1 h-4 w-0.5 rounded-sm bg-neutral-600"
           style={{ left: `${avgPct}%` }}
-          title={`Class average: ${avgLabel}`}
+          title={t("common.classAverageValue", { value: avgLabel })}
         />
       </div>
       <div className="mt-1.5 flex justify-between text-caption tabular-nums">
@@ -1370,6 +1411,7 @@ function InsightList({
   items: { key: string; label: string; section: string; text: string; pct: number }[];
   pctSuffix: string;
 }) {
+  const { t } = useTranslation("testRecords");
   const shown = items.slice(0, 5);
   return (
     <ul className="divide-y divide-border/60">
@@ -1395,7 +1437,7 @@ function InsightList({
       ))}
       {items.length > shown.length && (
         <li className="py-2 text-caption text-muted-foreground">
-          + {items.length - shown.length} more in the answer review below
+          {t("comparisonDashboard.review.moreInAnswerReview", { count: items.length - shown.length })}
         </li>
       )}
     </ul>
@@ -1409,6 +1451,7 @@ function LeaderboardRow({
   entry: any;
   isCurrentStudent: boolean;
 }) {
+  const { t } = useTranslation("testRecords");
   // Medal tint for the podium only; everyone else gets a quiet outline.
   const rankBadgeClass =
     entry.rank === 1
@@ -1445,7 +1488,7 @@ function LeaderboardRow({
         {entry.student_name}
         {isCurrentStudent && (
           <span className="ms-2 inline-flex items-center rounded-sm bg-primary-100 px-1.5 py-0.5 text-3xs font-semibold uppercase tracking-wide text-primary-500">
-            You
+            {t("common.you")}
           </span>
         )}
       </td>

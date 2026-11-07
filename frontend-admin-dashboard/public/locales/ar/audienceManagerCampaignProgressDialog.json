@@ -1,0 +1,56 @@
+{
+    "dialog": {
+        "heading": "مكالمات الذكاء الاصطناعي قيد التنفيذ"
+    },
+    "status": {
+        "completed": "مكتملة",
+        "noAnswer": "لا يوجد رد",
+        "busy": "مشغول",
+        "failed": "فشلت",
+        "cancelled": "أُلغيت",
+        "onCall": "قيد المكالمة",
+        "ringing": "يرن الهاتف",
+        "dialing": "جارٍ الاتصال",
+        "waitingAt": "#{{position}} in line",
+        "nextUp": "Next up",
+        "cancelled_queue": "Cancelled",
+        "expired": "Expired"
+    },
+    "header": {
+        "allFinished_zero": "انتهت جميع المكالمات ({{count}})",
+        "allFinished_one": "انتهت المكالمة الوحيدة ({{count}})",
+        "allFinished_two": "انتهت المكالمتان ({{count}})",
+        "allFinished_few": "انتهت جميع المكالمات الـ {{count}}",
+        "allFinished_many": "انتهت جميع المكالمات الـ {{count}}",
+        "allFinished_other": "انتهت جميع المكالمات الـ {{count}}",
+        "progress": "اكتمل {{done}} من أصل {{total}}",
+        "liveSuffix_zero": " · {{count}} مكالمة جارية",
+        "liveSuffix_one": " · مكالمة {{count}} جارية",
+        "liveSuffix_two": " · مكالمتان ({{count}}) جاريتان",
+        "liveSuffix_few": " · {{count}} مكالمات جارية",
+        "liveSuffix_many": " · {{count}} مكالمة جارية",
+        "liveSuffix_other": " · {{count}} مكالمة جارية",
+        "parallelLabel_zero": "{{count}} في المرة الواحدة",
+        "parallelLabel_two": "مكالمتان ({{count}}) في المرة",
+        "parallelLabel_few": "{{count}} في المرة الواحدة",
+        "parallelLabel_many": "{{count}} في المرة الواحدة",
+        "waiting_one": "{{count}} waiting",
+        "waiting_other": "{{count}} waiting",
+        "waitingWithEta_one": "{{count}} waiting · about {{eta}} left",
+        "waitingWithEta_other": "{{count}} waiting · about {{eta}} left"
+    },
+    "list": {
+        "dialingFirst": "جارٍ الاتصال بالعميل المحتمل الأول…",
+        "defaultLeadName": "عميل محتمل",
+        "duration": "{{minutes}} د {{seconds}} ث",
+        "droppedNotice_one": "{{count}} lead will not be called (cancelled or expired).",
+        "droppedNotice_other": "{{count}} leads will not be called (cancelled or expired)."
+    },
+    "error": {
+        "pollPaused": "تم إيقاف التحديثات المباشرة مؤقتًا (تتم إعادة المحاولة) — المكالمات مستمرة في العمل من جهة الخادم."
+    },
+    "footer": {
+        "backgroundNotice": "يعمل هذا في الخلفية — إغلاق هذه النافذة لا يوقف المكالمات. تتم نتيجة كل مكالمة وتعيين المستشار تلقائيًا بعد كل مكالمة.",
+        "cancelRemaining": "Cancel remaining"
+    }
+}

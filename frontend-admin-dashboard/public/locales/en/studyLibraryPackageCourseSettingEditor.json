@@ -1,0 +1,36 @@
+{
+    "advancedSettingsTitle": "Advanced Settings (JSON)",
+    "actions": {
+        "format": "Format",
+        "reset": "Reset",
+        "save": "Save",
+        "saving": "Saving..."
+    },
+    "description": "These settings are stored on this course and read by workflows (LMS config, retention, completion thresholds, etc.). Edit the raw JSON below — it must stay wrapped in a <1>{ \"setting\": { ... } }</1> envelope.",
+    "insertTemplate": "Insert template",
+    "loading": "Loading…",
+    "invalidJson": "Invalid JSON: {{message}}",
+    "validJson": "Valid JSON",
+    "saveSuccess": "Course settings JSON saved",
+    "errors": {
+        "loadFailed": "Failed to load course settings",
+        "invalidJson": "Invalid JSON",
+        "formatFailed": "Cannot format — fix the JSON error first",
+        "saveFailed": "Failed to save course settings"
+    },
+    "confirmDialog": {
+        "title": "Overwrite course settings JSON?",
+        "description": "This replaces the settings JSON used by this course's workflows (LMS, retention, completion, etc.). Make sure the keys are correct — this takes effect immediately.",
+        "cancel": "Cancel",
+        "confirm": "Yes, save",
+        "saving": "Saving…"
+    },
+    "snippets": {
+        "moodleLabel": "Moodle (MOODLE_SETTING)",
+        "moodleName": "Moodle Integration Settings",
+        "learnDashLabel": "LearnDash (LMS_SETTING)",
+        "learnDashName": "LMS Settings",
+        "courseSettingsLabel": "Course settings (COURSE_SETTING)",
+        "courseSettingsName": "Course Settings"
+    }
+}

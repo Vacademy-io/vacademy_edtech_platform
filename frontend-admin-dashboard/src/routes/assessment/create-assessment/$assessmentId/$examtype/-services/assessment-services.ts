@@ -1,3 +1,4 @@
+import { DEFAULT_PROCTORING_FORM, proctoringWireFromForm } from '@/types/assessments/proctoring';
 import {
     GET_ASSESSMENT_DETAILS,
     PUBLISH_ASSESSMENT_URL,
@@ -6,8 +7,11 @@ import {
     STEP2_QUESTIONS_URL,
     STEP3_ASSESSMENT_URL,
     STEP4_ASSESSMENT_URL,
+    STEP2_QUESTIONS_FULL_URL,
+    STEP2_EDIT_QUESTIONS_URL,
 } from '@/constants/urls';
 import authenticatedAxiosInstance from '@/lib/auth/axiosInstance';
+import type { QuestionResponse } from '@/types/assessments/question-paper-template';
 import {
     ConvertedCustomField,
     CustomFields,
@@ -65,6 +69,46 @@ export const getAssessmentDetails = ({
     };
 };
 
+/**
+ * The assessment's questions as full question-paper style DTOs (text, options,
+ * answer key, explanation) - what the question editor understands - keyed by
+ * section id. The preview shape from getQuestionsDataForStep2 drops the
+ * explanation and the key, so it cannot round-trip an edit.
+ */
+export const getFullQuestionsOfSections = async ({
+    assessmentId,
+    sectionIds,
+}: {
+    assessmentId: string;
+    sectionIds: string | undefined;
+}): Promise<Record<string, QuestionResponse[]>> => {
+    const response = await authenticatedAxiosInstance({
+        method: 'GET',
+        url: STEP2_QUESTIONS_FULL_URL,
+        params: { assessmentId, sectionIds },
+    });
+    return response?.data ?? {};
+};
+
+/** Rewrite questions of this assessment in place (same ids, so every section keeps them). */
+export const editAssessmentQuestions = async ({
+    assessmentId,
+    instituteId,
+    updatedQuestions,
+}: {
+    assessmentId: string;
+    instituteId: string | undefined;
+    updatedQuestions: unknown[];
+}): Promise<boolean> => {
+    const response = await authenticatedAxiosInstance({
+        method: 'PATCH',
+        url: STEP2_EDIT_QUESTIONS_URL,
+        params: { assessmentId, instituteId },
+        data: { updated_questions: updatedQuestions, added_questions: [], deleted_questions: [] },
+    });
+    return Boolean(response?.data);
+};
+
 export const getQuestionsDataForStep2 = async ({
     assessmentId,
     sectionIds,
@@ -100,7 +144,7 @@ export const getQuestionDataForSection = ({
     };
 };
 
-function getTestBoundation(
+export function getTestBoundation(
     testType: string | undefined,
     liveDateRange: { startDate?: string; endDate?: string }
 ) {
@@ -111,9 +155,17 @@ function getTestBoundation(
                 end_date: convertToUTC(liveDateRange.endDate || ''),
             };
         case 'SURVEY':
+            // A survey's live window is optional. Left blank it behaves like a
+            // mock or practice test — open from now until the 9999 sentinel.
+            // It must NOT be sent blank: the learner assessment list filters on
+            // `CURRENT_TIMESTAMP BETWEEN bound_start_time AND bound_end_time`,
+            // and NULL bounds make that NULL rather than true, so the survey
+            // would never appear in anyone's Live list.
             return {
-                start_date: convertToUTC(liveDateRange.startDate || ''),
-                end_date: convertToUTC(liveDateRange.endDate || ''),
+                start_date: convertToUTC(liveDateRange.startDate || '') || new Date().toISOString(),
+                end_date:
+                    convertToUTC(liveDateRange.endDate || '') ||
+                    new Date('9999-12-31T23:59:59.999Z').toISOString(),
             };
         case 'PRACTICE':
             return {
@@ -160,6 +212,14 @@ export const handlePostStep1Data = async (
         result_type: data.resultType,
         raise_reattempt_request: data.raiseReattemptRequest,
         raise_time_increase_request: data.raiseTimeIncreaseRequest,
+        // Queue an AI evaluation when a learner submits. Metered per graded
+        // question, so it is only ever sent as an explicit true/false.
+        ai_evaluation_enabled: data.aiEvaluationEnabled ?? false,
+        // OMR sheet (pen & paper) mode: answered on a printed bubble sheet, read by OMRChecker.
+        has_omr_mode: data.omrMode ?? false,
+        // Always sent as a full object: tier NONE clears the stored config, so a
+        // save from this build can never leave a stale tier behind.
+        proctoring_config: proctoringWireFromForm(data.proctoring ?? DEFAULT_PROCTORING_FORM),
     };
     const response = await authenticatedAxiosInstance({
         method: 'POST',

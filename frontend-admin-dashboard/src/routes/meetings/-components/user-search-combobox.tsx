@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 import { CaretUpDown, Check, X } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
@@ -48,12 +49,14 @@ export const UserSearchCombobox = ({
     value,
     onChange,
     mode = 'multi',
-    placeholder = 'Search user by name or email...',
+    placeholder,
     disabled = false,
 }: UserSearchComboboxProps) => {
+    const { t } = useTranslation('meetingsUserSearchCombobox');
     const [open, setOpen] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
     const debouncedQuery = useDebounce(searchQuery, 300);
+    const resolvedPlaceholder = placeholder ?? t('searchPlaceholder');
 
     const { data: suggestions } = useQuery({
         queryKey: ['meetings-user-autosuggest', instituteId, debouncedQuery],
@@ -75,8 +78,8 @@ export const UserSearchCombobox = ({
         mode === 'single' && value.length > 0
             ? value[0]!.fullName
             : mode === 'single'
-              ? 'Select user...'
-              : 'Add participants...';
+              ? t('selectUser')
+              : t('addParticipants');
 
     return (
         <div className="flex w-full flex-col gap-2">
@@ -96,18 +99,18 @@ export const UserSearchCombobox = ({
                 <PopoverContent className="w-96 max-w-[calc(100vw-2rem)] p-0" align="start">{/* design-lint-ignore: clamp popover to viewport on mobile */}
                     <Command shouldFilter={false}>
                         <CommandInput
-                            placeholder={placeholder}
+                            placeholder={resolvedPlaceholder}
                             value={searchQuery}
                             onValueChange={setSearchQuery}
                         />
                         <CommandList>
                             {debouncedQuery.length < 3 && (
                                 <div className="py-6 text-center text-body text-neutral-500">
-                                    Type at least 3 characters to search...
+                                    {t('typeToSearch')}
                                 </div>
                             )}
                             {debouncedQuery.length >= 3 && suggestions?.length === 0 && (
-                                <CommandEmpty>No users found.</CommandEmpty>
+                                <CommandEmpty>{t('noUsersFound')}</CommandEmpty>
                             )}
                             {debouncedQuery.length >= 3 &&
                                 suggestions?.map((user) => (
@@ -150,7 +153,7 @@ export const UserSearchCombobox = ({
                             {user.fullName}
                             <button
                                 type="button"
-                                aria-label={`Remove ${user.fullName}`}
+                                aria-label={t('removeUser', { name: user.fullName })}
                                 onClick={() => onChange(value.filter((u) => u.id !== user.id))}
                                 className="rounded-full p-0.5 hover:bg-neutral-200"
                             >

@@ -1,0 +1,162 @@
+{
+  "toast": {
+    "enrollmentSuccessRedirecting": "Enrollment successful! Redirecting to dashboard...",
+    "loginSuccessRedirecting": "Login successful! Redirecting to dashboard...",
+    "autoRenewalConsentRequired": "Please agree to the auto-renewal terms to continue."
+  },
+  "errors": {
+    "failedToLoadInstallmentSchedule": "Failed to load installment schedule. Please try again.",
+    "selectAtLeastOneInstallment": "Please select at least one installment to pay.",
+    "paymentAmountMustBePositive": "Payment amount must be greater than zero.",
+    "noCpoPaymentOptionFound": "No CPO payment option found.",
+    "enrollmentSucceededNoUserPlanId": "Enrollment succeeded but userPlanId was not returned. Please try again.",
+    "noPendingInstallmentsGenerated": "No pending installments were generated. Please contact support.",
+    "failedToCreateRazorpayOrder": "Failed to create Razorpay order",
+    "failedToInitiatePayment": "Failed to initiate payment",
+    "stripeNotReady": "Stripe payment is not ready yet. Please wait and try again.",
+    "paymentProcessingFailed": "Payment processing failed",
+    "paymentFailed": "Payment failed",
+    "completePaymentForm": "Please complete the payment form",
+    "cpoVendorNotSupported": "Payment gateway not supported for CPO enrollment. Please contact support.",
+    "enrollmentFailed": "Enrollment failed",
+    "phonepeCheckoutFailed": "Could not start PhonePe checkout. Please try again or contact support.",
+    "failedToInitiatePhonepePayment": "Failed to initiate PhonePe payment",
+    "enrollmentCreatedNoUserPlanId": "Enrollment created but user plan ID not received. Please contact support.",
+    "emailRequiredForPayment": "Email is required for payment.",
+    "loginRequiredForPayment": "Please log in to complete payment.",
+    "failedToInitializePaymentContactSupport": "Failed to initialize payment. Please try again or contact support.",
+    "failedToLoadCashfree": "Failed to load Cashfree payment gateway.",
+    "paymentInitializationFailed": "Payment initialization failed.",
+    "failedToInitiateCashfreePayment": "Failed to initiate Cashfree payment",
+    "razorpayComponentNotReady": "Razorpay component not ready",
+    "failedToCompleteEnrollment": "Failed to complete enrollment",
+    "userPlanIdNotReceived": "User plan ID not received.",
+    "paymentSessionMissingLoginRequired": "Payment session not in response. Please log in to complete payment.",
+    "emailRequired": "Email is required.",
+    "failedToInitializePayment": "Failed to initialize payment.",
+    "failedToInitializePaymentFallback": "Failed to initialize payment"
+  },
+  "autopay": {
+    "trialBanner": "Activate your {{trialDays}}-day free trial with ₹{{authAmount}}, cancel anytime within {{trialDays}} days.",
+    "setupHeading": "How would you like to set up auto-renewal?",
+    "upiLabel": "UPI Autopay",
+    "upiHint": "GPay, PhonePe, Paytm",
+    "cardLabel": "Card",
+    "cardHint": "Debit / credit card",
+    "consentTrial": {
+      "agreePrefix": "I agree:",
+      "authorizedToday": "is authorized today",
+      "refundedSuffix": "(refunded)",
+      "toStartMy": "to start my",
+      "trialDaysLabel": "{{days}}-day free trial",
+      "fromDay": ". From day",
+      "listSeparator": ",",
+      "willBeChargedCycle": "will be charged each billing cycle to my saved payment method, unless I cancel before that."
+    },
+    "consentAutoRenew": {
+      "agreePrefix": "I agree to auto-renewal:",
+      "willBeChargedPeriod": "will be charged to my saved payment method each billing period. I can cancel anytime from my profile."
+    }
+  },
+  "stepBadge": {
+    "ofThree": "Step {{step}} of 3",
+    "ofTwo": "Step {{step}} of 2"
+  },
+  "wizardPills": {
+    "details": "Details",
+    "plan": "Plan",
+    "confirm": "Confirm",
+    "pay": "Pay"
+  },
+  "bundledCourses": {
+    "whatsIncluded": "What's Included",
+    "detailsLoading": "{{course}} details loading...",
+    "fallbackLabel": "{{course}} {{index}}"
+  },
+  "badges": {
+    "installmentPlan": "Installment Plan",
+    "free": "Free"
+  },
+  "footer": {
+    "privacyPolicy": "Privacy Policy",
+    "termsAndConditions": "Terms & Conditions"
+  },
+  "defaultCourseEnrollmentName": "{{course}} Enrollment",
+  "defaultCourseEnrollmentDescription": "Payment for {{course}} enrollment",
+  "defaultThisCourse": "this {{course}}",
+  "planDuration": {
+    "days_one": "{{count}} day",
+    "days_other": "{{count}} days",
+    "months_one": "{{count}} month",
+    "months_other": "{{count}} months"
+  },
+  "planDescriptions": {
+    "payInInstallments": "Pay in installments",
+    "donationPlan": "Access to donation plan.",
+    "freePlan": "Access to free plan.",
+    "oneTimePlan": "Access to one time payment plan.",
+    "subscriptionPlan": "Access to subscription plan."
+  },
+  "subscriptionPlan": {
+    "discount": {
+      "percentageOff": "{{amount}}% off",
+      "fixedOff": "{{currency}}{{amount}} off"
+    },
+    "unit": {
+      "month": "month",
+      "days": "days"
+    }
+  },
+  "successStep": {
+    "title": "Enrollment Request Submitted!",
+    "defaultMessage": {
+      "intro": "Thank you for your interest in {{courseName}}. Your enrollment request has been submitted successfully. Your login credentials has been sent to your registered email address",
+      "outro": ". Please log in using the provided email and password"
+    },
+    "approvalRequired": {
+      "title": "Approval Required",
+      "body": "Your enrollment request is being reviewed by our team. You will receive an email notification once approved."
+    },
+    "redirectingToDashboard": "Redirecting to Dashboard...",
+    "continue": "Continue",
+    "loginNow": "Login Now"
+  },
+  "cardValidator": {
+    "tooShort": "Card number is too short",
+    "typeNotRecognized": "Card type not recognized",
+    "invalidLength": "Invalid card length for {{cardType}}",
+    "invalidNumber": "Card number is invalid",
+    "invalidMonth": "Invalid month",
+    "expired": "Card has expired",
+    "cvvRequired": "CVV is required",
+    "cvvLength": "CVV must be {{expectedLength}} digits",
+    "brands": {
+      "visa": "Visa",
+      "mastercard": "Mastercard",
+      "amex": "American Express",
+      "discover": "Discover",
+      "diners": "Diners Club",
+      "jcb": "JCB",
+      "unknown": "Unknown"
+    }
+  },
+  "fieldValidation": {
+    "required": "This field is required",
+    "invalidEmail": "Please enter a valid email address",
+    "invalidPhone": "Please enter a valid phone number",
+    "invalidUrl": "Please enter a valid URL",
+    "invalidNumber": "Please enter a valid number",
+    "invalidDate": "Please enter a valid date"
+  },
+  "ewayEncryption": {
+    "libraryUnavailable": "Encryption library not available. Please refresh the page and try again.",
+    "encryptFailed": "Failed to encrypt payment information. Please try again.",
+    "unexpectedError": "An unexpected error occurred. Please try again."
+  },
+  "useStripePayment": {
+    "notInitialized": "Stripe is not initialized. Please refresh the page.",
+    "cardElementNotFound": "Card element not found. Please refresh the page.",
+    "processingFailed": "Payment processing failed",
+    "unexpectedError": "An unexpected error occurred"
+  }
+}

@@ -1,0 +1,69 @@
+{
+    "toolbar": {
+        "title": "محرر الصور",
+        "fieldsMapped_zero": "لا توجد حقول مرتبطة",
+        "fieldsMapped_one": "حقل واحد مرتبط",
+        "fieldsMapped_two": "حقلان مرتبطان",
+        "fieldsMapped_few": "{{count}} حقول مرتبطة",
+        "fieldsMapped_many": "{{count}} حقلاً مرتبطاً",
+        "fieldsMapped_other": "{{count}} حقل مرتبط",
+        "hint": "• انقر للتحديد • انقر مرتين للتعديل",
+        "save": "حفظ",
+        "clearAll": "مسح الكل"
+    },
+    "canvas": {
+        "imageAlt": "قالب الشهادة",
+        "editingTitle": "اضغط Enter أو Escape لإنهاء التعديل",
+        "selectTitle": "انقر للتحديد، وانقر مرتين لتعديل النص",
+        "deleteFieldTitle": "حذف الحقل",
+        "loading": "جارٍ تحميل القالب...",
+        "dropHere": "أفلت الحقل هنا",
+        "dropHint": "حدد موضع الحقل على قالب الشهادة"
+    },
+    "summary": {
+        "title": "ربط الحقول ({{count}})",
+        "position": "x:{{x}}, y:{{y}}"
+    },
+    "properties": {
+        "title": "خصائص الحقل",
+        "removeButton": "إزالة",
+        "closeTitle": "إغلاق الخصائص",
+        "fontSize": {
+            "label": "حجم الخط",
+            "pxValue": "{{value}}px"
+        },
+        "fontFamily": {
+            "label": "نوع الخط"
+        },
+        "fontWeight": {
+            "label": "وزن الخط",
+            "normal": "عادي",
+            "bold": "عريض"
+        },
+        "textColor": {
+            "label": "لون النص"
+        },
+        "textAlignment": {
+            "label": "محاذاة النص",
+            "left": "يسار",
+            "center": "وسط",
+            "right": "يمين"
+        },
+        "backgroundColor": {
+            "label": "لون الخلفية",
+            "clear": "مسح",
+            "current": "الحالي: {{value}}",
+            "transparent": "شفاف"
+        },
+        "position": {
+            "label": "الموضع",
+            "x": "الموضع الأفقي (X)",
+            "y": "الموضع الرأسي (Y)"
+        },
+        "size": {
+            "label": "حجم الحقل",
+            "width": "العرض",
+            "height": "الارتفاع"
+        }
+    }
+}

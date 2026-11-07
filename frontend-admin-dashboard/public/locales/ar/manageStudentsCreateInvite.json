@@ -1,0 +1,27 @@
+{
+    "trigger": {
+        "createLink": "إنشاء رابط {{term}}"
+    },
+    "dialog": {
+        "title": "اختر الدورة والدفعات"
+    },
+    "courseSelect": {
+        "label": "اختر {{term}}",
+        "placeholder": "اختر دورة"
+    },
+    "addBatch": {
+        "heading": "إضافة دفعة",
+        "sessionPlaceholder": "اختر الجلسة",
+        "levelPlaceholder": "اختر المستوى",
+        "button": "إضافة دفعة"
+    },
+    "selectedBatches": {
+        "heading": "الدفعات المختارة",
+        "parentHint": "(اختر الدفعة الرئيسية - سيتم استخدام تفاصيل الدفعة الرئيسية كتفاصيل رابط الدعوة)",
+        "parentBadge": "الدفعة الرئيسية"
+    },
+    "actions": {
+        "cancel": "إلغاء",
+        "continue": "متابعة"
+    }
+}

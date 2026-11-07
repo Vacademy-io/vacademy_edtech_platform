@@ -10,11 +10,23 @@ interface InstituteDetails {
   homeIconClickRoute?: string | null;
 }
 
-const getInstituteDetails = async () => {
+/** Exported for tests — the hook is just useQuery around this. */
+export const getInstituteDetails = async () => {
   const { value } = await Preferences.get({ key: "InstituteDetails" });
   if (!value) return null;
 
-  const details: InstituteDetails = JSON.parse(value);
+  // A half-written or truncated Preferences entry used to throw out of the
+  // queryFn and take the whole page down — verified on the live /register
+  // page, where a malformed "InstituteDetails" left #root empty (white
+  // screen). Branding is decoration here; the register form must survive it.
+  let details: InstituteDetails;
+  try {
+    details = JSON.parse(value) as InstituteDetails;
+  } catch {
+    console.warn("[institute-details] ignoring corrupt cached value");
+    return null;
+  }
+  if (!details || typeof details !== "object") return null;
   const logoUrl = details.institute_logo_file_id
     ? await getPublicUrl(details.institute_logo_file_id)
     : null;

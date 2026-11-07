@@ -53,6 +53,10 @@ public interface PackageSessionLearnerInvitationToPaymentOptionRepository
                         List<String> enrollInviteIds, List<String> paymentOptionIds, List<String> packageSessionIds,
                         List<String> status);
 
+        /** One entry per package type on the invite, whatever the link's status; null for an untyped course. */
+        @Query("SELECT DISTINCT p.packageSession.packageEntity.packageType FROM PackageSessionLearnerInvitationToPaymentOption p WHERE p.enrollInvite.id = :enrollInviteId")
+        List<String> findPackageTypesByEnrollInviteId(@Param("enrollInviteId") String enrollInviteId);
+
         @Query("SELECT p.packageSession.id FROM PackageSessionLearnerInvitationToPaymentOption p WHERE p.enrollInvite = :enrollInvite AND p.status IN :status")
         List<String> findPackageSessionIdsByEnrollInviteAndStatusIn(@Param("enrollInvite") EnrollInvite enrollInvite,
                         @Param("status") List<String> status);

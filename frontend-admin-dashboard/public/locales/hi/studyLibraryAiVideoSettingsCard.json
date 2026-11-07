@@ -1,0 +1,31 @@
+{
+    "title": "AI वीडियो सेटिंग्स",
+    "appliesTo": "AI वीडियो, AI स्लाइड्स और स्टोरीबुक पेजों पर लागू होता है",
+    "language": "भाषा",
+    "videoModel": "वीडियो मॉडल",
+    "autoRecommended": "ऑटो (अनुशंसित)",
+    "loading": "लोड हो रहा है...",
+    "audioQuality": "ऑडियो गुणवत्ता",
+    "audioQualityStandard": "स्टैंडर्ड (शामिल)",
+    "audioQualityPremium": "प्रीमियम (2x क्रेडिट)",
+    "voiceGender": "आवाज़ का लिंग",
+    "genderFemale": "महिला",
+    "genderMale": "पुरुष",
+    "voice": "आवाज़",
+    "auto": "ऑटो",
+    "autoBestForLanguage": "ऑटो (भाषा के लिए सर्वोत्तम)",
+    "videoDuration": "वीडियो अवधि",
+    "qualityTierLabel": "गुणवत्ता स्तर",
+    "durationLabel": {
+        "oneToTwoMinutes": "1-2 मिनट",
+        "twoToThreeMinutes": "2-3 मिनट",
+        "threeToFiveMinutes": "3-5 मिनट",
+        "fiveToEightMinutes": "5-8 मिनट"
+    },
+    "qualityTier": {
+        "free": "मुफ़्त (सबसे तेज़, बुनियादी गुणवत्ता)",
+        "standard": "स्टैंडर्ड",
+        "premium": "प्रीमियम",
+        "ultra": "अल्ट्रा (सर्वश्रेष्ठ गुणवत्ता)"
+    }
+}

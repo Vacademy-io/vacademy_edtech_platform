@@ -1,0 +1,25 @@
+{
+    "errors": {
+        "fileSizeExceeded": "फ़ाइल का आकार 1MB की सीमा से अधिक है",
+        "invalidFileType": "कृपया एक सीएसवी फ़ाइल अपलोड करें",
+        "missingRows": "सीएसवी फ़ाइल में कम से कम एक हेडर पंक्ति और एक डेटा पंक्ति होनी चाहिए",
+        "emptyFile": "सीएसवी फ़ाइल खाली है या ख़राब है",
+        "parseFailed": "सीएसवी फ़ाइल पार्स करने में विफल। कृपया फ़ाइल का प्रारूप जांचें।"
+    },
+    "heading": "डायनामिक डेटा अपलोड",
+    "clearUpload": "अपलोड हटाएं",
+    "processing": "सीएसवी संसाधित हो रही है...",
+    "uploadPrompt": "डायनामिक डेटा सीएसवी अपलोड करें",
+    "dropHint": "चुनने के लिए खींचें और छोड़ें या क्लिक करें • अधिकतम 1MB • केवल सीएसवी प्रारूप",
+    "selectFile": "सीएसवी फ़ाइल चुनें",
+    "issuesFound": "सीएसवी अपलोड में समस्याएं मिलीं",
+    "uploadSuccessful": "सीएसवी अपलोड सफल",
+    "rowsProcessed_one": "{{count}} पंक्ति संसाधित",
+    "rowsProcessed_other": "{{count}} पंक्तियाँ संसाधित",
+    "columnsCount_one": "{{count}} कॉलम",
+    "columnsCount_other": "{{count}} कॉलम",
+    "dynamicFieldsCount_one": "{{count}} डायनामिक फ़ील्ड",
+    "dynamicFieldsCount_other": "{{count}} डायनामिक फ़ील्ड्स",
+    "detectedColumns": "पाए गए कॉलम",
+    "required": "(आवश्यक)"
+}

@@ -1,0 +1,15 @@
+{
+    "steps": {
+        "basicInfo": "Basic Info",
+        "addQuestion": "Add Question",
+        "addParticipants": "Add Participants",
+        "accessControl": "Access Control"
+    },
+    "page": {
+        "title": "Create Assessment",
+        "metaDescription": "This page is for creating an assessment for students via admin."
+    },
+    "noCourseDialog": {
+        "type": "Create Assessment"
+    }
+}

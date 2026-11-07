@@ -11,6 +11,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import vacademy.io.admin_core_service.features.common.dto.CustomFieldListFilterDTO;
 import vacademy.io.admin_core_service.features.common.repository.CustomFieldValuesRepository;
+import vacademy.io.admin_core_service.features.common.util.CustomFieldValueSql;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
@@ -83,6 +84,38 @@ public class CustomFieldListFilterResolver {
 
         public String excludedIdsCsv() {
             return (excludedIds == null || excludedIds.isEmpty()) ? null : String.join(",", excludedIds);
+        }
+
+        /**
+         * AND this resolution with another one produced for the SAME surface —
+         * e.g. the custom-field match set with the UTM-attribution match set.
+         * Matched sets intersect (null = unconstrained on that side); exclusion
+         * sets union. When both a matched and an exclusion set survive, the
+         * exclusions are folded into the matched set so the surface query
+         * applies each id set exactly once.
+         */
+        public Resolution and(Resolution other) {
+            if (other == null) return this;
+            Set<String> matched;
+            if (matchedIds == null) {
+                matched = other.matchedIds == null ? null : new HashSet<>(other.matchedIds);
+            } else if (other.matchedIds == null) {
+                matched = new HashSet<>(matchedIds);
+            } else {
+                matched = new HashSet<>(matchedIds);
+                matched.retainAll(other.matchedIds);
+            }
+            Set<String> excluded = null;
+            if (excludedIds != null && !excludedIds.isEmpty()) excluded = new HashSet<>(excludedIds);
+            if (other.excludedIds != null && !other.excludedIds.isEmpty()) {
+                if (excluded == null) excluded = new HashSet<>(other.excludedIds);
+                else excluded.addAll(other.excludedIds);
+            }
+            if (matched != null && excluded != null) {
+                matched.removeAll(excluded);
+                excluded = null;
+            }
+            return new Resolution(matched, excluded);
         }
     }
 
@@ -231,7 +264,7 @@ public class CustomFieldListFilterResolver {
                     sql.append("GTE".equals(operator) ? " >= " : " <= ").append(String.format(boundParam, 0));
                 }
             }
-            default -> sql.append("cfv.value IN (:values)");
+            default -> sql.append(CustomFieldValueSql.matchesAnyOf("cfv.value", "values"));
         }
 
         Query query = entityManager.createNativeQuery(sql.toString());

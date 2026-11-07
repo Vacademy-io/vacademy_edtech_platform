@@ -1,0 +1,52 @@
+---
+title: "Getting API access"
+description: "Who can create API keys, where, and what to do if you cannot see the option."
+---
+
+API access is self-serve: any **admin** of your Telleo account can create keys in the dashboard. There is nothing to switch on first.
+
+## Before you start
+
+- **A dashboard login with the Admin role.** Sign in with the address and login our team sent you when your account was set up. Counsellor and other non-admin roles cannot create keys.
+- **At least one AI agent** that can make outbound calls. You choose it per call with `agent_id`.
+- **Calling credits** for real calls. [Test calls](/concepts/test-mode) are free.
+
+## Create a key
+
+<Steps>
+  <Step title="Open the AI Calling settings">
+    In the left menu choose **CRM → Calling → AI Calling Settings**, or open **Settings** (the gear at the bottom of the menu) **→ Calling → AI Calling**.
+  </Step>
+  <Step title="Find the API & webhooks card">
+    Scroll down past the AI agents card to **API & webhooks**. It shows the API address (`https://api.telleo.ai/v1`), your keys, your agent ids and your webhook.
+  </Step>
+  <Step title="Create the key">
+    Click **Create key**, give it a name you will recognise (for example `Our CRM`), and optionally an expiry date. Tick the extra boxes only for what this key's system needs, because they cannot be added later:
+    - **Can ring counsellors (human calls)**: place [human calls](/concepts/human-calls) (`human_calls:read`, `human_calls:write`).
+    - **Can manage counsellors**: add, update and deactivate [counsellors](/concepts/counsellors) (`counsellors:manage`). A key with it can create dashboard logins in your account.
+    - **Can manage AI agents**: create, edit, switch and delete [agents](/concepts/managing-agents) and choose the default agent and which agent answers each number (`agents:manage`).
+
+    Click **Create key**.
+  </Step>
+  <Step title="Copy it now">
+    The key (`vak_call_…`) is shown **once**. Copy it and store it on your server, for example as an environment variable. If you lose it, revoke it and create a new one.
+  </Step>
+  <Step title="Note your agent ids">
+    The **Agent ids** list shows every outbound agent and its id. Copy the one you want to use as `agent_id`. The same list is available from the API: [`GET /v1/agents`](/api-reference/agents/list-agents).
+  </Step>
+</Steps>
+
+Next: the [Quickstart](/quickstart) places your first test call with the new key.
+
+## Managing keys
+
+- Use **one key per system** (CRM, website, automation tool). The table shows when each key was last used, and a badge marks keys that can ring counsellors or manage counsellors or agents.
+- Give the management scopes to as few keys as possible, ideally one kept on a server only your admins run.
+- **Revoke** stops a key immediately. Calls it already queued still go ahead; cancel them with [`POST /v1/calls/{id}/cancel`](/api-reference/calls/cancel-a-call) if you need to.
+- An account can hold up to 50 active keys.
+
+## If you cannot see the API & webhooks card
+
+1. **Check your role.** Only admins see the Settings gear and the card. Ask an admin of your account to create the key, or to give you the Admin role.
+2. **Reload the page.** The card appears once the calling setup has loaded; a failed load hides it until the next refresh.
+3. **Ask us.** If AI Calling is not part of your plan, or you would rather we set it up, email [hello@telleo.ai](mailto:hello@telleo.ai) with your account name. Our team can issue the key for you, and you can then set the webhook yourself with [`PUT /v1/webhook`](/api-reference/webhook/set-the-webhook).

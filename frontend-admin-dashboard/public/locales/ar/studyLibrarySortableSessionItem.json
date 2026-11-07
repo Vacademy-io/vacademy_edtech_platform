@@ -1,0 +1,12 @@
+{
+    "edit": "تعديل",
+    "delete": "حذف",
+    "save": "حفظ",
+    "cancel": "إلغاء",
+    "pagesCount_zero": "{{completed}}/{{count}} صفحة",
+    "pagesCount_one": "{{completed}}/صفحة واحدة",
+    "pagesCount_two": "{{completed}}/صفحتان",
+    "pagesCount_few": "{{completed}}/{{count}} صفحات",
+    "pagesCount_many": "{{completed}}/{{count}} صفحة",
+    "pagesCount_other": "{{completed}}/{{count}} صفحة"
+}

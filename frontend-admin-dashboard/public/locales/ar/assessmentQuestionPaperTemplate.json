@@ -1,0 +1,51 @@
+{
+    "common": {
+        "questionCount_zero": "{{count}} سؤال",
+        "questionCount_one": "سؤال واحد ({{count}})",
+        "questionCount_two": "سؤالان ({{count}})",
+        "questionCount_few": "{{count}} أسئلة",
+        "questionCount_many": "{{count}} سؤالًا",
+        "questionCount_other": "{{count}} سؤال",
+        "tagCount_zero": "{{count}} وسم",
+        "tagCount_one": "وسم واحد ({{count}})",
+        "tagCount_two": "وسمان ({{count}})",
+        "tagCount_few": "{{count}} أوسام",
+        "tagCount_many": "{{count}} وسمًا",
+        "tagCount_other": "{{count}} وسم"
+    },
+    "header": {
+        "logoAlt": "الشعار",
+        "untitled": "بدون عنوان",
+        "exit": "خروج",
+        "save": "حفظ"
+    },
+    "sidebar": {
+        "questionsLabel": "الأسئلة",
+        "questionIncompleteAriaLabel": "السؤال غير مكتمل",
+        "questionIncompleteTooltip": "السؤال غير مكتمل"
+    },
+    "actions": {
+        "addQuestion": "إضافة سؤال"
+    },
+    "dialogs": {
+        "addQuestion": {
+            "title": "إضافة سؤال"
+        }
+    },
+    "emptyState": {
+        "title": "لا توجد أسئلة بعد",
+        "description": "أضف سؤالك الأول لبدء إنشاء هذه الورقة."
+    },
+    "tags": {
+        "title": "وسوم الموضوع / الموضوع الفرعي",
+        "description": "تُستخدم لتجميع الأسئلة في التقارير وبحث الأسئلة.",
+        "applyToAll": "تطبيق على جميع الأسئلة"
+    },
+    "toasts": {
+        "addTagFirst": "أضف وسمًا واحدًا على الأقل إلى هذا السؤال أولاً",
+        "tagsApplied": "تم تطبيق {{tags}} على جميع {{questions}}",
+        "updateSuccess": "تم تحديث ورقة الأسئلة بنجاح",
+        "incompleteQuestions": "بعض أسئلتك غير مكتملة أو تحتاج إلى انتباه!",
+        "numericAnswerMissing": "السؤال {{number}} يحتاج إلى إجابة صحيحة قبل الحفظ"
+    }
+}

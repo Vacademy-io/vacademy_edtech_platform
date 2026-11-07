@@ -626,3 +626,22 @@ export function buildPrimaryScaleVars(hex?: string | null): Record<string, strin
         '--primary-foreground': L < 62 ? '0 0% 100%' : '222 47% 11%',
     };
 }
+
+/* ─── Dark author surfaces ─────────────────────────────────────────────────
+ * True when a #rrggbb colour is dark enough to need light ink on top
+ * (Rec. 601 luminance < 0.55). Components that paint their copy with theme
+ * TOKEN classes (the hero's title/description, the eyebrow, the secondary
+ * button) cannot be recoloured by a props.textColor — a navy hero authored
+ * with a white textColor still rendered navy-on-navy. Adding the `dark`
+ * class to the band flips every token inside it, so a renderer that calls
+ * this gets a legible dark band from the colour alone, with no author
+ * knowledge of the customClass trick. Same threshold as JsonRenderer's
+ * section text pairing and the AI service's is_hex_dark. */
+export function isHexDark(hex?: string | null): boolean {
+    const raw = (hex || '').trim().replace(/^#/, '');
+    if (!/^[0-9a-fA-F]{6}$/.test(raw)) return false;
+    const r = parseInt(raw.slice(0, 2), 16);
+    const g = parseInt(raw.slice(2, 4), 16);
+    const b = parseInt(raw.slice(4, 6), 16);
+    return (0.299 * r + 0.587 * g + 0.114 * b) / 255 < 0.55;
+}

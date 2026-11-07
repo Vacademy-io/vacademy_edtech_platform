@@ -1,0 +1,26 @@
+{
+    "columns": {
+        "status": "الحالة",
+        "uploadStatus": "حالة الرفع",
+        "uploadError": "خطأ الرفع"
+    },
+    "placeholders": {
+        "selectGender": "اختر الجنس",
+        "selectOption": "اختر خيارًا"
+    },
+    "hints": {
+        "mobileNumberExample": "(مثال: ‎+91-1234567890)"
+    },
+    "errors": {
+        "viewErrors_zero": "لا أخطاء ({{count}})",
+        "viewErrors_one": "خطأ واحد ({{count}})",
+        "viewErrors_two": "خطآن ({{count}})",
+        "viewErrors_few": "أخطاء ({{count}})",
+        "viewErrors_many": "خطأ ({{count}})",
+        "viewErrors_other": "خطأ ({{count}})"
+    },
+    "uploadResult": {
+        "success": "ناجح",
+        "failed": "فشل"
+    }
+}

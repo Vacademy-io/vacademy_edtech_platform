@@ -47,6 +47,14 @@ public class MeetingBookingRequestDTO {
     /** Booking-form custom-field answers, keyed by fieldKey. */
     private Map<String, String> customFieldValues;
 
+    /**
+     * Use THIS user's connected Google (Meet + calendar) instead of the host's; when they have not
+     * connected one, the institute default is used. Set by the engagement engine.
+     */
+    private String googleAccountUserId;
+    /** Explicit Google account id (blank = institute default); wins over {@code googleAccountUserId}. */
+    private String googleAccountId;
+
     /** Overrides of page defaults. */
     private String locationType;
     private String customMeetingLink;

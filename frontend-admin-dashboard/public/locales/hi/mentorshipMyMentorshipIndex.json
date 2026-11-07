@@ -1,0 +1,90 @@
+{
+    "navHeading": "मेरी मेंटरशिप",
+    "pageTitle": "मेरी मेंटरशिप",
+    "pageSubtitle": "आपके मेंटी, उपलब्धता और बुकिंग लिंक",
+    "retry": "पुनः प्रयास करें",
+    "connectGoogleError": "Google कनेक्ट शुरू नहीं हो सका। कृपया फिर से प्रयास करें।",
+    "chatError": "चैट नहीं खुल सकी। कृपया फिर से प्रयास करें।",
+    "notMentor": {
+        "title": "आप यहाँ मेंटर के रूप में सेट अप नहीं हैं",
+        "description": "यह पेज एक मेंटर का अपना कार्यक्षेत्र है — उनके मेंटी, उपलब्धता और बुकिंग लिंक। सभी की मेंटरशिप प्रबंधित करने के लिए, ओवरव्यू, मेंटर, सत्र या अनुरोध का उपयोग करें।"
+    },
+    "profile": {
+        "youFallback": "आप",
+        "mentorFallback": "मेंटर",
+        "menteesAssigned_one": "{{count}} मेंटी असाइन किया गया",
+        "menteesAssigned_other": "{{count}} मेंटी असाइन किए गए",
+        "ratingChip_one": "{{rating}} · {{count}} रेटिंग",
+        "ratingChip_other": "{{rating}} · {{count}} रेटिंग",
+        "expertise": "विशेषज्ञता: {{tags}}"
+    },
+    "googleCalendar": {
+        "title": "Google कैलेंडर",
+        "connected": "जुड़ा हुआ",
+        "connectedDescription": "बुकिंग अपने-आप एक Google Meet बनाती है और इवेंट को आपके कैलेंडर में जोड़ती है।",
+        "disconnectedDescription": "अपना Google खाता जोड़ें ताकि बुकिंग को Meet लिंक और कैलेंडर इवेंट मिले।",
+        "redirecting": "रीडायरेक्ट हो रहा है…",
+        "connect": "Google कनेक्ट करें"
+    },
+    "bookingLink": {
+        "title": "आपका 1:1 बुकिंग लिंक",
+        "shareDescription": "यह लिंक साझा करें ताकि शिक्षार्थी आपके साथ सत्र बुक कर सकें।",
+        "notSetUpDescription": "बुकिंग अभी सेट अप नहीं है। अपना बुकिंग पेज सक्षम करने के लिए अपने एडमिन से कहें।",
+        "editAvailability": "उपलब्धता संपादित करें",
+        "editAvailabilityTitle": "अपने साप्ताहिक घंटे, मीटिंग स्थान और सत्र प्रकार सेट करें",
+        "copyLink": "लिंक कॉपी करें",
+        "copyLinkTitle": "शिक्षार्थियों के साथ साझा करने के लिए अपना बुकिंग लिंक कॉपी करें",
+        "copiedToast": "बुकिंग लिंक कॉपी हो गया",
+        "copyFailedToast": "लिंक कॉपी नहीं हो सका",
+        "open": "खोलें",
+        "openTitle": "अपना बुकिंग पेज नए टैब में खोलें"
+    },
+    "awaitingReview": {
+        "heading_one": "{{count}} सत्र रिकॉर्ड करना बाकी है",
+        "heading_other": "{{count}} सत्र रिकॉर्ड करने बाकी हैं",
+        "description": "जब तक आप इसे रिकॉर्ड नहीं करते, तब तक यह सत्र कहीं भी पूर्ण नहीं गिना जाता।",
+        "menteeFallback": "मेंटी",
+        "record": "रिकॉर्ड करें",
+        "notCounted": "अभी गिना नहीं गया"
+    },
+    "mentees": {
+        "heading": "मेंटी",
+        "subtitle": "मेंटरशिप के लिए आपको सौंपे गए छात्र।",
+        "filteredCount": "{{total}} में से {{count}}",
+        "searchPlaceholder": "नाम, ईमेल या फ़ोन से खोजें",
+        "loadError": "आपके मेंटी लोड नहीं हो सके।",
+        "emptyTitle": "अभी तक कोई छात्र असाइन नहीं किया गया",
+        "emptyDescription": "आपका एडमिन यहाँ आपको छात्र असाइन करेगा।",
+        "noSearchMatch": "“{{query}}” से कोई मेंटी मेल नहीं खाता",
+        "clearSearch": "खोज साफ़ करें"
+    },
+    "table": {
+        "student": "छात्र",
+        "phone": "फ़ोन",
+        "assigned": "असाइन किया गया",
+        "autoAssigned": "स्वतः असाइन किया गया",
+        "actions": "कार्रवाइयाँ",
+        "defaultStudentLabel": "यह छात्र",
+        "openProfileTitle": "इस छात्र की प्रोफ़ाइल खोलें",
+        "scheduleAriaLabel": "{{name}} के साथ 1:1 शेड्यूल करें",
+        "scheduleTitle": "1:1 बुक करें — छात्र को कुछ भी करने की ज़रूरत नहीं",
+        "messageAriaLabel": "{{name}} को संदेश भेजें",
+        "openAriaLabel": "{{name}} खोलें",
+        "openRowTitle": "सीखने की प्रगति, नोट्स और शेड्यूल की गई कॉल"
+    },
+    "header": {
+        "schedule": "1:1 शेड्यूल करें"
+    },
+    "kpi": {
+        "mentees": "मेरे मेंटी",
+        "menteesLeft_one": "{{cap}} में से {{count}} जगह बाकी",
+        "menteesLeft_other": "{{cap}} में से {{count}} जगहें बाकी",
+        "menteesNoLimit": "कोई सीमा तय नहीं",
+        "rating": "मेरी औसत रेटिंग",
+        "ratingDetail_one": "{{count}} रेटेड सत्र",
+        "ratingDetail_other": "{{count}} रेटेड सत्र",
+        "ratingNone": "अभी कोई रेटिंग नहीं",
+        "toRecord": "दर्ज करने वाले सत्र",
+        "toRecordDetail": "दर्ज होने तक पूरे हुए नहीं गिने जाते"
+    }
+}

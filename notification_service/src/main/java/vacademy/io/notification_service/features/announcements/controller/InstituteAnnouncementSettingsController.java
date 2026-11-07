@@ -10,12 +10,17 @@ import jakarta.validation.constraints.NotBlank;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
+import vacademy.io.common.auth.model.CustomUserDetails;
 import vacademy.io.notification_service.features.announcements.dto.InstituteAnnouncementSettingsRequest;
 import vacademy.io.notification_service.features.announcements.dto.InstituteAnnouncementSettingsResponse;
 import vacademy.io.notification_service.features.announcements.service.InstituteAnnouncementSettingsService;
+import vacademy.io.notification_service.features.chat.security.ChatIdentity;
 
 import java.util.List;
 import java.util.Map;
@@ -41,7 +46,10 @@ public class InstituteAnnouncementSettingsController {
     })
     @PostMapping
     public ResponseEntity<InstituteAnnouncementSettingsResponse> createOrUpdateSettings(
-            @Valid @RequestBody InstituteAnnouncementSettingsRequest request) {
+            @Valid @RequestBody InstituteAnnouncementSettingsRequest request,
+            @AuthenticationPrincipal CustomUserDetails user,
+            @RequestHeader(value = "clientId", required = false) String clientId) {
+        requireInstituteAdmin(user, clientId, request.getInstituteId());
         
         log.info("Received request to create/update announcement settings for institute: {}", 
                 request.getInstituteId());
@@ -84,14 +92,9 @@ public class InstituteAnnouncementSettingsController {
     })
     @GetMapping("/all")
     public ResponseEntity<List<InstituteAnnouncementSettingsResponse>> getAllSettings() {
-        
-        log.info("Received request to get all institute announcement settings");
-        
-        List<InstituteAnnouncementSettingsResponse> response = settingsService.getAllSettings();
-        
-        log.info("Successfully retrieved announcement settings for {} institutes", response.size());
-        
-        return ResponseEntity.ok(response);
+        // Cross-institute listing is closed: there is no platform-staff role to gate it on
+        // (users.is_root_user is set for ~97% of accounts by ordinary sign-up/invite flows) and nothing calls it.
+        throw new ResponseStatusException(HttpStatus.FORBIDDEN, "NOT_AVAILABLE");
     }
 
     @Operation(summary = "Delete institute announcement settings", 
@@ -105,7 +108,10 @@ public class InstituteAnnouncementSettingsController {
     @DeleteMapping("/institute/{instituteId}")
     public ResponseEntity<Void> deleteSettings(
             @Parameter(description = "Institute ID", required = true)
-            @PathVariable @NotBlank(message = "Institute ID cannot be blank") String instituteId) {
+            @PathVariable @NotBlank(message = "Institute ID cannot be blank") String instituteId,
+            @AuthenticationPrincipal CustomUserDetails user,
+            @RequestHeader(value = "clientId", required = false) String clientId) {
+        requireInstituteAdmin(user, clientId, instituteId);
         
         log.info("Received request to delete announcement settings for institute: {}", instituteId);
         
@@ -202,5 +208,19 @@ public class InstituteAnnouncementSettingsController {
         log.info("Settings validation passed for institute: {}", request.getInstituteId());
         
         return ResponseEntity.ok(response);
+    }
+
+    /**
+     * Settings writes are admin-only and tenant-scoped: the caller must hold ADMIN in the institute named
+     * by the verified clientId header, and may only change that institute's settings.
+     */
+    private static void requireInstituteAdmin(CustomUserDetails user, String clientId, String targetInstituteId) {
+        ChatIdentity id = ChatIdentity.from(user, clientId);
+        if (!id.isAdmin()) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "ADMIN_REQUIRED");
+        }
+        if (targetInstituteId == null || !targetInstituteId.equals(id.instituteId())) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "INSTITUTE_MISMATCH");
+        }
     }
 }

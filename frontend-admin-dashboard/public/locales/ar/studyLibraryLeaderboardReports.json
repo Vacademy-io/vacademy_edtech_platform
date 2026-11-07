@@ -1,0 +1,58 @@
+{
+    "badgesStats": {
+        "loading": "جارٍ تحميل إحصاءات الشارات…",
+        "heading": "الشارات الممنوحة",
+        "totalAwarded": "إجمالي الممنوح",
+        "learnersRecognised": "المتعلمون المكرّمون",
+        "noneAwarded": "لم تُمنح أي شارات بعد."
+    },
+    "badgesDialog": {
+        "title": "الشارات",
+        "titleWithName": "شارات {{name}}",
+        "noneEarned": "لم يتم الحصول على أي شارات بعد."
+    },
+    "leaderboardRow": {
+        "viewBadges": "عرض الشارات",
+        "points_zero": "{{count}} نقطة",
+        "points_one": "نقطة واحدة",
+        "points_two": "نقطتان",
+        "points_few": "{{count}} نقاط",
+        "points_many": "{{count}} نقطة",
+        "points_other": "{{count}} نقطة"
+    },
+    "toasts": {
+        "linkCopied": "تم نسخ رابط لوحة الصدارة العامة"
+    },
+    "share": {
+        "dialogTitle": "لوحة صدارة المؤسسة"
+    },
+    "viewToggle": {
+        "instituteWide": "على مستوى المؤسسة",
+        "byCourse": "حسب المقرر"
+    },
+    "batchSelector": {
+        "course": "المقرر",
+        "selectCourse": "اختر مقررًا",
+        "searchCourse": "ابحث عن مقرر...",
+        "session": "الجلسة",
+        "selectSession": "اختر جلسة",
+        "level": "المستوى",
+        "selectLevel": "اختر مستوى"
+    },
+    "leaderboardPanel": {
+        "instituteWideHeading": "لوحة صدارة على مستوى المؤسسة",
+        "courseHeading": "لوحة صدارة المقرر",
+        "learnersCount_zero": "{{count}} متعلم",
+        "learnersCount_one": "متعلم واحد",
+        "learnersCount_two": "متعلمان",
+        "learnersCount_few": "{{count}} متعلمين",
+        "learnersCount_many": "{{count}} متعلمًا",
+        "learnersCount_other": "{{count}} متعلم",
+        "copyLink": "نسخ الرابط",
+        "shareAriaLabel": "مشاركة رابط لوحة الصدارة العامة",
+        "selectToView": "اختر مقررًا وجلسة ومستوى لعرض لوحة صدارته.",
+        "loading": "جارٍ تحميل لوحة الصدارة…",
+        "noInstituteActivity": "لم يتم تسجيل أي نشاط للمتعلمين بعد.",
+        "noBatchActivity": "لم يتم تسجيل أي نشاط لهذه الدفعة بعد."
+    }
+}

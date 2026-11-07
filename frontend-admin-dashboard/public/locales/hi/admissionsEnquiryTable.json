@@ -1,0 +1,64 @@
+{
+    "toast": {
+        "bulkUpdateSuccess_one": "{{count}} पूछताछ सफलतापूर्वक अपडेट की गई",
+        "bulkUpdateSuccess_other": "{{count}} पूछताछें सफलतापूर्वक अपडेट की गईं",
+        "bulkUpdateError": "पूछताछ की स्थिति अपडेट करने में विफल",
+        "selectAtLeastOneStatus": "कृपया अपडेट करने के लिए कम से कम एक स्थिति चुनें",
+        "downloadStarting": "डाउनलोड शुरू हो रहा है...",
+        "noDataToDownload": "डाउनलोड करने के लिए कोई डेटा नहीं है",
+        "downloadSuccess": "डाउनलोड सफलतापूर्वक पूरा हुआ",
+        "downloadError": "डेटा डाउनलोड करने में विफल"
+    },
+    "loading": {
+        "enquiryResponses": "पूछताछ प्रतिक्रियाएं लोड हो रही हैं..."
+    },
+    "error": {
+        "loadingEnquiryResponses": "पूछताछ प्रतिक्रियाएं लोड करने में त्रुटि"
+    },
+    "empty": {
+        "noResponses": "इस पूछताछ के लिए अभी तक कोई प्रतिक्रिया नहीं है!",
+        "addNewEnquiryResponse": "नई पूछताछ प्रतिक्रिया जोड़ें"
+    },
+    "header": {
+        "totalResponses": "कुल प्रतिक्रियाएं:",
+        "rowsSelected_one": "{{count}} पंक्ति चयनित",
+        "rowsSelected_other": "{{count}} पंक्तियाँ चयनित",
+        "bulkImport": "बल्क इम्पोर्ट",
+        "downloadCsv": "CSV डाउनलोड करें",
+        "downloading": "डाउनलोड हो रहा है..."
+    },
+    "pagination": {
+        "previous": "पिछला",
+        "next": "अगला",
+        "pageOf": "पृष्ठ {{page}} में से {{total}}"
+    },
+    "bulkActionBar": {
+        "selectedLabel": "चयनित",
+        "enquiryStatusLabel": "पूछताछ स्थिति",
+        "conversionLabel": "रूपांतरण",
+        "selectPlaceholder": "चुनें…",
+        "apply": "लागू करें",
+        "applying": "लागू हो रहा है…",
+        "clear": "साफ़ करें"
+    },
+    "csv": {
+        "headers": {
+            "enquiryId": "पूछताछ आईडी",
+            "class": "कक्षा",
+            "studentName": "छात्र का नाम",
+            "gender": "लिंग",
+            "dateOfBirth": "जन्म तिथि",
+            "parentName": "अभिभावक का नाम",
+            "parentEmail": "अभिभावक का ईमेल",
+            "parentMobile": "अभिभावक का मोबाइल नंबर",
+            "trackingId": "ट्रैकिंग आईडी",
+            "status": "स्थिति",
+            "source": "स्रोत",
+            "counsellor": "काउंसलर",
+            "submittedAt": "सबमिट किए जाने का समय"
+        },
+        "assigned": "आवंटित",
+        "notAssigned": "आवंटित नहीं",
+        "filenameFallback": "पूछताछ"
+    }
+}

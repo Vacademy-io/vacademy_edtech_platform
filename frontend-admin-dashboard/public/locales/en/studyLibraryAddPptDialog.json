@@ -1,0 +1,37 @@
+{
+    "toast": {
+        "reorderFailed": "Slide created but reordering failed",
+        "fileSelected": "PPT file selected successfully",
+        "selectFileFirst": "Please select a file first",
+        "uploadSuccess": "PPT uploaded successfully!"
+    },
+    "errors": {
+        "onlyPptOrPptx": "Please upload only PPT or PPTX files",
+        "uploadFailed": "Failed to upload presentation for conversion.",
+        "resolveUrlFailed": "Failed to resolve the uploaded presentation URL.",
+        "conversionDidNotStart": "Conversion did not start.",
+        "lostContact": "Lost contact with the conversion service.",
+        "serviceNotResponding": "Conversion service is not responding.",
+        "conversionFailed": "Presentation conversion failed.",
+        "conversionTimedOut": "Presentation conversion timed out.",
+        "uploadConvertedPdfFailed": "Failed to upload the converted PDF.",
+        "uploadFailedRetry": "Upload failed. Please try again."
+    },
+    "status": {
+        "uploadingPresentation": "Uploading presentation…",
+        "convertingAnimated": "Converting (animations preserved)…",
+        "creatingSlide": "Creating slide…",
+        "convertingToPdf": "Converting PPT to PDF…",
+        "analyzingPdfPages": "Analyzing PDF pages…",
+        "uploadingConvertedPdf": "Uploading converted PDF…",
+        "fallingBackToPdf": "Falling back to PDF…",
+        "processing": "Processing..."
+    },
+    "dropzone": {
+        "title": "Drop your PPT file here, or click to browse",
+        "subtitle": "Supports .ppt and .pptx files (up to 20 MB)"
+    },
+    "actions": {
+        "uploadPpt": "Upload PPT"
+    }
+}

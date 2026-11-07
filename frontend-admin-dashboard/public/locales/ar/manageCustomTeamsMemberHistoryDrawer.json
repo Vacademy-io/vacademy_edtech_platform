@@ -1,0 +1,55 @@
+{
+    "defaultMemberName": "عضو",
+    "enrolledCourses_zero": "لا توجد دورات مسجلة",
+    "enrolledCourses_one": "دورة مسجلة واحدة",
+    "enrolledCourses_two": "دورتان مسجلتان",
+    "enrolledCourses_few": "{{count}} دورات مسجلة",
+    "enrolledCourses_many": "{{count}} دورة مسجلة",
+    "enrolledCourses_other": "دورات مسجلة ({{count}})",
+    "readOnlyLedger": {
+        "title": "دفتر للقراءة فقط",
+        "body": "يمكن لمسؤول المؤسسة الأصلية فقط تعديل الدفعات أو تطبيق خصومات CPO أو تسجيل مدفوعات غير متصلة على دفتر هذا مسؤول {{org}}."
+    },
+    "noMemberSelected": "لم يتم تحديد عضو.",
+    "channels": {
+        "inApp": "داخل التطبيق",
+        "email": "البريد الإلكتروني"
+    },
+    "toast": {
+        "linkCopied": "تم نسخ رابط الدفع",
+        "copyFailed": "تعذر النسخ إلى الحافظة",
+        "reminderSentTo": "تم إرسال التذكير إلى {{email}}",
+        "reminderFired": "تم إرسال التذكير",
+        "reminderFailed": "فشل إرسال التذكير",
+        "toRecipient": "إلى {{email}}",
+        "invoiceReminderSentVia": "تم إرسال التذكير{{where}} عبر {{channels}}",
+        "invoiceReminderNoChannels": "التذكير{{where}} — لم يتم تسليم عبر أي قناة (تحقق من إعدادات الفواتير)",
+        "invoiceReminderFailed": "فشل إرسال تذكير الفاتورة"
+    },
+    "invoices": {
+        "heading": "الفواتير",
+        "loading": "جارٍ تحميل الفواتير...",
+        "headingWithCount_zero": "لا توجد فواتير",
+        "headingWithCount_one": "فاتورة واحدة",
+        "headingWithCount_two": "فاتورتان",
+        "headingWithCount_few": "{{count}} فواتير",
+        "headingWithCount_many": "{{count}} فاتورة",
+        "headingWithCount_other": "فواتير ({{count}})",
+        "createInvoice": "إنشاء فاتورة",
+        "noInvoicesYet": "لا توجد فواتير بعد. أنشئ واحدة باستخدام الزر أعلاه.",
+        "sendInstallmentReminderTitle": "إرسال تذكير بموعد الدفعة",
+        "resendPaymentReminderTitle": "إعادة إرسال تذكير الدفع المستحق (بريد إلكتروني + تنبيه داخل التطبيق)",
+        "sending": "جارٍ الإرسال…",
+        "remind": "تذكير",
+        "copyPaymentLinkTitle": "نسخ رابط دفع المتعلم",
+        "copied": "تم النسخ",
+        "copyLink": "نسخ الرابط",
+        "markPaidTitle": "تسجيل دفعة غير متصلة / يدوية لهذه الفاتورة",
+        "markPaid": "وضع علامة كمدفوعة",
+        "viewPdfTitle": "عرض PDF في علامة تبويب جديدة",
+        "view": "عرض",
+        "downloadPdfTitle": "تنزيل PDF الفاتورة",
+        "save": "حفظ",
+        "noPdf": "لا يوجد PDF"
+    }
+}

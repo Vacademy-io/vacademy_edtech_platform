@@ -1,4 +1,17 @@
 import mammoth from 'mammoth';
+import type { TFunction } from 'i18next';
+
+// This is a plain utility function (not a component/hook), so it cannot call
+// useTranslation() itself — the guide's convention is to thread the caller's
+// `t` in as a parameter. `t` is optional here because the only current caller,
+// add-doc-dialog.tsx, is not yet wired for i18n (a separate batch of this
+// rollout); until that caller passes its own `t`, this fallback resolves each
+// call's defaultValue string so behavior (and the English copy shown via
+// toast.error) stays exactly as before. Keys live under the
+// `studyLibraryDocToHtml` namespace, matching the sibling fallbackT pattern in
+// ai-copilot/course-outline/generating/services/contentGenerationService.ts.
+const fallbackT: TFunction = ((_key: string, defaultValue?: unknown) =>
+    typeof defaultValue === 'string' ? defaultValue : String(_key)) as unknown as TFunction;
 
 const INLINE_TAGS = 'strong|em|b|i|u|code|span|mark|sub|sup|small';
 const BLOCK_CONTAINERS = new Set([
@@ -402,7 +415,10 @@ const flattenOrderedListsToParagraphs = (html: string): string => {
     }
 };
 
-export const convertDocToHtml = async (file: File): Promise<string> => {
+export const convertDocToHtml = async (
+    file: File,
+    t: TFunction = fallbackT
+): Promise<string> => {
     return new Promise((resolve, reject) => {
         const reader = new FileReader();
 
@@ -412,7 +428,11 @@ export const convertDocToHtml = async (file: File): Promise<string> => {
                 const result = await mammoth.convertToHtml({ arrayBuffer });
 
                 if (!result || !result.value) {
-                    reject(new Error('Document conversion failed - no content'));
+                    reject(
+                        new Error(
+                            t('errors.conversionFailedNoContent', 'Document conversion failed - no content')
+                        )
+                    );
                     return;
                 }
 

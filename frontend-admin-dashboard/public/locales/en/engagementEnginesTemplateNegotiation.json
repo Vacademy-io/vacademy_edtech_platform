@@ -1,0 +1,59 @@
+{
+    "heading": "WhatsApp templates",
+    "subheading": "Proactive WhatsApp needs Meta-approved templates. The AI proposes them; you approve and submit; Meta reviews.",
+    "emptyState": "No templates yet. Let the AI propose a few based on this engine's brief.",
+    "actions": {
+        "checkMeta": "Check Meta",
+        "moreOptions": "More options",
+        "thinking": "Thinking…",
+        "proposeTemplates": "Propose templates",
+        "edit": "Edit",
+        "approve": "Approve",
+        "submitToMeta": "Submit to Meta",
+        "withdraw": "Withdraw",
+        "cancel": "Cancel"
+    },
+    "errors": {
+        "loadFailed": "Could not load templates. Please retry."
+    },
+    "proposalCard": {
+        "round": "round {{value}}",
+        "variables": "Variables: {{list}}",
+        "metaRejected": "Meta: {{reason}}",
+        "metaRecategorised": "Meta approved this but as <b>{{metaCategory}}</b> (you proposed {{proposedCategory}}). It's usable; request alternatives if the category matters."
+    },
+    "editDialog": {
+        "heading": "Edit template",
+        "bodyLabel": "Body (use {{p1}}, {{p2}} … for variables)",
+        "categoryLabel": "Category",
+        "variablesLabel": "Variables (one per {{n}}, in order) + a sample value Meta shows a reviewer",
+        "namePlaceholder": "name",
+        "samplePlaceholder": "e.g. Aisha",
+        "addVariable": "+ Add variable",
+        "footerLabel": "Footer (optional, ≤60 chars)",
+        "saving": "Saving…",
+        "saveChanges": "Save changes",
+        "errors": {
+            "bodyEmpty": "The body is empty.",
+            "bodyTooLong": "The body exceeds WhatsApp's 1024-character limit.",
+            "placeholderZero": "Placeholders start at {{p1}} — {{p0}} is not allowed.",
+            "placeholderMissing": "Placeholder {{placeholder}} is missing — they must be sequential from 1.",
+            "variableRowMismatch": "The body has {{variables}} but {{rows}}. They must match.",
+            "variableCount_one": "{{count}} variable",
+            "variableCount_other": "{{count}} variables",
+            "rowCount_one": "{{count}} row",
+            "rowCount_other": "{{count}} rows"
+        },
+        "charCount": "{{count}} / 1024 characters",
+        "removeVariable": "Remove variable"
+    },
+    "proposalCount_one": "{{count}} proposal",
+    "proposalCount_other": "{{count}} proposals",
+    "flow": {
+        "propose": "AI proposes",
+        "approve": "You edit & approve",
+        "submit": "Submit to Meta",
+        "meta": "Meta approves",
+        "send": "Engine can send"
+    }
+}

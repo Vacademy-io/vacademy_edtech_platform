@@ -1,4 +1,5 @@
 import { ReactNode } from 'react';
+import { Trans, useTranslation } from 'react-i18next';
 import { MyDialog } from '@/components/design-system/dialog';
 import { MyButton } from '@/components/design-system/button';
 import { useSubmissionsBulkActionsDialogStoreAttempted } from '../bulk-actions-zustand-store/useSubmissionsBulkActionsDialogStoreAttempted';
@@ -15,6 +16,7 @@ interface ProvideDialogDialogProps {
 }
 
 const ProvideReattemptDialogContent = () => {
+    const { t } = useTranslation('homeworkCreationProvideReattemptDialog');
     const { selectedStudent, bulkActionInfo, isBulkAction, closeAllDialogs } =
         useSubmissionsBulkActionsDialogStoreAttempted();
     const { assessmentId } = Route.useParams();
@@ -25,7 +27,7 @@ const ProvideReattemptDialogContent = () => {
         mutationFn: ({ registrationIds }: { registrationIds: string[] }) =>
             provideReattemptToParticipants(assessmentId, instituteId, registrationIds),
         onSuccess: () => {
-            toast.success('Reattempt has been provided to the selected participant(s).', {
+            toast.success(t('toasts.reattemptSuccess'), {
                 className: 'success-toast',
                 duration: 4000,
             });
@@ -55,8 +57,12 @@ const ProvideReattemptDialogContent = () => {
     return (
         <div className="flex flex-col gap-6 px-4 pb-2 text-neutral-600">
             <h1>
-                Are you sure you want to provide reattempt to selected&nbsp;
-                <span className="text-primary-500">{displayText}</span>?
+                <Trans
+                    i18nKey="dialog.confirmMessage"
+                    t={t}
+                    values={{ name: displayText }}
+                    components={{ highlight: <span className="text-primary-500" /> }}
+                />
             </h1>
             <MyButton
                 buttonType="primary"
@@ -65,7 +71,7 @@ const ProvideReattemptDialogContent = () => {
                 onClick={handleSubmit}
                 disable={provideReattemptMutation.isPending}
             >
-                Done
+                {t('doneButton')}
             </MyButton>
         </div>
     );
@@ -76,11 +82,12 @@ export const ProvideReattemptDialog = ({
     open,
     onOpenChange,
 }: ProvideDialogDialogProps) => {
+    const { t } = useTranslation('homeworkCreationProvideReattemptDialog');
     return (
         <MyDialog
             trigger={trigger}
-            heading="Provide Reattempt"
-            dialogWidth="w-[400px] max-w-[400px]"
+            heading={t('dialog.heading')}
+            dialogWidth="w-96 max-w-sm"
             content={<ProvideReattemptDialogContent />}
             open={open}
             onOpenChange={onOpenChange}

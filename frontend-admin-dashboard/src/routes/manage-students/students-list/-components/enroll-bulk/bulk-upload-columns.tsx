@@ -1,5 +1,6 @@
 // editable-bulk-upload-columns.tsx
 import { type ColumnDef } from '@tanstack/react-table';
+import type { TFunction } from 'i18next';
 import {
     type ValidationError,
     type SchemaFields,
@@ -39,6 +40,7 @@ interface EditableBulkUploadColumnsProps {
     onViewErrors?: (rowIndex: number) => void;
     currentPage: number;
     ITEMS_PER_PAGE: number;
+    t: TFunction;
 }
 
 // Create editable bulk upload columns
@@ -54,6 +56,7 @@ export const createEditableBulkUploadColumns = ({
     onViewErrors,
     currentPage,
     ITEMS_PER_PAGE,
+    t,
 }: EditableBulkUploadColumnsProps): Array<ColumnDef<SchemaFields>> => {
     const columns: Array<ColumnDef<SchemaFields>> = [];
 
@@ -63,7 +66,7 @@ export const createEditableBulkUploadColumns = ({
     if (!hasStatusColumn) {
         columns.push({
             id: 'status',
-            header: 'STATUS',
+            header: t('columns.status'),
             cell: (props) => {
                 if (statusColumnRenderer) {
                     return statusColumnRenderer({ row: props.row });
@@ -94,7 +97,7 @@ export const createEditableBulkUploadColumns = ({
                             layoutVariant="default"
                             onClick={() => onViewErrors?.(rowIndex)}
                         >
-                            Errors ({rowErrors.length})
+                            {t('errors.viewErrors', { count: rowErrors.length })}
                         </MyButton>
                     </div>
                 );
@@ -108,7 +111,7 @@ export const createEditableBulkUploadColumns = ({
         if (header.column_name === 'STATUS') {
             columns.push({
                 id: 'status',
-                header: 'STATUS',
+                header: t('columns.status'),
                 cell: (props) => {
                     if (statusColumnRenderer) {
                         return statusColumnRenderer({ row: props.row });
@@ -137,7 +140,7 @@ export const createEditableBulkUploadColumns = ({
                                 layoutVariant="default"
                                 onClick={() => onViewErrors?.(rowIndex)}
                             >
-                                Errors ({rowErrors.length})
+                                {t('errors.viewErrors', { count: rowErrors.length })}
                             </MyButton>
                         </div>
                     );
@@ -162,7 +165,7 @@ export const createEditableBulkUploadColumns = ({
                             </div>
                             {header.column_name.includes('MOBILE_NUMBER') && (
                                 <span className="text-xs text-neutral-500">
-                                    (Eg. +91-1234567890)
+                                    {t('hints.mobileNumberExample')}
                                 </span>
                             )}
                         </div>
@@ -199,7 +202,7 @@ export const createEditableBulkUploadColumns = ({
                                     }
                                 >
                                     <SelectTrigger className={error ? 'border-danger-500' : ''}>
-                                        <SelectValue placeholder="Select gender" />
+                                        <SelectValue placeholder={t('placeholders.selectGender')} />
                                     </SelectTrigger>
                                     <SelectContent>
                                         {['MALE', 'FEMALE', 'OTHERS'].map((option) => (
@@ -228,7 +231,7 @@ export const createEditableBulkUploadColumns = ({
                                     }
                                 >
                                     <SelectTrigger className={error ? 'border-danger-500' : ''}>
-                                        <SelectValue placeholder="Select an option" />
+                                        <SelectValue placeholder={t('placeholders.selectOption')} />
                                     </SelectTrigger>
                                     <SelectContent>
                                         {header.options.map((option) => (
@@ -295,7 +298,7 @@ export const createEditableBulkUploadColumns = ({
         columns.push(
             {
                 id: 'upload_status',
-                header: 'Upload Status',
+                header: t('columns.uploadStatus'),
                 cell: ({ row }) => {
                     const status = row.original.STATUS;
                     const message = row.original.STATUS_MESSAGE;
@@ -306,20 +309,20 @@ export const createEditableBulkUploadColumns = ({
                                 status === 'true' ? 'text-success-500' : 'text-danger-500'
                             )}
                         >
-                            {status === 'true' ? message || 'Success' : 'Failed'}
+                            {status === 'true' ? message || t('uploadResult.success') : t('uploadResult.failed')}
                         </div>
                     );
                 },
             },
             {
                 id: 'upload_error',
-                header: 'Upload Error',
+                header: t('columns.uploadError'),
                 cell: ({ row }) => {
                     const error = row.original.ERROR;
                     if (!error) return null;
 
                     return (
-                        <div className="max-w-[300px] whitespace-normal break-words text-sm text-danger-500">
+                        <div className="max-w-xs whitespace-normal break-words text-sm text-danger-500">
                             {error}
                         </div>
                     );

@@ -1,0 +1,66 @@
+{
+    "navHeading": {
+        "onboarding": "Intégration"
+    },
+    "loading": "Chargement…",
+    "notEnabled": {
+        "title": "Les parcours d'intégration ne sont pas activés",
+        "prefix": "Un administrateur peut activer cette option sous",
+        "settingsPath": "Paramètres → Paramètres d'intégration"
+    },
+    "page": {
+        "title": "Parcours d'intégration",
+        "subtitle": "Listes de contrôle ordonnées qu'un prospect ou un étudiant suit entre son accord pour rejoindre et son inscription complète."
+    },
+    "actions": {
+        "createFlow": "Créer un parcours",
+        "manage": "Gérer",
+        "retry": "Réessayer",
+        "cancel": "Annuler",
+        "deleting": "Suppression…",
+        "deleteFlow": "Supprimer le parcours",
+        "settings": "Onboarding settings"
+    },
+    "columns": {
+        "name": "Nom",
+        "description": "Description",
+        "status": "Statut",
+        "steps": "Étapes",
+        "actions": "Actions",
+        "noSteps": "No steps yet",
+        "updated": "Updated"
+    },
+    "statusLabels": {
+        "draft": "Brouillon",
+        "active": "Actif",
+        "archived": "Archivé"
+    },
+    "states": {
+        "noInstitute": "Choisissez un établissement pour afficher les parcours d'intégration.",
+        "loadError": "Impossible de charger les parcours d'intégration.",
+        "emptyTitle": "Aucun parcours d'intégration pour l'instant",
+        "emptyDescription": "Créez votre premier parcours pour définir les étapes qu'un prospect ou un étudiant suit jusqu'à son inscription complète."
+    },
+    "deleteDialog": {
+        "heading": "Supprimer le parcours d'intégration",
+        "confirmPrefix": "Supprimer",
+        "confirmSuffix": " ? Cela archive le parcours — plus aucune nouvelle instance ne pourra être démarrée à partir de lui, et il sera retiré de cette liste, mais les instances d'intégration déjà en cours sur ce parcours resteront inchangées."
+    },
+    "toasts": {
+        "deleted": "Parcours d'intégration supprimé",
+        "deleteError": "Impossible de supprimer le parcours. Veuillez réessayer."
+    },
+    "summary": {
+        "activeFlows": "Active flows",
+        "drafts_one": "{{count}} draft not live yet",
+        "drafts_other": "{{count}} drafts not live yet",
+        "inProgress": "In progress",
+        "inProgressDetail": "People part-way through a flow",
+        "completed": "Completed",
+        "abandoned": "Abandoned"
+    },
+    "table": {
+        "title": "Flows",
+        "subtitle": "Deleting a flow archives it — people already on it keep going."
+    }
+}

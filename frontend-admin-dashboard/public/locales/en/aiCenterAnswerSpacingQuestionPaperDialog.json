@@ -1,0 +1,25 @@
+{
+    "title": "Manage Answer Spacing",
+    "helper": {
+        "text": "Specify the space (in mm) to be provided after each question for answers. Valid range is between <strong>{{min}}mm</strong> and <strong>{{max}}mm</strong>."
+    },
+    "table": {
+        "headers": {
+            "qNo": "Q.No.",
+            "section": "Section",
+            "question": "Question",
+            "type": "Type",
+            "space": "Space (mm)"
+        },
+        "empty": "No eligible questions found. Only long answer and one-word questions can have custom spacing.",
+        "type": {
+            "longAnswer": "Long Answer",
+            "oneWord": "One Word"
+        },
+        "unit": "mm"
+    },
+    "actions": {
+        "cancel": "Cancel",
+        "save": "Save Settings"
+    }
+}

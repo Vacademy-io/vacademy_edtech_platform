@@ -1,0 +1,32 @@
+{
+    "title": {
+        "apiError": "अपलोड त्रुटि",
+        "validationError": "सत्यापन त्रुटियां"
+    },
+    "apiError": {
+        "heading": "इस प्रविष्टि के लिए अपलोड विफल रहा",
+        "sqlStatementLabel": "SQL कथन:",
+        "unknownError": "अज्ञात त्रुटि",
+        "unknownUploadError": "अपलोड के दौरान अज्ञात त्रुटि हुई।",
+        "rowDataHeading": "पंक्ति डेटा",
+        "table": {
+            "field": "फ़ील्ड",
+            "value": "मान"
+        }
+    },
+    "validationErrors": {
+        "table": {
+            "position": "स्थिति",
+            "error": "त्रुटि",
+            "resolution": "समाधान",
+            "currentValue": "वर्तमान मान"
+        },
+        "rowPosition": "{{field}} की पंक्ति {{row}} में"
+    },
+    "common": {
+        "notAvailable": "लागू नहीं"
+    },
+    "buttons": {
+        "close": "बंद करें"
+    }
+}

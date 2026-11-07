@@ -1,0 +1,13 @@
+{
+    "heading": "एकॉर्डियन",
+    "addSection": "सेक्शन जोड़ें",
+    "tabs": {
+        "preview": "पूर्वावलोकन",
+        "edit": "संपादित करें"
+    },
+    "sectionNumber": "सेक्शन {{number}}",
+    "sectionTitlePlaceholder": "सेक्शन का शीर्षक…",
+    "sectionContentPlaceholder": "सेक्शन की सामग्री — टेक्स्ट और/या एक छवि जोड़ें…",
+    "removeSection": "सेक्शन हटाएँ",
+    "emptySection": "खाली सेक्शन"
+}

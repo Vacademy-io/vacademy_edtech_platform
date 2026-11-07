@@ -1,0 +1,26 @@
+{
+    "updateBatch": {
+        "successTitle": "सफलता",
+        "successDescription": "चयनित विद्यार्थियों के बैच सफलतापूर्वक अपडेट किए गए",
+        "errorTitle": "त्रुटि",
+        "errorDescription": "बैच अपडेट करने में विफल। कृपया पुनः प्रयास करें।"
+    },
+    "extendSession": {
+        "successTitle": "सफलता",
+        "successDescription": "चयनित विद्यार्थियों के सत्र सफलतापूर्वक बढ़ाए गए",
+        "errorTitle": "त्रुटि",
+        "errorDescription": "सत्र बढ़ाने में विफल। कृपया पुनः प्रयास करें।"
+    },
+    "terminate": {
+        "successTitle": "सफलता",
+        "successDescription": "चयनित विद्यार्थियों का पंजीकरण सफलतापूर्वक समाप्त किया गया",
+        "errorTitle": "त्रुटि",
+        "errorDescription": "पंजीकरण समाप्त करने में विफल। कृपया पुनः प्रयास करें।"
+    },
+    "delete": {
+        "successTitle": "सफलता",
+        "successDescription": "चयनित विद्यार्थी सफलतापूर्वक हटाए गए",
+        "errorTitle": "त्रुटि",
+        "errorDescription": "विद्यार्थियों को हटाने में विफल। कृपया पुनः प्रयास करें।"
+    }
+}

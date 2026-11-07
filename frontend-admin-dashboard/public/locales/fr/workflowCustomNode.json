@@ -1,0 +1,23 @@
+{
+    "start": "Début",
+    "issueCount_one": "{{count}} problème",
+    "issueCount_many": "{{count}} problèmes",
+    "issueCount_other": "{{count}} problèmes",
+    "issues": {
+        "selectTriggerEvent": "Sélectionnez un événement déclencheur",
+        "selectQuery": "Sélectionnez une requête",
+        "selectRecipientsSource": "Sélectionnez une source de données pour les destinataires",
+        "selectWhatsappTemplate": "Sélectionnez un modèle WhatsApp",
+        "setRecipientsExpression": "Définissez l'expression des destinataires",
+        "enterUrl": "Saisissez une URL",
+        "setSourceExpression": "Définissez l'expression source",
+        "setFilterCondition": "Définissez la condition de filtre",
+        "setConditionExpression": "Définissez l'expression de condition",
+        "setDelayValue": "Définissez la valeur du délai",
+        "selectTable": "Sélectionnez une table",
+        "enterNotificationTitle": "Saisissez le titre de la notification",
+        "enterNotificationBody": "Saisissez le corps de la notification",
+        "setDelayDuration": "Définissez la durée du délai",
+        "selectLeadStatus": "Sélectionnez un statut de prospect"
+    }
+}

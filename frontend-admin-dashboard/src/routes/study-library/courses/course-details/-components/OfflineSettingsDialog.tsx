@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { Trans, useTranslation } from 'react-i18next';
 import { MyDialog } from '@/components/design-system/dialog';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
@@ -24,6 +25,7 @@ export const OfflineSettingsDialog: React.FC<OfflineSettingsDialogProps> = ({
     onOpenChange,
     packageId,
 }) => {
+    const { t } = useTranslation('studyLibraryOfflineSettingsDialog');
     const [enabled, setEnabled] = useState(false);
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
@@ -34,12 +36,12 @@ export const OfflineSettingsDialog: React.FC<OfflineSettingsDialogProps> = ({
         setLoading(true);
         getCourseOfflineDefault(packageId)
             .then((value) => active && setEnabled(value))
-            .catch(() => active && toast.error('Failed to load offline settings'))
+            .catch(() => active && toast.error(t('failedToLoadOfflineSettings')))
             .finally(() => active && setLoading(false));
         return () => {
             active = false;
         };
-    }, [open, packageId]);
+    }, [open, packageId, t]);
 
     const handleToggle = async (value: boolean) => {
         const previous = enabled;
@@ -47,10 +49,10 @@ export const OfflineSettingsDialog: React.FC<OfflineSettingsDialogProps> = ({
         setSaving(true);
         try {
             await saveCourseOfflineDefault(packageId, value);
-            toast.success('Offline settings saved');
+            toast.success(t('offlineSettingsSaved'));
         } catch {
             setEnabled(previous);
-            toast.error('Failed to save offline settings');
+            toast.error(t('failedToSaveOfflineSettings'));
         } finally {
             setSaving(false);
         }
@@ -58,7 +60,7 @@ export const OfflineSettingsDialog: React.FC<OfflineSettingsDialogProps> = ({
 
     return (
         <MyDialog
-            heading="Offline settings"
+            heading={t('offlineSettings')}
             open={open}
             onOpenChange={onOpenChange}
             dialogWidth="w-full max-w-lg"
@@ -68,11 +70,10 @@ export const OfflineSettingsDialog: React.FC<OfflineSettingsDialogProps> = ({
                     <div className="space-y-1">
                         <Label htmlFor="course-offline-default" className="flex items-center gap-2">
                             <CloudArrowDown className="size-4 text-primary-500" />
-                            Allow offline downloads by default
+                            {t('allowOfflineDownloadsByDefault')}
                         </Label>
                         <p className="text-caption text-neutral-500">
-                            Applies to everything in this course that isn&apos;t covered by a more
-                            specific rule.
+                            {t('appliesToEverythingDescription')}
                         </p>
                     </div>
                     <Switch
@@ -87,23 +88,26 @@ export const OfflineSettingsDialog: React.FC<OfflineSettingsDialogProps> = ({
                     <li className="flex items-start gap-2">
                         <DotsThreeVertical className="mt-0.5 size-4 shrink-0 text-neutral-400" />
                         <span>
-                            Fine-tune per, subject, module, chapter or slide from it&apos;s{' '}
-                            <span className="font-medium">menu</span>
+                            <Trans
+                                t={t}
+                                i18nKey="fineTuneFromMenu"
+                                components={{ strong: <span className="font-medium" /> }}
+                            />
                         </span>
                     </li>
                     <li className="flex items-start gap-2">
                         <Prohibit className="mt-0.5 size-4 shrink-0 text-neutral-400" />
                         <span>
-                            A <span className="font-medium">Block always wins</span> - blocking a
-                            chapter blocks its slides even if they&apos;re allowed.
+                            <Trans
+                                t={t}
+                                i18nKey="blockAlwaysWins"
+                                components={{ strong: <span className="font-medium" /> }}
+                            />
                         </span>
                     </li>
                     <li className="flex items-start gap-2">
                         <CloudArrowDown className="mt-0.5 size-4 shrink-0 text-neutral-400" />
-                        <span>
-                            YouTube/Vimeo/embedded content always needs internet — it can&apos;t be
-                            downloaded regardless of these settings.
-                        </span>
+                        <span>{t('embeddedContentNeedsInternet')}</span>
                     </li>
                 </ul>
             </div>

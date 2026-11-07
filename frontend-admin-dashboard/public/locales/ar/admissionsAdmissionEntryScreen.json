@@ -1,0 +1,127 @@
+{
+    "header": {
+        "title": "نموذج القبول الافتراضي",
+        "admissionForm": "نموذج القبول",
+        "bulkImport": "استيراد جماعي",
+        "subtitle": "Admissions and applications for a session — start a new one or convert an enquiry.",
+        "sessionLabel": "Session"
+    },
+    "filters": {
+        "status": "الحالة",
+        "source": "المصدر",
+        "dateRange": "النطاق الزمني",
+        "class": "الصف",
+        "section": "الشعبة",
+        "applyFilter": "تطبيق الفلتر",
+        "applying": "جارٍ التطبيق...",
+        "clearAll": "مسح الكل"
+    },
+    "dateRanges": {
+        "today": "اليوم",
+        "last7Days": "آخر 7 أيام",
+        "last30Days": "آخر 30 يومًا",
+        "last3Months": "آخر 3 أشهر",
+        "last6Months": "آخر 6 أشهر",
+        "lastYear": "العام الماضي"
+    },
+    "overallStatuses": {
+        "application": "طلب التقديم",
+        "admission": "القبول"
+    },
+    "sourceTypes": {
+        "website": "الموقع الإلكتروني",
+        "googleAds": "إعلانات جوجل",
+        "facebook": "فيسبوك",
+        "google": "جوجل",
+        "friends": "الأصدقاء",
+        "zohoForms": "نماذج زوهو",
+        "audienceCampaign": "حملة الجمهور",
+        "directApplication": "تقديم مباشر",
+        "manualAdmission": "قبول يدوي",
+        "other": "أخرى"
+    },
+    "searchByOptions": {
+        "studentName": "اسم الطالب",
+        "applicationNo": "رقم الطلب",
+        "parentMobile": "جوال ولي الأمر"
+    },
+    "search": {
+        "criteriaHeading": "معايير البحث",
+        "searchByLabel": "البحث حسب",
+        "enterDetailsLabel": "أدخل التفاصيل",
+        "enterDetailsPlaceholder": "أدخل {{field}}",
+        "searchButton": "بحث",
+        "searching": "جارٍ البحث..."
+    },
+    "results": {
+        "totalResponses": "إجمالي الردود:",
+        "noRecordsFound": "لم يتم العثور على سجلات مطابقة لمعايير البحث.",
+        "createAdmission": "إنشاء قبول",
+        "alreadyAdmitted": "تم القبول بالفعل"
+    },
+    "table": {
+        "sNo": "م.",
+        "class": "الصف",
+        "studentName": "اسم الطالب",
+        "gender": "الجنس",
+        "dateOfBirth": "تاريخ الميلاد",
+        "parentName": "اسم ولي الأمر",
+        "parentEmail": "بريد ولي الأمر الإلكتروني",
+        "parentMobile": "جوال ولي الأمر",
+        "trackingId": "رقم التتبع",
+        "status": "الحالة",
+        "source": "المصدر",
+        "actions": "الإجراءات"
+    },
+    "genderLabels": {
+        "male": "ذكر",
+        "female": "أنثى",
+        "other": "آخر"
+    },
+    "statusLabels": {
+        "new": "جديد",
+        "contacted": "تم التواصل",
+        "followUp": "متابعة",
+        "qualified": "مؤهل",
+        "notEligible": "غير مؤهل",
+        "enquiry": "استفسار",
+        "application": "طلب التقديم",
+        "admission": "القبول"
+    },
+    "emptyState": {
+        "title": "اختر طالبًا للبدء",
+        "description": "استخدم لوحة البحث أعلاه للعثور على استفسار أو طلب تقديم موجود. أو انقر على 'نموذج القبول' لبدء نموذج جديد."
+    },
+    "admissionTypeModal": {
+        "title": "اختر نوع القبول",
+        "subtitle": "اختر الطريقة التي تريد بها إنشاء قبول جديد",
+        "newAdmissionTitle": "قبول جديد",
+        "newAdmissionDesc": "ابدأ نموذج قبول جديد",
+        "fromEnquiryTitle": "من استفسار",
+        "fromEnquiryDesc": "إنشاء قبول من استفسار موجود",
+        "fromApplicationTitle": "من طلب تقديم",
+        "fromApplicationDesc": "إنشاء قبول من طلب تقديم موجود"
+    },
+    "applicationModal": {
+        "title": "أدخل تفاصيل الطلب",
+        "applicationIdLabel": "رقم الطلب / رقم التتبع",
+        "applicationIdPlaceholder": "مثال: APP-12345",
+        "or": "أو",
+        "phoneLabel": "رقم الهاتف",
+        "phonePlaceholder": "مثال: 9876543210",
+        "helperText": "أدخل رقم الطلب أو رقم هاتف الطلب الذي تريد تحويله إلى قبول",
+        "cancel": "إلغاء",
+        "continueButton": "متابعة",
+        "loading": "جارٍ التحميل..."
+    },
+    "alerts": {
+        "enterIdOrPhone": "يرجى إدخال رقم الطلب أو رقم الهاتف",
+        "noApplicationFound": "لم يتم العثور على طلب بالتفاصيل المدخلة.",
+        "fetchFailed": "فشل جلب تفاصيل الطلب. يرجى التحقق من الرقم أو رقم الهاتف."
+    },
+    "quickViews": {
+        "admitted": "Admitted",
+        "applications": "Applications",
+        "all": "All records"
+    }
+}

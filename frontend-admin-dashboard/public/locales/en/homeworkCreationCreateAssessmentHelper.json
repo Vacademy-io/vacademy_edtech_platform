@@ -1,0 +1,8 @@
+{
+    "qrCodeNotFound": "QR code not found!",
+    "defaultRegistrationFields": {
+        "fullName": "Full Name",
+        "email": "Email",
+        "phoneNumber": "Phone Number"
+    }
+}

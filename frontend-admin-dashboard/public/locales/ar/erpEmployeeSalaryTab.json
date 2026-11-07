@@ -1,0 +1,49 @@
+{
+    "groups": {
+        "earnings": "الإيرادات",
+        "deductions": "الخصومات",
+        "employerContributions": "مساهمات صاحب العمل"
+    },
+    "table": {
+        "columns": {
+            "component": "العنصر",
+            "calculation": "الحساب",
+            "monthly": "شهري",
+            "annual": "سنوي"
+        },
+        "overridden": "مُعدَّل لهذا الموظف"
+    },
+    "errors": {
+        "loadFailed": "تعذّر تحميل هيكل راتب هذا الموظف."
+    },
+    "empty": {
+        "noStructure": {
+            "title": "لم يتم تعيين هيكل راتب بعد",
+            "description": "عيّنه من ERP ← الراتب. حتى ذلك الحين، سيُستثنى هذا الموظف من دورات كشوف المرتبات."
+        },
+        "noComponents": {
+            "title": "لا يحتوي هذا الهيكل على عناصر",
+            "description": "أضِف عناصر إلى قالب الراتب حتى تتمكن كشوف المرتبات من حساب قسيمة الراتب."
+        }
+    },
+    "card": {
+        "defaultStructureName": "هيكل الراتب الحالي",
+        "defaultRevisionName": "هيكل الراتب",
+        "componentBreakdown": "تفصيل العناصر",
+        "revisionHistory": "سجل التعديلات",
+        "noEarlierStructures": "لا توجد هياكل سابقة — هذا أول هيكل مُعيَّن."
+    },
+    "fields": {
+        "ctcAnnual": "التكلفة الإجمالية (سنويًا)",
+        "ctcMonthly": "التكلفة الإجمالية (شهريًا)",
+        "grossMonthly": "الإجمالي (شهريًا)",
+        "netMonthly": "الصافي (شهريًا)",
+        "effectiveFrom": "ساري من",
+        "currency": "العملة",
+        "status": "الحالة",
+        "revisionReason": "سبب التعديل"
+    },
+    "history": {
+        "open": "مفتوح"
+    }
+}

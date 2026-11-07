@@ -1,0 +1,7 @@
+{
+    "headerRefs_one": "{{count}} ref",
+    "headerRefs_other": "{{count}} refs",
+    "briefLabel": "The brief",
+    "referencesAttached_one": "{{count}} reference attached",
+    "referencesAttached_other": "{{count}} references attached"
+}

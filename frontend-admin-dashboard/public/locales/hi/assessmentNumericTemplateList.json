@@ -1,0 +1,16 @@
+{
+    "settings": {
+        "title": "प्रश्न सेटिंग्स",
+        "questionType": "प्रश्न प्रकार",
+        "numericalType": "संख्यात्मक प्रकार",
+        "decimalPrecision": "दशमलव सटीकता"
+    },
+    "comprehensionText": "अनुच्छेद पाठ",
+    "question": {
+        "label": "प्रश्न"
+    },
+    "defaults": {
+        "answer": "उत्तर:",
+        "explanation": "व्याख्या:"
+    }
+}

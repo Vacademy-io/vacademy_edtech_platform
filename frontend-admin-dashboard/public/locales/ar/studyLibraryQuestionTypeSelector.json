@@ -1,0 +1,15 @@
+{
+    "addQuestion": "إضافة سؤال",
+    "quickAccess": "وصول سريع",
+    "mcqSingleCorrect": "اختيار من متعدد (إجابة صحيحة واحدة)",
+    "mcqMultipleCorrect": "اختيار من متعدد (إجابات صحيحة متعددة)",
+    "numerical": "رقمي",
+    "trueFalse": "صح خطأ",
+    "writingSkills": "مهارات الكتابة",
+    "longAnswer": "إجابة طويلة",
+    "singleWord": "كلمة واحدة",
+    "readingSkills": "مهارات القراءة",
+    "comprehensionMcqSingleCorrect": "اختيار من متعدد للفهم (إجابة صحيحة واحدة)",
+    "comprehensionMcqMultipleCorrect": "اختيار من متعدد للفهم (إجابات صحيحة متعددة)",
+    "comprehensionNumeric": "رقمي للفهم"
+}

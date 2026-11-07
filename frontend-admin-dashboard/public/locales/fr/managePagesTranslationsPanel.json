@@ -1,0 +1,28 @@
+{
+    "tabs": {
+        "other": "Autres entrées"
+    },
+    "other": {
+        "hint": "Traductions introuvables dans les pages, paramètres, cours, dossiers ou pages produit du site — restées après la modification d’un texte, ou ajoutées à la main. Certaines peuvent encore servir ailleurs : vérifiez avant de cliquer sur Clear.",
+        "empty": "Chaque traduction appartient à un texte de page, un cours, un dossier ou une page.",
+        "waiting": "Les autres entrées s’affichent seulement une fois les cours, dossiers et pages produit chargés, pour qu’une traduction encore utilisée ne paraisse jamais inutilisée.",
+        "confirmClear": "Supprimer cette traduction ? « {{text}} » est introuvable sur le site, mais elle sert peut-être ailleurs, hors de vue de l’éditeur."
+    },
+    "location": {
+        "header": "En-tête",
+        "footer": "Pied de page",
+        "pageTitle": "Titre de la page",
+        "seo": "Moteurs de recherche (SEO)",
+        "settings": "Paramètres du site",
+        "card": {
+            "formatLabel": "Libellé de format",
+            "buttonLabel": "Libellé du bouton",
+            "freeLabel": "Libellé gratuit",
+            "courseDescription": "Description du cours",
+            "loadMore": "Bouton Voir plus",
+            "courseCount": "Nombre de cours",
+            "gridHeading": "Titre de la grille",
+            "sortLabel": "Libellé de tri"
+        }
+    }
+}

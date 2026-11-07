@@ -76,20 +76,24 @@ public class AdPlatformWebhookController {
 
     /**
      * Google Lead Form Extensions webhook.
-     * The googleKey in the URL path acts as the authentication credential.
-     * Google sends the full lead payload synchronously; return 200 to acknowledge.
+     * The googleKey in the URL path names the connector; the body's google_key must equal it.
+     * Processed synchronously so the status tells Google the truth: 200 {} = saved,
+     * 4XX {"message"} = misconfigured (not retried), 5XX = failed (Google retries).
      */
     @PostMapping("/google/{googleKey}")
-    public ResponseEntity<String> receiveGoogleWebhook(
+    public ResponseEntity<Map<String, String>> receiveGoogleWebhook(
             @PathVariable String googleKey,
             HttpServletRequest request) {
         String rawBody = readBody(request);
-        if (rawBody == null) {
-            return ResponseEntity.badRequest().body("Empty body");
+        if (rawBody == null || rawBody.isBlank()) {
+            return ResponseEntity.badRequest().body(Map.of("message", "Empty body"));
         }
-        log.info("Received Google lead webhook for key={}", googleKey);
-        adPlatformWebhookService.handleGoogleWebhookAsync(googleKey, rawBody);
-        return ResponseEntity.ok("OK");
+        AdPlatformWebhookService.GoogleWebhookResult result =
+                adPlatformWebhookService.handleGoogleWebhook(googleKey, rawBody);
+        if (result.status() == 200) {
+            return ResponseEntity.ok(Map.of());
+        }
+        return ResponseEntity.status(result.status()).body(Map.of("message", result.message()));
     }
 
     // ── Utilities ─────────────────────────────────────────────────────────────

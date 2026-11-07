@@ -1,0 +1,70 @@
+{
+    "table": {
+        "date": "Date",
+        "class": "Class",
+        "status": "Status",
+        "present": "Present",
+        "absent": "Absent",
+        "duration": "Duration",
+        "talkTime": "Talk Time",
+        "chats": "Chats",
+        "polls": "Polls",
+        "raiseHand": "Raise Hand"
+    },
+    "export": {
+        "generatedOn": "Generated {{date}}",
+        "exportSuccess": "Learner report exported",
+        "exportFailed": "Failed to export PDF",
+        "csvExportSuccess": "CSV exported",
+        "csvExportFailed": "Failed to export CSV"
+    },
+    "errors": {
+        "loadFailed": "Something went wrong loading the report. Please try again.",
+        "batchLoadFailed": "Could not load the report for {{name}}."
+    },
+    "emptyState": {
+        "title": "No live classes found",
+        "description": "This learner had no live classes scheduled in the selected period."
+    },
+    "actions": {
+        "attendanceTracker": "Attendance Tracker",
+        "exporting": "Exporting…",
+        "exportPdf": "Export PDF",
+        "exportCsv": "Export CSV"
+    },
+    "metrics": {
+        "attendance": "Attendance",
+        "batchPercentage": "Batch {{value}}%",
+        "classesAttended": "Classes Attended",
+        "avgDurationPerClass": "Avg Duration / Class",
+        "batchDuration": "Batch {{value}}",
+        "engagement": "Engagement",
+        "batchEngagement": "Batch {{value}} · out of 100",
+        "engagementInfo": "Engagement score (0–100) based on in-class participation — talk time, chats, polls and raise-hands, measured per class. 100 = the most active learner in this batch. Only available for provider-synced (Zoom/BBB) classes."
+    },
+    "sections": {
+        "classHistoryTitle": "Class History",
+        "classHistorySubtitle": "Attendance and participation for every class in the period"
+    },
+    "batchCount": "{{term}} · {{count}} selected",
+    "csv": {
+        "fileStem": "learner-live-class-report",
+        "summaryTitle": "Summary",
+        "learner": "Learner",
+        "email": "Email",
+        "startDate": "Start date",
+        "endDate": "End date",
+        "attendancePct": "Attendance (%)",
+        "batchAttendancePct": "{{batch}} attendance (%)",
+        "attended": "Classes attended",
+        "totalClasses": "Classes total",
+        "avgDurationMin": "Avg duration (min)",
+        "batchAvgDurationMin": "{{batch}} avg duration (min)",
+        "engagementScore": "Engagement score (0-100)",
+        "batchEngagementScore": "{{batch}} engagement score (0-100)",
+        "classesTitle": "Class history",
+        "durationMin": "Duration (min)",
+        "talkTimeMin": "Talk time (min)",
+        "emojis": "Emojis"
+    }
+}

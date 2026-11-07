@@ -1,0 +1,14 @@
+{
+    "stepGoalTitle": "ماذا تريد أن تُؤتمِت؟",
+    "stepTemplateTitle": "اختر قالبًا",
+    "back": "رجوع",
+    "noTemplatesForCategory": "لم يتم العثور على قوالب لهذه الفئة.",
+    "startFromBlankCanvas": "ابدأ من لوحة فارغة",
+    "goals": {
+        "notifications": { "label": "إرسال إشعارات", "description": "بريد إلكتروني أو واتساب أو إشعارات فورية للمتعلمين" },
+        "enrollments": { "label": "معالجة التسجيلات", "description": "أتمتة التسجيل والتهيئة وبيانات الاعتماد" },
+        "reminders": { "label": "إرسال تذكيرات", "description": "تذكيرات الدفع، مواعيد الاستحقاق، المتابعات" },
+        "reports": { "label": "إنشاء تقارير", "description": "تجميع البيانات وإرسال الملخصات" },
+        "custom": { "label": "سير عمل مخصص", "description": "ابدأ من الصفر أو اختر أي قالب" }
+    }
+}

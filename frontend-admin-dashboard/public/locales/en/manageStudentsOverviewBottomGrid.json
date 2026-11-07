@@ -1,0 +1,19 @@
+{
+    "enrolment": {
+        "heading": "Enrolment Details",
+        "rows": {
+            "plan": "Plan",
+            "enrollmentNo": "Enrollment No",
+            "session": "Session",
+            "gender": "Gender",
+            "school": "School"
+        }
+    },
+    "contact": {
+        "heading": "Contact",
+        "rows": {
+            "mobileNo": "Mobile No.",
+            "email": "Email"
+        }
+    }
+}

@@ -8,11 +8,13 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { PopoverClose } from '@radix-ui/react-popover';
 import SelectField from '@/components/design-system/select-field';
 import { RichTextEditor } from '@/components/editor/RichTextEditor';
+import { NumericAnswerInput, answerSlots } from '../../NumericAnswerInput';
 import { QuestionPaperTemplateFormProps } from '../../../-utils/question-paper-template-form';
 import { formatStructure } from '../../../-utils/helper';
 import { QUESTION_TYPES, NUMERIC_TYPES } from '@/constants/dummy-data';
 import { Badge } from '@/components/ui/badge';
 import { useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 
 export const NumericQuestionPaperTemplateMainView = ({
     form,
@@ -21,6 +23,7 @@ export const NumericQuestionPaperTemplateMainView = ({
     showQuestionNumber = true,
     examType,
 }: QuestionPaperTemplateFormProps) => {
+    const { t } = useTranslation('assessmentNumericTemplateQP');
     console.log('🎯 NumericQuestionPaperTemplateMainView rendered', {
         examType,
         currentQuestionIndex,
@@ -30,32 +33,21 @@ export const NumericQuestionPaperTemplateMainView = ({
     if (!form || !form.control || !form.getValues || !form.trigger || !form.watch || !form.setValue) {
         return (
             <div className="flex h-screen w-full items-center justify-center">
-                <h1>Form not properly initialized</h1>
+                <h1>{t('errors.formNotInitialized')}</h1>
             </div>
         );
     }
 
-    const { control, getValues, trigger, watch, setValue } = form;
+    const { control, getValues, trigger, watch } = form;
 
     const numericType = watch(`questions.${currentQuestionIndex}.numericType`) || '';
     const validAnswers = watch(`questions.${currentQuestionIndex}.validAnswers`) || [0];
 
-    const answersType = getValues('answersType') || 'Answer:';
-    const explanationsType = getValues('explanationsType') || 'Explanation:';
+    const answersType = getValues('answersType') || t('defaults.answer');
+    const explanationsType = getValues('explanationsType') || t('defaults.explanation');
     const questionsType = getValues('questionsType') || '';
     const tags = getValues(`questions.${currentQuestionIndex}.tags`) || [];
     const level = getValues(`questions.${currentQuestionIndex}.level`) || '';
-
-    useEffect(() => {
-        try {
-            const validAnswers = getValues(`questions.${currentQuestionIndex}.validAnswers`);
-            if (!validAnswers) {
-                setValue(`questions.${currentQuestionIndex}.validAnswers`, [0]);
-            }
-        } catch (error) {
-            console.warn('Setting default valid answers failed:', error);
-        }
-    }, [currentQuestionIndex]);
 
     useEffect(() => {
         try {
@@ -77,13 +69,13 @@ export const NumericQuestionPaperTemplateMainView = ({
                     <PopoverContent>
                         <div className="mb-2 flex flex-col gap-4">
                             <div className="flex w-full items-center justify-between">
-                                <h1 className="text-primary-500">Questions Settings</h1>
+                                <h1 className="text-primary-500">{t('settings.title')}</h1>
                                 <PopoverClose>
                                     <X size={16} />
                                 </PopoverClose>
                             </div>
                             <SelectField
-                                label="Numerical Type"
+                                label={t('settings.numericalType')}
                                 name={`questions.${currentQuestionIndex}.numericType`}
                                 options={NUMERIC_TYPES.map((option, index) => ({
                                     value: option,
@@ -105,7 +97,7 @@ export const NumericQuestionPaperTemplateMainView = ({
                                                 value={field.value || 0}
                                                 onChange={(e) => field.onChange(parseInt(e.target.value) || 0)}
                                                 className="w-full"
-                                                placeholder="Decimal precision"
+                                                placeholder={t('settings.decimalPrecisionPlaceholder')}
                                             />
                                         </FormControl>
                                         <FormMessage />
@@ -118,7 +110,7 @@ export const NumericQuestionPaperTemplateMainView = ({
             </div>
             {getValues(`questions.${currentQuestionIndex}.parentRichTextContent`) && (
                 <div className="flex w-full flex-col !flex-nowrap items-start gap-1">
-                    <span>Comprehension Text</span>
+                    <span>{t('comprehensionText')}</span>
                     <FormField
                         control={control}
                         name={`questions.${currentQuestionIndex}.parentRichTextContent`}
@@ -141,7 +133,7 @@ export const NumericQuestionPaperTemplateMainView = ({
             <div className="flex w-full flex-col !flex-nowrap items-start gap-1">
                 <div className="flex items-center gap-2">
                     <span>
-                        Question
+                        {t('question.label')}
                         {showQuestionNumber && (
                             <>
                                 &nbsp;
@@ -194,45 +186,41 @@ export const NumericQuestionPaperTemplateMainView = ({
                         <FormItem className="w-full">
                             <FormControl>
                                 <div className="flex flex-row flex-wrap items-center gap-4">
-                                    {Array.isArray(field.value) &&
-                                        field.value.map((answer, index) => (
-                                            <div key={index} className="flex items-center gap-2">
-                                                {/* Input for each validAnswer */}
-                                                <Input
-                                                    type="number"
-                                                    value={answer.toString()}
-                                                    onChange={(e) => {
-                                                        const updatedAnswers = [
-                                                            ...(field.value ?? []),
-                                                        ];
-                                                        updatedAnswers[index] =
-                                                            parseFloat(e.target.value) || 0; // Ensure number
-                                                        field.onChange(updatedAnswers);
-                                                    }}
-                                                    className="w-20"
-                                                />
-                                                {/* Remove button for each answer */}
-                                                <button
-                                                    type="button"
-                                                    onClick={() => {
-                                                        field.onChange(
-                                                            field.value?.filter(
-                                                                (_, i) => i !== index
-                                                            )
-                                                        );
-                                                    }}
-                                                >
-                                                    <X />
-                                                </button>
-                                            </div>
-                                        ))}
+                                    {answerSlots(field.value).map((answer, index) => (
+                                        <div key={index} className="flex items-center gap-2">
+                                            {/* Input for each validAnswer */}
+                                            <NumericAnswerInput
+                                                value={answer}
+                                                onChange={(value) => {
+                                                    const updatedAnswers = [
+                                                        ...(field.value ?? []),
+                                                    ];
+                                                    updatedAnswers[index] = value as number;
+                                                    field.onChange(updatedAnswers);
+                                                }}
+                                            />
+                                            {/* Remove button for each answer */}
+                                            <button
+                                                type="button"
+                                                onClick={() => {
+                                                    field.onChange(
+                                                        field.value?.filter(
+                                                            (_, i) => i !== index
+                                                        )
+                                                    );
+                                                }}
+                                            >
+                                                <X />
+                                            </button>
+                                        </div>
+                                    ))}
                                     {/* Add new answer */}
                                     <Button
                                         variant="outline"
                                         type="button"
                                         className="cursor-pointer"
                                         onClick={() => {
-                                            field.onChange([...(field.value || []), 0]);
+                                            field.onChange([...answerSlots(field.value), null]);
                                         }}
                                     >
                                         <Plus size={20} />

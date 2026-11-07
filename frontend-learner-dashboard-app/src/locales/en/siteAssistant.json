@@ -1,0 +1,84 @@
+{
+  "launcher": {
+    "open": "Chat with {{name}}",
+    "defaultName": "Ask us"
+  },
+  "greeting": {
+    "default": "Hi! How can I help you today?"
+  },
+  "panel": {
+    "close": "Close chat",
+    "aiNotice": "AI assistant · answers can be imperfect",
+    "conversation": "Conversation",
+    "suggestions": "Suggested questions"
+  },
+  "composer": {
+    "label": "Your message",
+    "placeholder": "Type your question…",
+    "send": "Send",
+    "remaining": "{{count}} characters left"
+  },
+  "status": {
+    "thinking": "Thinking…",
+    "connecting": "Connecting…",
+    "connectFailed": "We couldn't start the chat. Please try again.",
+    "retry": "Try again"
+  },
+  "errors": {
+    "rate_limited": "You've asked a lot of questions in a short time. Please wait a moment, or reach our team directly.",
+    "daily_cap": "Our assistant has answered a lot of questions today. Our team will be happy to help you directly.",
+    "no_credits": "Our assistant is taking a break right now. Our team will be happy to help you directly.",
+    "disabled": "The assistant isn't available right now.",
+    "invalid": "Sorry, I couldn't take that question. Please rephrase it.",
+    "internal": "Something went wrong on our side. Please try again.",
+    "network": "The connection dropped. Please try again.",
+    "unauthorized": "This chat has expired. Please try again.",
+    "not_allowed": "This assistant isn't set up for this website.",
+    "closed": "This chat has ended. Please start a new one."
+  },
+  "feedback": {
+    "helpful": "Helpful",
+    "notHelpful": "Not helpful",
+    "thanks": "Thanks for the feedback"
+  },
+  "cards": {
+    "viewCourse": "View course",
+    "seeAll": "See all",
+    "takeMeThere": "Take me there",
+    "register": "Register",
+    "free": "Free",
+    "paid": "Paid",
+    "until": "Until {{date}}",
+    "compare": "Comparison",
+    "step": "Step {{n}}",
+    "liveClasses": "Upcoming live classes",
+    "contactTitle": "Reach our team",
+    "email": "Email",
+    "phone": "Phone",
+    "whatsapp": "WhatsApp",
+    "address": "Address",
+    "login": "Log in"
+  },
+  "contact": {
+    "titleSales": "Talk to our team",
+    "titleSupport": "Get help from our team",
+    "name": "Full name",
+    "email": "Email",
+    "phone": "Phone number",
+    "select": "Select…",
+    "submit": "Send my details",
+    "sending": "Sending…",
+    "success": "Thank you! Our team will get in touch with you soon.",
+    "failed": "We couldn't send your details. Please try again.",
+    "consentDefault": "I agree to be contacted about my enquiry.",
+    "required": "{{label}} is required",
+    "invalidEmail": "Enter a valid email address",
+    "invalidPhone": "Enter a valid phone number",
+    "oneOf": "Enter a phone number or an email address",
+    "consentRequired": "Please agree so that we can contact you",
+    "tooLong": "This is too long"
+  },
+  "a11y": {
+    "you": "You"
+  }
+}

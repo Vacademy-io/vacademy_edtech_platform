@@ -1,0 +1,61 @@
+{
+    "button": {
+        "tat": "Export TAT report",
+        "sla": "Export SLA report",
+        "overdue": "Export overdue follow-ups"
+    },
+    "exporting": "Exporting…",
+    "teamNotSupported": "Clear the team filter to export per-lead rows.",
+    "columns": {
+        "name": "Name",
+        "phone": "Phone",
+        "email": "Email",
+        "source": "Source",
+        "counsellor": "Counsellor",
+        "leadStatus": "Lead status",
+        "enquiredAt": "Enquired at",
+        "tatDueAt": "TAT due at",
+        "firstResponseAt": "First response at",
+        "responseMinutes": "Response time (min)",
+        "tatStatus": "TAT status",
+        "followUpDueAt": "Follow-up due at",
+        "slaStage": "SLA stage",
+        "tatOverdue": "TAT overdue",
+        "followUpOverdue": "Follow-up overdue",
+        "offClock": "Off the SLA clock (Lost / Converted)",
+        "daysOverdue": "Days overdue",
+        "followUpNote": "Follow-up note",
+        "studentResponse": "Student response",
+        "nextAction": "Next action",
+        "interestLevel": "Interest level"
+    },
+    "values": {
+        "yes": "Yes",
+        "no": "No",
+        "met": "Met",
+        "breached": "Breached",
+        "breachedNoResponse": "Breached (no response yet)",
+        "pending": "Pending",
+        "responded": "Responded",
+        "closed": "Closed",
+        "priorActivity": "Earlier contact (repeat lead)"
+    },
+    "stages": {
+        "onTrack": "On track",
+        "tatDueSoon": "TAT due soon",
+        "tatOverdue": "TAT overdue",
+        "followUpDueSoon": "Follow-up due soon",
+        "followUpOverdue": "Follow-up overdue",
+        "offClock": "Off the clock (Lost / Converted)"
+    },
+    "progress": "Exporting {{done}} of {{total}} rows…",
+    "running": "Exporting…",
+    "done_one": "Exported {{count}} row",
+    "done_other": "Exported {{count}} rows",
+    "failed": "Export failed — try again",
+    "alreadyRunning": "This export is already running",
+    "truncated_one": "Exported the first {{count}} row (limit reached)",
+    "truncated_other": "Exported the first {{count}} rows (limit reached)",
+    "partial_one": "Export stopped part-way — saved {{count}} row",
+    "partial_other": "Export stopped part-way — saved {{count}} rows"
+}

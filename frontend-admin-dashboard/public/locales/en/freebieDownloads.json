@@ -1,0 +1,46 @@
+{
+  "title": "Freebie downloads",
+  "days": "{{count}} days",
+  "unnamed": "Unnamed lead",
+  "more": "+{{count}} more",
+  "error": "Couldn't load freebie downloads.",
+  "retry": "Try again",
+  "columns": {
+    "lead": "Lead",
+    "freebies": "Freebies",
+    "took": "What they took",
+    "last": "Last download"
+  },
+  "empty": {
+    "title": "No freebies downloaded yet",
+    "body": "Every file a visitor opens from a Resource section on your website shows up here, with the name of the lead who took it."
+  },
+  "stats": {
+    "downloads": "Downloads & views",
+    "leads": "Leads who downloaded",
+    "files": "Freebies downloaded"
+  },
+  "top": {
+    "title": "Top freebies",
+    "hint": "Click one to see who took it.",
+    "counts": "{{downloads}} · {{leads}} leads"
+  },
+  "leads": {
+    "title": "Who downloaded what",
+    "filteredBy": "Only: {{name}}",
+    "search": "Search name, phone or email",
+    "noneYet": "Downloads so far came from visitors who have not filled a form yet.",
+    "noMatch": "No lead matches this search.",
+    "capped": "Showing the 500 most active leads."
+  },
+  "summary": "{{downloads}} downloads by {{leads}} leads",
+  "kind": {
+    "youtube": "YouTube video",
+    "drive": "Google Drive",
+    "pdf": "PDF",
+    "link": "Link"
+  },
+  "leadCard": {
+    "title": "Freebies taken"
+  }
+}

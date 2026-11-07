@@ -1,0 +1,61 @@
+{
+    "navHeading": "المكتبة",
+    "pageTitle": "{{title}} — المكتبة",
+    "toast": {
+        "alreadyOwned": "هذه المكتبة لديك بالفعل",
+        "unlocked": "{{title}} أصبحت ملكًا لك. لن يتم احتسابها مرة أخرى.",
+        "unlockFailed": "تعذر فتح هذه المكتبة"
+    },
+    "notFound": {
+        "message": "هذه المكتبة غير متاحة",
+        "back": "العودة إلى قاعدة المعرفة"
+    },
+    "backButton": "المكتبة",
+    "facts": {
+        "sources_zero": "لا مصادر ({{formatted}})",
+        "sources_one": "مصدر واحد ({{formatted}})",
+        "sources_two": "مصدران ({{formatted}})",
+        "sources_few": "{{formatted}} مصادر",
+        "sources_many": "{{formatted}} مصدرًا",
+        "sources_other": "{{formatted}} مصدر",
+        "pages_zero": "لا صفحات ({{formatted}})",
+        "pages_one": "صفحة واحدة ({{formatted}})",
+        "pages_two": "صفحتان ({{formatted}})",
+        "pages_few": "{{formatted}} صفحات",
+        "pages_many": "{{formatted}} صفحة",
+        "pages_other": "{{formatted}} صفحة"
+    },
+    "unlocked": {
+        "chip": "مفتوحة",
+        "heading": "جاهزة لاستخدامك",
+        "description": "هذه المكتبة متاحة أينما تُنشئ أسئلة الاختبارات أو التقييمات.",
+        "createPaper": "إنشاء ورقة أسئلة"
+    },
+    "locked": {
+        "credits_zero": "لا أرصدة ({{count}})",
+        "credits_one": "رصيد واحد ({{count}})",
+        "credits_two": "رصيدان ({{count}})",
+        "credits_few": "{{count}} أرصدة",
+        "credits_many": "{{count}} رصيدًا",
+        "credits_other": "{{count}} رصيد",
+        "description": "دفعة واحدة. تصبح ملكك بشكل دائم، بما في ذلك المحتوى الذي نضيفه إليها لاحقًا.",
+        "unlockButton": "فتح هذه المكتبة",
+        "unlocking": "جارٍ الفتح…",
+        "creditNote": "إنشاء أوراق الأسئلة يستهلك أرصدة كالمعتاد، بالإضافة إلى هذا."
+    },
+    "about": {
+        "heading": "حول هذه المكتبة"
+    },
+    "topics": {
+        "heading": "ماذا يوجد بالداخل",
+        "description": "كل موضوع تغطيه هذه المكتبة. تُكتب الأسئلة من هذه المواضيع، ويشير كل منها إلى الصفحة التي جاء منها.",
+        "preparing": "لا تزال مواضيع هذه المكتبة قيد الإعداد."
+    },
+    "capabilities": {
+        "heading": "ما يمكنك إنشاؤه",
+        "questionPapers": "أوراق الأسئلة",
+        "assessmentSections": "أقسام التقييم",
+        "courses": "الدورات",
+        "comingSoon": "قريبًا"
+    }
+}

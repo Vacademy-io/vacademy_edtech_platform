@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import { Star } from '@phosphor-icons/react';
 import { MyDialog } from '@/components/design-system/dialog';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -11,9 +12,9 @@ function fmtDate(v?: number | null): string {
 }
 
 /** Five stars with `filled` of them lit — the same shape learners rate with. */
-function Stars({ filled, size = 14 }: { filled: number; size?: number }) {
+function Stars({ filled, size = 14, label }: { filled: number; size?: number; label: string }) {
     return (
-        <span className="flex items-center gap-0.5" aria-label={`${filled} out of 5`}>
+        <span className="flex items-center gap-0.5" aria-label={label}>
             {[1, 2, 3, 4, 5].map((star) => (
                 <Star
                     key={star}
@@ -41,6 +42,7 @@ export function MentorFeedbackDialog({
     open: boolean;
     onOpenChange: (open: boolean) => void;
 }) {
+    const { t } = useTranslation('mentorshipMentorFeedbackDialog');
     const { data, isLoading, isError } = useMentorFeedback(
         open ? mentor?.id : undefined,
         open ? instituteId : undefined
@@ -51,7 +53,9 @@ export function MentorFeedbackDialog({
 
     return (
         <MyDialog
-            heading={`Session feedback — ${mentor.display_name || mentor.name || 'mentor'}`}
+            heading={t('heading', {
+                mentorName: mentor.display_name || mentor.name || t('mentorFallback'),
+            })}
             open={open}
             onOpenChange={onOpenChange}
             dialogWidth="max-w-lg"
@@ -64,17 +68,21 @@ export function MentorFeedbackDialog({
                                 {mentor.average_rating.toFixed(1)}
                             </span>
                             <div className="flex flex-col">
-                                <Stars filled={Math.round(mentor.average_rating)} size={16} />
+                                <Stars
+                                    filled={Math.round(mentor.average_rating)}
+                                    size={16}
+                                    label={t('outOfFive', {
+                                        count: Math.round(mentor.average_rating),
+                                    })}
+                                />
                                 <span className="text-caption text-neutral-500">
-                                    from {mentor.rating_count ?? 0} rated{' '}
-                                    {(mentor.rating_count ?? 0) === 1 ? 'session' : 'sessions'}
+                                    {t('ratedSessions', { count: mentor.rating_count ?? 0 })}
                                 </span>
                             </div>
                         </>
                     ) : (
                         <span className="text-body text-neutral-500">
-                            No sessions rated yet. Learners are asked to rate a session once it has
-                            taken place.
+                            {t('noSessionsRated')}
                         </span>
                     )}
                 </div>
@@ -86,17 +94,20 @@ export function MentorFeedbackDialog({
                         ))}
                     </div>
                 ) : isError ? (
-                    <p className="text-body text-danger-600">Couldn&apos;t load feedback.</p>
+                    <p className="text-body text-danger-600">{t('couldNotLoadFeedback')}</p>
                 ) : feedback.length === 0 ? (
                     <p className="text-caption text-neutral-400">
-                        Nothing to show yet — ratings appear here as learners submit them.
+                        {t('noFeedbackYet')}
                     </p>
                 ) : (
                     <div className="flex max-h-80 flex-col gap-2 overflow-y-auto">
                         {feedback.map((f) => (
                             <div key={f.id} className="rounded-md border border-neutral-100 p-3">
                                 <div className="flex items-center justify-between gap-2">
-                                    <Stars filled={f.rating} />
+                                    <Stars
+                                        filled={f.rating}
+                                        label={t('outOfFive', { count: f.rating })}
+                                    />
                                     <span className="text-caption text-neutral-400">
                                         {f.student_name ? `${f.student_name} · ` : ''}
                                         {fmtDate(f.created_at)}

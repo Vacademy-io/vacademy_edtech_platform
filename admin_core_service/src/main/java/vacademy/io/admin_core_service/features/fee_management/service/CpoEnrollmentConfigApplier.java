@@ -4,10 +4,13 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import vacademy.io.admin_core_service.features.fee_management.dto.DiscountSpecDTO;
 import vacademy.io.admin_core_service.features.fee_management.entity.StudentFeePayment;
 import vacademy.io.admin_core_service.features.fee_management.repository.StudentFeePaymentRepository;
 import vacademy.io.admin_core_service.features.learner_management.dto.CpoEnrollmentConfigDTO;
 import vacademy.io.admin_core_service.features.learner_management.dto.InstallmentOverrideDTO;
+
+import vacademy.io.common.exceptions.VacademyException;
 
 import java.math.BigDecimal;
 import java.util.HashMap;
@@ -79,10 +82,56 @@ public class CpoEnrollmentConfigApplier {
             }
         }
 
-        if (config.getCpoDiscount() != null) {
+        List<BigDecimal> rowDiscounts = InstallmentScheduleService.rowDiscounts(config.getInstallmentSchedule());
+        if (rowDiscounts != null) {
+            applyScheduleDiscounts(userPlanId, sfps, rowDiscounts, config.getCpoDiscount(), appliedBy);
+        } else if (config.getCpoDiscount() != null) {
             cpoDiscountService.setCpoDiscount(userPlanId, config.getCpoDiscount(), appliedBy);
         }
     }
+
+    /**
+     * The admin set how much comes off each installment of the schedule (what the enrollment
+     * screen showed as "To pay"). Stored as the plan discount with fixed per-bill shares, so
+     * every bill is billed at exactly that. An installment made of several fees' bills shares
+     * its discount between them in proportion to their amounts; fees paid upfront (no
+     * installment number) take none.
+     */
+    private void applyScheduleDiscounts(String userPlanId, List<StudentFeePayment> sfps, List<BigDecimal> rowDiscounts,
+                                        DiscountSpecDTO spec, String appliedBy) {
+        Map<String, BigDecimal> shares = new java.util.LinkedHashMap<>();
+        BigDecimal total = BigDecimal.ZERO;
+        for (int k = 0; k < rowDiscounts.size(); k++) {
+            BigDecimal off = rowDiscounts.get(k);
+            if (off.signum() <= 0) continue;
+            final int number = k + 1;
+            List<StudentFeePayment> bills = sfps.stream()
+                    .filter(s -> s.getInstallmentNumber() != null && s.getInstallmentNumber() == number)
+                    .toList();
+            if (bills.isEmpty()) {
+                throw new VacademyException("No bill for installment " + number + " to take the discount off");
+            }
+            BigDecimal gross = bills.stream().map(s -> nz(s.getOriginalAmount())).reduce(BigDecimal.ZERO, BigDecimal::add);
+            BigDecimal allocated = BigDecimal.ZERO;
+            for (int i = 0; i < bills.size(); i++) {
+                StudentFeePayment bill = bills.get(i);
+                BigDecimal share = i == bills.size() - 1 || gross.signum() == 0
+                        ? off.subtract(allocated)
+                        : nz(bill.getOriginalAmount()).multiply(off).divide(gross, 2, java.math.RoundingMode.HALF_UP);
+                shares.merge(bill.getId(), share, BigDecimal::add);
+                allocated = allocated.add(share);
+            }
+            total = total.add(off);
+        }
+        DiscountSpecDTO flat = DiscountSpecDTO.builder()
+                .type(DiscountSpecDTO.TYPE_FLAT)
+                .value(total.doubleValue())
+                .reason(spec != null ? spec.getReason() : null)
+                .build();
+        cpoDiscountService.setCpoDiscount(userPlanId, flat, CpoDiscountAllocator.CUSTOM, shares, appliedBy);
+    }
+
+    private static BigDecimal nz(BigDecimal b) { return b == null ? BigDecimal.ZERO : b; }
 
     private void applyInstallmentOverride(String sfpId, InstallmentOverrideDTO ov, String appliedBy) {
         // Dates: independent of amount math, always safe to apply.

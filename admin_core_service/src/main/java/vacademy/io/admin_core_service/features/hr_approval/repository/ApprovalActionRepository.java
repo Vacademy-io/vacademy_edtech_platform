@@ -10,4 +10,6 @@ import java.util.List;
 public interface ApprovalActionRepository extends JpaRepository<ApprovalAction, String> {
 
     List<ApprovalAction> findByRequestIdOrderByLevelAsc(String requestId);
+
+    List<ApprovalAction> findByRequestIdAndActorId(String requestId, String actorId);
 }

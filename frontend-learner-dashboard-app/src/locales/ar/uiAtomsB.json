@@ -1,0 +1,20 @@
+{
+    "common": {
+        "close": "إغلاق"
+    },
+    "pagination": {
+        "ariaLabel": "التنقل بين الصفحات",
+        "previous": {
+            "ariaLabel": "الانتقال إلى الصفحة السابقة",
+            "label": "السابق"
+        },
+        "next": {
+            "ariaLabel": "الانتقال إلى الصفحة التالية",
+            "label": "التالي"
+        },
+        "morePages": "المزيد من الصفحات"
+    },
+    "sidebar": {
+        "toggleSidebar": "تبديل الشريط الجانبي"
+    }
+}

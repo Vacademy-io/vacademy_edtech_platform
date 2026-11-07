@@ -1,0 +1,131 @@
+{
+    "pageTitle": "Create question paper",
+    "fallbackKnowledgeBase": "Knowledge base",
+    "steps": {
+        "chooseMaterial": "Choose material",
+        "planPaper": "Plan the paper",
+        "reviewQuestions": "Review questions"
+    },
+    "errors": {
+        "notEnoughCredits": "Not enough credits.",
+        "reopenFailed": "Could not reopen that paper",
+        "rebuildTopicMapFailed": "Could not rebuild the topic map",
+        "planFailed": "Could not plan the paper",
+        "startGenerationFailed": "Could not start generating",
+        "generationFailed": "Generation failed",
+        "sectionMissing": "This question’s section is no longer in the plan.",
+        "rewriteFailed": "Could not rewrite that question",
+        "saveFailed": "Could not save the paper"
+    },
+    "toasts": {
+        "topicMapRebuilt": "Topic map rebuilt",
+        "questionRewritten": "Question rewritten",
+        "savedToQuestionBank": "Saved to your question bank",
+        "questionEdited": "Question updated",
+        "offlineTestPrefilled_one": "Offline test pre-filled: {{count}} section, the paper attached for learners. Pick the dates and who sits it.",
+        "offlineTestPrefilled_other": "Offline test pre-filled: {{count}} sections, the paper attached for learners. Pick the dates and who sits it.",
+        "offlinePaperNotAttached": "Could not publish the paper PDF — attach it to the instructions yourself in Step 1.",
+        "offlineTestNotPrefilled": "Could not pre-fill the test from this paper — pick it under “Choose Saved Paper” in Step 2."
+    },
+    "resumingMessage": "Reopening your paper…",
+    "scope": {
+        "materialHeading": "What should the paper cover?",
+        "materialDescription": "The topics found across everything in this knowledge base. Pick a topic to include all of it, or open it to choose subtopics. Leave everything unticked to draw from the whole knowledge base.",
+        "rebuildButton": "Rebuild",
+        "rebuildingButton": "Rebuilding…",
+        "noTopicMap": "No topic map yet. It is built automatically once a document finishes processing.",
+        "buildTopicMapButton": "Build the topic map",
+        "buildingButton": "Building…",
+        "paperKindHeading": "What kind of paper?",
+        "numQuestionsLabel": "Number of questions",
+        "numQuestionsPlaceholder": "20",
+        "durationLabel": "Duration (minutes)",
+        "durationPlaceholder": "90",
+        "difficultyLabel": "Overall difficulty",
+        "difficulty": {
+            "easy": "Easy",
+            "medium": "Medium",
+            "hard": "Hard",
+            "mixed": "Mixed"
+        },
+        "gradeLabel": "Class or level",
+        "gradePlaceholder": "e.g. Class 9",
+        "examStyleLabel": "Follow a pattern (optional)",
+        "examStylePlaceholder": "e.g. CBSE board pattern",
+        "planPaperButton": "Plan the paper",
+        "planningButton": "Planning…",
+        "planHint": "You will see the full plan and can change it before any question is written."
+    },
+    "blueprint": {
+        "questionsCount_one": "{{count}} question",
+        "questionsCount_other": "{{count}} questions",
+        "marksCount_one": "{{formatted}} mark",
+        "marksCount_other": "{{formatted}} marks",
+        "durationSuffix": " · {{minutes}} min",
+        "changeMaterialButton": "Change material",
+        "generateButton_one": "Generate {{count}} question",
+        "generateButton_other": "Generate {{count}} questions",
+        "generateCreditsSuffix": " · ≈{{credits}} credits",
+        "insufficientCredits": "This needs about {{needed}} credits but only {{available}} are available.",
+        "askForChangeHeading": "Ask for a change",
+        "suggestions": {
+            "numericals": "Add a section of numericals",
+            "harderSectionB": "Make section B harder",
+            "moreApplicationBased": "More application-based questions"
+        },
+        "refinePlaceholder": "e.g. drop the long answers and add 5 more MCQs from chapter 2",
+        "updatePlanButton": "Update plan",
+        "updatingButton": "Updating…"
+    },
+    "generating": {
+        "writingHeading_one": "Writing {{count}} question from your material",
+        "writingHeading_other": "Writing {{count}} questions from your material",
+        "hint": "This usually takes a few minutes. You can leave this page — the paper keeps generating and will be waiting in your question bank drafts."
+    },
+    "review": {
+        "deliveredCount": "{{delivered}} of {{planned}} questions written",
+        "needFixing_one": "{{count}} need fixing",
+        "needFixing_other": "{{count}} need fixing",
+        "allChecksPassed": "All checks passed",
+        "saveButton": "Save to question bank",
+        "savingButton": "Saving…",
+        "heading": "Review and generate",
+        "description": "Check the configuration, then generate. The planner spreads your question mix across the selected material; you can adjust that plan before anything is written.",
+        "wholeBook": "Whole book — nothing narrowed",
+        "chaptersSelected_one": "{{count}} chapter · {{subtopics}} subtopics",
+        "chaptersSelected_other": "{{count}} chapters · {{subtopics}} subtopics",
+        "totals": "{{questions}} questions · {{marks}} marks",
+        "autoTitle": "Title chosen by the planner",
+        "detailsLine": "{{minutes}} min · {{difficulty}} · {{language}}",
+        "generateButton": "Generate question paper",
+        "adjustPlanButton": "Adjust plan first",
+        "generateHint": "Generate plans the sections and writes every question in one go. Adjust plan first shows the section plan for editing before anything is written.",
+        "noMixHint": "No question types configured — the planner will choose a mix.",
+        "editInstructions": "Edit instructions",
+        "done": "Done",
+        "createOfflineTest": "Save & create offline test"
+    },
+    "wizard": {
+        "heading": "Generate question paper",
+        "syllabus": "Syllabus & weightage",
+        "types": "Question types & marks",
+        "details": "Test details",
+        "review": "Review & generate",
+        "back": "Go back",
+        "continue": "Continue"
+    },
+    "syllabus": {
+        "heading": "Configure syllabus and weightage",
+        "description": "Tick the chapters, topics or subtopics the paper should cover. Leave everything unticked to draw from the whole book. Weightage is optional — what you leave blank, the planner balances.",
+        "weightageHint": "Set a % weightage on a ticked chapter to steer how many questions it gets. Totals need not add up to 100."
+    },
+    "types": {
+        "heading": "Configure question types and marks",
+        "description": "Tick the kinds of questions you want, then set how many and how many marks each. The totals in the header are exactly what the paper will carry."
+    },
+    "details": {
+        "heading": "Configure test details",
+        "description": "Name the paper, set its duration and difficulty, and the class and language the questions are written for."
+    },
+    "syllabusNote": "This is the official syllabus, not a textbook: the paper stays inside the listed units, and questions are set from the standard curriculum rather than cited to a page."
+}

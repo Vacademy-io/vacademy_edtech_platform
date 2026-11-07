@@ -1,0 +1,20 @@
+{
+    "typeSection": {
+        "title": "نوع الإعلان",
+        "description": "نقطة انطلاق — يمكنك لاحقًا تغيير مكان ظهوره وكيفية إرساله."
+    },
+    "messageSection": {
+        "title": "الرسالة",
+        "description": "ما سيقرؤه الأشخاص. يُستخدم العنوان أيضًا كموضوع للبريد الإلكتروني ما لم تستبدله."
+    },
+    "titleLabel": "العنوان",
+    "titlePlaceholder": "مثال: دفعة جديدة تبدأ من يوم الاثنين",
+    "previewTextLabel": "نص المعاينة",
+    "previewTextPlaceholder": "السطر الذي يظهر في صندوق الوارد قبل فتح البريد الإلكتروني",
+    "previewTextHint": "عند ترك هذا فارغًا، تعرض صناديق الوارد السطر الأول من محتواك.",
+    "contentLabel": "المحتوى",
+    "richTextTab": "نص منسّق",
+    "htmlTab": "HTML",
+    "editorPlaceholder": "اكتب الإعلان…",
+    "sourcePlaceholder": "الصق أو عدّل كود HTML الخام…"
+}

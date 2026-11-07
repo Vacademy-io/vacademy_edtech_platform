@@ -1,7 +1,8 @@
 import { useState, useMemo, useCallback, useRef, useEffect } from 'react';
 import { ColumnDef } from '@tanstack/react-table';
 import { useQuery } from '@tanstack/react-query';
-import { MagnifyingGlass } from '@phosphor-icons/react';
+import { CursorClick, MagnifyingGlass, UserCircle } from '@phosphor-icons/react';
+import { useTranslation } from 'react-i18next';
 import { MyTable, TableData } from '@/components/design-system/table';
 import { MyPagination } from '@/components/design-system/pagination';
 import { DashboardLoader } from '@/components/core/dashboard-loader';
@@ -19,17 +20,17 @@ import { RoleTerms, SystemTerms } from '@/routes/settings/-components/NamingSett
 // ─── Helpers ────────────────────────────────────────────────────────────────
 
 const STATUS_STYLES: Record<string, { bg: string; text: string; dot: string }> = {
-    PAID: { bg: 'bg-emerald-50', text: 'text-emerald-700', dot: 'bg-emerald-500' },
-    OVERDUE: { bg: 'bg-red-50', text: 'text-red-700', dot: 'bg-red-500' },
-    PARTIAL: { bg: 'bg-amber-50', text: 'text-amber-700', dot: 'bg-amber-500' },
-    PENDING: { bg: 'bg-slate-100', text: 'text-slate-600', dot: 'bg-slate-400' },
+    PAID: { bg: 'bg-success-50', text: 'text-success-700', dot: 'bg-success-500' },
+    OVERDUE: { bg: 'bg-danger-50', text: 'text-danger-700', dot: 'bg-danger-500' },
+    PARTIAL: { bg: 'bg-warning-50', text: 'text-warning-700', dot: 'bg-warning-500' },
+    PENDING: { bg: 'bg-neutral-100', text: 'text-neutral-600', dot: 'bg-neutral-400' },
 };
 
 function StatusPill({ status }: { status: string }) {
     const style = STATUS_STYLES[status] || STATUS_STYLES['PENDING']!;
     return (
         <span
-            className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-[11px] font-semibold uppercase tracking-wide ${style.bg} ${style.text}`}
+            className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-caption font-semibold uppercase tracking-wide ${style.bg} ${style.text}`}
         >
             <span className={`inline-block h-1.5 w-1.5 rounded-full ${style.dot}`} />
             {status}
@@ -47,6 +48,8 @@ interface StudentSearchStepProps {
 }
 
 export function StudentSearchStep({ onSelectStudent }: StudentSearchStepProps) {
+    const { t } = useTranslation('financialManagementStudentSearchStep');
+    const learnerTerm = getTerminology(RoleTerms.Learner, SystemTerms.Learner);
     const { getDetailsFromPackageSessionId, instituteDetails } = useInstituteDetailsStore();
 
     const [filter, setFilter] = useState<FeeSearchFilterDTO>({
@@ -119,12 +122,12 @@ export function StudentSearchStep({ onSelectStudent }: StudentSearchStepProps) {
                 cell: ({ row }) => {
                     const r = row.original;
                     return (
-                        <div className="space-y-0.5 min-w-[140px]">
-                            <div className="font-semibold text-gray-800">
+                        <div className="min-w-36 space-y-0.5">
+                            <div className="font-semibold text-neutral-800">
                                 {r.student_name || '\u2014'}
                             </div>
                             {r.phone && (
-                                <div className="text-[11px] text-gray-400">{r.phone}</div>
+                                <div className="text-caption text-neutral-400">{r.phone}</div>
                             )}
                         </div>
                     );
@@ -133,7 +136,7 @@ export function StudentSearchStep({ onSelectStudent }: StudentSearchStepProps) {
             },
             {
                 id: 'package',
-                header: 'Course / Package',
+                header: t('table.coursePackage'),
                 accessorFn: (row) => {
                     const ids = row.package_session_ids || [];
                     return ids.length ? ids.map((id) => getPackageName(id)).join(', ') : '\u2014';
@@ -143,10 +146,7 @@ export function StudentSearchStep({ onSelectStudent }: StudentSearchStepProps) {
                     const names = ids.map((id) => getPackageName(id));
                     const display = names.length > 0 ? names.join(', ') : '\u2014';
                     return (
-                        <div
-                            className="text-sm text-gray-700 truncate"
-                            title={display}
-                        >
+                        <div className="truncate text-sm text-neutral-700" title={display}>
                             {display}
                         </div>
                     );
@@ -155,13 +155,13 @@ export function StudentSearchStep({ onSelectStudent }: StudentSearchStepProps) {
             },
             {
                 id: 'dueAmount',
-                header: 'Due',
+                header: t('table.due'),
                 accessorFn: (row) => row.due_amount ?? 0,
                 cell: ({ row }) => {
                     const due = row.original.due_amount ?? 0;
                     return (
                         <div
-                            className={`font-semibold ${due > 0 ? 'text-orange-600' : 'text-gray-400'}`}
+                            className={`font-semibold ${due > 0 ? 'text-warning-600' : 'text-neutral-400'}`}
                         >
                             {formatCurrency(due)}
                         </div>
@@ -171,13 +171,13 @@ export function StudentSearchStep({ onSelectStudent }: StudentSearchStepProps) {
             },
             {
                 id: 'overdueAmount',
-                header: 'Overdue',
+                header: t('table.overdue'),
                 accessorFn: (row) => row.overdue_amount ?? 0,
                 cell: ({ row }) => {
                     const od = row.original.overdue_amount ?? 0;
                     return (
                         <div
-                            className={`font-semibold ${od > 0 ? 'text-red-600' : 'text-gray-400'}`}
+                            className={`font-semibold ${od > 0 ? 'text-danger-600' : 'text-neutral-400'}`}
                         >
                             {formatCurrency(od)}
                         </div>
@@ -187,13 +187,13 @@ export function StudentSearchStep({ onSelectStudent }: StudentSearchStepProps) {
             },
             {
                 id: 'status',
-                header: 'Status',
+                header: t('table.status'),
                 accessorFn: (row) => row.status || '',
                 cell: ({ row }) => <StatusPill status={row.original.status} />,
                 size: 160,
             },
         ],
-        [getPackageName]
+        [getPackageName, t]
     );
 
     const handlePageChange = (page: number) => {
@@ -203,14 +203,24 @@ export function StudentSearchStep({ onSelectStudent }: StudentSearchStepProps) {
     return (
         <div className="space-y-4">
             {/* Search Input */}
-            <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
+            <div className="flex flex-col gap-3 rounded-xl border border-neutral-200 bg-white p-4 shadow-sm">
+                <div className="flex flex-wrap items-center gap-2">
+                    <UserCircle size={18} className="text-primary-500" />
+                    <h3 className="text-subtitle font-semibold text-neutral-800">
+                        {t('redesign.findTitle', { learner: learnerTerm.toLowerCase() })}
+                    </h3>
+                    <span className="flex items-center gap-1 text-caption text-neutral-500">
+                        <CursorClick size={14} />
+                        {t('redesign.findHint', { learner: learnerTerm.toLowerCase() })}
+                    </span>
+                </div>
                 <div className="relative max-w-md">
                     <MagnifyingGlass
                         size={18}
-                        className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
+                        className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400"
                     />
                     <Input
-                        placeholder="Search by student name or phone..."
+                        placeholder={t('searchPlaceholder')}
                         value={searchInput}
                         onChange={(e) => setSearchInput(e.target.value)}
                         className="pl-10"
@@ -226,26 +236,26 @@ export function StudentSearchStep({ onSelectStudent }: StudentSearchStepProps) {
             )}
 
             {error && (
-                <div className="rounded-xl border border-red-200 bg-red-50 p-8 text-center">
-                    <p className="font-semibold text-red-800">Unable to load students</p>
-                    <p className="mt-2 text-sm text-red-600">
-                        {error instanceof Error ? error.message : 'Please try again.'}
+                <div className="rounded-xl border border-danger-200 bg-danger-50 p-8 text-center">
+                    <p className="font-semibold text-danger-700">{t('errors.unableToLoad')}</p>
+                    <p className="mt-2 text-sm text-danger-600">
+                        {error instanceof Error ? error.message : t('errors.tryAgain')}
                     </p>
                 </div>
             )}
 
             {!isLoading && !error && tableData && tableData.content.length === 0 && (
-                <div className="rounded-xl border border-gray-200 bg-white p-12 text-center">
-                    <p className="text-lg font-semibold text-gray-600">No students found.</p>
-                    <p className="mt-2 text-sm text-gray-400">
-                        Try searching by name or phone number.
+                <div className="rounded-xl border border-neutral-200 bg-white p-12 text-center">
+                    <p className="text-lg font-semibold text-neutral-600">
+                        {t('empty.noStudentsFound')}
                     </p>
+                    <p className="mt-2 text-sm text-neutral-400">{t('empty.trySearching')}</p>
                 </div>
             )}
 
             {!isLoading && !error && tableData && tableData.content.length > 0 && (
                 <div className="space-y-4">
-                    <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+                    <div className="overflow-hidden rounded-xl border border-neutral-200 bg-white shadow-sm">
                         <MyTable
                             data={tableData}
                             columns={columns}
@@ -262,21 +272,21 @@ export function StudentSearchStep({ onSelectStudent }: StudentSearchStepProps) {
                     </div>
 
                     {tableData.total_pages > 1 && (
-                        <div className="flex items-center justify-between rounded-xl border border-gray-100 bg-white px-5 py-3 shadow-sm">
-                            <div className="text-sm text-gray-500 font-medium">
-                                Showing{' '}
-                                <span className="font-semibold text-gray-800">
+                        <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-neutral-200 bg-white px-5 py-3 shadow-sm">
+                            <div className="text-sm font-medium text-neutral-500">
+                                {t('pagination.showing')}{' '}
+                                <span className="font-semibold text-neutral-800">
                                     {tableData.page_no * tableData.page_size + 1}
                                 </span>
                                 {' \u2013 '}
-                                <span className="font-semibold text-gray-800">
+                                <span className="font-semibold text-neutral-800">
                                     {Math.min(
                                         (tableData.page_no + 1) * tableData.page_size,
                                         tableData.total_elements
                                     )}
                                 </span>{' '}
-                                of{' '}
-                                <span className="font-semibold text-gray-800">
+                                {t('pagination.of')}{' '}
+                                <span className="font-semibold text-neutral-800">
                                     {tableData.total_elements}
                                 </span>
                             </div>

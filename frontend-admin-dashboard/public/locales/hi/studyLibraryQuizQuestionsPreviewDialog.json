@@ -1,0 +1,11 @@
+{
+    "previewQuestions_one": "{{count}} प्रश्न का पूर्वावलोकन",
+    "previewQuestions_other": "{{count}} प्रश्नों का पूर्वावलोकन",
+    "allQuestionsRemoved": "सभी प्रश्न हटा दिए गए। वापस जाने के लिए यह डायलॉग बंद करें।",
+    "questionsWillBeAdded_one": "{{count}} प्रश्न क्विज़ में जोड़ा जाएगा",
+    "questionsWillBeAdded_other": "{{count}} प्रश्न क्विज़ में जोड़े जाएंगे",
+    "cancel": "रद्द करें",
+    "adding": "जोड़ा जा रहा है…",
+    "addQuestionsToQuiz_one": "क्विज़ में {{count}} प्रश्न जोड़ें",
+    "addQuestionsToQuiz_other": "क्विज़ में {{count}} प्रश्न जोड़ें"
+}

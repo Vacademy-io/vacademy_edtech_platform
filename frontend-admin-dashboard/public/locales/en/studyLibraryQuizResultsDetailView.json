@@ -1,0 +1,33 @@
+{
+    "views": {
+        "learners": "Learners",
+        "questionAnalysis": "Question analysis"
+    },
+    "loadErrorTitle": "Could not load this quiz's results",
+    "loadErrorSubtitle": "The request failed. Check your connection and try again.",
+    "retry": "Retry",
+    "untitledQuiz": "Untitled quiz",
+    "notMappedToChapter": "Not mapped to a chapter",
+    "timeLimitSuffix_one": "{{count}} min limit",
+    "timeLimitSuffix_other": "{{count}} min limit",
+    "reAttemptsSuffix_one": "{{count}} re-attempt allowed",
+    "reAttemptsSuffix_other": "{{count}} re-attempts allowed",
+    "refreshAriaLabel": "Refresh this quiz's results",
+    "stats": {
+        "attempted": "Attempted",
+        "attemptsInTotal_one": "{{count}} attempt in total",
+        "attemptsInTotal_other": "{{count}} attempts in total",
+        "averageScore": "Average score",
+        "medianOutOfMarks": "Median {{median}} · out of {{total}} marks",
+        "passed": "Passed",
+        "scoreRange": "Score range",
+        "passMark": "Pass mark {{percent}}%",
+        "noPassMark": "This quiz has no pass mark",
+        "averageTime": "Average time",
+        "perLearnerLatestAttempt": "Per learner, latest attempt"
+    },
+    "ungradedNotice_one": "{{count}} answer needs marking by hand (free-text or manually-evaluated questions). It is left out of the scores above rather than counted as wrong, so the percentages here cover only what could be marked automatically.",
+    "ungradedNotice_other": "{{count}} answers need marking by hand (free-text or manually-evaluated questions). They are left out of the scores above rather than counted as wrong, so the percentages here cover only what could be marked automatically.",
+    "resultViewsAriaLabel": "Quiz result views",
+    "allQuizzes": "All quizzes"
+}

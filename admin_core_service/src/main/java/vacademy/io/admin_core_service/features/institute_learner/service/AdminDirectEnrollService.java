@@ -13,6 +13,8 @@ import vacademy.io.admin_core_service.features.institute_learner.dto.InstituteSt
 import vacademy.io.admin_core_service.features.institute_learner.enums.LearnerStatusEnum;
 import vacademy.io.admin_core_service.features.notification.enums.NotificationEventType;
 import vacademy.io.admin_core_service.features.notification.service.DynamicNotificationService;
+import vacademy.io.admin_core_service.features.payments.service.PaymentService;
+import vacademy.io.admin_core_service.features.user_subscription.entity.AppliedCouponDiscount;
 import vacademy.io.admin_core_service.features.user_subscription.entity.PaymentOption;
 import vacademy.io.admin_core_service.features.user_subscription.entity.PaymentPlan;
 import vacademy.io.admin_core_service.features.user_subscription.entity.UserPlan;
@@ -22,6 +24,8 @@ import vacademy.io.admin_core_service.features.user_subscription.service.Payment
 import vacademy.io.admin_core_service.features.user_subscription.service.PaymentOptionService;
 import vacademy.io.admin_core_service.features.user_subscription.service.PaymentPlanService;
 import vacademy.io.admin_core_service.features.user_subscription.service.UserPlanService;
+import vacademy.io.admin_core_service.features.user_subscription.service.coupon.AdminDiscountService;
+import vacademy.io.admin_core_service.features.user_subscription.service.coupon.CouponDiscountUtil;
 import vacademy.io.admin_core_service.features.learner.dto.SubOrgEnrollRequestDTO;
 import vacademy.io.admin_core_service.features.learner.dto.SubOrgEnrollResponseDTO;
 import vacademy.io.admin_core_service.features.learner.service.SubOrgLearnerService;
@@ -73,13 +77,24 @@ public class AdminDirectEnrollService {
     @Autowired
     private SubOrgLearnerService subOrgLearnerService;
 
+    @Autowired
+    private AdminDiscountService adminDiscountService;
+
+    @Autowired
+    @org.springframework.context.annotation.Lazy
+    private PaymentService paymentService;
+
     @Transactional
     public LearnerEnrollResponseDTO adminEnrollLearner(LearnerEnrollRequestDTO request, CustomUserDetails admin) {
         // If subOrgId is present, delegate to SubOrgLearnerService for each package session
         if (StringUtils.hasText(request.getSubOrgId())) {
+            if (request.getLearnerPackageSessionEnroll() != null
+                    && AdminDiscountService.isRequested(request.getLearnerPackageSessionEnroll().getAdminDiscount())) {
+                throw new VacademyException("A discount can't be applied to a sub-organisation enrollment");
+            }
             return adminEnrollLearnerToSubOrg(request, admin);
         }
-        return adminEnrollLearnerDirect(request);
+        return adminEnrollLearnerDirect(request, admin);
     }
 
     /**
@@ -115,7 +130,7 @@ public class AdminDirectEnrollService {
         return response;
     }
 
-    private LearnerEnrollResponseDTO adminEnrollLearnerDirect(LearnerEnrollRequestDTO request) {
+    private LearnerEnrollResponseDTO adminEnrollLearnerDirect(LearnerEnrollRequestDTO request, CustomUserDetails admin) {
         UserDTO user = createUserOrGetExistingUser(request.getUser(),request.getInstituteId());
         LearnerPackageSessionsEnrollDTO enrollDTO = request.getLearnerPackageSessionEnroll();
         String instituteId = request.getInstituteId();
@@ -127,7 +142,23 @@ public class AdminDirectEnrollService {
         PaymentPlan paymentPlan = null;
         if (enrollDTO.getPlanId() != null) {
             paymentPlan = paymentPlanService.findById(enrollDTO.getPlanId()).orElse(null);
-        }		sendNotificationsForEnrollment(
+        }
+
+        // Discount the admin gives on this enrollment (ad-hoc % / flat, or an existing
+        // coupon). Resolved before anything is sent so an invalid discount fails cleanly.
+        // The admin is recorded as the one who granted it.
+        String adminUserId = admin != null ? admin.getUserId() : null;
+        AppliedCouponDiscount adminDiscount = adminDiscountService.resolveForCharge(
+                enrollDTO.getAdminDiscount(),
+                instituteId,
+                paymentPlan,
+                paymentOption,
+                enrollDTO.getPackageSessionIds().get(0),
+                enrollDTO.getEnrollInviteId(),
+                user.getEmail(),
+                adminUserId);
+
+		sendNotificationsForEnrollment(
 				instituteId,
 				user,
 				paymentOption,
@@ -137,11 +168,11 @@ public class AdminDirectEnrollService {
 		
 		// Extract startDate from enrollDTO, default to current date if not provided
 		Date enrollmentStartDate = enrollDTO.getStartDate() != null ? enrollDTO.getStartDate() : new Date();
-		
+
         UserPlan userPlan = userPlanService.createUserPlan(
                 user.getId(),
                 paymentPlan,
-                null,
+                adminDiscount,
                 enrollInvite,
                 paymentOption,
                 enrollDTO.getPaymentInitiationRequest(),
@@ -149,6 +180,10 @@ public class AdminDirectEnrollService {
                 null,
                 null,
                 enrollmentStartDate);
+        if (adminDiscount != null) {
+            adminDiscountService.stampGrantedBy(userPlan, adminDiscount, adminUserId);
+            userPlan = userPlanService.save(userPlan);
+        }
 
         List<InstituteStudentDetails> instituteStudentDetails = new ArrayList<>();
         for (String packageSessionId : enrollDTO.getPackageSessionIds()) {
@@ -263,7 +298,11 @@ public class AdminDirectEnrollService {
         if (manual == null)
             return;
 
-        Double amount = paymentPlan != null ? paymentPlan.getActualPrice() : pir.getAmount();
+        Double grossAmount = paymentPlan != null ? paymentPlan.getActualPrice() : pir.getAmount();
+        // The admin's discount reduces what the learner paid offline.
+        Double amount = userPlan.getAppliedCouponDiscount() != null && grossAmount != null
+                ? CouponDiscountUtil.applyDiscount(grossAmount, userPlan.getAppliedCouponDiscount())
+                : grossAmount;
         String currency = paymentPlan != null ? paymentPlan.getCurrency() : enrollInvite.getCurrency();
 
         String paymentLogId = paymentLogService.createPaymentLog(
@@ -273,6 +312,10 @@ public class AdminDirectEnrollService {
                 PaymentGateway.MANUAL.name(),
                 currency,
                 userPlan);
+
+        if (userPlan.getAppliedCouponDiscount() != null) {
+            paymentService.recordFirstPaymentDiscountLineItem(paymentLogId, userPlan, grossAmount);
+        }
 
         Map<String, Object> paymentSpecificData = new HashMap<>();
         paymentSpecificData.put("originalRequest", pir);

@@ -1,10 +1,12 @@
 import React, { useEffect, useState, useRef } from "react";
+import { useTranslation } from "react-i18next";
 import FilterPanel from "./FilterPanel.tsx";
 import SearchAndSortBar from "./SearchAndSortBar.tsx";
 import CourseCard from "./CourseCards.tsx";
 import Pagination from "./Pagination.tsx";
 import { useCatalogStore } from "../-store/catalogStore.ts";
 import { toTitleCase } from "@/lib/utils";
+import { createPageChangeDetector } from "@/routes/study-library/courses/-component/page-change";
 import { getTerminologyPlural } from "@/components/common/layout-container/sidebar/utils";
 import { ContentTerms, SystemTerms } from "@/types/naming-settings";
 
@@ -43,6 +45,7 @@ const CoursesPage: React.FC<CoursesPageProps> = ({
   onApplyFilters,
   instituteId,
 }) => {
+  const { t } = useTranslation("coursesRouteA");
   const { courseData } = useCatalogStore();
   const fallbackDescription =
     "";
@@ -60,15 +63,17 @@ const CoursesPage: React.FC<CoursesPageProps> = ({
 
   const totalPages = Math.ceil(courseData.length / itemsPerPage);
 
-  // Smooth scroll on page change
+  // Smooth scroll on page change. Opening the screen is not a page change: it
+  // stays at the top with the banner in view.
+  const [pageChanged] = useState(() => createPageChangeDetector(currentPage));
   useEffect(() => {
-    if (scrollRef.current) {
+    if (pageChanged(currentPage) && scrollRef.current) {
       scrollRef.current.scrollIntoView({
         behavior: "smooth",
         block: "start",
       });
     }
-  }, [currentPage]);
+  }, [currentPage, pageChanged]);
 
   // Reset page to 1 on course data change
   useEffect(() => {
@@ -130,10 +135,14 @@ const CoursesPage: React.FC<CoursesPageProps> = ({
                 </svg>
               </div>
               <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-2">
-                No {getTerminologyPlural(ContentTerms.Course, SystemTerms.Course).toLowerCase()} available
+                {t("coursesPage.empty.title", {
+                  courses: getTerminologyPlural(ContentTerms.Course, SystemTerms.Course).toLowerCase(),
+                })}
               </h3>
               <p className="text-gray-600 text-sm max-w-md mx-auto">
-                Try adjusting your search criteria or check back later for new {getTerminologyPlural(ContentTerms.Course, SystemTerms.Course).toLowerCase()}.
+                {t("coursesPage.empty.description", {
+                  courses: getTerminologyPlural(ContentTerms.Course, SystemTerms.Course).toLowerCase(),
+                })}
               </p>
             </div>
           ) : (
@@ -144,16 +153,20 @@ const CoursesPage: React.FC<CoursesPageProps> = ({
                     courseId={course.id}
                     key={index}
                     package_name={toTitleCase(
-                      course.package_name || "Untitled Package"
+                      course.package_name || t("coursesPage.untitledPackage")
                     )}
-                    level_name={toTitleCase(course.level_name || "Beginner")}
+                    level_name={toTitleCase(course.level_name || t("coursesPage.defaultLevelName"))}
                     instructors={
                       course.instructors?.length
                         ? course.instructors.map((instructor) => ({
                           id: instructor.id,
                           full_name:
-                            instructor.full_name || "Unknown Instructor",
-                          image_url: undefined,
+                            instructor.full_name || t("common.unknownInstructor"),
+                          image_url: instructor.image_url,
+                          profile_pic_file_id: instructor.profile_pic_file_id,
+                          author_subtitle: instructor.author_subtitle,
+                          author_description: instructor.author_description,
+                          role_label: instructor.role_label,
                         }))
                         : []
                     }

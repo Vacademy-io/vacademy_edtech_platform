@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import { useMemo } from "react";
+import { useTranslation } from "react-i18next";
 import { formatDuration } from "@/constants/helper";
 import { Assessment } from "@/types/assessment";
 import {
@@ -54,7 +55,8 @@ const FILE_EXT_PATTERN =
  * download links. Mirrors `extractAndStripAttachments` in assignment-slide.tsx.
  */
 const parseInstructions = (
-  html: string
+  html: string,
+  fallbackAttachmentName: string
 ): { cleanHtml: string; attachments: InstructionAttachment[] } => {
   if (!html || typeof DOMParser === "undefined") {
     return { cleanHtml: html, attachments: [] };
@@ -85,7 +87,7 @@ const parseInstructions = (
           type.toLowerCase().includes("pdf");
         attachments.push({
           url: href,
-          fileName: name || href.split("/").pop() || "Attachment",
+          fileName: name || href.split("/").pop() || fallbackAttachmentName,
           isPdf,
         });
       }
@@ -113,8 +115,8 @@ interface StatCardProps {
 }
 
 const StatCard = ({ label, value }: StatCardProps) => (
-  <div className="rounded-xl border border-neutral-200 bg-white px-3 py-3 sm:px-4">
-    <p className="mb-1.5 text-3xs font-bold uppercase tracking-wide text-neutral-400">
+  <div className="rounded-xl border border-neutral-200 bg-white px-3 py-3 sm:px-4 space-y-1.5">
+    <p className="text-3xs font-bold uppercase tracking-wide text-neutral-400">
       {label}
     </p>
     <p className="text-title font-bold text-neutral-900 sm:text-h3">{value}</p>
@@ -138,8 +140,8 @@ const RuleRow = ({ icon, title, body, isFirst }: RuleRowProps) => (
     <span className="grid size-8 flex-none place-items-center rounded-lg bg-neutral-100 text-neutral-600">
       {icon}
     </span>
-    <div className="min-w-0">
-      <p className="mb-1 text-body font-semibold text-neutral-900">{title}</p>
+    <div className="min-w-0 space-y-1">
+      <p className="text-body font-semibold text-neutral-900">{title}</p>
       <p className="text-caption leading-relaxed text-neutral-500">{body}</p>
     </div>
   </div>
@@ -153,14 +155,15 @@ export const AssessmentInstructions = ({
   assessmentInfo,
   examExperience = DEFAULT_EXAM_EXPERIENCE,
 }: AssessmentInstructionsProps) => {
+  const { t } = useTranslation("layoutCommonB");
   const { used, max } = getAttemptInfo(assessmentInfo);
   const showAttempts =
     assessmentInfo.play_mode !== "PRACTICE" &&
     assessmentInfo.play_mode !== "MOCK";
 
   const { cleanHtml, attachments } = useMemo(
-    () => parseInstructions(instructions),
-    [instructions]
+    () => parseInstructions(instructions, t("instructionPage.assessmentInstructions.attachment")),
+    [instructions, t]
   );
   const hasInstructionText = cleanHtml.replace(/<[^>]+>/g, "").trim() !== "";
   const pdfAttachments = attachments.filter((a) => a.isPdf);
@@ -172,9 +175,9 @@ export const AssessmentInstructions = ({
   const tools = [
     examExperience.calculator.enabled &&
       (examExperience.calculator.mode === "scientific"
-        ? "a scientific calculator"
-        : "a calculator"),
-    examExperience.scratchpad.enabled && "a scratchpad for rough work",
+        ? t("instructionPage.assessmentInstructions.tools.scientificCalculator")
+        : t("instructionPage.assessmentInstructions.tools.calculator")),
+    examExperience.scratchpad.enabled && t("instructionPage.assessmentInstructions.tools.scratchpad"),
   ].filter(Boolean) as string[];
 
   return (
@@ -184,26 +187,25 @@ export const AssessmentInstructions = ({
         {showAttempts && (
           <span className="mb-3 inline-flex items-center gap-1.5 rounded-full border border-primary-200 bg-primary-50 px-3 py-1 text-2xs font-semibold text-primary-500">
             <ListChecks size={13} weight="bold" />
-            Attempt {used + 1} of {max}
+            {t("instructionPage.assessmentInstructions.attemptOf", { used: used + 1, max })}
           </span>
         )}
         <h1 className="text-h2 font-bold leading-tight text-neutral-900 sm:text-h1">
           {assessmentInfo.name}
         </h1>
         <p className="mt-2 text-body text-neutral-500">
-          Read these before you begin. The timer starts the moment you enter the
-          test.
+          {t("instructionPage.assessmentInstructions.readBeforeYouBegin")}
         </p>
       </div>
 
       {/* Headline numbers. Labels are kept to one word so all three cards stay
           the same height on a 360px phone. */}
       <div className="grid grid-cols-3 gap-2 sm:gap-3">
-        <StatCard label="Duration" value={formatDuration(duration * 60)} />
-        <StatCard label="Preview" value={preview ? "Yes" : "No"} />
+        <StatCard label={t("instructionPage.assessmentInstructions.stats.duration")} value={formatDuration(duration * 60)} />
+        <StatCard label={t("instructionPage.assessmentInstructions.stats.preview")} value={preview ? t("instructionPage.assessmentInstructions.yes") : t("instructionPage.assessmentInstructions.no")} />
         {/* Terse on purpose — the rule row below spells out what section
             switching actually means for this paper. */}
-        <StatCard label="Switching" value={canSwitchSections ? "Yes" : "No"} />
+        <StatCard label={t("instructionPage.assessmentInstructions.stats.switching")} value={canSwitchSections ? t("instructionPage.assessmentInstructions.yes") : t("instructionPage.assessmentInstructions.no")} />
       </div>
 
       {/* How this test works */}
@@ -211,53 +213,53 @@ export const AssessmentInstructions = ({
         <RuleRow
           isFirst
           icon={<Clock size={17} weight="duotone" />}
-          title={`${formatDuration(duration * 60)} on the clock`}
+          title={t("instructionPage.assessmentInstructions.rules.clock.title", { duration: formatDuration(duration * 60) })}
           body={
             canSwitchSections
-              ? "You may move between sections freely until the overall timer ends."
-              : "Sections open in order. Once a section's time ends you cannot return to it."
+              ? t("instructionPage.assessmentInstructions.rules.clock.bodySwitchable")
+              : t("instructionPage.assessmentInstructions.rules.clock.bodyFixed")
           }
         />
         <RuleRow
           icon={<ShieldCheck size={17} weight="duotone" />}
-          title="Stay in full screen"
-          body="The test runs in full screen. Leaving it, switching tabs, or opening another window is recorded. Three warnings will auto-submit your paper."
+          title={t("instructionPage.assessmentInstructions.rules.fullScreen.title")}
+          body={t("instructionPage.assessmentInstructions.rules.fullScreen.body")}
         />
         <RuleRow
           icon={<ArrowsClockwise size={17} weight="duotone" />}
-          title="Your answers save automatically"
-          body="Every response syncs as you go. If your connection drops, answers are held on this device and re-sent when you are back online."
+          title={t("instructionPage.assessmentInstructions.rules.autoSave.title")}
+          body={t("instructionPage.assessmentInstructions.rules.autoSave.body")}
         />
         {examExperience.questionPalette.enabled && (
           <RuleRow
             icon={<SquaresFour size={17} weight="duotone" />}
-            title="Use the question palette"
-            body="The palette shows what is answered, skipped or marked for review. Marking a question for review still submits any answer you selected."
+            title={t("instructionPage.assessmentInstructions.rules.questionPalette.title")}
+            body={t("instructionPage.assessmentInstructions.rules.questionPalette.body")}
           />
         )}
         {tools.length > 0 && (
           <RuleRow
             icon={<ArrowsLeftRight size={17} weight="duotone" />}
-            title="Tools you can use"
-            body={`This test gives you ${tools.join(" and ")}. Open them from the toolbar during the test.`}
+            title={t("instructionPage.assessmentInstructions.rules.tools.title")}
+            body={t("instructionPage.assessmentInstructions.rules.tools.body", { tools: tools.join(t("instructionPage.assessmentInstructions.rules.tools.and")) })}
           />
         )}
         {showAttempts && (
           <RuleRow
             icon={<ListChecks size={17} weight="duotone" />}
-            title={`Attempt ${used + 1} of ${max}`}
+            title={t("instructionPage.assessmentInstructions.attemptOf", { used: used + 1, max })}
             body={
               used > 0
-                ? `You have already used ${used} ${used === 1 ? "attempt" : "attempts"} on this paper.`
-                : "This is your first attempt on this paper."
+                ? t("instructionPage.assessmentInstructions.rules.attempts.bodyUsed", { count: used })
+                : t("instructionPage.assessmentInstructions.rules.attempts.bodyFirst")
             }
           />
         )}
         {preview && (
           <RuleRow
             icon={<Eye size={17} weight="duotone" />}
-            title="Preview before you start"
-            body="You get a read-only look at the paper before the answering time begins."
+            title={t("instructionPage.assessmentInstructions.rules.preview.title")}
+            body={t("instructionPage.assessmentInstructions.rules.preview.body")}
           />
         )}
       </div>
@@ -270,7 +272,7 @@ export const AssessmentInstructions = ({
           <div className="mb-3 flex items-center gap-2">
             <Info size={16} weight="duotone" className="text-neutral-400" />
             <h2 className="text-caption font-bold uppercase tracking-wide text-neutral-500">
-              Instructions from your institute
+              {t("instructionPage.assessmentInstructions.instructionsFromInstitute")}
             </h2>
           </div>
           {hasInstructionText ? (
@@ -280,7 +282,7 @@ export const AssessmentInstructions = ({
             />
           ) : attachments.length === 0 ? (
             <p className="text-body italic text-neutral-400">
-              No additional instructions were provided for this assessment.
+              {t("instructionPage.assessmentInstructions.noAdditionalInstructions")}
             </p>
           ) : null}
 
@@ -318,7 +320,18 @@ export const AssessmentInstructions = ({
           key={att.url}
           className="overflow-hidden rounded-2xl border border-neutral-200 bg-white"
         >
-          <div className="flex items-center gap-2 border-b border-neutral-100 p-4">
+          {/* The filename doubles as a direct link to the paper. The inline
+              viewer below fetches the PDF from the CDN in a series of range
+              requests, and a single dropped request leaves the learner with an
+              error box and — because the source anchor was stripped out of the
+              instructions — no other way to reach the question paper. This
+              link never goes through pdf.js, so it survives that failure. */}
+          <a
+            href={att.url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-2 border-b border-neutral-100 p-4 transition-colors hover:bg-primary-50"
+          >
             <FilePdf size={16} weight="duotone" className="text-danger-500" />
             <h2
               className="truncate text-caption font-bold uppercase tracking-wide text-neutral-500"
@@ -326,7 +339,11 @@ export const AssessmentInstructions = ({
             >
               {att.fileName}
             </h2>
-          </div>
+            <span className="ms-auto flex shrink-0 items-center gap-1 text-caption font-semibold text-primary-500">
+              {t("instructionPage.assessmentInstructions.downloadPaper")}
+              <ArrowSquareOut size={14} />
+            </span>
+          </a>
           <div className="h-screen-70 w-full">
             <SimplePDFViewer pdfUrl={att.url} />
           </div>

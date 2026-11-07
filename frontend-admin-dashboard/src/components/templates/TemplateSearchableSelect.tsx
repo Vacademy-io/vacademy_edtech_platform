@@ -1,7 +1,8 @@
 import * as React from 'react';
-import { Check, CaretUpDown, MagnifyingGlass } from '@phosphor-icons/react';
+import { Check, CaretDown, CaretUpDown, MagnifyingGlass } from '@phosphor-icons/react';
 
 import { cn } from '@/lib/utils';
+import { flattenTemplateBody, humanizeTemplateText } from './template-text';
 import { Button } from '@/components/ui/button';
 import {
     Command,
@@ -43,6 +44,9 @@ interface TemplateSearchableSelectProps {
     disabled?: boolean;
     loading?: boolean;
     className?: string;
+    /** Row expander copy, for translated callers. */
+    expandLabel?: string;
+    collapseLabel?: string;
     /** Rendered as the first entry, e.g. "No template" or "Custom — write from scratch". */
     noneOption?: { value: string; label: string };
     /**
@@ -71,12 +75,17 @@ export function TemplateSearchableSelect({
     disabled = false,
     loading = false,
     className,
+    expandLabel = 'Show full message',
+    collapseLabel = 'Show less',
     noneOption,
     portal = true,
     id,
 }: TemplateSearchableSelectProps) {
     const [open, setOpen] = React.useState(false);
     const [query, setQuery] = React.useState('');
+    // Which rows have their message opened out. Two lines is enough to tell templates apart but not
+    // enough to read one, and the body is the only thing that says what the message actually says.
+    const [expandedRows, setExpandedRows] = React.useState<Record<string, boolean>>({});
 
     const selected = React.useMemo(
         () => options.find((option) => option.value === value),
@@ -111,7 +120,8 @@ export function TemplateSearchableSelect({
     }, [options, query]);
 
     const showNoneOption =
-        !!noneOption && (!query.trim() || noneOption.label.toLowerCase().includes(query.trim().toLowerCase()));
+        !!noneOption &&
+        (!query.trim() || noneOption.label.toLowerCase().includes(query.trim().toLowerCase()));
 
     const handleSelect = (selectedValue: string) => {
         onChange(selectedValue);
@@ -122,8 +132,14 @@ export function TemplateSearchableSelect({
     const handleOpenChange = (next: boolean) => {
         setOpen(next);
         // Start each visit with the full list rather than the last search.
-        if (!next) setQuery('');
+        if (!next) {
+            setQuery('');
+            setExpandedRows({});
+        }
     };
+
+    const toggleRow = (rowValue: string) =>
+        setExpandedRows((prev) => ({ ...prev, [rowValue]: !prev[rowValue] }));
 
     const triggerLabel = loading
         ? 'Loading templates…'
@@ -180,7 +196,16 @@ export function TemplateSearchableSelect({
                                 message text contains it.
                             </p>
                         )}
-                        <CommandGroup className="max-h-72 overflow-auto">
+                        {/* Rows carry a name, badges and two lines of body, so the old 18rem showed
+                            barely two of them — an institute with a dozen templates could not see
+                            past the first. 24rem shows four, but only when there is room for it:
+                            whichever is smaller, 24rem or the space Radix measured between the
+                            trigger and the viewport edge, so a list opening low on a short screen
+                            still scrolls inside itself instead of running off the page. The
+                            fallback keeps a sane cap on the frame before Radix has measured. */}
+                        <CommandGroup
+                            className="max-h-[min(24rem,var(--radix-popover-content-available-height,24rem))] overflow-auto" // design-lint-ignore: dynamic Radix-computed CSS var (available viewport space), not a fixed magic number a token could represent
+                        >
                             {showNoneOption && noneOption && (
                                 <CommandItem
                                     key={noneOption.value}
@@ -196,56 +221,101 @@ export function TemplateSearchableSelect({
                                     {noneOption.label}
                                 </CommandItem>
                             )}
-                            {visible.map((option) => (
-                                <CommandItem
-                                    key={option.value}
-                                    // Unique per row — cmdk keys highlight/selection off this. It is
-                                    // no longer what search matches against (see `visible` above).
-                                    value={option.value}
-                                    onSelect={() => handleSelect(option.value)}
-                                    className="items-start"
-                                >
-                                    <Check
-                                        className={cn(
-                                            'mr-2 mt-1 size-4 shrink-0',
-                                            value === option.value ? 'opacity-100' : 'opacity-0'
-                                        )}
-                                    />
-                                    <div className="min-w-0 flex-1">
-                                        <div className="flex flex-wrap items-center gap-1.5">
-                                            <span className="truncate font-medium">
-                                                {option.name}
-                                            </span>
-                                            {option.status && (
-                                                <span
+                            {visible.map((option) => {
+                                const isExpanded = !!expandedRows[option.value];
+                                // Anything past two lines is cut off mid-sentence by the clamp, and
+                                // a multi-paragraph body loses every line but the first two.
+                                const isTruncatable =
+                                    !!option.preview &&
+                                    (option.preview.length > 110 || option.preview.includes('\n'));
+                                // Collapsed, the body flows as one paragraph. Keeping its line
+                                // breaks spent the two clamped lines on "Dear [name]," and a blank
+                                // — the reader learned nothing about the message. Expanded, the
+                                // paragraphs come back.
+                                const collapsedPreview = option.preview?.replace(/\s*\n+\s*/g, ' ');
+                                return (
+                                    <CommandItem
+                                        key={option.value}
+                                        // Unique per row — cmdk keys highlight/selection off this. It is
+                                        // no longer what search matches against (see `visible` above).
+                                        value={option.value}
+                                        onSelect={() => handleSelect(option.value)}
+                                        className="items-start"
+                                    >
+                                        <Check
+                                            className={cn(
+                                                'mr-2 mt-1 size-4 shrink-0',
+                                                value === option.value ? 'opacity-100' : 'opacity-0'
+                                            )}
+                                        />
+                                        <div className="min-w-0 flex-1">
+                                            <div className="flex flex-wrap items-center gap-1.5">
+                                                <span className="truncate font-medium">
+                                                    {option.name}
+                                                </span>
+                                                {option.status && (
+                                                    <span
+                                                        className={cn(
+                                                            'rounded px-1.5 py-0.5 text-2xs font-medium',
+                                                            statusTone[option.status] ??
+                                                                'bg-neutral-100 text-neutral-500'
+                                                        )}
+                                                    >
+                                                        {option.status}
+                                                    </span>
+                                                )}
+                                                {option.category && (
+                                                    <span className="rounded bg-primary-50 px-1.5 py-0.5 text-2xs text-primary-500">
+                                                        {option.category}
+                                                    </span>
+                                                )}
+                                                {option.language && (
+                                                    <span className="text-2xs text-neutral-400">
+                                                        {option.language}
+                                                    </span>
+                                                )}
+                                            </div>
+                                            {option.preview && (
+                                                <p
                                                     className={cn(
-                                                        'rounded px-1.5 py-0.5 text-2xs font-medium',
-                                                        statusTone[option.status] ??
-                                                            'bg-neutral-100 text-neutral-500'
+                                                        'mt-1 break-words text-xs leading-relaxed text-neutral-600',
+                                                        isExpanded
+                                                            ? 'whitespace-pre-wrap'
+                                                            : 'line-clamp-2'
                                                     )}
                                                 >
-                                                    {option.status}
-                                                </span>
+                                                    {isExpanded ? option.preview : collapsedPreview}
+                                                </p>
                                             )}
-                                            {option.category && (
-                                                <span className="rounded bg-primary-50 px-1.5 py-0.5 text-2xs text-primary-500">
-                                                    {option.category}
-                                                </span>
-                                            )}
-                                            {option.language && (
-                                                <span className="text-2xs text-neutral-400">
-                                                    {option.language}
-                                                </span>
+                                            {isTruncatable && (
+                                                // Inside a cmdk item, whose own onClick selects the row:
+                                                // stop the click here so opening the message does not
+                                                // also pick the template and close the list.
+                                                <button
+                                                    type="button"
+                                                    tabIndex={-1}
+                                                    onClick={(event) => {
+                                                        event.stopPropagation();
+                                                        toggleRow(option.value);
+                                                    }}
+                                                    onPointerDown={(event) =>
+                                                        event.stopPropagation()
+                                                    }
+                                                    className="mt-1 inline-flex items-center gap-1 text-2xs font-medium text-primary-500 hover:underline"
+                                                >
+                                                    {isExpanded ? collapseLabel : expandLabel}
+                                                    <CaretDown
+                                                        className={cn(
+                                                            'size-3 transition-transform',
+                                                            isExpanded && 'rotate-180'
+                                                        )}
+                                                    />
+                                                </button>
                                             )}
                                         </div>
-                                        {option.preview && (
-                                            <p className="mt-0.5 line-clamp-2 text-xs text-neutral-500">
-                                                {option.preview}
-                                            </p>
-                                        )}
-                                    </div>
-                                </CommandItem>
-                            ))}
+                                    </CommandItem>
+                                );
+                            })}
                         </CommandGroup>
                     </CommandList>
                 </Command>
@@ -265,6 +335,8 @@ interface TemplateLike {
     bodyText?: string;
     subject?: string;
     content?: string;
+    /** Names behind a WhatsApp template's positional `{{1}}` placeholders, when it has them. */
+    bodyVariableNames?: string[];
 }
 
 /**
@@ -282,10 +354,13 @@ export const toTemplateOptions = (
             category: t.category || t.templateCategory,
             language: t.language,
             status: t.status,
-            preview: (t.bodyText || t.subject || t.content || '')
-                .replace(/<[^>]*>/g, ' ')
-                .replace(/\s+/g, ' ')
-                .trim(),
+            // Placeholders are resolved to their names first: a Meta template's body reads
+            // "Dear {{1}}, your {{2}} starts…", which tells the reader nothing about the message.
+            preview: flattenTemplateBody(
+                humanizeTemplateText(t.bodyText || t.subject || t.content || '', {
+                    variableNames: t.bodyVariableNames,
+                })
+            ),
         }))
         .filter((option) => !!option.value);
 

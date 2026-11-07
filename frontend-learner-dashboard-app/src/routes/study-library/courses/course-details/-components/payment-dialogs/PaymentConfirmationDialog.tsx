@@ -3,6 +3,8 @@ import * as DialogPrimitive from "@radix-ui/react-dialog";
 import { Cross2Icon } from "@radix-ui/react-icons";
 import { MyButton } from "@/components/design-system/button";
 import { CheckCircle, Clock, BookOpen } from "@phosphor-icons/react";
+import { getTerminology } from "@/components/common/layout-container/sidebar/utils";
+import { ContentTerms, SystemTerms } from "@/types/naming-settings";
 
 export interface PaymentConfirmationDialogProps {
   open: boolean;
@@ -74,8 +76,8 @@ export const PaymentConfirmationDialog: React.FC<
 
             {/* Payment Details */}
             {paymentData && (
-              <div className="mb-6 rounded-lg bg-gray-50 p-4 text-start">
-                <h3 className="mb-3 font-medium text-gray-900">
+              <div className="mb-6 rounded-lg bg-gray-50 p-4 text-start space-y-stack">
+                <h3 className="font-medium text-gray-900">
                   Payment Details
                 </h3>
                 <div className="space-y-2 text-sm">
@@ -87,7 +89,7 @@ export const PaymentConfirmationDialog: React.FC<
                   </div>
                   {paymentData.courseName && (
                     <div className="flex justify-between">
-                      <span className="text-gray-600">Course:</span>
+                      <span className="text-gray-600">{getTerminology(ContentTerms.Course, SystemTerms.Course)}:</span>
                       <span className="font-medium text-gray-900">
                         {paymentData.courseName}
                       </span>
@@ -155,7 +157,7 @@ export const PaymentConfirmationDialog: React.FC<
                   className="flex-1"
                   onClick={handleExploreCourse}
                 >
-                  Explore Course
+                  Explore {getTerminology(ContentTerms.Course, SystemTerms.Course)}
                 </MyButton>
               )}
             </div>

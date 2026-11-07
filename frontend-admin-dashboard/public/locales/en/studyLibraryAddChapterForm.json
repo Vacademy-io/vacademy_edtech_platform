@@ -1,0 +1,41 @@
+{
+    "validation": {
+        "chapterNameRequired": "Chapter name is required",
+        "descriptionMaxLength": "Description must be {{max}} characters or fewer"
+    },
+    "toast": {
+        "invalidImageFile": "Please select a valid image file",
+        "thumbnailUploadSuccess": "Thumbnail uploaded successfully",
+        "thumbnailUploadFailed": "Failed to upload thumbnail",
+        "selectPackageRequired": "Please select at least one package for visibility",
+        "packageSessionNotFound": "Package session not found",
+        "chapterAddSuccess": "Chapter added successfully",
+        "noChapterToUpdate": "No chapter to update",
+        "chapterUpdateSuccess": "Chapter updated successfully",
+        "chapterActionFailedCreate": "Failed to create chapter. Please try again.",
+        "chapterActionFailedEdit": "Failed to edit chapter. Please try again."
+    },
+    "loadingVisibilityData": "Loading complete visibility data...",
+    "nameLabel": "{{term}} Name",
+    "descriptionLabel": "Description (Optional)",
+    "descriptionPlaceholder": "Enter {{term}} description",
+    "descriptionCharCount": "Shown on the {{term}} card — {{current}}/{{max}} characters",
+    "thumbnailLabel": "{{term}} Thumbnail",
+    "optional": "(Optional)",
+    "thumbnailHelpText": "Upload a thumbnail image for this chapter. It will be cropped to a 16:9 ratio for consistency (16:9 recommended).",
+    "thumbnailPreviewAlt": "Thumbnail preview",
+    "uploading": "Uploading...",
+    "selectThumbnail": "Select Thumbnail",
+    "visibilityHeading": "{{term}} Visibility",
+    "visibilityHelpText": "Select the levels you want to grant access to this chapter. Only the chosen levels will be able to view the content. You can update visibility at any time.",
+    "academicSession": "Academic Session:",
+    "defaultSuffix": " (Default)",
+    "selectAllAriaLabel": "Select all",
+    "loadingCompleteData": "Please wait while we load complete data...",
+    "adding": "Adding...",
+    "updating": "Updating...",
+    "addButton": "Add {{term}}",
+    "editButton": "Edit {{term}}",
+    "cropDialogTitle": "Crop Chapter Thumbnail",
+    "saveThumbnail": "Save Thumbnail"
+}

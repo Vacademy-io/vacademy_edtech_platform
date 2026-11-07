@@ -1,0 +1,81 @@
+{
+    "dialog": {
+        "title": "تشغيل سير عمل",
+        "descriptionPrefix": "تشغيل أتمتة لـ",
+        "descriptionSuffix": "عند حدوث حدث خاص بالعميل المحتمل."
+    },
+    "actionType": {
+        "label": "ماذا تريد أن تفعل؟",
+        "communication": {
+            "title": "التواصل",
+            "description": "إرسال بريد إلكتروني أو رسالة واتساب."
+        },
+        "payload": {
+            "title": "لصق البيانات في الحمولة",
+            "description": "إرسال بيانات الحدث إلى رابط عبر POST."
+        }
+    },
+    "event": {
+        "label": "التشغيل عند أي حدث؟",
+        "placeholder": "اختر حدث عميل محتمل",
+        "options": {
+            "leadAssignedToCounselor": "تم تعيين العميل المحتمل للمرشد",
+            "leadTatReminderBefore": "تذكير بمهلة العميل المحتمل (قبل التجاوز)",
+            "leadTatOverdue": "تجاوز مهلة العميل المحتمل",
+            "followUpDue": "المتابعة مستحقة",
+            "followUpOverdue": "تأخرت المتابعة",
+            "leadStatusChanged": "تغيرت حالة العميل المحتمل"
+        }
+    },
+    "statusGate": {
+        "label": "عند تغيير الحالة إلى",
+        "placeholder": "أي حالة",
+        "anyStatusChange": "أي تغيير في الحالة",
+        "hint": "يطابق الحالة الجديدة للعميل المحتمل. اختر حالة للتشغيل فقط عند ذلك التغيير، أو أبقِ على \"أي تغيير في الحالة\"."
+    },
+    "channel": {
+        "label": "القناة",
+        "email": "البريد الإلكتروني",
+        "whatsapp": "واتساب"
+    },
+    "recipient": {
+        "label": "إرسال الإشعار إلى",
+        "counselor": "المرشد المعيَّن (افتراضي)",
+        "lead": "بيانات تواصل العميل المحتمل نفسه"
+    },
+    "template": {
+        "label": "القالب",
+        "createSample": "إنشاء قالب نموذجي",
+        "creatingSample": "جارٍ إنشاء النموذج…",
+        "placeholder": "اختر قالبًا",
+        "emptyText": "لا يوجد قالب يطابق بحثك.",
+        "noneFoundEmail": "لم يتم العثور على قوالب بريد إلكتروني. انقر على \"إنشاء قالب نموذجي\" أعلاه للحصول على بداية جاهزة.",
+        "noneFoundWhatsapp": "لم يتم العثور على قوالب واتساب. أنشئ قالب واتساب معتمدًا أولًا."
+    },
+    "payload": {
+        "label": "رابط الوجهة",
+        "placeholder": "https://example.com/webhook",
+        "hint": "يتم إرسال سياق الحدث (العميل المحتمل، المرشد، المجمّع، إلخ) بصيغة JSON عبر POST."
+    },
+    "name": {
+        "label": "اسم سير العمل",
+        "placeholder": "مثال: إشعار ولي الأمر عند استحقاق المتابعة"
+    },
+    "description": {
+        "label": "الوصف",
+        "optional": "(اختياري)",
+        "placeholder": "ماذا يفعل سير العمل هذا؟"
+    },
+    "footer": {
+        "cancel": "إلغاء",
+        "creating": "جارٍ الإنشاء…",
+        "create": "إنشاء سير العمل"
+    },
+    "toasts": {
+        "sampleCreated": "تم إنشاء القالب النموذجي \"{{name}}\"",
+        "noSampleTemplate": "لا يوجد قالب نموذجي متاح لهذا الحدث.",
+        "sampleCreateFailed": "فشل إنشاء القالب",
+        "workflowCreated": "تم إنشاء سير العمل",
+        "workflowCreateFailed": "فشل إنشاء سير العمل"
+    }
+}

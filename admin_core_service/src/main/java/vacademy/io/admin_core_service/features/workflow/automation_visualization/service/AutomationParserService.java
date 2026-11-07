@@ -16,6 +16,7 @@ public class AutomationParserService {
 
     private final ObjectMapper objectMapper = new ObjectMapper();
     private final StepParserRegistry parserRegistry;
+    private final NodeSummaryBuilder nodeSummaryBuilder;
 
     // This map provides friendly names for known database operations
     public static final Map<String, String> TERMINOLOGY_MAP = new HashMap<>();
@@ -28,8 +29,9 @@ public class AutomationParserService {
         TERMINOLOGY_MAP.put("sendEmail", "Send Email to Learners");
     }
 
-    public AutomationParserService(StepParserRegistry parserRegistry) {
+    public AutomationParserService(StepParserRegistry parserRegistry, NodeSummaryBuilder nodeSummaryBuilder) {
         this.parserRegistry = parserRegistry;
+        this.nodeSummaryBuilder = nodeSummaryBuilder;
     }
 
     /**
@@ -39,6 +41,16 @@ public class AutomationParserService {
      * Ensures unique nodes by ID.
      */
     public AutomationDiagramDTO parse(Map<String, String> nodeTemplates) throws IOException {
+        return parse(nodeTemplates, null);
+    }
+
+    /**
+     * Same, with the workflow's trigger/schedule context so the TRIGGER node can report the
+     * event it listens for and the entities it is scoped to — neither of which lives in the
+     * node's own config JSON.
+     */
+    public AutomationDiagramDTO parse(Map<String, String> nodeTemplates,
+                                      NodeSummaryBuilder.TriggerSummary triggerSummary) throws IOException {
         Map<String, AutomationDiagramDTO.Node> nodeMap = new LinkedHashMap<>();
         List<AutomationDiagramDTO.Edge> edges = new ArrayList<>();
 
@@ -51,22 +63,25 @@ public class AutomationParserService {
             Map<String, Object> nodeData = objectMapper.readValue(json, new TypeReference<>() {
             });
 
-            // 1. Find the correct parser for this node type from the registry and parse it.
-            Optional<StepParser> parser = parserRegistry.getParser(nodeData);
+            // 1. The node's real node_type (injected by the controller) is authoritative — it
+            // says what the engine will actually run. The shape-guessing parsers below are kept
+            // only for nodes stored before _nodeType was injected, where there is nothing else
+            // to go on; they title every send node "Send Communication" and attach no details,
+            // so they must never win over the real type.
+            String nodeType = (String) nodeData.get("_nodeType");
+            String nodeName = (String) nodeData.get("_nodeName");
             AutomationDiagramDTO.Node node;
-            if (parser.isPresent()) {
-                node = parser.get().parse(nodeId, nodeData);
+            if (nodeType != null && !nodeType.isBlank()) {
+                node = nodeSummaryBuilder.build(nodeId, nodeType, nodeName, nodeData, triggerSummary);
             } else {
-                // Fallback: use _nodeType and _nodeName injected by the controller
-                String nodeType = (String) nodeData.getOrDefault("_nodeType", "UNKNOWN");
-                String nodeName = (String) nodeData.getOrDefault("_nodeName", "Unknown Step");
-                String diagramType = mapNodeTypeToDiagramType(nodeType);
-                node = AutomationDiagramDTO.Node.builder()
-                        .id(nodeId)
-                        .title(nodeName)
-                        .description(nodeType.replace("_", " "))
-                        .type(diagramType)
-                        .build();
+                Optional<StepParser> parser = parserRegistry.getParser(nodeData);
+                node = parser.map(p -> p.parse(nodeId, nodeData))
+                        .orElseGet(() -> AutomationDiagramDTO.Node.builder()
+                                .id(nodeId)
+                                .title(nodeName != null ? nodeName : "Unknown Step")
+                                .description("UNKNOWN")
+                                .type("UNKNOWN")
+                                .build());
             }
 
             // Use a map to ensure unique nodes by ID

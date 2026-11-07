@@ -1,0 +1,18 @@
+{
+    "errors": {
+        "formNotInitialized": "Le formulaire n'est pas correctement initialisé"
+    },
+    "settings": {
+        "title": "Paramètres des questions",
+        "numericalType": "Type numérique",
+        "decimalPrecisionPlaceholder": "Précision décimale"
+    },
+    "comprehensionText": "Texte de compréhension",
+    "question": {
+        "label": "Question"
+    },
+    "defaults": {
+        "answer": "Réponse :",
+        "explanation": "Explication :"
+    }
+}

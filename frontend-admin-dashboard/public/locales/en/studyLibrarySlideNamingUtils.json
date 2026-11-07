@@ -1,0 +1,16 @@
+{
+    "types": {
+        "document": "Document",
+        "presentation": "Presentation",
+        "jupyterNotebook": "Jupyter Notebook",
+        "scratchProject": "Scratch Project",
+        "codeEditor": "Code Editor",
+        "video": "Video",
+        "audio": "Audio",
+        "question": "Question",
+        "assignment": "Assignment",
+        "pdfDocument": "PDF Document",
+        "slide": "Slide",
+        "quiz": "Quiz"
+    }
+}

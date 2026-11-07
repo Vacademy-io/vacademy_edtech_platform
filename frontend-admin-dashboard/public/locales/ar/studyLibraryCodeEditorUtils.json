@@ -1,0 +1,22 @@
+{
+    "errors": {
+        "unknownPyodideError": "حدث خطأ غير معروف أثناء تحميل Pyodide.",
+        "pyodideTimedOut": "انتهت مهلة تحميل Pyodide. قد يكون هذا بسبب بطء الاتصال بالإنترنت أو مشكلات في CDN. يرجى تحديث الصفحة والمحاولة مرة أخرى.",
+        "pyodideDownloadFailed": "فشل تنزيل Pyodide. يرجى التحقق من اتصالك بالإنترنت والمحاولة مرة أخرى.",
+        "pyodideError": "خطأ في Pyodide: {{message}}",
+        "loadingError": "خطأ في التحميل: {{message}}",
+        "pyodideLoadingErrorBlock": "خطأ في تحميل Pyodide:\n{{errorMessage}}\n\nيرجى تجربة ما يلي:\n1. تحديث الصفحة\n2. التحقق من اتصالك بالإنترنت\n3. المحاولة مرة أخرى بعد لحظات",
+        "noCodeToExecute": "لا يوجد كود لتنفيذه. يرجى كتابة بعض الكود أولاً.",
+        "judge0Error": "خطأ في Judge0: {{message}}\n\nملاحظة: خدمة ce.judge0.com محدودة المعدل؛ إذا واجهت الخطأ 429، فانتظر ثم أعد المحاولة.",
+        "genericError": "خطأ: {{message}}"
+    },
+    "output": {
+        "codeExecutedNoOutput": "تم تنفيذ الكود بنجاح (بدون مخرجات)",
+        "noOutputParen": "(بدون مخرجات)",
+        "interactiveInputNotSupported": "\nملاحظة: الإدخال التفاعلي (input()) غير مدعوم في هذه البيئة.",
+        "errorLabel": "خطأ: {{message}}"
+    },
+    "simulation": {
+        "pythonWelcome": "مرحبًا، {{name}}! أهلاً بك في البرمجة!\nمجموع الأرقام: 15\n\nملاحظة: هذه محاكاة لبايثون. للتنفيذ الفعلي لبايثون، ستحتاج إلى مفسّر بايثون."
+    }
+}

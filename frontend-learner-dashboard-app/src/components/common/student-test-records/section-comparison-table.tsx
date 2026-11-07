@@ -1,5 +1,6 @@
 import { Progress } from "@/components/ui/progress";
 import { cn } from "@/lib/utils";
+import { useTranslation } from "react-i18next";
 
 interface SectionData {
   section_id: string;
@@ -33,6 +34,7 @@ export function SectionComparisonTable({
   sections,
   responseCounts,
 }: SectionComparisonTableProps) {
+  const { t } = useTranslation("testRecords");
   if (!sections || sections.length === 0) return null;
 
   const hasCutOff = sections.some((s) => s.cut_off_marks != null);
@@ -65,23 +67,23 @@ export function SectionComparisonTable({
       <table className="w-full text-body">
         <thead>
           <tr className="border-b-2 border-border">
-            <th className={cn(headCell, "text-start")}>Section</th>
+            <th className={cn(headCell, "text-start")}>{t("sectionComparisonTable.section")}</th>
             {hasCounts && (
               <>
-                <th className={cn(headCell, "text-end")}>Correct</th>
-                <th className={cn(headCell, "text-end")}>Incorrect</th>
-                <th className={cn(headCell, "text-end")}>Not answered</th>
+                <th className={cn(headCell, "text-end")}>{t("common.correct")}</th>
+                <th className={cn(headCell, "text-end")}>{t("common.incorrect")}</th>
+                <th className={cn(headCell, "text-end")}>{t("common.notAnswered")}</th>
               </>
             )}
-            <th className={cn(headCell, "text-end")}>Your marks</th>
-            <th className={cn(headCell, "text-end")}>Total</th>
-            <th className={cn(headCell, "text-end")}>Class avg</th>
-            {hasClassMax && <th className={cn(headCell, "text-end")}>Class max</th>}
-            <th className={cn(headCell, "text-start")}>Accuracy</th>
+            <th className={cn(headCell, "text-end")}>{t("sectionComparisonTable.yourMarks")}</th>
+            <th className={cn(headCell, "text-end")}>{t("sectionComparisonTable.total")}</th>
+            <th className={cn(headCell, "text-end")}>{t("sectionComparisonTable.classAvg")}</th>
+            {hasClassMax && <th className={cn(headCell, "text-end")}>{t("sectionComparisonTable.classMax")}</th>}
+            <th className={cn(headCell, "text-start")}>{t("common.accuracy")}</th>
             {hasCutOff && (
               <>
-                <th className={cn(headCell, "text-end")}>Cut-off</th>
-                <th className={cn(headCell, "text-start")}>Status</th>
+                <th className={cn(headCell, "text-end")}>{t("sectionComparisonTable.cutOff")}</th>
+                <th className={cn(headCell, "text-start")}>{t("sectionComparisonTable.status")}</th>
               </>
             )}
           </tr>
@@ -159,7 +161,7 @@ export function SectionComparisonTable({
                               : "bg-danger-50 text-danger-700"
                           )}
                         >
-                          {section.passed ? "Pass" : "Fail"}
+                          {section.passed ? t("sectionComparisonTable.pass") : t("sectionComparisonTable.fail")}
                         </span>
                       )}
                     </td>
@@ -171,7 +173,7 @@ export function SectionComparisonTable({
           {sections.length > 1 && (
             <tr className="border-t-2 border-border">
               <td className="py-2.5 px-3 text-caption font-semibold uppercase tracking-wide text-foreground">
-                Total
+                {t("sectionComparisonTable.total")}
               </td>
               {hasCounts && (
                 <>

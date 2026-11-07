@@ -1,0 +1,50 @@
+{
+    "source": {
+        "pdf": "من ملف PDF",
+        "audio": "من ملف صوتي",
+        "image": "من صورة",
+        "doc": "من مستند",
+        "none": "من موضوع"
+    },
+    "status": {
+        "completed": "جاهز",
+        "failed": "فشل",
+        "inProgress": "قيد التنفيذ"
+    },
+    "friendlyHeading": {
+        "vsmartUpload": "أوراق الأسئلة الخاصة بك",
+        "vsmartExtract": "المقتطفات الخاصة بك",
+        "vsmartImage": "المقتطفات الخاصة بك",
+        "vsmartAudio": "أوراق الأسئلة الصوتية الخاصة بك",
+        "vsmartTopics": "أوراق الأسئلة حسب الموضوع الخاصة بك",
+        "vsmartChat": "جلسات الدردشة الخاصة بك",
+        "vsmartOrganizer": "المجموعات المصنّفة الخاصة بك",
+        "vsmartSorter": "المجموعات المصنّفة الخاصة بك",
+        "vsmartLecturer": "خطط الدروس الخاصة بك",
+        "vsmartFeedback": "مراجعات المحاضرات الخاصة بك"
+    },
+    "relativeTime": {
+        "justNow": "الآن",
+        "minutesAgo_zero": "قبل {{count}} دقيقة",
+        "minutesAgo_one": "قبل {{count}} دقيقة",
+        "minutesAgo_two": "قبل {{count}} دقيقتين",
+        "minutesAgo_few": "قبل {{count}} دقائق",
+        "minutesAgo_many": "قبل {{count}} دقيقة",
+        "minutesAgo_other": "قبل {{count}} دقيقة",
+        "hoursAgo_zero": "قبل {{count}} ساعة",
+        "hoursAgo_one": "قبل {{count}} ساعة",
+        "hoursAgo_two": "قبل {{count}} ساعتين",
+        "hoursAgo_few": "قبل {{count}} ساعات",
+        "hoursAgo_many": "قبل {{count}} ساعة",
+        "hoursAgo_other": "قبل {{count}} ساعة",
+        "daysAgo_zero": "قبل {{count}} يوم",
+        "daysAgo_one": "قبل {{count}} يوم",
+        "daysAgo_two": "قبل {{count}} يومين",
+        "daysAgo_few": "قبل {{count}} أيام",
+        "daysAgo_many": "قبل {{count}} يومًا",
+        "daysAgo_other": "قبل {{count}} يوم"
+    },
+    "taskDisplayName": {
+        "untitledDraft": "مسودة بدون عنوان"
+    }
+}

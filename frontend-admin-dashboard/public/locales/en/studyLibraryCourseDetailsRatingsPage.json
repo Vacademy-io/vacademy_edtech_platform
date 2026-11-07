@@ -1,0 +1,10 @@
+{
+    "unknownUser": "Unknown",
+    "title": "Ratings & Reviews",
+    "errorMissingCourse": "Unable to load ratings - missing course information",
+    "errorGeneric": "Unable to load ratings. Please try again later.",
+    "notAvailable": "N/A",
+    "reviewsCount_one": "{{count}} review",
+    "reviewsCount_other": "{{count}} reviews",
+    "noReviewsYet": "No reviews yet"
+}

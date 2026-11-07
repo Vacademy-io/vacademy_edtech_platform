@@ -1,0 +1,31 @@
+{
+    "heading": {
+        "title": "होमवर्क विवरण"
+    },
+    "helmet": {
+        "title": "होमवर्क विवरण",
+        "description": "यह पृष्ठ इस होमवर्क से संबंधित सभी विवरण दिखाता है।"
+    },
+    "actions": {
+        "previewHomework": "होमवर्क पूर्वावलोकन करें",
+        "exportOffline": "ऑफ़लाइन निर्यात करें",
+        "noSectionsError": "इस होमवर्क के लिए कोई सेक्शन नहीं जोड़ा गया है।"
+    },
+    "badge": {
+        "visibility": {
+            "PRIVATE": "निजी",
+            "PUBLIC": "सार्वजनिक"
+        },
+        "status": {
+            "COMPLETED": "पूर्ण"
+        }
+    },
+    "tabs": {
+        "overview": "अवलोकन",
+        "submissions": "सबमिशन",
+        "basicInfo": "बुनियादी जानकारी",
+        "questions": "प्रश्न",
+        "participants": "प्रतिभागी",
+        "accessControl": "एक्सेस नियंत्रण"
+    }
+}

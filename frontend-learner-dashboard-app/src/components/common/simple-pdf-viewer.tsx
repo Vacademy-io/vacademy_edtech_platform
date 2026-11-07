@@ -14,8 +14,11 @@ import '@react-pdf-viewer/core/lib/styles/index.css';
 import '@react-pdf-viewer/default-layout/lib/styles/index.css';
 import '@react-pdf-viewer/full-screen/lib/styles/index.css';
 
-const PDF_WORKER_URL =
-    'https://unpkg.com/pdfjs-dist@3.11.174/build/pdf.worker.min.js';
+// Self-hosted copy of pdfjs-dist@3.11.174's worker (public/pdfjs). Loading it from
+// unpkg broke PDFs for learners whose school/ISP network or ad-blocker blocks that
+// CDN ("Setting up fake worker failed"). Version is in the path because /*.js is
+// cached for a year — bump the folder together with pdfjs-dist.
+const PDF_WORKER_URL = '/pdfjs/3.11.174/pdf.worker.min.js';
 
 // Evaluated-copy / submission PDFs are served from S3 signed URLs whose object
 // keys carry no ".pdf" extension. react-pdf-viewer's default download derives

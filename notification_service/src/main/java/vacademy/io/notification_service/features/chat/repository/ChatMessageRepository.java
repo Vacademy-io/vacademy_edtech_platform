@@ -11,6 +11,13 @@ import java.util.Optional;
 @Repository
 public interface ChatMessageRepository extends JpaRepository<ChatMessage, String> {
 
+    /** Newest live (non-deleted) message before {@code seq} — the previous message a reader could have seen. */
+    java.util.Optional<ChatMessage> findFirstByConversationIdAndSeqLessThanAndIsDeletedFalseOrderBySeqDesc(String conversationId, Long seq);
+
+    /** Whether any live (non-deleted) message comes after {@code seq}. */
+    boolean existsByConversationIdAndSeqGreaterThanAndIsDeletedFalse(String conversationId, Long seq);
+
+
     // Latest page (newest first)
     List<ChatMessage> findByConversationIdAndIsDeletedFalseOrderBySeqDesc(String conversationId, Pageable pageable);
 

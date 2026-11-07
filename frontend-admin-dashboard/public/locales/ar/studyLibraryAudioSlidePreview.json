@@ -1,0 +1,17 @@
+{
+    "audioDataNotFound": "بيانات شريحة الصوت غير موجودة",
+    "failedToLoadAudio": "فشل تحميل الصوت",
+    "failedToPlayAudio": "فشل تشغيل الصوت",
+    "playbackError": "خطأ في تشغيل الصوت",
+    "audioLabel": "الصوت",
+    "deletedTag": "محذوف",
+    "audioDeletedTitle": "تم حذف هذا الصوت",
+    "audioDeletedSubtitle": "لم يعد محتوى الصوت متاحًا",
+    "loadingAudio": "جارٍ تحميل الصوت...",
+    "audioThumbnailAlt": "صورة مصغرة للصوت",
+    "untitledAudio": "صوت بلا عنوان",
+    "durationLabel": "المدة: {{time}}",
+    "pauseAriaLabel": "إيقاف مؤقت",
+    "playAriaLabel": "تشغيل",
+    "transcriptLabel": "النص المكتوب"
+}

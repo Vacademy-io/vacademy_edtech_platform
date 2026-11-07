@@ -1,5 +1,6 @@
 package vacademy.io.admin_core_service.features.audience.dto;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.databind.PropertyNamingStrategies;
 import com.fasterxml.jackson.databind.annotation.JsonNaming;
 import lombok.AllArgsConstructor;
@@ -44,5 +45,18 @@ public class SubmitLeadRequestDTO {
     // the audience's institute and sets audience_response.lead_status_id (the status
     // chip). Ignored if blank or if no matching status exists for the institute.
     private String leadStatusKey;
+
+    // Staff member entering the lead, written to audience_response.created_by_user_id.
+    // Server-set from the token on the authenticated endpoints only; @JsonIgnore so a
+    // public form cannot claim to have been entered by a counsellor.
+    @JsonIgnore
+    private String createdByUserId;
+
+    // Server-set only (@JsonIgnore): skip the built-in respondent confirmation email
+    // ("thank you for your response") and its respondentEmailRequests workflow entry, for
+    // leads that never filled a form (Lead Agent intake). Workflows and the to_notify admin
+    // alert are unaffected. Default false keeps every other path unchanged.
+    @JsonIgnore
+    private boolean suppressRespondentEmail;
 }
 

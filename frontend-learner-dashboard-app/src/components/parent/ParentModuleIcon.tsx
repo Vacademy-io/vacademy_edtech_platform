@@ -24,6 +24,8 @@ import iconLiveSessions from "@/assets/cleaner-play/icon-live-sessions.webp";
 import iconBadges from "@/assets/cleaner-play/icon-badges.webp";
 import iconPoints from "@/assets/cleaner-play/icon-points.webp";
 import iconHelp from "@/assets/cleaner-play/icon-help.webp";
+import iconCertificate from "@/assets/cleaner-play/icon-certificate.webp";
+import iconReports from "@/assets/cleaner-play/icon-reports.webp";
 
 export type ParentIconKey =
   | "progress"
@@ -52,7 +54,13 @@ for (const [path, url] of Object.entries(generated)) {
   if (name) generatedByKey[name as ParentIconKey] = url as string;
 }
 
-// Tier 2: existing cleaner-play art (5 of 6 modules already covered).
+// Tier 2: existing cleaner-play art. `certificates` and `reports` now resolve
+// here too — scripts/generate-theme-icons.mjs added icon-certificate.webp and
+// icon-reports.webp to the shared felted-clay set, so the parent portal reuses
+// them rather than carrying a second copy under parent-icons/.
+// `payments` and `attention` are NOT listed here on purpose: they were generated
+// straight into src/assets/parent-icons/, so the Tier-1 glob above already picks
+// them up by filename with no mapping needed.
 const existingArt: Partial<Record<ParentIconKey, string>> = {
   progress: iconProgress,
   attendance: iconAttendance,
@@ -61,6 +69,8 @@ const existingArt: Partial<Record<ParentIconKey, string>> = {
   badges: iconBadges,
   rewards: iconPoints,
   help: iconHelp,
+  certificates: iconCertificate,
+  reports: iconReports,
 };
 
 // Tier 3: Phosphor duotone — exhaustive, so a new key won't compile without a fallback.

@@ -1,0 +1,90 @@
+{
+    "filters": {
+        "everyone": "الجميع",
+        "attempted": "حاول",
+        "notAttempted": "لم يحاول",
+        "passed": "ناجح",
+        "failed": "راسب"
+    },
+    "sorts": {
+        "highestScore": "أعلى درجة",
+        "lowestScore": "أقل درجة",
+        "nameAz": "الاسم (أ–ي)",
+        "mostRecentAttempt": "أحدث محاولة",
+        "mostAttempts": "أكثر عدد محاولات"
+    },
+    "csv": {
+        "name": "الاسم",
+        "email": "البريد الإلكتروني",
+        "mobile": "الجوال",
+        "status": "الحالة",
+        "attempts": "المحاولات",
+        "marksObtained": "الدرجات المحصّلة",
+        "totalMarks": "إجمالي الدرجات",
+        "scorePercent": "النسبة المئوية للدرجة",
+        "correct": "صحيح",
+        "wrong": "خاطئ",
+        "skipped": "متخطّى",
+        "unanswered": "بلا إجابة",
+        "timeSpentSeconds": "الوقت المستغرق (ث)",
+        "lastAttempt": "آخر محاولة"
+    },
+    "table": {
+        "learner": "المتعلّم",
+        "status": "الحالة",
+        "score": "الدرجة",
+        "responses": "الإجابات",
+        "attempts": "المحاولات",
+        "timeSpent": "الوقت المستغرق",
+        "lastAttempt": "آخر محاولة"
+    },
+    "breakdown": {
+        "correct_zero": "لا إجابات صحيحة",
+        "correct_one": "إجابة واحدة صحيحة",
+        "correct_two": "إجابتان صحيحتان",
+        "correct_few": "{{count}} إجابات صحيحة",
+        "correct_many": "{{count}} إجابة صحيحة",
+        "correct_other": "{{count}} إجابة صحيحة",
+        "wrong_zero": "لا إجابات خاطئة",
+        "wrong_one": "إجابة واحدة خاطئة",
+        "wrong_two": "إجابتان خاطئتان",
+        "wrong_few": "{{count}} إجابات خاطئة",
+        "wrong_many": "{{count}} إجابة خاطئة",
+        "wrong_other": "{{count}} إجابة خاطئة",
+        "skipped_zero": "لا إجابات متخطّاة",
+        "skipped_one": "إجابة واحدة متخطّاة",
+        "skipped_two": "إجابتان متخطّاتان",
+        "skipped_few": "{{count}} إجابات متخطّاة",
+        "skipped_many": "{{count}} إجابة متخطّاة",
+        "skipped_other": "{{count}} إجابة متخطّاة",
+        "unanswered_zero": "لا أسئلة بلا إجابة",
+        "unanswered_one": "سؤال واحد بلا إجابة",
+        "unanswered_two": "سؤالان بلا إجابة",
+        "unanswered_few": "{{count}} أسئلة بلا إجابة",
+        "unanswered_many": "{{count}} سؤالًا بلا إجابة",
+        "unanswered_other": "{{count}} سؤال بلا إجابة"
+    },
+    "searchPlaceholder": "البحث عن المتعلّمين",
+    "filterLearnersAriaLabel": "تصفية المتعلّمين",
+    "actions": {
+        "exportCsv": "تصدير CSV",
+        "clearFilters": "مسح الفلاتر"
+    },
+    "truncatedNotice": "يحتوي هذا الدفعة على متعلّمين أكثر مما يعيده التقرير دفعة واحدة — القائمة أدناه محدودة، لذا قد تكون الإجماليات غير مكتملة.",
+    "empty": {
+        "noMatchTitle": "لا يوجد متعلّمون يطابقون هذه الفلاتر",
+        "noMatchSubtitle": "جرّب مصطلح بحث مختلفًا، أو ارجع إلى \"الجميع\"."
+    },
+    "toast": {
+        "nothingToExport": "لا يوجد شيء للتصدير بهذه الفلاتر.",
+        "exported_zero": "لم يتم تصدير أي صف",
+        "exported_one": "تم تصدير صف واحد",
+        "exported_two": "تم تصدير صفّين",
+        "exported_few": "تم تصدير {{count}} صفوف",
+        "exported_many": "تم تصدير {{count}} صفًا",
+        "exported_other": "تم تصدير {{count}} صف"
+    },
+    "footer": {
+        "summary": "عرض {{visible}} من أصل {{total}} متعلّم مسجَّل · {{percent}} من الدفعة حاول هذا الاختبار."
+    }
+}

@@ -1,6 +1,7 @@
 /**
  * Utility functions for handling custom fields in registration forms
  */
+import i18n from "@/i18n";
 
 export interface CustomField {
   guestId: string | null;
@@ -34,6 +35,8 @@ export interface InstituteCustomFieldResponse {
   type_id: string;
   group_name: string | null;
   custom_field: CustomField;
+  /** Per-form required-ness. Takes precedence over the shared `custom_field.isMandatory`. */
+  is_mandatory?: boolean | null;
   individual_order: number | null;
   group_internal_order: number | null;
   status: string;
@@ -117,7 +120,11 @@ export const getFieldRenderType = (
  * - New object format: { options?, defaultValue?, allowedFileTypes?, maxSizeMB?, min?, max?, minDate?, maxDate? }
  */
 export interface CustomFieldFullConfig {
-  options?: Array<{ id: number; value: string; label: string }>;
+  options?: Array<{ id: number; value: string; label: string; parent?: string }>;
+  // Dependent dropdown: the field_key of the dropdown this one follows. Each
+  // option's `parent` names the parent value it belongs to; an option with no
+  // `parent` shows for every parent value.
+  parentFieldKey?: string;
   defaultValue?: string;
   allowedFileTypes?: string[];
   maxSizeMB?: number;
@@ -136,7 +143,56 @@ export interface CustomFieldFullConfig {
   // Short hint rendered under the input, set by the admin in the custom-field
   // dialog. Distinct from `description`, which is the checkbox consent body.
   helpText?: string;
+  // Overrides the auto-generated "Enter <field name>" prompt inside the input.
+  // Authored per field so one institute can reword the hint (e.g. spelling out
+  // "Enter First Name and Last Name" on a Full Name field) without renaming the
+  // field — the label above the input keeps coming from `field_name`.
+  placeholder?: string;
+  // Proof-of-ownership gate: the visitor must receive a one-time code on the
+  // value they typed and enter it back before the form can be submitted.
+  // Authored per field in the admin, so any field can be made verifiable —
+  // nothing here is specific to phone numbers or to one institute.
+  verification?: FieldVerificationConfig;
 }
+
+/** Channels a one-time code can be delivered over. */
+export type VerificationChannel = "WHATSAPP";
+
+export interface FieldVerificationConfig {
+  /** Off unless explicitly enabled — an unverifiable field must never block a form. */
+  required?: boolean;
+  channel?: VerificationChannel;
+  /**
+   * WhatsApp template to send. Naming one here skips the institute's
+   * OTP_REQUEST notification config entirely, so an institute with an approved
+   * template but no config wired up can still verify. Blank falls back to that
+   * config.
+   */
+  templateName?: string;
+  /**
+   * Language the named template is approved in. Meta registers a template per
+   * language, so one approved only as "en_US" must say so or the send is
+   * rejected. Ignored unless templateName is set; blank means English.
+   */
+  languageCode?: string;
+}
+
+/**
+ * The verification a field asks for, or null when it asks for none.
+ *
+ * Deliberately strict: a config that names a channel this build cannot deliver
+ * returns null rather than a gate nobody can pass. A form that cannot be
+ * submitted is a worse failure than one that skips a check.
+ */
+export const getFieldVerification = (
+  config?: string | null
+): Required<Pick<FieldVerificationConfig, "channel">> & FieldVerificationConfig | null => {
+  const parsed = parseFieldConfig(config)?.verification;
+  if (!parsed?.required) return null;
+  const channel = parsed.channel ?? "WHATSAPP";
+  if (channel !== "WHATSAPP") return null;
+  return { ...parsed, channel };
+};
 
 // Sentinel value for the admin's "All Files" option — equivalent to no
 // restriction at all, including formats outside the fixed category list
@@ -177,7 +233,7 @@ export const getFieldDefaultValue = (
   return parsed?.defaultValue ?? "";
 };
 
-type DropdownOption = { _id: number; value: string; label: string };
+type DropdownOption = { _id: number; value: string; label: string; parent?: string };
 
 /**
  * Admin writes two variants of the same option config: {id,value,label} and
@@ -186,15 +242,20 @@ type DropdownOption = { _id: number; value: string; label: string };
  * a SelectItem that cannot be selected.
  */
 const normaliseOptions = (
-  raw: Array<{ id?: number; value?: string; name?: string; label?: string }>
+  raw: Array<string | { id?: number; value?: string; name?: string; label?: string; parent?: unknown }>
 ): DropdownOption[] =>
   raw
+    // Some writers (e.g. the MCP form editor) store {"options":["A","B"]} —
+    // plain strings, which used to resolve to no value and render an empty list.
+    .map((entry) => (typeof entry === "string" ? { value: entry.trim() } : entry))
     .map((option, index) => {
       const value = option.value ?? option.name;
+      const parent = typeof option.parent === "string" ? option.parent.trim() : "";
       return {
         _id: option.id ?? index + 1,
         value: value as string,
         label: option.label ?? (value as string),
+        ...(parent ? { parent } : {}),
       };
     })
     .filter((option) => option.value !== undefined && option.value !== "");
@@ -323,7 +384,9 @@ export const transformCustomFieldsToFormValues = (
       id: custom_field.id,
       name: custom_field.fieldName,
       value: initialValue,
-      is_mandatory: custom_field.isMandatory ?? false,
+      // The form builder's Required switch writes the per-form mapping row, so read that
+      // first and fall back to the master only when this form never answered.
+      is_mandatory: field.is_mandatory ?? custom_field.isMandatory ?? false,
       type: fieldType,
       render_type: getFieldRenderType(fieldKey, fieldType),
       config: custom_field.config,
@@ -345,14 +408,14 @@ export const validateFieldValue = (
   renderType: FieldRenderType
 ): { isValid: boolean; error?: string } => {
   if (!value || !value.trim()) {
-    return { isValid: false, error: "This field is required" };
+    return { isValid: false, error: i18n.t("enrollmentB:fieldValidation.required") };
   }
 
   switch (renderType) {
     case FieldRenderType.EMAIL: {
       const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
       if (!emailRegex.test(value)) {
-        return { isValid: false, error: "Please enter a valid email address" };
+        return { isValid: false, error: i18n.t("enrollmentB:fieldValidation.invalidEmail") };
       }
       break;
     }
@@ -361,7 +424,7 @@ export const validateFieldValue = (
       if (!phoneRegex.test(value)) {
         return {
           isValid: false,
-          error: "Please enter a valid phone number",
+          error: i18n.t("enrollmentB:fieldValidation.invalidPhone"),
         };
       }
       break;
@@ -370,19 +433,19 @@ export const validateFieldValue = (
       try {
         new URL(value);
       } catch {
-        return { isValid: false, error: "Please enter a valid URL" };
+        return { isValid: false, error: i18n.t("enrollmentB:fieldValidation.invalidUrl") };
       }
       break;
     }
     case FieldRenderType.NUMBER: {
       if (Number.isNaN(Number(value))) {
-        return { isValid: false, error: "Please enter a valid number" };
+        return { isValid: false, error: i18n.t("enrollmentB:fieldValidation.invalidNumber") };
       }
       break;
     }
     case FieldRenderType.DATE: {
       if (Number.isNaN(new Date(value).getTime())) {
-        return { isValid: false, error: "Please enter a valid date" };
+        return { isValid: false, error: i18n.t("enrollmentB:fieldValidation.invalidDate") };
       }
       break;
     }
@@ -417,4 +480,61 @@ export const getInputType = (
   if (renderType === FieldRenderType.PHONE) return "tel";
   if (renderType === FieldRenderType.DATE) return "date";
   return "text";
+};
+
+/**
+ * Dependent (cascading) dropdowns, e.g. Course → Query: where a field stands
+ * given the values the visitor has picked so far.
+ * - independent: not a dependent field — render as before.
+ * - waiting: the parent has no value yet — show the field disabled.
+ * - empty: the parent's value has no options here — hide it and skip "required".
+ * - ready: render with exactly these options.
+ */
+export type DependentFieldState =
+  | { kind: "independent" }
+  | { kind: "waiting"; parentFieldKey: string }
+  | { kind: "empty"; parentFieldKey: string }
+  | { kind: "ready"; parentFieldKey: string; options: DropdownOption[] };
+
+export const getParentFieldKey = (config?: string | null): string | null => {
+  const key = parseFieldConfig(config)?.parentFieldKey;
+  return typeof key === "string" && key.trim() ? key.trim() : null;
+};
+
+export const resolveDependentField = (
+  config: string | null | undefined,
+  parentValueOf: (fieldKey: string) => string | undefined
+): DependentFieldState => {
+  const parentFieldKey = getParentFieldKey(config);
+  if (!parentFieldKey) return { kind: "independent" };
+  const parentValue = (parentValueOf(parentFieldKey) ?? "").trim();
+  if (!parentValue) return { kind: "waiting", parentFieldKey };
+  const options = parseDropdownOptions(config || "").filter(
+    (option) => !option.parent || option.parent === parentValue
+  );
+  return options.length
+    ? { kind: "ready", parentFieldKey, options }
+    : { kind: "empty", parentFieldKey };
+};
+
+/**
+ * Keys of every field that follows `changedKey`, directly or through another
+ * dependent field — their values are stale once the parent changes.
+ */
+export const dependentFieldKeys = (
+  changedKey: string,
+  fields: Array<{ key: string; config?: string | null }>
+): string[] => {
+  const out: string[] = [];
+  const queue = [changedKey];
+  while (queue.length) {
+    const parent = queue.shift()!;
+    for (const field of fields) {
+      if (field.key !== changedKey && !out.includes(field.key) && getParentFieldKey(field.config) === parent) {
+        out.push(field.key);
+        queue.push(field.key);
+      }
+    }
+  }
+  return out;
 };

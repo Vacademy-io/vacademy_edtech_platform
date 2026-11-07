@@ -1,0 +1,53 @@
+{
+    "header": {
+        "title": "WhatsApp Templates",
+        "subtitle": "Map your Meta-approved WhatsApp templates to internal data fields."
+    },
+    "infoBox": {
+        "title": "WhatsApp Template Management",
+        "description": "Templates must be created and approved through Meta's WhatsApp Business API or Business Manager. Use this interface to sync approved templates and map dynamic values to your CRM data."
+    },
+    "search": {
+        "placeholder": "Search templates..."
+    },
+    "actions": {
+        "syncing": "Syncing...",
+        "syncTemplates": "Sync Templates"
+    },
+    "templateCount": "WhatsApp Templates ({{count}})",
+    "loading": {
+        "templates": "Loading WhatsApp templates..."
+    },
+    "emptyState": {
+        "title": "No Approved Templates",
+        "description": "No approved WhatsApp templates found. Create templates through Meta's Business Manager first."
+    },
+    "table": {
+        "headers": {
+            "templateName": "Template Name",
+            "language": "Language",
+            "category": "Category",
+            "status": "Status",
+            "mappings": "Mappings",
+            "lastSynced": "Last Synced",
+            "actions": "Actions"
+        },
+        "never": "Never",
+        "editMappings": "Edit Mappings",
+        "mapValues": "Map Values",
+        "editShort": "Edit",
+        "mapShort": "Map"
+    },
+    "mappingStatus": {
+        "configured": "Configured",
+        "notConfigured": "Not Configured"
+    },
+    "errors": {
+        "loadFailed": "Failed to load WhatsApp templates.",
+        "syncFailed": "Failed to sync templates."
+    },
+    "success": {
+        "synced": "WhatsApp templates synced successfully!",
+        "mappingSaved": "Template mapping saved successfully!"
+    }
+}

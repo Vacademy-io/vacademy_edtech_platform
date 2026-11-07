@@ -26,6 +26,7 @@ import { getTerminology, getTerminologyPlural } from '@/components/common/layout
 import { RoleTerms, SystemTerms } from '@/routes/settings/-components/NamingSettings';
 import CreateInvite from '@/routes/manage-students/invite/-components/create-invite/CreateInvite';
 import { convertCapitalToTitleCase } from '@/lib/utils';
+import { useTranslation } from 'react-i18next';
 
 const InviteLinksDialog = ({
     currentSession,
@@ -38,6 +39,7 @@ const InviteLinksDialog = ({
 }) => {
     const router = useRouter();
     const { getDetailsFromPackageSessionId } = useInstituteDetailsStore();
+    const { t } = useTranslation('manageStudentsListHeader');
 
     const { data, isLoading, isError } = useGetBatchesQuery({
         sessionId: currentSession?.id || '',
@@ -52,15 +54,15 @@ const InviteLinksDialog = ({
                 className="hover:scale-102 flex items-center gap-1.5 text-xs transition-all duration-200"
             >
                 <ArrowRight className="size-3.5" />
-                Invite Page
+                {t('inviteLinksDialog.invitePage')}
             </MyButton>
             <CreateInvite />
         </div>
     );
 
     // Get session details for enhanced dialog title
-    const sessionName = currentSession?.name || 'Unknown Session';
-    const dialogTitle = `📨 Invite Links - ${sessionName}`;
+    const sessionName = currentSession?.name || t('inviteLinksDialog.unknownSession');
+    const dialogTitle = t('inviteLinksDialog.dialogTitle', { sessionName });
 
     return (
         <MyDialog
@@ -68,14 +70,14 @@ const InviteLinksDialog = ({
             open={openInviteLinksDialog}
             onOpenChange={handleOpenChange}
             footer={footer}
-            dialogWidth="w-[90vw] max-w-3xl"
+            dialogWidth="w-full max-w-3xl"
         >
             {isLoading ? (
                 <DashboardLoader />
             ) : isError ? (
                 <SmartErrorPage />
             ) : (
-                <div className="flex max-h-[60vh] flex-col gap-2 overflow-y-auto">
+                <div className="flex max-h-[60vh] flex-col gap-2 overflow-y-auto"> {/* design-lint-ignore: viewport-relative scroll body sized to 60vh, no fixed token matches (max-h-dialog-tall is 88vh, a different intent) */}
                     {currentSession?.id ? (
                         data?.flatMap((batch) =>
                             batch.batches.map((b, index) => {
@@ -87,7 +89,9 @@ const InviteLinksDialog = ({
                                 const courseName = convertCapitalToTitleCase(
                                     batch.package_dto.package_name
                                 );
-                                const levelName = batchDetails?.level.level_name || 'Unknown Level';
+                                const levelName =
+                                    batchDetails?.level.level_name ||
+                                    t('inviteLinksDialog.unknownLevel');
                                 const sessionName =
                                     batchDetails?.session.session_name || currentSession.name;
 
@@ -113,7 +117,9 @@ const InviteLinksDialog = ({
                                                 <div className="ml-4 space-y-1 text-xs text-neutral-600">
                                                     <div className="flex items-center gap-1.5">
                                                         <GraduationCap className="size-3 text-neutral-400" />
-                                                        <span className="font-medium">Course:</span>
+                                                        <span className="font-medium">
+                                                            {t('inviteLinksDialog.courseLabel')}
+                                                        </span>
                                                         <span className="text-neutral-700">
                                                             {courseName}
                                                         </span>
@@ -122,7 +128,9 @@ const InviteLinksDialog = ({
                                                         <div className="flex size-3 items-center justify-center rounded bg-blue-100">
                                                             <div className="size-1.5 rounded bg-blue-500"></div>
                                                         </div>
-                                                        <span className="font-medium">Level:</span>
+                                                        <span className="font-medium">
+                                                            {t('inviteLinksDialog.levelLabel')}
+                                                        </span>
                                                         <span className="text-neutral-700">
                                                             {levelName}
                                                         </span>
@@ -130,7 +138,7 @@ const InviteLinksDialog = ({
                                                     <div className="flex items-center gap-1.5">
                                                         <Calendar className="size-3 text-neutral-400" />
                                                         <span className="font-medium">
-                                                            Session:
+                                                            {t('inviteLinksDialog.sessionLabel')}
                                                         </span>
                                                         <span className="text-neutral-700">
                                                             {sessionName}
@@ -143,7 +151,7 @@ const InviteLinksDialog = ({
                                         {/* Invite link section */}
                                         <div className="border-t border-neutral-100 pl-4 pt-1.5">
                                             <div className="mb-1 text-xs font-medium text-neutral-600">
-                                                Invite Link:
+                                                {t('inviteLinksDialog.inviteLinkLabel')}
                                             </div>
                                             <InviteLink inviteCode={b.invite_code} />
                                         </div>
@@ -157,7 +165,7 @@ const InviteLinksDialog = ({
                                 <Users className="size-3 text-neutral-400" />
                             </div>
                             <p className="text-xs text-neutral-500">
-                                No batches found for this session
+                                {t('inviteLinksDialog.noBatchesFound')}
                             </p>
                         </div>
                     )}
@@ -168,40 +176,7 @@ const InviteLinksDialog = ({
 };
 
 import { useCompactMode } from '@/hooks/use-compact-mode';
-
-
-const CountBadge = ({
-    label,
-    value,
-    tone,
-    isCompact,
-}: {
-    label: string;
-    value: number;
-    tone: 'total' | 'active' | 'inactive';
-    isCompact: boolean;
-}) => {
-    // Fixed semantic scales (not the white-labeled `primary`, whose per-institute
-    // shades can clash) with -700 text for readable contrast on the -50/-100 surface.
-    const toneClasses = {
-        total: 'bg-neutral-100 text-neutral-700 ring-neutral-200',
-        active: 'bg-success-50 text-success-700 ring-success-200',
-        inactive: 'bg-warning-50 text-warning-700 ring-warning-200',
-    }[tone];
-
-    return (
-        <span
-            className={cn(
-                'inline-flex items-center gap-1 rounded-full text-xs font-medium ring-1',
-                isCompact ? 'px-1.5 py-0.5' : 'px-2 py-0.5',
-                toneClasses
-            )}
-        >
-            <span>{label}</span>
-            <span className="font-semibold tabular-nums">{value.toLocaleString()}</span>
-        </span>
-    );
-};
+import { CountBadge } from './count-badge';
 
 export const StudentListHeader = ({
     currentSession,
@@ -211,6 +186,7 @@ export const StudentListHeader = ({
     total,
     active,
     inactive,
+    invited,
     countsLoading,
 }: {
     currentSession?: DropdownItemType;
@@ -220,8 +196,10 @@ export const StudentListHeader = ({
     total?: number;
     active?: number;
     inactive?: number;
+    invited?: number;
     countsLoading?: boolean;
 }) => {
+    const { t } = useTranslation('manageStudentsListHeader');
     const [openInviteLinksDialog, setOpenInviteLinksDialog] = useState(false);
     const { instituteDetails } = useInstituteDetailsStore();
     const [isOpen, setIsOpen] = useState(false);
@@ -360,16 +338,41 @@ export const StudentListHeader = ({
                         titleSize ? titleSize : (isCompact ? 'text-sm lg:text-base' : 'text-base lg:text-lg')
                     )}
                 >
-                    {getTerminology(RoleTerms.Learner, SystemTerms.Learner)} Management
+                    {t('header.title', {
+                        term: getTerminology(RoleTerms.Learner, SystemTerms.Learner),
+                    })}
                 </h1>
                 {showCounts &&
                     (countsLoading ? (
                         <span className="h-4 w-28 animate-pulse rounded-full bg-neutral-100" />
                     ) : (
                         <div className="flex flex-wrap items-center gap-1.5">
-                            <CountBadge label="Total" value={total ?? 0} tone="total" isCompact={isCompact} />
-                            <CountBadge label="Active" value={active ?? 0} tone="active" isCompact={isCompact} />
-                            <CountBadge label="Inactive" value={inactive ?? 0} tone="inactive" isCompact={isCompact} />
+                            <CountBadge
+                                label={t('header.counts.total')}
+                                value={total ?? 0}
+                                tone="total"
+                                isCompact={isCompact}
+                            />
+                            <CountBadge
+                                label={t('header.counts.active')}
+                                value={active ?? 0}
+                                tone="active"
+                                isCompact={isCompact}
+                            />
+                            <CountBadge
+                                label={t('header.counts.inactive')}
+                                value={inactive ?? 0}
+                                tone="inactive"
+                                isCompact={isCompact}
+                            />
+                            {invited !== undefined && (
+                                <CountBadge
+                                    label={t('header.counts.invited', { defaultValue: 'Invited' })}
+                                    value={invited}
+                                    tone="invited"
+                                    isCompact={isCompact}
+                                />
+                            )}
                         </div>
                     ))}
             </div>
@@ -402,11 +405,11 @@ export const StudentListHeader = ({
                         buttonType="secondary"
                         className={cn(
                             "group flex items-center gap-1 border border-blue-200 bg-white text-blue-700 transition-all duration-200 hover:scale-100 hover:border-blue-300 hover:bg-blue-50",
-                            isCompact ? "px-2 py-0.5 text-[10px]" : "px-2.5 py-1 text-xs"
+                            isCompact ? "px-2 py-0.5 text-2xs" : "px-2.5 py-1 text-xs"
                         )}
                     >
                         <UserPlus className={cn("transition-transform duration-200 group-hover:scale-110", isCompact ? "size-2.5" : "size-3")} />
-                        <span className="hidden sm:inline">Invite</span>
+                        <span className="hidden sm:inline">{t('header.actions.invite')}</span>
                     </MyButton>
                 )}
 
@@ -416,18 +419,20 @@ export const StudentListHeader = ({
                         <NoCourseDialog
                             isOpen={isOpen}
                             setIsOpen={setIsOpen}
-                            type={`Enroll ${getTerminologyPlural(RoleTerms.Learner, SystemTerms.Learner)}`}
-                            content="You need to create a course and add a subject in it before"
+                            type={t('header.actions.enrollType', {
+                                term: getTerminologyPlural(RoleTerms.Learner, SystemTerms.Learner),
+                            })}
+                            content={t('header.actions.noCourseContent')}
                             trigger={
                                 <MyButton
                                     scale="small"
                                     className={cn(
                                         "hover:scale-102 hover:bg-primary-700 group flex items-center gap-1 border-0 bg-primary-600 text-white shadow-sm transition-all duration-200 hover:shadow-md",
-                                        isCompact ? "px-2 py-0.5 text-[10px]" : "px-2.5 py-1 text-xs"
+                                        isCompact ? "px-2 py-0.5 text-2xs" : "px-2.5 py-1 text-xs"
                                     )}
                                 >
                                     <Users className={cn("transition-transform duration-200 group-hover:scale-110", isCompact ? "size-2.5" : "size-3")} />
-                                    <span className="hidden sm:inline">Enroll</span>
+                                    <span className="hidden sm:inline">{t('header.actions.enroll')}</span>
                                 </MyButton>
                             }
                         />

@@ -1,0 +1,15 @@
+{
+    "navHeading": "سجلات نشاط المسؤول",
+    "pageTitle": "سجلات نشاط المسؤول",
+    "pageDescription": "سجل تفصيلي لإجراءات المسؤولين — من فعل ماذا، ومتى، وعلى أي مورد.",
+    "helmet": {
+        "title": "سجلات نشاط المسؤول",
+        "description": "مسار تدقيق الإجراءات الإدارية عبر المؤسسة."
+    },
+    "totalEntries_zero": "لا توجد إدخالات",
+    "totalEntries_one": "إدخال واحد إجمالاً",
+    "totalEntries_two": "إدخالان إجمالاً",
+    "totalEntries_few": "{{count}} إدخالات إجمالاً",
+    "totalEntries_many": "{{count}} إدخالًا إجمالاً",
+    "totalEntries_other": "{{count}} إدخال إجمالاً"
+}

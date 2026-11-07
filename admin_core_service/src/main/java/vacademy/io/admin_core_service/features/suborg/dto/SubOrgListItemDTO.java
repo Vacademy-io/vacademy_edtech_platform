@@ -23,12 +23,20 @@ public class SubOrgListItemDTO {
     private String suborgId;
     private String name;
     private String status;
+    /** auth_service user id of the sub-org's root-admin (from the mapping row, so it survives
+     *  an auth-service lookup failure) — what the row's "Share credentials" action sends to. */
+    private String adminUserId;
     /** Root-admin of the sub-org (null when none resolved / auth lookup failed). */
     private String adminName;
     private String adminEmail;
     private String adminPhone;
     /** Address of the spawned institute (stamped at registration when the link collects
-     *  address; null for manually-created sub-orgs or links without address collection). */
+     *  address; null for manually-created sub-orgs or links without address collection).
+     *  {@code addressLine} is {@code institutes.address_line}: the registration's address
+     *  line 1 + line 2 joined, exactly as the registrant typed them. It is a separate DB
+     *  column from city/state/pincode, but registrants routinely repeat those inside it —
+     *  so treat it as free text, never as a field to compose a full address from. */
+    private String addressLine;
     private String city;
     private String state;
     private String pincode;

@@ -131,6 +131,40 @@ public class ChatRulesService {
         return ModerationResult.clean();
     }
 
+    /**
+     * Enforce the CONTENT rules on an edited body. Deliberately a subset of
+     * {@link #enforceBeforeSend}: acknowledgement, the new-member read-only window and slow mode all
+     * govern the RATE at which someone may post, and re-applying them would block an edit for reasons
+     * that have nothing to do with the text. The content rules must still run — otherwise editing is a
+     * trivial bypass for the link ban and the banned-keyword filter (send "ok", then edit it to
+     * anything you like).
+     */
+    public ModerationResult enforceBeforeEdit(ChatConversation conv, String text) {
+        ChatRulesDto rules = getEffectiveRules(conv);
+        if (rules == null) {
+            return ModerationResult.clean();
+        }
+
+        ChatRulesDto.Posting posting = rules.getPosting();
+        if (posting != null && Boolean.FALSE.equals(posting.getAllowLinks())
+                && text != null && URL_PATTERN.matcher(text).find()) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "LINKS_NOT_ALLOWED");
+        }
+
+        ChatRulesDto.AutoModeration mod = rules.getAutoModeration();
+        if (mod != null && mod.getBannedKeywords() != null && !mod.getBannedKeywords().isEmpty() && text != null) {
+            String hit = matchBannedKeyword(text.toLowerCase(), mod.getBannedKeywords());
+            if (hit != null) {
+                if ("BLOCK".equalsIgnoreCase(mod.getAction())) {
+                    throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY, "BLOCKED_BY_MODERATION");
+                }
+                return new ModerationResult(true, "Matched banned keyword: " + hit);
+            }
+        }
+
+        return ModerationResult.clean();
+    }
+
     private String matchBannedKeyword(String lowerText, List<String> bannedKeywords) {
         for (String kw : bannedKeywords) {
             if (kw == null || kw.isBlank()) continue;

@@ -1,0 +1,7 @@
+{
+    "componentType": {
+        "earning": "Gain",
+        "deduction": "Retenue",
+        "employerContribution": "Contribution employeur"
+    }
+}

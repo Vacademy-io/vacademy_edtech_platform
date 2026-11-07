@@ -1,0 +1,19 @@
+{
+    "totalAwarded": "Total awarded",
+    "marksAwarded": "Marks awarded",
+    "viewTask": "View task",
+    "outOf": "out of {{max}}",
+    "enterOverallScoreHint": "Enter the overall score for this submission. 0 is a valid score — type it in to submit a zero.",
+    "sectionNumber": "Section {{number}}",
+    "questionNo": "Question No",
+    "scoredMarks": "Scored Marks",
+    "maxMarks": "Max Marks",
+    "remarks": "Remarks",
+    "addRemarksPlaceholder": "Add remarks…",
+    "pagesReviewed": "Pages reviewed",
+    "notVisited": "Not visited",
+    "timeOnEvaluation": "Time on evaluation",
+    "timeFormat": "{{mins}}m {{secs}}s",
+    "previewQuestionHeading": "Preview Question",
+    "questionLabel": "Question :"
+}

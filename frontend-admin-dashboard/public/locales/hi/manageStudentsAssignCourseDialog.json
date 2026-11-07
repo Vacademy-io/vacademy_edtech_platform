@@ -1,0 +1,83 @@
+{
+    "dialogTitle": "{{term}} में असाइन करें",
+    "selectCourses": {
+        "description": "<strong>{{name}}</strong> को एक या अधिक कोर्स में असाइन करें।",
+        "searchPlaceholder": "कोर्स खोजें...",
+        "selectedCount": "{{total}} में से {{selected}} चयनित",
+        "selectAll": "सभी चुनें",
+        "deselectAll": "सभी अचयनित करें",
+        "noCoursesFound": "कोई कोर्स नहीं मिला"
+    },
+    "configure": {
+        "description": "प्रत्येक कोर्स के लिए नामांकन सेटिंग्स कॉन्फ़िगर करें। त्वरित मुफ़्त नामांकन के लिए आप सब कुछ <strong>\"ऑटो (डिफ़ॉल्ट)\"</strong> पर छोड़ सकते हैं, या प्रत्येक कोर्स के लिए कोई विशिष्ट इनवाइट चुन सकते हैं।",
+        "optionsLabel": "विकल्प",
+        "duplicateHandlingLabel": "यदि पहले से नामांकित है:",
+        "duplicateOptions": {
+            "skip": "छोड़ें",
+            "error": "त्रुटि",
+            "reEnroll": "पुनः नामांकन करें"
+        },
+        "notifyLabel": "शिक्षार्थी को ईमेल से सूचित करें"
+    },
+    "preview": {
+        "title": "पूर्वावलोकन — ड्राई रन परिणाम",
+        "willSucceed_one": "{{count}} सफल होगा",
+        "willSucceed_other": "{{count}} सफल होंगे",
+        "skipped_one": "{{count}} छोड़ा गया",
+        "skipped_other": "{{count}} छोड़े गए",
+        "failed_one": "{{count}} विफल",
+        "failed_other": "{{count}} विफल",
+        "inviteConfigTitle": "इनवाइट कॉन्फ़िगरेशन",
+        "autoDefault": "ऑटो (डिफ़ॉल्ट)",
+        "cpoBadge": "CPO",
+        "installments_one": "{{count}} किस्त",
+        "installments_other": "{{count}} किस्तें",
+        "totalAmount": "कुल ₹{{amount}}",
+        "recordingNow": "अभी ₹{{amount}} दर्ज हो रहा है",
+        "noInitialPayment": "कोई प्रारंभिक भुगतान नहीं",
+        "tableHeaders": {
+            "course": "कोर्स",
+            "action": "कार्रवाई",
+            "status": "स्थिति"
+        }
+    },
+    "results": {
+        "title": "असाइनमेंट पूर्ण",
+        "assigned_one": "{{count}} असाइन किया गया",
+        "assigned_other": "{{count}} असाइन किए गए",
+        "skipped_one": "{{count}} छोड़ा गया",
+        "skipped_other": "{{count}} छोड़े गए",
+        "failed_one": "{{count}} विफल",
+        "failed_other": "{{count}} विफल",
+        "tableHeaders": {
+            "course": "कोर्स",
+            "status": "स्थिति",
+            "message": "संदेश"
+        }
+    },
+    "stepper": {
+        "select": "चुनें",
+        "configure": "कॉन्फ़िगर करें",
+        "preview": "पूर्वावलोकन",
+        "done": "पूर्ण"
+    },
+    "footer": {
+        "cancel": "रद्द करें",
+        "nextConfigure_one": "अगला → कॉन्फ़िगर करें ({{count}})",
+        "nextConfigure_other": "अगला → कॉन्फ़िगर करें ({{count}})",
+        "back": "← वापस",
+        "loading": "लोड हो रहा है...",
+        "previewButton": "पूर्वावलोकन →",
+        "assigning": "असाइन किया जा रहा है...",
+        "confirmAssignment": "✓ असाइनमेंट की पुष्टि करें",
+        "done": "पूर्ण"
+    },
+    "toasts": {
+        "loadCoursesFailed": "कोर्स लोड करने में विफल",
+        "previewFailed": "पूर्वावलोकन विफल रहा",
+        "assignFailed": "असाइनमेंट विफल रहा",
+        "assignSuccess_one": "{{count}} कोर्स सफलतापूर्वक असाइन किया गया!",
+        "assignSuccess_other": "{{count}} कोर्स सफलतापूर्वक असाइन किए गए!",
+        "assignPartial": "{{successful}} असाइन किए गए, {{failed}} विफल रहे।"
+    }
+}

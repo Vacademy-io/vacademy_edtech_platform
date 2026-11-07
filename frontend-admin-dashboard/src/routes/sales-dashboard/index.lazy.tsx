@@ -1,4 +1,6 @@
 import { createLazyFileRoute } from '@tanstack/react-router';
+import { SalesEnhancedHero } from './-components/SalesEnhancedHero';
+import { SalesNeedsAttention } from './-components/SalesNeedsAttention';
 import { useEffect, useState } from 'react';
 import { LayoutContainer } from '@/components/common/layout-container/layout-container';
 import { useNavHeadingStore } from '@/stores/layout-container/useNavHeadingStore';
@@ -182,6 +184,10 @@ function SalesDashboardPage() {
                     </div>
                 </div>
 
+                {/* trend hero, then insights. */}
+                <SalesEnhancedHero teamId={teamId} />
+                <InsightsStrip instituteId={instituteId} teamId={teamId} />
+
                 {/* KPI band */}
                 <KpiBand
                     instituteId={instituteId}
@@ -249,7 +255,7 @@ function SalesDashboardPage() {
 
                 {/* Bottom: campaigns + insights */}
                 <CampaignCardsRow instituteId={instituteId} period="WEEK" />
-                <InsightsStrip instituteId={instituteId} teamId={teamId} />
+                <SalesNeedsAttention teamId={teamId} />
             </div>
         </LayoutContainer>
     );

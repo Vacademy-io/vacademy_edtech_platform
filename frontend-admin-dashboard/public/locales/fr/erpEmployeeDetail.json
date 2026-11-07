@@ -1,0 +1,13 @@
+{
+    "navHeading": "Personnel",
+    "backButton": "Tous les employés",
+    "errorMessage": "Impossible de charger cet employé.",
+    "emptyTitle": "Cet employé n'existe plus",
+    "emptyDescription": "Il a peut-être été supprimé. Retournez à la liste pour trouver le bon enregistrement.",
+    "fallbackName": "Employé",
+    "tabs": {
+        "profile": "Profil",
+        "salary": "Salaire",
+        "employment": "Emploi"
+    }
+}

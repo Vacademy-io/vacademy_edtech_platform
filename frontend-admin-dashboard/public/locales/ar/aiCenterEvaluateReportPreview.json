@@ -1,0 +1,32 @@
+{
+    "dialog": {
+        "defaultReportTitle": "تقرير التقييم"
+    },
+    "header": {
+        "defaultTitle": "تقييم المحاضرة",
+        "export": "تصدير"
+    },
+    "info": {
+        "lectureTitle": "عنوان المحاضرة:",
+        "duration": "المدة:",
+        "evaluationDate": "تاريخ التقييم:",
+        "notAvailable": "غير متاح"
+    },
+    "score": {
+        "totalScore": "النتيجة الإجمالية",
+        "criterionScore": "(النتيجة: {{score}})"
+    },
+    "performance": {
+        "needsImprovement": "يحتاج إلى تحسين",
+        "average": "متوسط",
+        "good": "جيد",
+        "excellent": "ممتاز"
+    },
+    "criteria": {
+        "heading": "معايير التقييم",
+        "scopeOfImprovement": "مجالات التحسين:"
+    },
+    "summary": {
+        "heading": "الملخص"
+    }
+}

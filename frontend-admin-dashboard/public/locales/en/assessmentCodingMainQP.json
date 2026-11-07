@@ -1,0 +1,8 @@
+{
+    "emptyState": {
+        "noQuestions": "Please add a question to show question details"
+    },
+    "survey": {
+        "notSupported": "Coding questions are not supported in surveys."
+    }
+}

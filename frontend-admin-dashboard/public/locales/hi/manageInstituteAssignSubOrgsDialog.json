@@ -1,0 +1,27 @@
+{
+    "title": "{{name}} के लिए {{subOrgPlural}}",
+    "defaultMemberLabel": "इस सदस्य",
+    "defaultMemberName": "सदस्य",
+    "noneExist": "इस संस्थान में अभी तक कोई {{subOrgPlural}} मौजूद नहीं है।",
+    "grantsAccessDescription": "{{subOrg}} के सक्रिय आमंत्रणों द्वारा कवर किए जाने वाले हर कोर्स तक पहुंच देता है। यह उनकी भूमिका से पहले से मिली पहुंच से अलग है।",
+    "selectLabel": "{{subOrgPlural}} चुनें",
+    "searchPlaceholder": "{{subOrgPlural}} खोजें…",
+    "noneSelected": "कोई नहीं चुना गया — इस सदस्य के पास कोई व्यक्तिगत {{subOrg}} पहुंच नहीं रहेगी।",
+    "adding_one": "{{count}} जोड़ा जा रहा है।",
+    "adding_other": "{{count}} जोड़े जा रहे हैं।",
+    "removing_one": "{{count}} हटाया जा रहा है।",
+    "removing_other": "{{count}} हटाए जा रहे हैं।",
+    "toast": {
+        "assigned_one": "{{count}} असाइन किया गया",
+        "assigned_other": "{{count}} असाइन किए गए",
+        "removed_one": "{{count}} हटाया गया",
+        "removed_other": "{{count}} हटाए गए",
+        "summary": "{{name}} — {{parts}} {{subOrgPlural}}",
+        "updateFailed": "{{subOrgPlural}} अपडेट नहीं हो सका"
+    },
+    "actions": {
+        "cancel": "रद्द करें",
+        "save": "सहेजें",
+        "saving": "सहेजा जा रहा है…"
+    }
+}

@@ -1,0 +1,34 @@
+{
+    "markBadge": {
+        "marks": "{{marks}} درجة"
+    },
+    "comboboxField": {
+        "selectLabel": "اختر {{label}}",
+        "searchLabel": "ابحث عن {{label}}...",
+        "noResults": "لم يتم العثور على نتائج."
+    },
+    "selectField": {
+        "selectLabel": "اختر {{label}}"
+    },
+    "dropdown": {
+        "placeholder": "اختر خيارًا"
+    },
+    "dropdownSchema": {
+        "required": "هذا الحقل مطلوب"
+    },
+    "modernButton": {
+        "loading": "جارٍ التحميل..."
+    },
+    "pagination": {
+        "goTo": "الانتقال إلى"
+    },
+    "errorState": {
+        "defaultTitle": "حدث خطأ ما",
+        "retry": "إعادة المحاولة",
+        "tryAgain": "حاول مرة أخرى"
+    },
+    "table": {
+        "loading": "جارٍ التحميل...",
+        "errorLoadingData": "تعذّر تحميل البيانات"
+    }
+}

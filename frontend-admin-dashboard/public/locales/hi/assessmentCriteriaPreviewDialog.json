@@ -1,0 +1,13 @@
+{
+    "heading": "मूल्यांकन मानदंड",
+    "invalidFormat": {
+        "title": "अमान्य मानदंड प्रारूप",
+        "description": "मानदंड डेटा संरचना मान्य नहीं है। कृपया मानदंड को फिर से जनरेट करें या मैन्युअल रूप से बनाएं।"
+    },
+    "totalMarksLabel": "कुल अंक:",
+    "totalMarksValue_one": "{{count}} अंक",
+    "totalMarksValue_other": "{{count}} अंक",
+    "breakdownHeading": "मानदंड विवरण:",
+    "itemMarks_one": "{{count}} अंक",
+    "itemMarks_other": "{{count}} अंक"
+}

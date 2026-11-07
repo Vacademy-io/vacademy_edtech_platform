@@ -1,5 +1,6 @@
 import { FormControl, FormField, FormItem, FormMessage } from '@/components/ui/form';
 import 'react-quill/dist/quill.snow.css';
+import { useTranslation } from 'react-i18next';
 import { RichTextEditor } from '@/components/editor/RichTextEditor';
 import { QuestionPaperTemplateFormProps } from '../../../-utils/question-paper-template-form';
 import { formatStructure } from '../../../-utils/helper';
@@ -14,9 +15,10 @@ export const ComprehensiveMultipleCorrectQuestionPaperTemplateMainView = ({
     examType,
     enableOptionModalCompose = false,
 }: QuestionPaperTemplateFormProps) => {
+    const { t } = useTranslation('assessmentComprehensiveMultipleCorrectMainQP');
     const { control, getValues } = form;
-    const answersType = getValues('answersType') || 'Answer';
-    const explanationsType = getValues('explanationsType') || 'Explanation';
+    const answersType = getValues('answersType') || t('defaults.answersType');
+    const explanationsType = getValues('explanationsType') || t('defaults.explanationsType');
     const optionsType = getValues('optionsType') || '';
     const questionsType = getValues('questionsType') || '';
     const allQuestions = getValues('questions') || [];
@@ -27,9 +29,7 @@ export const ComprehensiveMultipleCorrectQuestionPaperTemplateMainView = ({
     if (allQuestions.length === 0) {
         return (
             <div className="flex h-full w-full items-center justify-center">
-                <p className="text-body text-neutral-500">
-                    Please add a question to show question details
-                </p>
+                <p className="text-body text-neutral-500">{t('emptyState.message')}</p>
             </div>
         );
     }
@@ -38,8 +38,8 @@ export const ComprehensiveMultipleCorrectQuestionPaperTemplateMainView = ({
         <div className={className}>
             <div className="flex w-full flex-col !flex-nowrap items-start gap-2">
                 <QuestionSectionHeader
-                    title="Comprehension text"
-                    hint="The passage every question in this set refers to."
+                    title={t('comprehension.title')}
+                    hint={t('comprehension.hint')}
                 />
                 <FormField
                     control={control}
@@ -52,7 +52,7 @@ export const ComprehensiveMultipleCorrectQuestionPaperTemplateMainView = ({
                                     onBlur={field.onBlur}
                                     onChange={field.onChange}
                                     minHeight={100}
-                                    placeholder="Comprehension text"
+                                    placeholder={t('comprehension.placeholder')}
                                 />
                             </FormControl>
                             <FormMessage />
@@ -62,7 +62,7 @@ export const ComprehensiveMultipleCorrectQuestionPaperTemplateMainView = ({
             </div>
             <div className="flex w-full flex-col !flex-nowrap items-start gap-2">
                 <QuestionSectionHeader
-                    title={`Question${
+                    title={`${t('question.title')}${
                         showQuestionNumber
                             ? ` ${
                                   questionsType
@@ -84,7 +84,7 @@ export const ComprehensiveMultipleCorrectQuestionPaperTemplateMainView = ({
                                     onBlur={field.onBlur}
                                     onChange={field.onChange}
                                     minHeight={100}
-                                    placeholder="Write the question"
+                                    placeholder={t('question.placeholder')}
                                 />
                             </FormControl>
                             <FormMessage />
@@ -114,7 +114,7 @@ export const ComprehensiveMultipleCorrectQuestionPaperTemplateMainView = ({
             <div className="flex w-full flex-col !flex-nowrap items-start gap-2">
                 <QuestionSectionHeader
                     title={explanationsType}
-                    hint="Shown to learners with their result."
+                    hint={t('explanation.hint')}
                 />
                 <FormField
                     control={control}
@@ -127,7 +127,7 @@ export const ComprehensiveMultipleCorrectQuestionPaperTemplateMainView = ({
                                     onBlur={field.onBlur}
                                     onChange={field.onChange}
                                     minHeight={80}
-                                    placeholder="Explanation"
+                                    placeholder={t('explanation.placeholder')}
                                 />
                             </FormControl>
                             <FormMessage />

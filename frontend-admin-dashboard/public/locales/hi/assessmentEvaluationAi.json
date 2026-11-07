@@ -1,0 +1,120 @@
+{
+    "status": {
+        "pending": "मूल्यांकन अभी शुरू होना बाकी है",
+        "inProgress": "मूल्यांकन प्रगति पर है",
+        "initiated": "मूल्यांकन शुरू हो गया है",
+        "processing": "छात्र की उत्तर पुस्तिका को संसाधित किया जा रहा है",
+        "extracting": "छात्र के उत्तर निकाले जा रहे हैं",
+        "evaluating": "छात्र के उत्तरों का मूल्यांकन किया जा रहा है",
+        "grading": "मूल्यांकित उत्तरों को ग्रेड किया जा रहा है",
+        "completed": "मूल्यांकन पूरा हो गया है",
+        "failed": "मूल्यांकन विफल हो गया है",
+        "cancelled": "मूल्यांकन रद्द कर दिया गया है",
+        "unknown": "अज्ञात"
+    },
+    "common": {
+        "loading": "लोड हो रहा है..."
+    },
+    "nav": {
+        "heading": "AI मूल्यांकन"
+    },
+    "error": {
+        "title": "प्रगति लोड करने में त्रुटि",
+        "loadFailed": "मूल्यांकन प्रगति लोड करने में विफल",
+        "goBack": "वापस जाएं"
+    },
+    "toasts": {
+        "evaluationStopped": "मूल्यांकन सफलतापूर्वक रोका गया!",
+        "stopFailed": "मूल्यांकन रोकने में विफल",
+        "answerSheetUnavailable": "उत्तर पुस्तिका उपलब्ध नहीं है",
+        "answerSheetLoadFailed": "उत्तर पुस्तिका लोड करने में विफल",
+        "evaluationCompleted": "मूल्यांकन सफलतापूर्वक पूरा हुआ!",
+        "evaluationFailedRetry": "मूल्यांकन विफल रहा। कृपया पुनः प्रयास करें।",
+        "marksUpdated": "अंक अपडेट किए गए",
+        "marksUpdateFailed": "अंक अपडेट करने में विफल। कृपया पुनः प्रयास करें।"
+    },
+    "header": {
+        "participant": "प्रतिभागी",
+        "assessment": "मूल्यांकन",
+        "status": "स्थिति",
+        "duration": "अवधि",
+        "progress": "प्रगति",
+        "stop": "रोकें",
+        "stopping": "रोका जा रहा है..."
+    },
+    "summary": {
+        "totalScore": "कुल स्कोर",
+        "percentage": "प्रतिशत",
+        "completed": "पूर्ण",
+        "pending": "लंबित"
+    },
+    "filters": {
+        "all": "सभी",
+        "completed": "पूर्ण",
+        "pending": "लंबित",
+        "ariaLabel": "प्रश्न फ़िल्टर करें"
+    },
+    "answerSheet": {
+        "loading": "लोड हो रहा है...",
+        "button": "उत्तर पुस्तिका",
+        "panelTitle": "छात्र की उत्तर पुस्तिका",
+        "close": "बंद करें"
+    },
+    "banners": {
+        "aiDrafted": "AI ने यह मूल्यांकन तैयार किया है। प्रत्येक प्रश्न की समीक्षा करें, किसी भी अंक या फीडबैक को समायोजित करें, फिर परिणाम जारी करें।",
+        "needsReview_one": "{{count}} प्रश्न स्वचालित रूप से ग्रेड नहीं हो सका और उसे आपकी समीक्षा चाहिए। परिणाम जारी करने से पहले अंक दर्ज करने के लिए इसे नीचे खोलें।",
+        "needsReview_other": "{{count}} प्रश्न स्वचालित रूप से ग्रेड नहीं हो सके और उन्हें आपकी समीक्षा चाहिए। परिणाम जारी करने से पहले अंक दर्ज करने के लिए उन्हें नीचे खोलें।"
+    },
+    "emptyState": {
+        "all": "दिखाने के लिए कोई प्रश्न नहीं",
+        "completed": "दिखाने के लिए कोई पूर्ण प्रश्न नहीं",
+        "pending": "दिखाने के लिए कोई लंबित प्रश्न नहीं"
+    },
+    "question": {
+        "qLabel": "प्र{{number}}",
+        "title": "प्रश्न {{number}}",
+        "reviewedPrefix": "आपके द्वारा समीक्षित · ",
+        "completedAt": "{{time}} पूर्ण हुआ",
+        "pendingStatus": "लंबित",
+        "failedGradeMessage": "AI इसे ग्रेड नहीं कर सका — आपकी समीक्षा आवश्यक है",
+        "editedBadge": "संपादित",
+        "needsReviewBadge": "समीक्षा आवश्यक",
+        "reviewMeta": {
+            "reviewedViaApiBy": "API के माध्यम से {{reviewer}} द्वारा समीक्षित",
+            "reviewedViaApi": "API के माध्यम से समीक्षित",
+            "reviewedBy": "{{reviewer}} द्वारा समीक्षित",
+            "reviewed": "समीक्षित",
+            "approvedViaApiBy": "API के माध्यम से {{reviewer}} द्वारा स्वीकृत",
+            "approvedViaApi": "API के माध्यम से स्वीकृत",
+            "approvedBy": "{{reviewer}} द्वारा स्वीकृत",
+            "approved": "स्वीकृत"
+        }
+    },
+    "teacherReview": {
+        "failedTitle": "इस प्रश्न को स्वचालित रूप से ग्रेड नहीं किया गया।",
+        "aiDraftedTitle": "AI द्वारा तैयार किए गए अंक",
+        "failedHint": "इसे स्वयं ग्रेड करने के लिए अंक और फीडबैक दर्ज करें।",
+        "aiDraftedHint": "यदि आप AI से असहमत हैं तो अंक या फीडबैक समायोजित करें।",
+        "gradeManually": "मैन्युअल रूप से ग्रेड करें",
+        "edit": "संपादित करें",
+        "marksLabel": "अंक",
+        "feedbackLabel": "फीडबैक",
+        "feedbackPlaceholder": "इस प्रश्न के लिए फीडबैक",
+        "cancel": "रद्द करें",
+        "save": "अंक सहेजें",
+        "saving": "सहेजा जा रहा है..."
+    },
+    "details": {
+        "questionHeading": "प्रश्न",
+        "correctAnswerHeading": "सही उत्तर",
+        "studentAnswerHeading": "छात्र का उत्तर",
+        "feedbackHeading": "फीडबैक",
+        "gradingBreakdownHeading": "ग्रेडिंग विवरण"
+    },
+    "table": {
+        "criteria": "मानदंड",
+        "reason": "कारण",
+        "marks": "अंक",
+        "totalMarksAwarded": "कुल दिए गए अंक:"
+    }
+}

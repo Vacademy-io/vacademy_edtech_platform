@@ -23,4 +23,6 @@ public class DataPointSpec {
     private String sensitivity;
     /** IN_PROCESS | HTTP — cost hint for the wizard. */
     private String cost;
+    /** Read for every engine whatever the selection (set by the catalog endpoint from the provider). */
+    private Boolean alwaysOn;
 }

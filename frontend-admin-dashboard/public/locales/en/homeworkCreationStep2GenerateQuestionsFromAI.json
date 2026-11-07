@@ -1,0 +1,44 @@
+{
+    "trigger": {
+        "label": "Create From AI",
+        "badge": "(Vacademy AI)"
+    },
+    "dialog": {
+        "title": "Create Questions From AI"
+    },
+    "generate": {
+        "cardTitle": "Generate Questions",
+        "cardDescription": "Ask AI to use PDF, Image or any topic to generate new questions",
+        "dialogTitle": "Generate Questions",
+        "upload": {
+            "toolName": "VSmart Upload",
+            "shortDescription": "(Generate questions by uploading pdf, doc and ppt files)",
+            "description": "Generate question papers instantly by uploading study materials in PDF, Word, or PowerPoint formats. Vsmart Upload uses AI to analyze your entire file and create relevant, well-structured questions — or lets you paste content manually if preferred. No formatting needed, just plug and go. Perfect for educators, exam setters, and corporate trainers who work with existing content like lecture slides, study guides, or course handouts. Whether you are preparing assessments for a classroom, a coaching batch, or a training session — Vsmart Upload saves hours of effort by turning your materials into ready-to-use question papers."
+        },
+        "audio": {
+            "toolName": "Vsmart Audio",
+            "shortDescription": "(Generate questions by uploading audio files)",
+            "description": "Convert any lecture, meeting, or audio recording into a full question paper. Simply upload MP3, WAV, or other audio formats — Vsmart Audio transcribes your content and uses AI to generate structured, context-aware questions. No manual transcription or editing required. Perfect for language labs, podcast-based learning modules, corporate training sessions, and recorded lectures at universities or coaching centers. Trainers and educators can repurpose existing audio resources into quizzes, comprehension tests, or discussion prompts with just a few clicks, enhancing engagement and reinforcing learning outcomes."
+        },
+        "topics": {
+            "toolName": "Vsmart Topics",
+            "shortDescription": "(Generate questions by providing topics)",
+            "description": "Generate custom question papers in seconds by just typing a topic, concept, or instruction. Vsmart Prompt uses advanced AI to understand your input and create a tailored set of questions — covering various difficulty levels, formats, and cognitive skills, all aligned to your needs. Perfect for teachers, trainers, and academic heads who want quick assessments on specific topics without uploading any material. Whether this is for an impromptu quiz, concept revision, or rapid-fire session, Vsmart Prompt delivers accurate and varied questions with minimal input."
+        }
+    },
+    "extract": {
+        "cardTitle": "Extract Questions",
+        "cardDescription": "Ask AI to extract questions from any PDF, Image or Audio Lecture",
+        "dialogTitle": "Extract Questions",
+        "file": {
+            "toolName": "Vsmart Extract",
+            "shortDescription": "(Extract questions by uploading pdf, doc and ppt files)",
+            "description": "Easily extract all existing questions from any PDF document — whether it's a past exam paper, a practice worksheet, or a question bank. Vsmart Extract scans the entire file, identifies question patterns, and neatly organizes them for easy reuse, editing, or export. Ideal for educators and academic teams who work with legacy PDFs, shared resources, or scanned papers. Save time manually copying or retyping questions — Vsmart Extract helps schools, coaching centers, and corporate training departments quickly build digital archives or create updated assessments from old materials."
+        },
+        "image": {
+            "toolName": "Vsmart Image",
+            "shortDescription": "(Extract questions by uploading images)",
+            "description": "Turn images into questions with ease. Vsmart Image uses advanced OCR and AI to scan photographs, scanned pages, handwritten notes, or screenshots — and extracts structured questions from them. Just upload your image, and let AI do the rest. Ideal for teachers, coaching institutes, and trainers who often receive content in the form of handwritten notes, textbook snapshots, or board images. Whether you are digitizing old test papers or pulling questions from printed material — Vsmart Image brings analog content into your digital workflow in seconds."
+        }
+    }
+}

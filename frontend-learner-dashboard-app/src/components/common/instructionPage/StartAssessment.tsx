@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { X } from "@phosphor-icons/react";
 import { MyButton } from "@/components/design-system/button";
 import { useNavigate } from "@tanstack/react-router";
@@ -16,6 +17,7 @@ interface AssessmentStartModalProps {
 }
 
 const AssessmentStartModal = ({ disabled }: AssessmentStartModalProps) => {
+  const { t } = useTranslation("layoutCommonB");
   const location = useLocation();
   const pathSegments = location.pathname.split("/");
   const assessmentId = pathSegments[3];
@@ -157,7 +159,7 @@ const AssessmentStartModal = ({ disabled }: AssessmentStartModalProps) => {
           disable={disabled}
           className="h-12 w-full"
         >
-          {isManual ? "Upload Answer" : "Start Assessment"}
+          {isManual ? t("instructionPage.startAssessment.uploadAnswer") : t("instructionPage.startAssessment.startAssessment")}
         </MyButton>
       )}
 
@@ -166,12 +168,12 @@ const AssessmentStartModal = ({ disabled }: AssessmentStartModalProps) => {
           <div className="w-full max-w-md overflow-hidden rounded-2xl bg-white">
             <div className="flex items-center justify-between border-b border-neutral-100 bg-primary-50 p-4">
               <h3 className="text-title font-semibold text-primary-500">
-                Start Assessment
+                {t("instructionPage.startAssessment.startAssessment")}
               </h3>
               <button
                 type="button"
                 onClick={handleClose}
-                aria-label="Close"
+                aria-label={t("instructionPage.startAssessment.close")}
                 className="grid size-8 place-items-center rounded-full text-neutral-400 transition-colors hover:bg-white hover:text-neutral-700"
               >
                 <X size={20} />
@@ -180,9 +182,7 @@ const AssessmentStartModal = ({ disabled }: AssessmentStartModalProps) => {
 
             <div className="p-5">
               <p className="text-body leading-relaxed text-neutral-600">
-                {
-                  "Once you start the assessment, you must complete it without interruption. Begin only when you're ready."
-                }
+                {t("instructionPage.startAssessment.confirmBody")}
               </p>
             </div>
 
@@ -194,7 +194,7 @@ const AssessmentStartModal = ({ disabled }: AssessmentStartModalProps) => {
                 layoutVariant="default"
                 disable={isLoading}
               >
-                Cancel
+                {t("instructionPage.startAssessment.cancel")}
               </MyButton>
               <MyButton
                 onClick={handleAssessmentAction}
@@ -203,7 +203,7 @@ const AssessmentStartModal = ({ disabled }: AssessmentStartModalProps) => {
                 layoutVariant="default"
                 disable={isLoading}
               >
-                {isLoading ? "Loading..." : "Proceed"}
+                {isLoading ? t("instructionPage.startAssessment.loading") : t("instructionPage.startAssessment.proceed")}
               </MyButton>
             </div>
           </div>

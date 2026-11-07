@@ -1,0 +1,78 @@
+{
+    "navHeading": "قاعدة المعرفة",
+    "meta": {
+        "title": "قاعدة المعرفة",
+        "description": "قم برفع كتب مؤسستك وملاحظاتها وأوراق الأسئلة السابقة حتى يتمكن الذكاء الاصطناعي من التدريس والاختبار والإجابة من محتواك الخاص."
+    },
+    "purpose": {
+        "instituteInfo": "معلومات المؤسسة",
+        "generalReference": "مرجع عام"
+    },
+    "kbCard": {
+        "sharedLibrary": "مكتبة مشتركة",
+        "sources_zero": "لا مصادر ({{formatted}})",
+        "sources_one": "مصدر واحد ({{formatted}})",
+        "sources_two": "مصدران ({{formatted}})",
+        "sources_few": "{{formatted}} مصادر",
+        "sources_many": "{{formatted}} مصدرًا",
+        "sources_other": "{{formatted}} مصدر",
+        "pages_zero": "لا صفحات ({{formatted}})",
+        "pages_one": "صفحة واحدة ({{formatted}})",
+        "pages_two": "صفحتان ({{formatted}})",
+        "pages_few": "{{formatted}} صفحات",
+        "pages_many": "{{formatted}} صفحة",
+        "pages_other": "{{formatted}} صفحة",
+        "figures_zero": "لا رسوم أو جداول ({{formatted}})",
+        "figures_one": "رسم أو جدول واحد ({{formatted}})",
+        "figures_two": "رسمان أو جدولان ({{formatted}})",
+        "figures_few": "{{formatted}} رسوم وجداول",
+        "figures_many": "{{formatted}} رسمًا وجدولًا",
+        "figures_other": "{{formatted}} رسم وجدول",
+        "reading_zero": "لا شيء قيد القراءة ({{formatted}})",
+        "reading_one": "جارٍ قراءة مصدر واحد ({{formatted}})…",
+        "reading_two": "جارٍ قراءة مصدرين ({{formatted}})…",
+        "reading_few": "جارٍ قراءة {{formatted}} مصادر…",
+        "reading_many": "جارٍ قراءة {{formatted}} مصدرًا…",
+        "reading_other": "جارٍ قراءة {{formatted}} مصدر…",
+        "nothingAdded": "لم تتم إضافة شيء بعد",
+        "readyToUse": "جاهز للاستخدام",
+        "reviewPages_zero": "لا صفحات تحتاج مراجعة ({{formatted}})",
+        "reviewPages_one": "صفحة واحدة تحتاج مراجعة ({{formatted}})",
+        "reviewPages_two": "صفحتان تحتاجان مراجعة ({{formatted}})",
+        "reviewPages_few": "{{formatted}} صفحات تحتاج مراجعة",
+        "reviewPages_many": "{{formatted}} صفحة تحتاج مراجعة",
+        "reviewPages_other": "{{formatted}} صفحة تحتاج مراجعة"
+    },
+    "emptyState": {
+        "heading": "علّم الذكاء الاصطناعي ما تُدرّسه مؤسستك",
+        "description": "قم برفع كتبك الدراسية وملاحظاتك وأوراق الأسئلة السابقة مرة واحدة. يقرأها الذكاء الاصطناعي — بما في ذلك الرسوم والجداول والمعادلات — ثم يمكنه الإجابة على الأسئلة منها، وبناء الدورات وأوراق الأسئلة المستندة إلى محتواك الخاص بدلاً من محتوى إنترنت عام.",
+        "examples": {
+            "science": {
+                "title": "علوم الصف التاسع",
+                "body": "كتابان من NCERT وملاحظات معلميك."
+            },
+            "jee": {
+                "title": "أوراق JEE السابقة",
+                "body": "عشر سنوات من أوراق الأسئلة مع الحلول."
+            },
+            "instituteInfo": {
+                "title": "معلومات المؤسسة",
+                "body": "سياسة الرسوم، المواعيد، قواعد الامتحانات والأسئلة الشائعة."
+            }
+        },
+        "createFirst": "أنشئ قاعدة معرفتك الأولى"
+    },
+    "tabs": {
+        "mine": "قواعد معرفتي",
+        "library": "المكتبة",
+        "curriculum": "المنهج"
+    },
+    "mine": {
+        "heading": "قواعد المعرفة",
+        "description": "كتبك وملاحظاتك وأوراقك الخاصة، مقروءة ومفهرسة حتى يتمكن الذكاء الاصطناعي من العمل بها.",
+        "newButton": "قاعدة معرفة جديدة",
+        "loadError": "تعذر تحميل قواعد معرفتك.",
+        "tryAgain": "حاول مرة أخرى",
+        "tip": "افتح قاعدة معرفة واستخدم <1>اسأل قاعدة المعرفة هذه</1> للتحقق مما فهمته فعليًا قبل بناء الدورات أو أوراق الأسئلة منها."
+    }
+}

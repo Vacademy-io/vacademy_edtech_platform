@@ -1,0 +1,44 @@
+{
+    "header": {
+        "title": "Add Questions",
+        "subtitle": "Add sections and questions to your assessment. Upload a paper, create manually, or generate with AI.",
+        "update": "Update",
+        "next": "Next"
+    },
+    "sectionDefaultName": "Section {{number}}",
+    "omrWarning": {
+        "title": "OMR sheet mode is on",
+        "body_one": "{{count}} question is not a single-correct MCQ. Publishing will be refused until every question is a single-correct MCQ with 2–5 options.",
+        "body_other": "{{count}} questions are not single-correct MCQs. Publishing will be refused until every question is a single-correct MCQ with 2–5 options."
+    },
+    "durationSettings": {
+        "title": "Duration Settings",
+        "description": "Choose how time is distributed across your assessment.",
+        "options": {
+            "entireSurvey": "Entire Survey",
+            "entireAssessment": "Entire Assessment",
+            "sectionWise": "Section-Wise",
+            "questionWise": "Question-Wise"
+        },
+        "info": {
+            "entireTestSurvey": "Set a single time limit for the whole survey.",
+            "entireTestAssessment": "Set a single time limit for the whole assessment.",
+            "sectionWise": "Assign a specific time for each section. The total assessment duration will be the sum of all section times.",
+            "questionWise": "Define individual time limits for each question in the Sections tab."
+        },
+        "entireTestDuration": {
+            "label": "Entire Test Duration",
+            "placeholderZero": "00",
+            "hrsUnit": "hrs",
+            "minUnit": "min"
+        }
+    },
+    "addSectionButton": "Add Section",
+    "toasts": {
+        "updateSuccess": "Step 2 data has been updated successfully!",
+        "saveSuccess": "Step 2 data has been saved successfully!"
+    },
+    "errors": {
+        "saveFailed": "Failed to save questions."
+    }
+}

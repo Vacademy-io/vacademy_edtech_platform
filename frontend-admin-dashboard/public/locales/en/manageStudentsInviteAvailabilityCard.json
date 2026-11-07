@@ -1,0 +1,14 @@
+{
+    "title": "Availability Window",
+    "description": "Optionally limit when this link accepts enrollments. Outside the window (or when the link is deactivated) learners see the message below instead of the enrollment form.",
+    "startDate": {
+        "label": "Start date (optional)"
+    },
+    "endDate": {
+        "label": "End date (optional)"
+    },
+    "unavailableMessage": {
+        "label": "Message shown when unavailable",
+        "placeholder": "e.g. Enrollments for this batch are closed. Write to us to hear about the next one."
+    }
+}

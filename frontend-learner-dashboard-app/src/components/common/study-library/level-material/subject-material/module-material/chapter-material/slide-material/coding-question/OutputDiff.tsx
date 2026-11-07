@@ -1,3 +1,5 @@
+import { useTranslation } from "react-i18next";
+
 interface Props {
   actual: string;
   expected: string;
@@ -22,6 +24,7 @@ function firstDiffIndex(a: string, b: string): number {
  * easy to spot without squinting.
  */
 export function OutputDiff({ actual, expected, acceptedCount }: Props) {
+  const { t } = useTranslation("libraryCommonA");
   const a = actual.replace(/\r\n/g, "\n");
   const e = expected.replace(/\r\n/g, "\n");
   const aLines = a.split("\n");
@@ -40,26 +43,25 @@ export function OutputDiff({ actual, expected, acceptedCount }: Props) {
     idx < 0
       ? null
       : idx >= a.length
-        ? `Expected ${e.length - a.length} more character(s) at position ${a.length}`
+        ? t("codingQuestion.outputDiff.expectedMoreChars", { count: e.length - a.length, position: a.length })
         : idx >= e.length
-          ? `Extra ${a.length - e.length} character(s) at position ${e.length}`
-          : `First mismatch at char ${idx}: got ${JSON.stringify(a[idx])}, expected ${JSON.stringify(e[idx])}`;
+          ? t("codingQuestion.outputDiff.extraChars", { count: a.length - e.length, position: e.length })
+          : t("codingQuestion.outputDiff.firstMismatch", { index: idx, got: JSON.stringify(a[idx]), expected: JSON.stringify(e[idx]) });
 
   return (
     <div className="space-y-1">
       {(acceptedCount ?? 1) > 1 && (
         <div className="text-2xs text-gray-500">
-          This test accepts {acceptedCount} valid outputs; showing the diff
-          against the primary one.
+          {t("codingQuestion.outputDiff.acceptsMultiple", { count: acceptedCount })}
         </div>
       )}
       <div className="grid grid-cols-[auto,1fr,1fr] gap-x-2 rounded border bg-white p-1 font-mono text-2xs">
         <div className="col-span-1" />
         <div className="text-3xs font-semibold uppercase text-gray-500">
-          Your output
+          {t("codingQuestion.outputDiff.yourOutput")}
         </div>
         <div className="text-3xs font-semibold uppercase text-gray-500">
-          Expected
+          {t("codingQuestion.outputDiff.expected")}
         </div>
         {rows.map((r, i) => (
           <Row key={i} idx={i + 1} a={r.a} e={r.e} diff={r.diff} />
@@ -83,6 +85,7 @@ function Row({
   e?: string;
   diff: boolean;
 }) {
+  const { t } = useTranslation("libraryCommonA");
   const bg = diff ? "bg-red-50" : "";
   return (
     <>
@@ -91,7 +94,7 @@ function Row({
         {a === undefined ? (
           <span className="text-gray-400">—</span>
         ) : a === "" ? (
-          <span className="text-gray-400">(empty)</span>
+          <span className="text-gray-400">{t("codingQuestion.outputDiff.empty")}</span>
         ) : (
           a
         )}
@@ -100,7 +103,7 @@ function Row({
         {e === undefined ? (
           <span className="text-gray-400">—</span>
         ) : e === "" ? (
-          <span className="text-gray-400">(empty)</span>
+          <span className="text-gray-400">{t("codingQuestion.outputDiff.empty")}</span>
         ) : (
           e
         )}

@@ -1,0 +1,25 @@
+{
+    "sections": {
+        "quickAccess": "त्वरित पहुँच",
+        "programming": "प्रोग्रामिंग",
+        "optionBased": "विकल्प आधारित",
+        "mathBased": "गणित आधारित",
+        "writingSkills": "लेखन कौशल",
+        "readingSkills": "पठन कौशल"
+    },
+    "questionTypes": {
+        "mcqSingle": "बहुविकल्पीय प्रश्न (एकल सही)",
+        "mcqMultiple": "बहुविकल्पीय प्रश्न (बहु सही)",
+        "numerical": "संख्यात्मक",
+        "trueFalse": "सही गलत",
+        "coding": "कोडिंग प्रश्न",
+        "longAnswer": "दीर्घ उत्तर",
+        "singleWord": "एक शब्द",
+        "comprehensionMcqSingle": "गद्यांश बहुविकल्पीय प्रश्न (एकल सही)",
+        "comprehensionMcqMultiple": "गद्यांश बहुविकल्पीय प्रश्न (बहु सही)",
+        "comprehensionNumeric": "गद्यांश संख्यात्मक"
+    },
+    "dialog": {
+        "title": "प्रश्न पत्र मैन्युअल रूप से बनाएँ"
+    }
+}

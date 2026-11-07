@@ -1,0 +1,17 @@
+{
+    "trigger": {
+        "label": "فرز الأسئلة حسب الموضوع"
+    },
+    "dialog": {
+        "title": "فرز الأسئلة حسب الموضوع",
+        "options": {
+            "topic": "اختر أي أسئلة يغطيها موضوع معين",
+            "pages": "اختر أسئلة من صفحات محددة",
+            "questionNo": "اختر مجموعة من الأسئلة"
+        },
+        "extractButton": "استخراج"
+    },
+    "tasksList": {
+        "heading": "Vsmart Organizer"
+    }
+}

@@ -1,0 +1,14 @@
+{
+    "emptySelection": "कुछ भी चुना नहीं गया — पेपर हर चीज़ से सामग्री लेगा।",
+    "selectedCount_one": "{{total}} में से {{count}} उपविषय चुना गया",
+    "selectedCount_other": "{{total}} में से {{count}} उपविषय चुने गए",
+    "actions": {
+        "clearAll": "सभी साफ़ करें",
+        "selectAll": "सभी चुनें"
+    },
+    "selectTopicAriaLabel": "{{title}} चुनें",
+    "subtopicsPartial_one": "{{total}} में से {{count}} उपविषय",
+    "subtopicsPartial_other": "{{total}} में से {{count}} उपविषय",
+    "subtopicsTotal_one": "{{count}} उपविषय",
+    "subtopicsTotal_other": "{{count}} उपविषय"
+}

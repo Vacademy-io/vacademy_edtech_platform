@@ -1,0 +1,332 @@
+{
+    "toasts": {
+        "noInstituteSelected": "No institute selected",
+        "styleSaved": "Video style saved",
+        "styleSaveFailed": "Failed to save video style",
+        "brandingSaved": "Video branding saved",
+        "brandingSaveFailed": "Failed to save video branding"
+    },
+    "tabs": {
+        "output": "Output",
+        "voice": "Voice",
+        "host": "Host",
+        "visuals": "Branding",
+        "advanced": "Advanced"
+    },
+    "output": {
+        "contentType": { "label": "Content type" },
+        "orientation": {
+            "label": "Orientation",
+            "landscape": "Landscape",
+            "portrait": "Portrait"
+        },
+        "duration": { "label": "Duration" },
+        "qualityTier": { "label": "Quality tier" },
+        "modelOverride": {
+            "label": "Model override",
+            "helper": "Pinned automatically by tier; override only if needed.",
+            "placeholder": "Auto (recommended)",
+            "freeBadge": "Free"
+        }
+    },
+    "voice": {
+        "language": { "label": "Language" },
+        "voiceGender": { "label": "Voice gender" },
+        "audioQuality": { "label": "Audio quality" },
+        "voiceList": {
+            "label": "Voice",
+            "noVoices": "No voices available for this combination.",
+            "providerSarvam": "Sarvam",
+            "providerGoogle": "Google",
+            "providerEdge": "Edge",
+            "playPreviewAria": "Play preview of {{name}}",
+            "stopPreviewAria": "Stop preview of {{name}}",
+            "playPreviewTitle": "Play voice preview",
+            "stopPreviewTitle": "Stop preview"
+        },
+        "audience": { "label": "Audience" }
+    },
+    "visuals": {
+        "visualQuality": {
+            "label": "Visual quality",
+            "classic": "Classic",
+            "advanced": "Advanced"
+        },
+        "captions": { "label": "Captions" },
+        "brandKit": {
+            "label": "Brand kit",
+            "helper": "Replaces palette, fonts, layout, intro / outro, and watermark for this generation."
+        },
+        "style": {
+            "title": "Style",
+            "background": { "label": "Background", "light": "Light", "dark": "Dark" },
+            "layoutTheme": {
+                "label": "Layout theme",
+                "defaultLabel": "Default",
+                "defaultDescription": "No template — minimal styling"
+            },
+            "primaryColor": "Primary color",
+            "heading": "Heading",
+            "body": "Body",
+            "saveStyle": "Save style"
+        },
+        "branding": {
+            "title": "Intro · Outro · Watermark",
+            "watermark": "Watermark",
+            "editLink": "Edit intro / outro / watermark content",
+            "saveBranding": "Save branding"
+        }
+    },
+    "themeCard": {
+        "minimalStyling": "Minimal styling"
+    },
+    "introOutro": {
+        "intro": "Intro",
+        "outro": "Outro",
+        "duration": "Duration",
+        "seconds": "seconds"
+    },
+    "advanced": {
+        "expBadge": "Exp",
+        "reviewMode": {
+            "label": "Review script first",
+            "helper": "Edit the AI-generated script before audio and visuals are created."
+        },
+        "subShots": {
+            "label": "Sub-shot split",
+            "helper": "Splits dense, motion-heavy shots into 2 focused sub-shots before HTML generation. Better visual precision; small extra LLM cost."
+        },
+        "dialogueScenes": {
+            "label": "Story dialogue scenes",
+            "helper": "Characters act out key moments in AI-generated clips, speaking in consistent voices (lip-synced). Adds generation cost per scene."
+        },
+        "dialogueMode": {
+            "storybook": {
+                "label": "Storybook",
+                "description": "Narrator carries the video; 1-4 dialogue scenes at key moments."
+            },
+            "drama": {
+                "label": "Drama",
+                "description": "Pure dialogue film — every shot is a scene, no narrator, music off. Higher clip budget."
+            }
+        },
+        "dialogueClipModel": {
+            "seedance": {
+                "label": "Seedance 2.0",
+                "description": "Voice-locked: characters lip-sync to our TTS — same voices every scene and sequel. ~$0.30/s, clips up to 15s."
+            },
+            "omniFlash": {
+                "label": "Omni Flash",
+                "description": "Gemini Omni speaks the lines itself — ~2x cheaper (~$0.13/s) but voices may vary between scenes. Clips up to 10s."
+            }
+        },
+        "castPicker": {
+            "noSavedCasts": "New characters this video. Finish a story, then “Save cast” to reuse them in the next one.",
+            "label": "Cast",
+            "savedCastAria": "Saved cast",
+            "newCast": "New cast this video",
+            "characterCount_one": "{{count}} character",
+            "characterCount_other": "{{count}} characters"
+        }
+    },
+    "aiVideo": {
+        "label": "AI video generation",
+        "betaBadge": "Beta",
+        "enableAria": "Enable AI video",
+        "tierLocked": "Available on Ultra and Super Ultra tiers only. Switch tier above to enable.",
+        "description": "Generates cinematic clips with fal.ai Veo. ≈{{minCredits}}–{{maxCredits}} credits per shot, hard-capped at {{capCredits}} per video. Director picks when content fits.",
+        "modelLabel": "Model",
+        "veoAudioLabel": "Veo audio",
+        "veoAudioAria": "Enable Veo audio",
+        "audioCostNote": "When ON, AI video shots play their own audio. Master narration is silenced during those shots. Cost rises from {{offRate}} credits/s to {{onRate}} credits/s."
+    },
+    "visualPreferences": {
+        "label": "Visual mix",
+        "activeBadge": "Active",
+        "reset": "Reset",
+        "hint": "Soft hints only. Free-text phrases in your prompt (e.g. “more SVG diagrams”) override these.",
+        "directorHint": " On <tier>{{tierLabel}}</tier>, family bias is applied via the script. Director-level bias starts at Premium.",
+        "familyBias": {
+            "avoid": "Avoid",
+            "auto": "Auto",
+            "prefer": "Prefer"
+        },
+        "visualStyleLabel": "Visual style",
+        "visualStyle": {
+            "auto": {
+                "label": "Auto",
+                "description": "Detect from topic — marketing looks premium, lessons stay clean."
+            },
+            "educational": {
+                "label": "Clean",
+                "description": "Flat whiteboard look. Best for lessons & explainers."
+            },
+            "marketing": {
+                "label": "Premium",
+                "description": "Modern brand-film look: depth, motion, finishing, minimal text."
+            },
+            "bold": {
+                "label": "Bold",
+                "description": "Premium + high-energy social-ad styling."
+            }
+        },
+        "textDensityLabel": "On-screen text",
+        "textDensity": {
+            "minimal": { "label": "Minimal", "description": "Title-only on hooks. No body anywhere." },
+            "low": { "label": "Low", "description": "Short headlines. Drop subtitle lines." },
+            "auto": { "label": "Auto", "description": "Pipeline default — moderate text." },
+            "rich": { "label": "Rich", "description": "Full headlines + supporting labels." }
+        },
+        "captionsHint": "Captions are <strong>recommended</strong> at this density — your video will rely on narration to carry meaning."
+    },
+    "host": {
+        "locked": {
+            "title": "On-screen host requires Ultra",
+            "description": "The Host feature (AI avatar narrator) is available on <ultra>Ultra</ultra> and <superUltra>Super Ultra</superUltra> tiers only. Switch the Quality tier in the Output tab to enable it."
+        },
+        "staleConfig": {
+            "title": "Saved host config will be ignored",
+            "description": "You have a host configuration saved from a higher tier. It will cause this generation to fail unless you switch back to Ultra or clear it now.",
+            "clearButton": "Clear host config"
+        },
+        "enableToggle": {
+            "label": "Enable on-screen host",
+            "helper": "A talking-head host appears in some shots and narrates in 1st person. Costs {{rate}} credits/sec of host footage on top of the base video."
+        },
+        "hostType": {
+            "label": "Host type",
+            "avatar": "AI Avatar",
+            "raw": "Real footage",
+            "soonBadge": "Soon"
+        },
+        "avatarPicker": {
+            "label": "Host avatar",
+            "helper": "Pick from your saved hosts. Built-in catalog avatars (Argil / VEED) lock the model to their endpoint."
+        },
+        "useSavedVoice": {
+            "label": "Use avatar’s saved voice",
+            "helper": "On: voice / language / gender from the saved avatar override the Voice tab. Off: keep the Voice tab’s settings."
+        },
+        "details": {
+            "label": "Host details (clothing, persona)",
+            "helper": "Free-form. Threaded into every per-shot avatar image prompt for consistency.",
+            "placeholder": "e.g. navy blazer, neutral office background, professional demeanour"
+        },
+        "avatarModel": {
+            "label": "Avatar model",
+            "creditsPerSec": "{{credits}} cr/sec"
+        },
+        "faceUpload": {
+            "label": "Host face image",
+            "helper": "Clear, front-facing portrait. Used as the per-shot identity reference.",
+            "faceAlt": "Host face",
+            "replace": "Replace",
+            "uploading": "Uploading…",
+            "dropHint": "Click or drop a face photo (PNG / JPG, ≤10 MB)",
+            "errors": {
+                "invalidType": "Please pick an image file (PNG / JPG).",
+                "tooLarge": "Image must be under 10 MB.",
+                "uploadFailed": "Upload failed",
+                "noPublicUrl": "Could not get public URL",
+                "toast": "Face image upload failed: {{message}}"
+            }
+        },
+        "quality": {
+            "label": "Avatar quality",
+            "helper": "Same per-second price; 720p produces a heavier file."
+        },
+        "fps": {
+            "label": "Frames per second",
+            "helper": "Higher fps = smoother motion and a higher per-second cost. LTX 2.3 only.",
+            "value": "{{fps}} fps"
+        },
+        "percentage": {
+            "label": "Host on screen — {{percent}}%",
+            "helper": "Director picks which shots show the host (Hook, Recap, CTA, high-emphasis beats are prioritised). Narration audio plays continuously regardless.",
+            "tip": "Tip: Below ~25% the host barely appears — disable Host instead to save on avatar synthesis costs."
+        }
+    },
+    "brandOverride": {
+        "title": "Override for this video",
+        "intro": "One-shot tweaks for this generation only — they don’t change the kit and reset after you generate.",
+        "directorInstructions": {
+            "label": "Director instructions",
+            "placeholderReplace": "Replace the kit instructions for this video…",
+            "placeholderDefault": "e.g. Make it punchier and lead with the offer.",
+            "helper": "Replaces the kit’s instructions for this video only."
+        },
+        "colors": {
+            "label": "Colors",
+            "primary": "Primary",
+            "secondary": "Secondary",
+            "accent": "Accent",
+            "background": "Background"
+        },
+        "overrideIntro": "Override intro",
+        "overrideOutro": "Override outro",
+        "overrideWatermark": "Override watermark",
+        "show": "Show",
+        "introPlaceholder": "<div>…intro HTML…</div>",
+        "outroPlaceholder": "<div>…outro HTML…</div>",
+        "watermarkPlaceholder": "<img src=\"https://…\" />",
+        "clearAll": "Clear all overrides"
+    },
+    "modelOverrides": {
+        "label": "AI model overrides",
+        "description": "Pick a model for the LLM stages of this run. Leave blank to use system defaults. Vision review and small utility prompts always use system defaults to protect quality and cost.",
+        "defaultModelLabel": "Default model",
+        "systemDefault": "Use system defaults",
+        "advancedToggle": "Customize per stage (advanced)",
+        "inheritsDefault": "Inherits default ({{model}})",
+        "inheritsSystemDefault": "Inherits system default"
+    },
+    "sheet": {
+        "triggerTitle": "Generation settings",
+        "triggerLabel": "Settings",
+        "title": "Generation settings",
+        "resetToDefaults": "Reset to defaults",
+        "resetTitle": "Reset all settings to defaults (prompt and attachments are kept)"
+    },
+    "lesson": {
+        "toggle": {
+            "label": "Lesson mode",
+            "helper": "Teach it like a class: lesson pacing, a teacher’s voice, and an optional teacher beside the board."
+        },
+        "teacher": {
+            "label": "Teacher on screen",
+            "loading": "Loading teachers…",
+            "none": "No teacher",
+            "noneHelper": "Board only — the lesson is narrated, no one on screen",
+            "stock": "Stock teacher",
+            "yours": "Your teacher",
+            "empty": "No teacher avatars yet. Add one under AI tutor settings (Teacher presence).",
+            "cost": "The teacher costs 8 credits per minute of video."
+        },
+        "layout": {
+            "label": "Teacher layout",
+            "options": {
+                "auto": "Auto — changes by section",
+                "presenter": "Presenter — right third, for intros",
+                "side": "Side panel — slim, right quarter",
+                "corner": "Corner — small cut-out, bottom right",
+                "bubble": "Bubble — round, bottom right",
+                "board": "Board only — teacher hidden"
+            },
+            "help": {
+                "auto": "Intro with the teacher large, explanations and recap beside the board, dense steps with the teacher in the corner.",
+                "presenter": "The teacher stands in a panel on the right third; the board shows a title and one key line.",
+                "side": "The board uses three quarters of the frame; the teacher stands in a slim panel on the right.",
+                "corner": "The board gets the whole frame; the teacher is a small cut-out in the bottom-right corner.",
+                "bubble": "The board gets the whole frame; the teacher appears in a round bubble in the bottom-right corner.",
+                "board": "No teacher on screen; the narration still sounds like a teacher."
+            }
+        },
+        "subject": {
+            "label": "Subject (optional)",
+            "placeholder": "e.g. Mathematics, Physics, Biology"
+        },
+        "workedExample": "Include a worked example",
+        "recap": "End with a recap",
+        "hostDisabled": "Lesson mode has its own teacher, so the on-screen host is off. Turn off Lesson mode on the Output tab to use a host."
+    }
+}

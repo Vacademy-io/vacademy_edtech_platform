@@ -7,6 +7,12 @@ public class StripeInvoiceEmailBody {
     /**
      * UPDATED: This template is now more visually appealing and fixes the formatting exception.
      * It correctly escapes '%' characters in CSS and includes a conditional receipt button.
+     *
+     * <p>The institute logo is sized on the {@code <img>} itself (width attribute + inline
+     * style), not only via the stylesheet: clients that drop {@code <head>} styles were
+     * rendering print-resolution logos at full size. The success mark is an inline-styled glyph
+     * rather than an image so the mail depends on no external URL. Keep V516's markup and this
+     * in step.
      */
     public static String getPaymentConfirmationEmailBody(
         String instituteName,
@@ -53,10 +59,9 @@ public class StripeInvoiceEmailBody {
                 body { height: 100%% !important; margin: 0 !important; padding: 0 !important; width: 100%% !important; background-color: #f6f8fc; font-family: 'Poppins', Arial, sans-serif; }
                 .container { max-width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 12px; overflow: hidden; box-shadow: 0 6px 24px rgba(0,0,0,0.07); }
                 .header { background: %s; color: #ffffff; padding: 20px; text-align: center; }
-                .header img.success-icon { width: 64px; height: 64px; margin-bottom: 15px; }
                 .header h1 { margin: 0; font-size: 32px; font-weight: 700; }
                 .logo-container { padding: 30px 0; text-align: center; border-bottom: 1px solid #dee2e6; }
-                .logo-container img { max-width: 140px; }
+                .logo-container img { max-width: 120px; height: auto; }
                 .content { padding: 40px 30px; font-size: 16px; line-height: 1.75; color: #555555; }
                 .content p { margin: 0 0 25px 0; }
                 .content p.greeting { font-size: 18px; font-weight: 600; color: #333; }
@@ -79,10 +84,10 @@ public class StripeInvoiceEmailBody {
                     <td align="center" style="padding: 40px 20px;">
                         <table role="presentation" class="container" cellspacing="0" cellpadding="0" border="0" width="600">
                             <tr><td class="header">
-                                <img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRbi1i-616xg-52ZV-8D5_B5pSg2IYd_Y1K-g&s" alt="Success" class="success-icon">
+                                <div style="display: inline-block; width: 64px; height: 64px; line-height: 64px; border-radius: 32px; background: #ffffff; color: %s; font-size: 36px; font-weight: 700; text-align: center; margin-bottom: 15px;">&#10003;</div>
                                 <h1>Payment Successful!</h1>
                             </td></tr>
-                            <tr><td class="logo-container"><img src="%s" alt="%s Logo"></td></tr>
+                            <tr><td class="logo-container"><img src="%s" alt="%s Logo" width="120" style="display: block; margin: 0 auto; width: 120px; height: auto;"></td></tr>
                             <tr><td class="content">
                                 <p class="greeting">Hi %s,</p>
                                 <p>Thank you for your payment to <strong>%s</strong>. We've received it successfully, and your receipt summary is below.</p>
@@ -99,7 +104,7 @@ public class StripeInvoiceEmailBody {
                                 <p>Thanks,<br>The %s Team</p>
                             </td></tr>
                             <tr><td class="footer">
-                                <p style="margin-top: 20px;">© 2025 %s. All rights reserved.<br>%s</p>
+                                <p style="margin-top: 20px;">© %s %s. All rights reserved.<br>%s</p>
                             </td></tr>
                         </table>
                     </td>
@@ -112,13 +117,14 @@ public class StripeInvoiceEmailBody {
             themeColor, // Header background
             themeColor, // Total amount color
             themeColor, // CTA button background
+            themeColor, // Success glyph colour (first %s in <body>)
             instituteLogoUrl, instituteName,
             userFullName, instituteName,
             currencySymbol, amountPaid,
             transactionId, paymentDate,
             buttonHtml, // Inject the button HTML here
             instituteName,
-            instituteName, instituteAddress
+            String.valueOf(java.time.Year.now().getValue()), instituteName, instituteAddress
         );
     }
 

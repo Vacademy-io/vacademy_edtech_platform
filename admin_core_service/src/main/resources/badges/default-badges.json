@@ -1,0 +1,11 @@
+{
+  "_comment": "The built-in six badges every institute gets until it customises its catalogue. MUST stay identical to DEFAULT_BADGE_CONFIG.badges in frontend-admin-dashboard/src/routes/settings/-constants/badge-config.ts and frontend-learner-dashboard-app/src/services/badge-config.ts (a vitest in the admin app asserts this). Used server-side to (a) accept these ids on /learner/v1/sync-unlocks when an institute has no stored badge list and (b) materialise them before the first catalogue append so adding a custom badge never hides the defaults.",
+  "badges": [
+    { "id": "first_course", "name": "First Steps", "description": "Enrol in your first course", "icon": "lib:first_steps-bronze", "trigger": "course_count", "threshold": 1, "enabled": true },
+    { "id": "streak_7", "name": "On Fire", "description": "Maintain a 7-day streak", "icon": "lib:streak-silver", "trigger": "streak", "threshold": 7, "enabled": true },
+    { "id": "streak_30", "name": "Unstoppable", "description": "Maintain a 30-day streak", "icon": "lib:streak-gold", "trigger": "streak", "threshold": 30, "enabled": true },
+    { "id": "perfect_score", "name": "Perfect Score", "description": "Score 100% on an assessment", "icon": "lib:xp_master-gold", "trigger": "assessment_score", "threshold": 100, "enabled": true },
+    { "id": "completionist", "name": "Completionist", "description": "Finish a course at 100%", "icon": "lib:completionist-gold", "trigger": "course_completion", "threshold": 100, "enabled": true },
+    { "id": "dedicated_learner", "name": "Dedicated Learner", "description": "Earn 1,000 XP total", "icon": "lib:xp_master-diamond", "trigger": "xp_total", "threshold": 1000, "enabled": true }
+  ]
+}

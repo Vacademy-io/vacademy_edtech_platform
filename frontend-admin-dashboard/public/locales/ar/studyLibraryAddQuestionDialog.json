@@ -1,0 +1,18 @@
+{
+    "autoTitle": "{{type}} سؤال {{index}}",
+    "questionWord": "سؤال",
+    "addSuccess": "تمت إضافة السؤال بنجاح!",
+    "addError": "فشلت إضافة السؤال",
+    "quickAccess": "وصول سريع",
+    "mcqSingleCorrect": "أسئلة اختيار من متعدد (إجابة واحدة صحيحة)",
+    "mcqMultipleCorrect": "أسئلة اختيار من متعدد (إجابات متعددة صحيحة)",
+    "numerical": "رقمي",
+    "trueFalse": "صح خطأ",
+    "writingSkills": "مهارات الكتابة",
+    "longAnswer": "إجابة طويلة",
+    "singleWord": "كلمة واحدة",
+    "readingSkills": "مهارات القراءة",
+    "comprehensionSingleCorrect": "استيعاب اختيار من متعدد (إجابة واحدة صحيحة)",
+    "comprehensionMultipleCorrect": "استيعاب اختيار من متعدد (إجابات متعددة صحيحة)",
+    "comprehensionNumeric": "استيعاب رقمي"
+}

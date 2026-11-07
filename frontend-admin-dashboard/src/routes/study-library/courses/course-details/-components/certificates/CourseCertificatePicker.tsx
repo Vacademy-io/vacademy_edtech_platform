@@ -1,4 +1,5 @@
 import { useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Check, Star } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import { useInstituteDetailsStore } from '@/stores/students/students-list/useInstituteDetailsStore';
@@ -55,6 +56,7 @@ export const useInstituteTemplates = (): {
 };
 
 export const CourseCertificatePicker = ({ value, onChange, disabled }: Props) => {
+    const { t } = useTranslation('studyLibraryCourseCertificatePicker');
     const { templates, defaultTemplateId } = useInstituteTemplates();
 
     // A course with its own uploaded HTML is on neither card; the upload block
@@ -63,7 +65,8 @@ export const CourseCertificatePicker = ({ value, onChange, disabled }: Props) =>
     const inheriting = !value.templateId && !value.templateHtml;
 
     const defaultName =
-        templates.find((t) => t.id === defaultTemplateId)?.name ?? 'the institute template';
+        templates.find((template) => template.id === defaultTemplateId)?.name ??
+        t('theInstituteTemplate');
 
     return (
         <div className="flex flex-col gap-3">
@@ -83,12 +86,12 @@ export const CourseCertificatePicker = ({ value, onChange, disabled }: Props) =>
                     <div className="flex aspect-[1123/794] w-full flex-col items-center justify-center gap-1 bg-neutral-50 px-2 text-center">
                         <Star size={20} weight="fill" className="text-amber-500" />
                         <span className="text-caption text-neutral-500">
-                            Whatever the institute default is
+                            {t('whateverTheInstituteDefaultIs')}
                         </span>
                     </div>
                     <div className="border-t px-2.5 py-2">
                         <div className="truncate text-caption font-semibold text-neutral-800">
-                            Institute default
+                            {t('instituteDefault')}
                         </div>
                         <div className="truncate text-caption text-neutral-500">{defaultName}</div>
                     </div>
@@ -125,7 +128,7 @@ export const CourseCertificatePicker = ({ value, onChange, disabled }: Props) =>
                                 {selected && (
                                     <span className="absolute right-1.5 top-1.5 flex items-center gap-1 rounded-full bg-primary-500 px-2 py-0.5 text-caption font-medium text-white">
                                         <Check size={10} weight="bold" />
-                                        In use
+                                        {t('inUse')}
                                     </span>
                                 )}
                             </div>
@@ -135,8 +138,8 @@ export const CourseCertificatePicker = ({ value, onChange, disabled }: Props) =>
                                 </div>
                                 <div className="truncate text-caption text-neutral-500">
                                     {template.id === defaultTemplateId
-                                        ? 'Institute default'
-                                        : 'Saved template'}
+                                        ? t('instituteDefault')
+                                        : t('savedTemplate')}
                                 </div>
                             </div>
                         </button>
@@ -145,16 +148,11 @@ export const CourseCertificatePicker = ({ value, onChange, disabled }: Props) =>
             </div>
 
             {templates.length === 0 && (
-                <p className="text-caption text-neutral-500">
-                    This institute has no saved certificate designs yet. Add them in Settings →
-                    Certificates and they will appear here for every course.
-                </p>
+                <p className="text-caption text-neutral-500">{t('noSavedDesignsYet')}</p>
             )}
 
             <p className="text-caption text-neutral-500">
-                {usingOwnUpload
-                    ? 'This course uses HTML uploaded below. Pick a saved design above to follow the institute template instead.'
-                    : 'Picking a saved design means this course follows it — edit that template in Settings and this course’s certificate changes with it.'}
+                {usingOwnUpload ? t('usingOwnUploadHint') : t('savedDesignFollowsHint')}
             </p>
         </div>
     );

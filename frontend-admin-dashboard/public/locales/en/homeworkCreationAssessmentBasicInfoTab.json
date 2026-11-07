@@ -1,0 +1,27 @@
+{
+    "fields": {
+        "homeworkName": {
+            "label": "Homework Name:"
+        },
+        "subject": {
+            "label": "Subject:"
+        },
+        "assessmentInstructions": {
+            "sectionTitle": "Assessment Instructions:"
+        },
+        "liveDateRange": {
+            "sectionTitle": "Live Date Range",
+            "startDateLabel": "Start Date and Time:",
+            "endDateLabel": "End Date and Time:"
+        },
+        "attemptSettings": {
+            "sectionTitle": "Attempt settings",
+            "reattemptCountLabel": "Homework Reattempt Count:",
+            "durationSettingsLabel": "Homework Duration Settings:",
+            "entireDurationLabel": "Entire Homework duration",
+            "minuteValue": "{{count}} min",
+            "previewLabel": "Homework Preview:",
+            "switchSectionsLabel": "Allow participants to switch between sections"
+        }
+    }
+}

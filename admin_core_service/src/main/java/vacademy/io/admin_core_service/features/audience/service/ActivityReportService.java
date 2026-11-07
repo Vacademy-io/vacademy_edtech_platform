@@ -65,6 +65,9 @@ public class ActivityReportService {
      * timeline. category = ACTIVITY excludes automated JOURNEY lifecycle events.
      * actor_id is the user who performed the action; rows with a null actor are
      * dropped (no counsellor to attribute).
+     * timeline_event has no institute_id column, so each row is tied to the
+     * institute through the lead it was written on: the response (via its
+     * audience), the lead profile, or for other types the student lead profile.
      */
     private static final String NOTES_SQL = """
             SELECT te.actor_id AS user_id,
@@ -76,6 +79,18 @@ public class ActivityReportService {
               AND te.created_at >= :fromUtc
               AND te.created_at < :toUtc
               AND (:scopeCsv IS NULL OR te.actor_id = ANY(STRING_TO_ARRAY(:scopeCsv, ',')))
+              AND (
+                    (te.type = 'AUDIENCE_RESPONSE' AND EXISTS (
+                        SELECT 1 FROM audience_response ar JOIN audience a ON a.id = ar.audience_id
+                        WHERE ar.id = te.type_id AND a.institute_id = :instituteId))
+                 OR (te.type = 'USER_LEAD_PROFILE' AND EXISTS (
+                        SELECT 1 FROM user_lead_profile ulp
+                        WHERE ulp.id = te.type_id AND ulp.institute_id = :instituteId))
+                 OR (te.type NOT IN ('AUDIENCE_RESPONSE', 'USER_LEAD_PROFILE')
+                     AND te.student_user_id IS NOT NULL AND EXISTS (
+                        SELECT 1 FROM user_lead_profile ulp
+                        WHERE ulp.user_id = te.student_user_id AND ulp.institute_id = :instituteId))
+              )
             GROUP BY te.actor_id, 2
             """;
 

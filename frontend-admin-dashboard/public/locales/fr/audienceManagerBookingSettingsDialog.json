@@ -1,0 +1,39 @@
+{
+    "dialog": {
+        "heading": "Paramètres de réservation"
+    },
+    "states": {
+        "loadError": "Impossible de charger les paramètres de réservation. Réessayez."
+    },
+    "empty": {
+        "description": "Activez les réservations pour « {{audienceName}} » — les prospects de cette liste obtiennent une page publique où ils peuvent choisir un créneau dans le calendrier de l'hôte.",
+        "defaultTitle": "Réunion {{audienceName}}"
+    },
+    "active": {
+        "linkLabel": "Lien de réservation public",
+        "statusActive": "Actif",
+        "statusInactive": "Inactif",
+        "linkPlaceholder": "Le lien sera disponible une fois la page dotée d'un slug",
+        "copy": "Copier",
+        "activate": "Activer",
+        "deactivate": "Désactiver",
+        "delete": "Supprimer"
+    },
+    "deleteDialog": {
+        "title": "Supprimer la page de réservation",
+        "description": "Voulez-vous vraiment supprimer la page de réservation pour « {{audienceName}} » ? Son lien public cessera de fonctionner. Cette action est irréversible.",
+        "cancel": "Annuler",
+        "deleting": "Suppression…",
+        "confirm": "Supprimer"
+    },
+    "toast": {
+        "copySuccess": "Lien de réservation copié",
+        "copyError": "Impossible de copier le lien",
+        "deactivateSuccess": "Page de réservation désactivée",
+        "activateSuccess": "Page de réservation activée",
+        "statusUpdateError": "Échec de la mise à jour du statut de la page de réservation",
+        "deleteSuccess": "Page de réservation supprimée",
+        "deleteError": "Échec de la suppression de la page de réservation",
+        "enableSuccess": "Les réservations sont désormais activées pour cette liste"
+    }
+}

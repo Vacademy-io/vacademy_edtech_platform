@@ -1,8 +1,12 @@
-import { ChatCircle, EnvelopeSimple } from '@phosphor-icons/react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
+import { EnvelopeSimple, Pulse, WhatsappLogo } from '@phosphor-icons/react';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
+import { MyButton } from '@/components/design-system/button';
+import {
+    EmptyChart,
+    SectionCard,
+} from '@/routes/study-library/live-session/-components/dashboard/dashboard-charts';
 import type { HubRecentItem } from '../../-services/hub-api';
 
 interface Props {
@@ -14,113 +18,104 @@ interface Props {
 }
 
 export function RecentActivity({ items, loading, hasMore, loadingMore, onLoadMore }: Props) {
+    const { t, i18n } = useTranslation('communicationRecentActivity');
+
     return (
-        <Card className="rounded-lg border-gray-200">
-            <CardHeader className="py-3">
-                <CardTitle className="text-base">Recent learner activity</CardTitle>
-                <p className="text-xs text-gray-400">
-                    Latest WhatsApp messages and email replies from your audience
-                </p>
-            </CardHeader>
-            <CardContent className="p-0">
-                {loading && items.length === 0 ? (
-                    <div className="p-4 space-y-2">
-                        {Array.from({ length: 4 }).map((_, i) => (
-                            <Skeleton key={i} className="h-14 rounded-md" />
-                        ))}
-                    </div>
-                ) : items.length === 0 ? (
-                    <div className="py-8 text-center text-sm text-gray-400">
-                        No incoming learner activity yet.
-                    </div>
-                ) : (
-                    <>
-                        <ul className="divide-y">
-                            {items.map((item) => (
-                                <li key={item.id} className="px-4 py-3 hover:bg-gray-50 transition">
-                                    <div className="flex items-start gap-3">
-                                        <ChannelIcon channel={item.channel} />
-                                        <div className="min-w-0 flex-1">
-                                            <div className="flex items-center gap-2">
-                                                <span className="text-sm font-medium text-gray-800 truncate">
-                                                    {item.fromName || item.from}
-                                                </span>
-                                                {item.fromName && (
-                                                    <span className="text-xs text-gray-400 truncate">
-                                                        {item.from}
-                                                    </span>
-                                                )}
-                                                <Badge
-                                                    variant="secondary"
-                                                    className="text-[10px] uppercase shrink-0"
-                                                >
-                                                    {item.channel}
-                                                </Badge>
-                                            </div>
-                                            <p className="text-xs text-gray-500 mt-0.5 truncate">
-                                                {item.preview || '—'}
-                                            </p>
+        <SectionCard title={t('title')} subtitle={t('subtitle')} icon={Pulse} className="h-full">
+            {loading && items.length === 0 ? (
+                <div className="space-y-2">
+                    {Array.from({ length: 4 }).map((_, i) => (
+                        <Skeleton key={i} className="h-14 rounded-md" />
+                    ))}
+                </div>
+            ) : items.length === 0 ? (
+                <EmptyChart text={t('emptyState')} className="h-32" />
+            ) : (
+                <>
+                    <ul className="-mx-1 divide-y divide-neutral-100">
+                        {items.map((item) => (
+                            <li
+                                key={item.id}
+                                className="rounded-lg px-1 py-2.5 transition hover:bg-neutral-50"
+                            >
+                                <div className="flex items-start gap-3">
+                                    <ChannelIcon channel={item.channel} />
+                                    <div className="min-w-0 flex-1">
+                                        <div className="flex items-center gap-2">
+                                            <span className="truncate text-sm font-semibold text-neutral-800">
+                                                {item.fromName || item.from}
+                                            </span>
+                                            <span className="shrink-0 rounded-full bg-neutral-100 px-2 py-0.5 text-caption font-medium uppercase text-neutral-600">
+                                                {item.channel}
+                                            </span>
                                         </div>
-                                        <span className="text-[11px] text-gray-400 whitespace-nowrap">
-                                            {formatTime(item.timestamp)}
-                                        </span>
+                                        {item.fromName && (
+                                            <p className="truncate text-caption text-neutral-400">
+                                                {item.from}
+                                            </p>
+                                        )}
+                                        <p className="mt-0.5 truncate text-xs text-neutral-500">
+                                            {item.preview || '—'}
+                                        </p>
                                     </div>
-                                </li>
-                            ))}
-                        </ul>
-                        {(hasMore || loadingMore) && (
-                            <div className="px-4 py-3 border-t flex justify-center">
-                                <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={onLoadMore}
-                                    disabled={loadingMore || !hasMore}
-                                    className="text-xs"
-                                >
-                                    {loadingMore ? 'Loading…' : 'Load more'}
-                                </Button>
-                            </div>
-                        )}
-                        {!hasMore && items.length > 0 && !loadingMore && (
-                            <p className="text-center text-[11px] text-muted-foreground py-3 border-t">
-                                No more activity
-                            </p>
-                        )}
-                    </>
-                )}
-            </CardContent>
-        </Card>
+                                    <span className="whitespace-nowrap text-caption text-neutral-400">
+                                        {formatTime(item.timestamp, t, i18n.language)}
+                                    </span>
+                                </div>
+                            </li>
+                        ))}
+                    </ul>
+                    {(hasMore || loadingMore) && (
+                        <div className="mt-2 flex justify-center border-t border-neutral-100 pt-3">
+                            <MyButton
+                                buttonType="secondary"
+                                scale="small"
+                                onClick={onLoadMore}
+                                disable={loadingMore || !hasMore}
+                            >
+                                {loadingMore ? t('loadingMore') : t('loadMore')}
+                            </MyButton>
+                        </div>
+                    )}
+                    {!hasMore && items.length > 0 && !loadingMore && (
+                        <p className="mt-2 border-t border-neutral-100 pt-3 text-center text-caption text-neutral-400">
+                            {t('noMoreActivity')}
+                        </p>
+                    )}
+                </>
+            )}
+        </SectionCard>
     );
 }
 
 function ChannelIcon({ channel }: { channel: HubRecentItem['channel'] }) {
     if (channel === 'EMAIL') {
         return (
-            <div className="size-8 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
+            <div className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-info-50 text-info-600">
                 <EnvelopeSimple size={16} />
             </div>
         );
     }
     return (
-        <div className="size-8 rounded-full bg-green-50 text-green-600 flex items-center justify-center shrink-0">
-            <ChatCircle size={16} />
+        <div className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-success-50 text-success-600">
+            <WhatsappLogo size={16} />
         </div>
     );
 }
 
-function formatTime(timestamp: string): string {
+function formatTime(timestamp: string, t: TFunction, locale: string): string {
     try {
         const d = new Date(timestamp);
         const now = new Date();
         const diffMs = now.getTime() - d.getTime();
         const diffMin = Math.floor(diffMs / 60000);
-        if (diffMin < 1) return 'now';
-        if (diffMin < 60) return `${diffMin}m`;
+        if (diffMin < 1) return t('time.now');
+        if (diffMin < 60) return t('time.minutes', { count: diffMin });
         const diffH = Math.floor(diffMin / 60);
-        if (diffH < 24) return `${diffH}h`;
+        if (diffH < 24) return t('time.hours', { count: diffH });
         const diffD = Math.floor(diffH / 24);
-        if (diffD < 7) return `${diffD}d`;
-        return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+        if (diffD < 7) return t('time.days', { count: diffD });
+        return d.toLocaleDateString(locale, { month: 'short', day: 'numeric' });
     } catch {
         return '';
     }

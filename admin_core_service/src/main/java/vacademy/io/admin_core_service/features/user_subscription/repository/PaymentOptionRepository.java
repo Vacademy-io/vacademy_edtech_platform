@@ -17,6 +17,11 @@ public interface PaymentOptionRepository extends JpaRepository<PaymentOption, St
     Optional<PaymentOption> findFirstBySourceAndSourceIdAndStatusOrderByCreatedAtDesc(
             String source, String sourceId, String status);
 
+    // Regional pricing (V585): options with the switch on. Derived queries, no SQL strings.
+    long countByRegionalPricingEnabledTrue();
+
+    List<PaymentOption> findByRegionalPricingEnabledTrue();
+
     /**
      * NOTE on parameter shape:
      * Postgres JDBC cannot infer the SQL type for a List parameter bound to NULL inside
@@ -24,6 +29,11 @@ public interface PaymentOptionRepository extends JpaRepository<PaymentOption, St
      * The fix is to always bind non-null lists and gate inclusion via boolean flags
      * (`:hasTypes`, `:hasExcludeTypes`, etc.). When a flag is false the OR short-circuits
      * and the IN clause never executes, so the sentinel list contents don't matter.
+     *
+     * The hidden_cpo clause leaves out system-built installment plans behind one-time
+     * prices (V575): they only carry a learner's chosen schedule and are never offered as
+     * a plan of their own. (No comments inside the SQL: an apostrophe there breaks
+     * Spring Data's query parsing at startup.)
      */
     @Query(value = """
     SELECT po.*
@@ -48,8 +58,18 @@ public interface PaymentOptionRepository extends JpaRepository<PaymentOption, St
           (:notRequireApproval = true AND po.require_approval = false) OR
           (:requireApproval = false AND :notRequireApproval = false)
       )
+      AND (CAST(:search AS text) IS NULL OR po.name ILIKE CONCAT('%', CAST(:search AS text), '%'))
+      AND (
+          po.complex_payment_option_id IS NULL
+          OR NOT EXISTS (
+              SELECT 1 FROM complex_payment_option hidden_cpo
+              WHERE hidden_cpo.id = po.complex_payment_option_id
+                AND hidden_cpo.source_payment_plan_id IS NOT NULL
+          )
+      )
     GROUP BY po.id, po.name, po.status, po.source, po.source_id, po.tag, po.type, po.require_approval, po.unit, po.complex_payment_option_id, po.created_at, po.updated_at
     ORDER BY po.created_at DESC, MAX(pp.created_at) DESC NULLS LAST
+    LIMIT CAST(:maxResults AS integer)
 """, nativeQuery = true)
     List<PaymentOption> findPaymentOptionsWithPaymentPlansNative(
             @Param("hasTypes") boolean hasTypes,
@@ -63,7 +83,11 @@ public interface PaymentOptionRepository extends JpaRepository<PaymentOption, St
             @Param("hasPaymentPlanStatuses") boolean hasPaymentPlanStatuses,
             @Param("paymentPlanStatuses") List<String> paymentPlanStatuses,
             @Param("requireApproval") boolean requireApproval,
-            @Param("notRequireApproval") boolean notRequireApproval
+            @Param("notRequireApproval") boolean notRequireApproval,
+            @Param("search") String search,
+            // Postgres reads LIMIT NULL as "no limit", which is what every caller
+            // that leaves this unset had before.
+            @Param("maxResults") Integer maxResults
     );
 
     @Query("""

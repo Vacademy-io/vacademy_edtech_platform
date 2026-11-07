@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import { Sparkle } from '@phosphor-icons/react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -59,6 +60,7 @@ const saveSettings = async (data: AssistantToolsSettingData): Promise<void> => {
 };
 
 export default function AssistantToolsSettings() {
+    const { t } = useTranslation('settingsAssistantTools');
     const queryClient = useQueryClient();
     const [settings, setSettings] = useState<AssistantToolsSettingData>(
         defaultAssistantToolsSetting
@@ -83,11 +85,11 @@ export default function AssistantToolsSettings() {
     const { mutate: save, isPending: saving } = useMutation({
         mutationFn: saveSettings,
         onSuccess: () => {
-            toast.success('Assistant settings saved');
+            toast.success(t('toasts.settingsSaved'));
             setHasChanges(false);
             queryClient.invalidateQueries({ queryKey: ['assistant-tools-settings'] });
         },
-        onError: () => toast.error('Failed to save assistant settings'),
+        onError: () => toast.error(t('toasts.saveFailed')),
     });
 
     // Non-learner roles: the system set + any custom roles (excluding learners).
@@ -140,7 +142,7 @@ export default function AssistantToolsSettings() {
             };
         });
         setHasChanges(true);
-        toast.info('Preset applied — click Save settings to confirm.');
+        toast.info(t('toasts.presetApplied'));
     };
 
     const toggleToolForRole = (role: string, key: string, on: boolean) => {
@@ -158,7 +160,7 @@ export default function AssistantToolsSettings() {
     };
 
     if (isLoading) {
-        return <div className="p-6 text-body text-neutral-500">Loading settings…</div>;
+        return <div className="p-6 text-body text-neutral-500">{t('loading')}</div>;
     }
 
     return (
@@ -167,22 +169,16 @@ export default function AssistantToolsSettings() {
                 <CardHeader>
                     <div className="flex items-center gap-2">
                         <Sparkle size={20} weight="fill" className="text-primary-500" />
-                        <CardTitle>Vacademy Assistant</CardTitle>
+                        <CardTitle>{t('header.title')}</CardTitle>
                     </div>
-                    <CardDescription>
-                        The in-app AI assistant for your team. Control which capabilities it can use
-                        for everyone, and grant extra capabilities to specific roles below. Access
-                        is always limited to this institute.
-                    </CardDescription>
+                    <CardDescription>{t('header.description')}</CardDescription>
                 </CardHeader>
             </Card>
 
             <Card>
                 <CardHeader>
-                    <CardTitle>Capabilities for everyone</CardTitle>
-                    <CardDescription>
-                        Enabled for every non-learner role in your institute.
-                    </CardDescription>
+                    <CardTitle>{t('capabilities.title')}</CardTitle>
+                    <CardDescription>{t('capabilities.description')}</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
                     {ASSISTANT_TOOL_CATALOG.map((tool) => (
@@ -197,10 +193,10 @@ export default function AssistantToolsSettings() {
                                     htmlFor={`tool-${tool.key}`}
                                     className="cursor-pointer text-body font-medium text-neutral-800"
                                 >
-                                    {tool.label}
+                                    {t(`tools.${tool.key}.label`)}
                                 </Label>
                                 <p className="mt-0.5 text-caption text-neutral-600">
-                                    {tool.description}
+                                    {t(`tools.${tool.key}.description`)}
                                 </p>
                             </div>
                         </div>
@@ -210,16 +206,13 @@ export default function AssistantToolsSettings() {
 
             <Card>
                 <CardHeader>
-                    <CardTitle>Per-role access (advanced)</CardTitle>
-                    <CardDescription>
-                        Grant extra capabilities to specific roles, on top of the institute-wide set
-                        above. Leave a role uncustomized to use the institute-wide settings.
-                    </CardDescription>
+                    <CardTitle>{t('perRole.title')}</CardTitle>
+                    <CardDescription>{t('perRole.description')}</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-3">
                     <div className="flex flex-wrap items-center gap-2 rounded-lg bg-neutral-50 p-3">
                         <span className="text-caption font-medium text-neutral-600">
-                            Suggested presets:
+                            {t('perRole.suggestedPresets')}
                         </span>
                         {ASSISTANT_ROLE_PRESETS.map((preset) => (
                             <MyButton
@@ -228,7 +221,7 @@ export default function AssistantToolsSettings() {
                                 scale="small"
                                 onClick={() => applyPreset(preset.role, preset.tools)}
                             >
-                                {preset.label}
+                                {t(`presets.${preset.role}`)}
                             </MyButton>
                         ))}
                     </div>
@@ -249,7 +242,7 @@ export default function AssistantToolsSettings() {
                                             onCheckedChange={(v) => toggleRoleCustomized(role, v)}
                                         />
                                         <span className="text-caption text-neutral-600">
-                                            Customize
+                                            {t('perRole.customize')}
                                         </span>
                                     </label>
                                 </div>
@@ -268,7 +261,7 @@ export default function AssistantToolsSettings() {
                                                     }
                                                 />
                                                 <span className="text-caption text-neutral-700">
-                                                    {tool.label}
+                                                    {t(`tools.${tool.key}.label`)}
                                                 </span>
                                             </label>
                                         ))}
@@ -287,7 +280,7 @@ export default function AssistantToolsSettings() {
                     onClick={() => save(settings)}
                     disable={saving || !hasChanges}
                 >
-                    {saving ? 'Saving…' : 'Save settings'}
+                    {saving ? t('footer.saving') : t('footer.save')}
                 </MyButton>
             </div>
         </div>

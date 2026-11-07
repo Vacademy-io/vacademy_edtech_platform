@@ -1,0 +1,32 @@
+{
+    "title": "إضافة خصم جديد",
+    "fields": {
+        "title": {
+            "label": "عنوان الخصم",
+            "placeholder": "أدخل عنوان الخصم"
+        },
+        "code": {
+            "label": "رمز الخصم",
+            "placeholder": "أدخل رمز الخصم"
+        },
+        "type": {
+            "label": "نوع الخصم",
+            "placeholder": "اختر النوع",
+            "options": {
+                "percent": "نسبة مئوية",
+                "rupees": "مبلغ بالروبية"
+            }
+        },
+        "value": {
+            "label": "قيمة الخصم",
+            "placeholderPercent": "أدخل النسبة المئوية (مثال 10)",
+            "placeholderRupees": "أدخل المبلغ (مثال 500)"
+        },
+        "expires": {
+            "label": "تاريخ الانتهاء"
+        }
+    },
+    "actions": {
+        "save": "حفظ"
+    }
+}

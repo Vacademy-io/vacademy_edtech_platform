@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { isYouTubeUrl, isVimeoUrl, getVimeoVideoId } from '../../-utils/helper';
 import { YouTubeVideoPlayer } from './youtube-video-player';
 
@@ -15,6 +16,7 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
   // size the container to match so portrait clips aren't cropped to a 16/9
   // box. Defaults to 16/9 until the metadata arrives so the layout doesn't
   // jump too aggressively.
+  const { t } = useTranslation("courseDetailsC");
   const [aspectRatio, setAspectRatio] = useState<number>(16 / 9);
 
   if (!src) {
@@ -39,7 +41,7 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
               className="w-full h-full rounded-md"
               allow="autoplay; fullscreen; picture-in-picture"
               allowFullScreen
-              title="Vimeo video player"
+              title={t("videoPlayer.vimeoTitle")}
             />
           </div>
         </div>
@@ -79,7 +81,7 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
             e.currentTarget.parentElement?.classList.add("bg-black");
           }}
         >
-          Your browser does not support the video tag.
+          {t("videoPlayer.unsupported")}
         </video>
       </div>
       {/* Video overlay gradient */}

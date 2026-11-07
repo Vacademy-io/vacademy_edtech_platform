@@ -1,0 +1,14 @@
+{
+    "menu": {
+        "provideReattempt": "Autoriser une nouvelle tentative",
+        "revaluate": "Réévaluer",
+        "questionWise": "Par question",
+        "entireAssessment": "Évaluation entière",
+        "releaseResult": "Publier le résultat"
+    },
+    "actionInfo": {
+        "selectedStudents_one": "{{count}} étudiant",
+        "selectedStudents_many": "{{count}} étudiants",
+        "selectedStudents_other": "{{count}} étudiants"
+    }
+}

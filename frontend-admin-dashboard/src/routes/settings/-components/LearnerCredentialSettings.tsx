@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
+import { useTranslation } from 'react-i18next';
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
@@ -37,6 +38,7 @@ function CredentialTemplateChannel({
     label: string;
     description: string;
 }) {
+    const { t } = useTranslation('settingsLearnerCredential');
     const queryClient = useQueryClient();
     const instituteId = getInstituteId() ?? '';
     const [selectedTemplate, setSelectedTemplate] = useState<MessageTemplate | null>(null);
@@ -66,11 +68,11 @@ function CredentialTemplateChannel({
                 ? setCredentialTemplateConfig(instituteId, channel, templateId)
                 : clearCredentialTemplateConfig(instituteId, channel),
         onSuccess: () => {
-            toast.success(`${label} updated`);
+            toast.success(t('toasts.updated', { label }));
             queryClient.invalidateQueries({ queryKey });
         },
         onError: () => {
-            toast.error(`Failed to update ${label.toLowerCase()}`);
+            toast.error(t('toasts.updateFailed', { label: label.toLowerCase() }));
         },
     });
 
@@ -84,14 +86,18 @@ function CredentialTemplateChannel({
             <Label>{label}</Label>
             <p className="text-caption text-neutral-500">{description}</p>
             {isLoading ? (
-                <div className="text-body text-neutral-500">Loading template selection…</div>
+                <div className="text-body text-neutral-500">{t('templateSelector.loading')}</div>
             ) : (
                 <TemplateSelector
                     templateType={channel}
                     selectedTemplate={selectedTemplate}
                     onTemplateSelect={handleTemplateSelect}
                     variant="dropdown"
-                    placeholder={`No template selected — ${channel === 'EMAIL' ? 'emails' : 'WhatsApp messages'} are skipped until one is chosen`}
+                    placeholder={t('templateSelector.placeholder', {
+                        channelNoun: t(
+                            channel === 'EMAIL' ? 'channelNoun.email' : 'channelNoun.whatsapp'
+                        ),
+                    })}
                 />
             )}
         </div>
@@ -99,27 +105,29 @@ function CredentialTemplateChannel({
 }
 
 export default function LearnerCredentialSettings() {
+    const { t } = useTranslation('settingsLearnerCredential');
+
     return (
         <Card>
             <CardHeader>
-                <CardTitle>Learner Credential Messages</CardTitle>
+                <CardTitle>{t('title')}</CardTitle>
                 <CardDescription>
-                    Choose the template used when an admin sends a learner their username and
-                    password. Templates can use <code>{'{{user_name}}'}</code>,{' '}
+                    {t('description.intro')} <code>{'{{user_name}}'}</code>,{' '}
                     <code>{'{{user_password}}'}</code>, <code>{'{{user_full_name}}'}</code>,{' '}
-                    <code>{'{{portal_url}}'}</code> and <code>{'{{institute_name}}'}</code>.
+                    <code>{'{{portal_url}}'}</code> {t('description.and')}{' '}
+                    <code>{'{{institute_name}}'}</code>.
                 </CardDescription>
             </CardHeader>
             <CardContent className="flex flex-col gap-6">
                 <CredentialTemplateChannel
                     channel="EMAIL"
-                    label="Credential Email Template"
-                    description="Sent from the Edit Credentials dialog when an admin picks Email."
+                    label={t('channels.email.label')}
+                    description={t('channels.email.description')}
                 />
                 <CredentialTemplateChannel
                     channel="WHATSAPP"
-                    label="Credential WhatsApp Template"
-                    description="Must be a template your WhatsApp provider has already approved — it is dispatched by name."
+                    label={t('channels.whatsapp.label')}
+                    description={t('channels.whatsapp.description')}
                 />
             </CardContent>
         </Card>

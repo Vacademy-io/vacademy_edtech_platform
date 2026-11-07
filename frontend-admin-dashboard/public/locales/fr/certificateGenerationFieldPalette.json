@@ -1,0 +1,36 @@
+{
+    "header": {
+        "title": "Champs disponibles",
+        "count_one": "{{count}} champ disponible",
+        "count_many": "{{count}} champ disponible",
+        "count_other": "{{count}} champs disponibles"
+    },
+    "instructions": {
+        "label": "Instructions :",
+        "text": "Faites glisser des champs de ce panneau vers le modèle PDF pour les positionner à l'endroit où vous voulez que les données apparaissent sur le certificat."
+    },
+    "sections": {
+        "systemFields": "Champs système",
+        "csvFields": "Champs de données CSV",
+        "fieldCount": "({{count}})"
+    },
+    "noCsvFields": {
+        "title": "Aucun champ CSV disponible",
+        "description": "Importez un fichier CSV à l'étape 1 pour voir des champs supplémentaires à mapper"
+    },
+    "legend": {
+        "title": "Types de champs",
+        "systemFields": "Champs système - Données intégrées de l'élève",
+        "csvFields": "Champs CSV - Données personnalisées du fichier importé"
+    },
+    "fields": {
+        "userId": { "label": "ID utilisateur", "sample": "USR001" },
+        "enrollmentNumber": { "label": "Numéro d'inscription", "sample": "ENR2024001" },
+        "studentName": { "label": "Nom de l'élève", "sample": "Jean Dupont" },
+        "fullName": { "label": "Nom complet", "sample": "Jean Michel Dupont" },
+        "email": { "label": "Adresse e-mail", "sample": "john.doe@example.com" },
+        "mobileNumber": { "label": "Numéro de mobile", "sample": "+1 (555) 123-4567" },
+        "instituteName": { "label": "Nom de l'établissement", "sample": "Université de Technologie" },
+        "completionDate": { "label": "Date d'achèvement" }
+    }
+}

@@ -280,6 +280,20 @@ public class DynamicNotificationService {
                 }
             }
 
+            // Alias: credential sends supply the password only as user_password/userPassword, but
+            // admins write {{password}} (and {{username}}) by hand — the template editor offers
+            // {{email}}, which notification-service aliases, yet nothing aliased the password, so
+            // it was scrubbed to blank. A send carrying a password is a credentials send, where
+            // userName is always the login handle, so {{username}} is safe to alias alongside it.
+            String password = variables.get("user_password");
+            if (org.springframework.util.StringUtils.hasText(password)) {
+                variables.putIfAbsent("password", password);
+                String loginName = variables.get("user_name");
+                if (org.springframework.util.StringUtils.hasText(loginName)) {
+                    variables.putIfAbsent("username", loginName);
+                }
+            }
+
             String channel;
             UnifiedSendRequest.SendOptions.SendOptionsBuilder optsBuilder = UnifiedSendRequest.SendOptions.builder()
                     .source("event:" + config.getEventName())

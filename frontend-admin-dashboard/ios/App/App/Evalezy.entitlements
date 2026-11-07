@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<!-- Universal Links for the Evalezy target (io.evalezy.app): https://evalezy.vacademy.io/...
+	     opens the app. Verified against /.well-known/apple-app-site-association served by the
+	     admin web build. Set as CODE_SIGN_ENTITLEMENTS on the Evalezy target only. -->
+	<key>com.apple.developer.associated-domains</key>
+	<array>
+		<string>applinks:evalezy.vacademy.io</string>
+	</array>
+</dict>
+</plist>

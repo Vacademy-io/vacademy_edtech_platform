@@ -1,0 +1,47 @@
+{
+    "header": {
+        "title": "Tri automatique par thème",
+        "subtitle": "Déposez un sujet d'examen. Nous regrouperons automatiquement les questions par thème pour que vous puissiez les réutiliser."
+    },
+    "prompt": {
+        "label": "Des thèmes précis en tête ?",
+        "optional": "(facultatif)",
+        "placeholder": "ex. concentrez-vous sur la photosynthèse, la respiration et la nutrition des plantes",
+        "hint": "Laissez vide et nous déterminerons les thèmes nous-mêmes."
+    },
+    "upload": {
+        "dropTitle": "Déposez votre fichier ici, ou cliquez pour le choisir",
+        "dropSubtitle": "Fichier PDF, Word ou PowerPoint contenant des questions.",
+        "removeAriaLabel": "Supprimer le fichier",
+        "statusUploading": "Envoi en cours…",
+        "statusProcessing": "Lecture en cours…",
+        "statusReady": "Prêt à trier",
+        "statusGenerating": "Tri en cours…",
+        "statusDone": "Terminé",
+        "workingUploading": "Lecture de votre fichier…",
+        "workingProcessing": "Préparation de votre document…",
+        "workingGenerating": "Regroupement des questions par thème — généralement environ 30 secondes."
+    },
+    "generate": {
+        "ctaLabel": "Trier et créer le brouillon",
+        "doneHeading": "Vsmart Sorter",
+        "generatingTitle": "Regroupement des questions par thème",
+        "generatingSubtitle": "Lecture du sujet et organisation par thème. Environ 30 secondes en général."
+    },
+    "recentFiles": {
+        "title": "Vos tris récents",
+        "fallbackLabel": "Ensemble de questions triées",
+        "emptyHint": "Vos ensembles de questions triées apparaîtront ici. Déposez un fichier ci-dessus pour commencer."
+    },
+    "tasksList": {
+        "heading": "Vsmart Sorter"
+    },
+    "errors": {
+        "unsupportedFormat": "Nous ne pouvons pas lire les fichiers .{{ext}}. Essayez PDF, Word ou PowerPoint.",
+        "uploadIncomplete": "L'envoi ne s'est pas terminé. Voulez-vous réessayer ?",
+        "readFailed": "Nous n'avons pas pu lire ce fichier. Essayer un autre fichier ?",
+        "genericFailure": "Un problème est survenu lors de la lecture de votre fichier. Réessayer ?",
+        "taskFailed": "Nous n'avons pas pu terminer ce tri. Voulez-vous réessayer ?",
+        "sortFailed": "Nous n'avons pas pu trier ce fichier. Essayer un autre fichier ?"
+    }
+}

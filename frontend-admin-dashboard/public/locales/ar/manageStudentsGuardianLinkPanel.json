@@ -1,0 +1,26 @@
+{
+    "validation": {
+        "nameRequired": "الاسم مطلوب",
+        "invalidEmail": "أدخل بريدًا إلكترونيًا صالحًا"
+    },
+    "tabs": {
+        "addPerson": "إضافة {{person}}",
+        "linkExistingPerson": "ربط {{person}} موجود"
+    },
+    "form": {
+        "fullNameLabel": "الاسم الكامل",
+        "fullNamePlaceholder": "الاسم الكامل لـ {{person}}",
+        "emailLabel": "البريد الإلكتروني",
+        "emailPlaceholder": "name@example.com",
+        "mobileLabel": "الجوال (اختياري)",
+        "mobilePlaceholder": "9876543210"
+    },
+    "existing": {
+        "changeTitle": "تغيير",
+        "searchPlaceholder": "ابحث عن {{person}} بالاسم أو البريد الإلكتروني…",
+        "searching": "جارٍ البحث…",
+        "select": "+ اختيار",
+        "noResults": "لم يتم العثور على {{person}} مطابق لـ \"{{query}}\"",
+        "minChars": "اكتب حرفين على الأقل للبحث"
+    }
+}

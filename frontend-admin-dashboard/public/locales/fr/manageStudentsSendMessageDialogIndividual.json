@@ -1,0 +1,40 @@
+{
+    "dialogTitle": "Envoyer un message WhatsApp",
+    "cancel": "Annuler",
+    "sending": "Envoi en cours...",
+    "sendButton": "Envoyer le message",
+    "sendMessageNotice": "Envoyer un message à",
+    "templateLabel": "Modèle de message",
+    "selectTemplatePlaceholder": "Sélectionnez un modèle",
+    "previewLabel": "Aperçu :",
+    "sendingNotice": "Envoi du message à {{name}}...",
+    "sentNotice": "✓ Message envoyé avec succès à {{name}}",
+    "failedNotice": "✗ Échec de l'envoi du message à {{name}}",
+    "defaultCustomMessage": "Veuillez consulter votre tableau de bord pour les mises à jour.",
+    "toasts": {
+        "noTemplateOrStudent": "Aucun modèle sélectionné ou étudiant non disponible.",
+        "templateNotFound": "Modèle sélectionné introuvable.",
+        "sending": "Envoi du message en cours...",
+        "sent": "Message envoyé avec succès !",
+        "failed": "Échec de l'envoi du message : {{error}}",
+        "unknownError": "Une erreur inconnue s'est produite"
+    },
+    "templates": {
+        "welcome": {
+            "name": "Message de bienvenue",
+            "content": "Bonjour {{name}} ! Bienvenue sur notre plateforme d'apprentissage."
+        },
+        "sessionReminder": {
+            "name": "Rappel de session",
+            "content": "Bonjour {{name}}, ceci est un rappel concernant votre prochaine session."
+        },
+        "assignmentDue": {
+            "name": "Devoir à rendre",
+            "content": "Bonjour {{name}}, votre devoir arrive bientôt à échéance. Merci de le terminer à temps."
+        },
+        "custom": {
+            "name": "Message personnalisé",
+            "content": "Bonjour {{name}}, {{custom_message_text}}"
+        }
+    }
+}

@@ -1,0 +1,32 @@
+{
+    "title": {
+        "apiError": "Erreur de téléversement",
+        "validationError": "Erreurs de validation"
+    },
+    "apiError": {
+        "heading": "Échec du téléversement pour cette entrée",
+        "sqlStatementLabel": "Instruction SQL :",
+        "unknownError": "Erreur inconnue",
+        "unknownUploadError": "Une erreur inconnue s'est produite pendant le téléversement.",
+        "rowDataHeading": "Données de la ligne",
+        "table": {
+            "field": "Champ",
+            "value": "Valeur"
+        }
+    },
+    "validationErrors": {
+        "table": {
+            "position": "Position",
+            "error": "Erreur",
+            "resolution": "Résolution",
+            "currentValue": "Valeur actuelle"
+        },
+        "rowPosition": "À la ligne {{row}} de {{field}}"
+    },
+    "common": {
+        "notAvailable": "N/A"
+    },
+    "buttons": {
+        "close": "Fermer"
+    }
+}

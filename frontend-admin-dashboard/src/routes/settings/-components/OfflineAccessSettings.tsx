@@ -4,6 +4,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
+import { useTranslation } from 'react-i18next';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Switch } from '@/components/ui/switch';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
@@ -31,6 +32,7 @@ type OfflineAccessFormValues = z.infer<typeof offlineAccessSchema>;
  * check-in flow and the resolver's `enabled=false` global kill switch.
  */
 export default function OfflineAccessSettings() {
+    const { t } = useTranslation('settingsOfflineAccess');
     const queryClient = useQueryClient();
 
     const { data, isLoading } = useQuery({
@@ -52,10 +54,10 @@ export default function OfflineAccessSettings() {
     const { mutate: save, isPending: saving } = useMutation({
         mutationFn: (values: OfflineAccessFormValues) => saveOfflineAccessSettings(values),
         onSuccess: () => {
-            toast.success('Offline access settings saved');
+            toast.success(t('toasts.saveSuccess'));
             queryClient.invalidateQueries({ queryKey: ['offline-access-settings'] });
         },
-        onError: () => toast.error('Failed to save offline access settings'),
+        onError: () => toast.error(t('toasts.saveError')),
     });
 
     const enabled = form.watch('enabled');
@@ -65,7 +67,7 @@ export default function OfflineAccessSettings() {
             <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                     <CloudArrowDown className="size-5 text-primary-500" />
-                    Offline Access
+                    {t('title')}
                 </CardTitle>
             </CardHeader>
             <CardContent>
@@ -80,13 +82,9 @@ export default function OfflineAccessSettings() {
                             render={({ field }) => (
                                 <FormItem className="flex items-center justify-between gap-4 rounded-md border border-border p-3">
                                     <div className="space-y-0.5">
-                                        <FormLabel>Allow offline downloads institute-wide</FormLabel>
+                                        <FormLabel>{t('enabled.label')}</FormLabel>
                                         <p className="text-caption text-neutral-500">
-                                            Master switch. Off zeroes out every course/batch/node
-                                            offline permission, regardless of their own settings,
-                                            and hides the course Downloads tab for every role
-                                            (each role keeps its own Downloads toggle in Display
-                                            Settings for when this is back on).
+                                            {t('enabled.hint')}
                                         </p>
                                     </div>
                                     <FormControl>
@@ -106,7 +104,7 @@ export default function OfflineAccessSettings() {
                                 name="revalidationDays"
                                 render={({ field }) => (
                                     <FormItem>
-                                        <FormLabel>Re-validation lease (days)</FormLabel>
+                                        <FormLabel>{t('revalidationDays.label')}</FormLabel>
                                         <FormControl>
                                             <MyInput
                                                 inputType="number"
@@ -118,8 +116,7 @@ export default function OfflineAccessSettings() {
                                             />
                                         </FormControl>
                                         <p className="text-caption text-neutral-500">
-                                            An offline device must check in online within this many
-                                            days (1–90) or its downloaded content locks.
+                                            {t('revalidationDays.hint')}
                                         </p>
                                         <FormMessage />
                                     </FormItem>
@@ -131,7 +128,7 @@ export default function OfflineAccessSettings() {
                                 name="maxDevices"
                                 render={({ field }) => (
                                     <FormItem>
-                                        <FormLabel>Max offline devices per learner</FormLabel>
+                                        <FormLabel>{t('maxDevices.label')}</FormLabel>
                                         <FormControl>
                                             <MyInput
                                                 inputType="number"
@@ -143,8 +140,7 @@ export default function OfflineAccessSettings() {
                                             />
                                         </FormControl>
                                         <p className="text-caption text-neutral-500">
-                                            Concurrent registered offline devices (1–10) before
-                                            registration is blocked with DEVICE_LIMIT_REACHED.
+                                            {t('maxDevices.hint')}
                                         </p>
                                         <FormMessage />
                                     </FormItem>
@@ -158,7 +154,7 @@ export default function OfflineAccessSettings() {
                                 disabled={isLoading || saving || !form.formState.isDirty}
                                 className="bg-primary-500"
                             >
-                                {saving ? 'Saving…' : 'Save'}
+                                {saving ? t('saving') : t('save')}
                             </MyButton>
                         </div>
                     </form>

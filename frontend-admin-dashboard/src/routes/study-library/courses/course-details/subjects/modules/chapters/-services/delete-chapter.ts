@@ -2,6 +2,7 @@ import { DELETE_CHAPTER } from '@/constants/urls';
 import authenticatedAxiosInstance from '@/lib/auth/axiosInstance';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
+import i18next from 'i18next';
 
 export const useDeleteChapter = () => {
     const queryClient = useQueryClient();
@@ -22,11 +23,11 @@ export const useDeleteChapter = () => {
                     `${DELETE_CHAPTER}?moduleId=${moduleId}&subjectId=${subjectId}&packageSessionIds=${packageSessionIds}`,
                     chapterIds
                 );
-                toast.success('Chapter deleted successfully');
+                toast.success(i18next.t('studyLibraryDeleteChapter:deleteSuccess'));
                 return response.data;
             } catch (error) {
-                toast.error('Failed to delete chapter');
-                throw new Error('Failed to delete chapter');
+                toast.error(i18next.t('studyLibraryDeleteChapter:deleteFailed'));
+                throw new Error(i18next.t('studyLibraryDeleteChapter:deleteFailed'));
             }
         },
         onSuccess: () => {

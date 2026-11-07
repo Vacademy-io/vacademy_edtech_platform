@@ -1,0 +1,67 @@
+{
+    "header": {
+        "title": "Base de connaissances",
+        "description": "Ajoutez des connaissances propres à votre établissement pour le chatbot IA (événements, règlements, FAQ, etc.)",
+        "itemCount_one": "{{count}} élément",
+        "itemCount_many": "{{count}} éléments",
+        "itemCount_other": "{{count}} éléments"
+    },
+    "toolbar": {
+        "searchPlaceholder": "Rechercher des éléments...",
+        "allCategories": "Toutes les catégories",
+        "addButton": "Ajouter une connaissance"
+    },
+    "list": {
+        "emptyNoItems": "Aucun élément de connaissance pour le moment. Ajoutez votre premier élément pour rendre le chatbot plus intelligent.",
+        "emptyNoMatch": "Aucun élément ne correspond à votre recherche.",
+        "inactiveBadge": "Inactif"
+    },
+    "categories": {
+        "event": "Événement",
+        "policy": "Règlement",
+        "process": "Procédure",
+        "faq": "FAQ",
+        "announcement": "Annonce",
+        "result": "Résultat",
+        "general": "Général"
+    },
+    "form": {
+        "editTitle": "Modifier l'élément de connaissance",
+        "addTitle": "Ajouter un élément de connaissance",
+        "editDescription": "Mettez à jour cet élément de connaissance. Les modifications seront reflétées dans les réponses du chatbot.",
+        "addDescription": "Ajoutez un nouvel élément de connaissance que le chatbot IA pourra référencer pendant les conversations.",
+        "titleLabel": "Titre",
+        "titlePlaceholder": "p. ex., Journée sportive annuelle 2026",
+        "categoryLabel": "Catégorie",
+        "contentLabel": "Contenu",
+        "contentPlaceholder": "Saisissez le contenu de connaissance que le chatbot IA doit connaître...",
+        "contentHint": "Ce texte sera intégré et recherché par le chatbot IA pendant les conversations.",
+        "tagsLabel": "Tags",
+        "tagsPlaceholder": "p. ex., sport, annuel, 2026 (séparés par des virgules)",
+        "tagsHint": "Tags séparés par des virgules pour aider à catégoriser et retrouver cet élément.",
+        "cancel": "Annuler",
+        "saving": "Enregistrement...",
+        "updateItem": "Mettre à jour l'élément",
+        "addItem": "Ajouter l'élément"
+    },
+    "deleteDialog": {
+        "title": "Supprimer l'élément de connaissance",
+        "description": "Voulez-vous vraiment supprimer cet élément de connaissance ? Cette action est irréversible et le chatbot n'aura plus accès à cette information.",
+        "cancel": "Annuler",
+        "deleting": "Suppression...",
+        "confirm": "Supprimer"
+    },
+    "toasts": {
+        "loadFailed": "Échec du chargement des éléments de la base de connaissances",
+        "titleRequired": "Le titre est requis",
+        "contentRequired": "Le contenu est requis",
+        "itemUpdated": "Élément de connaissance mis à jour",
+        "itemCreated": "Élément de connaissance créé",
+        "saveFailed": "Échec de l'enregistrement de l'élément de connaissance",
+        "itemActivated": "Élément activé",
+        "itemDeactivated": "Élément désactivé",
+        "toggleFailed": "Échec de la mise à jour du statut de l'élément",
+        "itemDeleted": "Élément de connaissance supprimé",
+        "deleteFailed": "Échec de la suppression de l'élément de connaissance"
+    }
+}

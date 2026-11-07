@@ -1,0 +1,37 @@
+{
+    "empty": {
+        "noData": "Aucune donnée de cas de test enregistrée pour cette soumission."
+    },
+    "verdict": {
+        "accepted": "Accepté",
+        "partial": "Partiel",
+        "rejected": "Rejeté",
+        "error": "Erreur",
+        "timedOut": "Délai dépassé"
+    },
+    "score": {
+        "points": "{{score}} pts"
+    },
+    "pasteAttempts_one": "{{count}} tentative de collage",
+    "pasteAttempts_many": "{{count}} tentative de collage",
+    "pasteAttempts_other": "{{count}} tentatives de collage",
+    "testCases": {
+        "passedLabel": "Cas de test réussis :",
+        "gradedSuffixHidden": "masqués",
+        "gradedSuffixSample": "exemple",
+        "sampleBreakdown": "Exemple {{passed}}/{{total}}",
+        "hiddenTag": "(masqué)",
+        "fallbackLabel": "Test {{number}}"
+    },
+    "runtime": {
+        "timeLabel": "Temps :",
+        "memoryLabel": "Mémoire :",
+        "timeValue": "{{value}} ms",
+        "memoryValue": "{{value}} Ko",
+        "timeAllowed": "/ {{value}} ms autorisées",
+        "memoryAllowed": "/ {{value}} Ko autorisés"
+    },
+    "sourceCode": {
+        "toggleLabel": "Afficher le code source soumis"
+    }
+}

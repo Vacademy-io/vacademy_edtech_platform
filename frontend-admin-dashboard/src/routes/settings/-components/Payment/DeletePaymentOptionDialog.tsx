@@ -12,7 +12,7 @@ import {
 } from '@/components/ui/select';
 import { Card } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { AlertTriangle, Loader2 } from 'lucide-react';
+import { Warning, CircleNotch } from '@phosphor-icons/react';
 import { PaymentPlan } from '@/types/payment';
 import {
     getInvitesByPaymentOptionId,
@@ -23,6 +23,7 @@ import {
 import { toast } from 'sonner';
 import { InviteLinkDataInterface } from '@/schemas/study-library/invite-links-schema';
 import { MyButton } from '@/components/design-system/button';
+import { useTranslation } from 'react-i18next';
 
 interface DeletePaymentOptionDialogProps {
     isOpen: boolean;
@@ -47,6 +48,7 @@ export const DeletePaymentOptionDialog: React.FC<DeletePaymentOptionDialogProps>
     allPaymentOptions,
     onDeleted,
 }) => {
+    const { t } = useTranslation('settingsDeletePaymentOption');
     const [step, setStep] = useState<'loading' | 'select' | 'confirm'>('loading');
     const [linkedInvites, setLinkedInvites] = useState<InviteLinkDataInterface[]>([]);
     const [inviteUpdates, setInviteUpdates] = useState<InvitePaymentUpdate[]>([]);
@@ -79,7 +81,7 @@ export const DeletePaymentOptionDialog: React.FC<DeletePaymentOptionDialogProps>
             setStep(invites.length > 0 ? 'select' : 'confirm');
         } catch (error) {
             console.error('Error loading invites:', error);
-            toast.error('Failed to load linked invites');
+            toast.error(t('toasts.loadInvitesFailed'));
             setStep('confirm');
         } finally {
             setIsLoadingInvites(false);
@@ -106,7 +108,7 @@ export const DeletePaymentOptionDialog: React.FC<DeletePaymentOptionDialogProps>
     const handleUpdateInvite = async (inviteId: string) => {
         const update = inviteUpdates.find((u) => u.inviteId === inviteId);
         if (!update || !update.selectedPaymentOptionId) {
-            toast.error('Please select a payment option');
+            toast.error(t('toasts.selectPaymentOption'));
             return;
         }
 
@@ -120,13 +122,13 @@ export const DeletePaymentOptionDialog: React.FC<DeletePaymentOptionDialogProps>
             );
 
             if (!selectedPaymentOption) {
-                throw new Error('Selected payment option not found');
+                throw new Error(t('toasts.paymentOptionNotFound'));
             }
 
             const linkedInvite = linkedInvites.find((inv) => inv.id === inviteId);
 
             if (!linkedInvite) {
-                throw new Error(`Invite with ID ${inviteId} not found in linked invites`);
+                throw new Error(t('toasts.inviteNotFound', { id: inviteId }));
             }
 
             // Build the update request based on the API structure
@@ -173,10 +175,11 @@ export const DeletePaymentOptionDialog: React.FC<DeletePaymentOptionDialogProps>
                 )
             );
 
-            toast.success('Invite payment option updated successfully');
+            toast.success(t('toasts.updateSuccess'));
         } catch (error) {
             console.error('Error updating invite:', error);
-            const errorMessage = error instanceof Error ? error.message : 'Failed to update invite';
+            const errorMessage =
+                error instanceof Error ? error.message : t('toasts.updateFailed');
             setInviteUpdates((prev) =>
                 prev.map((u) =>
                     u.inviteId === inviteId
@@ -197,25 +200,25 @@ export const DeletePaymentOptionDialog: React.FC<DeletePaymentOptionDialogProps>
         if (linkedInvites.length > 0) {
             const allUpdated = inviteUpdates.every((u) => u.status === 'completed');
             if (!allUpdated) {
-                toast.error('Please update all linked invites before deleting');
+                toast.error(t('toasts.updateAllRequired'));
                 return;
             }
         }
 
         if (deleteConfirmText.toLowerCase() !== 'delete') {
-            toast.error('Please type "delete" to confirm');
+            toast.error(t('toasts.confirmTextRequired'));
             return;
         }
 
         setIsDeleting(true);
         try {
             await deletePaymentOption([paymentOption.id]);
-            toast.success('Payment option deleted successfully');
+            toast.success(t('toasts.deleteSuccess'));
             onDeleted();
             handleClose();
         } catch (error) {
             console.error('Error deleting payment option:', error);
-            toast.error('Failed to delete payment option');
+            toast.error(t('toasts.deleteFailed'));
         } finally {
             setIsDeleting(false);
         }
@@ -230,7 +233,7 @@ export const DeletePaymentOptionDialog: React.FC<DeletePaymentOptionDialogProps>
     };
 
     const getPaymentOptionName = (id: string) => {
-        return allPaymentOptions.find((opt) => opt.id === id)?.name || 'Unknown';
+        return allPaymentOptions.find((opt) => opt.id === id)?.name || t('unknownPaymentOption');
     };
 
     const completedCount = inviteUpdates.filter((u) => u.status === 'completed').length;
@@ -243,8 +246,8 @@ export const DeletePaymentOptionDialog: React.FC<DeletePaymentOptionDialogProps>
             <DialogContent className=" min-w-fit space-y-0 overflow-y-auto ">
                 <DialogHeader>
                     <DialogTitle className="flex items-center gap-2">
-                        <AlertTriangle className="size-5 text-red-600" />
-                        Delete Payment Option - {paymentOption.name}
+                        <Warning className="size-5 text-red-600" />
+                        {t('dialog.title', { name: paymentOption.name })}
                     </DialogTitle>
                 </DialogHeader>
 
@@ -253,14 +256,16 @@ export const DeletePaymentOptionDialog: React.FC<DeletePaymentOptionDialogProps>
                     {step === 'loading' && (
                         <div className="space-y-4 py-2">
                             <div className="flex flex-col items-center justify-center space-y-4">
-                                <Loader2 className="size-8 animate-spin text-primary-400" />
-                                <p className="text-sm text-gray-600">Checking linked invites...</p>
+                                <CircleNotch className="size-8 animate-spin text-primary-400" />
+                                <p className="text-sm text-gray-600">{t('loading.checking')}</p>
                                 <Button
                                     onClick={loadLinkedInvites}
                                     disabled={isLoadingInvites}
                                     className="mt-4"
                                 >
-                                    {isLoadingInvites ? 'Loading...' : 'Load Linked Invites'}
+                                    {isLoadingInvites
+                                        ? t('loading.loadingButton')
+                                        : t('loading.loadButton')}
                                 </Button>
                             </div>
                         </div>
@@ -270,16 +275,17 @@ export const DeletePaymentOptionDialog: React.FC<DeletePaymentOptionDialogProps>
                     {step === 'select' && linkedInvites.length > 0 && (
                         <div className="space-y-4 py-2">
                             <Alert>
-                                <AlertTriangle className="size-4" />
+                                <Warning className="size-4" />
                                 <AlertDescription>
-                                    This payment option is linked to {linkedInvites.length}{' '}
-                                    {`invite(s). Please assign a different payment option to each
-                                    invite first.`}
+                                    {t('select.alert', { count: linkedInvites.length })}
                                 </AlertDescription>
                             </Alert>
 
                             <div className="text-sm font-medium text-gray-700">
-                                Progress: {completedCount} of {totalInvites} completed
+                                {t('select.progress', {
+                                    completed: completedCount,
+                                    total: totalInvites,
+                                })}
                             </div>
 
                             <div className="max-h-96 space-y-3 overflow-y-auto">
@@ -311,19 +317,19 @@ export const DeletePaymentOptionDialog: React.FC<DeletePaymentOptionDialogProps>
                                                         }`}
                                                     >
                                                         {update.status === 'completed'
-                                                            ? 'Updated'
+                                                            ? t('select.status.updated')
                                                             : update.status === 'failed'
-                                                              ? 'Failed'
+                                                              ? t('select.status.failed')
                                                               : update.status === 'updating'
-                                                                ? 'Updating...'
-                                                                : 'Pending'}
+                                                                ? t('select.status.updating')
+                                                                : t('select.status.pending')}
                                                     </span>
                                                 </div>
 
                                                 {update.status !== 'completed' && (
                                                     <div className="space-y-2">
                                                         <Label className="text-sm">
-                                                            Select New Payment Option
+                                                            {t('select.selectLabel')}
                                                         </Label>
                                                         <Select
                                                             value={update.selectedPaymentOptionId}
@@ -336,7 +342,11 @@ export const DeletePaymentOptionDialog: React.FC<DeletePaymentOptionDialogProps>
                                                             disabled={update.status === 'updating'}
                                                         >
                                                             <SelectTrigger>
-                                                                <SelectValue placeholder="Select payment option" />
+                                                                <SelectValue
+                                                                    placeholder={t(
+                                                                        'select.selectPlaceholder'
+                                                                    )}
+                                                                />
                                                             </SelectTrigger>
                                                             <SelectContent>
                                                                 {availablePaymentOptions.map(
@@ -366,11 +376,11 @@ export const DeletePaymentOptionDialog: React.FC<DeletePaymentOptionDialogProps>
                                                         >
                                                             {update.status === 'updating' ? (
                                                                 <>
-                                                                    <Loader2 className="mr-2 size-4 animate-spin" />
-                                                                    Updating...
+                                                                    <CircleNotch className="me-2 size-4 animate-spin" />
+                                                                    {t('select.status.updating')}
                                                                 </>
                                                             ) : (
-                                                                'Update'
+                                                                t('select.updateButton')
                                                             )}
                                                         </MyButton>
                                                     </div>
@@ -378,13 +388,19 @@ export const DeletePaymentOptionDialog: React.FC<DeletePaymentOptionDialogProps>
 
                                                 {update.status === 'completed' && (
                                                     <div className="text-sm text-green-700">
-                                                        {`✓ Updated to: ${getPaymentOptionName(update.selectedPaymentOptionId)}`}
+                                                        {t('select.updatedTo', {
+                                                            name: getPaymentOptionName(
+                                                                update.selectedPaymentOptionId
+                                                            ),
+                                                        })}
                                                     </div>
                                                 )}
 
                                                 {update.error && (
                                                     <div className="text-sm text-red-700">
-                                                        Error: {update.error}
+                                                        {t('select.errorPrefix', {
+                                                            error: update.error,
+                                                        })}
                                                     </div>
                                                 )}
                                             </div>
@@ -395,7 +411,7 @@ export const DeletePaymentOptionDialog: React.FC<DeletePaymentOptionDialogProps>
 
                             {completedCount === totalInvites && (
                                 <MyButton onClick={() => setStep('confirm')} className="w-full ">
-                                    All Updated - Continue to Delete
+                                    {t('select.continueButton')}
                                 </MyButton>
                             )}
                         </div>
@@ -406,30 +422,28 @@ export const DeletePaymentOptionDialog: React.FC<DeletePaymentOptionDialogProps>
                         <div className="space-y-4 py-2">
                             {linkedInvites.length === 0 && (
                                 <Alert>
-                                    <AlertTriangle className="size-4" />
+                                    <Warning className="size-4" />
                                     <AlertDescription>
-                                        This payment option has no linked invites and can be safely
-                                        deleted.
+                                        {t('confirm.noInvitesAlert')}
                                     </AlertDescription>
                                 </Alert>
                             )}
 
                             <Alert className="border-red-200 bg-red-50">
-                                <AlertTriangle className="size-4 text-red-600" />
+                                <Warning className="size-4 text-red-600" />
                                 <AlertDescription className="text-red-800">
-                                    This action cannot be undone. Type &quot;delete&quot; below to
-                                    confirm deletion.
+                                    {t('confirm.warningAlert')}
                                 </AlertDescription>
                             </Alert>
 
                             <div className="space-y-2">
                                 <Label htmlFor="delete-confirm" className="text-sm">
-                                    Type &quot;delete&quot; to confirm
+                                    {t('confirm.inputLabel')}
                                 </Label>
                                 <Input
                                     id="delete-confirm"
                                     type="text"
-                                    placeholder="Type 'delete' to confirm"
+                                    placeholder={t('confirm.inputPlaceholder')}
                                     value={deleteConfirmText}
                                     onChange={(e) => setDeleteConfirmText(e.target.value)}
                                     disabled={isDeleting}
@@ -447,7 +461,7 @@ export const DeletePaymentOptionDialog: React.FC<DeletePaymentOptionDialogProps>
                         variant="outline"
                         disabled={isDeleting || isLoadingInvites}
                     >
-                        Cancel
+                        {t('actions.cancel')}
                     </Button>
                     {step === 'confirm' && (
                         <MyButton
@@ -461,15 +475,17 @@ export const DeletePaymentOptionDialog: React.FC<DeletePaymentOptionDialogProps>
                         >
                             {isDeleting ? (
                                 <>
-                                    <Loader2 className="mr-2 size-4 animate-spin" />
-                                    Deleting...
+                                    <CircleNotch className="me-2 size-4 animate-spin" />
+                                    {t('actions.deletingButton')}
                                 </>
                             ) : (
-                                'Delete Payment Option'
+                                t('actions.deleteButton')
                             )}
                         </MyButton>
                     )}
-                    {step === 'loading' && <Button disabled>Loading...</Button>}
+                    {step === 'loading' && (
+                        <Button disabled>{t('loading.loadingButton')}</Button>
+                    )}
                 </div>
             </DialogContent>
         </Dialog>

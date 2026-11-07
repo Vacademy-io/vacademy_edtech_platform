@@ -1,0 +1,194 @@
+{
+    "unavailable": {
+        "noDataForPeriod": "इस अवधि के लिए कोई डेटा उपलब्ध नहीं है।",
+        "reportNotAvailable": "रिपोर्ट डेटा उपलब्ध नहीं है।"
+    },
+    "common": {
+        "notAvailable": "उपलब्ध नहीं",
+        "stats": {
+            "present": "उपस्थित",
+            "absent": "अनुपस्थित",
+            "late": "देर से",
+            "unmarked": "अचिह्नित",
+            "notMarked": "चिह्नित नहीं",
+            "attended": "उपस्थित",
+            "missed": "छूटी"
+        },
+        "headings": {
+            "strengths": "ताकतें",
+            "areasToImprove": "सुधार के क्षेत्र",
+            "liveClasses": "लाइव क्लासेस",
+            "assignments": "असाइनमेंट"
+        }
+    },
+    "overview": {
+        "studentDetailsHeading": "छात्र विवरण",
+        "stats": {
+            "batch": "बैच",
+            "enrollmentNo": "नामांकन संख्या",
+            "status": "स्थिति",
+            "enrolled": "नामांकित",
+            "reportPeriod": "रिपोर्ट अवधि",
+            "generated": "जनरेट किया गया"
+        },
+        "loginActivityHeading": "लॉगिन गतिविधि",
+        "loginStats": {
+            "totalLogins": "कुल लॉगिन",
+            "lastLogin": "अंतिम लॉगिन",
+            "avgSession": "औसत सत्र",
+            "totalActiveTime": "कुल सक्रिय समय"
+        },
+        "avgSessionValue": "{{minutes}} मिनट",
+        "totalActiveTimeValue": "{{hours}} घं"
+    },
+    "attendance": {
+        "overallHeading": "कुल उपस्थिति",
+        "attendanceRate": "उपस्थिति दर",
+        "recentSessionsHeading": "हाल के सत्र",
+        "sessionFallbackTitle": "सत्र"
+    },
+    "academics": {
+        "summary": {
+            "assessments": "मूल्यांकन",
+            "avgScore": "औसत स्कोर",
+            "best": "सर्वश्रेष्ठ",
+            "needsWork": "सुधार आवश्यक"
+        },
+        "assessmentScoresHeading": "मूल्यांकन स्कोर",
+        "chart": {
+            "marks": "अंक",
+            "total": "कुल"
+        },
+        "allAssessmentsHeading": "सभी मूल्यांकन",
+        "assessmentFallbackName": "मूल्यांकन"
+    },
+    "activity": {
+        "totalTime": "कुल समय",
+        "avgConcentration": "औसत एकाग्रता",
+        "dailyActivityHeading": "दैनिक गतिविधि",
+        "chart": {
+            "timeMinutes": "समय (मिनट)"
+        },
+        "contentEngagementHeading": "सामग्री जुड़ाव",
+        "minutesValue": "{{minutes}} मिनट"
+    },
+    "progress": {
+        "courseCompletionHeading": "कोर्स पूर्णता",
+        "overallProgress": "कुल प्रगति",
+        "subjectProgressHeading": "विषय प्रगति"
+    },
+    "liveClasses": {
+        "summaryHeading": "लाइव क्लास सारांश",
+        "totalClasses": "कुल क्लासें:",
+        "attendanceSuffix": "{{value}} उपस्थिति"
+    },
+    "certificates": {
+        "completion": "पूर्णता"
+    },
+    "assignments": {
+        "summary": {
+            "submitted": "जमा किया गया",
+            "graded": "ग्रेड किया गया",
+            "late": "देर से"
+        },
+        "notGraded": "ग्रेड नहीं किया गया",
+        "lateBadge": "देर से",
+        "doubtsHeading": "शंकाएं",
+        "doubtsStats": {
+            "raised": "उठाई गई",
+            "resolved": "हल की गई",
+            "avgResolution": "औसत समाधान समय"
+        }
+    },
+    "insights": {
+        "summaryHeading": "सारांश",
+        "keyInsightsHeading": "मुख्य जानकारियां",
+        "recommendationsHeading": "सिफारिशें"
+    },
+    "adminSections": {
+        "attendance": "उपस्थिति",
+        "academicPerformance": "शैक्षणिक प्रदर्शन",
+        "marksBySubject": "विषयवार अंक",
+        "studyHabits": "अध्ययन आदतें और दैनिक जुड़ाव",
+        "courseProgress": "कोर्स प्रगति — {{percentage}}% पूर्ण"
+    },
+    "adminReport": {
+        "title": "छात्र प्रगति रिपोर्ट",
+        "periodGenerated": "{{period}} · {{date}} को जनरेट किया गया",
+        "statusGrade": "{{status}} · ग्रेड {{grade}}",
+        "studentLabels": {
+            "student": "छात्र",
+            "class": "कक्षा",
+            "enrollmentNo": "नामांकन संख्या",
+            "rollNo": "रोल नंबर"
+        },
+        "atAGlanceHeading": "एक नज़र में",
+        "summaryForParentsHeading": "अभिभावकों के लिए सारांश",
+        "weeklyTrend": "साप्ताहिक रुझान",
+        "averagePrefix": "औसत",
+        "vsClassAverage": "कक्षा औसत {{percentage}}% की तुलना में",
+        "bestSubjectLabel": "सर्वश्रेष्ठ:",
+        "weakestSubjectLabel": "सुधार आवश्यक:",
+        "subjectPerformanceVsClass": "कक्षा की तुलना में विषय प्रदर्शन",
+        "marksAggregationNote": "मूल्यांकन, असाइनमेंट, क्विज़ और अभ्यास प्रश्नों में समग्र।",
+        "needsWorkBadge": "सुधार आवश्यक",
+        "studyHabitsStats": {
+            "activeDays": "सक्रिय दिन",
+            "longestStreak": "सबसे लंबी लगातार अवधि",
+            "focusScore": "फोकस स्कोर",
+            "mostActive": "सबसे सक्रिय समय"
+        },
+        "dailyStudyTimeDays_one": "दैनिक अध्ययन समय (मिनट) · {{count}} दिन",
+        "dailyStudyTimeDays_other": "दैनिक अध्ययन समय (मिनट) · {{count}} दिन",
+        "dayLabel": "दिन {{count}}",
+        "contentExplored": "एक्सप्लोर की गई सामग्री:",
+        "videosWatched": "वीडियो",
+        "documentsRead": "दस्तावेज़",
+        "quizzesAttempted": "क्विज़",
+        "liveClassesStats": {
+            "totalClasses": "कुल क्लासें",
+            "attended": "उपस्थित",
+            "missed": "छूटी",
+            "notMarked": "चिह्नित नहीं",
+            "attendance": "उपस्थिति"
+        },
+        "assignmentsStats": {
+            "assigned": "सौंपे गए",
+            "submitted": "जमा किए गए",
+            "onTime": "समय पर",
+            "late": "देर से",
+            "pending": "लंबित",
+            "avgScore": "औसत स्कोर"
+        },
+        "achievementsHeading": "उपलब्धियां",
+        "whatWeNoticedHeading": "हमने क्या देखा",
+        "recommendedNextStepsHeading": "अनुशंसित अगले कदम",
+        "footer": "{{instituteName}} · Vacademy द्वारा {{date}} को जनरेट किया गया · {{period}}"
+    },
+    "dialog": {
+        "headingWithName": "{{reportName}} — {{studentName}}",
+        "headingDefault": "व्यापक रिपोर्ट — {{studentName}}",
+        "headingWithPeriod": "व्यापक रिपोर्ट — {{studentName}} ({{periodLabel}})",
+        "studentFallbackName": "छात्र",
+        "reportNotAvailable": "रिपोर्ट डेटा उपलब्ध नहीं है।",
+        "tabs": {
+            "overview": "अवलोकन",
+            "attendance": "उपस्थिति",
+            "academics": "शिक्षा",
+            "activity": "गतिविधि",
+            "progress": "प्रगति",
+            "liveClasses": "लाइव क्लासेस",
+            "certificates": "प्रमाणपत्र",
+            "assignments": "असाइनमेंट",
+            "insights": "AI जानकारियां"
+        },
+        "actions": {
+            "downloading": "डाउनलोड हो रहा है…",
+            "downloadPdf": "PDF डाउनलोड करें",
+            "close": "बंद करें"
+        },
+        "toast": {
+            "downloadFailed": "PDF डाउनलोड करने में विफल"
+        }
+    }
+}

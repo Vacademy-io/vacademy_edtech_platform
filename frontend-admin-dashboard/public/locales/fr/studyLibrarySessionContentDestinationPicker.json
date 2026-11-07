@@ -1,0 +1,36 @@
+{
+    "addToBatches_one": "Ajouter aux lots ({{count}} sélectionné)",
+    "addToBatches_many": "Ajouter aux lots ({{count}} sélectionnés)",
+    "addToBatches_other": "Ajouter aux lots ({{count}} sélectionnés)",
+    "applyToAllBatches": "Appliquer à tous les lots",
+    "position": {
+        "label": "Position",
+        "endOfChapter": "Fin du chapitre",
+        "beginningOfChapter": "Début du chapitre"
+    },
+    "status": {
+        "label": "Statut",
+        "published": "Publié",
+        "draft": "Brouillon"
+    },
+    "notifyLearners": {
+        "label": "Notifier les apprenants",
+        "on": "Activé",
+        "off": "Désactivé"
+    },
+    "actions": {
+        "adding": "Ajout en cours…",
+        "add": "Ajouter"
+    },
+    "fields": {
+        "subject": "Matière",
+        "module": "Module",
+        "chapter": "Chapitre"
+    },
+    "fixedOrSelect": {
+        "loading": "Chargement : {{label}}…",
+        "select": "Sélectionner : {{label}}",
+        "search": "Rechercher : {{label}}…",
+        "noMatches": "Aucune correspondance"
+    }
+}

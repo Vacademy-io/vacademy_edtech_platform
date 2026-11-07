@@ -1,0 +1,189 @@
+---
+title: "Event payloads"
+description: "What each webhook delivery contains."
+---
+
+Every delivery is a JSON object:
+
+<ResponseField name="id" type="string">The event id, e.g. `evt_6f1d2c9a8b7e4f3a2d1c0b9a`. The same on every retry; one id per call and event type.</ResponseField>
+<ResponseField name="object" type="string">Always `event`.</ResponseField>
+<ResponseField name="type" type="string">`call.completed`, `call.not_connected`, `human_call.completed`, `human_call.not_connected`, `human_call.analysis_ready` or `webhook.test`.</ResponseField>
+<ResponseField name="created_at" type="string">When this delivery was made (ISO-8601 UTC).</ResponseField>
+<ResponseField name="data" type="object">For `call.*`: the full [call object](/concepts/calls#reading-a-call), the same as `GET /v1/calls/{id}` returns at that moment. For `human_call.*`: the [human call object](/concepts/human-calls#the-human-call-object), as `GET /v1/human-calls/{id}` returns it.</ResponseField>
+
+## call.completed
+
+```json
+{
+  "id": "evt_6f1d2c9a8b7e4f3a2d1c0b9a",
+  "object": "event",
+  "type": "call.completed",
+  "created_at": "2026-10-13T09:33:05Z",
+  "data": {
+    "id": "call_6f1d2c9a8b7e4f3a2d1c0b9a",
+    "object": "call",
+    "status": "completed",
+    "agent_id": "17ea33d2-5b6c-4c1e-9a1f-2d4e6f8a9b0c",
+    "phone_number": "+919876543210",
+    "contact": { "name": "Asha Verma", "email": null, "external_id": "lead-8812" },
+    "variables": { "course": "NEET 2027" },
+    "metadata": { "crm_owner": "u_42" },
+    "batch_id": null,
+    "test": false,
+    "duration_seconds": 142,
+    "created_at": "2026-10-13T09:30:02Z",
+    "dialed_at": "2026-10-13T09:30:03Z",
+    "ended_at": "2026-10-13T09:32:31Z",
+    "recording_url": "https://…",
+    "recording_expires_at": "2026-10-14T09:33:05Z",
+    "outcome": {
+      "disposition": "Interested",
+      "summary": "Asha wants the NEET 2027 weekend batch and asked for the fee structure.",
+      "answers": { "Preferred batch timing?": "Weekends" },
+      "lead_rating": 8,
+      "callback_requested": true,
+      "callback_time_text": "tomorrow after 6 pm",
+      "follow_up": "CALL",
+      "follow_up_note": "Send the fee structure; call back tomorrow evening.",
+      "meeting": { "requested": true, "at": "2026-10-14T18:00:00+05:30", "time_text": "tomorrow after 6 pm", "type": "call" },
+      "transcript": [
+        { "speaker": "agent", "text": "Hi Asha, this is Riya from Shiksha Academy. Is this a good time?" },
+        { "speaker": "contact", "text": "Yes, tell me." }
+      ]
+    }
+  }
+}
+```
+
+In rare cases `data.outcome` is `null` on `call.completed`: the call connected, but its analysis did not arrive within 10 minutes. Use `duration_seconds` and the recording.
+
+## call.not_connected
+
+```json
+{
+  "id": "evt_0c4e9b2a7d1f3c5e8a6b4d2f",
+  "object": "event",
+  "type": "call.not_connected",
+  "created_at": "2026-10-13T11:02:41Z",
+  "data": {
+    "id": "call_0c4e9b2a7d1f3c5e8a6b4d2f",
+    "object": "call",
+    "status": "no_answer",
+    "phone_number": "+919812345678",
+    "contact": { "name": "Rohan Das", "email": null, "external_id": "lead-8813" },
+    "duration_seconds": 0,
+    "recording_url": null,
+    "outcome": null,
+    "…": "…"
+  }
+}
+```
+
+`data.status` tells you why: `no_answer`, `busy`, `failed`, `canceled` or `expired`. `status_reason`, when present, adds detail. To try again later, create a new call; Telleo does not retry calls on its own.
+
+## human_call.completed
+
+Sent once when a [human call](/concepts/human-calls) connected and ended, after its recording is in (or 10 minutes later without one; 60 on Airtel).
+
+```json
+{
+  "id": "evt_hc_7d2e9b1c4a6f8e0d3b5c7a9e",
+  "object": "event",
+  "type": "human_call.completed",
+  "created_at": "2026-10-17T05:37:15Z",
+  "data": {
+    "id": "hcall_7d2e9b1c4a6f8e0d3b5c7a9e",
+    "object": "human_call",
+    "status": "completed",
+    "counsellor": { "id": "5f0c…", "name": "Priya Sharma", "email": "priya@school.in" },
+    "phone_number": "+919876543210",
+    "contact": { "name": "Asha Verma", "email": null, "external_id": "lead-8812" },
+    "crm_lead_linked": true,
+    "status_updates": "realtime",
+    "duration_seconds": 379,
+    "ended_at": "2026-10-17T05:36:40Z",
+    "recording_url": "https://…",
+    "disposition": null,
+    "analysis": { "status": "pending" },
+    "cost": { "credits": 6.5, "billed": false },
+    "…": "…"
+  }
+}
+```
+
+The counsellor usually sets the disposition after the call, so `disposition` is often still `null` here. Read the call again later, or set it yourself with `POST /v1/human-calls/{id}/disposition`.
+
+## human_call.not_connected
+
+Sent once when a human call ended without a conversation: `data.status` is `no_answer`, `busy`, `failed` or `canceled`. For `no_answer` and `busy`, `data.no_answer_by` is `counsellor` or `contact` when the provider says which phone did not pick up, else `null`.
+
+```json
+{
+  "id": "evt_hc_0a1b2c3d4e5f60718293a4b5",
+  "object": "event",
+  "type": "human_call.not_connected",
+  "created_at": "2026-10-17T06:02:41Z",
+  "data": { "id": "hcall_0a1b2c3d4e5f60718293a4b5", "object": "human_call", "status": "no_answer", "no_answer_by": "contact", "…": "…" }
+}
+```
+
+## human_call.analysis_ready
+
+Sent once, only for calls created with `analyze: true` that connected, when `data.analysis.status` is `completed` or `failed` (for example `no_recording`). Its id starts `evt_hca_`, so it never collides with the call's own event.
+
+```json
+{
+  "id": "evt_hca_7d2e9b1c4a6f8e0d3b5c7a9e",
+  "object": "event",
+  "type": "human_call.analysis_ready",
+  "created_at": "2026-10-17T05:39:10Z",
+  "data": {
+    "id": "hcall_7d2e9b1c4a6f8e0d3b5c7a9e",
+    "object": "human_call",
+    "status": "completed",
+    "analysis": {
+      "status": "completed",
+      "summary": "Asha wants the NEET 2027 weekend batch; demo booked for Friday.",
+      "sentiment": "positive",
+      "conversion_likelihood": "high",
+      "counsellor_rating": 8.0,
+      "credits": 0.95,
+      "…": "…"
+    },
+    "…": "…"
+  }
+}
+```
+
+## webhook.test
+
+```json
+{
+  "id": "evt_test_9f3a1c7e",
+  "object": "event",
+  "type": "webhook.test",
+  "created_at": "2026-10-13T09:00:00Z",
+  "data": { "message": "This is a test event from Telleo." }
+}
+```
+
+## Handling events
+
+```javascript
+async function handleEvent(event) {
+  if (await alreadyProcessed(event.id)) return;          // retries reuse the id
+  const call = event.data;
+  const recordId = call.contact.external_id;             // your CRM id
+  if (event.type === "call.completed") {
+    await crm.update(recordId, {
+      stage: mapDisposition(call.outcome?.disposition),
+      notes: call.outcome?.summary,
+      score: call.outcome?.lead_rating,
+      callbackAt: call.outcome?.meeting?.at,
+    });
+  } else if (event.type === "call.not_connected") {
+    await crm.logAttempt(recordId, call.status);
+  }
+  await markProcessed(event.id);
+}
+```

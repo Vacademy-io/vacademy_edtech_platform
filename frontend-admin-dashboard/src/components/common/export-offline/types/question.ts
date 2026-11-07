@@ -21,16 +21,19 @@ export interface Question {
         };
     }>;
     marking_json: string;
+    /**
+     * The question's auto_evaluation_json (correct option ids, numeric
+     * valid answers, one-word / long-answer model answer). Sent by
+     * questions-of-sections; read only in `showAnswers` mode.
+     */
+    evaluation_json?: string;
     question_type: string;
     section_id: string;
     question_duration: number;
     question_order: number;
     /**
-     * Optional per-question rationale shown only in answer-key exports
-     * (QuestionComponent's `showAnswers` mode). The question-papers flow
-     * doesn't populate this today; flows that generate questions with
-     * accompanying explanations (e.g. AI assessment from a lecture
-     * transcript) set it so the answer-key PDF carries them.
+     * Optional per-question explanation (HTML or plain text) shown only in
+     * answer-key exports (QuestionComponent's `showAnswers` mode).
      */
     explanation_text?: string;
 }

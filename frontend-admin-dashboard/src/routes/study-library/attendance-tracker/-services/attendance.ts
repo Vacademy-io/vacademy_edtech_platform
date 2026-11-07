@@ -3,6 +3,7 @@ import authenticatedAxiosInstance from '@/lib/auth/axiosInstance';
 import { useInfiniteQuery } from '@tanstack/react-query';
 
 interface AttendanceFilterRequest {
+    institute_id: string;
     name: string;
     start_date: string;
     end_date: string;
@@ -81,6 +82,9 @@ export const useGetAttendance = ({
     filterRequest,
 }: AttendanceRequestParamType) => {
     return useInfiniteQuery<AttendanceResponseType | null>({
+        // The API rejects a missing institute_id (it is what scopes the report to one
+        // institute), so don't fire until the token has resolved one.
+        enabled: !!filterRequest.institute_id,
         queryKey: ['attendanceList', pageNo, pageSize, filterRequest],
         queryFn: async ({ pageParam }) => {
             const response = await authenticatedAxiosInstance.post(

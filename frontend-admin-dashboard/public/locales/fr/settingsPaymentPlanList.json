@@ -1,0 +1,49 @@
+{
+    "header": {
+        "title": "Options de paiement"
+    },
+    "emptyState": {
+        "title": "Aucune option de paiement créée pour le moment",
+        "subtitle": "Créez votre première option de paiement pour commencer à accepter des paiements"
+    },
+    "badge": {
+        "default": "Par défaut"
+    },
+    "actions": {
+        "viewDetails": "Voir les détails",
+        "hide": "Masquer",
+        "makeDefault": "Définir par défaut"
+    },
+    "currency": "Devise : {{currency}}",
+    "priceDetails": {
+        "noConfig": "Aucune configuration disponible",
+        "percentOff": "{{amount}} % de réduction",
+        "amountOff": "{{symbol}}{{amount}} de réduction",
+        "fullPriceLabel": "Prix plein :",
+        "fullPriceValue": "Prix plein : {{symbol}}{{price}}",
+        "suggestedAmounts": "Montants suggérés : {{symbol}}{{amount}}",
+        "minimumAmount": "Montant minimum : {{symbol}}{{amount}}",
+        "feeTypeCount_one": "{{count}} type de frais",
+        "feeTypeCount_other": "{{count}} types de frais",
+        "feeTypeCount_many": "{{count}} types de frais",
+        "total": "Total : ₹{{total}}",
+        "batchLinked_one": "{{count}} groupe lié",
+        "batchLinked_other": "{{count}} groupes liés",
+        "batchLinked_many": "{{count}} groupes liés",
+        "clickViewDetails": "Cliquez sur « Voir les détails » pour voir le détail des frais"
+    },
+    "cpo": {
+        "feeTypesTitle": "Types de frais",
+        "loadingDetails": "Chargement des détails des échéances…",
+        "noFeeTypes": "Aucun type de frais trouvé.",
+        "installmentCount_one": "{{count}} échéance",
+        "installmentCount_other": "{{count}} échéances",
+        "installmentCount_many": "{{count}} échéances",
+        "refundable": "Remboursable",
+        "penalty": "Pénalité {{percent}} %",
+        "columnNumber": "#",
+        "columnAmount": "Montant",
+        "totalLabel": "Total",
+        "oneTimePayment": "Paiement unique de ₹{{amount}}"
+    }
+}

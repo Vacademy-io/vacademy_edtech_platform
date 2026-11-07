@@ -14,8 +14,9 @@ import { Input } from '@/components/ui/input';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
 import { useCallback, useState } from 'react';
-import { Plus } from 'lucide-react';
-import { Minus } from '@phosphor-icons/react';
+import { Minus, Plus } from '@phosphor-icons/react';
+import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 import {
     Accordion,
     AccordionItem,
@@ -39,12 +40,43 @@ interface ExportSettingsDialogProps {
     questionsData: Question[]; // Add this prop
 }
 
+function buildDisplaySettingsOptions(t: TFunction): Array<[string, string]> {
+    return [
+        ['showInstitutionLetterhead', t('sections.display.options.showInstitutionLetterhead')],
+        [
+            'showFirstPageInstructions',
+            t('sections.display.options.showFirstPageInstructions'),
+        ],
+        [
+            'showAdaptiveMarkingRules',
+            t('sections.display.options.showAdaptiveMarkingRules'),
+        ],
+        [
+            'showSectionInstructions',
+            t('sections.display.options.showSectionInstructions'),
+        ],
+        ['showSectionDuration', t('sections.display.options.showSectionDuration')],
+        ['showMarksPerQuestion', t('sections.display.options.showMarksPerQuestion')],
+        [
+            'showAdaptiveMarkingRulesSection',
+            t('sections.display.options.showAdaptiveMarkingRulesSection'),
+        ],
+        [
+            'showCheckboxesBeforeOptions',
+            t('sections.display.options.showCheckboxesBeforeOptions'),
+        ],
+        ['showPageNumbers', t('sections.display.options.showPageNumbers')],
+    ];
+}
+
 export function ExportQuestionPaperSettingsDialog({
     open,
     onOpenChange,
     questionsData,
 }: ExportSettingsDialogProps) {
+    const { t } = useTranslation('assessmentExportQuestionPaperSettingDialog');
     const { settings, updateSettings } = useExportSettings();
+    const displaySettingsOptions = buildDisplaySettingsOptions(t);
 
     const handleSettingChange = useCallback(
         // @ts-expect-error : Parameter 'value' implicitly has an 'any' type.
@@ -78,9 +110,9 @@ export function ExportQuestionPaperSettingsDialog({
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="max-h-[90vh] w-3/5 max-w-2xl overflow-y-auto">
+            <DialogContent className="max-h-dialog-tall w-3/5 max-w-2xl overflow-y-auto">
                 <DialogHeader>
-                    <DialogTitle>Export Settings</DialogTitle>
+                    <DialogTitle>{t('dialog.title')}</DialogTitle>
                 </DialogHeader>
 
                 <div className="grid gap-6 py-2">
@@ -88,13 +120,13 @@ export function ExportQuestionPaperSettingsDialog({
                     <Accordion type="single" collapsible className="w-full">
                         <AccordionItem value="layout">
                             <AccordionTrigger className="text-base">
-                                Layout Settings
+                                {t('sections.layout.title')}
                             </AccordionTrigger>
                             <AccordionContent>
                                 <div className="space-y-4">
                                     <div className="flex w-full gap-x-4">
                                         <div className="flex w-1/2 items-center gap-2">
-                                            <Label>Columns per Page</Label>
+                                            <Label>{t('sections.layout.columnsPerPage')}</Label>
                                             <div className="flex items-center space-x-2">
                                                 <Button
                                                     type="button"
@@ -145,7 +177,7 @@ export function ExportQuestionPaperSettingsDialog({
                                     </div>
 
                                     <div className="space-y-2">
-                                        <Label>Space for Rough Work</Label>
+                                        <Label>{t('sections.layout.roughWork.label')}</Label>
                                         <RadioGroup
                                             value={settings.spaceForRoughWork}
                                             onValueChange={(value) =>
@@ -158,17 +190,21 @@ export function ExportQuestionPaperSettingsDialog({
                                         >
                                             <div className="flex items-center gap-2">
                                                 <RadioGroupItem value="none" id="rough-none" />
-                                                <Label htmlFor="rough-none">None</Label>
+                                                <Label htmlFor="rough-none">
+                                                    {t('sections.layout.roughWork.none')}
+                                                </Label>
                                             </div>
                                             <div className="flex items-center gap-2">
                                                 <RadioGroupItem value="bottom" id="rough-bottom" />
-                                                <Label htmlFor="rough-bottom">Bottom</Label>
+                                                <Label htmlFor="rough-bottom">
+                                                    {t('sections.layout.roughWork.bottom')}
+                                                </Label>
                                             </div>
                                         </RadioGroup>
                                     </div>
 
                                     <div className="space-y-2">
-                                        <Label>Rough Work Space Size</Label>
+                                        <Label>{t('sections.layout.roughWorkSize.label')}</Label>
                                         <RadioGroup
                                             value={settings.roughWorkSize}
                                             onValueChange={(value) =>
@@ -185,7 +221,7 @@ export function ExportQuestionPaperSettingsDialog({
                                                     id="rough-size-small"
                                                 />
                                                 <Label htmlFor="rough-size-small">
-                                                    Small (50mm)
+                                                    {t('sections.layout.roughWorkSize.small')}
                                                 </Label>
                                             </div>
                                             <div className="flex items-center gap-2">
@@ -194,7 +230,7 @@ export function ExportQuestionPaperSettingsDialog({
                                                     id="rough-size-medium"
                                                 />
                                                 <Label htmlFor="rough-size-medium">
-                                                    Medium (100mm)
+                                                    {t('sections.layout.roughWorkSize.medium')}
                                                 </Label>
                                             </div>
                                             <div className="flex items-center gap-2">
@@ -203,14 +239,14 @@ export function ExportQuestionPaperSettingsDialog({
                                                     id="rough-size-large"
                                                 />
                                                 <Label htmlFor="rough-size-large">
-                                                    Large (150mm)
+                                                    {t('sections.layout.roughWorkSize.large')}
                                                 </Label>
                                             </div>
                                         </RadioGroup>
                                     </div>
 
                                     <div className="space-y-2">
-                                        <Label>Page Padding</Label>
+                                        <Label>{t('sections.layout.pagePadding.label')}</Label>
                                         <RadioGroup
                                             value={settings.pagePadding}
                                             onValueChange={(value) =>
@@ -223,7 +259,9 @@ export function ExportQuestionPaperSettingsDialog({
                                         >
                                             <div className="flex items-center gap-2">
                                                 <RadioGroupItem value="low" id="padding-low" />
-                                                <Label htmlFor="padding-low">Low (10mm)</Label>
+                                                <Label htmlFor="padding-low">
+                                                    {t('sections.layout.pagePadding.low')}
+                                                </Label>
                                             </div>
                                             <div className="flex items-center gap-2">
                                                 <RadioGroupItem
@@ -231,18 +269,20 @@ export function ExportQuestionPaperSettingsDialog({
                                                     id="padding-medium"
                                                 />
                                                 <Label htmlFor="padding-medium">
-                                                    Medium (20mm)
+                                                    {t('sections.layout.pagePadding.medium')}
                                                 </Label>
                                             </div>
                                             <div className="flex items-center gap-2">
                                                 <RadioGroupItem value="high" id="padding-high" />
-                                                <Label htmlFor="padding-high">High (30mm)</Label>
+                                                <Label htmlFor="padding-high">
+                                                    {t('sections.layout.pagePadding.high')}
+                                                </Label>
                                             </div>
                                         </RadioGroup>
                                     </div>
 
                                     <div className="space-y-2">
-                                        <Label>Font Size</Label>
+                                        <Label>{t('sections.layout.fontSize.label')}</Label>
                                         <RadioGroup
                                             value={settings.fontSize}
                                             onValueChange={(value) =>
@@ -255,20 +295,26 @@ export function ExportQuestionPaperSettingsDialog({
                                         >
                                             <div className="flex items-center gap-2">
                                                 <RadioGroupItem value="small" id="font-small" />
-                                                <Label htmlFor="font-small">Small (10pt)</Label>
+                                                <Label htmlFor="font-small">
+                                                    {t('sections.layout.fontSize.small')}
+                                                </Label>
                                             </div>
                                             <div className="flex items-center gap-2">
                                                 <RadioGroupItem value="medium" id="font-medium" />
-                                                <Label htmlFor="font-medium">Medium (12pt)</Label>
+                                                <Label htmlFor="font-medium">
+                                                    {t('sections.layout.fontSize.medium')}
+                                                </Label>
                                             </div>
                                             <div className="flex items-center gap-2">
                                                 <RadioGroupItem value="large" id="font-large" />
-                                                <Label htmlFor="font-large">Large (14pt)</Label>
+                                                <Label htmlFor="font-large">
+                                                    {t('sections.layout.fontSize.large')}
+                                                </Label>
                                             </div>
                                         </RadioGroup>
                                     </div>
                                     <div className="space-y-2">
-                                        <Label>Image Size</Label>
+                                        <Label>{t('sections.layout.imageSize.label')}</Label>
                                         <div className="flex items-center space-x-2">
                                             <Checkbox
                                                 id={'maintainImageAspectRatio'}
@@ -281,7 +327,7 @@ export function ExportQuestionPaperSettingsDialog({
                                                 }
                                             />
                                             <Label htmlFor="maintainImageAspectRatio">
-                                                Maintain image aspect ratio
+                                                {t('sections.layout.imageSize.maintainAspectRatio')}
                                             </Label>
                                         </div>
                                     </div>
@@ -290,36 +336,11 @@ export function ExportQuestionPaperSettingsDialog({
                         </AccordionItem>
                         <AccordionItem value="display">
                             <AccordionTrigger className="text-base">
-                                Display Settings
+                                {t('sections.display.title')}
                             </AccordionTrigger>
                             <AccordionContent>
                                 <div className="flex flex-col gap-y-2">
-                                    {[
-                                        ['showInstitutionLetterhead', 'Show Institute Letterhead'],
-                                        [
-                                            'showFirstPageInstructions',
-                                            'Show Instructions on First Page',
-                                        ],
-                                        [
-                                            'showAdaptiveMarkingRules',
-                                            'Show Adaptive Marking Rules - Entire Assessment',
-                                        ],
-                                        [
-                                            'showSectionInstructions',
-                                            'Show Section-wise Instructions',
-                                        ],
-                                        ['showSectionDuration', 'Show Section-wise Duration'],
-                                        ['showMarksPerQuestion', 'Show Marks per Question'],
-                                        [
-                                            'showAdaptiveMarkingRulesSection',
-                                            'Show Adaptive Marking Rules - Section-wise',
-                                        ],
-                                        [
-                                            'showCheckboxesBeforeOptions',
-                                            'Show Checkboxes before Options',
-                                        ],
-                                        ['showPageNumbers', 'Show Page Numbers'],
-                                    ].map(([key, label]) => (
+                                    {displaySettingsOptions.map(([key, label]) => (
                                         <div key={key} className="flex items-center gap-4">
                                             <Checkbox
                                                 id={key}
@@ -341,12 +362,12 @@ export function ExportQuestionPaperSettingsDialog({
                         </AccordionItem>
                         <AccordionItem value="paper">
                             <AccordionTrigger className="text-base">
-                                Paper Settings
+                                {t('sections.paper.title')}
                             </AccordionTrigger>
                             <AccordionContent>
                                 <div className="flex flex-col gap-y-2">
                                     <div className="flex items-center gap-2">
-                                        <Label>Create Question Papers Sets</Label>
+                                        <Label>{t('sections.paper.questionPaperSets')}</Label>
                                         <div className="flex items-center space-x-2">
                                             <Button
                                                 type="button"
@@ -405,7 +426,7 @@ export function ExportQuestionPaperSettingsDialog({
                                             }
                                         />
                                         <label htmlFor="includeQuestionSetCode">
-                                            Include Question Set Code
+                                            {t('sections.paper.includeQuestionSetCode')}
                                         </label>
                                     </div>
 
@@ -418,7 +439,7 @@ export function ExportQuestionPaperSettingsDialog({
                                             }
                                         />
                                         <label htmlFor="randomizeQuestions">
-                                            Randomize Questions
+                                            {t('sections.paper.randomizeQuestions')}
                                         </label>
                                     </div>
 
@@ -430,14 +451,16 @@ export function ExportQuestionPaperSettingsDialog({
                                                 handleSettingChange('randomizeOptions', checked)
                                             }
                                         />
-                                        <label htmlFor="randomizeOptions">Randomize Options</label>
+                                        <label htmlFor="randomizeOptions">
+                                            {t('sections.paper.randomizeOptions')}
+                                        </label>
                                     </div>
                                 </div>
                             </AccordionContent>
                         </AccordionItem>
                         <AccordionItem value="custom">
                             <AccordionTrigger className="text-base">
-                                Custom Fields Settings
+                                {t('sections.customFields.title')}
                             </AccordionTrigger>
                             <AccordionContent>
                                 <div className="grid gap-2">
@@ -452,7 +475,7 @@ export function ExportQuestionPaperSettingsDialog({
                                             }
                                         />
                                         <Label htmlFor="includeCustomInputFields">
-                                            Include Custom Input Fields
+                                            {t('sections.customFields.includeCustomInputFields')}
                                         </Label>
                                     </div>
                                     {settings.includeCustomInputFields && (
@@ -493,20 +516,32 @@ export function ExportQuestionPaperSettingsDialog({
                                                             }
                                                         >
                                                             <SelectTrigger>
-                                                                <SelectValue placeholder="Select field type" />
+                                                                <SelectValue
+                                                                    placeholder={t(
+                                                                        'sections.customFields.fieldTypePlaceholder'
+                                                                    )}
+                                                                />
                                                             </SelectTrigger>
                                                             <SelectContent>
                                                                 <SelectItem value="blank">
-                                                                    Blank (Default)
+                                                                    {t(
+                                                                        'sections.customFields.fieldTypes.blank'
+                                                                    )}
                                                                 </SelectItem>
                                                                 <SelectItem value="blocks">
-                                                                    Blocks
+                                                                    {t(
+                                                                        'sections.customFields.fieldTypes.blocks'
+                                                                    )}
                                                                 </SelectItem>
                                                                 <SelectItem value="input">
-                                                                    Input Box
+                                                                    {t(
+                                                                        'sections.customFields.fieldTypes.input'
+                                                                    )}
                                                                 </SelectItem>
                                                                 <SelectItem value="checkbox">
-                                                                    Checkbox
+                                                                    {t(
+                                                                        'sections.customFields.fieldTypes.checkbox'
+                                                                    )}
                                                                 </SelectItem>
                                                             </SelectContent>
                                                         </Select>
@@ -540,7 +575,9 @@ export function ExportQuestionPaperSettingsDialog({
                                             ))}
                                             <div className="mt-4 flex gap-4">
                                                 <Input
-                                                    placeholder="Enter new field label"
+                                                    placeholder={t(
+                                                        'sections.customFields.newFieldPlaceholder'
+                                                    )}
                                                     value={newFieldLabel}
                                                     onChange={(e) =>
                                                         setNewFieldLabel(e.target.value)
@@ -548,7 +585,7 @@ export function ExportQuestionPaperSettingsDialog({
                                                 />
                                                 <Button onClick={addCustomField} className="gap-2">
                                                     <Plus className="size-4" />
-                                                    Add
+                                                    {t('sections.customFields.addButton')}
                                                 </Button>
                                             </div>
                                         </div>
@@ -558,23 +595,25 @@ export function ExportQuestionPaperSettingsDialog({
                         </AccordionItem>
                         <AccordionItem value="advanced">
                             <AccordionTrigger className="text-base">
-                                Advanced Settings
+                                {t('sections.advanced.title')}
                             </AccordionTrigger>
                             <AccordionContent>
                                 {/* Your existing advanced settings */}
 
                                 <div className="space-y-4">
                                     <div className="flex flex-col gap-2">
-                                        <Label>Answer Spacing</Label>
+                                        <Label>{t('sections.advanced.answerSpacing.label')}</Label>
                                         <Button
                                             type="button"
                                             variant="outline"
                                             onClick={() => setIsAnswerSpacingDialogOpen(true)}
                                         >
-                                            Custom Spacing
+                                            {t(
+                                                'sections.advanced.answerSpacing.customSpacingButton'
+                                            )}
                                         </Button>
                                         <p className="text-sm text-muted-foreground">
-                                            Configure custom space for answers.
+                                            {t('sections.advanced.answerSpacing.description')}
                                         </p>
                                     </div>
                                 </div>
@@ -600,13 +639,13 @@ export function ExportQuestionPaperSettingsDialog({
 
                 <div className="mt-6 flex justify-end gap-2">
                     <Button variant="outline" onClick={() => onOpenChange(false)}>
-                        Cancel
+                        {t('footer.cancel')}
                     </Button>
                     <Button
                         className="bg-primary-500 text-white hover:bg-primary-400"
                         onClick={() => onOpenChange(false)}
                     >
-                        Save
+                        {t('footer.save')}
                     </Button>
                 </div>
             </DialogContent>

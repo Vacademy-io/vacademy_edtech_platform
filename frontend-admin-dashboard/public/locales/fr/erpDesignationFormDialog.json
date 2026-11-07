@@ -1,0 +1,29 @@
+{
+    "editHeading": "Modifier le poste",
+    "addHeading": "Ajouter un poste",
+    "cancel": "Annuler",
+    "saveChanges": "Enregistrer les modifications",
+    "saving": "Enregistrement…",
+    "fields": {
+        "nameLabel": "Nom",
+        "namePlaceholder": "ex. Enseignant principal",
+        "codeLabel": "Code",
+        "codePlaceholder": "ex. SR-TCH",
+        "levelLabel": "Niveau",
+        "levelPlaceholder": "ex. 3",
+        "levelHelp": "Plus le chiffre est élevé, plus le poste est senior.",
+        "gradeLabel": "Grade",
+        "gradePlaceholder": "ex. L3",
+        "descriptionLabel": "Description",
+        "descriptionPlaceholder": "Ce que couvre ce poste"
+    },
+    "toasts": {
+        "updated": "Poste mis à jour",
+        "added": "Poste ajouté"
+    },
+    "errors": {
+        "nameRequired": "Donnez un nom au poste",
+        "levelWholeNumber": "Utilisez un nombre entier",
+        "saveFailed": "Impossible d'enregistrer ce poste"
+    }
+}

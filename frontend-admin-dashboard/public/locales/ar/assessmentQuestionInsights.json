@@ -1,0 +1,39 @@
+{
+    "toasts": {
+        "pdfExportSuccess": "تم تصدير بيانات تحليل الأسئلة للطلاب بصيغة PDF بنجاح"
+    },
+    "questionCard": {
+        "heading": "السؤال ({{number}}.)",
+        "correctAnswerLabel": "الإجابة الصحيحة:",
+        "explanationLabel": "الشرح:",
+        "topResponsesTitle": "أسرع 3 إجابات صحيحة",
+        "secondsSuffix_zero": "{{count}} ثانية",
+        "secondsSuffix_one": "ثانية واحدة ({{count}})",
+        "secondsSuffix_two": "ثانيتان ({{count}})",
+        "secondsSuffix_few": "{{count}} ثوانٍ",
+        "secondsSuffix_many": "{{count}} ثانية",
+        "secondsSuffix_other": "{{count}} ثانية"
+    },
+    "summary": {
+        "totalAttempts_zero": "إجمالي المحاولات: {{count}} طالب",
+        "totalAttempts_one": "إجمالي المحاولات: طالب واحد ({{count}})",
+        "totalAttempts_two": "إجمالي المحاولات: طالبان ({{count}})",
+        "totalAttempts_few": "إجمالي المحاولات: {{count}} طلاب",
+        "totalAttempts_many": "إجمالي المحاولات: {{count}} طالبًا",
+        "totalAttempts_other": "إجمالي المحاولات: {{count}} طالب"
+    },
+    "respondents": {
+        "correctLabel": "المجيبون بشكل صحيح: ",
+        "partialLabel": "المجيبون بشكل صحيح جزئيًا: ",
+        "wrongLabel": "المجيبون بشكل خاطئ: ",
+        "skippedLabel": "تم التخطي: ",
+        "viewList": "عرض القائمة",
+        "notAvailable": "غير متاح"
+    },
+    "dialogs": {
+        "correctTitle": "المجيبون بشكل صحيح",
+        "partialTitle": "المجيبون بشكل صحيح جزئيًا",
+        "wrongTitle": "المجيبون بشكل خاطئ",
+        "skippedTitle": "من تخطى السؤال"
+    }
+}

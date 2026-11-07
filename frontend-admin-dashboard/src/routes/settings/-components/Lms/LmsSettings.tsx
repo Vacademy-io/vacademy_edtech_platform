@@ -32,6 +32,7 @@ import {
     Star,
 } from '@phosphor-icons/react';
 import { toast } from 'sonner';
+import { Trans, useTranslation } from 'react-i18next';
 import { cn } from '@/lib/utils';
 import {
     getLmsProviders,
@@ -55,6 +56,7 @@ const typeIcon = (id: string) => (id === 'MOODLE' ? Plugs : PlugsConnected);
  * live, mark a default. Apply a connection to a course from that course's Settings tab.
  */
 const LmsSettings = () => {
+    const { t } = useTranslation('settingsLms');
     const [providers, setProviders] = useState<LmsProviderMeta[]>([]);
     const [connections, setConnections] = useState<LmsConnection[]>([]);
     const [defaultId, setDefaultId] = useState<string | null>(null);
@@ -83,11 +85,11 @@ const LmsSettings = () => {
             setConfigSource(prov.configSource ?? 'NONE');
         } catch (e) {
             console.error('Failed to load LMS settings', e);
-            toast.error('Failed to load LMS settings');
+            toast.error(t('toasts.loadFailed'));
         } finally {
             setLoading(false);
         }
-    }, []);
+    }, [t]);
 
     useEffect(() => {
         void load();
@@ -109,12 +111,11 @@ const LmsSettings = () => {
         (f: LmsProviderField): string | null => {
             if (!draft) return null;
             const val = (draft[f.key] ?? '').trim();
-            if (f.required && !val) return 'Required';
-            if (f.type === 'url' && val && !isHttpUrl(val))
-                return 'Must start with http:// or https://';
+            if (f.required && !val) return t('validation.required');
+            if (f.type === 'url' && val && !isHttpUrl(val)) return t('validation.invalidUrl');
             return null;
         },
-        [draft]
+        [draft, t]
     );
     const draftHasErrors = useMemo(
         () => !!draft && (!draft.name.trim() || draftFields.some((f) => draftError(f))),
@@ -215,7 +216,7 @@ const LmsSettings = () => {
             setTestResult({
                 ok: false,
                 provider: draft.type,
-                message: 'Could not run the test. Try again.',
+                message: t('testResult.genericFailure'),
             });
         } finally {
             setTesting(false);
@@ -248,11 +249,11 @@ const LmsSettings = () => {
                 });
             }
             await saveInstituteSettingKey('LMS_SETTING', data, 'LMS Setting');
-            toast.success('LMS connections saved');
+            toast.success(t('toasts.saveSuccess'));
             await load();
         } catch (e) {
             console.error('Failed to save LMS settings', e);
-            toast.error('Failed to save LMS settings');
+            toast.error(t('toasts.saveFailed'));
         } finally {
             setSaving(false);
             setConfirmSaveOpen(false);
@@ -264,19 +265,15 @@ const LmsSettings = () => {
             <div className="space-y-1">
                 <h1 className="flex items-center gap-2 text-lg font-bold">
                     <PlugsConnected className="size-6 text-primary-500" weight="fill" />
-                    Connect your LMS
+                    {t('header.title')}
                 </h1>
-                <p className="text-sm text-neutral-500">
-                    Add the learning systems your institute uses — you can connect more than one
-                    (e.g. a LearnDash site and a Moodle site). Apply a connection to a specific
-                    course from that course&apos;s Settings tab.
-                </p>
+                <p className="text-sm text-neutral-500">{t('header.subtitle')}</p>
             </div>
 
             {loading ? (
                 <div className="flex flex-col items-center justify-center py-12">
                     <CircleNotch className="size-10 animate-spin text-primary-500" />
-                    <p className="mt-4 text-neutral-500">Loading LMS settings…</p>
+                    <p className="mt-4 text-neutral-500">{t('loading')}</p>
                 </div>
             ) : (
                 <div className="space-y-5">
@@ -284,10 +281,9 @@ const LmsSettings = () => {
                         <div className="flex items-start gap-3 rounded-lg border border-info-200 bg-info-50 p-4">
                             <Info className="mt-0.5 size-5 shrink-0 text-info-600" weight="fill" />
                             <p className="text-sm text-info-700">
-                                We found an LMS connection already configured on one of your courses
-                                and listed it below. Review it and click{' '}
-                                <span className="font-semibold">Save</span> to keep it as an
-                                institute connection.
+                                <Trans i18nKey="settingsLms:banner.courseSourceInfo">
+                                    We found an LMS connection already configured on one of your courses and listed it below. Review it and click <span className="font-semibold">Save</span> to keep it as an institute connection.
+                                </Trans>
                             </p>
                         </div>
                     )}
@@ -298,11 +294,10 @@ const LmsSettings = () => {
                             <CardContent className="flex flex-col items-center gap-2 py-10 text-center">
                                 <Sparkle className="size-8 text-neutral-300" weight="fill" />
                                 <p className="text-sm font-medium text-neutral-600">
-                                    No external LMS connected
+                                    {t('emptyState.title')}
                                 </p>
                                 <p className="max-w-md text-xs text-neutral-400">
-                                    Your learners use the built-in Vacademy LMS. Connect a LearnDash
-                                    or Moodle site below to sync enrolments to it.
+                                    {t('emptyState.description')}
                                 </p>
                             </CardContent>
                         </Card>
@@ -332,7 +327,7 @@ const LmsSettings = () => {
                                                                 className="size-3"
                                                                 weight="fill"
                                                             />{' '}
-                                                            Default
+                                                            {t('connectionCard.defaultBadge')}
                                                         </span>
                                                     )}
                                                 </div>
@@ -349,14 +344,14 @@ const LmsSettings = () => {
                                                     onClick={() => setDefaultId(c.id)}
                                                     className="text-xs text-neutral-500"
                                                 >
-                                                    Make default
+                                                    {t('connectionCard.makeDefault')}
                                                 </Button>
                                             )}
                                             <Button
                                                 variant="ghost"
                                                 size="icon"
                                                 onClick={() => startEdit(c)}
-                                                aria-label="Edit"
+                                                aria-label={t('connectionCard.editAriaLabel')}
                                             >
                                                 <PencilSimple className="size-4 text-neutral-500" />
                                             </Button>
@@ -364,7 +359,7 @@ const LmsSettings = () => {
                                                 variant="ghost"
                                                 size="icon"
                                                 onClick={() => removeConnection(c.id)}
-                                                aria-label="Remove"
+                                                aria-label={t('connectionCard.removeAriaLabel')}
                                             >
                                                 <Trash className="size-4 text-danger-500" />
                                             </Button>
@@ -386,7 +381,7 @@ const LmsSettings = () => {
                                     className="gap-2"
                                 >
                                     <Plus className="size-4" />
-                                    Add {p.displayName}
+                                    {t('addProvider', { name: p.displayName })}
                                 </Button>
                             ))}
                         </div>
@@ -398,8 +393,13 @@ const LmsSettings = () => {
                             <CardContent className="space-y-5 pt-6">
                                 <div className="flex items-center justify-between">
                                     <h2 className="font-semibold text-neutral-800">
-                                        {draftIsNew ? 'Add' : 'Edit'} {displayName(draft.type)}{' '}
-                                        connection
+                                        {draftIsNew
+                                            ? t('editor.addHeading', {
+                                                  name: displayName(draft.type),
+                                              })
+                                            : t('editor.editHeading', {
+                                                  name: displayName(draft.type),
+                                              })}
                                     </h2>
                                     {meta(draft.type)?.docsUrl && (
                                         <a
@@ -408,7 +408,7 @@ const LmsSettings = () => {
                                             rel="noreferrer"
                                             className="inline-flex items-center gap-1 text-xs font-medium text-primary-600 hover:underline"
                                         >
-                                            How to find these details{' '}
+                                            {t('editor.docsLink')}{' '}
                                             <ArrowSquareOut className="size-3.5" />
                                         </a>
                                     )}
@@ -416,20 +416,20 @@ const LmsSettings = () => {
 
                                 <div className="space-y-1.5">
                                     <Label htmlFor="conn-name" className="text-sm">
-                                        Connection name <span className="text-danger-500">*</span>
+                                        {t('editor.connectionName.label')}{' '}
+                                        <span className="text-danger-500">*</span>
                                     </Label>
                                     <Input
                                         id="conn-name"
                                         value={draft.name}
                                         onChange={(e) => setDraftField('name', e.target.value)}
-                                        placeholder="e.g. Main Moodle, CA-program LearnDash"
+                                        placeholder={t('editor.connectionName.placeholder')}
                                         className={cn(
                                             showErrors && !draft.name.trim() && 'border-danger-400'
                                         )}
                                     />
                                     <p className="text-caption text-neutral-400">
-                                        A label to recognise this connection when you apply it to a
-                                        course.
+                                        {t('editor.connectionName.hint')}
                                     </p>
                                 </div>
 
@@ -449,7 +449,7 @@ const LmsSettings = () => {
                                                         <span className="text-danger-500">*</span>
                                                     ) : (
                                                         <span className="text-caption text-neutral-400">
-                                                            (optional)
+                                                            {t('editor.optional')}
                                                         </span>
                                                     )}
                                                 </Label>
@@ -480,7 +480,11 @@ const LmsSettings = () => {
                                                                 }))
                                                             }
                                                             className="absolute right-2 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-neutral-600"
-                                                            aria-label={show ? 'Hide' : 'Show'}
+                                                            aria-label={
+                                                                show
+                                                                    ? t('editor.secretField.hide')
+                                                                    : t('editor.secretField.show')
+                                                            }
                                                         >
                                                             {show ? (
                                                                 <EyeSlash className="size-4" />
@@ -506,7 +510,9 @@ const LmsSettings = () => {
                                 </div>
 
                                 <div className="space-y-2">
-                                    <Label className="text-sm">Custom fields (optional)</Label>
+                                    <Label className="text-sm">
+                                        {t('editor.customFields.label')}
+                                    </Label>
                                     {draftExtras.map((row, i) => (
                                         <div key={i} className="flex items-center gap-2">
                                             <Input
@@ -514,7 +520,9 @@ const LmsSettings = () => {
                                                 onChange={(e) =>
                                                     updateDraftExtra(i, 'key', e.target.value)
                                                 }
-                                                placeholder="key (e.g. region)"
+                                                placeholder={t(
+                                                    'editor.customFields.keyPlaceholder'
+                                                )}
                                                 className="md:max-w-xs"
                                             />
                                             <Input
@@ -522,13 +530,17 @@ const LmsSettings = () => {
                                                 onChange={(e) =>
                                                     updateDraftExtra(i, 'value', e.target.value)
                                                 }
-                                                placeholder="value"
+                                                placeholder={t(
+                                                    'editor.customFields.valuePlaceholder'
+                                                )}
                                             />
                                             <Button
                                                 variant="ghost"
                                                 size="icon"
                                                 onClick={() => removeDraftExtra(i)}
-                                                aria-label="Remove field"
+                                                aria-label={t(
+                                                    'editor.customFields.removeAriaLabel'
+                                                )}
                                             >
                                                 <Trash className="size-4 text-danger-500" />
                                             </Button>
@@ -540,11 +552,10 @@ const LmsSettings = () => {
                                         onClick={addDraftExtra}
                                         className="gap-1 text-primary-600"
                                     >
-                                        <Plus className="size-4" /> Add field
+                                        <Plus className="size-4" /> {t('editor.customFields.addField')}
                                     </Button>
                                     <p className="text-caption text-neutral-400">
-                                        Add any other connection details your LMS needs as key–value
-                                        pairs.
+                                        {t('editor.customFields.hint')}
                                     </p>
                                 </div>
 
@@ -587,7 +598,7 @@ const LmsSettings = () => {
                                         onClick={cancelDraft}
                                         disabled={testing}
                                     >
-                                        Cancel
+                                        {t('editor.cancel')}
                                     </Button>
                                     <Button
                                         variant="outline"
@@ -600,14 +611,14 @@ const LmsSettings = () => {
                                         ) : (
                                             <PlugsConnected className="size-4" />
                                         )}
-                                        {testing ? 'Testing…' : 'Test connection'}
+                                        {testing ? t('editor.testing') : t('editor.testConnection')}
                                     </Button>
                                     <MyButton
                                         onClick={commitDraft}
                                         className="gap-2 bg-primary-500"
                                     >
                                         <CheckCircle className="size-4" />
-                                        {draftIsNew ? 'Add connection' : 'Update connection'}
+                                        {draftIsNew ? t('editor.addSubmit') : t('editor.updateSubmit')}
                                     </MyButton>
                                 </div>
                             </CardContent>
@@ -623,7 +634,7 @@ const LmsSettings = () => {
                                 className="gap-2 bg-primary-500"
                             >
                                 <FloppyDisk className="size-4" />
-                                {saving ? 'Saving…' : 'Save'}
+                                {saving ? t('saving') : t('save')}
                             </MyButton>
                         </div>
                     )}
@@ -633,17 +644,17 @@ const LmsSettings = () => {
             <AlertDialog open={confirmSaveOpen} onOpenChange={setConfirmSaveOpen}>
                 <AlertDialogContent>
                     <AlertDialogHeader>
-                        <AlertDialogTitle>Save LMS connection changes?</AlertDialogTitle>
+                        <AlertDialogTitle>{t('confirmSaveDialog.title')}</AlertDialogTitle>
                         <AlertDialogDescription>
-                            Changes to an <span className="font-semibold">existing</span> connection
-                            (URL, credentials, token) apply to every course already using it — so an
-                            incorrect edit can break enrolment sync for those courses. New
-                            connections won&apos;t affect anything until you apply them to a course.
-                            Double-check before saving.
+                            <Trans i18nKey="settingsLms:confirmSaveDialog.description">
+                                Changes to an <span className="font-semibold">existing</span> connection (URL, credentials, token) apply to every course already using it — so an incorrect edit can break enrolment sync for those courses. New connections won&apos;t affect anything until you apply them to a course. Double-check before saving.
+                            </Trans>
                         </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
-                        <AlertDialogCancel disabled={saving}>Cancel</AlertDialogCancel>
+                        <AlertDialogCancel disabled={saving}>
+                            {t('confirmSaveDialog.cancel')}
+                        </AlertDialogCancel>
                         <AlertDialogAction
                             onClick={(e) => {
                                 e.preventDefault();
@@ -652,7 +663,7 @@ const LmsSettings = () => {
                             disabled={saving}
                             className="bg-primary-500"
                         >
-                            {saving ? 'Saving…' : 'Yes, save'}
+                            {saving ? t('saving') : t('confirmSaveDialog.confirm')}
                         </AlertDialogAction>
                     </AlertDialogFooter>
                 </AlertDialogContent>

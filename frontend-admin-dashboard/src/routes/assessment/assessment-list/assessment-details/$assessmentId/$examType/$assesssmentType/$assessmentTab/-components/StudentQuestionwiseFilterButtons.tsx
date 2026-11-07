@@ -1,5 +1,6 @@
 import { MyButton } from '@/components/design-system/button';
 import { SelectedFilterQuestionWise } from '@/types/assessments/student-questionwise-status';
+import { useTranslation } from 'react-i18next';
 
 interface ScheduleTestFilterButtonsProps {
     selectedQuestionPaperFilters: SelectedFilterQuestionWise;
@@ -12,6 +13,7 @@ const StudentQuestionwiseFilterButtons = ({
     handleSubmitFilters,
     handleResetFilters,
 }: ScheduleTestFilterButtonsProps) => {
+    const { t } = useTranslation('assessmentStudentQuestionwiseFilterButtons');
     const isButtonEnabled = () => {
         const { name, registration_source_id } = selectedQuestionPaperFilters;
         return name || registration_source_id?.length > 0;
@@ -27,7 +29,7 @@ const StudentQuestionwiseFilterButtons = ({
                         className="h-8"
                         onClick={handleSubmitFilters}
                     >
-                        Filter
+                        {t('filter')}
                     </MyButton>
                     <MyButton
                         buttonType="secondary"
@@ -36,7 +38,7 @@ const StudentQuestionwiseFilterButtons = ({
                         className="h-8 border border-neutral-400 bg-neutral-200 hover:border-neutral-500 hover:bg-neutral-300 active:border-neutral-600 active:bg-neutral-400"
                         onClick={handleResetFilters}
                     >
-                        Reset
+                        {t('reset')}
                     </MyButton>
                 </div>
             )}

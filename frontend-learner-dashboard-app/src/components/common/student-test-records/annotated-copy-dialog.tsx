@@ -6,6 +6,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { toast } from "sonner";
+import { useTranslation } from "react-i18next";
 import { DashboardLoader } from "@/components/core/dashboard-loader";
 import SimplePDFViewer from "@/components/common/simple-pdf-viewer";
 import authenticatedAxiosInstance from "@/lib/auth/axiosInstance";
@@ -37,6 +38,7 @@ export function AnnotatedCopyDialog({
   attemptId,
   submittedFileId,
 }: AnnotatedCopyDialogProps) {
+  const { t } = useTranslation("testRecords");
   const [loading, setLoading] = useState(false);
   const [pdfUrl, setPdfUrl] = useState<string | null>(null);
   const [layoutMap, setLayoutMap] = useState<LayoutMap | null>(null);
@@ -64,7 +66,7 @@ export function AnnotatedCopyDialog({
         setLayoutMap((res.data?.layout_map as LayoutMap) ?? null);
         setAnnotations((res.data?.annotations as Annotation[]) ?? []);
       } catch {
-        if (!cancelled) toast.error("Could not load the annotated copy.");
+        if (!cancelled) toast.error(t("annotatedCopyDialog.toastError"));
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -82,7 +84,7 @@ export function AnnotatedCopyDialog({
       >
         <DialogHeader className="shrink-0 flex-row items-center justify-between gap-3 space-y-0 border-b border-neutral-200 px-4 py-3 pe-12">
           <DialogTitle className="truncate text-base font-semibold">
-            Annotated answer copy
+            {t("annotatedCopyDialog.title")}
           </DialogTitle>
         </DialogHeader>
 

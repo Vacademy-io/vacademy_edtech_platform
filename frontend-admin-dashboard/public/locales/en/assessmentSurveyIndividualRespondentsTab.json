@@ -1,0 +1,38 @@
+{
+    "loading": {
+        "respondents": "Loading survey respondents...",
+        "questions": "Loading questions data..."
+    },
+    "error": {
+        "title": "Error Loading Respondents",
+        "tryAgain": "Try Again"
+    },
+    "empty": {
+        "title": "No Respondents Found",
+        "description": "No survey responses found for this assessment."
+    },
+    "navigation": {
+        "previous": "Previous",
+        "next": "Next",
+        "respondentLabel": "Respondent",
+        "ofTotal": "of {{count}}"
+    },
+    "respondent": {
+        "unknownName": "Unknown",
+        "noEmail": "No email",
+        "batch": "Batch: {{name}}"
+    },
+    "response": {
+        "noResponse": "No response",
+        "unknownType": "Unknown response type",
+        "unknownQuestionId": "Unknown",
+        "unknownQuestionType": "Unknown",
+        "defaultQuestionContent": "Survey Question",
+        "parseError": "Error parsing response data",
+        "questionPrefix": "Q{{number}}.",
+        "label": "Response:",
+        "visited": "Visited",
+        "markedForReview": "Marked for Review",
+        "noneAvailable": "No responses available for this respondent."
+    }
+}

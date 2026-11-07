@@ -1,0 +1,19 @@
+{
+    "badge": {
+        "id": "المعرف: {{id}}",
+        "appliesTo": "← ينطبق على: {{target}}"
+    },
+    "rules": {
+        "title": "القواعد ({{count}})"
+    },
+    "metadata": {
+        "created": "أُنشئ: {{date}}",
+        "updatedSuffix": " • حُدّث: {{date}}"
+    },
+    "actions": {
+        "enable": "تفعيل الشرط",
+        "disable": "تعطيل الشرط",
+        "edit": "تعديل الشرط",
+        "delete": "حذف الشرط"
+    }
+}

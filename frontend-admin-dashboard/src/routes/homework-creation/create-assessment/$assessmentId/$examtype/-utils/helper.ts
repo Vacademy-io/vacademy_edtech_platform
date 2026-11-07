@@ -1,3 +1,5 @@
+import type { TFunction } from 'i18next';
+import { withMissingBuiltInFieldsOnTop } from '@/routes/assessment/create-assessment/$assessmentId/$examtype/-utils/step3-registration-fields';
 import {
     ConvertedCustomField,
     CustomFieldStep3,
@@ -19,9 +21,9 @@ import {
 } from '@/types/assessments/assessment-steps';
 import { z } from 'zod';
 import sectionDetailsSchema from './section-details-schema';
-import { BasicInfoFormSchema as HomeworkBasicInfoFormSchema } from './basic-info-form-schema';
+import type { BasicInfoFormSchemaType } from './basic-info-form-schema';
 import { convertCustomFields } from '../-services/assessment-services';
-import testAccessSchema from './add-participants-schema';
+import type { TestAccessFormValues } from './add-participants-schema';
 import { CourseWithSessionsType } from '@/stores/study-library/use-study-library-store';
 import { BatchData } from '@/types/assessments/batch-details';
 
@@ -124,10 +126,10 @@ export const getQuestionTypeCounts = (questions: AdaptiveMarkingQuestion[]) => {
     };
 };
 
-export const handleDownloadQRCode = (elementName: string) => {
+export const handleDownloadQRCode = (elementName: string, t: TFunction) => {
     const svg = document.getElementById(elementName);
     if (!svg) {
-        alert('QR code not found!');
+        alert(t('qrCodeNotFound'));
         return;
     }
 
@@ -311,7 +313,7 @@ export function calculateTotalMarks(questions: AdaptiveMarkingQuestion[]) {
 }
 
 export const syncStep1DataWithStore = (
-    form: UseFormReturn<z.infer<typeof HomeworkBasicInfoFormSchema>>
+    form: UseFormReturn<BasicInfoFormSchemaType>
 ) => {
     const setBasicInfo = useBasicInfoStore.getState().setBasicInfo;
     const { getValues } = form;
@@ -404,8 +406,10 @@ export const convertStep2Data = (data: z.infer<typeof sectionDetailsSchema>) => 
         section_duration:
             parseInt(section.section_duration.hrs) * 60 + parseInt(section.section_duration.min),
         section_order: index + 1,
-        total_marks: parseInt(section.total_marks) || 0,
-        cutoff_marks: section.cutoff_marks.checked ? parseInt(section.cutoff_marks.value) || 0 : 0,
+        total_marks: parseFloat(section.total_marks) || 0,
+        cutoff_marks: section.cutoff_marks.checked
+            ? parseFloat(section.cutoff_marks.value) || 0
+            : 0,
         problem_randomization: section.problem_randomization,
         question_and_marking: section.adaptive_marking_for_each_question.map(
             (question, qIndex) => ({
@@ -643,47 +647,11 @@ export function convertToCustomFieldsData(data: RegistrationFormField[] | undefi
         }));
 }
 
+// The built-ins go out under their canonical English names: the backend derives field_key from the
+// name, and the learner's registration identifies the email / name fields by that key.
 export function getCustomFieldsWhileEditStep3(assessmentDetails: Steps) {
-    const defaultFields = [
-        {
-            id: '0',
-            type: 'textfield',
-            name: 'Full Name',
-            oldKey: true,
-            isRequired: true,
-            key: 'full_name',
-        },
-        {
-            id: '1',
-            type: 'textfield',
-            name: 'Email',
-            oldKey: true,
-            isRequired: true,
-            key: 'email',
-        },
-        {
-            id: '2',
-            type: 'textfield',
-            name: 'Phone Number',
-            oldKey: true,
-            isRequired: true,
-            key: 'phone_number',
-        },
-    ];
-
     const registrationFields = assessmentDetails[2]?.saved_data?.registration_form_fields ?? [];
-
-    // Extract field names from registrationFields
-    const existingFieldNames = new Set(registrationFields.map((field) => field.field_name));
-
-    // Check if all three fields exist
-    const hasAllDefaults = ['Full Name', 'Email', 'Phone Number'].every((field) =>
-        existingFieldNames.has(field)
-    );
-
-    return hasAllDefaults
-        ? convertToCustomFieldsData(registrationFields)
-        : [...defaultFields, ...convertToCustomFieldsData(registrationFields)];
+    return withMissingBuiltInFieldsOnTop(convertToCustomFieldsData(registrationFields));
 }
 
 export const convertToCustomFieldSchema = (field: CustomFieldStep3): ConvertedCustomField => {
@@ -704,7 +672,7 @@ export const convertToCustomFieldSchema = (field: CustomFieldStep3): ConvertedCu
 
 export const convertDataToStep3 = (
     oldData: TestAccessFormType | null,
-    newData: z.infer<typeof testAccessSchema>
+    newData: TestAccessFormValues
 ) => {
     const convertedData: {
         closed_test: boolean;

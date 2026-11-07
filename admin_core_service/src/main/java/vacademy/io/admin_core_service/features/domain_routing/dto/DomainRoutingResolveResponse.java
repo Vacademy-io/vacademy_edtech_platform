@@ -40,9 +40,17 @@ public class DomainRoutingResolveResponse {
     private boolean convertUsernamePasswordToLowercase;
     private String subOrgId;
     private String commaSeparatedPreferredCountry;
+    /**
+     * How the dashboards should pick a phone field's country code on this
+     * portal: INSTITUTE_FIRST (default when null), GEO_FIRST or INSTITUTE_ONLY.
+     * See PhoneCountryGeoMode.
+     */
+    private String phoneCountryGeoMode;
     private Boolean hideInstituteName;
     private Integer logoWidthPx;
     private Integer logoHeightPx;
     private Boolean stackNameBelowLogo;
     private NamingOverridesDto namingOverrides;
+    /** Catalogue served at this host's root (clean URLs). Null = classic /<tag> routing. */
+    private String rootCatalogueTag;
 }

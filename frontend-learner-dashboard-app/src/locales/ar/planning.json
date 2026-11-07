@@ -1,0 +1,190 @@
+{
+    "common": {
+        "filters": "عوامل التصفية",
+        "clear": "مسح",
+        "view": "عرض",
+        "close": "إغلاق",
+        "previous": "السابق",
+        "next": "التالي",
+        "selectPeriod": "اختر الفترة",
+        "viewModeTimeline": "الجدول الزمني",
+        "viewModeTable": "جدول",
+        "pageOf": "صفحة {{page}} من {{total}}"
+    },
+    "periodSelector": {
+        "today": "اليوم",
+        "tomorrow": "غداً",
+        "allActivities": "كل الأنشطة"
+    },
+    "intervalTypeSelector": {
+        "today": "اليوم",
+        "thisWeek": "هذا الأسبوع",
+        "thisMonth": "هذا الشهر",
+        "thisQuarter": "هذا الربع",
+        "allPlannings": "كل الخطط"
+    },
+    "attachments": {
+        "label": "المرفقات",
+        "openInNewTab": "فتح في تبويب جديد",
+        "failedToLoad": "تعذّر التحميل",
+        "item": "المرفق {{index}}"
+    },
+    "filtersDialog": {
+        "title": "خيارات التصفية",
+        "description": "خصّص ما تريد رؤيته",
+        "period": "الفترة",
+        "coursesAndBatches": "{{courses}}/{{batches}}",
+        "clearAllFilters": "مسح كل عوامل التصفية"
+    },
+    "planningFilters": {
+        "clearAll": "مسح الكل",
+        "intervalType": "نوع الفترة",
+        "unnamedBatch": "{{batch}} بدون اسم"
+    },
+    "intervalTypeOptions": {
+        "dayOfWeek": "يوم من الأسبوع",
+        "weekly": "أسبوعي",
+        "monthly": "شهري",
+        "quarterly": "ربع سنوي"
+    },
+    "intervalTypeLabel": {
+        "daily": "يومي",
+        "weekly": "يوم من الأسبوع",
+        "monthly": "أسبوع",
+        "yearlyMonth": "شهر",
+        "yearlyQuarter": "ربع سنة"
+    },
+    "todayIntervalLabel": {
+        "daily": "يومي",
+        "weekly": "هذا الأسبوع",
+        "monthly": "هذا الشهر",
+        "yearlyMonth": "هذا الشهر",
+        "yearlyQuarter": "هذا الربع"
+    },
+    "weekdays": {
+        "monday": "الإثنين",
+        "tuesday": "الثلاثاء",
+        "wednesday": "الأربعاء",
+        "thursday": "الخميس",
+        "friday": "الجمعة",
+        "saturday": "السبت",
+        "sunday": "الأحد"
+    },
+    "monthsFull": {
+        "january": "يناير",
+        "february": "فبراير",
+        "march": "مارس",
+        "april": "أبريل",
+        "may": "مايو",
+        "june": "يونيو",
+        "july": "يوليو",
+        "august": "أغسطس",
+        "september": "سبتمبر",
+        "october": "أكتوبر",
+        "november": "نوفمبر",
+        "december": "ديسمبر"
+    },
+    "monthsShort": {
+        "jan": "يناير",
+        "feb": "فبراير",
+        "mar": "مارس",
+        "apr": "أبريل",
+        "may": "مايو",
+        "jun": "يونيو",
+        "jul": "يوليو",
+        "aug": "أغسطس",
+        "sep": "سبتمبر",
+        "oct": "أكتوبر",
+        "nov": "نوفمبر",
+        "dec": "ديسمبر"
+    },
+    "quarterRanges": {
+        "q1": "يناير - مارس",
+        "q2": "أبريل - يونيو",
+        "q3": "يوليو - سبتمبر",
+        "q4": "أكتوبر - ديسمبر"
+    },
+    "formatters": {
+        "weekLabel": "أسبوع {{week}} - {{month}}",
+        "yearMonthLabel": "{{month}} {{year}}",
+        "quarterFallback": "الربع {{num}}"
+    },
+    "groups": {
+        "today": "اليوم",
+        "tomorrow": "غداً",
+        "pastDays": "أيام سابقة",
+        "later": "لاحقاً",
+        "nextWeek": "الأسبوع القادم",
+        "nextMonth": "الشهر القادم",
+        "nextQuarter": "الربع القادم",
+        "pastWeek": "الأسبوع الماضي",
+        "pastMonth": "الشهر الماضي",
+        "pastQuarter": "الربع الماضي"
+    },
+    "table": {
+        "empty": {
+            "title": "لا توجد خطط أو أنشطة تمت مشاركتها معك بعد",
+            "description": "سيشارك {{teachers}} الخطط والأنشطة هنا"
+        },
+        "headers": {
+            "interval": "الفترة",
+            "period": "المدة",
+            "title": "العنوان",
+            "createdBy": "أنشأه",
+            "createdAt": "تاريخ الإنشاء",
+            "actions": "الإجراءات"
+        }
+    },
+    "timeline": {
+        "previousPage": "الصفحة السابقة",
+        "loadMore": "تحميل المزيد"
+    },
+    "timelineCard": {
+        "by": "بواسطة: {{name}}",
+        "viewDetails": "عرض التفاصيل"
+    },
+    "todayCard": {
+        "updatedAgo": "تم التحديث قبل {{time}}",
+        "createdBy": "أنشأه {{name}}"
+    },
+    "viewDialog": {
+        "interval": "الفترة:",
+        "createdBy": "أنشأه:",
+        "createdAt": "تاريخ الإنشاء:",
+        "description": "الوصف",
+        "content": "المحتوى",
+        "attachmentsCount": "المرفقات ({{count}})"
+    },
+    "hub": {
+        "heading": "الخطط والأنشطة",
+        "subtitle": "اطّلع على الخطط والأنشطة التي شاركها {{teachers}}",
+        "plannings": {
+            "title": "الخطط",
+            "description": "اطّلع على الخطط من {{teachers}}",
+            "cta": "عرض الخطط"
+        },
+        "activities": {
+            "title": "الأنشطة",
+            "description": "اطّلع على الأنشطة من {{teachers}}",
+            "cta": "عرض الأنشطة"
+        }
+    },
+    "activityLogsPage": {
+        "navHeading": "أنشطتي",
+        "subtitle": "اطّلع على أنشطة التعلّم اليومية",
+        "errorLoad": "تعذّر تحميل الأنشطة",
+        "empty": {
+            "title": "لا توجد أنشطة بعد",
+            "description": "لم يسجّل {{teacher}} أي نشاط بعد"
+        }
+    },
+    "planningLogsPage": {
+        "navHeading": "خططي",
+        "subtitle": "اطّلع على الخطط والجداول",
+        "errorLoad": "تعذّر تحميل الخطط",
+        "empty": {
+            "title": "لا توجد خطط بعد",
+            "description": "لم يضِف {{teacher}} أي خطة لهذه الفترة"
+        }
+    }
+}

@@ -4,16 +4,17 @@ import {
 } from '@/components/common/export-offline/contexts/export-settings-context';
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Settings, Trash2 } from 'lucide-react';
-import { Upload } from '@phosphor-icons/react';
+import { Gear, Trash, Upload } from '@phosphor-icons/react';
 import { Dialog, DialogClose, DialogContent, DialogTrigger } from '@/components/ui/dialog';
 import { ExportHandlerQuestionPaperAI } from './ExportHandlerQuestionPaperAI';
 import { PaperSetQuestionsAI } from './PaperSetQuestionsAI';
 import { convertQuestionsToExportSchema } from '@/routes/assessment/question-papers/-utils/helper';
 import { MyButton } from '@/components/design-system/button';
 import { ExportQuestionPaperSettingsDialogAI } from './export-question-paper-dialog-ai/export-question-paper-setting-dialog-ai';
+import { useTranslation } from 'react-i18next';
 
 const ExportQuestionPaperAI = ({ responseQuestionsData }: { responseQuestionsData: any }) => {
+    const { t } = useTranslation('aiCenterExportQuestionPaperAI');
     return (
         <Dialog>
             <DialogTrigger>
@@ -24,7 +25,7 @@ const ExportQuestionPaperAI = ({ responseQuestionsData }: { responseQuestionsDat
                     layoutVariant="default"
                     className="mr-4 text-sm"
                 >
-                    Export PDF
+                    {t('exportPdf')}
                 </MyButton>
             </DialogTrigger>
             <DialogContent className="no-scrollbar !m-0 h-full !w-full !max-w-full !gap-0 overflow-y-auto !rounded-none !p-0">
@@ -37,6 +38,7 @@ const ExportQuestionPaperAI = ({ responseQuestionsData }: { responseQuestionsDat
 };
 
 function PreviewWithSettings({ responseQuestionsData }: { responseQuestionsData: any }) {
+    const { t } = useTranslation('aiCenterExportQuestionPaperAI');
     // @ts-expect-error : Object is possibly 'undefined'
     const convertedQuestions: Question[] = convertQuestionsToExportSchema(responseQuestionsData);
     const [showSettings, setShowSettings] = useState(false);
@@ -83,8 +85,8 @@ function PreviewWithSettings({ responseQuestionsData }: { responseQuestionsData:
                         onClick={() => setShowSettings(true)}
                         className="gap-2"
                     >
-                        <Settings className="size-4" />
-                        Export Settings
+                        <Gear className="size-4" />
+                        {t('exportSettings')}
                     </Button>
                     <div className="flex items-center gap-4">
                         <input
@@ -98,7 +100,7 @@ function PreviewWithSettings({ responseQuestionsData }: { responseQuestionsData:
                             <div className="flex items-center gap-2">
                                 <DialogClose>
                                     <Button variant="outline" className="mr-2">
-                                        Close
+                                        {t('close')}
                                     </Button>
                                 </DialogClose>
                                 <Button
@@ -108,16 +110,16 @@ function PreviewWithSettings({ responseQuestionsData }: { responseQuestionsData:
                                     }
                                 >
                                     <Upload />
-                                    Letterhead
+                                    {t('letterhead')}
                                 </Button>
                                 {settings.customLetterheadImage && (
                                     <Button
                                         variant="destructive"
                                         size="icon"
                                         onClick={handleDeleteLetterhead}
-                                        title="Delete Letterhead"
+                                        title={t('deleteLetterhead')}
                                     >
-                                        <Trash2 className="size-4" />
+                                        <Trash className="size-4" />
                                     </Button>
                                 )}
                             </div>

@@ -1,0 +1,38 @@
+{
+    "collapsed": {
+        "expandHistory": "इतिहास विस्तृत करें",
+        "newVideo": "नया वीडियो"
+    },
+    "header": {
+        "title": "इतिहास",
+        "collapseHistory": "इतिहास संक्षिप्त करें"
+    },
+    "newVideoButton": "नया वीडियो",
+    "empty": {
+        "title": "अभी तक कोई वीडियो नहीं",
+        "subtitle": "आपके बनाए गए वीडियो यहाँ दिखाई देंगे"
+    },
+    "item": {
+        "retry": "पुनः प्रयास करें"
+    },
+    "deleteDialog": {
+        "title": "वीडियो हटाएँ?",
+        "description": "इससे \"{{name}}\" आपके इतिहास से स्थायी रूप से हट जाएगा।",
+        "cancel": "रद्द करें",
+        "confirm": "हटाएँ"
+    },
+    "pagination": {
+        "prev": "पिछला",
+        "next": "अगला",
+        "pageIndicator": "{{current}} / {{total}}"
+    },
+    "relativeTime": {
+        "justNow": "अभी अभी",
+        "minutesAgo_one": "{{count}} मिनट पहले",
+        "minutesAgo_other": "{{count}} मिनट पहले",
+        "hoursAgo_one": "{{count}} घंटे पहले",
+        "hoursAgo_other": "{{count}} घंटे पहले",
+        "daysAgo_one": "{{count}} दिन पहले",
+        "daysAgo_other": "{{count}} दिन पहले"
+    }
+}

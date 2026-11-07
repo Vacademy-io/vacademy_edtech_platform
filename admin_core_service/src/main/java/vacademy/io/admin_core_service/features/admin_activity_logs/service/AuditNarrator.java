@@ -169,18 +169,21 @@ public class AuditNarrator {
     /**
      * Phrases a bulk de-assign. A HARD de-assign revokes access immediately and
      * is a termination; a SOFT one leaves access until expiry, so the two must
-     * not read alike in the log.
+     * not read alike in the log. A HARD de-assign carries the admin's reason, when
+     * one was given — this row is the only place that reason is kept.
      */
     public String bulkDeassignmentOf(String mode, Integer successful, List<String> userIds,
-            List<String> packageSessionIds) {
+            List<String> packageSessionIds, String reason) {
         String who = appliedLearners(successful, userIds);
         if (who == null) {
             return null;
         }
         String where = coursesFor(packageSessionIds);
-        return "HARD".equalsIgnoreCase(mode)
-                ? "terminated " + who + inClause("from", where)
-                : "cancelled enrollment of " + who + inClause("in", where);
+        if (!"HARD".equalsIgnoreCase(mode)) {
+            return "cancelled enrollment of " + who + inClause("in", where);
+        }
+        String because = reason == null || reason.isBlank() ? "" : " — reason: " + reason.trim();
+        return "terminated " + who + inClause("from", where) + because;
     }
 
     /**

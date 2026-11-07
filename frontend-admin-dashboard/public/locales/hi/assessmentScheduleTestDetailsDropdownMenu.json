@@ -1,0 +1,56 @@
+{
+    "menu": {
+        "viewDetails": "असेसमेंट का विवरण देखें",
+        "deleteAssessment": "असेसमेंट हटाएं"
+    },
+    "common": {
+        "open": "खोलें",
+        "attention": "ध्यान दें"
+    },
+    "reminderMessage": {
+        "prefix": "असेसमेंट रिमाइंडर सभी",
+        "participantsCount_one": "{{count}} प्रतिभागी",
+        "participantsCount_other": "{{count}} प्रतिभागियों",
+        "suffix": "को भेजा जाएगा जो अभी तक असाइन की गई बैचों से उपस्थित नहीं हुए हैं।"
+    },
+    "dialogs": {
+        "reminder": {
+            "title": "रिमाइंडर भेजें",
+            "send": "भेजें"
+        },
+        "delete": {
+            "title": "असेसमेंट हटाएं",
+            "confirmPrefix": "क्या आप वाकई हटाना चाहते हैं",
+            "confirmSuffix": "?",
+            "delete": "हटाएं"
+        },
+        "pause": {
+            "title": "लाइव स्थिति रोकें",
+            "dateLabel": "तारीख",
+            "datePlaceholder": "तारीख",
+            "pauseUntilLabel": "तक रोकें",
+            "timePlaceholder": "समय",
+            "pause": "रोकें"
+        },
+        "resume": {
+            "title": "लाइव स्थिति फिर से शुरू करें",
+            "confirmPrefix": "क्या आप अपना लाइव असेसमेंट फिर से शुरू करना चाहते हैं",
+            "sampleAssessmentName": "द ह्यूमन आई एंड द कलरफुल वर्ल्ड",
+            "confirmSuffix": "?",
+            "resume": "फिर से शुरू करें"
+        },
+        "reopen": {
+            "title": "असेसमेंट फिर से खोलें",
+            "selectDateTime": "असेसमेंट को फिर से खोलने की तारीख और समय चुनें",
+            "startDateTimeLabel": "शुरू होने की तारीख और समय",
+            "endDateTimeLabel": "समाप्त होने की तारीख और समय",
+            "datePlaceholder": "तारीख",
+            "timePlaceholder": "समय",
+            "reopen": "फिर से खोलें"
+        }
+    },
+    "toasts": {
+        "deleteSuccess": "असेसमेंट सफलतापूर्वक हटा दिया गया है!",
+        "slidesDeleteFailed": "असेसमेंट हटा दिया गया है, लेकिन उसकी कोर्स स्लाइड्स हटाई नहीं जा सकीं।"
+    }
+}

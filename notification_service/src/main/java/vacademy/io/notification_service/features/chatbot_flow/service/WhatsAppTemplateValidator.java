@@ -124,6 +124,15 @@ public class WhatsAppTemplateValidator {
         if (category == null || !CATEGORIES.contains(category)) {
             problems.add("Category must be MARKETING, UTILITY or AUTHENTICATION.");
             firstField = firstField == null ? "category" : firstField;
+        } else if ("AUTHENTICATION".equals(category)) {
+            // Meta writes the body of an AUTHENTICATION template itself (the fixed OTP wording) and
+            // rejects any BODY component that carries "text" — the builder always sends one. Meta's
+            // own error for this is "component of type BODY has unexpected field(s) (text)", which
+            // reads nothing like "wrong category", so name the real problem here.
+            problems.add("Category is set to Authentication, which Meta reserves for one-time-password "
+                    + "templates with a fixed, Meta-written body. A message with your own text — registration "
+                    + "confirmations, login credentials, reminders — must use Utility (or Marketing).");
+            firstField = firstField == null ? "category" : firstField;
         }
 
         // --- Body ---

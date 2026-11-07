@@ -1,0 +1,34 @@
+{
+    "paymentSubmitted": "تم إرسال الدفعة",
+    "paymentRecordedFor": "تم تسجيل الدفعة لـ",
+    "receiptWillBeGenerated": "سيتم إنشاء الإيصال وإرساله تلقائيًا.",
+    "amountPaidNow": "المبلغ المدفوع الآن",
+    "downloadReceipt": "تنزيل الإيصال",
+    "payForAnotherStudent": "الدفع لطالب آخر",
+    "receipt": {
+        "receiptNo": "رقم الإيصال",
+        "date": "التاريخ",
+        "studentLabel": "الطالب:",
+        "modeLabel": "الطريقة:",
+        "txnIdLabel": "رقم المعاملة:"
+    },
+    "table": {
+        "feeType": "نوع الرسوم",
+        "dueDate": "تاريخ الاستحقاق",
+        "expected": "المتوقع",
+        "adjustment": "التسوية",
+        "paid": "المدفوع",
+        "outstanding": "المتبقي",
+        "status": "الحالة"
+    },
+    "adjustmentType": {
+        "concession": "تنازل",
+        "penalty": "غرامة"
+    },
+    "totals": {
+        "totalExpected": "إجمالي المتوقع",
+        "totalPaid": "إجمالي المدفوع",
+        "totalConcession": "إجمالي التنازلات",
+        "totalPenalty": "إجمالي الغرامات"
+    }
+}

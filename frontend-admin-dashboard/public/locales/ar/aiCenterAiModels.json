@@ -1,0 +1,29 @@
+{
+    "models": {
+        "glm53Flash": {
+            "name": "GLM 5.3 Flash",
+            "description": "Z.ai — موصى به، يقرأ الكتابة اليدوية"
+        },
+        "claudeOpus45": {
+            "name": "Claude Opus 4.5",
+            "description": "Anthropic"
+        },
+        "gemini3ProPreview": {
+            "name": "Gemini 3 Pro Preview",
+            "description": "Google"
+        },
+        "gemini31ProPreview": {
+            "name": "Gemini 3.1 Pro Preview",
+            "description": "Google"
+        },
+        "gpt54": {
+            "name": "GPT-5.4",
+            "description": "OpenAI"
+        }
+    },
+    "fallbackDescription": "نموذج ذكاء اصطناعي",
+    "platformDefault": {
+        "name": "الإعداد الافتراضي للمنصة",
+        "description": "موصى به — النموذج الذي حدده مسؤول المنصة لتصحيح الأوراق"
+    }
+}

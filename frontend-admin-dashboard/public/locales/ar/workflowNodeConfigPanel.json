@@ -1,0 +1,239 @@
+{
+    "common": {
+        "sourceList": "قائمة المصدر",
+        "resultKey": "مفتاح النتيجة",
+        "templateVariables": "متغيرات القالب",
+        "selectANode": "اختر عقدة لتكوينها",
+        "nodeName": "اسم العقدة",
+        "nodeNamePlaceholder": "أدخل اسم العقدة",
+        "requiredParameters": "المعلمات المطلوبة",
+        "autoFilled": "تم التعبئة تلقائيًا من سياق سير العمل",
+        "pickOrTypeValueFor": "اختر أو اكتب قيمة لـ {{param}}...",
+        "enterParam": "أدخل {{param}}...",
+        "deleteNode": "حذف العقدة",
+        "configurationJson": "الإعدادات (JSON)"
+    },
+    "triggerScope": {
+        "noScope": "يُطلق هذا الحدث على مستوى المعهد بالكامل — ليس هناك ما يمكن تحديد نطاقه."
+    },
+    "trigger": {
+        "triggerEvent": "حدث المُشغِّل",
+        "selectEvent": "اختر حدثًا..."
+    },
+    "email": {
+        "sendEmailsTo": "إرسال رسائل البريد الإلكتروني إلى",
+        "selectDataSource": "اختر مصدر البيانات...",
+        "respondentEmails": "رسائل المستجيبين (من المُشغِّل)",
+        "respondentEmailsDesc": "بريد إلكتروني جاهز يتضمن المستلم/الموضوع/المحتوى من نموذج الإرسال",
+        "adminEmails": "رسائل المسؤولين (من المُشغِّل)",
+        "adminEmailsDesc": "إشعارات بريدية للمسؤولين",
+        "audienceLeads": "عملاء الجمهور المحتملون (من الاستعلام)",
+        "audienceLeadsDesc": "قائمة العملاء المحتملين مع بيانات الحقول المخصصة",
+        "students": "الطلاب (من الاستعلام)",
+        "studentsDesc": "قائمة الطلاب بالاسم والبريد الإلكتروني والهاتف",
+        "enrolledStudents": "الطلاب المسجلون (من الاستعلام)",
+        "enrolledStudentsDesc": "قائمة الطلاب المسجلين بالاسم والبريد الإلكتروني والجوال",
+        "queryResults": "نتائج الاستعلام ({{queryKey}})",
+        "queryResultsDesc": "نتائج من عقدة الاستعلام",
+        "connectUpstreamData": "قم بتوصيل عقدة مُشغِّل أو استعلام في الأعلى للكشف التلقائي عن مصادر البيانات.",
+        "pickRecipients": "اختر قائمة المستلمين...",
+        "emailTemplate": "قالب البريد الإلكتروني",
+        "emailTemplateOptional": "(اختياري — تخطَّ لاستخدام البريد الجاهز من مصدر البيانات)",
+        "noTemplatePlaceholder": "بدون قالب (استخدام موضوع/محتوى مصدر البيانات)",
+        "noTemplateSearchEmpty": "لا يوجد قالب بريد إلكتروني يطابق بحثك.",
+        "sendToField": "حقل الإرسال إلى",
+        "sendToFieldHint": "(حقل البريد الإلكتروني المستخدم من كل عنصر)",
+        "autoDetectToEmail": "الكشف التلقائي (to, email)",
+        "studentEmail": "بريد الطالب الإلكتروني",
+        "fatherParentEmail": "بريد الأب/ولي الأمر",
+        "guardianEmail": "بريد ولي الأمر",
+        "motherEmail": "بريد الأم",
+        "toPrebuiltRecipient": "To (المستلم الجاهز)",
+        "templateVariablesHint": "اربط كل عنصر نائب في القالب بحقل بيانات. اختر من القائمة أو اكتب اسم حقل مخصص.",
+        "selectAField": "اختر حقلًا...",
+        "itemFieldsGroup": "حقول العنصر (من القائمة)",
+        "contextFieldsGroup": "حقول السياق / المُشغِّل",
+        "customFieldsGroup": "حقول مخصصة (اكتب الاسم يدويًا)",
+        "typeCustomFieldBelow": "اكتب اسم الحقل المخصص أدناه",
+        "customValue": "مخصص: {{value}}",
+        "customFieldPlaceholder": "أو اكتب اسم حقل مخصص (مثل الاسم الكامل، رقم الهاتف)",
+        "field": {
+            "recipientEmail": "بريد المستلم",
+            "emailSubject": "موضوع البريد",
+            "email": "البريد الإلكتروني",
+            "parentEmail": "بريد ولي الأمر",
+            "parentName": "اسم ولي الأمر",
+            "mobileNumber": "رقم الجوال",
+            "userId": "معرّف المستخدم",
+            "studentName": "اسم الطالب",
+            "studentEmail": "بريد الطالب الإلكتروني",
+            "enrollmentNumber": "رقم التسجيل",
+            "attendancePercentage": "نسبة الحضور",
+            "totalDuration": "إجمالي المدة (دقيقة)",
+            "chatCount": "عدد الدردشات",
+            "handRaiseCount": "عدد رفع اليد",
+            "sessionsAttended": "الجلسات المحضورة",
+            "reportStartDate": "تاريخ بداية التقرير",
+            "reportEndDate": "تاريخ نهاية التقرير",
+            "fullName": "الاسم الكامل",
+            "username": "اسم المستخدم",
+            "batchId": "معرّف الدفعة"
+        },
+        "context": {
+            "instituteName": "اسم المعهد (تلقائي)",
+            "instituteId": "معرّف المعهد (تلقائي)",
+            "learnerUsername": "اسم مستخدم المتعلم (من المُشغِّل)",
+            "learnerPassword": "كلمة مرور المتعلم (من المُشغِّل)",
+            "learnerFullName": "الاسم الكامل للمتعلم (من المُشغِّل)",
+            "learnerEmail": "بريد المتعلم الإلكتروني (من المُشغِّل)",
+            "learnerMobile": "جوال المتعلم (من المُشغِّل)",
+            "liveSessionTitle": "عنوان الجلسة المباشرة (من المُشغِّل)",
+            "sessionStartTime": "وقت بدء الجلسة (من المُشغِّل)",
+            "sessionMeetLink": "رابط اجتماع الجلسة (من المُشغِّل)",
+            "campaignName": "اسم الحملة (من المُشغِّل)",
+            "submissionTime": "وقت الإرسال (من المُشغِّل)"
+        }
+    },
+    "whatsapp": {
+        "template": "قالب واتساب",
+        "selectTemplate": "اختر قالبًا...",
+        "noTemplateSearchEmpty": "لا يوجد قالب واتساب يطابق بحثك.",
+        "sendTo": "إرسال واتساب إلى",
+        "selectRecipients": "اختر المستلمين...",
+        "connectUpstreamRecipients": "قم بتوصيل عقدة مُشغِّل أو استعلام في الأعلى للكشف التلقائي عن المستلمين.",
+        "leadSubmitter": "مُرسِل العميل المحتمل (من المُشغِّل)",
+        "leadSubmitterDesc": "المستخدم الوحيد الذي أرسل النموذج — يُستخدم رقم جواله",
+        "audienceLeads": "عملاء الجمهور المحتملون (من الاستعلام)",
+        "audienceLeadsDesc": "عملاء محتملون لديهم هاتف في الحقول المخصصة",
+        "students": "الطلاب (من الاستعلام)",
+        "studentsDesc": "طلاب لديهم رقم جوال",
+        "enrolledStudents": "الطلاب المسجلون (من الاستعلام)",
+        "enrolledStudentsDesc": "طلاب مسجلون لديهم رقم جوال",
+        "queryResults": "نتائج الاستعلام ({{queryKey}})",
+        "queryResultsDesc": "نتائج من عقدة الاستعلام",
+        "valueForField": "القيمة لـ {{field}}..."
+    },
+    "http": {
+        "requestType": "نوع الطلب",
+        "externalApi": "واجهة برمجة خارجية",
+        "internalService": "خدمة داخلية",
+        "url": "الرابط",
+        "internalUrlPlaceholder": "/admin-core-service/v1/...",
+        "externalUrlPlaceholder": "https://api.example.com/endpoint",
+        "method": "الطريقة",
+        "headers": "الترويسات",
+        "optional": "(اختياري)",
+        "queryParameters": "معلمات الاستعلام",
+        "requestBody": "محتوى الطلب",
+        "requestBodyJson": "(JSON)",
+        "resultKeyHint": "ستكون الاستجابة متاحة عبر #ctx['{{resultKey}}']['body']",
+        "condition": "الشرط",
+        "conditionHint": "(اختياري — تخطَّ الطلب إذا كانت النتيجة خاطئة)",
+        "conditionPlaceholder": "اتركه فارغًا للتنفيذ دائمًا"
+    },
+    "query": {
+        "query": "الاستعلام",
+        "selectQuery": "اختر استعلامًا...",
+        "optionalFilters": "عوامل تصفية اختيارية",
+        "optional": "(اختياري)"
+    },
+    "delay": {
+        "waitMode": "وضع الانتظار",
+        "fixedDuration": "مدة ثابتة",
+        "untilNextWeekday": "حتى يوم الأسبوع التالي",
+        "waitFor": "انتظر لمدة",
+        "pauseResumeAfter_zero": "سيتوقف سير العمل ويستأنف تلقائيًا بعد {{count}} يوم.",
+        "pauseResumeAfter_one": "سيتوقف سير العمل ويستأنف تلقائيًا بعد يوم واحد.",
+        "pauseResumeAfter_two": "سيتوقف سير العمل ويستأنف تلقائيًا بعد يومين.",
+        "pauseResumeAfter_few": "سيتوقف سير العمل ويستأنف تلقائيًا بعد {{count}} أيام.",
+        "pauseResumeAfter_many": "سيتوقف سير العمل ويستأنف تلقائيًا بعد {{count}} يومًا.",
+        "pauseResumeAfter_other": "سيتوقف سير العمل ويستأنف تلقائيًا بعد {{count}} يوم.",
+        "waitUntilNext": "انتظر حتى",
+        "timezone": "المنطقة الزمنية",
+        "pausesUntil": "يتوقف حتى {{day}} القادم عند الساعة {{time}}. أي حدث في نفس يوم الأسبوع ينتظر أسبوعًا كاملًا.",
+        "day": {
+            "monday": "الاثنين",
+            "tuesday": "الثلاثاء",
+            "wednesday": "الأربعاء",
+            "thursday": "الخميس",
+            "friday": "الجمعة",
+            "saturday": "السبت",
+            "sunday": "الأحد"
+        },
+        "unit": {
+            "seconds": "ثوانٍ",
+            "minutes": "دقائق",
+            "hours": "ساعات",
+            "days": "أيام"
+        }
+    },
+    "filter": {
+        "pickListToFilter": "اختر قائمة لتصفيتها...",
+        "keepItemsWhere": "الاحتفاظ بالعناصر حيث",
+        "saveFilteredListAs": "حفظ القائمة المُصفّاة باسم"
+    },
+    "aggregate": {
+        "pickListToAggregate": "اختر قائمة لتجميعها...",
+        "operations": "العمليات"
+    },
+    "condition": {
+        "trueLabel": "تسمية الصح",
+        "falseLabel": "تسمية الخطأ"
+    },
+    "loop": {
+        "sourceExpression": "تعبير المصدر",
+        "pickListVariable": "اختر متغير قائمة...",
+        "itemVariableName": "اسم متغير العنصر",
+        "itemVariableHint": "يمكن الوصول إلى كل عنصر في العُقد اللاحقة عبر #ctx['{variableName}']",
+        "outputKey": "مفتاح الإخراج"
+    },
+    "merge": {
+        "waitForNodeIds": "معرّفات العُقد المُنتظَرة (مفصولة بفواصل)",
+        "waitForHint": "معرّفات العُقد السابقة التي يجب أن يكون ناتجها متوفرًا قبل المتابعة.",
+        "strategy": "الاستراتيجية",
+        "waitAll": "انتظار جميع العُقد السابقة",
+        "waitAny": "المتابعة عند اكتمال أي عقدة سابقة"
+    },
+    "scheduleTask": {
+        "delayDuration": "مدة التأخير (ISO-8601)",
+        "delayDurationHint": "PT1H = ساعة واحدة، P3D = 3 أيام، PT30M = 30 دقيقة",
+        "targetWorkflowId": "معرّف سير العمل المستهدف (اختياري)",
+        "targetWorkflowIdPlaceholder": "اتركه فارغًا لسير العمل الحالي",
+        "contextKeysToForward": "مفاتيح السياق المُراد تمريرها (مفصولة بفواصل)"
+    },
+    "updateRecord": {
+        "table": "الجدول",
+        "selectTable": "اختر جدولًا...",
+        "findRecordsWhere": "البحث عن السجلات حيث",
+        "setValuesTo": "تعيين القيم إلى",
+        "columnPlaceholder": "العمود",
+        "matchValuePlaceholder": "قيمة المطابقة",
+        "newValuePlaceholder": "القيمة الجديدة"
+    },
+    "pushNotification": {
+        "title": "العنوان",
+        "titlePlaceholder": "تم نشر واجب جديد!",
+        "body": "المحتوى",
+        "bodyPlaceholder": "اطّلع على الواجب الجديد في مقررك",
+        "recipientTokens": "رموز المستلمين",
+        "recipientTokensPlaceholder": "اختر قائمة رموز FCM...",
+        "dataPayload": "حمولة البيانات (JSON، اختياري)"
+    },
+    "leadStatus": {
+        "label": "حالة العميل المحتمل",
+        "selectStatus": "اختر حالة..."
+    },
+    "callAi": {
+        "agent": "الوكيل",
+        "selectAgent": "اختر وكيلًا...",
+        "infoPrefix": "يتم تسجيل الوكلاء في الإعدادات ← الاتصال بالذكاء الاصطناعي (الحملات / وكلاء الذكاء الاصطناعي). تعود نتيجة الاتصال عبر",
+        "infoOutcomeSuffix": "(ASSIGN | STOP | RETRY)،",
+        "infoAnd": "و",
+        "provider": "المزوّد (اختياري)",
+        "instituteDefault": "افتراضي المعهد",
+        "instituteDefaultWithProvider": "افتراضي المعهد ({{provider}})",
+        "ignoreAssignedGuardLabel": "الاتصال أيضًا بالعملاء المحتملين الذين لديهم مستشار بالفعل",
+        "ignoreAssignedGuardHint": "معطّل افتراضيًا: يتخطى البوت العملاء المحتملين الذين يملكهم مستشار بالفعل. فعّل هذا الخيار لسير العمل الذي يستهدف عمدًا العملاء المحتملين المملوكين — مثل إعادة الاتصال بعميل محتمل قام مستشار للتو بوضع علامة DNP عليه — وإلا فستتوقف العقدة دون الاتصال. تظل حدود الاتصال اليومية سارية.",
+        "extraMetadata": "بيانات وصفية إضافية للوكيل (JSON، اختياري)"
+    }
+}

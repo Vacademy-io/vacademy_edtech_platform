@@ -1,0 +1,23 @@
+{
+    "ratingTooltip_zero": "لا توجد جلسات مقيَّمة — انقر لقراءة الملاحظات",
+    "ratingTooltip_one": "متوسط جلسة واحدة مقيَّمة — انقر لقراءة الملاحظات",
+    "ratingTooltip_two": "متوسط جلستين مقيَّمتين — انقر لقراءة الملاحظات",
+    "ratingTooltip_few": "متوسط {{count}} جلسات مقيَّمة — انقر لقراءة الملاحظات",
+    "ratingTooltip_many": "متوسط {{count}} جلسة مقيَّمة — انقر لقراءة الملاحظات",
+    "ratingTooltip_other": "متوسط {{count}} جلسة مقيَّمة — انقر لقراءة الملاحظات",
+    "noCapTooltip": "الطلاب المسندون حاليًا لهذا المرشد (لا يوجد حد أقصى)",
+    "atCapacityTooltip": "اكتملت الطاقة الاستيعابية — لا يمكن إسناد طلاب جدد حتى يتم رفع الحد أو إلغاء إسناد أحد الطلاب",
+    "placesOpenTooltip_zero": "لا توجد أماكن متاحة من أصل {{cap}}",
+    "placesOpenTooltip_one": "مكان واحد متاح من أصل {{cap}}",
+    "placesOpenTooltip_two": "مكانان متاحان من أصل {{cap}}",
+    "placesOpenTooltip_few": "{{count}} أماكن متاحة من أصل {{cap}}",
+    "placesOpenTooltip_many": "{{count}} مكانًا متاحًا من أصل {{cap}}",
+    "placesOpenTooltip_other": "{{count}} مكان متاح من أصل {{cap}}",
+    "fullSuffix": "مكتمل",
+    "studentsSuffix_zero": "طالب",
+    "studentsSuffix_one": "طالب",
+    "studentsSuffix_two": "طالبان",
+    "studentsSuffix_few": "طلاب",
+    "studentsSuffix_many": "طالبًا",
+    "studentsSuffix_other": "طالب"
+}

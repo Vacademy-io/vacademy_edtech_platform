@@ -1,0 +1,34 @@
+{
+    "toast": {
+        "approved": "Adjustment approved",
+        "rejected": "Adjustment rejected",
+        "reviewFailed": "Failed to review adjustment"
+    },
+    "errors": {
+        "unableToLoad": "Unable to load pending approvals",
+        "tryAgain": "Please try again."
+    },
+    "empty": {
+        "noPendingApprovals": "No pending approvals",
+        "allReviewed": "All adjustment requests have been reviewed."
+    },
+    "table": {
+        "student": "Student",
+        "feeType": "Fee Type",
+        "cpoPlan": "CPO / Plan",
+        "type": "Type",
+        "expected": "Expected",
+        "amount": "Amount",
+        "reason": "Reason",
+        "dueDate": "Due Date",
+        "actions": "Actions"
+    },
+    "adjustmentType": {
+        "concession": "Concession",
+        "penalty": "Penalty"
+    },
+    "actions": {
+        "approve": "Approve",
+        "reject": "Reject"
+    }
+}

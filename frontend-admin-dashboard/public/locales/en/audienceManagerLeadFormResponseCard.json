@@ -1,0 +1,44 @@
+{
+    "card": {
+        "title": "Form Response"
+    },
+    "row": {
+        "notProvided": "Not provided",
+        "viewAttachment": "View attachment"
+    },
+    "callButton": {
+        "title": "Call this lead",
+        "ariaLabel": "Call lead",
+        "connecting": "Connecting…",
+        "callNow": "Call now"
+    },
+    "aiCallButton": {
+        "title": "Place an AI voice-agent call to this lead",
+        "ariaLabel": "AI call lead",
+        "calling": "Calling…",
+        "aiCall": "AI call",
+        "optionsHeading": "AI call options",
+        "placeAiCall": "Place AI call"
+    },
+    "errors": {
+        "noResponseForCall": "No campaign response linked — cannot place a call from here.",
+        "noResponseForAiCall": "No campaign response linked — cannot place an AI call from here."
+    },
+    "editDialog": {
+        "edit": "Edit",
+        "dialogHeading": "Edit Form Response",
+        "helper": "Correct this lead's answers. Changing the lead's own phone, email or name here also updates it on their profile and in lead lists.",
+        "readOnly": "Attachments and multi-select answers can't be edited here.",
+        "cancel": "Cancel",
+        "saving": "Saving…",
+        "save": "Save Changes",
+        "updateSuccess": "Form response updated",
+        "updateError": "Failed to update form response",
+        "invalid": {
+            "phoneFormat": "Enter a valid phone number for the selected country.",
+            "phone": "Enter a full phone number (at least 10 digits) — this is the lead's own number.",
+            "email": "Enter a valid email — this is the lead's own email.",
+            "name": "Name can't be empty — this is the lead's own name."
+        }
+    }
+}

@@ -17,8 +17,8 @@ Thank you for your interest in contributing to Vacademy! We welcome contribution
 1. **Fork** the repository on GitHub.
 2. **Clone** your fork locally:
    ```bash
-   git clone https://github.com/<your-username>/vacademy_platform.git
-   cd vacademy_platform
+   git clone https://github.com/<your-username>/vacademy_edtech_platform.git
+   cd vacademy_edtech_platform
    ```
 3. **Create a branch** from `main` for your work:
    ```bash

@@ -1,0 +1,13 @@
+{
+    "navHeading": "People",
+    "backButton": "All employees",
+    "errorMessage": "Couldn't load this employee.",
+    "emptyTitle": "This employee no longer exists",
+    "emptyDescription": "They may have been removed. Go back to the list to find the right record.",
+    "fallbackName": "Employee",
+    "tabs": {
+        "profile": "Profile",
+        "salary": "Salary",
+        "employment": "Employment"
+    }
+}

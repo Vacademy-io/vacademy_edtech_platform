@@ -14,18 +14,7 @@ import {
     AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { useState } from "react";
-
-// Helper function to format time ago
-function timeAgo(dateString: string) {
-    const now = new Date();
-    const date = new Date(dateString);
-    const diff = Math.floor((now.getTime() - date.getTime()) / 1000);
-    if (diff < 60) return `${diff}s ago`;
-    if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
-    if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
-    if (diff < 604800) return `${Math.floor(diff / 86400)}d ago`;
-    return date.toLocaleDateString();
-}
+import { useTranslation } from "react-i18next";
 
 export function ReviewItem({
     review,
@@ -37,6 +26,20 @@ export function ReviewItem({
     showActions = true,
     variant = 'default'
 }: ReviewItemProps) {
+    const { t, i18n } = useTranslation("layoutCommonB");
+
+    // Helper function to format time ago
+    const timeAgo = (dateString: string) => {
+        const now = new Date();
+        const date = new Date(dateString);
+        const diff = Math.floor((now.getTime() - date.getTime()) / 1000);
+        if (diff < 60) return t("reviewItem.timeAgo.seconds", { count: diff });
+        if (diff < 3600) return t("reviewItem.timeAgo.minutes", { count: Math.floor(diff / 60) });
+        if (diff < 86400) return t("reviewItem.timeAgo.hours", { count: Math.floor(diff / 3600) });
+        if (diff < 604800) return t("reviewItem.timeAgo.days", { count: Math.floor(diff / 86400) });
+        return date.toLocaleDateString(i18n.language);
+    };
+
     const isCompact = variant === 'compact';
     const canDelete = currentUserId && review.user.id === currentUserId;
     const [showDeleteDialog, setShowDeleteDialog] = useState(false);
@@ -230,7 +233,7 @@ export function ReviewItem({
                                 >
                                     <Trash size={14} weight="duotone" />
                                     <span className="text-xs font-medium">
-                                        Delete
+                                        {t("reviewItem.actions.delete")}
                                     </span>
                                 </Button>
                             )}
@@ -246,22 +249,22 @@ export function ReviewItem({
             <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
                 <AlertDialogContent>
                     <AlertDialogHeader>
-                        <AlertDialogTitle>Delete Review</AlertDialogTitle>
+                        <AlertDialogTitle>{t("reviewItem.deleteDialog.title")}</AlertDialogTitle>
                         <AlertDialogDescription>
-                            Are you sure you want to delete this review? This action cannot be undone.
+                            {t("reviewItem.deleteDialog.description")}
                         </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
-                        <AlertDialogCancel>Cancel</AlertDialogCancel>
-                        <AlertDialogAction 
+                        <AlertDialogCancel>{t("reviewItem.deleteDialog.cancel")}</AlertDialogCancel>
+                        <AlertDialogAction
                             onClick={handleConfirmDelete}
                             className="bg-red-500 text-white hover:bg-red-600"
                         >
-                            Delete
+                            {t("reviewItem.deleteDialog.confirm")}
                         </AlertDialogAction>
                     </AlertDialogFooter>
                 </AlertDialogContent>
             </AlertDialog>
         </>
     );
-} 
+}

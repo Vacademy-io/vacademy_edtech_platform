@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import { MyButton } from '@/components/design-system/button';
 import { SelectedQuestionPaperFilters } from './ScheduleTestMainComponent';
 
@@ -7,11 +8,21 @@ interface ScheduleTestFilterButtonsProps {
     handleResetFilters: () => void;
 }
 
+/**
+ * Apply / clear for the assessment-list filters.
+ *
+ * <p>These matter more than they look: picking a filter only stores it — the list is
+ * refetched by a mutation on Apply, not by a query keyed on the filter state — so until
+ * this is pressed the page still shows unfiltered results. The old labels ("Filter" /
+ * "Reset") did not say that, which is why ticking boxes appeared to do nothing.
+ */
 const ScheduleTestFilterButtons = ({
     selectedQuestionPaperFilters,
     handleSubmitFilters,
     handleResetFilters,
 }: ScheduleTestFilterButtonsProps) => {
+    const { t } = useTranslation('assessmentScheduleTestFilterButtons');
+
     const isButtonEnabled = () => {
         const {
             name,
@@ -38,31 +49,28 @@ const ScheduleTestFilterButtons = ({
             evaluation_types?.length > 0
         );
     };
+
+    if (!isButtonEnabled()) return null;
+
     return (
-        <>
-            {!!isButtonEnabled() && (
-                <div className="flex gap-6">
-                    <MyButton
-                        buttonType="primary"
-                        scale="small"
-                        layoutVariant="default"
-                        className="h-8"
-                        onClick={handleSubmitFilters}
-                    >
-                        Filter
-                    </MyButton>
-                    <MyButton
-                        buttonType="secondary"
-                        scale="small"
-                        layoutVariant="default"
-                        className="h-8 border border-neutral-400 bg-neutral-200 hover:border-neutral-500 hover:bg-neutral-300 active:border-neutral-600 active:bg-neutral-400"
-                        onClick={handleResetFilters}
-                    >
-                        Reset
-                    </MyButton>
-                </div>
-            )}
-        </>
+        <div className="flex items-center gap-2">
+            <MyButton
+                buttonType="primary"
+                scale="small"
+                layoutVariant="default"
+                className="h-9 cursor-pointer px-4"
+                onClick={handleSubmitFilters}
+            >
+                {t('apply')}
+            </MyButton>
+            <button
+                type="button"
+                onClick={handleResetFilters}
+                className="h-9 cursor-pointer rounded-lg px-3 text-sm font-medium text-neutral-500 transition-colors duration-200 hover:bg-neutral-100 hover:text-neutral-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-400"
+            >
+                {t('clearAll')}
+            </button>
+        </div>
     );
 };
 

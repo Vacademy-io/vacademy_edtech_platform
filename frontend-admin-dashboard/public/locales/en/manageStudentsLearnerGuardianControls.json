@@ -1,0 +1,16 @@
+{
+    "toggle": {
+        "isGuardianLabel": "Is this a guardian?",
+        "addGuardianButton": "+ Add Guardian",
+        "removeGuardianButton": "Remove guardian"
+    },
+    "hints": {
+        "emailRequired": "Add an email to this record to enable guardian linking.",
+        "linkStudentPrompt": "Add or link the student this guardian is enrolling:",
+        "linkGuardianPrompt": "Add or link this learner's guardian (optional):"
+    },
+    "personLabels": {
+        "student": "Student",
+        "guardian": "Guardian"
+    }
+}

@@ -1,0 +1,85 @@
+{
+    "toast": {
+        "attendanceDownloaded": "تم تنزيل تقرير الحضور بنجاح.",
+        "selectAtLeastOneStudent": "يرجى تحديد طالب واحد على الأقل"
+    },
+    "studentsCount_zero": "لا يوجد طلاب ({{count}})",
+    "studentsCount_one": "طالب واحد",
+    "studentsCount_two": "طالبان",
+    "studentsCount_few": "{{count}} طلاب",
+    "studentsCount_many": "{{count}} طالبًا",
+    "studentsCount_other": "{{count}} طالب",
+    "labels": {
+        "startDateTime": "تاريخ ووقت البدء:",
+        "endTime": "وقت الانتهاء:",
+        "batches": "الدفعات:"
+    },
+    "actions": {
+        "viewDetails": "عرض تفاصيل {{term}}",
+        "viewAttendanceReport": "عرض تقرير الحضور",
+        "viewRecordings": "عرض التسجيلات",
+        "exporting": "جارٍ التصدير...",
+        "csv": "CSV"
+    },
+    "dialog": {
+        "heading": "تقرير الحضور",
+        "basicClassDetails": "التفاصيل الأساسية للحصة",
+        "session": "الجلسة:",
+        "paidMembers": "أعضاء مدفوعون",
+        "openSession": "جلسة مفتوحة",
+        "occurrence": "التكرار:",
+        "type": "النوع:",
+        "duration": "المدة:",
+        "description": "الوصف",
+        "noDescriptionAvailable": "لا يوجد وصف متاح.",
+        "participantsInsights": "إحصاءات المشاركين",
+        "totalParticipants_zero": "إجمالي المشاركين: {{count}}",
+        "totalParticipants_one": "إجمالي المشاركين: {{count}}",
+        "totalParticipants_two": "إجمالي المشاركين: {{count}}",
+        "totalParticipants_few": "إجمالي المشاركين: {{count}}",
+        "totalParticipants_many": "إجمالي المشاركين: {{count}}",
+        "totalParticipants_other": "إجمالي المشاركين: {{count}}",
+        "attendees": "الحاضرون:",
+        "notAttendees": "غير الحاضرين:",
+        "attendancePercentage": "نسبة الحضور",
+        "attendance": "الحضور"
+    },
+    "csv": {
+        "number": "#",
+        "name": "الاسم",
+        "email": "البريد الإلكتروني",
+        "batch": "الدفعة",
+        "course": "الدورة",
+        "status": "الحالة",
+        "mode": "الوضع",
+        "durationMin": "المدة (دقيقة)",
+        "activePoints": "نقاط النشاط",
+        "talkTimeMin": "وقت الحديث (دقيقة)",
+        "talkSegments": "أجزاء الحديث",
+        "raiseHands": "رفع اليد",
+        "emojis": "الرموز التعبيرية",
+        "chats": "الدردشات",
+        "pollVotes": "أصوات الاستطلاع",
+        "activeness": "النشاط %",
+        "activenessOnScreen": "أمام الشاشة %",
+        "activenessAttention": "الانتباه %",
+        "activenessStatus": "حالة النشاط"
+    },
+    "status": {
+        "present": "حاضر",
+        "absent": "غائب",
+        "unmarked": "غير مُحدد"
+    },
+    "activenessState": {
+        "1": "تم القياس",
+        "2": "أوقفه المتعلم",
+        "3": "هاتف/جهاز لوحي — لم يُقَس",
+        "4": "الكاميرا محظورة",
+        "5": "لا توجد كاميرا",
+        "6": "الكاميرا مستخدمة في تطبيق آخر",
+        "7": "الجهاز بطيء جدًا",
+        "8": "تعذّر التحميل",
+        "9": "توقفت الكاميرا",
+        "10": "لم يُسمح بالكاميرا"
+    }
+}

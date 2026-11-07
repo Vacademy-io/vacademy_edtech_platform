@@ -28,6 +28,9 @@ import {
   CardDescription,
 } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
+import { useTranslation } from "react-i18next";
+import { getTerminology } from "@/components/common/layout-container/sidebar/utils";
+import { ContentTerms, SystemTerms } from "@/types/naming-settings";
 
 interface RegistrationFormProps {
   customFields: CustomField[];
@@ -77,6 +80,8 @@ export default function RegistrationForm({
   onError,
   onIdentityChange,
 }: RegistrationFormProps) {
+  const { t } = useTranslation("registrationA");
+  const session = getTerminology(ContentTerms.Session, SystemTerms.Session);
   const schema = generateZodSchema(customFields);
   // Actual keys of every email field in this form (keys vary per institute).
   const emailFieldKeys = useMemo(
@@ -130,11 +135,11 @@ export default function RegistrationForm({
     const raw = lookupValue.trim();
     if (lookupChannel === "email") {
       if (!EMAIL_REGEX.test(raw)) {
-        toast.error("Please enter a valid email address");
+        toast.error(t("liveClass.registrationForm.toast.invalidEmail"));
         return;
       }
     } else if (raw.replace(/\D/g, "").length < 8) {
-      toast.error("Please enter a valid mobile number");
+      toast.error(t("liveClass.registrationForm.toast.invalidMobile"));
       return;
     }
     setLookupBusy(true);
@@ -222,12 +227,12 @@ export default function RegistrationForm({
       <Card className="w-full border-primary-100/60 shadow-lg">
         <CardHeader className="pb-2 pt-6 px-6">
           <CardTitle className="text-xl font-bold text-gray-900">
-            Find your registration
+            {t("liveClass.registrationForm.lookup.title")}
           </CardTitle>
           <CardDescription className="text-gray-500">
             {lookupChannel === "phone"
-              ? "Enter the mobile number you registered with"
-              : "Enter the email you registered with"}
+              ? t("liveClass.registrationForm.lookup.descriptionPhone")
+              : t("liveClass.registrationForm.lookup.descriptionEmail")}
           </CardDescription>
         </CardHeader>
 
@@ -240,8 +245,8 @@ export default function RegistrationForm({
               inputMode={lookupChannel === "phone" ? "tel" : "email"}
               placeholder={
                 lookupChannel === "phone"
-                  ? "Mobile number (with country code)"
-                  : "you@example.com"
+                  ? t("liveClass.registrationForm.lookup.placeholderPhone")
+                  : t("liveClass.registrationForm.lookup.placeholderEmail")
               }
               value={lookupValue}
               onChange={(e) => {
@@ -254,9 +259,12 @@ export default function RegistrationForm({
             />
             {lookupNotFound && (
               <p className="text-sm text-red-500">
-                No registration found with this{" "}
-                {lookupChannel === "phone" ? "mobile number" : "email"}. Please
-                check it, or fill the registration form instead.
+                {t("liveClass.registrationForm.lookup.notFound", {
+                  channel:
+                    lookupChannel === "phone"
+                      ? t("liveClass.registrationForm.lookup.channelMobile")
+                      : t("liveClass.registrationForm.lookup.channelEmail"),
+                })}
               </p>
             )}
             <MyButton
@@ -266,7 +274,7 @@ export default function RegistrationForm({
               disable={lookupBusy}
               onClick={runLookup}
             >
-              {lookupBusy ? "Checking..." : "Continue"}
+              {lookupBusy ? t("liveClass.registrationForm.lookup.checking") : t("liveClass.registrationForm.lookup.continue")}
             </MyButton>
             <button
               type="button"
@@ -276,7 +284,7 @@ export default function RegistrationForm({
                 setLookupNotFound(false);
               }}
             >
-              New here? Fill the registration form
+              {t("liveClass.registrationForm.lookup.backToForm")}
             </button>
           </div>
         </CardContent>
@@ -288,24 +296,24 @@ export default function RegistrationForm({
     <Card className="w-full border-primary-100/60 shadow-lg">
       <CardHeader className="pb-2 pt-6 px-6">
         <CardTitle className="text-xl font-bold text-gray-900">
-          Registration Form
+          {t("common.registrationFormHeading")}
         </CardTitle>
         <CardDescription className="text-gray-500">
-          Fill in your details to join the session
+          {t("liveClass.registrationForm.joinPrompt", { session })}
         </CardDescription>
       </CardHeader>
 
       <Separator className="mx-6 w-auto" />
 
-      <CardContent className="pt-5 px-6 pb-6">
-        <div className="mb-4 flex flex-wrap items-center justify-between gap-2 rounded-lg border border-primary-100 bg-primary-50 px-4 py-3">
-          <span className="text-sm text-gray-700">Already registered?</span>
+      <CardContent className="pt-5 px-6 pb-6 space-y-4">
+        <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-primary-100 bg-primary-50 px-4 py-3">
+          <span className="text-sm text-gray-700">{t("liveClass.registrationForm.alreadyRegistered")}</span>
           <button
             type="button"
             className="text-sm font-semibold text-primary-500 underline-offset-2 hover:underline"
             onClick={() => setLookupMode(true)}
           >
-            Continue here
+            {t("liveClass.registrationForm.continueHere")}
           </button>
         </div>
         <FormProvider {...form}>
@@ -325,12 +333,12 @@ export default function RegistrationForm({
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel className="text-sm font-medium text-gray-700">
-                        Email<span className="text-red-500 ms-0.5">*</span>
+                        {t("common.email")}<span className="text-red-500 ms-0.5">*</span>
                       </FormLabel>
                       <FormControl>
                         <CustomFieldRenderer
                           type={FieldRenderType.EMAIL}
-                          name="Email"
+                          name={t("common.email")}
                           value={(field.value as string) || ""}
                           onChange={(val) => field.onChange(val)}
                           config=""
@@ -368,7 +376,9 @@ export default function RegistrationForm({
                       <PhoneInputField
                         label={responseField.fieldName}
                         name={responseField.fieldKey}
-                        placeholder={`Enter ${responseField.fieldName.toLowerCase()}`}
+                        placeholder={t("liveClass.registrationForm.enterFieldPlaceholder", {
+                          fieldName: responseField.fieldName.toLowerCase(),
+                        })}
                         control={form.control}
                         required={responseField.mandatory}
                         validate={false}
@@ -441,7 +451,7 @@ export default function RegistrationForm({
               type="submit"
               className="w-full h-11 text-sm font-semibold rounded-lg mt-1"
             >
-              Join Now
+              {t("liveClass.registrationForm.joinNow")}
             </MyButton>
           </form>
         </FormProvider>

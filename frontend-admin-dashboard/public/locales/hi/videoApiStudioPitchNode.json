@@ -1,0 +1,7 @@
+{
+    "headerRefs_one": "{{count}} संदर्भ",
+    "headerRefs_other": "{{count}} संदर्भ",
+    "briefLabel": "संक्षिप्त विवरण",
+    "referencesAttached_one": "{{count}} संदर्भ संलग्न",
+    "referencesAttached_other": "{{count}} संदर्भ संलग्न"
+}

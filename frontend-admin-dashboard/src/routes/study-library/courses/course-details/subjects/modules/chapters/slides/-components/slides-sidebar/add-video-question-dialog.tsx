@@ -12,6 +12,8 @@ import { Dispatch, MutableRefObject, SetStateAction, useState } from 'react';
 import { VideoPlayerTimeFormType } from '../../-form-schemas/video-player-time-schema';
 import VideoQuestionDialogAddPreview from './video-question-dialog-add-preview';
 import { toast } from 'sonner';
+import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 import { timestampToSeconds } from '../../-helper/helper';
 
 export interface QuestionTypeProps {
@@ -70,6 +72,7 @@ const AddVideoQuestionDialog = ({
     isAddQuestionTypeRef: React.RefObject<HTMLButtonElement>;
     videoDuration: number;
 }) => {
+    const { t } = useTranslation('studyLibraryAddVideoQuestionDialog');
     const { append: appendVideoQuestion } = useFieldArray({
         control: videoQuestionForm.control,
         name: 'questions', // Name of the field array
@@ -152,7 +155,7 @@ const AddVideoQuestionDialog = ({
         );
         if (timestamp === null || timestamp < 0 || timestamp > videoDuration) {
             toast.error(
-                'Invalid timestamp. Please enter a valid time in MM:SS format or seconds also current timestamp should be less than video length',
+                t('invalidTimestamp'),
                 {
                     className: 'error-toast',
                     duration: 3000,
@@ -175,100 +178,100 @@ const AddVideoQuestionDialog = ({
                     disable={isButtonDisabled}
                     onClick={handleNextClick}
                 >
-                    Next
+                    {t('next')}
                 </MyButton>
                 <DialogContent className="size-[500px] p-0">
                     <h1 className="rounded-t-lg bg-primary-50 p-4 font-semibold text-primary-500">
-                        Add Question
+                        {t('addQuestion')}
                     </h1>
                     <div className="overflow-auto p-4">
                         <div className="flex flex-col gap-4">
-                            <div className="text-subtitle font-semibold">Quick Access</div>
+                            <div className="text-subtitle font-semibold">{t('quickAccess')}</div>
                             <QuestionType
                                 icon={<MCQS />}
-                                text="Multiple Choice Questions (Single correct)"
+                                text={t('questionTypes.mcqSingle')}
                                 type={QuestionTypeList.MCQS}
                                 handleAddQuestion={handleAddQuestion}
                             />
                             <QuestionType
                                 icon={<MCQM />}
-                                text="Multiple Choice Questions (Multiple correct)"
+                                text={t('questionTypes.mcqMultiple')}
                                 type={QuestionTypeList.MCQM}
                                 handleAddQuestion={handleAddQuestion}
                             />
                             <QuestionType
                                 icon={<Numerical />}
-                                text="Numerical"
+                                text={t('questionTypes.numerical')}
                                 type={QuestionTypeList.NUMERIC}
                                 handleAddQuestion={handleAddQuestion}
                             />
                             <QuestionType
                                 type={QuestionTypeList.TRUE_FALSE}
                                 icon={<TrueFalse />}
-                                text="True False"
+                                text={t('questionTypes.trueFalse')}
                                 handleAddQuestion={handleAddQuestion}
                             />
                         </div>
                         <Separator className="my-6" />
                         <div className="flex flex-col gap-4">
-                            <div className="text-subtitle font-semibold">Option Based</div>
+                            <div className="text-subtitle font-semibold">{t('optionBased')}</div>
                             <QuestionType
                                 icon={<MCQS />}
-                                text="Multiple Choice Questions (Single correct)"
+                                text={t('questionTypes.mcqSingle')}
                                 type={QuestionTypeList.MCQS}
                                 handleAddQuestion={handleAddQuestion}
                             />
                             <QuestionType
                                 icon={<MCQM />}
-                                text="Multiple Choice Questions (Multiple correct)"
+                                text={t('questionTypes.mcqMultiple')}
                                 type={QuestionTypeList.MCQM}
                                 handleAddQuestion={handleAddQuestion}
                             />
                         </div>
                         <Separator className="my-6" />
                         <div className="flex flex-col gap-4">
-                            <div className="text-subtitle font-semibold">Math Based</div>
+                            <div className="text-subtitle font-semibold">{t('mathBased')}</div>
                             <QuestionType
                                 icon={<Numerical />}
-                                text="Numerical"
+                                text={t('questionTypes.numerical')}
                                 type={QuestionTypeList.NUMERIC}
                                 handleAddQuestion={handleAddQuestion}
                             />
                         </div>
                         <Separator className="my-6" />
                         <div className="flex flex-col gap-4">
-                            <div className="text-subtitle font-semibold">Writing Skills</div>
+                            <div className="text-subtitle font-semibold">{t('writingSkills')}</div>
                             <QuestionType
                                 icon={<LongAnswer />}
                                 type={QuestionTypeList.LONG_ANSWER}
-                                text="Long Answer"
+                                text={t('questionTypes.longAnswer')}
                                 handleAddQuestion={handleAddQuestion}
                             />
                             <QuestionType
                                 icon={<SingleWord />}
                                 type={QuestionTypeList.ONE_WORD}
-                                text="Single Word"
+                                text={t('questionTypes.singleWord')}
                                 handleAddQuestion={handleAddQuestion}
                             />
                         </div>
                         <Separator className="my-6" />
                         <div className="flex flex-col gap-4">
-                            <div className="text-subtitle font-semibold">Reading Skills</div>
+                            <div className="text-subtitle font-semibold">{t('readingSkills')}</div>
                             <QuestionType
                                 icon={<CMCQS />}
-                                text="Comprehension Multiple Choice Questions (Single correct)"
+                                text={t('questionTypes.comprehensionMcqSingle')}
                                 type={QuestionTypeList.CMCQS}
                                 handleAddQuestion={handleAddQuestion}
                             />
                             <QuestionType
                                 icon={<CMCQM />}
-                                text="Comprehension Multiple Choice Questions (Multiple correct)"
+                                text={t('questionTypes.comprehensionMcqMultiple')}
                                 type={QuestionTypeList.CMCQM}
                                 handleAddQuestion={handleAddQuestion}
                             />
                             <QuestionType
                                 icon={<CMCQM />}
-                                text="Comprehension Numeric"
+                                text={t('questionTypes.comprehensionNumeric')}
                                 type={QuestionTypeList.CNUMERIC}
                                 handleAddQuestion={handleAddQuestion}
                             />

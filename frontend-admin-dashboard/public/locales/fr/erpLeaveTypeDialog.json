@@ -1,0 +1,81 @@
+{
+    "dialog": {
+        "editHeading": "Modifier le type de congé",
+        "addHeading": "Ajouter un type de congé"
+    },
+    "info": {
+        "paidType": "Un type payé puise dans un solde, il faut donc une politique pour attribuer un quota aux employés.",
+        "unpaidType": "Un type non payé est traité par la paie comme une absence non rémunérée : les jours sont déduits du salaire et aucun solde n'est nécessaire, donc aucune politique n'est requise."
+    },
+    "fields": {
+        "name": {
+            "label": "Nom",
+            "placeholder": "Congé occasionnel"
+        },
+        "code": {
+            "label": "Code",
+            "placeholder": "CASUAL",
+            "description": "Identifiant utilisé par les politiques, les soldes et la paie."
+        },
+        "minDays": {
+            "label": "Jours minimum par demande",
+            "placeholder": "0.5",
+            "description": "0,5 permet aux employés de prendre une demi-journée."
+        },
+        "maxConsecutiveDays": {
+            "label": "Jours consécutifs maximum",
+            "placeholder": "5",
+            "description": "Laisser vide pour aucune limite."
+        },
+        "applicableGender": {
+            "label": "Applicable à"
+        },
+        "status": {
+            "label": "Statut"
+        },
+        "maxCarryForward": {
+            "label": "Jours maximum reportés",
+            "placeholder": "10",
+            "description": "Le maximum que le processus de fin d'année reportera à l'année suivante. Tout excédent est perdu, ou versé en espèces si le type est convertible en espèces."
+        },
+        "description": {
+            "label": "Description",
+            "placeholder": "Quand les employés doivent utiliser ce congé, pour que le prochain administrateur n'ait pas à deviner."
+        }
+    },
+    "checkboxes": {
+        "paidLeave": "Congé payé",
+        "carriesForward": "Reportable",
+        "encashable": "Convertible en espèces",
+        "requiresDocument": "Document requis"
+    },
+    "actions": {
+        "cancel": "Annuler",
+        "saving": "Enregistrement…",
+        "saveChanges": "Enregistrer les modifications",
+        "createLeaveType": "Créer le type de congé"
+    },
+    "toast": {
+        "updated": "Type de congé mis à jour",
+        "created": "Type de congé créé"
+    },
+    "errors": {
+        "saveFailed": "Impossible d'enregistrer le type de congé."
+    },
+    "validation": {
+        "nameRequired": "Donnez un nom au type de congé",
+        "codeMinLength": "Les codes comptent au moins 2 caractères",
+        "codeFormat": "Lettres majuscules, chiffres et underscores uniquement — pas d'espaces (ex. CASUAL, SICK, COMP_OFF)",
+        "genderRequired": "Choisissez à qui cela s'applique",
+        "statusRequired": "Choisissez un statut",
+        "descriptionMaxLength": "Limitez la description à 500 caractères",
+        "mustBePositiveDays": "{{label}} doit être un nombre de jours positif",
+        "mustBeWholeDays": "{{label}} doit être un nombre entier de jours",
+        "codeClash": "Un autre type de congé utilise déjà ce code"
+    },
+    "labels": {
+        "carryForwardCap": "Plafond de report",
+        "minimumDays": "Jours minimum",
+        "maximumConsecutiveDays": "Jours consécutifs maximum"
+    }
+}

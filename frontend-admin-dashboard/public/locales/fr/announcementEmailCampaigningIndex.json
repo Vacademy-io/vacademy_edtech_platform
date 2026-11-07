@@ -1,0 +1,296 @@
+{
+    "page": {
+        "titleCreate": "Créer une campagne e-mail",
+        "titleEdit": "Modifier la campagne e-mail planifiée",
+        "navHeadingCreate": "Campagnes e-mail",
+        "navHeadingEdit": "Modifier la campagne planifiée",
+        "subtitle": "Envoyez des e-mails ciblés à vos {{learners}}, {{teachers}} ou à des groupes précis.",
+        "editingBadge": "Modification d'une campagne planifiée"
+    },
+    "actions": {
+        "cancel": "Annuler",
+        "review": "Vérifier et envoyer",
+        "keepEditing": "Continuer la modification",
+        "sendCampaign": "Envoyer la campagne",
+        "scheduleCampaign": "Planifier la campagne",
+        "updateCampaign": "Mettre à jour la campagne planifiée",
+        "sending": "Envoi…",
+        "updating": "Mise à jour…",
+        "backToSchedule": "Retour aux campagnes planifiées"
+    },
+    "fixIssues_one": "Corrigez {{count}} problème avant d'envoyer cette campagne.",
+    "fixIssues_many": "Corrigez {{count}} problèmes avant d'envoyer cette campagne.",
+    "fixIssues_other": "Corrigez {{count}} problèmes avant d'envoyer cette campagne.",
+    "footer": {
+        "blocked_one": "{{count}} point reste à corriger.",
+        "blocked_many": "{{count}} points restent à corriger.",
+        "blocked_other": "{{count}} points restent à corriger.",
+        "ready_one": "Prêt à partir — {{count}} audience sélectionnée.",
+        "ready_many": "Prêt à partir — {{count}} audiences sélectionnées.",
+        "ready_other": "Prêt à partir — {{count}} audiences sélectionnées.",
+        "noAudience": "Ajoutez au moins une audience avant d'envoyer."
+    },
+    "locked": {
+        "banner": "Cette campagne est {{status}} et ne peut plus être modifiée. Créez plutôt une nouvelle campagne.",
+        "toast": "Une campagne au statut {{status}} ne peut pas être modifiée."
+    },
+    "prefill": {
+        "loading": "Chargement de la campagne planifiée…",
+        "notFound": "Cette campagne est introuvable. Elle a peut-être été supprimée.",
+        "failed": "Impossible de charger la campagne pour la modifier."
+    },
+    "toast": {
+        "updated": "Campagne planifiée mise à jour.",
+        "sent": "Campagne e-mail créée et mise en file d'envoi.",
+        "scheduled": "Campagne e-mail planifiée.",
+        "pendingApproval": "Campagne e-mail soumise pour approbation.",
+        "templateApplied": "Modèle « {{name}} » appliqué — objet et contenu remplacés."
+    },
+    "errors": {
+        "loadTemplates": "Impossible de charger les modèles d'e-mail.",
+        "loadTemplate": "Impossible de charger ce modèle. Réessayez.",
+        "loadSenders": "Impossible de charger vos adresses d'expédition.",
+        "loadTags": "Impossible de charger les tags.",
+        "loadCustomFields": "Impossible de charger les champs personnalisés — les filtres de champ sont indisponibles tant que ce n'est pas corrigé.",
+        "loadCampaigns": "Impossible de charger les campagnes."
+    },
+    "apiError": {
+        "fixHighlighted_one": "Le serveur a refusé {{count}} champ — voyez la section surlignée.",
+        "fixHighlighted_many": "Le serveur a refusé {{count}} champs — voyez les sections surlignées.",
+        "fixHighlighted_other": "Le serveur a refusé {{count}} champs — voyez les sections surlignées.",
+        "noPermission": "Vous n'avez pas l'autorisation d'envoyer des campagnes e-mail pour cet établissement.",
+        "notFound": "Cette campagne n'existe plus.",
+        "tooLarge": "Le contenu de l'e-mail est trop volumineux. Réduisez-le ou hébergez les grandes images ailleurs.",
+        "serverError": "Un problème est survenu de notre côté. Rien n'a été envoyé — réessayez dans un instant.",
+        "network": "Impossible de joindre le serveur. Vérifiez votre connexion et réessayez — rien n'a été envoyé.",
+        "generic": "La campagne n'a pas pu être enregistrée. Veuillez réessayer."
+    },
+    "validation": {
+        "title": {
+            "required": "Donnez un nom à la campagne.",
+            "tooLong": "Le nom de la campagne doit faire moins de 500 caractères."
+        },
+        "subject": {
+            "required": "Rédigez un objet — les destinataires le voient dans leur boîte de réception.",
+            "tooLong": "L'objet doit faire moins de 255 caractères.",
+            "truncatedWarning": "Les objets de plus de ~78 caractères sont tronqués dans la plupart des boîtes de réception."
+        },
+        "previewText": {
+            "missingWarning": "Pas de texte d'aperçu — les boîtes de réception afficheront la première ligne de votre contenu.",
+            "truncatedWarning": "Un texte d'aperçu de plus de ~150 caractères est tronqué dans la plupart des boîtes de réception."
+        },
+        "content": {
+            "required": "Rédigez le contenu de l'e-mail."
+        },
+        "sender": {
+            "noneConfigured": "Aucune adresse d'expédition n'est configurée. Configurez-en une dans Paramètres → Notifications avant d'envoyer.",
+            "required": "Choisissez l'adresse d'expédition.",
+            "noLongerAvailable": "L'expéditeur utilisé par cette campagne n'est plus configuré — choisissez-en un autre."
+        },
+        "priority": {
+            "required": "Choisissez une priorité."
+        },
+        "expiresAt": {
+            "invalid": "Saisissez une date et une heure d'expiration valides.",
+            "mustBeFuture": "L'heure d'expiration doit être dans le futur.",
+            "beforeSend": "L'heure d'expiration doit être postérieure à l'heure d'envoi planifiée."
+        },
+        "schedule": {
+            "pickTime": "Choisissez quand envoyer cette campagne.",
+            "invalidTime": "Saisissez une date et une heure d'envoi valides.",
+            "mustBeFuture": "L'heure d'envoi est déjà passée — choisissez une heure future ou « Envoyer maintenant ».",
+            "cronRequired": "Saisissez une expression cron ou choisissez un préréglage.",
+            "cronInvalid": "Ce n'est pas une planification valide. Utilisez 6 champs (sec min heure jour mois jour-semaine) avec « ? » dans exactement l'un des champs jour ou jour-semaine, ex. 0 0 9 * * ?."
+        }
+    },
+    "details": {
+        "title": "Détails de la campagne",
+        "description": "Informations de base sur votre campagne.",
+        "campaignName": {
+            "label": "Nom de la campagne",
+            "hint": "Nom interne pour identifier cette campagne dans votre tableau de bord.",
+            "placeholder": "ex. Rentrée 2026 — groupe A"
+        },
+        "subject": {
+            "label": "Objet de l'e-mail",
+            "hint": "C'est ce que les destinataires voient dans leur boîte de réception.",
+            "placeholder": "Objet de l'e-mail"
+        },
+        "previewText": {
+            "label": "Texte d'aperçu",
+            "hint": "Affiché à côté de l'objet dans la boîte de réception, avant l'ouverture de l'e-mail.",
+            "placeholder": "Une courte accroche pour la boîte de réception…"
+        }
+    },
+    "content": {
+        "title": "Contenu de l'e-mail",
+        "description": "Rédigez le message ou partez d'un modèle enregistré.",
+        "previewEmail": "Aperçu de l'e-mail",
+        "template": {
+            "label": "Partir d'un modèle",
+            "hint": "Facultatif. Appliquer un modèle remplace l'objet, le texte d'aperçu et le contenu ci-dessous.",
+            "appliedHint": "Modèle « {{name}} » appliqué. Vos modifications ici ne changent pas le modèle enregistré.",
+            "manage": "Gérer les modèles",
+            "applying": "Application du modèle…",
+            "placeholder": "Choisir un modèle d'e-mail enregistré",
+            "searchPlaceholder": "Rechercher des modèles…",
+            "empty": "Aucun modèle trouvé.",
+            "addNew": "Ajouter un modèle",
+            "clear": "Retirer le modèle"
+        },
+        "tabs": {
+            "editor": "Éditeur enrichi",
+            "source": "Source HTML"
+        },
+        "variables": {
+            "insert": "Insérer une variable",
+            "name": "Nom du destinataire",
+            "firstName": "Prénom",
+            "email": "E-mail du destinataire",
+            "username": "Nom d'utilisateur",
+            "password": "Mot de passe de connexion",
+            "mobile": "Numéro de mobile",
+            "instituteEmail": "E-mail de l'établissement",
+            "currentDate": "Date du jour",
+            "currentTime": "Heure actuelle"
+        },
+        "editorPlaceholder": "Rédigez le contenu de l'e-mail…",
+        "sourcePlaceholder": "<p>Collez ou écrivez du HTML ici…</p>",
+        "wordCount_one": "{{count}} mot",
+        "wordCount_many": "{{count}} mots",
+        "wordCount_other": "{{count}} mots"
+    },
+    "settings": {
+        "title": "Expéditeur et paramètres d'envoi",
+        "description": "De qui provient l'e-mail, et quand il part.",
+        "sender": {
+            "verified": "Expéditeur vérifié",
+            "label": "Adresse d'expédition",
+            "hint": "Les destinataires verront ce nom et cette adresse comme expéditeur.",
+            "fromHint": "De : {{email}}",
+            "noneTitle": "Aucune adresse d'expédition configurée",
+            "noneDescription": "Ajoutez et vérifiez une adresse d'expédition avant d'envoyer des campagnes e-mail.",
+            "configure": "Configurer l'envoi",
+            "placeholder": "Choisir un expéditeur"
+        },
+        "priority": {
+            "label": "Priorité",
+            "hint": "Également affichée sur l'alerte système dans l'application.",
+            "placeholder": "Choisir une priorité",
+            "options": {
+                "HIGH": "Haute",
+                "MEDIUM": "Moyenne",
+                "LOW": "Basse"
+            }
+        },
+        "expiresAt": {
+            "label": "Expire le (facultatif)",
+            "hint": "Après cette heure, l'alerte dans l'application est masquée. Les e-mails déjà envoyés ne sont pas concernés."
+        },
+        "schedule": {
+            "label": "Planifier l'envoi",
+            "immediate": {
+                "label": "Envoyer maintenant",
+                "hint": "Part dès que vous confirmez."
+            },
+            "oneTime": {
+                "label": "Envoyer plus tard",
+                "hint": "Choisissez une date et une heure.",
+                "sendAt": "Envoyer à"
+            },
+            "recurring": {
+                "label": "Répéter",
+                "hint": "Envoyer selon une planification récurrente.",
+                "cron": "Expression cron",
+                "cronHint": "6 champs : seconde minute heure jour mois jour-semaine — ex. 0 0 9 * * ? = tous les jours à 9h00.",
+                "presets": "Préréglages :",
+                "note": "La campagne continue d'être envoyée selon cette planification jusqu'à son annulation depuis la liste des campagnes planifiées."
+            },
+            "timezone": {
+                "label": "Fuseau horaire",
+                "hint": "Les heures d'envoi sont interprétées dans ce fuseau horaire."
+            },
+            "quickPicks": "Raccourcis :",
+            "quick": {
+                "in1h": "Dans 1 heure",
+                "today5pm": "Aujourd'hui 17h",
+                "tomorrow9am": "Demain 9h",
+                "nextMonday9am": "Lundi 9h"
+            }
+        }
+    },
+    "preview": {
+        "from": "De :",
+        "to": "À :",
+        "recipients": "{{ Destinataires }}",
+        "yourInstitute": "Votre établissement",
+        "noSubject": "(Sans objet)",
+        "frameTitle": "Aperçu de l'e-mail",
+        "emptyTitle": "Rien à prévisualiser pour l'instant",
+        "emptyDescription": "Votre e-mail apparaîtra ici au fur et à mesure que vous l'écrivez.",
+        "dialogTitle": "Aperçu de l'e-mail",
+        "dialogDescription": "Voici le rendu de l'e-mail. L'apparence réelle peut varier légèrement selon le client de messagerie.",
+        "device": {
+            "mobile": "Mobile",
+            "tablet": "Tablette",
+            "desktop": "Ordinateur"
+        }
+    },
+    "rail": {
+        "previewTitle": "Aperçu de l'e-mail",
+        "previewNote": "Aperçu en direct. L'apparence réelle peut varier légèrement selon le client de messagerie.",
+        "summaryTitle": "Résumé de la campagne",
+        "tipTitle": "Astuce :",
+        "tipBody": "Combinez plusieurs audiences, exclusions et filtres de champ pour cibler exactement les bonnes personnes — les doublons sont éliminés."
+    },
+    "review": {
+        "heading": "Vérifier et envoyer",
+        "howItWillLook": "Aperçu du rendu"
+    },
+    "summary": {
+        "campaignName": "Campagne",
+        "subject": "Objet",
+        "audience": {
+            "label": "Audience",
+            "none": "Aucune audience pour l'instant",
+            "count_one": "{{count}} audience",
+            "count_many": "{{count}} audiences",
+            "count_other": "{{count}} audiences",
+            "breakdown": "Détail de l'audience"
+        },
+        "tagReach": "Portée des tags",
+        "estimating": "Estimation…",
+        "unavailable": "Estimation indisponible",
+        "people_one": "~{{count}} personne",
+        "people_many": "~{{count}} personnes",
+        "people_other": "~{{count}} personnes",
+        "from": "De",
+        "priority": "Priorité",
+        "schedule": {
+            "label": "Planification",
+            "immediate": "Envoi immédiat",
+            "oneTime": "{{when}}",
+            "oneTimeUnset": "Envoi différé — heure non définie",
+            "recurring": "Répétition : {{cron}}",
+            "recurringUnset": "Répétition — planification non définie"
+        },
+        "expires": "Expire",
+        "exclusions": "Exclusions",
+        "filters": "Filtres de champ",
+        "none": "Aucun",
+        "notSet": "Non défini",
+        "edit": "Modifier",
+        "roles": {
+            "all": "Tous les {{noun}}",
+            "ADMIN": "Tous les administrateurs"
+        },
+        "ruleType": {
+            "ROLE": "Rôle",
+            "PACKAGE_SESSION": "Groupe",
+            "USER": "Utilisateur",
+            "TAG": "Tag",
+            "AUDIENCE": "Campagne",
+            "CUSTOM_FIELD_FILTER": "Filtre"
+        }
+    }
+}

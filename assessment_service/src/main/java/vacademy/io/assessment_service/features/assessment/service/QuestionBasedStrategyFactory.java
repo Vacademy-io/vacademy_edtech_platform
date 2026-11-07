@@ -16,26 +16,56 @@ import vacademy.io.assessment_service.features.learner_assessment.entity.Questio
 import vacademy.io.assessment_service.features.question_core.enums.QuestionTypes;
 
 import java.util.*;
+import java.util.function.Supplier;
 
 public class QuestionBasedStrategyFactory {
-    private static final Map<String, IQuestionTypeBasedStrategy> strategies = new HashMap<>();
+
+    /**
+     * Suppliers, NOT instances.
+     * <p>
+     * {@link IQuestionTypeBasedStrategy} carries mutable {@code type} and
+     * {@code answerStatus} fields, and {@code calculateMarks} below reads
+     * {@code getAnswerStatus()} AFTER the marks call returns. When this map held one
+     * shared instance per type, two learners graded concurrently on the @Async pool
+     * mutated the same object between those two statements — so learner A's question
+     * could be persisted with learner B's CORRECT/INCORRECT status. Silent, and it
+     * corrupted question_wise_marks, reports and every status-based revaluation.
+     * <p>
+     * Handing out a fresh instance per call confines that state to one thread. The
+     * marks arithmetic is untouched.
+     */
+    private static final Map<String, Supplier<IQuestionTypeBasedStrategy>> strategies = new HashMap<>();
 
     static {
-        strategies.put(QuestionTypes.MCQM.name(), new MCQMQuestionTypeBasedStrategy());
-        strategies.put(QuestionTypes.MCQS.name(), new MCQSQuestionTypeBasedStrategy());
-        strategies.put(QuestionTypes.ONE_WORD.name(), new OneWordQuestionTypeBasedStrategy());
-        strategies.put(QuestionTypes.LONG_ANSWER.name(), new LongAnswerQuestionTypeBasedStrategy());
-        strategies.put(QuestionTypes.NUMERIC.name(), new NUMERICQuestionTypeBasedStrategy());
-        strategies.put(QuestionTypes.TRUE_FALSE.name(), new MCQSQuestionTypeBasedStrategy());
-        strategies.put(QuestionTypes.CODING.name(), new CodingQuestionTypeBasedStrategy());
+        strategies.put(QuestionTypes.MCQM.name(), MCQMQuestionTypeBasedStrategy::new);
+        strategies.put(QuestionTypes.MCQS.name(), MCQSQuestionTypeBasedStrategy::new);
+        strategies.put(QuestionTypes.ONE_WORD.name(), OneWordQuestionTypeBasedStrategy::new);
+        strategies.put(QuestionTypes.LONG_ANSWER.name(), LongAnswerQuestionTypeBasedStrategy::new);
+        strategies.put(QuestionTypes.NUMERIC.name(), NUMERICQuestionTypeBasedStrategy::new);
+        strategies.put(QuestionTypes.TRUE_FALSE.name(), MCQSQuestionTypeBasedStrategy::new);
+        strategies.put(QuestionTypes.CODING.name(), CodingQuestionTypeBasedStrategy::new);
         // Add more strategies here
     }
 
     private static IQuestionTypeBasedStrategy getStrategy(String questionType) {
-        IQuestionTypeBasedStrategy strategy = strategies.getOrDefault(questionType, null);
-        if (!Objects.isNull(strategy)) {
-            strategy.setType(questionType);
-            strategy.setAnswerStatus(QuestionResponseEnum.PENDING.name());
+        Supplier<IQuestionTypeBasedStrategy> supplier = strategies.getOrDefault(questionType, null);
+        if (Objects.isNull(supplier)) {
+            return null;
+        }
+        IQuestionTypeBasedStrategy strategy = supplier.get();
+        strategy.setType(questionType);
+        strategy.setAnswerStatus(QuestionResponseEnum.PENDING.name());
+        return strategy;
+    }
+
+    /**
+     * Same lookup, but never null — the callers below dereference the strategy
+     * immediately and previously NPE'd on an unrecognised question type.
+     */
+    private static IQuestionTypeBasedStrategy requireStrategy(String questionType) {
+        IQuestionTypeBasedStrategy strategy = getStrategy(questionType);
+        if (strategy == null) {
+            throw new IllegalArgumentException("Invalid Question Type: " + questionType);
         }
         return strategy;
     }
@@ -77,7 +107,7 @@ public class QuestionBasedStrategyFactory {
     }
 
     public static List<String> getResponseOptionIds(String responseJson, String type) throws JsonProcessingException {
-        IQuestionTypeBasedStrategy strategy = getStrategy(type);
+        IQuestionTypeBasedStrategy strategy = requireStrategy(type);
         if(strategy.getType().equals(QuestionTypes.MCQS.name())){
             MCQSResponseDto responseDto = (MCQSResponseDto) verifyResponseJson(responseJson, type);
 
@@ -94,7 +124,7 @@ public class QuestionBasedStrategyFactory {
     }
 
     public static List<String> getCorrectOptionIds(String evaluationJson, String type) throws JsonProcessingException {
-        IQuestionTypeBasedStrategy strategy = getStrategy(type);
+        IQuestionTypeBasedStrategy strategy = requireStrategy(type);
         if(strategy.getType().equals(QuestionTypes.MCQS.name()) || strategy.getType().equals(QuestionTypes.TRUE_FALSE.name())){
             MCQSCorrectAnswerDto optionDto = (MCQSCorrectAnswerDto) verifyCorrectAnswerJson(evaluationJson, type);
 
@@ -112,7 +142,7 @@ public class QuestionBasedStrategyFactory {
 
     public static Object getCorrectAnswerFromAutoEvaluationBasedOnQuestionType(String autoEvaluationJson) throws Exception{
         String type = getQuestionTypeFromEvaluationJson(autoEvaluationJson);
-        IQuestionTypeBasedStrategy strategy = getStrategy(type);
+        IQuestionTypeBasedStrategy strategy = requireStrategy(type);
         return strategy.validateAndGetCorrectAnswerData(autoEvaluationJson);
     }
 
@@ -124,7 +154,7 @@ public class QuestionBasedStrategyFactory {
 
     public static Object getSurveyDetailBasedOnType(Assessment assessment, AssessmentQuestionPreviewDto assessmentQuestionPreviewDto, List<QuestionWiseMarks> allRespondentData){
         String type = assessmentQuestionPreviewDto.getQuestionType();
-        IQuestionTypeBasedStrategy strategy = getStrategy(type);
+        IQuestionTypeBasedStrategy strategy = requireStrategy(type);
         return strategy.validateAndGetSurveyData(assessment,assessmentQuestionPreviewDto,allRespondentData);
     }
 }

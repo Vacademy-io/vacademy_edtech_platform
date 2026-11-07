@@ -1,0 +1,11 @@
+{
+    "cardTitle": "Sub-organization",
+    "loading": "Loading…",
+    "fieldLabel": "Sub-org associated",
+    "description": "When enabled, enrolling a learner into this course creates a sub-organization for them. Applies to all batches of this course.",
+    "toast": {
+        "enabled": "Sub-org association enabled",
+        "disabled": "Sub-org association disabled",
+        "updateFailed": "Failed to update sub-org association"
+    }
+}

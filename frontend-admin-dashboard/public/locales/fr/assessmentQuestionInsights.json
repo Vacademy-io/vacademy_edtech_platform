@@ -1,0 +1,33 @@
+{
+    "toasts": {
+        "pdfExportSuccess": "Les données d'analyse des questions des étudiants ont été exportées en PDF avec succès"
+    },
+    "questionCard": {
+        "heading": "Question ({{number}}.)",
+        "correctAnswerLabel": "Réponse correcte :",
+        "explanationLabel": "Explication :",
+        "topResponsesTitle": "Top 3 des réponses correctes les plus rapides",
+        "secondsSuffix_one": "{{count}} seconde",
+        "secondsSuffix_many": "{{count}} de secondes",
+        "secondsSuffix_other": "{{count}} secondes"
+    },
+    "summary": {
+        "totalAttempts_one": "Nombre total de tentatives : {{count}} étudiant",
+        "totalAttempts_many": "Nombre total de tentatives : {{count}} d'étudiants",
+        "totalAttempts_other": "Nombre total de tentatives : {{count}} étudiants"
+    },
+    "respondents": {
+        "correctLabel": "Répondants corrects : ",
+        "partialLabel": "Répondants partiellement corrects : ",
+        "wrongLabel": "Répondants incorrects : ",
+        "skippedLabel": "Ignoré : ",
+        "viewList": "Voir la liste",
+        "notAvailable": "N/A"
+    },
+    "dialogs": {
+        "correctTitle": "Répondants corrects",
+        "partialTitle": "Répondants partiellement corrects",
+        "wrongTitle": "Répondants incorrects",
+        "skippedTitle": "Répondants ayant ignoré la question"
+    }
+}

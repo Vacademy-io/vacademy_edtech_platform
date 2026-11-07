@@ -1,4 +1,6 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -13,12 +15,12 @@ interface Props {
     onApplyTemplate: (templateJson: string, name: string) => void;
 }
 
-const GOALS = [
-    { id: 'notifications', label: 'Send Notifications', icon: '\u{1F4E7}', description: 'Email, WhatsApp, or push notifications to learners' },
-    { id: 'enrollments', label: 'Process Enrollments', icon: '\u{1F393}', description: 'Automate enrollment, onboarding, and credentials' },
-    { id: 'reminders', label: 'Send Reminders', icon: '\u{23F0}', description: 'Payment reminders, due dates, follow-ups' },
-    { id: 'reports', label: 'Generate Reports', icon: '\u{1F4CA}', description: 'Aggregate data and send summaries' },
-    { id: 'custom', label: 'Custom Workflow', icon: '\u{1F527}', description: 'Start from scratch or pick any template' },
+const buildGoals = (t: TFunction) => [
+    { id: 'notifications', label: t('goals.notifications.label'), icon: '\u{1F4E7}', description: t('goals.notifications.description') },
+    { id: 'enrollments', label: t('goals.enrollments.label'), icon: '\u{1F393}', description: t('goals.enrollments.description') },
+    { id: 'reminders', label: t('goals.reminders.label'), icon: '\u{23F0}', description: t('goals.reminders.description') },
+    { id: 'reports', label: t('goals.reports.label'), icon: '\u{1F4CA}', description: t('goals.reports.description') },
+    { id: 'custom', label: t('goals.custom.label'), icon: '\u{1F527}', description: t('goals.custom.description') },
 ];
 
 const GOAL_CATEGORIES: Record<string, string[]> = {
@@ -30,8 +32,10 @@ const GOAL_CATEGORIES: Record<string, string[]> = {
 };
 
 export function WorkflowWizard({ open, onOpenChange, instituteId, onApplyTemplate }: Props) {
+    const { t } = useTranslation('workflowWizard');
     const [step, setStep] = useState(0);
     const [selectedGoal, setSelectedGoal] = useState<string | null>(null);
+    const GOALS = buildGoals(t);
 
     const { data: templates } = useQuery({
         ...getWorkflowTemplatesQuery(instituteId),
@@ -55,7 +59,7 @@ export function WorkflowWizard({ open, onOpenChange, instituteId, onApplyTemplat
                 <DialogHeader>
                     <DialogTitle className="flex items-center gap-2">
                         <MagicWand size={20} />
-                        {step === 0 ? 'What would you like to automate?' : 'Choose a template'}
+                        {step === 0 ? t('stepGoalTitle') : t('stepTemplateTitle')}
                     </DialogTitle>
                 </DialogHeader>
 
@@ -73,14 +77,14 @@ export function WorkflowWizard({ open, onOpenChange, instituteId, onApplyTemplat
                                         setStep(1);
                                     }
                                 }}
-                                className="w-full flex items-center gap-3 p-3 rounded-lg border hover:bg-muted/50 transition-colors text-left"
+                                className="w-full flex items-center gap-3 p-3 rounded-lg border hover:bg-muted/50 transition-colors text-start"
                             >
                                 <span className="text-2xl">{goal.icon}</span>
                                 <div>
                                     <div className="font-medium text-sm">{goal.label}</div>
                                     <div className="text-xs text-muted-foreground">{goal.description}</div>
                                 </div>
-                                <ArrowRight size={16} className="ml-auto text-muted-foreground" />
+                                <ArrowRight size={16} className="ms-auto text-muted-foreground" />
                             </button>
                         ))}
                     </div>
@@ -89,33 +93,33 @@ export function WorkflowWizard({ open, onOpenChange, instituteId, onApplyTemplat
                 {step === 1 && (
                     <div className="space-y-3 mt-2">
                         <Button variant="ghost" size="sm" onClick={() => setStep(0)} className="gap-1">
-                            <ArrowLeft size={14} /> Back
+                            <ArrowLeft size={14} /> {t('back')}
                         </Button>
                         {filteredTemplates.length === 0 ? (
                             <div className="text-center py-8 text-sm text-muted-foreground">
-                                No templates found for this category.
+                                {t('noTemplatesForCategory')}
                                 <div className="mt-2">
                                     <Button variant="outline" size="sm" onClick={() => { onOpenChange(false); reset(); }}>
-                                        Start from blank canvas
+                                        {t('startFromBlankCanvas')}
                                     </Button>
                                 </div>
                             </div>
                         ) : (
-                            filteredTemplates.map((t) => (
+                            filteredTemplates.map((tpl) => (
                                 <button
-                                    key={t.id}
+                                    key={tpl.id}
                                     onClick={() => {
-                                        onApplyTemplate(t.template_json, t.name);
+                                        onApplyTemplate(tpl.template_json, tpl.name);
                                         onOpenChange(false);
                                         reset();
                                     }}
-                                    className="w-full flex items-start gap-3 p-3 rounded-lg border hover:bg-muted/50 transition-colors text-left"
+                                    className="w-full flex items-start gap-3 p-3 rounded-lg border hover:bg-muted/50 transition-colors text-start"
                                 >
                                     <div className="flex-1">
-                                        <div className="font-medium text-sm">{t.name}</div>
-                                        <div className="text-xs text-muted-foreground mt-0.5">{t.description}</div>
+                                        <div className="font-medium text-sm">{tpl.name}</div>
+                                        <div className="text-xs text-muted-foreground mt-0.5">{tpl.description}</div>
                                     </div>
-                                    <Badge variant="outline" className="text-[10px] shrink-0">{t.category}</Badge>
+                                    <Badge variant="outline" className="text-[10px] shrink-0">{tpl.category}</Badge>
                                 </button>
                             ))
                         )}

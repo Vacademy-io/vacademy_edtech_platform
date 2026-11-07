@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { useTranslation } from 'react-i18next';
 import { dateRangeFormSchema } from '../-utils/date-range-form-schema';
 import {
     Form,
@@ -17,6 +18,7 @@ import { CalendarBlank, X } from '@phosphor-icons/react';
 import { PopoverClose } from '@radix-ui/react-popover';
 
 export const QuestionPapersDateRangeComponent = () => {
+    const { t } = useTranslation('assessmentQuestionPapersDateRange');
     const form = useForm<z.infer<typeof dateRangeFormSchema>>({
         resolver: zodResolver(dateRangeFormSchema),
         defaultValues: {
@@ -52,7 +54,7 @@ export const QuestionPapersDateRangeComponent = () => {
             </PopoverTrigger>
             <PopoverContent className="rounded-md !p-0">
                 <div className="flex items-center justify-between bg-primary-50">
-                    <h1 className="rounded-sm p-4 text-primary-500">Select Date Range</h1>
+                    <h1 className="rounded-sm p-4 text-primary-500">{t('heading')}</h1>
                     <PopoverClose className="border-none bg-primary-50 pr-4 shadow-none hover:bg-primary-50">
                         <X size={18} className="text-neutral-600" />
                     </PopoverClose>
@@ -68,7 +70,7 @@ export const QuestionPapersDateRangeComponent = () => {
                             render={({ field }) => (
                                 <FormItem className="flex flex-col items-start justify-start gap-1">
                                     <FormLabel className="text-neutral-600">
-                                        Enter Start Date
+                                        {t('startDateLabel')}
                                     </FormLabel>
                                     <FormControl>
                                         <Input
@@ -89,7 +91,7 @@ export const QuestionPapersDateRangeComponent = () => {
                             render={({ field }) => (
                                 <FormItem className="flex flex-col items-start justify-start gap-1">
                                     <FormLabel className="text-neutral-600">
-                                        Enter End Date
+                                        {t('endDateLabel')}
                                     </FormLabel>
                                     <FormControl>
                                         <Input
@@ -109,7 +111,7 @@ export const QuestionPapersDateRangeComponent = () => {
                             className="bg-primary-500 text-white"
                             disabled={!isFormValid}
                         >
-                            Done
+                            {t('doneButton')}
                         </Button>
                     </form>
                 </Form>

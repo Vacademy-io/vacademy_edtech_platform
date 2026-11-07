@@ -1,0 +1,98 @@
+{
+    "navHeading": "إرشادي",
+    "pageTitle": "إرشادي",
+    "pageSubtitle": "مسترشدوك ووقت توفرك ورابط الحجز الخاص بك",
+    "retry": "إعادة المحاولة",
+    "connectGoogleError": "تعذر بدء الربط مع Google. يرجى المحاولة مرة أخرى.",
+    "chatError": "تعذر فتح المحادثة. يرجى المحاولة مرة أخرى.",
+    "notMentor": {
+        "title": "لست مسجلاً كمرشد هنا",
+        "description": "هذه الصفحة هي مساحة عمل المرشد الخاصة — مسترشدوه ووقت توفره ورابط حجزه. لإدارة الإرشاد للجميع، استخدم نظرة عامة أو المرشدون أو الجلسات أو الطلبات."
+    },
+    "profile": {
+        "youFallback": "أنت",
+        "mentorFallback": "مرشد",
+        "menteesAssigned_zero": "لا يوجد ({{count}}) مسترشدين معيّنين",
+        "menteesAssigned_one": "{{count}} مسترشد واحد معيّن",
+        "menteesAssigned_two": "{{count}} مسترشدان معيّنان",
+        "menteesAssigned_few": "{{count}} مسترشدين معيّنين",
+        "menteesAssigned_many": "{{count}} مسترشدًا معيّنًا",
+        "menteesAssigned_other": "{{count}} مسترشد معيّن",
+        "ratingChip_one": "{{rating}} · {{count}} rating",
+        "ratingChip_other": "{{rating}} · {{count}} ratings",
+        "expertise": "Expertise: {{tags}}"
+    },
+    "googleCalendar": {
+        "title": "تقويم Google",
+        "connected": "متصل",
+        "connectedDescription": "تُنشئ الحجوزات تلقائيًا رابط Google Meet وتضيف الحدث إلى تقويمك.",
+        "disconnectedDescription": "اربط حساب Google الخاص بك حتى تحصل الحجوزات على رابط Meet وحدث في التقويم.",
+        "redirecting": "جارٍ إعادة التوجيه…",
+        "connect": "ربط Google"
+    },
+    "bookingLink": {
+        "title": "رابط حجز جلساتك الفردية",
+        "shareDescription": "شارك هذا الرابط ليتمكن المتعلمون من حجز جلسة معك.",
+        "notSetUpDescription": "لم يتم إعداد الحجز بعد. اطلب من المسؤول تفعيل صفحة الحجز الخاصة بك.",
+        "editAvailability": "تعديل التوفر",
+        "editAvailabilityTitle": "حدد ساعات عملك الأسبوعية ومكان الاجتماع وأنواع الجلسات",
+        "copyLink": "نسخ الرابط",
+        "copyLinkTitle": "انسخ رابط الحجز الخاص بك لمشاركته مع المتعلمين",
+        "copiedToast": "تم نسخ رابط الحجز",
+        "copyFailedToast": "تعذر نسخ الرابط",
+        "open": "فتح",
+        "openTitle": "افتح صفحة الحجز الخاصة بك في تبويب جديد"
+    },
+    "awaitingReview": {
+        "heading_zero": "لا توجد جلسات ({{count}}) بحاجة إلى التسجيل",
+        "heading_one": "{{count}} جلسة واحدة بحاجة إلى التسجيل",
+        "heading_two": "{{count}} جلستان بحاجة إلى التسجيل",
+        "heading_few": "{{count}} جلسات بحاجة إلى التسجيل",
+        "heading_many": "{{count}} جلسة بحاجة إلى التسجيل",
+        "heading_other": "{{count}} جلسة بحاجة إلى التسجيل",
+        "description": "إلى أن تسجلها، لا تُحتسب الجلسة كمُنجزة في أي مكان.",
+        "menteeFallback": "مسترشد",
+        "record": "تسجيل",
+        "notCounted": "Not counted yet"
+    },
+    "mentees": {
+        "heading": "المسترشدون",
+        "subtitle": "الطلاب المُعيّنون لك للإرشاد.",
+        "filteredCount": "{{count}} من {{total}}",
+        "searchPlaceholder": "ابحث بالاسم أو البريد الإلكتروني أو رقم الهاتف",
+        "loadError": "تعذر تحميل مسترشديك.",
+        "emptyTitle": "لم يتم تعيين طلاب بعد",
+        "emptyDescription": "سيقوم المسؤول بتعيين الطلاب لك هنا.",
+        "noSearchMatch": "لا يوجد مسترشدون مطابقون لـ «{{query}}»",
+        "clearSearch": "مسح البحث"
+    },
+    "table": {
+        "student": "الطالب",
+        "phone": "الهاتف",
+        "assigned": "معيّن",
+        "autoAssigned": "معيّن تلقائيًا",
+        "actions": "إجراءات",
+        "defaultStudentLabel": "هذا الطالب",
+        "openProfileTitle": "افتح ملف هذا الطالب",
+        "scheduleAriaLabel": "جدولة جلسة فردية مع {{name}}",
+        "scheduleTitle": "احجز جلسة فردية — لا يحتاج الطالب إلى فعل أي شيء",
+        "messageAriaLabel": "مراسلة {{name}}",
+        "openAriaLabel": "فتح {{name}}",
+        "openRowTitle": "تقدم التعلم والملاحظات والمكالمات المجدولة"
+    },
+    "header": {
+        "schedule": "Schedule 1:1"
+    },
+    "kpi": {
+        "mentees": "My mentees",
+        "menteesLeft_one": "{{count}} place left of {{cap}}",
+        "menteesLeft_other": "{{count}} places left of {{cap}}",
+        "menteesNoLimit": "No limit set",
+        "rating": "My average rating",
+        "ratingDetail_one": "{{count}} rated session",
+        "ratingDetail_other": "{{count}} rated sessions",
+        "ratingNone": "No ratings yet",
+        "toRecord": "Sessions to record",
+        "toRecordDetail": "Not counted as delivered until recorded"
+    }
+}

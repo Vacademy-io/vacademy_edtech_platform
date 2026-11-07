@@ -1,0 +1,234 @@
+{
+    "roles": {
+        "learnerPortal": "लर्नर पोर्टल",
+        "adminPortal": "एडमिन पोर्टल",
+        "teacherPortal": "टीचर पोर्टल"
+    },
+    "status": {
+        "configured": "कॉन्फ़िगर किया गया",
+        "notConfigured": "कॉन्फ़िगर नहीं किया गया"
+    },
+    "configValue": {
+        "yes": "✓ हां",
+        "no": "✗ नहीं"
+    },
+    "imageUpload": {
+        "uploadFailed": "छवि अपलोड करने में विफल",
+        "changeImage": "छवि बदलें",
+        "removeImage": "छवि हटाएं",
+        "iconPreviewAlt": "आइकन पूर्वावलोकन",
+        "fileUuidPlaceholder": "या फ़ाइल UUID दर्ज करें"
+    },
+    "pagesDomain": {
+        "cnameHint": "यदि यह एक कस्टम (गैर-vacademy.io) डोमेन है, तो अपने DNS प्रदाता पर एक CNAME जोड़ें:",
+        "sslHint": "Cloudflare द्वारा इसे सत्यापित करते ही SSL अपने आप सक्रिय हो जाता है।"
+    },
+    "configForm": {
+        "branding": {
+            "heading": "ब्रांडिंग",
+            "tabTitleLabel": "टैब शीर्षक",
+            "tabTitlePlaceholder": "मेरा स्कूल",
+            "tabIconLabel": "टैब आइकन फ़ाइल ID",
+            "themeLabel": "थीम / रंग",
+            "themePlaceholder": "#4F46E5 या theme-name",
+            "fontFamilyLabel": "फ़ॉन्ट फ़ैमिली",
+            "fontFamilyPlaceholder": "Inter, Roboto, आदि",
+            "hideNameLabel": "संस्थान का नाम छिपाएं",
+            "hideNameHint": "यदि आपके लोगो में पहले से ही संस्थान का नाम शामिल है तो इसे सक्षम करें। साइडबार और लॉगिन पेज पर नाम छिपाता है।",
+            "stackNameLabel": "नाम को लोगो के नीचे रखें",
+            "stackNameHint": "साइडबार हेडर में संस्थान के नाम को लोगो के बगल में रखने के बजाय उसके नीचे केंद्रित करके दिखाता है।",
+            "logoWidthLabel": "लोगो चौड़ाई (px)",
+            "logoWidthHint": "डिफ़ॉल्ट उपयोग करने के लिए खाली छोड़ें। साइडबार लोगो को किनारे-से-किनारे पूरी चौड़ाई में फैलाने के लिए 250+ सेट करें और ऊंचाई खाली रखें।",
+            "logoHeightLabel": "लोगो ऊंचाई (px)",
+            "logoHeightHint": "चौड़ाई के अनुपात में स्केल करने के लिए खाली छोड़ें (पूरी चौड़ाई वाले साइडबार लोगो के लिए आवश्यक)। इसके बजाय लोगो को एक निश्चित बॉक्स में फिट करने के लिए एक मान सेट करें।"
+        },
+        "auth": {
+            "heading": "प्रमाणीकरण",
+            "allowSignup": "साइन अप की अनुमति दें",
+            "googleAuth": "गूगल प्रमाणीकरण",
+            "githubAuth": "गिटहब प्रमाणीकरण",
+            "emailOtpAuth": "ईमेल OTP प्रमाणीकरण",
+            "phoneAuth": "फ़ोन प्रमाणीकरण",
+            "usernamePasswordAuth": "यूज़रनेम/पासवर्ड प्रमाणीकरण",
+            "convertUsernameLowercase": "यूज़रनेम को लोअरकेस में बदलें"
+        },
+        "phone": {
+            "heading": "फ़ोन इनपुट प्राथमिकताएं",
+            "preferredCountriesLabel": "पसंदीदा देश",
+            "preferredCountriesHint": "पहला चयनित देश लर्नर और एडमिन पोर्टल के फ़ोन इनपुट में पहले से चयनित होता है। पूरी सूची देश चयनकर्ता का क्रम तय करती है। पुनः क्रम देने के लिए हर चिप पर ↑ / ↓ तीरों का उपयोग करें।",
+            "geoModeLabel": "जब फ़ॉर्म दूसरे देश से खोला जाए",
+            "geoModePreview": "आप {{detected}} में हैं। इन सेटिंग्स के साथ इस पोर्टल पर फ़ोन फ़ील्ड {{resolved}} से शुरू होगा। किसी दूसरे देश का पूर्वावलोकन करने के लिए किसी भी फ़ॉर्म URL में ?phoneCountry=ru जोड़ें।",
+            "geoModePreviewUnknown": "इस ब्राउज़र से आपका क्षेत्र पता नहीं चला, इसलिए फ़ॉलबैक लागू है: इस पोर्टल पर फ़ोन फ़ील्ड {{resolved}} से शुरू होगा।",
+            "geoModes": {
+                "INSTITUTE_FIRST": {
+                    "label": "पसंदीदा देश प्राथमिक",
+                    "hint": "ऊपर दी गई सूची तय करती है। फ़ॉर्म जिस देश से खोला गया है उसका उपयोग तभी होगा जब आपने कोई पसंदीदा देश न चुना हो — तब रूस में खुला फ़ॉर्म भारत के बजाय +7 से शुरू होगा।"
+                },
+                "GEO_FIRST": {
+                    "label": "विज़िटर के देश का अनुसरण करें",
+                    "hint": "फ़ॉर्म जिस देश से खोला गया है वह पहले से चुना जाएगा; आपके पसंदीदा देश बाकी सूची का क्रम तय करेंगे। कई देशों से नामांकन लेने पर सबसे उपयुक्त।"
+                },
+                "INSTITUTE_ONLY": {
+                    "label": "केवल पसंदीदा देश",
+                    "hint": "फ़ॉर्म कहाँ से खोला गया, इसे कभी न देखें। यदि आप जो भी फ़ोन नंबर एकत्र करते हैं वे एक ही देश के हैं तो यह चुनें।"
+                }
+            }
+        },
+        "routes": {
+            "heading": "रूट्स",
+            "redirectLabel": "रीडायरेक्ट URL",
+            "redirectPlaceholder": "/dashboard",
+            "afterLoginLabel": "लॉगिन के बाद का रूट",
+            "afterLoginPlaceholder": "/dashboard",
+            "afterLogoutLabel": "लॉगआउट के बाद का रूट",
+            "afterLogoutPlaceholder": "/login",
+            "homeClickLabel": "होम आइकन क्लिक रूट",
+            "homeClickPlaceholder": "/"
+        },
+        "links": {
+            "heading": "लिंक",
+            "privacyPolicyLabel": "गोपनीयता नीति URL",
+            "privacyPolicyPlaceholder": "https://myschool.com/privacy",
+            "termsLabel": "नियम एवं शर्तें URL",
+            "termsPlaceholder": "https://myschool.com/terms",
+            "playStoreLabel": "प्ले स्टोर लिंक",
+            "playStorePlaceholder": "https://play.google.com/...",
+            "appStoreLabel": "ऐप स्टोर लिंक",
+            "appStorePlaceholder": "https://apps.apple.com/...",
+            "windowsLabel": "Windows ऐप लिंक",
+            "macLabel": "Mac ऐप लिंक",
+            "genericUrlPlaceholder": "https://..."
+        }
+    },
+    "notAvailable": {
+        "strong": "इस डिप्लॉयमेंट पर उपलब्ध नहीं है।",
+        "description": "Cloudflare API क्रेडेंशियल कॉन्फ़िगर नहीं किए गए हैं। अपने प्लेटफ़ॉर्म प्रशासक से संपर्क करें।"
+    },
+    "header": {
+        "title": "व्हाइट-लेबल डोमेन सेटअप",
+        "description": "प्रत्येक पोर्टल के लिए कस्टम डोमेन, ब्रांडिंग, प्रमाणीकरण सेटिंग्स और बहुत कुछ कॉन्फ़िगर करें।",
+        "refreshStatus": "स्थिति ताज़ा करें"
+    },
+    "currentConfig": {
+        "title": "वर्तमान कॉन्फ़िगरेशन",
+        "primaryUrlsLabel": "प्राथमिक पोर्टल URL (संस्थान डिफ़ॉल्ट)",
+        "noPortalUrls": "कोई पोर्टल URL सेट नहीं है।",
+        "domainRoutingEntries": "डोमेन रूटिंग प्रविष्टियां",
+        "totalBadge": "कुल {{count}}"
+    },
+    "setupCard": {
+        "titleUpdate": "डोमेन जोड़ें / अपडेट करें",
+        "titleNew": "नया सेटअप",
+        "descriptionPart1": "नीचे डोमेन प्रविष्टियां जोड़ें। ब्रांडिंग, प्रमाणीकरण, रूट्स और लिंक कॉन्फ़िगर करने के लिए प्रत्येक प्रविष्टि पर",
+        "settingsLabel": "⚙ सेटिंग्स",
+        "descriptionPart2": "पर क्लिक करें।",
+        "tip": {
+            "label": "सुझाव:",
+            "enterPrefix": "दर्ज करें",
+            "vacademySuffix": "Vacademy सबडोमेन के लिए, या",
+            "customSuffix": "कस्टम डोमेन के लिए। प्रत्येक भूमिका के लिए एक को ⭐ प्राइमरी के रूप में चिह्नित करें।"
+        },
+        "roleLabel": "भूमिका",
+        "domainLabel": "डोमेन",
+        "domainPlaceholder": "learn.myschool.com",
+        "primary": "प्राइमरी",
+        "setPrimary": "प्राइमरी सेट करें",
+        "primaryTooltip": "इस भूमिका के लिए पोर्टल URL — डोमेन सक्रिय होने पर ईमेल में उपयोग होगा",
+        "setPrimaryTooltip": "इस भूमिका के पोर्टल URL के रूप में इस डोमेन का उपयोग करें",
+        "settingsToggle": "सेटिंग्स",
+        "toggleSettingsTooltip": "सेटिंग्स टॉगल करें",
+        "removeTooltip": "हटाएं",
+        "addAnotherDomain": "एक और डोमेन जोड़ें",
+        "configuring": "कॉन्फ़िगर हो रहा है…",
+        "updateButton": "व्हाइट-लेबल सेटअप अपडेट करें",
+        "applyButton": "व्हाइट-लेबल सेटअप लागू करें",
+        "preservedHint": "मौजूदा प्रविष्टियां सुरक्षित रहती हैं। केवल सूचीबद्ध डोमेन ही बनाए/अपडेट किए जाते हैं।",
+        "draftRestored": "इस टैब से जाने से पहले आप जो डोमेन जोड़ रहे थे, वे वापस ला दिए गए हैं। सेटअप लागू करने तक कुछ भी लाइव नहीं होता।",
+        "discardDraft": "रद्द करें और सहेजे गए डोमेन दोबारा लोड करें",
+        "unsavedChanges": "सहेजे नहीं गए बदलाव — सहेजने के लिए Apply दबाएँ।"
+    },
+    "toast": {
+        "noInstituteSelected": "कोई संस्थान चयनित नहीं है",
+        "addAtLeastOneDomain": "कम से कम एक डोमेन प्रविष्टि जोड़ें",
+        "setupCompleted": "व्हाइट-लेबल सेटअप पूरा हुआ! 🎉",
+        "setupFailed": "सेटअप विफल रहा।",
+        "portalUrlAdopted": "{{roles}} पोर्टल URL अब लाइव है और सहेज लिया गया है।"
+    },
+    "setupResult": {
+        "title": "सेटअप पूर्ण",
+        "pagesCustomDomains": "Pages कस्टम डोमेन",
+        "pagesHint": "ये होस्ट को ऐप से जोड़ते हैं ताकि वह वास्तव में सर्व हो सके। केवल एक DNS रिकॉर्ड पर्याप्त नहीं है।",
+        "dnsRecordsConfigured": "DNS रिकॉर्ड कॉन्फ़िगर किए गए"
+    },
+    "routingEntryCard": {
+        "cloudflareStatusTooltip": "Cloudflare कस्टम-डोमेन स्थिति",
+        "tabPrefix": "टैब: {{value}}",
+        "themePrefix": "थीम: {{value}}",
+        "showDetailsTooltip": "विवरण दिखाएं",
+        "cnameInstructionPrefix": "इस डोमेन को सक्रिय करने के लिए अपने प्रदाता पर",
+        "cnameInstructionSuffix": "के लिए यह DNS रिकॉर्ड जोड़ें:",
+        "dnsType": "प्रकार",
+        "dnsName": "नाम",
+        "dnsValue": "मान",
+        "sslAutoActivate": "Cloudflare द्वारा रिकॉर्ड को सत्यापित करते ही SSL अपने आप सक्रिय हो जाता है।",
+        "defaultCountryTooltip": "डिफ़ॉल्ट रूप से चयनित देश",
+        "preferredCountries": "पसंदीदा देश",
+        "fields": {
+            "domain": "डोमेन",
+            "subdomain": "सबडोमेन",
+            "tabTitle": "टैब शीर्षक",
+            "tabIcon": "टैब आइकन",
+            "theme": "थीम",
+            "font": "फ़ॉन्ट",
+            "redirect": "रीडायरेक्ट",
+            "afterLogin": "लॉगिन के बाद",
+            "afterLogout": "लॉगआउट के बाद",
+            "homeClick": "होम क्लिक",
+            "signUp": "साइन अप",
+            "googleAuth": "गूगल प्रमाणीकरण",
+            "githubAuth": "गिटहब प्रमाणीकरण",
+            "emailOtp": "ईमेल OTP",
+            "phoneAuth": "फ़ोन प्रमाणीकरण",
+            "userPassAuth": "यूज़र/पास प्रमाणीकरण",
+            "privacyPolicy": "गोपनीयता नीति",
+            "terms": "नियम",
+            "playStore": "प्ले स्टोर",
+            "appStore": "ऐप स्टोर",
+            "windows": "Windows",
+            "mac": "Mac",
+            "hideInstituteName": "संस्थान का नाम छिपाएं",
+            "logoWidth": "लोगो चौड़ाई (px)",
+            "logoHeight": "लोगो ऊंचाई (px)",
+            "stackNameBelowLogo": "नाम लोगो के नीचे"
+        },
+        "portalUrl": "पोर्टल URL",
+        "portalUrlTooltip": "ईमेल और साझा लिंक अभी इसी डोमेन का उपयोग करते हैं",
+        "primaryPending": "प्राइमरी · लंबित",
+        "primaryPendingTooltip": "पोर्टल URL के रूप में चुना गया — यह डोमेन सक्रिय होते ही सहेजा जाएगा",
+        "willBeAdoptedOnceActive": "पोर्टल URL के रूप में चुना गया। यह डोमेन सक्रिय होते ही अपने आप सहेज लिया जाएगा — तब तक ईमेल और लिंक मौजूदा पोर्टल URL का ही उपयोग करेंगे।"
+    },
+    "subOrg": {
+        "label": "उप-संगठन",
+        "none": "मूल संस्थान",
+        "untitled": "अनामांकित उप-संगठन",
+        "badgeTooltip": "यह पोर्टल इसी उप-संगठन के लिए ब्रांडेड है और इसी तक सीमित है",
+        "searchPlaceholder": "उप-संगठन खोजें…",
+        "searchEmpty": "इस नाम से कोई उप-संगठन नहीं मिला।"
+    },
+    "shortLinkDns": {
+        "title": "शॉर्ट लिंक डोमेन",
+        "description": "यह रिकॉर्ड पोर्टल CNAME के साथ ही ग्राहक को भेजें, ताकि उनके शॉर्ट लिंक u.vacademy.io के बजाय उनके अपने डोमेन पर चलें।",
+        "hostLabel": "शॉर्ट लिंक यहाँ से सर्व होंगे",
+        "dnsType": "प्रकार",
+        "dnsName": "नाम",
+        "dnsValue": "मान",
+        "dnsTtl": "TTL",
+        "dnsProxy": "प्रॉक्सी",
+        "ttlAuto": "स्वतः",
+        "proxyOff": "केवल DNS — प्रॉक्सी न करें",
+        "copy": "रिकॉर्ड कॉपी करें",
+        "copied": "DNS रिकॉर्ड कॉपी हो गया",
+        "copyFailed": "कॉपी नहीं हो सका — मान स्वयं चुनें",
+        "platformNote": "केवल यह रिकॉर्ड पर्याप्त नहीं है: प्लेटफ़ॉर्म टीम को यह होस्ट ingress में भी जोड़ना होगा और इस संस्थान के लिए डोमेन पंजीकृत करना होगा। रिकॉर्ड के सक्रिय होने से पहले डोमेन पंजीकृत करने पर शॉर्ट लिंक u.vacademy.io पर वापस जाने के बजाय काम करना बंद कर देंगे।"
+    }
+}

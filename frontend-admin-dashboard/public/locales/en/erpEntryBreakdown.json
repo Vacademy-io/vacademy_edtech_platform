@@ -1,0 +1,14 @@
+{
+    "groups": {
+        "earnings": "Earnings",
+        "deductions": "Deductions",
+        "employerContributions": "Employer contributions"
+    },
+    "component": "Component",
+    "tax": "Tax",
+    "onHold": "On hold:",
+    "noBreakdown": "No component breakdown was stored for this entry.",
+    "none": "None",
+    "subtotal": "Subtotal",
+    "netPay": "Net pay"
+}

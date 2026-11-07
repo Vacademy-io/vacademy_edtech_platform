@@ -18,6 +18,11 @@ export interface StudentFilterRequest {
     enroll_invite_ids?: string[];
     audience_ids?: string[];
     sub_org_ids?: string[];
+    /** TRIAL and/or PAID. A learner with no plan never matches. */
+    membership_types?: string[];
+    /** Join-date range over ssigm.enrolled_date, inclusive, as YYYY-MM-DD. */
+    start_date?: string;
+    end_date?: string;
     // Dropdown custom-field filters — keyed by custom_field.id, values are the
     // selected option ids. Matches the backend's StudentListFilter.customFieldFilters
     // (Map<String, List<String>>), NOT the legacy flat customFieldId*/customFieldValues*
@@ -26,6 +31,9 @@ export interface StudentFilterRequest {
     // Operator-aware custom-field filters (CONTAINS / IS_EMPTY / NOT_EMPTY /
     // BETWEEN / GTE / LTE). Coexists with the legacy values-IN map above.
     custom_field_typed_filters?: { field_id: string; operator?: string; values: string[] }[];
+    // Campaign (UTM) attribution filter — same wire shape on every list
+    // surface; see services/utm-list-filters.
+    utm_filters?: import('@/services/utm-list-filters').UtmListFiltersPayload;
     [key: string]: any;
 }
 
@@ -90,6 +98,10 @@ export interface StudentTable {
     enroll_invite_id: string;
     enroll_invite_name?: string | null;
     payment_status: string;
+    /** TRIAL | PAID from user_plan.is_trial; absent when the learner has no plan. */
+    membership_type?: 'TRIAL' | 'TRIAL_ENDED' | 'PAID' | null;
+    /** Join date (ssigm.enrolled_date). */
+    enrolled_date?: string | null;
     custom_fields: Record<string, string | null>;
     sub_org_name?: string;
     sub_org_id?: string;
@@ -113,6 +125,12 @@ export interface StudentListResponse {
     total_elements: number;
     total_pages: number;
     last: boolean;
+    /**
+     * True when the institute runs trials at all (a live invite sets TRIAL_DAYS > 0).
+     * Gates the Trial/Paid badge and filter, so institutes without trial memberships
+     * never see a distinction that means nothing to them.
+     */
+    membership_types_available?: boolean;
 }
 
 // Add this below the existing interfaces like StudentListResponse

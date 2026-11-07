@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { createYooptaEditor } from '@yoopta/editor';
 import { html } from '@yoopta/exports';
 import { plugins, TOOLS, MARKS } from '@/constants/study-library/yoopta-editor-plugins-tools';
@@ -159,6 +160,7 @@ export function YooptaEditorWrapper({
     editable = true,
     onBlur,
 }: YooptaEditorWrapperProps) {
+    const { t } = useTranslation('studyLibraryYooptaEditorWrapper');
     const editor = useMemo(() => {
         try {
             const newEditor = createYooptaEditor();
@@ -340,7 +342,7 @@ export function YooptaEditorWrapper({
                 } catch (e) {
                     console.error('❌ [MOUNT_DESERIALIZE] Failed:', e);
                     console.error('❌ [MOUNT_DESERIALIZE] Error stack:', e instanceof Error ? e.stack : 'N/A');
-                    setError('Failed to load content. Please try again.');
+                    setError(t('errors.loadFailed'));
                 }
             } else {
                 console.log('⏭️ [MOUNT_DESERIALIZE] Value unchanged and editor has content, skipping');
@@ -448,7 +450,7 @@ export function YooptaEditorWrapper({
                     padding: '20px',
                 }}
             >
-                <p className="text-lg font-semibold">Error loading content:</p>
+                <p className="text-lg font-semibold">{t('errors.loadingContentPrefix')}</p>
                 <p className="text-sm">{error}</p>
                 <button
                     onClick={() => {
@@ -459,7 +461,7 @@ export function YooptaEditorWrapper({
                     }}
                     className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition-colors"
                 >
-                    Retry
+                    {t('actions.retry')}
                 </button>
             </div>
         );
@@ -476,8 +478,8 @@ export function YooptaEditorWrapper({
                 }}
             >
                 <div className="text-sm text-red-600">
-                    <p className="font-semibold">Editor initialization failed</p>
-                    <p className="text-xs">Please refresh the page and try again.</p>
+                    <p className="font-semibold">{t('errors.initFailed')}</p>
+                    <p className="text-xs">{t('errors.refreshAndRetry')}</p>
                 </div>
             </div>
         );

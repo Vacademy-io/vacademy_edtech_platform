@@ -72,6 +72,10 @@ public class Invoice {
     @Column(name = "discount_amount", precision = 10, scale = 2)
     private BigDecimal discountAmount;
 
+    /** Admin who applied a discount on an admin-created invoice (V557). */
+    @Column(name = "discount_granted_by_user_id")
+    private String discountGrantedByUserId;
+
     @Column(name = "tax_amount", precision = 10, scale = 2)
     private BigDecimal taxAmount;
 

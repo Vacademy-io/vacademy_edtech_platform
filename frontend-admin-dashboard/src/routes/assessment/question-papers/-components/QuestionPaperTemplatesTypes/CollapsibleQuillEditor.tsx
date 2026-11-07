@@ -1,5 +1,6 @@
 import { RichTextEditor } from '@/components/editor/RichTextEditor';
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { CollapsibleQuillEditorProps } from '@/types/assessments/question-type-types';
 
 export const CollapsibleQuillEditor: React.FC<CollapsibleQuillEditorProps> = ({
@@ -7,20 +8,21 @@ export const CollapsibleQuillEditor: React.FC<CollapsibleQuillEditorProps> = ({
     onChange,
     onBlur,
 }) => {
+    const { t } = useTranslation('assessmentCollapsibleQuillEditor');
     const [isExpanded, setIsExpanded] = useState<boolean>(false);
     return (
         <div className="">
             {!isExpanded ? (
                 // Render only a single line preview
                 <div className="flex cursor-pointer flex-row gap-1 rounded-md border bg-primary-50 p-2">
-                    <div className="w-full max-w-[50vw] truncate text-body">
+                    <div className="min-w-0 flex-1 truncate text-body">
                         {value && value.replace(/<[^>]+>/g, '')}
                     </div>
                     <button
                         className="text-body text-primary-500"
                         onClick={() => setIsExpanded(true)}
                     >
-                        Show More
+                        {t('actions.showMore')}
                     </button>
                 </div>
             ) : (
@@ -36,7 +38,7 @@ export const CollapsibleQuillEditor: React.FC<CollapsibleQuillEditorProps> = ({
                         className="mt-2 text-body text-primary-500"
                         onClick={() => setIsExpanded(false)}
                     >
-                        Show Less
+                        {t('actions.showLess')}
                     </button>
                 </div>
             )}

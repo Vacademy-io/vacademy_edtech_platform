@@ -1,0 +1,94 @@
+{
+    "navHeading": "Schedule Announcement",
+    "pageHeading": "Schedule Announcements",
+    "nav": {
+        "prev": "Prev",
+        "today": "Today",
+        "next": "Next"
+    },
+    "tabs": {
+        "day": "Day",
+        "threeDay": "3-day",
+        "week": "Week",
+        "month": "Month"
+    },
+    "modeFilter": {
+        "placeholder": "Mode filter",
+        "all": "All modes"
+    },
+    "scheduleNew": "Schedule new",
+    "scheduleHere": "Schedule here",
+    "weekdays": {
+        "sun": "Sun",
+        "mon": "Mon",
+        "tue": "Tue",
+        "wed": "Wed",
+        "thu": "Thu",
+        "fri": "Fri",
+        "sat": "Sat"
+    },
+    "loading": "Loading…",
+    "emptyState": {
+        "title": "No scheduled announcements in this range",
+        "description": "Pick a different range, or schedule a new campaign."
+    },
+    "showingRange": "Showing {{range}}",
+    "moreCount_one": "+{{count}} more",
+    "moreCount_other": "+{{count}} more",
+    "actions": {
+        "edit": "Edit",
+        "delete": "Delete",
+        "approve": "Approve",
+        "reject": "Reject"
+    },
+    "toast": {
+        "deleted": "Scheduled announcement deleted",
+        "deleteFailedTitle": "Delete failed",
+        "deleteFailedFallback": "Try again",
+        "approved": "Approved",
+        "approveFailed": "Approve failed",
+        "rejected": "Rejected",
+        "rejectFailed": "Reject failed"
+    },
+    "rejectDialog": {
+        "title": "Reject Announcement",
+        "reasonPlaceholder": "Reason",
+        "cancel": "Cancel",
+        "reject": "Reject"
+    },
+    "deleteDialog": {
+        "title": "Delete scheduled announcement?",
+        "bodyPrefix": "This will permanently cancel and delete",
+        "bodySuffix": ". It will not be delivered and cannot be restored.",
+        "defaultTitle": "this announcement",
+        "cancel": "Cancel",
+        "deleting": "Deleting…",
+        "delete": "Delete"
+    },
+    "schedule": {
+        "immediate": "Immediate",
+        "recurring": "Recurring",
+        "recurringWithCron": "Recurring · {{cron}}",
+        "cronWithLabel": "CRON {{cron}}"
+    },
+    "subheading": "A calendar of every planned announcement and email campaign. Pick a day to schedule something new.",
+    "viewLabel": "Calendar view",
+    "legend": {
+        "recurring": "Recurring"
+    },
+    "countInView_one": "{{count}} announcement",
+    "countInView_other": "{{count}} announcements",
+    "nothingScheduled": "Nothing scheduled",
+    "lists": {
+        "upNext": {
+            "title": "Coming up in this view",
+            "empty": "Nothing is planned in this range."
+        },
+        "pending": {
+            "title": "Waiting for approval",
+            "empty": "Nothing in this range is waiting for approval.",
+            "openQueue": "Open queue",
+            "notSentYet": "not sent until approved"
+        }
+    }
+}

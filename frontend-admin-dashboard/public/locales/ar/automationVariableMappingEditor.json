@@ -1,0 +1,41 @@
+{
+    "systemFields": {
+        "fullName": "الاسم الكامل",
+        "email": "البريد الإلكتروني",
+        "mobileNumber": "رقم الجوال",
+        "username": "اسم المستخدم",
+        "userId": "معرّف المستخدم",
+        "dateOfBirth": "تاريخ الميلاد",
+        "gender": "الجنس",
+        "address": "العنوان",
+        "city": "المدينة",
+        "region": "المنطقة / الولاية",
+        "pinCode": "الرمز البريدي"
+    },
+    "sources": {
+        "systemField": "حقل النظام",
+        "customField": "حقل مخصص",
+        "session": "متغير الجلسة",
+        "context": "السياق (الهاتف، instituteId، …)",
+        "fixed": "قيمة ثابتة"
+    },
+    "emptyState": "لا توجد تعيينات بعد. أضف واحدًا لتحديد {{placeholder}} من بيانات المستخدم مع قيمة افتراضية احتياطية.",
+    "placeholderName": "اسم العنصر النائب",
+    "remove": "إزالة",
+    "selectSystemField": "— اختر حقل النظام —",
+    "selectCustomField": "— اختر حقلًا مخصصًا —",
+    "loadingCustomFields": "جارٍ التحميل…",
+    "customFieldOption": "{{name}} ({{type}})",
+    "noCustomFieldsFound": "لم يتم العثور على حقول مخصصة لهذه المؤسسة.",
+    "loadError": "خطأ: {{message}}",
+    "retry": "إعادة المحاولة",
+    "fieldPlaceholder": {
+        "fixed": "قيمة حرفية",
+        "context": "phone | instituteId | userId | messageText",
+        "session": "مفتاح متغير الجلسة"
+    },
+    "defaultValuePlaceholder": "القيمة الافتراضية (تُستخدم عند عدم وجود قيمة)",
+    "addVariable": "إضافة متغير",
+    "noInstituteId": "لا يوجد instituteId متاح",
+    "loadCustomFieldsFailed": "فشل تحميل الحقول المخصصة"
+}

@@ -1,0 +1,39 @@
+{
+    "title": "Prospects de parrainage",
+    "subtitle": "Prospects acquis via des campagnes de parrainage",
+    "referralUsers": "Utilisateurs parrainés",
+    "referralRate": "Taux de parrainage",
+    "selectCampaign": "Sélectionner la campagne :",
+    "selectCampaignPlaceholder": "Sélectionner une campagne de parrainage",
+    "campaignUsers_one": "{{name}} ({{count}} utilisateur)",
+    "campaignUsers_many": "{{name}} ({{count}} utilisateurs)",
+    "campaignUsers_other": "{{name}} ({{count}} utilisateurs)",
+    "exportCsv": "Exporter en CSV",
+    "noCampaigns": "Aucune campagne de parrainage trouvée",
+    "loadingLeads": "Chargement des prospects...",
+    "noLeads": "Aucun prospect trouvé pour la campagne et la période sélectionnées",
+    "table": {
+        "index": "#",
+        "user": "Utilisateur",
+        "contact": "Contact",
+        "source": "Source",
+        "submitted": "Soumis",
+        "anonymous": "Anonyme",
+        "idLabel": "ID : {{id}}..."
+    },
+    "csv": {
+        "name": "Nom",
+        "email": "E-mail",
+        "phone": "Téléphone",
+        "source": "Source",
+        "submittedAt": "Soumis le",
+        "notAvailable": "N/D"
+    },
+    "pagination": {
+        "showing_one": "Affichage de {{from}} à {{to}} sur {{count}} prospect",
+        "showing_many": "Affichage de {{from}} à {{to}} sur {{count}} prospects",
+        "showing_other": "Affichage de {{from}} à {{to}} sur {{count}} prospects",
+        "previous": "Précédent",
+        "next": "Suivant"
+    }
+}

@@ -53,6 +53,30 @@ public class RegistrationService {
 
 
     /**
+     * Shortest digit count that can be a real phone number rather than a dial code. The E.164
+     * country code alone is 1-3 digits, and the shortest national subscriber numbers in use are
+     * 4 digits, so anything under 7 digits cannot identify a person.
+     */
+    private static final int MIN_IDENTITY_PHONE_DIGITS = 7;
+
+    /**
+     * The mobile number to register this guest BY, or null when the form did not really collect
+     * one.
+     *
+     * <p>A registration form is free to make its phone field optional, and the widget the learner
+     * forms use keeps the selected country's dial code in the box — so "left blank" reaches us as
+     * {@code "+91"}. Treated as an identity, that dial code is shared by every learner who skipped
+     * the field: the second one to register would be matched onto the first one's row and
+     * overwrite their answers. A value too short to be a phone number is therefore no phone number
+     * at all. The shortest number ever stored in this table is 10 digits, so nothing real is
+     * excluded.
+     */
+    private String identityPhone(String rawMobileNumber) {
+        String digits = SessionGuestRegistration.normalizeMobileNumber(rawMobileNumber);
+        return (digits != null && digits.length() >= MIN_IDENTITY_PHONE_DIGITS) ? digits : null;
+    }
+
+    /**
      * Idempotent guest registration keyed by either identity: email (classic) or
      * mobile number (phone-identity institutes). Re-registering with a known
      * identifier returns the existing registration id instead of failing, so a
@@ -63,7 +87,7 @@ public class RegistrationService {
     public String registerGuest(String email, String mobileNumber, String sessionId) {
         String normalizedEmail = (email == null || email.trim().isEmpty())
                 ? null : email.trim().toLowerCase();
-        String normalizedPhone = SessionGuestRegistration.normalizeMobileNumber(mobileNumber);
+        String normalizedPhone = identityPhone(mobileNumber);
         if (normalizedEmail == null && normalizedPhone == null) {
             throw new VacademyException("Either an email or a mobile number is required to register");
         }
@@ -389,7 +413,10 @@ public class RegistrationService {
                     if (fullName == null) fullName = value.trim();
                 }
                 case PHONE -> {
-                    if (mobileNumber == null) mobileNumber = value.trim();
+                    // An optional phone field the learner skipped still arrives as the widget's
+                    // dial code ("+91"). Notifications and CRM leads must not treat that as a
+                    // number they can reach anyone on.
+                    if (mobileNumber == null && identityPhone(value) != null) mobileNumber = value.trim();
                 }
                 case EMAIL -> {
                     if (email == null || email.isBlank()) email = value.trim();

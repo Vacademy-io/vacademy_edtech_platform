@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -31,16 +32,19 @@ const ProvideReattemptComponent = ({
     student: AssessmentRevaluateStudentInterface;
     onClose: () => void;
 }) => {
+    const { t } = useTranslation('homeworkCreationStudentAttemptDropdown');
     return (
         <DialogContent className="flex flex-col p-0">
-            <h1 className="rounded-md bg-primary-50 p-4 text-primary-500">Provide Reattempt</h1>
+            <h1 className="rounded-md bg-primary-50 p-4 text-primary-500">
+                {t('dialogs.provideReattempt.title')}
+            </h1>
             <div className="flex flex-col gap-2 p-4">
                 <div className="flex items-center text-danger-600">
-                    <p>Attention</p>
+                    <p>{t('dialogs.attentionLabel')}</p>
                     <WarningCircle size={18} />
                 </div>
                 <h1>
-                    Are you sure you want to provide a reattempt opportunity to{' '}
+                    {t('dialogs.provideReattempt.confirmMessagePrefix')}{' '}
                     <span className="text-primary-500">{student.full_name}</span>?
                 </h1>
                 <div className="flex justify-end">
@@ -51,7 +55,7 @@ const ProvideReattemptComponent = ({
                         className="mt-4 font-medium"
                         onClick={onClose} // Close the dialog when clicked
                     >
-                        Yes
+                        {t('dialogs.yes')}
                     </MyButton>
                 </div>
             </div>
@@ -66,6 +70,7 @@ const ReleaseResultComponent = ({
     student: AssessmentRevaluateStudentInterface;
     onClose: () => void;
 }) => {
+    const { t } = useTranslation('homeworkCreationStudentAttemptDropdown');
     const { assessmentId } = Route.useParams();
     const instituteId = getInstituteId();
     const getReleaseResultMutation = useMutation({
@@ -81,13 +86,10 @@ const ReleaseResultComponent = ({
             selectedFilter: SelectedReleaseResultFilterInterface;
         }) => getReleaseStudentResult(assessmentId, instituteId, methodType, selectedFilter),
         onSuccess: () => {
-            toast.success(
-                'Your attempt for this assessment has been revaluated. Please check your email!',
-                {
-                    className: 'success-toast',
-                    duration: 4000,
-                }
-            );
+            toast.success(t('toasts.releaseResultSuccess'), {
+                className: 'success-toast',
+                duration: 4000,
+            });
             onClose();
         },
         onError: (error: unknown) => {
@@ -107,14 +109,16 @@ const ReleaseResultComponent = ({
     };
     return (
         <DialogContent className="flex flex-col p-0">
-            <h1 className="rounded-md bg-primary-50 p-4 text-primary-500">Release Result</h1>
+            <h1 className="rounded-md bg-primary-50 p-4 text-primary-500">
+                {t('dialogs.releaseResult.title')}
+            </h1>
             <div className="flex flex-col gap-2 p-4">
                 <div className="flex items-center text-danger-600">
-                    <p>Attention</p>
+                    <p>{t('dialogs.attentionLabel')}</p>
                     <WarningCircle size={18} />
                 </div>
                 <h1>
-                    Are you sure you want to release result for{' '}
+                    {t('dialogs.releaseResult.confirmMessagePrefix')}{' '}
                     <span className="text-primary-500">{student.full_name}</span>?
                 </h1>
                 <div className="flex justify-end">
@@ -125,7 +129,7 @@ const ReleaseResultComponent = ({
                         className="mt-4 font-medium"
                         onClick={handleReleaseResultStudent} // Close the dialog when clicked
                     >
-                        Yes
+                        {t('dialogs.yes')}
                     </MyButton>
                 </div>
             </div>
@@ -140,6 +144,7 @@ const StudentRevaluateForEntireAssessmentComponent = ({
     student: AssessmentRevaluateStudentInterface;
     onClose: () => void;
 }) => {
+    const { t } = useTranslation('homeworkCreationStudentAttemptDropdown');
     const { assessmentId } = Route.useParams();
     const instituteId = getInstituteId();
     const [selectedFilter] = useState<SelectedFilterRevaluateInterface>({
@@ -164,13 +169,10 @@ const StudentRevaluateForEntireAssessmentComponent = ({
             selectedFilter: SelectedFilterRevaluateInterface;
         }) => getRevaluateStudentResult(assessmentId, instituteId, methodType, selectedFilter),
         onSuccess: () => {
-            toast.success(
-                'Your attempt for this assessment has been revaluated. Please check your email!',
-                {
-                    className: 'success-toast',
-                    duration: 4000,
-                }
-            );
+            toast.success(t('toasts.revaluateSuccess'), {
+                className: 'success-toast',
+                duration: 4000,
+            });
             onClose();
         },
         onError: (error: unknown) => {
@@ -198,17 +200,17 @@ const StudentRevaluateForEntireAssessmentComponent = ({
     return (
         <DialogContent className="flex flex-col p-0">
             <h1 className="rounded-md bg-primary-50 p-4 text-primary-500">
-                Revaluate Entire Assessment
+                {t('dialogs.revaluateEntireAssessment.title')}
             </h1>
             <div className="flex flex-col gap-2 p-4">
                 <div className="flex items-center text-danger-600">
-                    <p>Attention</p>
+                    <p>{t('dialogs.attentionLabel')}</p>
                     <WarningCircle size={18} />
                 </div>
                 <h1>
-                    Are you sure you want to revaluate for{' '}
-                    <span className="text-primary-500">{student.full_name}</span> for the entire
-                    assessment?
+                    {t('dialogs.revaluateEntireAssessment.confirmMessagePrefix')}{' '}
+                    <span className="text-primary-500">{student.full_name}</span>{' '}
+                    {t('dialogs.revaluateEntireAssessment.confirmMessageSuffix')}
                 </h1>
                 <div className="flex justify-end">
                     <MyButton
@@ -218,7 +220,7 @@ const StudentRevaluateForEntireAssessmentComponent = ({
                         className="mt-4 font-medium"
                         onClick={handleRevaluateStudent}
                     >
-                        Yes
+                        {t('dialogs.yes')}
                     </MyButton>
                 </div>
             </div>
@@ -227,6 +229,7 @@ const StudentRevaluateForEntireAssessmentComponent = ({
 };
 
 const StudentAttemptDropdown = ({ student }: { student: AssessmentRevaluateStudentInterface }) => {
+    const { t } = useTranslation('homeworkCreationStudentAttemptDropdown');
     const [openDialog, setOpenDialog] = useState(false);
     const [selectedOption, setSelectedOption] = useState<string | null>(null);
 
@@ -253,24 +256,24 @@ const StudentAttemptDropdown = ({ student }: { student: AssessmentRevaluateStude
                         className="cursor-pointer"
                         onClick={() => handleProvideReattempt('Provide Reattempt')}
                     >
-                        Provide Reattempt
+                        {t('dropdown.provideReattempt')}
                     </DropdownMenuItem>
                     <DropdownMenuSub>
                         <DropdownMenuSubTrigger className="cursor-pointer">
-                            Revaluate
+                            {t('dropdown.revaluate')}
                         </DropdownMenuSubTrigger>
                         <DropdownMenuSubContent>
                             <DropdownMenuItem
                                 className="cursor-pointer"
                                 onClick={() => handleProvideReattempt('Question Wise')}
                             >
-                                Question Wise
+                                {t('dropdown.questionWise')}
                             </DropdownMenuItem>
                             <DropdownMenuItem
                                 className="cursor-pointer"
                                 onClick={() => handleProvideReattempt('Entire Assessment')}
                             >
-                                Entire Assessment
+                                {t('dropdown.entireAssessment')}
                             </DropdownMenuItem>
                         </DropdownMenuSubContent>
                     </DropdownMenuSub>
@@ -278,7 +281,7 @@ const StudentAttemptDropdown = ({ student }: { student: AssessmentRevaluateStude
                         className="cursor-pointer"
                         onClick={() => handleProvideReattempt('Release Result')}
                     >
-                        Release Result
+                        {t('dropdown.releaseResult')}
                     </DropdownMenuItem>
                 </DropdownMenuContent>
             </DropdownMenu>

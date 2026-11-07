@@ -1,0 +1,84 @@
+{
+    "defaultSectionName": "القسم {{number}}",
+    "trigger": {
+        "title": "إنشاء من قاعدة المعرفة",
+        "subtitle": "أسئلة من كتبك وملاحظاتك الخاصة"
+    },
+    "dialog": {
+        "headingChooseKb": "اختر قاعدة معرفة",
+        "headingKbSection": "{{kbName}} — {{sectionName}}"
+    },
+    "kbStep": {
+        "intro": "سيتم كتابة الأسئلة فقط من المحتوى الموجود في قاعدة المعرفة التي تختارها، وسيُظهر كل سؤال الصفحة التي أُخذ منها.",
+        "emptyTitle": "لا توجد قواعد معرفة بعد",
+        "emptyDescription": "أضف كتبك أو ملاحظاتك ضمن قاعدة المعرفة أولاً، ثم عد إلى هنا.",
+        "sourcesCount_zero": "{{count}} مصدر",
+        "sourcesCount_one": "{{count}} مصدر واحد",
+        "sourcesCount_two": "{{count}} مصدران",
+        "sourcesCount_few": "{{count}} مصادر",
+        "sourcesCount_many": "{{count}} مصدرًا",
+        "sourcesCount_other": "{{count}} مصدر"
+    },
+    "setup": {
+        "numberOfQuestions": "عدد الأسئلة",
+        "questionType": "نوع السؤال",
+        "difficulty": "مستوى الصعوبة",
+        "noTopicsWarning": "لا تحتوي قاعدة المعرفة هذه على مواضيع بعد. سيتم استخلاص الأسئلة من كل محتواها.",
+        "questionTypeOptions": {
+            "mcqs": "اختيار من متعدد (إجابة واحدة)",
+            "mcqm": "اختيار من متعدد (عدة إجابات)",
+            "trueFalse": "صواب / خطأ",
+            "oneWord": "كلمة واحدة",
+            "longAnswer": "إجابة طويلة",
+            "numeric": "رقمي",
+            "passage": "قطعة / فهم المقروء",
+            "assertionReason": "الادعاء والسبب"
+        },
+        "difficultyOptions": {
+            "easy": "سهل",
+            "medium": "متوسط",
+            "hard": "صعب"
+        },
+        "validation": {
+            "minCount": "سؤال واحد على الأقل",
+            "maxCount": "60 سؤالًا كحد أقصى في المرة الواحدة"
+        }
+    },
+    "generating": {
+        "writingFrom": "جارٍ كتابة الأسئلة من {{kbName}}",
+        "hint": "تتم كتابة الأسئلة بضعة في كل مرة، لذا يستغرق القسم الأكبر وقتًا أطول. تبقى هذه العملية محفوظة في سجل قاعدة المعرفة حتى لو أغلقت هذه النافذة."
+    },
+    "review": {
+        "partialDelivery": "تم كتابة {{delivered}} من أصل {{planned}} سؤالًا من المواضيع التي اخترتها. أضف مزيدًا من المحتوى أو وسّع التحديد لإكمال الباقي."
+    },
+    "insert": {
+        "paperTitle": "{{kbName}} — {{sectionName}}",
+        "successToast_zero": "تمت إضافة {{count}} سؤال إلى {{sectionName}}",
+        "successToast_one": "تمت إضافة {{count}} سؤال واحد إلى {{sectionName}}",
+        "successToast_two": "تمت إضافة {{count}} سؤالين إلى {{sectionName}}",
+        "successToast_few": "تمت إضافة {{count}} أسئلة إلى {{sectionName}}",
+        "successToast_many": "تمت إضافة {{count}} سؤالًا إلى {{sectionName}}",
+        "successToast_other": "تمت إضافة {{count}} سؤال إلى {{sectionName}}"
+    },
+    "footer": {
+        "cancel": "إلغاء",
+        "back": "رجوع",
+        "generateQuestions": "إنشاء الأسئلة",
+        "changeSelection": "تغيير التحديد",
+        "adding": "جارٍ الإضافة…",
+        "addQuestions_zero": "إضافة {{count}} سؤال إلى هذا القسم",
+        "addQuestions_one": "إضافة {{count}} سؤال واحد إلى هذا القسم",
+        "addQuestions_two": "إضافة {{count}} سؤالين إلى هذا القسم",
+        "addQuestions_few": "إضافة {{count}} أسئلة إلى هذا القسم",
+        "addQuestions_many": "إضافة {{count}} سؤالًا إلى هذا القسم",
+        "addQuestions_other": "إضافة {{count}} سؤال إلى هذا القسم"
+    },
+    "errors": {
+        "loadTopics": "تعذّرت قراءة المواضيع في قاعدة المعرفة هذه",
+        "startGenerating": "تعذّر بدء الإنشاء",
+        "generationFailed": "فشل الإنشاء",
+        "regenerateQuestion": "تعذّرت إعادة كتابة هذا السؤال",
+        "paperNotSaved": "لم يتم حفظ ورقة الأسئلة",
+        "insertQuestions": "تعذّرت إضافة هذه الأسئلة إلى القسم"
+    }
+}

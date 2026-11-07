@@ -1,0 +1,103 @@
+{
+    "header": {
+        "title": "AI Intelligence",
+        "subtitle": "Calling quality and day-to-day activity over time — team first, then each counsellor, with the change vs the previous period so you can see what improved.",
+        "settings": "Intelligence settings"
+    },
+    "loadingInstitute": "Loading institute…",
+    "emptyState": {
+        "title": "AI Intelligence is turned off",
+        "description": "Enable Call Intelligence in Settings to transcribe and analyze calls, then this page will show team and per-counsellor trends."
+    },
+    "banner": {
+        "offWithData": "Call Intelligence is turned off — no new calls are being analyzed. Showing previously analyzed data. Enable it in Settings to resume analysis."
+    },
+    "comparing": {
+        "label": "Comparing",
+        "against": "against previous"
+    },
+    "period": {
+        "days_one": "{{count}} day",
+        "days_other": "{{count}} days",
+        "custom": "Custom",
+        "startDateLabel": "Start date",
+        "endDateLabel": "End date",
+        "to": "to"
+    },
+    "months": {
+        "jan": "Jan",
+        "feb": "Feb",
+        "mar": "Mar",
+        "apr": "Apr",
+        "may": "May",
+        "jun": "Jun",
+        "jul": "Jul",
+        "aug": "Aug",
+        "sep": "Sep",
+        "oct": "Oct",
+        "nov": "Nov",
+        "dec": "Dec"
+    },
+    "delta": {
+        "noChange": "no change"
+    },
+    "teamInsights": {
+        "heading": "Team insights",
+        "groupCallQuality": "Calling & call quality",
+        "groupActivity": "Day-to-day activity",
+        "metrics": {
+            "callsAnalyzed": "Calls analyzed",
+            "avgCallerRating": "Avg caller rating",
+            "avgCallOutput": "Avg call output",
+            "positiveSentiment": "Positive sentiment",
+            "leadsDispositioned": "Leads dispositioned",
+            "callsMade": "Calls made",
+            "teamReach": "Team reach"
+        },
+        "summary": {
+            "noChangeYet": "No meaningful change vs the previous period yet.",
+            "aiSummaryLabel": "AI summary —",
+            "whatImproved": "What improved",
+            "needsAttention": "Needs attention"
+        },
+        "aiSummary": {
+            "improved": "Improved: {{list}}.",
+            "watch": "Watch: {{list}}.",
+            "coachingFocus": "AI coaching focus: {{tip}}",
+            "mostHitObjection": "Most-hit objection: {{objection}}."
+        }
+    },
+    "counsellorBreakdown": {
+        "heading": "Counsellor breakdown",
+        "subtitle": "metrics vs the previous equal period",
+        "columns": {
+            "counsellor": "Counsellor",
+            "analyzed": "Analyzed",
+            "avgCaller": "Avg caller",
+            "avgOutput": "Avg output",
+            "dispositioned": "Dispositioned",
+            "reach": "Reach"
+        },
+        "noActivity": "No counsellor activity in this period.",
+        "whatTheyCanImprove": "What they can improve",
+        "coaching": {
+            "loading": "Loading coaching…",
+            "noCoaching": "No analyzed calls in this range — no coaching for this rep yet.",
+            "weakestSkills": "Weakest skills:",
+            "notEnoughSignal": "Not enough signal for coaching in this range."
+        },
+        "collapseAll": "Collapse all",
+        "expandAll": "Expand all"
+    },
+    "hero": {
+        "eyebrow": "Call quality · {{range}}",
+        "unit": "/10 avg caller rating",
+        "analyzed_one": "{{count}} call analyzed",
+        "analyzed_other": "{{count}} calls analyzed",
+        "positive": "{{value}}% positive sentiment",
+        "reach": "{{value}}% team reach"
+    },
+    "kpi": {
+        "was": "was {{value}}"
+    }
+}

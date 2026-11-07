@@ -1,0 +1,78 @@
+{
+    "emptyState": {
+        "title": "एक बातचीत चुनें",
+        "subtitle": "संदेश देखने के लिए बाईं ओर से किसी संपर्क को चुनें"
+    },
+    "backToConversations": "बातचीत सूची पर वापस जाएं",
+    "idLabel": "ID: {{id}}",
+    "escalation": {
+        "title": "आपके जवाब का इंतज़ार है",
+        "reason": {
+            "maxTurns": "बातचीत अपनी स्वचालित उत्तर सीमा तक पहुंच गई।",
+            "aiError": "असिस्टेंट कोई जवाब नहीं बना सका।",
+            "manual": "एक एडमिन द्वारा हैंडओवर किया गया।",
+            "default": "असिस्टेंट के पास जवाब देने के लिए जानकारी नहीं थी, इसलिए उसने कहा कि वह टीम से जांच करेगा।",
+            "existingLead": "एक मौजूदा लीड ने चैटबॉट के ज़रिए फिर से संदेश भेजा। कोई नई लीड नहीं बनाई गई — संपर्क उनकी मौजूदा लीड पर दर्ज किया गया।",
+            "crmSaveFailed": "चैटबॉट इस लीड को CRM में सेव नहीं कर सका। उनके जवाब नीचे हैं — इन्हें CRM में खुद जोड़ें।"
+        },
+        "askedQuote": "उन्होंने पूछा: “{{message}}”",
+        "messageQuote": "उनका संदेश: “{{message}}”",
+        "answersQuote": "उनके जवाब:\n{{message}}"
+    },
+    "loadError": {
+        "retrying": "फिर से कोशिश हो रही है…",
+        "tryAgain": "फिर से कोशिश करें"
+    },
+    "loadOlder": {
+        "loading": "लोड हो रहा है...",
+        "cta": "पुराने संदेश लोड करें"
+    },
+    "noMessages": "इस बातचीत में अभी तक कोई संदेश नहीं है",
+    "bot": "बॉट",
+    "viaTemplate": "टेम्पलेट “{{name}}” के माध्यम से",
+    "notDelivered": "डिलीवर नहीं हुआ",
+    "accountLevelFailure": "यह इस नंबर से भेजे जाने वाले हर WhatsApp संदेश को प्रभावित करता है, न कि केवल इस चैट को।",
+    "errorCode": "WhatsApp त्रुटि कोड {{code}}",
+    "viewDocument": "दस्तावेज़ देखें",
+    "attachmentAlt": "अटैचमेंट",
+    "origin": {
+        "workflow": "वर्कफ़्लो “{{name}}” द्वारा भेजा गया",
+        "workflowUnnamed": "एक वर्कफ़्लो द्वारा भेजा गया",
+        "chatbotFlow": "चैटबॉट फ़्लो “{{name}}” द्वारा भेजा गया",
+        "chatbotFlowUnnamed": "एक चैटबॉट फ़्लो द्वारा भेजा गया"
+    },
+    "templateCategory": {
+        "MARKETING": "मार्केटिंग",
+        "UTILITY": "यूटिलिटी",
+        "AUTHENTICATION": "ऑथेंटिकेशन"
+    },
+    "noFailureReason": "WhatsApp ने इस संदेश के न पहुँचने का कारण नहीं बताया।",
+    "inbound": {
+        "kind": {
+            "image": "फ़ोटो",
+            "video": "वीडियो",
+            "audio": "ऑडियो",
+            "voice": "वॉइस मैसेज",
+            "sticker": "स्टिकर",
+            "document": "दस्तावेज़",
+            "location": "लोकेशन",
+            "contacts": "संपर्क कार्ड",
+            "reaction": "रिएक्शन",
+            "unsupported": "ऐसा संदेश जिसे WhatsApp बिज़नेस ऐप्स के साथ साझा नहीं करता",
+            "form_response": "फ़ॉर्म का जवाब",
+            "other": "अटैचमेंट"
+        },
+        "mediaError": {
+            "expired": "यह फ़ाइल अब WhatsApp पर उपलब्ध नहीं है — मीडिया लगभग 30 दिन तक रखा जाता है।",
+            "tooLarge": "यह फ़ाइल यहाँ दिखाने के लिए बहुत बड़ी है।",
+            "notConfigured": "इस संस्थान के लिए WhatsApp सेट नहीं है, इसलिए फ़ाइल नहीं लाई जा सकती।",
+            "failed": "WhatsApp से यह फ़ाइल लोड नहीं हो सकी।"
+        },
+        "loading": "{{kind}} लोड हो रहा है…",
+        "openInMaps": "Google Maps में खोलें",
+        "unnamedContact": "बिना नाम का संपर्क",
+        "reactedTo": "“{{preview}}” पर {{emoji}} रिएक्ट किया",
+        "reactedToMessage": "एक संदेश पर {{emoji}} रिएक्ट किया",
+        "reactionRemoved": "रिएक्शन हटा दिया"
+    }
+}

@@ -1,0 +1,10 @@
+{
+    "heading": "Modifier le lien du cours en direct",
+    "currentLinkLabel": "Lien actuel",
+    "newLinkLabel": "Nouveau lien",
+    "newLinkPlaceholder": "Entrez le nouveau lien",
+    "actions": {
+        "cancel": "Annuler",
+        "update": "Mettre à jour"
+    }
+}

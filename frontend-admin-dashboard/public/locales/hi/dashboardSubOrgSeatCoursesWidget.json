@@ -1,0 +1,21 @@
+{
+    "heading": "शिक्षार्थी और कोर्स",
+    "manage": "प्रबंधित करें",
+    "recentEnrollments": {
+        "label": "हाल के नामांकन",
+        "oweFees_one": "{{count}} पर फीस बकाया है",
+        "oweFees_other": "{{count}} पर फीस बकाया है",
+        "empty": "अभी तक कोई नामांकन नहीं",
+        "learnerFallback": "शिक्षार्थी",
+        "joined": "{{date}} को शामिल हुए",
+        "due": "{{amount}} बकाया",
+        "paid": "भुगतान हो गया"
+    },
+    "courses": {
+        "label": "मेरे कोर्स",
+        "fallbackName": "कोर्स",
+        "empty": "अभी तक कोई कोर्स असाइन नहीं किया गया",
+        "learnerCountTitle_one": "{{count}} शिक्षार्थी",
+        "learnerCountTitle_other": "{{count}} शिक्षार्थी"
+    }
+}

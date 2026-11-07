@@ -1,6 +1,7 @@
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { motion } from 'framer-motion';
 import { useQuery } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 import { fetchAnalyticsActiveUsersRealtime } from '../../-services/dashboard-services';
 import { useEffect, useState } from 'react';
 import { Eye, ArrowUp } from '@phosphor-icons/react';
@@ -42,6 +43,7 @@ interface RealTimeActiveUsersWidgetProps {
 }
 
 export default function RealTimeActiveUsersWidget({ instituteId }: RealTimeActiveUsersWidgetProps) {
+    const { t } = useTranslation('dashboardRealTimeActiveUsersWidget');
     const {
         data: activeUsersCount,
         isLoading,
@@ -66,7 +68,7 @@ export default function RealTimeActiveUsersWidget({ instituteId }: RealTimeActiv
                 <Card className="h-full">
                     <AnalyticsErrorDisplay
                         error={error}
-                        widgetName="real-time active users"
+                        widgetName={t('error.widgetName')}
                         onRetry={() => refetch()}
                         fallbackIcon={Eye}
                     />
@@ -103,7 +105,7 @@ export default function RealTimeActiveUsersWidget({ instituteId }: RealTimeActiv
                             <div className="rounded-full bg-primary-300/20 p-2">
                                 <Eye size={20} className="text-primary-400" />
                             </div>
-                            <CardTitle className="text-lg font-bold">Real-Time Active</CardTitle>
+                            <CardTitle className="text-lg font-bold">{t('header.title')}</CardTitle>
                         </div>
                         <motion.div
                             animate={{ scale: [1, 1.1, 1] }}
@@ -112,7 +114,7 @@ export default function RealTimeActiveUsersWidget({ instituteId }: RealTimeActiv
                         />
                     </div>
                     <CardDescription className="text-sm text-gray-800/80">
-                        Users currently online
+                        {t('header.subtitle')}
                     </CardDescription>
                 </CardHeader>
 
@@ -145,7 +147,7 @@ export default function RealTimeActiveUsersWidget({ instituteId }: RealTimeActiv
                             </motion.div>
                             <div className="flex items-center gap-1 text-xs">
                                 <ArrowUp size={12} />
-                                <span>Live updates</span>
+                                <span>{t('stats.liveUpdates')}</span>
                             </div>
                         </div>
 

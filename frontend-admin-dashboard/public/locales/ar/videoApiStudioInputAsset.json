@@ -1,0 +1,6 @@
+{
+    "errors": {
+        "createFailed": "فشل الإنشاء ({{status}}): {{detail}}",
+        "deleteFailed": "فشل الحذف ({{status}})"
+    }
+}

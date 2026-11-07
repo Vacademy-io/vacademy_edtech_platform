@@ -1,0 +1,19 @@
+{
+    "header": {
+        "title": "भुगतान योजना",
+        "showInInvite": "आमंत्रण में भुगतान योजनाएँ दिखाएँ",
+        "changePlans": "भुगतान योजनाएँ बदलें"
+    },
+    "badge": {
+        "default": "डिफ़ॉल्ट"
+    },
+    "donation": {
+        "suggestedAmounts": "सुझाई गई राशियाँ: {{amount}}",
+        "minimumAmount": "न्यूनतम राशि: {{amount}}",
+        "currency": "मुद्रा: {{currency}}"
+    },
+    "freePlan": {
+        "days_one": "{{count}} दिन के लिए निःशुल्क",
+        "days_other": "{{count}} दिनों के लिए निःशुल्क"
+    }
+}

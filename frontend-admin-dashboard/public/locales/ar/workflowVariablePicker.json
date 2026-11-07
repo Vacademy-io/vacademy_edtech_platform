@@ -1,0 +1,12 @@
+{
+    "switchToVisualPicker": "التبديل إلى المنتقي المرئي",
+    "switchToRawSpelInput": "التبديل إلى إدخال SpEL الخام",
+    "advancedPlaceholder": "#ctx['variable']",
+    "visualPlaceholder": "انقر لاختيار متغيّر...",
+    "searchPlaceholder": "البحث عن المتغيرات...",
+    "spelBadge": "SpEL",
+    "noVariablesAvailable": "لا توجد متغيرات متاحة",
+    "noVariablesHint": "قم بتوصيل هذه العقدة بالعقد السابقة (مثل المشغّل أو الاستعلام) لرؤية بيانات مخرجاتها هنا.",
+    "switchToAdvancedHint": "أو بدّل إلى الوضع المتقدم لكتابة تعبير SpEL يدويًا",
+    "fromGroup": "من: {{group}}"
+}

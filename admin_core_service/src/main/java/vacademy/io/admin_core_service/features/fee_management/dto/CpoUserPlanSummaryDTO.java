@@ -31,6 +31,12 @@ public class CpoUserPlanSummaryDTO {
     private String paymentOptionName;
     private String status;
 
+    /**
+     * Currency this plan is billed in, off the plan's PaymentPlan. Without it the side-view
+     * card had no choice but to assume a rupee symbol for every institute.
+     */
+    private String currency;
+
     private BigDecimal grossTotal;
     private BigDecimal netTotal;
     private BigDecimal paidTotal;
@@ -39,4 +45,7 @@ public class CpoUserPlanSummaryDTO {
 
     private Date startDate;
     private Date endDate;
+
+    /** The admission package this course was enrolled in with others, if any. */
+    private String admissionPackageId;
 }

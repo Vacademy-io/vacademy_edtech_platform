@@ -9,6 +9,7 @@ import org.springframework.util.StringUtils;
 import vacademy.io.admin_core_service.features.domain_routing.dto.DomainRoutingResolveResponse;
 import vacademy.io.admin_core_service.features.domain_routing.dto.NamingOverridesDto;
 import vacademy.io.admin_core_service.features.domain_routing.entity.InstituteDomainRouting;
+import vacademy.io.admin_core_service.features.domain_routing.enums.PhoneCountryGeoMode;
 import vacademy.io.admin_core_service.features.domain_routing.repository.InstituteDomainRoutingRepository;
 import vacademy.io.admin_core_service.features.institute.enums.SettingKeyEnums;
 import vacademy.io.admin_core_service.features.institute.repository.InstituteRepository;
@@ -29,12 +30,22 @@ public class DomainRoutingService {
     private final InstituteRepository instituteRepository;
 
     public Optional<DomainRoutingResolveResponse> resolve(String domain, String subdomain) {
+        return resolve(domain, subdomain, null);
+    }
+
+    /**
+     * With a role (the admin app sends ADMIN), that role's exact-subdomain row
+     * beats the wildcard row. Without one, the long-standing order applies.
+     */
+    public Optional<DomainRoutingResolveResponse> resolve(String domain, String subdomain, String role) {
         if (!StringUtils.hasText(domain) || !StringUtils.hasText(subdomain)) {
             return Optional.empty();
         }
 
-        return routingRepository.resolveMapping(domain.trim(), subdomain.trim())
-                .flatMap(this::buildResponse);
+        Optional<InstituteDomainRouting> mapping = StringUtils.hasText(role)
+                ? routingRepository.resolveMappingForRole(domain.trim(), subdomain.trim(), role.trim())
+                : routingRepository.resolveMapping(domain.trim(), subdomain.trim());
+        return mapping.flatMap(this::buildResponse);
     }
 
     /**
@@ -118,10 +129,12 @@ public class DomainRoutingService {
                 .macAppLink(mapping.getMacAppLink())
                 .convertUsernamePasswordToLowercase(mapping.isConvertUsernamePasswordToLowercase())
                 .commaSeparatedPreferredCountry(mapping.getCommaSeparatedPreferredCountry())
+                .phoneCountryGeoMode(PhoneCountryGeoMode.fromNullable(mapping.getPhoneCountryGeoMode()).name())
                 .hideInstituteName(mapping.getHideInstituteName())
                 .logoWidthPx(mapping.getLogoWidthPx())
                 .logoHeightPx(mapping.getLogoHeightPx())
-                .stackNameBelowLogo(mapping.getStackNameBelowLogo());
+                .stackNameBelowLogo(mapping.getStackNameBelowLogo())
+                .rootCatalogueTag(mapping.getRootCatalogueTag());
 
         if (institute != null) {
             responseBuilder.instituteId(institute.getId())

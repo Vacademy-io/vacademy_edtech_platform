@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Loader2, RefreshCw, Sparkles } from 'lucide-react';
+import { CircleNotch, ArrowsClockwise, Sparkle } from '@phosphor-icons/react';
 import { toast } from 'sonner';
+import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import {
@@ -31,6 +32,7 @@ export function ThumbnailPickerPanel({
     apiKey,
     variant = 'default',
 }: ThumbnailPickerPanelProps) {
+    const { t } = useTranslation('videoApiStudioThumbnailPickerPanel');
     const instituteId = getInstituteId();
     const queryClient = useQueryClient();
     const [optimisticSelectedId, setOptimisticSelectedId] = useState<string | null>(null);
@@ -70,7 +72,7 @@ export function ThumbnailPickerPanel({
         },
         onError: (err: Error) => {
             setOptimisticSelectedId(null);
-            toast.error(err.message || 'Could not change thumbnail');
+            toast.error(err.message || t('toast.selectError'));
         },
         onSettled: () => {
             // Resolve the optimistic state into whatever the server confirmed.
@@ -81,13 +83,13 @@ export function ThumbnailPickerPanel({
     const regenMutation = useMutation({
         mutationFn: () => regenerateThumbnails(videoId, apiKey!),
         onSuccess: () => {
-            toast.success('Generating new thumbnail options…');
+            toast.success(t('toast.regenerateSuccess'));
             // Drop the cached set so the polling loop picks up the new one.
             queryClient.setQueryData(['vimotion-thumbnails', videoId], null);
             queryClient.invalidateQueries({ queryKey: ['vimotion-thumbnails', videoId] });
         },
         onError: (err: Error) => {
-            toast.error(err.message || 'Could not regenerate thumbnails');
+            toast.error(err.message || t('toast.regenerateError'));
         },
     });
 
@@ -105,23 +107,23 @@ export function ThumbnailPickerPanel({
     return (
         <div className="rounded-lg border bg-card p-3 shadow-sm">
             <div className="mb-2 flex items-center justify-between">
-                <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-                    Thumbnail
+                <div className="text-2xs font-semibold uppercase tracking-wider text-muted-foreground">
+                    {t('heading')}
                 </div>
                 <Button
                     variant="ghost"
                     size="sm"
-                    className="h-7 gap-1 text-[11px]"
+                    className="h-7 gap-1 text-2xs"
                     onClick={() => regenMutation.mutate()}
                     disabled={regenMutation.isPending || options.length === 0}
-                    title="Regenerate options"
+                    title={t('regenerate.title')}
                 >
                     {regenMutation.isPending ? (
-                        <Loader2 className="size-3 animate-spin" />
+                        <CircleNotch className="size-3 animate-spin" />
                     ) : (
-                        <RefreshCw className="size-3" />
+                        <ArrowsClockwise className="size-3" />
                     )}
-                    Regenerate
+                    {t('regenerate.button')}
                 </Button>
             </div>
 
@@ -175,6 +177,7 @@ function AlternateButton({
     onClick: () => void;
     pending: boolean;
 }) {
+    const { t } = useTranslation('videoApiStudioThumbnailPickerPanel');
     return (
         <button
             type="button"
@@ -186,7 +189,7 @@ function AlternateButton({
                     ? 'cursor-wait border-neutral-300'
                     : 'border-transparent hover:border-neutral-400'
             )}
-            title="Select this thumbnail"
+            title={t('alternate.selectTitle')}
         >
             <ThumbnailRenderer
                 thumb={option}
@@ -196,7 +199,7 @@ function AlternateButton({
             />
             {pending && (
                 <div className="absolute inset-0 flex items-center justify-center bg-black/40 text-white">
-                    <Loader2 className="size-4 animate-spin" />
+                    <CircleNotch className="size-4 animate-spin" />
                 </div>
             )}
         </button>
@@ -210,22 +213,23 @@ function ThumbnailPlaceholder({
     orientation: 'landscape' | 'portrait';
     loading: boolean;
 }) {
+    const { t } = useTranslation('videoApiStudioThumbnailPickerPanel');
     return (
         <div
             className={cn(
-                'flex w-full items-center justify-center rounded-md border border-dashed bg-neutral-50 text-[11px] text-muted-foreground',
+                'flex w-full items-center justify-center rounded-md border border-dashed bg-neutral-50 text-2xs text-muted-foreground',
                 orientation === 'portrait' ? 'aspect-[9/16]' : 'aspect-video'
             )}
         >
             {loading ? (
                 <div className="flex items-center gap-1.5">
-                    <Loader2 className="size-3 animate-spin" />
-                    Loading thumbnails…
+                    <CircleNotch className="size-3 animate-spin" />
+                    {t('placeholder.loading')}
                 </div>
             ) : (
                 <div className="flex flex-col items-center gap-1 px-3 text-center">
-                    <Sparkles className="size-4 text-neutral-400" />
-                    Thumbnails will appear here once the director plan is ready.
+                    <Sparkle className="size-4 text-neutral-400" />
+                    {t('placeholder.empty')}
                 </div>
             )}
         </div>

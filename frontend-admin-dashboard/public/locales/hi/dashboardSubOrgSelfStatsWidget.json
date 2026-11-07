@@ -1,0 +1,25 @@
+{
+    "welcomeBack": "वापसी पर स्वागत है",
+    "defaultOrgName": "मेरा संगठन",
+    "manage": "प्रबंधित करें",
+    "stats": {
+        "learners": {
+            "label": "शिक्षार्थी",
+            "subtitle": "नामांकित सदस्य"
+        },
+        "seats": {
+            "label": "सीटें",
+            "seatsLeft_one": "{{count}} सीट शेष",
+            "seatsLeft_other": "{{count}} सीटें शेष",
+            "noCap": "कोई सीट सीमा नहीं"
+        },
+        "collected": {
+            "label": "प्राप्त राशि",
+            "subtitle": "प्राप्त शुल्क"
+        },
+        "outstanding": {
+            "label": "बकाया",
+            "subtitle": "देय शुल्क"
+        }
+    }
+}

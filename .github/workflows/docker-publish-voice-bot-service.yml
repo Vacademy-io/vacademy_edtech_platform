@@ -53,6 +53,12 @@ on:
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
+    # VERTEX_CREDENTIALS_JSON lives in the `voice-bot` ENVIRONMENT: the repo is
+    # at GitHub's 100-secret limit (2026-09-29). Same service account the box
+    # mounts at /etc/vertex-sa.json (voice-bot-vertex@vacademy-app). Without it
+    # the conversation simulator fell back to a key with no Vertex access, got
+    # 403 on every persona and printed "ok … turns 0" on every deploy.
+    environment: voice-bot
     steps:
       - name: Checkout source
         uses: actions/checkout@v3
@@ -72,6 +78,65 @@ jobs:
           cd voice_bot_service
           pip install -q -r requirements.txt pytest pytest-asyncio
           python -m pytest tests/ -q
+
+      # CONVERSATION GATE (2026-09-12): twelve scripted callers — every one a real
+      # caller we failed the week before — talk to the real prompt on the real
+      # production LLM, with TTS/STT replaced by text. Costs LLM tokens only
+      # (~Rs 6 a run). A hard rule failure (re-greet, not ending when asked,
+      # spoken markup, invented price, wrong weekday…) blocks the deploy.
+      # Skipped, not failed, when the Vertex secret is absent (forks).
+      - name: Run conversation simulator
+        env:
+          # The repo has no VERTEX_CREDENTIALS_JSON secret (the deploy step's
+          # copy is silently empty too); GOOGLE_APPLICATION_CREDENTIALS_JSON is
+          # the service-account JSON the other workflows use.
+          VERTEX_CREDENTIALS_JSON: ${{ secrets.VERTEX_CREDENTIALS_JSON || secrets.GOOGLE_APPLICATION_CREDENTIALS_JSON }}
+          VERTEX_PROJECT_ID: vacademy-app
+          VERTEX_LOCATION: asia-south1
+          LLM_PROVIDER: vertex
+          SIM_OUT: sim_report.json
+        run: |
+          # Presence-checked in the shell: neither `secrets` nor a job-env flag is
+          # usable in a step `if` (two skipped runs on 2026-09-12 proved it).
+          if [ -z "${VERTEX_CREDENTIALS_JSON:-}" ]; then
+            echo "VERTEX_CREDENTIALS_JSON not available — simulator skipped"; exit 0
+          fi
+          cd voice_bot_service
+          # --ci fails only on the callers' hard rules; a credential/network
+          # error is reported and skipped so a missing permission cannot block
+          # every deploy (it is printed in the log and the report artifact).
+          # REPORT-ONLY since 2026-09-29. With a working Vertex key the gate
+          # finally ran for real: ~2 of 16 persona runs hit a hard rule on BOTH
+          # main and the fix branch (restated answers, a bare "Right.") — Gemini
+          # variance, not a regression. Blocking on it would fail most deploys at
+          # random. It becomes a gate again once it runs the real Hindi agent with
+          # repeated reps and a pass-rate threshold.
+          python -m sim.run --model prod --soft-errors | tee sim_run.log
+          if grep -q "^FAIL" sim_run.log; then
+            echo "::warning title=Conversation simulator::$(grep -c '^FAIL' sim_run.log) persona run(s) hit a hard rule — see the log / sim_report.json"
+          fi
+
+      # TIMING GATE (2026-09-12): the real pipeline — gates, aggregator, VAD,
+      # Smart Turn, watchdog — on a simulated line with real-speech clips and
+      # stub STT/LLM/TTS. No credentials, no vendor cost. Barge-in, ducking,
+      # held tails, farewell close, nudges: the class of bug the text
+      # simulator cannot see. A failure blocks the deploy.
+      - name: Run timing simulator
+        env:
+          HF_HOME: ${{ runner.temp }}/hf
+        run: |
+          cd voice_bot_service
+          python -m sim.timing --ci --out sim_timing.json
+
+      - name: Upload simulator report
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: sim-report
+          path: |
+            voice_bot_service/sim_report.json
+            voice_bot_service/sim_timing.json
+          if-no-files-found: ignore
 
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v3
@@ -122,6 +187,9 @@ jobs:
           # k8s pods 502 on Google previews while the box serves them fine —
           # which is what the admin dashboard hits.
           VERTEX_CREDENTIALS_JSON: ${{ secrets.VERTEX_CREDENTIALS_JSON }}
+          # Navana (Bodhi) TTS. Lives in the `voice-bot` ENVIRONMENT like the Vertex
+          # key (the repo is at GitHub's 100-secret limit).
+          NAVANA_API_KEY: ${{ secrets.NAVANA_API_KEY }}
         run: |
           if kubectl get deployment "$DEPLOYMENT_NAME" --namespace "$NAMESPACE" >/dev/null 2>&1; then
             # VOICE_BOT_CLIENT_NAME/SECRET must match a row in admin_core's
@@ -140,10 +208,15 @@ jobs:
             if [ -n "${VERTEX_CREDENTIALS_JSON:-}" ]; then
               EXTRA_ENV="VERTEX_CREDENTIALS_JSON=$VERTEX_CREDENTIALS_JSON"
             fi
+            NAVANA_ENV=""
+            if [ -n "${NAVANA_API_KEY:-}" ]; then
+              NAVANA_ENV="NAVANA_API_KEY=$NAVANA_API_KEY"
+            fi
 
             kubectl set env deployment/"$DEPLOYMENT_NAME" \
               --namespace "$NAMESPACE" \
               ${EXTRA_ENV:+"$EXTRA_ENV"} \
+              ${NAVANA_ENV:+"$NAVANA_ENV"} \
               PUBLIC_BASE=https://backend-stage.vacademy.io/voice-bot-service \
               ADMIN_CORE_BASE=https://backend-stage.vacademy.io \
               VOICE_BOT_CLIENT_NAME=${{ vars.VOICE_BOT_CLIENT_NAME || 'voice_bot_service' }} \
@@ -171,12 +244,18 @@ jobs:
       # repo variable VOICE_BOT_MUMBAI_HOST (the box's IP/hostname) + the secret
       # VOICE_BOT_MUMBAI_SSH_KEY (private key for root@host). Rolls the SAME
       # immutable :<sha> image by rewriting VOICE_BOT_IMAGE in /opt/voice-bot/.env.
+      # `up -d` recreates the container, which ends every live call on it:
+      # call a6849d85 (2026-09-30) started during the image build and was cut
+      # 40 s in. So the new image is pulled first, then the roll WAITS for
+      # /health's activeCalls to reach 0 (up to 30 min — a campaign has gaps
+      # between calls) and restarts in the first idle moment.
       - name: Deploy to Mumbai anchor (Linode) over SSH
         if: vars.VOICE_BOT_MUMBAI_HOST != ''
         env:
           SSH_KEY: ${{ secrets.VOICE_BOT_MUMBAI_SSH_KEY }}
           RUMIK_API_KEY: ${{ secrets.RUMIK_API_KEY }}
           SMALLEST_API_KEY: ${{ secrets.SMALLEST_API_KEY }}
+          NAVANA_API_KEY: ${{ secrets.NAVANA_API_KEY }}
           HOST: ${{ vars.VOICE_BOT_MUMBAI_HOST }}
           ECR_REGISTRY: public.ecr.aws/e0x1f4p4
           REPOSITORY: voice-bot-service/voice-bot-service-repo
@@ -198,5 +277,16 @@ jobs:
                sed -i '/^SMALLEST_API_KEY=/d' .env; \
                echo 'SMALLEST_API_KEY=$SMALLEST_API_KEY' >> .env; \
              fi; \
-             docker compose pull -q voice-bot; docker compose up -d; \
+             if [ -n '$NAVANA_API_KEY' ]; then \
+               sed -i '/^NAVANA_API_KEY=/d' .env; \
+               echo 'NAVANA_API_KEY=$NAVANA_API_KEY' >> .env; \
+             fi; \
+             docker compose pull -q voice-bot; \
+             for i in \$(seq 1 120); do \
+               n=\$(docker compose exec -T voice-bot python3 -c 'import json,urllib.request;print(json.load(urllib.request.urlopen(\"http://127.0.0.1:8090/voice-bot-service/health\",timeout=5))[\"activeCalls\"])' 2>/dev/null || echo 0); \
+               [ \"\$n\" = 0 ] && break; \
+               echo \"\$n live call(s) - waiting before the restart (\$i/120)\"; sleep 15; \
+             done; \
+             docker compose up -d; \
+             docker image prune -af >/dev/null 2>&1 || true; \
              sleep 5; docker compose ps"

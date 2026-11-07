@@ -25,6 +25,8 @@ import { useOfflineStore } from "@/stores/offline/use-offline-store";
 import { eventFlusher } from "../events/event-flusher";
 import { isLeaseValid } from "./lease-state";
 import type { DeviceStateRow } from "../db/types";
+import { getTerminology } from "@/components/common/layout-container/sidebar/utils";
+import { ContentTerms, SystemTerms } from "@/types/naming-settings";
 
 interface InstalledCourseDTO {
   package_session_id: string;
@@ -236,7 +238,7 @@ function revocationMessage(
     case "UNENROLLED":
       return course
         ? `You're no longer enrolled in ${course} — its offline content was removed.`
-        : "You're no longer enrolled — that course's offline content was removed.";
+        : `You're no longer enrolled — that ${getTerminology(ContentTerms.Course, SystemTerms.Course).toLocaleLowerCase()}'s offline content was removed.`;
     case "OFFLINE_DISABLED":
       return course
         ? `Your institute turned off offline downloads, so ${course} was removed from this device.`

@@ -1,5 +1,6 @@
 // module-material.tsx
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { AddChapterButton } from './chapter-material/add-chapters/add-chapter-button';
 import { useForm } from 'react-hook-form';
 import {
@@ -24,6 +25,7 @@ export interface FormValues {
 }
 
 export const ChapterMaterial = ({ currentModuleId }: { currentModuleId: string }) => {
+    const { t } = useTranslation('studyLibraryChapterMaterial');
     const router = useRouter();
     const [isChapterLoading, setIsChapterLoading] = useState(true);
     const { modulesWithChaptersData } = useModulesWithChaptersStore();
@@ -62,9 +64,9 @@ export const ChapterMaterial = ({ currentModuleId }: { currentModuleId: string }
                 packageSessionIds: packageSessionId || '',
                 chapterIds: chapterIds,
             });
-            toast.success('Chapter deleted successfully');
+            toast.success(t('chapterDeletedSuccessfully'));
         } catch {
-            toast.error('Failed to delete chapter');
+            toast.error(t('failedToDeleteChapter'));
         }
     };
 
@@ -88,18 +90,14 @@ export const ChapterMaterial = ({ currentModuleId }: { currentModuleId: string }
             <div className="flex items-center justify-between gap-80">
                 <div className="flex w-full items-center justify-between gap-8">
                     <div className="flex w-full flex-col gap-2">
-                        <p className="text-h3 font-semibold">Manage Chapter</p>
-                        <p className="text-subtitle">
-                            Explore and manage chapters. Click on a chapter to view and access
-                            eBooks, video lectures, and study resources, or add new materials to
-                            enhance your learning experience.
-                        </p>
+                        <p className="text-h3 font-semibold">{t('manageChapter')}</p>
+                        <p className="text-subtitle">{t('manageChapterDescription')}</p>
                     </div>
                     <AddChapterButton />
                 </div>
             </div>
             <div className="flex items-center gap-6">
-                <p>Session: {getSessionNameById(sessionId || '')}</p>
+                <p>{t('session', { sessionName: getSessionNameById(sessionId || '') })}</p>
             </div>
             {/* Add your module content here */}
             <Chapters

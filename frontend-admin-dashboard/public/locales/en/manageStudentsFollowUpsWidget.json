@@ -1,0 +1,51 @@
+{
+    "status": {
+        "pending": "Pending",
+        "ongoing": "Ongoing",
+        "overdue": "Overdue",
+        "completed": "Completed"
+    },
+    "card": {
+        "closedReason": "Closed: {{reason}}",
+        "created": "Created {{date}}",
+        "edit": "Edit follow-up"
+    },
+    "widget": {
+        "title": "Follow-ups",
+        "openCount_one": "{{count}} open",
+        "openCount_other": "{{count}} open"
+    },
+    "emptyState": {
+        "title": "No open follow-ups",
+        "description": "Schedule one below using the Follow Up tab"
+    },
+    "history": {
+        "title": "Follow-up history",
+        "created": "Created",
+        "nextFollowUp": "Next follow-up",
+        "response": "Response",
+        "mode": "Mode",
+        "nextAction": "Next action",
+        "closingNote": "Closing note",
+        "noComment": "No comment",
+        "showAll": "Show all ({{count}})",
+        "showLess": "Show less"
+    },
+    "edit": {
+        "title": "Edit follow-up",
+        "description": "Correct the comment or interest level. The earlier text is kept in the activity log.",
+        "interestLevel": "Interest level",
+        "interestPlaceholder": "Select interest level",
+        "search": "Search…",
+        "comment": "Comment",
+        "commentPlaceholder": "What happened on this follow-up…",
+        "commentRequired": "Your institute requires a note on every follow-up.",
+        "closingNote": "Closing note",
+        "closingNoteRequired": "A completed follow-up needs a closing note.",
+        "cancel": "Cancel",
+        "save": "Save",
+        "saving": "Saving…",
+        "saved": "Follow-up updated",
+        "failed": "Could not update the follow-up"
+    }
+}

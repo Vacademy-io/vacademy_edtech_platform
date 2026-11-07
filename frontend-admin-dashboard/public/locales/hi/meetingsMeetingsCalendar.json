@@ -1,0 +1,18 @@
+{
+    "untitledMeeting": "मीटिंग",
+    "today": "आज",
+    "previousMonth": "पिछला महीना",
+    "nextMonth": "अगला महीना",
+    "dayAriaLabel_one": "{{date}} को {{count}} मीटिंग देखें",
+    "dayAriaLabel_other": "{{date}} को {{count}} मीटिंग देखें",
+    "moreCount": "+{{count}} और",
+    "joinMeeting": "मीटिंग में शामिल हों",
+    "status": {
+        "confirmed": "पुष्ट",
+        "pending": "लंबित",
+        "completed": "पूर्ण",
+        "noShow": "अनुपस्थित",
+        "cancelled": "रद्द",
+        "rescheduled": "पुनर्निर्धारित"
+    }
+}

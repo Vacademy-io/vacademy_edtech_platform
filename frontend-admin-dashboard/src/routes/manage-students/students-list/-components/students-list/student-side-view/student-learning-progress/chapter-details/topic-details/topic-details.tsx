@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import { ChapterWithProgress } from '@/routes/manage-students/students-list/-types/student-subjects-details-types';
 import { useStudentSidebar } from '@/routes/manage-students/students-list/-context/selected-student-sidebar-context';
 import { useStudentSlidesProgressQuery } from '@/routes/manage-students/students-list/-services/getStudentChapterSlides';
@@ -12,6 +13,7 @@ export interface slideType {
 }
 
 export const TopicDetails = ({ chapterDetails }: { chapterDetails: ChapterWithProgress }) => {
+    const { t } = useTranslation('manageStudentsTopicDetails');
     const { selectedStudent } = useStudentSidebar();
     const {
         data: SlideWithProgress,
@@ -24,12 +26,12 @@ export const TopicDetails = ({ chapterDetails }: { chapterDetails: ChapterWithPr
     });
 
     if (isLoading) return <DashboardLoader />;
-    if (isError || error) return <p>Error getting slides</p>;
+    if (isError || error) return <p>{t('errorGettingSlides')}</p>;
 
     return (
         <>
             {SlideWithProgress == null || SlideWithProgress == undefined ? (
-                <p>Slides are not created for this chapter</p>
+                <p>{t('noSlidesCreated')}</p>
             ) : (
                 <div className="flex flex-col gap-4">
                     <div className="flex flex-col gap-3">

@@ -1,0 +1,26 @@
+{
+    "editHeading": "विभाग संपादित करें",
+    "addHeading": "विभाग जोड़ें",
+    "cancel": "रद्द करें",
+    "saveChanges": "बदलाव सेव करें",
+    "saving": "सेव हो रहा है…",
+    "noParent": "कोई मूल विभाग नहीं (शीर्ष स्तर)",
+    "fields": {
+        "nameLabel": "नाम",
+        "namePlaceholder": "जैसे Academics",
+        "codeLabel": "कोड",
+        "codePlaceholder": "जैसे ACAD",
+        "codeHelp": "रिपोर्ट और पेरोल एक्सपोर्ट में इस्तेमाल होने वाला छोटा कोड।",
+        "parentLabel": "मूल विभाग",
+        "descriptionLabel": "विवरण",
+        "descriptionPlaceholder": "यह विभाग किसके लिए ज़िम्मेदार है"
+    },
+    "toasts": {
+        "updated": "विभाग अपडेट किया गया",
+        "added": "विभाग जोड़ा गया"
+    },
+    "errors": {
+        "nameRequired": "विभाग को एक नाम दें",
+        "saveFailed": "यह विभाग सेव नहीं किया जा सका"
+    }
+}

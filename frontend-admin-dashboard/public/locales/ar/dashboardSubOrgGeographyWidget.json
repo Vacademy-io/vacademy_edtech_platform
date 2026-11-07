@@ -1,0 +1,43 @@
+{
+    "header": {
+        "title": "{{term}} حسب الموقع",
+        "subtitle": "أين تقع {{term}} الخاصة بك"
+    },
+    "groupBy": {
+        "ariaLabel": "تجميع حسب"
+    },
+    "dims": {
+        "state": "الولاية",
+        "city": "المدينة",
+        "pincode": "الرمز البريدي"
+    },
+    "manage": "إدارة",
+    "registered": "المسجَّل",
+    "dateRange": {
+        "ariaLabel": "نطاق تاريخ التسجيل",
+        "all": "الكل",
+        "last24h": "24 س",
+        "last3d": "3 أيام",
+        "last7d": "7 أيام",
+        "custom": "مخصص",
+        "fromDate": "تاريخ البدء",
+        "toDate": "تاريخ الانتهاء",
+        "to": "إلى"
+    },
+    "stats": {
+        "states": "الولايات",
+        "cities": "المدن",
+        "pincodes": "الرموز البريدية",
+        "located": "محدَّد الموقع"
+    },
+    "topLocations": {
+        "state": "أهم الولايات",
+        "city": "أهم المدن",
+        "pincode": "أهم الرموز البريدية"
+    },
+    "table": {
+        "active": "نشط",
+        "seats": "المقاعد"
+    },
+    "notSpecified": "غير محدد"
+}

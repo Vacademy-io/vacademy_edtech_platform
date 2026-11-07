@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import type { AdmissionFormData } from './AdmissionFormWizard';
 
 interface AdmissionFormPrintTemplateProps {
@@ -10,12 +11,12 @@ interface AdmissionFormPrintTemplateProps {
 }
 
 const THEME = {
-    primary: '#1e3a5f',
-    primaryLight: '#2c5282',
-    border: '#d1d5db',
-    headerBg: '#f0f4f8',
-    labelColor: '#4a5568',
-    valueColor: '#1a202c',
+    primary: 'hsl(var(--info-700))',
+    primaryLight: 'hsl(var(--info-600))',
+    border: 'hsl(var(--border))',
+    headerBg: 'hsl(var(--info-50))',
+    labelColor: 'hsl(var(--muted-foreground))',
+    valueColor: 'hsl(var(--foreground))',
 };
 
 function SectionHeader({ title }: { title: string }) {
@@ -23,7 +24,7 @@ function SectionHeader({ title }: { title: string }) {
         <div
             style={{
                 background: THEME.primary,
-                color: '#ffffff',
+                color: 'white',
                 padding: '4px 12px',
                 fontSize: '10px',
                 fontWeight: 700,
@@ -67,7 +68,7 @@ function FieldRow({
                     <div
                         style={{
                             fontSize: '7px',
-                            color: '#9ca3af',
+                            color: 'hsl(var(--muted-foreground))',
                             textTransform: 'uppercase',
                             letterSpacing: '0.6px',
                             marginBottom: '1px',
@@ -94,6 +95,7 @@ function FieldRow({
 
 const AdmissionFormPrintTemplate = React.forwardRef<HTMLDivElement, AdmissionFormPrintTemplateProps>(
     ({ formData, instituteName, instituteLogo, trackingLabel, trackingId }, ref) => {
+        const { t } = useTranslation('admissionsAdmissionFormPrintTemplate');
         const today = new Date().toLocaleDateString('en-IN', {
             day: '2-digit',
             month: 'short',
@@ -122,7 +124,7 @@ const AdmissionFormPrintTemplate = React.forwardRef<HTMLDivElement, AdmissionFor
                     padding: '12mm 14mm 10mm 14mm',
                     fontFamily: "'Segoe UI', 'Helvetica Neue', Arial, sans-serif",
                     color: THEME.valueColor,
-                    background: '#ffffff',
+                    background: 'white',
                     boxSizing: 'border-box',
                     lineHeight: 1.3,
                 }}
@@ -140,7 +142,7 @@ const AdmissionFormPrintTemplate = React.forwardRef<HTMLDivElement, AdmissionFor
                     {instituteLogo && instituteLogo.startsWith('data:') && (
                         <img
                             src={instituteLogo}
-                            alt="Institute Logo"
+                            alt={t('instituteLogoAlt')}
                             style={{
                                 width: '48px',
                                 height: '48px',
@@ -159,7 +161,7 @@ const AdmissionFormPrintTemplate = React.forwardRef<HTMLDivElement, AdmissionFor
                                 letterSpacing: '0.5px',
                             }}
                         >
-                            {instituteName || 'Institute Name'}
+                            {instituteName || t('instituteNameFallback')}
                         </div>
                         <div
                             style={{
@@ -171,13 +173,13 @@ const AdmissionFormPrintTemplate = React.forwardRef<HTMLDivElement, AdmissionFor
                                 textTransform: 'uppercase',
                             }}
                         >
-                            Admission Form
+                            {t('formTitle')}
                         </div>
                         <div style={{ fontSize: '8px', color: THEME.labelColor, marginTop: '4px' }}>
                             {trackingLabel && trackingId && (
                                 <span><strong>{trackingLabel}:</strong> {trackingId}</span>
                             )}
-                            <span style={{ marginLeft: '16px' }}><strong>Date:</strong> {today}</span>
+                            <span style={{ marginLeft: '16px' }}><strong>{t('date')}:</strong> {today}</span>
                         </div>
                     </div>
                     {/* Photo placeholder */}
@@ -190,138 +192,138 @@ const AdmissionFormPrintTemplate = React.forwardRef<HTMLDivElement, AdmissionFor
                             alignItems: 'center',
                             justifyContent: 'center',
                             fontSize: '8px',
-                            color: '#a0aec0',
+                            color: 'hsl(var(--muted-foreground))',
                             borderRadius: '3px',
                             flexShrink: 0,
                         }}
                     >
-                        Paste Photo
+                        {t('pastePhoto')}
                     </div>
                 </div>
 
                 {/* ── Section 1: Student Details ── */}
-                <SectionHeader title="Student Details" />
+                <SectionHeader title={t('sections.studentDetails')} />
                 <FieldRow
                     fields={[
-                        { label: 'First Name', value: formData.studentFirstName },
-                        { label: 'Middle Name', value: formData.studentMiddleName },
-                        { label: 'Last Name', value: formData.studentLastName },
+                        { label: t('fields.firstName'), value: formData.studentFirstName },
+                        { label: t('fields.middleName'), value: formData.studentMiddleName },
+                        { label: t('fields.lastName'), value: formData.studentLastName },
                     ]}
                 />
                 <FieldRow
                     fields={[
-                        { label: 'Gender', value: formData.gender },
-                        { label: 'Date of Birth', value: formatDate(formData.dateOfBirth) },
-                        { label: 'Date of Admission', value: formatDate(formData.dateOfAdmission) },
+                        { label: t('fields.gender'), value: formData.gender },
+                        { label: t('fields.dateOfBirth'), value: formatDate(formData.dateOfBirth) },
+                        { label: t('fields.dateOfAdmission'), value: formatDate(formData.dateOfAdmission) },
                     ]}
                 />
                 <FieldRow
                     fields={[
-                        { label: 'Class', value: formData.studentClass },
-                        { label: 'Section', value: formData.section },
-                        { label: 'Group', value: formData.classGroup },
+                        { label: t('fields.class'), value: formData.studentClass },
+                        { label: t('fields.section'), value: formData.section },
+                        { label: t('fields.group'), value: formData.classGroup },
                     ]}
                 />
                 <FieldRow
                     fields={[
-                        { label: 'Application No', value: formData.applicationNumber },
-                        { label: 'Student Type', value: formData.studentType },
-                        { label: 'Admission Type', value: formData.admissionType },
+                        { label: t('fields.applicationNo'), value: formData.applicationNumber },
+                        { label: t('fields.studentType'), value: formData.studentType },
+                        { label: t('fields.admissionType'), value: formData.admissionType },
                     ]}
                 />
                 <FieldRow
                     fields={[
-                        { label: 'Residential Phone', value: formData.residentialPhone },
-                        { label: 'Transport', value: formData.transport },
-                        { label: 'Aadhaar Number', value: formData.aadhaarNumber },
+                        { label: t('fields.residentialPhone'), value: formData.residentialPhone },
+                        { label: t('fields.transport'), value: formData.transport },
+                        { label: t('fields.aadhaarNumber'), value: formData.aadhaarNumber },
                     ]}
                 />
 
                 {/* ── Section 2: Previous School & Personal Details ── */}
-                <SectionHeader title="Previous School & Personal Details" />
+                <SectionHeader title={t('sections.previousSchoolPersonalDetails')} />
                 <FieldRow
                     fields={[
-                        { label: 'Previous School Name', value: formData.schoolName },
-                        { label: 'Previous Class', value: formData.previousClass },
-                        { label: 'Board', value: formData.board },
+                        { label: t('fields.previousSchoolName'), value: formData.schoolName },
+                        { label: t('fields.previousClass'), value: formData.previousClass },
+                        { label: t('fields.board'), value: formData.board },
                     ]}
                 />
                 <FieldRow
                     fields={[
-                        { label: 'Year of Passing', value: formData.yearOfPassing },
-                        { label: 'Percentage', value: formData.percentage },
-                        { label: 'Previous Admission No', value: formData.previousAdmissionNo },
+                        { label: t('fields.yearOfPassing'), value: formData.yearOfPassing },
+                        { label: t('fields.percentage'), value: formData.percentage },
+                        { label: t('fields.previousAdmissionNo'), value: formData.previousAdmissionNo },
                     ]}
                 />
                 <FieldRow
                     fields={[
-                        { label: 'Religion', value: formData.religion },
-                        { label: 'Caste', value: formData.caste },
-                        { label: 'Mother Tongue', value: formData.motherTongue },
+                        { label: t('fields.religion'), value: formData.religion },
+                        { label: t('fields.caste'), value: formData.caste },
+                        { label: t('fields.motherTongue'), value: formData.motherTongue },
                     ]}
                 />
                 <FieldRow
                     fields={[
-                        { label: 'Blood Group', value: formData.bloodGroup },
-                        { label: 'Nationality', value: formData.nationality },
-                        { label: 'How Did You Know About Us', value: formData.howDidYouKnow },
+                        { label: t('fields.bloodGroup'), value: formData.bloodGroup },
+                        { label: t('fields.nationality'), value: formData.nationality },
+                        { label: t('fields.howDidYouKnow'), value: formData.howDidYouKnow },
                     ]}
                 />
 
                 {/* ── Section 3: Parent / Guardian Details ── */}
-                <SectionHeader title="Parent / Guardian Details" />
+                <SectionHeader title={t('sections.parentGuardianDetails')} />
                 <FieldRow
                     fields={[
-                        { label: "Father's Name", value: formData.fatherName },
-                        { label: "Father's Mobile", value: formData.fatherMobile },
-                        { label: "Father's Email", value: formData.fatherEmail },
+                        { label: t('fields.fatherName'), value: formData.fatherName },
+                        { label: t('fields.fatherMobile'), value: formData.fatherMobile },
+                        { label: t('fields.fatherEmail'), value: formData.fatherEmail },
                     ]}
                 />
                 <FieldRow
                     fields={[
-                        { label: "Father's Aadhaar", value: formData.fatherAadhaar },
-                        { label: "Father's Qualification", value: formData.fatherQualification },
-                        { label: "Father's Occupation", value: formData.fatherOccupation },
+                        { label: t('fields.fatherAadhaar'), value: formData.fatherAadhaar },
+                        { label: t('fields.fatherQualification'), value: formData.fatherQualification },
+                        { label: t('fields.fatherOccupation'), value: formData.fatherOccupation },
                     ]}
                 />
                 <FieldRow
                     fields={[
-                        { label: "Mother's Name", value: formData.motherName },
-                        { label: "Mother's Mobile", value: formData.motherMobile },
-                        { label: "Mother's Email", value: formData.motherEmail },
+                        { label: t('fields.motherName'), value: formData.motherName },
+                        { label: t('fields.motherMobile'), value: formData.motherMobile },
+                        { label: t('fields.motherEmail'), value: formData.motherEmail },
                     ]}
                 />
                 <FieldRow
                     fields={[
-                        { label: "Mother's Aadhaar", value: formData.motherAadhaar },
-                        { label: "Mother's Qualification", value: formData.motherQualification },
-                        { label: "Mother's Occupation", value: formData.motherOccupation },
+                        { label: t('fields.motherAadhaar'), value: formData.motherAadhaar },
+                        { label: t('fields.motherQualification'), value: formData.motherQualification },
+                        { label: t('fields.motherOccupation'), value: formData.motherOccupation },
                     ]}
                 />
                 <FieldRow
                     fields={[
-                        { label: "Guardian's Name", value: formData.guardianName },
-                        { label: "Guardian's Mobile", value: formData.guardianMobile },
+                        { label: t('fields.guardianName'), value: formData.guardianName },
+                        { label: t('fields.guardianMobile'), value: formData.guardianMobile },
                         { label: '', value: '' },
                     ]}
                 />
 
                 {/* ── Section 4: Address Details ── */}
-                <SectionHeader title="Address Details" />
+                <SectionHeader title={t('sections.addressDetails')} />
                 <FieldRow
-                    fields={[{ label: 'Current Address', value: formData.currentAddress }]}
+                    fields={[{ label: t('fields.currentAddress'), value: formData.currentAddress }]}
                     minHeight="44px"
                 />
                 <FieldRow
                     fields={[
-                        { label: 'Locality', value: formData.currentLocality },
-                        { label: 'Pin Code', value: formData.currentPinCode },
+                        { label: t('fields.locality'), value: formData.currentLocality },
+                        { label: t('fields.pinCode'), value: formData.currentPinCode },
                     ]}
                 />
                 <FieldRow
                     fields={[
                         {
-                            label: 'Permanent Address',
+                            label: t('fields.permanentAddress'),
                             value: formData.sameAsPermanent
                                 ? formData.currentAddress
                                 : formData.permanentAddress,
@@ -332,7 +334,7 @@ const AdmissionFormPrintTemplate = React.forwardRef<HTMLDivElement, AdmissionFor
                 <FieldRow
                     fields={[
                         {
-                            label: 'Permanent Locality',
+                            label: t('fields.permanentLocality'),
                             value: formData.sameAsPermanent
                                 ? formData.currentLocality
                                 : formData.permanentLocality,
@@ -361,12 +363,10 @@ const AdmissionFormPrintTemplate = React.forwardRef<HTMLDivElement, AdmissionFor
                                 textTransform: 'uppercase',
                             }}
                         >
-                            Declaration
+                            {t('declaration.heading')}
                         </div>
                         <div style={{ fontSize: '8px', color: THEME.labelColor, lineHeight: 1.4 }}>
-                            I hereby declare that all the information provided above is true and
-                            correct to the best of my knowledge. I understand that any false
-                            information may lead to the cancellation of admission.
+                            {t('declaration.text')}
                         </div>
                     </div>
 
@@ -379,8 +379,8 @@ const AdmissionFormPrintTemplate = React.forwardRef<HTMLDivElement, AdmissionFor
                             marginTop: '36px',
                         }}
                     >
-                        {['Parent / Guardian', 'Student', 'Principal'].map((role) => (
-                            <div key={role} style={{ textAlign: 'center' }}>
+                        {(['parentGuardian', 'student', 'principal'] as const).map((roleKey) => (
+                            <div key={roleKey} style={{ textAlign: 'center' }}>
                                 <div
                                     style={{
                                         borderTop: `1.5px solid ${THEME.primary}`,
@@ -391,7 +391,7 @@ const AdmissionFormPrintTemplate = React.forwardRef<HTMLDivElement, AdmissionFor
                                         letterSpacing: '0.5px',
                                     }}
                                 >
-                                    {role}&#39;s Signature
+                                    {t(`signature.${roleKey}`)}
                                 </div>
                             </div>
                         ))}
@@ -403,12 +403,12 @@ const AdmissionFormPrintTemplate = React.forwardRef<HTMLDivElement, AdmissionFor
                             marginTop: '14px',
                             textAlign: 'center',
                             fontSize: '7px',
-                            color: '#a0aec0',
+                            color: 'hsl(var(--muted-foreground))',
                             borderTop: `1px solid ${THEME.border}`,
                             paddingTop: '4px',
                         }}
                     >
-                        This is a computer-generated document. Generated on {today}.
+                        {t('footer', { date: today })}
                     </div>
                 </div>
             </div>

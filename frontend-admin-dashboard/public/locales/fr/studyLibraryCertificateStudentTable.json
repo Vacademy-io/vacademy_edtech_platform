@@ -1,0 +1,38 @@
+{
+    "status": {
+        "generated": "Généré",
+        "awaiting": "En attente",
+        "pending": "En cours"
+    },
+    "columns": {
+        "learner": "Apprenant",
+        "completion": "Achèvement",
+        "status": "Statut",
+        "generatedOn": "Généré le",
+        "certificateNumber": "Numéro de certificat",
+        "actions": "Actions"
+    },
+    "actions": {
+        "generate": "Générer"
+    },
+    "toast": {
+        "regenerated": "Certificat régénéré",
+        "generated": "Certificat généré",
+        "regeneratedDescription": "Le numéro de certificat reste inchangé ; le PDF a été remplacé.",
+        "generatedDescription": "Le certificat a été envoyé par e-mail à l'apprenant.",
+        "generateError": "Impossible de générer le certificat",
+        "generateErrorDescription": "Vérifiez que les certificats sont activés pour ce cours et que l'apprenant a dépassé le seuil d'achèvement.",
+        "emailSent": "E-mail du certificat envoyé",
+        "emailError": "Impossible d'envoyer l'e-mail du certificat",
+        "openedInNewTab": "Certificat ouvert dans un nouvel onglet",
+        "openedInNewTabDescription": "Votre navigateur a bloqué le téléchargement direct — enregistrez-le depuis cet onglet."
+    },
+    "searchPlaceholder": "Rechercher par nom, e-mail ou numéro de certificat",
+    "learnerCount_one": "{{count}} apprenant",
+    "learnerCount_many": "{{count}} apprenants",
+    "learnerCount_other": "{{count}} apprenants",
+    "emptyState": {
+        "noMatch": "Aucun apprenant ne correspond à votre recherche.",
+        "noLearners": "Aucun apprenant n'est encore inscrit dans ce groupe."
+    }
+}

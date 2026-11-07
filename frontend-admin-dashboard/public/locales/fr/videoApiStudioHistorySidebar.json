@@ -1,0 +1,41 @@
+{
+    "collapsed": {
+        "expandHistory": "Développer l'historique",
+        "newVideo": "Nouvelle vidéo"
+    },
+    "header": {
+        "title": "Historique",
+        "collapseHistory": "Réduire l'historique"
+    },
+    "newVideoButton": "Nouvelle vidéo",
+    "empty": {
+        "title": "Aucune vidéo pour l'instant",
+        "subtitle": "Vos vidéos générées apparaîtront ici"
+    },
+    "item": {
+        "retry": "Réessayer"
+    },
+    "deleteDialog": {
+        "title": "Supprimer la vidéo ?",
+        "description": "Cette action supprimera définitivement « {{name}} » de votre historique.",
+        "cancel": "Annuler",
+        "confirm": "Supprimer"
+    },
+    "pagination": {
+        "prev": "Précédent",
+        "next": "Suivant",
+        "pageIndicator": "{{current}} / {{total}}"
+    },
+    "relativeTime": {
+        "justNow": "À l'instant",
+        "minutesAgo_one": "il y a {{count}} min",
+        "minutesAgo_many": "il y a {{count}} min",
+        "minutesAgo_other": "il y a {{count}} min",
+        "hoursAgo_one": "il y a {{count}} h",
+        "hoursAgo_many": "il y a {{count}} h",
+        "hoursAgo_other": "il y a {{count}} h",
+        "daysAgo_one": "il y a {{count}} j",
+        "daysAgo_many": "il y a {{count}} j",
+        "daysAgo_other": "il y a {{count}} j"
+    }
+}

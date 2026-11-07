@@ -1,0 +1,12 @@
+{
+    "heading": "अपने संस्थान का विवरण साझा करें",
+    "logoAlt": "लोगो",
+    "instituteNameLabel": "संस्थान का नाम",
+    "instituteNamePlaceholder": "संस्थान का नाम",
+    "instituteTypeLabel": "संस्थान का प्रकार",
+    "continue": "जारी रखें",
+    "schema": {
+        "instituteNameRequired": "संस्थान का नाम आवश्यक है",
+        "instituteTypeRequired": "संस्थान का प्रकार चुनें"
+    }
+}

@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>aps-environment</key>
+	<string>development</string>
+	<key>com.apple.developer.applesignin</key>
+	<array>
+		<string>Default</string>
+	</array>
+	<!--
+	  Agilore's own domain, and only its own — the same choice ZOE made. The
+	  shared App/App.entitlements lists eight other brands' applinks hosts and
+	  none of Agilore's, so a target pointed at it would claim other brands'
+	  domains and not its own. Universal links additionally need
+	  learner.agilore.com to serve /.well-known/apple-app-site-association
+	  naming 35NLZB49QN.io.agilore.app; that file ships with the WEB deploy,
+	  not with this .ipa.
+	-->
+	<key>com.apple.developer.associated-domains</key>
+	<array>
+		<string>applinks:learner.agilore.com</string>
+	</array>
+</dict>
+</plist>

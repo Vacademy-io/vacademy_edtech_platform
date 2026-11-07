@@ -1,0 +1,15 @@
+{
+    "emptyState": "No {{nounPlural}} exist for this institute yet. Create one first, then come back.",
+    "selectNoun": "Select {{noun}}",
+    "countSelected": "{{count}} {{noun}} selected",
+    "searchPlaceholder": "Search {{nounPlural}}, levels or sessions…",
+    "noMatch": "No {{nounPlural}} match “{{query}}”.",
+    "selectAll": "Select all",
+    "clearGroup": "Clear",
+    "orgSuffix": " · sub-organisation",
+    "footerSelectedCount_one": "{{count}} selected",
+    "footerSelectedCount_other": "{{count}} selected",
+    "clearAll": "Clear all",
+    "done": "Done",
+    "removeAria": "Remove {{label}}"
+}

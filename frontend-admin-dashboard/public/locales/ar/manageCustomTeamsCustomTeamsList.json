@@ -1,0 +1,54 @@
+{
+    "tabs": {
+        "active": "نشط",
+        "invited": "مدعو"
+    },
+    "addMember": "إضافة عضو",
+    "search": {
+        "ariaLabel": "البحث عن الأعضاء",
+        "placeholder": "البحث بالاسم أو البريد الإلكتروني أو الهاتف",
+        "clearAriaLabel": "مسح البحث"
+    },
+    "filters": {
+        "roleLabel": "الدور",
+        "rolePlaceholder": "البحث عن دور…",
+        "summary_zero": "{{filtered}} من {{count}} عضو",
+        "summary_one": "{{filtered}} من عضو واحد",
+        "summary_two": "{{filtered}} من عضوين",
+        "summary_few": "{{filtered}} من {{count}} أعضاء",
+        "summary_many": "{{filtered}} من {{count}} عضوًا",
+        "summary_other": "{{filtered}} من {{count}} عضو",
+        "chipSearchLabel": "البحث",
+        "chipRoleLabel": "الدور",
+        "clearAll": "مسح الكل"
+    },
+    "table": {
+        "member": "العضو",
+        "email": "البريد الإلكتروني",
+        "phone": "الهاتف",
+        "roles": "الأدوار",
+        "status": "الحالة",
+        "pendingDues": "المستحقات المعلقة",
+        "actions": "الإجراءات"
+    },
+    "empty": {
+        "noMatch": "لا يوجد أعضاء يطابقون عوامل التصفية.",
+        "none": "لم يتم العثور على أعضاء."
+    },
+    "dues": {
+        "pendingCount_zero": "لا توجد مستحقات معلقة",
+        "pendingCount_one": "مستحق معلق واحد",
+        "pendingCount_two": "مستحقان معلقان",
+        "pendingCount_few": "{{count}} مستحقات معلقة",
+        "pendingCount_many": "{{count}} مستحقًا معلقًا",
+        "pendingCount_other": "{{count}} مستحق معلق"
+    },
+    "actions": {
+        "removeFrom": "إزالة من {{org}}"
+    },
+    "toast": {
+        "removeScheduled": "تمت جدولة إزالة العضو — يستمر الوصول حتى التاريخ المحدد",
+        "removed": "تمت إزالة العضو من {{org}}",
+        "removeFailed": "فشلت إزالة العضو"
+    }
+}

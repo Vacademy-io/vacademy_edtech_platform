@@ -1,0 +1,10 @@
+{
+    "options": {
+        "sendWhatsApp": "व्हाट्सएप संदेश भेजें",
+        "sendEmail": "ईमेल भेजें"
+    },
+    "studentsSelected_one": "{{count}} छात्र चयनित",
+    "studentsSelected_other": "{{count}} छात्र चयनित",
+    "clearSelection": "चयन हटाएं",
+    "bulkActions": "बल्क कार्रवाइयां"
+}

@@ -1,5 +1,6 @@
 import { createFileRoute, useNavigate } from '@tanstack/react-router';
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useSuspenseQuery, useMutation } from '@tanstack/react-query';
 import { useInstituteQuery } from '@/services/student-list-section/getInstituteDetails';
 import { LayoutContainer } from '@/components/common/layout-container/layout-container';
@@ -16,7 +17,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
-import { ArrowLeft, Save, X } from 'lucide-react';
+import { ArrowLeft, FloppyDisk, X } from '@phosphor-icons/react';
 import { toast } from 'sonner';
 import { useInstituteDetailsStore } from '@/stores/students/students-list/useInstituteDetailsStore';
 import { MAX_LENGTH, isValidEmail, isNonEmpty } from '@/utils/form-validation';
@@ -36,6 +37,8 @@ export const Route = createFileRoute('/admissions/new-enquiry/$audienceId/')({
 });
 
 function NewEnquiryForm() {
+    const { t } = useTranslation('admissionsNewEnquiryAudienceIdIndex');
+    const { t: tSubmitEnquiry } = useTranslation('admissionsSubmitEnquiry');
     const { audienceId } = Route.useParams();
     const navigate = useNavigate();
     const { data: instituteData } = useSuspenseQuery(useInstituteQuery());
@@ -109,17 +112,20 @@ function NewEnquiryForm() {
 
     // Submit mutation
     const submitMutation = useMutation({
-        mutationFn: submitEnquiryWithLead,
+        mutationFn: (payload: SubmitEnquiryRequest) =>
+            submitEnquiryWithLead(payload, tSubmitEnquiry),
         onSuccess: (data) => {
-            toast.success('Enquiry submitted successfully!', {
-                description: `Enquiry ID: ${data.enquiry_id}`,
+            toast.success(t('toasts.submitSuccess'), {
+                description: t('toasts.submitSuccessDescription', {
+                    enquiryId: data.enquiry_id,
+                }),
             });
             setTimeout(() => {
                 navigate({ to: '/admissions/enquiries' });
             }, 1500);
         },
         onError: (error: Error) => {
-            toast.error('Failed to submit enquiry', {
+            toast.error(t('toasts.submitFailed'), {
                 description: error.message,
             });
         },
@@ -130,31 +136,31 @@ function NewEnquiryForm() {
 
         // Validation
         if (!isNonEmpty(formData.childFullName)) {
-            toast.error('Child name is required');
+            toast.error(t('toasts.childNameRequired'));
             return;
         }
         if (!isNonEmpty(formData.parentName)) {
-            toast.error('Parent name is required');
+            toast.error(t('toasts.parentNameRequired'));
             return;
         }
         if (!isNonEmpty(formData.parentEmail)) {
-            toast.error('Parent email is required');
+            toast.error(t('toasts.parentEmailRequired'));
             return;
         }
         if (!isValidEmail(formData.parentEmail)) {
-            toast.error('Please enter a valid email address');
+            toast.error(t('toasts.invalidEmail'));
             return;
         }
         if (!isNonEmpty(formData.parentMobile)) {
-            toast.error('Parent mobile is required');
+            toast.error(t('toasts.parentMobileRequired'));
             return;
         }
         if (!isValidPhoneValue(formData.parentMobile)) {
-            toast.error('Please enter a valid phone number for the selected country');
+            toast.error(t('toasts.invalidPhone'));
             return;
         }
         if (!formData.parentRelationWithChild) {
-            toast.error('Relation with child is required');
+            toast.error(t('toasts.relationRequired'));
             return;
         }
 
@@ -231,9 +237,11 @@ function NewEnquiryForm() {
             {/* Header */}
             <div className="flex items-center gap-4">
                 <div>
-                    <h1 className="text-2xl font-bold">Add New Enquiry</h1>
+                    <h1 className="text-2xl font-bold">{t('header.title')}</h1>
                     <p className="text-sm text-muted-foreground">
-                        Session: {campaign?.campaign_name || 'Unknown'}
+                        {t('header.sessionLabel', {
+                            campaignName: campaign?.campaign_name || t('header.unknownSession'),
+                        })}
                     </p>
                 </div>
             </div>
@@ -242,14 +250,15 @@ function NewEnquiryForm() {
                 {/* Student (Child) Information - Simplified */}
                 <Card className="mb-4">
                     <CardHeader>
-                        <CardTitle>Student Information</CardTitle>
-                        <CardDescription>Enter the student's basic details</CardDescription>
+                        <CardTitle>{t('studentCard.title')}</CardTitle>
+                        <CardDescription>{t('studentCard.description')}</CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-4">
                         <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
                             <div>
                                 <Label htmlFor="childFullName">
-                                    Full Name <span className="text-red-500">*</span>
+                                    {t('studentCard.fullNameLabel')}{' '}
+                                    <span className="text-red-500">*</span>
                                 </Label>
                                 <Input
                                     id="childFullName"
@@ -260,14 +269,14 @@ function NewEnquiryForm() {
                                             childFullName: e.target.value,
                                         })
                                     }
-                                    placeholder="Enter student's full name"
+                                    placeholder={t('studentCard.fullNamePlaceholder')}
                                     required
                                     maxLength={MAX_LENGTH.NAME}
                                 />
                             </div>
 
                             <div>
-                                <Label htmlFor="childDOB">Date of Birth</Label>
+                                <Label htmlFor="childDOB">{t('studentCard.dobLabel')}</Label>
                                 <Input
                                     id="childDOB"
                                     type="date"
@@ -278,7 +287,7 @@ function NewEnquiryForm() {
                                 />
                             </div>
                             <div>
-                                <Label htmlFor="childGender">Gender</Label>
+                                <Label htmlFor="childGender">{t('studentCard.genderLabel')}</Label>
                                 <Select
                                     value={formData.childGender}
                                     onValueChange={(value) =>
@@ -286,12 +295,20 @@ function NewEnquiryForm() {
                                     }
                                 >
                                     <SelectTrigger>
-                                        <SelectValue placeholder="Select gender" />
+                                        <SelectValue
+                                            placeholder={t('studentCard.genderPlaceholder')}
+                                        />
                                     </SelectTrigger>
                                     <SelectContent>
-                                        <SelectItem value="MALE">Male</SelectItem>
-                                        <SelectItem value="FEMALE">Female</SelectItem>
-                                        <SelectItem value="OTHER">Other</SelectItem>
+                                        <SelectItem value="MALE">
+                                            {t('studentCard.genderMale')}
+                                        </SelectItem>
+                                        <SelectItem value="FEMALE">
+                                            {t('studentCard.genderFemale')}
+                                        </SelectItem>
+                                        <SelectItem value="OTHER">
+                                            {t('studentCard.genderOther')}
+                                        </SelectItem>
                                     </SelectContent>
                                 </Select>
                             </div>
@@ -303,11 +320,11 @@ function NewEnquiryForm() {
                 {packageSessionOptions.length > 0 && (
                     <Card className="mb-4">
                         <CardHeader>
-                            <CardTitle>Class</CardTitle>
-                            <CardDescription>Select the class for this enquiry</CardDescription>
+                            <CardTitle>{t('classCard.title')}</CardTitle>
+                            <CardDescription>{t('classCard.description')}</CardDescription>
                         </CardHeader>
                         <CardContent>
-                            <Label htmlFor="packageSession">Class</Label>
+                            <Label htmlFor="packageSession">{t('classCard.label')}</Label>
                             <MyDropdown
                                 currentValue={
                                     packageSessionOptions.find(
@@ -324,7 +341,7 @@ function NewEnquiryForm() {
                                     });
                                 }}
                                 dropdownList={packageSessionOptions.map((opt) => opt.label)}
-                                placeholder="Select class"
+                                placeholder={t('classCard.placeholder')}
                             />
                         </CardContent>
                     </Card>
@@ -333,16 +350,15 @@ function NewEnquiryForm() {
                 {/* Parent/Guardian Information - Full Details with Address */}
                 <Card className="mb-4">
                     <CardHeader>
-                        <CardTitle>Parent/Guardian Information</CardTitle>
-                        <CardDescription>
-                            Parent details (address will be used for student too)
-                        </CardDescription>
+                        <CardTitle>{t('parentCard.title')}</CardTitle>
+                        <CardDescription>{t('parentCard.description')}</CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-4">
                         <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
                             <div>
                                 <Label htmlFor="parentName">
-                                    Parent Name <span className="text-red-500">*</span>
+                                    {t('parentCard.nameLabel')}{' '}
+                                    <span className="text-red-500">*</span>
                                 </Label>
                                 <Input
                                     id="parentName"
@@ -350,14 +366,15 @@ function NewEnquiryForm() {
                                     onChange={(e) =>
                                         setFormData({ ...formData, parentName: e.target.value })
                                     }
-                                    placeholder="Enter parent name"
+                                    placeholder={t('parentCard.namePlaceholder')}
                                     required
                                     maxLength={MAX_LENGTH.NAME}
                                 />
                             </div>
                             <div>
                                 <Label htmlFor="parentEmail">
-                                    Parent Email <span className="text-red-500">*</span>
+                                    {t('parentCard.emailLabel')}{' '}
+                                    <span className="text-red-500">*</span>
                                 </Label>
                                 <Input
                                     id="parentEmail"
@@ -366,13 +383,15 @@ function NewEnquiryForm() {
                                     onChange={(e) =>
                                         setFormData({ ...formData, parentEmail: e.target.value })
                                     }
-                                    placeholder="Enter parent email"
+                                    placeholder={t('parentCard.emailPlaceholder')}
                                     required
                                     maxLength={MAX_LENGTH.EMAIL}
                                     className={formData.parentEmail && !isValidEmail(formData.parentEmail) ? 'border-red-400 focus:border-red-500 focus:ring-red-300' : ''}
                                 />
                                 {formData.parentEmail && !isValidEmail(formData.parentEmail) && (
-                                    <span className="text-xs text-red-500">Enter a valid email address</span>
+                                    <span className="text-xs text-red-500">
+                                        {t('parentCard.emailInvalid')}
+                                    </span>
                                 )}
                             </div>
                             <PhoneNumberInput
@@ -381,13 +400,14 @@ function NewEnquiryForm() {
                                 onChange={(_name, value) =>
                                     setFormData({ ...formData, parentMobile: value })
                                 }
-                                label="Parent Mobile"
+                                label={t('parentCard.mobileLabel')}
                                 required
-                                placeholder="Enter parent mobile"
+                                placeholder={t('parentCard.mobilePlaceholder')}
                             />
                             <div>
                                 <Label htmlFor="parentRelationWithChild">
-                                    Relation with Child <span className="text-red-500">*</span>
+                                    {t('parentCard.relationLabel')}{' '}
+                                    <span className="text-red-500">*</span>
                                 </Label>
                                 <Select
                                     value={formData.parentRelationWithChild}
@@ -399,12 +419,20 @@ function NewEnquiryForm() {
                                     }
                                 >
                                     <SelectTrigger id="parentRelationWithChild">
-                                        <SelectValue placeholder="Select relation" />
+                                        <SelectValue
+                                            placeholder={t('parentCard.relationPlaceholder')}
+                                        />
                                     </SelectTrigger>
                                     <SelectContent>
-                                        <SelectItem value="FATHER">Father</SelectItem>
-                                        <SelectItem value="MOTHER">Mother</SelectItem>
-                                        <SelectItem value="GUARDIAN">Guardian</SelectItem>
+                                        <SelectItem value="FATHER">
+                                            {t('parentCard.relationFather')}
+                                        </SelectItem>
+                                        <SelectItem value="MOTHER">
+                                            {t('parentCard.relationMother')}
+                                        </SelectItem>
+                                        <SelectItem value="GUARDIAN">
+                                            {t('parentCard.relationGuardian')}
+                                        </SelectItem>
                                     </SelectContent>
                                 </Select>
                             </div>
@@ -413,14 +441,16 @@ function NewEnquiryForm() {
                         {/* Address Details */}
                         <div className="grid grid-cols-1 gap-4">
                             <div>
-                                <Label htmlFor="parentAddress">Address Line</Label>
+                                <Label htmlFor="parentAddress">
+                                    {t('parentCard.addressLabel')}
+                                </Label>
                                 <Input
                                     id="parentAddress"
                                     value={formData.parentAddress}
                                     onChange={(e) =>
                                         setFormData({ ...formData, parentAddress: e.target.value })
                                     }
-                                    placeholder="Enter complete address"
+                                    placeholder={t('parentCard.addressPlaceholder')}
                                     maxLength={MAX_LENGTH.ADDRESS}
                                 />
                             </div>
@@ -428,31 +458,33 @@ function NewEnquiryForm() {
 
                         <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
                             <div>
-                                <Label htmlFor="parentCity">City</Label>
+                                <Label htmlFor="parentCity">{t('parentCard.cityLabel')}</Label>
                                 <Input
                                     id="parentCity"
                                     value={formData.parentCity}
                                     onChange={(e) =>
                                         setFormData({ ...formData, parentCity: e.target.value })
                                     }
-                                    placeholder="Enter city"
+                                    placeholder={t('parentCard.cityPlaceholder')}
                                     maxLength={MAX_LENGTH.GENERAL}
                                 />
                             </div>
                             <div>
-                                <Label htmlFor="parentRegion">State/Region</Label>
+                                <Label htmlFor="parentRegion">{t('parentCard.regionLabel')}</Label>
                                 <Input
                                     id="parentRegion"
                                     value={formData.parentRegion}
                                     onChange={(e) =>
                                         setFormData({ ...formData, parentRegion: e.target.value })
                                     }
-                                    placeholder="Enter state/region"
+                                    placeholder={t('parentCard.regionPlaceholder')}
                                     maxLength={MAX_LENGTH.GENERAL}
                                 />
                             </div>
                             <div>
-                                <Label htmlFor="parentPinCode">Pin Code</Label>
+                                <Label htmlFor="parentPinCode">
+                                    {t('parentCard.pinCodeLabel')}
+                                </Label>
                                 <Input
                                     id="parentPinCode"
                                     value={formData.parentPinCode}
@@ -460,7 +492,7 @@ function NewEnquiryForm() {
                                         const digits = e.target.value.replace(/\D/g, '').slice(0, 6);
                                         setFormData({ ...formData, parentPinCode: digits });
                                     }}
-                                    placeholder="Enter pin code"
+                                    placeholder={t('parentCard.pinCodePlaceholder')}
                                     maxLength={MAX_LENGTH.PINCODE}
                                     inputMode="numeric"
                                 />
@@ -478,15 +510,15 @@ function NewEnquiryForm() {
                 {/* Enquiry Details - Enhanced with New Fields */}
                 <Card className="mb-4">
                     <CardHeader>
-                        <CardTitle>Enquiry Details</CardTitle>
-                        <CardDescription>
-                            Additional tracking and preference information
-                        </CardDescription>
+                        <CardTitle>{t('enquiryCard.title')}</CardTitle>
+                        <CardDescription>{t('enquiryCard.description')}</CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-4">
                         <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                             <div>
-                                <Label htmlFor="enquiryStatus">Enquiry Status</Label>
+                                <Label htmlFor="enquiryStatus">
+                                    {t('enquiryCard.statusLabel')}
+                                </Label>
                                 <Select
                                     value={formData.enquiryStatus}
                                     onValueChange={(value) =>
@@ -497,15 +529,23 @@ function NewEnquiryForm() {
                                         <SelectValue />
                                     </SelectTrigger>
                                     <SelectContent>
-                                        <SelectItem value="NEW">New</SelectItem>
-                                        <SelectItem value="CONTACTED">Contacted</SelectItem>
-                                        <SelectItem value="QUALIFIED">Qualified</SelectItem>
-                                        <SelectItem value="NOT_ELIGIBLE">Not Eligible</SelectItem>
+                                        <SelectItem value="NEW">
+                                            {t('enquiryCard.statusNew')}
+                                        </SelectItem>
+                                        <SelectItem value="CONTACTED">
+                                            {t('enquiryCard.statusContacted')}
+                                        </SelectItem>
+                                        <SelectItem value="QUALIFIED">
+                                            {t('enquiryCard.statusQualified')}
+                                        </SelectItem>
+                                        <SelectItem value="NOT_ELIGIBLE">
+                                            {t('enquiryCard.statusNotEligible')}
+                                        </SelectItem>
                                     </SelectContent>
                                 </Select>
                             </div>
                             <div>
-                                <Label htmlFor="sourceType">Source Type</Label>
+                                <Label htmlFor="sourceType">{t('enquiryCard.sourceLabel')}</Label>
                                 <Select
                                     value={formData.sourceType}
                                     onValueChange={(value) =>
@@ -516,17 +556,31 @@ function NewEnquiryForm() {
                                         <SelectValue />
                                     </SelectTrigger>
                                     <SelectContent>
-                                        <SelectItem value="WEBSITE">Website</SelectItem>
-                                        <SelectItem value="GOOGLE_ADS">Google Ads</SelectItem>
-                                        <SelectItem value="FACEBOOK">Facebook</SelectItem>
-                                        <SelectItem value="INSTAGRAM">Instagram</SelectItem>
-                                        <SelectItem value="REFERRAL">Referral</SelectItem>
-                                        <SelectItem value="OTHER">Other</SelectItem>
+                                        <SelectItem value="WEBSITE">
+                                            {t('enquiryCard.sourceWebsite')}
+                                        </SelectItem>
+                                        <SelectItem value="GOOGLE_ADS">
+                                            {t('enquiryCard.sourceGoogleAds')}
+                                        </SelectItem>
+                                        <SelectItem value="FACEBOOK">
+                                            {t('enquiryCard.sourceFacebook')}
+                                        </SelectItem>
+                                        <SelectItem value="INSTAGRAM">
+                                            {t('enquiryCard.sourceInstagram')}
+                                        </SelectItem>
+                                        <SelectItem value="REFERRAL">
+                                            {t('enquiryCard.sourceReferral')}
+                                        </SelectItem>
+                                        <SelectItem value="OTHER">
+                                            {t('enquiryCard.sourceOther')}
+                                        </SelectItem>
                                     </SelectContent>
                                 </Select>
                             </div>
                             <div>
-                                <Label htmlFor="referenceSource">Reference Source</Label>
+                                <Label htmlFor="referenceSource">
+                                    {t('enquiryCard.referenceLabel')}
+                                </Label>
                                 <Input
                                     id="referenceSource"
                                     value={formData.referenceSource}
@@ -536,12 +590,12 @@ function NewEnquiryForm() {
                                             referenceSource: e.target.value,
                                         })
                                     }
-                                    placeholder="e.g., Friend's name, advertisement campaign"
+                                    placeholder={t('enquiryCard.referencePlaceholder')}
                                     maxLength={MAX_LENGTH.GENERAL}
                                 />
                             </div>
                             <div>
-                                <Label htmlFor="mode">Mode</Label>
+                                <Label htmlFor="mode">{t('enquiryCard.modeLabel')}</Label>
                                 <Select
                                     value={formData.mode}
                                     onValueChange={(value: 'ONLINE' | 'OFFLINE') =>
@@ -552,25 +606,33 @@ function NewEnquiryForm() {
                                         <SelectValue />
                                     </SelectTrigger>
                                     <SelectContent>
-                                        <SelectItem value="ONLINE">Online</SelectItem>
-                                        <SelectItem value="OFFLINE">Offline</SelectItem>
+                                        <SelectItem value="ONLINE">
+                                            {t('enquiryCard.modeOnline')}
+                                        </SelectItem>
+                                        <SelectItem value="OFFLINE">
+                                            {t('enquiryCard.modeOffline')}
+                                        </SelectItem>
                                     </SelectContent>
                                 </Select>
                             </div>
                             <div>
-                                <Label htmlFor="feeExpectation">Fee Range Expectation</Label>
+                                <Label htmlFor="feeExpectation">
+                                    {t('enquiryCard.feeLabel')}
+                                </Label>
                                 <Input
                                     id="feeExpectation"
                                     value={formData.feeExpectation}
                                     onChange={(e) =>
                                         setFormData({ ...formData, feeExpectation: e.target.value })
                                     }
-                                    placeholder="e.g., 50000-100000"
+                                    placeholder={t('enquiryCard.feePlaceholder')}
                                     maxLength={MAX_LENGTH.GENERAL}
                                 />
                             </div>
                             <div>
-                                <Label htmlFor="transportRequirement">Transport Requirement</Label>
+                                <Label htmlFor="transportRequirement">
+                                    {t('enquiryCard.transportLabel')}
+                                </Label>
                                 <Select
                                     value={formData.transportRequirement}
                                     onValueChange={(value) =>
@@ -578,26 +640,40 @@ function NewEnquiryForm() {
                                     }
                                 >
                                     <SelectTrigger>
-                                        <SelectValue placeholder="Select transport need" />
+                                        <SelectValue
+                                            placeholder={t('enquiryCard.transportPlaceholder')}
+                                        />
                                     </SelectTrigger>
                                     <SelectContent>
-                                        <SelectItem value="YES">Yes - Required</SelectItem>
-                                        <SelectItem value="NO">No - Not Required</SelectItem>
-                                        <SelectItem value="OPTIONAL">Optional</SelectItem>
+                                        <SelectItem value="YES">
+                                            {t('enquiryCard.transportYes')}
+                                        </SelectItem>
+                                        <SelectItem value="NO">
+                                            {t('enquiryCard.transportNo')}
+                                        </SelectItem>
+                                        <SelectItem value="OPTIONAL">
+                                            {t('enquiryCard.transportOptional')}
+                                        </SelectItem>
                                     </SelectContent>
                                 </Select>
                             </div>
                             {!selectedCounsellor ? (
                                 <div>
-                                    <Label htmlFor="counsellorSearch">Search Counsellor</Label>
+                                    <Label htmlFor="counsellorSearch">
+                                        {t('enquiryCard.counsellorSearchLabel')}
+                                    </Label>
                                     <Input
                                         id="counsellorSearch"
                                         value={counsellorSearchQuery}
                                         onChange={(e) => setCounsellorSearchQuery(e.target.value)}
-                                        placeholder="Type to search by name..."
+                                        placeholder={t(
+                                            'enquiryCard.counsellorSearchPlaceholder'
+                                        )}
                                     />
                                     {isLoadingCounsellors && (
-                                        <p className="mt-2 text-sm text-gray-500">Searching...</p>
+                                        <p className="mt-2 text-sm text-gray-500">
+                                            {t('enquiryCard.searching')}
+                                        </p>
                                     )}
                                     {counsellors && counsellors.length > 0 && (
                                         <div className="mt-2 max-h-48 overflow-y-auto rounded-md border">
@@ -633,8 +709,9 @@ function NewEnquiryForm() {
                                         counsellorSearchQuery &&
                                         !isLoadingCounsellors && (
                                             <p className="mt-2 text-sm text-gray-500">
-                                                No counsellors found matching "
-                                                {counsellorSearchQuery}"
+                                                {t('enquiryCard.noCounsellorsFound', {
+                                                    query: counsellorSearchQuery,
+                                                })}
                                             </p>
                                         )}
                                 </div>
@@ -644,7 +721,9 @@ function NewEnquiryForm() {
                                         <div className="font-medium ">
                                             {selectedCounsellor?.full_name}
                                         </div>
-                                        <div className="text-sm ">Assigned Counsellor</div>
+                                        <div className="text-sm ">
+                                            {t('enquiryCard.assignedCounsellor')}
+                                        </div>
                                     </div>
                                     <button
                                         type="button"
@@ -660,14 +739,14 @@ function NewEnquiryForm() {
                             )}
                         </div>
                         <div>
-                            <Label htmlFor="notes">Notes</Label>
+                            <Label htmlFor="notes">{t('enquiryCard.notesLabel')}</Label>
                             <Textarea
                                 id="notes"
                                 value={formData.notes}
                                 onChange={(e) =>
                                     setFormData({ ...formData, notes: e.target.value })
                                 }
-                                placeholder="Enter any additional notes or comments"
+                                placeholder={t('enquiryCard.notesPlaceholder')}
                                 rows={4}
                                 maxLength={MAX_LENGTH.NOTES}
                             />
@@ -683,11 +762,11 @@ function NewEnquiryForm() {
                         onClick={() => navigate({ to: '/admissions/enquiries' })}
                         disabled={isSubmitting}
                     >
-                        Cancel
+                        {t('actions.cancel')}
                     </MyButton>
                     <MyButton type="submit" disabled={isSubmitting}>
-                        <Save className="mr-2 h-4 w-4" />
-                        {isSubmitting ? 'Saving...' : 'Save'}
+                        <FloppyDisk className="me-2 h-4 w-4" />
+                        {isSubmitting ? t('actions.saving') : t('actions.save')}
                     </MyButton>
                 </div>
             </form>

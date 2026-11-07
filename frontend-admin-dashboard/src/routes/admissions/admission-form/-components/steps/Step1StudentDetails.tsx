@@ -1,4 +1,5 @@
 import React, { useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { AdmissionFormData } from '../AdmissionFormWizard';
 import { BatchForSessionType } from '@/schemas/student/student-list/institute-schema';
 import { MAX_LENGTH } from '@/utils/form-validation';
@@ -28,6 +29,8 @@ export default function Step1StudentDetails({
     onFormDataUpdate,
     errors = {},
 }: Props) {
+    const { t } = useTranslation('admissionsStep1StudentDetails');
+
     // Track selected parent class separately so section dropdown stays stable
     const [selectedParentId, setSelectedParentId] = React.useState<string>(() => {
         // Initialize: if destinationPackageSessionId is a child, find its parent
@@ -84,12 +87,12 @@ export default function Step1StudentDetails({
     return (
         <div className="grid grid-cols-1 gap-6 duration-200 animate-in fade-in zoom-in-95 md:grid-cols-2 lg:grid-cols-3">
             <div className="col-span-full border-b border-gray-100 pb-2">
-                <h2 className="text-lg font-semibold text-gray-800">Student Details</h2>
+                <h2 className="text-lg font-semibold text-gray-800">{t('heading')}</h2>
             </div>
 
             <div className="flex flex-col gap-1.5">
                 <label className="text-sm font-medium text-gray-700">
-                    Student First Name <span className="text-red-500">*</span>
+                    {t('studentFirstName.label')} <span className="text-red-500">*</span>
                 </label>
                 <input
                     name="studentFirstName"
@@ -97,26 +100,26 @@ export default function Step1StudentDetails({
                     onChange={handleChange}
                     maxLength={MAX_LENGTH.NAME}
                     className={inputClass('studentFirstName')}
-                    placeholder="Enter First Name"
+                    placeholder={t('studentFirstName.placeholder')}
                 />
                 {errors.studentFirstName && (
                     <span className="text-xs text-red-500">{errors.studentFirstName}</span>
                 )}
             </div>
             <div className="flex flex-col gap-1.5">
-                <label className="text-sm font-medium text-gray-700">Middle Name</label>
+                <label className="text-sm font-medium text-gray-700">{t('middleName.label')}</label>
                 <input
                     name="studentMiddleName"
                     value={formData.studentMiddleName}
                     onChange={handleChange}
                     maxLength={MAX_LENGTH.NAME}
                     className={inputClass()}
-                    placeholder="Enter Middle Name"
+                    placeholder={t('middleName.placeholder')}
                 />
             </div>
             <div className="flex flex-col gap-1.5">
                 <label className="text-sm font-medium text-gray-700">
-                    Last Name <span className="text-red-500">*</span>
+                    {t('lastName.label')} <span className="text-red-500">*</span>
                 </label>
                 <input
                     name="studentLastName"
@@ -124,7 +127,7 @@ export default function Step1StudentDetails({
                     onChange={handleChange}
                     maxLength={MAX_LENGTH.NAME}
                     className={inputClass('studentLastName')}
-                    placeholder="Enter Last Name"
+                    placeholder={t('lastName.placeholder')}
                 />
                 {errors.studentLastName && (
                     <span className="text-xs text-red-500">{errors.studentLastName}</span>
@@ -132,42 +135,44 @@ export default function Step1StudentDetails({
             </div>
 
             <div className="flex flex-col gap-1.5">
-                <label className="text-sm font-medium text-gray-700">Gender</label>
+                <label className="text-sm font-medium text-gray-700">{t('gender.label')}</label>
                 <select
                     name="gender"
                     value={formData.gender}
                     onChange={handleChange}
                     className={inputClass()}
                 >
-                    <option value="">Select Gender</option>
-                    <option value="MALE">Male</option>
-                    <option value="FEMALE">Female</option>
-                    <option value="OTHER">Other</option>
+                    <option value="">{t('gender.select')}</option>
+                    <option value="MALE">{t('gender.male')}</option>
+                    <option value="FEMALE">{t('gender.female')}</option>
+                    <option value="OTHER">{t('gender.other')}</option>
                 </select>
             </div>
 
             <div className="flex flex-col gap-1.5">
-                <label className="text-sm font-medium text-gray-700">Application Number</label>
+                <label className="text-sm font-medium text-gray-700">
+                    {t('applicationNumber.label')}
+                </label>
                 <input
                     name="applicationNumber"
                     value={formData.applicationNumber}
                     onChange={handleChange}
                     maxLength={MAX_LENGTH.APPLICATION_NUMBER}
                     className={inputClass()}
-                    placeholder="Auto Generated / Editable"
+                    placeholder={t('applicationNumber.placeholder')}
                 />
             </div>
 
             <div className="flex flex-col gap-1.5">
                 <label className="text-sm font-medium text-gray-700">
-                    Class <span className="text-red-500">*</span>
+                    {t('class.label')} <span className="text-red-500">*</span>
                 </label>
                 <select
                     value={selectedParentId}
                     onChange={(e) => handleClassChange(e.target.value)}
                     className={inputClass('destinationPackageSessionId')}
                 >
-                    <option value="">Select Class</option>
+                    <option value="">{t('class.select')}</option>
                     {packageSessionOptions.map((opt) => (
                         <option key={opt.id} value={opt.id}>
                             {opt.label}
@@ -183,7 +188,7 @@ export default function Step1StudentDetails({
 
             {sectionOptions.length > 0 && (
                 <div className="flex flex-col gap-1.5">
-                    <label className="text-sm font-medium text-gray-700">Section</label>
+                    <label className="text-sm font-medium text-gray-700">{t('section.label')}</label>
                     <select
                         value={
                             sectionOptions.some(
@@ -195,7 +200,7 @@ export default function Step1StudentDetails({
                         onChange={(e) => handleSectionChange(e.target.value)}
                         className={inputClass()}
                     >
-                        <option value="">Select Section</option>
+                        <option value="">{t('section.select')}</option>
                         {sectionOptions.map((opt) => (
                             <option key={opt.id} value={opt.id}>
                                 {opt.label}
@@ -206,7 +211,9 @@ export default function Step1StudentDetails({
             )}
 
             <div className="flex flex-col gap-1.5">
-                <label className="text-sm font-medium text-gray-700">Date of Admission</label>
+                <label className="text-sm font-medium text-gray-700">
+                    {t('dateOfAdmission.label')}
+                </label>
                 <input
                     type="date"
                     name="dateOfAdmission"
@@ -218,7 +225,7 @@ export default function Step1StudentDetails({
 
             <div className="flex flex-col gap-1.5">
                 <label className="text-sm font-medium text-gray-700">
-                    Date of Birth <span className="text-red-500">*</span>
+                    {t('dateOfBirth.label')} <span className="text-red-500">*</span>
                 </label>
                 <input
                     type="date"
@@ -236,62 +243,68 @@ export default function Step1StudentDetails({
                 name="residentialPhone"
                 value={formData.residentialPhone}
                 onChange={(name, value) => onFormDataUpdate({ [name]: value })}
-                label="Residential Phone No"
+                label={t('residentialPhone.label')}
                 error={errors.residentialPhone}
             />
 
             <div className="flex flex-col gap-1.5">
-                <label className="text-sm font-medium text-gray-700">Student Type</label>
+                <label className="text-sm font-medium text-gray-700">{t('studentType.label')}</label>
                 <select
                     name="studentType"
                     value={formData.studentType}
                     onChange={handleChange}
                     className={inputClass()}
                 >
-                    <option value="">Select Type</option>
-                    <option value="Regular">Regular</option>
-                    <option value="Transfer">Transfer</option>
+                    <option value="">{t('studentType.select')}</option>
+                    <option value="Regular">{t('studentType.regular')}</option>
+                    <option value="Transfer">{t('studentType.transfer')}</option>
                 </select>
             </div>
 
             <div className="flex flex-col gap-1.5">
-                <label className="text-sm font-medium text-gray-700">Admission Type</label>
+                <label className="text-sm font-medium text-gray-700">
+                    {t('admissionType.label')}
+                </label>
                 <select
                     name="admissionType"
                     value={formData.admissionType}
                     onChange={handleChange}
                     className={inputClass()}
                 >
-                    <option value="">Select Type</option>
-                    <option value="Day Scholar">Day Scholar</option>
-                    <option value="Hostel">Hostel</option>
+                    <option value="">{t('admissionType.select')}</option>
+                    <option value="Day Scholar">{t('admissionType.dayScholar')}</option>
+                    <option value="Hostel">{t('admissionType.hostel')}</option>
                 </select>
             </div>
 
             <div className="flex flex-col gap-1.5">
-                <label className="text-sm font-medium text-gray-700">Transport Required</label>
+                <label className="text-sm font-medium text-gray-700">
+                    {t('transport.label')}
+                </label>
                 <select
                     name="transport"
                     value={formData.transport}
                     onChange={handleChange}
                     className={inputClass()}
                 >
-                    <option value="No">No</option>
-                    <option value="Yes">Yes</option>
+                    <option value="No">{t('transport.no')}</option>
+                    <option value="Yes">{t('transport.yes')}</option>
                 </select>
             </div>
 
             <div className="flex flex-col gap-1.5">
-                <label className="text-sm font-medium text-gray-700">Student Aadhaar Type</label>
+                <label className="text-sm font-medium text-gray-700">
+                    {t('aadhaarType.label')}
+                </label>
                 <select
                     name="aadhaarType"
                     value={formData.aadhaarType}
                     onChange={handleChange}
                     className={inputClass()}
                 >
-                    <option value="">Select Type</option>
-                    <option value="Standard">Standard</option>
-                    <option value="Temporary">Temporary</option>
+                    <option value="">{t('aadhaarType.select')}</option>
+                    <option value="Standard">{t('aadhaarType.standard')}</option>
+                    <option value="Temporary">{t('aadhaarType.temporary')}</option>
                 </select>
             </div>
 

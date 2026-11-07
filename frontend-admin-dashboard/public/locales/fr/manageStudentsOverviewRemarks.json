@@ -1,0 +1,17 @@
+{
+    "heading": "Remarques",
+    "callButton": "Appeler",
+    "placeholder": "Ajouter une remarque sur cet apprenant…",
+    "addButton": "Ajouter",
+    "adding": "Ajout…",
+    "noteTitle": "Note",
+    "loadError": "Impossible de charger les remarques.",
+    "empty": {
+        "title": "Aucune remarque",
+        "hint": "Les appels et remarques ajoutés ici apparaissent aussi dans l'historique d'activité de l'apprenant."
+    },
+    "toast": {
+        "added": "Remarque ajoutée.",
+        "failed": "Impossible d'ajouter la remarque. Veuillez réessayer."
+    }
+}

@@ -1,0 +1,11 @@
+{
+    "errors": {
+        "loadFailed": "Échec du chargement du contenu. Veuillez réessayer.",
+        "loadingContentPrefix": "Erreur lors du chargement du contenu :",
+        "initFailed": "Échec de l'initialisation de l'éditeur",
+        "refreshAndRetry": "Veuillez actualiser la page et réessayer."
+    },
+    "actions": {
+        "retry": "Réessayer"
+    }
+}

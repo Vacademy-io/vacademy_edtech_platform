@@ -1,0 +1,43 @@
+{
+    "title": "بحث عن استفسار",
+    "filters": {
+        "nameLabel": "اسم الطالب / ولي الأمر",
+        "namePlaceholder": "مثال: جون دو",
+        "phoneLabel": "رقم الهاتف",
+        "phonePlaceholder": "مثال: 9876543210",
+        "trackingIdLabel": "رقم التتبع",
+        "trackingIdPlaceholder": "مثال: A9KQ2"
+    },
+    "actions": {
+        "searching": "جارٍ البحث...",
+        "searchEnquiries": "البحث عن الاستفسارات",
+        "apply": "تقديم طلب",
+        "applied": "تم التقديم",
+        "admit": "قبول",
+        "admitted": "مقبول"
+    },
+    "table": {
+        "headers": {
+            "trackingId": "رقم التتبع",
+            "studentName": "اسم الطالب",
+            "parentName": "اسم ولي الأمر",
+            "phone": "الهاتف",
+            "status": "الحالة",
+            "application": "الطلب",
+            "admission": "القبول"
+        },
+        "empty": {
+            "noResults": "لم يتم العثور على استفسارات مطابقة لبحثك.",
+            "prompt": "أدخل معايير البحث وانقر فوق بحث للعثور على الاستفسارات."
+        }
+    },
+    "statusBadge": {
+        "enquiry": "استفسار",
+        "applied": "تم التقديم",
+        "admitted": "مقبول"
+    },
+    "toast": {
+        "enterAtLeastOneCriteria": "يرجى إدخال معيار بحث واحد على الأقل",
+        "searchFailed": "فشل البحث عن الاستفسارات. يرجى المحاولة مرة أخرى."
+    }
+}

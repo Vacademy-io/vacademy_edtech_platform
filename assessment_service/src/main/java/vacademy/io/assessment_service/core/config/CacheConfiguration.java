@@ -38,6 +38,29 @@ public class CacheConfiguration {
                         .recordStats()
                         .build());
 
+        // Batch enrollment for the "not attempted yet" list, keyed by institute + batch set.
+        // This is what keeps that feature off the hot path: the submissions page asks for the
+        // Pending count on EVERY mount, so uncached it would be one admin_core round trip per
+        // page view. Batch enrollment changes rarely, so 2 minutes collapses every mount, tab
+        // switch and page step for a batch set onto a single call while staying fresh enough
+        // that a newly enrolled learner shows up quickly. Entries are lists of learners, so
+        // the size cap is deliberately small.
+        cacheManager.registerCustomCache("batchEnrolledLearners",
+                Caffeine.newBuilder()
+                        .expireAfterWrite(2, TimeUnit.MINUTES)
+                        .maximumSize(200)
+                        .recordStats()
+                        .build());
+
+        // Batch display names for the CSV exports. Names essentially never change and the
+        // map is tiny, so this is cached longer than the enrollment above.
+        cacheManager.registerCustomCache("batchNames",
+                Caffeine.newBuilder()
+                        .expireAfterWrite(30, TimeUnit.MINUTES)
+                        .maximumSize(500)
+                        .recordStats()
+                        .build());
+
         return cacheManager;
     }
 }

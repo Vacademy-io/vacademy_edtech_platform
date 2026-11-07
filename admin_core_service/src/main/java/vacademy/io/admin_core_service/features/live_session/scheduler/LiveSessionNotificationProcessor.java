@@ -13,6 +13,7 @@ import vacademy.io.admin_core_service.features.live_session.entity.ScheduleNotif
 import vacademy.io.admin_core_service.features.live_session.enums.LiveClassAction;
 import vacademy.io.admin_core_service.features.live_session.enums.NotificationStatusEnum;
 import vacademy.io.admin_core_service.features.live_session.enums.NotificationTypeEnum;
+import vacademy.io.admin_core_service.features.live_session.constants.AttendanceEmailBody;
 import vacademy.io.admin_core_service.features.live_session.constants.LiveClassEmailBody;
 import vacademy.io.admin_core_service.features.live_session.service.LiveClassTemplateService;
 import vacademy.io.admin_core_service.features.live_session.service.LiveClassTemplateService.ResolvedTemplate;
@@ -35,6 +36,10 @@ import vacademy.io.admin_core_service.features.live_session.entity.LiveSessionNo
 import vacademy.io.admin_core_service.features.live_session.repository.LiveSessionNotificationConfigRepository;
 import vacademy.io.admin_core_service.features.workflow.enums.WorkflowTriggerEvent;
 import vacademy.io.admin_core_service.features.workflow.service.WorkflowTriggerService;
+
+import vacademy.io.admin_core_service.features.live_session.client.LiveSessionUserDirectoryClient;
+import vacademy.io.admin_core_service.features.live_session.service.LiveSessionInstructorService;
+import vacademy.io.admin_core_service.features.live_session.service.LiveSessionAttendanceOnlyModeService;
 
 import java.text.SimpleDateFormat;
 import java.time.LocalDateTime;
@@ -64,8 +69,12 @@ public class LiveSessionNotificationProcessor {
     private final LiveSessionNotificationConfigRepository notificationConfigRepository;
     private final LiveClassTemplateService liveClassTemplateService;
     private final WorkflowTriggerService workflowTriggerService;
+    private final LiveSessionInstructorService liveSessionInstructorService;
+    private final LiveSessionUserDirectoryClient userDirectoryClient;
+    private final LiveSessionAttendanceOnlyModeService attendanceOnlyModeService;
     @Autowired
     private SessionScheduleRepository scheduleRepository;
+
 
     /**
      * Look-back window for the LIVE_SESSION_END dispatch. MUST equal the
@@ -164,7 +173,7 @@ public class LiveSessionNotificationProcessor {
                 SessionSchedule schedule = scheduleOpt.orElse(null);
                 
                 // Fetch students from both batch and individual user participants
-                List<Object[]> rows = getStudentsForNotification(participants, session.getInstituteId());
+                List<Object[]> rows = getStudentsForNotification(participants, session.getInstituteId(), session.getId());
 
                 if (!rows.isEmpty()) {
                     Set<String> channels = parseChannels(sn.getChannel());
@@ -321,8 +330,17 @@ public class LiveSessionNotificationProcessor {
         return new ArrayList<>(batchIds);
     }
 
-    private List<Object[]> getStudentsForNotification(List<LiveSessionParticipants> participants, String instituteId) {
+    private List<Object[]> getStudentsForNotification(List<LiveSessionParticipants> participants,
+                                                     String instituteId,
+                                                     String sessionId) {
         List<Object[]> allStudents = new ArrayList<>();
+
+        // Attendance-only institute: learners are never told about classes, so
+        // only the instructors' rows go out (on create, reminders, edit, cancel).
+        if (attendanceOnlyModeService.suppressesLearnerNotifications(instituteId, sessionId)) {
+            allStudents.addAll(getInstructorRecipients(sessionId));
+            return allStudents;
+        }
         
         // Separate batch and individual user participants
         List<String> batchIds = new ArrayList<>();
@@ -351,8 +369,57 @@ public class LiveSessionNotificationProcessor {
             List<Object[]> individualStudents = mappingRepository.findStudentContactsByUserIds(individualUserIds);
             allStudents.addAll(individualStudents);
         }
-        
+
+        allStudents.addAll(getInstructorRecipients(sessionId));
+
         return allStudents;
+    }
+
+    /**
+     * The session's instructors, as notification rows (V524), so a teacher is
+     * told about their own class the same way the learners are.
+     *
+     * <p>Their contacts come from auth_service, not from the {@code student}
+     * table the learner rows come from: staff have no row there, so the
+     * existing contact query returns nothing for them.
+     *
+     * <p>Shaped as the 5-element "individual user" row
+     * {@code [user_id, full_name, mobile_number, email, region]} that every
+     * notification builder in this class already understands, which is what
+     * makes instructors work across all of them (on-create, before-live,
+     * on-live, delete, attendance) without touching each builder.
+     *
+     * <p>Never throws: a directory hiccup must not stop the learners' mail.
+     */
+    private List<Object[]> getInstructorRecipients(String sessionId) {
+        if (sessionId == null || sessionId.isBlank()) {
+            return Collections.emptyList();
+        }
+        try {
+            List<String> instructorIds = liveSessionInstructorService
+                    .getExplicitInstructorUserIds(sessionId);
+            if (instructorIds.isEmpty()) {
+                return Collections.emptyList();
+            }
+            Map<String, LiveSessionUserDirectoryClient.DirectoryUser> directory =
+                    userDirectoryClient.findUsersByIds(instructorIds);
+
+            List<Object[]> rows = new ArrayList<>();
+            for (String userId : instructorIds) {
+                LiveSessionUserDirectoryClient.DirectoryUser user = directory.get(userId);
+                // No resolvable email means nothing to send to; skip rather than
+                // emit a row the mailer would reject.
+                if (user == null || user.email() == null || user.email().isBlank()) {
+                    continue;
+                }
+                rows.add(new Object[]{userId, user.fullName(), user.mobileNumber(), user.email(), null});
+            }
+            return rows;
+        } catch (Exception e) {
+            System.out.println("Instructor notification recipients skipped for session "
+                    + sessionId + ": " + e.getMessage());
+            return Collections.emptyList();
+        }
     }
 
     private NotificationDTO buildOnLiveEmailNotification(LiveSession session, ScheduleNotification sn, SessionSchedule schedule, List<Object[]> rows) {
@@ -518,7 +585,7 @@ public class LiveSessionNotificationProcessor {
             SessionSchedule schedule = schedules.isEmpty() ? null : schedules.get(0);
 
             // Fetch students from both batch and individual user participants
-            List<Object[]> rows = getStudentsForNotification(participants, instituteId);
+            List<Object[]> rows = getStudentsForNotification(participants, instituteId, sessionId);
 
             if (!rows.isEmpty()) {
                 NotificationDTO notification = buildDeleteEmailNotification(session, schedule, rows);
@@ -563,7 +630,7 @@ public class LiveSessionNotificationProcessor {
                 scheduleRepository.softDeleteScheduleByIdIn(List.of(scheduleId));
 
                 // Fetch students
-                List<Object[]> rows = getStudentsForNotification(participants, instituteId);
+                List<Object[]> rows = getStudentsForNotification(participants, instituteId, sessionId);
 
                 if (!rows.isEmpty()) {
                     NotificationDTO notification = buildDeleteEmailNotification(session, schedule, rows);
@@ -655,7 +722,7 @@ public class LiveSessionNotificationProcessor {
                 return;
             }
 
-            List<Object[]> rows = getStudentsForNotification(participants, session.getInstituteId());
+            List<Object[]> rows = getStudentsForNotification(participants, session.getInstituteId(), session.getId());
             if (rows.isEmpty()) {
                 System.out.println("No students found for notification for session: " + sessionId);
                 return;
@@ -750,7 +817,7 @@ public class LiveSessionNotificationProcessor {
             }
 
             // Fetch students from both batch and individual user participants
-            List<Object[]> rows = getStudentsForNotification(participants, session.getInstituteId());
+            List<Object[]> rows = getStudentsForNotification(participants, session.getInstituteId(), session.getId());
             if (rows.isEmpty()) {
                 System.out.println("No students found for notification for session: " + sessionId);
                 return;
@@ -984,6 +1051,16 @@ public class LiveSessionNotificationProcessor {
      * Checks LiveSessionNotificationConfig for ATTENDANCE type.
      */
     public void sendAttendanceNotification(String sessionId, String userId, String status) {
+        sendAttendanceNotification(sessionId, userId, status, null);
+    }
+
+    /**
+     * @param reasonDetail plain-language explanation appended to the message, e.g.
+     *                     why a learner fell short of the minimum-attendance rule.
+     *                     Null/blank keeps the original wording.
+     */
+    public void sendAttendanceNotification(String sessionId, String userId, String status,
+                                           String reasonDetail) {
         try {
             Optional<LiveSessionNotificationConfig> configOpt = notificationConfigRepository
                     .findBySessionIdAndNotificationType(sessionId, NotificationTypeEnum.ATTENDANCE.name());
@@ -997,10 +1074,19 @@ public class LiveSessionNotificationProcessor {
             Optional<LiveSession> sessionOpt = liveSessionRepository.findById(sessionId);
             if (sessionOpt.isEmpty()) return;
             LiveSession session = sessionOpt.get();
+            // Attendance-only institute: no learner notifications at all, this one included.
+            if (attendanceOnlyModeService.suppressesLearnerNotifications(session)) {
+                return;
+            }
 
             String sessionTitle = session.getTitle() != null ? session.getTitle() : "Live Class";
             String title = "Attendance Marked: " + status;
             String body = "You have been marked as " + status + " for " + sessionTitle;
+            if (reasonDetail != null && !reasonDetail.isBlank()) {
+                // A learner told they are absent for a class they attended part of
+                // deserves the arithmetic, not just the verdict.
+                body = body + ". " + reasonDetail;
+            }
 
             if (channels.contains("PUSH_NOTIFICATION")) {
                 notificationService.sendPushViaUnified(
@@ -1015,8 +1101,15 @@ public class LiveSessionNotificationProcessor {
                 // Build a simple email notification for the student
                 Student student = studentRepository.findTopByUserId(userId).orElse(null);
                 if (student != null && student.getEmail() != null) {
+                    // An attendance record is not an invitation. LiveClassEmailBody is
+                    // the invitation body — it opens "We're excited to invite you to our
+                    // upcoming ...", renders a "Join the Live Class" button and closes
+                    // "We look forward to seeing you there!". Sent for attendance it
+                    // invited a learner to a class that had already finished, pointed the
+                    // button at "#", and left an empty orange card where
+                    // {{ALL_TIMEZONE_TIMES}} would have been.
                     NotificationDTO dto = new NotificationDTO();
-                    dto.setBody(LiveClassEmailBody.Live_Class_Email_Body);
+                    dto.setBody(AttendanceEmailBody.Attendance_Email_Body);
                     dto.setSubject(title + " - " + sessionTitle);
                     dto.setNotificationType("EMAIL");
                     dto.setSource("ADMIN_CORE");
@@ -1026,14 +1119,16 @@ public class LiveSessionNotificationProcessor {
                     Map<String, String> placeholders = new HashMap<>();
                     placeholders.put("NAME", student.getFullName() != null ? student.getFullName() : "Student");
                     placeholders.put("SESSION_TITLE", sessionTitle);
-                    placeholders.put("ACTION", "Attendance: " + status);
+                    placeholders.put("STATUS", status);
+                    placeholders.put("STATUS_COLOR",
+                            "ABSENT".equalsIgnoreCase(status) ? "#dc2626" : "#16a34a");
+                    // A whole sentence belongs in the body, not interpolated into the
+                    // header. Empty note renders nothing at all.
+                    placeholders.put("STATUS_NOTE", AttendanceEmailBody.noteBlock(reasonDetail));
+                    placeholders.put("SESSION_DATE", sessionDateLabel(session));
                     placeholders.put("THEME_COLOR", getThemeColor(session.getInstituteId()));
                     placeholders.put("INSTITUTE_NAME", getInstituteName(session.getInstituteId()));
                     placeholders.put("YEAR", getCurrentYear());
-                    placeholders.put("LINK", "#");
-                    placeholders.put("ALL_TIMEZONE_TIMES", "");
-                    placeholders.put("DATE", "");
-                    placeholders.put("TIME", "");
                     u.setPlaceholders(placeholders);
                     u.setUserId(userId);
                     u.setChannelId(student.getEmail());
@@ -1045,6 +1140,22 @@ public class LiveSessionNotificationProcessor {
         } catch (Exception e) {
             System.out.println("Error sending attendance notification for session " + sessionId + ", user " + userId + ": " + e.getMessage());
         }
+    }
+
+
+    /** "26 August 2026" for the attendance mail, or an empty label if unknown. */
+    private String sessionDateLabel(LiveSession session) {
+        try {
+            var schedules = scheduleRepository.findBySessionId(session.getId());
+            if (schedules != null && !schedules.isEmpty()) {
+                var d = schedules.get(0).getMeetingDate();
+                if (d != null) {
+                    return new SimpleDateFormat("d MMMM yyyy").format(d);
+                }
+            }
+        } catch (Exception ignored) {
+        }
+        return "";
     }
 
     private String getThemeColor(String instituteId) {

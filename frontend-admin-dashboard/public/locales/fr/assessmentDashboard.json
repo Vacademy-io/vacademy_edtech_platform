@@ -1,0 +1,291 @@
+{
+    "page": {
+        "description": "Le bilan de vos tests : participation, scores, corrections en attente et apprenants à relancer."
+    },
+    "hero": {
+        "eyebrow": "Analyse des évaluations",
+        "title": "Tableau de bord des évaluations",
+        "compared": "comparé à {{range}}"
+    },
+    "share": {
+        "csv": "Exporter CSV",
+        "pdf": "Télécharger le PDF"
+    },
+    "filters": {
+        "rangeLabel": "Période",
+        "allOf": "Tous : {{term}}",
+        "types": "Types de test",
+        "allTypes": "Tous les types de test",
+        "clear": "Effacer",
+        "refresh": "Actualiser",
+        "startDate": "Date de début",
+        "endDate": "Date de fin",
+        "apply": "Appliquer",
+        "invalidRange": "La date de fin doit être égale ou postérieure à la date de début",
+        "rangeTooLong": "Choisissez une période de {{days}} jours maximum",
+        "updatedAt": "Mis à jour à {{time}} · actualisé chaque minute"
+    },
+    "presets": {
+        "today": "Aujourd'hui",
+        "last5": "5 derniers jours",
+        "last7": "7 derniers jours",
+        "last30": "30 derniers jours",
+        "next7": "7 prochains jours",
+        "custom": "Personnalisé"
+    },
+    "error": {
+        "title": "Impossible de charger le tableau de bord",
+        "body": "Vérifiez votre connexion et réessayez.",
+        "retry": "Réessayer"
+    },
+    "warnings": {
+        "enrollmentUnavailable": "Impossible de charger pour le moment les membres ({{term}}), seuls les apprenants inscrits sont donc comptés. « Non tenté » peut être inférieur à la réalité."
+    },
+    "delta": {
+        "points": "{{v}} pts",
+        "percent": "{{v}} %",
+        "plain": "{{v}}",
+        "vs": "par rapport à {{range}}"
+    },
+    "kpis": {
+        "tests": "Tests",
+        "testsDetail": "{{closed}} clôturés · {{live}} en direct · {{upcoming}} à venir · {{open}} à tout moment",
+        "participation": "Participation",
+        "participationDetail": "{{attempted}} sur {{expected}} ({{term}}) ont passé les tests clôturés",
+        "noClosed": "Aucun test clôturé sur cette période pour l'instant",
+        "submissions": "Soumissions",
+        "submissionsDetail": "par {{n}} ({{term}})",
+        "avgScore": "Score moyen",
+        "avgScoreDetail": "Sur {{n}} tentatives corrigées · meilleur {{top}}",
+        "noScores": "Aucune tentative corrigée pour l'instant",
+        "notAttempted": "Non tenté",
+        "notAttemptedDetail_one": "Tentatives manquées dans {{count}} test clôturé",
+        "notAttemptedDetail_other": "Tentatives manquées sur {{count}} tests clôturés",
+        "backlog": "Corrections en attente",
+        "backlogDetail": "{{evaluate}} à corriger · {{release}} résultats à publier",
+        "backlogClear": "Tout est corrigé et publié",
+        "noSubmissions": "Aucune soumission sur cette période"
+    },
+    "trend": {
+        "title": "Activité quotidienne",
+        "metrics": {
+            "submissions": "Soumissions",
+            "score": "Score moyen",
+            "learners": "Apprenants",
+            "tests": "Tests"
+        },
+        "subtitles": {
+            "submissions": "Tentatives soumises chaque jour",
+            "score": "Score moyen des tentatives soumises chaque jour",
+            "learners": "Apprenants distincts ayant soumis chaque jour",
+            "tests": "Tests dont la fenêtre s'est ouverte chaque jour"
+        }
+    },
+    "empty": {
+        "noActivity": "Aucun test ni soumission sur cette période",
+        "noSubmissions": "Aucune soumission sur cette période",
+        "noTests": "Aucun test sur cette période",
+        "noBatches": "Aucun élément ({{term}}) sur cette période",
+        "noMatch": "Aucun test ne correspond à ces filtres"
+    },
+    "donut": {
+        "title": "Qui a passé les tests",
+        "subtitle_one": "Sur {{count}} test clôturé",
+        "subtitle_other": "Sur {{count}} tests clôturés",
+        "attempted": "Tenté",
+        "notAttempted": "Non tenté",
+        "center": "participation"
+    },
+    "scores": {
+        "title": "Répartition des scores",
+        "subtitle": "{{n}} tentatives corrigées · moyenne {{avg}}",
+        "band": "{{band}} %",
+        "learners": "{{n}} tentatives",
+        "legend": {
+            "low": "Moins de 50 %",
+            "mid": "50–75 %",
+            "high": "75 % et plus"
+        }
+    },
+    "heatmap": {
+        "title": "Quand les apprenants soumettent",
+        "subtitle": "Soumissions par jour de la semaine et par heure, dans votre fuseau horaire",
+        "cell": "{{n}} soumissions",
+        "fewer": "Moins",
+        "more": "Plus"
+    },
+    "types": {
+        "title": "Types de test",
+        "subtitle": "Nombre de tests de chaque type sur cette période",
+        "meta": "{{n}} soumissions · moy. {{avg}}"
+    },
+    "playModes": {
+        "exam": "Examen",
+        "mock": "Examen blanc",
+        "practice": "Entraînement",
+        "survey": "Sondage",
+        "offline": "Examen hors ligne",
+        "assignment": "Devoir",
+        "other": "Autre"
+    },
+    "liveNow": {
+        "title": "En direct",
+        "none": "Aucun test en cours pour le moment",
+        "autoRefresh": "Les chiffres se mettent à jour chaque minute",
+        "endsAt": "Se termine à {{time}}",
+        "submitted": "{{n}} ont soumis",
+        "writing": "{{n}} en cours",
+        "notStarted": "{{n}} n'ont pas commencé",
+        "ofExpected": "sur {{n}} apprenants",
+        "open": "Ouvrir"
+    },
+    "status": {
+        "ALL": "Tous",
+        "CLOSED": "Clôturé",
+        "LIVE": "En direct",
+        "UPCOMING": "À venir",
+        "OPEN": "À tout moment"
+    },
+    "table": {
+        "title": "Tous les tests",
+        "subtitle": "{{n}} tests · cliquez sur un test pour l'ouvrir",
+        "truncated": "Affichage des {{limit}} premiers tests — réduisez la période pour voir le reste",
+        "search": "Rechercher un test, une matière ou un groupe",
+        "untitled": "Test sans titre",
+        "when": "Quand",
+        "anytime": "À tout moment",
+        "test": "Test",
+        "status": "Statut",
+        "participation": "Participation",
+        "avgScore": "Score moyen",
+        "range": "{{low}} – {{high}}",
+        "submissions": "Soumis",
+        "writing": "{{n}} en cours",
+        "evaluation": "Correction",
+        "allDone": "Tout est fait"
+    },
+    "insights": {
+        "best": "Test le mieux réussi",
+        "bestMeta": "Moyenne {{avg}} · {{n}} tentatives",
+        "lowest": "Participation la plus faible",
+        "lowestMeta": "{{rate}} l'ont passé · {{missed}} ne l'ont pas passé",
+        "topBatch": "Meilleur groupe",
+        "topBatchMeta": "Moyenne {{avg}} · participation {{rate}}",
+        "backlog": "Correction",
+        "backlogTitle": "{{n}} tentatives en attente",
+        "backlogMeta_one": "Dans {{count}} test",
+        "backlogMeta_other": "Sur {{count}} tests",
+        "backlogNone": "Tout est à jour",
+        "backlogNoneMeta": "Rien à corriger ni à publier"
+    },
+    "batches": {
+        "title": "Performance : {{term}}",
+        "subtitle": "Participation aux tests clôturés et score moyen",
+        "unknown": "Groupe inconnu",
+        "sort": {
+            "lowest": "Plus faible d'abord",
+            "highest": "Plus forte d'abord",
+            "score": "Par score"
+        },
+        "meta_one": "{{count}} test · {{attempted}}/{{expected}} ont tenté · moy. {{avg}}",
+        "meta_other": "{{count}} tests · {{attempted}}/{{expected}} ont tenté · moy. {{avg}}",
+        "checked": "{{done}}/{{total}} copies corrigées"
+    },
+    "top": {
+        "title": "Meilleurs : {{term}}",
+        "subtitle": "Meilleur score moyen sur les tests corrigés",
+        "tests_one": "{{count}} test",
+        "tests_other": "{{count}} tests",
+        "best": "meilleur {{best}}"
+    },
+    "queue": {
+        "title": "File de correction",
+        "subtitle_one": "Il reste du travail sur {{count}} test",
+        "subtitle_other": "Il reste du travail sur {{count}} tests",
+        "empty": "Rien en attente",
+        "allClear": "Chaque soumission est corrigée et son résultat publié",
+        "done": "{{done}}/{{total}} corrigées",
+        "toEvaluate": "{{n}} à corriger",
+        "toRelease": "{{n}} à publier",
+        "open": "Ouvrir le test",
+        "by": "par {{names}}"
+    },
+    "followUp": {
+        "title": "À relancer : {{term}}",
+        "viewLabel": "Quels apprenants",
+        "views": {
+            "missed": "Tests manqués",
+            "low": "Scores faibles"
+        },
+        "threshold": "Manqués au moins",
+        "missedPlus": "{{n}}+ manqués",
+        "missedSubtitle": "{{n}} apprenants ont manqué {{missed}} tests clôturés ou plus",
+        "missedNone": "Personne n'a manqué {{missed}} tests clôturés ou plus",
+        "lowSubtitle": "{{n}} apprenants ont une moyenne inférieure à {{line}}",
+        "lowNone": "Personne n'a une moyenne inférieure à {{line}}",
+        "messageAll": "WhatsApp à {{n}}",
+        "email": "E-mail",
+        "csv": "CSV",
+        "showingTop": "Affichage de {{shown}} sur {{total}}",
+        "learnersCount": "{{n}} apprenants",
+        "nobody": "Il n'y a personne à contacter",
+        "missedOf": "{{missed}}/{{expected}} manqués",
+        "took": "a passé {{rate}}",
+        "scoredTests_one": "{{count}} test corrigé",
+        "scoredTests_other": "{{count}} tests corrigés",
+        "avg": "moy. {{avg}}",
+        "lastSubmitted": "dernière soumission le {{date}}",
+        "neverSubmitted": "aucune soumission sur la période"
+    },
+    "csv": {
+        "name": "Nom",
+        "email": "E-mail",
+        "mobile": "Mobile",
+        "batch": "Groupe",
+        "testsSet": "Tests assignés",
+        "testsTaken": "Tests passés",
+        "testsMissed": "Tests manqués",
+        "testsScored": "Tests corrigés",
+        "avgScore": "Score moyen %",
+        "bestScore": "Meilleur score %",
+        "lastSubmitted": "Dernière soumission",
+        "start": "Ouverture",
+        "end": "Clôture",
+        "test": "Test",
+        "type": "Type",
+        "visibility": "Accès",
+        "status": "Statut",
+        "subject": "Matière",
+        "batches": "Groupes",
+        "expected": "Assigné à",
+        "attempted": "Ont tenté",
+        "participation": "Participation %",
+        "notAttempted": "Non tenté",
+        "submissions": "Soumissions",
+        "highestScore": "Score le plus élevé %",
+        "lowestScore": "Score le plus bas %",
+        "evaluated": "Corrigés",
+        "awaitingEvaluation": "En attente de correction",
+        "awaitingRelease": "En attente de publication",
+        "checkedBy": "Corrigé par"
+    },
+    "copyCheck": {
+        "title": "Correction des copies",
+        "subtitle": "{{checked}} copies corrigées sur {{total}} · {{waiting}} en attente",
+        "segments": {
+            "teacher": "Par les enseignants",
+            "ai": "Par l'IA",
+            "auto": "Notées automatiquement",
+            "other": "Notes saisies directement",
+            "waiting": "En attente de correction"
+        },
+        "teachersTitle": "Qui a corrigé les copies",
+        "noTeachers": "Aucune copie n'a été corrigée par un enseignant sur cette période",
+        "copies": "{{n}} copies",
+        "tests_one": "{{count}} test",
+        "tests_many": "{{count}} tests",
+        "tests_other": "{{count}} tests",
+        "perCopy": "~{{minutes}} min par copie",
+        "lastChecked": "dernière correction le {{date}}"
+    }
+}

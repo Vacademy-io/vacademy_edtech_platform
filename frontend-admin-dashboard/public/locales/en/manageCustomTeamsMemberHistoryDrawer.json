@@ -1,0 +1,47 @@
+{
+    "defaultMemberName": "Member",
+    "enrolledCourses_one": "Enrolled Course ({{count}})",
+    "enrolledCourses_other": "Enrolled Courses ({{count}})",
+    "readOnlyLedger": {
+        "title": "Read-only ledger",
+        "body": "Only the parent institute admin can edit installments, apply CPO discounts, or record offline payments on this {{org}} admin's ledger."
+    },
+    "noMemberSelected": "No member selected.",
+    "channels": {
+        "inApp": "in-app",
+        "email": "email"
+    },
+    "toast": {
+        "linkCopied": "Payment link copied",
+        "copyFailed": "Could not copy to clipboard",
+        "reminderSentTo": "Reminder sent to {{email}}",
+        "reminderFired": "Reminder fired",
+        "reminderFailed": "Failed to send reminder",
+        "toRecipient": "to {{email}}",
+        "invoiceReminderSentVia": "Reminder sent{{where}} via {{channels}}",
+        "invoiceReminderNoChannels": "Reminder{{where}} — no channels delivered (check Invoice Settings)",
+        "invoiceReminderFailed": "Failed to send invoice reminder"
+    },
+    "invoices": {
+        "heading": "Invoices",
+        "loading": "Loading invoices...",
+        "headingWithCount_one": "Invoice ({{count}})",
+        "headingWithCount_other": "Invoices ({{count}})",
+        "createInvoice": "Create Invoice",
+        "noInvoicesYet": "No invoices yet. Create one with the button above.",
+        "sendInstallmentReminderTitle": "Send installment-due reminder",
+        "resendPaymentReminderTitle": "Re-send the payment-due reminder (email + in-app alert)",
+        "sending": "Sending…",
+        "remind": "Remind",
+        "copyPaymentLinkTitle": "Copy learner payment link",
+        "copied": "Copied",
+        "copyLink": "Copy Link",
+        "markPaidTitle": "Record an offline / manual payment for this invoice",
+        "markPaid": "Mark Paid",
+        "viewPdfTitle": "View PDF in new tab",
+        "view": "View",
+        "downloadPdfTitle": "Download invoice PDF",
+        "save": "Save",
+        "noPdf": "No PDF"
+    }
+}

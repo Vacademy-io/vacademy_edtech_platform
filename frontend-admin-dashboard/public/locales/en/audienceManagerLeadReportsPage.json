@@ -1,0 +1,65 @@
+{
+    "header": {
+        "navTitle": "Reports Center",
+        "title": "Reports Center",
+        "subtitle": "Pipeline health, sources, calling activity, funnel velocity and follow-up hygiene — one place.",
+        "refresh": "Refresh"
+    },
+    "filters": {
+        "presetLabel": "{{days}}d",
+        "from": "From",
+        "to": "To",
+        "apply": "Apply",
+        "reset": "Reset",
+        "noInstitute": "Pick an institute to view reports."
+    },
+    "tabs": {
+        "overview": "Overview",
+        "sources": "Sources",
+        "funnel": "Funnel",
+        "dispositions": "Dispositions",
+        "calling": "Calling",
+        "leadCalls": "Lead Calls",
+        "callIntelligence": "CRM Intelligence",
+        "activity": "Activity",
+        "followups": "Follow-ups",
+        "counsellors": "Counsellors",
+        "conversions": "Conversions",
+        "manager": "Manager",
+        "revenue": "Revenue",
+        "admissions": "Admissions",
+        "cohort": "Cohort",
+        "forecast": "Forecast",
+        "custom": "Builder",
+        "utm": "Campaigns (UTM)"
+    },
+    "counsellorPicker": {
+        "ariaLabel": "Filter by counsellor",
+        "allCounsellors": "All counsellors"
+    },
+    "campaignPicker": {
+        "ariaLabel": "Filter by campaign",
+        "allCampaigns": "All campaigns",
+        "untitledCampaign": "Untitled campaign"
+    },
+    "descriptions": {
+        "overview": "Leads received, how many converted, response speed and where they came from.",
+        "funnel": "How leads move from stage to stage and where they drop off.",
+        "dispositions": "What happened on each lead — call outcomes and statuses set by counsellors.",
+        "followups": "Open follow-ups right now, grouped by how overdue they are.",
+        "sources": "Leads, conversions and revenue for each source.",
+        "utm": "Website visits and enquiries by UTM campaign, source and medium.",
+        "calling": "Calls dialled, connected and talk time per counsellor and per day.",
+        "leadCalls": "Every lead with its last call, next callback and call count.",
+        "callIntelligence": "AI scores and coaching tips from recorded calls.",
+        "activity": "Notes, calls, status changes and follow-ups done by each counsellor.",
+        "counsellors": "Each counsellor's leads, conversions, response time and overdue work.",
+        "conversions": "Leads that enrolled into a course, by counsellor and campaign.",
+        "manager": "Team-level view for managers — workload and performance per counsellor.",
+        "revenue": "Payments received, by day, source and counsellor.",
+        "admissions": "Students admitted each month — fees, paid and due — by course, source and counsellor.",
+        "cohort": "Leads grouped by the month they came in, and how many converted later.",
+        "forecast": "Expected conversions and revenue from the leads open today.",
+        "custom": "Build your own report — pick the rows, columns and filters."
+    }
+}

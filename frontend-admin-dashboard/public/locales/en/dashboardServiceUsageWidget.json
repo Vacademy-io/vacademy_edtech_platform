@@ -1,0 +1,25 @@
+{
+    "header": {
+        "title": "Service Usage",
+        "subtitle": "Most active services and APIs"
+    },
+    "tooltip": {
+        "usage": "Usage: {{value}}",
+        "users": "Users: {{value}}",
+        "avgResponse": "Avg Response: {{value}}ms"
+    },
+    "empty": {
+        "message": "No service data available"
+    },
+    "error": {
+        "widgetName": "service usage"
+    },
+    "list": {
+        "users_one": "{{count}} user",
+        "users_other": "{{count}} users"
+    },
+    "footer": {
+        "avgResponseTime": "Avg response time:",
+        "ms": "{{value}}ms"
+    }
+}

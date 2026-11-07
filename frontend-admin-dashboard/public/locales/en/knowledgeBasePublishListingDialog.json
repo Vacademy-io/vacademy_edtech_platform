@@ -1,0 +1,50 @@
+{
+    "validation": {
+        "titleRequired": "Give this library a title",
+        "summaryRequired": "Write one line describing what this is",
+        "summaryMax": "Keep the summary under 280 characters",
+        "subjectRequired": "Subject is needed for filtering",
+        "levelRequired": "Class or exam is needed for filtering"
+    },
+    "toast": {
+        "identifyFailed": "Could not identify you. Please sign in again.",
+        "uploadFailed": "Could not upload that image. Please try again.",
+        "saveSuccess": "Library details saved",
+        "saveFailed": "Could not save these details"
+    },
+    "heading": {
+        "edit": "Edit library details",
+        "create": "Describe this library"
+    },
+    "cancel": "Cancel",
+    "save": "Save details",
+    "saving": "Saving…",
+    "intro": "This is what an institute reads while deciding whether to spend credits. Write it for someone who has never seen the material.",
+    "cover": {
+        "defaultTitle": "Library",
+        "replace": "Replace cover",
+        "add": "Add cover image",
+        "remove": "Remove",
+        "altLabel": "Describe the cover",
+        "altPlaceholder": "e.g. NCERT Physics Class 11 textbook cover",
+        "altHint": "Read aloud to anyone using a screen reader, and shown if the image fails to load."
+    },
+    "fields": {
+        "titleLabel": "Title",
+        "titlePlaceholder": "e.g. NCERT Physics — Class 11",
+        "summaryLabel": "One-line summary",
+        "summaryPlaceholder": "e.g. Full syllabus, both parts, with worked examples",
+        "descriptionLabel": "Full description",
+        "descriptionPlaceholder": "What it covers, who it suits, and anything a teacher should know before using it.",
+        "subjectLabel": "Subject",
+        "subjectPlaceholder": "Physics",
+        "levelLabel": "Class or exam",
+        "levelPlaceholder": "Class 11",
+        "boardLabel": "Board",
+        "boardPlaceholder": "CBSE",
+        "languageLabel": "Language",
+        "languagePlaceholder": "English",
+        "tagsLabel": "Tags",
+        "tagsPlaceholder": "mechanics, thermodynamics, solved examples"
+    }
+}

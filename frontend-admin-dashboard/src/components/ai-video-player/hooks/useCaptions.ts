@@ -12,6 +12,23 @@ interface UseCaptionsProps {
     currentTime: number;
     audioStartAt?: number; // Offset for when audio starts in timeline
     playbackRate?: number; // Current playback speed (scales caption tail duration)
+    /**
+     * The timeline reserves a caption band (lesson "board" layouts). Captions
+     * are then on unless the viewer turned them off on such a video — kept
+     * apart from the general setting, which defaults to off and would leave
+     * the band empty.
+     */
+    lessonBand?: boolean;
+}
+
+const LESSON_CAPTIONS_KEY = 'ai-player-lesson-captions';
+
+function readLessonCaptionsOff(): boolean {
+    try {
+        return localStorage.getItem(LESSON_CAPTIONS_KEY) === 'off';
+    } catch {
+        return false;
+    }
 }
 
 interface CaptionPhrase {
@@ -105,6 +122,7 @@ export function useCaptions({
     currentTime,
     audioStartAt = 0,
     playbackRate = 1,
+    lessonBand = false,
 }: UseCaptionsProps): UseCaptionsReturn {
     const [words, setWords] = useState<WordTimestamp[]>([]);
     const [isLoading, setIsLoading] = useState(false);
@@ -121,6 +139,17 @@ export function useCaptions({
         }
         return DEFAULT_CAPTION_SETTINGS;
     });
+
+    const [lessonCaptionsOff, setLessonCaptionsOff] = useState<boolean>(readLessonCaptionsOff);
+    const setLessonCaptions = useCallback((on: boolean) => {
+        setLessonCaptionsOff(!on);
+        try {
+            localStorage.setItem(LESSON_CAPTIONS_KEY, on ? 'on' : 'off');
+        } catch {
+            // Ignore storage errors
+        }
+    }, []);
+    const enabled = lessonBand ? !lessonCaptionsOff : settings.enabled;
 
     // Precomputed phrases for stable display
     const phrasesRef = useRef<CaptionPhrase[]>([]);
@@ -198,7 +227,7 @@ export function useCaptions({
 
     // Find current phrase (stable - doesn't change until phrase ends)
     const currentPhrase = useMemo((): CaptionPhrase | null => {
-        if (!settings.enabled || phrasesRef.current.length === 0) return null;
+        if (!enabled || phrasesRef.current.length === 0) return null;
 
         // Scale caption tail inversely with playback speed so captions
         // linger proportionally at high speeds.
@@ -215,7 +244,7 @@ export function useCaptions({
         }
 
         return null;
-    }, [audioTime, settings.enabled, playbackRate]);
+    }, [audioTime, enabled, playbackRate]);
 
     // Find current word index within the phrase (for karaoke mode)
     const currentWordIndex = useMemo(() => {
@@ -240,14 +269,32 @@ export function useCaptions({
     }, [currentPhrase, audioTime]);
 
     // Update settings
-    const updateSettings = useCallback((updates: Partial<CaptionSettings>) => {
-        setSettings((prev) => ({ ...prev, ...updates }));
-    }, []);
+    const updateSettings = useCallback(
+        (updates: Partial<CaptionSettings>) => {
+            if (lessonBand && updates.enabled !== undefined) {
+                const { enabled: on, ...rest } = updates;
+                setLessonCaptions(on);
+                setSettings((prev) => ({ ...prev, ...rest }));
+                return;
+            }
+            setSettings((prev) => ({ ...prev, ...updates }));
+        },
+        [lessonBand, setLessonCaptions]
+    );
 
     // Toggle captions on/off
     const toggleCaptions = useCallback(() => {
+        if (lessonBand) {
+            setLessonCaptions(lessonCaptionsOff);
+            return;
+        }
         setSettings((prev) => ({ ...prev, enabled: !prev.enabled }));
-    }, []);
+    }, [lessonBand, lessonCaptionsOff, setLessonCaptions]);
+
+    const effectiveSettings = useMemo(
+        () => (enabled === settings.enabled ? settings : { ...settings, enabled }),
+        [settings, enabled]
+    );
 
     return {
         words,
@@ -255,7 +302,7 @@ export function useCaptions({
         error,
         currentPhrase,
         currentWordIndex,
-        settings,
+        settings: effectiveSettings,
         updateSettings,
         toggleCaptions,
         // Legacy compatibility - return words from current phrase

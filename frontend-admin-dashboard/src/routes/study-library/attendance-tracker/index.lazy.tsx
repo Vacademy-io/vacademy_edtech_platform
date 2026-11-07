@@ -43,8 +43,11 @@ import { Input } from '@/components/ui/input';
 import Papa from 'papaparse';
 import { toast } from 'sonner';
 import { LIVE_SESSION_ALL_ATTENDANCE } from '@/constants/urls';
+import { getInstituteId } from '@/constants/helper';
 import authenticatedAxiosInstance from '@/lib/auth/axiosInstance';
 import type { AttendanceResponseType, ContentType } from './-services/attendance';
+import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 
 export const Route = createLazyFileRoute('/study-library/attendance-tracker/')({
     component: RouteComponent,
@@ -63,21 +66,28 @@ type ClassAttendanceData = {
     [key: string]: ClassAttendanceItem[];
 };
 
-const formatDurationMinutes = (mins: number | null | undefined): string => {
+// Batches without an active DEFAULT enroll invite have a null invite_code; appending it
+// blindly renders "Batch name (null)" in the picker.
+const batchLabel = (batch: BatchType): string =>
+    batch.invite_code ? `${batch.batch_name} (${batch.invite_code})` : batch.batch_name;
+
+const formatDurationMinutes = (mins: number | null | undefined, t: TFunction): string => {
     if (mins == null || mins <= 0) return '—';
-    if (mins < 60) return `${mins} min`;
+    if (mins < 60) return t('duration.minutes', { count: mins });
     const h = Math.floor(mins / 60);
     const m = mins % 60;
-    return m === 0 ? `${h}h` : `${h}h ${m}m`;
+    return m === 0
+        ? t('duration.hoursOnly', { count: h })
+        : t('duration.hoursMinutes', { hours: h, minutes: m });
 };
 
 // Convert a 24-hour "HH:mm[:ss]" time string into a 12-hour "h:mm AM/PM" label.
-const formatTime12h = (time: string | null | undefined): string => {
+const formatTime12h = (time: string | null | undefined, t: TFunction): string => {
     if (!time) return '—';
     const [hStr, mStr = '00'] = time.split(':');
     const h = Number(hStr);
     if (Number.isNaN(h)) return time; // unexpected format → show as-is
-    const period = h >= 12 ? 'PM' : 'AM';
+    const period = h >= 12 ? t('time.pm') : t('time.am');
     const hour12 = h % 12 === 0 ? 12 : h % 12;
     return `${hour12}:${mStr.padStart(2, '0')} ${period}`;
 };
@@ -100,14 +110,14 @@ interface AttendanceStudent {
 const classAttendanceData: ClassAttendanceData = {};
 
 // Columns for the per-learner session table shown in the View More dialog.
-const SESSION_COLUMNS: ColumnDef<ClassAttendanceItem>[] = [
+const buildSessionColumns = (t: TFunction): ColumnDef<ClassAttendanceItem>[] => [
     {
         id: 'className',
         accessorKey: 'className',
         size: 520,
         minSize: 240,
         maxSize: 640,
-        header: 'Class',
+        header: t('sessionColumns.class'),
         cell: ({ row }) => (
             <span className="font-medium text-neutral-800">{row.original.className}</span>
         ),
@@ -118,7 +128,7 @@ const SESSION_COLUMNS: ColumnDef<ClassAttendanceItem>[] = [
         size: 160,
         minSize: 120,
         maxSize: 200,
-        header: 'Date',
+        header: t('sessionColumns.date'),
         cell: ({ row }) => <span className="text-neutral-600">{row.original.date}</span>,
     },
     {
@@ -127,9 +137,9 @@ const SESSION_COLUMNS: ColumnDef<ClassAttendanceItem>[] = [
         size: 150,
         minSize: 100,
         maxSize: 180,
-        header: 'Time',
+        header: t('sessionColumns.time'),
         cell: ({ row }) => (
-            <span className="text-neutral-600">{formatTime12h(row.original.time)}</span>
+            <span className="text-neutral-600">{formatTime12h(row.original.time, t)}</span>
         ),
     },
     {
@@ -137,7 +147,7 @@ const SESSION_COLUMNS: ColumnDef<ClassAttendanceItem>[] = [
         size: 160,
         minSize: 110,
         maxSize: 200,
-        header: 'Status',
+        header: t('sessionColumns.status'),
         cell: ({ row }) => {
             const status = row.original.status;
             return (
@@ -148,7 +158,7 @@ const SESSION_COLUMNS: ColumnDef<ClassAttendanceItem>[] = [
                             : 'bg-danger-100 text-danger-600'
                     }`}
                 >
-                    {status}
+                    {status === 'Present' ? t('status.present') : t('status.absent')}
                 </span>
             );
         },
@@ -173,9 +183,11 @@ const AttendanceModal = ({
     startDate,
     endDate,
 }: AttendanceModalProps) => {
+    const { t } = useTranslation('studyLibraryAttendanceTrackerIndexLazy');
     const [loading, setLoading] = useState(false);
     const [studentClasses, setStudentClasses] = useState<ClassAttendanceItem[]>([]);
     const [overallAttendance, setOverallAttendance] = useState<number | null>(null);
+    const sessionColumns = useMemo(() => buildSessionColumns(t), [t]);
 
     useEffect(() => {
         const showAttendance = async () => {
@@ -246,7 +258,7 @@ const AttendanceModal = ({
             <DialogContent className="flex max-h-[85vh] w-full flex-col sm:max-w-5xl">
                 <div className="flex items-center justify-between border-b border-neutral-200 p-4">
                     <h2 className="text-lg font-semibold text-neutral-800">
-                        {student.name} - Class Attendance
+                        {t('modal.classAttendanceTitle', { name: student.name })}
                     </h2>
                 </div>
 
@@ -254,7 +266,7 @@ const AttendanceModal = ({
                     {/* Overall Attendance — donut chart + breakdown */}
                     {loading ? (
                         <div className="flex h-40 items-center justify-center rounded-lg bg-primary-50 text-sm text-neutral-500">
-                            Loading attendance…
+                            {t('modal.loadingAttendance')}
                         </div>
                     ) : totalSessions === 0 ? null : (
                         <div className="flex flex-col items-center gap-6 rounded-lg bg-primary-50 p-4 sm:flex-row sm:justify-center sm:gap-12">
@@ -278,8 +290,10 @@ const AttendanceModal = ({
                                         </Pie>
                                         <RechartsTooltip
                                             formatter={(value: number, name: string) => [
-                                                `${value} ${value === 1 ? 'class' : 'classes'}`,
-                                                name,
+                                                t('modal.classCount', { count: value }),
+                                                name === 'Present'
+                                                    ? t('status.present')
+                                                    : t('status.absent'),
                                             ]}
                                         />
                                     </PieChart>
@@ -288,7 +302,9 @@ const AttendanceModal = ({
                                     <span className="text-3xl font-bold text-primary-500">
                                         {overallAttendance !== null ? `${overallAttendance}%` : '--'}
                                     </span>
-                                    <span className="text-xs text-neutral-500">Attendance</span>
+                                    <span className="text-xs text-neutral-500">
+                                        {t('modal.attendanceLabel')}
+                                    </span>
                                 </div>
                             </div>
 
@@ -306,7 +322,9 @@ const AttendanceModal = ({
                                                 style={{ backgroundColor: entry.color }}
                                             />
                                             <span className="text-sm text-neutral-700">
-                                                {entry.name}
+                                                {entry.name === 'Present'
+                                                    ? t('status.present')
+                                                    : t('status.absent')}
                                             </span>
                                         </div>
                                         <span className="text-sm font-semibold text-neutral-800">
@@ -323,7 +341,7 @@ const AttendanceModal = ({
                                 ))}
                                 <div className="mt-1 flex items-center justify-between border-t border-neutral-200 pt-2">
                                     <span className="text-sm font-medium text-neutral-700">
-                                        Total Classes
+                                        {t('modal.totalClasses')}
                                     </span>
                                     <span className="text-sm font-semibold text-neutral-800">
                                         {totalSessions}
@@ -336,7 +354,7 @@ const AttendanceModal = ({
                     {/* Class List */}
                     {!loading && studentClasses.length === 0 ? (
                         <p className="py-6 text-center text-sm text-neutral-500">
-                            No sessions found for this learner
+                            {t('modal.noSessions')}
                         </p>
                     ) : (
                         <MyTable<ClassAttendanceItem>
@@ -348,7 +366,7 @@ const AttendanceModal = ({
                                 total_elements: studentClasses.length,
                                 last: true,
                             }}
-                            columns={SESSION_COLUMNS}
+                            columns={sessionColumns}
                             isLoading={loading}
                             error={null}
                             currentPage={0}
@@ -370,6 +388,7 @@ function RouteComponent() {
 }
 
 function AttendanceTrackerContent() {
+    const { t } = useTranslation('studyLibraryAttendanceTrackerIndexLazy');
     const [startDate, setStartDate] = useState<Date | undefined>(subDays(new Date(), 7));
     const [endDate, setEndDate] = useState<Date | undefined>(new Date());
     const [searchInput, setSearchInput] = useState('');
@@ -402,17 +421,18 @@ function AttendanceTrackerContent() {
 
     // Extract batch options for dropdown
     const batchOptions = useMemo(() => {
-        if (!batches || !Array.isArray(batches)) return [{ label: 'All Batches', value: null }];
+        if (!batches || !Array.isArray(batches))
+            return [{ label: t('filters.allBatches'), value: null }];
 
         const extractedBatches = batches.flatMap((batchData: batchWithStudentDetails) =>
             batchData.batches.map((batch: BatchType) => ({
-                label: `${batch.batch_name} (${batch.invite_code})`,
+                label: batchLabel(batch),
                 value: batch.package_session_id,
             }))
         );
 
-        return [{ label: 'All Batches', value: null }, ...extractedBatches];
-    }, [batches]);
+        return [{ label: t('filters.allBatches'), value: null }, ...extractedBatches];
+    }, [batches, t]);
 
     // Map packageSessionId → { batchName, packageId, packageName } for fast lookup
     const batchInfoMap = useMemo(() => {
@@ -421,7 +441,7 @@ function AttendanceTrackerContent() {
             for (const batchData of batches as batchWithStudentDetails[]) {
                 for (const batch of batchData.batches) {
                     map.set(batch.package_session_id, {
-                        batchName: `${batch.batch_name} (${batch.invite_code})`,
+                        batchName: batchLabel(batch),
                         packageId: batchData.package_dto.id,
                         packageName: batchData.package_dto.package_name,
                     });
@@ -475,8 +495,8 @@ function AttendanceTrackerContent() {
     const { setNavHeading } = useNavHeadingStore();
 
     useEffect(() => {
-        setNavHeading('Attendance Tracker');
-    }, [setNavHeading]);
+        setNavHeading(t('navHeading'));
+    }, [setNavHeading, t]);
 
     // Sync dateRange with individual date states for backwards compatibility
     useEffect(() => {
@@ -493,15 +513,20 @@ function AttendanceTrackerContent() {
         return () => clearTimeout(timer);
     }, [searchInput]);
 
+    // "All Batches" sends batch_ids: null, so this is the only thing scoping the report to
+    // the current institute — never drop it.
+    const instituteId = getInstituteId() ?? '';
+
     const filterRequest = useMemo(
         () => ({
+            institute_id: instituteId,
             name: searchQuery,
             start_date: startDate ? format(startDate, 'yyyy-MM-dd') : '2020-01-01',
             end_date: endDate ? format(endDate, 'yyyy-MM-dd') : format(new Date(), 'yyyy-MM-dd'),
             batch_ids: selectedBatchIds.length > 0 ? selectedBatchIds : null,
             live_session_ids: selectedLiveSessions.length > 0 ? selectedLiveSessions : null,
         }),
-        [searchQuery, startDate, endDate, selectedBatchIds, selectedLiveSessions]
+        [instituteId, searchQuery, startDate, endDate, selectedBatchIds, selectedLiveSessions]
     );
 
     // Use attendance service hook
@@ -517,10 +542,10 @@ function AttendanceTrackerContent() {
 
     // Fallback label for the Batch column when a learner's package_session can't be resolved.
     const selectedBatchLabel = useMemo(() => {
-        if (selectedBatchIds.length !== 1) return 'All Batches';
+        if (selectedBatchIds.length !== 1) return t('filters.allBatches');
         const batch = batchOptions.find((opt) => opt.value === selectedBatchIds[0]);
-        return batch?.label || 'All Batches';
-    }, [selectedBatchIds, batchOptions]);
+        return batch?.label || t('filters.allBatches');
+    }, [selectedBatchIds, batchOptions, t]);
 
     // Process attendance data to match current table structure
     const studentsData = useMemo(() => {
@@ -701,12 +726,12 @@ function AttendanceTrackerContent() {
                 minSize: 60,
                 maxSize: 100,
                 enablePinning: true,
-                header: 'Details',
+                header: t('table.detailsHeader'),
                 cell: ({ row }) => (
                     <button
                         className="text-neutral-500 hover:text-primary-500"
                         onClick={() => handleViewDetailsClick(row.original)}
-                        aria-label="View learner details"
+                        aria-label={t('table.viewDetails')}
                     >
                         <ArrowSquareOut size={20} />
                     </button>
@@ -734,9 +759,9 @@ function AttendanceTrackerContent() {
                             <button
                                 type="button"
                                 className="flex w-full items-center justify-between gap-1 text-neutral-700 hover:text-neutral-900 focus:outline-none"
-                                aria-label="Sort learner name"
+                                aria-label={t('table.sortLearnerName')}
                             >
-                                <span>Learner Name</span>
+                                <span>{t('table.learnerName')}</span>
                                 <CaretUpDown />
                             </button>
                         </MyDropdown>
@@ -751,7 +776,7 @@ function AttendanceTrackerContent() {
                 size: 130,
                 minSize: 100,
                 maxSize: 220,
-                header: 'Username',
+                header: t('table.username'),
                 cell: ({ row }) => <span>{row.original.username || '—'}</span>,
             },
             {
@@ -772,7 +797,7 @@ function AttendanceTrackerContent() {
                 size: 150,
                 minSize: 120,
                 maxSize: 220,
-                header: 'Mobile Number',
+                header: t('table.mobileNumber'),
                 cell: ({ row }) => <span>{row.original.mobileNumber || '—'}</span>,
             },
             {
@@ -780,7 +805,7 @@ function AttendanceTrackerContent() {
                 size: 230,
                 minSize: 160,
                 maxSize: 340,
-                header: 'Email',
+                header: t('table.email'),
                 cell: ({ row }) => (
                     <span className="block truncate" title={row.original.email}>
                         {row.original.email || '—'}
@@ -792,9 +817,9 @@ function AttendanceTrackerContent() {
                 size: 120,
                 minSize: 100,
                 maxSize: 160,
-                header: 'Avg Duration',
+                header: t('table.avgDuration'),
                 cell: ({ row }) => (
-                    <span>{formatDurationMinutes(row.original.avgDurationMinutes)}</span>
+                    <span>{formatDurationMinutes(row.original.avgDurationMinutes, t)}</span>
                 ),
             },
             {
@@ -802,13 +827,14 @@ function AttendanceTrackerContent() {
                 size: 220,
                 minSize: 180,
                 maxSize: 300,
-                header: 'Live Classes and Attendance',
+                header: t('table.liveClassesAttendance'),
                 cell: ({ row }) => {
                     const student = row.original;
                     return (
                         <div className="flex flex-col">
                             <span>
-                                {student.attendedClasses}/{student.totalClasses} Attended
+                                {student.attendedClasses}/{student.totalClasses}{' '}
+                                {t('table.attended')}
                             </span>
                             <div className="mt-1 flex items-center gap-3">
                                 <button
@@ -816,7 +842,7 @@ function AttendanceTrackerContent() {
                                     onClick={() => handleViewMoreClick(student)}
                                 >
                                     <Eye size={14} />
-                                    View More
+                                    {t('table.viewMore')}
                                 </button>
                                 <div className="h-4 w-px bg-neutral-300"></div>
                                 <span
@@ -836,7 +862,7 @@ function AttendanceTrackerContent() {
                 },
             },
         ],
-        [handleViewDetailsClick, handleViewMoreClick]
+        [handleViewDetailsClick, handleViewMoreClick, t]
     );
 
     // Pagination helpers - with server-side pagination
@@ -890,22 +916,22 @@ function AttendanceTrackerContent() {
                     ? batchInfoMap.get(student.packageSessionId)
                     : undefined;
                 return {
-                    'Name': student.fullName || '',
-                    'Email': student.email || '',
-                    'Mobile Number': student.mobileNumber || '',
-                    'Enrollment Number': student.instituteEnrollmentNumber || '',
+                    [t('csv.name')]: student.fullName || '',
+                    [t('csv.email')]: student.email || '',
+                    [t('csv.mobileNumber')]: student.mobileNumber || '',
+                    [t('csv.enrollmentNumber')]: student.instituteEnrollmentNumber || '',
                     // 'Batch': info?.batchName || '',
-                    'Course': info?.packageName || '',
-                    'Gender': student.gender || '',
-                    'Enrollment Status': student.enrollmentStatus || '',
+                    [t('csv.course')]: info?.packageName || '',
+                    [t('csv.gender')]: student.gender || '',
+                    [t('csv.enrollmentStatus')]: student.enrollmentStatus || '',
                 };
             });
             const csv = Papa.unparse(csvData);
             downloadCsv(csv, `attendance_account_details_${format(new Date(), 'yyyy-MM-dd')}.csv`);
-            toast.success('Account details exported successfully');
+            toast.success(t('toasts.accountDetailsSuccess'));
         } catch (error) {
             console.error('Export failed:', error);
-            toast.error('Failed to export account details');
+            toast.error(t('toasts.accountDetailsFailure'));
         } finally {
             setIsExporting(false);
         }
@@ -959,18 +985,18 @@ function AttendanceTrackerContent() {
                         : undefined;
 
                     const row: Record<string, string> = {
-                        'Name': student.fullName || '',
-                        'Email': student.email || '',
-                        'Mobile Number': student.mobileNumber || '',
-                        'Enrollment Number': student.instituteEnrollmentNumber || '',
+                        [t('csv.name')]: student.fullName || '',
+                        [t('csv.email')]: student.email || '',
+                        [t('csv.mobileNumber')]: student.mobileNumber || '',
+                        [t('csv.enrollmentNumber')]: student.instituteEnrollmentNumber || '',
                         // 'Batch': info?.batchName || '',
-                        'Course': info?.packageName || '',
-                        'Attendance %': `${student.attendancePercentage}%`,
-                        'Classes Attended': `${attended}/${total}`,
-                        'Avg Duration': formatDurationMinutes(avgDurationMinutes),
+                        [t('csv.course')]: info?.packageName || '',
+                        [t('csv.attendancePercent')]: `${student.attendancePercentage}%`,
+                        [t('csv.classesAttended')]: `${attended}/${total}`,
+                        [t('csv.avgDuration')]: formatDurationMinutes(avgDurationMinutes, t),
                     };
-                    if (includePresent) row['Present'] = presentSessions;
-                    if (includeAbsent) row['Absent'] = absentSessions;
+                    if (includePresent) row[t('status.present')] = presentSessions;
+                    if (includeAbsent) row[t('status.absent')] = absentSessions;
                     return row;
                 })
                 .filter((row): row is Record<string, string> => row !== null);
@@ -981,10 +1007,10 @@ function AttendanceTrackerContent() {
                 csv,
                 `attendance_${scopeSuffix}_report_${format(new Date(), 'yyyy-MM-dd')}.csv`
             );
-            toast.success('Attendance data exported successfully');
+            toast.success(t('toasts.fullDataSuccess'));
         } catch (error) {
             console.error('Export failed:', error);
-            toast.error('Failed to export attendance data');
+            toast.error(t('toasts.fullDataFailure'));
         } finally {
             setIsExporting(false);
         }
@@ -993,20 +1019,17 @@ function AttendanceTrackerContent() {
     return (
         <>
                 <Helmet>
-                    <title>Live Class Attendance</title>
-                    <meta
-                        name="description"
-                        content="Track and manage student attendance for live classes"
-                    />
+                    <title>{t('pageTitle')}</title>
+                    <meta name="description" content={t('pageDescription')} />
                 </Helmet>
                 <div className="flex flex-col gap-4">
                     <div className="flex flex-wrap items-start justify-between gap-3">
                         <div>
                             <h1 className="text-xl font-semibold text-neutral-800 sm:text-2xl">
-                                Live Class Attendance
+                                {t('pageTitle')}
                             </h1>
                             <p className="text-sm text-neutral-600 sm:text-base">
-                                Track and manage student attendance for live classes
+                                {t('pageDescription')}
                             </p>
                         </div>
                         <MyButton
@@ -1019,12 +1042,12 @@ function AttendanceTrackerContent() {
                             {isExporting ? (
                                 <>
                                     <div className="size-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
-                                    Exporting...
+                                    {t('exportButton.exporting')}
                                 </>
                             ) : (
                                 <>
                                     <DownloadSimple size={18} />
-                                    Export CSV
+                                    {t('exportButton.export')}
                                 </>
                             )}
                         </MyButton>
@@ -1044,14 +1067,19 @@ function AttendanceTrackerContent() {
                                         <MyDropdown
                                             currentValue={currentSession}
                                             dropdownList={sessionList}
-                                            placeholder={`Select ${getTerminology(ContentTerms.Session, SystemTerms.Session)}`}
+                                            placeholder={t('filters.selectLabel', {
+                                                term: getTerminology(
+                                                    ContentTerms.Session,
+                                                    SystemTerms.Session
+                                                ),
+                                            })}
                                             handleChange={handleSessionChange}
                                         />
                                     </div>
                                 </div>
                                 <div className="flex flex-col gap-1.5">
                                     <span className="text-xs font-medium text-neutral-600">
-                                        Search
+                                        {t('filters.searchLabel')}
                                     </span>
                                     <div className="relative w-full">
                                         <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
@@ -1059,7 +1087,7 @@ function AttendanceTrackerContent() {
                                         </div>
                                         <Input
                                             type="text"
-                                            placeholder="Search students..."
+                                            placeholder={t('filters.searchPlaceholder')}
                                             value={searchInput}
                                             onChange={(e) => setSearchInput(e.target.value)}
                                             className="h-9 w-full rounded-md border border-neutral-300 bg-white py-2 pl-10 pr-3 text-sm text-neutral-900 placeholder:text-neutral-500 focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
@@ -1097,7 +1125,7 @@ function AttendanceTrackerContent() {
                                         className="inline-flex h-9 items-center justify-center gap-1 rounded-md border border-danger-200 bg-danger-50 px-3 py-2 text-sm font-medium text-danger-600 hover:bg-danger-100"
                                     >
                                         <X className="size-4" />
-                                        Clear Filters
+                                        {t('filters.clearFilters')}
                                     </button>
                                 )}
                             </div>
@@ -1107,23 +1135,28 @@ function AttendanceTrackerContent() {
                         <div className="flex items-center justify-between text-xs text-neutral-500">
                             <span>
                                 {isLoading ? (
-                                    'Loading students...'
+                                    t('studentsCount.loading')
                                 ) : (
                                     <>
-                                        Showing{' '}
+                                        {t('studentsCount.showing')}{' '}
                                         <span className="font-medium text-neutral-700">
                                             {studentsData.length}
                                         </span>
                                         {totalElements > studentsData.length && (
                                             <>
                                                 {' '}
-                                                of{' '}
+                                                {t('studentsCount.of')}{' '}
                                                 <span className="font-medium text-neutral-700">
                                                     {totalElements}
                                                 </span>
                                             </>
                                         )}{' '}
-                                        students
+                                        {t('studentsCount.students', {
+                                            count:
+                                                totalElements > studentsData.length
+                                                    ? totalElements
+                                                    : studentsData.length,
+                                        })}
                                     </>
                                 )}
                             </span>
@@ -1135,24 +1168,20 @@ function AttendanceTrackerContent() {
                         <div className="flex flex-col items-center rounded-lg border border-neutral-200 bg-white p-8 text-center text-neutral-500">
                             <Warning size={40} weight="thin" className="mb-3 text-danger-300" />
                             <p className="text-lg font-medium text-danger-600">
-                                Error loading attendance data
+                                {t('errors.title')}
                             </p>
-                            <p className="mt-1 text-sm">
-                                Please try refreshing the page or adjusting your filters
-                            </p>
+                            <p className="mt-1 text-sm">{t('errors.description')}</p>
                         </div>
                     ) : !isLoading && sortedStudents.length === 0 ? (
                         <div className="flex flex-col items-center rounded-lg border border-neutral-200 bg-white p-8 text-center text-neutral-500">
                             <Warning size={40} weight="thin" className="mb-3 text-neutral-300" />
-                            <p className="text-lg font-medium">No students found</p>
-                            <p className="mt-1 text-sm">
-                                Try adjusting your search or filter criteria
-                            </p>
+                            <p className="text-lg font-medium">{t('empty.title')}</p>
+                            <p className="mt-1 text-sm">{t('empty.description')}</p>
                             <button
                                 className="mt-4 rounded-md bg-primary-50 px-4 py-2 text-sm font-medium text-primary-600 hover:bg-primary-100"
                                 onClick={clearFilters}
                             >
-                                Clear all filters
+                                {t('empty.clearAll')}
                             </button>
                         </div>
                     ) : (
@@ -1181,7 +1210,7 @@ function AttendanceTrackerContent() {
                         {totalSelectedCount > 0 && (
                             <div className="flex flex-wrap items-center justify-between gap-4 text-neutral-600">
                                 <div className="flex gap-1 text-sm">
-                                    [{totalSelectedCount}]<span> Selected</span>
+                                    [{totalSelectedCount}]<span> {t('bulk.selected')}</span>
                                 </div>
 
                                 <div className="flex items-center gap-3">
@@ -1190,15 +1219,18 @@ function AttendanceTrackerContent() {
                                         scale="medium"
                                         onClick={() => setRowSelections({})}
                                     >
-                                        Reset
+                                        {t('bulk.reset')}
                                     </MyButton>
 
                                     <MyDropdown
-                                        dropdownList={['Export Account Details', 'Export Data']}
+                                        dropdownList={[
+                                            t('bulk.exportAccountDetails'),
+                                            t('bulk.exportData'),
+                                        ]}
                                         onSelect={(value) => {
-                                            if (value === 'Export Account Details') {
+                                            if (value === t('bulk.exportAccountDetails')) {
                                                 exportAccountDetails([]);
-                                            } else if (value === 'Export Data') {
+                                            } else if (value === t('bulk.exportData')) {
                                                 exportFullData('both');
                                             }
                                         }}
@@ -1208,7 +1240,7 @@ function AttendanceTrackerContent() {
                                             scale="medium"
                                             className="flex items-center gap-1"
                                         >
-                                            Bulk Actions
+                                            {t('bulk.bulkActions')}
                                             <CaretUpDown />
                                         </MyButton>
                                     </MyDropdown>
@@ -1236,7 +1268,7 @@ function AttendanceTrackerContent() {
 
                 {/* Export scope chooser — present / absent / both */}
                 <MyDialog
-                    heading="Export Attendance CSV"
+                    heading={t('exportDialog.heading')}
                     open={exportDialogOpen}
                     onOpenChange={setExportDialogOpen}
                     footer={
@@ -1246,7 +1278,7 @@ function AttendanceTrackerContent() {
                                 scale="medium"
                                 onClick={() => setExportDialogOpen(false)}
                             >
-                                Cancel
+                                {t('exportDialog.cancel')}
                             </MyButton>
                             <MyButton
                                 buttonType="primary"
@@ -1257,14 +1289,14 @@ function AttendanceTrackerContent() {
                                     exportFullData(exportScope);
                                 }}
                             >
-                                Download CSV
+                                {t('exportDialog.downloadCsv')}
                             </MyButton>
                         </>
                     }
                 >
                     <div className="flex flex-col gap-3">
                         <p className="text-sm text-neutral-600">
-                            Choose which attendance records to include in the export.
+                            {t('exportDialog.description')}
                         </p>
                         <RadioGroup
                             value={exportScope}
@@ -1275,18 +1307,18 @@ function AttendanceTrackerContent() {
                                 [
                                     {
                                         value: 'both',
-                                        label: 'Present & Absent',
-                                        desc: 'Include both attended and missed classes (default)',
+                                        label: t('exportDialog.scope.both.label'),
+                                        desc: t('exportDialog.scope.both.desc'),
                                     },
                                     {
                                         value: 'present',
-                                        label: 'Present only',
-                                        desc: 'Only the classes the learner attended',
+                                        label: t('exportDialog.scope.present.label'),
+                                        desc: t('exportDialog.scope.present.desc'),
                                     },
                                     {
                                         value: 'absent',
-                                        label: 'Absent only',
-                                        desc: 'Only the classes the learner missed',
+                                        label: t('exportDialog.scope.absent.label'),
+                                        desc: t('exportDialog.scope.absent.desc'),
                                     },
                                 ] as Array<{ value: ExportScope; label: string; desc: string }>
                             ).map((opt) => (
@@ -1336,18 +1368,22 @@ interface RangeDateFilterProps {
 
 type DatePresetKey = '1' | '3' | '5' | '7' | '15' | '30' | 'custom';
 
-const DATE_PRESETS: Array<{ key: DatePresetKey; label: string; days: number }> = [
-    { key: '1', label: '1 day', days: 1 },
-    { key: '3', label: '3 days', days: 3 },
-    { key: '5', label: '5 days', days: 5 },
-    { key: '7', label: '7 days', days: 7 },
-    { key: '15', label: '15 days', days: 15 },
-    { key: '30', label: '30 days', days: 30 },
+const buildDatePresets = (
+    t: TFunction
+): Array<{ key: DatePresetKey; label: string; days: number }> => [
+    { key: '1', label: t('dateFilter.days', { count: 1 }), days: 1 },
+    { key: '3', label: t('dateFilter.days', { count: 3 }), days: 3 },
+    { key: '5', label: t('dateFilter.days', { count: 5 }), days: 5 },
+    { key: '7', label: t('dateFilter.days', { count: 7 }), days: 7 },
+    { key: '15', label: t('dateFilter.days', { count: 15 }), days: 15 },
+    { key: '30', label: t('dateFilter.days', { count: 30 }), days: 30 },
 ];
 
 function RangeDateFilter({ range, onChange }: RangeDateFilterProps) {
+    const { t } = useTranslation('studyLibraryAttendanceTrackerIndexLazy');
     const { from, to } = range;
     const [open, setOpen] = useState(false);
+    const DATE_PRESETS = useMemo(() => buildDatePresets(t), [t]);
 
     const activePreset: DatePresetKey = useMemo(() => {
         if (!from || !to) return 'custom';
@@ -1357,7 +1393,7 @@ function RangeDateFilter({ range, onChange }: RangeDateFilterProps) {
             (today.getTime() - startOfDay(from).getTime()) / (1000 * 60 * 60 * 24)
         );
         return DATE_PRESETS.find((p) => p.days === diffDays)?.key ?? 'custom';
-    }, [from, to]);
+    }, [from, to, DATE_PRESETS]);
 
     const hasCustomRange = activePreset === 'custom' && !!(from || to);
 
@@ -1373,7 +1409,7 @@ function RangeDateFilter({ range, onChange }: RangeDateFilterProps) {
 
     return (
         <div className="flex flex-col gap-1.5">
-            <span className="text-xs font-medium text-neutral-600">Date range</span>
+            <span className="text-xs font-medium text-neutral-600">{t('dateFilter.label')}</span>
             <div className="flex flex-wrap items-center gap-2">
                 {DATE_PRESETS.map((preset) => (
                     <button
@@ -1398,13 +1434,13 @@ function RangeDateFilter({ range, onChange }: RangeDateFilterProps) {
                             <CalendarIcon className="size-3.5" />
                             {hasCustomRange && from && to
                                 ? `${format(from, 'dd MMM')} – ${format(to, 'dd MMM')}`
-                                : 'Custom'}
+                                : t('dateFilter.custom')}
                             <CaretDownIcon className="size-3" />
                         </button>
                     </PopoverTrigger>
                     <PopoverContent className="w-auto p-3" align="start">
                         <h4 className="mb-2 text-xs font-medium text-neutral-500">
-                            Pick a custom range
+                            {t('dateFilter.pickCustomRange')}
                         </h4>
                         <Calendar
                             mode="range"
@@ -1428,6 +1464,7 @@ interface BatchDropdownProps {
 }
 
 function BatchDropdown({ label, options, selectedValues, onChange }: BatchDropdownProps) {
+    const { t } = useTranslation('studyLibraryAttendanceTrackerIndexLazy');
     const [batchSearch, setBatchSearch] = useState('');
     // Snapshot of which batches were selected when the dropdown opened. Ordering uses
     // this (not the live selection) so items don't jump around while you toggle them —
@@ -1459,12 +1496,15 @@ function BatchDropdown({ label, options, selectedValues, onChange }: BatchDropdo
     }, [batchOnly, batchSearch, pinnedOrder]);
 
     const triggerLabel = useMemo(() => {
-        if (selectedValues.length === 0) return 'All Batches';
+        if (selectedValues.length === 0) return t('filters.allBatches');
         if (selectedValues.length === 1) {
-            return batchOnly.find((o) => o.value === selectedValues[0])?.label || '1 selected';
+            return (
+                batchOnly.find((o) => o.value === selectedValues[0])?.label ||
+                t('batchDropdown.batchesSelected', { count: 1 })
+            );
         }
-        return `${selectedValues.length} batches selected`;
-    }, [selectedValues, batchOnly]);
+        return t('batchDropdown.batchesSelected', { count: selectedValues.length });
+    }, [selectedValues, batchOnly, t]);
 
     const toggle = (value: string) => {
         onChange(
@@ -1500,7 +1540,9 @@ function BatchDropdown({ label, options, selectedValues, onChange }: BatchDropdo
                                     onClick={() => onChange([])}
                                     className="text-xs font-medium text-primary-600 hover:underline"
                                 >
-                                    Clear ({selectedValues.length})
+                                    {t('batchDropdown.clearCount', {
+                                        count: selectedValues.length,
+                                    })}
                                 </button>
                             )}
                         </div>
@@ -1508,7 +1550,7 @@ function BatchDropdown({ label, options, selectedValues, onChange }: BatchDropdo
                             <Search className="pointer-events-none absolute left-2.5 top-1/2 size-3.5 -translate-y-1/2 text-neutral-400" />
                             <input
                                 type="text"
-                                placeholder="Search..."
+                                placeholder={t('batchDropdown.searchPlaceholder')}
                                 value={batchSearch}
                                 onChange={(e) => setBatchSearch(e.target.value)}
                                 autoComplete="off"
@@ -1528,7 +1570,7 @@ function BatchDropdown({ label, options, selectedValues, onChange }: BatchDropdo
                                         : 'border-neutral-200 bg-white hover:border-neutral-300 hover:bg-neutral-50'
                                     }`}
                             >
-                                All Batches
+                                {t('filters.allBatches')}
                             </button>
                             {filteredOptions.length > 0 ? (
                                 filteredOptions.map((opt) => {
@@ -1561,7 +1603,9 @@ function BatchDropdown({ label, options, selectedValues, onChange }: BatchDropdo
                                     );
                                 })
                             ) : (
-                                <p className="py-2 text-center text-xs text-neutral-400">No batches found</p>
+                                <p className="py-2 text-center text-xs text-neutral-400">
+                                    {t('batchDropdown.noBatchesFound')}
+                                </p>
                             )}
                         </div>
                     </div>

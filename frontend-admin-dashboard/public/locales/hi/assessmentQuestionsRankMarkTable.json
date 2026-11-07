@@ -1,0 +1,8 @@
+{
+    "columns": {
+        "rank": "रैंक",
+        "marks": "अंक",
+        "percentile": "पर्सेंटाइल",
+        "participants": "प्रतिभागियों की संख्या"
+    }
+}

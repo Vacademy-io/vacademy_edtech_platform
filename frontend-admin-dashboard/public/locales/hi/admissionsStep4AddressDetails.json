@@ -1,0 +1,20 @@
+{
+    "current": {
+        "heading": "वर्तमान पता"
+    },
+    "address": {
+        "label": "पता",
+        "placeholder": "पूरा पता दर्ज करें"
+    },
+    "locality": {
+        "label": "निकटतम इलाका",
+        "placeholder": "इलाका/लैंडमार्क दर्ज करें"
+    },
+    "sameAsPermanent": {
+        "label": "वर्तमान पता स्थायी पते के समान है"
+    },
+    "permanent": {
+        "heading": "स्थायी पता",
+        "addressPlaceholder": "पूरा स्थायी पता दर्ज करें"
+    }
+}

@@ -1,0 +1,33 @@
+{
+    "button": {
+        "uploadCsv": "رفع ملف CSV",
+        "downloadTemplate": "تنزيل القالب",
+        "preview": "معاينة",
+        "showUploadedFile": "عرض الملف المرفوع",
+        "upload": "رفع"
+    },
+    "dialog": {
+        "title": "رفع ملف CSV"
+    },
+    "dropzone": {
+        "instructions": "اسحب ملف CSV وأفلته هنا، أو انقر لاختيار ملف",
+        "fileSizeKb": "{{size}} كيلوبايت"
+    },
+    "errors": {
+        "csvOnly": "يرجى رفع ملفات CSV فقط",
+        "headersUnavailable": "إعدادات الرؤوس غير متوفرة",
+        "parseCsv": "خطأ في تحليل ملف CSV",
+        "fixValidationErrors": "يرجى إصلاح أخطاء التحقق قبل الرفع!",
+        "fixErrors": "يرجى إصلاح الأخطاء",
+        "uploadFailed": "فشل رفع ملف CSV"
+    },
+    "toast": {
+        "uploadCompleted": "اكتمل الرفع! {{success}} ناجح، {{failed}} فاشل"
+    },
+    "notification": {
+        "heading": "تفضيل الإشعارات",
+        "dontNotify": "عدم الإشعار",
+        "notify": "إشعار {{term}}",
+        "description": "هل ترغب في إرسال رسائل بريد إلكتروني للإشعار إلى {{term}} بشأن تسجيلهم؟"
+    }
+}

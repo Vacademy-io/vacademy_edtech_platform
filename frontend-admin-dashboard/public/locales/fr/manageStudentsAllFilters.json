@@ -1,0 +1,37 @@
+{
+    "statuses": {
+        "title": "Statut"
+    },
+    "gender": {
+        "title": "Genre"
+    },
+    "sessionExpiry": {
+        "titleSuffix": "Expiration",
+        "optionLabel": "Expire dans {{days}} jours"
+    },
+    "paymentStatus": {
+        "title": "Statut du paiement",
+        "paid": "Payé",
+        "failed": "Échoué",
+        "pending": "En attente"
+    },
+    "approvalStatus": {
+        "title": "Statut d'approbation",
+        "pendingForApproval": "En attente d'approbation",
+        "invited": "Invité"
+    },
+    "cartStatus": {
+        "title": "Statut du panier",
+        "abandonedCart": "Panier abandonné",
+        "paymentFailed": "Paiement échoué"
+    },
+    "role": {
+        "title": "Rôle"
+    },
+    "subOrg": {
+        "title": "Sous-organisation"
+    },
+    "audience": {
+        "title": "Audience"
+    }
+}

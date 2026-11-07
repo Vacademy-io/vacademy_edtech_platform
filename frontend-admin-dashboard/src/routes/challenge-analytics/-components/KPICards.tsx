@@ -1,5 +1,6 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Users, ChartLine, Target, TrendUp, ChatCircle, Calendar } from '@phosphor-icons/react';
+import { useTranslation } from 'react-i18next';
 
 interface KPICardsProps {
     activeUsers: number;
@@ -20,6 +21,7 @@ export function KPICards({
     totalDays,
     isLoading,
 }: KPICardsProps) {
+    const { t, i18n } = useTranslation('challengeAnalyticsKPICards');
     const activePercentage =
         totalUsersReached > 0 ? ((activeUsers / totalUsersReached) * 100).toFixed(1) : '0';
 
@@ -49,15 +51,18 @@ export function KPICards({
                 </div>
                 <CardHeader className="pb-1 pt-3">
                     <CardTitle className="text-xs font-medium uppercase tracking-wide text-gray-500">
-                        Active Users
+                        {t('activeUsers')}
                     </CardTitle>
                 </CardHeader>
                 <CardContent className="pb-3">
                     <div className="text-2xl font-bold text-emerald-700">
-                        {activeUsers.toLocaleString()}
+                        {activeUsers.toLocaleString(i18n.language)}
                     </div>
                     <p className="mt-1 text-xs text-gray-500">
-                        {activePercentage}% of {totalUsersReached.toLocaleString()} reached
+                        {activePercentage}%{' '}
+                        {t('reachedSuffix', {
+                            total: totalUsersReached.toLocaleString(i18n.language),
+                        })}
                     </p>
                     <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-gray-200">
                         <div
@@ -75,14 +80,14 @@ export function KPICards({
                 </div>
                 <CardHeader className="pb-1 pt-3">
                     <CardTitle className="text-xs font-medium uppercase tracking-wide text-gray-500">
-                        Users Reached
+                        {t('usersReached')}
                     </CardTitle>
                 </CardHeader>
                 <CardContent className="pb-3">
                     <div className="text-2xl font-bold text-blue-700">
-                        {totalUsersReached.toLocaleString()}
+                        {totalUsersReached.toLocaleString(i18n.language)}
                     </div>
-                    <p className="mt-1 text-xs text-gray-500">Total unique users</p>
+                    <p className="mt-1 text-xs text-gray-500">{t('totalUniqueUsers')}</p>
                 </CardContent>
             </Card>
 
@@ -93,14 +98,14 @@ export function KPICards({
                 </div>
                 <CardHeader className="pb-1 pt-3">
                     <CardTitle className="text-xs font-medium uppercase tracking-wide text-gray-500">
-                        Total Messages
+                        {t('totalMessages')}
                     </CardTitle>
                 </CardHeader>
                 <CardContent className="pb-3">
                     <div className="text-2xl font-bold text-purple-700">
-                        {totalMessages.toLocaleString()}
+                        {totalMessages.toLocaleString(i18n.language)}
                     </div>
-                    <p className="mt-1 text-xs text-gray-500">Sent & received</p>
+                    <p className="mt-1 text-xs text-gray-500">{t('sentAndReceived')}</p>
                 </CardContent>
             </Card>
 
@@ -111,14 +116,14 @@ export function KPICards({
                 </div>
                 <CardHeader className="pb-1 pt-3">
                     <CardTitle className="text-xs font-medium uppercase tracking-wide text-gray-500">
-                        Response Rate
+                        {t('responseRate')}
                     </CardTitle>
                 </CardHeader>
                 <CardContent className="pb-3">
                     <div className="text-2xl font-bold text-amber-700">
                         {responseRate.toFixed(1)}%
                     </div>
-                    <p className="mt-1 text-xs text-gray-500">Overall engagement</p>
+                    <p className="mt-1 text-xs text-gray-500">{t('overallEngagement')}</p>
                 </CardContent>
             </Card>
 
@@ -129,14 +134,14 @@ export function KPICards({
                 </div>
                 <CardHeader className="pb-1 pt-3">
                     <CardTitle className="text-xs font-medium uppercase tracking-wide text-gray-500">
-                        Completion Rate
+                        {t('completionRate')}
                     </CardTitle>
                 </CardHeader>
                 <CardContent className="pb-3">
                     <div className="text-2xl font-bold text-rose-700">
                         {completionRate.toFixed(1)}%
                     </div>
-                    <p className="mt-1 text-xs text-gray-500">Challenge completed</p>
+                    <p className="mt-1 text-xs text-gray-500">{t('challengeCompleted')}</p>
                 </CardContent>
             </Card>
 
@@ -147,12 +152,12 @@ export function KPICards({
                 </div>
                 <CardHeader className="pb-1 pt-3">
                     <CardTitle className="text-xs font-medium uppercase tracking-wide text-gray-500">
-                        Total Days
+                        {t('totalDays')}
                     </CardTitle>
                 </CardHeader>
                 <CardContent className="pb-3">
                     <div className="text-2xl font-bold text-indigo-700">{totalDays}</div>
-                    <p className="mt-1 text-xs text-gray-500">Challenge duration</p>
+                    <p className="mt-1 text-xs text-gray-500">{t('challengeDuration')}</p>
                 </CardContent>
             </Card>
         </div>

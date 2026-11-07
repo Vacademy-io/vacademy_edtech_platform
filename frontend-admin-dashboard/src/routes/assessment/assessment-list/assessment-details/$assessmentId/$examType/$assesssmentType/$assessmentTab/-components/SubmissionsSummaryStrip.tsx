@@ -1,4 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 import { CheckCircle, ClipboardText, Hourglass, PaperPlaneTilt, ChartBar } from '@phosphor-icons/react';
 import { getAdminParticipants, getAttemptsFileStatus } from '../-services/assessment-details-services';
 import { MyFilterOption } from '@/types/assessments/my-filter';
@@ -72,33 +73,50 @@ const computeStats = (
     };
 };
 
+type TileAccent = 'success' | 'warning' | 'primary' | 'info' | 'neutral';
+
+// Each accent pairs a tinted icon chip with the colour the headline number takes, so a
+// glance across the row reads as five statuses rather than five identical boxes.
+const TILE_ACCENTS: Record<TileAccent, { chip: string; icon: string; value: string }> = {
+    success: { chip: 'bg-success-50', icon: 'text-success-600', value: 'text-success-600' },
+    warning: { chip: 'bg-warning-100', icon: 'text-warning-600', value: 'text-warning-600' },
+    primary: { chip: 'bg-primary-50', icon: 'text-primary-500', value: 'text-primary-500' },
+    info: { chip: 'bg-info-50', icon: 'text-info-600', value: 'text-info-600' },
+    neutral: { chip: 'bg-neutral-100', icon: 'text-neutral-500', value: 'text-neutral-700' },
+};
+
 const StatTile = ({
     icon,
     label,
     value,
-    accent,
+    sublabel,
+    accent = 'neutral',
 }: {
     icon: React.ReactNode;
     label: string;
     value: string;
-    accent?: 'success' | 'warning' | 'primary' | 'neutral';
+    sublabel?: string;
+    accent?: TileAccent;
 }) => {
-    const accentText =
-        accent === 'success'
-            ? 'text-success-600'
-            : accent === 'warning'
-              ? 'text-warning-600'
-              : accent === 'primary'
-                ? 'text-primary-500'
-                : 'text-neutral-700';
+    const styles = TILE_ACCENTS[accent];
     return (
-        <div className="flex min-w-36 flex-1 items-center gap-2 rounded-lg border border-neutral-200 bg-white px-3 py-2">
-            <div className={cn('flex shrink-0 items-center', accentText)}>{icon}</div>
-            <div className="flex min-w-0 flex-col">
+        <div className="flex min-w-0 items-center gap-2.5 rounded-xl border border-neutral-200 bg-white px-3.5 py-3">
+            <div
+                className={cn(
+                    'flex size-9 shrink-0 items-center justify-center rounded-lg',
+                    styles.chip
+                )}
+            >
+                <span className={cn('flex items-center', styles.icon)}>{icon}</span>
+            </div>
+            <div className="flex min-w-0 flex-col gap-0.5">
                 <span className="text-caption text-neutral-500">{label}</span>
-                <span className={cn('whitespace-nowrap text-body font-semibold', accentText)}>
+                <span className={cn('truncate text-h3 font-semibold leading-tight', styles.value)}>
                     {value}
                 </span>
+                {sublabel && (
+                    <span className="text-2xs leading-tight text-neutral-400">{sublabel}</span>
+                )}
             </div>
         </div>
     );
@@ -114,6 +132,8 @@ export const SubmissionsSummaryStrip = ({
     refreshKey = 0,
     isManualEvaluation = false,
 }: SubmissionsSummaryStripProps) => {
+    const { t } = useTranslation('assessmentSubmissionsSummaryStrip');
+
     // Cached via react-query: switching sub-tabs / remounting reuses the cached
     // stats instead of refiring the (large-page) participants call. refreshKey is
     // part of the key, so the existing "bump to refresh" contract (after
@@ -187,50 +207,75 @@ export const SubmissionsSummaryStrip = ({
     if (!stats || stats.submitted === 0) return null;
 
     return (
-        <div className="flex flex-wrap gap-3">
+        <div className="grid gap-2.5 [grid-template-columns:repeat(auto-fit,minmax(150px,1fr))]">
             {/* Manual evaluation: attempts vs answer-sheet files actually submitted. */}
             {isManualEvaluation && stats.fileSubmissions !== null ? (
                 <StatTile
-                    icon={<ClipboardText size={18} />}
-                    label="Submissions / Attempts"
-                    value={`${stats.fileSubmissions} / ${stats.submitted}`}
-                    accent="neutral"
+                    icon={<ClipboardText size={20} />}
+                    label={t('tiles.submissionsAttempts.label')}
+                    value={t('tiles.ratio', {
+                        numerator: stats.fileSubmissions,
+                        denominator: stats.submitted,
+                    })}
+                    sublabel={t('tiles.submissionsAttempts.sublabel')}
+                    accent="primary"
                 />
             ) : (
                 <StatTile
-                    icon={<ClipboardText size={18} />}
-                    label="Submitted"
+                    icon={<ClipboardText size={20} />}
+                    label={t('tiles.submitted.label')}
                     value={String(stats.submitted)}
-                    accent="neutral"
+                    sublabel={t('tiles.submitted.sublabel')}
+                    accent="primary"
                 />
             )}
             <StatTile
-                icon={<CheckCircle size={18} weight="fill" />}
-                label="Evaluated"
-                value={`${stats.evaluated} / ${stats.submitted}`}
+                icon={<CheckCircle size={20} weight="fill" />}
+                label={t('tiles.evaluated.label')}
+                value={t('tiles.ratio', {
+                    numerator: stats.evaluated,
+                    denominator: stats.submitted,
+                })}
+                sublabel={t('tiles.evaluated.sublabel')}
                 accent="success"
             />
             <StatTile
-                icon={<Hourglass size={18} weight="fill" />}
-                label="Pending Evaluation"
+                icon={<Hourglass size={20} weight="fill" />}
+                label={t('tiles.pendingEvaluation.label')}
                 value={String(stats.pendingEvaluation)}
+                sublabel={t('tiles.pendingEvaluation.sublabel')}
                 accent="warning"
             />
             <StatTile
-                icon={<PaperPlaneTilt size={18} weight="fill" />}
-                label="Results Released"
-                value={`${stats.resultsReleased} / ${stats.submitted}`}
-                accent="primary"
+                icon={<PaperPlaneTilt size={20} weight="fill" />}
+                label={t('tiles.resultsReleased.label')}
+                value={t('tiles.ratio', {
+                    numerator: stats.resultsReleased,
+                    denominator: stats.submitted,
+                })}
+                sublabel={t('tiles.resultsReleased.sublabel')}
+                accent="info"
             />
             <StatTile
-                icon={<ChartBar size={18} weight="fill" />}
-                // Label carries the "Avg / High / Low" legend; keep the value a
-                // single compact line (out of / totalMarks) so it never wraps.
-                label={`Avg / High / Low  (/ ${totalMarks})`}
+                icon={<ChartBar size={20} weight="fill" />}
+                // High/low move to the sub-label so the headline is the one number a
+                // teacher actually scans for — the class average out of total marks.
+                label={t('tiles.averageScore.label')}
                 value={
                     stats.avgScore === null
                         ? '—'
-                        : `${stats.avgScore.toFixed(1)} / ${stats.highScore?.toFixed(1)} / ${stats.lowScore?.toFixed(1)}`
+                        : t('tiles.averageScore.value', {
+                              avg: stats.avgScore.toFixed(1),
+                              totalMarks,
+                          })
+                }
+                sublabel={
+                    stats.avgScore === null
+                        ? undefined
+                        : t('tiles.averageScore.sublabel', {
+                              high: stats.highScore?.toFixed(1),
+                              low: stats.lowScore?.toFixed(1),
+                          })
                 }
                 accent="neutral"
             />

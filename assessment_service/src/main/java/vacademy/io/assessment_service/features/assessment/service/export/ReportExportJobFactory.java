@@ -132,5 +132,7 @@ public class ReportExportJobFactory {
         @Override public String getReportReleaseResultStatus() { return null; }
         @Override public java.util.Date getLastReportReleaseDate() { return null; }
         @Override public String getUserEmail() { return null; }
+        @Override public String getPhoneNumber() { return null; }
+        @Override public String getUsername() { return null; }
     }
 }

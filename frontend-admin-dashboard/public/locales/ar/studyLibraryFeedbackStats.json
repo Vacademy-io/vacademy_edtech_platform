@@ -1,0 +1,22 @@
+{
+    "learnerFeedbackStats": "إحصائيات ملاحظات المتعلمين",
+    "totalResponsesCollected_zero": "لم يتم جمع أي ردود",
+    "totalResponsesCollected_one": "تم جمع رد واحد إجمالاً",
+    "totalResponsesCollected_two": "تم جمع ردين إجمالاً",
+    "totalResponsesCollected_few": "تم جمع {{count}} ردود إجمالاً",
+    "totalResponsesCollected_many": "تم جمع {{count}} ردًا إجمالاً",
+    "totalResponsesCollected_other": "تم جمع {{count}} رد إجمالاً",
+    "ratingsCount_zero": "لا تقييمات",
+    "ratingsCount_one": "تقييم واحد",
+    "ratingsCount_two": "تقييمان",
+    "ratingsCount_few": "{{count}} تقييمات",
+    "ratingsCount_many": "{{count}} تقييمًا",
+    "ratingsCount_other": "{{count}} تقييم",
+    "lowRatingsCount_zero": "لا تقييمات منخفضة",
+    "lowRatingsCount_one": "تقييم منخفض واحد (< 3)",
+    "lowRatingsCount_two": "تقييمان منخفضان (< 3)",
+    "lowRatingsCount_few": "{{count}} تقييمات منخفضة (< 3)",
+    "lowRatingsCount_many": "{{count}} تقييمًا منخفضًا (< 3)",
+    "lowRatingsCount_other": "{{count}} تقييم منخفض (< 3)",
+    "noWrittenResponsesYet": "لا توجد ردود مكتوبة بعد."
+}

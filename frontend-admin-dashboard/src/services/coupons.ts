@@ -27,7 +27,7 @@ export interface CouponCreateRequest {
     code: string;
     status?: CouponStatus;
     redeem_start_date?: string | null; // ISO date string
-    redeem_end_date: string; // ISO date string — required
+    redeem_end_date?: string | null; // ISO date string; null = never expires
     usage_limit?: number | null; // null = unlimited
     is_email_restricted?: boolean;
     /** JSON array string, e.g. '["alice@x.com"]' */
@@ -41,6 +41,8 @@ export interface CouponUpdateRequest {
     status?: CouponStatus;
     redeem_start_date?: string | null;
     redeem_end_date?: string | null;
+    /** true = remove the end date (null redeem_end_date alone means "unchanged"). */
+    clear_redeem_end_date?: boolean;
     usage_limit?: number | null;
     is_email_restricted?: boolean | null;
     allowed_email_ids?: string | null;

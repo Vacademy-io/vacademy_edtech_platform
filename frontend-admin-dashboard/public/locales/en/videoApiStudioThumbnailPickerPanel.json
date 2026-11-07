@@ -1,0 +1,19 @@
+{
+    "heading": "Thumbnail",
+    "regenerate": {
+        "title": "Regenerate options",
+        "button": "Regenerate"
+    },
+    "alternate": {
+        "selectTitle": "Select this thumbnail"
+    },
+    "placeholder": {
+        "loading": "Loading thumbnails…",
+        "empty": "Thumbnails will appear here once the director plan is ready."
+    },
+    "toast": {
+        "selectError": "Could not change thumbnail",
+        "regenerateSuccess": "Generating new thumbnail options…",
+        "regenerateError": "Could not regenerate thumbnails"
+    }
+}

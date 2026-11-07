@@ -1,13 +1,16 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { MyButton } from '@/components/design-system/button';
-import { BookOpen, GraduationCap, Users } from 'lucide-react';
+import { BookOpen, GraduationCap, Users } from '@phosphor-icons/react';
 import { BASE_URL_LEARNER_DASHBOARD } from '@/constants/urls';
+import { useTranslation } from 'react-i18next';
 
 interface LearnerTabProps {
     onClose: () => void;
 }
 
 export function LearnerTab({ onClose }: LearnerTabProps) {
+    const { t } = useTranslation('dashboardLearnerTab');
+
     const handleSwitchToLearner = () => {
         // Navigate to learner platform
         window.location.href = BASE_URL_LEARNER_DASHBOARD;
@@ -28,11 +31,8 @@ export function LearnerTab({ onClose }: LearnerTabProps) {
                     <div className="mx-auto mb-4 flex size-16 items-center justify-center rounded-full bg-blue-100">
                         <GraduationCap className="size-8 text-blue-600" />
                     </div>
-                    <CardTitle className="text-xl">Welcome</CardTitle>
-                    <CardDescription>
-                        You have access to both admin and learner features. Choose how you&apos;d
-                        like to proceed:
-                    </CardDescription>
+                    <CardTitle className="text-xl">{t('header.title')}</CardTitle>
+                    <CardDescription>{t('header.description')}</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
                     <div className="space-y-3">
@@ -41,9 +41,9 @@ export function LearnerTab({ onClose }: LearnerTabProps) {
                                 <BookOpen className="size-5 text-green-600" />
                             </div>
                             <div className="flex-1">
-                                <h3 className="font-medium">Continue as Learner</h3>
+                                <h3 className="font-medium">{t('options.learner.title')}</h3>
                                 <p className="text-sm text-gray-500">
-                                    Access your courses and learning materials
+                                    {t('options.learner.description')}
                                 </p>
                             </div>
                         </div>
@@ -53,9 +53,9 @@ export function LearnerTab({ onClose }: LearnerTabProps) {
                                 <Users className="size-5 text-purple-600" />
                             </div>
                             <div className="flex-1">
-                                <h3 className="font-medium">Continue as Admin</h3>
+                                <h3 className="font-medium">{t('options.admin.title')}</h3>
                                 <p className="text-sm text-gray-500">
-                                    Manage your institute and courses
+                                    {t('options.admin.description')}
                                 </p>
                             </div>
                         </div>
@@ -71,7 +71,7 @@ export function LearnerTab({ onClose }: LearnerTabProps) {
                             className="flex-1"
                         >
                             <BookOpen className="mr-2 size-4" />
-                            Go to Learner Portal
+                            {t('actions.goToLearnerPortal')}
                         </MyButton>
 
                         <MyButton
@@ -83,7 +83,7 @@ export function LearnerTab({ onClose }: LearnerTabProps) {
                             className="flex-1"
                         >
                             <Users className="mr-2 size-4" />
-                            Stay as Admin
+                            {t('actions.stayAsAdmin')}
                         </MyButton>
                     </div>
 
@@ -93,7 +93,7 @@ export function LearnerTab({ onClose }: LearnerTabProps) {
                             onClick={handleContinueAsAdmin}
                             className="text-sm text-gray-500 hover:text-gray-700"
                         >
-                            Don&apos;t show this again
+                            {t('actions.dontShowAgain')}
                         </button>
                     </div>
                 </CardContent>

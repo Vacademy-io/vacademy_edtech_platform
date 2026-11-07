@@ -110,8 +110,29 @@ public interface LiveSessionRepository extends JpaRepository<LiveSession, String
       AND ss.meeting_date = CAST((CURRENT_TIMESTAMP AT TIME ZONE COALESCE(NULLIF(s.timezone, ''), 'Asia/Kolkata')) AS date)
       AND s.institute_id = :instituteId
       AND ss.status != 'DELETED'
+      AND (
+            :restrictVisibility = FALSE
+            OR s.created_by_user_id = :callerUserId
+            OR EXISTS (
+                SELECT 1 FROM live_session_instructors lsi
+                WHERE lsi.session_id = s.id
+                  AND lsi.status = 'ACTIVE'
+                  AND lsi.user_id IN (:allowedUserIds)
+            )
+            OR (
+                NOT EXISTS (
+                    SELECT 1 FROM live_session_instructors lsi2
+                    WHERE lsi2.session_id = s.id
+                      AND lsi2.status = 'ACTIVE'
+                )
+                AND s.created_by_user_id IN (:allowedUserIds)
+            )
+          )
 """, nativeQuery = true)
-    List<LiveSessionRepository.LiveSessionListProjection> findCurrentlyLiveSessions(@Param("instituteId") String instituteId);
+    List<LiveSessionRepository.LiveSessionListProjection> findCurrentlyLiveSessions(@Param("instituteId") String instituteId,
+                                                                                     @Param("restrictVisibility") boolean restrictVisibility,
+                                                                                     @Param("callerUserId") String callerUserId,
+                                                                                     @Param("allowedUserIds") java.util.Collection<String> allowedUserIds);
 
 
     @Query(value = """
@@ -143,9 +164,30 @@ public interface LiveSessionRepository extends JpaRepository<LiveSession, String
           )
     AND s.institute_id = :instituteId
     AND ss.status != 'DELETED'
+      AND (
+            :restrictVisibility = FALSE
+            OR s.created_by_user_id = :callerUserId
+            OR EXISTS (
+                SELECT 1 FROM live_session_instructors lsi
+                WHERE lsi.session_id = s.id
+                  AND lsi.status = 'ACTIVE'
+                  AND lsi.user_id IN (:allowedUserIds)
+            )
+            OR (
+                NOT EXISTS (
+                    SELECT 1 FROM live_session_instructors lsi2
+                    WHERE lsi2.session_id = s.id
+                      AND lsi2.status = 'ACTIVE'
+                )
+                AND s.created_by_user_id IN (:allowedUserIds)
+            )
+          )
     ORDER BY ss.meeting_date ASC, ss.start_time ASC
 """, nativeQuery = true)
-    List<LiveSessionRepository.LiveSessionListProjection> findUpcomingSessions(@Param("instituteId") String instituteId);
+    List<LiveSessionRepository.LiveSessionListProjection> findUpcomingSessions(@Param("instituteId") String instituteId,
+                                                                                     @Param("restrictVisibility") boolean restrictVisibility,
+                                                                                     @Param("callerUserId") String callerUserId,
+                                                                                     @Param("allowedUserIds") java.util.Collection<String> allowedUserIds);
 
     @Query(value = """
     SELECT
@@ -176,9 +218,30 @@ public interface LiveSessionRepository extends JpaRepository<LiveSession, String
           )
       AND s.institute_id = :instituteId
       AND ss.status != 'DELETED'
+      AND (
+            :restrictVisibility = FALSE
+            OR s.created_by_user_id = :callerUserId
+            OR EXISTS (
+                SELECT 1 FROM live_session_instructors lsi
+                WHERE lsi.session_id = s.id
+                  AND lsi.status = 'ACTIVE'
+                  AND lsi.user_id IN (:allowedUserIds)
+            )
+            OR (
+                NOT EXISTS (
+                    SELECT 1 FROM live_session_instructors lsi2
+                    WHERE lsi2.session_id = s.id
+                      AND lsi2.status = 'ACTIVE'
+                )
+                AND s.created_by_user_id IN (:allowedUserIds)
+            )
+          )
     ORDER BY ss.meeting_date ASC, ss.start_time ASC
     """, nativeQuery = true)
-    List<LiveSessionRepository.LiveSessionListProjection> findPreviousSessions(@Param("instituteId") String instituteId);
+    List<LiveSessionRepository.LiveSessionListProjection> findPreviousSessions(@Param("instituteId") String instituteId,
+                                                                                     @Param("restrictVisibility") boolean restrictVisibility,
+                                                                                     @Param("callerUserId") String callerUserId,
+                                                                                     @Param("allowedUserIds") java.util.Collection<String> allowedUserIds);
 
     @Query(value = """
     SELECT
@@ -204,8 +267,29 @@ public interface LiveSessionRepository extends JpaRepository<LiveSession, String
     WHERE s.status = 'DRAFT'
     AND s.institute_id = :instituteId
     AND ss.status != 'DELETED'
+      AND (
+            :restrictVisibility = FALSE
+            OR s.created_by_user_id = :callerUserId
+            OR EXISTS (
+                SELECT 1 FROM live_session_instructors lsi
+                WHERE lsi.session_id = s.id
+                  AND lsi.status = 'ACTIVE'
+                  AND lsi.user_id IN (:allowedUserIds)
+            )
+            OR (
+                NOT EXISTS (
+                    SELECT 1 FROM live_session_instructors lsi2
+                    WHERE lsi2.session_id = s.id
+                      AND lsi2.status = 'ACTIVE'
+                )
+                AND s.created_by_user_id IN (:allowedUserIds)
+            )
+          )
     """, nativeQuery = true)
-    List<LiveSessionRepository.LiveSessionListProjection> findDraftedSessions(@Param("instituteId") String instituteId);
+    List<LiveSessionRepository.LiveSessionListProjection> findDraftedSessions(@Param("instituteId") String instituteId,
+                                                                                     @Param("restrictVisibility") boolean restrictVisibility,
+                                                                                     @Param("callerUserId") String callerUserId,
+                                                                                     @Param("allowedUserIds") java.util.Collection<String> allowedUserIds);
 
     @Query(value = """
         SELECT DISTINCT
@@ -370,6 +454,7 @@ public interface LiveSessionRepository extends JpaRepository<LiveSession, String
         AND (:endDate IS NULL OR ss.meeting_date <= CAST(:endDate AS DATE))
         AND s.status IN ('DRAFT', 'LIVE')
         AND ss.status != 'DELETED'
+        AND (:learnerVisibleOnly = FALSE OR s.show_to_learners IS TRUE)
         ORDER BY ss.meeting_date, ss.start_time
         LIMIT CASE WHEN :size IS NULL THEN NULL ELSE :size END
         OFFSET CASE WHEN :offset IS NULL THEN 0 ELSE :offset END
@@ -380,7 +465,8 @@ public interface LiveSessionRepository extends JpaRepository<LiveSession, String
         @Param("startDate") String startDate,
         @Param("endDate") String endDate,
         @Param("offset") Integer offset,
-        @Param("size") Integer size
+        @Param("size") Integer size,
+        @Param("learnerVisibleOnly") boolean learnerVisibleOnly
     );
 
     /**
@@ -419,6 +505,7 @@ public interface LiveSessionRepository extends JpaRepository<LiveSession, String
         )
         AND s.status = 'LIVE'
         AND ss.status != 'DELETED'
+        AND (:learnerVisibleOnly = FALSE OR s.show_to_learners IS TRUE)
         AND (
             ss.meeting_date < CAST((CURRENT_TIMESTAMP AT TIME ZONE COALESCE(NULLIF(s.timezone, ''), 'Asia/Kolkata')) AS date)
             OR (ss.meeting_date = CAST((CURRENT_TIMESTAMP AT TIME ZONE COALESCE(NULLIF(s.timezone, ''), 'Asia/Kolkata')) AS date)
@@ -440,6 +527,7 @@ public interface LiveSessionRepository extends JpaRepository<LiveSession, String
         )
         AND s.status = 'LIVE'
         AND ss.status != 'DELETED'
+        AND (:learnerVisibleOnly = FALSE OR s.show_to_learners IS TRUE)
         AND (
             ss.meeting_date < CAST((CURRENT_TIMESTAMP AT TIME ZONE COALESCE(NULLIF(s.timezone, ''), 'Asia/Kolkata')) AS date)
             OR (ss.meeting_date = CAST((CURRENT_TIMESTAMP AT TIME ZONE COALESCE(NULLIF(s.timezone, ''), 'Asia/Kolkata')) AS date)
@@ -454,6 +542,245 @@ public interface LiveSessionRepository extends JpaRepository<LiveSession, String
         @Param("userId") String userId,
         @Param("startDate") String startDate,
         @Param("endDate") String endDate,
+        @Param("learnerVisibleOnly") boolean learnerVisibleOnly,
+        Pageable pageable
+    );
+
+    /**
+     * findUpcomingSessionsForUserAndBatchWithFilters PLUS every unassigned public
+     * class of the institute: access_level public (stored lowercase, legacy rows
+     * uppercase), status LIVE (drafts never broadcast), and no
+     * live_session_participants row of any kind. A public class an admin attached
+     * to a batch or to individual learners keeps its targeting.
+     *
+     * Only called when the institute opted in (STUDENT_DISPLAY_SETTINGS
+     * liveClasses.showUnassignedPublicSessions) and the learner is enrolled there.
+     * A separate query rather than an OR on the original one: an OR across the two
+     * branches moves the planner off the participant index onto a
+     * session_schedules date scan. UNION keeps each branch on its own index and
+     * removes overlap. Paging is applied after the UNION so offsets stay correct.
+     */
+    @Query(value = """
+        SELECT * FROM (
+            SELECT DISTINCT
+                s.id AS sessionId,
+                s.waiting_room_time AS waitingRoomTime,
+                s.waiting_room_type AS waitingRoomType,
+                s.thumbnail_file_id AS thumbnailFileId,
+                s.background_score_file_id AS backgroundScoreFileId,
+                s.session_streaming_service_type AS sessionStreamingServiceType,
+                ss.id AS scheduleId,
+                ss.meeting_date AS meetingDate,
+                ss.start_time AS startTime,
+                ss.last_entry_time AS lastEntryTime,
+                ss.recurrence_type AS recurrenceType,
+                s.access_level AS accessLevel,
+                s.title AS title,
+                s.subject AS subject,
+                s.registration_form_link_for_public_sessions AS registrationFormLinkForPublicSessions,
+                s.allow_play_pause AS allowPlayPause,
+                COALESCE(NULLIF(s.timezone, ''), 'Asia/Kolkata') AS timezone,
+                CASE
+                    WHEN ss.custom_meeting_link IS NOT NULL AND ss.custom_meeting_link <> '' THEN ss.custom_meeting_link
+                    ELSE s.default_meet_link
+                END AS meetingLink,
+                s.learner_button_config AS learnerButtonConfig,
+                ss.default_class_link AS defaultClassLink,
+                ss.default_class_name AS defaultClassName,
+                COALESCE(ss.link_type, s.link_type) AS linkType,
+                ss.provider_meeting_id AS providerMeetingId
+            FROM session_schedules ss
+            JOIN live_session s ON ss.session_id = s.id
+            JOIN live_session_participants lsp ON lsp.session_id = s.id
+            WHERE (
+                (:batchId IS NOT NULL AND lsp.source_type = 'BATCH' AND lsp.source_id = :batchId)
+                OR
+                (:userId IS NOT NULL AND lsp.source_type = 'USER' AND lsp.source_id = :userId)
+            )
+            AND ss.meeting_date >= COALESCE(CAST(:startDate AS DATE), CURRENT_DATE - INTERVAL '1 day')
+            AND (:endDate IS NULL OR ss.meeting_date <= CAST(:endDate AS DATE))
+            AND s.status IN ('DRAFT', 'LIVE')
+            AND ss.status != 'DELETED'
+            AND (:learnerVisibleOnly = FALSE OR s.show_to_learners IS TRUE)
+
+            UNION
+
+            SELECT
+                s.id AS sessionId,
+                s.waiting_room_time AS waitingRoomTime,
+                s.waiting_room_type AS waitingRoomType,
+                s.thumbnail_file_id AS thumbnailFileId,
+                s.background_score_file_id AS backgroundScoreFileId,
+                s.session_streaming_service_type AS sessionStreamingServiceType,
+                ss.id AS scheduleId,
+                ss.meeting_date AS meetingDate,
+                ss.start_time AS startTime,
+                ss.last_entry_time AS lastEntryTime,
+                ss.recurrence_type AS recurrenceType,
+                s.access_level AS accessLevel,
+                s.title AS title,
+                s.subject AS subject,
+                s.registration_form_link_for_public_sessions AS registrationFormLinkForPublicSessions,
+                s.allow_play_pause AS allowPlayPause,
+                COALESCE(NULLIF(s.timezone, ''), 'Asia/Kolkata') AS timezone,
+                CASE
+                    WHEN ss.custom_meeting_link IS NOT NULL AND ss.custom_meeting_link <> '' THEN ss.custom_meeting_link
+                    ELSE s.default_meet_link
+                END AS meetingLink,
+                s.learner_button_config AS learnerButtonConfig,
+                ss.default_class_link AS defaultClassLink,
+                ss.default_class_name AS defaultClassName,
+                COALESCE(ss.link_type, s.link_type) AS linkType,
+                ss.provider_meeting_id AS providerMeetingId
+            FROM session_schedules ss
+            JOIN live_session s ON ss.session_id = s.id
+            WHERE s.institute_id = :instituteId
+            AND s.status = 'LIVE'
+            AND UPPER(s.access_level) = 'PUBLIC'
+            AND NOT EXISTS (SELECT 1 FROM live_session_participants p WHERE p.session_id = s.id)
+            AND ss.meeting_date >= COALESCE(CAST(:startDate AS DATE), CURRENT_DATE - INTERVAL '1 day')
+            AND (:endDate IS NULL OR ss.meeting_date <= CAST(:endDate AS DATE))
+            AND ss.status != 'DELETED'
+            AND (:learnerVisibleOnly = FALSE OR s.show_to_learners IS TRUE)
+        ) learner_sessions
+        ORDER BY learner_sessions.meetingDate, learner_sessions.startTime, learner_sessions.scheduleId
+        LIMIT CASE WHEN :size IS NULL THEN NULL ELSE :size END
+        OFFSET CASE WHEN :offset IS NULL THEN 0 ELSE :offset END
+    """, nativeQuery = true)
+    List<LiveSessionRepository.LiveSessionListProjection> findUpcomingSessionsForUserAndBatchIncludingUnassignedPublic(
+        @Param("batchId") String batchId,
+        @Param("userId") String userId,
+        @Param("instituteId") String instituteId,
+        @Param("startDate") String startDate,
+        @Param("endDate") String endDate,
+        @Param("offset") Integer offset,
+        @Param("size") Integer size,
+        @Param("learnerVisibleOnly") boolean learnerVisibleOnly
+    );
+
+    /**
+     * findPastSessionsForUserAndBatch PLUS the institute unassigned public
+     * classes, same branch rules as
+     * findUpcomingSessionsForUserAndBatchIncludingUnassignedPublic. Gated by the
+     * caller exactly like the upcoming variant.
+     */
+    @Query(value = """
+        SELECT * FROM (
+            SELECT DISTINCT
+                s.id AS sessionId,
+                ss.id AS scheduleId,
+                s.title AS title,
+                s.subject AS subject,
+                ss.meeting_date AS meetingDate,
+                ss.start_time AS startTime,
+                ss.last_entry_time AS lastEntryTime,
+                COALESCE(NULLIF(s.timezone, ''), 'Asia/Kolkata') AS timezone,
+                COALESCE(ss.link_type, s.link_type) AS linkType,
+                COALESCE(ss.thumbnail_file_id, s.thumbnail_file_id, s.cover_file_id) AS thumbnailFileId,
+                s.institute_id AS instituteId,
+                ss.provider_recordings_json AS providerRecordingsJson
+            FROM session_schedules ss
+            JOIN live_session s ON ss.session_id = s.id
+            JOIN live_session_participants lsp ON lsp.session_id = s.id
+            WHERE (
+                (:batchId IS NOT NULL AND lsp.source_type = 'BATCH' AND lsp.source_id = :batchId)
+                OR
+                (:userId IS NOT NULL AND lsp.source_type = 'USER' AND lsp.source_id = :userId)
+            )
+            AND s.status = 'LIVE'
+            AND ss.status != 'DELETED'
+            AND (:learnerVisibleOnly = FALSE OR s.show_to_learners IS TRUE)
+            AND (
+                ss.meeting_date < CAST((CURRENT_TIMESTAMP AT TIME ZONE COALESCE(NULLIF(s.timezone, ''), 'Asia/Kolkata')) AS date)
+                OR (ss.meeting_date = CAST((CURRENT_TIMESTAMP AT TIME ZONE COALESCE(NULLIF(s.timezone, ''), 'Asia/Kolkata')) AS date)
+                    AND CAST((CURRENT_TIMESTAMP AT TIME ZONE COALESCE(NULLIF(s.timezone, ''), 'Asia/Kolkata')) AS time) > ss.last_entry_time)
+            )
+            AND (:startDate IS NULL OR ss.meeting_date >= CAST(:startDate AS DATE))
+            AND (:endDate IS NULL OR ss.meeting_date <= CAST(:endDate AS DATE))
+
+            UNION
+
+            SELECT
+                s.id AS sessionId,
+                ss.id AS scheduleId,
+                s.title AS title,
+                s.subject AS subject,
+                ss.meeting_date AS meetingDate,
+                ss.start_time AS startTime,
+                ss.last_entry_time AS lastEntryTime,
+                COALESCE(NULLIF(s.timezone, ''), 'Asia/Kolkata') AS timezone,
+                COALESCE(ss.link_type, s.link_type) AS linkType,
+                COALESCE(ss.thumbnail_file_id, s.thumbnail_file_id, s.cover_file_id) AS thumbnailFileId,
+                s.institute_id AS instituteId,
+                ss.provider_recordings_json AS providerRecordingsJson
+            FROM session_schedules ss
+            JOIN live_session s ON ss.session_id = s.id
+            WHERE s.institute_id = :instituteId
+            AND s.status = 'LIVE'
+            AND UPPER(s.access_level) = 'PUBLIC'
+            AND NOT EXISTS (SELECT 1 FROM live_session_participants p WHERE p.session_id = s.id)
+            AND ss.status != 'DELETED'
+            AND (:learnerVisibleOnly = FALSE OR s.show_to_learners IS TRUE)
+            AND (
+                ss.meeting_date < CAST((CURRENT_TIMESTAMP AT TIME ZONE COALESCE(NULLIF(s.timezone, ''), 'Asia/Kolkata')) AS date)
+                OR (ss.meeting_date = CAST((CURRENT_TIMESTAMP AT TIME ZONE COALESCE(NULLIF(s.timezone, ''), 'Asia/Kolkata')) AS date)
+                    AND CAST((CURRENT_TIMESTAMP AT TIME ZONE COALESCE(NULLIF(s.timezone, ''), 'Asia/Kolkata')) AS time) > ss.last_entry_time)
+            )
+            AND (:startDate IS NULL OR ss.meeting_date >= CAST(:startDate AS DATE))
+            AND (:endDate IS NULL OR ss.meeting_date <= CAST(:endDate AS DATE))
+        ) learner_past_sessions
+        ORDER BY learner_past_sessions.meetingDate DESC, learner_past_sessions.startTime DESC, learner_past_sessions.scheduleId
+    """,
+    countQuery = """
+        SELECT COUNT(*) FROM (
+            SELECT ss.id
+            FROM session_schedules ss
+            JOIN live_session s ON ss.session_id = s.id
+            JOIN live_session_participants lsp ON lsp.session_id = s.id
+            WHERE (
+                (:batchId IS NOT NULL AND lsp.source_type = 'BATCH' AND lsp.source_id = :batchId)
+                OR
+                (:userId IS NOT NULL AND lsp.source_type = 'USER' AND lsp.source_id = :userId)
+            )
+            AND s.status = 'LIVE'
+            AND ss.status != 'DELETED'
+            AND (:learnerVisibleOnly = FALSE OR s.show_to_learners IS TRUE)
+            AND (
+                ss.meeting_date < CAST((CURRENT_TIMESTAMP AT TIME ZONE COALESCE(NULLIF(s.timezone, ''), 'Asia/Kolkata')) AS date)
+                OR (ss.meeting_date = CAST((CURRENT_TIMESTAMP AT TIME ZONE COALESCE(NULLIF(s.timezone, ''), 'Asia/Kolkata')) AS date)
+                    AND CAST((CURRENT_TIMESTAMP AT TIME ZONE COALESCE(NULLIF(s.timezone, ''), 'Asia/Kolkata')) AS time) > ss.last_entry_time)
+            )
+            AND (:startDate IS NULL OR ss.meeting_date >= CAST(:startDate AS DATE))
+            AND (:endDate IS NULL OR ss.meeting_date <= CAST(:endDate AS DATE))
+
+            UNION
+
+            SELECT ss.id
+            FROM session_schedules ss
+            JOIN live_session s ON ss.session_id = s.id
+            WHERE s.institute_id = :instituteId
+            AND s.status = 'LIVE'
+            AND UPPER(s.access_level) = 'PUBLIC'
+            AND NOT EXISTS (SELECT 1 FROM live_session_participants p WHERE p.session_id = s.id)
+            AND ss.status != 'DELETED'
+            AND (:learnerVisibleOnly = FALSE OR s.show_to_learners IS TRUE)
+            AND (
+                ss.meeting_date < CAST((CURRENT_TIMESTAMP AT TIME ZONE COALESCE(NULLIF(s.timezone, ''), 'Asia/Kolkata')) AS date)
+                OR (ss.meeting_date = CAST((CURRENT_TIMESTAMP AT TIME ZONE COALESCE(NULLIF(s.timezone, ''), 'Asia/Kolkata')) AS date)
+                    AND CAST((CURRENT_TIMESTAMP AT TIME ZONE COALESCE(NULLIF(s.timezone, ''), 'Asia/Kolkata')) AS time) > ss.last_entry_time)
+            )
+            AND (:startDate IS NULL OR ss.meeting_date >= CAST(:startDate AS DATE))
+            AND (:endDate IS NULL OR ss.meeting_date <= CAST(:endDate AS DATE))
+        ) learner_past_schedule_ids
+    """,
+    nativeQuery = true)
+    Page<LiveSessionRepository.LearnerPastSessionProjection> findPastSessionsForUserAndBatchIncludingUnassignedPublic(
+        @Param("batchId") String batchId,
+        @Param("userId") String userId,
+        @Param("instituteId") String instituteId,
+        @Param("startDate") String startDate,
+        @Param("endDate") String endDate,
+        @Param("learnerVisibleOnly") boolean learnerVisibleOnly,
         Pageable pageable
     );
 

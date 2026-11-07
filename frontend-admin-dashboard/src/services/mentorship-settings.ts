@@ -1,7 +1,6 @@
 import { GET_INSTITUTE_SETTING_DATA, SAVE_INSTITUTE_SETTING } from '@/constants/urls';
 import authenticatedAxiosInstance from '@/lib/auth/axiosInstance';
-import { getTokenDecodedData, getTokenFromCookie } from '@/lib/auth/sessionUtility';
-import { TokenKey } from '@/constants/auth/tokens';
+import { getCurrentInstituteId } from '@/lib/auth/instituteUtils';
 
 /**
  * Institute-setting key for the mentorship notification configuration. The blob
@@ -228,12 +227,14 @@ export const DEFAULT_MENTORSHIP_SETTINGS: MentorshipSettings = {
     },
 };
 
+// The institute being worked in (selected institute; the token's first only when none is
+// selected) — not always the token's first institute. A multi-institute admin otherwise
+// read and saved mentorship settings on the wrong institute, and the backend now rejects a
+// setting save whose clientId isn't the target instituteId.
 const getInstituteId = (): string => {
-    const accessToken = getTokenFromCookie(TokenKey.accessToken);
-    const tokenData = getTokenDecodedData(accessToken);
-    const instituteIds = Object.keys(tokenData?.authorities || {});
-    if (instituteIds.length === 0) throw new Error('No institute ID found in token');
-    return instituteIds[0]!;
+    const instituteId = getCurrentInstituteId();
+    if (!instituteId) throw new Error('No institute ID found in token');
+    return instituteId;
 };
 
 // Merge a persisted channel object (or legacy boolean) onto the default channel.

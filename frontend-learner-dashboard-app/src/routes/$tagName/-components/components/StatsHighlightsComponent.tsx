@@ -32,6 +32,9 @@ interface StatsHighlightsProps {
     textColor?: string;
     hoverEffect?: "scale" | "shadow" | "none";
   };
+  /** The untranslated props (JsonRenderer): icons are picked from the
+   *  authored labels, so a translated page shows the same icons. */
+  baseProps?: { stats?: Stat[]; groups?: StatGroup[] };
 }
 
 const prefersReducedMotion = () =>
@@ -62,6 +65,21 @@ const getStatIcon = (label: string): React.ComponentType<IconProps> => {
   if (/rating|review|star|satisf|success/.test(l)) return Star;
   return TrendUp;
 };
+
+/** The big number and the label of a stat: "1,200+ Learners" with no value splits into both. */
+const splitStat = (stat: Stat): { bigValue: string; labelText: string } => {
+  const bigValue = stat.value || "";
+  const labelText = stat.label || "";
+  if (!bigValue && labelText) {
+    const match = labelText.match(/^([\d,.]+[+%]?)\s+(.+)$/);
+    if (match) return { bigValue: match[1]!, labelText: match[2]! };
+  }
+  return { bigValue, labelText };
+};
+
+/** The authored list a shown (translated) list was made from: same length, same order. */
+const authoredList = <T,>(base: T[] | undefined, shown: T[] | undefined): T[] | undefined =>
+  Array.isArray(base) && Array.isArray(shown) && base.length === shown.length ? base : undefined;
 
 /**
  * Animated number that counts up 0 → target when `active` becomes true.
@@ -121,6 +139,7 @@ export const StatsHighlightsComponent: React.FC<StatsHighlightsProps> = ({
   groups,
   style: displayStyle = "card",
   styles = {},
+  baseProps,
 }) => {
   const { backgroundColor } = styles;
 
@@ -159,19 +178,10 @@ export const StatsHighlightsComponent: React.FC<StatsHighlightsProps> = ({
     return () => observer.disconnect();
   }, []);
 
-  const renderStat = (stat: Stat, index: number) => {
-    let bigValue = stat.value || "";
-    let labelText = stat.label || "";
-
-    if (!bigValue && labelText) {
-      const match = labelText.match(/^([\d,.]+[+%]?)\s+(.+)$/);
-      if (match) {
-        bigValue = match[1]!;
-        labelText = match[2]!;
-      }
-    }
-
-    const Icon = getStatIcon(labelText);
+  const renderStat = (stat: Stat, index: number, authored?: Stat) => {
+    const { bigValue, labelText } = splitStat(stat);
+    // Picked from the authored label: the icons never change with the language.
+    const Icon = getStatIcon(authored ? splitStat(authored).labelText : labelText);
     const delayClass = REVEAL_DELAYS[Math.min(index, REVEAL_DELAYS.length - 1)];
     const revealClass = inView
       ? "opacity-100 translate-y-0"
@@ -195,7 +205,7 @@ export const StatsHighlightsComponent: React.FC<StatsHighlightsProps> = ({
             "group relative flex h-full flex-col items-center text-center",
             minimal
               ? "px-4 py-6"
-              : "rounded-2xl border border-catalogue-border-subtle bg-catalogue-bg-elevated p-7 sm:p-8 shadow-sm transition-transform duration-300 ease-out will-change-transform hover:-translate-y-1",
+              : "rounded-catalogue-lg border border-catalogue-border-subtle bg-catalogue-bg-elevated p-7 sm:p-8 shadow-sm transition-transform duration-300 ease-out will-change-transform hover:-translate-y-1",
           )}
         >
           {/* Soft brand-green glow — animates via OPACITY only (GPU-smooth),
@@ -203,12 +213,12 @@ export const StatsHighlightsComponent: React.FC<StatsHighlightsProps> = ({
           {!minimal && (
             <span
               aria-hidden="true"
-              className="pointer-events-none absolute inset-0 rounded-2xl opacity-0 shadow-xl shadow-primary-500/30 transition-opacity duration-300 ease-out group-hover:opacity-100"
+              className="pointer-events-none absolute inset-0 rounded-catalogue-lg opacity-0 shadow-xl shadow-primary-500/30 transition-opacity duration-300 ease-out group-hover:opacity-100"
             />
           )}
 
           {/* Brand icon chip */}
-          <div className="mb-5 flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-primary-50 to-primary-100 ring-1 ring-primary-100 transition-all duration-300 ease-out group-hover:scale-105 group-hover:ring-primary-200">
+          <div className="mb-5 flex h-14 w-14 items-center justify-center rounded-catalogue-lg bg-gradient-to-br from-primary-50 to-primary-100 ring-1 ring-primary-100 transition-all duration-300 ease-out group-hover:scale-105 group-hover:ring-primary-200">
             <Icon className="h-7 w-7 text-primary-500" weight="duotone" />
           </div>
 
@@ -229,6 +239,8 @@ export const StatsHighlightsComponent: React.FC<StatsHighlightsProps> = ({
   };
 
   const useGroupsFormat = groups && groups.length > 0;
+  const authoredStats = authoredList(baseProps?.stats, stats);
+  const authoredGroups = authoredList(baseProps?.groups, groups);
 
   const gridClass = (count: number) =>
     cn(
@@ -271,7 +283,7 @@ export const StatsHighlightsComponent: React.FC<StatsHighlightsProps> = ({
             {groups!.map((group, groupIndex) => (
               <div
                 key={groupIndex}
-                className="rounded-2xl border border-catalogue-border-subtle bg-catalogue-bg-elevated p-5 shadow-sm sm:p-8"
+                className="rounded-catalogue-lg border border-catalogue-border-subtle bg-catalogue-bg-elevated p-5 shadow-sm sm:p-8"
               >
                 <div className="text-center mb-6">
                   <h3 className="text-base sm:text-lg font-semibold text-primary-500">
@@ -279,14 +291,16 @@ export const StatsHighlightsComponent: React.FC<StatsHighlightsProps> = ({
                   </h3>
                 </div>
                 <div className={gridClass(group.stats.length)}>
-                  {group.stats.map((stat, index) => renderStat(stat, index))}
+                  {group.stats.map((stat, index) =>
+                    renderStat(stat, index, authoredList(authoredGroups?.[groupIndex]?.stats, group.stats)?.[index]),
+                  )}
                 </div>
               </div>
             ))}
           </div>
         ) : (
           <div className={gridClass((stats || []).length)}>
-            {(stats || []).map((stat, index) => renderStat(stat, index))}
+            {(stats || []).map((stat, index) => renderStat(stat, index, authoredStats?.[index]))}
           </div>
         )}
       </div>

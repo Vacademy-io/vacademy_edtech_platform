@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
+import { createPageChangeDetector } from "./page-change";
 import FilterPanel from "./FilterPanel.tsx";
 import SearchAndSortBar from "./SearchAndSortBar.tsx";
 import CourseCard from "./CourseCards.tsx";
@@ -10,6 +11,8 @@ import { cn, toTitleCase } from "@/lib/utils";
 import { getTerminologyPlural } from "@/components/common/layout-container/sidebar/utils.ts";
 import { ContentTerms, SystemTerms } from "@/types/naming-settings.ts";
 import { getStudentDisplaySettings } from "@/services/student-display-settings";
+import { LoadErrorState } from "@/components/design-system/states";
+import { resolveListView, type RequestStatus } from "@/lib/list-status";
 
 interface CoursesPageProps {
     courseData: CoursePackageResponse;
@@ -31,7 +34,9 @@ interface CoursesPageProps {
     handlePageChange: (page: number) => void;
     showFilters?: boolean;
     selectedTab: string;
-    isLoading?: boolean;
+    /** How the request for this tab ended; undefined until one has started. */
+    status?: RequestStatus;
+    onRetry: () => void;
 }
 
 const CoursesPage: React.FC<CoursesPageProps> = ({
@@ -53,7 +58,8 @@ const CoursesPage: React.FC<CoursesPageProps> = ({
     handlePageChange,
     showFilters = true,
     selectedTab,
-    isLoading = false,
+    status,
+    onRetry,
 }) => {
     const { t } = useTranslation("study");
     // Lower-cased at the call site (not in the catalog) so the composed
@@ -85,7 +91,22 @@ const CoursesPage: React.FC<CoursesPageProps> = ({
     const activeFiltersCount =
         selectedLevels.length + selectedSessions.length + selectedTags.length + selectedInstructors.length;
 
-    // Smooth scroll on page change and dev log
+    const listView = resolveListView(status, (courseData.content ?? []).length);
+
+    // "Matching your search" is only true when there is a search or a filter.
+    const emptyCopyKey =
+        searchTerm.trim() || activeFiltersCount > 0
+            ? "catalog.empty"
+            : selectedTab === "PROGRESS"
+                ? "catalog.emptyProgress"
+                : selectedTab === "COMPLETED"
+                    ? "catalog.emptyCompleted"
+                    : "catalog.emptyAll";
+
+    // Smooth scroll on page change and dev log. Opening the screen and the first
+    // page of results arriving are not page changes: both leave the learner where
+    // they are.
+    const [pageChanged] = useState(() => createPageChangeDetector(courseData.number));
     useEffect(() => {
         if (import.meta.env.DEV) {
             console.debug("[CoursesPage] page changed", {
@@ -94,13 +115,13 @@ const CoursesPage: React.FC<CoursesPageProps> = ({
                 totalElements: courseData.totalElements,
             });
         }
-        if (scrollRef.current) {
+        if (pageChanged(courseData.number) && scrollRef.current) {
             scrollRef.current.scrollIntoView({
                 behavior: "smooth",
                 block: "start",
             });
         }
-    }, [courseData.number, courseData.totalPages, courseData.totalElements]);
+    }, [courseData.number, courseData.totalPages, courseData.totalElements, pageChanged]);
 
     // Helper function to toggle item in array
     const toggleItem = (
@@ -167,7 +188,7 @@ const CoursesPage: React.FC<CoursesPageProps> = ({
     return (
         <div
             ref={scrollRef}
-            className="w-full"
+            className="w-full scroll-mt-12 md:scroll-mt-14"
         >
             <div
                 className={`flex flex-col lg:flex-row lg:items-start ${showFilters ? "gap-4 lg:gap-6" : ""} mx-auto relative`}
@@ -252,7 +273,7 @@ const CoursesPage: React.FC<CoursesPageProps> = ({
                         activeFiltersCount={activeFiltersCount}
                     />
 
-                    {isLoading ? (
+                    {listView === "loading" ? (
                         <div className={cn(
                             "bg-card border rounded-md shadow-sm p-5 sm:p-6",
                             // Vibrant Styles
@@ -279,7 +300,18 @@ const CoursesPage: React.FC<CoursesPageProps> = ({
                                 </div>
                             </div>
                         </div>
-                    ) : (courseData.content ?? []).length === 0 ? (
+                    ) : listView === "error" ? (
+                        <div className={cn(
+                            "bg-card border rounded-lg shadow-sm px-6",
+                            "[.ui-vibrant_&]:shadow-sm [.ui-vibrant_&]:border-primary/20",
+                            "[.ui-play_&]:!bg-primary-50 [.ui-play_&]:rounded-2xl"
+                        )}>
+                            <LoadErrorState
+                                title={t("catalog.loadError.title", { courses: coursesLower })}
+                                onRetry={onRetry}
+                            />
+                        </div>
+                    ) : listView === "empty" ? (
                         <div className={cn(
                             "relative overflow-hidden bg-card border rounded-lg shadow-sm px-6 py-12 sm:py-16 text-center",
                             "[.ui-vibrant_&]:shadow-sm [.ui-vibrant_&]:border-primary/20",
@@ -303,10 +335,10 @@ const CoursesPage: React.FC<CoursesPageProps> = ({
                                     </div>
                                 </div>
                                 <h3 className="text-lg sm:text-xl font-bold text-foreground mb-2">
-                                    {t("catalog.empty.title", { courses: coursesLower })}
+                                    {t(`${emptyCopyKey}.title`, { courses: coursesLower })}
                                 </h3>
                                 <p className="text-muted-foreground text-sm max-w-md mx-auto leading-relaxed">
-                                    {t("catalog.empty.description", { courses: coursesLower })}
+                                    {t(`${emptyCopyKey}.description`, { courses: coursesLower })}
                                 </p>
                             </div>
                         </div>

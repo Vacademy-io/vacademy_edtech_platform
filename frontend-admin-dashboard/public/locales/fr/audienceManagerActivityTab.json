@@ -1,0 +1,39 @@
+{
+    "dailyActivity": {
+        "title": "Activité quotidienne",
+        "summary_one": "{{count}} activité · fuseau horaire de l'établissement",
+        "summary_many": "{{count}} d'activités · fuseau horaire de l'établissement",
+        "summary_other": "{{count}} activités · fuseau horaire de l'établissement",
+        "empty": "Aucune activité sur cette période.",
+        "barTooltip_one": "{{date}} — {{count}} activité",
+        "barTooltip_many": "{{date}} — {{count}} d'activités",
+        "barTooltip_other": "{{date}} — {{count}} activités"
+    },
+    "counsellorActivity": {
+        "title": "Activité des conseillers",
+        "empty": "Aucune activité de conseiller sur cette période.",
+        "unknownCounsellor": "Conseiller inconnu"
+    },
+    "csv": {
+        "headers": {
+            "counsellor": "Conseiller",
+            "notes": "Notes",
+            "calls": "Appels",
+            "statusChanges": "Changements de statut",
+            "followupsCreated": "Suivis créés",
+            "followupsClosed": "Suivis clôturés",
+            "total": "Total"
+        }
+    },
+    "table": {
+        "headers": {
+            "counsellor": "Conseiller",
+            "notes": "Notes",
+            "calls": "Appels",
+            "statusChanges": "Changements de statut",
+            "followupsCreated": "Suivis créés",
+            "followupsClosed": "Suivis clôturés",
+            "total": "Total"
+        }
+    }
+}

@@ -1,0 +1,16 @@
+{
+    "title": "सबमिशन की पुष्टि करें",
+    "studentLabel": "छात्र:",
+    "scoringModeLabel": "स्कोरिंग मोड:",
+    "scoringModeAutoCalculate": "ऑटो-कैलकुलेट",
+    "scoringModeDirectMarks": "सीधे अंक",
+    "answeredCount_one": "{{count}} उत्तर दिया गया",
+    "answeredCount_other": "{{count}} उत्तर दिए गए",
+    "unansweredCount_one": "{{count}} अनुत्तरित",
+    "unansweredCount_other": "{{count}} अनुत्तरित",
+    "unansweredWarning": "अनुत्तरित प्रश्नों को 0 अंक दिए जाएंगे।",
+    "attachmentsHeading": "अनुलग्नक ({{count}})",
+    "cancel": "रद्द करें",
+    "submitting": "सबमिट किया जा रहा है...",
+    "submit": "सबमिट करें"
+}

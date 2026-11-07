@@ -1,18 +1,24 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 import { cn } from '@/lib/utils';
 import { PendingApprovalsTable } from './PendingApprovalsTable';
 import { AdjustmentHistoryList } from './AdjustmentHistoryList';
 
 type Tab = 'PENDING' | 'APPROVED' | 'REJECTED' | 'ALL';
 
-const TABS: { key: Tab; label: string }[] = [
-    { key: 'PENDING', label: 'Pending' },
-    { key: 'APPROVED', label: 'Approved' },
-    { key: 'REJECTED', label: 'Rejected' },
-    { key: 'ALL', label: 'All History' },
-];
+function buildTabs(t: TFunction): { key: Tab; label: string }[] {
+    return [
+        { key: 'PENDING', label: t('tabs.pending') },
+        { key: 'APPROVED', label: t('tabs.approved') },
+        { key: 'REJECTED', label: t('tabs.rejected') },
+        { key: 'ALL', label: t('tabs.allHistory') },
+    ];
+}
 
 export function AdjustmentApprovalsMain() {
+    const { t } = useTranslation('financialManagementAdjustmentApprovalsMain');
+    const TABS = buildTabs(t);
     const [activeTab, setActiveTab] = useState<Tab>('PENDING');
 
     return (

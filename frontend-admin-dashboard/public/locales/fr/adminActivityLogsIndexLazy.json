@@ -1,0 +1,12 @@
+{
+    "navHeading": "Journaux d'activité admin",
+    "pageTitle": "Journaux d'activité admin",
+    "pageDescription": "Registre détaillé des actions administratives — qui a fait quoi, quand, et sur quelle ressource.",
+    "helmet": {
+        "title": "Journaux d'activité admin",
+        "description": "Piste d'audit des actions administratives à l'échelle de l'établissement."
+    },
+    "totalEntries_one": "{{count}} entrée au total",
+    "totalEntries_many": "{{count}} entrées au total",
+    "totalEntries_other": "{{count}} entrées au total"
+}

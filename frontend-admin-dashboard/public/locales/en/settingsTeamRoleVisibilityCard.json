@@ -1,0 +1,10 @@
+{
+    "title": "Team Tab — Role Visibility",
+    "description": "Choose which roles appear in the Team tab's role filter and the Invite User \"Role Type\" dropdown for this role. Hidden roles cannot be selected when inviting or filtering team members.",
+    "loading": "Loading roles…",
+    "empty": "No roles available.",
+    "selfLocked": "Locked on — you can't hide your own role.",
+    "error": {
+        "loadRoles": "Failed to load roles"
+    }
+}

@@ -1,0 +1,12 @@
+{
+    "detailsReportTitle": "تقرير تفاصيل {{term}}",
+    "learner": "المتعلم",
+    "termColonName": "{{term}}: {{name}}",
+    "studySlide": "شريحة الدراسة",
+    "type": "النوع",
+    "concentration": "التركيز",
+    "batchConcentrationAvg": "تركيز {{batchTerm}} (المتوسط)",
+    "timeSpent": "الوقت المستغرق",
+    "lastActive": "آخر نشاط",
+    "notAvailable": "غير متاح"
+}

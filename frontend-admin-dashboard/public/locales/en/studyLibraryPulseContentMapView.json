@@ -1,0 +1,19 @@
+{
+    "untitledSlide": "Untitled slide",
+    "untitledChapter": "Untitled chapter",
+    "untitledModule": "Untitled module",
+    "untitledSubject": "Untitled subject",
+    "frictionUsually": "friction · usually {{duration}}",
+    "avgDuration": "avg {{duration}}",
+    "loadError": "Couldn't load the content map.",
+    "retry": "Retry",
+    "emptyTitle": "No active content right now",
+    "emptySubtitle": "Slides light up here as learners open them across the course.",
+    "summary": {
+        "learners_one": "{{count}} learner",
+        "learners_other": "{{count}} learners",
+        "subjects_one": "{{count}} subject",
+        "subjects_other": "{{count}} subjects",
+        "across": "{{learners}} across {{subjects}}"
+    }
+}

@@ -1,0 +1,100 @@
+{
+    "schema": {
+        "codeMinLength": "يجب أن يتكون الكود من 3 أحرف على الأقل",
+        "codeMaxLength": "يجب ألا يتجاوز الكود 32 حرفًا",
+        "codeFormat": "استخدم أحرفًا كبيرة وأرقامًا و_ أو -",
+        "discountValueRequired": "قيمة الخصم مطلوبة",
+        "discountValuePositive": "يجب أن تكون قيمة الخصم أكبر من 0",
+        "usageLimitInvalid": "أدخل رقمًا أو اتركه فارغًا",
+        "percentageMax": "لا يمكن أن تتجاوز النسبة المئوية 100",
+        "endDateAfterStart": "يجب أن يكون تاريخ الانتهاء بعد تاريخ البدء"
+    },
+    "priceLine": {
+        "percentOff": "خصم {{value}}%",
+        "percentOffWithMax": "خصم {{value}}%، بحد أقصى {{max}}",
+        "flatOff": "خصم {{amount}}",
+        "withExpiry": "{{discount}} · صالح حتى {{date}}"
+    },
+    "dialog": {
+        "editHeading": "تعديل الكوبون {{code}}",
+        "newHeading": "كوبون جديد"
+    },
+    "footer": {
+        "cancel": "إلغاء",
+        "saving": "جارٍ الحفظ…",
+        "saveChanges": "حفظ التغييرات",
+        "createCoupon": "إنشاء الكوبون"
+    },
+    "toasts": {
+        "updated": "تم تحديث الكوبون",
+        "created": "تم إنشاء الكوبون \"{{code}}\"",
+        "saveFailed": "تعذّر حفظ الكوبون"
+    },
+    "basics": {
+        "title": "الأساسيات",
+        "code": {
+            "label": "كود الكوبون",
+            "placeholder": "SAVE20"
+        },
+        "discountType": {
+            "label": "نوع الخصم",
+            "percentage": "نسبة مئوية (%)",
+            "flat": "مبلغ ثابت"
+        },
+        "value": {
+            "labelPercentage": "القيمة (%)",
+            "labelFlat": "القيمة (₹)",
+            "placeholderPercentage": "20",
+            "placeholderFlat": "500"
+        },
+        "maxCap": {
+            "label": "الحد الأقصى (₹)",
+            "placeholder": "بلا حد أقصى",
+            "noCapHint": "(فارغ = بلا حد أقصى)"
+        }
+    },
+    "validity": {
+        "title": "الصلاحية",
+        "startDate": {
+            "label": "تاريخ البدء",
+            "optional": "(اختياري)"
+        },
+        "endDate": {
+            "label": "تاريخ الانتهاء",
+            "noExpiryHint": "(فارغ = لا ينتهي أبدًا)"
+        },
+        "usageLimit": {
+            "label": "حد الاستخدام",
+            "unlimitedHint": "(فارغ = غير محدود)",
+            "placeholder": "غير محدود"
+        }
+    },
+    "emailRestriction": {
+        "restrictLabel": "تقييد إلى بريد إلكتروني محدد",
+        "restrictHint": "يمكن فقط لبريد {{term}} المدرَج تطبيق هذا الكوبون",
+        "allowedEmailsLabel": "البريد الإلكتروني المسموح به",
+        "allowedEmailsPlaceholder": "alice@example.com, bob@example.com",
+        "emailsCaptured_zero": "{{count}} بريد إلكتروني مسجَّل",
+        "emailsCaptured_one": "{{count}} بريد إلكتروني مسجَّل",
+        "emailsCaptured_two": "{{count}} بريدان إلكترونيان مسجَّلان",
+        "emailsCaptured_few": "{{count}} بريدات إلكترونية مسجَّلة",
+        "emailsCaptured_many": "{{count}} بريدًا إلكترونيًا مسجَّلًا",
+        "emailsCaptured_other": "{{count}} بريد إلكتروني مسجَّل"
+    },
+    "scope": {
+        "title": "أين يُطبَّق",
+        "locked": "(مقفل — تم استخدام الكوبون)"
+    },
+    "livePreview": {
+        "heading": "معاينة {{term}}",
+        "codePlaceholder": "YOURCODE",
+        "status": "الحالة",
+        "usage": "الاستخدام",
+        "scope": "النطاق",
+        "instituteWide": "على مستوى المؤسسة",
+        "scopeCount": "{{count}} {{unit}}",
+        "emailRestricted": "مقيّد بالبريد الإلكتروني",
+        "allowedCount": "{{count}} مسموح به"
+    },
+    "frozenNotice": "تم استخدام هذا الكوبون. الخصم والنطاق مقفلان؛ لا يزال بإمكانك تمديد تاريخ الانتهاء أو رفع حد الاستخدام أو تغيير الحالة."
+}

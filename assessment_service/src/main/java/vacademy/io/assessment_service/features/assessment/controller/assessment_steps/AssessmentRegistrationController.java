@@ -2,6 +2,7 @@ package vacademy.io.assessment_service.features.assessment.controller.assessment
 
 
 import org.springframework.beans.factory.annotation.Autowired;
+import vacademy.io.assessment_service.features.assessment.audit.AssessmentAuditClient;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import vacademy.io.assessment_service.features.assessment.dto.AssessmentSaveResponseDto;
@@ -16,13 +17,19 @@ public class AssessmentRegistrationController {
     @Autowired
     AssessmentParticipantsManager assessmentParticipantsManager;
 
+    @Autowired
+    AssessmentAuditClient auditClient;
+
     @PostMapping("/submit")
     public ResponseEntity<AssessmentSaveResponseDto> saveParticipantsToAssessment(@RequestAttribute("user") CustomUserDetails user,
                                                                                   @RequestBody AssessmentRegistrationsDto basicAssessmentDetailsDTO,
                                                                                   @RequestParam(name = "assessmentId", required = false) String assessmentId,
                                                                                   @RequestParam(name = "instituteId", required = false) String instituteId,
                                                                                   @RequestParam String type) {
-        return assessmentParticipantsManager.saveParticipantsToAssessment(user, basicAssessmentDetailsDTO, assessmentId, instituteId, type);
+        ResponseEntity<AssessmentSaveResponseDto> response = assessmentParticipantsManager.saveParticipantsToAssessment(user, basicAssessmentDetailsDTO, assessmentId, instituteId, type);
+        auditClient.record(user, instituteId, AssessmentAuditClient.ACTION_UPDATE, assessmentId,
+                "updated participants of assessment " + assessmentId, basicAssessmentDetailsDTO);
+        return response;
     }
 
 

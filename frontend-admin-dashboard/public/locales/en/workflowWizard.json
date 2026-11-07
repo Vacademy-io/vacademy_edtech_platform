@@ -1,0 +1,14 @@
+{
+    "stepGoalTitle": "What would you like to automate?",
+    "stepTemplateTitle": "Choose a template",
+    "back": "Back",
+    "noTemplatesForCategory": "No templates found for this category.",
+    "startFromBlankCanvas": "Start from blank canvas",
+    "goals": {
+        "notifications": { "label": "Send Notifications", "description": "Email, WhatsApp, or push notifications to learners" },
+        "enrollments": { "label": "Process Enrollments", "description": "Automate enrollment, onboarding, and credentials" },
+        "reminders": { "label": "Send Reminders", "description": "Payment reminders, due dates, follow-ups" },
+        "reports": { "label": "Generate Reports", "description": "Aggregate data and send summaries" },
+        "custom": { "label": "Custom Workflow", "description": "Start from scratch or pick any template" }
+    }
+}

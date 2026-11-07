@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { MyDialog } from '@/components/design-system/dialog';
 import { MyButton } from '@/components/design-system/button';
 import { MyRadioButton } from '@/components/design-system/radio';
@@ -107,6 +108,7 @@ export default function DeleteRecurringDialog({
     sessionId,
     onSuccess,
 }: DeleteRecurringDialogProps) {
+    const { t } = useTranslation('studyLibraryDeleteRecurringDialog');
     type Choice = 'single' | 'following' | 'manual';
     const [choice, setChoice] = useState<Choice>('single');
     const [loading, setLoading] = useState(false);
@@ -150,9 +152,7 @@ export default function DeleteRecurringDialog({
         if (choice === 'manual') {
             // NOTE: Implement API call for manual deletion once backend supports manual scope
             console.log('Manually selected dates to delete:', Array.from(selectedDates));
-            alert(
-                'Manual deletion API is not yet implemented. Check the console for selected dates.'
-            );
+            alert(t('manualDeletionNotImplemented'));
             return;
         }
 
@@ -183,24 +183,24 @@ export default function DeleteRecurringDialog({
     };
 
     return (
-        <MyDialog open={open} onOpenChange={onOpenChange} heading="Remove recurring event">
+        <MyDialog open={open} onOpenChange={onOpenChange} heading={t('heading')}>
             <div className="flex flex-col gap-6 p-4">
                 <MyRadioButton
                     name="delete-scope"
                     value={choice}
                     onChange={(val) => setChoice(val as Choice)}
                     options={[
-                        { label: 'This event', value: 'single' },
-                        { label: 'This and all following events', value: 'following' },
-                        { label: 'Manually select events', value: 'manual' },
+                        { label: t('scope.single'), value: 'single' },
+                        { label: t('scope.following'), value: 'following' },
+                        { label: t('scope.manual'), value: 'manual' },
                     ]}
                     className="flex flex-col gap-4"
                 />
 
                 {choice === 'manual' && (
                     <div className="border-t pt-4">
-                        <h3 className="mb-2 font-semibold">Select dates to remove:</h3>
-                        {loading && <div>Loading schedule...</div>}
+                        <h3 className="mb-2 font-semibold">{t('selectDatesToRemove')}</h3>
+                        {loading && <div>{t('loadingSchedule')}</div>}
                         <div className="flex max-h-60 flex-col gap-2 overflow-y-auto pr-2">
                             {occurrences.map((occ) => (
                                 <div
@@ -243,10 +243,10 @@ export default function DeleteRecurringDialog({
                     />
                     <span>
                         <span className="font-medium text-neutral-800">
-                            Notify learners about the cancellation
+                            {t('notifyLearners')}
                         </span>
                         <span className="block text-xs text-neutral-500">
-                            When unchecked, no cancellation email is sent to enrolled learners.
+                            {t('notifyLearnersHint')}
                         </span>
                     </span>
                 </label>
@@ -258,7 +258,7 @@ export default function DeleteRecurringDialog({
                         onClick={() => onOpenChange(false)}
                         disabled={loading}
                     >
-                        Cancel
+                        {t('cancel')}
                     </MyButton>
                     <MyButton
                         type="button"
@@ -266,7 +266,7 @@ export default function DeleteRecurringDialog({
                         onClick={handleConfirm}
                         disabled={loading || (choice === 'manual' && selectedDates.size === 0)}
                     >
-                        Delete
+                        {t('delete')}
                     </MyButton>
                 </div>
             </div>

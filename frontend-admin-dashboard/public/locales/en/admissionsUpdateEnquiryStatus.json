@@ -1,0 +1,16 @@
+{
+    "status": {
+        "new": "New",
+        "contacted": "Contacted",
+        "qualified": "Qualified",
+        "notEligible": "Not Eligible",
+        "followUp": "Follow up",
+        "closed": "Closed",
+        "converted": "Converted",
+        "admitted": "Admitted"
+    },
+    "conversion": {
+        "hot": "Hot",
+        "cold": "Cold"
+    }
+}

@@ -1,11 +1,14 @@
 import authenticatedAxiosInstance from '@/lib/auth/axiosInstance';
 import { getTokenDecodedData, getTokenFromCookie } from '@/lib/auth/sessionUtility';
 import { TokenKey } from '@/constants/auth/tokens';
+import { getActiveRoleDisplaySettingsKey } from '@/lib/auth/instituteUtils';
+import { getDisplaySettingsFromCache } from '@/services/display-settings';
 import {
     TEACHER_MY_COURSES,
     TEACHER_CREATE_EDITABLE_COPY,
     TEACHER_SUBMIT_FOR_REVIEW,
     TEACHER_WITHDRAW_FROM_REVIEW,
+    TEACHER_PUBLISH_COURSE,
     TEACHER_CAN_EDIT_COURSE,
     TEACHER_COURSE_HISTORY,
     ADMIN_PENDING_APPROVAL_COURSES,
@@ -65,6 +68,28 @@ export const createEditableCopy = async (originalCourseId: string) => {
 
 export const submitForReview = async (courseId: string) => {
     const response = await authenticatedAxiosInstance.post(TEACHER_SUBMIT_FOR_REVIEW, null, {
+        params: { courseId },
+        headers: {
+            user: JSON.stringify({
+                id: getUserData()?.user,
+                role: 'TEACHER',
+            }),
+        },
+    });
+    return response.data;
+};
+
+// Whether the signed-in role must send new draft courses through admin
+// review. On unless the role's Course Permission toggle is explicitly off
+// (so a missing key / cold cache keeps the long-standing review flow);
+// admins never go through review regardless.
+export const isCourseApprovalRequired = () =>
+    getDisplaySettingsFromCache(getActiveRoleDisplaySettingsKey())?.coursePage
+        ?.requireCourseApproval !== false;
+
+// Teacher publishes their own draft directly (approval toggle off).
+export const publishCourse = async (courseId: string) => {
+    const response = await authenticatedAxiosInstance.post(TEACHER_PUBLISH_COURSE, null, {
         params: { courseId },
         headers: {
             user: JSON.stringify({

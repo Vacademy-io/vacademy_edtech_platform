@@ -1,0 +1,42 @@
+{
+    "emptyState": {
+        "selectPage": "اختر صفحة لعرض محتواها"
+    },
+    "status": {
+        "pending": "قيد الانتظار",
+        "generating": "جارٍ الإنشاء..."
+    },
+    "prompt": {
+        "heading": "موجّه إنشاء الذكاء الاصطناعي",
+        "noPromptAvailable": "لا يوجد موجّه متاح لهذه الشريحة.",
+        "contentWillGenerate": "سيتم إنشاء المحتوى عند النقر على \"إنشاء محتوى الصفحة\""
+    },
+    "generating": {
+        "heading": "جارٍ إنشاء المحتوى",
+        "subtext": "الذكاء الاصطناعي يُنشئ محتوى هذه الصفحة...",
+        "promptPreview": "الموجّه: {{prompt}}..."
+    },
+    "code": {
+        "defaultComment": "// ابدأ بكتابة الكود هنا"
+    },
+    "video": {
+        "scriptLabel": "النص",
+        "descriptionLabel": "الوصف",
+        "generationStatusLabel": "حالة إنشاء الفيديو:",
+        "scriptWillAppear": "سيظهر النص بمجرد اكتمال الإنشاء.",
+        "noContentAvailable": "لا يوجد محتوى متاح"
+    },
+    "quiz": {
+        "questionOf": "السؤال {{current}} من {{total}}",
+        "explanationLabel": "التفسير:",
+        "defaultQuestion": "ما هو المفهوم الرئيسي الذي يتناوله هذا القسم؟",
+        "defaultOptionA": "الخيار A",
+        "defaultOptionB": "الخيار B",
+        "defaultOptionC": "الخيار C",
+        "defaultOptionD": "الخيار D",
+        "defaultExplanation": "هذا هو تفسير الإجابة الصحيحة."
+    },
+    "assignment": {
+        "noContent": "لا يوجد محتوى للواجب"
+    }
+}

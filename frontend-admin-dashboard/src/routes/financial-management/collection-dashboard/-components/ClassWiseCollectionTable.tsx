@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { formatCurrency } from '@/utils/finance-utils';
 
 interface TableProps {
@@ -13,20 +14,21 @@ interface TableProps {
 }
 
 export const ClassWiseCollectionTable: React.FC<TableProps> = ({ classWiseDetails }) => {
+    const { t } = useTranslation('financialManagementClassWiseCollectionTable');
     return (
         <div className="bg-white rounded-xl shadow-lg border border-gray-100 p-6 h-full overflow-hidden flex flex-col">
             <h2 className="text-sm font-bold text-gray-800 mb-4 border-b border-gray-100 pb-3 flex items-center gap-2 uppercase tracking-wide">
-                Class-wise Performance
+                {t('heading')}
             </h2>
             <div className="overflow-x-auto flex-1 custom-scrollbar">
                 <table className="w-full text-left border-collapse min-w-[700px]">
                     <thead>
                         <tr className="bg-gray-50/50">
-                            <th className="py-4 px-5 text-[11px] font-bold text-gray-400 uppercase tracking-widest border-b border-gray-100">Class Name</th>
-                            <th className="py-4 px-5 text-[11px] font-bold text-gray-400 uppercase tracking-widest border-b border-gray-100 text-right">Projected</th>
-                            <th className="py-4 px-5 text-[11px] font-bold text-gray-400 uppercase tracking-widest border-b border-gray-100 text-right">Expected</th>
-                            <th className="py-4 px-5 text-[11px] font-bold text-gray-400 uppercase tracking-widest border-b border-gray-100 text-right">Collected</th>
-                            <th className="py-4 px-5 text-[11px] font-bold text-gray-400 uppercase tracking-widest border-b border-gray-100 text-right">Collection Rate</th>
+                            <th className="py-4 px-5 text-[11px] font-bold text-gray-400 uppercase tracking-widest border-b border-gray-100">{t('columns.className')}</th>
+                            <th className="py-4 px-5 text-[11px] font-bold text-gray-400 uppercase tracking-widest border-b border-gray-100 text-end">{t('columns.projected')}</th>
+                            <th className="py-4 px-5 text-[11px] font-bold text-gray-400 uppercase tracking-widest border-b border-gray-100 text-end">{t('columns.expected')}</th>
+                            <th className="py-4 px-5 text-[11px] font-bold text-gray-400 uppercase tracking-widest border-b border-gray-100 text-end">{t('columns.collected')}</th>
+                            <th className="py-4 px-5 text-[11px] font-bold text-gray-400 uppercase tracking-widest border-b border-gray-100 text-end">{t('columns.collectionRate')}</th>
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-50 text-sm font-medium">

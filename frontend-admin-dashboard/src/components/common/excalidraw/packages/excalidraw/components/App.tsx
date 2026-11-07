@@ -731,6 +731,21 @@ class App extends React.Component<AppProps, AppState> {
         history: {
           clear: this.resetHistory,
         },
+        // Vacademy addition (additive): run the registered undo/redo actions,
+        // exactly as the footer buttons / Ctrl+Z do. Resolved lazily because
+        // the actions are registered after this object is built.
+        undo: () => {
+          const action = this.actionManager.actions.undo;
+          if (action) {
+            this.actionManager.executeAction(action, "api");
+          }
+        },
+        redo: () => {
+          const action = this.actionManager.actions.redo;
+          if (action) {
+            this.actionManager.executeAction(action, "api");
+          }
+        },
         scrollToContent: this.scrollToContent,
         getSceneElements: this.getSceneElements,
         getAppState: () => this.state,

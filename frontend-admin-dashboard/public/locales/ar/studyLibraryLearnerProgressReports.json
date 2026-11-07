@@ -1,0 +1,75 @@
+{
+    "loading": "جارٍ التحميل…",
+    "view": "عرض",
+    "unnamedLearner": "{{learner}} بدون اسم",
+    "viewProgressBreakdownAriaLabel": "عرض تفاصيل تقدم {{name}}",
+    "status": {
+        "completed": "مكتمل",
+        "onTrack": "على المسار الصحيح",
+        "inProgress": "قيد التقدم",
+        "behind": "متأخر",
+        "notStarted": "لم يبدأ"
+    },
+    "columns": {
+        "courseProgress": "تقدم {{course}}",
+        "status": "الحالة",
+        "chaptersDone": "الفصول المكتملة"
+    },
+    "emptyBatch": {
+        "selectBatch": "اختر {{batch}} لعرض تقدم {{learner}}.",
+        "multiHint": "اختر عدة {{batch}} لعرض متعلمي هذه {{batch}} في قائمة واحدة."
+    },
+    "stats": {
+        "enrolled_zero": "لا يوجد {{learner}} مسجل",
+        "enrolled_one": "{{learner}} واحد مسجل",
+        "enrolled_two": "{{learner}} مسجلان",
+        "enrolled_few": "{{learner}} مسجلون",
+        "enrolled_many": "{{learner}} مسجلًا",
+        "enrolled_other": "{{learner}} مسجل",
+        "avgProgressThisPage": "متوسط التقدم (هذه الصفحة)",
+        "completedThisPage": "مكتمل (هذه الصفحة)",
+        "notStartedThisPage": "لم يبدأ (هذه الصفحة)"
+    },
+    "search": {
+        "placeholder": "ابحث عن {{learner}} بالاسم",
+        "label": "بحث",
+        "clear": "مسح",
+        "enrolledCount_zero": "لا يوجد {{learner}} مسجل",
+        "enrolledCount_one": "{{learner}} واحد مسجل",
+        "enrolledCount_two": "{{learner}} مسجلان",
+        "enrolledCount_few": "{{count}} {{learner}} مسجلون",
+        "enrolledCount_many": "{{count}} {{learner}} مسجلًا",
+        "enrolledCount_other": "{{count}} {{learner}} مسجل"
+    },
+    "error": {
+        "loadFailed": "تعذّر تحميل {{learner}} المسجلين لهذه الدفعة.",
+        "retry": "إعادة المحاولة"
+    },
+    "empty": {
+        "noMatch": "لا يوجد {{learner}} يطابق “{{search}}”.",
+        "noneEnrolled": "لا يوجد {{learner}} مسجل في {{batch}} المختارة بعد.",
+        "tryDifferentName": "جرّب اسمًا مختلفًا.",
+        "progressAppearsHere": "سيظهر التقدم هنا بمجرد تسجيل {{learner}}."
+    },
+    "drawer": {
+        "percentComplete": "اكتمال {{percent}}% من {{course}}"
+    },
+    "csv": {
+        "fileStem": "{{learner}}-progress",
+        "exportCsv": "تصدير CSV",
+        "preparing": "جارٍ التحضير…",
+        "exporting": "جارٍ التصدير {{done}}/{{total}}…",
+        "exportSuccess": "تم تصدير CSV · {{count}} صفوف",
+        "exportTruncated": "تم تصدير CSV · أول {{count}} فقط",
+        "exportFailed": "فشل تصدير CSV",
+        "summaryTitle": "تقدم {{learner}}",
+        "email": "البريد الإلكتروني",
+        "username": "اسم المستخدم",
+        "enrollmentNumber": "رقم التسجيل",
+        "courseProgress": "تقدم {{course}} (%)",
+        "chaptersDone": "الفصول المكتملة",
+        "chaptersTotal": "إجمالي الفصول",
+        "subjectTitle": "تقدم {{learner}} حسب المادة",
+        "moduleProgress": "تقدم {{module}} (%)"
+    }
+}

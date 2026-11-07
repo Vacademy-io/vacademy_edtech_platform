@@ -87,6 +87,24 @@ class FileConversionRepository:
             .first()
         )
 
+    def find_success_by_vendor_and_file_id(self, vendor: str, file_id: str) -> Optional[FileConversion]:
+        """Most recent converted row for a source fileId written by ONE vendor.
+
+        The table is shared: the same PDF can also hold a tutor probe row (JSON
+        page counts) or MathPix HTML. A reader that wants a specific kind of
+        text must say which, or it gets whichever vendor wrote last."""
+        return (
+            self.db.query(FileConversion)
+            .filter(
+                FileConversion.vendor == vendor,
+                FileConversion.file_id == file_id,
+                FileConversion.status == "SUCCESS",
+                FileConversion.html_text.isnot(None),
+            )
+            .order_by(FileConversion.created_at.desc())
+            .first()
+        )
+
     def find_latest_by_source_file_id(self, file_id: str) -> Optional[FileConversion]:
         """Most recent row (any status) for a source fileId. Lets a re-ingest
         reuse an in-flight conversion's vendor pdfId (re-poll) instead of
@@ -98,10 +116,27 @@ class FileConversionRepository:
             .first()
         )
 
-    def start(self, vendor_file_id: str, vendor: str, file_id: Optional[str]) -> FileConversion:
+    def start(
+        self, vendor_file_id: str, vendor: str, file_id: Optional[str], file_type: Optional[str] = None,
+    ) -> FileConversion:
         row = FileConversion(
             id=str(uuid4()), vendor_file_id=vendor_file_id, vendor=vendor,
-            file_id=file_id, status="INIT",
+            file_id=file_id, status="INIT", file_type=file_type,
+        )
+        self.db.add(row)
+        self.db.commit()
+        return row
+
+    def store_success(
+        self, vendor_file_id: str, vendor: str, file_id: Optional[str], html: str,
+        file_type: Optional[str] = None,
+    ) -> FileConversion:
+        """Insert one finished row in a single commit. Unlike start() +
+        cache_html(), which re-finds the row by vendor_file_id alone, this can
+        never land the text on another vendor's row that shares the key."""
+        row = FileConversion(
+            id=str(uuid4()), vendor_file_id=vendor_file_id, vendor=vendor,
+            file_id=file_id, status="SUCCESS", html_text=html, file_type=file_type,
         )
         self.db.add(row)
         self.db.commit()

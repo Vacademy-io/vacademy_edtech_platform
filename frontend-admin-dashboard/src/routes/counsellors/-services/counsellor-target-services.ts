@@ -1,3 +1,4 @@
+import type { TFunction } from 'i18next';
 import authenticatedAxiosInstance from '@/lib/auth/axiosInstance';
 import {
     COUNSELLOR_TARGET_BULK,
@@ -18,6 +19,15 @@ export const TARGET_METRIC_LABEL: Record<TargetMetric, string> = {
     LEADS_ASSIGNED: 'Leads assigned',
     CALLS_MADE: 'Calls made',
 };
+
+/** Translated equivalent of {@link TARGET_METRIC_LABEL}, for components rendering these labels to users. */
+export function buildTargetMetricLabel(t: TFunction): Record<TargetMetric, string> {
+    return {
+        CONVERSIONS: t('counsellorsTargetMetrics:conversions'),
+        LEADS_ASSIGNED: t('counsellorsTargetMetrics:leadsAssigned'),
+        CALLS_MADE: t('counsellorsTargetMetrics:callsMade'),
+    };
+}
 
 export const TARGET_METRICS: TargetMetric[] = ['CONVERSIONS', 'LEADS_ASSIGNED', 'CALLS_MADE'];
 

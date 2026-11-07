@@ -7,6 +7,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestAttribute;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -24,16 +25,17 @@ import vacademy.io.auth_service.feature.vimotion.entity.InviteCode;
 import vacademy.io.auth_service.feature.vimotion.entity.WaitlistEntry;
 import vacademy.io.auth_service.feature.vimotion.service.InviteCodeService;
 import vacademy.io.auth_service.feature.vimotion.service.WaitlistService;
+import vacademy.io.common.auth.model.CustomUserDetails;
+import vacademy.io.common.auth.util.SuperAdminAuthUtil;
 import vacademy.io.common.exceptions.VacademyException;
 
 import java.util.List;
 
 /**
  * Admin surface for the Vimotion launch tooling — consumed by
- * vacademy-health-check. JWT-authenticated by default (paths are not in
- * ALLOWED_PATHS); access control is the existing super-admin gate at the
- * FE. Production hardening: add @PreAuthorize / a custom is-root-user
- * check before we open the URL publicly.
+ * vacademy-health-check. JWT-authenticated (paths are not in ALLOWED_PATHS)
+ * and platform staff only: every handler calls
+ * {@link SuperAdminAuthUtil#requireSuperAdmin}.
  */
 @RestController
 @RequestMapping("/auth-service/v1/vimotion/admin")
@@ -51,18 +53,22 @@ public class VimotionAdminController {
 
     @GetMapping("/waitlist")
     public PagedResponse<AdminWaitlistEntryDTO> listWaitlist(
+            @RequestAttribute("user") CustomUserDetails user,
             @RequestParam(value = "status", required = false) String status,
             @RequestParam(value = "search", required = false) String search,
             @RequestParam(value = "page", defaultValue = "0") int page,
             @RequestParam(value = "size", defaultValue = "25") int size) {
+        SuperAdminAuthUtil.requireSuperAdmin(user);
         Pageable pageable = PageRequest.of(Math.max(0, page), Math.min(Math.max(1, size), 200));
         Page<WaitlistEntry> result = waitlistService.list(status, search, pageable);
         return PagedResponse.from(result, this::toAdminWaitlist);
     }
 
     @PostMapping("/waitlist/{id}/invite")
-    public InviteWaitlistResponse inviteWaitlist(@PathVariable("id") String id,
+    public InviteWaitlistResponse inviteWaitlist(@RequestAttribute("user") CustomUserDetails user,
+                                                 @PathVariable("id") String id,
                                                  @RequestBody InviteWaitlistRequest request) {
+        SuperAdminAuthUtil.requireSuperAdmin(user);
         WaitlistService.InviteResult result = waitlistService.invite(
                 id,
                 request != null && request.isSendEmail(),
@@ -75,7 +81,9 @@ public class VimotionAdminController {
     }
 
     @PostMapping("/waitlist/{id}/reject")
-    public AdminWaitlistEntryDTO rejectWaitlist(@PathVariable("id") String id) {
+    public AdminWaitlistEntryDTO rejectWaitlist(@RequestAttribute("user") CustomUserDetails user,
+                                                @PathVariable("id") String id) {
+        SuperAdminAuthUtil.requireSuperAdmin(user);
         return toAdminWaitlist(waitlistService.reject(id));
     }
 
@@ -85,17 +93,21 @@ public class VimotionAdminController {
 
     @GetMapping("/invite-codes")
     public PagedResponse<AdminInviteCodeDTO> listInviteCodes(
+            @RequestAttribute("user") CustomUserDetails user,
             @RequestParam(value = "kind", required = false) String kind,
             @RequestParam(value = "status", required = false) String status,
             @RequestParam(value = "page", defaultValue = "0") int page,
             @RequestParam(value = "size", defaultValue = "25") int size) {
+        SuperAdminAuthUtil.requireSuperAdmin(user);
         Pageable pageable = PageRequest.of(Math.max(0, page), Math.min(Math.max(1, size), 200));
         Page<InviteCode> result = inviteCodeService.list(kind, status, pageable);
         return PagedResponse.from(result, this::toAdminInviteCode);
     }
 
     @PostMapping("/invite-codes")
-    public AdminInviteCodeDTO createInviteCode(@RequestBody CreateInviteCodeRequest request) {
+    public AdminInviteCodeDTO createInviteCode(@RequestAttribute("user") CustomUserDetails user,
+                                               @RequestBody CreateInviteCodeRequest request) {
+        SuperAdminAuthUtil.requireSuperAdmin(user);
         if (request == null || request.getKind() == null) {
             throw new VacademyException("kind is required ('open' or 'locked')");
         }
@@ -121,12 +133,16 @@ public class VimotionAdminController {
     }
 
     @PostMapping("/invite-codes/{id}/revoke")
-    public AdminInviteCodeDTO revokeInviteCode(@PathVariable("id") String id) {
+    public AdminInviteCodeDTO revokeInviteCode(@RequestAttribute("user") CustomUserDetails user,
+                                               @PathVariable("id") String id) {
+        SuperAdminAuthUtil.requireSuperAdmin(user);
         return toAdminInviteCode(inviteCodeService.revoke(id));
     }
 
     @GetMapping("/invite-codes/{id}/redemptions")
-    public List<RedemptionDTO> listRedemptions(@PathVariable("id") String id) {
+    public List<RedemptionDTO> listRedemptions(@RequestAttribute("user") CustomUserDetails user,
+                                               @PathVariable("id") String id) {
+        SuperAdminAuthUtil.requireSuperAdmin(user);
         return inviteCodeService.listRedemptions(id).stream()
                 .map(r -> RedemptionDTO.builder()
                         .id(r.getId())
@@ -145,7 +161,8 @@ public class VimotionAdminController {
      * ============================================================ */
 
     @GetMapping("/stats")
-    public AdminStatsResponse stats() {
+    public AdminStatsResponse stats(@RequestAttribute("user") CustomUserDetails user) {
+        SuperAdminAuthUtil.requireSuperAdmin(user);
         long pending = waitlistService.countByStatus(WaitlistEntry.STATUS_PENDING);
         long invited = waitlistService.countByStatus(WaitlistEntry.STATUS_INVITED);
         long converted = waitlistService.countByStatus(WaitlistEntry.STATUS_CONVERTED);

@@ -28,7 +28,7 @@ public class CouponCreateRequestDTO {
 
     private Date redeemStartDate;
 
-    @NotNull
+    /** null = never expires. */
     private Date redeemEndDate;
 
     /** null = unlimited. */

@@ -1,0 +1,23 @@
+{
+    "header": {
+        "progress_one": "Your implementation status · {{count}}% complete",
+        "progress_other": "Your implementation status · {{count}}% complete"
+    },
+    "empty": {
+        "message": "No milestones yet."
+    },
+    "status": {
+        "done": "Done",
+        "inProgress": "In progress",
+        "blocked": "Blocked",
+        "notStarted": "Not started"
+    },
+    "milestone": {
+        "eta": "ETA {{date}}",
+        "confirmButton": "Confirm"
+    },
+    "comment": {
+        "placeholder": "Add a comment for the team…",
+        "sendButton": "Send"
+    }
+}

@@ -1,0 +1,22 @@
+{
+    "dropzoneHint": "Drag and drop a document here, or click to select",
+    "dropzoneFormats": "DOC or DOCX, up to 25 MB",
+    "invalidFileType": "Please upload only document files (DOC, DOCX)",
+    "fileTooLarge": "File is {{sizeMb}} MB. Maximum size is 25 MB.",
+    "fileSelected": "Document selected successfully",
+    "selectFileFirst": "Please select a file first",
+    "titleRequired": "Please enter a title for the document",
+    "stageStarting": "Starting…",
+    "stageConverting": "Converting document…",
+    "stageProcessingImages": "Processing images…",
+    "stageGeneratingPreview": "Generating preview…",
+    "stageSaving": "Saving slide…",
+    "stageFinalizing": "Finalizing…",
+    "stageDone": "Done",
+    "uploadSuccess": "Document uploaded successfully!",
+    "conversionFailed": "Conversion failed. Please try again.",
+    "reorderFailed": "Slide created but reordering failed",
+    "processingHint": "This may take a few moments…",
+    "uploading": "Uploading…",
+    "uploadDocument": "Upload Document"
+}

@@ -1,4 +1,6 @@
+import type { ReactNode } from 'react';
 import { GraduationCap, Plus, UsersThree } from '@phosphor-icons/react';
+import { useTranslation } from 'react-i18next';
 import { MyButton } from '@/components/design-system/button';
 import type { TagItem } from '@/services/tag-management';
 import type { CampaignItem } from '@/routes/audience-manager/list/-services/get-campaigns-list';
@@ -36,39 +38,43 @@ interface RecipientsStepProps {
     tagReachLoading: boolean;
     errors: FieldErrors;
     showErrors: boolean;
+    /** Replaces the section icon — the email campaign page numbers its sections. */
+    badge?: ReactNode;
 }
 
 export function RecipientsStep(props: RecipientsStepProps) {
+    const { t } = useTranslation('announcementCreateRecipientsStep');
     const { rules, onAddRule, showErrors, errors } = props;
 
     const quickAdds: Array<{ label: string; run: () => void }> = [
         {
-            label: `All ${props.learnerNounPlural}`,
+            label: t('quickAdd.allLearners', { noun: props.learnerNounPlural }),
             run: () => onAddRule('ROLE', { roleId: 'STUDENT' }),
         },
         {
-            label: `All ${props.teacherNounPlural}`,
+            label: t('quickAdd.allTeachers', { noun: props.teacherNounPlural }),
             run: () => onAddRule('ROLE', { roleId: 'TEACHER' }),
         },
         {
-            label: `Specific ${props.batchNounPlural}`,
+            label: t('quickAdd.specificBatches', { noun: props.batchNounPlural }),
             run: () => onAddRule('PACKAGE_SESSION'),
         },
-        { label: 'By tag', run: () => onAddRule('TAG') },
-        { label: 'A campaign', run: () => onAddRule('AUDIENCE') },
+        { label: t('quickAdd.byTag'), run: () => onAddRule('TAG') },
+        { label: t('quickAdd.campaign'), run: () => onAddRule('AUDIENCE') },
     ];
 
     return (
         <div className="space-y-6">
             <SectionCard
-                title="Who receives this?"
-                description="Add one or more audiences. Overlaps are de-duplicated, so nobody gets it twice."
+                title={t('sectionTitle')}
+                description={t('sectionDescription')}
                 Icon={UsersThree}
+                badge={props.badge}
                 invalid={showErrors && Boolean(errors.recipients)}
                 action={
                     <MyButton buttonType="primary" scale="small" onClick={() => onAddRule('ROLE')}>
                         <Plus className="mr-1 size-4" />
-                        Add audience
+                        {t('addAudience')}
                     </MyButton>
                 }
             >
@@ -90,8 +96,8 @@ export function RecipientsStep(props: RecipientsStepProps) {
                     <>
                         <EmptyState
                             Icon={GraduationCap}
-                            title="No audience yet"
-                            description="Pick one of the shortcuts above, or add an audience and choose exactly who it targets."
+                            title={t('emptyTitle')}
+                            description={t('emptyDescription')}
                         />
                         <FieldError message={showErrors ? errors.recipients : undefined} />
                     </>

@@ -1,0 +1,52 @@
+{
+    "eyebrow": "प्रवेश आवेदन",
+    "status": {
+        "admitted": "प्रवेशित",
+        "approved": "स्वीकृत",
+        "rejected": "अस्वीकृत",
+        "pending": "लंबित",
+        "underReview": "समीक्षा में",
+        "submitted": "सबमिट किया गया"
+    },
+    "stageSteps": {
+        "submitted": "सबमिट किया गया",
+        "review": "समीक्षा में",
+        "decision": "निर्णय"
+    },
+    "hero": {
+        "trackingId": "ट्रैकिंग आईडी: {{id}}",
+        "stage": "चरण: {{stage}}"
+    },
+    "empty": {
+        "title": "कोई आवेदन नहीं मिला",
+        "hint": "इस शिक्षार्थी से अभी तक कोई आवेदन जुड़ा नहीं है।"
+    },
+    "error": {
+        "title": "आवेदन विवरण लोड नहीं हो सका",
+        "hint": "आवेदन प्राप्त करते समय कुछ गड़बड़ी हुई। कृपया फिर से प्रयास करें।"
+    },
+    "sections": {
+        "studentInformation": "छात्र की जानकारी",
+        "parentInformation": "अभिभावक की जानकारी",
+        "applicationTimeline": "आवेदन समयरेखा"
+    },
+    "fields": {
+        "fullName": "पूरा नाम",
+        "dateOfBirth": "जन्म तिथि",
+        "gender": "लिंग",
+        "classAppliedFor": "जिस कक्षा के लिए आवेदन किया",
+        "fatherName": "पिता का नाम",
+        "motherName": "माता का नाम",
+        "applyingForClass": "आवेदित कक्षा",
+        "academicYear": "शैक्षणिक वर्ष",
+        "email": "ईमेल",
+        "mobileNumber": "मोबाइल नंबर",
+        "address": "पता",
+        "trackingId": "ट्रैकिंग आईडी",
+        "currentStage": "वर्तमान चरण",
+        "stageStatus": "चरण की स्थिति",
+        "createdAt": "बनाया गया",
+        "lastUpdated": "अंतिम अपडेट"
+    },
+    "notAvailable": "उपलब्ध नहीं"
+}

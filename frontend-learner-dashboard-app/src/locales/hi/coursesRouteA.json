@@ -1,0 +1,146 @@
+{
+  "common": {
+    "loading": "लोड हो रहा है...",
+    "login": "लॉग इन",
+    "unknownInstructor": "अज्ञात प्रशिक्षक"
+  },
+  "courseCard": {
+    "noTagsAvailable": "कोई टैग उपलब्ध नहीं",
+    "moreTags": "+ {{count}} और",
+    "viewButton": "{{course}} देखें"
+  },
+  "catalogPage": {
+    "bannerAlt": "{{course}} बैनर"
+  },
+  "header": {
+    "nav": {
+      "home": "होम",
+      "about": "हमारे बारे में",
+      "impact": "प्रभाव",
+      "getInvolved": "जुड़ें",
+      "contact": "संपर्क करें"
+    },
+    "loadingLogoAriaLabel": "लोगो लोड हो रहा है",
+    "toggleMobileMenuAriaLabel": "मोबाइल मेनू टॉगल करें",
+    "logoAlt": "लोगो",
+    "donate": "दान करें"
+  },
+  "donationDialog": {
+    "closeAriaLabel": "बंद करें",
+    "continueButton": "जारी रखें",
+    "errors": {
+      "amountRequired": "कृपया दान की राशि चुनें या दर्ज करें",
+      "invalidEmail": "कृपया एक मान्य ईमेल पता दर्ज करें"
+    }
+  },
+  "coursesPage": {
+    "untitledPackage": "अनाम पैकेज",
+    "defaultLevelName": "शुरुआती",
+    "empty": {
+      "title": "कोई {{courses}} उपलब्ध नहीं",
+      "description": "अपने खोज मापदंड समायोजित करने का प्रयास करें या ताज़ा {{courses}} के लिए बाद में फिर देखें।"
+    }
+  },
+  "filterPanel": {
+    "title": "फ़िल्टर",
+    "clearAll": "सभी हटाएं",
+    "apply": "लागू करें",
+    "showLess": "कम दिखाएं",
+    "showMore": "और दिखाएं",
+    "noItemsAvailable": "कोई {{title}} उपलब्ध नहीं।",
+    "filtersUnavailable": "{{title}} फ़िल्टर फ़िलहाल उपलब्ध नहीं हैं।"
+  },
+  "footer": {
+    "tagline": "शिक्षा के माध्यम से बच्चों को सशक्त बनाना",
+    "logoAlt": "लोगो",
+    "quickLinks": "त्वरित लिंक",
+    "contactUs": "संपर्क करें",
+    "websiteLabel": "Codecircle.org",
+    "emailLabel": "ईमेल:",
+    "newsletterTitle": "हमारे न्यूज़लेटर की सदस्यता लें",
+    "namePlaceholder": "आपका नाम",
+    "emailPlaceholder": "आपका ईमेल",
+    "subscribeButton": "सदस्यता लें",
+    "copyright": "© 2025 Codecircle.org. सर्वाधिकार सुरक्षित",
+    "privacyPolicy": "गोपनीयता नीति",
+    "termsOfService": "सेवा की शर्तें"
+  },
+  "hero": {
+    "bannerAlt": "{{course}} कैटलॉग बैनर"
+  },
+  "cta": {
+    "titlePrefix": "क्या आप खुद",
+    "titleSuffix": "बनाना चाहते हैं?",
+    "subtitle1": "अपना ज्ञान दुनिया के साथ साझा करें!",
+    "subtitle2": "लॉग इन करें और दूसरों के देखने और सीखने के लिए खुद {{courses}} बनाना शुरू करें।"
+  },
+  "pagination": {
+    "ariaLabel": "पेजिनेशन",
+    "previous": "पिछला",
+    "next": "अगला"
+  },
+  "searchAndSortBar": {
+    "searchPlaceholder": "शीर्षक से {{courses}} खोजें ...",
+    "sortNewest": "इस अनुसार क्रमबद्ध करें: सबसे नया",
+    "sortOldest": "इस अनुसार क्रमबद्ध करें: सबसे पुराना"
+  },
+  "supporters": {
+    "titlePrefix": "हमारे",
+    "titleHighlight": "समर्थक"
+  },
+  "donation": {
+    "amountStep": {
+      "loadingOptions": "भुगतान विकल्प लोड हो रहे हैं...",
+      "other": "अन्य",
+      "minAmountPlaceholder": "{{currencySymbol}} (न्यूनतम {{currencySymbol}}{{minAmount}})"
+    },
+    "summary": {
+      "title": "दान सारांश",
+      "amountLabel": "राशि:",
+      "emailLabel": "ईमेल:",
+      "editButton": "संपादित करें"
+    },
+    "emailStep": {
+      "emailLabel": "आपका ईमेल",
+      "emailPlaceholder": "you@example.com",
+      "receiptNote": "हम आपकी रसीद इसी ईमेल पते पर भेजेंगे"
+    },
+    "header": {
+      "title": "निःशुल्क शिक्षा का समर्थन करें",
+      "subtitle": "दान के लिए एक राशि चुनें"
+    },
+    "paymentStep": {
+      "loadingGateway": "भुगतान गेटवे लोड हो रहा है...",
+      "gatewayUnavailable": "भुगतान गेटवे उपलब्ध नहीं है",
+      "cardDetailsLabel": "कार्ड विवरण",
+      "errors": {
+        "gatewayNotConfigured": "भुगतान गेटवे कॉन्फ़िगर नहीं है",
+        "failedToLoad": "भुगतान गेटवे लोड करने में विफल"
+      }
+    },
+    "successStep": {
+      "thankYouTitle": "धन्यवाद!",
+      "donationProcessingPrefix": "आपका दान",
+      "donationProcessingSuffix": "संसाधित किया जा रहा है।",
+      "thankYouMessage": "निःशुल्क शिक्षा का समर्थन करने और सभी के लिए शिक्षा को सुलभ बनाने में मदद करने के लिए धन्यवाद!",
+      "paymentFailedTitle": "भुगतान विफल",
+      "paymentFailedPrefix": "हम आपके",
+      "paymentFailedSuffix": "का दान संसाधित नहीं कर सके।",
+      "paymentIssueTitle": "भुगतान समस्या",
+      "tryAgainButton": "फिर से प्रयास करें"
+    },
+    "paymentForm": {
+      "processing": "प्रोसेस हो रहा है...",
+      "donateNow": "अभी दान करें",
+      "securePaymentBy": "सुरक्षित भुगतान द्वारा संचालित",
+      "stripeBrand": "Stripe",
+      "errors": {
+        "stripeNotLoaded": "Stripe लोड नहीं हुआ है। कृपया पेज को रीफ़्रेश करें।",
+        "cardElementNotFound": "कार्ड एलिमेंट नहीं मिला।",
+        "paymentMethodCreationFailed": "भुगतान विधि बनाने में विफल।",
+        "paymentProcessingFailed": "भुगतान प्रोसेसिंग विफल",
+        "paymentFailedRetry": "भुगतान विफल रहा। कृपया फिर से प्रयास करें।"
+      }
+    }
+  }
+}

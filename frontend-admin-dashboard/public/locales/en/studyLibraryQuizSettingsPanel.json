@@ -1,0 +1,12 @@
+{
+    "timeLimit": "⏱ Time Limit",
+    "minutesAbbrev": "min",
+    "marksPerQuestion": "★ Marks/Q",
+    "negativeMarking": "− Negative",
+    "partialMarking": "½ Partial marks",
+    "partialMarkingHint": "Multiple-correct questions: picking only some of the correct options (and no wrong one) earns that share of the marks",
+    "passPercentage": "🎯 Pass %",
+    "attempts": "Attempts",
+    "savingEllipsis": "Saving…",
+    "saveSettings": "Save Settings"
+}

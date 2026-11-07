@@ -1,0 +1,52 @@
+{
+    "schema": {
+        "campaignIdRequired": "Campaign ID is required"
+    },
+    "navHeading": "Add Response",
+    "helmet": {
+        "title": "Add Response - {{name}}",
+        "description": "Add a response on behalf of a respondent."
+    },
+    "backButton": "Back to {{audienceTerm}} Users",
+    "header": {
+        "description": "Fill in the details below to submit a response on behalf of a respondent.",
+        "cardDescription": "Add the person's details to add them as a lead in this {{audienceTerm}}."
+    },
+    "emptyState": {
+        "title": "No form fields configured for this {{audienceTerm}}.",
+        "hint": "Please add custom fields first to start collecting responses."
+    },
+    "form": {
+        "sectionTitle": "Respondent details",
+        "requiredFields": "Required fields",
+        "cancel": "Cancel",
+        "submitting": "Submitting...",
+        "submit": "Submit Response",
+        "requiredHint": "All fields marked with <star>*</star> are required",
+        "loadingFields": "Loading form…"
+    },
+    "validation": {
+        "missingFields": "Please fill required fields: {{fields}}"
+    },
+    "toast": {
+        "success": "Response submitted successfully!",
+        "genericError": "Failed to submit response. Please try again."
+    },
+    "audienceFallbackName": "this {{audienceTerm}}",
+    "footer": {
+        "responsesAppearUnder": "Responses appear under <bold>{{audienceName}}</bold> in your {{audienceTerm}} list."
+    },
+    "assign": {
+        "label": "Assign to counsellor",
+        "placeholder": "Select counsellor (optional)",
+        "loading": "Loading counsellors…",
+        "search": "Search counsellor…",
+        "empty": "No counsellor found.",
+        "hint": "If left empty, the lead follows your usual lead routing.",
+        "optional": "(optional)"
+    },
+    "duplicateBlock": {
+        "title": "This lead already exists",
+        "ok": "OK"
+    }
+}

@@ -1,0 +1,52 @@
+{
+    "heading": {
+        "goalsTitle": "Heading above the goal chips"
+    },
+    "featured": {
+        "title": "Featured layout",
+        "hint": "Goal chips, one featured path and the other paths as cards. Turn parts off to split them over two sections.",
+        "showGoals": "Goal chips",
+        "showFeatured": "Featured path",
+        "showGrid": "More learning paths",
+        "showGridHint": "Every other path, as cards.",
+        "sharedFrom": "Goals and the featured path come from the section “{{name}}” on this page. Edit them there.",
+        "syncNote": "Goals and the featured path are also copied to the other learning-path sections on this page that list this library ({{count}}).",
+        "path": "Featured path",
+        "pathFirst": "The first path (default)",
+        "pathLoading": "Loading product pages…",
+        "pathOutside": "{{value}} (not in this library)",
+        "pathOutsideWarning": "This section does not list this product page (it is outside the library or the chosen folder, or in a coming-soon folder), so the site features the first path instead. Pick another.",
+        "badge": "Badge on the featured path",
+        "badgePlaceholder": "Most popular path",
+        "sharedFromOpen": "Open that section",
+        "sectionNumber": "section {{n}}",
+        "differsFeatured": "The other section features a different path or badge. Changing them here replaces its copy.",
+        "differsGoals": "The other section has different goals. Editing goals here replaces its goals.",
+        "statusDraft": "draft",
+        "statusInactive": "inactive"
+    },
+    "goals": {
+        "title": "Goal chips",
+        "hint": "Each chip shows the paths in the streams you pick.",
+        "allLabel": "First chip",
+        "allPlaceholder": "All paths",
+        "label": "Chip text",
+        "key": "Link key",
+        "keyHint": "Used in the address as ?goal=… — change it only if no link uses it yet.",
+        "streams": "Streams",
+        "customTag": "Custom: {{value}}",
+        "noStreams": "The library has no stream folders to pick from yet.",
+        "remove": "Remove goal",
+        "add": "Add a goal",
+        "hiddenUntilFilled": "Hidden on the site until it has chip text and a link key.",
+        "foldersLoading": "Loading the library’s streams…",
+        "foldersFailed": "The library’s streams could not be loaded.",
+        "retry": "Try again",
+        "noLibrary": "Choose a library above to pick its streams."
+    },
+    "more": {
+        "title": "Heading of the other paths",
+        "titlePlaceholder": "More learning paths",
+        "note": "Note beside the heading"
+    }
+}

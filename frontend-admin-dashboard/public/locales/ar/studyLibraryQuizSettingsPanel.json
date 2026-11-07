@@ -1,0 +1,12 @@
+{
+    "timeLimit": "⏱ الحد الزمني",
+    "minutesAbbrev": "د",
+    "marksPerQuestion": "★ الدرجات/سؤال",
+    "negativeMarking": "− العلامات السالبة",
+    "partialMarking": "½ درجات جزئية",
+    "partialMarkingHint": "أسئلة متعددة الإجابات الصحيحة: اختيار بعض الإجابات الصحيحة فقط (دون أي خاطئة) يمنح جزءًا مماثلًا من الدرجة",
+    "passPercentage": "🎯 نسبة النجاح %",
+    "attempts": "المحاولات",
+    "savingEllipsis": "جارٍ الحفظ…",
+    "saveSettings": "حفظ الإعدادات"
+}

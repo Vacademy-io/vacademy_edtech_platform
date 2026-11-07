@@ -12,6 +12,7 @@ import vacademy.io.common.exceptions.VacademyException;
 
 import java.util.Comparator;
 import java.util.List;
+import java.util.Optional;
 
 /**
  * Plivo origination for the v1 PSTN-bridge (counsellor-first) flow: the
@@ -42,11 +43,27 @@ public class PlivoOriginationResolver implements OutboundOriginationResolver {
         return ProviderType.PLIVO;
     }
 
+    /** Shared with the dial-time failure so the pre-flight and the toast match. */
+    private static final String NO_VERIFIED_MOBILE =
+            "Add a verified mobile number in your profile before placing calls";
+
+    @Override
+    public Optional<String> callerBlockedReason(String instituteId, String callerUserId) {
+        // Strict lookup, so an auth_service failure THROWS here and
+        // computeAvailability's catch degrades to "ready". findVerifiedMobile
+        // collapses an outage into an empty Optional, indistinguishable from
+        // "this person genuinely has no mobile" — using it would have disabled
+        // the Call button for every working counsellor during a blip, and told
+        // them to go add a mobile number they already have.
+        return userMobileResolver.findVerifiedMobileStrict(callerUserId).isPresent()
+                ? Optional.empty()
+                : Optional.of(NO_VERIFIED_MOBILE);
+    }
+
     @Override
     public OriginationPlan resolve(OriginationContext ctx) {
         String counsellorPhone = userMobileResolver.findVerifiedMobile(ctx.getCounsellorUserId())
-                .orElseThrow(() -> new VacademyException(
-                        "Add a verified mobile number in your profile before placing calls"));
+                .orElseThrow(() -> new VacademyException(NO_VERIFIED_MOBILE));
 
         ProviderNumberView chosen = pickNumber(ctx);
         String callerId = chosen != null ? chosen.getPhoneNumber() : null;

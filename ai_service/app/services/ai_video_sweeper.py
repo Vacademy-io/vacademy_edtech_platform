@@ -13,6 +13,7 @@ Best-effort — a sweeper failure must never block boot.
 from __future__ import annotations
 
 import logging
+from typing import Dict, Optional
 from datetime import datetime, timedelta
 
 from sqlalchemy import text
@@ -26,6 +27,35 @@ logger = logging.getLogger(__name__)
 # Generous TTL: the longest legitimate runs (ultra-tier HTML with images) take
 # well under an hour; anything older than this is orphaned.
 STALE_AFTER_HOURS = 6
+
+
+def _claim_for_sweep(video, repo=None, claimed: Optional[Dict[str, str]] = None) -> bool:
+    """Take a leased run away from any resumer before failing it: a
+    compare-and-set to lease state ``sweeping`` on the leg we observed. Rows
+    without a lease (legacy) are swept as before.
+
+    An ``interrupted`` lease is swept too: the sweeper only sees rows untouched
+    for STALE_AFTER_HOURS, and the resumer only looks at rows created within
+    the last 6 h — an interrupted row this old will never be resumed, and
+    skipping it would leave it IN_PROGRESS and unrefunded forever."""
+    meta = video.extra_metadata if isinstance(getattr(video, "extra_metadata", None), dict) else {}
+    lease = meta.get("run_lease") if isinstance(meta.get("run_lease"), dict) else None
+    if not lease or not lease.get("leg_id"):
+        return True
+    try:
+        from . import ai_video_run_lease
+
+        if repo is None:
+            from ..repositories.ai_video_repository import AiVideoRepository
+            repo = AiVideoRepository()
+        claim = ai_video_run_lease.new_lease(origin="sweeper", state="sweeping", prev=lease)
+        ok = bool(repo.claim_for_resume(video.video_id, lease["leg_id"], claim))
+        if ok and claimed is not None:
+            claimed[video.video_id] = claim["leg_id"]
+        return ok
+    except Exception as exc:  # noqa: BLE001 — never block the backstop on the lease
+        logger.warning("Sweeper lease claim failed for %s: %s", video.video_id, exc)
+        return False
 
 
 def sweep_stale_ai_videos() -> int:
@@ -50,7 +80,10 @@ def sweep_stale_ai_videos() -> int:
                 .all()
             )
             token_service = TokenUsageService(db)
+            claimed: Dict[str, str] = {}
             for video in stale:
+                if not _claim_for_sweep(video, claimed=claimed):
+                    continue
                 try:
                     row = db.execute(
                         text(
@@ -74,6 +107,16 @@ def sweep_stale_ai_videos() -> int:
                 )
                 swept += 1
             db.commit()
+        # The swept rows are FAILED now: release the sweeper's lease so a
+        # user /retry is not refused with 409 while it would read as live.
+        if claimed:
+            try:
+                from ..repositories.ai_video_repository import AiVideoRepository
+                _repo = AiVideoRepository()
+                for _vid, _leg in claimed.items():
+                    _repo.release_lease(_vid, _leg, "released", interrupt_reason="swept")
+            except Exception as exc:  # noqa: BLE001
+                logger.warning("Sweeper lease release failed: %s", exc)
         if swept:
             logger.warning("ai_gen_video sweeper: marked %d orphaned run(s) FAILED", swept)
     except Exception as exc:  # noqa: BLE001

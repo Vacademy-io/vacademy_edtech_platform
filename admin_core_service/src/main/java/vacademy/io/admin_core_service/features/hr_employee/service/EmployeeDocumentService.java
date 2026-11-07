@@ -4,6 +4,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
+import vacademy.io.admin_core_service.core.security.HrAccessGuard;
 import vacademy.io.admin_core_service.features.hr_employee.dto.EmployeeDocumentDTO;
 import vacademy.io.admin_core_service.features.hr_employee.entity.EmployeeDocument;
 import vacademy.io.admin_core_service.features.hr_employee.entity.EmployeeProfile;
@@ -24,10 +25,14 @@ public class EmployeeDocumentService {
     @Autowired
     private EmployeeProfileRepository employeeProfileRepository;
 
+    @Autowired
+    private HrAccessGuard hrAccessGuard;
+
     @Transactional
-    public String addDocument(String employeeId, EmployeeDocumentDTO dto) {
+    public String addDocument(String employeeId, EmployeeDocumentDTO dto, String instituteId) {
         EmployeeProfile employee = employeeProfileRepository.findById(employeeId)
                 .orElseThrow(() -> new VacademyException("Employee not found"));
+        hrAccessGuard.requireInstituteMatch(employee.getInstituteId(), instituteId, "Employee");
 
         if (!StringUtils.hasText(dto.getDocumentName())) {
             throw new VacademyException("Document name is required");
@@ -55,7 +60,11 @@ public class EmployeeDocumentService {
     }
 
     @Transactional(readOnly = true)
-    public List<EmployeeDocumentDTO> getDocuments(String employeeId) {
+    public List<EmployeeDocumentDTO> getDocuments(String employeeId, String instituteId) {
+        EmployeeProfile employee = employeeProfileRepository.findById(employeeId)
+                .orElseThrow(() -> new VacademyException("Employee not found"));
+        hrAccessGuard.requireInstituteMatch(employee.getInstituteId(), instituteId, "Employee");
+
         List<EmployeeDocument> documents = employeeDocumentRepository.findByEmployeeIdOrderByCreatedAtDesc(employeeId);
 
         return documents.stream()
@@ -64,9 +73,10 @@ public class EmployeeDocumentService {
     }
 
     @Transactional
-    public void deleteDocument(String employeeId, String documentId) {
+    public void deleteDocument(String employeeId, String documentId, String instituteId) {
         EmployeeDocument document = employeeDocumentRepository.findById(documentId)
                 .orElseThrow(() -> new VacademyException("Document not found"));
+        hrAccessGuard.requireInstituteMatch(document.getEmployee().getInstituteId(), instituteId, "Document");
         if (!document.getEmployee().getId().equals(employeeId)) {
             throw new VacademyException("Document does not belong to this employee");
         }

@@ -4,9 +4,13 @@ import {
     TrendUp,
 } from "@phosphor-icons/react";
 import { useState, useEffect, useRef, useCallback } from "react";
+import { useTranslation } from "react-i18next";
+import type { TFunction } from "i18next";
 import { MyPagination } from "@/components/design-system/pagination";
 import { AxiosError } from "axios";
 import { toast } from "sonner";
+import { getTerminology } from "@/components/common/layout-container/sidebar/utils";
+import { ContentTerms, SystemTerms } from "@/types/naming-settings";
 import {
     useMutation,
     useQueryClient,
@@ -57,7 +61,7 @@ interface PaginatedResponse {
 }
 
 // Helper function to transform API data to Review format
-const transformRatingToReview = (rating: Rating): Review => {
+const transformRatingToReview = (rating: Rating, t: TFunction): Review => {
     return {
         id: rating.id,
         user: {
@@ -67,7 +71,7 @@ const transformRatingToReview = (rating: Rating): Review => {
         },
         createdAt: rating.created_at,
         rating: rating.points,
-        description: rating.text || "No review text provided",
+        description: rating.text || t("ratings.noReviewText"),
         likes: rating.likes,
         dislikes: rating.dislikes,
     };
@@ -82,6 +86,8 @@ export function CourseDetailsRatingsComponent({
     packageSessionId: string | null;
     onLoadingChange?: (loading: boolean) => void;
 }) {
+    const { t } = useTranslation("courseDetailsC");
+    const course = getTerminology(ContentTerms.Course, SystemTerms.Course);
     const router = useRouter();
     const searchParams = router.state.location.search;
     const queryClient = useQueryClient();
@@ -133,7 +139,8 @@ export function CourseDetailsRatingsComponent({
     }, [isRatingLoading, isOverallRatingLoading, handleLoadingChange]);
 
     // Transform API data to reviews format
-    const reviews = ratingData?.content.map(transformRatingToReview) || [];
+    const reviews =
+        ratingData?.content.map((rating) => transformRatingToReview(rating, t)) || [];
     const totalPages = ratingData?.totalPages || 0;
     
 
@@ -249,14 +256,14 @@ export function CourseDetailsRatingsComponent({
 
             if (error instanceof AxiosError) {
                 toast.error(
-                    error?.response?.data?.ex || "Failed to submit rating",
+                    error?.response?.data?.ex || t("ratings.toast.failedToSubmit"),
                     {
                         className: "error-toast",
                         duration: 2000,
                     }
                 );
             } else {
-                toast.error("An unexpected error occurred", {
+                toast.error(t("ratings.toast.unexpectedError"), {
                     className: "error-toast",
                     duration: 2000,
                 });
@@ -376,7 +383,7 @@ export function CourseDetailsRatingsComponent({
             return handleSubmitRating(rating, desc, source_id);
         },
         onSuccess: () => {
-            toast.success("Thank you for your feedback!", {
+            toast.success(t("ratings.toast.thankYou"), {
                 className: "success-toast",
                 duration: 2000,
             });
@@ -394,14 +401,14 @@ export function CourseDetailsRatingsComponent({
         onError: (error: unknown) => {
             if (error instanceof AxiosError) {
                 toast.error(
-                    error?.response?.data?.ex || "Failed to submit rating",
+                    error?.response?.data?.ex || t("ratings.toast.failedToSubmit"),
                     {
                         className: "error-toast",
                         duration: 2000,
                     }
                 );
             } else {
-                toast.error("An unexpected error occurred", {
+                toast.error(t("ratings.toast.unexpectedError"), {
                     className: "error-toast",
                     duration: 2000,
                 });
@@ -416,7 +423,7 @@ export function CourseDetailsRatingsComponent({
         
         // Ensure rating is selected
         if (!selectedRating) {
-            toast.error("Please select a rating before submitting", {
+            toast.error(t("ratings.toast.selectRatingRequired"), {
                 className: "error-toast",
                 duration: 2000,
             });
@@ -445,7 +452,7 @@ export function CourseDetailsRatingsComponent({
             <div className="relative space-y-4 lg:space-y-6">
                 {/* Enhanced Header */}
                 <div className="flex items-center space-x-2 sm:space-x-3 animate-fade-in-down">
-                    <div className="p-1.5 sm:p-2 bg-gradient-to-br from-yellow-100 to-yellow-200 rounded-lg shadow-sm">
+                    <div className="p-1.5 sm:p-2 bg-gradient-to-br from-warning-100 to-warning-200 rounded-lg shadow-sm">
                         <Star
                             size={20}
                             className="text-yellow-600"
@@ -454,7 +461,7 @@ export function CourseDetailsRatingsComponent({
                     </div>
                     <div>
                         <h1 className="text-lg sm:text-xl lg:text-2xl font-bold text-gray-900 tracking-tight">
-                            Ratings & Reviews
+                            {t("ratings.heading")}
                         </h1>
                         <p className="text-xs sm:text-sm text-gray-600 mt-0.5 flex items-center space-x-1.5">
                             <ChatCircle
@@ -462,24 +469,24 @@ export function CourseDetailsRatingsComponent({
                                 className="text-primary-500"
                                 weight="duotone"
                             />
-                            <span>Community feedback and ratings</span>
+                            <span>{t("ratings.subheading")}</span>
                         </p>
                     </div>
                 </div>
 
                 <form className="mb-6 flex flex-col gap-4 rounded-md border bg-gray-50 dark:bg-neutral-900 p-4">
                     <label className="font-semibold text-neutral-700 dark:text-neutral-300">
-                        Your Feedback
+                        {t("ratings.feedbackLabel")}
                     </label>
                     <Textarea
                         value={feedbackText}
                         onChange={(e) => setFeedbackText(e.target.value)}
-                        placeholder="Write your feedback..."
+                        placeholder={t("ratings.feedbackPlaceholder")}
                         rows={3}
                         className="resize-none"
                     />
                     <label className="font-semibold text-neutral-700 dark:text-neutral-300">
-                        Rating <span className="text-red-500">*</span>
+                        {t("ratings.ratingLabel")} <span className="text-red-500">*</span>
                     </label>
                     <div className="space-y-2">
                         <div className="flex items-center gap-2">
@@ -507,7 +514,7 @@ export function CourseDetailsRatingsComponent({
                             ))}
                             <span className="ms-2 text-sm text-neutral-500">
                                 {selectedRating
-                                    ? `${selectedRating} Star${selectedRating > 1 ? "s" : ""}`
+                                    ? t("ratings.starCount", { count: selectedRating })
                                     : ""}
                             </span>
                         </div>
@@ -523,7 +530,7 @@ export function CourseDetailsRatingsComponent({
                         className="w-fit"
                         onClick={handleSubmit}
                     >
-                        {submitting ? "Submitting..." : "Submit Feedback"}
+                        {submitting ? t("ratings.submitting") : t("ratings.submitFeedback")}
                     </MyButton>
                 </form>
 
@@ -533,9 +540,9 @@ export function CourseDetailsRatingsComponent({
                         style={{ animationDelay: "0.1s" }}
                     >
                         {/* Enhanced Overall Rating Section */}
-                        <div className="relative bg-gradient-to-br from-yellow-50/80 to-orange-50/80 border border-yellow-200/60 rounded-md p-3 sm:p-4 lg:p-5 overflow-hidden group/rating">
+                        <div className="relative bg-gradient-to-br from-warning-50/80 to-primary-50/80 border border-yellow-200/60 rounded-md p-3 sm:p-4 lg:p-5 overflow-hidden group/rating">
                             {/* Background pattern */}
-                            <div className="absolute inset-0 bg-gradient-to-br from-yellow-100/20 via-transparent to-orange-100/20 opacity-0 group-hover/rating:opacity-100 transition-opacity duration-500"></div>
+                            <div className="absolute inset-0 bg-gradient-to-br from-warning-100/20 via-transparent to-primary-100/20 opacity-0 group-hover/rating:opacity-100 transition-opacity duration-500"></div>
 
                             <div className="relative grid grid-cols-1 lg:grid-cols-5 gap-4 lg:gap-6">
                                 {/* Rating Score */}
@@ -549,7 +556,7 @@ export function CourseDetailsRatingsComponent({
                                                 ? Number(
                                                       overallRatingData.average_rating
                                                   ).toFixed(1)
-                                                : "N/A"}
+                                                : t("ratings.notAvailable")}
                                         </div>
                                         <div className="flex items-center space-x-1.5">
                                             <StarRatingComponent
@@ -573,13 +580,15 @@ export function CourseDetailsRatingsComponent({
                                                 weight="duotone"
                                             />
                                             <span className="text-xs font-medium">
-                                                {overallRatingData?.total_reviews !==
-                                                    null &&
-                                                overallRatingData?.total_reviews !==
-                                                    undefined
-                                                    ? overallRatingData.total_reviews
-                                                    : 0}{" "}
-                                                reviews
+                                                {t("ratings.totalReviews", {
+                                                    count:
+                                                        overallRatingData?.total_reviews !==
+                                                            null &&
+                                                        overallRatingData?.total_reviews !==
+                                                            undefined
+                                                            ? overallRatingData.total_reviews
+                                                            : 0,
+                                                })}
                                             </span>
                                         </div>
                                     </div>
@@ -635,9 +644,9 @@ export function CourseDetailsRatingsComponent({
                             {[1, 2, 3].map((i) => (
                                 <div
                                     key={i}
-                                    className="bg-white/60 rounded-md p-3 sm:p-4 animate-pulse"
+                                    className="bg-white/60 rounded-md p-3 sm:p-4 animate-pulse space-y-stack"
                                 >
-                                    <div className="flex items-center space-x-3 mb-3">
+                                    <div className="flex items-center gap-x-3">
                                         <div className="w-10 h-10 bg-gray-200 rounded-full"></div>
                                         <div className="flex-1 space-y-1.5">
                                             <div className="h-3 bg-gray-200 rounded w-1/4"></div>
@@ -665,11 +674,12 @@ export function CourseDetailsRatingsComponent({
                                     />
                                 </div>
                                 <h3 className="text-base sm:text-lg font-bold text-gray-900 mb-1">
-                                    No reviews yet
+                                    {t("ratings.noReviewsTitle")}
                                 </h3>
                                 <p className="text-gray-600 text-xs sm:text-sm">
-                                    Be the first to share your experience with
-                                    this course
+                                    {t("ratings.noReviewsDescription", {
+                                        course: course.toLocaleLowerCase(),
+                                    })}
                                 </p>
                             </div>
                         </div>

@@ -1,0 +1,15 @@
+{
+    "toast": {
+        "errorAddingDoubt": "Error adding doubt"
+    },
+    "doubt": {
+        "status": {
+            "unknown": "Unknown",
+            "resolved": "Resolved",
+            "unresolved": "Unresolved"
+        },
+        "anonymousUser": "Anonymous User",
+        "timestampLabel": "Timestamp: {{time}}",
+        "pageLabel": "Page: {{page}}"
+    }
+}

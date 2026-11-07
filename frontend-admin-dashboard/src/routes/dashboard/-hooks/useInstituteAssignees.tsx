@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { fetchInstituteDashboardUsers } from '../-services/dashboard-services';
 
 interface InstituteUserRole {
@@ -60,6 +61,8 @@ export const useInstituteAssignees = (
     instituteId: string | undefined,
     roles: { id: string; name: string }[] = DEFAULT_ASSIGNEE_ROLES
 ) => {
+    const { t } = useTranslation('dashboardUseInstituteAssignees');
+
     const query = useQuery({
         queryKey: ['INSTITUTE_ASSIGNEES', instituteId, roles.map((r) => r.name).join(',')],
         queryFn: () =>
@@ -87,7 +90,7 @@ export const useInstituteAssignees = (
                 user.full_name?.trim() ||
                 user.username?.trim() ||
                 user.email?.trim() ||
-                'Unnamed';
+                t('unnamed');
             return {
                 id: user.id,
                 name,
@@ -98,7 +101,7 @@ export const useInstituteAssignees = (
         // Stable sort by name for predictable UI
         options.sort((a, b) => a.name.localeCompare(b.name));
         return options;
-    }, [query.data?.content]);
+    }, [query.data?.content, t]);
 
     return { assignees, ...query };
 };

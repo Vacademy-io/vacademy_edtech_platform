@@ -3,7 +3,9 @@ package vacademy.io.admin_core_service.features.hr_tax.controller;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import vacademy.io.admin_core_service.core.security.InstituteAccessValidator;
+import vacademy.io.admin_core_service.core.security.HrAccessGuard;
+import vacademy.io.admin_core_service.features.admin_activity_logs.annotation.Auditable;
+import vacademy.io.admin_core_service.features.hr_employee.entity.EmployeeProfile;
 import vacademy.io.admin_core_service.features.hr_tax.dto.TaxComputationDTO;
 import vacademy.io.admin_core_service.features.hr_tax.dto.TaxConfigurationDTO;
 import vacademy.io.admin_core_service.features.hr_tax.dto.TaxDeclarationDTO;
@@ -28,17 +30,22 @@ public class TaxController {
     private TaxComputationService taxComputationService;
 
     @Autowired
-    private InstituteAccessValidator instituteAccessValidator;
+    private HrAccessGuard hrAccessGuard;
 
     // ======================== Tax Configuration ========================
 
     @PostMapping("/config")
+    @Auditable(
+            entityType = "HR_TAX_CONFIG",
+            action = "UPDATE",
+            entityIdExpr = "#result?.body",
+            descriptionExpr = "'saved tax configuration for institute ' + #instituteId")
     public ResponseEntity<String> saveConfig(
             @RequestBody TaxConfigurationDTO dto,
             @RequestParam("instituteId") String instituteId,
             @RequestAttribute("user") CustomUserDetails user) {
-        instituteAccessValidator.validateUserAccess(user, instituteId);
-        String id = taxConfigurationService.saveConfig(dto);
+        hrAccessGuard.requireHrAdmin(user, instituteId);
+        String id = taxConfigurationService.saveConfig(dto, instituteId);
         return ResponseEntity.ok(id);
     }
 
@@ -46,7 +53,7 @@ public class TaxController {
     public ResponseEntity<TaxConfigurationDTO> getConfig(
             @RequestParam("instituteId") String instituteId,
             @RequestAttribute("user") CustomUserDetails user) {
-        instituteAccessValidator.validateUserAccess(user, instituteId);
+        hrAccessGuard.requireHrStaff(user, instituteId);
         TaxConfigurationDTO config = taxConfigurationService.getConfig(instituteId);
         return ResponseEntity.ok(config);
     }
@@ -58,8 +65,8 @@ public class TaxController {
             @RequestBody TaxDeclarationDTO dto,
             @RequestParam("instituteId") String instituteId,
             @RequestAttribute("user") CustomUserDetails user) {
-        instituteAccessValidator.validateUserAccess(user, instituteId);
-        String id = taxDeclarationService.submitDeclaration(dto);
+        EmployeeProfile employee = hrAccessGuard.requireSelfOrHrStaff(user, instituteId, dto.getEmployeeId());
+        String id = taxDeclarationService.submitDeclaration(dto, employee);
         return ResponseEntity.ok(id);
     }
 
@@ -69,7 +76,7 @@ public class TaxController {
             @RequestParam("fy") String financialYear,
             @RequestParam("instituteId") String instituteId,
             @RequestAttribute("user") CustomUserDetails user) {
-        instituteAccessValidator.validateUserAccess(user, instituteId);
+        hrAccessGuard.requireSelfOrHrStaff(user, instituteId, employeeId);
         TaxDeclarationDTO declaration = taxDeclarationService.getDeclaration(employeeId, financialYear);
         return ResponseEntity.ok(declaration);
     }
@@ -80,18 +87,24 @@ public class TaxController {
             @RequestBody TaxDeclarationDTO dto,
             @RequestParam("instituteId") String instituteId,
             @RequestAttribute("user") CustomUserDetails user) {
-        instituteAccessValidator.validateUserAccess(user, instituteId);
-        String resultId = taxDeclarationService.updateDeclaration(id, dto);
+        // Self-or-HR-staff check happens inside the service: the owning employee
+        // is only known after the declaration is loaded by id.
+        String resultId = taxDeclarationService.updateDeclaration(id, dto, instituteId, user);
         return ResponseEntity.ok(resultId);
     }
 
     @PutMapping("/declarations/{id}/verify")
+    @Auditable(
+            entityType = "HR_TAX_DECLARATION",
+            action = "VERIFY",
+            entityIdExpr = "#id",
+            descriptionExpr = "'verified tax declaration ' + #id")
     public ResponseEntity<String> verifyDeclaration(
             @PathVariable("id") String id,
             @RequestParam("instituteId") String instituteId,
             @RequestAttribute("user") CustomUserDetails user) {
-        instituteAccessValidator.validateUserAccess(user, instituteId);
-        String resultId = taxDeclarationService.verifyDeclaration(id, user.getUserId());
+        hrAccessGuard.requireHrAdmin(user, instituteId);
+        String resultId = taxDeclarationService.verifyDeclaration(id, instituteId, user.getUserId());
         return ResponseEntity.ok(resultId);
     }
 
@@ -103,7 +116,7 @@ public class TaxController {
             @RequestParam("fy") String financialYear,
             @RequestParam("instituteId") String instituteId,
             @RequestAttribute("user") CustomUserDetails user) {
-        instituteAccessValidator.validateUserAccess(user, instituteId);
+        hrAccessGuard.requireSelfOrHrStaff(user, instituteId, employeeId);
         List<TaxComputationDTO> computations = taxComputationService.getComputation(employeeId, financialYear);
         return ResponseEntity.ok(computations);
     }

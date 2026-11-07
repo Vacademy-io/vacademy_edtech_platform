@@ -1,0 +1,261 @@
+{
+  "common": {
+    "correct": "Correct",
+    "incorrect": "Incorrect",
+    "skipped": "Skipped",
+    "notAnswered": "Not answered",
+    "download": "Download",
+    "downloadingEllipsis": "Downloading…",
+    "loadingEllipsis": "Loading…",
+    "tryAgain": "Try again",
+    "view": "View",
+    "accuracy": "Accuracy",
+    "timeTaken": "Time taken",
+    "you": "You",
+    "marks": "Marks",
+    "percentile": "Percentile",
+    "excellent": "Excellent",
+    "good": "Good",
+    "average": "Average",
+    "low": "Low",
+    "yourResponse": "Your Response",
+    "explanation": "Explanation",
+    "resultReport": "Result report",
+    "classAverageValue": "Class average: {{value}}",
+    "studentsCount_one": "{{count}} student",
+    "studentsCount_other": "{{count}} students"
+  },
+  "annotatedCopyDialog": {
+    "title": "Annotated answer copy",
+    "toastError": "Could not load the annotated copy."
+  },
+  "attemptPapersCard": {
+    "title": "Your papers",
+    "opening": "Opening...",
+    "errors": {
+      "fileUnavailable": "This file is no longer available.",
+      "popupBlocked": "Your browser blocked the pop-up. Allow pop-ups for this site and try again.",
+      "openFailed": "Could not open this file. Please try again."
+    }
+  },
+  "evaluatedReportDialog": {
+    "defaultTitle": "Evaluated answer",
+    "downloadError": "Could not download the file.",
+    "evaluatorRemark": "Evaluator remark"
+  },
+  "comparisonDashboard": {
+    "errors": {
+      "fileNotAvailable": "File not available.",
+      "openFileFailed": "Could not open the file.",
+      "downloadReportFailed": "Could not download the report."
+    },
+    "empty": {
+      "title": "No comparison data yet",
+      "description": "Batch comparison appears here once your attempt has been evaluated and results are released.",
+      "noQuestionsTitle": "No questions in this section",
+      "noQuestionsDescription": "Pick another section tab to review the rest of your answers."
+    },
+    "masthead": {
+      "reportType": "Individual Performance Report",
+      "attempted": "Attempted {{date}}",
+      "submitted": "Submitted {{time}}"
+    },
+    "reportOptionsAriaLabel": "Report options",
+    "menu": {
+      "downloadReport": "Download report",
+      "yourSubmission": "Your submission",
+      "viewEvaluated": "View evaluated",
+      "viewSubmitted": "View submitted",
+      "viewResultReport": "View result report",
+      "viewAnnotatedCopy": "View annotated copy"
+    },
+    "stats": {
+      "yourScore": "Your score",
+      "classRank": "Class rank",
+      "of": "of {{count}}",
+      "classAccuracy": "class {{pct}}%",
+      "classDuration": "class {{duration}}",
+      "highest": "Highest",
+      "lowest": "Lowest",
+      "participants": "Participants"
+    },
+    "sections": {
+      "whereYouStand": "Where you stand — overall (out of {{maxMarks}})",
+      "summaryTitle": "Summary of your performance",
+      "vsClassAverage": "You vs class average",
+      "sectionWisePerformance": "Section-wise performance",
+      "marksDistribution": "Marks distribution — all students",
+      "leaderboardPosition": "Leaderboard — your position",
+      "reviewAndPractice": "Review & practice",
+      "answerReview": "Answer review",
+      "easyMissesCount": "Easy misses — {{count}}",
+      "easyMissesNone": "Easy misses — none",
+      "expertiseCount": "Your expertise — {{count}}",
+      "expertiseNone": "Your expertise — none"
+    },
+    "summary": {
+      "strengthsLead": "Your strengths.",
+      "strengthsText": "{{section}} is your best area — about {{delta}} marks above the class average.",
+      "weaknessLead": "Key area to work on.",
+      "weaknessText": "{{section}} — about {{delta}} marks below the class average, the largest gap on this paper.",
+      "paceLead": "Your pace.",
+      "paceTextAhead": "You finished in {{duration}}, ahead of a class average of {{avgDuration}}.",
+      "paceTextBehind": "You finished in {{duration}}, against a class average of {{avgDuration}}."
+    },
+    "compare": {
+      "you": "You {{value}}",
+      "avg": "Avg {{value}}"
+    },
+    "leaderboard": {
+      "rankOf": "Rank #{{rank}} of {{total}}",
+      "rank": "Rank",
+      "student": "Student",
+      "time": "Time"
+    },
+    "review": {
+      "everyQuestionDesc": "Every question with your response, the correct answer, and how the rest of the class answered.",
+      "viewAnswerReview": "View Answer Review",
+      "noEasyMisses": "You did not miss any question that most of the class answered correctly — the marks you dropped were on the harder end of the paper.",
+      "noExpertise": "No question yet where you beat most of the class — keep practising the tougher problems.",
+      "pctOfClassCorrect": "of class got it right",
+      "moreInAnswerReview": "+ {{count}} more in the answer review below",
+      "questionsCount_one": "{{count}} question",
+      "questionsCount_other": "{{count}} questions",
+      "classPctCorrect": "{{pct}}% of class correct",
+      "yourResponse": "Your response",
+      "marksAwardedDirectly": "Marks awarded directly ({{value}})",
+      "notAttempted": "Not attempted",
+      "correctAnswer": "Correct answer",
+      "feedback": "Feedback",
+      "aiAssistedReviewed": "AI-assisted, teacher-reviewed",
+      "aiAssisted": "AI-assisted",
+      "criteria": "Criteria",
+      "reason": "Reason",
+      "howClassAnswered": "How the class answered"
+    }
+  },
+  "marksBreakdown": {
+    "partiallyCorrect": "Partially Correct",
+    "wrongResponse": "Wrong Response"
+  },
+  "marksChip": {
+    "markLabel_one": "Mark",
+    "markLabel_other": "Marks"
+  },
+  "marksDistributionChart": {
+    "yourScoreRange": "Your score range",
+    "restOfBatch": "Rest of the batch"
+  },
+  "pdfDownloadButton": {
+    "downloading": "Downloading...",
+    "downloadFailed": "Download failed",
+    "downloadPdf": "Download PDF"
+  },
+  "performanceBand": {
+    "tooltip": {
+      "classTopper": "Class topper: {{value}}",
+      "you": "You: {{value}}"
+    },
+    "legend": {
+      "classAverage": "Class average",
+      "classTopper": "Class topper"
+    }
+  },
+  "pieChart": {
+    "noData": "No pie chart data available"
+  },
+  "questionResponseRenderer": {
+    "noResponse": "No response",
+    "noOptionSelected": "No option selected",
+    "noOptionsSelected": "No options selected",
+    "hiddenWord": "hidden",
+    "sampleWord": "sample",
+    "testsFraction": "{{passed}}/{{total}} tests",
+    "scorePts": "· {{score}} pts",
+    "pasteAttempts_one": "{{count}} paste attempt",
+    "pasteAttempts_other": "{{count}} paste attempts",
+    "testCasesPassed": "Test cases passed:",
+    "sampleFraction": "Sample: {{passed}}/{{total}}",
+    "timeTakenLabel": "Time taken:",
+    "msValue": "{{value}} ms",
+    "msAllowed": "/ {{value}} ms allowed",
+    "memoryLabel": "Memory:",
+    "kbValue": "{{value}} KB",
+    "kbAllowed": "/ {{value}} KB allowed",
+    "showSourceCode": "Show submitted source code",
+    "testCasesHeading": "Test cases",
+    "testNumber": "Test {{number}}",
+    "hiddenParenthetical": "(hidden)",
+    "noCorrectAnswerProvided": "No correct answer provided",
+    "noAnswerProvided": "No answer provided",
+    "noCorrectOptionsProvided": "No correct options provided",
+    "codingTestCaseSummary": "{{visible}} visible + {{hidden}} hidden test case(s) — see test results in the response panel.",
+    "errorDisplayingResponse": "Error displaying response",
+    "errorDisplayingCorrectAnswer": "Error displaying correct answer"
+  },
+  "responseBreakdown": {
+    "errorDisplayingResponseWithError": "Error displaying response: {{error}}",
+    "errorDisplayingCorrectAnswerWithError": "Error displaying correct answer: {{error}}"
+  },
+  "sectionComparisonTable": {
+    "section": "Section",
+    "yourMarks": "Your marks",
+    "total": "Total",
+    "classAvg": "Class avg",
+    "classMax": "Class max",
+    "cutOff": "Cut-off",
+    "status": "Status",
+    "pass": "Pass",
+    "fail": "Fail"
+  },
+  "surveyReportDialog": {
+    "title": "Survey Report",
+    "responseNotAvailable": "Response not available",
+    "errorParsingResponse": "Error parsing response",
+    "noSurveyData": "No survey data available"
+  },
+  "testReportDialog": {
+    "navHeadingReport": "Report",
+    "attemptDate": "Attempt Date",
+    "duration": "Duration",
+    "startTime": "Start Time",
+    "endTime": "End Time",
+    "subjectLabel": "{{subject}}: {{name}}",
+    "papers": {
+      "answerSheetLabel": "Your answer sheet",
+      "answerSheetDescription": "The paper you submitted, as scanned by your institute.",
+      "checkedCopyLabel": "Checked copy",
+      "checkedCopyDescription": "Your answer sheet with the evaluator's marks and remarks.",
+      "resultReportDescription": "The result report prepared by your institute."
+    },
+    "yourScore": "Your Score",
+    "marksFraction": "{{achieved}} / {{total}} marks",
+    "veryGood": "Very Good",
+    "needsImprovement": "Needs Improvement",
+    "classRank": "Class Rank",
+    "notAvailable": "N/A",
+    "topPercentile": "Top {{pct}}% Percentile",
+    "quickStats": "Quick Stats",
+    "performanceAnalytics": "Performance Analytics",
+    "performanceAnalyticsDesc": "Detailed breakdown of your responses and marks",
+    "responseBreakdown": "Response Breakdown",
+    "attemptedCount": "Attempted: {{count}}",
+    "skippedCount": "Skipped: {{count}}",
+    "marksBreakdown": "Marks Breakdown",
+    "partial": "Partial",
+    "marksAwardedWithPlus": "{{count}} (+{{marks}})",
+    "marksAwardedPlain": "{{count}} ({{marks}})",
+    "answerReview": "Answer Review",
+    "answerReviewDesc": "Detailed analysis of your responses",
+    "sectionTotal": "Section Total: {{marks}} Marks",
+    "questionNumber": "Question {{number}}",
+    "correctAnswerLabel": "Correct Answer",
+    "evaluatorFeedback": "Evaluator feedback",
+    "noQuestionsAvailable": "No questions available for review",
+    "exporting": "Exporting...",
+    "exportReport": "Export Report",
+    "viewEvaluatedCopy": "View Evaluated Copy",
+    "close": "Close",
+    "evaluatedFileName": "Evaluated File.pdf"
+  }
+}

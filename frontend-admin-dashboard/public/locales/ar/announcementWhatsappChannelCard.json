@@ -1,0 +1,40 @@
+{
+    "empty": {
+        "title": "لا توجد قوالب واتساب معتمدة بعد",
+        "description": "لا يرسل واتساب سوى رسائل مبنية على قالب اعتمدته Meta. زامن حساب واتساب بزنس الخاص بك، أو أنشئ قالبًا وقدّمه للاعتماد."
+    },
+    "action": {
+        "syncing": "جارٍ المزامنة…",
+        "syncFromMeta": "مزامنة من Meta",
+        "manageTemplates": "إدارة القوالب"
+    },
+    "template": {
+        "label": "القالب المعتمد",
+        "searchPlaceholder": "ابحث في قوالبك المعتمدة",
+        "approvedOnlyHint": "لا يمكن إرسال سوى القوالب التي اعتمدتها Meta.",
+        "availableCount_zero": "لا توجد قوالب متاحة.",
+        "availableCount_one": "قالب واحد متاح.",
+        "availableCount_two": "قالبان متاحان.",
+        "availableCount_few": "{{count}} قوالب متاحة.",
+        "availableCount_many": "{{count}} قالبًا متاحًا.",
+        "availableCount_other": "{{count}} قالب متاح."
+    },
+    "headerKind": {
+        "badge": "رأسية {{kind}}",
+        "type": {
+            "image": "صورة",
+            "video": "فيديو",
+            "document": "مستند"
+        }
+    },
+    "headerUrl": {
+        "label": "رابط {{kind}}",
+        "placeholder": "https://…/your-{{kind}}",
+        "requiredHint": "يرفض Meta الإرسال بالكامل إذا وصل قالب برأسية وسائط دون الوسائط الخاصة به، لذا هذا الحقل مطلوب."
+    },
+    "variables": {
+        "label": "متغيرات القالب",
+        "hint": "يتم ملء كل متغير لكل مستلم عند وقت الإرسال.",
+        "customValuePlaceholder": "النص المستخدم لـ {{name}}"
+    }
+}

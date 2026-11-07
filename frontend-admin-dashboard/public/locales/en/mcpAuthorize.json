@@ -1,0 +1,27 @@
+{
+    "title": "Connect an AI app",
+    "subtitle": "This app wants to access {{institute}} on your behalf.",
+    "loading": "Checking the request…",
+    "unknownApp": "An AI app",
+    "request": "{{app}} is asking to connect to {{institute}}.",
+    "willReturnTo": "You will be returned to {{host}} once you decide.",
+    "instituteLabel": "Institute to grant access to",
+    "grants": {
+        "title": "If you approve, this app can:",
+        "readOnly": "Use only what your institute's MCP settings allow. Any website changes are saved as drafts that you publish yourself.",
+        "sameAsYou": "See exactly what you can see, and nothing more.",
+        "revocable": "Be disconnected at any time from Settings → MCP Server."
+    },
+    "approve": "Approve",
+    "approving": "Approving…",
+    "deny": "Deny",
+    "denying": "Denying…",
+    "signIn": "Sign in to continue",
+    "errors": {
+        "noTxn": "This link is incomplete. Start the connection again from your AI app.",
+        "expired": "This request has expired or was already handled. Start the connection again from your AI app.",
+        "generic": "Something went wrong. Please try again.",
+        "wrongInstitute": "You're signed in to a different institute. Sign in with an account for {{institute}} to approve this connection."
+    },
+    "yourInstitute": "your institute"
+}

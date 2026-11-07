@@ -1,0 +1,55 @@
+{
+    "restriction": {
+        "banner": "संपादन प्रतिबंधित: यह कोर्स {{status}} है।",
+        "statusPublished": "प्रकाशित",
+        "statusUnderReview": "समीक्षा में",
+        "publishedHint": "संपादन योग्य प्रति बनाने के लिए मेरे कोर्स पर जाएँ।",
+        "reviewHint": "जब तक यह समीक्षा में है, तब तक आप सामग्री संपादित नहीं कर सकते।"
+    },
+    "addedToCatalog": "कैटलॉग में जोड़ा गया",
+    "offlineSettings": "ऑफ़लाइन सेटिंग्स",
+    "advancedIds": {
+        "moreOptions": "अधिक विकल्प",
+        "title": "उन्नत",
+        "notAvailable": "{{label}} उपलब्ध नहीं है",
+        "copied": "{{label}} कॉपी किया गया",
+        "copyFailed": "कॉपी करने में विफल",
+        "courseId": "{{course}} आईडी",
+        "packageSessionId": "पैकेज सेशन आईडी",
+        "sessionId": "{{session}} आईडी",
+        "levelId": "{{level}} आईडी"
+    },
+    "viewLess": "कम देखें",
+    "viewMore": "अधिक देखें",
+    "youtubePlayerTitle": "यूट्यूब वीडियो प्लेयर",
+    "videoNotSupported": "आपका ब्राउज़र वीडियो टैग का समर्थन नहीं करता है।",
+    "courseBannerAlt": "{{course}} बैनर",
+    "batchSubgroup": "बैच / सबग्रुप",
+    "selectBatch": "बैच चुनें",
+    "errorLoadingSlideCounts": "स्लाइड की संख्या लोड करने में त्रुटि",
+    "courseHighlights": "{{course}} की खास बातें",
+    "whatYoullLearn": "आप क्या सीखेंगे?",
+    "aboutThis": "इस {{course}} के बारे में",
+    "whoShouldJoin": "किसे शामिल होना चाहिए?",
+    "authors": "लेखक",
+    "loadingInstructors": "शिक्षकों को लोड किया जा रहा है...",
+    "dripCondition": {
+        "saveFailed": "ड्रिप शर्त सहेजने में विफल। कृपया पुनः प्रयास करें।",
+        "updateFailed": "ड्रिप शर्त अपडेट करने में विफल। कृपया पुनः प्रयास करें।",
+        "deleteFailed": "ड्रिप शर्त हटाने में विफल। कृपया पुनः प्रयास करें।"
+    },
+    "slideType": {
+        "aiContent": "एआई सामग्री",
+        "video": "वीडियो",
+        "codeEditor": "कोड एडिटर",
+        "pdf": "पीडीएफ़",
+        "document": "दस्तावेज़",
+        "presentation": "प्रेजेंटेशन",
+        "jupyterNotebook": "ज्यूपिटर नोटबुक",
+        "scratchProject": "स्क्रैच प्रोजेक्ट",
+        "question": "प्रश्न",
+        "quiz": "क्विज़",
+        "assignment": "असाइनमेंट",
+        "defaultSlide": "स्लाइड"
+    }
+}

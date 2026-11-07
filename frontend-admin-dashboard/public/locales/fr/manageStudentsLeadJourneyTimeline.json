@@ -1,0 +1,97 @@
+{
+    "actionConfig": {
+        "leadSubmitted": "Prospect soumis",
+        "counselorAssigned": "Conseiller assigné",
+        "statusChanged": "Statut modifié",
+        "scoreUpdated": "Score mis à jour",
+        "manualScoreUpdate": "Score manuel",
+        "followup": "Relance",
+        "reachout": "Prise de contact",
+        "leadConverted": "Converti",
+        "leadLost": "Prospect perdu",
+        "duplicateMerged": "Doublon fusionné",
+        "paymentReceived": "Paiement reçu",
+        "enrollmentCompleted": "Inscrit",
+        "note": "Note",
+        "call": "Appel",
+        "callMade": "Appel sortant",
+        "walkInNote": "Note de visite",
+        "followupScheduled": "Relance planifiée",
+        "statusChange": "Statut modifié",
+        "fallback": "Événement",
+        "reEnquiry": "Nouvelle prise de contact",
+        "reattempt": "Nouvelle tentative"
+    },
+    "statusChangeMeta": {
+        "previous": "Précédent"
+    },
+    "counselorMeta": {
+        "unknown": "Inconnu",
+        "autoPool": "Auto (pool)",
+        "manual": "Manuel"
+    },
+    "callStatus": {
+        "connected": "Connecté",
+        "noAnswer": "Pas de réponse",
+        "busy": "Occupé",
+        "failed": "Échoué",
+        "cancelled": "Annulé",
+        "inProgress": "En cours",
+        "ringing": "En sonnerie",
+        "queued": "En file d'attente"
+    },
+    "callOutcome": {
+        "connected": "Connecté",
+        "noAnswer": "Pas de réponse",
+        "busy": "Occupé",
+        "leftVoicemail": "Message vocal laissé",
+        "callBackLater": "Rappeler plus tard",
+        "notReachable": "Injoignable",
+        "switchedOff": "Éteint",
+        "wrongNumber": "Mauvais numéro",
+        "interested": "Intéressé",
+        "notInterested": "Pas intéressé",
+        "followUpScheduled": "Relance planifiée",
+        "demoScheduled": "Démo planifiée",
+        "converted": "Converti",
+        "doNotCall": "Ne pas appeler"
+    },
+    "duration": {
+        "zero": "0s",
+        "secondsOnly_one": "{{count}}s",
+        "secondsOnly_many": "{{count}}s",
+        "secondsOnly_other": "{{count}}s",
+        "minutesSeconds": "{{minutes}}m {{seconds}}s"
+    },
+    "callRecording": {
+        "from": "· de {{caller}}",
+        "download": "Télécharger",
+        "loading": "Chargement…",
+        "playRecording": "Écouter l'enregistrement",
+        "addNote": "Ajouter une note"
+    },
+    "emptyState": {
+        "title": "Aucun événement pour l'instant",
+        "description": "Les événements apparaissent ici au fil de la progression du prospect — soumissions, scores, notes et plus"
+    },
+    "noProfileLinked": "Aucun profil de prospect associé",
+    "errorState": {
+        "title": "Échec du chargement des événements",
+        "retry": "Réessayer"
+    },
+    "eventRow": {
+        "byPrefix": "par",
+        "system": "Système",
+        "activity": "Activité"
+    },
+    "pagination": {
+        "pageOf": "{{current}} / {{total}}",
+        "prev": "Préc.",
+        "next": "Suiv."
+    },
+    "header": {
+        "title": "Parcours du prospect",
+        "refresh": "Actualiser",
+        "refreshAria": "Actualiser les événements du parcours"
+    }
+}

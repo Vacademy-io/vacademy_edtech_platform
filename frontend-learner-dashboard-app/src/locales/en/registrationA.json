@@ -1,0 +1,240 @@
+{
+    "common": {
+        "email": "Email",
+        "resendOtp": "Resend OTP",
+        "registrationCompletedBadge": "Registration Completed",
+        "liveNow": "Live now",
+        "registrationFormHeading": "Registration Form",
+        "verifying": "Verifying..."
+    },
+    "closedExpired": {
+        "assessmentLabel": "Assessment",
+        "defaultAssessmentName": "This assessment",
+        "accessDenied": {
+            "badge": "Access Denied",
+            "title": "Assessment Access Denied",
+            "description": "You are not registered for this assessment."
+        },
+        "expired": {
+            "badge": "Expired",
+            "title": "Assessment Expired",
+            "description": "This assessment is no longer available. The window for taking this test has closed."
+        },
+        "closed": {
+            "badge": "Closed",
+            "title": "Registration Closed",
+            "description": "Registration for this assessment has closed. Please contact your institute for more information."
+        }
+    },
+    "completed": {
+        "badge": "Registration Completed",
+        "title": "You're all set!",
+        "liveBadge": "Live Now",
+        "liveMessage": "Your assessment is ready to begin",
+        "goesLiveIn": "Assessment goes live in",
+        "cta": "Go To Assessment",
+        "unlockHint": "This button will unlock automatically when the assessment begins.",
+        "toast": {
+            "fetchDetailsError": "Failed to fetch details"
+        }
+    },
+    "form": {
+        "notYetOpenBadge": "Registration Not Yet Open",
+        "opensIn": "Registration opens in",
+        "openBadge": "Registration Open",
+        "closesIn": "Registration closes in",
+        "closingSoon": "Closing soon",
+        "registerNowMobile": "Register Now",
+        "countdown": {
+            "hr": "hr",
+            "min": "min",
+            "sec": "sec",
+            "dayUnit_one": "day",
+            "dayUnit_other": "days"
+        },
+        "meta": {
+            "duration": "Duration",
+            "durationValue": "{{minutes}} min",
+            "mode": "Mode",
+            "evaluation": "Evaluation",
+            "attempts": "Attempts"
+        },
+        "dates": {
+            "heading": "Important Dates",
+            "registrationWindow": "Registration Window",
+            "assessmentLive": "Assessment Live"
+        },
+        "dateBlock": {
+            "start": "START",
+            "end": "END",
+            "noLimit": "No limit"
+        },
+        "instructions": "Instructions",
+        "aboutAssessment": "About Assessment",
+        "registrationFormSubheading": "Fill in your details to register for this assessment.",
+        "phoneNumberLabel": "Phone Number",
+        "phoneNumberPlaceholder": "123 456 7890",
+        "register": "Register",
+        "resetForm": "Reset Form",
+        "toast": {
+            "registeredSuccess": "You have been registered successfully!",
+            "accountUnresolved": "We couldn't resolve your account. Please try again.",
+            "networkError": "Couldn't reach the server. Check your connection and try again."
+        },
+        "noClosingDate": "No closing date"
+    },
+    "checkEmailDialog": {
+        "title": "Check Registration Status",
+        "subtitle": "Verify your email to continue with assessment registration.",
+        "emailPlaceholder": "Enter your email",
+        "resendIn": "Resend OTP in {{seconds}} seconds",
+        "sending": "Sending OTP...",
+        "send": "Send OTP",
+        "verify": "Verify & Continue",
+        "toast": {
+            "otpSent": "OTP sent successfully",
+            "notRegisteredTitle": "This email is not registered",
+            "notRegisteredDescription": "Please register yourself to attempt this assessment",
+            "attemptsOverTitle": "Your remaining attempts are over to attempt this assessment!",
+            "attemptsOverDescription": "Your attempts are over!",
+            "invalidOtpTitle": "Invalid OTP",
+            "invalidOtpDescription": "Please try again",
+            "fillAllOtp": "Please fill all OTP fields",
+            "otpSendFailedTitle": "Couldn't send the OTP",
+            "otpSendFailedDescription": "Please check your connection and try again",
+            "otpExpiredOrInvalidTitle": "OTP not accepted",
+            "verificationFailedTitle": "Couldn't verify right now",
+            "verificationFailedDescription": "Please check your connection and try again",
+            "statusLookupFailedTitle": "Email verified, but we couldn't check your registration",
+            "statusLookupFailedDescription": "Please press Verify & Continue again"
+        }
+    },
+    "otpVerify": {
+        "title": "One last step!",
+        "subtitle": "Verify your email to access {{assessmentName}}",
+        "otpSentToLabel": "OTP sent to",
+        "verify": "Verify & Go to Assessment",
+        "verifying": "Verifying…",
+        "resendPrompt": "Didn't receive it?",
+        "resendIn": "Resend in {{seconds}}s",
+        "toast": {
+            "otpSentTo": "OTP sent to {{email}}",
+            "sendFailed": "Failed to send OTP. Please try again.",
+            "enterFullOtp": "Please enter the full 6-digit OTP",
+            "invalidOtp": "Invalid OTP. Please try again."
+        }
+    },
+    "liveClass": {
+        "countdown": {
+            "startsIn": "Starts in",
+            "days": "Days",
+            "hours": "Hours",
+            "mins": "Mins",
+            "secs": "Secs"
+        },
+        "sessionInfo": {
+            "instituteFallback": "Institute",
+            "registrationAlt": "Registration",
+            "start": "Start",
+            "end": "End"
+        },
+        "registrationForm": {
+            "joinPrompt": "Fill in your details to join the {{session}}",
+            "alreadyRegistered": "Already registered?",
+            "continueHere": "Continue here",
+            "enterFieldPlaceholder": "Enter {{fieldName}}",
+            "joinNow": "Join Now",
+            "toast": {
+                "invalidEmail": "Please enter a valid email address",
+                "invalidMobile": "Please enter a valid mobile number"
+            },
+            "lookup": {
+                "title": "Find your registration",
+                "descriptionPhone": "Enter the mobile number you registered with",
+                "descriptionEmail": "Enter the email you registered with",
+                "placeholderPhone": "Mobile number (with country code)",
+                "placeholderEmail": "you@example.com",
+                "notFound": "No registration found with this {{channel}}. Please check it, or fill the registration form instead.",
+                "channelMobile": "mobile number",
+                "channelEmail": "email",
+                "continue": "Continue",
+                "checking": "Checking...",
+                "backToForm": "New here? Fill the registration form"
+            }
+        },
+        "otpDialog": {
+            "emailSubject": "Email Verification",
+            "verifyEmailTitle": "Verify your email",
+            "verifyPhoneTitle": "Verify your mobile number",
+            "descriptionEmail": "We've sent a 6-digit code to {{value}}.",
+            "descriptionPhone": "We've sent a 6-digit code on WhatsApp to {{value}}.",
+            "stepOf": " (Step {{current}} of {{total}})",
+            "placeholder": "Enter 6-digit code",
+            "verify": "Verify",
+            "resend": "Resend code",
+            "sending": "Sending...",
+            "toast": {
+                "otpSentTo": "OTP sent to {{value}}",
+                "otpSentWhatsapp": "OTP sent on WhatsApp",
+                "sendFailedEmail": "Could not send the email OTP. Please try again.",
+                "sendFailedWhatsapp": "Could not send the WhatsApp OTP. Please try again.",
+                "enterOtp": "Please enter the OTP",
+                "verifiedEmail": "Email verified",
+                "verifiedPhone": "Mobile number verified",
+                "invalidOtp": "Invalid or expired OTP. Please try again."
+            }
+        },
+        "statusCard": {
+            "joinLive": "Join Live {{session}}",
+            "waitingRoomOpenBadge": "Waiting Room Open",
+            "enterWaitingRoom": "Enter Waiting Room",
+            "notStarted": "{{session}} hasn't started yet",
+            "willStartSoon": "{{session}} will start soon",
+            "alreadyRegisteredTitle": "Already Registered!",
+            "registeredWith": "You're registered for this {{session}} with:",
+            "startTime": "Start Time",
+            "waitingRoomOpens": "Waiting Room Opens"
+        },
+        "page": {
+            "priceLabel": "Price",
+            "completeRegistration": "Complete your registration",
+            "completeRegistrationDescription": "Your spot is reserved. Complete your payment to confirm it — you'll get a receipt by email and can join once it's time.",
+            "total": "Total",
+            "payAndConfirm": "Pay & Confirm",
+            "toast": {
+                "buildRequestError": "Error building request",
+                "identityRequired": "Please enter your email or mobile number",
+                "emailRequiredPaid": "An email address is required for this paid {{liveSession}}",
+                "emailRequired": "An email address is required for this {{liveSession}}",
+                "phoneRequired": "A mobile number is required for this {{liveSession}}",
+                "registrationSuccess": "Registration successful",
+                "spotReserved": "Spot reserved — complete your payment to confirm your registration",
+                "alreadyRegistered": "You're already registered for this {{session}}"
+            }
+        },
+        "hooks": {
+            "registrationFailed": "Registration failed",
+            "registrationFailedRetry": "Registration failed. Please try again.",
+            "markAttendanceFailed": "Failed to mark attendance"
+        }
+    },
+    "loadError": {
+        "notFound": {
+            "badge": "Invalid link",
+            "title": "Assessment not found",
+            "description": "This registration link is not valid or the assessment has been removed. Please check the link you received."
+        },
+        "network": {
+            "badge": "Connection problem",
+            "title": "Couldn't load the assessment",
+            "description": "We couldn't reach the server. Check your internet connection and try again."
+        },
+        "unknown": {
+            "badge": "Something went wrong",
+            "title": "Couldn't load the assessment",
+            "description": "An unexpected error occurred while loading this page. Please try again."
+        },
+        "retry": "Try again",
+        "updating": "Updating to the latest version…"
+    }
+}

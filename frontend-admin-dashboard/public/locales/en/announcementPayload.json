@@ -1,0 +1,8 @@
+{
+    "error": {
+        "fixFieldsBeforeCreate": "Some fields need fixing before this can be created.",
+        "noPermission": "You do not have permission to send this announcement.",
+        "serviceUnavailable": "The announcement service is unavailable right now.",
+        "genericCreateFailure": "Could not create the announcement. Please try again."
+    }
+}

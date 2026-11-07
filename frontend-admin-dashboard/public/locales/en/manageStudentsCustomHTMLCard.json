@@ -1,0 +1,9 @@
+{
+    "card": {
+        "title": "Custom HTML",
+        "helperText": "Add custom HTML content to the invite page"
+    },
+    "textarea": {
+        "placeholder": "Enter custom HTML code here..."
+    }
+}

@@ -1,0 +1,18 @@
+{
+    "failedDialog": {
+        "heading": "प्रश्न लोड करने में विफल",
+        "clickPrefix": "क्लिक करें",
+        "hereLink": "यहाँ",
+        "retrySuffix": "पुनः प्रयास करने के लिए"
+    },
+    "retryButton": {
+        "label": "पुनः प्रयास करें"
+    },
+    "viewReviewButton": {
+        "label": "समीक्षा देखें",
+        "loading": "लोड हो रहा है…"
+    },
+    "toast": {
+        "noDataExists": "कोई डेटा मौजूद नहीं है!"
+    }
+}

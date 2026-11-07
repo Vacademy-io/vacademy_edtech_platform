@@ -1,0 +1,104 @@
+{
+    "empty": {
+        "pickInstitute": "اختر مؤسسة لعرض تقارير المكالمات.",
+        "noCallsInRange": "لا توجد مكالمات في هذا النطاق الزمني.",
+        "noCounsellorActivity": "لا يوجد نشاط مكالمات للمستشارين في هذا النطاق الزمني."
+    },
+    "deployPending": {
+        "title": "تقارير المكالمات غير متاحة على هذا الخادم بعد",
+        "description": "لم يتم نشر نقاط نهاية إعداد التقارير في هذه البيئة بعد. يُرجى التحقق لاحقًا بعد الإصدار التالي للخادم."
+    },
+    "error": {
+        "loadFailed": "تعذّر تحميل هذا التقرير.",
+        "retry": "إعادة المحاولة"
+    },
+    "kpi": {
+        "totalDials": {
+            "label": "إجمالي محاولات الاتصال",
+            "sub_zero": "خلال {{count}} أيام",
+            "sub_one": "خلال {{count}} يوم واحد",
+            "sub_two": "خلال {{count}} يومين",
+            "sub_few": "خلال {{count}} أيام",
+            "sub_many": "خلال {{count}} يومًا",
+            "sub_other": "خلال {{count}} يوم"
+        },
+        "connected": {
+            "label": "متصلة",
+            "sub_zero": "من أصل {{dials}} اتصالات",
+            "sub_one": "من أصل {{dials}} اتصال واحد",
+            "sub_two": "من أصل {{dials}} اتصالين",
+            "sub_few": "من أصل {{dials}} اتصالات",
+            "sub_many": "من أصل {{dials}} اتصالًا",
+            "sub_other": "من أصل {{dials}} اتصال"
+        },
+        "connectRate": {
+            "label": "معدل الاتصال",
+            "sub": "متصلة ÷ محاولات الاتصال"
+        },
+        "talkTime": {
+            "label": "مدة المكالمة",
+            "sub": "ساعات : دقائق"
+        }
+    },
+    "dailyChart": {
+        "heading": "نشاط المكالمات اليومي",
+        "legendDials": "الاتصالات",
+        "legendConnected": "متصلة",
+        "ariaLabel": "الاتصالات والمكالمات المتصلة يوميًا",
+        "exportCsv": "تصدير CSV"
+    },
+    "counsellorTable": {
+        "heading": "أداء مكالمات المستشارين",
+        "exportCsv": "تصدير CSV",
+        "headers": {
+            "counsellor": "المستشار",
+            "dials": "الاتصالات",
+            "connected": "متصلة",
+            "connectRate": "نسبة الاتصال %",
+            "talkTime": "مدة المكالمة",
+            "avgCall": "متوسط المكالمة",
+            "outcomes": "النتائج"
+        }
+    },
+    "heatmap": {
+        "heading": "خريطة أوقات الاتصال الحرارية",
+        "timezoneNote": "اليوم × الساعة، حسب المنطقة الزمنية لتقارير مؤسستك",
+        "legendFewer": "أقل",
+        "legendMore": "أكثر",
+        "days": {
+            "mon": "إثنين",
+            "tue": "ثلاثاء",
+            "wed": "أربعاء",
+            "thu": "خميس",
+            "fri": "جمعة",
+            "sat": "سبت",
+            "sun": "أحد"
+        },
+        "tooltip": {
+            "noDials": "{{day}} {{hour}} — لا اتصالات",
+            "withDials_zero": "{{day}} {{hour}} — {{count}} اتصالات · {{pct}}٪ متصلة",
+            "withDials_one": "{{day}} {{hour}} — {{count}} اتصال واحد · {{pct}}٪ متصلة",
+            "withDials_two": "{{day}} {{hour}} — {{count}} اتصالين · {{pct}}٪ متصلة",
+            "withDials_few": "{{day}} {{hour}} — {{count}} اتصالات · {{pct}}٪ متصلة",
+            "withDials_many": "{{day}} {{hour}} — {{count}} اتصالًا · {{pct}}٪ متصلة",
+            "withDials_other": "{{day}} {{hour}} — {{count}} اتصال · {{pct}}٪ متصلة"
+        }
+    },
+    "csv": {
+        "daily": {
+            "date": "التاريخ",
+            "dials": "الاتصالات",
+            "connected": "متصلة",
+            "connectRate": "معدل الاتصال (%)",
+            "talkTime": "مدة المكالمة (ثوانٍ)"
+        },
+        "counsellor": {
+            "counsellor": "المستشار",
+            "dials": "الاتصالات",
+            "connected": "متصلة",
+            "connectRate": "معدل الاتصال (%)",
+            "talkTime": "مدة المكالمة (ثوانٍ)",
+            "avgCall": "متوسط المكالمة (ثوانٍ)"
+        }
+    }
+}

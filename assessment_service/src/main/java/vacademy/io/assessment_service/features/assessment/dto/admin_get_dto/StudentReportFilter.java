@@ -22,4 +22,7 @@ public class StudentReportFilter {
     private List<String> status;
     private List<String> releaseResultStatus;
     private List<String> assessmentType;
+    // Learner batches (package session ids). When sent, only tests assigned to one of these
+    // batches, or that the learner is registered for or has attempted, are returned.
+    private List<String> batchIds;
 }

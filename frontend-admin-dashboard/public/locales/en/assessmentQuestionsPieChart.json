@@ -1,0 +1,34 @@
+{
+    "chart": {
+        "ongoing": "Ongoing",
+        "pending": "Pending",
+        "attempted": "Attempted"
+    },
+    "info": {
+        "createdOn": "Created on",
+        "startDateTime": "Start Date & Time",
+        "endDateTime": "End Date & Time",
+        "duration": "Duration",
+        "totalParticipants": "Total Participants",
+        "subjectFallback": "N/A"
+    },
+    "durationLabel": {
+        "hoursMinutes": "{{hours}} hr {{minutes}} min",
+        "hoursOnly": "{{hours}} hr",
+        "minutesOnly": "{{minutes}} min"
+    },
+    "stats": {
+        "avgDuration": "Avg. Duration",
+        "avgDurationUnit": "min",
+        "avgMarks": "Avg. Marks"
+    },
+    "breakdown": {
+        "title": "Participation Breakdown",
+        "total_one": "{{count}} total",
+        "total_other": "{{count}} total"
+    },
+    "unavailable": {
+        "title": "Overview not available for the selected institute",
+        "body": "This assessment isn't linked to the institute currently selected. Switch to the institute it belongs to and reload the page."
+    }
+}

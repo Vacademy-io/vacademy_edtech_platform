@@ -1,0 +1,25 @@
+{
+    "sections": {
+        "quickAccess": "Accès rapide",
+        "programming": "Programmation",
+        "optionBased": "Basé sur des options",
+        "mathBased": "Basé sur les mathématiques",
+        "writingSkills": "Compétences en écriture",
+        "readingSkills": "Compétences en lecture"
+    },
+    "questionTypes": {
+        "mcqSingle": "Questions à choix multiples (réponse unique)",
+        "mcqMultiple": "Questions à choix multiples (réponses multiples)",
+        "numerical": "Numérique",
+        "trueFalse": "Vrai Faux",
+        "coding": "Question de programmation",
+        "longAnswer": "Réponse longue",
+        "singleWord": "Mot unique",
+        "comprehensionMcqSingle": "Questions à choix multiples de compréhension (réponse unique)",
+        "comprehensionMcqMultiple": "Questions à choix multiples de compréhension (réponses multiples)",
+        "comprehensionNumeric": "Numérique de compréhension"
+    },
+    "dialog": {
+        "title": "Créer un sujet d'examen manuellement"
+    }
+}

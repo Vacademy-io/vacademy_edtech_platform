@@ -1,0 +1,9 @@
+{
+    "card": {
+        "title": "HTML مخصص",
+        "helperText": "أضف محتوى HTML مخصصًا إلى صفحة الدعوة"
+    },
+    "textarea": {
+        "placeholder": "أدخل كود HTML المخصص هنا..."
+    }
+}

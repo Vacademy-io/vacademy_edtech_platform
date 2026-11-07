@@ -1,8 +1,10 @@
 import { useMemo, useState, useCallback, createContext, useContext } from 'react';
+import { paymentCourseNames, paymentShares } from '../-utils/paymentGroup';
+import { readRecordedPaymentDetails } from '@/services/offline-payment-modes';
 import { ColumnDef } from '@tanstack/react-table';
 import { MyTable, TableData } from '@/components/design-system/table';
 import { MyPagination } from '@/components/design-system/pagination';
-import type { PaymentLog, PaymentLogEntry, PaymentLogsResponse } from '@/types/payment-logs';
+import type { PaymentLogEntry, PaymentLogsResponse } from '@/types/payment-logs';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -25,6 +27,9 @@ import { formatMoney, resolveEntryCurrency } from '@/utils/payment-currency';
 import { cn } from '@/lib/utils';
 import { GatewayBadge } from './GatewayBadge';
 import { derivePaymentTypeLabel } from '../-utils/exportPaymentLogsCsv';
+import { daysUntil, dueState, formatPlanDate } from '../-utils/planDates';
+import { paymentReceivedAt } from '../-utils/paymentReceivedAt';
+import { getPlanQuantity } from '../-utils/planQuantity';
 
 // ─── Redesign cell primitives ──────────────────────────────────────────────────
 
@@ -74,6 +79,20 @@ const PAYMENT_STATUS_PILL: Record<string, { label: string; cls: string; dot: str
         label: 'Not initiated',
         cls: 'bg-neutral-100 text-neutral-600',
         dot: 'bg-neutral-400',
+    },
+    // A checkout opened and never finished — the gateway order has long expired. Not money in
+    // flight and not money owed; kept visible because it is a warm lead.
+    ABANDONED: {
+        label: 'Abandoned',
+        cls: 'bg-neutral-100 text-neutral-500',
+        dot: 'bg-neutral-400',
+    },
+    // A failed attempt the learner then paid on a retry. The money is on the later PAID row, so
+    // this one is in no total — counting it as paid counted that money twice.
+    RETRIED: {
+        label: 'Retried',
+        cls: 'bg-neutral-100 text-neutral-500',
+        dot: 'bg-neutral-300',
     },
     // A voided invoice. Visible for audit, excluded from every total.
     CANCELLED: {
@@ -421,14 +440,6 @@ function InvoiceCell({ entry }: { entry: PaymentLogEntry }) {
 const formatCurrency = (amount: number, currency: string) =>
     formatMoney(amount, currency, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
-/**
- * `payment_log.date` is a DATE column (no time), so it arrives as UTC midnight — rendering it
- * with hour/minute produced a meaningless "05:30 AM" on every row. `created_at` carries the real
- * payment timestamp (and is what the listing is ordered by); fall back to `date` for rows served
- * by an API build that predates it.
- */
-const paymentTimestamp = (log?: PaymentLog | null) => log?.created_at || log?.date || '';
-
 const formatDate = (dateString: string, hasTime: boolean) => {
     if (!dateString) return '-';
     const date = new Date(dateString);
@@ -451,6 +462,42 @@ const formatRelativeTime = (dateString: string) => {
         return '-';
     }
 };
+
+/** Next Due Date: the day, and under it whether it has passed, is today, or how far off it is. */
+function NextDueCell({ value }: { value?: string | null }) {
+    const label = formatPlanDate(value);
+    if (!label) return <span className="text-xs text-neutral-400">—</span>;
+    const state = dueState(value);
+    const days = daysUntil(value) ?? 0;
+    return (
+        <div className="space-y-1">
+            <div
+                className={cn(
+                    'text-sm font-medium',
+                    state === 'overdue' ? 'text-danger-600' : 'text-neutral-700'
+                )}
+            >
+                {label}
+            </div>
+            <div
+                className={cn(
+                    'text-xs',
+                    state === 'overdue'
+                        ? 'text-danger-500'
+                        : state === 'today'
+                          ? 'text-warning-600'
+                          : 'text-neutral-500'
+                )}
+            >
+                {state === 'overdue'
+                    ? `Overdue by ${-days} day${days === -1 ? '' : 's'}`
+                    : state === 'today'
+                      ? 'Due today'
+                      : `In ${days} day${days === 1 ? '' : 's'}`}
+            </div>
+        </div>
+    );
+}
 
 // ─── Static Columns (defined outside component — never recreated) ─────────
 
@@ -632,17 +679,16 @@ export function PaymentLogsTable({
             {
                 id: 'payment_date',
                 header: 'Date & Time',
-                accessorFn: (row) => paymentTimestamp(row?.payment_log),
+                accessorFn: (row) => paymentReceivedAt(row?.payment_log).value,
                 cell: ({ row }) => {
-                    const log = row.original?.payment_log;
-                    const timestamp = paymentTimestamp(log);
+                    const { value, hasTime } = paymentReceivedAt(row.original?.payment_log);
                     return (
                         <div className="space-y-1">
                             <div className="font-medium text-neutral-700">
-                                {formatDate(timestamp, Boolean(log?.created_at))}
+                                {formatDate(value, hasTime)}
                             </div>
                             <div className="text-xs text-neutral-500">
-                                {formatRelativeTime(timestamp)}
+                                {formatRelativeTime(value)}
                             </div>
                         </div>
                     );
@@ -718,6 +764,9 @@ export function PaymentLogsTable({
                 cell: ({ row }) => {
                     const amount = row.original?.payment_log?.payment_amount || 0;
                     const currency = resolveEntryCurrency(row.original);
+                    // A package payment / multi-course checkout: one payment, its total here,
+                    // the per-course split in the detail sheet.
+                    const shares = paymentShares(row.original);
                     return (
                         <div>
                             <div className="font-bold tabular-nums text-neutral-800">
@@ -725,6 +774,19 @@ export function PaymentLogsTable({
                             </div>
                             <div className="text-xs text-neutral-500">
                                 {derivePaymentTypeLabel(row.original)}
+                                {shares.length > 1 && (
+                                    <span
+                                        className="ml-1 whitespace-nowrap font-medium text-primary-600"
+                                        title={shares
+                                            .map(
+                                                (line) =>
+                                                    `${line?.user_plan?.enroll_invite?.name || '-'}: ${formatCurrency(line?.payment_log?.payment_amount || 0, currency)}`
+                                            )
+                                            .join('\n')}
+                                    >
+                                        · split over {shares.length}
+                                    </span>
+                                )}
                             </div>
                         </div>
                     );
@@ -746,7 +808,9 @@ export function PaymentLogsTable({
                 accessorFn: (row) => row?.payment_log?.vendor || '',
                 cell: ({ row }) => {
                     const vendor = row.original?.payment_log?.vendor;
-                    return <GatewayBadge vendor={vendor} showLabel size="sm" />;
+                    // Offline payments show how they were paid ("UPI · PhonePe") under the badge.
+                    const paidVia = readRecordedPaymentDetails(row.original?.payment_log)?.label;
+                    return <GatewayBadge vendor={vendor} showLabel size="sm" subLabel={paidVia ?? undefined} />;
                 },
                 size: 160,
             },
@@ -768,13 +832,32 @@ export function PaymentLogsTable({
             {
                 id: 'enroll_invite',
                 header: `${getTerminology(ContentTerms.Course, SystemTerms.Course)}/Membership`,
-                accessorFn: (row) => row?.user_plan?.enroll_invite?.name || '',
+                accessorFn: (row) =>
+                    paymentCourseNames(row).join(', ') || row?.user_plan?.enroll_invite?.name || '',
                 cell: ({ row }) => {
-                    const enrollInvite = row.original?.user_plan?.enroll_invite;
+                    const userPlan = row.original?.user_plan;
+                    const enrollInvite = userPlan?.enroll_invite;
+                    // One payment for several courses lists the first and says how many more.
+                    const courseNames = paymentCourseNames(row.original);
+                    const moreCourses = courseNames.length > 1 ? courseNames.length - 1 : 0;
                     return (
                         <div className="space-y-1">
-                            <div className="font-medium text-neutral-700">
+                            <div
+                                className="font-medium text-neutral-700"
+                                title={moreCourses > 0 ? courseNames.join('\n') : undefined}
+                            >
                                 {enrollInvite?.name || '-'}
+                                {moreCourses > 0 && (
+                                    <span className="ml-1 whitespace-nowrap rounded-full bg-primary-50 px-1.5 py-0.5 text-2xs font-semibold text-primary-600">
+                                        +{moreCourses} more
+                                    </span>
+                                )}
+                                {/* Always shown, "× 1" included. Invoice rows have no plan, so no quantity. */}
+                                {userPlan && (
+                                    <span className="ml-1 whitespace-nowrap font-normal tabular-nums text-neutral-500">
+                                        × {getPlanQuantity(userPlan)}
+                                    </span>
+                                )}
                             </div>
                             <div className="text-xs text-neutral-500">
                                 Code: {enrollInvite?.invite_code || '-'}
@@ -783,6 +866,24 @@ export function PaymentLogsTable({
                     );
                 },
                 size: 200,
+            },
+            {
+                id: 'enrolled_date',
+                header: 'Enrollment Date',
+                accessorFn: (row) => row?.enrolled_date || '',
+                cell: ({ row }) => {
+                    const label = formatPlanDate(row.original?.enrolled_date);
+                    if (!label) return <span className="text-xs text-neutral-400">—</span>;
+                    return <span className="text-sm text-neutral-700">{label}</span>;
+                },
+                size: 150,
+            },
+            {
+                id: 'next_due_date',
+                header: 'Next Due Date',
+                accessorFn: (row) => row?.next_due_on || '',
+                cell: ({ row }) => <NextDueCell value={row.original?.next_due_on} />,
+                size: 160,
             },
             invoiceColumn,
             {

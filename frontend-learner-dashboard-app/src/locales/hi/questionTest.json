@@ -1,0 +1,255 @@
+{
+    "common": {
+        "submit": "सबमिट करें",
+        "returnToTest": "टेस्ट पर वापस जाएं",
+        "yourAnswer": "आपका उत्तर",
+        "questionNumber": "प्रश्न {{number}}",
+        "tabSwitchWarning": "चेतावनी: आप टेस्ट वातावरण से बाहर जाने का प्रयास कर रहे हैं। यह 3 में से {{count}} चेतावनी है। यदि आप दोबारा बाहर जाने का प्रयास करते हैं, तो आपका टेस्ट अपने आप सबमिट हो जाएगा।",
+        "tools": {
+            "calculator": "कैलकुलेटर",
+            "scratchpad": "स्क्रैचपैड"
+        }
+    },
+    "preview": {
+        "header": {
+            "title": "पूर्वावलोकन",
+            "subtitle": "केवल पढ़ने के लिए — यह समाप्त होते ही उत्तर देना शुरू होगा"
+        },
+        "nav": {
+            "sectionsAriaLabel": "सेक्शन"
+        },
+        "actions": {
+            "starting": "शुरू हो रहा है...",
+            "startTest": "टेस्ट शुरू करें"
+        }
+    },
+    "navbar": {
+        "autoSave": {
+            "saved": "सेव हो गया",
+            "saving": "सेव हो रहा है…",
+            "notSaved": "सेव नहीं हुआ"
+        },
+        "timer": {
+            "title": "शेष समय"
+        },
+        "help": {
+            "ariaLabel": "मदद और अनुरोध",
+            "menu": {
+                "instructions": "निर्देश",
+                "alerts": "टेस्ट अलर्ट",
+                "reattempt": "पुनः प्रयास का अनुरोध करें",
+                "timeIncrease": "समय बढ़ाने का अनुरोध करें"
+            }
+        },
+        "questionPanel": {
+            "hide": "प्रश्न पैनल छिपाएँ",
+            "show": "प्रश्न पैनल दिखाएँ"
+        },
+        "pdf": {
+            "preview": "PDF का पूर्वावलोकन करें",
+            "upload": "अपलोड करें",
+            "uploading": "अपलोड हो रहा है...",
+            "back": "वापस",
+            "replace": "PDF बदलें"
+        },
+        "exitWarning": {
+            "description": "आपका टेस्ट अभी भी जारी है। प्रयास के दौरान आप वापस नहीं जा सकते। समाप्त होने पर सबमिट बटन का उपयोग करें — आपके उत्तर अपने आप सेव हो जाते हैं।"
+        },
+        "toast": {
+            "missingAttemptId": "सबमिशन विफल: अटेम्प्ट आईडी गायब है।",
+            "submitSuccess": "टेस्ट सफलतापूर्वक सबमिट हो गया!",
+            "retrying": "सबमिशन विफल रहा। पुनः प्रयास किया जा रहा है ({{attempt}}/{{max}})...",
+            "submitFailed": "आपका टेस्ट सबमिट नहीं हो सका। कृपया अपना कनेक्शन जांचें और फिर से प्रयास करें।"
+        }
+    },
+    "networkStatus": {
+        "offline": {
+            "title": "इंटरनेट कनेक्शन नहीं है",
+            "description": "आपके उत्तर इस डिवाइस पर सुरक्षित हैं और ऑनलाइन आते ही फिर से भेज दिए जाएंगे।"
+        },
+        "saveFailed": {
+            "title": "उत्तर सिंक नहीं हो रहे",
+            "description": "वे इस डिवाइस पर सुरक्षित हैं। अभी सिंक करने के लिए रीट्राई पर टैप करें।"
+        },
+        "online": {
+            "title": "फिर से ऑनलाइन",
+            "description": "आपका नेटवर्क कनेक्शन बहाल हो गया है।"
+        },
+        "retry": "रीट्राई करें"
+    },
+    "footer": {
+        "actions": {
+            "questionPalette": "प्रश्न पैलेट",
+            "tools": "टूल्स",
+            "closeToolsMenu": "टूल्स मेनू बंद करें"
+        },
+        "markForReview": {
+            "mark": "समीक्षा के लिए चिह्नित करें",
+            "unmark": "समीक्षा चिह्न हटाएं",
+            "marked": "समीक्षा के लिए चिह्नित"
+        },
+        "clearResponse": {
+            "ariaLabel": "उत्तर हटाएं",
+            "label": "हटाएं"
+        },
+        "nav": {
+            "previous": "पिछला",
+            "previousAriaLabel": "पिछला प्रश्न",
+            "next": "अगला",
+            "saveAndNext": "सेव करें और अगला"
+        }
+    },
+    "coding": {
+        "problem": {
+            "missing": "(समस्या का विवरण उपलब्ध नहीं है)"
+        },
+        "badges": {
+            "maxPoints": "अधिकतम अंक: {{max}}",
+            "cpu": "CPU {{seconds}} सेकंड",
+            "tests": "टेस्ट: {{count}}"
+        },
+        "actions": {
+            "run": "रन करें"
+        },
+        "loadingRuntime": "Python रनटाइम लोड हो रहा है…",
+        "tabs": {
+            "tests": "टेस्ट",
+            "output": "आउटपुट"
+        },
+        "tests": {
+            "noneProvided": "कोई नमूना टेस्ट उपलब्ध नहीं है।",
+            "sampleFallback": "नमूना {{number}}",
+            "hiddenFallback": "छिपा हुआ {{number}}",
+            "input": "इनपुट",
+            "expected": "अपेक्षित",
+            "empty": "(खाली)",
+            "compilerError": "कंपाइलर / रनटाइम त्रुटि",
+            "yourOutput": "आपका आउटपुट",
+            "hiddenBadge": "छिपा हुआ"
+        },
+        "output": {
+            "none": "अभी तक कोई आउटपुट नहीं।",
+            "testFallback": "टेस्ट {{number}}",
+            "stdoutLabel": "stdout",
+            "stderrLabel": "stderr / कंपाइलर"
+        }
+    },
+    "longAnswer": {
+        "wordCount_one": "{{count}} शब्द",
+        "wordCount_other": "{{count}} शब्द",
+        "placeholder": "अपना उत्तर यहां लिखें। अंक तर्क के लिए दिए जाते हैं, लंबाई के लिए नहीं।"
+    },
+    "oneWord": {
+        "placeholder": "अपना एक-शब्द वाला उत्तर टाइप करें"
+    },
+    "numeric": {
+        "ariaLabel": "आपका संख्यात्मक उत्तर",
+        "noNegativeMarking": "इस प्रश्न पर कोई नेगेटिव मार्किंग नहीं है।",
+        "pad": {
+            "show": "नंबर पैड दिखाएं",
+            "hide": "नंबर पैड छिपाएं",
+            "decimalPointAriaLabel": "दशमलव बिंदु",
+            "backspaceAriaLabel": "बैकस्पेस"
+        }
+    },
+    "paragraph": {
+        "readMore": "और पढ़ें",
+        "readLess": "कम पढ़ें"
+    },
+    "page": {
+        "toast": {
+            "savingResumed": "आपके उत्तर फिर से सेव किए जा रहे हैं",
+            "savingFailed": "आपके उत्तर रिकॉर्ड नहीं हो रहे हैं"
+        }
+    },
+    "questionDisplay": {
+        "selectPrompt": "शुरू करने के लिए एक प्रश्न चुनें",
+        "sectionTimeUp": "इस सेक्शन का समय समाप्त हो गया है। कृपया अगले उपलब्ध सेक्शन पर जाएं।",
+        "ofTotal": "में से {{total}}",
+        "codingMissingConfig": "कोडिंग प्रश्न में सेटिंग्स नहीं हैं।",
+        "answerOptionsAriaLabel": "उत्तर विकल्प",
+        "unsupportedType": "इस प्रकार का प्रश्न यहां नहीं दिखाया जा सकता।"
+    },
+    "questionList": {
+        "itemAriaLabel": "प्रश्न {{number}}, {{status}}"
+    },
+    "questionNavigator": {
+        "sectionFallback": "सेक्शन",
+        "questionCount_one": "{{count}} प्रश्न",
+        "questionCount_other": "{{count}} प्रश्न",
+        "legendAriaLabel": "प्रश्न स्थिति लीजेंड",
+        "submitPaper": "पेपर सबमिट करें",
+        "hidePanel": "प्रश्न पैनल छिपाएँ"
+    },
+    "questionPassage": {
+        "label": "गद्यांश",
+        "tapToRead": "पढ़ने के लिए टैप करें"
+    },
+    "questionStatus": {
+        "answered": "उत्तर दिया गया",
+        "answeredMarked": "उत्तर दिया गया और चिह्नित",
+        "marked": "समीक्षा के लिए चिह्नित",
+        "notAnswered": "उत्तर नहीं दिया गया",
+        "notVisited": "देखा नहीं गया"
+    },
+    "sectionTabs": {
+        "ariaLabel": "टेस्ट सेक्शन"
+    },
+    "sectionTimer": {
+        "ariaLabel": "सेक्शन का शेष समय: {{minutes}} मिनट {{seconds}} सेकंड"
+    },
+    "sidebar": {
+        "paletteAriaLabel": "प्रश्न पैलेट"
+    },
+    "calculator": {
+        "genericError": "त्रुटि",
+        "errors": {
+            "factorialWholeNumber": "फैक्टोरियल के लिए पूर्ण संख्या चाहिए",
+            "tooLarge": "बहुत बड़ा",
+            "unexpectedChar": "अप्रत्याशित \"{{char}}\"",
+            "malformedNumber": "गलत संख्या प्रारूप",
+            "divideByZero": "शून्य से भाग नहीं हो सकता",
+            "outOfDomain": "स्वीकार्य सीमा से बाहर",
+            "unknownFunction": "अज्ञात फ़ंक्शन",
+            "incompleteExpression": "अधूरा एक्सप्रेशन",
+            "missingParen": ") कोष्ठक गायब है",
+            "empty": "खाली",
+            "unbalancedParen": ") असंतुलित कोष्ठक",
+            "notANumber": "यह एक संख्या नहीं है",
+            "outOfRange": "सीमा से बाहर"
+        },
+        "keys": {
+            "clear": "क्लियर",
+            "backspace": "बैकस्पेस",
+            "percent": "प्रतिशत",
+            "divide": "भाग",
+            "multiply": "गुणा",
+            "minus": "घटाना",
+            "plus": "जोड़",
+            "decimalPoint": "दशमलव बिंदु",
+            "equals": "बराबर",
+            "secondFunction": "सेकंड फ़ंक्शन",
+            "toggleAngleUnit": "डिग्री और रेडियन के बीच बदलें",
+            "openBracket": "कोष्ठक खोलें",
+            "closeBracket": "कोष्ठक बंद करें",
+            "squareRoot": "वर्गमूल",
+            "square": "वर्ग",
+            "power": "घात",
+            "pi": "पाई (π)",
+            "eulersNumber": "यूलर संख्या",
+            "toggleSign": "चिह्न बदलें",
+            "factorial": "फैक्टोरियल"
+        }
+    },
+    "scratchpad": {
+        "placeholder": "रफ़ काम — आपके पेपर के साथ सबमिट नहीं होता।",
+        "ariaLabel": "रफ़ काम के लिए स्क्रैचपैड"
+    },
+    "toolPanel": {
+        "closeAriaLabel": "{{title}} बंद करें"
+    },
+    "viewToggle": {
+        "grid": "ग्रिड व्यू",
+        "list": "लिस्ट व्यू"
+    }
+}

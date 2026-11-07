@@ -1,0 +1,262 @@
+{
+    "heading": "Bibliothèque de questions",
+    "header": {
+        "title": "Bibliothèque de questions",
+        "description": "Toutes les questions de votre établissement, classées par matière, chapitre et thème. Classez-les une fois, réutilisez-les dans n’importe quel test.",
+        "importTags": "Importer les tags",
+        "importPaper": "Ajouter un sujet",
+        "newTopic": "Nouveau thème"
+    },
+    "stats": {
+        "questions": "Questions",
+        "thisWeek": "ajoutées cette semaine",
+        "nothingNew": "Rien de nouveau cette semaine",
+        "topics": "Thèmes",
+        "biggest": "Le plus grand : {{name}} ({{count}})",
+        "noTopicsYet": "Aucun thème pour l’instant",
+        "sorted": "Classées dans un thème",
+        "allSorted": "Chaque question est dans un thème",
+        "difficultyMix": "Répartition des difficultés",
+        "noDifficulty": "Aucune question pour l’instant",
+        "unsortedLink_one": "{{count}} question non classée",
+        "unsortedLink_other": "{{count}} questions non classées"
+    },
+    "insights": {
+        "thinTopics": "Thèmes avec peu de questions",
+        "questions_one": "{{count}} question",
+        "questions_other": "{{count}} questions"
+    },
+    "difficulty": {
+        "EASY": "Facile",
+        "MEDIUM": "Moyen",
+        "HARD": "Difficile"
+    },
+    "types": {
+        "MCQS": "QCM (unique)",
+        "MCQM": "QCM (multiple)",
+        "TRUE_FALSE": "Vrai / Faux",
+        "NUMERIC": "Numérique",
+        "ONE_WORD": "Un mot",
+        "LONG_ANSWER": "Réponse longue",
+        "CODING": "Code"
+    },
+    "source": {
+        "MANUAL": "Saisie manuelle",
+        "UPLOAD": "Importée",
+        "AI": "Générée par IA",
+        "KNOWLEDGE_BASE": "Depuis la base de connaissances"
+    },
+    "tree": {
+        "title": "Thèmes",
+        "addTopic": "Ajouter",
+        "all": "Toutes les questions",
+        "unsorted": "Hors thème",
+        "emptyTitle": "Aucun thème pour l’instant",
+        "emptyHint": "Ajoutez une matière comme « Physique », puis ses chapitres et thèmes.",
+        "addSubtopic": "Ajouter un sous-thème",
+        "rename": "Renommer",
+        "move": "Déplacer vers…",
+        "moveUp": "Monter",
+        "moveDown": "Descendre",
+        "delete": "Supprimer",
+        "actions": "Actions du thème",
+        "expand": "Déplier",
+        "collapse": "Replier"
+    },
+    "scope": {
+        "all": "Toutes les questions",
+        "allHint": "Toutes les questions actives de votre établissement",
+        "unsorted": "Hors thème",
+        "unsortedHint": "Sélectionnez des questions et ajoutez-les à un thème",
+        "addSubtopic": "Sous-thème",
+        "addPaperHere": "Ajouter un sujet ici"
+    },
+    "filters": {
+        "clear": "Effacer",
+        "search": "Rechercher dans le texte",
+        "searchButton": "Rechercher",
+        "difficulty": "Difficulté",
+        "type": "Type",
+        "any": "Tous"
+    },
+    "bulk": {
+        "selectPage": "Sélectionner cette page",
+        "addToTopic": "Ajouter à un thème",
+        "moveToTopic": "Déplacer vers un thème",
+        "removeFromTopic": "Retirer de ce thème",
+        "clear": "Effacer",
+        "selected_one": "{{count}} sélectionnée",
+        "selected_other": "{{count}} sélectionnées"
+    },
+    "list": {
+        "select": "Sélectionner la question",
+        "untitled": "Question sans titre",
+        "edit": "Modifier la question",
+        "addToTopic": "Ajouter à un thème",
+        "removeFromTopic": "Retirer de ce thème",
+        "noTopic": "Hors thème",
+        "showAnswer": "Afficher la réponse",
+        "hideAnswer": "Masquer la réponse",
+        "answer": "Réponse :",
+        "explanation": "Explication",
+        "total_one": "{{count}} question",
+        "total_other": "{{count}} questions",
+        "usedIn_one": "Utilisée dans {{count}} test",
+        "usedIn_other": "Utilisée dans {{count}} tests",
+        "moreTopics_one": "+{{count}} autre",
+        "moreTopics_other": "+{{count}} autres"
+    },
+    "empty": {
+        "all": "Aucune question pour l’instant",
+        "allHint": "Les questions importées, saisies ou générées par IA apparaissent ici.",
+        "unsorted": "Chaque question est dans un thème",
+        "topic": "Aucune question dans ce thème",
+        "topicHint": "Ajoutez un sujet entier ici, ou choisissez des questions dans « Hors thème ».",
+        "filtered": "Aucune question ne correspond à ces filtres",
+        "filteredHint": "Essayez une autre difficulté ou un autre type, ou effacez la recherche.",
+        "fromUnsorted": "Choisir dans « Hors thème »"
+    },
+    "errors": {
+        "tree": "Impossible de charger vos thèmes.",
+        "questions": "Impossible de charger les questions."
+    },
+    "common": {
+        "cancel": "Annuler",
+        "retry": "Réessayer"
+    },
+    "topicForm": {
+        "createTitle": "Nouveau thème",
+        "renameTitle": "Renommer le thème",
+        "create": "Créer",
+        "save": "Enregistrer",
+        "name": "Nom",
+        "namePlaceholder": "ex. Physique, Lois du mouvement, Frottement",
+        "topLevel": "Ce sera un thème de premier niveau (par exemple une matière).",
+        "underParent": "Dans {{parent}}"
+    },
+    "moveTopic": {
+        "title": "Déplacer « {{name}} »",
+        "move": "Déplacer ici",
+        "topLevel": "Premier niveau",
+        "nowhere": "Ce thème ne peut aller nulle part ailleurs."
+    },
+    "deleteTopic": {
+        "title": "Supprimer « {{name}} » ?",
+        "body": "Les questions restent dans votre bibliothèque. Elles sont seulement retirées de ce thème.",
+        "confirm": "Supprimer le thème",
+        "withChildren_one": "Son sous-thème ({{count}}) est aussi supprimé. Les questions restent dans votre bibliothèque.",
+        "withChildren_other": "Ses {{count}} sous-thèmes sont aussi supprimés. Les questions restent dans votre bibliothèque."
+    },
+    "picker": {
+        "add": "Ajouter",
+        "move": "Déplacer",
+        "search": "Rechercher un thème",
+        "noTopics": "Créez d’abord un thème.",
+        "noMatch": "Aucun thème ne correspond.",
+        "addTitle_one": "Ajouter {{count}} question à des thèmes",
+        "addTitle_other": "Ajouter {{count}} questions à des thèmes",
+        "moveTitle_one": "Déplacer {{count}} question vers un thème",
+        "moveTitle_other": "Déplacer {{count}} questions vers un thème"
+    },
+    "importPaper": {
+        "title": "Ajouter un sujet à un thème",
+        "topic": "Thème",
+        "chooseTopic": "Choisir un thème",
+        "noTopics": "Créez d’abord un thème, puis ajoutez-y des sujets.",
+        "paper": "Sujet",
+        "searchPapers": "Rechercher un sujet",
+        "noPapers": "Aucun sujet trouvé.",
+        "loadFailed": "Impossible de charger les sujets.",
+        "confirm": "Ajouter les questions"
+    },
+    "importTags": {
+        "title": "Créer des thèmes depuis vos tags",
+        "description": "Chaque tag devient un thème de premier niveau et ses questions y sont classées. Relancer ne crée aucun doublon.",
+        "selectAll": "Tout sélectionner",
+        "empty": "Vos questions n’ont pas encore de tags de matière.",
+        "loadFailed": "Impossible de charger vos tags.",
+        "questions_one": "{{count}} question",
+        "questions_other": "{{count}} questions",
+        "confirm_one": "Importer {{count}} tag",
+        "confirm_other": "Importer {{count}} tags"
+    },
+    "edit": {
+        "title": "Modifier la question",
+        "difficulty": "Difficulté",
+        "versionNotice_one": "Cette question est déjà utilisée dans {{count}} test. L’enregistrement crée une nouvelle version ; ce test garde la question vue par ses élèves.",
+        "versionNotice_other": "Cette question est déjà utilisée dans {{count}} tests. L’enregistrement crée une nouvelle version ; ces tests gardent la question vue par leurs élèves.",
+        "savedAsVersion_one": "Enregistrée comme nouvelle version. Le test qui l’utilisait ({{count}}) est inchangé.",
+        "savedAsVersion_other": "Enregistrée comme nouvelle version. Les {{count}} tests qui l’utilisaient sont inchangés."
+    },
+    "comingSoon": {
+        "title": "Des questions prêtes à l'emploi arrivent bientôt",
+        "text": "Les questions et les sujets par thème apparaîtront ici dès leur ajout.",
+        "pickTitle": "Choisissez un thème",
+        "pickText": "Ouvrez-le depuis l'étape d'ajout de questions de n'importe quelle évaluation.",
+        "addTitle": "Ajoutez des questions ou un sujet",
+        "addText": "Choisissez-les une par une ou prenez un sujet complet.",
+        "editTitle": "Modifiez dans votre évaluation",
+        "editText": "Vos modifications restent dans votre évaluation. La bibliothèque ne change pas."
+    },
+    "readOnly": {
+        "description": "Des questions et des sujets prêts à l'emploi, classés par thème. Ajoutez-les depuis l'étape d'ajout de questions de n'importe quelle évaluation. Vos modifications restent dans votre évaluation.",
+        "allHint": "Toutes les questions disponibles dans la bibliothèque",
+        "emptyTitle": "Rien pour le moment",
+        "emptyHint": "Les nouvelles questions et les nouveaux sujets apparaîtront ici dès leur ajout."
+    },
+    "papers": {
+        "title": "Sujets",
+        "loadFailed": "Impossible de charger les sujets.",
+        "remove": "Retirer le sujet de ce thème"
+    },
+    "pick": {
+        "random": "Sélection aléatoire",
+        "randomHint": "Indiquez combien de questions par niveau. Elles sont choisies au hasard dans le dossier sélectionné.",
+        "pickAgain": "Choisir à nouveau",
+        "tooMany": "Seules les {{count}} premières ont été sélectionnées.",
+        "available_one": "{{count}} disponible",
+        "available_other": "{{count}} disponibles",
+        "pickNow_one": "Choisir {{count}} question",
+        "pickNow_other": "Choisir {{count}} questions",
+        "selectAll_one": "Tout sélectionner ({{count}})",
+        "selectAll_other": "Tout sélectionner ({{count}})",
+        "cardTitle": "Choisir dans la bibliothèque de questions",
+        "cardHint": "Des questions et des sujets prêts à l'emploi, par thème",
+        "dialogTitle": "Bibliothèque de questions — {{name}}",
+        "questions": "Questions",
+        "papers": "Sujets complets",
+        "loadFailed": "Impossible de charger la bibliothèque de questions.",
+        "noQuestions": "Aucune question ne correspond",
+        "noPapers": "Aucun sujet pour le moment",
+        "emptyHint": "Essayez un autre thème ou un autre filtre.",
+        "selectQuestions": "Sélectionnez des questions à ajouter",
+        "selectPaper": "Sélectionnez un sujet à ajouter",
+        "addPaper": "Ajouter ce sujet",
+        "adding": "Ajout en cours…",
+        "addQuestions_one": "Ajouter {{count}} question",
+        "addQuestions_other": "Ajouter {{count}} questions",
+        "alreadyInSection_one": "{{count}} question est déjà dans cette section",
+        "alreadyInSection_other": "{{count}} questions sont déjà dans cette section",
+        "someFailed_one": "{{count}} question n'a pas pu être ajoutée",
+        "someFailed_other": "{{count}} questions n'ont pas pu être ajoutées"
+    },
+    "toasts": {
+        "paperRemoved": "« {{name}} » retiré de ce thème",
+        "failed": "Une erreur est survenue. Réessayez.",
+        "topicCreated": "« {{name}} » créé",
+        "topicRenamed": "Renommé en « {{name}} »",
+        "topicMoved": "« {{name}} » déplacé",
+        "topicDeleted": "« {{name}} » supprimé",
+        "reordered": "Ordre mis à jour",
+        "added_one": "{{count}} question ajoutée",
+        "added_other": "{{count}} questions ajoutées",
+        "moved_one": "{{count}} question déplacée",
+        "moved_other": "{{count}} questions déplacées",
+        "removed_one": "{{count}} question retirée de « {{name}} »",
+        "removed_other": "{{count}} questions retirées de « {{name}} »",
+        "paperAdded_one": "{{count}} nouvelle question classée dans {{name}}",
+        "paperAdded_other": "{{count}} nouvelles questions classées dans {{name}}",
+        "tagsImported_one": "{{topics}} nouveaux thèmes, {{count}} question classée",
+        "tagsImported_other": "{{topics}} nouveaux thèmes, {{count}} questions classées"
+    }
+}

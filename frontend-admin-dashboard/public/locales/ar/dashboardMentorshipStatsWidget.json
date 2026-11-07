@@ -1,0 +1,34 @@
+{
+    "header": {
+        "eyebrow": "الإرشاد",
+        "title": "المرشدون والمسترشدون"
+    },
+    "actions": {
+        "manage": "إدارة",
+        "pendingTooltip": "متعلمون في انتظار الربط بمرشد",
+        "pendingReview_zero": "لا يوجد ({{count}}) ما يُراجع",
+        "pendingReview_one": "{{count}} عنصر واحد للمراجعة",
+        "pendingReview_two": "{{count}} عنصران للمراجعة",
+        "pendingReview_few": "{{count}} عناصر للمراجعة",
+        "pendingReview_many": "{{count}} عنصرًا للمراجعة",
+        "pendingReview_other": "{{count}} عنصر للمراجعة"
+    },
+    "tiles": {
+        "mentors": {
+            "label": "المرشدون",
+            "subtitle": "المرشدون النشطون"
+        },
+        "mentees": {
+            "label": "المسترشدون",
+            "subtitle": "الطلاب المُرشَدون"
+        },
+        "today": {
+            "label": "اليوم",
+            "subtitle": "جلسات اليوم"
+        },
+        "upcoming": {
+            "label": "القادمة",
+            "subtitle": "الأيام السبعة القادمة"
+        }
+    }
+}

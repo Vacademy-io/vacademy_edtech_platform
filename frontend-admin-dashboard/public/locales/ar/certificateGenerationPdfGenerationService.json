@@ -1,0 +1,14 @@
+{
+    "errors": {
+        "canvasContextFailed": "فشل الحصول على سياق اللوحة ثنائي الأبعاد",
+        "imageLoadFailed": "فشل تحميل الصورة",
+        "certificateGenerationFailed": "فشل إنشاء الشهادة لـ {{name}}: {{message}}",
+        "previewGenerationFailed": "فشل إنشاء المعاينة: {{message}}",
+        "unknownError": "خطأ غير معروف"
+    },
+    "defaults": {
+        "instituteName": "جامعة التكنولوجيا",
+        "sampleValue": "{{field}} نموذجي",
+        "sampleText": "نص نموذجي"
+    }
+}

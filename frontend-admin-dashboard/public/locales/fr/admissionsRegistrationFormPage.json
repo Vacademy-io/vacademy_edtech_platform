@@ -1,0 +1,71 @@
+{
+    "pageTitle": "Nouvelle candidature",
+    "sectionHasErrors": "Contient des erreurs",
+    "stepProgress": "Étape {{current}} sur {{total}}",
+    "sections": {
+        "student": {
+            "label": "Informations sur l'élève",
+            "shortLabel": "Élève"
+        },
+        "academic": {
+            "label": "Informations académiques",
+            "shortLabel": "Académique"
+        },
+        "parent": {
+            "label": "Parent et tuteur",
+            "shortLabel": "Parent"
+        },
+        "address": {
+            "label": "Adresse",
+            "shortLabel": "Adresse"
+        },
+        "payment": {
+            "label": "Paiement",
+            "shortLabel": "Paiement"
+        }
+    },
+    "buttons": {
+        "downloadPdf": "Télécharger le PDF",
+        "generatingPdf": "Génération en cours...",
+        "print": "Imprimer",
+        "previous": "Précédent",
+        "next": "Suivant",
+        "submitApplication": "Soumettre la candidature",
+        "backToList": "Retour à la liste"
+    },
+    "toasts": {
+        "pdfTemplateNotReady": "Le modèle PDF n'est pas prêt. Veuillez réessayer.",
+        "generatingPdf": "Génération du PDF...",
+        "pdfDownloaded": "PDF téléchargé !",
+        "pdfGenerationFailed": "Échec de la génération du PDF. Veuillez réessayer.",
+        "popupBlocked": "Fenêtre contextuelle bloquée. Veuillez autoriser les fenêtres contextuelles pour imprimer.",
+        "submitFailed": "Échec de l'envoi de la candidature. Veuillez réessayer."
+    },
+    "validation": {
+        "studentNameRequired": "Le nom de l'élève est requis",
+        "dobRequired": "La date de naissance est requise",
+        "genderRequired": "Le sexe est requis",
+        "nationalityRequired": "La nationalité est requise",
+        "categoryRequired": "La catégorie est requise",
+        "classRequired": "Veuillez sélectionner une classe/un niveau dans la section Informations académiques",
+        "boardRequired": "La préférence de conseil scolaire est requise",
+        "parentRequired": "Au moins un parent (père ou mère) avec un nom et un numéro de mobile est requis",
+        "fatherEmailInvalid": "L'adresse e-mail du père n'est pas valide",
+        "motherEmailInvalid": "L'adresse e-mail de la mère n'est pas valide",
+        "addressFieldsRequired": "Veuillez remplir tous les champs d'adresse requis (rue, quartier, ville, état)",
+        "countryRequired": "Le pays est requis",
+        "pincodeInvalid": "Veuillez saisir un code postal valide à 6 chiffres",
+        "sessionMissing": "L'identifiant de session est manquant. Veuillez sélectionner une session dans la liste d'inscription"
+    },
+    "confirmSubmit": "Êtes-vous sûr de vouloir soumettre cette candidature ? Veuillez vérifier tous les détails avant de continuer.",
+    "print": {
+        "documentTitle": "Formulaire de candidature - {{name}}"
+    },
+    "payment": {
+        "defaultFeeName": "Frais de candidature / d'inscription"
+    },
+    "header": {
+        "backToList": "Back to applications",
+        "stepBadge": "Step {{current}} of {{total}}"
+    }
+}

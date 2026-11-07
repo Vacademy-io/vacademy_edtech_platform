@@ -1,0 +1,35 @@
+{
+    "columns": {
+        "learnerName": "Nom ({{term}})",
+        "enrollmentNumber": "Numéro d'inscription",
+        "username": "Nom d'utilisateur",
+        "email": "E-mail",
+        "mobileNumber": "Numéro de mobile",
+        "gender": "Genre",
+        "dateOfBirth": "Date de naissance",
+        "status": "Statut",
+        "sessionExpiryDate": "Date d'expiration ({{term}})",
+        "address": "Adresse",
+        "city": "Ville",
+        "state": "État / Région",
+        "country": "Pays",
+        "pinCode": "Code postal",
+        "collegeSchool": "Collège / École",
+        "fatherName": "Nom du père / tuteur",
+        "fatherMobile": "Mobile du père / tuteur",
+        "fatherEmail": "E-mail du père / tuteur",
+        "motherName": "Nom de la mère / tutrice",
+        "motherMobile": "Mobile de la mère / tutrice",
+        "motherEmail": "E-mail de la mère / tutrice",
+        "attendancePercent": "Assiduité %",
+        "referralsCount": "Nombre de parrainages",
+        "createdAt": "Créé le"
+    },
+    "groups": {
+        "identity": "Identité",
+        "contactAddress": "Contact et adresse",
+        "guardian": "Tuteur",
+        "other": "Autre",
+        "customFields": "Champs personnalisés"
+    }
+}

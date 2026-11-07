@@ -16,5 +16,7 @@ public interface PayslipRepository extends JpaRepository<Payslip, String> {
 
     Optional<Payslip> findByPayrollEntryId(String payrollEntryId);
 
+    List<Payslip> findByPayrollEntryPayrollRunIdOrderByEmployeeEmployeeCodeAsc(String payrollRunId);
+
     List<Payslip> findByInstituteIdAndMonthAndYear(String instituteId, Integer month, Integer year);
 }

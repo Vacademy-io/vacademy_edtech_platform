@@ -1,0 +1,22 @@
+{
+    "emptyState": {
+        "message": "يرجى إضافة سؤال لعرض تفاصيل السؤال"
+    },
+    "comprehension": {
+        "title": "نص الفهم",
+        "hint": "المقطع الذي يشير إليه كل سؤال في هذه المجموعة.",
+        "placeholder": "نص الفهم"
+    },
+    "question": {
+        "title": "سؤال",
+        "placeholder": "اكتب السؤال"
+    },
+    "explanation": {
+        "hint": "يُعرض للمتعلمين مع نتيجتهم.",
+        "placeholder": "التفسير"
+    },
+    "defaults": {
+        "answersType": "الإجابة",
+        "explanationsType": "التفسير"
+    }
+}

@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import * as ReactDOM from 'react-dom';
+import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 import {
     $getSelection,
     $isRangeSelection,
@@ -74,23 +76,18 @@ const formatBlock = (editor: LexicalEditor, createNode: () => ElementNode) => {
 
 /** Core (standard rich-text) options. Custom block options are appended by
  *  buildSlashMenuOptions callers as they are implemented. */
-export function buildCoreSlashOptions(): SlashMenuOption[] {
+export function buildCoreSlashOptions(t: TFunction): SlashMenuOption[] {
     return [
-        new SlashMenuOption('Text', {
-            description: 'Start writing plain text.',
+        new SlashMenuOption(t('options.text.title'), {
+            description: t('options.text.description'),
             menuIcon: TextAa,
             keywords: ['paragraph', 'text', 'plain'],
             onSelect: (editor) => formatBlock(editor, () => $createParagraphNode()),
         }),
         ...(['1', '2', '3'] as const).map(
             (level) =>
-                new SlashMenuOption(`Heading ${level}`, {
-                    description:
-                        level === '1'
-                            ? 'Big section heading'
-                            : level === '2'
-                              ? 'Medium section heading'
-                              : 'Small section heading',
+                new SlashMenuOption(t(`options.heading${level}.title`), {
+                    description: t(`options.heading${level}.description`),
                     menuIcon: level === '1' ? TextHOne : level === '2' ? TextHTwo : TextHThree,
                     keywords: ['heading', `h${level}`, 'title'],
                     onSelect: (editor) =>
@@ -99,39 +96,39 @@ export function buildCoreSlashOptions(): SlashMenuOption[] {
                         ),
                 })
         ),
-        new SlashMenuOption('Quote', {
-            description: 'Capture a quote',
+        new SlashMenuOption(t('options.quote.title'), {
+            description: t('options.quote.description'),
             menuIcon: Quotes,
             keywords: ['quote', 'blockquote'],
             onSelect: (editor) => formatBlock(editor, () => $createQuoteNode()),
         }),
-        new SlashMenuOption('Bulleted list', {
-            description: 'Simple bulleted list',
+        new SlashMenuOption(t('options.bulletedList.title'), {
+            description: t('options.bulletedList.description'),
             menuIcon: ListBullets,
             keywords: ['list', 'bullet', 'ul'],
             onSelect: (editor) => editor.dispatchCommand(INSERT_UNORDERED_LIST_COMMAND, undefined),
         }),
-        new SlashMenuOption('Numbered list', {
-            description: 'Numbered list',
+        new SlashMenuOption(t('options.numberedList.title'), {
+            description: t('options.numberedList.description'),
             menuIcon: ListNumbers,
             keywords: ['list', 'numbered', 'ol'],
             onSelect: (editor) => editor.dispatchCommand(INSERT_ORDERED_LIST_COMMAND, undefined),
         }),
-        new SlashMenuOption('To-do list', {
-            description: 'List with checkboxes',
+        new SlashMenuOption(t('options.todoList.title'), {
+            description: t('options.todoList.description'),
             menuIcon: CheckSquare,
             keywords: ['todo', 'check', 'task'],
             onSelect: (editor) => editor.dispatchCommand(INSERT_CHECK_LIST_COMMAND, undefined),
         }),
-        new SlashMenuOption('Table', {
-            description: 'Add simple table',
+        new SlashMenuOption(t('options.table.title'), {
+            description: t('options.table.description'),
             menuIcon: Table,
             keywords: ['table', 'grid'],
             onSelect: (editor) =>
                 editor.dispatchCommand(INSERT_TABLE_COMMAND, { columns: '3', rows: '3' }),
         }),
-        new SlashMenuOption('Divider', {
-            description: 'Divide your blocks',
+        new SlashMenuOption(t('options.divider.title'), {
+            description: t('options.divider.description'),
             menuIcon: Minus,
             keywords: ['divider', 'hr', 'separator', 'line'],
             onSelect: (editor) => editor.dispatchCommand(INSERT_HORIZONTAL_RULE_COMMAND, undefined),
@@ -140,13 +137,14 @@ export function buildCoreSlashOptions(): SlashMenuOption[] {
 }
 
 export function SlashMenuPlugin({ extraOptions = [] }: { extraOptions?: SlashMenuOption[] }) {
+    const { t } = useTranslation('studyLibrarySlashMenuPlugin');
     const [editor] = useLexicalComposerContext();
     const [queryString, setQueryString] = useState<string | null>(null);
 
     const checkForTriggerMatch = useBasicTypeaheadTriggerMatch('/', { minLength: 0 });
 
     const options = useMemo(() => {
-        const all = [...buildCoreSlashOptions(), ...extraOptions];
+        const all = [...buildCoreSlashOptions(t), ...extraOptions];
         if (!queryString) return all;
         const q = queryString.toLowerCase();
         return all.filter(
@@ -154,7 +152,7 @@ export function SlashMenuPlugin({ extraOptions = [] }: { extraOptions?: SlashMen
                 o.title.toLowerCase().includes(q) ||
                 o.keywords.some((k) => k.toLowerCase().includes(q))
         );
-    }, [queryString, extraOptions]);
+    }, [queryString, extraOptions, t]);
 
     const onSelectOption = useCallback(
         (

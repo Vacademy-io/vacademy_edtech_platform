@@ -1,0 +1,16 @@
+{
+    "menu": {
+        "edit": "تعديل",
+        "delete": "حذف"
+    },
+    "toast": {
+        "deleteSuccess": "تم حذف الدعوة!",
+        "deleteError": "فشل حذف رابط الدعوة!"
+    },
+    "deleteDialog": {
+        "heading": "حوار الحذف",
+        "confirmText": "هل أنت متأكد أنك تريد حذف دعوة {{name}}؟",
+        "cancel": "إلغاء",
+        "confirm": "نعم، أنا متأكد"
+    }
+}

@@ -1,0 +1,28 @@
+{
+    "instituteLogoAlt": "شعار المؤسسة",
+    "continueWithGoogle": "المتابعة باستخدام Google",
+    "continueWithGithub": "المتابعة باستخدام GitHub",
+    "orContinueWith": "أو المتابعة باستخدام",
+    "usernamePlaceholder": "أدخل اسم المستخدم الخاص بك",
+    "usernameLabel": "اسم المستخدم",
+    "passwordLabel": "كلمة المرور",
+    "forgotPassword": "هل نسيت كلمة المرور؟",
+    "useEmailOtp": "استخدام رمز التحقق عبر البريد الإلكتروني",
+    "usePhoneOtp": "استخدام رمز التحقق عبر الهاتف",
+    "loggingIn": "جارٍ تسجيل الدخول...",
+    "login": "تسجيل الدخول",
+    "noAccount": "ليس لديك حساب؟",
+    "createOne": "إنشاء حساب",
+    "termsAndConditions": "الشروط والأحكام",
+    "privacyPolicy": "سياسة الخصوصية",
+    "errors": {
+        "accessDeniedTitle": "تم رفض الوصول",
+        "studentAccessDenied": "لا يُسمح للطلاب بالوصول إلى بوابة المسؤول. يرجى التواصل مع المسؤول لديك.",
+        "adminRoleRequired": "تتطلب هذه البوابة صلاحيات المسؤول (ADMIN). يرجى التواصل مع المسؤول لديك.",
+        "notAllowedPortal": "غير مسموح لك بالوصول إلى هذه البوابة. يرجى التواصل مع المسؤول لديك.",
+        "loginFailedRetry": "فشل تسجيل الدخول. يرجى المحاولة مرة أخرى.",
+        "loginErrorTitle": "خطأ في تسجيل الدخول",
+        "invalidCredentials": "بيانات اعتماد غير صالحة",
+        "invalidUsernamePassword": "اسم مستخدم أو كلمة مرور غير صالحة"
+    }
+}

@@ -1,0 +1,7 @@
+{
+    "dialog": {
+        "heading": "Close Submission",
+        "confirmMessage": "Are you sure you want to close submission for <highlight>{{name}}</highlight>?"
+    },
+    "doneButton": "Done"
+}

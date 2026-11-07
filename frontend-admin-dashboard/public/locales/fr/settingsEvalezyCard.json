@@ -1,0 +1,29 @@
+{
+    "header": {
+        "title": "Application Evalezy",
+        "description": "Une application simple pour corriger les copies : choisissez une évaluation, scannez ou importez les copies, l’IA les corrige, téléchargez les copies corrigées en zip. Elle s’ouvre sur evalezy.vacademy.io et dans l’application mobile Evalezy, avec le même identifiant.",
+        "open": "Ouvrir Evalezy"
+    },
+    "enabled": {
+        "label": "Autoriser Evalezy",
+        "description": "Vos administrateurs peuvent se connecter à Evalezy. Désactivé, Evalezy indique qu’il est désactivé pour votre établissement."
+    },
+    "camera": {
+        "label": "Scanner avec l’appareil photo",
+        "description": "Les copies peuvent être scannées page par page avec la caméra du téléphone ou de l’ordinateur."
+    },
+    "upload": {
+        "label": "Importer des fichiers",
+        "description": "Les copies peuvent être importées en PDF ou en photos depuis l’appareil."
+    },
+    "notifyEmail": {
+        "label": "E-mail une fois corrigé",
+        "description": "La personne qui a envoyé les copies reçoit un e-mail quand le lot est corrigé."
+    },
+    "quality": {
+        "label": "Qualité du scan",
+        "description": "Une qualité plus élevée lit mieux l’écriture petite ou pâle, mais l’import est plus long.",
+        "standard": "Standard (recommandé)",
+        "high": "Élevée"
+    }
+}

@@ -44,6 +44,13 @@ public class CouponSnapshotDTO {
     /** {@code coupon_code} (admin-created) or {@code referral}. */
     private String discountSource;
 
+    /** Admin-granted discounts (discount_source = ADMIN): who granted it and why. */
+    private String grantedByUserId;
+    private String grantReason;
+
+    /** Charges the discount reduces: null = every cycle (ADMIN), 1 = first payment only. */
+    private Integer applyForCycles;
+
     // Configured to accept BOTH camelCase and snake_case keys defensively,
     // since the on-disk JSON was historically written by different code paths
     // (entity-level mapper vs explicit @JsonNaming-bearing DTOs).
@@ -70,6 +77,9 @@ public class CouponSnapshotDTO {
                     .discountPoint(raw.getDiscountPoint())
                     .maxDiscountPoint(raw.getMaxDiscountPoint())
                     .discountSource(raw.getDiscountSource())
+                    .grantedByUserId(raw.getGrantedByUserId())
+                    .grantReason(raw.getGrantReason())
+                    .applyForCycles(raw.getApplyForCycles())
                     .build();
         } catch (Exception e) {
             log.debug("Could not parse applied_coupon_discount_json snapshot: {}", e.getMessage());

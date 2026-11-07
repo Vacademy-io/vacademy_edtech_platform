@@ -21,6 +21,7 @@ import { converDataToVideoFormat } from '../../-helper/helper';
 import { useInstituteDetailsStore } from '@/stores/students/students-list/useInstituteDetailsStore';
 import { Route } from '../..';
 import { toast } from 'sonner';
+import { useTranslation } from 'react-i18next';
 
 const VideoQuestionDialogEditPreview = ({
     formRefData,
@@ -35,6 +36,7 @@ const VideoQuestionDialogEditPreview = ({
     setCurrentQuestionIndex: Dispatch<SetStateAction<number>>;
     updateQuestion?: (question: StudyLibraryQuestion) => void; // New prop for updating state
 }) => {
+    const { t } = useTranslation('studyLibraryVideoQuestionDialogEditPreview');
     const { activeItem, setActiveItem } = useContentStore();
     // Slide context + save mutation so the edit persists to the backend on Save
     // (same wiring the split-screen dialog uses to reach addUpdateVideoSlide).
@@ -119,10 +121,10 @@ const VideoQuestionDialogEditPreview = ({
                 newSlide: false,
             });
             await addUpdateVideoSlide(payload);
-            toast.success('Question saved');
+            toast.success(t('questionSaved'));
         } catch (err) {
             console.error('Failed to save video question:', err);
-            toast.error('Failed to save question');
+            toast.error(t('saveFailed'));
         } finally {
             setIsSaving(false);
             closeRef.current?.click();
@@ -159,7 +161,7 @@ const VideoQuestionDialogEditPreview = ({
             </DialogTrigger>
             <DialogContent className="no-scrollbar !m-0 flex h-full !w-full !max-w-full flex-col !gap-0 overflow-y-auto !rounded-none !p-0">
                 <div className="sticky top-0 z-10 flex w-full items-center justify-between bg-primary-50">
-                    <h1 className="p-4 font-semibold text-primary-500">Question</h1>
+                    <h1 className="p-4 font-semibold text-primary-500">{t('question')}</h1>
                     <MyButton
                         type="button"
                         buttonType="primary"
@@ -169,13 +171,13 @@ const VideoQuestionDialogEditPreview = ({
                         onClick={handleEditQuestionInAddedForm}
                         disable={isSaving}
                     >
-                        {isSaving ? 'Saving...' : 'Save'}
+                        {isSaving ? t('savingEllipsis') : t('save')}
                     </MyButton>
                 </div>
                 <div>
                     <FormProvider {...form}>
                         {form.getValues('questions')?.length === 0 ? (
-                            <p>Nothing to show</p>
+                            <p>{t('nothingToShow')}</p>
                         ) : (
                             <div className="my-4 flex flex-col gap-2">
                                 <MainViewComponentFactory

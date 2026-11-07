@@ -1,0 +1,42 @@
+{
+    "emptyState": {
+        "selectPage": "सामग्री देखने के लिए एक पेज चुनें"
+    },
+    "status": {
+        "pending": "लंबित",
+        "generating": "जनरेट हो रहा है..."
+    },
+    "prompt": {
+        "heading": "AI जनरेशन प्रॉम्प्ट",
+        "noPromptAvailable": "इस स्लाइड के लिए कोई प्रॉम्प्ट उपलब्ध नहीं है।",
+        "contentWillGenerate": "\"पेज सामग्री जनरेट करें\" पर क्लिक करने पर सामग्री जनरेट की जाएगी"
+    },
+    "generating": {
+        "heading": "सामग्री जनरेट हो रही है",
+        "subtext": "AI इस पेज के लिए सामग्री बना रहा है...",
+        "promptPreview": "प्रॉम्प्ट: {{prompt}}..."
+    },
+    "code": {
+        "defaultComment": "// यहां अपना कोड लिखना शुरू करें"
+    },
+    "video": {
+        "scriptLabel": "स्क्रिप्ट",
+        "descriptionLabel": "विवरण",
+        "generationStatusLabel": "वीडियो जनरेशन स्थिति:",
+        "scriptWillAppear": "जनरेशन पूरा होने पर स्क्रिप्ट दिखाई देगी।",
+        "noContentAvailable": "कोई सामग्री उपलब्ध नहीं है"
+    },
+    "quiz": {
+        "questionOf": "प्रश्न {{current}} / {{total}}",
+        "explanationLabel": "व्याख्या:",
+        "defaultQuestion": "इस खंड में मुख्य अवधारणा क्या है?",
+        "defaultOptionA": "विकल्प A",
+        "defaultOptionB": "विकल्प B",
+        "defaultOptionC": "विकल्प C",
+        "defaultOptionD": "विकल्प D",
+        "defaultExplanation": "यह सही उत्तर की व्याख्या है।"
+    },
+    "assignment": {
+        "noContent": "कोई असाइनमेंट सामग्री नहीं है"
+    }
+}

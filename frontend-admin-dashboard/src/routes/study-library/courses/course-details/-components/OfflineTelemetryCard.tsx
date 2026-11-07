@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { MyButton } from '@/components/design-system/button';
 import { MyDialog } from '@/components/design-system/dialog';
@@ -21,8 +22,8 @@ interface OfflineTelemetryCardProps {
 }
 
 /** Dates arrive as ISO strings (or null when a device has never checked in). */
-const formatDate = (value?: string | null): string =>
-    value ? new Date(value).toLocaleDateString(undefined, { dateStyle: 'medium' }) : '—';
+const formatDate = (value: string | null | undefined, locale: string): string =>
+    value ? new Date(value).toLocaleDateString(locale, { dateStyle: 'medium' }) : '—';
 
 /**
  * Offline plan Part A4/A5: who is holding this batch offline.
@@ -34,6 +35,7 @@ const formatDate = (value?: string | null): string =>
  * admin already is.
  */
 export const OfflineTelemetryCard: React.FC<OfflineTelemetryCardProps> = ({ packageSessionId }) => {
+    const { t, i18n } = useTranslation('studyLibraryOfflineTelemetryCard');
     const [rows, setRows] = useState<OfflineLearnerDownloadDTO[]>([]);
     const [loading, setLoading] = useState(true);
     const [failed, setFailed] = useState(false);
@@ -60,8 +62,8 @@ export const OfflineTelemetryCard: React.FC<OfflineTelemetryCardProps> = ({ pack
         if (!pendingRevoke) return;
         setRevoking(true);
         try {
-            await revokeOfflineDevice(pendingRevoke.device_id, 'Revoked from course downloads');
-            toast.success('Offline access revoked');
+            await revokeOfflineDevice(pendingRevoke.device_id, t('revoke.reason'));
+            toast.success(t('toast.revokeSuccess'));
             // The device keeps its row (it still holds content until it next
             // checks in and purges), so reflect the new status in place.
             setRows((prev) =>
@@ -73,7 +75,7 @@ export const OfflineTelemetryCard: React.FC<OfflineTelemetryCardProps> = ({ pack
             );
             setPendingRevoke(null);
         } catch {
-            toast.error('Could not revoke offline access — please try again');
+            toast.error(t('toast.revokeFailed'));
         } finally {
             setRevoking(false);
         }
@@ -84,43 +86,43 @@ export const OfflineTelemetryCard: React.FC<OfflineTelemetryCardProps> = ({ pack
             <CardHeader className="flex flex-row flex-wrap items-center justify-between gap-3 space-y-0">
                 <CardTitle className="flex items-center gap-2">
                     <CloudArrowDown className="size-5 text-primary-500" />
-                    Offline Downloads
+                    {t('header.title')}
                 </CardTitle>
                 <MyButton
                     buttonType="secondary"
                     scale="small"
                     onClick={() => setDiscrepancyDialogOpen(true)}
                 >
-                    Review sync discrepancies
+                    {t('header.reviewDiscrepancies')}
                 </MyButton>
             </CardHeader>
             <CardContent>
                 {loading ? (
-                    <div className="py-8 text-center text-body text-neutral-500">Loading…</div>
+                    <div className="py-8 text-center text-body text-neutral-500">
+                        {t('states.loading')}
+                    </div>
                 ) : failed ? (
                     <div className="flex flex-col items-center gap-3 py-8">
-                        <p className="text-body text-neutral-500">
-                            Couldn&apos;t load offline downloads for this batch.
-                        </p>
+                        <p className="text-body text-neutral-500">{t('states.loadFailed')}</p>
                         <MyButton buttonType="secondary" scale="small" onClick={load}>
-                            Try again
+                            {t('actions.tryAgain')}
                         </MyButton>
                     </div>
                 ) : rows.length === 0 ? (
                     <div className="py-8 text-center text-body text-neutral-500">
-                        No learner has downloaded content from this batch yet.
+                        {t('states.noDownloads')}
                     </div>
                 ) : (
                     <div className="overflow-x-auto rounded-lg border border-neutral-100">
                         <table className="w-full text-left text-body">
                             <thead className="bg-neutral-50 text-caption text-neutral-500">
                                 <tr>
-                                    <th className="p-3">Learner</th>
-                                    <th className="p-3">Username</th>
-                                    <th className="p-3">Email</th>
-                                    <th className="p-3">Device</th>
-                                    <th className="p-3">Downloaded</th>
-                                    <th className="p-3">Valid till</th>
+                                    <th className="p-3">{t('table.learner')}</th>
+                                    <th className="p-3">{t('table.username')}</th>
+                                    <th className="p-3">{t('table.email')}</th>
+                                    <th className="p-3">{t('table.device')}</th>
+                                    <th className="p-3">{t('table.downloaded')}</th>
+                                    <th className="p-3">{t('table.validTill')}</th>
                                     <th className="p-3" />
                                 </tr>
                             </thead>
@@ -135,8 +137,9 @@ export const OfflineTelemetryCard: React.FC<OfflineTelemetryCardProps> = ({ pack
                                                 {row.full_name || '—'}
                                             </div>
                                             <div className="text-caption text-neutral-500">
-                                                {row.downloaded_slides} item
-                                                {row.downloaded_slides === 1 ? '' : 's'}
+                                                {t('table.itemCount', {
+                                                    count: row.downloaded_slides,
+                                                })}
                                             </div>
                                         </td>
                                         <td className="p-3 text-neutral-600">
@@ -154,19 +157,21 @@ export const OfflineTelemetryCard: React.FC<OfflineTelemetryCardProps> = ({ pack
                                                     showIcon={false}
                                                 >
                                                     {row.device_status === 'ACTIVE'
-                                                        ? 'Active'
-                                                        : 'Revoked'}
+                                                        ? t('status.active')
+                                                        : t('status.revoked')}
                                                 </StatusChips>
                                                 <span className="text-caption text-neutral-500">
-                                                    {row.device_name || row.platform || 'Device'}
+                                                    {row.device_name ||
+                                                        row.platform ||
+                                                        t('table.deviceFallback')}
                                                 </span>
                                             </div>
                                         </td>
                                         <td className="p-3 text-neutral-600">
-                                            {formatDate(row.last_downloaded_at)}
+                                            {formatDate(row.last_downloaded_at, i18n.language)}
                                         </td>
                                         <td className="p-3 text-neutral-600">
-                                            {formatDate(row.lease_expires_at)}
+                                            {formatDate(row.lease_expires_at, i18n.language)}
                                         </td>
                                         <td className="p-3 text-right">
                                             {row.device_status === 'ACTIVE' && (
@@ -175,7 +180,7 @@ export const OfflineTelemetryCard: React.FC<OfflineTelemetryCardProps> = ({ pack
                                                     scale="small"
                                                     onClick={() => setPendingRevoke(row)}
                                                 >
-                                                    Revoke access
+                                                    {t('actions.revokeAccess')}
                                                 </MyButton>
                                             )}
                                         </td>
@@ -198,15 +203,15 @@ export const OfflineTelemetryCard: React.FC<OfflineTelemetryCardProps> = ({ pack
             <MyDialog
                 open={pendingRevoke !== null}
                 onOpenChange={(open) => !open && setPendingRevoke(null)}
-                heading="Revoke offline access?"
+                heading={t('revoke.dialogHeading')}
                 dialogWidth="max-w-lg"
             >
                 <div className="space-y-4 p-1">
                     <p className="text-body text-neutral-600">
-                        {pendingRevoke?.full_name || 'This learner'} will lose offline access on{' '}
-                        {pendingRevoke?.device_name || 'this device'}, and the content downloaded
-                        there will be deleted the next time it connects. They can download again if
-                        you re-enable access.
+                        {t('revoke.confirmationText', {
+                            learnerName: pendingRevoke?.full_name || t('revoke.thisLearner'),
+                            deviceName: pendingRevoke?.device_name || t('revoke.thisDevice'),
+                        })}
                     </p>
                     <div className="flex justify-end gap-3 border-t pt-4">
                         <MyButton
@@ -214,14 +219,14 @@ export const OfflineTelemetryCard: React.FC<OfflineTelemetryCardProps> = ({ pack
                             disabled={revoking}
                             onClick={() => setPendingRevoke(null)}
                         >
-                            Cancel
+                            {t('actions.cancel')}
                         </MyButton>
                         <MyButton
                             buttonType="primary"
                             disabled={revoking}
                             onClick={() => void handleRevoke()}
                         >
-                            {revoking ? 'Revoking…' : 'Revoke access'}
+                            {revoking ? t('actions.revoking') : t('actions.revokeAccess')}
                         </MyButton>
                     </div>
                 </div>
@@ -237,6 +242,7 @@ interface DiscrepancyReviewDialogProps {
 }
 
 function DiscrepancyReviewDialog({ open, onClose, packageSessionId }: DiscrepancyReviewDialogProps) {
+    const { t, i18n } = useTranslation('studyLibraryOfflineTelemetryCard');
     const [rows, setRows] = useState<OfflineSyncDiscrepancyDTO[]>([]);
     const [loading, setLoading] = useState(false);
 
@@ -244,7 +250,7 @@ function DiscrepancyReviewDialog({ open, onClose, packageSessionId }: Discrepanc
         setLoading(true);
         getOfflineDiscrepancies(packageSessionId, 'OPEN')
             .then((page) => setRows(page.content))
-            .catch(() => toast.error('Failed to load discrepancies'))
+            .catch(() => toast.error(t('discrepancy.loadFailed')))
             .finally(() => setLoading(false));
     };
 
@@ -257,9 +263,9 @@ function DiscrepancyReviewDialog({ open, onClose, packageSessionId }: Discrepanc
         try {
             await reviewOfflineDiscrepancy(id);
             setRows((prev) => prev.filter((r) => r.id !== id));
-            toast.success('Marked as reviewed');
+            toast.success(t('discrepancy.markedReviewed'));
         } catch {
-            toast.error('Failed to update discrepancy');
+            toast.error(t('discrepancy.updateFailed'));
         }
     };
 
@@ -267,31 +273,28 @@ function DiscrepancyReviewDialog({ open, onClose, packageSessionId }: Discrepanc
         <MyDialog
             open={open}
             onOpenChange={onClose}
-            heading="Offline Sync Discrepancies"
+            heading={t('discrepancy.dialogHeading')}
             dialogWidth="max-w-3xl"
         >
             <div className="space-y-4 p-1">
-                <p className="text-caption text-neutral-500">
-                    When a learner answers a quiz or question offline, their device scores it on
-                    the spot. We score it again once the device reconnects. These are the answers
-                    where the two scores disagreed — the server&apos;s score is the one that counts,
-                    and it has already been saved.
-                </p>
+                <p className="text-caption text-neutral-500">{t('discrepancy.explainer')}</p>
                 {loading ? (
-                    <div className="py-8 text-center text-sm text-neutral-500">Loading…</div>
+                    <div className="py-8 text-center text-sm text-neutral-500">
+                        {t('states.loading')}
+                    </div>
                 ) : rows.length === 0 ? (
                     <div className="py-8 text-center text-sm text-neutral-500">
-                        No open discrepancies for this batch.
+                        {t('discrepancy.noOpenDiscrepancies')}
                     </div>
                 ) : (
                     <div className="overflow-x-auto rounded-lg border border-neutral-100">
                         <table className="w-full text-left text-body">
                             <thead className="bg-neutral-50 text-caption text-neutral-500">
                                 <tr>
-                                    <th className="p-3">Field</th>
-                                    <th className="p-3">Client value</th>
-                                    <th className="p-3">Server value</th>
-                                    <th className="p-3">Created</th>
+                                    <th className="p-3">{t('discrepancy.table.field')}</th>
+                                    <th className="p-3">{t('discrepancy.table.clientValue')}</th>
+                                    <th className="p-3">{t('discrepancy.table.serverValue')}</th>
+                                    <th className="p-3">{t('discrepancy.table.created')}</th>
                                     <th className="p-3" />
                                 </tr>
                             </thead>
@@ -302,7 +305,9 @@ function DiscrepancyReviewDialog({ open, onClose, packageSessionId }: Discrepanc
                                         <td className="p-3 text-danger-600">{row.client_value}</td>
                                         <td className="p-3 text-success-600">{row.server_value}</td>
                                         <td className="p-3 text-caption text-neutral-500">
-                                            {new Date(row.created_at).toLocaleString()}
+                                            {new Date(row.created_at).toLocaleString(
+                                                i18n.language
+                                            )}
                                         </td>
                                         <td className="p-3">
                                             <MyButton
@@ -310,7 +315,7 @@ function DiscrepancyReviewDialog({ open, onClose, packageSessionId }: Discrepanc
                                                 scale="small"
                                                 onClick={() => handleReview(row.id)}
                                             >
-                                                Mark reviewed
+                                                {t('discrepancy.markReviewed')}
                                             </MyButton>
                                         </td>
                                     </tr>
@@ -321,7 +326,7 @@ function DiscrepancyReviewDialog({ open, onClose, packageSessionId }: Discrepanc
                 )}
                 <div className="flex justify-end border-t pt-4">
                     <MyButton buttonType="secondary" onClick={onClose}>
-                        Close
+                        {t('actions.close')}
                     </MyButton>
                 </div>
             </div>

@@ -363,7 +363,11 @@ public class FeeTrackingService {
                 StudentFeeAdjustmentHistory effective = adjustmentResolver.effectiveOrNull(event);
                 BigDecimal adjustmentEffect = adjustmentResolver.computeAdjustmentEffect(effective);
                 String name = feeTypeNameMap.getOrDefault(p.getAsvId(), "N/A");
-                Integer num = installmentNumberMap.getOrDefault(p.getIId(), null);
+                // i_id is null on lump-sum and schedule-generated bills; Map.of() (used when no
+                // bill has an i_id) throws on a null key, so never look it up.
+                Integer num = p.getInstallmentNumber() != null
+                        ? p.getInstallmentNumber()
+                        : p.getIId() != null ? installmentNumberMap.get(p.getIId()) : null;
 
                 return vacademy.io.admin_core_service.features.fee_management.dto.InstallmentDetailsDTO.builder()
                         .feeTypeName(name)
@@ -543,6 +547,8 @@ public class FeeTrackingService {
 
                 return studentFeeAllocationLedgerRepository.findByStudentFeePaymentIdInOrderByCreatedAtDesc(billIds)
                                 .stream()
+                                // A voided payment's allocations are kept for audit but are not a receipt.
+                                .filter(ledger -> !"VOIDED".equals(ledger.getAllocationType()))
                                 .map(ledger -> mapToLedgerDTO(ledger,
                                                 billIdToMeta.get(ledger.getStudentFeePaymentId())))
                                 .collect(Collectors.toList());
@@ -784,8 +790,12 @@ public class FeeTrackingService {
             String paymentMode = null;
             String transactionId = null;
             if (!sourceIds.isEmpty()) {
+                // A voided payment's allocation is kept for audit; it must not lend its mode or
+                // transaction id to a receipt for a payment that really arrived.
                 List<StudentFeeAllocationLedger> ledgers =
-                        studentFeeAllocationLedgerRepository.findByStudentFeePaymentId(sourceIds.get(0));
+                        studentFeeAllocationLedgerRepository.findByStudentFeePaymentId(sourceIds.get(0)).stream()
+                                .filter(l -> !"VOIDED".equals(l.getAllocationType()))
+                                .collect(Collectors.toList());
                 if (!ledgers.isEmpty() && ledgers.get(0).getRemarks() != null) {
                     String[] parts = ledgers.get(0).getRemarks().split(" \\| ");
                     for (String part : parts) {
@@ -929,7 +939,11 @@ public class FeeTrackingService {
          */
         @Transactional(readOnly = true)
         public List<Map<String, String>> getFeeTypesForInstitute(String instituteId) {
-                List<ComplexPaymentOption> cpos = complexPaymentOptionRepository.findByInstituteId(instituteId);
+                // Leave out the hidden plans behind one-time prices (V575): each would add its own
+                // "Course fee" entry to the fee-type filters.
+                List<ComplexPaymentOption> cpos = complexPaymentOptionRepository.findByInstituteId(instituteId).stream()
+                                .filter(c -> c.getSourcePaymentPlanId() == null)
+                                .collect(Collectors.toList());
                 List<String> cpoIds = cpos.stream().map(ComplexPaymentOption::getId).collect(Collectors.toList());
                 if (cpoIds.isEmpty()) return Collections.emptyList();
 

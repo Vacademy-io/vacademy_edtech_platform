@@ -1,0 +1,7 @@
+{
+    "editDialogHeading": "{{term}} संपादित करें",
+    "deleteDialogHeading": "{{term}} हटाएं",
+    "cancel": "रद्द करें",
+    "confirmDelete": "हां, मुझे यकीन है",
+    "deleteConfirmMessage": "क्या आप वाकई अध्याय {{chapterName}} को हटाना चाहते हैं?"
+}

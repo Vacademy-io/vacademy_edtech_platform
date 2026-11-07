@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslation } from "react-i18next";
 import ReactMarkdown from "react-markdown";
 import remarkBreaks from "remark-breaks";
 import { MyDialog } from "@/components/design-system/dialog";
@@ -19,11 +20,12 @@ export default function ReportDetailsDialog({
   isOpen,
   onClose,
 }: ReportDetailsDialogProps) {
+  const { t } = useTranslation("layoutCommonB");
   if (!report) return null;
 
   const renderSection = (title: string, content: string) => (
-    <Card className="mb-6 p-2">
-      <CardTitle className="text-lg font-semibold text-neutral-800 mb-3">
+    <Card className="mb-6 p-2 space-y-stack">
+      <CardTitle className="text-lg font-semibold text-neutral-800">
         {title}
       </CardTitle>
       <CardContent className="prose prose-sm max-w-none">
@@ -50,8 +52,8 @@ export default function ReportDetailsDialog({
     }
 
     return (
-      <Card className="mb-6 w-full p-2">
-        <CardTitle className="text-lg font-semibold text-neutral-800 mb-3">
+      <Card className="mb-6 w-full p-2 space-y-stack">
+        <CardTitle className="text-lg font-semibold text-neutral-800">
           {title}
         </CardTitle>
         <CardContent className="grid gap-4">
@@ -69,15 +71,14 @@ export default function ReportDetailsDialog({
     );
   };
 
-  const heading = `Report: ${format(
-    new Date(report.start_date_iso),
-    "MMM dd, yyyy"
-  )} - ${format(new Date(report.end_date_iso), "MMM dd, yyyy")}`;
+  const heading = t("reportDetailsDialog.heading", {
+    start: format(new Date(report.start_date_iso), "MMM dd, yyyy"),
+    end: format(new Date(report.end_date_iso), "MMM dd, yyyy"),
+  });
 
-  const description = `Generated on ${format(
-    new Date(report.created_at),
-    "MMM dd, yyyy"
-  )}`;
+  const description = t("reportDetailsDialog.generatedOn", {
+    date: format(new Date(report.created_at), "MMM dd, yyyy"),
+  });
 
   return (
     <MyDialog
@@ -90,28 +91,28 @@ export default function ReportDetailsDialog({
       <div className="mb-4 text-sm text-neutral-600">{description}</div>
       <div className="flex flex-col md:flex-row gap-2 w-full">
         {Object.keys(report.report.strengths).length > 0 &&
-          renderStrengthsWeaknesses("Strengths", report.report.strengths, true)}
+          renderStrengthsWeaknesses(t("reportDetailsDialog.sections.strengths"), report.report.strengths, true)}
 
         {Object.keys(report.report.weaknesses).length > 0 &&
           renderStrengthsWeaknesses(
-            "Areas for Improvement",
+            t("reportDetailsDialog.sections.areasForImprovement"),
             report.report.weaknesses,
             false
           )}
       </div>
       <div className="space-y-6">
-        {renderSection("Overall Progress", report.report.progress)}
-        {renderSection("Learning Frequency", report.report.learning_frequency)}
+        {renderSection(t("reportDetailsDialog.sections.overallProgress"), report.report.progress)}
+        {renderSection(t("reportDetailsDialog.sections.learningFrequency"), report.report.learning_frequency)}
         {renderSection(
-          "Topics of Improvement",
+          t("reportDetailsDialog.sections.topicsOfImprovement"),
           report.report.topics_of_improvement
         )}
         {renderSection(
-          "Topics Needing Attention",
+          t("reportDetailsDialog.sections.topicsNeedingAttention"),
           report.report.topics_of_degradation
         )}
         {renderSection(
-          "Recommended Remedial Actions",
+          t("reportDetailsDialog.sections.recommendedRemedialActions"),
           report.report.remedial_points
         )}
       </div>

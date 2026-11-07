@@ -1,0 +1,40 @@
+{
+    "header": {
+        "title": "AI Content API Studio",
+        "subtitle": "Manage your API keys and access video generation APIs",
+        "consoleButton": "Content AI Console"
+    },
+    "tabs": {
+        "keys": "API Keys",
+        "docs": "Documentation"
+    },
+    "keysTab": {
+        "empty": {
+            "title": "No API Keys Found",
+            "description": "Create your first API key to start using the Vacademy AI Video Generation API. Your key will allow you to generate AI-powered videos programmatically.",
+            "createButton": "Create Your First Key"
+        },
+        "list": {
+            "title": "Your API Keys",
+            "activeKeys_one": "{{count}} active key",
+            "activeKeys_other": "{{count}} active keys",
+            "createButton": "Create New Key"
+        },
+        "securityTip": {
+            "title": "Security Tip",
+            "description": "Keep your API keys secure and never expose them in client-side code. Use environment variables or secrets management for production applications."
+        }
+    },
+    "docsTab": {
+        "cardTitle": "Vacademy AI Content Generation API",
+        "cardDescription": "Generate high-quality AI videos from text prompts programmatically"
+    },
+    "toasts": {
+        "fetchKeysFailed": "Failed to fetch API keys",
+        "instituteIdMissing": "Institute ID not found",
+        "generateSuccess": "API key generated successfully",
+        "generateFailed": "Failed to generate API key",
+        "revokeSuccess": "API key revoked successfully",
+        "revokeFailed": "Failed to revoke API key"
+    }
+}

@@ -54,6 +54,13 @@ public class QuestionDTO {
     private String evaluationCriteriaJson;
     private String criteriaTemplateId;
 
+    // Provenance (V42). Set by the generators that know it — today the knowledge-base
+    // paper pipeline — and echoed back on read so the UI can show where a question
+    // came from and link to its source page.
+    private String instituteId;
+    private String sourceType;
+    private String sourceMeta;
+
     // Default constructor
     public QuestionDTO() {
     }
@@ -70,6 +77,11 @@ public class QuestionDTO {
         this.optionsJson = question.getOptionsJson();
         this.evaluationCriteriaJson = question.getEvaluationCriteriaJson();
         this.criteriaTemplateId = question.getCriteriaTemplateId();
+        this.instituteId = question.getInstituteId();
+        this.sourceType = question.getSourceType();
+        this.sourceMeta = question.getSourceMeta();
+        this.aiDifficultyLevel = question.getDifficulty() != null ? question.getDifficulty() : this.aiDifficultyLevel;
+        this.problemType = question.getProblemType();
 
         if (provideSolution) {
             this.autoEvaluationJson = question.getAutoEvaluationJson();

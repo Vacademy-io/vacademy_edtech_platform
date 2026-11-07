@@ -1,0 +1,14 @@
+{
+    "errors": {
+        "authRequired": "Authentification requise. Veuillez actualiser la page ou vous reconnecter.",
+        "sessionExpired": "Session expirée. Veuillez vous reconnecter.",
+        "accessDenied": "Accès refusé. Vous n'avez pas la permission de voir ces données.",
+        "notFound": "Aucune donnée analytique trouvée pour cet établissement.",
+        "tooManyRequests": "Trop de requêtes. Veuillez patienter un instant puis réessayer.",
+        "serverUnavailable": "Serveur temporairement indisponible. Nous y travaillons.",
+        "serviceError": "Erreur du service ({{status}}). Veuillez réessayer plus tard.",
+        "connectionLost": "Connexion perdue. Veuillez vérifier votre connexion internet et réessayer.",
+        "requestTimedOut": "Délai d'attente dépassé. Le serveur met trop de temps à répondre.",
+        "genericFallback": "Impossible de charger les données. Veuillez réessayer plus tard."
+    }
+}

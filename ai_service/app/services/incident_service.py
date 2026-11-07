@@ -3,7 +3,8 @@
 Synchronous: builds the inline incident prompt (with the full IncidentType
 catalog embedded), calls the LLM, parses the snake_case JSON into
 IncidentAIStructureResponse, bills usage/credits. Model resolved from the
-registry (use case 'incident'; falls back to gemini-2.5-flash, matching Java).
+registry (use case 'incident'; falls back to the platform default GLM, then
+gemini-2.5-flash).
 """
 from __future__ import annotations
 

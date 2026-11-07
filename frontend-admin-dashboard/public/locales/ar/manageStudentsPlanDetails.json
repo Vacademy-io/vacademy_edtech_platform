@@ -1,0 +1,99 @@
+{
+    "heading": {
+        "activeMemberships": "العضويات النشطة",
+        "viewHistory": "عرض السجل",
+        "membershipHistory": "سجل العضوية"
+    },
+    "emptyState": {
+        "noActivePlans": "لا توجد عضوية نشطة لهذا المتعلم.",
+        "noPlansFound": "لم يتم العثور على خطط."
+    },
+    "planStatus": {
+        "active": "الخطة نشطة",
+        "expired": "الخطة منتهية",
+        "unknown": "غير معروف"
+    },
+    "enrollmentStatus": {
+        "active": "التسجيل نشط",
+        "inactive": "الدورة غير نشطة"
+    },
+    "fallback": {
+        "planName": "خطة غير معروفة",
+        "paymentOption": "خيار دفع غير معروف"
+    },
+    "coupon": {
+        "defaultLabel": "قسيمة",
+        "percentageOff": "خصم {{point}}%",
+        "percentageOffWithCap": "خصم {{point}}% · بحد أقصى {{amount}}",
+        "amountOff": "خصم {{amount}}"
+    },
+    "autoRenewal": {
+        "enabled": "التجديد التلقائي",
+        "disabled": "بدون تجديد تلقائي",
+        "paymentAttemptOn": "محاولة الدفع في {{date}}",
+        "scheduledDate": "التاريخ المحدد",
+        "disabledTooltip": "التجديد التلقائي معطل"
+    },
+    "policy": {
+        "expiryPolicy": "سياسة الانتهاء",
+        "finalDate": "الانتهاء النهائي: {{date}}",
+        "gracePeriod_zero": "{{count}} يوم سماح",
+        "gracePeriod_one": "{{count}} يوم سماح",
+        "gracePeriod_two": "{{count}} يوما سماح",
+        "gracePeriod_few": "{{count}} أيام سماح",
+        "gracePeriod_many": "{{count}} يوم سماح",
+        "gracePeriod_other": "{{count}} يوم سماح",
+        "actionsCount": "إجراءات السياسة ({{count}})",
+        "reenrollmentFrom": "إعادة التسجيل من {{date}}",
+        "reenrollmentAvailable": "إعادة التسجيل متاحة",
+        "gapDays_zero": "(فاصل {{count}} يوم)",
+        "gapDays_one": "(فاصل {{count}} يوم)",
+        "gapDays_two": "(فاصل {{count}} يوما)",
+        "gapDays_few": "(فاصل {{count}} أيام)",
+        "gapDays_many": "(فاصل {{count}} يوم)",
+        "gapDays_other": "(فاصل {{count}} يوم)",
+        "reenrollmentNotAllowed": "إعادة التسجيل غير مسموح بها"
+    },
+    "daysLeft": {
+        "label": "يوم متبقي",
+        "noExpiry": "بدون انتهاء",
+        "activeSession": "جلسة نشطة",
+        "renewalDueSoon": "التجديد مستحق قريبًا",
+        "urgentRenewal": "التجديد العاجل مطلوب"
+    },
+    "dates": {
+        "started": "بدأ في {{date}}",
+        "ends": "ينتهي في {{date}}"
+    },
+    "pagination": {
+        "pageOf": "صفحة {{current}} من {{total}}",
+        "previous": "السابق",
+        "next": "التالي"
+    },
+    "toast": {
+        "loadHistoryFailed": "فشل تحميل سجل الخطط",
+        "loadPageFailed": "فشل تحميل الخطط"
+    },
+    "changePlan": {
+        "button": "Change plan",
+        "title": "Change payment plan",
+        "noChargeWarning": "This applies immediately and takes no payment. The member keeps their current access window; the new price starts billing at their next renewal.",
+        "loadFailed": "We couldn't load the available plans. Please try again.",
+        "noOptions": "No other plan is marked switchable for this member. Turn on plan switching for a payment option in Settings → Payment Settings.",
+        "alreadyInProgress": "A plan change is already in progress for this membership.",
+        "planNotActive": "This membership isn't active, so its plan can't be changed.",
+        "currentlyOn": "Currently on {{plan}} ({{price}}).",
+        "upgrade": "Upgrade",
+        "downgrade": "Downgrade",
+        "cadence": "{{price}} every {{days}} days",
+        "crossOptionNote": "Also moves them onto the {{option}} enrolment invite — gateway, currency and auto-pay settings come from it.",
+        "reasonLabel": "Reason (optional)",
+        "reasonPlaceholder": "e.g. negotiated downgrade, billing correction",
+        "notifyLearner": "Notify the member about this change",
+        "cancel": "Cancel",
+        "apply": "Apply change",
+        "applying": "Applying…",
+        "successToast": "Moved to {{plan}}",
+        "failedToast": "Couldn't change the plan"
+    }
+}

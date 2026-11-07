@@ -33,6 +33,7 @@
 //     the numbers alone can't say whether they count chapters or slides.
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { ChevronDownIcon, ChevronRightIcon } from "@radix-ui/react-icons";
 import {
   CheckCircle,
@@ -42,7 +43,7 @@ import {
 } from "@phosphor-icons/react";
 import type { Icon as PhosphorIcon } from "@phosphor-icons/react";
 import { toast } from "sonner";
-import { getTerminologyPlural } from "@/components/common/layout-container/sidebar/utils";
+import { getTerminology, getTerminologyPlural } from "@/components/common/layout-container/sidebar/utils";
 import { ContentTerms, SystemTerms } from "@/types/naming-settings";
 import {
   fetchModulesWithChapters,
@@ -161,12 +162,13 @@ const CountChip = ({
   total: number;
   unitLabel: string;
 }) => {
+  const { t } = useTranslation("libraryCommonA");
   if (done != null && done >= total) {
     return (
       <CheckCircle
         className="w-4 h-4 flex-shrink-0 text-success-500"
         weight="fill"
-        aria-label={`All ${total} ${unitLabel} completed`}
+        aria-label={t("courseTree.allCompletedAria", { total, unit: unitLabel })}
       />
     );
   }
@@ -175,8 +177,8 @@ const CountChip = ({
     <span
       title={
         done == null
-          ? `${total} ${unitLabel}`
-          : `${done} of ${total} ${unitLabel} completed`
+          ? t("courseTree.totalUnitTooltip", { total, unit: unitLabel })
+          : t("courseTree.doneOfTotalTooltip", { done, total, unit: unitLabel })
       }
       className={`flex-shrink-0 rounded-full px-1.5 py-0.5 text-2xs font-semibold tabular-nums [.ui-play_&]:font-black ${
         started
@@ -236,6 +238,7 @@ const SlideRow = ({
   displayTitle: string;
   onClick: () => void;
 }) => {
+  const { t } = useTranslation("libraryCommonA");
   const Icon = getSlideTypeIcon(slide);
   const colors = getSlideTypeColors(slide);
   const title = getSlideTitle(slide);
@@ -265,7 +268,7 @@ const SlideRow = ({
       aria-current={isActive ? "true" : undefined}
       aria-disabled={isLocked || undefined}
       onClick={isLocked ? undefined : onClick}
-      title={isLocked ? lockMessage || "Locked" : undefined}
+      title={isLocked ? lockMessage || t("courseTree.lockedTooltip") : undefined}
       style={{ paddingLeft: `${indent}px` }}
       className={`relative w-full flex items-center gap-2 pe-3 py-2 text-start text-caption border-s-2 transition-colors ${
         isActive
@@ -469,6 +472,7 @@ export const CourseTreeSidebar = ({
   currentSubjectModules,
   onSlideSelect,
 }: Props) => {
+  const { t } = useTranslation("libraryCommonA");
   // Drip-condition verdicts for the slides the route has evaluated (the
   // current chapter). Anything not in here is left unlocked rather than
   // guessed at — see the note on SlideRow.isLocked.
@@ -537,7 +541,7 @@ export const CourseTreeSidebar = ({
         }
         setSubjectModulesMap((prev) => ({ ...prev, [subjectId]: modules || [] }));
       } catch {
-        toast.error("Couldn't load modules for that subject.");
+        toast.error(t("courseTree.toast.loadModulesFailed"));
       } finally {
         setLoadingSubjects((prev) => {
           const next = new Set(prev);
@@ -557,7 +561,7 @@ export const CourseTreeSidebar = ({
         const slides = await fetchSlidesByChapterId(chapterId);
         setChapterSlidesMap((prev) => ({ ...prev, [chapterId]: slides || [] }));
       } catch {
-        toast.error("Couldn't load slides for that chapter.");
+        toast.error(t("courseTree.toast.loadSlidesFailed"));
       } finally {
         setLoadingChapters((prev) => {
           const next = new Set(prev);
@@ -801,7 +805,7 @@ export const CourseTreeSidebar = ({
               className="text-caption text-gray-500 py-1.5"
               style={{ paddingLeft: `${(depth + 1) * 14 + 12}px` }}
             >
-              No {slidesTerm}
+              {t("courseTree.noUnit", { unit: slidesTerm })}
             </div>
           )}
         </div>
@@ -911,7 +915,7 @@ export const CourseTreeSidebar = ({
               className="text-caption text-gray-500 py-1.5"
               style={{ paddingLeft: `${depth * 14 + 12}px` }}
             >
-              Loading…
+              {t("courseTree.loading")}
             </div>
           );
         }
@@ -973,7 +977,7 @@ export const CourseTreeSidebar = ({
               className="text-caption text-gray-500 py-1.5"
               style={{ paddingLeft: `${(depth + 1) * 14 + 12}px` }}
             >
-              No {modulesTerm}
+              {t("courseTree.noUnit", { unit: modulesTerm })}
             </div>
           )}
         </div>
@@ -991,7 +995,7 @@ export const CourseTreeSidebar = ({
   );
 
   return (
-    <div className="w-full" role="tree" aria-label="Course content">
+    <div className="w-full" role="tree" aria-label={t("courseTree.treeAriaLabel", { course: getTerminology(ContentTerms.Course, SystemTerms.Course) })}>
       {subjects.map((s) => renderSubject(s, 0))}
     </div>
   );
@@ -1023,6 +1027,7 @@ const SkippedChapterSlides = ({
   ensureLoaded: () => void;
   onSlideSelect: Props["onSlideSelect"];
 }) => {
+  const { t } = useTranslation("libraryCommonA");
   const slideEvaluations = useContentStore((state) => state.slideEvaluations);
   useEffect(() => {
     if (!slides && !isLoading) ensureLoaded();
@@ -1035,17 +1040,18 @@ const SkippedChapterSlides = ({
         className="text-caption text-gray-500 py-1.5"
         style={{ paddingLeft: `${depth * 14 + 12}px` }}
       >
-        Loading…
+        {t("courseTree.loading")}
       </div>
     );
   }
   if (!slides || slides.length === 0) {
+    const slidesTerm = getTerminologyPlural(ContentTerms.Slides, SystemTerms.Slides);
     return (
       <div
         className="text-caption text-gray-500 py-1.5"
         style={{ paddingLeft: `${depth * 14 + 12}px` }}
       >
-        No slides
+        {t("courseTree.noUnit", { unit: slidesTerm })}
       </div>
     );
   }

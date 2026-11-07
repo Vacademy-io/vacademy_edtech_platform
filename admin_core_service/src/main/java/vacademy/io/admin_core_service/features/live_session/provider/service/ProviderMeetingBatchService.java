@@ -9,6 +9,8 @@ import org.springframework.stereotype.Service;
 import vacademy.io.admin_core_service.features.live_session.entity.LiveSession;
 import vacademy.io.admin_core_service.features.live_session.entity.SessionSchedule;
 import vacademy.io.admin_core_service.features.live_session.provider.dto.ProviderMeetingCreateRequestDTO;
+import vacademy.io.admin_core_service.features.live_session.provider.entity.LiveSessionProviderConfig;
+import vacademy.io.admin_core_service.features.live_session.provider.repository.LiveSessionProviderConfigRepository;
 import vacademy.io.admin_core_service.features.live_session.repository.LiveSessionRepository;
 import vacademy.io.admin_core_service.features.live_session.repository.SessionScheduleRepository;
 import vacademy.io.common.meeting.enums.MeetingProvider;
@@ -55,12 +57,14 @@ public class ProviderMeetingBatchService {
     private final SessionScheduleRepository scheduleRepository;
     private final LiveSessionRepository liveSessionRepository;
     private final ObjectMapper objectMapper;
+    private final LiveSessionProviderConfigRepository providerConfigRepository;
 
     /**
-     * Persists the Zoom account + meeting settings chosen for a session so the
+     * Persists the provider account + meeting settings chosen for a session so the
      * provisioning retry job can re-create meetings for any occurrence whose
      * up-front async provisioning was interrupted, without re-asking the UI.
-     * Only stores when there's actually a provider account (Zoom flow).
+     * Only stores when there's actually a provider account (Zoom / Google Meet flow).
+     * The columns are named zoom_* for history; the account row carries the provider.
      */
     public void rememberProvisioningConfig(ProviderMeetingCreateRequestDTO request) {
         if (request == null || request.getSessionId() == null
@@ -81,12 +85,31 @@ public class ProviderMeetingBatchService {
     }
 
     /**
-     * Rebuilds a create request from a session's stored Zoom config and provisions
+     * Rebuilds a create request from a session's stored provider config and provisions
      * its still-pending occurrences. Used by the retry scheduler; idempotent via
      * {@link #createMeetingsForSession}. Returns the number created.
+     *
+     * The provider comes from the stored account's own row — Google Meet sessions store
+     * their Google account id here too, and re-creating them as Zoom failed every run
+     * with "Zoom account not found", so their missing occurrences were never filled.
      */
     public int reprovisionFromStoredConfig(LiveSession session) {
         if (session == null || session.getZoomAccountId() == null || session.getZoomAccountId().isBlank()) {
+            return 0;
+        }
+        String provider = providerConfigRepository.findById(session.getZoomAccountId())
+                .map(LiveSessionProviderConfig::getProvider)
+                .orElse(null);
+        if (provider == null || provider.isBlank()) {
+            log.warn("provider.batch.reprovision account gone sessionId={} accountId={}",
+                    session.getId(), session.getZoomAccountId());
+            return 0;
+        }
+        if (platformChangedSince(session.getLinkType(), provider)) {
+            // The admin switched the class to another platform after it was provisioned.
+            // Creating a meeting now would overwrite the link they chose.
+            log.info("provider.batch.reprovision skipped sessionId={} linkType={} storedProvider={}",
+                    session.getId(), session.getLinkType(), provider);
             return 0;
         }
         Map<String, Object> cfg = null;
@@ -102,12 +125,39 @@ public class ProviderMeetingBatchService {
         ProviderMeetingCreateRequestDTO request = ProviderMeetingCreateRequestDTO.builder()
                 .instituteId(session.getInstituteId())
                 .sessionId(session.getId())
-                .provider(MeetingProvider.ZOOM_MEETING.name())
+                .provider(provider)
                 .topic(session.getTitle())
                 .providerAccountId(session.getZoomAccountId())
                 .providerConfig(cfg)
                 .build();
         return createMeetingsForSession(request);
+    }
+
+    /**
+     * True when the session's link type names a different platform than the stored
+     * account's provider. A blank or "UNKNOWN" link type says nothing, so it doesn't block.
+     */
+    static boolean platformChangedSince(String linkType, String provider) {
+        if (linkType == null || linkType.isBlank() || "UNKNOWN".equalsIgnoreCase(linkType)) {
+            return false;
+        }
+        try {
+            return MeetingProvider.fromString(linkType) != MeetingProvider.fromString(provider);
+        } catch (IllegalArgumentException e) {
+            // youtube / other / custom — not a provider-managed platform any more.
+            return true;
+        }
+    }
+
+    /** Whether the session has a stored provider account, i.e. its meetings are created by us. */
+    public boolean isManaged(String sessionId) {
+        if (sessionId == null || sessionId.isBlank()) {
+            return false;
+        }
+        return liveSessionRepository.findById(sessionId)
+                .map(LiveSession::getZoomAccountId)
+                .filter(id -> !id.isBlank())
+                .isPresent();
     }
 
     /** Count of schedules that still need a meeting (for an immediate response to the caller). */

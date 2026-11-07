@@ -1,0 +1,45 @@
+{
+    "heading": "Décrivez votre automatisation",
+    "aiBadge": "IA",
+    "intro": "Dites-moi ce que vous voulez. Je proposerai un plan, puis je vous demanderai de choisir les modèles, les audiences et les mappages de variables — pour que le workflow obtenu soit prêt à publier.",
+    "goalPlaceholder": "ex. 3 jours après qu'une personne remplit le formulaire de prospect JEE, si elle ne s'est pas inscrite, envoyez-lui la brochure par WhatsApp.",
+    "actions": {
+        "cancel": "Annuler",
+        "planning": "Planification…",
+        "replan": "Reprogrammer",
+        "draftWithAi": "Créer le brouillon avec l'IA",
+        "building": "Construction…",
+        "buildWorkflow": "Créer le workflow"
+    },
+    "plan": {
+        "defaultSummary": "Workflow proposé",
+        "chooseDetails": "C'est bon — choisir les détails"
+    },
+    "decisions": {
+        "heading": "Quelques choix que vous seul pouvez faire :",
+        "allSet": "Tout est prêt",
+        "stillNeeded": "Encore nécessaire : {{items}}",
+        "chooseTemplateFirst": "Choisissez d'abord le modèle ci-dessus.",
+        "noVariables": "Ce modèle n'a aucune variable à mapper — rien à faire ici.",
+        "varMapPlaceholder": "ex. #item['full_name'] ou une valeur fixe"
+    },
+    "channels": {
+        "email": "E-mail",
+        "whatsapp": "WhatsApp"
+    },
+    "templateSelect": {
+        "searchPlaceholder": "Rechercher des modèles…",
+        "selectPlaceholder": "Sélectionner un modèle…",
+        "noneFoundWhatsapp": "Aucun modèle WhatsApp trouvé — créez-en un dans Paramètres → Modèles d'abord.",
+        "noneFoundEmail": "Aucun modèle d'e-mail trouvé — créez-en un dans Paramètres → Modèles d'abord."
+    },
+    "toasts": {
+        "planFailedTitle": "Planification impossible",
+        "planningFailedTitle": "Échec de la planification",
+        "unknownError": "Erreur inconnue",
+        "buildFailedTitle": "Construction impossible",
+        "noWorkflowReturned": "Aucun workflow renvoyé",
+        "loadedWithNotesTitle": "Chargé avec des remarques",
+        "buildErrorTitle": "Échec de la construction"
+    }
+}

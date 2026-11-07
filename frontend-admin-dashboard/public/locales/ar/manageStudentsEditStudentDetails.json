@@ -1,0 +1,106 @@
+{
+    "trigger": "تعديل التفاصيل",
+    "dialogHeading": "تعديل ملف {{term}}",
+    "discardConfirm": "هل تريد تجاهل التغييرات غير المحفوظة؟",
+    "unsavedChanges": "تغييرات غير محفوظة",
+    "allChangesSaved": "تم حفظ جميع التغييرات",
+    "cancel": "إلغاء",
+    "saving": "جارٍ الحفظ...",
+    "saveChanges": "حفظ التغييرات",
+    "noStudentFound": "لم يتم العثور على طالب",
+    "validation": {
+        "required": "هذا الحقل مطلوب",
+        "invalidEmail": "عنوان بريد إلكتروني غير صالح",
+        "invalidEmailShort": "بريد إلكتروني غير صالح"
+    },
+    "sections": {
+        "photo": {
+            "title": "صورة الملف الشخصي",
+            "helper": "صورة مربعة، بحجم 200×200 على الأقل. بحد أقصى 5 ميغابايت."
+        },
+        "identity": {
+            "title": "الهوية",
+            "helper": "الاسم والمعلومات الأساسية."
+        },
+        "contact": {
+            "title": "التواصل",
+            "helper": "القنوات الأساسية للتواصل."
+        },
+        "address": {
+            "title": "العنوان",
+            "helper": "مكان إقامته."
+        },
+        "institute": {
+            "title": "المؤسسة التعليمية",
+            "helper": "مكان دراسته الأساسي."
+        },
+        "family": {
+            "title": "العائلة",
+            "helper": "أولياء الأمور وجهات الاتصال في حالات الطوارئ."
+        },
+        "custom": {
+            "title": "معلومات إضافية",
+            "helper": "الحقول المخصصة التي تم إعدادها لمؤسستك."
+        }
+    },
+    "subgroups": {
+        "father": "الأب / الوصي",
+        "mother": "الأم / الوصية"
+    },
+    "photo": {
+        "alt": "الملف الشخصي",
+        "upload": "رفع",
+        "replace": "استبدال",
+        "remove": "إزالة"
+    },
+    "fields": {
+        "fullName": {
+            "label": "الاسم الكامل",
+            "placeholder": "مثال: هيمانج شارما"
+        },
+        "gender": {
+            "label": "الجنس",
+            "placeholder": "اختر الجنس"
+        },
+        "email": {
+            "label": "البريد الإلكتروني",
+            "placeholder": "name@example.com"
+        },
+        "mobile": {
+            "label": "رقم الجوال",
+            "placeholder": "123 456 7890"
+        },
+        "addressLine": {
+            "label": "العنوان",
+            "placeholder": "المنزل / الشارع / الحي"
+        },
+        "city": {
+            "label": "المدينة",
+            "placeholder": "المدينة"
+        },
+        "state": {
+            "label": "الولاية / المنطقة",
+            "placeholder": "الولاية / المنطقة"
+        },
+        "pincode": {
+            "label": "الرمز البريدي",
+            "placeholder": "مثال: 425562"
+        },
+        "instituteName": {
+            "label": "اسم المؤسسة",
+            "placeholder": "مدرسة / كلية / مؤسسة"
+        },
+        "fatherName": {
+            "label": "الاسم",
+            "placeholder": "اسم الأب / الوصي"
+        },
+        "motherName": {
+            "label": "الاسم",
+            "placeholder": "اسم الأم / الوصية"
+        }
+    },
+    "customField": {
+        "selectPlaceholder": "اختر {{name}}",
+        "enterPlaceholder": "أدخل {{name}}"
+    }
+}

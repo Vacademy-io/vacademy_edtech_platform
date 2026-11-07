@@ -1,0 +1,43 @@
+{
+    "title": "पूछताछ खोजें",
+    "filters": {
+        "nameLabel": "छात्र / अभिभावक का नाम",
+        "namePlaceholder": "उदा., जॉन डो",
+        "phoneLabel": "फोन नंबर",
+        "phonePlaceholder": "उदा., 9876543210",
+        "trackingIdLabel": "ट्रैकिंग आईडी",
+        "trackingIdPlaceholder": "उदा., A9KQ2"
+    },
+    "actions": {
+        "searching": "खोजा जा रहा है...",
+        "searchEnquiries": "पूछताछ खोजें",
+        "apply": "आवेदन करें",
+        "applied": "आवेदन किया गया",
+        "admit": "प्रवेश दें",
+        "admitted": "प्रवेशित"
+    },
+    "table": {
+        "headers": {
+            "trackingId": "ट्रैकिंग आईडी",
+            "studentName": "छात्र का नाम",
+            "parentName": "अभिभावक का नाम",
+            "phone": "फोन",
+            "status": "स्थिति",
+            "application": "आवेदन",
+            "admission": "प्रवेश"
+        },
+        "empty": {
+            "noResults": "आपकी खोज से मेल खाती कोई पूछताछ नहीं मिली।",
+            "prompt": "पूछताछ खोजने के लिए खोज मानदंड दर्ज करें और खोजें पर क्लिक करें।"
+        }
+    },
+    "statusBadge": {
+        "enquiry": "पूछताछ",
+        "applied": "आवेदन किया गया",
+        "admitted": "प्रवेशित"
+    },
+    "toast": {
+        "enterAtLeastOneCriteria": "कृपया कम से कम एक खोज मानदंड दर्ज करें",
+        "searchFailed": "पूछताछ खोजने में विफल। कृपया पुनः प्रयास करें।"
+    }
+}

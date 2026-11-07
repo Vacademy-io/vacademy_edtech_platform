@@ -1,0 +1,76 @@
+{
+    "filterBarSearchPlaceholder": "Search sessions...",
+    "chips": {
+        "search": "Search",
+        "date": "Date",
+        "time": "Time",
+        "meetingType": "Meeting type",
+        "subject": "Subject",
+        "access": "Access",
+        "platform": "Platform",
+        "clearAria": "Clear {{label}}",
+        "clearAll": "Clear all"
+    },
+    "dateRange": {
+        "from": "From {{date}}",
+        "to": "To {{date}}",
+        "selectRange": "Select date range",
+        "quickSelect": "Quick select",
+        "today": "Today",
+        "next": "Next",
+        "past": "Past",
+        "daysPreset_one": "{{direction}} {{count}} day",
+        "daysPreset_other": "{{direction}} {{count}} days",
+        "customRange": "Custom range",
+        "startDate": "Start date",
+        "endDate": "End date",
+        "clear": "Clear",
+        "done": "Done"
+    },
+    "filters": {
+        "button": "Filters",
+        "heading": "Filters",
+        "reset": "Reset",
+        "timeOfDay": "Time of Day",
+        "startTimeAria": "Start time",
+        "endTimeAria": "End time",
+        "meetingType": "Meeting Type",
+        "all": "All",
+        "once": "Once",
+        "weekly": "Weekly",
+        "custom": "Custom",
+        "accessType": "Access Type",
+        "platform": "Platform",
+        "searchBatchesPlaceholder": "Search {{batches}}…",
+        "noMatches": "No matches",
+        "cancel": "Cancel",
+        "apply": "Apply",
+        "selectedCount_one": "{{count}} selected",
+        "selectedCount_other": "{{count}} selected"
+    },
+    "platformLabels": {
+        "zoom": "Zoom",
+        "googleMeet": "Google Meet",
+        "youtube": "YouTube",
+        "bbb": "Vacademy Meet",
+        "zoho": "Zoho",
+        "other": "Other"
+    },
+    "sessions": {
+        "loading": "Loading sessions...",
+        "error": "Error loading sessions: {{message}}",
+        "tabLabels": {
+            "live": "Live",
+            "upcoming": "Upcoming",
+            "past": "Past",
+            "draft": "Draft"
+        },
+        "emptyTitle": "No {{tab}} Sessions",
+        "emptyDraftBody": "No draft sessions found. Create a new session to get started.",
+        "emptyDefaultBody": "Schedule your first live class to engage with learners in real time.",
+        "emptyPage": "No {{tab}} sessions on this page.",
+        "showingRange": "Showing {{from}} to {{to}} of {{total}} {{term}}"
+    },
+    "settingsButtonLabel": "Live session settings",
+    "scheduleButton": "Schedule"
+}

@@ -1,0 +1,73 @@
+{
+    "overview": {
+        "loading": "Chargement des données du sondage...",
+        "errorTitle": "Erreur de chargement des données du sondage",
+        "tryAgain": "Réessayer",
+        "emptyTitle": "Aucune donnée de sondage disponible",
+        "emptyDescription": "Aucune réponse au sondage trouvée pour cette évaluation.",
+        "totalParticipants": "Participants totaux",
+        "responded": "ont répondu",
+        "outOf": "sur",
+        "completionRate": "Taux d'achèvement",
+        "individualResponsesTitle": "Réponses individuelles",
+        "loadingResponses": "Chargement des réponses...",
+        "loadingQuestionsData": "Chargement des données des questions...",
+        "loadingBatchData": "Chargement des données du lot...",
+        "noResponsesForQuestion": "Aucune réponse trouvée pour cette question.",
+        "questionIdLabel": "ID de la question : {{id}}",
+        "tableName": "Nom",
+        "tableEmail": "E-mail",
+        "tableBatch": "Lot",
+        "tableResponse": "Réponse",
+        "notApplicable": "N/A"
+    },
+    "question": {
+        "number": "Q{{number}}",
+        "viewIndividualResponses": "Voir les réponses individuelles",
+        "unsupportedType": "Type de question non pris en charge"
+    },
+    "common": {
+        "responseCount_one": "{{count}} réponse",
+        "responseCount_many": "{{count}} réponses",
+        "responseCount_other": "{{count}} réponses"
+    },
+    "charts": {
+        "tooltipResponsesPercent_one": "{{count}} réponse ({{percentage}} %)",
+        "tooltipResponsesPercent_many": "{{count}} réponses ({{percentage}} %)",
+        "tooltipResponsesPercent_other": "{{count}} réponses ({{percentage}} %)",
+        "countLabel": "Nombre"
+    },
+    "legend": {
+        "percentResponses_one": "{{percentage}} % ({{count}} réponse)",
+        "percentResponses_many": "{{percentage}} % ({{count}} réponses)",
+        "percentResponses_other": "{{percentage}} % ({{count}} réponses)"
+    },
+    "trueFalse": {
+        "true": "Vrai",
+        "false": "Faux",
+        "tooltipPercent_one": "{{percentage}} % ({{count}} réponse)",
+        "tooltipPercent_many": "{{percentage}} % ({{count}} réponses)",
+        "tooltipPercent_other": "{{percentage}} % ({{count}} réponses)"
+    },
+    "textQuestion": {
+        "recentResponses_one": "Réponses récentes ({{count}} réponse au total) :",
+        "recentResponses_many": "Réponses récentes ({{count}} réponses au total) :",
+        "recentResponses_other": "Réponses récentes ({{count}} réponses au total) :",
+        "similarResponses_one": "{{count}} réponse similaire",
+        "similarResponses_many": "{{count}} réponses similaires",
+        "similarResponses_other": "{{count}} réponses similaires"
+    },
+    "numerical": {
+        "responseDistribution": "Répartition des réponses :",
+        "responsesPercent_one": "{{count}} réponse ({{percentage}} %)",
+        "responsesPercent_many": "{{count}} réponses ({{percentage}} %)",
+        "responsesPercent_other": "{{count}} réponses ({{percentage}} %)"
+    },
+    "responses": {
+        "noOptionsSelected": "Aucune option sélectionnée",
+        "noNumericAnswer": "Aucune réponse numérique fournie",
+        "noTextAnswer": "Aucune réponse textuelle fournie",
+        "unknownType": "Type de réponse inconnu",
+        "errorParsing": "Erreur lors de l'analyse des données de réponse"
+    }
+}

@@ -1,0 +1,30 @@
+{
+    "header": {
+        "title": "SCORM मॉड्यूल",
+        "untitled": "अनाम SCORM मॉड्यूल",
+        "scormVersion": "SCORM {{version}}",
+        "interactiveBadge": "इंटरैक्टिव"
+    },
+    "deleted": {
+        "badge": "हटाया गया",
+        "heading": "यह SCORM मॉड्यूल हटा दिया गया है",
+        "description": "SCORM सामग्री अब उपलब्ध नहीं है"
+    },
+    "loading": "SCORM सामग्री लोड हो रही है...",
+    "errors": {
+        "dataNotFound": "SCORM स्लाइड डेटा नहीं मिला",
+        "launchPathNotConfigured": "SCORM लॉन्च पथ कॉन्फ़िगर नहीं किया गया है",
+        "loadFailed": "SCORM सामग्री लोड करने में विफल"
+    },
+    "infoBar": {
+        "versionLabel": "संस्करण:",
+        "entryLabel": "एंट्री:",
+        "statusLabel": "स्थिति:",
+        "openInNewTab": "नए टैब में खोलें"
+    },
+    "iframeTitle": "SCORM सामग्री",
+    "notReady": {
+        "heading": "SCORM पैकेज तैयार नहीं है",
+        "description": "SCORM लॉन्च URL उपलब्ध नहीं है। कृपया SCORM पैकेज को फिर से अपलोड करें।"
+    }
+}

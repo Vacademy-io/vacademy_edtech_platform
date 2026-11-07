@@ -54,6 +54,7 @@ public class LearnerPastSessionsResponseDTO {
         private boolean showAttendance;
         private boolean showActivityStats;
         private boolean showClassMaterials;
+        private boolean showUnassignedPublicSessions;
 
         public static DisplayFlagsDTO from(LearnerDisplaySettingsFlags flags) {
             return DisplayFlagsDTO.builder()
@@ -62,6 +63,7 @@ public class LearnerPastSessionsResponseDTO {
                     .showAttendance(flags.showAttendance())
                     .showActivityStats(flags.showActivityStats())
                     .showClassMaterials(flags.showClassMaterials())
+                    .showUnassignedPublicSessions(flags.showUnassignedPublicSessions())
                     .build();
         }
     }

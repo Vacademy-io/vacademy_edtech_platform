@@ -1,0 +1,20 @@
+{
+    "validation": {
+        "moduleNameRequired": "اسم الوحدة مطلوب",
+        "descriptionMaxLength": "يجب ألا يتجاوز الوصف {{max}} حرفًا"
+    },
+    "moduleNameLabel": "اسم {{term}}",
+    "moduleNamePlaceholder": "أدخل اسم {{term}}",
+    "descriptionLabel": "الوصف (اختياري)",
+    "descriptionPlaceholder": "أدخل وصف الوحدة",
+    "descriptionHint": "يظهر على بطاقة {{term}} — {{count}}/{{max}} حرفًا",
+    "thumbnailImage": "الصورة المصغرة",
+    "loadingThumbnail": "جارٍ تحميل الصورة المصغرة...",
+    "thumbnailPreviewAlt": "معاينة الصورة المصغرة للوحدة",
+    "uploadThumbnail": "رفع الصورة المصغرة",
+    "uploadThumbnailHint": "PNG، JPG · يُفضّل 16:9",
+    "uploading": "جارٍ الرفع...",
+    "saveChanges": "حفظ التغييرات",
+    "add": "إضافة",
+    "cropModuleThumbnail": "قص الصورة المصغرة للوحدة"
+}

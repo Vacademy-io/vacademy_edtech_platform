@@ -1,0 +1,18 @@
+{
+    "autoTitle": "{{type}} प्रश्न {{index}}",
+    "questionWord": "प्रश्न",
+    "addSuccess": "प्रश्न सफलतापूर्वक जोड़ा गया!",
+    "addError": "प्रश्न जोड़ने में विफल",
+    "quickAccess": "त्वरित एक्सेस",
+    "mcqSingleCorrect": "बहुविकल्पीय प्रश्न (एकल सही)",
+    "mcqMultipleCorrect": "बहुविकल्पीय प्रश्न (बहु सही)",
+    "numerical": "संख्यात्मक",
+    "trueFalse": "सही गलत",
+    "writingSkills": "लेखन कौशल",
+    "longAnswer": "दीर्घ उत्तर",
+    "singleWord": "एक शब्द",
+    "readingSkills": "पठन कौशल",
+    "comprehensionSingleCorrect": "बोध MCQ (एकल सही)",
+    "comprehensionMultipleCorrect": "बोध MCQ (बहु सही)",
+    "comprehensionNumeric": "बोध संख्यात्मक"
+}

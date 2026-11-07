@@ -2,7 +2,21 @@
  * Pre-built sample email templates for each use-case.
  * When user clicks "Use sample template", we create this in their template library
  * so the SEND_EMAIL handler can look it up by name.
+ *
+ * i18n note: `name` stays untranslated on purpose — it's used as a business key
+ * (MESSAGE_TEMPLATE_EXISTS lookup + creation) sent to the backend, not just display
+ * text, so localizing it would fragment dedupe across languages. `subject` and
+ * `html` are genuine recipient-facing content and ARE translated below.
+ *
+ * The `{{placeholder}}` tokens (fullName, instituteName, …) are NOT i18next
+ * interpolation — they're resolved later by the SEND_EMAIL handler. Every
+ * translated string that embeds one is rendered through `tt()`, which passes an
+ * identity map ({ fullName: '{{fullName}}', … }) as the interpolation data so
+ * i18next substitutes the token right back in verbatim (and translators are free
+ * to reposition it for their language's word order).
  */
+
+import type { TFunction } from 'i18next';
 
 export interface SampleEmailTemplate {
   name: string;
@@ -11,73 +25,82 @@ export interface SampleEmailTemplate {
   variables: string[];
 }
 
-/** Map of use-case template ID → sample email template */
-export const SAMPLE_TEMPLATES: Record<string, SampleEmailTemplate> = {
+/** Identity interpolation map so `{{var}}` tokens embedded in a translation pass through unchanged. */
+function ph(vars: string[]): Record<string, string> {
+  return Object.fromEntries(vars.map((v) => [v, `{{${v}}}`]));
+}
+
+/** Map of use-case template ID → sample email template, built with a live `t`. */
+export function buildSampleTemplates(t: TFunction): Record<string, SampleEmailTemplate> {
+  const tt = (key: string, vars: string[]) => t(key, ph(vars));
+  const footer = (vars: string[] = ['instituteName']) => tt('common.footer', vars);
+
+  return {
 
   // ─── Enrollment ───
 
   email_batch_students: {
     name: 'Batch Notification',
-    subject: 'Important Update for You, {{fullName}}',
+    subject: tt('emailBatchStudents.subject', ['fullName']),
     variables: ['fullName', 'email', 'instituteName'],
     html: `<div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;padding:24px;background:#ffffff">
-  <h2 style="color:#1a1a1a;margin-bottom:16px">Hello {{fullName}},</h2>
-  <p style="color:#444;line-height:1.6">We have an important update for you. Please check your dashboard for more details.</p>
-  <p style="color:#444;line-height:1.6">If you have any questions, feel free to reach out to us.</p>
-  <p style="color:#888;font-size:13px;margin-top:32px">Best regards,<br/>{{instituteName}}</p>
+  <h2 style="color:#1a1a1a;margin-bottom:16px">${tt('emailBatchStudents.greeting', ['fullName'])}</h2>
+  <p style="color:#444;line-height:1.6">${t('emailBatchStudents.body1')}</p>
+  <p style="color:#444;line-height:1.6">${t('emailBatchStudents.body2')}</p>
+  <p style="color:#888;font-size:13px;margin-top:32px">${footer()}</p>
 </div>`,
   },
 
   welcome_enrolled_student: {
     name: 'Welcome - New Student',
-    subject: 'Welcome {{fullName}}! Your enrollment is confirmed',
+    subject: tt('welcomeEnrolledStudent.subject', ['fullName']),
     variables: ['fullName', 'username', 'password', 'email', 'instituteName'],
     html: `<div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;padding:24px;background:#ffffff">
   <div style="text-align:center;padding:24px 0">
-    <h1 style="color:#2563eb;margin:0">Welcome Aboard!</h1>
+    <h1 style="color:#2563eb;margin:0">${t('welcomeEnrolledStudent.heroTitle')}</h1>
   </div>
-  <h2 style="color:#1a1a1a">Hi {{fullName}},</h2>
-  <p style="color:#444;line-height:1.6">Congratulations! Your enrollment has been confirmed. We're excited to have you with us.</p>
+  <h2 style="color:#1a1a1a">${tt('welcomeEnrolledStudent.greeting', ['fullName'])}</h2>
+  <p style="color:#444;line-height:1.6">${t('welcomeEnrolledStudent.body1')}</p>
 
   <div style="background:#f0f9ff;border:1px solid #bfdbfe;border-radius:8px;padding:16px 20px;margin:20px 0">
-    <p style="margin:0 0 10px 0;color:#1e40af;font-weight:600;font-size:14px">Your login credentials</p>
-    <p style="margin:4px 0;color:#1e293b;font-size:14px"><strong>Username:</strong> {{username}}</p>
-    <p style="margin:4px 0;color:#1e293b;font-size:14px"><strong>Password:</strong> {{password}}</p>
-    <p style="margin:10px 0 0 0;color:#64748b;font-size:12px">Please change your password after first login.</p>
+    <p style="margin:0 0 10px 0;color:#1e40af;font-weight:600;font-size:14px">${t('welcomeEnrolledStudent.credentialsHeading')}</p>
+    <p style="margin:4px 0;color:#1e293b;font-size:14px"><strong>${t('welcomeEnrolledStudent.usernameLabel')}</strong> ${tt('welcomeEnrolledStudent.usernameValue', ['username'])}</p>
+    <p style="margin:4px 0;color:#1e293b;font-size:14px"><strong>${t('welcomeEnrolledStudent.passwordLabel')}</strong> ${tt('welcomeEnrolledStudent.passwordValue', ['password'])}</p>
+    <p style="margin:10px 0 0 0;color:#64748b;font-size:12px">${t('welcomeEnrolledStudent.credentialsNote')}</p>
   </div>
 
-  <p style="color:#444;line-height:1.6">Here's what to do next:</p>
+  <p style="color:#444;line-height:1.6">${t('welcomeEnrolledStudent.nextStepsIntro')}</p>
   <ul style="color:#444;line-height:1.8">
-    <li>Log in to your student dashboard with the credentials above</li>
-    <li>Complete your profile</li>
-    <li>Explore your courses and materials</li>
+    <li>${t('welcomeEnrolledStudent.step1')}</li>
+    <li>${t('welcomeEnrolledStudent.step2')}</li>
+    <li>${t('welcomeEnrolledStudent.step3')}</li>
   </ul>
-  <p style="color:#444;line-height:1.6">If you need help getting started, our team is here for you.</p>
-  <p style="color:#888;font-size:13px;margin-top:32px">Best regards,<br/>{{instituteName}}</p>
+  <p style="color:#444;line-height:1.6">${t('welcomeEnrolledStudent.body2')}</p>
+  <p style="color:#888;font-size:13px;margin-top:32px">${footer()}</p>
 </div>`,
   },
 
   email_parents_batch: {
     name: 'Parent Notification',
-    subject: 'Update about {{fullName}}',
+    subject: tt('emailParentsBatch.subject', ['fullName']),
     variables: ['fullName', 'email', 'parentsEmail', 'instituteName'],
     html: `<div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;padding:24px;background:#ffffff">
-  <h2 style="color:#1a1a1a">Dear Parent,</h2>
-  <p style="color:#444;line-height:1.6">We would like to inform you about an important update regarding your child <strong>{{fullName}}</strong>.</p>
-  <p style="color:#444;line-height:1.6">Please check the student portal for details or contact us if you have questions.</p>
-  <p style="color:#888;font-size:13px;margin-top:32px">Best regards,<br/>{{instituteName}}</p>
+  <h2 style="color:#1a1a1a">${t('emailParentsBatch.greeting')}</h2>
+  <p style="color:#444;line-height:1.6">${tt('emailParentsBatch.body1', ['fullName'])}</p>
+  <p style="color:#444;line-height:1.6">${t('emailParentsBatch.body2')}</p>
+  <p style="color:#888;font-size:13px;margin-top:32px">${footer()}</p>
 </div>`,
   },
 
   termination_notice: {
     name: 'Membership Removal Notice',
-    subject: '{{fullName}}, your membership has been updated',
+    subject: tt('terminationNotice.subject', ['fullName']),
     variables: ['fullName', 'email', 'instituteName'],
     html: `<div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;padding:24px;background:#ffffff">
-  <h2 style="color:#1a1a1a">Hi {{fullName}},</h2>
-  <p style="color:#444;line-height:1.6">We're writing to let you know that your membership status has been updated. Your access has been removed from the organization.</p>
-  <p style="color:#444;line-height:1.6">If you believe this is an error or have questions, please contact the administrator.</p>
-  <p style="color:#888;font-size:13px;margin-top:32px">Best regards,<br/>{{instituteName}}</p>
+  <h2 style="color:#1a1a1a">${tt('terminationNotice.greeting', ['fullName'])}</h2>
+  <p style="color:#444;line-height:1.6">${t('terminationNotice.body1')}</p>
+  <p style="color:#444;line-height:1.6">${t('terminationNotice.body2')}</p>
+  <p style="color:#888;font-size:13px;margin-top:32px">${footer()}</p>
 </div>`,
   },
 
@@ -85,34 +108,34 @@ export const SAMPLE_TEMPLATES: Record<string, SampleEmailTemplate> = {
 
   audience_lead_confirmation: {
     name: 'Lead Confirmation',
-    subject: 'Thank you for your interest, {{parentName}}!',
+    subject: tt('audienceLeadConfirmation.subject', ['parentName']),
     variables: ['parentName', 'email', 'instituteName'],
     html: `<div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;padding:24px;background:#ffffff">
   <div style="text-align:center;padding:24px 0">
-    <h1 style="color:#16a34a;margin:0">Thank You!</h1>
+    <h1 style="color:#16a34a;margin:0">${t('audienceLeadConfirmation.heroTitle')}</h1>
   </div>
-  <h2 style="color:#1a1a1a">Hi {{parentName}},</h2>
-  <p style="color:#444;line-height:1.6">Thank you for your interest! We've received your enquiry and our team will get back to you shortly.</p>
-  <p style="color:#444;line-height:1.6">In the meantime, feel free to explore our website to learn more about our programs.</p>
-  <p style="color:#888;font-size:13px;margin-top:32px">Best regards,<br/>{{instituteName}}</p>
+  <h2 style="color:#1a1a1a">${tt('audienceLeadConfirmation.greeting', ['parentName'])}</h2>
+  <p style="color:#444;line-height:1.6">${t('audienceLeadConfirmation.body1')}</p>
+  <p style="color:#444;line-height:1.6">${t('audienceLeadConfirmation.body2')}</p>
+  <p style="color:#888;font-size:13px;margin-top:32px">${footer()}</p>
 </div>`,
   },
 
   lead_followup_email: {
     name: 'Lead Follow-up',
-    subject: '{{parentName}}, following up on your enquiry',
+    subject: tt('leadFollowupEmail.subject', ['parentName']),
     variables: ['parentName', 'email', 'instituteName'],
     html: `<div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;padding:24px;background:#ffffff">
-  <h2 style="color:#1a1a1a">Hi {{parentName}},</h2>
-  <p style="color:#444;line-height:1.6">We noticed you recently showed interest in our programs. We wanted to follow up and see if you have any questions.</p>
-  <p style="color:#444;line-height:1.6">Our team is ready to help you with:</p>
+  <h2 style="color:#1a1a1a">${tt('leadFollowupEmail.greeting', ['parentName'])}</h2>
+  <p style="color:#444;line-height:1.6">${t('leadFollowupEmail.body1')}</p>
+  <p style="color:#444;line-height:1.6">${t('leadFollowupEmail.body2')}</p>
   <ul style="color:#444;line-height:1.8">
-    <li>Course information and curriculum details</li>
-    <li>Fee structure and payment options</li>
-    <li>Admission process and timelines</li>
+    <li>${t('leadFollowupEmail.item1')}</li>
+    <li>${t('leadFollowupEmail.item2')}</li>
+    <li>${t('leadFollowupEmail.item3')}</li>
   </ul>
-  <p style="color:#444;line-height:1.6">Simply reply to this email or call us to get started!</p>
-  <p style="color:#888;font-size:13px;margin-top:32px">Best regards,<br/>{{instituteName}}</p>
+  <p style="color:#444;line-height:1.6">${t('leadFollowupEmail.body3')}</p>
+  <p style="color:#888;font-size:13px;margin-top:32px">${footer()}</p>
 </div>`,
   },
 
@@ -120,39 +143,39 @@ export const SAMPLE_TEMPLATES: Record<string, SampleEmailTemplate> = {
 
   payment_failed_email: {
     name: 'Payment Failed Alert',
-    subject: '{{fullName}}, payment issue - action required',
+    subject: tt('paymentFailedEmail.subject', ['fullName']),
     variables: ['fullName', 'email', 'instituteName'],
     html: `<div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;padding:24px;background:#ffffff">
   <div style="background:#fef2f2;border:1px solid #fecaca;border-radius:8px;padding:16px;margin-bottom:24px">
-    <h2 style="color:#dc2626;margin:0 0 8px 0">Payment Failed</h2>
-    <p style="color:#991b1b;margin:0">Your recent payment could not be processed.</p>
+    <h2 style="color:#dc2626;margin:0 0 8px 0">${t('paymentFailedEmail.bannerTitle')}</h2>
+    <p style="color:#991b1b;margin:0">${t('paymentFailedEmail.bannerBody')}</p>
   </div>
-  <p style="color:#444;line-height:1.6">Hi <strong>{{fullName}}</strong>,</p>
-  <p style="color:#444;line-height:1.6">We were unable to process your payment. This may happen due to insufficient funds, card expiry, or a temporary bank issue.</p>
-  <p style="color:#444;line-height:1.6"><strong>What to do next:</strong></p>
+  <p style="color:#444;line-height:1.6">${t('paymentFailedEmail.greetingLabel')} <strong>${tt('paymentFailedEmail.greetingName', ['fullName'])}</strong>,</p>
+  <p style="color:#444;line-height:1.6">${t('paymentFailedEmail.body1')}</p>
+  <p style="color:#444;line-height:1.6"><strong>${t('paymentFailedEmail.nextStepsHeading')}</strong></p>
   <ol style="color:#444;line-height:1.8">
-    <li>Check your payment method details</li>
-    <li>Ensure sufficient balance is available</li>
-    <li>Try the payment again from your dashboard</li>
+    <li>${t('paymentFailedEmail.step1')}</li>
+    <li>${t('paymentFailedEmail.step2')}</li>
+    <li>${t('paymentFailedEmail.step3')}</li>
   </ol>
-  <p style="color:#444;line-height:1.6">If the issue persists, please contact our support team.</p>
-  <p style="color:#888;font-size:13px;margin-top:32px">Best regards,<br/>{{instituteName}}</p>
+  <p style="color:#444;line-height:1.6">${t('paymentFailedEmail.body2')}</p>
+  <p style="color:#888;font-size:13px;margin-top:32px">${footer()}</p>
 </div>`,
   },
 
   abandoned_cart_reminder: {
     name: 'Complete Your Enrollment',
-    subject: '{{fullName}}, you\'re almost there! Complete your enrollment',
+    subject: tt('abandonedCartReminder.subject', ['fullName']),
     variables: ['fullName', 'email', 'instituteName'],
     html: `<div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;padding:24px;background:#ffffff">
-  <h2 style="color:#1a1a1a">Hi {{fullName}},</h2>
-  <p style="color:#444;line-height:1.6">We noticed you started your enrollment but didn't complete the payment. Your spot is still available!</p>
-  <p style="color:#444;line-height:1.6">Complete your enrollment now to secure your place and get started right away.</p>
+  <h2 style="color:#1a1a1a">${tt('abandonedCartReminder.greeting', ['fullName'])}</h2>
+  <p style="color:#444;line-height:1.6">${t('abandonedCartReminder.body1')}</p>
+  <p style="color:#444;line-height:1.6">${t('abandonedCartReminder.body2')}</p>
   <div style="text-align:center;margin:32px 0">
-    <a style="background:#2563eb;color:#ffffff;padding:12px 32px;border-radius:8px;text-decoration:none;font-weight:bold;display:inline-block">Complete Enrollment</a>
+    <a style="background:#2563eb;color:#ffffff;padding:12px 32px;border-radius:8px;text-decoration:none;font-weight:bold;display:inline-block">${t('abandonedCartReminder.cta')}</a>
   </div>
-  <p style="color:#888;font-size:13px">If you have questions about fees or need assistance, just reply to this email.</p>
-  <p style="color:#888;font-size:13px;margin-top:32px">Best regards,<br/>{{instituteName}}</p>
+  <p style="color:#888;font-size:13px">${t('abandonedCartReminder.footNote')}</p>
+  <p style="color:#888;font-size:13px;margin-top:32px">${footer()}</p>
 </div>`,
   },
 
@@ -160,33 +183,33 @@ export const SAMPLE_TEMPLATES: Record<string, SampleEmailTemplate> = {
 
   session_start_reminder: {
     name: 'Live Session Starting',
-    subject: '{{fullName}}, your live session is starting!',
+    subject: tt('sessionStartReminder.subject', ['fullName']),
     variables: ['fullName', 'email', 'instituteName'],
     html: `<div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;padding:24px;background:#ffffff">
   <div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:8px;padding:16px;margin-bottom:24px;text-align:center">
-    <h2 style="color:#2563eb;margin:0">Live Session Starting Now!</h2>
+    <h2 style="color:#2563eb;margin:0">${t('sessionStartReminder.bannerTitle')}</h2>
   </div>
-  <p style="color:#444;line-height:1.6">Hi <strong>{{fullName}}</strong>,</p>
-  <p style="color:#444;line-height:1.6">Your live session is starting. Join now to not miss anything!</p>
-  <p style="color:#444;line-height:1.6">Make sure you have a stable internet connection and your audio/video is working.</p>
-  <p style="color:#888;font-size:13px;margin-top:32px">See you there!</p>
+  <p style="color:#444;line-height:1.6">${t('sessionStartReminder.greetingLabel')} <strong>${tt('sessionStartReminder.greetingName', ['fullName'])}</strong>,</p>
+  <p style="color:#444;line-height:1.6">${t('sessionStartReminder.body1')}</p>
+  <p style="color:#444;line-height:1.6">${t('sessionStartReminder.body2')}</p>
+  <p style="color:#888;font-size:13px;margin-top:32px">${t('sessionStartReminder.signoff')}</p>
 </div>`,
   },
 
   post_session_followup: {
     name: 'Post-Session Follow-up',
-    subject: '{{fullName}}, session complete - recording & next steps',
+    subject: tt('postSessionFollowup.subject', ['fullName']),
     variables: ['fullName', 'email', 'instituteName'],
     html: `<div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;padding:24px;background:#ffffff">
-  <h2 style="color:#1a1a1a">Hi {{fullName}},</h2>
-  <p style="color:#444;line-height:1.6">Thank you for attending today's session! Here's a quick summary:</p>
+  <h2 style="color:#1a1a1a">${tt('postSessionFollowup.greeting', ['fullName'])}</h2>
+  <p style="color:#444;line-height:1.6">${t('postSessionFollowup.body1')}</p>
   <ul style="color:#444;line-height:1.8">
-    <li>Session recording will be available in your dashboard</li>
-    <li>Review the materials shared during the session</li>
-    <li>Complete any assignments before the next session</li>
+    <li>${t('postSessionFollowup.item1')}</li>
+    <li>${t('postSessionFollowup.item2')}</li>
+    <li>${t('postSessionFollowup.item3')}</li>
   </ul>
-  <p style="color:#444;line-height:1.6">We'd love to hear your feedback. Please take a moment to share your thoughts.</p>
-  <p style="color:#888;font-size:13px;margin-top:32px">See you next time!<br/>{{instituteName}}</p>
+  <p style="color:#444;line-height:1.6">${t('postSessionFollowup.body2')}</p>
+  <p style="color:#888;font-size:13px;margin-top:32px">${tt('postSessionFollowup.signoff', ['instituteName'])}</p>
 </div>`,
   },
 
@@ -194,22 +217,22 @@ export const SAMPLE_TEMPLATES: Record<string, SampleEmailTemplate> = {
 
   scheduled_fee_reminder: {
     name: 'Fee Payment Reminder',
-    subject: 'Fee payment reminder - {{dueDate}}',
+    subject: tt('scheduledFeeReminder.subject', ['dueDate']),
     variables: ['studentName', 'recipientName', 'dueDate', 'remainingAmount', 'amountExpected', 'amountPaid', 'installmentNumber', 'reminderType', 'instituteName'],
     html: `<div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;padding:24px;background:#ffffff">
   <div style="background:#fffbeb;border:1px solid #fde68a;border-radius:8px;padding:16px;margin-bottom:24px">
-    <h2 style="color:#d97706;margin:0">Fee Payment Reminder</h2>
+    <h2 style="color:#d97706;margin:0">${t('scheduledFeeReminder.bannerTitle')}</h2>
   </div>
-  <p style="color:#444;line-height:1.6">Dear <strong>{{recipientName}}</strong>,</p>
-  <p style="color:#444;line-height:1.6">This is a reminder for the upcoming fee payment for <strong>{{studentName}}</strong>.</p>
+  <p style="color:#444;line-height:1.6">${t('scheduledFeeReminder.greetingLabel')} <strong>${tt('scheduledFeeReminder.greetingName', ['recipientName'])}</strong>,</p>
+  <p style="color:#444;line-height:1.6">${tt('scheduledFeeReminder.body1', ['studentName'])}</p>
   <table style="width:100%;border-collapse:collapse;margin:20px 0">
-    <tr style="background:#f8fafc"><td style="padding:10px;border:1px solid #e2e8f0;font-weight:bold;color:#444">Due Date</td><td style="padding:10px;border:1px solid #e2e8f0;color:#444">{{dueDate}}</td></tr>
-    <tr><td style="padding:10px;border:1px solid #e2e8f0;font-weight:bold;color:#444">Total Amount</td><td style="padding:10px;border:1px solid #e2e8f0;color:#444">{{amountExpected}}</td></tr>
-    <tr style="background:#f8fafc"><td style="padding:10px;border:1px solid #e2e8f0;font-weight:bold;color:#444">Already Paid</td><td style="padding:10px;border:1px solid #e2e8f0;color:#444">{{amountPaid}}</td></tr>
-    <tr><td style="padding:10px;border:1px solid #e2e8f0;font-weight:bold;color:#dc2626">Remaining</td><td style="padding:10px;border:1px solid #e2e8f0;color:#dc2626;font-weight:bold">{{remainingAmount}}</td></tr>
+    <tr style="background:#f8fafc"><td style="padding:10px;border:1px solid #e2e8f0;font-weight:bold;color:#444">${t('scheduledFeeReminder.dueDateLabel')}</td><td style="padding:10px;border:1px solid #e2e8f0;color:#444">${tt('scheduledFeeReminder.dueDateValue', ['dueDate'])}</td></tr>
+    <tr><td style="padding:10px;border:1px solid #e2e8f0;font-weight:bold;color:#444">${t('scheduledFeeReminder.totalAmountLabel')}</td><td style="padding:10px;border:1px solid #e2e8f0;color:#444">${tt('scheduledFeeReminder.totalAmountValue', ['amountExpected'])}</td></tr>
+    <tr style="background:#f8fafc"><td style="padding:10px;border:1px solid #e2e8f0;font-weight:bold;color:#444">${t('scheduledFeeReminder.alreadyPaidLabel')}</td><td style="padding:10px;border:1px solid #e2e8f0;color:#444">${tt('scheduledFeeReminder.alreadyPaidValue', ['amountPaid'])}</td></tr>
+    <tr><td style="padding:10px;border:1px solid #e2e8f0;font-weight:bold;color:#dc2626">${t('scheduledFeeReminder.remainingLabel')}</td><td style="padding:10px;border:1px solid #e2e8f0;color:#dc2626;font-weight:bold">${tt('scheduledFeeReminder.remainingValue', ['remainingAmount'])}</td></tr>
   </table>
-  <p style="color:#444;line-height:1.6">Please ensure the payment is made before the due date to avoid any late fees.</p>
-  <p style="color:#888;font-size:13px;margin-top:32px">Best regards,<br/>{{instituteName}}</p>
+  <p style="color:#444;line-height:1.6">${t('scheduledFeeReminder.body2')}</p>
+  <p style="color:#888;font-size:13px;margin-top:32px">${footer()}</p>
 </div>`,
   },
 
@@ -217,83 +240,83 @@ export const SAMPLE_TEMPLATES: Record<string, SampleEmailTemplate> = {
 
   scheduled_batch_report: {
     name: 'Attendance Report',
-    subject: '{{fullName}}, your attendance report ({{startDate}} - {{endDate}})',
+    subject: tt('scheduledBatchReport.subject', ['fullName', 'startDate', 'endDate']),
     variables: ['fullName', 'email', 'attendancePercentage', 'sessionsAttended', 'totalSessions', 'startDate', 'endDate', 'sessionsTableHtml', 'totalDurationMinutes', 'instituteName', 'reportUrl'],
     html: `<div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;padding:24px;background:#ffffff">
-  <h2 style="color:#1a1a1a">Attendance Report</h2>
-  <p style="color:#444;line-height:1.6">Hi <strong>{{fullName}}</strong>, here's your attendance summary for <strong>{{startDate}}</strong> to <strong>{{endDate}}</strong>:</p>
+  <h2 style="color:#1a1a1a">${t('scheduledBatchReport.heading')}</h2>
+  <p style="color:#444;line-height:1.6">${tt('scheduledBatchReport.intro', ['fullName', 'startDate', 'endDate'])}</p>
   <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:12px;padding:24px;text-align:center;margin:20px 0">
-    <div style="font-size:44px;font-weight:bold;color:#16a34a;line-height:1.2">{{attendancePercentage}}%</div>
-    <div style="color:#444;margin-top:12px;font-size:14px">Attendance Rate</div>
-    <div style="color:#666;margin-top:6px;font-size:13px">{{sessionsAttended}} of {{totalSessions}} sessions attended &middot; {{totalDurationMinutes}} min total</div>
+    <div style="font-size:44px;font-weight:bold;color:#16a34a;line-height:1.2">${tt('scheduledBatchReport.percentValue', ['attendancePercentage'])}%</div>
+    <div style="color:#444;margin-top:12px;font-size:14px">${t('scheduledBatchReport.attendanceRateLabel')}</div>
+    <div style="color:#666;margin-top:6px;font-size:13px">${tt('scheduledBatchReport.sessionsSummary', ['sessionsAttended', 'totalSessions', 'totalDurationMinutes'])}</div>
   </div>
-  <h3 style="color:#1e293b;margin-top:24px">Session Details</h3>
+  <h3 style="color:#1e293b;margin-top:24px">${t('scheduledBatchReport.sessionDetailsHeading')}</h3>
   {{sessionsTableHtml}}
   <div style="text-align:center;margin:24px 0">
-    <a href="{{reportUrl}}" style="display:inline-block;background:#2563eb;color:#ffffff;padding:12px 28px;border-radius:8px;text-decoration:none;font-weight:600;font-size:14px">View Full Report &amp; Download PDF</a>
+    <a href="{{reportUrl}}" style="display:inline-block;background:#2563eb;color:#ffffff;padding:12px 28px;border-radius:8px;text-decoration:none;font-weight:600;font-size:14px">${t('scheduledBatchReport.cta')}</a>
   </div>
-  <p style="color:#444;line-height:1.6;margin-top:16px">Regular attendance is the key to success.</p>
-  <p style="color:#888;font-size:13px;margin-top:32px">Best regards,<br/>{{instituteName}}</p>
+  <p style="color:#444;line-height:1.6;margin-top:16px">${t('scheduledBatchReport.body1')}</p>
+  <p style="color:#888;font-size:13px;margin-top:32px">${footer()}</p>
   <p style="border-top:1px solid #e2e8f0;margin-top:24px;padding-top:12px;color:#94a3b8;font-size:11px;line-height:1.5">
-    <strong>* Concentration Score</strong> = 80 pts attendance time + 20 pts interactions (chats, talks, raises, emojis, polls). View the full report for a per-session breakdown.
+    <strong>${t('scheduledBatchReport.concentrationScoreLabel')}</strong> ${t('scheduledBatchReport.concentrationScoreBody')}
   </p>
 </div>`,
   },
 
   scheduled_engagement_summary: {
     name: 'Engagement Summary',
-    subject: '{{fullName}}, your weekly engagement report',
+    subject: tt('scheduledEngagementSummary.subject', ['fullName']),
     variables: ['fullName', 'attendancePercentage', 'sessionsAttended', 'totalSessions', 'totalDurationMinutes', 'totalChats', 'totalHandRaises', 'startDate', 'endDate', 'sessionsTableHtml', 'instituteName'],
     html: `<div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;padding:24px;background:#ffffff">
-  <h2 style="color:#1a1a1a">Weekly Engagement Report</h2>
-  <p style="color:#444;line-height:1.6">Hi <strong>{{fullName}}</strong>, here's how you engaged this week:</p>
+  <h2 style="color:#1a1a1a">${t('scheduledEngagementSummary.heading')}</h2>
+  <p style="color:#444;line-height:1.6">${tt('scheduledEngagementSummary.intro', ['fullName'])}</p>
   <table style="width:100%;border-collapse:collapse;margin:20px 0">
     <tr>
       <td style="background:#eff6ff;border-radius:8px;padding:16px;text-align:center;width:25%">
-        <div style="font-size:28px;font-weight:bold;color:#2563eb">{{attendancePercentage}}%</div>
-        <div style="color:#64748b;font-size:12px;margin-top:4px">Attendance</div>
+        <div style="font-size:28px;font-weight:bold;color:#2563eb">${tt('scheduledEngagementSummary.percentValue', ['attendancePercentage'])}%</div>
+        <div style="color:#64748b;font-size:12px;margin-top:4px">${t('scheduledEngagementSummary.attendanceLabel')}</div>
       </td>
       <td style="width:4%"></td>
       <td style="background:#f0fdf4;border-radius:8px;padding:16px;text-align:center;width:21%">
-        <div style="font-size:28px;font-weight:bold;color:#16a34a">{{sessionsAttended}}/{{totalSessions}}</div>
-        <div style="color:#64748b;font-size:12px;margin-top:4px">Sessions</div>
+        <div style="font-size:28px;font-weight:bold;color:#16a34a">${tt('scheduledEngagementSummary.sessionsValue', ['sessionsAttended', 'totalSessions'])}</div>
+        <div style="color:#64748b;font-size:12px;margin-top:4px">${t('scheduledEngagementSummary.sessionsLabel')}</div>
       </td>
       <td style="width:4%"></td>
       <td style="background:#fefce8;border-radius:8px;padding:16px;text-align:center;width:21%">
-        <div style="font-size:28px;font-weight:bold;color:#ca8a04">{{totalDurationMinutes}}</div>
-        <div style="color:#64748b;font-size:12px;margin-top:4px">Minutes</div>
+        <div style="font-size:28px;font-weight:bold;color:#ca8a04">${tt('scheduledEngagementSummary.minutesValue', ['totalDurationMinutes'])}</div>
+        <div style="color:#64748b;font-size:12px;margin-top:4px">${t('scheduledEngagementSummary.minutesLabel')}</div>
       </td>
       <td style="width:4%"></td>
       <td style="background:#fdf2f8;border-radius:8px;padding:16px;text-align:center;width:21%">
-        <div style="font-size:28px;font-weight:bold;color:#db2777">{{totalChats}}</div>
-        <div style="color:#64748b;font-size:12px;margin-top:4px">Chats</div>
+        <div style="font-size:28px;font-weight:bold;color:#db2777">${tt('scheduledEngagementSummary.chatsValue', ['totalChats'])}</div>
+        <div style="color:#64748b;font-size:12px;margin-top:4px">${t('scheduledEngagementSummary.chatsLabel')}</div>
       </td>
     </tr>
   </table>
-  <h3 style="color:#1e293b;margin-top:24px">Session Details</h3>
+  <h3 style="color:#1e293b;margin-top:24px">${t('scheduledEngagementSummary.sessionDetailsHeading')}</h3>
   {{sessionsTableHtml}}
-  <p style="color:#444;line-height:1.6;margin-top:16px">Period: {{startDate}} to {{endDate}}</p>
-  <p style="color:#888;font-size:13px;margin-top:32px">Keep learning!<br/>{{instituteName}}</p>
+  <p style="color:#444;line-height:1.6;margin-top:16px">${tt('scheduledEngagementSummary.period', ['startDate', 'endDate'])}</p>
+  <p style="color:#888;font-size:13px;margin-top:32px">${tt('scheduledEngagementSummary.signoff', ['instituteName'])}</p>
 </div>`,
   },
 
   scheduled_parents_attendance: {
     name: 'Parent Attendance Update',
-    subject: '{{fullName}}\'s weekly attendance update ({{startDate}} - {{endDate}})',
+    subject: tt('scheduledParentsAttendance.subject', ['fullName', 'startDate', 'endDate']),
     variables: ['fullName', 'attendancePercentage', 'sessionsAttended', 'totalSessions', 'startDate', 'endDate', 'sessionsTableHtml', 'instituteName'],
     html: `<div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;padding:24px;background:#ffffff">
-  <h2 style="color:#1a1a1a">Weekly Attendance Update</h2>
-  <p style="color:#444;line-height:1.6">Dear Parent,</p>
-  <p style="color:#444;line-height:1.6">Here is the weekly attendance summary for <strong>{{fullName}}</strong> ({{startDate}} - {{endDate}}):</p>
+  <h2 style="color:#1a1a1a">${t('scheduledParentsAttendance.heading')}</h2>
+  <p style="color:#444;line-height:1.6">${t('scheduledParentsAttendance.greeting')}</p>
+  <p style="color:#444;line-height:1.6">${tt('scheduledParentsAttendance.intro', ['fullName', 'startDate', 'endDate'])}</p>
   <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:12px;padding:24px;text-align:center;margin:20px 0">
-    <div style="font-size:44px;font-weight:bold;color:#16a34a;line-height:1.2">{{attendancePercentage}}%</div>
-    <div style="color:#444;margin-top:12px;font-size:14px">Attendance Rate</div>
-    <div style="color:#666;margin-top:6px;font-size:13px">{{sessionsAttended}} of {{totalSessions}} sessions attended</div>
+    <div style="font-size:44px;font-weight:bold;color:#16a34a;line-height:1.2">${tt('scheduledParentsAttendance.percentValue', ['attendancePercentage'])}%</div>
+    <div style="color:#444;margin-top:12px;font-size:14px">${t('scheduledParentsAttendance.attendanceRateLabel')}</div>
+    <div style="color:#666;margin-top:6px;font-size:13px">${tt('scheduledParentsAttendance.sessionsSummary', ['sessionsAttended', 'totalSessions'])}</div>
   </div>
-  <h3 style="color:#1e293b;margin-top:24px">Session Details</h3>
+  <h3 style="color:#1e293b;margin-top:24px">${t('scheduledParentsAttendance.sessionDetailsHeading')}</h3>
   {{sessionsTableHtml}}
-  <p style="color:#444;line-height:1.6;margin-top:16px">If you have any concerns about attendance, please reach out to us.</p>
-  <p style="color:#888;font-size:13px;margin-top:32px">Best regards,<br/>{{instituteName}}</p>
+  <p style="color:#444;line-height:1.6;margin-top:16px">${t('scheduledParentsAttendance.body1')}</p>
+  <p style="color:#888;font-size:13px;margin-top:32px">${footer()}</p>
 </div>`,
   },
 
@@ -301,31 +324,31 @@ export const SAMPLE_TEMPLATES: Record<string, SampleEmailTemplate> = {
 
   membership_expiry_reminder: {
     name: 'Membership Expiry Reminder',
-    subject: '{{fullName}}, your membership is expiring soon',
+    subject: tt('membershipExpiryReminder.subject', ['fullName']),
     variables: ['fullName', 'email', 'instituteName'],
     html: `<div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;padding:24px;background:#ffffff">
   <div style="background:#fef2f2;border:1px solid #fecaca;border-radius:8px;padding:16px;margin-bottom:24px;text-align:center">
-    <h2 style="color:#dc2626;margin:0">Membership Expiring Soon</h2>
+    <h2 style="color:#dc2626;margin:0">${t('membershipExpiryReminder.bannerTitle')}</h2>
   </div>
-  <p style="color:#444;line-height:1.6">Hi <strong>{{fullName}}</strong>,</p>
-  <p style="color:#444;line-height:1.6">Your membership is about to expire. Renew now to continue enjoying uninterrupted access to all your courses and materials.</p>
+  <p style="color:#444;line-height:1.6">${t('membershipExpiryReminder.greetingLabel')} <strong>${tt('membershipExpiryReminder.greetingName', ['fullName'])}</strong>,</p>
+  <p style="color:#444;line-height:1.6">${t('membershipExpiryReminder.body1')}</p>
   <div style="text-align:center;margin:32px 0">
-    <a style="background:#2563eb;color:#ffffff;padding:12px 32px;border-radius:8px;text-decoration:none;font-weight:bold;display:inline-block">Renew Now</a>
+    <a style="background:#2563eb;color:#ffffff;padding:12px 32px;border-radius:8px;text-decoration:none;font-weight:bold;display:inline-block">${t('membershipExpiryReminder.cta')}</a>
   </div>
-  <p style="color:#888;font-size:13px">Don't lose your progress! Renewing takes just a minute.</p>
-  <p style="color:#888;font-size:13px;margin-top:32px">Best regards,<br/>{{instituteName}}</p>
+  <p style="color:#888;font-size:13px">${t('membershipExpiryReminder.footNote')}</p>
+  <p style="color:#888;font-size:13px;margin-top:32px">${footer()}</p>
 </div>`,
   },
 
   scheduled_expiry_check: {
     name: 'Membership Renewal Reminder',
-    subject: '{{fullName}}, renew your membership',
+    subject: tt('scheduledExpiryCheck.subject', ['fullName']),
     variables: ['fullName', 'email', 'instituteName'],
     html: `<div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;padding:24px;background:#ffffff">
-  <h2 style="color:#1a1a1a">Hi {{fullName}},</h2>
-  <p style="color:#444;line-height:1.6">Your membership will expire soon. Renew today to continue accessing your courses without interruption.</p>
-  <p style="color:#444;line-height:1.6">Contact us if you have any questions about renewal options.</p>
-  <p style="color:#888;font-size:13px;margin-top:32px">Best regards,<br/>{{instituteName}}</p>
+  <h2 style="color:#1a1a1a">${tt('scheduledExpiryCheck.greeting', ['fullName'])}</h2>
+  <p style="color:#444;line-height:1.6">${t('scheduledExpiryCheck.body1')}</p>
+  <p style="color:#444;line-height:1.6">${t('scheduledExpiryCheck.body2')}</p>
+  <p style="color:#888;font-size:13px;margin-top:32px">${footer()}</p>
 </div>`,
   },
 
@@ -333,30 +356,30 @@ export const SAMPLE_TEMPLATES: Record<string, SampleEmailTemplate> = {
 
   assessment_created_notify: {
     name: 'New Assessment Available',
-    subject: '{{fullName}}, new assessment available for you',
+    subject: tt('assessmentCreatedNotify.subject', ['fullName']),
     variables: ['fullName', 'email', 'instituteName'],
     html: `<div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;padding:24px;background:#ffffff">
   <div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:8px;padding:16px;margin-bottom:24px;text-align:center">
-    <h2 style="color:#2563eb;margin:0">New Assessment Available</h2>
+    <h2 style="color:#2563eb;margin:0">${t('assessmentCreatedNotify.bannerTitle')}</h2>
   </div>
-  <p style="color:#444;line-height:1.6">Hi <strong>{{fullName}}</strong>,</p>
-  <p style="color:#444;line-height:1.6">A new assessment has been published for you. Log in to your dashboard to view the details and start the assessment.</p>
-  <p style="color:#444;line-height:1.6">Good luck!</p>
-  <p style="color:#888;font-size:13px;margin-top:32px">Best regards,<br/>{{instituteName}}</p>
+  <p style="color:#444;line-height:1.6">${t('assessmentCreatedNotify.greetingLabel')} <strong>${tt('assessmentCreatedNotify.greetingName', ['fullName'])}</strong>,</p>
+  <p style="color:#444;line-height:1.6">${t('assessmentCreatedNotify.body1')}</p>
+  <p style="color:#444;line-height:1.6">${t('assessmentCreatedNotify.goodLuck')}</p>
+  <p style="color:#888;font-size:13px;margin-top:32px">${footer()}</p>
 </div>`,
   },
 
   assessment_email_batch: {
     name: 'Assessment Completion',
-    subject: '{{fullName}}, assessment submitted successfully',
+    subject: tt('assessmentEmailBatch.subject', ['fullName']),
     variables: ['fullName', 'email', 'instituteName'],
     html: `<div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;padding:24px;background:#ffffff">
   <div style="text-align:center;padding:24px 0">
-    <h1 style="color:#16a34a;margin:0">Assessment Submitted!</h1>
+    <h1 style="color:#16a34a;margin:0">${t('assessmentEmailBatch.heroTitle')}</h1>
   </div>
-  <p style="color:#444;line-height:1.6">Hi <strong>{{fullName}}</strong>,</p>
-  <p style="color:#444;line-height:1.6">Your assessment has been submitted successfully. Results will be shared once the evaluation is complete.</p>
-  <p style="color:#888;font-size:13px;margin-top:32px">Best regards,<br/>{{instituteName}}</p>
+  <p style="color:#444;line-height:1.6">${t('assessmentEmailBatch.greetingLabel')} <strong>${tt('assessmentEmailBatch.greetingName', ['fullName'])}</strong>,</p>
+  <p style="color:#444;line-height:1.6">${t('assessmentEmailBatch.body1')}</p>
+  <p style="color:#888;font-size:13px;margin-top:32px">${footer()}</p>
 </div>`,
   },
 
@@ -364,12 +387,12 @@ export const SAMPLE_TEMPLATES: Record<string, SampleEmailTemplate> = {
 
   invite_notify_batch: {
     name: 'New Enrollment Invite',
-    subject: 'New enrollment opportunity',
+    subject: t('inviteNotifyBatch.subject'),
     variables: ['fullName', 'email', 'instituteName'],
     html: `<div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;padding:24px;background:#ffffff">
-  <h2 style="color:#1a1a1a">Hi {{fullName}},</h2>
-  <p style="color:#444;line-height:1.6">A new enrollment invite has been created. Check your dashboard for details and enrollment instructions.</p>
-  <p style="color:#888;font-size:13px;margin-top:32px">Best regards,<br/>{{instituteName}}</p>
+  <h2 style="color:#1a1a1a">${tt('inviteNotifyBatch.greeting', ['fullName'])}</h2>
+  <p style="color:#444;line-height:1.6">${t('inviteNotifyBatch.body1')}</p>
+  <p style="color:#888;font-size:13px;margin-top:32px">${footer()}</p>
 </div>`,
   },
 
@@ -377,13 +400,13 @@ export const SAMPLE_TEMPLATES: Record<string, SampleEmailTemplate> = {
 
   scheduled_audience_followup: {
     name: 'Audience Follow-up',
-    subject: '{{parentName}}, we haven\'t heard from you',
+    subject: tt('scheduledAudienceFollowup.subject', ['parentName']),
     variables: ['parentName', 'email', 'instituteName'],
     html: `<div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;padding:24px;background:#ffffff">
-  <h2 style="color:#1a1a1a">Hi {{parentName}},</h2>
-  <p style="color:#444;line-height:1.6">We noticed you recently enquired about our programs. We wanted to check if you have any questions or need more information.</p>
-  <p style="color:#444;line-height:1.6">Our admissions team is happy to help with anything you need. Simply reply to this email!</p>
-  <p style="color:#888;font-size:13px;margin-top:32px">Best regards,<br/>{{instituteName}}</p>
+  <h2 style="color:#1a1a1a">${tt('scheduledAudienceFollowup.greeting', ['parentName'])}</h2>
+  <p style="color:#444;line-height:1.6">${t('scheduledAudienceFollowup.body1')}</p>
+  <p style="color:#444;line-height:1.6">${t('scheduledAudienceFollowup.body2')}</p>
+  <p style="color:#888;font-size:13px;margin-top:32px">${footer()}</p>
 </div>`,
   },
 
@@ -394,7 +417,7 @@ export const SAMPLE_TEMPLATES: Record<string, SampleEmailTemplate> = {
 
   live_session_recap_present: {
     name: 'Live Class Recap (Attended)',
-    subject: 'Thanks for attending {{sessionTitle}}',
+    subject: tt('liveSessionRecapPresent.subject', ['sessionTitle']),
     // The {{attendanceBlockHtml}} placeholder is a pre-rendered HTML snippet from
     // the backend — full styled attendance box when join-time data is available,
     // EMPTY STRING when the provider hasn't synced yet (no misleading "0%" line).
@@ -415,30 +438,30 @@ export const SAMPLE_TEMPLATES: Record<string, SampleEmailTemplate> = {
     ],
     html: `<div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;padding:24px;background:#ffffff">
   <div style="text-align:center;padding:16px 0">
-    <h1 style="color:#16a34a;margin:0;font-size:22px">Great to see you!</h1>
+    <h1 style="color:#16a34a;margin:0;font-size:22px">${t('liveSessionRecapPresent.heroTitle')}</h1>
   </div>
-  <h2 style="color:#1a1a1a">Hi {{fullName}},</h2>
-  <p style="color:#444;line-height:1.6">Thanks for attending <strong>{{sessionTitle}}</strong> on {{date}} at {{time}}. We hope it was useful.</p>
+  <h2 style="color:#1a1a1a">${tt('liveSessionRecapPresent.greeting', ['fullName'])}</h2>
+  <p style="color:#444;line-height:1.6">${tt('liveSessionRecapPresent.body1', ['sessionTitle', 'date', 'time'])}</p>
 
   {{attendanceBlockHtml}}
 
-  <p style="color:#444;line-height:1.6">Keep up the consistency — see you in the next class!</p>
-  <p style="color:#888;font-size:13px;margin-top:32px">Best regards,<br/>{{instituteName}}</p>
+  <p style="color:#444;line-height:1.6">${t('liveSessionRecapPresent.body2')}</p>
+  <p style="color:#888;font-size:13px;margin-top:32px">${footer()}</p>
 </div>`,
   },
 
   live_session_recap_absent: {
     name: 'Live Class Recap (Missed)',
-    subject: 'You missed {{sessionTitle}}',
+    subject: tt('liveSessionRecapAbsent.subject', ['sessionTitle']),
     variables: ['fullName', 'sessionTitle', 'date', 'time', 'instituteName'],
     html: `<div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;padding:24px;background:#ffffff">
   <div style="text-align:center;padding:16px 0">
-    <h1 style="color:#d97706;margin:0;font-size:22px">We missed you!</h1>
+    <h1 style="color:#d97706;margin:0;font-size:22px">${t('liveSessionRecapAbsent.heroTitle')}</h1>
   </div>
-  <h2 style="color:#1a1a1a">Hi {{fullName}},</h2>
-  <p style="color:#444;line-height:1.6">We noticed you weren't able to join <strong>{{sessionTitle}}</strong> on {{date}} at {{time}}.</p>
-  <p style="color:#444;line-height:1.6">No worries — please make sure to attend the next live class so you don't fall behind.</p>
-  <p style="color:#888;font-size:13px;margin-top:32px">Best regards,<br/>{{instituteName}}</p>
+  <h2 style="color:#1a1a1a">${tt('liveSessionRecapAbsent.greeting', ['fullName'])}</h2>
+  <p style="color:#444;line-height:1.6">${tt('liveSessionRecapAbsent.body1', ['sessionTitle', 'date', 'time'])}</p>
+  <p style="color:#444;line-height:1.6">${t('liveSessionRecapAbsent.body2')}</p>
+  <p style="color:#888;font-size:13px;margin-top:32px">${footer()}</p>
 </div>`,
   },
 
@@ -448,7 +471,7 @@ export const SAMPLE_TEMPLATES: Record<string, SampleEmailTemplate> = {
 
   LEAD_ASSIGNED_TO_COUNSELOR: {
     name: 'Lead Assigned — Counsellor Notice',
-    subject: 'New lead assigned: {{leadName}}',
+    subject: tt('leadAssignedToCounselor.subject', ['leadName']),
     variables: [
       'counselorName',
       'leadName',
@@ -458,21 +481,21 @@ export const SAMPLE_TEMPLATES: Record<string, SampleEmailTemplate> = {
       'tat',
     ],
     html: `<div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;padding:24px">
-  <h2 style="color:#1a1a1a">Hi {{counselorName}},</h2>
-  <p style="color:#444;line-height:1.6">A new lead has been assigned to you.</p>
+  <h2 style="color:#1a1a1a">${tt('leadAssignedToCounselor.greeting', ['counselorName'])}</h2>
+  <p style="color:#444;line-height:1.6">${t('leadAssignedToCounselor.body1')}</p>
   <ul style="color:#444;line-height:1.8">
-    <li><strong>Name:</strong> {{leadName}}</li>
-    <li><strong>Mobile:</strong> {{leadMobile}}</li>
-    <li><strong>Email:</strong> {{leadEmail}}</li>
-    <li><strong>Campaign:</strong> {{campaignName}}</li>
+    <li><strong>${t('leadAssignedToCounselor.nameLabel')}</strong> ${tt('leadAssignedToCounselor.nameValue', ['leadName'])}</li>
+    <li><strong>${t('leadAssignedToCounselor.mobileLabel')}</strong> ${tt('leadAssignedToCounselor.mobileValue', ['leadMobile'])}</li>
+    <li><strong>${t('leadAssignedToCounselor.emailLabel')}</strong> ${tt('leadAssignedToCounselor.emailValue', ['leadEmail'])}</li>
+    <li><strong>${t('leadAssignedToCounselor.campaignLabel')}</strong> ${tt('leadAssignedToCounselor.campaignValue', ['campaignName'])}</li>
   </ul>
-  <p style="color:#444;line-height:1.6">Please reach within {{tat}} time.</p>
+  <p style="color:#444;line-height:1.6">${tt('leadAssignedToCounselor.body2', ['tat'])}</p>
 </div>`,
   },
 
   LEAD_TAT_REMINDER_BEFORE: {
     name: 'Lead TAT — Reminder',
-    subject: 'Reminder: respond to {{leadName}} within {{minutesToBreach}} minutes',
+    subject: tt('leadTatReminderBefore.subject', ['leadName', 'minutesToBreach']),
     variables: [
       'counselorName',
       'leadName',
@@ -482,21 +505,20 @@ export const SAMPLE_TEMPLATES: Record<string, SampleEmailTemplate> = {
       'dueAt',
     ],
     html: `<div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;padding:24px">
-  <h2 style="color:#b45309">Lead awaiting your response</h2>
-  <p style="color:#444;line-height:1.6">Hi {{counselorName}},</p>
-  <p style="color:#444;line-height:1.6">This lead needs a response in
-    <strong>{{minutesToBreach}} minutes</strong>:</p>
+  <h2 style="color:#b45309">${t('leadTatReminderBefore.heading')}</h2>
+  <p style="color:#444;line-height:1.6">${tt('leadTatReminderBefore.greeting', ['counselorName'])}</p>
+  <p style="color:#444;line-height:1.6">${tt('leadTatReminderBefore.body1', ['minutesToBreach'])}</p>
   <ul style="color:#444;line-height:1.8">
-    <li><strong>{{leadName}}</strong> — {{leadMobile}}</li>
-    <li>Campaign: {{campaignName}}</li>
-    <li>SLA due at: {{dueAt}}</li>
+    <li><strong>${tt('leadTatReminderBefore.leadName', ['leadName'])}</strong> — ${tt('leadTatReminderBefore.leadMobile', ['leadMobile'])}</li>
+    <li>${tt('leadTatReminderBefore.campaignLine', ['campaignName'])}</li>
+    <li>${tt('leadTatReminderBefore.dueAtLine', ['dueAt'])}</li>
   </ul>
 </div>`,
   },
 
   LEAD_TAT_OVERDUE: {
     name: 'Lead TAT — Overdue',
-    subject: 'Overdue: {{leadName}} has not been contacted',
+    subject: tt('leadTatOverdue.subject', ['leadName']),
     variables: [
       'counselorName',
       'leadName',
@@ -505,20 +527,20 @@ export const SAMPLE_TEMPLATES: Record<string, SampleEmailTemplate> = {
       'dueAt',
     ],
     html: `<div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;padding:24px">
-  <h2 style="color:#b91c1c">Lead TAT overdue</h2>
-  <p style="color:#444;line-height:1.6">Hi {{counselorName}}, the SLA deadline has passed for this lead:</p>
+  <h2 style="color:#b91c1c">${t('leadTatOverdue.heading')}</h2>
+  <p style="color:#444;line-height:1.6">${tt('leadTatOverdue.body1', ['counselorName'])}</p>
   <ul style="color:#444;line-height:1.8">
-    <li><strong>{{leadName}}</strong> — {{leadMobile}}</li>
-    <li>Campaign: {{campaignName}}</li>
-    <li>Due at: {{dueAt}}</li>
+    <li><strong>${tt('leadTatOverdue.leadName', ['leadName'])}</strong> — ${tt('leadTatOverdue.leadMobile', ['leadMobile'])}</li>
+    <li>${tt('leadTatOverdue.campaignLine', ['campaignName'])}</li>
+    <li>${tt('leadTatOverdue.dueAtLine', ['dueAt'])}</li>
   </ul>
-  <p style="color:#444">Please act on this lead as soon as possible.</p>
+  <p style="color:#444">${t('leadTatOverdue.body2')}</p>
 </div>`,
   },
 
   FOLLOW_UP_DUE: {
     name: 'Follow-up — Due',
-    subject: 'Follow-up due for {{leadName}}',
+    subject: tt('followUpDue.subject', ['leadName']),
     variables: [
       'counselorName',
       'leadName',
@@ -527,28 +549,25 @@ export const SAMPLE_TEMPLATES: Record<string, SampleEmailTemplate> = {
       'minutesToBreach',
     ],
     html: `<div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;padding:24px">
-  <h2 style="color:#1a1a1a">Follow-up due</h2>
-  <p style="color:#444;line-height:1.6">Hi {{counselorName}}, your next follow-up for
-    <strong>{{leadName}}</strong> ({{leadMobile}}) is due in
-    <strong>{{minutesToBreach}}</strong> minutes (at {{dueAt}}).</p>
+  <h2 style="color:#1a1a1a">${t('followUpDue.heading')}</h2>
+  <p style="color:#444;line-height:1.6">${tt('followUpDue.body1', ['counselorName', 'leadName', 'leadMobile', 'minutesToBreach', 'dueAt'])}</p>
 </div>`,
   },
 
   FOLLOW_UP_OVERDUE: {
     name: 'Follow-up — Overdue',
-    subject: 'Follow-up overdue for {{leadName}}',
+    subject: tt('followUpOverdue.subject', ['leadName']),
     variables: ['counselorName', 'leadName', 'leadMobile', 'dueAt'],
     html: `<div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;padding:24px">
-  <h2 style="color:#b91c1c">Follow-up overdue</h2>
-  <p style="color:#444;line-height:1.6">Hi {{counselorName}}, the follow-up for
-    <strong>{{leadName}}</strong> ({{leadMobile}}) is overdue (was due at {{dueAt}}).</p>
-  <p style="color:#444">Please action this lead now.</p>
+  <h2 style="color:#b91c1c">${t('followUpOverdue.heading')}</h2>
+  <p style="color:#444;line-height:1.6">${tt('followUpOverdue.body1', ['counselorName', 'leadName', 'leadMobile', 'dueAt'])}</p>
+  <p style="color:#444">${t('followUpOverdue.body2')}</p>
 </div>`,
   },
 
   LEAD_STATUS_CHANGED: {
     name: 'Lead Status Changed',
-    subject: 'Lead status updated: {{leadName}} → {{newStatus}}',
+    subject: tt('leadStatusChanged.subject', ['leadName', 'newStatus']),
     variables: [
       'counselorName',
       'leadName',
@@ -557,11 +576,10 @@ export const SAMPLE_TEMPLATES: Record<string, SampleEmailTemplate> = {
       'changeType',
     ],
     html: `<div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;padding:24px">
-  <h2 style="color:#1a1a1a">Lead status updated</h2>
-  <p style="color:#444;line-height:1.6">Hi {{counselorName}},</p>
-  <p style="color:#444;line-height:1.6">Status for <strong>{{leadName}}</strong>
-    changed from <strong>{{oldStatus}}</strong> to <strong>{{newStatus}}</strong>
-    (<em>{{changeType}}</em>).</p>
+  <h2 style="color:#1a1a1a">${t('leadStatusChanged.heading')}</h2>
+  <p style="color:#444;line-height:1.6">${tt('leadStatusChanged.greeting', ['counselorName'])}</p>
+  <p style="color:#444;line-height:1.6">${tt('leadStatusChanged.body1', ['leadName', 'oldStatus', 'newStatus', 'changeType'])}</p>
 </div>`,
   },
-};
+  };
+}

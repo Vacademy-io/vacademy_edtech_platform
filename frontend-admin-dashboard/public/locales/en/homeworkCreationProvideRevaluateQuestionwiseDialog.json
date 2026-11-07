@@ -1,0 +1,13 @@
+{
+    "dialog": {
+        "heading": "Question Wise Revaluation"
+    },
+    "table": {
+        "questionNo": "Q.No.",
+        "question": "Question"
+    },
+    "revaluateButton": "Revaluate",
+    "toasts": {
+        "revaluateSuccess": "Your attempt for this assessment has been revaluated for the selected students. Please check your email!"
+    }
+}

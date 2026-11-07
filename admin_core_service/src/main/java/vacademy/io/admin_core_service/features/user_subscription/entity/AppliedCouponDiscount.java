@@ -62,6 +62,25 @@ public class AppliedCouponDiscount {
     @JoinColumn(name = "coupon_code_id") // Foreign key to CouponCode
     private CouponCode couponCode;
 
+    // ── Admin-granted discounts (V557, discount_source = 'ADMIN') ─────────
+
+    /** Admin who created this discount. */
+    @Column(name = "granted_by_user_id")
+    private String grantedByUserId;
+
+    @Column(name = "granted_at")
+    private Date grantedAt;
+
+    @Column(name = "grant_reason", columnDefinition = "TEXT")
+    private String grantReason;
+
+    @Column(name = "institute_id")
+    private String instituteId;
+
+    /** Charges this discount reduces: null = every cycle (ADMIN only), 1 = first payment only. */
+    @Column(name = "apply_for_cycles")
+    private Integer applyForCycles;
+
     @Column(name = "created_at", insertable = false, updatable = false)
     private LocalDateTime createdAt;
 
@@ -84,6 +103,11 @@ public class AppliedCouponDiscount {
                 .redeemStartDate(this.redeemStartDate)
                 .redeemEndDate(this.redeemEndDate)
                 .couponCode(this.couponCode != null ? this.couponCode.toDTO() : null) // nested DTO
+                .grantedByUserId(this.grantedByUserId)
+                .grantedAt(this.grantedAt)
+                .grantReason(this.grantReason)
+                .instituteId(this.instituteId)
+                .applyForCycles(this.applyForCycles)
                 .createdAt(this.createdAt)
                 .updatedAt(this.updatedAt)
                 .build();

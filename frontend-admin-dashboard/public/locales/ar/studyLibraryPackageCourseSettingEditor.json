@@ -1,0 +1,36 @@
+{
+    "advancedSettingsTitle": "إعدادات متقدمة (JSON)",
+    "actions": {
+        "format": "تنسيق",
+        "reset": "إعادة تعيين",
+        "save": "حفظ",
+        "saving": "جارٍ الحفظ..."
+    },
+    "description": "يتم تخزين هذه الإعدادات في هذه الدورة وتُقرأ بواسطة سير العمل (إعدادات LMS، الاحتفاظ، حدود الإكمال، إلخ). حرّر JSON الخام أدناه — يجب أن يبقى مُغلّفًا ضمن <1>{ \"setting\": { ... } }</1>.",
+    "insertTemplate": "إدراج قالب",
+    "loading": "جارٍ التحميل…",
+    "invalidJson": "JSON غير صالح: {{message}}",
+    "validJson": "JSON صالح",
+    "saveSuccess": "تم حفظ إعدادات الدورة بصيغة JSON",
+    "errors": {
+        "loadFailed": "فشل تحميل إعدادات الدورة",
+        "invalidJson": "JSON غير صالح",
+        "formatFailed": "تعذّر التنسيق — أصلح خطأ JSON أولاً",
+        "saveFailed": "فشل حفظ إعدادات الدورة"
+    },
+    "confirmDialog": {
+        "title": "استبدال إعدادات الدورة بصيغة JSON؟",
+        "description": "سيؤدي هذا إلى استبدال JSON الإعدادات المستخدم في سير عمل هذه الدورة (LMS، الاحتفاظ، الإكمال، إلخ). تأكد من صحة المفاتيح — سيصبح هذا ساري المفعول فورًا.",
+        "cancel": "إلغاء",
+        "confirm": "نعم، احفظ",
+        "saving": "جارٍ الحفظ…"
+    },
+    "snippets": {
+        "moodleLabel": "Moodle (MOODLE_SETTING)",
+        "moodleName": "إعدادات تكامل Moodle",
+        "learnDashLabel": "LearnDash (LMS_SETTING)",
+        "learnDashName": "إعدادات LMS",
+        "courseSettingsLabel": "إعدادات الدورة (COURSE_SETTING)",
+        "courseSettingsName": "إعدادات الدورة"
+    }
+}

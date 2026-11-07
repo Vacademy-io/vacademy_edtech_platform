@@ -19,12 +19,15 @@ export interface AssessmentActionVisibility {
     canCreate: boolean;
     canEdit: boolean;
     canDelete: boolean;
+    /** Create / edit / delete / reorder folders and move assessments between them. */
+    canManageFolders: boolean;
 }
 
 const resolve = (settings: AssessmentActionSettings | undefined): AssessmentActionVisibility => ({
     canCreate: settings?.showCreateAssessment !== false,
     canEdit: settings?.showEditAssessment !== false,
     canDelete: settings?.showDeleteAssessment !== false,
+    canManageFolders: settings?.showManageFolders !== false,
 });
 
 const readFromCache = (): AssessmentActionVisibility =>

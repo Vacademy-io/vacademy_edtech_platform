@@ -1,0 +1,37 @@
+{
+    "navHeading": "Offline Data Entry",
+    "defaults": {
+        "assessmentName": "Assessment"
+    },
+    "selectStudent": {
+        "subtitle": "Offline Data Entry — Select a student to begin",
+        "bulkImport": "Bulk Import"
+    },
+    "completed": {
+        "title": "Submission Complete",
+        "summaryPrefix": "Offline responses for ",
+        "summarySuffix": " have been submitted and scored.",
+        "enterAnotherStudent": "Enter Another Student",
+        "backToAssessments": "Back to Assessments"
+    },
+    "responses": {
+        "back": "Back",
+        "viewMode": {
+            "table": "Table",
+            "preview": "Preview"
+        },
+        "scoringMode": {
+            "auto": "Auto",
+            "directMarks": "Direct Marks"
+        },
+        "submitAll": "Submit All Responses",
+        "noQuestionsInSection": "No questions in this section."
+    },
+    "toasts": {
+        "submitSuccess": "Offline responses submitted successfully"
+    },
+    "errors": {
+        "uploadFailed": "Could not upload \"{{fileName}}\"",
+        "submitFailed": "Failed to submit offline responses"
+    }
+}

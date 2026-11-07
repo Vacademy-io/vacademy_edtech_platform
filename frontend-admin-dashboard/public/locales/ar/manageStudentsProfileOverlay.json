@@ -1,0 +1,26 @@
+{
+    "header": {
+        "title": "الملف الشخصي لـ {{term}}",
+        "unknownName": "غير معروف",
+        "photoAlt": "صورة الملف الشخصي"
+    },
+    "leadTier": {
+        "hot": "ساخن",
+        "warm": "دافئ",
+        "cold": "بارد",
+        "titleSimple": "مستوى العميل المحتمل {{tier}}",
+        "titleWithScore": "مستوى العميل المحتمل {{tier}} · النتيجة {{score}}"
+    },
+    "nav": {
+        "prevLearner": "المتعلم السابق (←)",
+        "nextLearner": "المتعلم التالي (→)",
+        "close": "إغلاق (Esc)"
+    },
+    "contextStrip": {
+        "enrollmentNo": "رقم التسجيل",
+        "joined": "تاريخ الانضمام",
+        "city": "المدينة",
+        "email": "البريد الإلكتروني",
+        "phone": "الهاتف"
+    }
+}

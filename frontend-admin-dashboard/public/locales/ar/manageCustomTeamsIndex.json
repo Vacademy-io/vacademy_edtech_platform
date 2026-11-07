@@ -1,0 +1,8 @@
+{
+    "helmetTitle": "إدارة {{termPlural}}",
+    "heading": "إدارة {{termPlural}}",
+    "subtitle": "إدارة ومراقبة جميع بوابات {{termPlural}} الخاصة بك في مكان واحد.",
+    "tabs": {
+        "registrationLinks": "روابط التسجيل"
+    }
+}

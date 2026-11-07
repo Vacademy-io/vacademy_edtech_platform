@@ -14,10 +14,12 @@ import vacademy.io.admin_core_service.features.audience.dto.ProcessedFormDataDTO
 import vacademy.io.admin_core_service.features.audience.entity.FormWebhookConnector;
 import vacademy.io.admin_core_service.features.audience.repository.FormWebhookConnectorRepository;
 import vacademy.io.admin_core_service.features.audience.strategy.AdPlatformStrategy;
+import vacademy.io.admin_core_service.features.audience.strategy.GoogleLeadFormStrategy;
 import vacademy.io.admin_core_service.features.audience.strategy.MetaLeadAdsStrategy;
 import vacademy.io.common.exceptions.VacademyException;
 import vacademy.io.common.logging.SentryLogger;
 
+import java.time.LocalDateTime;
 import java.util.*;
 
 /**
@@ -52,6 +54,12 @@ public class AdPlatformWebhookService {
 
     @Autowired
     private MetaLeadAdsStrategy metaLeadAdsStrategy;
+
+    @Autowired
+    private GoogleLeadFormStrategy googleLeadFormStrategy;
+
+    @Autowired
+    private AdCampaignRouteService campaignRouteService;
 
     // ── Strategy registry (built once at startup via @PostConstruct) ─────────
 
@@ -131,27 +139,136 @@ public class AdPlatformWebhookService {
 
     // ── Google webhook handling ───────────────────────────────────────────────
 
+    /** HTTP status + message the controller answers Google with. */
+    public record GoogleWebhookResult(int status, String message) {
+        static GoogleWebhookResult ok() { return new GoogleWebhookResult(200, null); }
+    }
+
     /**
-     * Handle Google Lead Form webhook identified by googleKey (= connector.vendorId).
+     * Handle a Google Lead Form webhook identified by googleKey (= connector.vendorId).
+     *
+     * Deliberately SYNCHRONOUS (unlike Meta): Google retries a 5XX and drops a 4XX, so
+     * the status has to reflect what actually happened to the lead. The old async version
+     * answered 200 before even looking up the key, which made Google's "Send test data"
+     * report success for a wrong key and turned every processing failure into a lead lost
+     * with nothing but a log line. Same synchronous shape as the Zoho form webhook.
+     *
+     * Outcomes: unknown key → 404, unreadable JSON → 400, google_key mismatch → 401
+     * (config errors, a retry can't fix them); test lead → 200, nothing created; real
+     * lead saved (or deduped / discarded by routing) → 200; anything else → 500 + Sentry,
+     * so Google redelivers. A redelivery is safe: the lead resolves to the same user and
+     * the per-audience duplicate guard drops it if the first attempt did land.
      */
-    @Async("workflowTaskExecutor")
-    public void handleGoogleWebhookAsync(String googleKey, String rawBody) {
+    public GoogleWebhookResult handleGoogleWebhook(String googleKey, String rawBody) {
         FormWebhookConnector connector = connectorRepository
-                .findByVendorIdAndIsActiveTrue(googleKey)
+                .findFirstByVendorAndVendorIdAndIsActiveTrueOrderByUpdatedAtDesc("GOOGLE_LEAD_ADS", googleKey)
                 .orElse(null);
-
         if (connector == null) {
-            log.warn("No active GOOGLE_LEAD_ADS connector for key={}", googleKey);
-            return;
+            // The key is a credential — log only enough of it to match a support ticket.
+            log.warn("Google lead webhook for unknown key {}…", keyHint(googleKey));
+            return new GoogleWebhookResult(404,
+                    "No active connector for this webhook URL. Copy the URL again from Settings → Ad Integrations.");
         }
 
-        if (!"GOOGLE_LEAD_ADS".equals(connector.getVendor())) {
-            log.warn("Connector {} is not a GOOGLE_LEAD_ADS connector", connector.getId());
-            return;
+        JsonNode root;
+        try {
+            root = objectMapper.readTree(rawBody);
+        } catch (Exception e) {
+            root = null;
+        }
+        if (root == null || !root.isObject()) {
+            log.warn("Unreadable Google lead payload for connector {}", connector.getId());
+            return new GoogleWebhookResult(400, "Request body is not a JSON object");
         }
 
-        AdPlatformStrategy strategy = getStrategy("GOOGLE_LEAD_ADS");
-        processLeadsFromStrategy(strategy, rawBody, connector);
+        if (!googleLeadFormStrategy.googleKeyMatches(root, connector.getVendorId())) {
+            log.warn("google_key mismatch for connector {}", connector.getId());
+            recordGoogleDelivery(connector, "ACTION_REQUIRED",
+                    "Google reached this connector, but the Key on the Google Ads lead form does not match. "
+                            + "Copy the key again from Setup & status.");
+            return new GoogleWebhookResult(401,
+                    "The Key set on the Google Ads lead form does not match this connector's key.");
+        }
+
+        if (root.path("is_test").asBoolean(false)) {
+            // Acknowledge so Google's "Send test data" shows success, but create nothing:
+            // a test lead would otherwise become a real user, enter the workflows and
+            // email the admins.
+            log.info("Google test lead received for connector {} — acknowledged, not saved", connector.getId());
+            recordGoogleDelivery(connector, "ACTIVE", null);
+            return GoogleWebhookResult.ok();
+        }
+
+        String leadId = root.path("lead_id").asText(null);
+        try {
+            List<NormalizedLeadData> leads = googleLeadFormStrategy.extractAndFetchLeads(rawBody, connector);
+            if (leads.isEmpty()) {
+                // extractAndFetchLeads only returns empty when its own parsing threw.
+                throw new IllegalStateException("Google lead payload produced no lead");
+            }
+            String unroutableCampaign = null;
+            for (NormalizedLeadData lead : leads) {
+                // Each campaign can feed its own list; unmapped ones use the catch-all.
+                if (campaignRouteService.autoCreatesLists(connector)) {
+                    try {
+                        campaignRouteService.ensureAutoList(connector, lead.getCampaignId());
+                    } catch (Exception e) {
+                        // Never lose the lead over its list: it falls back to the catch-all.
+                        log.warn("Could not auto-create a list for campaign {} on connector {}: {}",
+                                lead.getCampaignId(), connector.getId(), e.getMessage());
+                    }
+                }
+                AdCampaignRouteService.RouteDecision route =
+                        campaignRouteService.decide(connector, lead.getCampaignId());
+                lead.setRoutedAudienceId(route.audienceId());
+                if (route.unusableAudienceId() != null) unroutableCampaign = lead.getCampaignId();
+                submitNormalizedLead(lead, connector);
+                campaignRouteService.recordLead(connector, lead.getCampaignId());
+            }
+            if (unroutableCampaign != null) {
+                recordGoogleDelivery(connector, "ACTION_REQUIRED", "Campaign " + unroutableCampaign
+                        + " is routed to a list that was deleted or is no longer active, so its leads are "
+                        + "going to the main list. Pick another list for it in Setup & status.");
+            } else {
+                recordGoogleDelivery(connector, "ACTIVE", null);
+            }
+            return GoogleWebhookResult.ok();
+        } catch (Exception e) {
+            // Our own validation messages ("Audience campaign is not active") tell the admin
+            // what to fix; anything else is ours to fix, and Sentry already has it.
+            String reason = e instanceof VacademyException && StringUtils.hasText(e.getMessage())
+                    ? e.getMessage().replaceAll("[.\\s]+$", "")
+                    : "an unexpected error; our team has been alerted";
+            recordGoogleDelivery(connector, "ACTION_REQUIRED",
+                    "Google delivered a lead but it could not be saved: " + reason + ". Google will retry.");
+            log.error("Failed to ingest Google lead {} for connector {}", leadId, connector.getId(), e);
+            Map<String, String> tags = new LinkedHashMap<>();
+            tags.put("feature", "ad_platform_connector");
+            tags.put("vendor", "GOOGLE_LEAD_ADS");
+            tags.put("connector_id", connector.getId());
+            if (connector.getInstituteId() != null) tags.put("institute_id", connector.getInstituteId());
+            if (leadId != null) tags.put("platform_lead_id", leadId);
+            SentryLogger.logError(e, "Google lead ingest failed — Google will retry", tags);
+            return new GoogleWebhookResult(500, "Lead could not be saved; please retry");
+        }
+    }
+
+    /**
+     * Stamp the latest delivery outcome on the connector for the admin's Setup & status
+     * view (and the connector table's Action-needed badge). Best effort: a failed write
+     * must never change what Google is told.
+     */
+    private void recordGoogleDelivery(FormWebhookConnector connector, String status, String detail) {
+        try {
+            connectorRepository.updateDeliveryStatus(connector.getId(), LocalDateTime.now(), status, detail);
+        } catch (Exception e) {
+            log.warn("Could not record Google delivery status for connector {}: {}",
+                    connector.getId(), e.getMessage());
+        }
+    }
+
+    private static String keyHint(String key) {
+        return key == null ? "null" : key.substring(0, Math.min(4, key.length()));
     }
 
     // ── Core processing ───────────────────────────────────────────────────────
@@ -220,8 +337,10 @@ public class AdPlatformWebhookService {
     // Note: @Transactional omitted intentionally — self-invocation from @Async bypasses AOP.
     // audienceService.submitLeadFromFormWebhook() is itself @Transactional.
     private void submitNormalizedLead(NormalizedLeadData lead, FormWebhookConnector connector) {
-        // Resolve routing rules to find actual audience
-        String audienceId = resolveAudience(lead, connector);
+        // A campaign route (Google) wins; otherwise resolve the connector's routing rules.
+        String audienceId = StringUtils.hasText(lead.getRoutedAudienceId())
+                ? lead.getRoutedAudienceId()
+                : resolveAudience(lead, connector);
         if (audienceId == null) {
             log.info("No matching audience for lead {} — discarded per no_match_action",
                     lead.getPlatformLeadId());
@@ -240,16 +359,21 @@ public class AdPlatformWebhookService {
         leadEnricher.composeFullName(formFields);
         leadEnricher.mergeDefaults(formFields, connector.getDefaultValuesJson());
 
+        Map<String, String> metadata = new LinkedHashMap<>();
+        metadata.put("platform_lead_id", lead.getPlatformLeadId() != null ? lead.getPlatformLeadId() : "");
+        metadata.put("source_type", lead.getSourceType() != null ? lead.getSourceType() : "");
+        metadata.put("is_test", String.valueOf(lead.isTestLead()));
+        // Campaign attribution — AudienceService stores source_id on the lead and the
+        // utm_* keys as a utm_attribution row.
+        if (StringUtils.hasText(lead.getCampaignId())) metadata.put("source_id", lead.getCampaignId());
+        if (lead.getUtmParams() != null) metadata.putAll(lead.getUtmParams());
+
         ProcessedFormDataDTO processedData = ProcessedFormDataDTO.builder()
                 .email(lead.getEmail())
                 .fullName(lead.getFullName())
                 .phone(lead.getPhone())
                 .formFields(formFields)
-                .metadata(Map.of(
-                        "platform_lead_id", lead.getPlatformLeadId() != null ? lead.getPlatformLeadId() : "",
-                        "source_type", lead.getSourceType() != null ? lead.getSourceType() : "",
-                        "is_test", String.valueOf(lead.isTestLead())
-                ))
+                .metadata(metadata)
                 .build();
 
         audienceService.submitLeadFromFormWebhook(audienceId, processedData, connector.getVendor());

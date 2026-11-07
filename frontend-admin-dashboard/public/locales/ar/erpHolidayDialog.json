@@ -1,0 +1,32 @@
+{
+    "headingAdd": "إضافة عطلة",
+    "headingEdit": "تعديل العطلة",
+    "actions": {
+        "cancel": "إلغاء",
+        "saving": "جارٍ الحفظ…",
+        "saveChanges": "حفظ التغييرات",
+        "addHoliday": "إضافة عطلة"
+    },
+    "fields": {
+        "name": "الاسم",
+        "namePlaceholder": "يوم الاستقلال",
+        "date": "التاريخ",
+        "type": "النوع",
+        "optionalHoliday": "عطلة اختيارية",
+        "optionalHolidayDescription": "يختار الموظفون ما إذا كانوا سيأخذونها، في حدود المخصص الذي تحدده سياسة الإجازات لديك — فهي ليست يوم إغلاق للجميع.",
+        "description": "الوصف",
+        "descriptionPlaceholder": "أي شيء يجب أن يعرفه الموظفون عن هذا اليوم"
+    },
+    "toast": {
+        "updated": "تم تحديث العطلة",
+        "added": "تمت إضافة العطلة"
+    },
+    "errors": {
+        "saveFailed": "تعذّر حفظ العطلة."
+    },
+    "validation": {
+        "nameRequired": "أدخل اسمًا للعطلة",
+        "dateRequired": "اختر التاريخ",
+        "descriptionTooLong": "اجعل الوصف أقل من 500 حرف"
+    }
+}

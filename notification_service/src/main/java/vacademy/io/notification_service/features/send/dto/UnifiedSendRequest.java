@@ -84,11 +84,15 @@ public class UnifiedSendRequest {
         private String emailSubject;
         private String emailBody;
         private String emailType; // UTILITY_EMAIL, PROMOTIONAL_EMAIL, TRANSACTIONAL_EMAIL
+        /** Bulk marketing mail: add the unsubscribe footer when that keeps the same sender. */
+        private Boolean commercialBulk;
         private String previewText; // Hidden preview text shown in inbox before opening
         @JsonProperty("fromEmail")
         private String fromEmail;
         @JsonProperty("fromName")
         private String fromName;
+        /** The Message-ID this email answers, so it joins that thread in the recipient's inbox. */
+        private String inReplyTo;
 
         // WhatsApp options
         private String headerType; // image, video, document
@@ -121,5 +125,14 @@ public class UnifiedSendRequest {
         // General
         private String source;  // caller identifier for logging
         private String sourceId;
+
+        /**
+         * Who is sending, for the WhatsApp Inbox and student timeline ("sent by workflow X"):
+         * WORKFLOW + workflow id + workflow name. Stored on the log row's message_payload only —
+         * notification_log.source / correlation_id are left exactly as before.
+         */
+        private String originType;
+        private String originId;
+        private String originName;
     }
 }

@@ -1,0 +1,20 @@
+{
+    "emptyState": {
+        "title": "Ressources",
+        "description": "Gérez et consultez vos fichiers importés.",
+        "heading": "Aucun fichier trouvé.",
+        "body": "Aucune ressource n'est disponible pour le moment, ou les détails des fichiers associés sont incomplets."
+    },
+    "title": "Ressources",
+    "description": "Liste des fichiers uniques, triés du plus récemment créé au plus ancien.",
+    "table": {
+        "fileName": "Nom du fichier",
+        "type": "Type",
+        "createdOn": "Créé le",
+        "actions": "Actions"
+    },
+    "actions": {
+        "download": "Télécharger {{fileName}}",
+        "noFile": "-"
+    }
+}

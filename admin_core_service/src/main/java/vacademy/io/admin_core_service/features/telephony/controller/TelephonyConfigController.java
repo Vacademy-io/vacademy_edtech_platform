@@ -8,6 +8,7 @@ import org.springframework.transaction.support.TransactionSynchronization;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
 import org.springframework.web.bind.annotation.*;
 import vacademy.io.admin_core_service.features.audience.service.TokenEncryptionService;
+import vacademy.io.admin_core_service.features.admin_activity_logs.annotation.Auditable;
 import vacademy.io.admin_core_service.features.telephony.controller.dto.TelephonyConfigDTO;
 import vacademy.io.admin_core_service.features.telephony.controller.dto.TelephonyConfigViewDTO;
 import vacademy.io.admin_core_service.features.telephony.core.TelephonyConfigCache;
@@ -59,6 +60,15 @@ public class TelephonyConfigController {
 
     @PutMapping("/{instituteId}")
     @Transactional
+    @Auditable(
+            entityType = "TELEPHONY_CONFIG",
+            action = "UPDATE",
+            entityIdExpr = "#instituteId",
+            // The body carries provider API tokens; REDACTED masks the usual
+            // key names but not every provider's, so capture nothing.
+            payload = Auditable.PayloadMode.NONE,
+            descriptionExpr = "'updated calling settings' + (#body?.providerType != null "
+                    + "? ' (provider ' + #body.providerType + ')' : '')")
     public ResponseEntity<TelephonyConfigViewDTO> upsert(
             @PathVariable String instituteId,
             @RequestBody TelephonyConfigDTO body,

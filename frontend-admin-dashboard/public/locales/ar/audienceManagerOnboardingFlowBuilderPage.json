@@ -1,0 +1,77 @@
+{
+    "navHeading": {
+        "fallback": "مسار التهيئة"
+    },
+    "actions": {
+        "backToFlows": "العودة إلى مسارات التهيئة",
+        "retry": "إعادة المحاولة",
+        "activating": "جارٍ التفعيل…",
+        "activateFlow": "تفعيل المسار",
+        "addStep": "إضافة خطوة",
+        "edit": "تعديل",
+        "cancel": "إلغاء",
+        "removing": "جارٍ الإزالة…",
+        "remove": "إزالة"
+    },
+    "states": {
+        "loadingFlow": "جارٍ تحميل المسار…",
+        "loadFlowError": "تعذّر تحميل مسار التهيئة هذا.",
+        "addStepBeforeActivating": "أضف خطوة واحدة على الأقل قبل تفعيل هذا المسار.",
+        "loadingSteps": "جارٍ تحميل الخطوات…",
+        "noStepsTitle": "لا توجد خطوات بعد",
+        "noStepsDescription": "أضف الخطوة الأولى (مثل نموذج تسجيل) للبدء في بناء هذا المسار."
+    },
+    "tags": {
+        "optional": "اختياري",
+        "grantsStudentRole": "يمنح دور الطالب",
+        "sendsCredentials": "يرسل بيانات الدخول"
+    },
+    "statusLabels": {
+        "draft": "مسودة",
+        "active": "نشِط",
+        "archived": "مؤرشف"
+    },
+    "stepTypeLabels": {
+        "FORM": "نموذج"
+    },
+    "deleteDialog": {
+        "title": "هل تريد إزالة هذه الخطوة؟",
+        "description": "سيتم أرشفة \"{{stepName}}\". يحتفظ المتعلمون الذين وصلوا بالفعل إلى هذه الخطوة بتقدمهم، لكن الخطوة لن تظهر لأي شخص يبدأ المسار بعد ذلك."
+    },
+    "toasts": {
+        "reorderError": "تعذّر حفظ الترتيب الجديد. جارٍ التراجع.",
+        "stepRemoved": "تمت إزالة الخطوة",
+        "removeError": "تعذّرت إزالة الخطوة.",
+        "flowActivated": "تم تفعيل المسار",
+        "activateError": "تعذّر تفعيل المسار."
+    },
+    "sections": {
+        "steps": "Steps",
+        "stepsDragHint": "Drag the handle to reorder",
+        "howItRuns": "How it runs",
+        "people": "People on this flow"
+    },
+    "meta": {
+        "fields_one": "{{count}} field",
+        "fields_other": "{{count}} fields",
+        "roleEdit": "{{role}} edit",
+        "roleView": "{{role}} view"
+    },
+    "flow": {
+        "startTitle": "Started from a profile",
+        "startText": "Someone picks this flow on a lead or {{learner}} profile",
+        "optional": "Optional — can be skipped",
+        "required": "Required",
+        "doneTitle": "Onboarding complete",
+        "doneText": "The instance is marked Completed"
+    },
+    "people": {
+        "unavailable": "Counts are not available right now.",
+        "status": {
+            "IN_PROGRESS": "In progress",
+            "COMPLETED": "Completed",
+            "ABANDONED": "Abandoned",
+            "CANCELLED": "Cancelled"
+        }
+    }
+}

@@ -32,6 +32,14 @@ public class ComplexPaymentOptionDTO {
      * omit it leave the existing value untouched.
      */
     private Boolean requireApproval;
+    /**
+     * FIXED (default): installments are part of the plan. FLEXIBLE: the plan holds fee
+     * types and amounts only; the admin picks the number of installments and the gap for
+     * each learner at enrollment. Set at creation.
+     */
+    private String scheduleMode;
+    /** Defaults for a FLEXIBLE plan (prefill + schedule used when none is chosen). */
+    private FlexibleScheduleDefaultsDTO flexibleDefaults;
     private List<FeeTypeDTO> feeTypes;
 
     @Builder.Default

@@ -1,0 +1,56 @@
+{
+    "navHeading": "إنشاء إعلان",
+    "fixIssues_zero": "أصلح {{count}} مشكلة قبل إنشاء هذا الإعلان.",
+    "fixIssues_one": "أصلح مشكلة واحدة قبل إنشاء هذا الإعلان.",
+    "fixIssues_two": "أصلح مشكلتين قبل إنشاء هذا الإعلان.",
+    "fixIssues_few": "أصلح {{count}} مشكلات قبل إنشاء هذا الإعلان.",
+    "fixIssues_many": "أصلح {{count}} مشكلة قبل إنشاء هذا الإعلان.",
+    "fixIssues_other": "أصلح {{count}} مشكلة قبل إنشاء هذا الإعلان.",
+    "toast": {
+        "createdImmediate": "تم إنشاء الإعلان وإضافته إلى قائمة الإرسال.",
+        "scheduled": "تمت جدولة الإعلان."
+    },
+    "sections": {
+        "howItWillLook": "كيف سيبدو"
+    },
+    "actions": {
+        "reviewAndPreview": "مراجعة ومعاينة",
+        "keepEditing": "متابعة التحرير",
+        "createAndSend": "إنشاء وإرسال",
+        "scheduleAnnouncement": "جدولة الإعلان",
+        "creating": "جارٍ الإنشاء…"
+    },
+    "dialog": {
+        "reviewHeading": "مراجعة ومعاينة"
+    },
+    "header": {
+        "subtitle": "One message to in-app placements, push, email and WhatsApp — for any mix of audiences, now, later or on repeat."
+    },
+    "steps": {
+        "label": "Announcement progress",
+        "message": "Message",
+        "recipients": "Recipients",
+        "placements": "Placements",
+        "channels": "Channels",
+        "schedule": "Schedule",
+        "review": "Review"
+    },
+    "rail": {
+        "livePreview": "Live preview",
+        "soFar": "So far",
+        "audiences": "Audiences",
+        "audienceCount_one": "{{count}} audience",
+        "audienceCount_other": "{{count}} audiences",
+        "none": "None yet",
+        "appearsIn": "Appears in",
+        "channels": "Delivered via",
+        "inProductOnly": "In-product only",
+        "when": "When"
+    },
+    "footer": {
+        "blocked_one": "{{count}} issue to fix before creating.",
+        "blocked_other": "{{count}} issues to fix before creating.",
+        "ready": "Ready to go",
+        "progress": "{{done}} of {{total}} steps complete"
+    }
+}

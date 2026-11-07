@@ -1,0 +1,215 @@
+name: Figma BV eval (tier 1)
+
+# Two jobs:
+#
+#   unit   ALWAYS runs, needs no secrets: the eval's scorer unit tests and the
+#          design_import model <-> Flyway migration parity guard.
+#   tier1  The Brahm Varchas golden (ai_service/evals/figma_bv): the
+#          design_import plan on the real Figma inputs, scored against the
+#          committed site fixture.
+#
+# The tier-1 inputs are CLIENT MATERIAL kept in a PRIVATE S3 prefix and never
+# committed (see ai_service/evals/figma_bv/README.md). They are pulled with
+# ENVIRONMENT secrets of the `figma-bv-eval` GitHub environment, not
+# repository secrets: the repository is at GitHub's 100-secret limit, so a new
+# repository secret is refused. The environment needs no required reviewers
+# and a deployment-branch policy that allows PR runs ("No restriction").
+#
+# Environment `figma-bv-eval`:
+#   secret   FIGMA_BV_S3_URI          s3://<private-bucket>/<prefix> (required to run)
+#   secret   FIGMA_BV_AWS_ACCESS_KEY  READ-ONLY key: s3:GetObject on that prefix only
+#   secret   FIGMA_BV_AWS_SECRET_KEY  (required when FIGMA_BV_S3_URI is set)
+#   variable FIGMA_BV_AWS_REGION      optional, default us-east-1
+#
+# Without FIGMA_BV_S3_URI tier1 SKIPS (green, with a notice): forks,
+# Dependabot, or a repo without the bucket. There is deliberately NO fallback
+# to the deploy key (AWS_ACCESS_KEY): this job runs PR code.
+#
+# The AWS credentials are given ONLY to the download step (the preinstalled
+# aws CLI, file list read with jq); dependency install and the eval run
+# without them. Nothing is uploaded as an artifact: the scorecard can quote
+# the client's copy.
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - "ai_service/evals/**"
+      - "ai_service/app/services/figma_design_import.py"
+      - "ai_service/app/services/assistant_tools_design_import.py"
+      - "ai_service/app/services/assistant_tools_website_edit.py"
+      - "ai_service/app/models/design_import.py"
+      - "ai_service/app/data/catalogue_schema_catalog.json"
+      - "ai_service/tests/test_figma_bv_eval.py"
+      - "ai_service/tests/test_design_import_migration_parity.py"
+      - "ai_service/requirements.txt"
+      - "admin_core_service/src/main/resources/db/migration/V*__mcp_design_import_part.sql"
+      - "frontend-admin-dashboard/src/routes/manage-pages/-components/__fixtures__/brahm-varchas-site.json"
+      - ".github/workflows/figma-bv-eval.yml"
+  push:
+    branches: [main]
+    paths:
+      - "ai_service/evals/**"
+      - "ai_service/app/services/figma_design_import.py"
+      - "ai_service/app/services/assistant_tools_design_import.py"
+      - "ai_service/app/services/assistant_tools_website_edit.py"
+      - "ai_service/app/models/design_import.py"
+      - "ai_service/app/data/catalogue_schema_catalog.json"
+      - "ai_service/tests/test_figma_bv_eval.py"
+      - "ai_service/tests/test_design_import_migration_parity.py"
+      - "ai_service/requirements.txt"
+      - "admin_core_service/src/main/resources/db/migration/V*__mcp_design_import_part.sql"
+      - "frontend-admin-dashboard/src/routes/manage-pages/-components/__fixtures__/brahm-varchas-site.json"
+      - ".github/workflows/figma-bv-eval.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: figma-bv-eval-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # No secrets, no client material: always runs.
+  unit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+          cache-dependency-path: ai_service/requirements.txt
+
+      # The eval and the parity test import only SQLAlchemy and pydantic(-settings)
+      # outside the standard library; the full requirements.txt (playwright,
+      # whisper, opencv, ...) would cost minutes for nothing. Pins come from
+      # requirements.txt so the two cannot drift.
+      - name: Install minimal dependencies
+        working-directory: ai_service
+        run: |
+          python -m pip install --upgrade pip
+          grep -iE '^(sqlalchemy|pydantic-settings)==' requirements.txt > "$RUNNER_TEMP/req-min.txt"
+          pip install pytest -r "$RUNNER_TEMP/req-min.txt"
+
+      - name: Scorer unit tests + migration parity
+        working-directory: ai_service
+        run: python -m pytest -q tests/test_design_import_migration_parity.py tests/test_figma_bv_eval.py
+
+  tier1:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment: figma-bv-eval
+    env:
+      FIGMA_BV_S3_URI: ${{ secrets.FIGMA_BV_S3_URI }}
+      HAS_READ_KEY: ${{ secrets.FIGMA_BV_AWS_ACCESS_KEY != '' && secrets.FIGMA_BV_AWS_SECRET_KEY != '' }}
+    steps:
+      - name: Check for the private eval inputs
+        id: gate
+        run: |
+          if [ -z "$FIGMA_BV_S3_URI" ]; then
+            echo "::notice title=Figma BV eval skipped::FIGMA_BV_S3_URI is not set in the figma-bv-eval environment (fork, Dependabot, or no private bucket). See ai_service/evals/figma_bv/README.md."
+            echo "### Figma BV eval: skipped" >> "$GITHUB_STEP_SUMMARY"
+            echo "The private inputs are not configured (environment secret \`FIGMA_BV_S3_URI\` in \`figma-bv-eval\`), so nothing was scored." >> "$GITHUB_STEP_SUMMARY"
+            echo "run=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          case "$FIGMA_BV_S3_URI" in
+            s3://?*/?*) ;;
+            *) echo "::error title=Figma BV eval::FIGMA_BV_S3_URI must look like s3://<bucket>/<prefix>"; exit 1 ;;
+          esac
+          if [ "$HAS_READ_KEY" != "true" ]; then
+            echo "::error title=Figma BV eval::FIGMA_BV_S3_URI is set but FIGMA_BV_AWS_ACCESS_KEY / FIGMA_BV_AWS_SECRET_KEY are not. Add a read-only key (s3:GetObject on the prefix) to the figma-bv-eval environment; the deploy key is never used here."
+            exit 1
+          fi
+          echo "run=true" >> "$GITHUB_OUTPUT"
+
+      - name: Checkout
+        if: steps.gate.outputs.run == 'true'
+        uses: actions/checkout@v4
+
+      # Credentials live in this step's env only, and the step runs no repo
+      # code: the file list comes from expected.json via jq, so the job and
+      # the runner can never disagree.
+      - name: Download eval inputs (private S3)
+        if: steps.gate.outputs.run == 'true'
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.FIGMA_BV_AWS_ACCESS_KEY }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.FIGMA_BV_AWS_SECRET_KEY }}
+          AWS_DEFAULT_REGION: ${{ vars.FIGMA_BV_AWS_REGION || 'us-east-1' }}
+        run: |
+          set -euo pipefail
+          dest="$RUNNER_TEMP/figma-bv-inputs"
+          mkdir -p "$dest"
+          uri="${FIGMA_BV_S3_URI%/}"
+          jq -r '.metadata, .design_code[]' ai_service/evals/figma_bv/expected.json \
+            | while read -r name; do
+                case "$name" in */* | .* | "") echo "::error::unexpected input name '$name' in expected.json"; exit 1 ;; esac
+                aws s3 cp "$uri/$name" "$dest/$name" --only-show-errors
+              done
+          ls -l "$dest"
+
+      - name: Set up Python
+        if: steps.gate.outputs.run == 'true'
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+          cache-dependency-path: ai_service/requirements.txt
+
+      # Same minimal set as the unit job: the eval plans in well under a second
+      # and imports only SQLAlchemy and pydantic(-settings) beyond the stdlib.
+      - name: Install minimal dependencies
+        if: steps.gate.outputs.run == 'true'
+        working-directory: ai_service
+        run: |
+          python -m pip install --upgrade pip
+          grep -iE '^(sqlalchemy|pydantic-settings)==' requirements.txt > "$RUNNER_TEMP/req-min.txt"
+          pip install -r "$RUNNER_TEMP/req-min.txt"
+
+      - name: Run tier-1 eval (--check)
+        if: steps.gate.outputs.run == 'true'
+        timeout-minutes: 5
+        working-directory: ai_service
+        env:
+          APP_ENV: stage
+          FIGMA_BV_INPUTS: ${{ runner.temp }}/figma-bv-inputs
+          FIGMA_BV_S3_URI: ""
+        run: python -m evals.figma_bv.run --check --json "$RUNNER_TEMP/figma-bv-card.json"
+
+      - name: Scorecard summary
+        if: always() && steps.gate.outputs.run == 'true'
+        run: |
+          card="$RUNNER_TEMP/figma-bv-card.json"
+          if [ ! -f "$card" ]; then
+            echo "### Figma BV eval: no scorecard (the run failed before scoring)" >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+          python3 -I - "$card" >> "$GITHUB_STEP_SUMMARY" << 'PY'
+          import json, sys
+          card = json.load(open(sys.argv[1]))
+          s, t = card["sections"], card["tokens"]
+          print(f"### Figma BV eval: {'PASS' if card['passed'] else 'FAIL'}")
+          print()
+          print("| check | result |")
+          print("|---|---|")
+          for name, ok in card["checks"].items():
+              print(f"| {name} | {'pass' if ok else 'FAIL'} |")
+          print()
+          print(f"patterns P={s['precision']:.2f} R={s['recall']:.2f}, palette {t['palette_within_de5']}/{t['palette_roles']} within dE 5, "
+                f"plan {card.get('plan_seconds')} s")
+          variants = card.get("variants") or {}
+          if variants:
+              print()
+              print("**Variants (report-only, not gated):**")
+              print()
+              for name, line in variants.items():
+                  print(f"- {name}: {line}")
+          PY
+
+      - name: Remove the client inputs
+        if: always() && steps.gate.outputs.run == 'true'
+        run: rm -rf "$RUNNER_TEMP/figma-bv-inputs" "$RUNNER_TEMP/figma-bv-card.json"

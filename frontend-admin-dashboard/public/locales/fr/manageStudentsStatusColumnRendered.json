@@ -1,0 +1,10 @@
+{
+    "apiStatus": {
+        "uploadFailed": "Échec de l'importation",
+        "errorResolution": "Consultez les détails de l'erreur pour plus d'informations",
+        "unknownError": "Erreur inconnue"
+    },
+    "validationErrors": {
+        "errorsButton": "Erreurs ({{count}})"
+    }
+}

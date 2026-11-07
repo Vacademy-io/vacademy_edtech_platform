@@ -1,0 +1,45 @@
+{
+  "menu": {
+    "editUser": "Edit",
+    "resendInvite": "Resend Invite",
+    "cancelInvite": "Cancel Invite"
+  },
+  "editUser": {
+    "title": "Edit",
+    "nameLabel": "Full Name",
+    "namePlaceholder": "Full name (First and Last)",
+    "emailLabel": "Email",
+    "emailPlaceholder": "Enter Email",
+    "roleTypeLabel": "Role Type",
+    "submit": "Edit User",
+    "validation": {
+      "nameRequired": "Full name is required",
+      "emailRequired": "Email is required",
+      "emailInvalid": "Invalid email format",
+      "roleRequired": "At least one role type is required"
+    },
+    "toast": {
+      "success": "Invitation for this user has been updated successfully!"
+    }
+  },
+  "resendInvite": {
+    "title": "Resend Invite",
+    "attention": "Attention",
+    "confirmPrefix": "Are you sure you want to resend invite to",
+    "confirmSuffix": "?",
+    "confirmButton": "Yes",
+    "toast": {
+      "success": "Invitation for this user has been resent successfully!"
+    }
+  },
+  "cancelInvite": {
+    "title": "Cancel Invite",
+    "attention": "Attention",
+    "confirmPrefix": "Are you sure you want to cancel invite for",
+    "confirmSuffix": "?",
+    "confirmButton": "Yes",
+    "toast": {
+      "success": "Invitation for this user has been cancelled successfully!"
+    }
+  }
+}

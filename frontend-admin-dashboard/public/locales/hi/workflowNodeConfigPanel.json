@@ -1,0 +1,235 @@
+{
+    "common": {
+        "sourceList": "स्रोत सूची",
+        "resultKey": "रिज़ल्ट कुंजी",
+        "templateVariables": "टेम्पलेट वेरिएबल",
+        "selectANode": "कॉन्फ़िगर करने के लिए एक नोड चुनें",
+        "nodeName": "नोड का नाम",
+        "nodeNamePlaceholder": "नोड का नाम दर्ज करें",
+        "requiredParameters": "आवश्यक पैरामीटर",
+        "autoFilled": "वर्कफ़्लो संदर्भ से स्वतः भरा गया",
+        "pickOrTypeValueFor": "{{param}} के लिए मान चुनें या टाइप करें...",
+        "enterParam": "{{param}} दर्ज करें...",
+        "deleteNode": "नोड हटाएं",
+        "configurationJson": "कॉन्फ़िगरेशन (JSON)"
+    },
+    "triggerScope": {
+        "noScope": "यह इवेंट पूरे इंस्टीट्यूट के लिए ट्रिगर होता है — इसे सीमित करने के लिए कुछ नहीं है।"
+    },
+    "trigger": {
+        "triggerEvent": "ट्रिगर इवेंट",
+        "selectEvent": "इवेंट चुनें..."
+    },
+    "email": {
+        "sendEmailsTo": "ईमेल किसे भेजें",
+        "selectDataSource": "डेटा स्रोत चुनें...",
+        "respondentEmails": "उत्तरदाता ईमेल (ट्रिगर से)",
+        "respondentEmailsDesc": "फ़ॉर्म सबमिशन से to/subject/body के साथ पहले से बना ईमेल",
+        "adminEmails": "एडमिन ईमेल (ट्रिगर से)",
+        "adminEmailsDesc": "एडमिन के लिए ईमेल सूचनाएं",
+        "audienceLeads": "ऑडियंस लीड (क्वेरी से)",
+        "audienceLeadsDesc": "कस्टम फ़ील्ड डेटा वाली लीड की सूची",
+        "students": "छात्र (क्वेरी से)",
+        "studentsDesc": "नाम, ईमेल, फ़ोन वाले छात्रों की सूची",
+        "enrolledStudents": "नामांकित छात्र (क्वेरी से)",
+        "enrolledStudentsDesc": "नाम, ईमेल, मोबाइल वाले नामांकित छात्रों की सूची",
+        "queryResults": "क्वेरी परिणाम ({{queryKey}})",
+        "queryResultsDesc": "क्वेरी नोड से परिणाम",
+        "connectUpstreamData": "डेटा स्रोतों का स्वतः पता लगाने के लिए ऊपर की ओर एक ट्रिगर या क्वेरी नोड जोड़ें।",
+        "pickRecipients": "प्राप्तकर्ताओं की सूची चुनें...",
+        "emailTemplate": "ईमेल टेम्पलेट",
+        "emailTemplateOptional": "(वैकल्पिक — डेटा स्रोत के पहले से बने ईमेल का उपयोग करने के लिए छोड़ें)",
+        "noTemplatePlaceholder": "कोई टेम्पलेट नहीं (डेटा स्रोत का subject/body उपयोग करें)",
+        "noTemplateSearchEmpty": "आपकी खोज से कोई ईमेल टेम्पलेट मेल नहीं खाता।",
+        "sendToField": "भेजने के लिए फ़ील्ड",
+        "sendToFieldHint": "(प्रत्येक आइटम से कौन-सी ईमेल फ़ील्ड उपयोग करनी है)",
+        "autoDetectToEmail": "स्वतः पता लगाएं (to, email)",
+        "studentEmail": "छात्र ईमेल",
+        "fatherParentEmail": "पिता/अभिभावक ईमेल",
+        "guardianEmail": "अभिभावक ईमेल",
+        "motherEmail": "माता का ईमेल",
+        "toPrebuiltRecipient": "To (पहले से बना प्राप्तकर्ता)",
+        "templateVariablesHint": "प्रत्येक टेम्पलेट प्लेसहोल्डर को डेटा फ़ील्ड से मैप करें। ड्रॉपडाउन से चुनें या कस्टम फ़ील्ड नाम टाइप करें।",
+        "selectAField": "एक फ़ील्ड चुनें...",
+        "itemFieldsGroup": "आइटम फ़ील्ड (सूची से)",
+        "contextFieldsGroup": "संदर्भ / ट्रिगर फ़ील्ड",
+        "customFieldsGroup": "कस्टम फ़ील्ड (नाम मैन्युअल रूप से टाइप करें)",
+        "typeCustomFieldBelow": "नीचे कस्टम फ़ील्ड का नाम टाइप करें",
+        "customValue": "कस्टम: {{value}}",
+        "customFieldPlaceholder": "या कस्टम फ़ील्ड नाम टाइप करें (जैसे पूरा नाम, फ़ोन नंबर)",
+        "field": {
+            "recipientEmail": "प्राप्तकर्ता ईमेल",
+            "emailSubject": "ईमेल विषय",
+            "email": "ईमेल",
+            "parentEmail": "अभिभावक ईमेल",
+            "parentName": "अभिभावक का नाम",
+            "mobileNumber": "मोबाइल नंबर",
+            "userId": "यूज़र आईडी",
+            "studentName": "छात्र का नाम",
+            "studentEmail": "छात्र ईमेल",
+            "enrollmentNumber": "नामांकन संख्या",
+            "attendancePercentage": "उपस्थिति %",
+            "totalDuration": "कुल अवधि (मिनट)",
+            "chatCount": "चैट गिनती",
+            "handRaiseCount": "हैंड रेज़ गिनती",
+            "sessionsAttended": "उपस्थित सत्र",
+            "reportStartDate": "रिपोर्ट प्रारंभ तिथि",
+            "reportEndDate": "रिपोर्ट समाप्ति तिथि",
+            "fullName": "पूरा नाम",
+            "username": "यूज़रनेम",
+            "batchId": "बैच आईडी"
+        },
+        "context": {
+            "instituteName": "इंस्टीट्यूट का नाम (ऑटो)",
+            "instituteId": "इंस्टीट्यूट आईडी (ऑटो)",
+            "learnerUsername": "लर्नर यूज़रनेम (ट्रिगर से)",
+            "learnerPassword": "लर्नर पासवर्ड (ट्रिगर से)",
+            "learnerFullName": "लर्नर का पूरा नाम (ट्रिगर से)",
+            "learnerEmail": "लर्नर ईमेल (ट्रिगर से)",
+            "learnerMobile": "लर्नर मोबाइल (ट्रिगर से)",
+            "liveSessionTitle": "लाइव सेशन शीर्षक (ट्रिगर से)",
+            "sessionStartTime": "सेशन प्रारंभ समय (ट्रिगर से)",
+            "sessionMeetLink": "सेशन मीट लिंक (ट्रिगर से)",
+            "campaignName": "कैंपेन का नाम (ट्रिगर से)",
+            "submissionTime": "सबमिशन समय (ट्रिगर से)"
+        }
+    },
+    "whatsapp": {
+        "template": "व्हाट्सएप टेम्पलेट",
+        "selectTemplate": "टेम्पलेट चुनें...",
+        "noTemplateSearchEmpty": "आपकी खोज से कोई व्हाट्सएप टेम्पलेट मेल नहीं खाता।",
+        "sendTo": "व्हाट्सएप किसे भेजें",
+        "selectRecipients": "प्राप्तकर्ता चुनें...",
+        "connectUpstreamRecipients": "प्राप्तकर्ताओं का स्वतः पता लगाने के लिए ऊपर की ओर एक ट्रिगर या क्वेरी नोड जोड़ें।",
+        "leadSubmitter": "लीड सबमिट करने वाला (ट्रिगर से)",
+        "leadSubmitterDesc": "फ़ॉर्म सबमिट करने वाला एकमात्र यूज़र — उसका mobileNumber उपयोग किया जाता है",
+        "audienceLeads": "ऑडियंस लीड (क्वेरी से)",
+        "audienceLeadsDesc": "कस्टम फ़ील्ड में फ़ोन वाली लीड",
+        "students": "छात्र (क्वेरी से)",
+        "studentsDesc": "mobileNumber वाले छात्र",
+        "enrolledStudents": "नामांकित छात्र (क्वेरी से)",
+        "enrolledStudentsDesc": "mobileNumber वाले नामांकित छात्र",
+        "queryResults": "क्वेरी परिणाम ({{queryKey}})",
+        "queryResultsDesc": "क्वेरी नोड से परिणाम",
+        "valueForField": "{{field}} के लिए मान..."
+    },
+    "http": {
+        "requestType": "अनुरोध प्रकार",
+        "externalApi": "बाहरी API",
+        "internalService": "आंतरिक सेवा",
+        "url": "URL",
+        "internalUrlPlaceholder": "/admin-core-service/v1/...",
+        "externalUrlPlaceholder": "https://api.example.com/endpoint",
+        "method": "मेथड",
+        "headers": "हेडर",
+        "optional": "(वैकल्पिक)",
+        "queryParameters": "क्वेरी पैरामीटर",
+        "requestBody": "रिक्वेस्ट बॉडी",
+        "requestBodyJson": "(JSON)",
+        "resultKeyHint": "प्रतिक्रिया #ctx['{{resultKey}}']['body'] के रूप में उपलब्ध होगी",
+        "condition": "शर्त",
+        "conditionHint": "(वैकल्पिक — गलत होने पर अनुरोध छोड़ें)",
+        "conditionPlaceholder": "हमेशा निष्पादित करने के लिए खाली छोड़ें"
+    },
+    "query": {
+        "query": "क्वेरी",
+        "selectQuery": "एक क्वेरी चुनें...",
+        "optionalFilters": "वैकल्पिक फ़िल्टर",
+        "optional": "(वैकल्पिक)"
+    },
+    "delay": {
+        "waitMode": "प्रतीक्षा मोड",
+        "fixedDuration": "निश्चित अवधि",
+        "untilNextWeekday": "अगले सप्ताह के दिन तक",
+        "waitFor": "प्रतीक्षा करें",
+        "pauseResumeAfter_one": "वर्कफ़्लो {{count}} दिन बाद स्वतः रुक कर फिर से शुरू होगा।",
+        "pauseResumeAfter_other": "वर्कफ़्लो {{count}} दिनों बाद स्वतः रुक कर फिर से शुरू होगा।",
+        "waitUntilNext": "अगले तक प्रतीक्षा करें",
+        "timezone": "टाइमज़ोन",
+        "pausesUntil": "अगले {{day}} को {{time}} बजे तक रुकता है। उसी सप्ताह के दिन पड़ने वाला इवेंट पूरा एक सप्ताह प्रतीक्षा करता है।",
+        "day": {
+            "monday": "सोमवार",
+            "tuesday": "मंगलवार",
+            "wednesday": "बुधवार",
+            "thursday": "गुरुवार",
+            "friday": "शुक्रवार",
+            "saturday": "शनिवार",
+            "sunday": "रविवार"
+        },
+        "unit": {
+            "seconds": "सेकंड",
+            "minutes": "मिनट",
+            "hours": "घंटे",
+            "days": "दिन"
+        }
+    },
+    "filter": {
+        "pickListToFilter": "फ़िल्टर करने के लिए एक सूची चुनें...",
+        "keepItemsWhere": "आइटम रखें जहां",
+        "saveFilteredListAs": "फ़िल्टर की गई सूची इस नाम से सहेजें"
+    },
+    "aggregate": {
+        "pickListToAggregate": "एग्रीगेट करने के लिए एक सूची चुनें...",
+        "operations": "ऑपरेशन"
+    },
+    "condition": {
+        "trueLabel": "सही लेबल",
+        "falseLabel": "गलत लेबल"
+    },
+    "loop": {
+        "sourceExpression": "स्रोत एक्सप्रेशन",
+        "pickListVariable": "एक सूची वेरिएबल चुनें...",
+        "itemVariableName": "आइटम वेरिएबल नाम",
+        "itemVariableHint": "डाउनस्ट्रीम नोड्स में हर आइटम को #ctx['{variableName}'] के रूप में एक्सेस करें",
+        "outputKey": "आउटपुट कुंजी"
+    },
+    "merge": {
+        "waitForNodeIds": "प्रतीक्षा हेतु नोड आईडी (कॉमा से अलग)",
+        "waitForHint": "अपस्ट्रीम नोड्स की आईडी जिनका आउटपुट जारी रखने से पहले मौजूद होना चाहिए।",
+        "strategy": "रणनीति",
+        "waitAll": "सभी अपस्ट्रीम नोड्स की प्रतीक्षा करें",
+        "waitAny": "किसी भी अपस्ट्रीम के पूरा होने पर जारी रखें"
+    },
+    "scheduleTask": {
+        "delayDuration": "देरी अवधि (ISO-8601)",
+        "delayDurationHint": "PT1H = 1 घंटा, P3D = 3 दिन, PT30M = 30 मिनट",
+        "targetWorkflowId": "लक्ष्य वर्कफ़्लो आईडी (वैकल्पिक)",
+        "targetWorkflowIdPlaceholder": "वर्तमान वर्कफ़्लो के लिए खाली छोड़ें",
+        "contextKeysToForward": "आगे भेजने के लिए संदर्भ कुंजियां (कॉमा से अलग)"
+    },
+    "updateRecord": {
+        "table": "टेबल",
+        "selectTable": "टेबल चुनें...",
+        "findRecordsWhere": "रिकॉर्ड खोजें जहां",
+        "setValuesTo": "मान इस पर सेट करें",
+        "columnPlaceholder": "कॉलम",
+        "matchValuePlaceholder": "मिलान मान",
+        "newValuePlaceholder": "नया मान"
+    },
+    "pushNotification": {
+        "title": "शीर्षक",
+        "titlePlaceholder": "नया असाइनमेंट पोस्ट किया गया!",
+        "body": "बॉडी",
+        "bodyPlaceholder": "अपने कोर्स में नया असाइनमेंट देखें",
+        "recipientTokens": "प्राप्तकर्ता टोकन",
+        "recipientTokensPlaceholder": "FCM टोकन सूची चुनें...",
+        "dataPayload": "डेटा पेलोड (JSON, वैकल्पिक)"
+    },
+    "leadStatus": {
+        "label": "लीड स्टेटस",
+        "selectStatus": "स्टेटस चुनें..."
+    },
+    "callAi": {
+        "agent": "एजेंट",
+        "selectAgent": "एजेंट चुनें...",
+        "infoPrefix": "एजेंट सेटिंग्स → AI कॉलिंग (कैंपेन / AI एजेंट) में रजिस्टर किए जाते हैं। कॉल का परिणाम इस रूप में वापस आता है",
+        "infoOutcomeSuffix": "(ASSIGN | STOP | RETRY),",
+        "infoAnd": "और",
+        "provider": "प्रोवाइडर (वैकल्पिक)",
+        "instituteDefault": "इंस्टीट्यूट डिफ़ॉल्ट",
+        "instituteDefaultWithProvider": "इंस्टीट्यूट डिफ़ॉल्ट ({{provider}})",
+        "ignoreAssignedGuardLabel": "उन लीड को भी कॉल करें जिनके पास पहले से काउंसलर है",
+        "ignoreAssignedGuardHint": "डिफ़ॉल्ट रूप से बंद: बॉट उन लीड को छोड़ देता है जो पहले से किसी काउंसलर के पास हैं। जिन वर्कफ़्लो का उद्देश्य जानबूझकर पहले से असाइन की गई लीड को टारगेट करना है — जैसे किसी लीड को फिर से कॉल करना जिसे काउंसलर ने अभी DNP मार्क किया है — उनके लिए इसे चालू करें, वरना नोड बिना कॉल किए रुक जाएगा। दैनिक कॉल सीमाएं अभी भी लागू होती हैं।",
+        "extraMetadata": "एजेंट के लिए अतिरिक्त मेटाडेटा (JSON, वैकल्पिक)"
+    }
+}

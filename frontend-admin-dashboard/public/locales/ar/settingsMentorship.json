@@ -1,0 +1,91 @@
+{
+    "waFieldOptions": {
+        "auto": "تلقائي (مطابقة حسب الاسم)",
+        "recipientName": "اسم المستلم",
+        "mentorName": "اسم الموجّه",
+        "studentName": "اسم الطالب",
+        "sessionTitle": "عنوان الجلسة",
+        "sessionDatetime": "تاريخ ووقت الجلسة",
+        "declineReason": "سبب الرفض (طلب موجّه)"
+    },
+    "placeholderHint": {
+        "label": "العناصر النائبة:"
+    },
+    "channel": {
+        "email": {
+            "label": "البريد الإلكتروني",
+            "subjectLabel": "الموضوع"
+        },
+        "inAppAlert": {
+            "label": "تنبيه داخل التطبيق",
+            "titleLabel": "العنوان"
+        },
+        "push": {
+            "label": "إشعار فوري",
+            "titleLabel": "العنوان"
+        },
+        "messageLabel": "الرسالة",
+        "usesDefault": "يستخدم رسالة النظام الافتراضية.",
+        "customize": "تخصيص",
+        "resetToDefault": "إعادة التعيين إلى الإعداد الافتراضي"
+    },
+    "whatsapp": {
+        "label": "واتساب",
+        "requiresTemplate": "يتطلب قالب Meta معتمدًا.",
+        "approvedTemplateLabel": "القالب المعتمد",
+        "selectTemplatePlaceholder": "اختر قالبًا معتمدًا",
+        "noTemplatesFound": "لم يتم العثور على قوالب واتساب معتمدة.",
+        "noTemplateMatchesSearch": "لا يوجد قالب معتمد يطابق بحثك.",
+        "mapVariables": "ربط متغيرات القالب",
+        "mapVariablesHint": "اتركه على \"تلقائي\" عندما يتطابق اسم متغير القالب بالفعل مع أحد حقول الموجّه."
+    },
+    "header": {
+        "title": "إعدادات التوجيه",
+        "subtitle": "اختر كيفية إشعار المتعلمين بكل حدث من أحداث التوجيه."
+    },
+    "actions": {
+        "reset": "إعادة تعيين",
+        "save": "حفظ التغييرات",
+        "saving": "جارٍ الحفظ…"
+    },
+    "toasts": {
+        "saveSuccess": "تم حفظ إعدادات التوجيه",
+        "saveError": "تعذّر حفظ إعدادات التوجيه."
+    },
+    "whoToNotify": "من يتم إشعاره",
+    "learnerMessageAndChannels": "رسالة المتعلم والقنوات",
+    "assignment": {
+        "title": "تم تعيين موجّه",
+        "description": "عند تعيين موجّه لطالب.",
+        "notifyStudent": "إشعار الطالب",
+        "notifyMentor": "إشعار الموجّه"
+    },
+    "request": {
+        "title": "طلب موجّه",
+        "description": "عندما يطلب متعلم موجّهًا من \"البحث عن موجّه\".",
+        "notifyMentorRequested": "إبلاغ الموجّه بأن أحدهم طلبه",
+        "notifyStudentDeclined": "إبلاغ المتعلم عند الرفض",
+        "approvalNote": "الموافقة لا ترسل أي شيء إضافي — يحصل المتعلم بالفعل على رسالة \"لديك موجّه جديد\" من عملية الإقران نفسها.",
+        "declineMessageAndChannels": "رسالة الرفض والقنوات"
+    },
+    "booking": {
+        "title": "تم حجز الجلسة",
+        "description": "عندما يحجز متعلم جلسة فردية."
+    },
+    "cancellation": {
+        "title": "تم إلغاء الجلسة",
+        "description": "عند إلغاء جلسة."
+    },
+    "sessionReminder": {
+        "title": "تذكير بالجلسة",
+        "description": "قبل جلسة قادمة.",
+        "sendReminders": "إرسال تذكيرات بالجلسات",
+        "hoursBeforeSession": "عدد الساعات قبل الجلسة"
+    },
+    "checkinReminder": {
+        "title": "تذكير بالمتابعة",
+        "description": "عندما لا يلتقي المتعلم بموجّهه منذ فترة.",
+        "sendNudges": "إرسال تذكيرات المتابعة",
+        "daysWithoutSession": "عدد الأيام دون جلسة"
+    }
+}

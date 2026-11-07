@@ -1,0 +1,32 @@
+{
+    "placeholder": "यहाँ लिखना शुरू करने के लिए क्लिक करें...",
+    "customBlocks": {
+        "image": { "title": "छवि", "description": "एक छवि अपलोड करें" },
+        "video": { "title": "वीडियो", "description": "एक वीडियो फ़ाइल अपलोड करें" },
+        "embed": { "title": "एम्बेड", "description": "YouTube, Vimeo, Loom या कोई भी URL" },
+        "file": { "title": "फ़ाइल", "description": "डाउनलोड योग्य फ़ाइल जोड़ें" },
+        "callout": { "title": "कॉलआउट", "description": "हाइलाइट किया गया नोट बॉक्स" },
+        "audio": { "title": "ऑडियो", "description": "एक ऑडियो क्लिप अपलोड करें" },
+        "pdfViewer": { "title": "PDF व्यूअर", "description": "शिक्षार्थियों के लिए इनलाइन PDF" },
+        "math": { "title": "गणित (LaTeX)", "description": "KaTeX से रेंडर किया गया फॉर्मूला" },
+        "mermaid": { "title": "मरमेड डायग्राम", "description": "फ्लोचार्ट, सीक्वेंस और अधिक" },
+        "fillBlanks": { "title": "रिक्त स्थान भरें", "description": "इंटरैक्टिव क्लोज़ अभ्यास" },
+        "toc": { "title": "विषय-सूची", "description": "हेडिंग्स से ऑटो-जनरेट की गई" },
+        "jupyter": { "title": "Jupyter नोटबुक", "description": "GitHub से नोटबुक एम्बेड करें" },
+        "scratch": { "title": "Scratch प्रोजेक्ट", "description": "एक Scratch प्रोजेक्ट एम्बेड करें" },
+        "flashcard": { "title": "फ्लैशकार्ड", "description": "आगे/पीछे पलटने वाला कार्ड" },
+        "tabs": { "title": "टैब्स", "description": "टैब्ड कंटेंट सेक्शन" },
+        "quiz": { "title": "क्विज़", "description": "इनलाइन MCQ या सही/गलत" },
+        "timeline": { "title": "टाइमलाइन", "description": "चरण-दर-चरण टाइमलाइन" },
+        "columns": { "title": "कॉलम", "description": "साथ-साथ लेआउट" },
+        "accordion": {
+            "title": "एकॉर्डियन",
+            "description": "संक्षिप्त करने योग्य सेक्शन — हर एक रिच कंटेंट को सपोर्ट करता है"
+        },
+        "code": { "title": "कोड", "description": "सिंटैक्स-हाइलाइटेड कोड स्निपेट" },
+        "codeEditor": {
+            "title": "कोड एडिटर (रन करने योग्य)",
+            "description": "शिक्षार्थियों के लिए इंटरैक्टिव रनर"
+        }
+    }
+}

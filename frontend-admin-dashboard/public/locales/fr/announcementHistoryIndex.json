@@ -1,0 +1,207 @@
+{
+    "heading": "Historique des annonces",
+    "tabs": {
+        "all": "Tout",
+        "planned": "Planifiées",
+        "past": "Passées"
+    },
+    "toolbar": {
+        "searchLabel": "Rechercher un titre",
+        "searchPlaceholder": "Rechercher…",
+        "statusLabel": "Statut",
+        "statusAll": "Tout",
+        "fromLabel": "Du",
+        "toLabel": "Au"
+    },
+    "status": {
+        "DRAFT": "Brouillon",
+        "PENDING_APPROVAL": "En attente d'approbation",
+        "REJECTED": "Rejetée",
+        "SCHEDULED": "Planifiée",
+        "ACTIVE": "Active",
+        "INACTIVE": "Inactive",
+        "DELIVERED": "Livrée",
+        "CANCELLED": "Annulée"
+    },
+    "results_one": "{{count}} résultat",
+    "results_many": "{{count}} résultats",
+    "results_other": "{{count}} résultats",
+    "sizeLabel": "Taille",
+    "prev": "Précédent",
+    "next": "Suivant",
+    "page": "Page {{page}}",
+    "table": {
+        "title": "Titre",
+        "status": "Statut",
+        "modes": "Modes",
+        "mediums": "Canaux",
+        "schedule": "Planification",
+        "createdBy": "Créée par",
+        "createdAt": "Créée le",
+        "actions": "Actions",
+        "loading": "Chargement…",
+        "empty": "Aucune annonce",
+        "recipientsPrefix": "À :",
+        "recipientsMore": "+{{count}} de plus",
+        "channels": "Envoyé via",
+        "loadFailed": "Impossible de charger les annonces.",
+        "noMatch": "Aucune annonce de cette page ne correspond à la recherche.",
+        "announcement": "Announcement",
+        "appearsIn": "Appears in · via",
+        "inProductOnly": "In-product only"
+    },
+    "actions": {
+        "view": "Voir",
+        "stats": "Statistiques",
+        "approve": "Approuver",
+        "reject": "Rejeter",
+        "deliverNow": "Envoyer maintenant",
+        "delete": "Supprimer",
+        "more": "Plus d'actions"
+    },
+    "toasts": {
+        "statsLoadFailed": "Échec du chargement des statistiques",
+        "approved": "Approuvée",
+        "approveFailed": "Échec de l'approbation",
+        "rejected": "Rejetée",
+        "rejectFailed": "Échec du rejet",
+        "deliveryTriggered": "Envoi déclenché",
+        "triggerFailed": "Échec du déclenchement",
+        "deleted": "Supprimée",
+        "deleteFailed": "Échec de la suppression"
+    },
+    "detailsDialog": {
+        "title": "Détails de l'annonce",
+        "content": "Contenu",
+        "modes": "Modes",
+        "mediums": "Canaux",
+        "recipients": "Destinataires",
+        "close": "Fermer",
+        "viewStats": "Voir les statistiques",
+        "createdLine": "Par {{name}} · {{when}}",
+        "system": "Système",
+        "createdBy": "Créé par",
+        "createdAt": "Créé le",
+        "schedule": "Planification",
+        "noContent": "Aucun contenu.",
+        "recipientsCount_one": "Destinataires ({{count}})",
+        "recipientsCount_other": "Destinataires ({{count}})",
+        "noRecipients": "Aucun destinataire."
+    },
+    "statsDialog": {
+        "title": "Statistiques de livraison",
+        "loading": "Chargement des statistiques...",
+        "overviewTitle": "Aperçu de la livraison",
+        "tiles": {
+            "recipients": "Destinataires",
+            "delivered": "Livrées",
+            "read": "Lues",
+            "failed": "Échouées",
+            "dismissed": "Ignorées",
+            "dismissRate": "Taux d'ignorance"
+        },
+        "emailEventsTitle": "Événements e-mail",
+        "viaSes": "via SES",
+        "emailTiles": {
+            "emailsSent": "E-mails envoyés",
+            "delivered": "Livrés",
+            "opened": "Ouverts",
+            "clicked": "Cliqués",
+            "bounced": "Rejetés (bounce)",
+            "rejected": "Refusés",
+            "complained": "Signalés comme spam",
+            "awaitingEvents": "En attente d'événements"
+        },
+        "pendingNote": "Les e-mails ont été envoyés mais aucun événement SES n'est encore revenu. En local, vérifiez que le webhook SES → SNS → notification_service est configuré.",
+        "noEmails": "Aucun e-mail n'a été envoyé pour cette annonce.",
+        "recipientsSection": {
+            "title": "Destinataires",
+            "loadFailed": "Échec du chargement des destinataires",
+            "loading": "Chargement des destinataires...",
+            "empty": "Aucun destinataire trouvé pour cette annonce.",
+            "table": {
+                "name": "Destinataire",
+                "mode": "Mode",
+                "status": "Statut",
+                "seenAt": "Vu le",
+                "dismissedAt": "Ignoré le",
+                "deliveredAt": "Livré le"
+            },
+            "pagePagination": "Page {{page}} sur {{totalPages}}",
+            "titleCount_one": "Destinataires ({{count}})",
+            "titleCount_other": "Destinataires ({{count}})"
+        },
+        "nav": {
+            "recipients": "Destinataires",
+            "overview": "Vue d'ensemble",
+            "email": "E-mail"
+        },
+        "rates": {
+            "delivery": "Taux de livraison",
+            "read": "Taux de lecture",
+            "dismiss": "Taux de fermeture"
+        }
+    },
+    "rejectDialog": {
+        "title": "Rejeter l'annonce",
+        "reasonPlaceholder": "Motif",
+        "cancel": "Annuler",
+        "reject": "Rejeter"
+    },
+    "schedule": {
+        "none": "-",
+        "immediate": "Immédiat",
+        "oneTime": "Ponctuel",
+        "recurring": "Récurrent",
+        "cron": "CRON : {{expr}}",
+        "nextRun": "Prochain : {{when}}"
+    },
+    "subheading": "Toutes les annonces et alertes système envoyées par cet institut, avec leurs destinataires.",
+    "createAnnouncement": "Créer une annonce",
+    "retry": "Réessayer",
+    "recipients": {
+        "unknownUser": "Utilisateur inconnu",
+        "unknownBatch": "Groupe"
+    },
+    "recipientTypes": {
+        "USER": "Utilisateur",
+        "ROLE": "Rôle",
+        "PACKAGE_SESSION": "Groupe",
+        "PACKAGE_SESSION_COMMA_SEPARATED_ORG_ROLES": "Rôles du groupe",
+        "TAG": "Tag",
+        "CUSTOM_FIELD_FILTER": "Filtre de champ personnalisé",
+        "AUDIENCE": "Audience"
+    },
+    "roles": {
+        "ADMIN": "Administrateur",
+        "TEACHER": "Enseignant",
+        "STUDENT": "Élève",
+        "SYSTEM": "Système"
+    },
+    "modes": {
+        "SYSTEM_ALERT": "Alerte système",
+        "DASHBOARD_PIN": "Épinglé au tableau de bord",
+        "DM": "Message direct",
+        "STREAM": "Flux",
+        "RESOURCES": "Ressources",
+        "COMMUNITY": "Communauté",
+        "TASKS": "Tâches",
+        "APP_OVERLAY": "Superposition d'app"
+    },
+    "mediums": {
+        "WHATSAPP": "WhatsApp",
+        "PUSH_NOTIFICATION": "Notification push",
+        "EMAIL": "E-mail"
+    },
+    "messageStatus": {
+        "PENDING": "En attente",
+        "SENT": "Envoyé",
+        "DELIVERED": "Livré",
+        "FAILED": "Échec",
+        "READ": "Lu"
+    },
+    "deleteDialog": {
+        "title": "Supprimer l'annonce ?",
+        "description": "« {{title}} » sera retirée de l'historique. Action irréversible."
+    }
+}

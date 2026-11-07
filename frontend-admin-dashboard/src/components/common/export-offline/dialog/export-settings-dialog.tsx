@@ -15,9 +15,8 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
 import { useExportSettings, type ExportSettings } from '../contexts/export-settings-context';
 import { useCallback, useState } from 'react';
-import { Plus } from 'lucide-react';
 import type { CustomField, CustomFieldType } from '../types/question';
-import { Minus } from '@phosphor-icons/react';
+import { Minus, Plus } from '@phosphor-icons/react';
 import { AnswerSpacingDialog } from './answer-spacing-dialog';
 import {
     Accordion,
@@ -33,9 +32,16 @@ interface ExportSettingsDialogProps {
     open: boolean;
     onOpenChange: (open: boolean) => void;
     sections: Section[]; // Add this prop
+    /** An OMR set is being printed: sets and randomizing are fixed by the saved set. */
+    lockedSetCode?: string;
 }
 
-export function ExportSettingsDialog({ open, onOpenChange, sections }: ExportSettingsDialogProps) {
+export function ExportSettingsDialog({
+    open,
+    onOpenChange,
+    sections,
+    lockedSetCode,
+}: ExportSettingsDialogProps) {
     const { settings, updateSettings } = useExportSettings();
 
     const handleSettingChange = useCallback(
@@ -70,7 +76,9 @@ export function ExportSettingsDialog({ open, onOpenChange, sections }: ExportSet
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="max-h-[90vh] w-3/5 max-w-2xl overflow-y-auto">
+            <DialogContent
+                className="max-h-[90vh] w-3/5 max-w-2xl overflow-y-auto" /* design-lint-ignore: viewport-relative height cap, no token for 90vh */
+            >
                 <DialogHeader>
                     <DialogTitle>Export Settings</DialogTitle>
                 </DialogHeader>
@@ -419,7 +427,18 @@ export function ExportSettingsDialog({ open, onOpenChange, sections }: ExportSet
                         <AccordionItem value="paper">
                             <AccordionTrigger className="text-base">Paper Sets</AccordionTrigger>
                             <AccordionContent>
-                                <div className="flex flex-col gap-y-2">
+                                {lockedSetCode && (
+                                    <p className="mb-2 text-sm text-muted-foreground">
+                                        This is OMR Set {lockedSetCode}: its question and option
+                                        order is fixed by the saved set, so sets and randomizing
+                                        cannot be changed here.
+                                    </p>
+                                )}
+                                {/* A disabled fieldset disables every input and checkbox in it. */}
+                                <fieldset
+                                    disabled={!!lockedSetCode}
+                                    className="flex flex-col gap-y-2 disabled:opacity-60"
+                                >
                                     <div className="flex items-center gap-2">
                                         <Label>Create Question Papers Sets</Label>
                                         <div className="flex items-center space-x-2">
@@ -507,7 +526,7 @@ export function ExportSettingsDialog({ open, onOpenChange, sections }: ExportSet
                                         />
                                         <label htmlFor="randomizeOptions">Randomize Options</label>
                                     </div>
-                                </div>
+                                </fieldset>
                             </AccordionContent>
                         </AccordionItem>
                         <AccordionItem value="custom">

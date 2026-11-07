@@ -1,0 +1,7 @@
+{
+    "navHeading": "Manage {{term}}",
+    "performanceOverview": {
+        "title": "Performance overview",
+        "description": "Where conversions come from and how many calls your team makes per day"
+    }
+}

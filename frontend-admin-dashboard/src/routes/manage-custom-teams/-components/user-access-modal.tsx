@@ -1,5 +1,6 @@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { useQuery } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 import { fetchUserAccessDetails } from '@/lib/auth/facultyAccessUtils';
 import { getInstituteId } from '@/constants/helper';
 import { DashboardLoader } from '@/components/core/dashboard-loader';
@@ -13,6 +14,7 @@ interface UserAccessModalProps {
 }
 
 export function UserAccessModal({ open, onOpenChange, userId, userName }: UserAccessModalProps) {
+    const { t } = useTranslation('manageCustomTeamsUserAccessModal');
     const instituteId = getInstituteId();
 
     const { data: accessData, isLoading } = useQuery({
@@ -25,9 +27,9 @@ export function UserAccessModal({ open, onOpenChange, userId, userName }: UserAc
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent className="sm:max-w-[700px]">
                 <DialogHeader>
-                    <DialogTitle>Access Details</DialogTitle>
+                    <DialogTitle>{t('title')}</DialogTitle>
                     <DialogDescription>
-                        View access mappings and permissions assigned to {userName}.
+                        {t('description', { userName })}
                     </DialogDescription>
                 </DialogHeader>
                 <div className="mt-4">
@@ -35,31 +37,31 @@ export function UserAccessModal({ open, onOpenChange, userId, userName }: UserAc
                         <div className="py-8"><DashboardLoader /></div>
                     ) : !accessData || accessData.accessMappings.length === 0 ? (
                         <div className="py-8 text-center text-sm text-gray-500">
-                            No special access mapped for this user.
+                            {t('noAccess')}
                         </div>
                     ) : (
                         <div className="max-h-[60vh] overflow-y-auto rounded-md border">
                             <Table>
                                 <TableHeader>
                                     <TableRow>
-                                        <TableHead>Type</TableHead>
-                                        <TableHead>Name</TableHead>
-                                        <TableHead>Permissions</TableHead>
-                                        <TableHead>Linkage</TableHead>
+                                        <TableHead>{t('columns.type')}</TableHead>
+                                        <TableHead>{t('columns.name')}</TableHead>
+                                        <TableHead>{t('columns.permissions')}</TableHead>
+                                        <TableHead>{t('columns.linkage')}</TableHead>
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
                                     {accessData.accessMappings.map((mapping, idx) => (
                                         <TableRow key={mapping.id || idx}>
                                             <TableCell className="font-medium text-xs text-gray-700 text-nowrap">
-                                                {mapping.accessType === 'PACKAGE' ? 'Course' :
-                                                    mapping.accessType === 'PACKAGE_SESSION' ? 'Session' :
-                                                        mapping.accessType === 'ENROLL_INVITE' ? 'Invite' :
-                                                            mapping.accessType === 'INSTITUTE' ? 'Global' :
+                                                {mapping.accessType === 'PACKAGE' ? t('accessType.course') :
+                                                    mapping.accessType === 'PACKAGE_SESSION' ? t('accessType.session') :
+                                                        mapping.accessType === 'ENROLL_INVITE' ? t('accessType.invite') :
+                                                            mapping.accessType === 'INSTITUTE' ? t('accessType.global') :
                                                                 mapping.accessType}
                                             </TableCell>
                                             <TableCell className="text-sm">
-                                                {mapping.name || mapping.accessId || 'N/A'}
+                                                {mapping.name || mapping.accessId || t('notAvailable')}
                                             </TableCell>
                                             <TableCell>
                                                 <div className="flex flex-wrap gap-1">
@@ -73,7 +75,7 @@ export function UserAccessModal({ open, onOpenChange, userId, userName }: UserAc
                                                 </div>
                                             </TableCell>
                                             <TableCell className="text-xs text-gray-500">
-                                                {mapping.linkageType || 'DIRECT'}
+                                                {mapping.linkageType || t('linkageType.direct')}
                                             </TableCell>
                                         </TableRow>
                                     ))}

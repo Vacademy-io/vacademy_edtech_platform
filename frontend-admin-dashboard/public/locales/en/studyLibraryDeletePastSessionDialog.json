@@ -1,0 +1,18 @@
+{
+    "title": "Delete this past {{term}}?",
+    "description": "This {{term}} will be removed from the Past list for everyone, along with the attendance, recordings and feedback shown for it. You can't undo this from the dashboard.",
+    "points": {
+        "onlyThisOccurrence": "Only this {{term}} is deleted. The other classes in the series stay as they are.",
+        "noNotification": "Learners will not be notified.",
+        "audited": "Your name and the time will be recorded in the Activity Log."
+    },
+    "actions": {
+        "cancel": "Cancel",
+        "delete": "Delete {{term}}",
+        "deleting": "Deleting…"
+    },
+    "toast": {
+        "deleted": "{{term}} deleted",
+        "deleteFailed": "Couldn't delete. Please try again."
+    }
+}

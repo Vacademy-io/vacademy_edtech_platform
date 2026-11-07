@@ -1,0 +1,15 @@
+{
+    "toast": {
+        "errorAddingDoubt": "प्रश्न में उत्तर जोड़ने में त्रुटि हुई"
+    },
+    "doubt": {
+        "status": {
+            "unknown": "अज्ञात",
+            "resolved": "हल हो गया",
+            "unresolved": "अनसुलझा"
+        },
+        "anonymousUser": "अज्ञात उपयोगकर्ता",
+        "timestampLabel": "समय: {{time}}",
+        "pageLabel": "पृष्ठ: {{page}}"
+    }
+}

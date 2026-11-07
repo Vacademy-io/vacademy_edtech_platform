@@ -11,6 +11,9 @@
 // Decision: production will use a managed Judge0 with API key, NOT self-hosted.
 
 import { LangId, getLanguageDef } from '../constants/code-editor';
+import i18n from '@/i18n';
+
+const NS = 'studyLibraryJudge0Client';
 
 const env = (import.meta as unknown as { env?: Record<string, string | undefined> }).env ?? {};
 
@@ -98,7 +101,9 @@ export async function executeOnJudge0(input: Judge0RunInput): Promise<Judge0RunR
         });
 
         if (!res.ok) {
-            throw new Error(`Judge0 HTTP ${res.status}: ${res.statusText}`);
+            throw new Error(
+                i18n.t(`${NS}:httpError`, { status: res.status, statusText: res.statusText })
+            );
         }
 
         const json = await res.json();
@@ -116,7 +121,7 @@ export async function executeOnJudge0(input: Judge0RunInput): Promise<Judge0RunR
 
 // Combined output as a single text blob (useful for the editor's console pane).
 export function judge0OutputToConsoleText(r: Judge0RunResult): string {
-    if (r.compileOutput) return `Compile Error:\n${r.compileOutput}`;
+    if (r.compileOutput) return `${i18n.t(`${NS}:compileError`)}:\n${r.compileOutput}`;
     if (r.stderr) return `${r.stdout}${r.stdout && r.stderr ? '\n' : ''}${r.stderr}`;
-    return r.stdout || `(no output) — ${r.statusDescription}`;
+    return r.stdout || `${i18n.t(`${NS}:noOutput`)} — ${r.statusDescription}`;
 }

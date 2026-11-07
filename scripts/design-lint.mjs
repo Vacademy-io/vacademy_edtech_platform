@@ -3,7 +3,8 @@
  * Vacademy design-system lint — deterministic checker for UI drift.
  *
  * Flags violations of docs/design-system (raw hex, arbitrary Tailwind values,
- * inline styles, banned icon libraries) in React/CSS files.
+ * inline styles, banned icon libraries, learner primary-600..950 no-op classes,
+ * raw palette hues) in React/CSS files.
  *
  * Usage:
  *   node scripts/design-lint.mjs <file|dir> [<file|dir> ...]   # CLI / CI / lint-staged
@@ -73,6 +74,46 @@ const RULES = [
     test: /(?<![\w/-])(?:text|bg|border|divide)-gray-\d{2,3}\b|(?<![\w/-])bg-white(?![/\w-])/g,
     appliesTo: /frontend-learner-dashboard-app[\\/]src[\\/]routes[\\/]\$tagName[\\/].*\.tsx$/,
     msg: 'Catalogue renderer: prefer catalogue tokens (text-catalogue-text-*, bg-catalogue-bg*, border-catalogue-border*) so institute themes & dark mode apply.',
+  },
+  {
+    id: 'learner-primary-out-of-scale',
+    severity: 'error',
+    // The learner tailwind.config.js defines primary 50..500 ONLY, so
+    // primary-600..950 compile to nothing (a silent no-op). An ERROR in the
+    // engagement code, which is clean; a warning elsewhere, where ~300 legacy
+    // uses exist and a whole-file error would block unrelated commits.
+    test: /(?<![\w-])(?:bg|text|border(?:-[xytrbse])?|ring(?:-offset)?|from|via|to|fill|stroke|outline|divide|shadow|accent|caret|decoration|placeholder)-primary-(?:600|700|800|900|950)(?!\d)/g,
+    appliesTo: /frontend-learner-dashboard-app[\\/]src[\\/]routes[\\/](?:engagement|dashboard[\\/]-components[\\/]engagement)[\\/].*\.(tsx|ts)$/,
+    msg: 'Learner primary scale is 50..500 only — primary-600..950 compile to nothing. Use primary-500 (strongest), or a semantic token (text-foreground, text-neutral-*).',
+  },
+  {
+    id: 'learner-primary-out-of-scale-legacy',
+    severity: 'warn',
+    test: /(?<![\w-])(?:bg|text|border(?:-[xytrbse])?|ring(?:-offset)?|from|via|to|fill|stroke|outline|divide|shadow|accent|caret|decoration|placeholder)-primary-(?:600|700|800|900|950)(?!\d)/g,
+    appliesTo: /frontend-learner-dashboard-app[\\/]src[\\/](?!routes[\\/](?:engagement|dashboard[\\/]-components[\\/]engagement)[\\/]).*\.(tsx|ts)$/,
+    msg: 'Learner primary scale is 50..500 only — primary-600..950 compile to nothing.',
+  },
+  {
+    id: 'raw-palette-family',
+    severity: 'warn',
+    // Raw Tailwind palette hues bypass the institute theme (primary/secondary/
+    // tertiary) and the semantic scales (success/warning/danger/info), and
+    // their dark-mode pairing must be hand-maintained. Keep them for genuinely
+    // categorical color (chart series, subject tags) and annotate with
+    // design-lint-ignore; otherwise use a token.
+    test: /(?<![\w-])(?:bg|text|border(?:-[xytrbse])?|ring(?:-offset)?|from|via|to|fill|stroke|outline|divide|shadow|accent|caret|decoration|placeholder)-(?:sky|violet|amber|teal|emerald|rose|orange|indigo|fuchsia|cyan|pink)-(?:50|[1-9]00|950)(?!\d)/g,
+    appliesTo: /\.(tsx|ts)$/,
+    msg: 'Raw palette hue — prefer theme tokens (primary-*, secondary-*) or semantic scales (success-*, warning-*, danger-*, info-*). Categorical use: annotate with design-lint-ignore.',
+  },
+  {
+    id: 'arbitrary-grid-template',
+    severity: 'warn',
+    // grid-cols-[...] / grid-rows-[...] are not in ARBITRARY_PREFIXES, so a
+    // hand-tuned track list slipped through. Warn only: a few layouts
+    // (tables with a fixed first column) genuinely need one.
+    test: /(?<![\w-])grid-(?:cols|rows)-\[[^\]]+\]/g,
+    appliesTo: /\.(tsx|ts)$/,
+    msg: 'Arbitrary grid template — prefer grid-cols-N / flex, or a named layout; annotate with design-lint-ignore if the track list is essential.',
   },
 ];
 
@@ -179,12 +220,15 @@ async function main() {
   out.push(`Summary: ${errors.length} error(s), ${warns.length} warning(s).`);
   const report = out.join('\n');
 
+  // Set exitCode instead of calling process.exit(): exit() does not wait for a
+  // large report to drain into a pipe (`| grep`, CI log capture), so the
+  // report used to be silently truncated at ~64 KB.
   if (errors.length > 0) {
     process.stderr.write(report + '\n');
-    process.exit(2); // fails CI/lint-staged; surfaces feedback to Claude via hook
+    process.exitCode = 2; // fails CI/lint-staged; surfaces feedback to Claude via hook
   } else {
     process.stdout.write(report + '\n');
-    process.exit(0); // warnings only — don't block
+    process.exitCode = 0; // warnings only — don't block
   }
 }
 

@@ -1,0 +1,16 @@
+{
+    "toggle": {
+        "isGuardianLabel": "S'agit-il d'un tuteur ?",
+        "addGuardianButton": "+ Ajouter un tuteur",
+        "removeGuardianButton": "Supprimer le tuteur"
+    },
+    "hints": {
+        "emailRequired": "Ajoutez un e-mail à cette fiche pour activer la liaison avec un tuteur.",
+        "linkStudentPrompt": "Ajoutez ou liez l'élève que ce tuteur inscrit :",
+        "linkGuardianPrompt": "Ajoutez ou liez le tuteur de cet apprenant (facultatif) :"
+    },
+    "personLabels": {
+        "student": "Élève",
+        "guardian": "Tuteur"
+    }
+}

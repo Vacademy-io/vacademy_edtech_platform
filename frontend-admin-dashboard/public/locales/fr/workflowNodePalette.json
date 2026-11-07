@@ -1,0 +1,12 @@
+{
+    "addNodes": "Ajouter des nœuds",
+    "searchPlaceholder": "Rechercher des nœuds...",
+    "categories": {
+        "Triggers": "Déclencheurs",
+        "Data": "Données",
+        "Actions": "Actions",
+        "Notifications": "Notifications",
+        "Integrations": "Intégrations",
+        "Logic": "Logique"
+    }
+}

@@ -2,8 +2,12 @@
   "version": 1,
   "include": ["/*"],
   "exclude": [
+    "/.well-known/*",
     "/badge-library/*",
     "/email-editor/*",
+    "/locales/*",
+    "/sw.js",
+    "/service-worker.js",
     "/favicon.ico",
     "/robots.txt",
     "/styles.css",
@@ -23,6 +27,8 @@
     "/tick.png",
     "/tick.svg",
     "/vacademy-logo.svg",
+    "/evalezy-logo.svg",
+    "/evalezy-favicon.svg",
     "/vimotion-favicon.svg",
     "/vsmart-logo.png",
     "/yoga.png"

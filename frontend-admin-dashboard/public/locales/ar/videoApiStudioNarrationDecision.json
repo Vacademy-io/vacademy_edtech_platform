@@ -1,0 +1,28 @@
+{
+    "header": {
+        "title_zero": "السرد (لا توجد لقطات، {{count}})",
+        "title_one": "السرد (لقطة واحدة، {{count}})",
+        "title_two": "السرد (لقطتان، {{count}})",
+        "title_few": "السرد ({{count}} لقطات)",
+        "title_many": "السرد ({{count}} لقطة)",
+        "title_other": "السرد ({{count}} لقطة)",
+        "wordsEstimate_zero": "لا كلمات ({{count}}) · ≈ {{seconds}} ثانية",
+        "wordsEstimate_one": "كلمة واحدة ({{count}}) · ≈ {{seconds}} ثانية",
+        "wordsEstimate_two": "كلمتان ({{count}}) · ≈ {{seconds}} ثانية",
+        "wordsEstimate_few": "{{count}} كلمات · ≈ {{seconds}} ثانية",
+        "wordsEstimate_many": "{{count}} كلمة · ≈ {{seconds}} ثانية",
+        "wordsEstimate_other": "{{count}} كلمة · ≈ {{seconds}} ثانية"
+    },
+    "hooks": {
+        "pickLabel": "الجملة الافتتاحية — اختر خطافًا:",
+        "draft": "المسودة"
+    },
+    "shot": {
+        "placeholder": "لا يوجد سرد لهذه اللقطة"
+    },
+    "actions": {
+        "letAiDecide": "دع الذكاء الاصطناعي يقرر",
+        "saveAndContinue": "حفظ ومتابعة",
+        "approveAndContinue": "اعتماد ومتابعة"
+    }
+}

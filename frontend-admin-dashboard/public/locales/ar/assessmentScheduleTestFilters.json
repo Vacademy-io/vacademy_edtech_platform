@@ -1,0 +1,11 @@
+{
+    "trigger": {
+        "ariaLabelSelected": "{{label}}: {{selection}}",
+        "ariaLabelEmpty": "تصفية حسب {{label}}",
+        "clearAriaLabel": "مسح عامل التصفية {{label}}"
+    },
+    "search": {
+        "placeholder": "البحث في {{label}}...",
+        "noResults": "لم يتم العثور على نتائج."
+    }
+}

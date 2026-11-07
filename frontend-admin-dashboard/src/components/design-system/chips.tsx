@@ -307,6 +307,10 @@ export interface ChipToggleGroupProps<V extends string = string> {
     disabled?: boolean;
     className?: string;
     ariaLabel?: string;
+    /** `sm` (default) is the compact status pill; `md` is a 36px filter chip. */
+    size?: 'sm' | 'md';
+    /** `filled` (default) paints the active chip primary; `outline` tints it. */
+    variant?: 'filled' | 'outline';
 }
 
 export function ChipToggleGroup<V extends string = string>({
@@ -316,7 +320,13 @@ export function ChipToggleGroup<V extends string = string>({
     disabled,
     className,
     ariaLabel,
+    size = 'sm',
+    variant = 'filled',
 }: ChipToggleGroupProps<V>) {
+    const activeClass =
+        variant === 'outline'
+            ? 'border-primary-500 bg-primary-50 text-primary-600'
+            : 'border-primary-500 bg-primary-500 text-neutral-50';
     return (
         <div
             role="group"
@@ -334,14 +344,17 @@ export function ChipToggleGroup<V extends string = string>({
                         disabled={disabled}
                         aria-pressed={active}
                         className={cn(
-                            'inline-flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-2xs font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-400',
+                            'inline-flex items-center rounded-full border transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-400',
+                            size === 'md'
+                                ? 'h-9 gap-1.5 px-3.5 text-body font-medium'
+                                : 'gap-1 px-2.5 py-0.5 text-2xs font-semibold',
                             active
-                                ? 'border-primary-500 bg-primary-500 text-neutral-50'
+                                ? cn(activeClass, size === 'md' && 'font-semibold')
                                 : 'border-border bg-card text-muted-foreground hover:border-primary-300 hover:text-primary-600',
                             disabled && 'cursor-not-allowed opacity-50'
                         )}
                     >
-                        {Icon && <Icon className="size-2.5" />}
+                        {Icon && <Icon className={size === 'md' ? 'size-4' : 'size-2.5'} />}
                         {opt.label}
                     </button>
                 );

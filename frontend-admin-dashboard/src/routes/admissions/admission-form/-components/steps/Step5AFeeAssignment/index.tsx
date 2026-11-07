@@ -1,5 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from '@tanstack/react-router';
+import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 import { UploadFileInS3 } from '@/services/upload_file';
 import { useCPOOptions } from '@/routes/financial-management/fee-plans/-services/cpo-service';
 import type { CPOInstallment } from '@/routes/financial-management/fee-plans/-types/cpo-types';
@@ -36,22 +38,25 @@ interface Props {
     instituteId: string;
 }
 
-const formatCurrency = (value: number | undefined) => {
-    if (!value && value !== 0) return '-';
+const buildFormatCurrency = (t: TFunction) => (value: number | undefined) => {
+    if (!value && value !== 0) return t('dash');
     return `₹ ${value.toLocaleString('en-IN')}`;
 };
 
-const getInstallmentLabel = (installments?: CPOInstallment[]) => {
-    if (!installments || installments.length === 0) return 'One-time payment';
+const buildGetInstallmentLabel = (t: TFunction) => (installments?: CPOInstallment[]) => {
+    if (!installments || installments.length === 0) return t('installmentLabel.oneTime');
     const count = installments.length;
     const firstDue = installments[0]?.due_date;
-    return `${count} installment${count > 1 ? 's' : ''}${firstDue ? ` • starts ${new Date(firstDue).toLocaleDateString('en-IN')}` : ''}`;
+    const label = t('installmentLabel.count', { count });
+    return firstDue
+        ? `${label}${t('installmentLabel.startsSuffix', { date: new Date(firstDue).toLocaleDateString('en-IN') })}`
+        : label;
 };
 
-const formatDate = (value?: string | null) => {
-    if (!value) return '-';
+const buildFormatDate = (t: TFunction) => (value?: string | null) => {
+    if (!value) return t('dash');
     const d = new Date(value);
-    if (Number.isNaN(d.getTime())) return '-';
+    if (Number.isNaN(d.getTime())) return t('dash');
     return d.toLocaleDateString('en-IN');
 };
 
@@ -62,6 +67,10 @@ export default function Step5AFeeAssignment({
     instituteId,
 }: Props) {
     const navigate = useNavigate();
+    const { t } = useTranslation('admissionsStep5AFeeAssignment');
+    const formatCurrency = useMemo(() => buildFormatCurrency(t), [t]);
+    const getInstallmentLabel = useMemo(() => buildGetInstallmentLabel(t), [t]);
+    const formatDate = useMemo(() => buildFormatDate(t), [t]);
     const {
         data: cpoOptions,
         isLoading,
@@ -96,11 +105,11 @@ export default function Step5AFeeAssignment({
             const fileId = await UploadFileInS3(file, setIsUploading, instituteId, 'INSTITUTE');
             if (fileId) {
                 setReceiptFileId(fileId);
-                toast.success('Receipt uploaded');
+                toast.success(t('toast.receiptUploaded'));
             }
         } catch (error) {
             console.error('Receipt upload failed', error);
-            toast.error('Failed to upload receipt');
+            toast.error(t('toast.receiptUploadFailed'));
             setReceiptFileId('');
         }
     };
@@ -150,23 +159,23 @@ export default function Step5AFeeAssignment({
 
     const handleEnroll = async () => {
         if (!packageSessionId) {
-            toast.error('Package session is required to enroll.');
+            toast.error(t('toast.packageSessionRequired'));
             return;
         }
         if (!selectedCpo) {
-            toast.error('Select a fee plan to continue.');
+            toast.error(t('toast.selectFeePlan'));
             return;
         }
         const child = admissionResult?.child;
         const childUserId = child?.id || admissionResult?.child_user_id;
         if (!childUserId) {
-            toast.error('Child user ID missing from admission response.');
+            toast.error(t('toast.childUserIdMissing'));
             return;
         }
 
         const paymentOptionId = selectedCpo.default_payment_option_id ?? defaultPaymentOptionId;
         if (!paymentOptionId) {
-            toast.error('Payment option is required. Set a default or update the CPO.');
+            toast.error(t('toast.paymentOptionRequired'));
             return;
         }
 
@@ -201,7 +210,7 @@ export default function Step5AFeeAssignment({
         try {
             setIsEnrolling(true);
             await schoolEnroll(payload);
-            toast.success('Student enrolled and fee plan assigned.');
+            toast.success(t('toast.enrollSuccess'));
             setEnrollSuccess({
                 cpoName: selectedCpo.name,
                 totalAmount,
@@ -210,7 +219,7 @@ export default function Step5AFeeAssignment({
             });
         } catch (error) {
             console.error('Enrollment failed', error);
-            toast.error('Failed to enroll student. Please try again.');
+            toast.error(t('toast.enrollFailed'));
         } finally {
             setIsEnrolling(false);
         }
@@ -222,9 +231,7 @@ export default function Step5AFeeAssignment({
                 <div className="flex size-10 items-center justify-center rounded-full bg-yellow-100 text-lg text-yellow-700">
                     !
                 </div>
-                <p className="text-sm font-medium">
-                    Select a package session in Step 1 to view fee plans.
-                </p>
+                <p className="text-sm font-medium">{t('emptyState.selectPackage')}</p>
             </div>
         );
     }
@@ -236,20 +243,24 @@ export default function Step5AFeeAssignment({
                     ✓
                 </div>
                 <div>
-                    <h3 className="text-lg font-semibold text-gray-900">Enrollment complete</h3>
+                    <h3 className="text-lg font-semibold text-gray-900">{t('success.title')}</h3>
                     <p className="mt-1 text-sm text-gray-600">
                         {enrollSuccess.studentName
-                            ? `${enrollSuccess.studentName} has been enrolled with the selected fee plan.`
-                            : 'Student has been enrolled with the selected fee plan.'}
+                            ? t('success.messageNamed', { name: enrollSuccess.studentName })
+                            : t('success.messageGeneric')}
                     </p>
                 </div>
                 <div className="flex flex-col gap-1 text-sm text-gray-700">
-                    <span>Plan: {enrollSuccess.cpoName}</span>
-                    <span>Total assigned: {formatCurrency(enrollSuccess.totalAmount)}</span>
-                    <span>Payment mode: Offline</span>
+                    <span>{t('success.planLabel', { name: enrollSuccess.cpoName })}</span>
+                    <span>
+                        {t('success.totalAssignedLabel', {
+                            amount: formatCurrency(enrollSuccess.totalAmount),
+                        })}
+                    </span>
+                    <span>{t('success.paymentModeLabel')}</span>
                 </div>
                 <MyButton onClick={() => navigate({ to: '/admissions/admission-list' })}>
-                    Go to Admissions
+                    {t('success.goToAdmissions')}
                 </MyButton>
             </div>
         );
@@ -259,35 +270,33 @@ export default function Step5AFeeAssignment({
         <div className="space-y-6 duration-200 animate-in fade-in">
             <div className="flex items-start justify-between gap-4">
                 <div>
-                    <h2 className="text-lg font-semibold text-gray-900">Assign Fee Plan</h2>
-                    <p className="text-sm text-gray-600">
-                        Fetched from CPO linked to the selected package session.
-                    </p>
+                    <h2 className="text-lg font-semibold text-gray-900">{t('header.title')}</h2>
+                    <p className="text-sm text-gray-600">{t('header.subtitle')}</p>
                 </div>
                 <button
                     onClick={() => refetch()}
                     className="rounded border border-blue-200 px-3 py-1.5 text-sm font-medium text-blue-600 transition hover:border-blue-300 hover:text-blue-700"
                     disabled={isLoading}
                 >
-                    Refresh
+                    {t('header.refresh')}
                 </button>
             </div>
 
             {(isLoading || isDefaultLoading) && (
                 <div className="rounded-lg border border-gray-200 bg-white p-6 text-sm text-gray-600">
-                    Loading fee plans...
+                    {t('status.loadingFeePlans')}
                 </div>
             )}
 
             {isError && (
                 <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-700">
-                    Failed to load CPO options. Please retry.
+                    {t('status.loadError')}
                 </div>
             )}
 
             {!isLoading && !isError && cpoOptions && cpoOptions.length === 0 && (
                 <div className="rounded-lg border border-gray-200 bg-white p-6 text-sm text-gray-600">
-                    No fee plans found for this package session.
+                    {t('status.noFeePlans')}
                 </div>
             )}
 
@@ -310,10 +319,10 @@ export default function Step5AFeeAssignment({
                                             {cpo.name}
                                         </div>
                                         <div className="mt-0.5 text-xs text-gray-500">
-                                            Default payment option:{' '}
+                                            {t('cpoCard.defaultPaymentOption')}{' '}
                                             {cpo.default_payment_option_id
-                                                ? 'Available'
-                                                : 'Not set'}
+                                                ? t('cpoCard.available')
+                                                : t('cpoCard.notSet')}
                                         </div>
                                     </div>
                                     <div className="text-sm font-semibold text-gray-800">
@@ -340,8 +349,8 @@ export default function Step5AFeeAssignment({
                                         </div>
                                         <div className="text-xs text-gray-500">
                                             {selectedCpo.package_session_links?.length
-                                                ? 'Linked to current package session'
-                                                : 'No session link found'}
+                                                ? t('detailHeader.linked')
+                                                : t('detailHeader.notLinked')}
                                         </div>
                                     </div>
                                     <div className="text-sm font-semibold text-blue-700">
@@ -354,13 +363,13 @@ export default function Step5AFeeAssignment({
                                         <thead className="bg-gray-50 text-gray-600">
                                             <tr>
                                                 <th className="px-4 py-3 text-left font-semibold">
-                                                    Fee Type
+                                                    {t('feeTable.feeType')}
                                                 </th>
                                                 <th className="px-4 py-3 text-left font-semibold">
-                                                    Amount
+                                                    {t('feeTable.amount')}
                                                 </th>
                                                 <th className="px-4 py-3 text-left font-semibold">
-                                                    Installments
+                                                    {t('feeTable.installments')}
                                                 </th>
                                             </tr>
                                         </thead>
@@ -389,29 +398,29 @@ export default function Step5AFeeAssignment({
                                 <div className="space-y-3 border-t bg-gray-50 px-5 py-4">
                                     <div className="rounded-lg border border-gray-200 bg-white">
                                         <div className="border-b px-4 py-3 text-sm font-semibold text-gray-800">
-                                            Installments
+                                            {t('installmentsTable.title')}
                                         </div>
                                         <div className="overflow-x-auto">
                                             <table className="w-full text-sm">
                                                 <thead className="bg-gray-50 text-gray-600">
                                                     <tr>
                                                         <th className="px-4 py-2 text-left font-semibold">
-                                                            Fee
+                                                            {t('installmentsTable.fee')}
                                                         </th>
                                                         <th className="px-4 py-2 text-left font-semibold">
-                                                            #
+                                                            {t('installmentsTable.number')}
                                                         </th>
                                                         <th className="px-4 py-2 text-left font-semibold">
-                                                            Amount
+                                                            {t('installmentsTable.amount')}
                                                         </th>
                                                         <th className="px-4 py-2 text-left font-semibold">
-                                                            Due
+                                                            {t('installmentsTable.due')}
                                                         </th>
                                                         <th className="px-4 py-2 text-left font-semibold">
-                                                            Start
+                                                            {t('installmentsTable.start')}
                                                         </th>
                                                         <th className="px-4 py-2 text-left font-semibold">
-                                                            End
+                                                            {t('installmentsTable.end')}
                                                         </th>
                                                     </tr>
                                                 </thead>
@@ -456,7 +465,7 @@ export default function Step5AFeeAssignment({
                                                                 colSpan={6}
                                                                 className="px-4 py-3 text-center text-sm text-gray-600"
                                                             >
-                                                                No installments configured.
+                                                                {t('installmentsTable.noneConfigured')}
                                                             </td>
                                                         </tr>
                                                     )}
@@ -469,11 +478,10 @@ export default function Step5AFeeAssignment({
                                         <div className="flex items-center justify-between">
                                             <div className="space-y-0.5">
                                                 <p className="text-sm font-semibold text-gray-900">
-                                                    Record payment (optional)
+                                                    {t('paymentForm.recordTitle')}
                                                 </p>
                                                 <p className="text-xs text-gray-600">
-                                                    Capture offline payment details before
-                                                    enrolling.
+                                                    {t('paymentForm.recordSubtitle')}
                                                 </p>
                                             </div>
                                             <MyButton
@@ -481,7 +489,9 @@ export default function Step5AFeeAssignment({
                                                 scale="small"
                                                 onClick={() => setShowPaymentForm((prev) => !prev)}
                                             >
-                                                {showPaymentForm ? 'Hide' : 'Pay now'}
+                                                {showPaymentForm
+                                                    ? t('paymentForm.hide')
+                                                    : t('paymentForm.payNow')}
                                             </MyButton>
                                         </div>
 
@@ -489,7 +499,7 @@ export default function Step5AFeeAssignment({
                                             <div className="grid gap-3 sm:grid-cols-3">
                                                 <div className="space-y-1.5">
                                                     <label className="text-xs font-semibold text-gray-700">
-                                                        Amount received (optional)
+                                                        {t('paymentForm.amountLabel')}
                                                     </label>
                                                     <input
                                                         type="number"
@@ -506,7 +516,7 @@ export default function Step5AFeeAssignment({
 
                                                 <div className="space-y-1.5">
                                                     <label className="text-xs font-semibold text-gray-700">
-                                                        Transaction ID
+                                                        {t('paymentForm.transactionIdLabel')}
                                                     </label>
                                                     <div className="flex gap-2">
                                                         <input
@@ -522,20 +532,20 @@ export default function Step5AFeeAssignment({
                                                             onClick={handleGenerateTransactionId}
                                                             className="rounded border border-gray-300 px-3 py-2 text-xs font-semibold text-gray-700 shadow-sm transition hover:bg-gray-100"
                                                         >
-                                                            Generate
+                                                            {t('paymentForm.generate')}
                                                         </button>
                                                     </div>
                                                 </div>
 
                                                 <div className="space-y-1.5">
                                                     <label className="text-xs font-semibold text-gray-700">
-                                                        Receipt (optional)
+                                                        {t('paymentForm.receiptLabel')}
                                                     </label>
                                                     <label className="flex cursor-pointer items-center justify-between rounded border border-dashed border-gray-300 px-3 py-2 text-sm text-gray-700 shadow-sm transition hover:bg-gray-50">
                                                         <span>
                                                             {receiptFileId
-                                                                ? 'Receipt uploaded'
-                                                                : 'Upload receipt'}
+                                                                ? t('paymentForm.receiptUploaded')
+                                                                : t('paymentForm.uploadReceipt')}
                                                         </span>
                                                         <input
                                                             type="file"
@@ -551,8 +561,8 @@ export default function Step5AFeeAssignment({
                                                     </label>
 
                                                     {isUploading && (
-                                                        <p className="text-[11px] text-gray-500">
-                                                            Uploading...
+                                                        <p className="text-caption text-gray-500">
+                                                            {t('paymentForm.uploading')}
                                                         </p>
                                                     )}
                                                 </div>
@@ -562,19 +572,21 @@ export default function Step5AFeeAssignment({
 
                                     <div className="flex flex-wrap items-center justify-between gap-3">
                                         <div className="text-sm text-gray-700">
-                                            Total: {formatCurrency(totalAmount)}
+                                            {t('footer.totalLabel', {
+                                                amount: formatCurrency(totalAmount),
+                                            })}
                                         </div>
                                         <MyButton onClick={handleEnroll} disabled={isEnrolling}>
                                             {isEnrolling
-                                                ? 'Enrolling...'
-                                                : 'Enroll with this fee plan'}
+                                                ? t('footer.enrolling')
+                                                : t('footer.enroll')}
                                         </MyButton>
                                     </div>
                                 </div>
                             </div>
                         ) : (
                             <div className="rounded-lg border border-dashed border-gray-300 bg-white p-6 text-sm text-gray-600">
-                                Select a fee plan to view details.
+                                {t('selectPrompt')}
                             </div>
                         )}
                     </div>

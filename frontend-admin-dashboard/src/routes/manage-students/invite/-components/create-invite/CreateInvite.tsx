@@ -1,5 +1,6 @@
 import { MyButton } from '@/components/design-system/button';
 import { useRef, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Plus, X, CaretDown, Check } from '@phosphor-icons/react';
 import {
     Dialog,
@@ -32,6 +33,7 @@ type DummyBatchesType = {
 };
 
 const CreateInvite = () => {
+    const { t } = useTranslation('manageStudentsCreateInvite');
     const { data: studyLibraryCoursesData } = useSuspenseQuery(useStudyLibraryQuery());
     const dummyCourses = transformApiDataToDummyStructure(studyLibraryCoursesData).dummyCourses;
     const dummyBatches = transformApiDataToDummyStructure(studyLibraryCoursesData).dummyBatches;
@@ -173,17 +175,21 @@ const CreateInvite = () => {
                             className="flex items-center gap-1 border-none bg-gray-100 p-4 py-5 font-semibold hover:bg-gray-200"
                         >
                             <Plus size={18} weight="fill" />
-                            {`Create ${getTerminology(OtherTerms.Invite, SystemTerms.Invite)} Link`}
+                            {t('trigger.createLink', {
+                                term: getTerminology(OtherTerms.Invite, SystemTerms.Invite),
+                            })}
                         </MyButton>
                     </DialogTrigger>
-                    <DialogContent className="animate-fadeIn min-w-[500px]">
+                    <DialogContent className="animate-fadeIn w-dialog-md">
                         <DialogHeader>
-                            <DialogTitle>Select Course and Batches</DialogTitle>
+                            <DialogTitle>{t('dialog.title')}</DialogTitle>
                         </DialogHeader>
                         {/* Course Select */}
                         <div className="mb-1 mt-4 flex flex-col gap-2 text-sm font-medium">
                             <span>
-                                Select {getTerminology(ContentTerms.Course, SystemTerms.Course)}
+                                {t('courseSelect.label', {
+                                    term: getTerminology(ContentTerms.Course, SystemTerms.Course),
+                                })}
                             </span>
                             <div className="relative" ref={courseDropdownRef}>
                                 <button
@@ -198,7 +204,9 @@ const CreateInvite = () => {
                                             selectedCourse ? 'text-gray-900' : 'text-gray-400'
                                         }
                                     >
-                                        {selectedCourse ? selectedCourse.name : 'Choose a course'}
+                                        {selectedCourse
+                                        ? selectedCourse.name
+                                        : t('courseSelect.placeholder')}
                                     </span>
                                     <CaretDown size={18} />
                                 </button>
@@ -235,7 +243,9 @@ const CreateInvite = () => {
                         {/* Add Batch Section */}
                         {selectedCourse && (
                             <div className="animate-fadeIn mt-3">
-                                <div className="mb-2 text-sm font-semibold">Add Batch</div>
+                                <div className="mb-2 text-sm font-semibold">
+                                    {t('addBatch.heading')}
+                                </div>
                                 <div className="mb-2 flex gap-2">
                                     {/* Session Dropdown */}
                                     <div className="relative flex-1" ref={sessionDropdownRef}>
@@ -258,7 +268,7 @@ const CreateInvite = () => {
                                             >
                                                 {selectedSession
                                                     ? selectedSession.sessionName
-                                                    : 'Select session'}
+                                                    : t('addBatch.sessionPlaceholder')}
                                             </span>
                                             <CaretDown size={18} />
                                         </button>
@@ -312,7 +322,7 @@ const CreateInvite = () => {
                                             >
                                                 {selectedLevel
                                                     ? selectedLevel.levelName
-                                                    : 'Select level'}
+                                                    : t('addBatch.levelPlaceholder')}
                                             </span>
                                             <CaretDown size={18} />
                                         </button>
@@ -355,17 +365,16 @@ const CreateInvite = () => {
                                     disable={!(selectedSession && selectedLevel)}
                                     onClick={handleAddBatch}
                                 >
-                                    <Plus size={16} className="mr-1" /> Add Batch
+                                    <Plus size={16} className="me-1" /> {t('addBatch.button')}
                                 </MyButton>
                                 {/* Selected Batches List */}
                                 {selectedBatches.length > 0 && (
                                     <div className="animate-fadeIn mt-4">
                                         <div className="mb-1 text-sm font-semibold">
-                                            Selected Batches
+                                            {t('selectedBatches.heading')}
                                             {selectedBatches.length > 1 && (
                                                 <span className="block text-xs text-gray-500">
-                                                    (Select parent batch - parent batch&apos;s
-                                                    details will be used as invite link details)
+                                                    {t('selectedBatches.parentHint')}
                                                 </span>
                                             )}
                                         </div>
@@ -401,7 +410,9 @@ const CreateInvite = () => {
                                                                     </span>
                                                                     {batch.isParent && (
                                                                         <span className="text-xs font-medium text-blue-600">
-                                                                            Parent batch
+                                                                            {t(
+                                                                                'selectedBatches.parentBadge'
+                                                                            )}
                                                                         </span>
                                                                     )}
                                                                 </div>
@@ -459,7 +470,7 @@ const CreateInvite = () => {
                                 onClick={() => setValue('dialogOpen', false)}
                                 className="bg-neutral-100 hover:border-none hover:bg-neutral-200"
                             >
-                                Cancel
+                                {t('actions.cancel')}
                             </MyButton>
                             <MyButton
                                 type="button"
@@ -473,7 +484,7 @@ const CreateInvite = () => {
                                     });
                                 }}
                             >
-                                Continue
+                                {t('actions.continue')}
                             </MyButton>
                         </div>
                     </DialogContent>

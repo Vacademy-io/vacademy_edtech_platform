@@ -1,0 +1,46 @@
+{
+    "header": {
+        "title": "Template Design & Certificate Generation",
+        "subtitle": "Upload template and annotate with student data fields"
+    },
+    "viewToggle": {
+        "upload": "Upload",
+        "design": "Design",
+        "preview": "Preview"
+    },
+    "progress": {
+        "generating": "Generating Certificates...",
+        "status": "{{completed}} of {{total}} completed"
+    },
+    "alerts": {
+        "missingFields": "Please upload a template and map some fields first.",
+        "generationSuccess": "Certificate generation completed!\nSuccessful: {{successCount}}\nErrors: {{errorCount}}",
+        "generationFailed": "Certificate generation failed: {{message}}",
+        "unknownError": "Unknown error"
+    },
+    "footer": {
+        "back": "Back to Student Data",
+        "fieldsMapped_one": "{{count}} field mapped",
+        "fieldsMapped_other": "{{count}} fields mapped",
+        "generating": "Generating...",
+        "generate": "Generate Certificates"
+    },
+    "help": {
+        "title": "Getting Started with Certificate Generation",
+        "step1": "Upload a certificate template (PDF or image) using the upload area above",
+        "step2": "Switch to \"Design\" view to map data fields onto your template",
+        "step3": "Drag fields from the palette onto the template where you want data to appear",
+        "step4": "Use \"Preview\" to see how certificates will look with real student data",
+        "step5": "Click \"Generate Certificates\" to create and download all certificates"
+    },
+    "fields": {
+        "userId": { "label": "User ID", "sample": "USR001" },
+        "enrollmentNumber": { "label": "Enrollment Number", "sample": "ENR2024001" },
+        "studentName": { "label": "Student Name", "sample": "John Doe" },
+        "fullName": { "label": "Full Name", "sample": "John Michael Doe" },
+        "email": { "label": "Email Address", "sample": "john.doe@example.com" },
+        "mobileNumber": { "label": "Mobile Number", "sample": "+1 (555) 123-4567" },
+        "instituteName": { "label": "Institute Name", "sample": "University of Technology" },
+        "completionDate": { "label": "Completion Date" }
+    }
+}

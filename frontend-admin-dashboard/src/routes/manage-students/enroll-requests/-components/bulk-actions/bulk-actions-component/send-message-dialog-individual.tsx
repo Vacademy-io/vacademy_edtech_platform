@@ -1,4 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 import { MyDialog } from '@/components/design-system/dialog';
 import { MyButton } from '@/components/design-system/button';
 import {
@@ -12,32 +14,46 @@ import { PaperPlaneTilt, Spinner } from '@phosphor-icons/react';
 import { toast } from 'sonner';
 import { useEnrollRequestsDialogStore } from '../bulk-actions-store';
 
-// Define message templates
-const MESSAGE_TEMPLATES = [
+// Define message templates. The content strings contain the app's own
+// {{placeholder}} tokens (resolved later in handleSendMessage by simple
+// string replacement, not by i18next) — each is translated with an identity
+// interpolation value so the token text survives translation unchanged.
+const buildMessageTemplates = (t: TFunction) => [
     {
         id: 'template1',
-        name: 'Welcome Message',
-        content: 'Hello {{name}}! Welcome to our learning platform.',
+        name: t('templates.welcome.name'),
+        content: t('templates.welcome.content', { name: '{{name}}' }),
     },
     {
         id: 'template2',
-        name: 'Session Reminder',
-        content: 'Hi {{name}}, this is a reminder about your upcoming session.',
+        name: t('templates.sessionReminder.name'),
+        content: t('templates.sessionReminder.content', { name: '{{name}}' }),
     },
     {
         id: 'template3',
-        name: 'Assignment Due',
-        content: 'Hey {{name}}, your assignment is due soon. Please complete it on time.',
+        name: t('templates.assignmentDue.name'),
+        content: t('templates.assignmentDue.content', { name: '{{name}}' }),
     },
-    { id: 'template4', name: 'Custom Message', content: 'Hi {{name}}, {{custom_message_text}}' },
+    {
+        id: 'template4',
+        name: t('templates.custom.name'),
+        content: t('templates.custom.content', {
+            name: '{{name}}',
+            custom_message_text: '{{custom_message_text}}',
+        }),
+    },
 ];
 
 type MessageSendingStatus = 'pending' | 'sending' | 'sent' | 'failed';
 
 export const SendMessageDialogIndividual = () => {
+    const { t } = useTranslation('manageStudentsSendMessageDialogIndividual');
     const { isSendMessageOpen, selectedStudent, closeAllDialogs } = useEnrollRequestsDialogStore();
+
+    const messageTemplates = useMemo(() => buildMessageTemplates(t), [t]);
+
     const [selectedTemplateId, setSelectedTemplateId] = useState<string>(
-        MESSAGE_TEMPLATES[0]?.id || ''
+        messageTemplates[0]?.id || ''
     );
     const [messageStatus, setMessageStatus] = useState<MessageSendingStatus>('pending');
     const [isSending, setIsSending] = useState(false);
@@ -70,19 +86,21 @@ export const SendMessageDialogIndividual = () => {
 
     const handleSendMessage = async () => {
         if (!selectedTemplateId || !selectedStudent) {
-            toast.error('No template selected or student not available.');
+            toast.error(t('toasts.noTemplateOrStudent'));
             return;
         }
 
-        const template = MESSAGE_TEMPLATES.find((t) => t.id === selectedTemplateId);
+        // Renamed the find() callback param from `t` to `tpl` — it would otherwise
+        // shadow the outer translation function `t` from useTranslation() above.
+        const template = messageTemplates.find((tpl) => tpl.id === selectedTemplateId);
         if (!template) {
-            toast.error('Selected template not found.');
+            toast.error(t('toasts.templateNotFound'));
             return;
         }
 
         setIsSending(true);
         setMessageStatus('sending');
-        toast.info('Sending message...', { id: 'send-message-progress' });
+        toast.info(t('toasts.sending'), { id: 'send-message-progress' });
 
         try {
             // Replace placeholders in the message
@@ -97,7 +115,7 @@ export const SendMessageDialogIndividual = () => {
             );
             messageContent = messageContent.replace(
                 /\{\{custom_message_text\}\}/g,
-                'Please check your dashboard for updates.'
+                t('defaultCustomMessage')
             );
 
             await mockSendMessageAPI(
@@ -107,14 +125,15 @@ export const SendMessageDialogIndividual = () => {
             );
 
             setMessageStatus('sent');
-            toast.success('Message sent successfully!', {
+            toast.success(t('toasts.sent'), {
                 id: 'send-message-progress',
                 duration: 5000,
             });
         } catch (error: unknown) {
-            const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+            const errorMessage =
+                error instanceof Error ? error.message : t('toasts.unknownError');
             setMessageStatus('failed');
-            toast.error(`Failed to send message: ${errorMessage}`, {
+            toast.error(t('toasts.failed', { error: errorMessage }), {
                 id: 'send-message-progress',
                 duration: 5000,
             });
@@ -126,7 +145,7 @@ export const SendMessageDialogIndividual = () => {
     const handleClose = () => {
         if (isSending) return;
         setMessageStatus('pending');
-        setSelectedTemplateId(MESSAGE_TEMPLATES[0]?.id || '');
+        setSelectedTemplateId(messageTemplates[0]?.id || '');
         closeAllDialogs();
     };
 
@@ -136,10 +155,10 @@ export const SendMessageDialogIndividual = () => {
 
     return (
         <MyDialog
-            heading="Send WhatsApp Message"
+            heading={t('dialogTitle')}
             open={isSendMessageOpen}
             onOpenChange={handleClose}
-            dialogWidth="w-[90vw] max-w-md"
+            dialogWidth="w-dialog-md"
             footer={
                 <div className="flex items-center justify-end gap-2">
                     <MyButton
@@ -148,24 +167,24 @@ export const SendMessageDialogIndividual = () => {
                         onClick={handleClose}
                         disable={isSending}
                     >
-                        Cancel
+                        {t('cancel')}
                     </MyButton>
                     <MyButton
                         buttonType="primary"
                         scale="medium"
                         onClick={handleSendMessage}
                         disable={!selectedTemplateId || isSending}
-                        className="min-w-[120px] bg-green-600 text-white hover:bg-green-700"
+                        className="min-w-32 bg-green-600 text-white hover:bg-green-700"
                     >
                         {isSending ? (
                             <>
                                 <Spinner className="mr-2 size-4 animate-spin" />
-                                Sending...
+                                {t('sending')}
                             </>
                         ) : (
                             <>
                                 <PaperPlaneTilt className="mr-2 size-4" />
-                                Send Message
+                                {t('sendButton')}
                             </>
                         )}
                     </MyButton>
@@ -174,13 +193,13 @@ export const SendMessageDialogIndividual = () => {
         >
             <div className="space-y-4">
                 <div className="mb-4 text-sm text-neutral-600">
-                    Send a message to{' '}
+                    {t('sendMessageNotice')}{' '}
                     <span className="font-medium">{selectedStudent.full_name}</span>
                 </div>
 
                 <div>
                     <label className="mb-2 block text-sm font-medium text-neutral-700">
-                        Message Template
+                        {t('templateLabel')}
                     </label>
                     <Select
                         value={selectedTemplateId}
@@ -188,10 +207,10 @@ export const SendMessageDialogIndividual = () => {
                         disabled={isSending}
                     >
                         <SelectTrigger className="w-full">
-                            <SelectValue placeholder="Select a template" />
+                            <SelectValue placeholder={t('selectTemplatePlaceholder')} />
                         </SelectTrigger>
                         <SelectContent>
-                            {MESSAGE_TEMPLATES.map((template) => (
+                            {messageTemplates.map((template) => (
                                 <SelectItem key={template.id} value={template.id}>
                                     {template.name}
                                 </SelectItem>
@@ -202,10 +221,12 @@ export const SendMessageDialogIndividual = () => {
 
                 {selectedTemplateId && (
                     <div className="rounded-lg bg-neutral-50 p-3">
-                        <div className="mb-1 text-sm font-medium text-neutral-700">Preview:</div>
+                        <div className="mb-1 text-sm font-medium text-neutral-700">
+                            {t('previewLabel')}
+                        </div>
                         <div className="text-sm text-neutral-600">
-                            {MESSAGE_TEMPLATES.find((t) => t.id === selectedTemplateId)?.content ||
-                                ''}
+                            {messageTemplates.find((tpl) => tpl.id === selectedTemplateId)
+                                ?.content || ''}
                         </div>
                     </div>
                 )}
@@ -214,7 +235,7 @@ export const SendMessageDialogIndividual = () => {
                     <div className="rounded-lg bg-neutral-100 p-3">
                         <div className="flex items-center justify-between">
                             <span className="text-sm font-medium text-neutral-700">
-                                Sending message to {selectedStudent.full_name}...
+                                {t('sendingNotice', { name: selectedStudent.full_name })}
                             </span>
                             <Spinner className="size-4 animate-spin text-blue-500" />
                         </div>
@@ -225,7 +246,7 @@ export const SendMessageDialogIndividual = () => {
                     <div className="rounded-lg bg-green-50 p-3">
                         <div className="flex items-center">
                             <span className="text-sm font-medium text-green-700">
-                                ✓ Message sent successfully to {selectedStudent.full_name}
+                                {t('sentNotice', { name: selectedStudent.full_name })}
                             </span>
                         </div>
                     </div>
@@ -235,7 +256,7 @@ export const SendMessageDialogIndividual = () => {
                     <div className="rounded-lg bg-red-50 p-3">
                         <div className="flex items-center">
                             <span className="text-sm font-medium text-red-700">
-                                ✗ Failed to send message to {selectedStudent.full_name}
+                                {t('failedNotice', { name: selectedStudent.full_name })}
                             </span>
                         </div>
                     </div>

@@ -1,0 +1,15 @@
+{
+    "manageYourSessions": "Gérez vos {{session}}",
+    "description": "Organisez, téléchargez et suivez sans effort les ressources pédagogiques en un seul endroit. Offrez aux {{learnerPlural}} un accès facile aux ressources dont ils ont besoin pour réussir, garantissant une expérience d'apprentissage fluide.",
+    "add": "Ajouter",
+    "addNew": "Ajouter un nouveau {{session}}",
+    "noCourseDialog": {
+        "type": "Ajout de sessions",
+        "content": "Vous devez d'abord créer un cours"
+    },
+    "toast": {
+        "added": " {{session}} ajouté avec succès",
+        "addFailed": "Échec de l'ajout de {{session}}"
+    },
+    "subtitle": "Each {{session}} lists the {{course}} levels that run in it. Every {{course}} × {{level}} × {{session}} is a {{batch}}."
+}

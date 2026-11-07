@@ -20,6 +20,8 @@ export interface CourseType {
     tags?: string | null;
     course_depth?: number | null;
     course_html_description?: string | null;
+    /** Public course-page extras: {"v":1,"mode":…,"faqs":[{q,a}]} as a string, or null. */
+    course_page_json?: string | null;
 }
 
 export type StudyLibrarySessionType = SessionType;

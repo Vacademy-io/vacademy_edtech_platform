@@ -1,0 +1,64 @@
+{
+    "defaultTitle": "मूल्यांकन",
+    "errors": {
+        "couldNotGeneratePdf": "PDF जनरेट नहीं हो सका"
+    },
+    "header": {
+        "instituteLogoAlt": "संस्थान का लोगो",
+        "instituteFallback": "संस्थान",
+        "answerKey": "उत्तर कुंजी",
+        "questionPaper": "प्रश्न पत्र",
+        "questionsCount_one": "{{count}} प्रश्न",
+        "questionsCount_other": "{{count}} प्रश्न",
+        "marksCount_one": "{{count}} अंक",
+        "marksCount_other": "{{count}} अंक"
+    },
+    "studentDetails": {
+        "ariaLabel": "छात्र का विवरण",
+        "fields": {
+            "name": "नाम",
+            "rollNo": "रोल नंबर",
+            "classBatch": "कक्षा / बैच",
+            "date": "तारीख"
+        }
+    },
+    "footer": {
+        "confidential": "गोपनीय"
+    },
+    "actions": {
+        "exportPdf": "PDF निर्यात करें"
+    },
+    "dropdown": {
+        "chooseVersion": "एक संस्करण चुनें",
+        "studentVersion": "छात्र संस्करण",
+        "answerKey": "उत्तर कुंजी"
+    },
+    "dialog": {
+        "exportStudentPdf": "छात्र PDF निर्यात करें",
+        "exportAnswerKeyPdf": "उत्तर कुंजी PDF निर्यात करें",
+        "cancel": "रद्द करें",
+        "tickSectionsHint": "निर्यात किए गए PDF में शामिल करने के लिए सेक्शन चुनें।",
+        "rows": {
+            "includeStudentDetails": {
+                "label": "छात्र विवरण फ़ील्ड शामिल करें",
+                "description": "पेज 1 पर एक भरने योग्य पट्टी जोड़ता है — नाम, रोल नंबर, कक्षा / बैच, तारीख। साफ़ अभ्यास हैंडआउट के लिए इसे बंद करें।"
+            },
+            "showTitle": {
+                "label": "मूल्यांकन शीर्षक दिखाएं",
+                "description": "हर पेज पर बड़ा केंद्रित शीर्षक (वर्तमान में \"{{title}}\") छिपाता है। लेटरहेड + संस्करण बैज बने रहते हैं।"
+            },
+            "showHeaderInfo": {
+                "label": "हेडर जानकारी पट्टी दिखाएं"
+            },
+            "showFooterDate": {
+                "label": "फ़ुटर में तारीख दिखाएं",
+                "description": "पेज फ़ुटर में संस्थान के नाम के साथ निर्यात तारीख प्रिंट करता है।"
+            },
+            "showFooterConfidential": {
+                "label": "फ़ुटर में \"गोपनीय\" दिखाएं",
+                "descriptionLong": "पेज फ़ुटर में गोपनीय लेबल जोड़ता है। परीक्षाओं के लिए उपयोगी; सामान्य अभ्यास हैंडआउट के लिए हटा दें।",
+                "descriptionShort": "पेज फ़ुटर में गोपनीय लेबल जोड़ता है।"
+            }
+        }
+    }
+}

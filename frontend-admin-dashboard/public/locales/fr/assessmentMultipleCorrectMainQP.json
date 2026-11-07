@@ -1,0 +1,9 @@
+{
+    "emptyState": "Veuillez ajouter une question pour afficher les détails de la question",
+    "comprehensionText": "Texte de compréhension",
+    "questionLabel": "Question",
+    "questionLabelNumbered": "Question {{number}}",
+    "questionPlaceholder": "Rédigez la question",
+    "explanationHint": "Affiché aux apprenants avec leur résultat.",
+    "explanationPlaceholder": "Explication"
+}

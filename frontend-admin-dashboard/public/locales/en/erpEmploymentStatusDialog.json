@@ -1,0 +1,30 @@
+{
+    "heading": "Change employment status",
+    "fallbackEmployeeLabel": "This employee",
+    "notSet": "not set",
+    "currentStatus": "Currently {{status}} for <1>{{name}}</1>.",
+    "actions": {
+        "cancel": "Cancel",
+        "updating": "Updating…",
+        "updateStatus": "Update status"
+    },
+    "fields": {
+        "newStatus": "New status",
+        "lastWorkingDate": "Last working date",
+        "exitReason": "Exit reason",
+        "exitReasonPlaceholder": "e.g. Resigned for a new role"
+    },
+    "exitNotice": "This ends the employment. The last working date and reason feed the full & final settlement, so both are required.",
+    "toast": {
+        "exitStatusUpdated": "{{name}} is now {{status}}. Their full & final settlement can be prepared in Payroll.",
+        "statusUpdated": "Status updated to {{status}}"
+    },
+    "errors": {
+        "updateFailed": "Could not change the employment status"
+    },
+    "validation": {
+        "pickStatus": "Pick a status",
+        "lastWorkingDateRequired": "A last working date is required to settle dues",
+        "exitReasonRequired": "Record why the employment ended"
+    }
+}

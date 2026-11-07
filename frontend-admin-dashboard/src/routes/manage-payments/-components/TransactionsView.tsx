@@ -1,20 +1,31 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { DownloadSimple, EnvelopeSimple, Plus, X } from '@phosphor-icons/react';
+import { CaretDown, DownloadSimple, EnvelopeSimple, Plus, X } from '@phosphor-icons/react';
 import { toast } from 'sonner';
 import { MyButton } from '@/components/design-system/button';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { useInstituteDetailsStore } from '@/stores/students/students-list/useInstituteDetailsStore';
+import { resolveInstituteCurrency } from '@/utils/institute-currency';
 import type { SelectOption } from '@/components/design-system/SelectChips';
 import type {
     PaymentLogEntry,
     PaymentLogsRequest,
-    PaymentLogsResponse,
     PackageSessionFilter,
     BatchForSession,
 } from '@/types/payment-logs';
 import { StudentSidebarProvider } from '@/routes/manage-students/students-list/-providers/student-sidebar-provider';
-import { fetchBillingSummary, fetchOutstandingLearners } from '@/services/payment-logs';
+import {
+    fetchBillingSummary,
+    fetchInstalmentForecast,
+    fetchOutstandingLearners,
+} from '@/services/payment-logs';
+import type { OutstandingLearner } from '@/services/payment-logs';
 import { ManageColumnsPopover } from '@/components/shared/leads/manage-columns-popover';
 import {
     useLeadColumnPrefs,
@@ -23,28 +34,35 @@ import {
     type LeadColumnToggle,
 } from '@/components/shared/leads/use-lead-column-prefs';
 import { InvoicePreviewByIdDialog } from '@/components/common/invoice/invoice-preview-by-id-dialog';
-import type { PaymentLogInvoiceDTO } from '@/services/invoice-service';
+import { downloadInvoicesZip, type PaymentLogInvoiceDTO } from '@/services/invoice-service';
 import { getCurrentInstituteId } from '@/lib/auth/instituteUtils';
 import { getTerminology } from '@/components/common/layout-container/sidebar/utils';
 import { ContentTerms, SystemTerms } from '@/routes/settings/-components/NamingSettings';
 import { PaymentFilters } from './PaymentFilters';
 import { PaymentControlBar, type SegmentKey, type StatusSegment } from './PaymentControlBar';
 import { DueLearnersTable } from './DueLearnersTable';
+import { DueLearnerDetailSheet } from './DueLearnerDetailSheet';
+import { InstalmentForecast, formatForecastMonth, isInstalmentFirst } from './InstalmentForecast';
 import { PaymentLogsTable } from './PaymentLogsTable';
+import { hideColumnsAddedLater } from '../-utils/hideColumnsAddedLater';
 import { PaymentKpiCards, type RecordStatusKey, type SummaryStatusKey } from './PaymentKpiCards';
+import { KpiCardSettings, useKpiCardPrefs } from './KpiCardSettings';
 import { PaymentDetailSheet } from './PaymentDetailSheet';
 import { SendRemindersModal } from './SendRemindersModal';
 import { RecordPaymentModal } from './RecordPaymentModal';
 import { DateRangeDropdown } from './DateRangeDropdown';
 import { exportEntriesToCsv, fetchAllPaymentLogs } from '../-utils/exportPaymentLogsCsv';
-import {
-    classifyEntry,
-    computeBillingFromEntries,
-    computePaymentSummary,
-    summarizeBucketAmount,
-} from '../-utils/paymentSummary';
+import { fetchPaymentLogs, fetchPaymentLogsSummary } from '@/services/payment-logs';
+import { summaryFromStatusTotals, summarizeBucketAmount } from '../-utils/paymentSummary';
+import { formatMoney } from '@/utils/payment-currency';
 import { ALL_TIME_RANGE, type DateRangeValue } from '../-utils/dateRange';
 import { resolvePaymentLogInvoices } from '../-utils/resolvePaymentLogInvoices';
+import { buildPaymentModeGroups, paymentModeFilterTokens } from '../-utils/paymentModeOptions';
+import { useOfflinePaymentModes } from '@/services/offline-payment-modes';
+import {
+    useManagePaymentsSettings,
+    useSaveManagePaymentsSettings,
+} from '@/services/manage-payments-settings';
 
 const PAGE_SIZE = 20;
 
@@ -54,11 +72,45 @@ const COLUMN_PREFS_KEY = 'manage-payments:hidden-columns';
 /** Where the left-to-right column order is remembered, per browser. */
 const COLUMN_ORDER_KEY = 'manage-payments:column-order';
 
-/** Columns hidden until someone asks for them — the tracking trio is a niche reconciliation aid. */
-const DEFAULT_HIDDEN_COLUMNS = ['tracking_id', 'tracking_source', 'order_status'];
+/**
+ * Columns hidden until someone asks for them — the tracking trio is a niche reconciliation aid,
+ * and the enrolment / next-due dates are opt-in extras.
+ */
+const DEFAULT_HIDDEN_COLUMNS = [
+    'tracking_id',
+    'tracking_source',
+    'order_status',
+    'enrolled_date',
+    'next_due_date',
+];
+
+/**
+ * Columns shipped after admins may already have saved a layout. A saved layout replaces the
+ * defaults outright, so these are added to it once (see hideColumnsAddedLater).
+ */
+const COLUMNS_ADDED_HIDDEN = ['enrolled_date', 'next_due_date'];
+const COLUMNS_ADDED_FLAG = 'manage-payments:hidden-columns:dates-added';
 
 /** Header actions (Send reminders / Record payment) are hidden until the flows are ready. */
 const SHOW_HEADER_ACTIONS = false;
+
+/** `invoices_acme_2026-10-01_to_2026-10-31.zip` — the window in the admin's own dates. */
+const invoicesZipFileName = (start: string, end: string, instituteName?: string): string => {
+    const localDate = (iso: string) => {
+        const d = new Date(iso);
+        const pad = (n: number) => String(n).padStart(2, '0');
+        return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+    };
+    const namePart = (instituteName || 'institute')
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/(^-|-$)/g, '');
+    const period =
+        start || end
+            ? `${start ? localDate(start) : 'start'}_to_${end ? localDate(end) : localDate(new Date().toISOString())}`
+            : 'all-time';
+    return `invoices_${namePart}_${period}.zip`;
+};
 
 interface ActiveChip {
     id: string;
@@ -85,6 +137,7 @@ export function TransactionsView() {
     // Filters. The date window lives in the toolbar (not the slide-over) so changing the period
     // is one click; start/end are the UTC instants it resolves to.
     const [dateRange, setDateRange] = useState<DateRangeValue>(ALL_TIME_RANGE);
+    const [exporting, setExporting] = useState<'csv' | 'zip' | null>(null);
     const { start: startDate, end: endDate } = dateRange;
     // Status is one control — the KPI tiles and the segmented switch drive this single bucket, and
     // it filters the loaded rows locally (see classifyEntry).
@@ -92,7 +145,17 @@ export function TransactionsView() {
     // 'balances' answers "who owes money", which the payment records cannot: an unpaid balance
     // normally has no row to filter to. It swaps the table rather than narrowing it.
     const [view, setView] = useState<'records' | 'balances'>('records');
+    // Which balances list is open: 'due' (something already overdue) or 'outstanding' (anything
+    // still to collect, whatever its date — how an admin sees each learner's next instalment).
+    // 'upcoming' is the same list opened from the instalment Upcoming card.
+    const [balanceScope, setBalanceScope] = useState<'due' | 'outstanding' | 'upcoming'>('due');
+    // One month of the instalment forecast (yyyy-MM) narrowing the Upcoming list; null = all of it.
+    const [dueMonth, setDueMonth] = useState<string | null>(null);
     const [selectedUserPlanStatuses, setSelectedUserPlanStatuses] = useState<SelectOption[]>([]);
+    // Payment plan is the one detailed filter the API can't apply; it narrows the loaded set
+    // locally, before the KPI tiles are computed, so it behaves like the server-side ones.
+    const [selectedPaymentPlans, setSelectedPaymentPlans] = useState<SelectOption[]>([]);
+    const [selectedPaymentModes, setSelectedPaymentModes] = useState<SelectOption[]>([]);
     const [selectedPaymentSources, setSelectedPaymentSources] = useState<SelectOption[]>([]);
     const [selectedPaymentTypes, setSelectedPaymentTypes] = useState<SelectOption[]>([]);
     const [packageSessionFilter, setPackageSessionFilter] = useState<PackageSessionFilter>({});
@@ -103,6 +166,9 @@ export function TransactionsView() {
     const [recordOpen, setRecordOpen] = useState(false);
     const [detailEntry, setDetailEntry] = useState<PaymentLogEntry | null>(null);
     const [detailOpen, setDetailOpen] = useState(false);
+    // The Due list nets a learner to one figure; this opens the plans behind it.
+    const [dueLearner, setDueLearner] = useState<OutstandingLearner | null>(null);
+    const [dueDetailOpen, setDueDetailOpen] = useState(false);
 
     const instituteDetails = useInstituteDetailsStore((state) => state.instituteDetails);
 
@@ -116,9 +182,27 @@ export function TransactionsView() {
         [batchesForSessions]
     );
 
+    // Column layout, remembered per browser: which columns are on, and their order. The
+    // migration runs first, in this render, so the prefs hook reads the updated hidden set.
+    useState(() =>
+        hideColumnsAddedLater(COLUMN_PREFS_KEY, COLUMNS_ADDED_HIDDEN, COLUMNS_ADDED_FLAG)
+    );
+    const { hiddenColumns, toggleColumn, resetColumns } = useLeadColumnPrefs(
+        COLUMN_PREFS_KEY,
+        DEFAULT_HIDDEN_COLUMNS
+    );
+    const { columnOrder, setColumnOrder, resetColumnOrder } = useColumnOrderPrefs(COLUMN_ORDER_KEY);
+    // The enrolment / next-due dates cost the API an extra query per page, so they are only asked
+    // for while one of their columns is switched on. With both hidden the request is unchanged.
+    const showPlanDates =
+        !hiddenColumns.has('enrolled_date') || !hiddenColumns.has('next_due_date');
+
     const requestFilters: Omit<PaymentLogsRequest, 'institute_id'> = useMemo(() => {
         const filters: Omit<PaymentLogsRequest, 'institute_id'> = {
             sort_columns: { createdAt: 'DESC' },
+            // One row and one count per payment: a package payment or a multi-course checkout is
+            // stored per course, and listing those shares as separate payments doubled them here.
+            group_payments: true,
         };
         if (startDate) filters.start_date_in_utc = startDate;
         if (endDate) filters.end_date_in_utc = endDate;
@@ -129,6 +213,7 @@ export function TransactionsView() {
         if (selectedPaymentTypes.length > 0)
             filters.payment_types = selectedPaymentTypes.map((t) => t.value);
         if (debouncedSearch) filters.search_string = debouncedSearch;
+        if (showPlanDates) filters.include_plan_dates = true;
 
         if (
             packageSessionFilter.packageSessionIds &&
@@ -150,6 +235,14 @@ export function TransactionsView() {
                 .map((batch) => batch.id);
             if (resolvedIds.length > 0) filters.package_session_ids = resolvedIds;
         }
+        if (selectedPaymentPlans.length > 0) {
+            filters.payment_plan_names = selectedPaymentPlans.map((plan) => plan.value);
+        }
+        if (selectedPaymentModes.length > 0) {
+            filters.payment_modes = paymentModeFilterTokens(
+                selectedPaymentModes.map((mode) => mode.value)
+            );
+        }
         return filters;
     }, [
         startDate,
@@ -160,40 +253,89 @@ export function TransactionsView() {
         debouncedSearch,
         packageSessionFilter,
         batchesForSessions,
+        showPlanDates,
+        selectedPaymentPlans,
+        selectedPaymentModes,
     ]);
 
+    // Paging is the server's job now, so a narrowed result no longer silently clamps the page the
+    // way slicing an array did: without this, applying a filter while deep in the list asks for a
+    // page past the end and shows nothing. Covers every filter at once, including ones added later.
+    useEffect(() => {
+        setCurrentPage(0);
+    }, [requestFilters]);
+
+    // The table asks for one bucket; the tiles have to keep describing every bucket, so the
+    // selected tile is deliberately not part of the filters the summary is fetched with.
+    const tableFilters = useMemo(
+        () => ({ ...requestFilters, status_bucket: statusBucket }),
+        [requestFilters, statusBucket]
+    );
+
     const {
-        data: allData,
+        data: pageData,
         isLoading: isLoadingPayments,
         error: paymentsError,
         refetch: refetchPaymentLogs,
     } = useQuery({
-        queryKey: ['payment-logs-all', requestFilters],
-        queryFn: () => fetchAllPaymentLogs(requestFilters),
+        queryKey: ['payment-logs-page', tableFilters, currentPage],
+        queryFn: () => fetchPaymentLogs(currentPage, PAGE_SIZE, tableFilters),
+        staleTime: 30000,
+        placeholderData: (previous) => previous,
+    });
+
+    // Totals over every matching row, and the institute's full plan list. One small call, so the
+    // tiles stay accurate without the table having to download the whole result set.
+    const {
+        data: summaryData,
+        refetch: refetchSummary,
+        isPending: summaryPending,
+        isFetching: summaryFetching,
+        isFetchedAfterMount: summaryIsFresh,
+    } = useQuery({
+        queryKey: ['payment-logs-summary', requestFilters],
+        queryFn: () => fetchPaymentLogsSummary(requestFilters),
         staleTime: 30000,
     });
 
-    // Everything the API returned for the current filters — the KPI tiles always describe this set,
-    // so the numbers don't collapse to whichever tile is selected.
-    const allEntries = useMemo(() => allData?.entries ?? [], [allData]);
-
-    const paymentSummary = useMemo(() => computePaymentSummary(allEntries), [allEntries]);
-
-    // What the table shows: the same set narrowed to the selected KPI bucket.
-    const filteredEntries = useMemo(
+    // Every plan the institute has, listed by the server — not just the plans present in the rows
+    // on screen, so choosing one never empties the picker.
+    const paymentPlanOptions = useMemo<SelectOption[]>(
         () =>
-            statusBucket === 'total'
-                ? allEntries
-                : allEntries.filter((entry) => classifyEntry(entry) === statusBucket),
-        [allEntries, statusBucket]
+            (summaryData?.payment_plan_names ?? []).map((name) => ({
+                label: name,
+                value: name,
+                _id: name,
+            })),
+        [summaryData]
+    );
+
+    // Every mode the institute offers in Settings (custom ones and their options included), plus
+    // any mode found on recorded payments that Settings no longer lists.
+    const { data: offlinePaymentModes } = useOfflinePaymentModes();
+    const paymentModeGroups = useMemo(
+        () => buildPaymentModeGroups(offlinePaymentModes, summaryData?.used_payment_modes),
+        [offlinePaymentModes, summaryData]
+    );
+
+    // The tiles describe every row matching the filters — the selected tile is not among them, so
+    // the numbers don't collapse to whichever tile is selected.
+    const paymentSummary = useMemo(
+        () => summaryFromStatusTotals(summaryData?.status_totals ?? []),
+        [summaryData]
     );
 
     /**
-     * What learners were billed, paid, and still owe. Payment records can't answer this: a
-     * part-paid instalment plan leaves one PAID row and no trace of the balance, and an enrolment
-     * that never paid leaves no row at all. Same window and course scope as the table.
+     * What came in, what learners with access still owe, and what falls due next. Payment records
+     * can't answer the last two: an overdue instalment nobody paid has no row at all, and a lapsed
+     * renewal leaves only the failed attempt. Same window and course scope as the table.
      */
-    const { data: billingSummary } = useQuery({
+    const {
+        data: billingSummary,
+        isFetchedAfterMount: billingIsFresh,
+        isPending: billingPending,
+        isFetching: billingFetching,
+    } = useQuery({
         queryKey: [
             'payment-billing-summary',
             startDate,
@@ -207,49 +349,172 @@ export function TransactionsView() {
                 package_session_ids: requestFilters.package_session_ids,
             }),
         staleTime: 60_000,
+        // Balances change on other screens — a learner removed from a course, a payment deleted —
+        // so a return to this page re-asks rather than showing the copy cached before the change.
+        refetchOnMount: 'always',
         retry: false,
     });
 
-    /**
-     * Prefer the server figures; without them (older backend, failed request) derive what we can
-     * from the rows on screen — that still prices each enrolment properly, it just can't see
-     * enrolments that have never paid anything.
-     */
-    const entryBilling = useMemo(() => computeBillingFromEntries(allEntries), [allEntries]);
-    const billing = billingSummary
-        ? {
-              totalBilled: billingSummary.total_billed,
-              collected: billingSummary.collected,
-              due: billingSummary.due,
-              currency: billingSummary.currency || '',
-              planCount: billingSummary.plan_count,
-              settledPlanCount: billingSummary.settled_plan_count,
-          }
-        : entryBilling.planCount > 0
-          ? entryBilling
-          : null;
+    // The server's currency is the most common one on live plans, and free plans carry a default
+    // INR — a UK institute with only free plans read ₹0. With every figure at zero no money backs
+    // that pick, so the institute's own currency is shown, as on the home Dashboard. Once any
+    // money exists the server's currency stands: an Indian institute charging in USD must read $.
+    // The server picks it from live plans only, so a window with payments but no live plan (a past
+    // year whose learners owe nothing) gets none back — the institute's currency fills that gap.
+    const instituteCurrency = resolveInstituteCurrency(instituteDetails);
+    const billingHasMoney =
+        !!billingSummary &&
+        [
+            billingSummary.collected,
+            billingSummary.due,
+            billingSummary.upcoming,
+            billingSummary.outstanding,
+            billingSummary.upcoming_all,
+        ].some(Boolean);
 
-    const pagedData: PaymentLogsResponse | undefined = useMemo(() => {
-        if (!allData) return undefined;
-        const total = filteredEntries.length;
-        const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
-        const page = Math.min(currentPage, totalPages - 1);
-        const start = page * PAGE_SIZE;
-        const content = filteredEntries.slice(start, start + PAGE_SIZE);
-        return {
-            content,
-            totalPages,
-            totalElements: total,
-            size: PAGE_SIZE,
-            number: page,
-            numberOfElements: content.length,
-            first: page === 0,
-            last: page >= totalPages - 1,
-            empty: total === 0,
-            pageable: {},
-            sort: {},
-        } as unknown as PaymentLogsResponse;
-    }, [allData, filteredEntries, currentPage]);
+    // No client-side fallback for the balance cards: pricing the rows on screen is exactly the
+    // model that reported abandoned checkouts and coupon discounts as debt. Without the server
+    // figures Due and Upcoming show a dash.
+    const billing = useMemo(
+        () =>
+            billingSummary
+                ? {
+                      collected: billingSummary.collected,
+                      due: billingSummary.due,
+                      upcoming: billingSummary.upcoming,
+                      upcomingDays: billingSummary.upcoming_days,
+                      learnersOwing: billingSummary.learners_owing,
+                      learnersUpcoming: billingSummary.learners_upcoming,
+                      activatedWithoutPaymentCount: billingSummary.activated_without_payment_count,
+                      outstanding: billingSummary.outstanding,
+                      learnersOutstanding: billingSummary.learners_outstanding,
+                      upcomingAll: billingSummary.upcoming_all ?? undefined,
+                      learnersUpcomingAll: billingSummary.learners_upcoming_all,
+                      nextDueDate: billingSummary.next_due_date,
+                      usesInstallments: billingSummary.uses_installments,
+                      instalmentPlanCount: billingSummary.instalment_plan_count,
+                      livePlanCount: billingSummary.live_plan_count,
+                      currency:
+                          (!billingHasMoney && billingSummary.currency && instituteCurrency) ||
+                          billingSummary.currency ||
+                          instituteCurrency ||
+                          '',
+                  }
+                : null,
+        [billingSummary, billingHasMoney, instituteCurrency]
+    );
+
+    /**
+     * The headline, the cards and the tab counts come from two calls (the records summary and the
+     * billing summary) that land at different moments. Painting whichever arrived first made the
+     * numbers jump within a second: "0 payments" before the summary, the paid-records amount before
+     * the billing figure replaced it, and on a return visit the cached copy before the refetch.
+     * So they wait until both describe the current filters, fetched on this visit. A background
+     * refetch later (window focus) still updates in place — that is a real change, not a flicker.
+     * A failed billing call is not pending, so the records fallback still shows.
+     */
+    const figuresLoading =
+        summaryPending ||
+        billingPending ||
+        (!summaryIsFresh && summaryFetching) ||
+        (!billingIsFresh && billingFetching);
+
+    // Which cards — and their tabs — the admin chose to show. Defaults follow the fee model.
+    const cardPrefs = useKpiCardPrefs(billing);
+    // Institute-wide: some institutes (I2CAN) don't filter by plan, so the field can be switched off.
+    const { data: pageSettings } = useManagePaymentsSettings();
+    const savePageSettings = useSaveManagePaymentsSettings();
+    const showPaymentPlanFilter = !pageSettings?.hide_payment_plan_filter;
+    const togglePaymentPlanFilter = () => {
+        // Hiding the field must not leave an invisible plan filter narrowing the list.
+        if (showPaymentPlanFilter) {
+            setSelectedPaymentPlans([]);
+            setCurrentPage(0);
+        }
+        savePageSettings.mutate(
+            { ...pageSettings, hide_payment_plan_filter: showPaymentPlanFilter },
+            { onError: () => toast.error('Could not save the filter setting') }
+        );
+    };
+    const upcomingHasList = !!billing?.usesInstallments && cardPrefs.visible.has('upcoming');
+    // Instalments are this institute's main fee model — counted across the whole institute, so the
+    // page keeps its shape whatever date or course the admin filters to.
+    const instalmentFirst = isInstalmentFirst(billing?.instalmentPlanCount, billing?.livePlanCount);
+    // The month-by-month panel: a card setting (on by default only where instalments are the fee
+    // model), offered wherever there is an instalment plan. Months open the Upcoming list, so it
+    // needs that list too. Only when it is on is the forecast ever asked for.
+    const scheduleVisible =
+        upcomingHasList &&
+        cardPrefs.visible.has('schedule') &&
+        (billing?.instalmentPlanCount ?? 0) > 0;
+
+    // A tab can disappear under an open list or filter — a date change removes Outstanding, or
+    // the admin switches a card off. Fall back rather than leave an unmarked view on screen.
+    // Waits for the billing figures, so a refetch in flight does not bounce the view.
+    useEffect(() => {
+        if (!billing) return;
+        if (
+            (balanceScope === 'outstanding' && !cardPrefs.visible.has('outstanding')) ||
+            (balanceScope === 'upcoming' && !upcomingHasList)
+        ) {
+            setBalanceScope('due');
+            setDueMonth(null);
+        }
+    }, [billing, balanceScope, cardPrefs.visible, upcomingHasList]);
+
+    /** Instalment progress and the Upcoming card split by month — only while the panel is on. */
+    const {
+        data: forecast,
+        isLoading: isLoadingForecast,
+        error: forecastError,
+    } = useQuery({
+        queryKey: [
+            'payment-instalment-forecast',
+            startDate,
+            endDate,
+            requestFilters.package_session_ids,
+        ],
+        queryFn: () =>
+            fetchInstalmentForecast({
+                start_date_in_utc: startDate ? startDate.slice(0, 19) : undefined,
+                end_date_in_utc: endDate ? endDate.slice(0, 19) : undefined,
+                package_session_ids: requestFilters.package_session_ids,
+            }),
+        enabled: scheduleVisible,
+        staleTime: 60_000,
+        // Refetched with the cards, so the months and the Upcoming card describe one moment.
+        refetchOnMount: 'always',
+        retry: false,
+    });
+
+    // Whether the admin has picked a view yet — the landing rule below never overrides a choice.
+    const viewChosenRef = useRef(false);
+
+    // A month only narrows the Upcoming list while its panel is on screen. Drop it once the panel
+    // goes (switched off, Upcoming hidden) or the new forecast no longer has that month —
+    // otherwise the list stays filtered by a panel nobody can see.
+    useEffect(() => {
+        if (!dueMonth || !billing) return;
+        if (!scheduleVisible || (forecast && !forecast.months.some((m) => m.month === dueMonth))) {
+            setDueMonth(null);
+        }
+    }, [dueMonth, billing, scheduleVisible, forecast]);
+    useEffect(() => {
+        const hiddenBucket =
+            ((statusBucket === 'pending' || statusBucket === 'abandoned') &&
+                !cardPrefs.visible.has('pending')) ||
+            (statusBucket === 'failed' && !cardPrefs.visible.has('failed'));
+        if (hiddenBucket) setStatusBucket('total');
+    }, [statusBucket, cardPrefs.visible]);
+
+    const pagedData = pageData;
+
+    // Rows can disappear between fetches (a void, a refund). If that empties the page being
+    // viewed, fall back to the last page that still has rows rather than leaving a blank table.
+    useEffect(() => {
+        const totalPages = pageData?.totalPages ?? 0;
+        if (totalPages > 0 && currentPage > totalPages - 1) setCurrentPage(totalPages - 1);
+    }, [pageData, currentPage]);
 
     const packageSessionsMap = useMemo(() => {
         const map: Record<string, string> = {};
@@ -259,13 +524,6 @@ export function TransactionsView() {
         });
         return map;
     }, [batchesForSessions]);
-
-    // Column layout, remembered per browser: which columns are on, and their order.
-    const { hiddenColumns, toggleColumn, resetColumns } = useLeadColumnPrefs(
-        COLUMN_PREFS_KEY,
-        DEFAULT_HIDDEN_COLUMNS
-    );
-    const { columnOrder, setColumnOrder, resetColumnOrder } = useColumnOrderPrefs(COLUMN_ORDER_KEY);
 
     /**
      * Every column the table can render, in the order PaymentLogsTable defines them. Date &
@@ -285,6 +543,8 @@ export function TransactionsView() {
             { id: 'vendor', label: 'Payment Method' },
             { id: 'user_plan_status', label: 'Plan Status' },
             { id: 'enroll_invite', label: `${courseTerm}/Membership` },
+            { id: 'enrolled_date', label: 'Enrollment Date' },
+            { id: 'next_due_date', label: 'Next Due Date' },
             { id: 'invoice', label: 'Invoice' },
             { id: 'transaction_id', label: 'Transaction ID' },
             { id: 'tracking_id', label: 'Tracking ID' },
@@ -369,6 +629,11 @@ export function TransactionsView() {
     // Paging only applies while the balances list is on screen; leaving it at 0 otherwise keeps
     // the count in the segmented switch from refetching every time the records table is paged.
     const balancesPage = view === 'balances' ? currentPage : 0;
+    // Same for the search box: it narrows the balances list only while that list is open, so
+    // searching the payment records neither refetches it nor changes the Due count in the switch.
+    const balancesSearch = view === 'balances' ? debouncedSearch : '';
+    // A forecast month only ever narrows the Upcoming list.
+    const listMonth = balanceScope === 'upcoming' ? dueMonth : null;
     const {
         data: outstanding,
         isLoading: isLoadingOutstanding,
@@ -380,6 +645,9 @@ export function TransactionsView() {
             endDate,
             requestFilters.package_session_ids,
             balancesPage,
+            balanceScope,
+            listMonth,
+            balancesSearch,
         ],
         queryFn: () =>
             fetchOutstandingLearners(
@@ -387,21 +655,33 @@ export function TransactionsView() {
                     start_date_in_utc: startDate ? startDate.slice(0, 19) : undefined,
                     end_date_in_utc: endDate ? endDate.slice(0, 19) : undefined,
                     package_session_ids: requestFilters.package_session_ids,
+                    // Before, typing a name on Due or Outstanding changed nothing.
+                    search_string: balancesSearch || undefined,
                 },
                 balancesPage,
-                PAGE_SIZE
+                PAGE_SIZE,
+                balanceScope !== 'due',
+                listMonth
             ),
         staleTime: 60_000,
+        // Refetched with the cards above it, so the list and the cards never describe two moments.
+        refetchOnMount: 'always',
         retry: false,
     });
 
-    /** 'due' opens the balances list; everything else narrows the payment records. */
+    /** 'due' / 'outstanding' open a balances list; everything else narrows the payment records. */
     const handleSegmentSelect = (key: SegmentKey) => {
+        viewChosenRef.current = true;
         setCurrentPage(0);
-        if (key === 'due') {
+        // A tab or card always opens its whole list; a month is picked from the forecast.
+        setDueMonth(null);
+        if (key === 'due' || key === 'outstanding' || (key === 'upcoming' && upcomingHasList)) {
+            setBalanceScope(key);
             setView('balances');
             return;
         }
+        // The 30-day Upcoming is informational — there is no list behind it.
+        if (key === 'upcoming') return;
         setView('records');
         // Clicking the active tile again clears back to "all".
         setStatusBucket(key === statusBucket ? 'total' : key);
@@ -409,14 +689,79 @@ export function TransactionsView() {
 
     const handleSummarySelect = (key: SummaryStatusKey) => handleSegmentSelect(key);
 
-    // Segmented switch. The first four narrow the payment records; the last swaps in the learners
-    // who still owe money, counted from the balances query rather than from the records.
+    /** A forecast month lists who pays in it; clicking the picked month again shows all upcoming. */
+    const handleSelectMonth = (month: string | null) => {
+        viewChosenRef.current = true;
+        setCurrentPage(0);
+        setDueMonth(month);
+        setBalanceScope('upcoming');
+        setView('balances');
+    };
+
+    // Segmented switch. The first five narrow the payment records; the last swaps in the learners
+    // who owe money, counted from the balances query rather than from the records. Abandoned is
+    // the stale-checkout pile — a warm-lead list for counsellors, not money in flight.
+    // Each tab follows its card in the Cards settings; All and Paid are always there.
+    const shown = cardPrefs.visible;
+    // While the figures load every count reads a dash rather than a 0 that jumps a second later.
+    const segmentCount = (n: number): number | null => (figuresLoading ? null : n);
     const segments: StatusSegment[] = [
-        { key: 'total', label: 'All', count: allEntries.length },
-        { key: 'paid', label: 'Paid', count: paymentSummary.paid.count },
-        { key: 'pending', label: 'Pending', count: paymentSummary.pending.count },
-        { key: 'failed', label: 'Failed', count: paymentSummary.failed.count },
-        { key: 'due', label: 'Due', count: outstanding?.totalElements ?? 0 },
+        { key: 'total', label: 'All', count: segmentCount(paymentSummary.total.count) },
+        { key: 'paid', label: 'Paid', count: segmentCount(paymentSummary.paid.count) },
+        ...(shown.has('pending')
+            ? [
+                  {
+                      key: 'pending' as const,
+                      label: 'Pending',
+                      count: segmentCount(paymentSummary.pending.count),
+                  },
+                  {
+                      key: 'abandoned' as const,
+                      label: 'Abandoned',
+                      count: segmentCount(paymentSummary.abandoned.count),
+                  },
+              ]
+            : []),
+        ...(shown.has('failed')
+            ? [
+                  {
+                      key: 'failed' as const,
+                      label: 'Failed',
+                      count: segmentCount(paymentSummary.failed.count),
+                  },
+              ]
+            : []),
+        ...(shown.has('outstanding')
+            ? [
+                  {
+                      key: 'outstanding' as const,
+                      label: 'Outstanding',
+                      count: segmentCount(billing?.learnersOutstanding ?? 0),
+                  },
+              ]
+            : []),
+        ...(shown.has('due')
+            ? [
+                  {
+                      key: 'due' as const,
+                      label: 'Due',
+                      count: segmentCount(
+                          balanceScope === 'due'
+                              ? outstanding?.totalElements ?? 0
+                              : billing?.learnersOwing ?? 0
+                      ),
+                  },
+              ]
+            : []),
+        ...(upcomingHasList
+            ? [
+                  {
+                      key: 'upcoming' as const,
+                      label: 'Upcoming',
+                      count: segmentCount(billing?.learnersUpcomingAll ?? 0),
+                  },
+              ]
+            : []),
     ];
 
     // Detailed-filter count for the Filters button badge. Status lives in the segmented switch and
@@ -424,9 +769,51 @@ export function TransactionsView() {
     const detailedFilterCount =
         selectedPaymentTypes.length +
         selectedUserPlanStatuses.length +
+        selectedPaymentPlans.length +
+        selectedPaymentModes.length +
         selectedPaymentSources.length +
         (packageSessionFilter.packageSessionIds?.length ||
             (packageSessionFilter.packageId ? 1 : 0));
+
+    // An instalment-first institute with nothing overdue opens on who pays next: an empty Due list
+    // or a page of past payments answers neither "what is coming in" nor "who do I remind".
+    // Decided once, on the first billing figures, and only on a page nobody has touched yet — a
+    // tab, page, search, filter or date picked before the figures arrived always wins.
+    const landedRef = useRef(false);
+    useEffect(() => {
+        // Decide on figures fetched for this visit, never on a copy cached from the last one.
+        if (landedRef.current || !billing || !billingIsFresh) return;
+        landedRef.current = true;
+        const untouched =
+            !viewChosenRef.current &&
+            view === 'records' &&
+            statusBucket === 'total' &&
+            currentPage === 0 &&
+            !searchValue &&
+            detailedFilterCount === 0 &&
+            dateRange === ALL_TIME_RANGE;
+        if (
+            untouched &&
+            instalmentFirst &&
+            upcomingHasList &&
+            billing.due <= 0 &&
+            (billing.upcomingAll ?? 0) > 0
+        ) {
+            setBalanceScope('upcoming');
+            setView('balances');
+        }
+    }, [
+        billing,
+        billingIsFresh,
+        instalmentFirst,
+        upcomingHasList,
+        view,
+        statusBucket,
+        currentPage,
+        searchValue,
+        detailedFilterCount,
+        dateRange,
+    ]);
 
     // Removable chips for the active detailed filters.
     const activeChips: ActiveChip[] = useMemo(() => {
@@ -447,6 +834,27 @@ export function TransactionsView() {
                     setSelectedUserPlanStatuses((prev) => prev.filter((x) => x.value !== s.value)),
             })
         );
+        selectedPaymentPlans.forEach((p) =>
+            chips.push({
+                id: `payment-plan-${p.value}`,
+                label: `Payment plan: ${p.label}`,
+                onRemove: () =>
+                    setSelectedPaymentPlans((prev) => prev.filter((x) => x.value !== p.value)),
+            })
+        );
+        selectedPaymentModes.forEach((m) =>
+            chips.push({
+                id: `payment-mode-${m.value}`,
+                label: `Mode: ${m.label}`,
+                // A mode's chip takes its picked options with it.
+                onRemove: () =>
+                    setSelectedPaymentModes((prev) =>
+                        prev.filter(
+                            (x) => x.value !== m.value && !x.value.startsWith(`${m.value}|`)
+                        )
+                    ),
+            })
+        );
         selectedPaymentSources.forEach((s) =>
             chips.push({
                 id: `source-${s.value}`,
@@ -458,15 +866,24 @@ export function TransactionsView() {
         if (packageSessionFilter.packageId || packageSessionFilter.packageSessionIds?.length)
             chips.push({
                 id: 'course',
-                label: 'Course / session',
+                label: `${getTerminology(ContentTerms.Course, SystemTerms.Course)} / session`,
                 onRemove: () => setPackageSessionFilter({}),
+            });
+        if (listMonth)
+            chips.push({
+                id: 'due-month',
+                label: `Due in: ${formatForecastMonth(listMonth)}`,
+                onRemove: () => setDueMonth(null),
             });
         return chips;
     }, [
         selectedPaymentTypes,
         selectedUserPlanStatuses,
+        selectedPaymentPlans,
+        selectedPaymentModes,
         selectedPaymentSources,
         packageSessionFilter,
+        listMonth,
     ]);
 
     const handlePageChange = (page: number) => {
@@ -483,7 +900,11 @@ export function TransactionsView() {
         setDateRange(ALL_TIME_RANGE);
         setStatusBucket('total');
         setView('records');
+        setBalanceScope('due');
+        setDueMonth(null);
         setSelectedUserPlanStatuses([]);
+        setSelectedPaymentPlans([]);
+        setSelectedPaymentModes([]);
         setSelectedPaymentSources([]);
         setSelectedPaymentTypes([]);
         setPackageSessionFilter({});
@@ -492,15 +913,56 @@ export function TransactionsView() {
 
     const handleExportCsv = async () => {
         try {
-            if (filteredEntries.length === 0) {
+            if (paymentSummary.total.count === 0) {
                 toast.info('No payment records to export.');
                 return;
             }
-            const count = exportEntriesToCsv(filteredEntries, instituteDetails?.institute_name);
+            // The table only holds one page now, so the export fetches the rows it needs at click
+            // time — with the tile the admin is looking at, so the file matches what they see.
+            const { entries } = await fetchAllPaymentLogs(tableFilters);
+            if (entries.length === 0) {
+                toast.info('No payment records to export.');
+                return;
+            }
+            const count = exportEntriesToCsv(entries, instituteDetails?.institute_name);
             toast.success(`Exported ${count.toLocaleString()} payment records.`);
         } catch (error) {
             console.error('Failed to export payment logs:', error);
             toast.error('Failed to export payment logs. Please try again.');
+        }
+    };
+
+    // Every invoice issued in the toolbar's window, as one ZIP. Only the date window applies —
+    // an accounting pack is "all invoices for the period", not the slice of payments in view.
+    const handleExportInvoicesZip = async () => {
+        if (!instituteId) return;
+        const toastId = toast.loading('Preparing invoices… large periods can take a minute.');
+        try {
+            await downloadInvoicesZip(
+                instituteId,
+                {
+                    startDate: startDate ? startDate.slice(0, 19) : undefined,
+                    endDate: endDate ? endDate.slice(0, 19) : undefined,
+                },
+                invoicesZipFileName(startDate, endDate, instituteDetails?.institute_name)
+            );
+            toast.success('Invoices downloaded.', { id: toastId });
+        } catch (error) {
+            console.error('Failed to export invoices:', error);
+            const message =
+                error instanceof Error && error.message && !error.message.startsWith('Request failed')
+                    ? error.message
+                    : 'Failed to download invoices. Please try again.';
+            toast.error(message, { id: toastId });
+        }
+    };
+
+    const runExport = async (kind: 'csv' | 'zip') => {
+        setExporting(kind);
+        try {
+            await (kind === 'csv' ? handleExportCsv() : handleExportInvoicesZip());
+        } finally {
+            setExporting(null);
         }
     };
 
@@ -509,9 +971,19 @@ export function TransactionsView() {
         setDetailOpen(true);
     };
 
-    // Subline: "N payments · ₹X collected · M need attention".
-    const collectedAmount = summarizeBucketAmount(paymentSummary.paid.amountByCurrency).display;
+    // Subline: "N paid · ₹X collected · M need attention · K abandoned" — the same buckets the cards
+    // show, so no number on the line can be read against a different number on a card. (It used to
+    // lead with the all-records count, "328 payments", next to a Collected card saying "284
+    // payments".) Abandoned checkouts are not "attention" — nothing can be done about a gateway
+    // order that has already expired — so they get their own segment.
+    // Collected reads the same figure as the Collected card (the server's PAID total), so the two
+    // never disagree; the paid records are only the fallback while that figure is unavailable.
+    const collectedAmount = billing
+        ? formatMoney(billing.collected, billing.currency, { maximumFractionDigits: 0 })
+        : summarizeBucketAmount(paymentSummary.paid.amountByCurrency).display;
+    const paidCount = paymentSummary.paid.count;
     const needAttention = paymentSummary.pending.count + paymentSummary.failed.count;
+    const abandonedCount = paymentSummary.abandoned.count;
 
     return (
         <StudentSidebarProvider>
@@ -521,14 +993,14 @@ export function TransactionsView() {
                     <div className="flex flex-wrap items-center gap-3">
                         <DateRangeDropdown value={dateRange} onChange={handleDateRangeChange} />
                         <p className="text-body text-neutral-500">
-                            {isLoadingPayments ? (
+                            {isLoadingPayments || figuresLoading ? (
                                 'Loading payments…'
                             ) : (
                                 <>
                                     <span className="font-medium text-neutral-700">
-                                        {allEntries.length.toLocaleString()}
+                                        {paidCount.toLocaleString()}
                                     </span>{' '}
-                                    payments
+                                    paid
                                     {collectedAmount && (
                                         <>
                                             {' · '}
@@ -538,23 +1010,68 @@ export function TransactionsView() {
                                             collected
                                         </>
                                     )}
-                                    {needAttention > 0 && <> · {needAttention} need attention</>}
+                                    {needAttention > 0 && (
+                                        <> · {needAttention.toLocaleString()} need attention</>
+                                    )}
+                                    {abandonedCount > 0 && (
+                                        <> · {abandonedCount.toLocaleString()} abandoned</>
+                                    )}
                                 </>
                             )}
                         </p>
                     </div>
                     <div className="flex flex-wrap items-center gap-2">
-                        <MyButton
-                            buttonType="secondary"
-                            scale="medium"
-                            onAsyncClick={handleExportCsv}
-                            loadingText="Exporting…"
-                            className="gap-2"
-                            disable={filteredEntries.length === 0}
-                        >
-                            <DownloadSimple size={16} />
-                            Export
-                        </MyButton>
+                        <KpiCardSettings
+                            visible={cardPrefs.visible}
+                            onToggle={cardPrefs.toggle}
+                            onReset={cardPrefs.reset}
+                            isCustomised={cardPrefs.isCustomised}
+                            // The schedule option only means something with an instalment plan.
+                            // Offered only where it can show something: instalment plans that have
+                            // a schedule (the same condition that gives Upcoming its list).
+                            hiddenOptions={
+                                billing?.usesInstallments && (billing.instalmentPlanCount ?? 0) > 0
+                                    ? undefined
+                                    : ['schedule']
+                            }
+                            showPaymentPlanFilter={showPaymentPlanFilter}
+                            onTogglePaymentPlanFilter={togglePaymentPlanFilter}
+                        />
+                        <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                                <MyButton
+                                    buttonType="secondary"
+                                    scale="medium"
+                                    className="gap-2"
+                                    disable={exporting !== null}
+                                >
+                                    <DownloadSimple size={16} />
+                                    {exporting ? 'Exporting…' : 'Export'}
+                                    <CaretDown size={14} />
+                                </MyButton>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end" className="w-64">
+                                <DropdownMenuItem
+                                    disabled={paymentSummary.total.count === 0}
+                                    onSelect={() => void runExport('csv')}
+                                    className="flex flex-col items-start gap-0.5"
+                                >
+                                    <span className="font-medium">Payments (CSV)</span>
+                                    <span className="text-caption text-neutral-500">
+                                        The payment records in view
+                                    </span>
+                                </DropdownMenuItem>
+                                <DropdownMenuItem
+                                    onSelect={() => void runExport('zip')}
+                                    className="flex flex-col items-start gap-0.5"
+                                >
+                                    <span className="font-medium">Invoices (ZIP)</span>
+                                    <span className="text-caption text-neutral-500">
+                                        Every invoice PDF issued in the selected dates
+                                    </span>
+                                </DropdownMenuItem>
+                            </DropdownMenuContent>
+                        </DropdownMenu>
                         {SHOW_HEADER_ACTIONS && (
                             <>
                                 <MyButton
@@ -580,16 +1097,34 @@ export function TransactionsView() {
                     </div>
                 </div>
 
-                {/* KPI tiles — Total / Collected / Due / Failed (same row as the dashboard) */}
+                {/* KPI tiles — Collected / Due / Upcoming / Pending / Failed (same row as the dashboard) */}
                 <PaymentKpiCards
                     summary={paymentSummary}
                     billing={billing}
-                    totalCount={allEntries.length}
-                    isLoading={isLoadingPayments}
-                    truncated={allData?.truncated}
-                    activeKey={view === 'balances' ? 'due' : statusBucket}
+                    isLoading={isLoadingPayments || figuresLoading}
+                    activeKey={view === 'balances' ? balanceScope : statusBucket}
                     onSelect={handleSummarySelect}
+                    visibleKeys={cardPrefs.visible}
                 />
+
+                {/* Instalment schedule — progress + Upcoming by month (instalment-first views only) */}
+                {scheduleVisible && (
+                    <InstalmentForecast
+                        data={forecast}
+                        isLoading={isLoadingForecast}
+                        error={forecastError}
+                        currency={billing?.currency ?? ''}
+                        selectedMonth={view === 'balances' ? listMonth : null}
+                        onSelectMonth={handleSelectMonth}
+                        // Only while the Total card is on screen — hide it and the panel's own
+                        // progress row comes back.
+                        cardTotals={
+                            billing && cardPrefs.visible.has('billed')
+                                ? { collected: billing.collected, outstanding: billing.outstanding }
+                                : null
+                        }
+                    />
+                )}
 
                 {/* Control bar */}
                 <PaymentControlBar
@@ -599,7 +1134,7 @@ export function TransactionsView() {
                         setCurrentPage(0);
                     }}
                     segments={segments}
-                    activeStatus={view === 'balances' ? 'due' : statusBucket}
+                    activeStatus={view === 'balances' ? balanceScope : statusBucket}
                     onStatusSelect={handleSegmentSelect}
                     filterCount={detailedFilterCount}
                     onOpenFilters={() => setFiltersOpen(true)}
@@ -650,10 +1185,26 @@ export function TransactionsView() {
                 {view === 'balances' ? (
                     <DueLearnersTable
                         data={outstanding}
+                        mode={balanceScope === 'due' ? 'due' : 'outstanding'}
+                        monthLabel={listMonth ? formatForecastMonth(listMonth) : null}
+                        // An empty Due list is a dead end for an instalment institute — point it
+                        // at the instalments still to come.
+                        emptyAction={
+                            scheduleVisible && (billing?.upcomingAll ?? 0) > 0
+                                ? {
+                                      label: 'See upcoming instalments',
+                                      onClick: () => handleSegmentSelect('upcoming'),
+                                  }
+                                : null
+                        }
                         isLoading={isLoadingOutstanding}
                         error={outstandingError as Error}
                         currentPage={currentPage}
                         onPageChange={handlePageChange}
+                        onSelectLearner={(learner) => {
+                            setDueLearner(learner);
+                            setDueDetailOpen(true);
+                        }}
                     />
                 ) : (
                     <PaymentLogsTable
@@ -670,7 +1221,10 @@ export function TransactionsView() {
                         invoicesByPaymentLog={invoicesByPaymentLog}
                         isLoadingInvoices={isLoadingInvoices}
                         onPreviewInvoice={setPreviewInvoice}
-                        onRefresh={() => refetchPaymentLogs()}
+                        onRefresh={() => {
+                            refetchPaymentLogs();
+                            refetchSummary();
+                        }}
                         onViewDetails={openDetail}
                     />
                 )}
@@ -708,6 +1262,22 @@ export function TransactionsView() {
                                     setSelectedUserPlanStatuses(statuses);
                                     setCurrentPage(0);
                                 }}
+                                paymentPlanOptions={paymentPlanOptions}
+                                selectedPaymentPlans={selectedPaymentPlans}
+                                onPaymentPlansChange={
+                                    showPaymentPlanFilter
+                                        ? (plans) => {
+                                              setSelectedPaymentPlans(plans);
+                                              setCurrentPage(0);
+                                          }
+                                        : undefined
+                                }
+                                paymentModeGroups={paymentModeGroups}
+                                selectedPaymentModes={selectedPaymentModes}
+                                onPaymentModesChange={(modes) => {
+                                    setSelectedPaymentModes(modes);
+                                    setCurrentPage(0);
+                                }}
                                 selectedPaymentSources={selectedPaymentSources}
                                 onPaymentSourcesChange={(sources) => {
                                     setSelectedPaymentSources(sources);
@@ -739,6 +1309,28 @@ export function TransactionsView() {
                     entry={detailEntry}
                     open={detailOpen}
                     onOpenChange={setDetailOpen}
+                    onVoided={() => {
+                        refetchPaymentLogs();
+                        refetchSummary();
+                    }}
+                />
+
+                {/* Balance breakdown, opened from a Due row */}
+                <DueLearnerDetailSheet
+                    learner={dueLearner}
+                    open={dueDetailOpen}
+                    onOpenChange={setDueDetailOpen}
+                    // The exact scope the clicked row was computed under, so the enrolments in the
+                    // sheet always add up to the totals it shows.
+                    filters={{
+                        start_date_in_utc: startDate ? startDate.slice(0, 19) : undefined,
+                        end_date_in_utc: endDate ? endDate.slice(0, 19) : undefined,
+                        package_session_ids: requestFilters.package_session_ids,
+                    }}
+                    onViewPayment={(entry) => {
+                        setDueDetailOpen(false);
+                        openDetail(entry);
+                    }}
                 />
 
                 {/* Invoice PDF preview, opened from the Invoice column */}

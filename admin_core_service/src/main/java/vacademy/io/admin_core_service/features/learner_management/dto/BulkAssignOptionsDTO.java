@@ -40,6 +40,12 @@ public class BulkAssignOptionsDTO {
     @JsonFormat(shape = JsonFormat.Shape.STRING, timezone = "UTC")
     private Date paymentDate;
 
+    /**
+     * How the payment was made (mode, sub-option, reference) for every learner in this run,
+     * recorded with the payment date / transaction id. See OfflinePaymentDetailsService.
+     */
+    private vacademy.io.admin_core_service.features.offline_payment.dto.OfflinePaymentDetailsDTO paymentDetails;
+
     /** true = preview only, no database writes */
     @Builder.Default
     private boolean dryRun = false;

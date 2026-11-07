@@ -1,0 +1,10 @@
+{
+    "checking": "जाँच हो रही है...",
+    "submitted": "जमा किया गया",
+    "notSubmitted": "जमा नहीं किया गया",
+    "viewSubmission": "सबमिशन देखें",
+    "upload": "अपलोड करें",
+    "submissionHeading": "सबमिशन",
+    "fileNamePrefix": "सबमिशन",
+    "loadFailedError": "सबमिशन लोड नहीं हो सका। कृपया पुनः प्रयास करें।"
+}

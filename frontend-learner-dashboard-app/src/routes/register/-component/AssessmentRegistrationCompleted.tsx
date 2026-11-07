@@ -15,6 +15,7 @@ import {
   storeAssessmentInfo,
 } from "@/routes/assessment/examination/-utils.ts/useFetchAssessment";
 import { CheckCircle, Timer, ArrowRight, Sparkle } from "@phosphor-icons/react";
+import { useTranslation } from "react-i18next";
 
 interface TimeLeft {
   hours: number;
@@ -31,6 +32,7 @@ const AssessmentRegistrationCompleted = ({
   assessmentName: string;
   timeLeft: TimeLeft;
 }) => {
+  const { t } = useTranslation("registrationA");
   const navigate = useNavigate();
   const { data: instituteDetails } = useInstituteDetails();
 
@@ -78,7 +80,7 @@ const AssessmentRegistrationCompleted = ({
             });
           } catch (error) {
             console.error("Error fetching details:", error);
-            toast.error("Failed to fetch details");
+            toast.error(t("completed.toast.fetchDetailsError"));
             navigate({
               to: assessmentRoute,
               search: { isPublicAssessment: true },
@@ -129,10 +131,10 @@ const AssessmentRegistrationCompleted = ({
           <div className="flex flex-col items-center gap-1.5 text-center">
             <span className="inline-flex items-center gap-1 rounded-full bg-success-50 border border-success-200 px-3 py-0.5 text-caption font-semibold uppercase tracking-wide text-success-700">
               <Sparkle size={12} weight="fill" />
-              Registration Completed
+              {t("common.registrationCompletedBadge")}
             </span>
             <h1 className="text-xl sm:text-2xl font-semibold text-neutral-900">
-              You&apos;re all set!
+              {t("completed.title")}
             </h1>
             <p className="text-sm text-neutral-500 max-w-ch-26">
               {assessmentName}
@@ -145,17 +147,17 @@ const AssessmentRegistrationCompleted = ({
               <div className="flex flex-col items-center gap-1.5">
                 <div className="flex items-center gap-1.5 text-caption font-semibold uppercase tracking-wide text-success-700">
                   <span className="size-1.5 rounded-full bg-success-500 animate-pulse" />
-                  Live Now
+                  {t("completed.liveBadge")}
                 </div>
                 <span className="text-sm font-medium text-neutral-700">
-                  Your assessment is ready to begin
+                  {t("completed.liveMessage")}
                 </span>
               </div>
             ) : (
               <div className="flex flex-col items-center gap-2">
                 <div className="flex items-center gap-2 text-xs font-medium uppercase tracking-wide text-primary-700">
                   <Timer size={14} weight="bold" />
-                  Assessment goes live in
+                  {t("completed.goesLiveIn")}
                 </div>
                 <span className="text-2xl sm:text-3xl font-bold tabular-nums text-primary-600">
                   {String(timeLeft.hours).padStart(2, "0")}
@@ -178,7 +180,7 @@ const AssessmentRegistrationCompleted = ({
             disable={!isLive}
             onClick={handleNavigateAssessment}
           >
-            Go To Assessment
+            {t("completed.cta")}
             <ArrowRight
               size={16}
               weight="bold"
@@ -188,7 +190,7 @@ const AssessmentRegistrationCompleted = ({
 
           {!isLive && (
             <p className="text-center text-xs text-neutral-400">
-              This button will unlock automatically when the assessment begins.
+              {t("completed.unlockHint")}
             </p>
           )}
         </div>

@@ -1,0 +1,48 @@
+{
+    "navHeading": "اجتماعات الفريق",
+    "heading": "اجتماعات الفريق",
+    "subtitle": "الاجتماعات التي تستضيفها أنت وفريقك",
+    "unknownHost": "مضيف غير معروف",
+    "noTeamTitle": "لا تدير فريقًا بعد",
+    "noTeamDescription": "تعرض اجتماعات الفريق جداول جميع من يتبعونك. بمجرد أن يتبعك أعضاء الفريق، ستظهر اجتماعاتهم هنا.",
+    "emptyTitle": "لا توجد اجتماعات فريق هذا الأسبوع",
+    "emptyDescription": "ستظهر هنا الاجتماعات التي تستضيفها أنت أو فريقك.",
+    "hostFilterAriaLabel": "تصفية الاجتماعات حسب المضيف",
+    "allHosts": "كل المضيفين ({{count}})",
+    "filterByHost": "التصفية حسب المضيف",
+    "searchHostPlaceholder": "البحث عن مضيف…",
+    "noHostFound": "لم يتم العثور على مضيف.",
+    "durationMinutes": "{{minutes}}m",
+    "durationHours": "{{hours}}h",
+    "durationHoursMinutes": "{{hours}}h {{minutes}}m",
+    "showingStatus": "Showing: {{status}}",
+    "clearFilter": "Clear filter",
+    "filteredEmptyTitle": "No {{status}} meetings this week",
+    "filteredEmptyDescription": "Pick another status card above, or show every meeting.",
+    "showAllMeetings": "Show all meetings",
+    "teamBadge": "Your team: {{count}} people",
+    "kpi": {
+        "thisWeek": "This week",
+        "hosts": "{{count}} hosts",
+        "onCalls": "On calls",
+        "onCallsDetail": "Booked time, not counting cancelled",
+        "pending": "Pending approval",
+        "pendingDetail": "Waiting for the host to approve"
+    },
+    "byHost": {
+        "title": "Meetings by host",
+        "subtitle": "This week",
+        "footer": "Click a host to filter. Host options come from this week’s meetings and reset when you change the week.",
+        "empty": "No meetings this week.",
+        "rowTitle": "Show only {{name}}"
+    },
+    "attention": {
+        "title": "Needs attention",
+        "pendingTitle": "Pending approval: {{count}}",
+        "pendingText": "Hosts approve from their own schedule",
+        "noShowTitle": "No-shows: {{count}}",
+        "noShowText": "Follow up or rebook them",
+        "allClear": "Nothing needs attention this week.",
+        "show": "Show"
+    }
+}

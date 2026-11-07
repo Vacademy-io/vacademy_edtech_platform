@@ -1,0 +1,53 @@
+{
+    "heading": "Counsellor Allocation",
+    "subheading": "Configure how counsellors are assigned to enquiries",
+    "autoAssign": {
+        "label": "Auto-Assign",
+        "desc": "Automatically assign enquiries to counsellors"
+    },
+    "allowParent": {
+        "label": "Allow Parent",
+        "desc": "Let parents choose their preferred counsellor"
+    },
+    "assignmentStrategy": {
+        "label": "Assignment Strategy"
+    },
+    "strategies": {
+        "roundRobin": {
+            "label": "Round Robin",
+            "desc": "Distributes equally in rotation"
+        },
+        "random": {
+            "label": "Random",
+            "desc": "Picks any counselor randomly"
+        },
+        "weighted": {
+            "label": "Weighted",
+            "desc": "Senior counselors handle more",
+            "disabledNote": "Per-counselor weights coming soon"
+        },
+        "performance": {
+            "label": "Performance",
+            "desc": "Routes to highest-converting counselor"
+        },
+        "leastLoaded": {
+            "label": "Least Loaded",
+            "desc": "Assigns to counselor with fewest active leads"
+        }
+    },
+    "advanced": {
+        "trigger": "Advanced",
+        "maxActiveLeads": {
+            "label": "Max active leads per counselor",
+            "placeholder": "No limit",
+            "helper": "Leave empty for no limit. New leads beyond this cap will go to the next available counselor."
+        }
+    },
+    "counsellors": {
+        "label": "Counsellors",
+        "optional": "(Optional)",
+        "desc": "Add counsellor IDs for assignment pool",
+        "inputPlaceholder": "Enter counsellor ID",
+        "addButton": "Add"
+    }
+}

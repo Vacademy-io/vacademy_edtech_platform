@@ -1,0 +1,47 @@
+{
+    "title": "पूर्णता और पूर्व-छात्र समूह",
+    "subtitle": "चैलेंज प्रोग्राम पूरा करने वाले उपयोगकर्ता",
+    "emptyState": {
+        "message": "कोई पूर्णता डेटा उपलब्ध नहीं है",
+        "hint": "समूह डेटा देखने के लिए पूर्णता टेम्पलेट चुनें"
+    },
+    "createCampaign": "अभियान बनाएं",
+    "export": "निर्यात करें",
+    "summary": {
+        "totalCompleted": "कुल पूर्ण",
+        "templatesTracked": "ट्रैक किए गए टेम्पलेट्स",
+        "currentPage": "वर्तमान पृष्ठ",
+        "dateRange": "तिथि सीमा"
+    },
+    "timeline": {
+        "title": "पूर्णता समयरेखा",
+        "completionsCount_one": "{{count}} पूर्णता",
+        "completionsCount_other": "{{count}} पूर्णताएं"
+    },
+    "completionTemplates": "पूर्णता टेम्पलेट्स",
+    "table": {
+        "user": "उपयोगकर्ता",
+        "contact": "संपर्क",
+        "center": "केंद्र",
+        "completed": "पूर्ण",
+        "actions": "कार्रवाइयां"
+    },
+    "anonymous": "अनाम",
+    "parentLabel": "अभिभावक: {{name}}",
+    "unknown": "अज्ञात",
+    "notAvailable": "उपलब्ध नहीं",
+    "send": "भेजें",
+    "pagination": {
+        "showing_one": "{{count}} में से {{shown}} उपयोगकर्ता दिखाया जा रहा है",
+        "showing_other": "{{count}} में से {{shown}} उपयोगकर्ता दिखाए जा रहे हैं",
+        "previous": "पिछला",
+        "next": "अगला"
+    },
+    "csv": {
+        "name": "नाम",
+        "email": "ईमेल",
+        "phone": "फ़ोन",
+        "completionDate": "पूर्णता तिथि",
+        "center": "केंद्र"
+    }
+}

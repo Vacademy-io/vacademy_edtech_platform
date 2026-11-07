@@ -1,0 +1,183 @@
+{
+    "guestHome": {
+        "placeholder": "Bonjour \"/live-class-guest/\" !"
+    },
+    "common": {
+        "errorLoadingSession": "Erreur lors du chargement des détails de la session : {{message}}",
+        "markAttendanceFailed": "Échec de l'enregistrement de la présence",
+        "liveBadge": "En direct",
+        "phoneExamplePlaceholder": "123 456 7890",
+        "hostedBy": "Organisé par",
+        "timezoneLabel": "Fuseau horaire : {{tz}}",
+        "joinMeetingLink": "Rejoindre le lien de la réunion"
+    },
+    "waitingRoom": {
+        "getReady": "Préparez-vous ! La session commencera dans :",
+        "thumbnailAlt": "Miniature de la session",
+        "toast": {
+            "notOpenYetTitle": "La salle d'attente n'est pas encore ouverte.",
+            "notOpenYetDescription": "Elle ouvrira {{minutes}} minutes avant le début de la session."
+        }
+    },
+    "embed": {
+        "bbb": {
+            "joining": "Connexion...",
+            "joinButton": "Rejoindre {{liveSession}}",
+            "joinHint": "Cliquez pour rejoindre {{liveSession}} dans une nouvelle fenêtre"
+        },
+        "errors": {
+            "videoUrlUnavailable": "Impossible d'obtenir l'URL de la classe vidéo",
+            "notStartedOrEnded": "Ce cours n'a pas encore commencé ou est terminé.",
+            "joinFailed": "Échec de la connexion à la classe vidéo. Veuillez réessayer."
+        },
+        "youtube": {
+            "invalidUrl": "Format d'URL YouTube invalide",
+            "viewLiveLink": "Cliquez ici pour voir le direct"
+        },
+        "openingNewTab": "Ouverture du lien de la réunion dans un nouvel onglet...",
+        "noMeetingLink": "Aucun lien de réunion disponible pour cette session."
+    },
+    "audienceResponse": {
+        "form": {
+            "toast": {
+                "submitFailed": "Échec de l'envoi de la réponse. Veuillez réessayer."
+            },
+            "success": {
+                "defaultTitle": "Inscription réussie !",
+                "defaultMessage": "Merci pour votre réponse. Votre formulaire a été envoyé avec succès.",
+                "confirmationEmailNotice": "Un e-mail de confirmation vous sera envoyé sous peu.",
+                "redirecting_one": "Redirection dans {{count}} seconde…",
+                "redirecting_other": "Redirection dans {{count}} secondes…",
+                "submitAnotherDefault": "Envoyer une autre réponse",
+                "redirecting_many": "Redirection dans {{count}} secondes…"
+            },
+            "campaign": {
+                "objectiveLabel": "Objectif :"
+            },
+            "details": {
+                "title": "Veuillez renseigner vos coordonnées",
+                "subtitle": "Ces informations serviront à vous contacter au sujet de la campagne.",
+                "requiredLegend": "Champ obligatoire",
+                "progress": "{{completed}} champ(s) obligatoire(s) sur {{total}} complété(s)"
+            },
+            "noFields": {
+                "title": "Aucun champ de formulaire disponible",
+                "description": "Cette campagne n'a aucun champ personnalisé configuré.",
+                "debugCount": "Champs personnalisés depuis l'API : {{count}}"
+            },
+            "selectParentFirst": "Choisissez d’abord {{name}}",
+            "submitButton": {
+                "submitting": "Envoi en cours...",
+                "default": "Envoyer la réponse"
+            },
+            "errors": {
+                "title": "Veuillez compléter les champs signalés"
+            }
+        }
+    },
+    "bookingResponse": {
+        "errorPage": {
+            "incompleteTitle": "Ce lien de réservation semble incomplet",
+            "incompleteDescription": "Veuillez vérifier le lien que vous avez reçu et l'ouvrir exactement tel qu'il vous a été communiqué.",
+            "notFoundTitle": "Page de réservation introuvable",
+            "notFoundDescription": "Ce lien de réservation est peut-être invalide ou n'est plus actif. Veuillez vérifier le lien ou contacter la personne qui vous l'a communiqué."
+        },
+        "slotPicker": {
+            "prevDaysAria": "Jours précédents",
+            "nextDaysAria": "Jours suivants",
+            "loading": "Chargement des créneaux disponibles…",
+            "loadError": "Impossible de charger les créneaux disponibles. Veuillez réessayer.",
+            "noSlots": "Aucun créneau disponible le {{day}}. Essayez un autre jour."
+        },
+        "confirmation": {
+            "pendingTitle": "Demande de réservation reçue",
+            "confirmedTitle": "Réservation confirmée",
+            "pendingWithHost": "Votre demande pour {{title}} est en attente de confirmation de la part de {{host}}. Nous vous informerons dès qu'elle sera approuvée.",
+            "pendingNoHost": "Votre demande pour {{title}} est en attente de confirmation. Nous vous informerons dès qu'elle sera approuvée.",
+            "confirmedWithHost": "Vous êtes inscrit(e) pour {{title}} avec {{host}}.",
+            "confirmedNoHost": "Vous êtes inscrit(e) pour {{title}}.",
+            "emailSentWithAddress": "Un e-mail de confirmation avec ces détails a été envoyé à {{email}}.",
+            "emailSentGeneric": "Une confirmation avec ces détails vous a été envoyée.",
+            "manageLink": "Gérer la réservation (annuler ou reprogrammer)"
+        },
+        "page": {
+            "bookingFailed": "Impossible de finaliser votre réservation. Veuillez réessayer.",
+            "minutesShort": "min",
+            "bookingInProgress": "Réservation de votre session…",
+            "chooseSession": "Choisissez une session",
+            "pickATime": "Choisissez un horaire",
+            "backToTimeAria": "Retour au choix de l'horaire",
+            "questionsTitle": "Quelques questions",
+            "detailsTitle": "Vos coordonnées",
+            "form": {
+                "nameLabel": "Nom",
+                "namePlaceholder": "Votre nom complet",
+                "emailLabel": "E-mail",
+                "emailPlaceholder": "vous@exemple.com",
+                "phoneLabel": "Téléphone",
+                "phonePlaceholder": "Votre numéro de téléphone",
+                "identityHint": "Indiquez au moins un e-mail ou un numéro de téléphone afin que nous puissions vous communiquer les détails de votre réservation.",
+                "authedHint": "Nous utiliserons le nom et les coordonnées de votre compte — répondez simplement aux questions ci-dessous."
+            },
+            "submit": {
+                "booking": "Réservation…",
+                "requestBooking": "Demander la réservation",
+                "confirmBooking": "Confirmer la réservation"
+            },
+            "validation": {
+                "nameRequired": "Veuillez saisir votre nom",
+                "emailInvalid": "Veuillez saisir une adresse e-mail valide",
+                "identityRequired": "Veuillez indiquer un e-mail ou un numéro de téléphone",
+                "phoneInvalid": "Veuillez saisir un numéro de téléphone valide"
+            }
+        }
+    },
+    "bookingManage": {
+        "errorPage": {
+            "incompleteTitle": "Ce lien de réservation semble incomplet",
+            "incompleteDescription": "Veuillez ouvrir le lien de gestion exactement tel qu'il apparaît dans votre e-mail de confirmation."
+        },
+        "status": {
+            "confirmed": "Confirmée",
+            "pending": "En attente de confirmation",
+            "cancelled": "Annulée",
+            "rescheduled": "Reprogrammée"
+        },
+        "notFound": {
+            "title": "Réservation introuvable",
+            "description": "Ce lien de gestion est peut-être invalide ou expiré. Veuillez utiliser le lien de votre e-mail de confirmation."
+        },
+        "toast": {
+            "cancelSuccess": "Votre réservation a été annulée.",
+            "cancelError": "Impossible d'annuler la réservation. Veuillez réessayer.",
+            "rescheduleSuccess": "Votre réservation a été reprogrammée.",
+            "rescheduleError": "Impossible de reprogrammer la réservation. Veuillez réessayer."
+        },
+        "viewDetails": "Voir les détails de la réservation",
+        "backToDetailsAria": "Retour aux détails de la réservation",
+        "pickNewTime": "Choisir un nouvel horaire",
+        "loadingAvailability": "Chargement des disponibilités…",
+        "confirmReschedule": {
+            "confirming": "Reprogrammation…",
+            "default": "Confirmer la reprogrammation"
+        },
+        "bookedFor": "Réservé pour",
+        "statusNotes": {
+            "pending": "Cette réservation est en attente de confirmation de l'hôte. Vous serez informé(e) dès son approbation.",
+            "cancelled": "Cette réservation a été annulée.",
+            "rescheduled": "Cette réservation a été reprogrammée. Veuillez utiliser le lien de gestion de votre dernière confirmation pour le nouvel horaire.",
+            "past": "Cette réservation appartient au passé."
+        },
+        "reschedule": "Reprogrammer",
+        "cancelBooking": "Annuler la réservation",
+        "cancelDialog": {
+            "heading": "Annuler cette réservation ?",
+            "keepBooking": "Conserver la réservation",
+            "confirmCancel": "Oui, annuler",
+            "cancelling": "Annulation…",
+            "releaseNotice": "Votre créneau du <bold>{{slot}}</bold> sera libéré. Cette action est irréversible.",
+            "reasonLabel": "Motif (facultatif)",
+            "reasonPlaceholder": "Indiquez à l'hôte la raison de votre annulation"
+        }
+    }
+}

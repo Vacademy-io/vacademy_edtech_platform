@@ -8,10 +8,13 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import vacademy.io.admin_core_service.features.institute_learner.repository.StudentSessionInstituteGroupMappingRepository;
 import vacademy.io.admin_core_service.features.student_analysis.dto.comprehensive.ComprehensiveStudentReport;
+import vacademy.io.admin_core_service.features.student_analysis.service.StudentRawDetailService;
 import vacademy.io.admin_core_service.features.student_analysis.service.aggregation.ComprehensiveReportAggregator;
 import vacademy.io.admin_core_service.features.student_analysis.service.aggregation.ReportModule;
 
 import java.time.LocalDate;
+import java.util.Arrays;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
@@ -41,6 +44,7 @@ public class StudentAnalysisInternalController {
 
     private final ComprehensiveReportAggregator comprehensiveReportAggregator;
     private final StudentSessionInstituteGroupMappingRepository mappingRepository;
+    private final StudentRawDetailService rawDetailService;
 
     @GetMapping("/student-360")
     public ResponseEntity<ComprehensiveStudentReport> getStudent360(
@@ -51,16 +55,72 @@ public class StudentAnalysisInternalController {
             @RequestParam(value = "startDate", required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
             @RequestParam(value = "endDate", required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate) {
 
-        // Membership gate + batch fallback in one lookup.
-        Optional<String> latestPackageSession =
-                mappingRepository.findLatestPackageSessionIdByUserIdAndInstituteId(userId, instituteId);
+        Optional<String> latestPackageSession = latestEnrolment(userId, instituteId);
         if (latestPackageSession.isEmpty()) {
-            log.warn("student-360: user {} has no enrollment in institute {} — refusing", userId, instituteId);
             return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
         }
         String effectiveBatchId = batchId != null ? batchId : latestPackageSession.get();
+        LocalDate[] window = window(startDate, endDate);
+        LocalDate effectiveStart = window[0];
+        LocalDate effectiveEnd = window[1];
 
-        // Default window: last 30 days; clamp pathological ranges.
+        Set<String> modules = ReportModule.resolveCsv(modulesCsv);
+        log.info("student-360: user={} institute={} batch={} modules={} range={}..{}",
+                userId, instituteId, effectiveBatchId, modules, effectiveStart, effectiveEnd);
+
+        ComprehensiveStudentReport report = comprehensiveReportAggregator.collect(
+                userId, instituteId, effectiveBatchId, effectiveStart, effectiveEnd, modules);
+        return ResponseEntity.ok(report);
+    }
+
+    /**
+     * The data the report collects and then discards (per-session attendance, per-module progress vs
+     * the batch, slide-by-slide study, assignment submissions, doubt text, per-attempt analysis) for
+     * the MCP {@code learner_report} tool, whose own AI app writes the report. No model runs here.
+     * Same membership gate, batch fallback and window rules as {@link #getStudent360}.
+     */
+    @GetMapping("/raw-detail")
+    public ResponseEntity<Map<String, Object>> getRawDetail(
+            @RequestParam("userId") String userId,
+            @RequestParam("instituteId") String instituteId,
+            @RequestParam(value = "batchId", required = false) String batchId,
+            @RequestParam(value = "parts", required = false) String partsCsv,
+            @RequestParam(value = "attemptLimit", required = false) Integer attemptLimit,
+            @RequestParam(value = "startDate", required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
+            @RequestParam(value = "endDate", required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate) {
+
+        Optional<String> latestPackageSession = latestEnrolment(userId, instituteId);
+        if (latestPackageSession.isEmpty()) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+        }
+        // A caller-named batch must be one of this learner's batches in this institute: module
+        // progress reports the batch's averages, which must never come from another institute.
+        if (batchId != null && mappingRepository
+                .findByUserIdAndPackageSessionIdAndInstituteId(userId, batchId, instituteId).isEmpty()) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+        }
+        String effectiveBatchId = batchId != null ? batchId : latestPackageSession.get();
+        LocalDate[] window = window(startDate, endDate);
+        Set<String> parts = StudentRawDetailService.resolveParts(
+                partsCsv == null ? null : Arrays.asList(partsCsv.split(",")));
+        log.info("raw-detail: user={} institute={} batch={} parts={} range={}..{}",
+                userId, instituteId, effectiveBatchId, parts, window[0], window[1]);
+
+        return ResponseEntity.ok(rawDetailService.collect(
+                userId, instituteId, effectiveBatchId, window[0], window[1], parts, attemptLimit));
+    }
+
+    /** Membership gate + batch fallback in one lookup: empty when the user is not in this institute. */
+    private Optional<String> latestEnrolment(String userId, String instituteId) {
+        Optional<String> latest = mappingRepository.findLatestPackageSessionIdByUserIdAndInstituteId(userId, instituteId);
+        if (latest.isEmpty()) {
+            log.warn("student-analysis internal: user {} has no enrollment in institute {} — refusing", userId, instituteId);
+        }
+        return latest;
+    }
+
+    /** Default window: last 30 days; swaps an inverted range and clamps pathological ones. */
+    private LocalDate[] window(LocalDate startDate, LocalDate endDate) {
         LocalDate effectiveEnd = endDate != null ? endDate : LocalDate.now();
         LocalDate effectiveStart = startDate != null ? startDate : effectiveEnd.minusDays(30);
         if (effectiveStart.isAfter(effectiveEnd)) {
@@ -71,13 +131,6 @@ public class StudentAnalysisInternalController {
         if (effectiveStart.isBefore(effectiveEnd.minusDays(MAX_RANGE_DAYS))) {
             effectiveStart = effectiveEnd.minusDays(MAX_RANGE_DAYS);
         }
-
-        Set<String> modules = ReportModule.resolveCsv(modulesCsv);
-        log.info("student-360: user={} institute={} batch={} modules={} range={}..{}",
-                userId, instituteId, effectiveBatchId, modules, effectiveStart, effectiveEnd);
-
-        ComprehensiveStudentReport report = comprehensiveReportAggregator.collect(
-                userId, instituteId, effectiveBatchId, effectiveStart, effectiveEnd, modules);
-        return ResponseEntity.ok(report);
+        return new LocalDate[]{effectiveStart, effectiveEnd};
     }
 }

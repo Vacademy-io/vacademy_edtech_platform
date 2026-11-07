@@ -1,0 +1,12 @@
+{
+    "status": {
+        "paused": "En pause",
+        "recording": "Enregistrement en cours..."
+    },
+    "startRecording": "Démarrer l'enregistrement",
+    "pause": "Pause",
+    "resume": "Reprendre",
+    "stop": "Arrêter",
+    "reset": "Réinitialiser",
+    "transcriptionHeading": "Transcription en temps réel"
+}

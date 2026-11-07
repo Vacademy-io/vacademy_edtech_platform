@@ -1,0 +1,11 @@
+{
+    "offlineSettings": "إعدادات وضع عدم الاتصال",
+    "failedToLoadOfflineSettings": "فشل تحميل إعدادات وضع عدم الاتصال",
+    "offlineSettingsSaved": "تم حفظ إعدادات وضع عدم الاتصال",
+    "failedToSaveOfflineSettings": "فشل حفظ إعدادات وضع عدم الاتصال",
+    "allowOfflineDownloadsByDefault": "السماح بالتنزيلات دون اتصال افتراضيًا",
+    "appliesToEverythingDescription": "ينطبق هذا على كل ما في هذه الدورة ولم يُغطَّ بقاعدة أكثر تحديدًا.",
+    "fineTuneFromMenu": "اضبط الإعداد لكل مادة أو وحدة أو فصل أو شريحة من <strong>قائمتها</strong>",
+    "blockAlwaysWins": "<strong>الحظر يفوز دائمًا</strong> - حظر فصل يحظر شرائحه حتى لو كانت مسموحة.",
+    "embeddedContentNeedsInternet": "يحتاج محتوى YouTube/Vimeo/المضمّن دائمًا إلى اتصال بالإنترنت — لا يمكن تنزيله بغض النظر عن هذه الإعدادات."
+}

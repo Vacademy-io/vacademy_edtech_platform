@@ -8,6 +8,7 @@ import vacademy.io.admin_core_service.features.admin_activity_logs.annotation.Au
 import vacademy.io.admin_core_service.features.institute.dto.settings.SwitchWhatsAppProviderRequest;
 import vacademy.io.admin_core_service.features.institute.dto.settings.WhatsAppProviderCredentialsRequest;
 import vacademy.io.admin_core_service.features.institute.dto.settings.WhatsAppProviderStatusResponse;
+import vacademy.io.admin_core_service.features.institute.service.setting.InstituteSettingAccessGuard;
 import vacademy.io.admin_core_service.features.institute.service.setting.WhatsAppSettingService;
 import vacademy.io.common.auth.model.CustomUserDetails;
 
@@ -19,6 +20,14 @@ public class InstituteWhatsAppSettingController {
 
     private final WhatsAppSettingService whatsappSettingService;
 
+    // The status response carries the provider credentials unmasked, and the writes replace
+    // them: institute staff of instituteId only (the same level the generic save-setting
+    // applies to WHATSAPP_SETTING). Callers: admin dashboard WhatsApp settings, webhook setup
+    // and template list, all with clientId == instituteId.
+    private final InstituteSettingAccessGuard instituteSettingAccessGuard;
+
+    private static final String WHATSAPP_SETTING_KEY = "WHATSAPP_SETTING";
+
     /**
      * Get configured providers and active provider status.
      */
@@ -26,6 +35,7 @@ public class InstituteWhatsAppSettingController {
     public ResponseEntity<WhatsAppProviderStatusResponse> getProviderStatus(
             @RequestAttribute("user") CustomUserDetails userDetails,
             @RequestParam("instituteId") String instituteId) {
+        instituteSettingAccessGuard.requireCanReadKey(userDetails, instituteId, WHATSAPP_SETTING_KEY);
         log.info("Fetching WhatsApp status for instituteId: {}", instituteId);
         WhatsAppProviderStatusResponse status = whatsappSettingService.getProviderStatus(instituteId);
         return ResponseEntity.ok(status);
@@ -45,6 +55,7 @@ public class InstituteWhatsAppSettingController {
             @RequestAttribute("user") CustomUserDetails userDetails,
             @RequestParam("instituteId") String instituteId,
             @RequestBody SwitchWhatsAppProviderRequest request) {
+        instituteSettingAccessGuard.requireCanWrite(userDetails, instituteId, WHATSAPP_SETTING_KEY);
         log.info("Switching provider for instituteId: {} to new provider: {}", instituteId, request.getNewProvider());
         whatsappSettingService.switchProvider(instituteId, request);
         return ResponseEntity.ok("Successfully switched WhatsApp Provider");
@@ -65,6 +76,7 @@ public class InstituteWhatsAppSettingController {
             @RequestAttribute("user") CustomUserDetails userDetails,
             @RequestParam("instituteId") String instituteId,
             @RequestBody WhatsAppProviderCredentialsRequest request) {
+        instituteSettingAccessGuard.requireCanWrite(userDetails, instituteId, WHATSAPP_SETTING_KEY);
         log.info("Updating credentials for provider '{}' in instituteId: {}", request.getProviderName(), instituteId);
         whatsappSettingService.updateCredentials(instituteId, request);
         return ResponseEntity.ok("Successfully updated WhatsApp Credentials");
@@ -85,6 +97,7 @@ public class InstituteWhatsAppSettingController {
             @RequestAttribute("user") CustomUserDetails userDetails,
             @RequestParam("instituteId") String instituteId,
             @PathVariable("providerName") String providerName) {
+        instituteSettingAccessGuard.requireCanWrite(userDetails, instituteId, WHATSAPP_SETTING_KEY);
         log.info("Removing credentials for provider '{}' in instituteId: {}", providerName, instituteId);
         whatsappSettingService.removeCredentials(instituteId, providerName);
         return ResponseEntity.ok("Successfully removed WhatsApp Credentials");

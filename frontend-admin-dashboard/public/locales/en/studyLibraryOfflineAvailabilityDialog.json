@@ -1,0 +1,30 @@
+{
+    "offlineAvailabilityFor": "Offline Availability - {{name}}",
+    "loadingEllipsis": "Loading…",
+    "canLearnersDownload": "Can learners download this {{node}} for offline use?",
+    "inheritDefault": "Inherit (default)",
+    "inheritDescription": "Follows the parent / course default",
+    "allow": "Allow",
+    "allowDescription": "Downloadable, unless a parent is blocked",
+    "block": "Block",
+    "blockDescription": "Never downloadable",
+    "onlineOnlyWarningSlide_one": "{{online}} of {{total}} item in this section is streamed or interactive (YouTube/Vimeo/Drive/embeds, assessments) and can never be downloaded — learners will see \"Requires internet\" on it regardless of this setting.",
+    "onlineOnlyWarningSlide_other": "{{online}} of {{total}} items in this section are streamed or interactive (YouTube/Vimeo/Drive/embeds, assessments) and can never be downloaded — learners will see \"Requires internet\" on them regardless of this setting.",
+    "onlineOnlyWarningSection_one": "{{online}} of {{total}} item in this section are streamed or interactive (YouTube/Vimeo/Drive/embeds, assessments) and can never be downloaded — learners will see \"Requires internet\" on them regardless of this setting.",
+    "onlineOnlyWarningSection_other": "{{online}} of {{total}} items in this section are streamed or interactive (YouTube/Vimeo/Drive/embeds, assessments) and can never be downloaded — learners will see \"Requires internet\" on them regardless of this setting.",
+    "noPreviewWarning": "Could not load a content preview for this batch — the setting will still be saved.",
+    "cancel": "Cancel",
+    "savingEllipsis": "Saving…",
+    "save": "Save",
+    "loadFailed": "Failed to load offline availability",
+    "saved": "Offline availability saved",
+    "saveFailed": "Failed to save offline availability",
+    "nodeLabel": {
+        "package": "course (all batches)",
+        "packageSession": "batch",
+        "subject": "subject",
+        "module": "module",
+        "chapter": "chapter",
+        "slide": "slide"
+    }
+}

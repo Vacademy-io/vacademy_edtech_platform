@@ -1,0 +1,16 @@
+{
+    "status": {
+        "new": "नया",
+        "contacted": "संपर्क किया गया",
+        "qualified": "योग्य",
+        "notEligible": "अपात्र",
+        "followUp": "फॉलो अप",
+        "closed": "बंद",
+        "converted": "परिवर्तित",
+        "admitted": "प्रवेशित"
+    },
+    "conversion": {
+        "hot": "गर्म",
+        "cold": "ठंडा"
+    }
+}

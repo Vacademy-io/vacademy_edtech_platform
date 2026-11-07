@@ -1,0 +1,39 @@
+{
+    "intro": "Les documents réglementaires générés à partir des cycles de paie déjà approuvés. Prévisualisez-en un pour voir ce qu'il contient et ce qui manque, puis téléchargez le fichier pour le portail.",
+    "monthlyFilingsLabel": "Déclarations mensuelles",
+    "tdsLabel": "TDS :",
+    "preview": "Aperçu",
+    "download": "Télécharger",
+    "preparing": "Préparation…",
+    "downloadedToast": "{{title}} téléchargé",
+    "downloadErrorFallback": "Impossible de télécharger {{title}}.",
+    "filings": {
+        "ecr": {
+            "title": "PF ECR",
+            "blurb": "Retour électronique mensuel type challan-cum-return de l'EPFO. Téléversé sur le portail employeur de l'EPFO.",
+            "fileHint": "Texte ECR v2 — à valider sur le portail EPFO avant votre premier téléversement réel."
+        },
+        "esi": {
+            "title": "Déclaration ESI",
+            "blurb": "Déclaration de cotisation ESIC mensuelle pour les personnes assurées."
+        },
+        "pt": {
+            "title": "Déclaration de taxe professionnelle",
+            "blurb": "Déclaration mensuelle de taxe professionnelle par État, selon les tranches."
+        },
+        "form24q": {
+            "title": "Formulaire 24Q",
+            "blurb": "Déclaration trimestrielle du TDS sur salaires, réconciliée avec les challans enregistrés.",
+            "fileHint": "CSV destiné à un préparateur de déclaration — ce n'est pas le fichier e-TDS FVU lui-même."
+        },
+        "form16": {
+            "title": "Formulaire 16 (partie B)",
+            "blurb": "Le relevé annuel de salaire et de TDS d'un employé. La partie A provient de TRACES."
+        },
+        "wps": {
+            "title": "Fichier de salaire WPS",
+            "blurb": "Fichier du système de protection des salaires (WPS) pour la banque / le ministère du Travail.",
+            "fileHint": "Mise en page v1 — à valider auprès de votre banque agent WPS avant votre première soumission réelle."
+        }
+    }
+}

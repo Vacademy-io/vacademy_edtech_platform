@@ -1,0 +1,16 @@
+{
+    "popover": {
+        "title": "إعدادات الأسئلة",
+        "questionTypeLabel": "نوع السؤال"
+    },
+    "comprehensionText": "نص الفهم",
+    "question": {
+        "labelWithNumber": "السؤال {{number}}"
+    },
+    "answer": {
+        "label": "الإجابة"
+    },
+    "explanation": {
+        "label": "الشرح:"
+    }
+}

@@ -1,0 +1,13 @@
+{
+    "errors": {
+        "talentCutFromProduction": "Talent cut from production",
+        "scoreCutFromProduction": "Score cut from production"
+    },
+    "hint": {
+        "clickAnyStageForDetails": "Click any stage for details"
+    },
+    "directorTicker": {
+        "label": "Director:",
+        "workingOn": "working on {{stage}}…"
+    }
+}

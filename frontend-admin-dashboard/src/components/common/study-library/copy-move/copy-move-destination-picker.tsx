@@ -620,7 +620,10 @@ export const CopyMoveDestinationPicker = ({
                         label="Position"
                         value={placement.position}
                         options={[
-                            { value: 'BOTTOM', label: 'End of chapter' },
+                            {
+                                value: 'BOTTOM',
+                                label: `End of ${getTerminology(ContentTerms.Chapters, SystemTerms.Chapters).toLocaleLowerCase()}`,
+                            },
                             { value: 'TOP', label: 'Beginning' },
                         ]}
                         onChange={(position) =>

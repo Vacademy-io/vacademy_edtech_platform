@@ -1,0 +1,15 @@
+{
+    "title": "صندوق وارد واتساب",
+    "subtitle": "عرض محادثات واتساب والرد عليها",
+    "refresh": "تحديث",
+    "waitingCount_zero": "لا محادثات سلّمها الروبوت",
+    "waitingCount_one": "محادثة واحدة سلّمها الروبوت",
+    "waitingCount_two": "محادثتان سلّمهما الروبوت",
+    "waitingCount_few": "{{count}} محادثات سلّمها الروبوت",
+    "waitingCount_many": "{{count}} محادثة سلّمها الروبوت",
+    "waitingCount_other": "{{count}} محادثة سلّمها الروبوت",
+    "errors": {
+        "conversationsFallback": "تعذّر تحميل المحادثات",
+        "messagesFallback": "تعذّر تحميل هذه المحادثة"
+    }
+}

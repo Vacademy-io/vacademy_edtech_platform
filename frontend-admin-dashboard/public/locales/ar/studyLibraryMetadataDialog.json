@@ -1,0 +1,14 @@
+{
+    "courseDetails": "تفاصيل الدورة",
+    "editYourCourseMetadata": "عدّل البيانات الوصفية لدورتك",
+    "courseThumbnail": "الصورة المصغرة للدورة",
+    "courseThumbnailAlt": "الصورة المصغرة للدورة",
+    "courseName": "اسم الدورة",
+    "enterCourseName": "أدخل اسم الدورة",
+    "courseDescription": "وصف الدورة",
+    "enterCourseDescription": "أدخل وصف الدورة",
+    "tags": "الوسوم",
+    "addTags": "أضف وسومًا...",
+    "cancel": "إلغاء",
+    "saveChanges": "حفظ التغييرات"
+}

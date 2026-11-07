@@ -1,6 +1,7 @@
 import { StepContentProps } from '@/types/assessments/step-content-props';
-import React, { Dispatch, SetStateAction, useEffect, useState } from 'react';
+import React, { Dispatch, SetStateAction, useEffect, useRef, useState } from 'react';
 import { FormProvider, useForm, UseFormReturn } from 'react-hook-form';
+import { useTranslation } from 'react-i18next';
 import { z } from 'zod';
 import { AccessControlFormSchema } from '../../-utils/access-control-form-schema';
 import { MyButton } from '@/components/design-system/button';
@@ -40,6 +41,7 @@ import { MyFilterOption } from '@/types/assessments/my-filter';
 import { RoleTypeSelectedFilter } from '@/routes/dashboard/-components/RoleTypeComponent';
 import { UserRolesDataEntry } from '@/types/dashboard/user-roles';
 import Step4InviteUsers from './-components/Step4InviteUsers';
+import { usePendingFolderPrompt } from '@/components/common/assessment-folders/pending-folder-prompt';
 
 interface Role {
     roleId: string;
@@ -62,6 +64,7 @@ const Step4AccessControl: React.FC<StepContentProps> = ({
     handleCompleteCurrentStep,
     completedSteps,
 }) => {
+    const { t } = useTranslation('assessmentStep4AccessControl');
     const instituteId = getInstituteId();
     const queryClient = useQueryClient();
     const navigate = useNavigate();
@@ -78,6 +81,9 @@ const Step4AccessControl: React.FC<StepContentProps> = ({
         })
     );
     const [isAdminLoading, setIsAdminLoading] = useState(false);
+    // A ref, not state: the step-4 save's onSuccess reads this synchronously during the
+    // same tick the publish flow sets it, which a state update would not guarantee.
+    const isPublishingRef = useRef(false);
     const [existingInstituteUsersData, setExistingInstituteUsersData] = useState<
         InvitedUsersInterface[]
     >([]);
@@ -108,10 +114,14 @@ const Step4AccessControl: React.FC<StepContentProps> = ({
         }) => handlePostStep4Data(data, assessmentId, instituteId, type),
         onSuccess: async () => {
             queryClient.invalidateQueries({ queryKey: ['GET_QUESTIONS_DATA_FOR_SECTIONS'] });
+            // Publishing runs this same save first. Let the publish mutation own the
+            // toast, the store reset and the navigation, so the two do not both fire
+            // and the user does not see "saved" flash past on the way to "published".
+            if (isPublishingRef.current) return;
             if (assessmentId !== 'defaultId') {
                 useAccessControlStore.getState().reset();
                 window.history.back();
-                toast.success('Your assessment has been updated successfully!', {
+                toast.success(t('toasts.updateSuccess'), {
                     className: 'success-toast',
                     duration: 2000,
                 });
@@ -123,7 +133,7 @@ const Step4AccessControl: React.FC<StepContentProps> = ({
                 useSectionDetailsStore.getState().reset();
                 useTestAccessStore.getState().reset();
                 useAccessControlStore.getState().reset();
-                toast.success('Your assessment has been saved successfully!', {
+                toast.success(t('toasts.saveSuccess'), {
                     className: 'success-toast',
                     duration: 2000,
                 });
@@ -141,7 +151,7 @@ const Step4AccessControl: React.FC<StepContentProps> = ({
                 feature: 'assessment-step4-access-control',
                 tags: { actionType: assessmentId !== 'defaultId' ? 'update' : 'create' },
                 extra: { assessmentId, instituteId: instituteDetails?.id, examType },
-                fallbackMessage: 'Failed to save access control.',
+                fallbackMessage: t('errors.saveFailed'),
             });
         },
     });
@@ -165,29 +175,39 @@ const Step4AccessControl: React.FC<StepContentProps> = ({
             instituteId: string | undefined;
             type: string | undefined;
         }) => publishAssessment({ assessmentId, instituteId, type }),
-        onSuccess: async () => {
+        onSuccess: async (_data, variables) => {
             queryClient.invalidateQueries({ queryKey: ['GET_QUESTIONS_DATA_FOR_SECTIONS'] });
             if (assessmentId !== 'defaultId') {
                 useAccessControlStore.getState().reset();
                 window.history.back();
-                toast.success('Your assessment has been updated and published successfully!', {
+                toast.success(t('toasts.updatePublishSuccess'), {
                     className: 'success-toast',
                     duration: 2000,
                 });
                 queryClient.invalidateQueries({ queryKey: ['GET_ASSESSMENT_DETAILS'] });
             } else {
+                // Read before the stores reset below.
+                const publishedName =
+                    useBasicInfoStore.getState().testCreation?.assessmentName ?? '';
                 syncStep4DataWithStore(form);
                 setSavedAssessmentId('');
                 useBasicInfoStore.getState().reset();
                 useSectionDetailsStore.getState().reset();
                 useTestAccessStore.getState().reset();
                 useAccessControlStore.getState().reset();
-                toast.success('Your assessment has been published successfully!', {
+                toast.success(t('toasts.publishSuccess'), {
                     className: 'success-toast',
                     duration: 2000,
                 });
                 handleCompleteCurrentStep();
                 queryClient.invalidateQueries({ queryKey: ['GET_ASSESSMENT_DETAILS'] });
+                // With assessment folders on, the list asks which folder this goes in.
+                if (variables.assessmentId) {
+                    usePendingFolderPrompt.getState().setPending({
+                        assessmentId: variables.assessmentId,
+                        name: publishedName,
+                    });
+                }
                 navigate({
                     to: '/assessment/assessment-list',
                 });
@@ -198,34 +218,54 @@ const Step4AccessControl: React.FC<StepContentProps> = ({
                 feature: 'assessment-publish',
                 tags: { actionType: assessmentId !== 'defaultId' ? 'update' : 'create' },
                 extra: { assessmentId, instituteId: instituteDetails?.id, examType },
-                fallbackMessage: 'Failed to publish assessment.',
+                fallbackMessage: t('errors.publishFailed'),
             });
         },
     });
 
+    /**
+     * Save the access-control step, THEN publish.
+     *
+     * This used to wrap the fire-and-forget `onSubmit(formData)` in a promise that
+     * resolved immediately, so publish was dispatched while the step-4 save was still
+     * in flight — the assessment could go live before its access rules had landed, and
+     * whichever mutation finished second re-ran the toast/reset/navigate.
+     */
     const handlePublishAssessment = async () => {
+        if (isPublishingRef.current) return;
+        isPublishingRef.current = true;
         try {
-            // Get the form values using form.getValues() or whatever method is appropriate
-            const formData = form.getValues(); // or form.data, if applicable
-
-            // Trigger the onSubmit first with the correct form data
-            await new Promise<void>((resolve) => {
-                onSubmit(formData); // pass the form data here
-                resolve();
+            await handleSubmitStep4Form.mutateAsync({
+                data: form.getValues(),
+                assessmentId: assessmentId !== 'defaultId' ? assessmentId : savedAssessmentId,
+                instituteId: instituteDetails?.id,
+                type: examType,
             });
 
-            // After successful form submission, trigger the publish mutation
-            handlePublishAssessmentMutation.mutate({
+            await handlePublishAssessmentMutation.mutateAsync({
                 assessmentId: assessmentId !== 'defaultId' ? assessmentId : savedAssessmentId,
                 instituteId: instituteDetails?.id,
                 type: examType,
             });
         } catch (error) {
-            // Handle error silently
+            // Both mutations report through reportApiError in their own onError; nothing
+            // to add here beyond not publishing when the save failed.
+        } finally {
+            isPublishingRef.current = false;
         }
     };
-    const onInvalid = (err: unknown) => {
-        // Handle validation errors
+    const onInvalid = (errors: unknown) => {
+        // Surface the first problem instead of leaving the button looking dead.
+        const firstField = Object.keys((errors as Record<string, unknown>) ?? {})[0];
+        toast.error('Please fix the highlighted fields before continuing.', {
+            className: 'error-toast',
+            duration: 3000,
+        });
+        if (firstField) {
+            document
+                .querySelector(`[name="${firstField}"]`)
+                ?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
     };
 
     useEffect(() => {
@@ -310,7 +350,16 @@ const Step4AccessControl: React.FC<StepContentProps> = ({
 
     if (isLoading) return <DashboardLoader />;
 
-    if (isLoading || handleSubmitStep4Form.status === 'pending' || isAdminLoading)
+    // Publishing now shows the loader too. Previously only the step-4 save did, so the
+    // page stayed interactive during a publish and the button could be clicked again.
+    // This unmounts both buttons for the whole publish, which — together with the
+    // isPublishingRef re-entry guard — is what makes a double-click a no-op.
+    if (
+        isLoading ||
+        handleSubmitStep4Form.status === 'pending' ||
+        handlePublishAssessmentMutation.status === 'pending' ||
+        isAdminLoading
+    )
         return <DashboardLoader />;
 
     return (
@@ -318,10 +367,9 @@ const Step4AccessControl: React.FC<StepContentProps> = ({
             <form>
                 <div className="m-0 flex items-center justify-between p-0">
                     <div>
-                        <h1>Access Control</h1>
+                        <h1>{t('header.title')}</h1>
                         <p className="mt-1 text-sm text-muted-foreground">
-                            Control who can manage, view results, and evaluate this
-                            assessment.
+                            {t('header.description')}
                         </p>
                     </div>
                     <div className="flex items-center gap-6">
@@ -331,7 +379,7 @@ const Step4AccessControl: React.FC<StepContentProps> = ({
                             buttonType="secondary"
                             onClick={handleSubmit(onSubmit, onInvalid)}
                         >
-                            {assessmentId !== 'defaultId' ? 'Update' : 'Save'}
+                            {assessmentId !== 'defaultId' ? t('header.update') : t('header.save')}
                         </MyButton>
                         <MyButton
                             type="button"
@@ -339,7 +387,7 @@ const Step4AccessControl: React.FC<StepContentProps> = ({
                             buttonType="primary"
                             onClick={handlePublishAssessment}
                         >
-                            Publish
+                            {t('header.publish')}
                         </MyButton>
                     </div>
                 </div>
@@ -351,7 +399,11 @@ const Step4AccessControl: React.FC<StepContentProps> = ({
                         key: 'creation_access',
                     }) === 'REQUIRED' && (
                         <AccessControlCards
-                            heading={examType === 'SURVEY' ? 'Survey Creation Access' : 'Assessment Creation Access'}
+                            heading={
+                                examType === 'SURVEY'
+                                    ? t('sections.creationAccessSurvey')
+                                    : t('sections.creationAccess')
+                            }
                             keyVal="assessment_creation_access"
                             form={form}
                             existingInstituteUsersData={existingInstituteUsersData}
@@ -364,7 +416,11 @@ const Step4AccessControl: React.FC<StepContentProps> = ({
                         key: 'live_assessment_access',
                     }) === 'REQUIRED' && (
                         <AccessControlCards
-                            heading={examType === 'SURVEY' ? 'Live Survey Notification' : 'Live Assessment Notification'}
+                            heading={
+                                examType === 'SURVEY'
+                                    ? t('sections.liveNotificationSurvey')
+                                    : t('sections.liveNotification')
+                            }
                             keyVal="live_assessment_notification"
                             form={form}
                             existingInstituteUsersData={existingInstituteUsersData}
@@ -377,7 +433,11 @@ const Step4AccessControl: React.FC<StepContentProps> = ({
                         key: 'report_and_submission_access',
                     }) === 'REQUIRED' && (
                         <AccessControlCards
-                            heading={examType === 'SURVEY' ? 'Survey Submission & Report Access' : 'Assessment Submission & Report Access'}
+                            heading={
+                                examType === 'SURVEY'
+                                    ? t('sections.submissionReportAccessSurvey')
+                                    : t('sections.submissionReportAccess')
+                            }
                             keyVal="assessment_submission_and_report_access"
                             form={form}
                             existingInstituteUsersData={existingInstituteUsersData}
@@ -390,7 +450,7 @@ const Step4AccessControl: React.FC<StepContentProps> = ({
                         key: 'evaluation_access',
                     }) === 'REQUIRED' && (
                         <AccessControlCards
-                            heading="Evaluation Process"
+                            heading={t('sections.evaluationProcess')}
                             keyVal="evaluation_process"
                             form={form}
                             existingInstituteUsersData={existingInstituteUsersData}
@@ -420,6 +480,7 @@ const AccessControlCards = ({
     existingInstituteUsersData: InvitedUsersInterface[];
     setExistingInstituteUsersData: Dispatch<SetStateAction<InvitedUsersInterface[]>>;
 }) => {
+    const { t } = useTranslation('assessmentStep4AccessControl');
     const [selectedUsers, setSelectedUsers] = useState<string[]>(
         form.getValues(keyVal).map((user) => user.userId)
     );
@@ -573,7 +634,7 @@ const AccessControlCards = ({
 
             // Refetch data to update the user list
             handleRefetchData();
-            toast.success('Invitation for this user has been cancelled successfully!', {
+            toast.success(t('toasts.cancelInviteSuccess'), {
                 className: 'success-toast',
                 duration: 2000,
             });
@@ -653,13 +714,13 @@ const AccessControlCards = ({
                         <DialogTrigger>
                             <MyButton type="button" scale="medium" buttonType="secondary">
                                 <Plus size={32} />
-                                Add
+                                {t('card.addButton')}
                             </MyButton>
                         </DialogTrigger>
-                        <DialogContent className="no-scrollbar !m-0 flex h-[90vh] !w-full !max-w-[90vw] flex-col overflow-hidden !p-0">
+                        <DialogContent className="no-scrollbar !m-0 flex max-h-dialog-tall w-dialog-xl flex-col overflow-hidden !p-0">
                             {/* Header */}
                             <h1 className="sticky top-0 z-10 rounded-t-lg bg-primary-50 p-4 text-primary-500">
-                                Add User
+                                {t('card.addUserTitle')}
                             </h1>
 
                             {/* Scrollable Middle Section */}
@@ -668,7 +729,7 @@ const AccessControlCards = ({
                                 <div className="flex items-center justify-between pt-6">
                                     <div className="flex items-center gap-6">
                                         <ScheduleTestFilters
-                                            label="Role Type"
+                                            label={t('card.roleTypeLabel')}
                                             data={RoleType}
                                             selectedItems={selectedFilter['roles'] || []}
                                             onSelectionChange={(items) =>
@@ -686,7 +747,7 @@ const AccessControlCards = ({
                                             checked={isSelectAllChecked}
                                             onCheckedChange={handleSelectAll}
                                         />
-                                        <span className="font-thin">Select All</span>
+                                        <span className="font-thin">{t('card.selectAll')}</span>
                                     </div>
                                 </div>
 
@@ -719,14 +780,14 @@ const AccessControlCards = ({
                                                                         className={`whitespace-nowrap rounded-lg border border-neutral-300 ${
                                                                             role.roleName ===
                                                                             'ADMIN'
-                                                                                ? 'bg-[#F4F9FF]'
+                                                                                ? 'bg-info-50'
                                                                                 : role.roleName ===
                                                                                     'CONTENT CREATOR'
-                                                                                  ? 'bg-[#F4FFF9]'
+                                                                                  ? 'bg-success-50'
                                                                                   : role.roleName ===
                                                                                       'ASSESSMENT CREATOR'
-                                                                                    ? 'bg-[#FFF4F5]'
-                                                                                    : 'bg-[#F5F0FF]'
+                                                                                    ? 'bg-danger-50'
+                                                                                    : 'bg-purple-50'
                                                                         } py-1.5 font-thin shadow-none`}
                                                                     >
                                                                         {role.roleName}
@@ -742,16 +803,16 @@ const AccessControlCards = ({
                                                 {user.status === 'INVITED' && (
                                                     <Dialog>
                                                         <DialogTrigger className="text-sm font-semibold text-primary-500">
-                                                            Cancel Invitation
+                                                            {t('card.cancelInvitation')}
                                                         </DialogTrigger>
-                                                        <DialogContent className="flex w-[500px] flex-col p-0">
+                                                        <DialogContent className="flex w-dialog-md flex-col p-0">
                                                             <h1 className="rounded-lg bg-primary-50 p-4 text-primary-500">
-                                                                Cancel Invitation
+                                                                {t('card.cancelInvitation')}
                                                             </h1>
                                                             <div className="flex flex-col gap-4 p-4 pt-3">
                                                                 <div className="flex items-center gap-1">
                                                                     <span className="text-danger-600">
-                                                                        Attention
+                                                                        {t('card.attention')}
                                                                     </span>
                                                                     <Info
                                                                         size={18}
@@ -759,12 +820,11 @@ const AccessControlCards = ({
                                                                     />
                                                                 </div>
                                                                 <h1 className="-mt-2 font-thin">
-                                                                    Are you sure you want to cancel
-                                                                    invitation for
+                                                                    {t('card.confirmCancel.prefix')}
                                                                     <span className="text-primary-500">
                                                                         &nbsp;{user.name}
                                                                     </span>
-                                                                    ?
+                                                                    {t('card.confirmCancel.suffix')}
                                                                 </h1>
                                                                 <div className="mt-2 flex justify-end">
                                                                     <MyButton
@@ -777,7 +837,7 @@ const AccessControlCards = ({
                                                                             )
                                                                         }
                                                                     >
-                                                                        Yes
+                                                                        {t('card.yes')}
                                                                     </MyButton>
                                                                 </div>
                                                             </div>
@@ -801,7 +861,7 @@ const AccessControlCards = ({
                                     className="mb-0"
                                     onClick={handleDone}
                                 >
-                                    Done
+                                    {t('card.done')}
                                 </MyButton>
                             </footer>
                         </DialogContent>
@@ -827,14 +887,14 @@ const AccessControlCards = ({
                                                                 key={role.roleId}
                                                                 className={`whitespace-nowrap rounded-lg border border-neutral-300 ${
                                                                     role.roleName === 'ADMIN'
-                                                                        ? 'bg-[#F4F9FF]'
+                                                                        ? 'bg-info-50'
                                                                         : role.roleName ===
                                                                             'CONTENT CREATOR'
-                                                                          ? 'bg-[#F4FFF9]'
+                                                                          ? 'bg-success-50'
                                                                           : role.roleName ===
                                                                               'ASSESSMENT CREATOR'
-                                                                            ? 'bg-[#FFF4F5]'
-                                                                            : 'bg-[#F5F0FF]'
+                                                                            ? 'bg-danger-50'
+                                                                            : 'bg-purple-50'
                                                                 } py-1.5 font-thin shadow-none`}
                                                             >
                                                                 {role.roleName}

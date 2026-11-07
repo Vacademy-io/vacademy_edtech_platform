@@ -1,0 +1,17 @@
+{
+    "columns": {
+        "serialNumber": "क्र.सं.",
+        "details": "विवरण",
+        "status": "स्थिति",
+        "reachOutIn": "संपर्क करें",
+        "followUpAt": "फ़ॉलो-अप",
+        "counsellor": "काउंसलर",
+        "activityNotes": "गतिविधि और नोट्स",
+        "submittedOn": "सबमिट की तारीख"
+    },
+    "actions": {
+        "reassign": "फिर से सौंपें",
+        "assign": "सौंपें",
+        "deleteLead": "लीड हटाएं"
+    }
+}

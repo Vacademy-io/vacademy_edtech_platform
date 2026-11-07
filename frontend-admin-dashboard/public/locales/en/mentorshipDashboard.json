@@ -1,0 +1,125 @@
+{
+    "loadError": "Couldn't load mentorship data.",
+    "retry": "Retry",
+    "mentorFallback": "Mentor",
+    "learnerFallback": "Learner",
+    "viewAllSessions": "View all sessions",
+    "viewAllMentors": "View all mentors",
+    "kpi": {
+        "mentors": {
+            "label": "Mentors",
+            "hint": "On your team"
+        },
+        "studentsMentored": {
+            "label": "Students mentored",
+            "hint_one": "{{count}} active pairing",
+            "hint_other": "{{count}} active pairings",
+            "detail_one": "{{count}} pairing · {{mentors}} mentors",
+            "detail_other": "{{count}} pairings · {{mentors}} mentors"
+        },
+        "sessionsAhead": {
+            "label": "Sessions ahead",
+            "hint": "Next 7 days"
+        },
+        "averageRating": {
+            "label": "Average rating",
+            "hintRated_one": "From {{count}} rated mentor",
+            "hintRated_other": "From {{count}} rated mentors",
+            "hintNone": "No ratings yet",
+            "detailRated_one": "From {{count}} rated mentor · {{ratings}} ratings",
+            "detailRated_other": "From {{count}} rated mentors · {{ratings}} ratings"
+        },
+        "requests": {
+            "label": "Requests waiting",
+            "detail": "Waiting for your decision"
+        }
+    },
+    "outcomes": {
+        "cardTitle": "Session outcomes",
+        "cardSubtitle": "All-time session summary",
+        "empty": "No sessions yet. Outcomes appear here once mentors record them.",
+        "completed": "Completed",
+        "noShows": "No-shows",
+        "cancelled": "Cancelled",
+        "awaitingReview": "Awaiting review",
+        "totalLabel": "sessions in total"
+    },
+    "workload": {
+        "cardTitle": "Mentor workload",
+        "cardSubtitle": "Students per mentor",
+        "empty": "No mentors yet.",
+        "countOfCap": "{{count}} / {{cap}}",
+        "fullSuffix": " · full",
+        "noUpcoming": "no upcoming",
+        "upcomingCount_one": "{{count}} upcoming",
+        "upcomingCount_other": "{{count}} upcoming"
+    },
+    "attention": {
+        "cardTitle": "Needs attention",
+        "cardSubtitle": "Things waiting on you",
+        "allCaughtUp": "All caught up",
+        "allCaughtUpDescription": "No pending requests and every session is recorded.",
+        "requestsTitle": "Learner requests waiting",
+        "requestsDetail_one": "{{count}} learner is waiting to be paired with a mentor",
+        "requestsDetail_other": "{{count}} learners are waiting to be paired with a mentor",
+        "reviewRequests": "Review requests",
+        "awaitingTitle": "Sessions awaiting review",
+        "awaitingDetail_one": "{{count}} session needs its outcome recorded",
+        "awaitingDetail_other": "{{count}} sessions need their outcome recorded",
+        "reviewSessions": "Review sessions",
+        "fullTitle": "Mentors at their limit",
+        "fullDetail_one": "{{count}} mentor can’t take new {{learners}}",
+        "fullDetail_other": "{{count}} mentors can’t take new {{learners}}",
+        "noBookingTitle": "Mentors without a booking page",
+        "noBookingDetail_one": "{{count}} mentor can’t be booked by their {{learners}}",
+        "noBookingDetail_other": "{{count}} mentors can’t be booked by their {{learners}}",
+        "openMentors": "Open mentors"
+    },
+    "upcoming": {
+        "cardTitle": "Upcoming sessions",
+        "cardSubtitle": "Next 5 sessions",
+        "empty": "Nothing booked yet.",
+        "durationMinutes_one": "{{count}} min",
+        "durationMinutes_other": "{{count}} min",
+        "linkReady": "Meet link ready",
+        "linkPending": "Link pending"
+    },
+    "hero": {
+        "eyebrow": "Mentorship · all time",
+        "unit": "sessions delivered",
+        "sub": "{{upcoming}} upcoming · {{awaiting}} waiting for their outcome to be recorded",
+        "today": "Sessions today",
+        "attendance": "Attendance",
+        "listed": "Listed in the directory"
+    },
+    "insights": {
+        "top": {
+            "title": "{{name}} has the happiest mentees",
+            "text_one": "★ {{rating}} from {{count}} rating — the best-rated mentor right now.",
+            "text_other": "★ {{rating}} from {{count}} ratings — the best-rated mentor right now."
+        },
+        "noShow": {
+            "title": "{{rate}}% of recorded sessions were no-shows",
+            "text_one": "{{count}} session where the {{learners}} didn’t turn up. A reminder the night before helps.",
+            "text_other": "{{count}} sessions where the {{learners}} didn’t turn up. A reminder the night before helps."
+        },
+        "full": {
+            "title_one": "{{count}} mentor is at their limit",
+            "title_other": "{{count}} mentors are at their limit",
+            "text": "Requests for them can’t be approved until the limit is raised or a mentee is unassigned."
+        },
+        "noBooking": {
+            "title_one": "{{count}} mentor has no booking page",
+            "title_other": "{{count}} mentors have no booking page",
+            "text": "Their {{learners}} can’t book a 1:1 with them yet."
+        }
+    },
+    "top": {
+        "cardTitle": "Top mentors",
+        "cardSubtitle": "By rating and number of ratings",
+        "empty": "No ratings yet. Mentors appear here once their sessions are rated.",
+        "rating": "★ {{rating}}",
+        "detail_one": "{{count}} rating · {{students}} {{learners}}",
+        "detail_other": "{{count}} ratings · {{students}} {{learners}}"
+    }
+}

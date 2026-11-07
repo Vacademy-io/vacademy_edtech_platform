@@ -1,0 +1,9 @@
+{
+    "usersLabelDefault": "Enrolled",
+    "interactionsLabelDefault": "Interactions",
+    "title": "Center Distribution",
+    "subtitle": "Users by center — visual overview",
+    "barChartHeading": "Users by Center",
+    "optOuts": "Opt-Outs",
+    "pieChartHeading": "User Distribution"
+}

@@ -14,6 +14,7 @@ import {
     Tooltip,
 } from 'recharts';
 import { MapPin } from '@phosphor-icons/react';
+import { useTranslation } from 'react-i18next';
 
 // Categorical palette for the center charts. recharts needs literal color strings
 // (it cannot consume Tailwind classes), so the hex list is isolated here.
@@ -48,12 +49,17 @@ interface CenterDistributionChartsProps {
  */
 export function CenterDistributionCharts({
     data,
-    usersLabel = 'Enrolled',
-    interactionsLabel = 'Interactions',
+    usersLabel,
+    interactionsLabel,
 }: CenterDistributionChartsProps) {
+    const { t, i18n } = useTranslation('challengeAnalyticsCenterDistributionCharts');
+
     if (!data || data.length === 0) {
         return null;
     }
+
+    const resolvedUsersLabel = usersLabel ?? t('usersLabelDefault');
+    const resolvedInteractionsLabel = interactionsLabel ?? t('interactionsLabelDefault');
 
     const centers = [...data].sort((a, b) => b.users - a.users);
     // Grow the chart so every center fits (≈34px per row).
@@ -76,9 +82,9 @@ export function CenterDistributionCharts({
                     </div>
                     <div>
                         <CardTitle className="text-base font-semibold">
-                            Center Distribution
+                            {t('title')}
                         </CardTitle>
-                        <p className="text-xs text-gray-500">Users by center — visual overview</p>
+                        <p className="text-xs text-gray-500">{t('subtitle')}</p>
                     </div>
                 </div>
             </CardHeader>
@@ -86,7 +92,7 @@ export function CenterDistributionCharts({
                 <div className="grid gap-6 lg:grid-cols-2">
                     {/* Bar chart */}
                     <div>
-                        <h4 className="mb-3 text-sm font-medium text-gray-700">Users by Center</h4>
+                        <h4 className="mb-3 text-sm font-medium text-gray-700">{t('barChartHeading')}</h4>
                         <ChartContainer
                             config={chartConfig}
                             className="aspect-auto w-full"
@@ -116,15 +122,15 @@ export function CenterDistributionCharts({
                                                 <div className="rounded-lg border bg-white px-3 py-2 shadow-lg">
                                                     <p className="font-medium">{d?.name}</p>
                                                     <p className="mt-1 text-sm">
-                                                        {usersLabel}:{' '}
+                                                        {resolvedUsersLabel}:{' '}
                                                         <strong>{d?.users}</strong>
                                                     </p>
                                                     <p className="text-sm">
-                                                        {interactionsLabel}:{' '}
+                                                        {resolvedInteractionsLabel}:{' '}
                                                         <strong>{d?.interactions}</strong>
                                                     </p>
                                                     <p className="text-sm">
-                                                        Opt-Outs: <strong>{d?.optedOut}</strong>
+                                                        {t('optOuts')}: <strong>{d?.optedOut}</strong>
                                                     </p>
                                                 </div>
                                             );
@@ -143,7 +149,7 @@ export function CenterDistributionCharts({
 
                     {/* Pie chart */}
                     <div>
-                        <h4 className="mb-3 text-sm font-medium text-gray-700">User Distribution</h4>
+                        <h4 className="mb-3 text-sm font-medium text-gray-700">{t('pieChartHeading')}</h4>
                         <ResponsiveContainer width="100%" height={320}>
                             <PieChart margin={{ top: 8, right: 12, bottom: 8, left: 12 }}>
                                 <Pie
@@ -163,7 +169,12 @@ export function CenterDistributionCharts({
                                         <Cell key={i} fill={entry.fill} />
                                     ))}
                                 </Pie>
-                                <Tooltip formatter={(v: number) => [v.toLocaleString(), usersLabel]} />
+                                <Tooltip
+                                    formatter={(v: number) => [
+                                        v.toLocaleString(i18n.language),
+                                        resolvedUsersLabel,
+                                    ]}
+                                />
                                 <Legend
                                     layout="horizontal"
                                     align="center"

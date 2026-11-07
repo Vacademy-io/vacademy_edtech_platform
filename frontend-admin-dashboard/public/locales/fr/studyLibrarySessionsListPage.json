@@ -1,0 +1,78 @@
+{
+    "filterBarSearchPlaceholder": "Rechercher des sessions...",
+    "chips": {
+        "search": "Recherche",
+        "date": "Date",
+        "time": "Heure",
+        "meetingType": "Type de réunion",
+        "subject": "Matière",
+        "access": "Accès",
+        "platform": "Plateforme",
+        "clearAria": "Effacer {{label}}",
+        "clearAll": "Tout effacer"
+    },
+    "dateRange": {
+        "from": "Du {{date}}",
+        "to": "Au {{date}}",
+        "selectRange": "Sélectionner une plage de dates",
+        "quickSelect": "Sélection rapide",
+        "today": "Aujourd'hui",
+        "next": "Prochains",
+        "past": "Derniers",
+        "daysPreset_one": "{{direction}} {{count}} jour",
+        "daysPreset_many": "{{direction}} {{count}} jours",
+        "daysPreset_other": "{{direction}} {{count}} jours",
+        "customRange": "Plage personnalisée",
+        "startDate": "Date de début",
+        "endDate": "Date de fin",
+        "clear": "Effacer",
+        "done": "Terminé"
+    },
+    "filters": {
+        "button": "Filtres",
+        "heading": "Filtres",
+        "reset": "Réinitialiser",
+        "timeOfDay": "Heure de la journée",
+        "startTimeAria": "Heure de début",
+        "endTimeAria": "Heure de fin",
+        "meetingType": "Type de réunion",
+        "all": "Tous",
+        "once": "Une fois",
+        "weekly": "Hebdomadaire",
+        "custom": "Personnalisé",
+        "accessType": "Type d'accès",
+        "platform": "Plateforme",
+        "searchBatchesPlaceholder": "Rechercher {{batches}}…",
+        "noMatches": "Aucun résultat",
+        "cancel": "Annuler",
+        "apply": "Appliquer",
+        "selectedCount_one": "{{count}} sélectionné",
+        "selectedCount_many": "{{count}} sélectionnés",
+        "selectedCount_other": "{{count}} sélectionnés"
+    },
+    "platformLabels": {
+        "zoom": "Zoom",
+        "googleMeet": "Google Meet",
+        "youtube": "YouTube",
+        "bbb": "Vacademy Meet",
+        "zoho": "Zoho",
+        "other": "Autre"
+    },
+    "sessions": {
+        "loading": "Chargement des sessions...",
+        "error": "Erreur lors du chargement des sessions : {{message}}",
+        "tabLabels": {
+            "live": "En direct",
+            "upcoming": "À venir",
+            "past": "Passées",
+            "draft": "Brouillon"
+        },
+        "emptyTitle": "Aucune session {{tab}}",
+        "emptyDraftBody": "Aucune session brouillon trouvée. Créez une nouvelle session pour commencer.",
+        "emptyDefaultBody": "Planifiez votre premier cours en direct pour interagir avec les apprenants en temps réel.",
+        "emptyPage": "Aucune session {{tab}} sur cette page.",
+        "showingRange": "Affichage de {{from}} à {{to}} sur {{total}} {{term}}"
+    },
+    "settingsButtonLabel": "Paramètres des sessions en direct",
+    "scheduleButton": "Planifier"
+}

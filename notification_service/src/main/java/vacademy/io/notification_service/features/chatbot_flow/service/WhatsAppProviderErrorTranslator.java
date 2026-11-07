@@ -183,6 +183,17 @@ public class WhatsAppProviderErrorTranslator {
             return new Mapped(HttpStatus.BAD_REQUEST, "META_HEADER_HANDLE_REQUIRED", "headerSampleUrl",
                     "Meta would not accept the sample media. Re-upload the sample file and try again.");
         }
+        // "component of type BODY has unexpected field(s) (text)" is Meta's way of saying the
+        // category is AUTHENTICATION: those templates get a fixed Meta-written OTP body, so any
+        // body text at all is refused. The validator catches this pre-flight; this is the safety
+        // net for a template that reached Meta another way (synced, or an older client).
+        if (haystack.contains("type body") && haystack.contains("unexpected field")
+                && haystack.contains("text")) {
+            return new Mapped(HttpStatus.BAD_REQUEST, "META_AUTH_CATEGORY_HAS_BODY_TEXT", "category",
+                    "Meta refuses custom body text on Authentication templates — that category is only for "
+                            + "one-time-password messages whose wording Meta writes. "
+                            + "Change the category to Utility (or Marketing) and submit again.");
+        }
         if ("100".equals(code)) {
             // Meta's catch-all for a malformed template — the composed message carries the specifics.
             return new Mapped(HttpStatus.BAD_REQUEST, "META_INVALID_TEMPLATE", null,

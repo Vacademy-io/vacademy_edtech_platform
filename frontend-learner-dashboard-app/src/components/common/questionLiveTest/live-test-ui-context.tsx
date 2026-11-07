@@ -26,6 +26,13 @@ interface LiveTestUiContextValue {
   setScratchpad: (value: string) => void;
   isPaletteOpen: boolean;
   setPaletteOpen: (open: boolean) => void;
+  /**
+   * Desktop right rail. Open by default; the learner can collapse it to give
+   * the question — a code editor especially — the full width. Independent of
+   * `isPaletteOpen`, which is the phone bottom sheet.
+   */
+  isRailOpen: boolean;
+  setRailOpen: (open: boolean) => void;
   paletteView: QuestionPaletteView;
   setPaletteView: (view: QuestionPaletteView) => void;
   /**
@@ -47,6 +54,8 @@ const FALLBACK: LiveTestUiContextValue = {
   setScratchpad: () => {},
   isPaletteOpen: false,
   setPaletteOpen: () => {},
+  isRailOpen: true,
+  setRailOpen: () => {},
   paletteView: "grid",
   setPaletteView: () => {},
   submitRequestId: 0,
@@ -69,6 +78,7 @@ export function LiveTestUiProvider({ children }: { children: ReactNode }) {
   const [activeTool, setActiveTool] = useState<ExamTool | null>(null);
   const [scratchpad, setScratchpad] = useState("");
   const [isPaletteOpen, setPaletteOpen] = useState(false);
+  const [isRailOpen, setRailOpen] = useState(true);
   const [submitRequestId, setSubmitRequestId] = useState(0);
   const [paletteView, setPaletteView] = useState<QuestionPaletteView>(
     DEFAULT_EXAM_EXPERIENCE.questionPalette.defaultView,
@@ -117,6 +127,8 @@ export function LiveTestUiProvider({ children }: { children: ReactNode }) {
       setScratchpad,
       isPaletteOpen,
       setPaletteOpen,
+      isRailOpen,
+      setRailOpen,
       paletteView,
       setPaletteView,
       submitRequestId,
@@ -131,6 +143,7 @@ export function LiveTestUiProvider({ children }: { children: ReactNode }) {
       activeTool,
       scratchpad,
       isPaletteOpen,
+      isRailOpen,
       paletteView,
       submitRequestId,
     ],

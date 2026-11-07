@@ -1,0 +1,44 @@
+{
+    "heading": "Forfait IA",
+    "description": "Ce que couvre votre forfait IA sur cette période. Le forfait est géré par {{brand}} ; contactez-les pour le modifier.",
+    "loading": "Chargement…",
+    "none": "Cet établissement n'a pas de forfait IA. Chaque utilisation est facturée en crédits.",
+    "period": "Période en cours : {{start}} – {{end}}",
+    "status": {
+        "trial": "Essai",
+        "grace": "Période de grâce"
+    },
+    "allowance": {
+        "title": "Crédit mensuel",
+        "line": "{{used}} sur {{total}} crédits utilisés · {{remaining}} restants",
+        "hint": "Paie les fonctionnalités marquées « Sur le crédit ». Une fois épuisé, elles utilisent vos crédits. Le crédit non utilisé n'est pas reporté.",
+        "none": "Ce forfait n'inclut pas de crédit mensuel."
+    },
+    "mode": {
+        "included": "Inclus",
+        "allowance": "Sur le crédit",
+        "charged": "Utilise des crédits"
+    },
+    "groups": {
+        "INCLUDED": {
+            "title": "Inclus dans votre forfait",
+            "description": "Aucun crédit n'est utilisé dans la limite d'un usage raisonnable. Au-delà, ou avec un modèle hors forfait, l'utilisation est facturée en crédits."
+        },
+        "ALLOWANCE": {
+            "title": "Payé sur le crédit du forfait",
+            "description": "Pris d'abord sur le crédit de la période, puis sur vos crédits."
+        },
+        "CHARGED": {
+            "title": "Utilise des crédits",
+            "description": "Facturé sur vos crédits comme d’habitude."
+        }
+    },
+    "fairUse": {
+        "used": "{{pct}} % de l'usage raisonnable utilisé sur cette période",
+        "reached": "Limite d'usage raisonnable atteinte : les utilisations suivantes sont facturées en crédits jusqu'à la prochaine période."
+    },
+    "models": {
+        "included": "Modèles inclus : {{models}}",
+        "any": "Tous les modèles sont inclus"
+    }
+}

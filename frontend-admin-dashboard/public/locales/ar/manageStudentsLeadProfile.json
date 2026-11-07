@@ -1,0 +1,105 @@
+{
+    "status": {
+        "converted": "تم التحويل",
+        "lost": "خسارة",
+        "lead": "عميل محتمل"
+    },
+    "tier": {
+        "hot": "ساخن",
+        "warm": "دافئ",
+        "cold": "بارد"
+    },
+    "scoreFactors": {
+        "sourceQuality": "جودة المصدر",
+        "profileCompleteness": "اكتمال الملف الشخصي",
+        "recency": "الحداثة",
+        "engagement": "التفاعل"
+    },
+    "noteActionTypes": {
+        "note": "ملاحظة",
+        "callLog": "سجل مكالمة",
+        "followUp": "متابعة",
+        "meeting": "اجتماع"
+    },
+    "scoreEditor": {
+        "manualScore": "يدوي: {{score}}",
+        "setManually": "تعيين النتيجة يدويًا",
+        "clearOverrideTitle": "مسح التجاوز اليدوي — يستعيد النتيجة المحسوبة",
+        "scoreUpdated": "تم تحديث النتيجة",
+        "updateFailed": "فشل تحديث النتيجة",
+        "enterValidNumber": "أدخل رقمًا بين 0 و100",
+        "placeholder": "0–100"
+    },
+    "scoreBreakdown": {
+        "hideBreakdown": "إخفاء التفاصيل",
+        "showBreakdown": "تفاصيل النتيجة",
+        "loading": "جارٍ التحميل…",
+        "manualNotice": "تم تعيين النتيجة يدويًا — التفاصيل تناسبية",
+        "initialBonus": "المكافأة الأولية",
+        "total": "الإجمالي"
+    },
+    "timeline": {
+        "viewLess": "عرض أقل",
+        "viewMore": "عرض المزيد",
+        "by": "بواسطة"
+    },
+    "addNote": {
+        "addPrompt": "إضافة ملاحظة أو تسجيل نشاط…",
+        "scheduleTimeLabel": "وقت الجدولة",
+        "followUpPlaceholder": "أضف ملاحظة لهذه المتابعة (اختياري)…",
+        "noResponseLinked": "لا توجد استجابة حملة مرتبطة — لا يمكن جدولة المتابعة.",
+        "notePlaceholder": "اكتب ملاحظتك هنا…",
+        "scheduleRequired": "وقت الجدولة مطلوب",
+        "ctrlEnterSubmit": "اضغط Ctrl+Enter للإرسال",
+        "cancel": "إلغاء",
+        "saving": "جارٍ الحفظ…",
+        "scheduleFollowUp": "جدولة المتابعة",
+        "addNote": "إضافة ملاحظة",
+        "followUpScheduled": "تمت جدولة المتابعة",
+        "followUpFailed": "فشل جدولة المتابعة",
+        "noteAdded": "تمت إضافة الملاحظة",
+        "noteFailed": "فشل إضافة الملاحظة",
+        "noteRequired": "تشترط مؤسستك كتابة ملاحظة في كل متابعة.",
+        "followUpPlaceholderRequired": "أضف ملاحظة لهذه المتابعة (مطلوب)…",
+        "fieldsRequired": "أكمل كل حقل عليه * قبل جدولة هذه المتابعة."
+    },
+    "audiences": {
+        "linkedCampaigns": "الحملات المرتبطة",
+        "unnamedCampaign": "حملة بدون اسم"
+    },
+    "crossStageTimeline": {
+        "activityAndNotes": "النشاط والملاحظات",
+        "loadingActivity": "جارٍ تحميل النشاط…",
+        "pageOf": "صفحة {{current}} من {{total}}",
+        "previous": "السابق",
+        "next": "التالي",
+        "noActivityYet": "لا يوجد نشاط حتى الآن",
+        "noActivityHint": "ستظهر الملاحظات وتغييرات الحالة والأحداث الأخرى هنا"
+    },
+    "profile": {
+        "noProfileYet": "لا يوجد ملف تعريف عميل محتمل بعد",
+        "noProfileHint": "سيظهر الملف الشخصي بمجرد أن يقدم هذا المستخدم استفسارًا أو يتم تقييمه.",
+        "leadInterestScore": "نتيجة اهتمام العميل المحتمل",
+        "lastCalculatedLabel": "آخر حساب",
+        "setTier": "تعيين {{tier}}",
+        "campaigns": "الحملات",
+        "timelineEvents": "أحداث الجدول الزمني",
+        "demoAttendance": "حضور العرض التجريبي",
+        "bestSource": "أفضل مصدر",
+        "lastActivity": "آخر نشاط",
+        "leadSince": "عميل محتمل منذ",
+        "convertedOn": "تم التحويل في",
+        "scoreUpdated": "تم تحديث النتيجة",
+        "leadStatus": "حالة العميل المحتمل",
+        "selectStatus": "اختر الحالة",
+        "scoreFrozenWhileConverted": "تحديثات النتيجة مجمدة أثناء التحويل.",
+        "assignedCounselor": "المستشار المعيّن",
+        "reassign": "إعادة التعيين",
+        "assignCounselorPrompt": "+ تعيين مستشار",
+        "callHistory": "سجل المكالمات",
+        "leadMarkedAs": "تم وضع علامة على العميل المحتمل كـ {{status}}",
+        "statusUpdateFailed": "فشل تحديث حالة العميل المحتمل",
+        "leadTierSetTo": "تم تعيين مستوى العميل المحتمل إلى {{tier}}",
+        "tierUpdateFailed": "فشل تحديث مستوى العميل المحتمل"
+    }
+}

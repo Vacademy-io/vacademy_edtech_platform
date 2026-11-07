@@ -1,0 +1,40 @@
+{
+    "unknownUser": "Utilisateur inconnu",
+    "titleFallback": "{{action}} {{entityType}}",
+    "sections": {
+        "performedBy": "Effectué par",
+        "request": "Requête",
+        "whatChanged": "Ce qui a changé",
+        "submittedData": "Données soumises"
+    },
+    "fields": {
+        "name": "Nom",
+        "email": "E-mail",
+        "userId": "ID utilisateur",
+        "method": "Méthode",
+        "endpoint": "Point de terminaison",
+        "ipAddress": "Adresse IP",
+        "response": "Réponse",
+        "latency": "Latence",
+        "entityId": "ID de l'entité",
+        "logId": "ID du journal",
+        "device": "Appareil"
+    },
+    "buttons": {
+        "seeEverythingByPerson": "Voir tout ce que cette personne a fait",
+        "fields": "Champs",
+        "rawJson": "JSON brut",
+        "copy": "Copier",
+        "copied": "Copié"
+    },
+    "payload": {
+        "before": "Avant",
+        "afterSubmitted": "Après (soumis)",
+        "noPayloadCaptured": "Aucune donnée enregistrée pour cette action.",
+        "null": "nul",
+        "emptyList": "liste vide",
+        "noFields": "aucun champ",
+        "yes": "Oui",
+        "no": "Non"
+    }
+}

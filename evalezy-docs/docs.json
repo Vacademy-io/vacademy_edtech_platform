@@ -1,0 +1,140 @@
+{
+  "$schema": "https://mintlify.com/docs.json",
+  "theme": "mint",
+  "name": "Evalezy API",
+  "description": "AI evaluation of handwritten answer copies and typed long answers, with teacher review and finalize.",
+  "colors": {
+    "primary": "#D61C28",
+    "light": "#E8545E",
+    "dark": "#B5141F"
+  },
+  "logo": {
+    "light": "/logo/light.svg",
+    "dark": "/logo/dark.svg",
+    "href": "https://evalezy.com"
+  },
+  "favicon": "/favicon.svg",
+  "appearance": {
+    "default": "system"
+  },
+  "navbar": {
+    "links": [
+      {
+        "label": "evalezy.com",
+        "href": "https://evalezy.com"
+      },
+      {
+        "label": "Support",
+        "href": "mailto:hello@evalezy.com"
+      }
+    ],
+    "primary": {
+      "type": "button",
+      "label": "Dashboard",
+      "href": "https://dash.vacademy.io"
+    }
+  },
+  "navigation": {
+    "tabs": [
+      {
+        "tab": "Documentation",
+        "icon": "book-open",
+        "groups": [
+          {
+            "group": "Get started",
+            "pages": [
+              "introduction",
+              "quickstart",
+              "authentication"
+            ]
+          },
+          {
+            "group": "Concepts",
+            "pages": [
+              "concepts/exams-and-questions",
+              "concepts/rubrics",
+              "concepts/candidates",
+              "concepts/uploads",
+              "concepts/submissions",
+              "concepts/results"
+            ]
+          },
+          {
+            "group": "Guides",
+            "pages": [
+              "guides/handwritten-exams",
+              "guides/typed-tests",
+              "guides/answer-writing-practice",
+              "guides/syncing-results",
+              "guides/going-live"
+            ]
+          },
+          {
+            "group": "Platform",
+            "pages": [
+              "platform/pricing",
+              "platform/errors",
+              "platform/rate-limits",
+              "platform/idempotency",
+              "platform/pagination",
+              "platform/changelog",
+              "platform/roadmap"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "API reference",
+        "icon": "square-terminal",
+        "groups": [
+          {
+            "group": "Overview",
+            "pages": [
+              "api-reference/introduction"
+            ]
+          },
+          {
+            "group": "Endpoints",
+            "openapi": "api-reference/openapi.json"
+          }
+        ]
+      }
+    ]
+  },
+  "api": {
+    "playground": {
+      "display": "simple"
+    },
+    "examples": {
+      "languages": [
+        "curl",
+        "python",
+        "javascript"
+      ],
+      "defaults": "required"
+    },
+    "mdx": {
+      "server": "https://api.evalezy.com/v1",
+      "auth": {
+        "method": "key",
+        "name": "X-API-Key"
+      }
+    }
+  },
+  "contextual": {
+    "options": [
+      "copy",
+      "view",
+      "chatgpt",
+      "claude"
+    ]
+  },
+  "footer": {
+    "socials": {
+      "website": "https://evalezy.com"
+    }
+  },
+  "seo": {
+    "indexing": "navigable"
+  }
+}

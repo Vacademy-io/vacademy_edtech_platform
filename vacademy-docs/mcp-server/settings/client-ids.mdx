@@ -1,0 +1,79 @@
+---
+title: "Client IDs"
+description: "Your institute's client ID, when an AI app needs one, and how to add a client ID for another app."
+icon: "id-card"
+---
+
+Most people never need a client ID. Claude, ChatGPT, Cursor, Claude Code and VS Code register themselves with the server the first time they connect. You paste the server URL, sign in, and approve.
+
+A client ID is only for apps that ask you to type one in, usually in an **Advanced** or **OAuth** section of their connector form.
+
+## Your client ID
+
+**Settings → MCP Server → Connect your AI app** shows **Your client ID**.
+
+- It is created automatically the first time an admin opens the page. You do not fill in anything.
+- It starts with `vacademy-`.
+- It cannot be removed, so your institute always has a working ID.
+- An app that uses it shows your institute's name when it asks for access.
+- It already accepts these sign-in return addresses:
+
+| App | Return address |
+|---|---|
+| Claude | `https://claude.ai/api/mcp/auth_callback` |
+| Claude | `https://claude.com/api/mcp/auth_callback` |
+| ChatGPT (older address) | `https://chatgpt.com/connector_platform_oauth_redirect` |
+| Cursor | `https://cursor.com/connector/callback` |
+
+It does **not** accept the local callbacks that desktop and command-line tools use (Claude Code, Cursor desktop, VS Code). Those need a [client ID of their own](#add-a-client-id-for-another-app).
+
+<Note>
+  **ChatGPT.** Newer ChatGPT apps use their own callback address, shown in ChatGPT's app settings. Let ChatGPT register itself where it can. If you must use a fixed client, an admin copies the callback URL shown in ChatGPT and creates a client ID with it below. Menus and callback formats change; see [OpenAI's auth guide](https://developers.openai.com/apps-sdk/build/auth).
+</Note>
+
+### Using it in an app
+
+1. In the app's connector form, paste the **server URL**.
+2. If the app asks how to register, choose automatic or dynamic registration if it is offered. Otherwise choose your own OAuth client.
+3. Paste **Your client ID** into the **Client ID** field.
+4. Leave **Client secret** empty. The server does not issue secrets. It protects the sign-in with PKCE instead, which the MCP standard requires every app to use.
+
+<Note>
+  Menus in AI apps change often. For Claude, see [Getting started with custom connectors](https://support.claude.com/en/articles/11175166-getting-started-with-custom-connectors-using-remote-mcp). For ChatGPT, see [Connect from ChatGPT](https://developers.openai.com/apps-sdk/deploy/connect-chatgpt). For other apps, see their own MCP or connector documentation.
+</Note>
+
+## Add a client ID for another app
+
+Use this for an app whose return address is not in the list above, such as an in-house assistant.
+
+<Steps>
+  <Step title="Open the form">
+    Under **Connect your AI app**, click **Add a client ID for another app**.
+  </Step>
+  <Step title="Name it">
+    Enter an **App name**, for example *Marketing team's assistant*. People see this name on the approval screen and in **Active connections**.
+  </Step>
+  <Step title="Add the redirect URLs">
+    Enter the app's **Redirect URLs**, separated by commas (up to 5). The app's own documentation tells you what to use.
+  </Step>
+  <Step title="Create it">
+    Click **Create client ID**. The new ID starts with `vcm-`. Copy it into the app.
+  </Step>
+</Steps>
+
+### Rules for redirect URLs
+
+- Each URL must start with `https://`, or be `http://` on your own computer (`localhost`, `127.0.0.1` or `::1`). Desktop tools that listen on your computer for the sign-in use the second kind.
+- Addresses that open an app directly through a custom link (for example `myapp://callback`) are not accepted.
+- The app must send exactly the URL you entered. A different path or a missing slash is refused.
+- The URLs are fixed when you create the ID. To change them, create a new client ID and remove the old one.
+
+## Remove a client ID
+
+Click **Remove** next to a client ID you created. Your own institute client ID has no **Remove** button.
+
+Removing a client ID stops new sign-ins with it. To end the sessions of people already connected through it, revoke their rows under [Active connections](/mcp-server/settings/connections-and-revoking).
+
+## Who can manage client IDs
+
+Only people with the **Admin** role in your institute can see, create and remove client IDs. This is separate from [Who can connect](/mcp-server/settings/roles): an admin can manage client IDs even while the server is off.

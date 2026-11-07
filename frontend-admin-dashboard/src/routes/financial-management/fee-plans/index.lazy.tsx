@@ -9,7 +9,7 @@ export const Route = createLazyFileRoute('/financial-management/fee-plans/')({
 function RouteComponent() {
     return (
         <LayoutContainer>
-            <div className="min-h-screen flex-1 bg-[#FAFAFA] p-6">
+            <div className="min-h-screen flex-1 bg-neutral-50 p-6">
                 <FeeManagementMain />
             </div>
         </LayoutContainer>

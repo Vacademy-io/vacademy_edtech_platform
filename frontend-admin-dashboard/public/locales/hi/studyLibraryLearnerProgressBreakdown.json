@@ -1,0 +1,13 @@
+{
+    "emptyTitle": "अभी तक कोई कोर्स सामग्री नहीं है",
+    "emptyHint": "इस बैच के लिए कोई {{term}} नहीं बनाया गया है।",
+    "subjectProgressHeading": "{{term}} प्रगति",
+    "moduleCount_one": "{{count}} {{term}}",
+    "moduleCount_other": "{{count}} {{term}}",
+    "moduleChapterBreakdownHeading": "{{term}} और अध्याय विवरण",
+    "selectSubjectPlaceholder": "{{term}} चुनें",
+    "noModulesForSubject": "इस {{subjectTerm}} के लिए कोई {{moduleTerm}} नहीं है।",
+    "moduleLabel": "{{term}}: {{name}}",
+    "noChaptersInModule": "इस {{term}} में कोई अध्याय नहीं है।",
+    "done": "पूर्ण"
+}

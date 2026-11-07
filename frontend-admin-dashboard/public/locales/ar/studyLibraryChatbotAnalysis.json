@@ -1,0 +1,110 @@
+{
+    "description": "كيف يستخدم الطلاب المعلم الذكي، وما الذي يسألون عنه.",
+    "dayRange": {
+        "last7": "آخر 7 أيام",
+        "last30": "آخر 30 يومًا",
+        "last90": "آخر 90 يومًا",
+        "last365": "آخر 365 يومًا"
+    },
+    "filters": {
+        "searchPlaceholder": "ابحث باسم الطالب أو البريد الإلكتروني",
+        "status": {
+            "all": "كل المحادثات",
+            "active": "نشطة",
+            "closed": "مغلقة"
+        },
+        "mode": {
+            "all": "كل الأوضاع",
+            "textChat": "محادثة نصية",
+            "mockInterview": "مقابلة تجريبية",
+            "voiceDoubt": "سؤال صوتي",
+            "oralTest": "اختبار شفهي"
+        }
+    },
+    "summary": {
+        "loading": "جارٍ تحميل الملخص…",
+        "error": "تعذر تحميل ملخص روبوت الدردشة.",
+        "retry": "إعادة المحاولة",
+        "chats": "المحادثات",
+        "allTime": "{{count}} منذ البداية",
+        "studentsReached": "الطلاب الذين تم الوصول إليهم",
+        "studentMessages": "رسائل الطلاب",
+        "messagesPerChat_zero": "لا رسائل لكل محادثة",
+        "messagesPerChat_one": "رسالة واحدة لكل محادثة",
+        "messagesPerChat_two": "رسالتان لكل محادثة",
+        "messagesPerChat_few": "{{count}} رسائل لكل محادثة",
+        "messagesPerChat_many": "{{count}} رسالة لكل محادثة",
+        "messagesPerChat_other": "{{count}} رسالة لكل محادثة",
+        "doubtsAsked": "الأسئلة المطروحة",
+        "practiceQuizzesTaken": "اختبارات التدريب المكتملة",
+        "averageScore": "{{percent}}% متوسط الدرجات",
+        "noQuizSubmittedYet": "لم يتم إرسال أي اختبار بعد",
+        "aiReplies": "ردود الذكاء الاصطناعي",
+        "toolLookups_zero": "لا عمليات بحث عن أدوات",
+        "toolLookups_one": "عملية بحث واحدة عن أداة",
+        "toolLookups_two": "عمليتا بحث عن أداة",
+        "toolLookups_few": "{{count}} عمليات بحث عن أدوات",
+        "toolLookups_many": "{{count}} عملية بحث عن أداة",
+        "toolLookups_other": "{{count}} عملية بحث عن أداة",
+        "activeChats": "المحادثات النشطة",
+        "notYetClosed": "لم يُغلقها الطالب بعد",
+        "quizzesGenerated": "الاختبارات المُنشأة",
+        "submittedCount_zero": "لم يُرسل أي اختبار",
+        "submittedCount_one": "تم إرسال اختبار واحد",
+        "submittedCount_two": "تم إرسال اختبارين",
+        "submittedCount_few": "تم إرسال {{count}} اختبارات",
+        "submittedCount_many": "تم إرسال {{count}} اختبارًا",
+        "submittedCount_other": "تم إرسال {{count}} اختبار",
+        "chatModes": "أوضاع المحادثة",
+        "whereStudentsChat": "أين يتحدث الطلاب",
+        "mostAskedTopics": "الموضوعات الأكثر سؤالًا",
+        "noTopicsYet": "لم يتم تسجيل أي موضوعات بعد. تظهر الموضوعات بمجرد أن يطرح الطلاب أسئلة أو يخوضوا اختبارات تدريبية.",
+        "topicQuiz": "اختبار",
+        "topicDoubt": "سؤال",
+        "dailyActivity": "النشاط اليومي",
+        "noChatsYet": "لا توجد محادثات في هذه الفترة بعد."
+    },
+    "activity": {
+        "empty": "لا يوجد نشاط محادثة في هذه الفترة بعد.",
+        "tooltip": {
+            "studentMessages_zero": "لا رسائل من الطلاب",
+            "studentMessages_one": "رسالة واحدة من طالب",
+            "studentMessages_two": "رسالتان من طالب",
+            "studentMessages_few": "{{count}} رسائل من الطلاب",
+            "studentMessages_many": "{{count}} رسالة من الطلاب",
+            "studentMessages_other": "{{count}} رسالة من الطلاب",
+            "chats_zero": "لا محادثات",
+            "chats_one": "محادثة واحدة",
+            "chats_two": "محادثتان",
+            "chats_few": "{{count}} محادثات",
+            "chats_many": "{{count}} محادثة",
+            "chats_other": "{{count}} محادثة"
+        },
+        "peak_zero": "لا ذروة رسائل/يوم",
+        "peak_one": "الذروة رسالة واحدة/يوم",
+        "peak_two": "الذروة رسالتان/يوم",
+        "peak_few": "الذروة {{count}} رسائل/يوم",
+        "peak_many": "الذروة {{count}} رسالة/يوم",
+        "peak_other": "الذروة {{count}} رسالة/يوم"
+    },
+    "table": {
+        "student": "الطالب",
+        "chatAbout": "موضوع المحادثة",
+        "noStudentMessage": "لا توجد رسالة من الطالب",
+        "mode": "الوضع",
+        "messages": "الرسائل",
+        "fromStudent": "{{count}} من الطالب",
+        "quizzes": "الاختبارات",
+        "status": "الحالة",
+        "lastActive": "آخر نشاط",
+        "viewChat": "عرض المحادثة"
+    },
+    "recentChats": {
+        "title": "المحادثات الأخيرة",
+        "error": "تعذر تحميل المحادثات الأخيرة.",
+        "retry": "إعادة المحاولة",
+        "emptyTitle": "لم يتم العثور على محادثات",
+        "emptyFiltered": "جرّب مسح البحث أو الفلاتر.",
+        "emptyUnfiltered": "تظهر المحادثات هنا بمجرد أن يبدأ الطلاب استخدام المعلم الذكي."
+    }
+}

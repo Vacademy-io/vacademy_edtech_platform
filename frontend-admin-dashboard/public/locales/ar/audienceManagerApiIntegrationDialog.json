@@ -1,0 +1,89 @@
+{
+    "dialogTitle": "تكامل API - {{campaignName}}",
+    "dialogDescription": "استخدم هذه التفاصيل للتكامل مع أدوات الأتمتة مثل Zapier وMake أو التطبيقات المخصصة.",
+    "tabs": {
+        "curl": "أمر cURL",
+        "docs": "التوثيق"
+    },
+    "copyButton": {
+        "copy": "نسخ",
+        "copied": "تم النسخ",
+        "copyMarkdown": "نسخ Markdown"
+    },
+    "toasts": {
+        "copiedToClipboard": "تم النسخ إلى الحافظة!",
+        "copyFailed": "فشل النسخ"
+    },
+    "curlTab": {
+        "replaceHintPrefix": "استبدل القيم النائبة (مثال:",
+        "replaceHintSuffix": ") بالبيانات الفعلية قبل إرسال الطلب."
+    },
+    "common": {
+        "yes": "نعم",
+        "no": "لا"
+    },
+    "docsPanel": {
+        "heading": "دليل تكامل API",
+        "endpointHeading": "نقطة النهاية",
+        "headersHeading": "الترويسات",
+        "headersTable": {
+            "header": "الترويسة",
+            "value": "القيمة"
+        },
+        "customFieldsHeading": "الحقول المخصصة",
+        "customFieldsTable": {
+            "fieldId": "معرّف الحقل",
+            "name": "الاسم",
+            "type": "النوع",
+            "required": "مطلوب"
+        },
+        "integrationExamplesHeading": "أمثلة التكامل",
+        "zapierHeading": "تكامل Zapier",
+        "zapierSteps": {
+            "createZap": "أنشئ عملية Zap جديدة",
+            "chooseTrigger": "اختر تطبيق المشغّل الخاص بك",
+            "addWebhooks": "أضف Webhooks by Zapier كإجراء",
+            "selectPostMethod": "اختر طريقة \"POST\"",
+            "pasteUrl": "الصق عنوان URL لنقطة النهاية",
+            "mapFields": "اربط حقولك بمحتوى الطلب"
+        }
+    },
+    "markdown": {
+        "guideHeading": "دليل تكامل API",
+        "endpointHeading": "نقطة النهاية",
+        "headersHeading": "الترويسات",
+        "headersTable": {
+            "header": "الترويسة",
+            "value": "القيمة"
+        },
+        "requestBodyHeading": "بنية محتوى الطلب",
+        "customFieldsHeading": "مرجع الحقول المخصصة",
+        "customFieldsTable": {
+            "fieldId": "معرّف الحقل",
+            "fieldName": "اسم الحقل",
+            "type": "النوع",
+            "required": "مطلوب"
+        },
+        "responseHeading": "الاستجابة",
+        "successLabel": "نجاح",
+        "errorLabel": "خطأ",
+        "integrationExamplesHeading": "أمثلة التكامل",
+        "zapierHeading": "تكامل Zapier",
+        "zapierSteps": {
+            "createZap": "أنشئ عملية Zap جديدة",
+            "chooseTrigger": "اختر تطبيق المشغّل الخاص بك (مثل Google Forms أو Typeform)",
+            "addWebhooks": "أضف Webhooks by Zapier كإجراء",
+            "selectPostMethod": "اختر طريقة \"POST\"",
+            "pasteUrl": "الصق عنوان URL لنقطة النهاية",
+            "setContentType": "اضبط Content-Type على application/json",
+            "mapFields": "اربط حقول المشغّل بمحتوى الطلب"
+        },
+        "makeHeading": "Make (Integromat)",
+        "makeSteps": {
+            "createScenario": "أنشئ سيناريو جديدًا",
+            "addTrigger": "أضف وحدة المشغّل الخاصة بك",
+            "addHttpModule": "أضف وحدة HTTP > Make a request",
+            "configure": "اضبط الإعدادات باستخدام نقطة النهاية وبنية المحتوى أعلاه"
+        }
+    }
+}

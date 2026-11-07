@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { cn } from '@/lib/utils';
 import { ChatsCircle } from '@phosphor-icons/react';
 import { useDoubtTable } from '../../-hooks/useDoubtTable';
@@ -16,6 +17,7 @@ import { ConversationPane } from './conversation-pane';
  *        isn't on the loaded page it's fetched by id and shown at the top of the list.
  */
 export const DoubtInbox = ({ initialDoubtId }: { initialDoubtId?: string }) => {
+    const { t } = useTranslation('studyLibraryDoubtInbox');
     const { doubts, currentPage, setCurrentPage, isLoading, error, refetch, userDetailsRecord } =
         useDoubtTable();
     const pageList = doubts?.content ?? [];
@@ -102,7 +104,7 @@ export const DoubtInbox = ({ initialDoubtId }: { initialDoubtId?: string }) => {
                 ) : (
                     <div className="flex h-full flex-col items-center justify-center gap-3 p-8 text-center text-neutral-400">
                         <ChatsCircle size={40} weight="duotone" className="text-neutral-300" />
-                        <p className="text-sm">Select a doubt to view the conversation</p>
+                        <p className="text-sm">{t('selectADoubt')}</p>
                     </div>
                 )}
             </div>

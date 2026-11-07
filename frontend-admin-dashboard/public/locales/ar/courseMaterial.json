@@ -1,0 +1,18 @@
+{
+    "deletedSuccess": "تم حذف الدورة بنجاح",
+    "deleteFailed": "فشل حذف الدورة",
+    "exploreTerm": "استكشف الـ {{term}}",
+    "tabs": {
+        "authoredTerm": "الـ {{term}} التي أنشأتها",
+        "allTerm": "كل الـ {{term}}",
+        "termInReview": "{{term}} قيد المراجعة",
+        "termApproval": "الموافقة على الـ {{term}}"
+    },
+    "noTermFound": "لم يتم العثور على {{term}}",
+    "tryAddingNewTerm": "جرّب إضافة {{term}} جديد.",
+    "courseSettings": "إعدادات الدورة",
+    "createTermWithAI": "إنشاء {{term}} بالذكاء الاصطناعي",
+    "exploreSubtitle": "نظّم مواردك التعليمية وارفعها وتتبّعها بسهولة في مكان واحد.",
+    "noTermFoundForTab": "لم يتم العثور على {{term}} لهذا التبويب.",
+    "noTermFoundForFilters": "لم يتم العثور على {{term}} للفلاتر المطبّقة."
+}

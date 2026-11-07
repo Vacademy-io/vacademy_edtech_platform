@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -26,6 +27,7 @@ import {
     getMyCourses,
     createEditableCopy,
     submitForReview,
+    publishCourse,
     getMyCourseHistory,
 } from '../-services/approval-services';
 import { formatDistanceToNow } from 'date-fns';
@@ -168,6 +170,7 @@ export const AuthoredCoursesTab: React.FC<AuthoredCoursesTabProps> = ({
     searchValue,
     setSearchValue,
 }) => {
+    const { t } = useTranslation('authoredCourses');
     const navigate = useNavigate();
     const queryClient = useQueryClient();
     const [filteredCourses, setFilteredCourses] = useState<DisplayCourse[]>([]);
@@ -201,7 +204,12 @@ export const AuthoredCoursesTab: React.FC<AuthoredCoursesTabProps> = ({
     // When the field is missing from saved/cached settings (older payloads
     // predate this toggle), default to: visible for admin, hidden for
     // teacher / sub-org / custom roles.
-    const [roleDisplay, setRoleDisplay] = useState<DisplaySettingsData | null>(null);
+    // Seeded from cache so the Publish / Submit-for-Review decision below is
+    // right on first paint; null only on a cold cache, which disables the
+    // draft action until the policy arrives.
+    const [roleDisplay, setRoleDisplay] = useState<DisplaySettingsData | null>(
+        () => getDisplaySettingsFromCache(getActiveRoleDisplaySettingsKey()) ?? null
+    );
     useEffect(() => {
         const roleKey = getActiveRoleDisplaySettingsKey();
         // Force-refresh on mount so admin policy changes (Course Permission
@@ -227,6 +235,11 @@ export const AuthoredCoursesTab: React.FC<AuthoredCoursesTabProps> = ({
     const showDelete = cardSettings ? cardSettings.showDelete !== false : Boolean(isAdmin);
     const showEnrolledStudentCount =
         roleDisplay?.courseListCard?.showEnrolledStudentCount === true;
+    // On by default (the long-standing flow): a draft's action button is
+    // "Submit for Review". Only when the admin turns this off for the role
+    // does it become "Publish" and go straight to ACTIVE.
+    const requireApproval = roleDisplay?.coursePage?.requireCourseApproval !== false;
+    const approvalPolicyKnown = roleDisplay !== null;
 
     // Fetch authored courses
     const {
@@ -277,7 +290,7 @@ export const AuthoredCoursesTab: React.FC<AuthoredCoursesTabProps> = ({
             return { sourceCourse, newCourseId };
         },
         onSuccess: ({ sourceCourse, newCourseId }) => {
-            toast.success('Editable copy created successfully');
+            toast.success(t('copyCreated'));
             setCopyingCourseId(null);
 
             const targetPage = 0;
@@ -328,22 +341,24 @@ export const AuthoredCoursesTab: React.FC<AuthoredCoursesTabProps> = ({
             navigate({ to: '/study-library/courses' });
         },
         onError: (error: Error) => {
-            toast.error(error.message || 'Failed to create editable copy');
+            toast.error(error.message || t('copyFailed'));
             setCopyingCourseId(null);
         },
     });
 
-    // Submit for review mutation
+    // Submit for review / direct publish mutation (which one depends on the
+    // role's requireCourseApproval toggle)
     const submitReviewMutation = useMutation({
-        mutationFn: submitForReview,
+        mutationFn: (courseId: string) =>
+            requireApproval ? submitForReview(courseId) : publishCourse(courseId),
         onSuccess: () => {
             setSubmittingCourseId(null);
-            toast.success('Course submitted for review');
+            toast.success(requireApproval ? t('submittedForReview') : t('published'));
             refetch();
         },
         onError: (error: Error) => {
             setSubmittingCourseId(null);
-            toast.error(error.message || 'Failed to submit for review');
+            toast.error(error.message || (requireApproval ? t('submitFailed') : t('publishFailed')));
         },
     });
 
@@ -470,7 +485,7 @@ export const AuthoredCoursesTab: React.FC<AuthoredCoursesTabProps> = ({
         // Find the course to get the packageId
         const course = filteredCourses.find((c) => c.id === entryId);
         if (!course) {
-            toast.error('Course not found');
+            toast.error(t('courseNotFound'));
             return;
         }
 
@@ -480,7 +495,7 @@ export const AuthoredCoursesTab: React.FC<AuthoredCoursesTabProps> = ({
         setDeleteDialogOpen(null); // Close the dialog
         deleteCourseMutation.mutate(course.packageId, {
             onSuccess: () => {
-                toast.success('Course deleted successfully');
+                toast.success(t('deletedSuccess'));
                 refetch();
                 setDeletingCourseId(null);
             },
@@ -489,7 +504,7 @@ export const AuthoredCoursesTab: React.FC<AuthoredCoursesTabProps> = ({
                     error && typeof error === 'object' && 'message' in error
                         ? (error as { message?: string }).message
                         : undefined;
-                toast.error(errMsg || 'Failed to delete course');
+                toast.error(errMsg || t('deleteFailed'));
                 setDeletingCourseId(null);
             },
         });
@@ -508,11 +523,11 @@ export const AuthoredCoursesTab: React.FC<AuthoredCoursesTabProps> = ({
     const getStatusBadge = (status: string) => {
         switch (status) {
             case 'ACTIVE':
-                return <Badge className="bg-green-100 text-green-800">Published</Badge>;
+                return <Badge className="bg-green-100 text-green-800">{t('status.published')}</Badge>;
             case 'DRAFT':
-                return <Badge>Draft</Badge>;
+                return <Badge>{t('status.draft')}</Badge>;
             case 'IN_REVIEW':
-                return <Badge>In Review</Badge>;
+                return <Badge>{t('status.inReview')}</Badge>;
             default:
                 return <Badge>{status}</Badge>;
         }
@@ -576,9 +591,9 @@ export const AuthoredCoursesTab: React.FC<AuthoredCoursesTabProps> = ({
     if (error) {
         return (
             <div className="flex h-40 flex-col items-center justify-center text-red-500">
-                <p>Error loading courses</p>
+                <p>{t('errorLoadingCourses')}</p>
                 <MyButton onClick={() => refetch()} className="mt-2">
-                    Retry
+                    {t('retry')}
                 </MyButton>
             </div>
         );
@@ -595,7 +610,7 @@ export const AuthoredCoursesTab: React.FC<AuthoredCoursesTabProps> = ({
             {/* Search Bar - Full width on mobile */}
             <div className="flex items-center gap-4">
                 <Input
-                    placeholder="Search courses..."
+                    placeholder={t('searchCourses')}
                     value={searchValue}
                     onChange={(e) => setSearchValue(e.target.value)}
                     className="w-full sm:max-w-md"
@@ -606,11 +621,11 @@ export const AuthoredCoursesTab: React.FC<AuthoredCoursesTabProps> = ({
             {filteredCourses.length === 0 ? (
                 <Card>
                     <CardContent className="flex flex-col items-center justify-center py-12">
-                        <h3 className="mb-2 text-lg font-semibold">No courses found</h3>
+                        <h3 className="mb-2 text-lg font-semibold">{t('noCoursesFoundTitle')}</h3>
                         <p className="text-gray-600">
                             {searchValue
-                                ? `No courses match "${searchValue}"`
-                                : "You haven't created any courses yet."}
+                                ? t('noCoursesMatchSearch', { search: searchValue })
+                                : t('noCoursesCreatedYet')}
                         </p>
                     </CardContent>
                 </Card>
@@ -698,7 +713,7 @@ export const AuthoredCoursesTab: React.FC<AuthoredCoursesTabProps> = ({
                                                     className="flex-shrink-0 rounded bg-gray-200 px-2 py-0.5 text-xs font-medium text-gray-700"
                                                     title={tags.slice(MAX_VISIBLE_TAGS).join(', ')}
                                                 >
-                                                    +{tags.length - MAX_VISIBLE_TAGS} more
+                                                    {t('moreCount', { count: tags.length - MAX_VISIBLE_TAGS })}
                                                 </span>
                                             )}
                                         </div>
@@ -708,7 +723,7 @@ export const AuthoredCoursesTab: React.FC<AuthoredCoursesTabProps> = ({
                                     <div className="mt-2 flex flex-wrap gap-2">
                                         {getStatusBadge(course.status)}
                                         {course.originalCourseId && (
-                                            <Badge className="px-2 text-xs">Copy</Badge>
+                                            <Badge className="px-2 text-xs">{t('copyBadge')}</Badge>
                                         )}
                                     </div>
 
@@ -716,11 +731,11 @@ export const AuthoredCoursesTab: React.FC<AuthoredCoursesTabProps> = ({
                                     <span className="mt-2 flex items-center gap-1 rounded py-1 text-xs font-medium text-gray-500">
                                         {course.isCoursePublishedToCatalaouge ? (
                                             <>
-                                                <Eye className="size-4" /> In Catalog
+                                                <Eye className="size-4" /> {t('inCatalog')}
                                             </>
                                         ) : (
                                             <>
-                                                <EyeSlash className="size-4" /> Private
+                                                <EyeSlash className="size-4" /> {t('private')}
                                             </>
                                         )}
                                     </span>
@@ -729,22 +744,25 @@ export const AuthoredCoursesTab: React.FC<AuthoredCoursesTabProps> = ({
                                     {showEnrolledStudentCount && (
                                         <span className="flex items-center gap-1 rounded py-1 text-xs font-medium text-gray-500">
                                             <UsersThree className="size-4" />
-                                            {course.enrolledStudentCount} Enrolled{' '}
-                                            {course.enrolledStudentCount === 1
-                                                ? getTerminology(
-                                                      RoleTerms.Learner,
-                                                      SystemTerms.Learner
-                                                  )
-                                                : getTerminologyPlural(
-                                                      RoleTerms.Learner,
-                                                      SystemTerms.Learner
-                                                  )}
+                                            {t('enrolledCount', {
+                                                count: course.enrolledStudentCount,
+                                                term:
+                                                    course.enrolledStudentCount === 1
+                                                        ? getTerminology(
+                                                              RoleTerms.Learner,
+                                                              SystemTerms.Learner
+                                                          )
+                                                        : getTerminologyPlural(
+                                                              RoleTerms.Learner,
+                                                              SystemTerms.Learner
+                                                          ),
+                                            })}
                                         </span>
                                     )}
 
                                     {/* Updated Date */}
                                     <span className="text-xs text-gray-500">
-                                        Updated {formatDistanceToNow(new Date(course.updatedAt))} ago
+                                        {t('updatedAgo', { time: formatDistanceToNow(new Date(course.updatedAt)) })}
                                     </span>
 
                                     {/* Action Buttons */}
@@ -759,7 +777,7 @@ export const AuthoredCoursesTab: React.FC<AuthoredCoursesTabProps> = ({
                                             onClick={() => handleViewCourse(course)}
                                         >
                                             <Eye size={16} />
-                                            View Course
+                                            {t('viewCourse')}
                                         </MyButton>
 
                                         {/* Additional Actions for Draft courses */}
@@ -773,7 +791,8 @@ export const AuthoredCoursesTab: React.FC<AuthoredCoursesTabProps> = ({
                                                         handleSubmitForReview(course.courseId)
                                                     }
                                                     disabled={
-                                                        submittingCourseId === course.courseId
+                                                        submittingCourseId === course.courseId ||
+                                                        !approvalPolicyKnown
                                                     }
                                                 >
                                                     {submittingCourseId === course.courseId ? (
@@ -787,7 +806,9 @@ export const AuthoredCoursesTab: React.FC<AuthoredCoursesTabProps> = ({
                                                             weight="fill"
                                                         />
                                                     )}
-                                                    Submit for Review
+                                                    {requireApproval
+                                                        ? t('submitForReview')
+                                                        : t('publish')}
                                                 </Button>
 
                                                 <Button
@@ -797,7 +818,7 @@ export const AuthoredCoursesTab: React.FC<AuthoredCoursesTabProps> = ({
                                                     onClick={() =>
                                                         setHistoryDialogCourseId(course.courseId)
                                                     }
-                                                    title="View History"
+                                                    title={t('viewHistory')}
                                                 >
                                                     <ClockCounterClockwise
                                                         size={16}
@@ -829,7 +850,7 @@ export const AuthoredCoursesTab: React.FC<AuthoredCoursesTabProps> = ({
                                                     ) : (
                                                         <Copy size={16} />
                                                     )}
-                                                    Copy to Edit
+                                                    {t('copyToEdit')}
                                                 </Button>
                                             )}
 
@@ -851,13 +872,10 @@ export const AuthoredCoursesTab: React.FC<AuthoredCoursesTabProps> = ({
                                             <AlertDialogContent className="w-[calc(100%-2rem)] max-w-md">
                                                 <AlertDialogHeader>
                                                     <AlertDialogTitle>
-                                                        Are you sure you want to delete this
-                                                        course?
+                                                        {t('deleteConfirmTitle')}
                                                     </AlertDialogTitle>
                                                     <AlertDialogDescription>
-                                                        This action cannot be undone. This will
-                                                        permanently delete your course and remove
-                                                        your course data from our servers.
+                                                        {t('deleteConfirmBody')}
                                                     </AlertDialogDescription>
                                                 </AlertDialogHeader>
                                                 <AlertDialogFooter className="flex-col gap-2 sm:flex-row">
@@ -865,7 +883,7 @@ export const AuthoredCoursesTab: React.FC<AuthoredCoursesTabProps> = ({
                                                         disabled={deletingCourseId === course.id}
                                                         className="w-full sm:w-auto"
                                                     >
-                                                        Cancel
+                                                        {t('cancel')}
                                                     </AlertDialogCancel>
                                                     <AlertDialogAction
                                                         onClick={() =>
@@ -880,7 +898,7 @@ export const AuthoredCoursesTab: React.FC<AuthoredCoursesTabProps> = ({
                                                                 className="animate-spin"
                                                             />
                                                         ) : (
-                                                            'Delete'
+                                                            t('delete')
                                                         )}
                                                     </AlertDialogAction>
                                                 </AlertDialogFooter>
@@ -908,8 +926,8 @@ export const AuthoredCoursesTab: React.FC<AuthoredCoursesTabProps> = ({
             <MyDialog
                 heading={
                     courseHistory?.courseName
-                        ? `Course History · ${courseHistory.courseName}`
-                        : 'Course History'
+                        ? t('courseHistoryWithName', { name: courseHistory.courseName })
+                        : t('courseHistory')
                 }
                 open={Boolean(historyDialogCourseId)}
                 onOpenChange={(open) => {
@@ -919,32 +937,32 @@ export const AuthoredCoursesTab: React.FC<AuthoredCoursesTabProps> = ({
             >
                 {isHistoryFetching ? (
                     <div className="flex items-center justify-center py-6 text-gray-600">
-                        <CircleNotch size={18} className="mr-2 animate-spin" /> Loading history…
+                        <CircleNotch size={18} className="mr-2 animate-spin" /> {t('loadingHistory')}
                     </div>
                 ) : historyError ? (
                     <div className="rounded-md bg-red-50 p-4 text-red-700">
-                        Failed to load course history.
+                        {t('loadHistoryFailed')}
                     </div>
                 ) : courseHistory ? (
                     <div className="space-y-4">
                         <div className="grid gap-2 sm:grid-cols-2">
                             <div className="text-sm text-gray-600">
-                                <span className="font-medium text-gray-800">Course ID:</span>{' '}
+                                <span className="font-medium text-gray-800">{t('courseIdLabel')}</span>{' '}
                                 {courseHistory.courseId}
                             </div>
                             <div className="text-sm text-gray-600">
-                                <span className="font-medium text-gray-800">Status:</span>{' '}
+                                <span className="font-medium text-gray-800">{t('statusLabel')}</span>{' '}
                                 {courseHistory.status}
                             </div>
                             {courseHistory.versionNumber != null && (
                                 <div className="text-sm text-gray-600">
-                                    <span className="font-medium text-gray-800">Version:</span>{' '}
+                                    <span className="font-medium text-gray-800">{t('versionLabel')}</span>{' '}
                                     {courseHistory.versionNumber}
                                 </div>
                             )}
                             {courseHistory.originalCourseName && (
                                 <div className="text-sm text-gray-600">
-                                    <span className="font-medium text-gray-800">Original:</span>{' '}
+                                    <span className="font-medium text-gray-800">{t('originalLabel')}</span>{' '}
                                     {courseHistory.originalCourseName}{' '}
                                     {courseHistory.originalCourseStatus && (
                                         <span>({courseHistory.originalCourseStatus})</span>
@@ -954,7 +972,7 @@ export const AuthoredCoursesTab: React.FC<AuthoredCoursesTabProps> = ({
                         </div>
 
                         <div className="pt-2">
-                            <h4 className="mb-2 text-sm font-semibold text-gray-900">Audit Logs</h4>
+                            <h4 className="mb-2 text-sm font-semibold text-gray-900">{t('auditLogs')}</h4>
                             {courseHistory.auditLogs && courseHistory.auditLogs.length > 0 ? (
                                 <ul className="space-y-3">
                                     {courseHistory.auditLogs
@@ -977,23 +995,23 @@ export const AuthoredCoursesTab: React.FC<AuthoredCoursesTabProps> = ({
                                                     {log.message}
                                                 </div>
                                                 <div className="mt-1 text-xs text-gray-600">
-                                                    By: {log.actorUserId}
+                                                    {t('byActor', { actor: log.actorUserId })}
                                                 </div>
                                                 {log.comment && (
                                                     <div className="mt-2 rounded bg-white p-2 text-xs text-gray-700">
-                                                        Comment: {log.comment}
+                                                        {t('commentLabel', { comment: log.comment })}
                                                     </div>
                                                 )}
                                             </li>
                                         ))}
                                 </ul>
                             ) : (
-                                <div className="text-sm text-gray-600">No history available.</div>
+                                <div className="text-sm text-gray-600">{t('noHistoryAvailable')}</div>
                             )}
                         </div>
                     </div>
                 ) : (
-                    <div className="text-sm text-gray-600">No history available.</div>
+                    <div className="text-sm text-gray-600">{t('noHistoryAvailable')}</div>
                 )}
             </MyDialog>
         </div>

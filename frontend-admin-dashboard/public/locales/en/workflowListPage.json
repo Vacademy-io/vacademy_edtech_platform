@@ -1,0 +1,28 @@
+{
+    "heading": "Workflows",
+    "statusHeading": "{{status}} Workflows",
+    "foundCount_one": "{{count}} workflow found",
+    "foundCount_other": "{{count}} workflows found",
+    "createWorkflow": "Create Workflow",
+    "searchPlaceholder": "Search workflows...",
+    "status": "Status:",
+    "all": "All",
+    "filterByType": "Filter by type:",
+    "loadFailed": {
+        "title": "Failed to load workflows",
+        "hint": "Please try refreshing the page or contact support if the problem persists."
+    },
+    "retry": "Retry",
+    "empty": {
+        "filteredTitle": "No workflows found",
+        "noneTitle": "No workflows yet",
+        "filteredHint": "Try adjusting your search or filter criteria",
+        "noneHint": "Create your first workflow to automate your institute processes"
+    },
+    "createFirstWorkflow": "Create Your First Workflow",
+    "statusLabels": {
+        "active": "Active",
+        "draft": "Draft",
+        "inactive": "Inactive"
+    }
+}

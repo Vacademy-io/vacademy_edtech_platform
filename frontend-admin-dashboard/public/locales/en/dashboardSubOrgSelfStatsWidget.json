@@ -1,0 +1,25 @@
+{
+    "welcomeBack": "Welcome back",
+    "defaultOrgName": "My organization",
+    "manage": "Manage",
+    "stats": {
+        "learners": {
+            "label": "Learners",
+            "subtitle": "Enrolled members"
+        },
+        "seats": {
+            "label": "Seats",
+            "seatsLeft_one": "{{count}} seat left",
+            "seatsLeft_other": "{{count}} seats left",
+            "noCap": "No seat cap"
+        },
+        "collected": {
+            "label": "Collected",
+            "subtitle": "Fees received"
+        },
+        "outstanding": {
+            "label": "Outstanding",
+            "subtitle": "Fees due"
+        }
+    }
+}

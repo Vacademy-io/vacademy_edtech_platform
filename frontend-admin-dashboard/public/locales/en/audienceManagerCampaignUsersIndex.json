@@ -1,0 +1,12 @@
+{
+    "schema": {
+        "campaignIdRequired": "Campaign ID is required"
+    },
+    "navHeading": "{{audienceTerm}} Users",
+    "helmet": {
+        "title": "{{audienceTerm}} Users",
+        "description": "View users enrolled in the {{audienceTerm}}."
+    },
+    "backButton": "Back to {{audienceTermPlural}}",
+    "missingCampaignId": "Campaign ID is required"
+}

@@ -18,13 +18,31 @@ from ..schemas.chat_agent import (
     QuestionFeedback,
 )
 from ..config import get_settings
-from ..services.chat_llm_client import ChatLLMClient
+from ..services.chat_llm_client import ChatLLMClient, reasoning_mode_for
+from ..services.image_model_resolver import QUIZ_IMAGE, image_model_for
 
 logger = logging.getLogger(__name__)
 
+# Output budget for assessment-from-transcript. Non-reasoning models keep the
+# historical 32k. Reasoning-mandatory models (GLM) get a cap: ChatLLMClient adds
+# a thinking allowance on top (apply_reasoning_mode: +up to 12k), and the GLM
+# registry row's max_tokens (1,048,576) is not a real output limit — 20,480 +
+# 12,000 keeps the wire value (32,480) inside the 32k the endpoint has always
+# been sent. 50 Indic-language MCQs is the worst case this must still fit.
+_ASSESSMENT_MAX_TOKENS = 32768
+_ASSESSMENT_MAX_TOKENS_REASONING = 20480
+
+
+def _assessment_max_tokens(model: Optional[str]) -> int:
+    if model and reasoning_mode_for(model):
+        return _ASSESSMENT_MAX_TOKENS_REASONING
+    return _ASSESSMENT_MAX_TOKENS
+
 # Image generation for assessment questions goes through OpenRouter — the
 # direct Gemini image key is free-tier with a zero image quota (429s every
-# call). Same billed model the course-content and video pipelines use.
+# call). Same billed model the course-content and video pipelines use. The
+# 'quiz_image' use case (super-admin portal) picks it; this literal is the
+# default. Chat-completions image models only (the call sends `modalities`).
 _IMAGE_MODEL = "google/gemini-3.1-flash-image"
 _OPENROUTER_IMAGE_URL = "https://openrouter.ai/api/v1/chat/completions"
 
@@ -188,9 +206,14 @@ IMPORTANT: Return ONLY valid JSON, no additional text or markdown code blocks ar
         user_id: Optional[str] = None,
         model: Optional[str] = None,
         include_images: bool = False,
+        fallback_models: Optional[List[str]] = None,
     ) -> Dict[str, Any]:
         """
         Generate an assessment (title + N MCQs) from a long-form transcript.
+
+        `model` is the model that actually runs (the router resolves it from
+        the request override / 'agent' use case); `fallback_models` is the
+        failover chain. The model that answered is returned as `model_used`.
 
         Unlike `generate_quiz`, this accepts the full transcript (no truncation),
         always generates a title, and emits questions in `target_language`
@@ -259,13 +282,10 @@ OUTPUT — return ONLY this JSON object, no surrounding markdown / text:
 }}
 """
 
-        # NOTE: ChatLLMClient.chat_completion() picks the model via its internal
-        # ApiKeyResolver (LLM_DEFAULT_MODEL env / ai_api_keys table). We do NOT
-        # pass `model` here — it's not a kwarg on chat_completion. Caller can
-        # influence model by setting LLM_DEFAULT_MODEL=google/gemini-2.5-flash.
-        if model:
-            logger.info(f"[assessment-gen] (note) caller hinted model={model}; actual model resolved by ChatLLMClient.")
-
+        # The resolved model is passed through (it used to be dropped here, so
+        # the call ran the env default while billing named the 'agent' model).
+        # Without a model, ChatLLMClient's resolver picks one (platform default
+        # or the institute/user ai_api_keys default).
         try:
             response = await self.llm_client.chat_completion(
                 messages=[
@@ -274,10 +294,13 @@ OUTPUT — return ONLY this JSON object, no surrounding markdown / text:
                 ],
                 tools=None,
                 temperature=0.4,
-                max_tokens=32768,
+                max_tokens=_assessment_max_tokens(model),
                 institute_id=institute_id,
                 user_id=user_id,
+                model=model,
+                fallback_models=fallback_models,
             )
+            model_used = (response.get("model") if isinstance(response, dict) else None) or model
             content = response.get("content", "") or ""
             # Capture token usage for credit billing (the overage leg of
             # max(parametric, actual)). Provider shapes differ: OpenRouter uses
@@ -372,6 +395,7 @@ OUTPUT — return ONLY this JSON object, no surrounding markdown / text:
             "questions": questions,
             "usage": {"prompt_tokens": _prompt_toks, "completion_tokens": _completion_toks},
             "images_generated": images_generated,
+            "model_used": model_used,
         }
 
     async def _enrich_questions_with_images(self, questions: List[Dict[str, Any]]) -> None:
@@ -478,7 +502,7 @@ OUTPUT — return ONLY this JSON object, no surrounding markdown / text:
                         "Content-Type": "application/json",
                     },
                     json={
-                        "model": _IMAGE_MODEL,
+                        "model": image_model_for(QUIZ_IMAGE, _IMAGE_MODEL),
                         "messages": [{"role": "user", "content": prompt}],
                         "modalities": ["image"],
                         "image_config": {"aspect_ratio": "16:9"},

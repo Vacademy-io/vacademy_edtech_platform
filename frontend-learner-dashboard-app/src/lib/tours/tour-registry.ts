@@ -103,7 +103,7 @@ export function getLearnerTours(): LearnerTour[] {
         },
         {
           title: `Open a ${course.toLowerCase()}`,
-          description: `Tap any card to open it. Inside you'll find its subjects, modules and chapters organised step by step.`,
+          description: `Tap any card to open it. Inside you'll find its subjects, modules and ${getTerminologyPlural(ContentTerms.Chapters, SystemTerms.Chapters).toLowerCase()} organised step by step.`,
         },
         {
           title: 'Pick up where you left off',
@@ -120,7 +120,7 @@ export function getLearnerTours(): LearnerTour[] {
       steps: [
         {
           title: 'Learning material',
-          description: `Open any ${course.toLowerCase()} and go to a chapter — its ${slides.toLowerCase()} are listed in order: videos, documents, quizzes and more.`,
+          description: `Open any ${course.toLowerCase()} and go to a ${getTerminology(ContentTerms.Chapters, SystemTerms.Chapters).toLowerCase()} — its ${slides.toLowerCase()} are listed in order: videos, documents, quizzes and more.`,
         },
         {
           title: 'Watch and read',

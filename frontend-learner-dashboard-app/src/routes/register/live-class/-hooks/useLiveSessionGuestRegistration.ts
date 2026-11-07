@@ -1,6 +1,7 @@
 import { useMutation } from "@tanstack/react-query";
 import { AxiosError } from "axios";
 import { toast } from "sonner";
+import { useTranslation } from "react-i18next";
 import {
   COLLECT_PUBLIC_USER_DATA,
   LIVE_SESSION_PAYMENT_INFO,
@@ -22,6 +23,7 @@ interface ErrorResponse {
 }
 
 export const useLiveSessionGuestRegistration = () => {
+  const { t } = useTranslation("registrationA");
   return useMutation({
     mutationFn: async (payload: GuestRegistrationRequestDTO) => {
       const response = await guestAxiosInstance.post(
@@ -44,7 +46,7 @@ export const useLiveSessionGuestRegistration = () => {
         return;
       }
 
-      toast.error(error.response?.data?.message || "Registration failed");
+      toast.error(error.response?.data?.message || t("liveClass.hooks.registrationFailed"));
     },
   });
 };
@@ -52,6 +54,7 @@ export const useLiveSessionGuestRegistration = () => {
 // Paid live session: registers the guest AND raises the fee invoice in one call.
 // The returned invoice_id is settled on the shared /pay/invoice/{id} page.
 export const useLiveSessionRegisterAndPay = () => {
+  const { t } = useTranslation("registrationA");
   return useMutation({
     mutationFn: async (payload: PaidRegistrationRequestDTO) => {
       const response = await guestAxiosInstance.post<LiveSessionPaymentInfo>(
@@ -63,7 +66,7 @@ export const useLiveSessionRegisterAndPay = () => {
     },
     onError: (error: AxiosError<ErrorResponse>) => {
       toast.error(
-        error.response?.data?.message || "Registration failed. Please try again."
+        error.response?.data?.message || t("liveClass.hooks.registrationFailedRetry")
       );
     },
   });

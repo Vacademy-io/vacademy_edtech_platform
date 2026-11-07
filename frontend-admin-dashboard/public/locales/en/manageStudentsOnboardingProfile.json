@@ -1,0 +1,104 @@
+{
+    "startOnboarding": {
+        "button": "Start Onboarding",
+        "dialogHeading": "Start Onboarding",
+        "cancel": "Cancel",
+        "start": "Start",
+        "starting": "Starting…",
+        "loadingFlows": "Loading flows…",
+        "noActiveFlows": "No active onboarding flows yet — activate one from the Onboarding tab first.",
+        "flowLabel": "Onboarding flow",
+        "pickFlowPlaceholder": "Pick a flow…",
+        "started": "Onboarding started",
+        "startFailed": "Could not start onboarding for this person."
+    },
+    "loadError": {
+        "title": "Couldn't load onboarding progress"
+    },
+    "empty": {
+        "title": "No onboarding flows started",
+        "hint": "This person hasn't been placed into an onboarding flow yet."
+    },
+    "credentials": {
+        "copiedToClipboard": "{{label}} copied to clipboard",
+        "copyFailed": "Could not copy {{label}}",
+        "passwordVisibilityOff": "Password visibility is off for this institute — enable it under Settings → Role Display to view this student's login here.",
+        "loading": "Loading credentials…",
+        "usernameLabel": "Username:",
+        "passwordLabel": "Password:",
+        "notAvailable": "N/A",
+        "notFound": "Not found",
+        "usernameFieldName": "Username",
+        "passwordFieldName": "Password"
+    },
+    "instance": {
+        "heading": "Onboarding — {{status}}",
+        "resolvedSubjectPrefix": "A parent filled this on behalf of a student. The actual student is",
+        "resolvedSubjectFallback": "created",
+        "resolvedSubjectSuffix": "— this onboarding stays visible here, on the original lead/contact.",
+        "stepStatusWithReason": "{{status}} — {{reason}}",
+        "viewForm": "View form",
+        "complete": "Complete",
+        "skip": "Skip",
+        "noSteps": "No steps recorded yet.",
+        "stepCompleted": "Step marked complete",
+        "completeFailed": "Could not complete this step.",
+        "progressSaved": "Progress saved",
+        "saveFailed": "Could not save this step.",
+        "stepSkipped": "Step skipped",
+        "skipFailed": "Could not skip this step."
+    },
+    "status": {
+        "pending": "Pending",
+        "inProgress": "In Progress",
+        "completed": "Completed",
+        "skipped": "Skipped"
+    },
+    "skipDialog": {
+        "heading": "Skip this step?",
+        "cancel": "Cancel",
+        "skipStep": "Skip Step",
+        "skipping": "Skipping…",
+        "description": "\"{{stepName}}\" is optional and can be skipped. Add a reason (optional).",
+        "reasonPlaceholder": "Reason (optional)",
+        "defaultReason": "Skipped by admin"
+    },
+    "completeStepDialog": {
+        "heading": "Complete — {{stepName}}",
+        "cancel": "Cancel",
+        "save": "Save",
+        "saving": "Saving…",
+        "completeStep": "Complete Step",
+        "completing": "Completing…",
+        "parentToggleLabel": "This form was filled by a parent, on behalf of a student",
+        "existingDetailsHint": "The student will be created using this person's existing details:",
+        "noNameOnFile": "No name on file",
+        "noContactOnFile": "No email or mobile number on file",
+        "studentDetailsHint": "Enter the student's own details — they'll be the one enrolled and granted access, not the parent.",
+        "studentFullNameLabel": "Student's full name",
+        "studentFullNamePlaceholder": "e.g. Aarav Sharma",
+        "studentEmailLabel": "Student's email",
+        "studentEmailPlaceholder": "student@example.com",
+        "studentMobileLabel": "Student's mobile number",
+        "studentMobilePlaceholder": "Optional if email is provided",
+        "enrollLabel": "Enroll into (course / batch)",
+        "optionalIfEnrolled": "(optional if already enrolled)",
+        "skipCourseHint": "This step allows completing without picking a course if the student already has an active enrollment.",
+        "pickCoursePlaceholder": "Pick a course…",
+        "searchCoursePlaceholder": "Search course / batch…",
+        "searchPlaceholder": "Search…",
+        "noFieldsHint": "This step has no attached fields — marking it complete needs no input.",
+        "formFieldsLabel": "Form fields",
+        "defaultFieldLabel": "Field"
+    },
+    "submittedFormDialog": {
+        "heading": "Form — {{stepName}}",
+        "close": "Close",
+        "noFields": "This step has no attached fields.",
+        "untitledField": "Untitled field",
+        "notAnswered": "Not answered"
+    },
+    "noAccess": {
+        "hint": "Your role does not have access to onboarding for this institute."
+    }
+}

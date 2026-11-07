@@ -1,0 +1,64 @@
+{
+    "installmentStatus": {
+        "paid": "مدفوع",
+        "partial": "جزئي",
+        "overdue": "متأخر",
+        "pending": "قيد الانتظار",
+        "waived": "معفى"
+    },
+    "legend": {
+        "installmentStatus": "حالة الأقساط:"
+    },
+    "expandedRow": {
+        "loadFailed": "فشل تحميل تفاصيل الأقساط.",
+        "noInstallments": "لم يتم العثور على أقساط.",
+        "columns": {
+            "feeType": "نوع الرسوم",
+            "expected": "المتوقع",
+            "paid": "المدفوع",
+            "due": "المستحق",
+            "overdue": "المتأخر",
+            "installments": "الأقساط"
+        }
+    },
+    "installmentTooltip": "#{{number}}: {{label}}",
+    "columns": {
+        "package": "الدورة / الباقة",
+        "cpoName": "خطة الرسوم",
+        "expected": "المتوقع",
+        "paid": "المدفوع",
+        "due": "المستحق",
+        "overdue": "المتأخر",
+        "status": "الحالة",
+        "progress": "التقدم"
+    },
+    "actions": {
+        "viewInstallments": "عرض الأقساط"
+    },
+    "error": {
+        "title": "تعذر تحميل بيانات الدفع",
+        "genericMessage": "يرجى المحاولة مرة أخرى."
+    },
+    "empty": {
+        "title": "لم يتم العثور على سجلات دفع.",
+        "subtitle": "حاول تعديل عوامل التصفية لعرض المزيد من النتائج."
+    },
+    "pagination": {
+        "showingRange_zero": "عرض <b>{{start}}</b> – <b>{{end}}</b> من <b>{{count}}</b> سجل",
+        "showingRange_one": "عرض <b>{{start}}</b> – <b>{{end}}</b> من سجل واحد (<b>{{count}}</b>)",
+        "showingRange_two": "عرض <b>{{start}}</b> – <b>{{end}}</b> من سجلَّين (<b>{{count}}</b>)",
+        "showingRange_few": "عرض <b>{{start}}</b> – <b>{{end}}</b> من <b>{{count}}</b> سجلات",
+        "showingRange_many": "عرض <b>{{start}}</b> – <b>{{end}}</b> من <b>{{count}}</b> سجلًا",
+        "showingRange_other": "عرض <b>{{start}}</b> – <b>{{end}}</b> من <b>{{count}}</b> سجل"
+    },
+    "progressBar": {
+        "paidTooltip": "مدفوع: {{percent}}%",
+        "overdueTooltip": "متأخر: {{percent}}%",
+        "dueTooltip": "مستحق: {{percent}}%",
+        "paidLabel": "{{percent}}% مدفوع"
+    },
+    "redesign": {
+        "rosterTitle": "Fee roster",
+        "rosterHint": "· click a row for the fee-type breakdown, the eye icon for every installment"
+    }
+}

@@ -1,0 +1,37 @@
+{
+    "header": {
+        "title": "Direction créative"
+    },
+    "fields": {
+        "controlling_idea": {
+            "label": "Idée directrice",
+            "hint": "l'argument unique que défend la vidéo"
+        },
+        "tonal_register": {
+            "label": "Ton",
+            "hint": "p. ex. confiant, ludique, documentaire"
+        },
+        "emotional_arc": {
+            "label": "Arc émotionnel",
+            "hint": "de → à"
+        },
+        "visual_metaphor": {
+            "label": "Métaphore visuelle",
+            "hint": "l'idée animable"
+        },
+        "signature_device": {
+            "label": "Signature visuelle",
+            "hint": "un geste visuel récurrent"
+        }
+    },
+    "directions": {
+        "draftLabel": "Direction {{letter}} · brouillon",
+        "label": "Direction {{letter}}",
+        "draftWhyThisWorks": "La direction du brouillon."
+    },
+    "actions": {
+        "letAiDecide": "Laisser l'IA décider",
+        "saveAndContinue": "Enregistrer et continuer",
+        "approveDirection": "Approuver la direction"
+    }
+}

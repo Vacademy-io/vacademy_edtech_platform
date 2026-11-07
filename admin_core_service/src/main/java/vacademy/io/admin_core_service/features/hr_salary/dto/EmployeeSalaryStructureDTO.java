@@ -29,6 +29,7 @@ public class EmployeeSalaryStructureDTO {
     private BigDecimal ctcMonthly;
     private BigDecimal grossMonthly;
     private BigDecimal netMonthly;
+    private String currency;
     private String status;
     private String revisionReason;
     private List<EmployeeSalaryComponentDTO> components;

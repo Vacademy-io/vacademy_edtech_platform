@@ -1,0 +1,31 @@
+{
+    "heading": "Generate Questions From Topics",
+    "fields": {
+        "topics": {
+            "label": "Topics",
+            "placeholder": "Enter the topic you want to generate the question for"
+        },
+        "detailsOfTopics": {
+            "label": "Details of topics",
+            "placeholder": "For example, Generate a set of questions covering the key principles of photosynthesis, including the process, factors affecting it, and its importance in the ecosystem. Focus on conceptual understanding and application"
+        },
+        "numQuestions": {
+            "label": "Number of Questions",
+            "placeholder": "For example, 10"
+        },
+        "classLevel": {
+            "placeholder": "For example, 8th standard"
+        },
+        "questionType": {
+            "label": "Question Type",
+            "placeholder": "Eg. Numerical, MCQS, True/False etc"
+        },
+        "questionLanguage": {
+            "label": "Question Language"
+        }
+    },
+    "languages": {
+        "english": "English",
+        "hindi": "Hindi"
+    }
+}

@@ -1,0 +1,121 @@
+{
+    "header": {
+        "title": "Referral Programs",
+        "subtitle": "Manage multiple referral programs with different reward structures",
+        "createNewProgram": "Create New Program"
+    },
+    "emptyState": {
+        "title": "No referral programs created",
+        "description": "Create your first referral program to start incentivizing referrals"
+    },
+    "rewardTypeLabels": {
+        "percentageDiscount": "Percentage Discount",
+        "fixedDiscount": "Fixed Discount",
+        "bonusContent": "Bonus Content",
+        "freeDays": "Free Days",
+        "pointsSystem": "Points System"
+    },
+    "programCard": {
+        "defaultBadge": "Default",
+        "refereeBenefit": {
+            "title": "Referee Benefit",
+            "empty": "No referee benefit configured",
+            "percentOff": "{{value}}% off",
+            "amountOff": "₹{{value}} off",
+            "freeDays": "{{value}} free days",
+            "points": "{{value}} points",
+            "bonusContentFallback": "Bonus content",
+            "templateLabel": "Template: {{template}}"
+        },
+        "referrerTiers": {
+            "title": "Referrer Tiers",
+            "empty": "No referrer tiers configured",
+            "referralCount_one": "{{count}} referral",
+            "referralCount_other": "{{count}} referrals",
+            "pointsValue": "+{{value}}pts",
+            "percentUnit": "%",
+            "daysUnit": "d",
+            "currencyUnit": "₹",
+            "moreTiers_one": "+{{count}} more tier",
+            "moreTiers_other": "+{{count}} more tiers"
+        },
+        "settings": {
+            "title": "Program Settings",
+            "vestingPeriod": "Vesting Period",
+            "days_one": "{{count}} day",
+            "days_other": "{{count}} days",
+            "combineOffers": "Combine Offers",
+            "yes": "Yes",
+            "no": "No"
+        },
+        "actions": {
+            "view": "View"
+        }
+    },
+    "modal": {
+        "subtitle": "Program Details & Configuration",
+        "defaultBadge": "Default",
+        "editProgram": "Edit Program",
+        "close": "Close",
+        "refereeBenefits": {
+            "title": "Referee Benefits (One-time)",
+            "percentUnit": "%",
+            "daysUnit": " days",
+            "pointsUnit": " points",
+            "empty": "No referee benefit configured for this program.",
+            "deliveryLabel": "Delivery:",
+            "emailBadge": "📧 Email",
+            "whatsappBadge": "💬 WhatsApp",
+            "contentDetails": {
+                "title": "Content Details",
+                "contentType": "Content Type:",
+                "titleLabel": "Title:",
+                "template": "Template:",
+                "templateValue": "Template {{number}}",
+                "file": "File:",
+                "uploadedBadge": "✓ Uploaded"
+            }
+        },
+        "referrerRewards": {
+            "title": "Referrer Rewards (Tiered)",
+            "referralCount_one": "{{count}} referral",
+            "referralCount_other": "{{count}} referrals",
+            "deliveryLabel": "Delivery:",
+            "emailBadge": "📧 Email",
+            "whatsappBadge": "💬 WhatsApp",
+            "pointsSystemDetails": {
+                "title": "Points System Details",
+                "perReferral": "Per Referral:",
+                "pointsEarnedValue": "+{{value}} points",
+                "rewardAt": "Reward at:",
+                "pointsValue": "{{value}} points",
+                "referralsNeeded": "Referrals needed:",
+                "reward": "Reward:",
+                "percentOff": "{{value}}% off",
+                "daysOff": "{{value}} days",
+                "amountOff": "{{value}}₹ off"
+            },
+            "contentDetails": {
+                "title": "Content Details",
+                "contentType": "Content Type:",
+                "titleLabel": "Title:",
+                "template": "Template:",
+                "templateValue": "Template {{number}}",
+                "file": "File:",
+                "uploadedBadge": "✓ Uploaded"
+            }
+        },
+        "settings": {
+            "title": "Program Settings",
+            "vestingPeriod": "Vesting Period",
+            "days_one": "{{count}} day",
+            "days_other": "{{count}} days",
+            "combineWithOtherOffers": "Combine with Other Offers",
+            "yes": "Yes",
+            "no": "No",
+            "programStatus": "Program Status",
+            "default": "Default",
+            "available": "Available"
+        }
+    }
+}

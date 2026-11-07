@@ -1,0 +1,48 @@
+package vacademy.io.admin_core_service.features.learner_reports.dto;
+
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.databind.PropertyNamingStrategies;
+import com.fasterxml.jackson.databind.annotation.JsonNaming;
+import lombok.Data;
+
+import java.time.LocalDate;
+import java.util.List;
+
+/** Learning Reports → Batch → Overview: one batch and window, plus what to render or send. */
+@Data
+@JsonIgnoreProperties(ignoreUnknown = true)
+@JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
+public class BatchSummaryReportRequest {
+
+    private String packageSessionId;
+
+    /** Display label for the report header ("Course · Level · Session"). */
+    private String batchName;
+
+    private LocalDate startDate;
+    private LocalDate endDate;
+
+    /** Sections to render; null means the institute's saved template. */
+    private List<String> sections;
+
+    /** Several batches together; one entry is the same as packageSessionId, none means all batches. */
+    private List<String> packageSessionIds;
+
+    /** Limit the report to these assessments; null or empty means every assessment in the window. */
+    private List<String> assessmentIds;
+
+    /** For /send: TEACHERS or PARENTS. */
+    private String audience;
+
+    /** For /send: EMAIL (default) or WHATSAPP. */
+    private String channel;
+
+    /** For a WhatsApp send: the approved template; the report PDF goes in its document header. */
+    private String templateName;
+
+    /** For an email send: the institute email template to use; null means the default report email. */
+    private String emailTemplateId;
+
+    /** For a WhatsApp send: the template language, en by default. */
+    private String languageCode;
+}

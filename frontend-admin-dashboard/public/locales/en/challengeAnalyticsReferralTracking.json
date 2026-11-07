@@ -1,0 +1,37 @@
+{
+    "title": "Referral Leads",
+    "subtitle": "Leads acquired through referral campaigns",
+    "referralUsers": "Referral Users",
+    "referralRate": "Referral Rate",
+    "selectCampaign": "Select Campaign:",
+    "selectCampaignPlaceholder": "Select a referral campaign",
+    "campaignUsers_one": "{{name}} ({{count}} user)",
+    "campaignUsers_other": "{{name}} ({{count}} users)",
+    "exportCsv": "Export CSV",
+    "noCampaigns": "No referral campaigns found",
+    "loadingLeads": "Loading leads...",
+    "noLeads": "No leads found for the selected campaign and date range",
+    "table": {
+        "index": "#",
+        "user": "User",
+        "contact": "Contact",
+        "source": "Source",
+        "submitted": "Submitted",
+        "anonymous": "Anonymous",
+        "idLabel": "ID: {{id}}..."
+    },
+    "csv": {
+        "name": "Name",
+        "email": "Email",
+        "phone": "Phone",
+        "source": "Source",
+        "submittedAt": "Submitted At",
+        "notAvailable": "N/A"
+    },
+    "pagination": {
+        "showing_one": "Showing {{from}} - {{to}} of {{count}} lead",
+        "showing_other": "Showing {{from}} - {{to}} of {{count}} leads",
+        "previous": "Previous",
+        "next": "Next"
+    }
+}

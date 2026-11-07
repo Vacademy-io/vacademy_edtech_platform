@@ -1,0 +1,90 @@
+[
+ {
+  "course": {
+   "id": "7c12a9ec-22c3-4c55-ada1-2a93e107816f",
+   "package_name": "Vedic Parenting - eBook",
+   "thumbnail_file_id": "",
+   "status": "ACTIVE",
+   "is_course_published_to_catalaouge": true,
+   "course_preview_image_media_id": "32aa2224-c7b1-46cf-b7ae-ebf1a37c5e34",
+   "course_banner_media_id": "bdfde708-f79a-41e4-896b-53cfec2219cc",
+   "course_media_id": "{\"type\":\"image\",\"id\":\"c6fc1553-eef5-4498-acc0-1a999193d344\"}",
+   "why_learn": "<p></p>",
+   "who_should_learn": "<p></p>",
+   "about_the_course": "<p style=\"text-align: left;\"><strong>Vedic Parenting is a comprehensive science based on the development of the Panchakosha system,&nbsp;which has been used in India as a major science for thousands of years.</strong></p><p style=\"text-align: left;\">It is a blend of principles derived from texts like the Vedas, Upanishads, Shastras, Ramayana, Mahabharata, and modern psychology, providing parents w</p>",
+   "tags": "english,dharma,vedic-parenting,format-ebook,for-parents",
+   "course_depth": 3,
+   "course_html_description": "<p><span style=\"color: rgb(4, 4, 19);\">The forgotten mystery of the real meaning of parents!</span></p>",
+   "percentage_completed": null,
+   "course_page_json": null
+  },
+  "sessions": [
+   {
+    "session_dto": {
+     "id": "5416ef11-e765-4052-95f0-dff187076250",
+     "session_name": "Virtue | Civilisation",
+     "status": "ACTIVE",
+     "start_date": "2026-09-22"
+    },
+    "level_with_details": [
+     {
+      "id": "DEFAULT",
+      "name": "default",
+      "duration_in_days": 0,
+      "subjects": [
+       {
+        "id": "46f13321-8501-463d-aa4a-ccbaa63d8c65",
+        "subject_name": "DEFAULT",
+        "subject_code": "",
+        "credit": 0,
+        "thumbnail_id": "",
+        "created_at": null,
+        "updated_at": null,
+        "subject_order": null,
+        "parent_id": null
+       }
+      ],
+      "instructors": [],
+      "read_time_in_minutes": 15.0
+     }
+    ]
+   }
+  ],
+  "package_sessions": [
+   {
+    "id": "92e89046-5865-4cf7-bea6-ac1e8b7bd328",
+    "level": {
+     "id": "DEFAULT",
+     "level_name": "default",
+     "duration_in_days": 0,
+     "thumbnail_id": null
+    },
+    "session": {
+     "id": "5416ef11-e765-4052-95f0-dff187076250",
+     "session_name": "Virtue | Civilisation",
+     "status": "ACTIVE",
+     "start_date": "2026-09-22T00:00:00.000+00:00"
+    },
+    "start_time": "2026-09-22T00:00:00.000+00:00",
+    "status": "ACTIVE",
+    "package_dto": {
+     "id": "7c12a9ec-22c3-4c55-ada1-2a93e107816f"
+    },
+    "group": {
+     "id": "8e86c6a2-5b04-424d-886f-8fbf2bb395cf",
+     "group_name": "DEFAULT",
+     "parent_group": null,
+     "is_root": null,
+     "group_value": ""
+    },
+    "read_time_in_minutes": 15.0,
+    "is_org_associated": false,
+    "is_parent": false,
+    "parent_id": null,
+    "name": null,
+    "percentage_completed": null
+   }
+  ],
+  "coming_soon": null
+ }
+]

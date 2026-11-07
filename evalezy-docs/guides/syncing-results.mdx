@@ -1,0 +1,311 @@
+---
+title: "Syncing results"
+description: "Keep your system in step with every grading result using one polling worker, until webhooks arrive."
+icon: "arrows-rotate"
+---
+
+Grading runs in the background, and results keep changing after they first arrive: a teacher corrects a mark, a copy is re-evaluated, an exam is finalized. This guide builds one worker that picks up every change, for every exam, without missing or double-processing any of them.
+
+<Info>
+Webhooks are on the [Roadmap](/platform/roadmap). Until they ship, poll the submissions feed as described here. A worker built this way switches to webhooks easily, because both deliver "this submission changed, go and read it".
+</Info>
+
+## The submissions feed
+
+`GET /submissions` lists every submission of your institute that changed after `updated_since`, across all exams, oldest change first.
+
+```bash
+curl "https://api.evalezy.com/v1/submissions?updated_since=2026-10-01T00:00:00Z&limit=200" \
+  -H "X-API-Key: $EVALEZY_API_KEY"
+```
+
+```json Response (abridged)
+{
+  "data": [
+    {
+      "id": "e51f0b8d-3c7a-4e92-a1d4-6b8c0f2e9a35",
+      "exam_id": "7c2e9b14-5a3f-4d81-b6e0-2f9a8c4d1e73",
+      "candidate": { "id": "2d8a6f3e-91b4-4c07-8e5a-c3f7b1d9042e", "external_id": "STU-2024-0117" },
+      "state": "live",
+      "status": "graded",
+      "needs_review": false,
+      "finalized": false,
+      "credits_charged": 12,
+      "error": null,
+      "metadata": { "erp_answer_sheet_id": "AS-55210" },
+      "updated_at": "2026-10-02T02:17:11.675412Z"
+    }
+  ],
+  "next_cursor": "MTc5MDkwNjg3MC4wOTQ0NzYwMDB8OTBhOWNiMjktYWU3Yi00ZTM1LWI4YTgtY2VlYzA1MGNmNDUy",
+  "has_more": true
+}
+```
+
+<ParamField query="updated_since" type="string" required>
+  An ISO 8601 UTC time, for example `2026-10-01T09:00:00Z`. Only submissions whose `updated_at` is later are returned. Required on this endpoint; for the first run, use a time before your first submission.
+</ParamField>
+
+<ParamField query="cursor" type="string">
+  The `next_cursor` of the previous page, passed back unchanged. An altered or invalid cursor returns `400 invalid_cursor`.
+</ParamField>
+
+<ParamField query="limit" type="integer" default="50">
+  Page size, 1 to 200.
+</ParamField>
+
+<ParamField query="status" type="string">
+  Optional filter, comma-separated: `queued`, `processing`, `reading`, `grading`, `graded`, `partially_graded`, `failed`, `cancelled`.
+</ParamField>
+
+<ParamField query="needs_review" type="boolean">
+  Optional filter.
+</ParamField>
+
+<ParamField query="finalized" type="boolean">
+  Optional filter.
+</ParamField>
+
+Rows are ordered by `updated_at`, then `id`, so paging with `next_cursor` never skips a row. A submission that changes while you page moves to the end and shows up again, which is what you want. Each row is a submission status, not the full result. Read the result separately when you need marks.
+
+### What moves a submission in the feed
+
+A submission's `updated_at` changes, and it appears in the feed again, whenever something you can see about it changes:
+
+- grading progress: `queued` to `processing`, `reading`, `grading`, then `graded`, `partially_graded`, `failed` or `cancelled`
+- a teacher changing marks, on the dashboard or through the API, or approving the copy
+- re-evaluation, finalize and unfinalize
+- the submission being replaced or deleted
+
+The feed includes replaced and deleted submissions, so your copy of the data can follow them. Check `state` on every row:
+
+| `state` | What to do |
+| --- | --- |
+| `live` | The current submission for this student and exam. Process it. |
+| `replaced` | A newer submission took its place (`replaced_by` has its ID). Mark yours as superseded. |
+| `deleted` | Removed. Delete or hide it on your side. |
+
+## The worker
+
+The loop:
+
+1. Load your checkpoint, the latest `updated_at` you have fully processed.
+2. Request the feed from a little before the checkpoint, and follow `next_cursor` until `has_more` is `false`.
+3. Process each row idempotently, skipping changes you have already applied.
+4. Save the new checkpoint, then sleep and repeat.
+
+<Note>
+**Start each poll a little before your checkpoint.** A change that was being saved while you polled can carry a timestamp slightly earlier than rows you already received. Starting each poll one to two minutes before the checkpoint, and skipping rows you have already applied, guarantees nothing slips through.
+</Note>
+
+<CodeGroup>
+
+```python Python
+import os
+import random
+import time
+from datetime import datetime, timedelta, timezone
+
+import requests
+
+API = "https://api.evalezy.com/v1"
+HEADERS = {"X-API-Key": os.environ["EVALEZY_API_KEY"]}
+OVERLAP = timedelta(minutes=2)
+POLL_EVERY_S = 30
+def parse_ts(s):
+    # Python 3.11+ parses any number of fraction digits
+    return datetime.fromisoformat(s.replace("Z", "+00:00"))
+
+
+def iso(dt):
+    return dt.astimezone(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.%fZ")
+
+
+def get(path, params=None, attempt=0):
+    """GET with retries on 429, 5xx and network errors."""
+    try:
+        r = requests.get(f"{API}{path}", params=params, headers=HEADERS, timeout=60)
+    except requests.RequestException:
+        r = None
+    if r is not None and r.status_code < 400:
+        return r.json()
+    if r is not None and r.status_code < 500 and r.status_code != 429:
+        r.raise_for_status()            # 4xx other than 429: a bug, don't retry
+    if attempt >= 6:
+        raise RuntimeError(f"giving up on {path}")
+    retry_after = r.headers.get("Retry-After") if r is not None else None
+    delay = float(retry_after) if retry_after else min(60, 2 ** attempt) + random.random()
+    time.sleep(delay)
+    return get(path, params, attempt + 1)
+
+
+def handle(row):
+    """Apply one change. Safe to call twice for the same change."""
+    seen = db.get_submission_version(row["id"])           # your table, stored as received
+    if seen is not None and parse_ts(seen) >= parse_ts(row["updated_at"]):
+        return                                             # already applied
+    if row["state"] != "live":
+        db.mark_superseded(row["id"], row["state"], row.get("replaced_by"))
+    elif row["status"] in ("graded", "partially_graded"):
+        result = get(f"/submissions/{row['id']}/result")
+        db.save_result(row["id"], result)                  # marks, feedback, finalized flag
+    elif row["status"] == "failed":
+        db.save_failure(row["id"], row["error"]["code"], row["error"]["message"])
+    else:
+        db.save_status(row["id"], row["status"], row.get("queue"))
+    db.set_submission_version(row["id"], row["updated_at"])
+
+
+def sync_once():
+    checkpoint = db.load_checkpoint() or datetime(2026, 1, 1, tzinfo=timezone.utc)
+    params = {"updated_since": iso(checkpoint - OVERLAP), "limit": 200}
+    newest = checkpoint
+    while True:
+        page = get("/submissions", params)
+        for row in page["data"]:
+            handle(row)
+            newest = max(newest, parse_ts(row["updated_at"]))
+        if not page["has_more"]:
+            break
+        params["cursor"] = page["next_cursor"]
+    db.save_checkpoint(newest)
+
+
+while True:
+    sync_once()
+    time.sleep(POLL_EVERY_S)
+```
+
+```javascript Node
+const API = "https://api.evalezy.com/v1";
+const headers = { "X-API-Key": process.env.EVALEZY_API_KEY };
+const OVERLAP_MS = 2 * 60 * 1000;
+const POLL_EVERY_MS = 30_000;
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+
+// "2026-10-02T02:17:11.675Z" -> "2026-10-02T02:17:11.675000000Z", so timestamps compare as strings
+const tsKey = (s) => {
+  const [, base, frac = ""] = s.match(/^(.*?)(?:\.(\d+))?Z$/);
+  return `${base}.${frac.padEnd(9, "0")}Z`;
+};
+
+async function get(path, params = {}, attempt = 0) {
+  let res;
+  try {
+    res = await fetch(`${API}${path}?${new URLSearchParams(params)}`, { headers });
+  } catch {
+    res = null; // network error: retry
+  }
+  if (res && res.ok) return res.json();
+  if (res && res.status < 500 && res.status !== 429) {
+    const { error } = await res.json();
+    throw new Error(`${error.code}: ${error.message} (request ${error.request_id})`);
+  }
+  if (attempt >= 6) throw new Error(`giving up on ${path}`);
+  const retryAfter = Number(res?.headers.get("Retry-After"));
+  await sleep(retryAfter ? retryAfter * 1000 : Math.min(60_000, 2 ** attempt * 1000) + Math.random() * 1000);
+  return get(path, params, attempt + 1);
+}
+
+async function handle(row) {
+  const seen = await db.getSubmissionVersion(row.id);
+  if (seen && tsKey(seen) >= tsKey(row.updated_at)) return; // already applied
+
+  if (row.state !== "live") {
+    await db.markSuperseded(row.id, row.state, row.replaced_by);
+  } else if (row.status === "graded" || row.status === "partially_graded") {
+    await db.saveResult(row.id, await get(`/submissions/${row.id}/result`));
+  } else if (row.status === "failed") {
+    await db.saveFailure(row.id, row.error.code, row.error.message);
+  } else {
+    await db.saveStatus(row.id, row.status, row.queue);
+  }
+  await db.setSubmissionVersion(row.id, row.updated_at);
+}
+
+async function syncOnce() {
+  const checkpoint = (await db.loadCheckpoint()) ?? "2026-01-01T00:00:00Z";
+  const params = {
+    updated_since: new Date(Date.parse(checkpoint) - OVERLAP_MS).toISOString(),
+    limit: "200",
+  };
+  let newest = checkpoint;
+  for (;;) {
+    const page = await get("/submissions", params);
+    for (const row of page.data) {
+      await handle(row);
+      if (tsKey(row.updated_at) > tsKey(newest)) newest = row.updated_at;
+    }
+    if (!page.has_more) break;
+    params.cursor = page.next_cursor;
+  }
+  await db.saveCheckpoint(newest);
+}
+
+for (;;) {
+  await syncOnce();
+  await sleep(POLL_EVERY_MS);
+}
+```
+
+</CodeGroup>
+
+<Tip>
+`updated_at` is UTC with a variable number of fraction digits (`2026-10-02T02:17:11.675Z`, `2026-10-02T02:17:11.675412Z`). Don't compare the raw strings: parse them, or pad the fraction to a fixed length first, as the examples do. Store the value exactly as received.
+</Tip>
+
+### Processing idempotently
+
+The same change can reach you more than once: the overlap window replays recent rows, a row that changes while you page through the feed appears again on a later page, and a crashed worker repeats its last batch. Make every write safe to repeat:
+
+- **Key everything by submission `id`.** Upsert, never insert blindly.
+- **Remember the `updated_at` you last applied** for each submission, and skip a row that is not newer.
+- **Save the checkpoint only after the rows are applied.** If the worker dies halfway, the next run starts from the old checkpoint and repeats the work, which is harmless.
+- **Link results to your own records** with `metadata` (your answer-sheet or attempt ID, up to 2 KB) or the candidate's `external_id`.
+
+## How often to poll
+
+| Situation | Approach |
+| --- | --- |
+| Background sync for schools and test series | The worker above, every 30 to 60 seconds. |
+| A student waiting on screen for a typed test | Poll that one submission every 2 to 5 seconds, backing off to 10, as in [Typed online tests](/guides/typed-tests), and keep the worker for everything else. |
+| End of an exam, writing marks into report cards | Read the whole exam with `GET /exams/{id}/results` (below). |
+
+Every poll counts towards your rate limit. On the standard tier, one key can make 20 reads per second and 600 per minute. Responses carry `RateLimit-Limit`, `RateLimit-Remaining` and `RateLimit-Reset` headers. See [Going live](/guides/going-live#6-quotas-and-rate-limits).
+
+## Backoff and errors
+
+| Response | What to do |
+| --- | --- |
+| `429 rate_limited` | Wait for `Retry-After` seconds, then retry. Poll less often. |
+| `503 engine_unavailable`, `503 auth_unavailable` | Temporary. Wait for `Retry-After`, then retry. |
+| `500 internal_error`, network errors, timeouts | Retry with exponential backoff and jitter (1 s, 2 s, 4 s, up to about a minute). Log the `request_id`. |
+| `400 invalid_cursor` | Drop the cursor and restart the run from your checkpoint. |
+| `422 validation_failed` on `updated_since` | Send an ISO 8601 UTC time such as `2026-10-01T09:00:00Z`. |
+| `401`, `403` | The key was revoked, expired or lacks `evaluation:read`. Alert a person; retrying won't help. |
+
+## Reading a whole exam at once
+
+When a teacher finishes reviewing, you usually want every result of one exam. `GET /exams/{id}/results` returns full results (the same shape as `GET /submissions/{id}/result`) for the exam's live submissions, so you don't need one request per student.
+
+```bash
+curl "https://api.evalezy.com/v1/exams/$EXAM_ID/results?finalized=true&limit=50" \
+  -H "X-API-Key: $EVALEZY_API_KEY"
+```
+
+- `limit` is 1 to 50, default 20. Page with `cursor` and `next_cursor`.
+- `updated_since` returns only results that changed since your last read.
+- `finalized=true` returns only final marks; `finalized=false` only drafts.
+- Results are JSON. `format=csv` returns `422 feature_not_available` for now.
+
+`GET /exams/{id}/submissions?include=result` works too, if you also want filters such as `status` or `needs_review` (`limit` is capped at 50 with `include=result`).
+
+## Next steps
+
+<CardGroup cols={2}>
+  <Card title="Going live" icon="rocket" href="/guides/going-live">
+    The checklist before your first real exam.
+  </Card>
+  <Card title="Roadmap" icon="map" href="/platform/roadmap">
+    Webhooks and what else is coming.
+  </Card>
+</CardGroup>

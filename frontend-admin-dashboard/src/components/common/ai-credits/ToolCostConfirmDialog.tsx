@@ -1,6 +1,9 @@
 import { Sparkle, Warning } from '@phosphor-icons/react';
 import { MyDialog } from '@/components/design-system/dialog';
 import { MyButton } from '@/components/design-system/button';
+import { getCurrentInstituteId } from '@/lib/auth/instituteUtils';
+import { SeePlansButton, useStorefrontVisible } from './PlanEntryPoints';
+import { coverageLabel, type PlanCoverage } from './aiPlan';
 
 interface ToolCostConfirmDialogProps {
     open: boolean;
@@ -13,6 +16,8 @@ interface ToolCostConfirmDialogProps {
     onConfirm: () => void;
     heading?: string;
     confirmLabel?: string;
+    /** The institute's AI plan pays (see useToolCostPreview().coverage). */
+    coverage?: PlanCoverage | null;
 }
 
 /**
@@ -31,8 +36,11 @@ export function ToolCostConfirmDialog({
     onConfirm,
     heading = 'Confirm credit usage',
     confirmLabel = 'Continue',
+    coverage = null,
 }: ToolCostConfirmDialogProps) {
     const notEnough = sufficient === false;
+    // Not enough credits and plans are on offer (admins, storefront on): link to them.
+    const storefront = useStorefrontVisible(getCurrentInstituteId(), open && notEnough);
 
     const footer = (
         <div className="flex w-full items-center justify-end gap-2">
@@ -69,11 +77,20 @@ export function ToolCostConfirmDialog({
                     </span>
                 </div>
 
-                <p className="text-center text-body text-neutral-500">
-                    This action will use approximately{' '}
-                    <span className="font-semibold text-neutral-700">{credits ?? '—'}</span> credits.
-                    Larger inputs may cost slightly more.
-                </p>
+                {coverage ? (
+                    <p className="text-center text-body text-neutral-500">
+                        <span className="font-semibold text-success-700">
+                            {coverageLabel(coverage)}
+                        </span>{' '}
+                        ({coverage.planName}). About {credits ?? '—'} credits at list price.
+                    </p>
+                ) : (
+                    <p className="text-center text-body text-neutral-500">
+                        This action will use approximately{' '}
+                        <span className="font-semibold text-neutral-700">{credits ?? '—'}</span>{' '}
+                        credits. Larger inputs may cost slightly more.
+                    </p>
+                )}
 
                 {currentBalance != null && (
                     <div className="flex w-full flex-col gap-1 rounded-lg bg-neutral-50 p-3 text-body">
@@ -102,6 +119,7 @@ export function ToolCostConfirmDialog({
                         </span>
                     </div>
                 )}
+                {notEnough && storefront && <SeePlansButton />}
             </div>
         </MyDialog>
     );

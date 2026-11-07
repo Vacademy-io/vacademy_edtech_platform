@@ -1,0 +1,40 @@
+{
+    "unknownUser": "अज्ञात उपयोगकर्ता",
+    "titleFallback": "{{action}} {{entityType}}",
+    "sections": {
+        "performedBy": "किसने किया",
+        "request": "रिक्वेस्ट",
+        "whatChanged": "क्या बदला",
+        "submittedData": "सबमिट किया गया डेटा"
+    },
+    "fields": {
+        "name": "नाम",
+        "email": "ईमेल",
+        "userId": "उपयोगकर्ता आईडी",
+        "method": "मेथड",
+        "endpoint": "एंडपॉइंट",
+        "ipAddress": "आईपी पता",
+        "response": "रिस्पॉन्स",
+        "latency": "लेटेंसी",
+        "entityId": "एंटिटी आईडी",
+        "logId": "लॉग आईडी",
+        "device": "डिवाइस"
+    },
+    "buttons": {
+        "seeEverythingByPerson": "इस व्यक्ति द्वारा की गई सभी गतिविधियाँ देखें",
+        "fields": "फ़ील्ड्स",
+        "rawJson": "रॉ JSON",
+        "copy": "कॉपी करें",
+        "copied": "कॉपी हो गया"
+    },
+    "payload": {
+        "before": "पहले",
+        "afterSubmitted": "बाद में (सबमिट किया गया)",
+        "noPayloadCaptured": "इस कार्रवाई के लिए कोई डेटा दर्ज नहीं किया गया।",
+        "null": "शून्य",
+        "emptyList": "खाली सूची",
+        "noFields": "कोई फ़ील्ड नहीं",
+        "yes": "हाँ",
+        "no": "नहीं"
+    }
+}

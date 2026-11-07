@@ -29,6 +29,8 @@ public interface EnrollInviteWithSessionsProjection {
     String getWebPageMetaDataJson();
     Timestamp getCreatedAt();
     Timestamp getUpdatedAt();
+    String getCreatedByUserId();
+    String getUpdatedByUserId();
 
     @JsonIgnore
     String getShortUrl();

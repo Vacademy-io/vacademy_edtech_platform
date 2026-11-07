@@ -1,0 +1,341 @@
+{
+    "common": {
+        "tryAgain": "Try Again",
+        "download": "Download",
+        "downloadImages": "Download images",
+        "imageN": "Image {{n}}",
+        "downloadAll": "Download all"
+    },
+    "verification": {
+        "focusPrompt": "Just ensuring that you are actively learning, please click the number <1>{{number}}</1> within <2>{{seconds}}</2> seconds."
+    },
+    "documentViewer": {
+        "quiz": {
+            "badge": "QUIZ",
+            "checkAnswer": "Check Answer",
+            "explanationLabel": "Explanation:",
+            "optionFallback": "Option {{letter}}"
+        },
+        "flashcard": {
+            "front": "Front",
+            "clickToFlip": "Click to flip",
+            "back": "Back",
+            "clickToFlipBack": "Click to flip back"
+        },
+        "fillBlanks": {
+            "badge": "FILL IN THE BLANKS",
+            "blankPlaceholder": "blank {{number}}",
+            "checkAnswers": "Check Answers",
+            "reset": "Reset",
+            "scoreLabel": "{{count}}/{{total}} correct"
+        },
+        "toc": {
+            "title": "Table of Contents",
+            "hint": "Tap a section to jump to it.",
+            "empty": "This document has no headings yet."
+        },
+        "pdfViewer": {
+            "openInNewTab": "Open PDF in new tab"
+        }
+    },
+    "quizReview": {
+        "title": "Quiz Review",
+        "attemptBadge": "Attempt {{attemptNumber}}",
+        "attemptBadgeWithMax": "Attempt {{attemptNumber}} / {{maxAttempts}}",
+        "reattempt": "Reattempt",
+        "noAttemptsRemaining": "No attempts remaining",
+        "attemptScoreLabel": "Attempt Score",
+        "yourScoreLabel": "Your Score",
+        "marksSuffix": "/ {{totalMarks}} marks",
+        "correctLabel": "Correct: {{count}}",
+        "wrongLabel": "Wrong: {{count}}",
+        "partialLabel": "Partial: {{count}}",
+        "partiallyCorrect": "Partially correct · {{percent}}% marks",
+        "skippedLabel": "Skipped: {{count}}",
+        "attemptPassed": "Attempt passed",
+        "youPassed": "You passed!",
+        "requiredScoreLine": "Required: {{percentage}}% — Score: {{score}}%",
+        "attemptFailed": "Attempt did not pass",
+        "youFailed": "You did not pass",
+        "reattemptQuiz": "Reattempt Quiz",
+        "hidePastAttempts": "▾ Hide Past Attempts ({{count}})",
+        "viewPastAttempts": "▸ View Past Attempts ({{count}})",
+        "attemptNumberLabel": "Attempt #{{number}}",
+        "notesCount_one": "{{count}} note",
+        "notesCount_other": "{{count}} notes",
+        "viewingPastAttempt": "Viewing a past attempt.",
+        "noRecordedResponses": "This attempt has no recorded responses — all questions are shown as Skipped.",
+        "backToLatest": "Back to latest",
+        "questionNumber": "Question {{number}}",
+        "questionMarks": "Marks: {{earned}} / {{max}}",
+        "passageLabel": "Passage:",
+        "showLess": "Show less",
+        "showMore": "Show more",
+        "yourAnswerLabel": "Your Answer",
+        "correctAnswerLabel": "Correct Answer",
+        "explanationLabel": "Explanation",
+        "noAnswerSelected": "No answer selected",
+        "feedback": {
+            "label": "{{teacher}} feedback",
+            "viewAttachment": "View attachment"
+        }
+    },
+    "quizTimeWarning": {
+        "title": "30 Seconds Left!",
+        "message": "Hurry up! The quiz will auto-submit when time runs out.",
+        "gotIt": "Got it ({{countdown}})"
+    },
+    "assignmentSlide": {
+        "attachmentFallbackName": "Attachment",
+        "genericFileType": "FILE",
+        "loadingAttachment": "Loading attachment…",
+        "attachmentUnavailable": "Attachment unavailable",
+        "couldNotLoadFile": "Could not load file",
+        "typeDocument": "{{type}} document",
+        "preview": "Preview",
+        "open": "Open",
+        "couldNotLoadFileUrlToast": "Could not load file URL",
+        "failedToDownloadFileToast": "Failed to download file",
+        "questionType": {
+            "mcqs": "Multiple Choice (Single Answer)",
+            "mcqm": "Multiple Choice (Multiple Answers)",
+            "oneWord": "One Word Answer",
+            "longAnswer": "Long Answer",
+            "numeric": "Numeric Answer",
+            "trueFalse": "True/False"
+        },
+        "toast": {
+            "submitSuccess": "Assignment submitted successfully!",
+            "submitFailed": "Failed to submit assignment",
+            "needsInternet": "Needs internet to submit this assignment. Please reconnect and try again."
+        },
+        "placeholder": {
+            "oneWord": "Type your one-word answer",
+            "longAnswer": "Type your answer...",
+            "decimal": "Enter decimal value",
+            "integer": "Enter integer value"
+        },
+        "clear": "Clear",
+        "startLabel": "Start:",
+        "dueLabel": "Due:",
+        "attemptsAllowedLabel": "Attempts Allowed:",
+        "attemptsLabel": "Attempts: {{value}}",
+        "unlimited": "Unlimited",
+        "typeLabel": "Type: {{type}}",
+        "reviewedBy": "Reviewed by {{teacher}}",
+        "gradedHeading": "Your Assignment Has Been Graded",
+        "yourScoreLabel": "Your Score",
+        "totalMarksSuffix": "/ {{total}}",
+        "passed": "Passed",
+        "notPassed": "Not Passed",
+        "teacherFeedbackLabel": "{{teacher}}'s Feedback",
+        "checkedAnswerCopyLabel": "Checked Answer Copy",
+        "markedCopyFallback": "Marked copy from your {{teacher}}",
+        "filesHeading": "Assignment Files",
+        "tapPdfHint": "Tap a PDF to preview it in-app",
+        "documentFallback": "Document {{number}}",
+        "attachmentFallbackNumbered": "Attachment {{number}}",
+        "questionsHeading": "Questions",
+        "answerAllHint": "Please answer all questions below",
+        "submittedFilesHeading": "Submitted Files",
+        "lateBadge": "Late",
+        "previousSubmissionHint": "Files from your previous submission",
+        "submissionFileFallback": "Submission file {{number}}",
+        "maxAttemptsReached": "Maximum attempts reached ({{count}}/{{max}})",
+        "opensOn": "This assignment opens on {{date}}",
+        "opensInCountdown": "Opens in {{countdown}}",
+        "closesInCountdown": "Closes in {{countdown}}",
+        "closedAgoLateAccepted": "Closed {{ago}} ago — late submissions accepted",
+        "openBadge": "Open",
+        "uploadFilesHeading": "Upload Files",
+        "uploadHint": "Upload any required files for this assignment",
+        "attemptOfMax": "(Attempt {{current}} of {{max}})",
+        "lateWindowNotice": "Submission window closed on {{date}}. Your submission will be marked late.",
+        "uploadAtLeastOneFile": "Upload at least one file before submitting",
+        "submitting": "Submitting...",
+        "submitLate": "Submit Late",
+        "submitAssignment": "Submit Assignment",
+        "documentPreviewTitle": "Document preview",
+        "openInNewTab": "Open in new tab"
+    },
+    "audioPlayer": {
+        "loading": "Loading Audio...",
+        "sourceUnavailable": "Audio source unavailable",
+        "titleFallback": "Audio Track",
+        "descriptionFallback": "Listen to this audio lesson",
+        "transcriptLabel": "Transcript",
+        "failedToLoad": "Failed to load audio.",
+        "coverAlt": "Audio Cover",
+        "speedPlaceholder": "Speed"
+    },
+    "codeEditor": {
+        "pausedHeading": "Code Editor Paused",
+        "pausedMessage": "You've switched tabs {{count}} times. Please click below to resume coding.",
+        "resumeCoding": "Resume Coding",
+        "headerTitle": "Code Editor",
+        "editMode": "Edit Mode",
+        "viewMode": "View Mode",
+        "running": "Running...",
+        "run": "Run",
+        "settings": "Settings",
+        "switchToDark": "Switch to Dark Theme",
+        "switchToLight": "Switch to Light Theme",
+        "copyCode": "Copy Code",
+        "downloadCode": "Download Code",
+        "console": "Console",
+        "showOutput": "Show Output"
+    },
+    "codeExecution": {
+        "noCodeToExecute": "No code to execute. Please write some code first.",
+        "loadingPythonEnv": "Loading Python environment...",
+        "loadingPythonEnvFirstRun": "Loading Python environment (this may take a few seconds on first run)...",
+        "clickRunToSeeOutput": "Click \"Run Code\" to see output here...",
+        "executedNoOutput": "Code executed successfully (no output)",
+        "pyodideTimeoutError": "Pyodide loading timed out after 30 seconds. Please refresh the page and try again.",
+        "pyodideTimeoutHint": "Pyodide loading timed out. This might be due to slow internet connection or CDN issues. Please refresh the page and try again.",
+        "pyodideDownloadFailed": "Failed to download Pyodide. Please check your internet connection and try again.",
+        "pyodideErrorPrefix": "Pyodide error: {{message}}",
+        "loadingErrorPrefix": "Loading error: {{message}}",
+        "unknownPyodideError": "Unknown error occurred while loading Pyodide.",
+        "pyodideLoadingErrorFull": "Pyodide Loading Error:\n{{errorMessage}}\n\nPlease try:\n1. Refresh the page\n2. Check your internet connection\n3. Try again in a few moments",
+        "languageNotSupported": "Language '{{language}}' is not supported yet. Only Python execution is available.",
+        "timeLimitExceeded": "Time Limit Exceeded",
+        "runtimeError": "Runtime Error",
+        "compilationError": "Compilation Error",
+        "memoryLimitExceeded": "Memory Limit Exceeded",
+        "judge0ErrorHint": "Judge0 error: {{message}}\n(ce.judge0.com is rate-limited; if you hit a 429 wait a bit and retry.)",
+        "executionServiceError": "Execution Service Error",
+        "unexpectedError": "Unexpected Error",
+        "unknownStatus": "Unknown",
+        "compileErrorPrefix": "Compile Error:\n{{output}}",
+        "noOutputWithStatus": "(no output) — {{status}}"
+    },
+    "codingQuestion": {
+        "outputDiff": {
+            "acceptsMultiple": "This test accepts {{count}} valid outputs; showing the diff against the primary one.",
+            "yourOutput": "Your output",
+            "expected": "Expected",
+            "empty": "(empty)",
+            "expectedMoreChars": "Expected {{count}} more character(s) at position {{position}}",
+            "extraChars": "Extra {{count}} character(s) at position {{position}}",
+            "firstMismatch": "First mismatch at char {{index}}: got {{got}}, expected {{expected}}"
+        },
+        "sessionTimer": {
+            "tooltip": "Session timer — auto-submits on expiry"
+        },
+        "questionMode": {
+            "submit": "Submit",
+            "sessionEndedBanner": "Session ended — your final submission has been recorded. The editor is now read-only.",
+            "loadingPythonRuntime": "Loading Python runtime…",
+            "sessionEndedTooltip": "Session ended",
+            "runTooltip": "Run against sample tests (Ctrl/Cmd+Enter)",
+            "submitTooltip": "Submit against all tests incl. hidden (Ctrl/Cmd+Shift+Enter)",
+            "noProblemStatement": "No problem statement provided yet.",
+            "statsPrefix": "Max points:",
+            "statsLine_one": "· {{count}} test ({{visible}} visible, {{hidden}} hidden) · CPU {{cpu}}s · Mem {{mem}}MB",
+            "statsLine_other": "· {{count}} tests ({{visible}} visible, {{hidden}} hidden) · CPU {{cpu}}s · Mem {{mem}}MB",
+            "testCasesTab": "Test Cases",
+            "outputTab": "Output",
+            "submissionsTab": "My Submissions",
+            "sampleLabel": "Sample {{number}}",
+            "hiddenLabel": "Hidden {{number}}",
+            "sampleTag": "(sample)",
+            "hiddenTag": "(hidden)",
+            "genericError": "Error",
+            "matchedAcceptedOutput": "Matched accepted output {{index}} of {{count}}",
+            "noSampleTests_one": "No sample test cases shown by the author. {{count}} hidden test will run on Submit.",
+            "noSampleTests_other": "No sample test cases shown by the author. {{count}} hidden tests will run on Submit.",
+            "hitRunHint_one": "Hit Run to evaluate against the {{count}} sample test.",
+            "hitRunHint_other": "Hit Run to evaluate against the {{count}} sample tests.",
+            "inputLabel": "Input",
+            "expectedOutputLabel": "Expected output",
+            "moreAcceptedOutputs_one": "+{{count}} more accepted output",
+            "moreAcceptedOutputs_other": "+{{count}} more accepted outputs",
+            "hitRunToSeeOutput": "Hit \"Run\" to see output here.",
+            "runErrorPrefix": "Run error: {{message}}",
+            "submitFailedPrefix": "Submit failed: {{message}}",
+            "passLabel": "PASS",
+            "failLabel": "FAIL",
+            "noStdout": "(no stdout)",
+            "serviceError": "Service Error"
+        },
+        "submissionHistory": {
+            "verdict": {
+                "accepted": "Accepted",
+                "partial": "Partial",
+                "rejected": "Rejected",
+                "error": "Error",
+                "timedOut": "Timed Out"
+            },
+            "emptyPrefix": "No submissions yet. Hit",
+            "emptySuffix": "to record one.",
+            "loadingDetails": "Loading details…",
+            "totalTimeLabel": "Total time:",
+            "peakMemoryLabel": "Peak memory:",
+            "submittedLabel": "Submitted:",
+            "testLabel": "Test {{number}}",
+            "viewCode": "View submitted code",
+            "scoreLine": "{{score}} / {{maxPoints}} pts",
+            "testsFraction": "{{passed}}/{{total}} tests"
+        }
+    },
+    "courseTree": {
+        "allCompletedAria": "All {{total}} {{unit}} completed",
+        "totalUnitTooltip": "{{total}} {{unit}}",
+        "doneOfTotalTooltip": "{{done}} of {{total}} {{unit}} completed",
+        "toast": {
+            "loadModulesFailed": "Couldn't load modules for that subject.",
+            "loadSlidesFailed": "Couldn't load slides for that chapter."
+        },
+        "noUnit": "No {{unit}}",
+        "loading": "Loading…",
+        "lockedTooltip": "Locked",
+        "treeAriaLabel": "{{course}} content"
+    },
+    "videoPlayer": {
+        "pause": "Pause",
+        "play": "Play",
+        "rewindSeconds": "Rewind {{seconds}} seconds",
+        "forwardSeconds": "Forward {{seconds}} seconds",
+        "unmute": "Unmute",
+        "mute": "Mute",
+        "exitFullScreen": "Exit full screen",
+        "fullScreen": "Full screen",
+        "moreOptions": "More options",
+        "playbackSpeed": "Playback speed",
+        "normalSpeed": "Normal",
+        "verification": {
+            "focusCheckTitle": "Active Focus Check",
+            "selectToMaintainStreak": "Select <1>{{number}}</1> to maintain your learning streak.",
+            "closingIn": "Closing in {{countdown}}s"
+        },
+        "error": {
+            "loadingVideo": "Error loading video",
+            "aborted": "Video playback was aborted",
+            "network": "Network error while loading video",
+            "formatNotSupported": "Video format not supported",
+            "sourceNotSupported": "Video source not supported",
+            "noUrlProvided": "No video URL provided",
+            "failedFromFileId": "Failed to get video URL from file ID"
+        },
+        "questionMarker": {
+            "titleAnswered": "Question {{number}} (Answered): {{text}}",
+            "titleSkippable": "Question {{number}} (Skippable): {{text}}",
+            "titleRequired": "Question {{number}} (Required): {{text}}"
+        },
+        "unsupportedBrowser": "Your browser does not support the video tag or the video format."
+    },
+    "deckPlayer": {
+        "noSlides": "This presentation has no slides.",
+        "loadFailed": "Couldn't load the presentation.",
+        "previous": "Previous",
+        "next": "Next",
+        "playFullScreen": "Play full screen",
+        "slideAlt": "Slide {{number}}"
+    },
+    "docViewer": {
+        "pausedHeading": "Reading Paused",
+        "pausedMessage": "You've switched tabs {{count}} times. Please click below to resume reading.",
+        "resumeReading": "Resume Reading"
+    }
+}

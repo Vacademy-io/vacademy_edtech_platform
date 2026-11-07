@@ -4,6 +4,8 @@
 
 import { motion } from "framer-motion";
 import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
+import type { TFunction } from "i18next";
 import type { ChildProfile } from "@/types/parent-portal";
 import {
   useAdmissionStages,
@@ -39,6 +41,7 @@ interface ParentDashboardProps {
 }
 
 export function ParentDashboard({ child, onNavigate }: ParentDashboardProps) {
+  const { t } = useTranslation("parent");
   const [instituteId, setInstituteId] = useState<string>("");
 
   useEffect(() => {
@@ -47,7 +50,7 @@ export function ParentDashboard({ child, onNavigate }: ParentDashboardProps) {
     });
   }, []);
 
-  const statusInfo = getAdmissionStatusInfo("APPLICATION");
+  const statusInfo = getAdmissionStatusInfo("APPLICATION", t);
 
   return (
     <div className="p-4 sm:p-6 lg:p-8 max-w-5xl mx-auto w-full space-y-6 pb-20 lg:pb-8">
@@ -59,12 +62,14 @@ export function ParentDashboard({ child, onNavigate }: ParentDashboardProps) {
       >
         <div>
           <h1 className="text-xl sm:text-2xl font-bold text-foreground">
-            {child.full_name}&apos;s Admission
+            {t("admissionPortal.dashboard.title", { name: child.full_name })}
           </h1>
           <p className="text-sm text-muted-foreground mt-0.5">
             {child.grade_applying
-              ? `Applying for ${child.grade_applying}`
-              : "Admission in progress"}
+              ? t("admissionPortal.dashboard.applyingFor", {
+                  grade: child.grade_applying,
+                })
+              : t("admissionPortal.dashboard.inProgress")}
             {child.academic_year ? ` • ${child.academic_year}` : ""}
           </p>
         </div>
@@ -83,9 +88,11 @@ export function ParentDashboard({ child, onNavigate }: ParentDashboardProps) {
       >
         <Card className="shadow-sm">
           <CardHeader className="pb-3">
-            <CardTitle className="text-base">Admission Progress</CardTitle>
+            <CardTitle className="text-base">
+              {t("admissionPortal.dashboard.progressTitle")}
+            </CardTitle>
             <CardDescription className="text-xs">
-              Track each step of the admission journey
+              {t("admissionPortal.dashboard.progressSubtitle")}
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -106,6 +113,7 @@ function AdmissionProgressSteps({
   child: ChildProfile;
   instituteId: string;
 }) {
+  const { t, i18n } = useTranslation("parent");
   const { data: stages, isLoading: isStagesLoading } =
     useAdmissionStages(instituteId);
 
@@ -140,7 +148,7 @@ function AdmissionProgressSteps({
     return (
       <div className="text-center py-4">
         <p className="text-sm text-muted-foreground">
-          No admission stages configured
+          {t("admissionPortal.dashboard.noStagesConfigured")}
         </p>
       </div>
     );
@@ -201,13 +209,16 @@ function AdmissionProgressSteps({
                 </p>
                 {isCurrent && (
                   <p className="text-caption text-primary/70 mt-0.5">
-                    In progress
+                    {t("admissionPortal.dashboard.stepInProgress")}
                   </p>
                 )}
                 {userStage?.completed_at && (
                   <p className="text-caption text-muted-foreground mt-0.5">
-                    Completed on{" "}
-                    {new Date(userStage.completed_at).toLocaleDateString()}
+                    {t("admissionPortal.dashboard.completedOn", {
+                      date: new Date(
+                        userStage.completed_at,
+                      ).toLocaleDateString(i18n.language),
+                    })}
                   </p>
                 )}
               </div>
@@ -221,7 +232,7 @@ function AdmissionProgressSteps({
 
 // ── Status Info Helper ───────────────────────────────────────────
 
-function getAdmissionStatusInfo(status: string) {
+function getAdmissionStatusInfo(status: string, t: TFunction) {
   const map: Record<
     string,
     {
@@ -237,64 +248,81 @@ function getAdmissionStatusInfo(status: string) {
     }
   > = {
     ENQUIRY: {
-      label: "Enquiry Submitted",
+      label: t("admissionPortal.dashboard.statusInfo.enquiry.label"),
       badge: "bg-blue-100 text-blue-700 hover:bg-blue-200",
       borderColor: "border-s-blue-500",
       iconBg: "bg-blue-100 dark:bg-blue-900/30",
       bannerIcon: <Info size={20} className="text-blue-600" />,
-      bannerTitle: "Inquiry Under Review",
-      bannerDescription:
-        "Your inquiry has been received and is being reviewed by the admissions team. You will be notified once registration opens.",
+      bannerTitle: t("admissionPortal.dashboard.statusInfo.enquiry.bannerTitle"),
+      bannerDescription: t(
+        "admissionPortal.dashboard.statusInfo.enquiry.bannerDescription",
+      ),
     },
     REGISTRATION_PENDING: {
-      label: "Application Open",
+      label: t("admissionPortal.dashboard.statusInfo.registrationPending.label"),
       badge:
         "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300",
       borderColor: "border-s-amber-500",
       iconBg: "bg-amber-100 dark:bg-amber-900/30",
       bannerIcon: <Warning size={20} className="text-amber-600" />,
-      bannerTitle: "Registration Required",
-      bannerDescription:
-        "Complete the registration form to proceed with the admission process. All sections must be filled.",
+      bannerTitle: t(
+        "admissionPortal.dashboard.statusInfo.registrationPending.bannerTitle",
+      ),
+      bannerDescription: t(
+        "admissionPortal.dashboard.statusInfo.registrationPending.bannerDescription",
+      ),
       actionTab: "application",
-      actionLabel: "Start Registration",
+      actionLabel: t(
+        "admissionPortal.dashboard.statusInfo.registrationPending.actionLabel",
+      ),
     },
     APPLICATION: {
-      label: "Application In Progress",
+      label: t("admissionPortal.dashboard.statusInfo.application.label"),
       badge:
         "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-300",
       borderColor: "border-s-yellow-500",
       iconBg: "bg-yellow-100 dark:bg-yellow-900/30",
       bannerIcon: <ClipboardText size={20} className="text-yellow-600" />,
-      bannerTitle: "Continue Application",
-      bannerDescription:
-        "You have a draft registration. Continue filling the form and submit when ready.",
+      bannerTitle: t(
+        "admissionPortal.dashboard.statusInfo.application.bannerTitle",
+      ),
+      bannerDescription: t(
+        "admissionPortal.dashboard.statusInfo.application.bannerDescription",
+      ),
       actionTab: "application",
-      actionLabel: "Continue",
+      actionLabel: t(
+        "admissionPortal.dashboard.statusInfo.application.actionLabel",
+      ),
     },
     PAYMENT_PENDING: {
-      label: "Payment Required",
+      label: t("admissionPortal.dashboard.statusInfo.paymentPending.label"),
       badge:
         "bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300",
       borderColor: "border-s-orange-500",
       iconBg: "bg-orange-100 dark:bg-orange-900/30",
       bannerIcon: <CurrencyDollar size={20} className="text-orange-600" />,
-      bannerTitle: "Payment Pending",
-      bannerDescription:
-        "Complete your fee payment to finalize the admission process.",
+      bannerTitle: t(
+        "admissionPortal.dashboard.statusInfo.paymentPending.bannerTitle",
+      ),
+      bannerDescription: t(
+        "admissionPortal.dashboard.statusInfo.paymentPending.bannerDescription",
+      ),
       actionTab: "payments",
-      actionLabel: "View & Pay",
+      actionLabel: t(
+        "admissionPortal.dashboard.statusInfo.paymentPending.actionLabel",
+      ),
     },
     ADMITTED: {
-      label: "Enrolled",
+      label: t("admissionPortal.dashboard.statusInfo.admitted.label"),
       badge:
         "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300",
       borderColor: "border-s-emerald-500",
       iconBg: "bg-emerald-100 dark:bg-emerald-900/30",
       bannerIcon: <Confetti size={20} className="text-emerald-600" />,
-      bannerTitle: "Admission Complete!",
-      bannerDescription:
-        "Congratulations! Your child has been successfully enrolled.",
+      bannerTitle: t("admissionPortal.dashboard.statusInfo.admitted.bannerTitle"),
+      bannerDescription: t(
+        "admissionPortal.dashboard.statusInfo.admitted.bannerDescription",
+      ),
     },
   };
 
@@ -305,8 +333,10 @@ function getAdmissionStatusInfo(status: string) {
       borderColor: "border-s-gray-400",
       iconBg: "bg-gray-100 dark:bg-gray-900/30",
       bannerIcon: <Info size={20} className="text-gray-600" />,
-      bannerTitle: "In Progress",
-      bannerDescription: "Your admission is being processed.",
+      bannerTitle: t("admissionPortal.dashboard.statusInfo.default.bannerTitle"),
+      bannerDescription: t(
+        "admissionPortal.dashboard.statusInfo.default.bannerDescription",
+      ),
     }
   );
 }

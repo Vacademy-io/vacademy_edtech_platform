@@ -1,0 +1,16 @@
+{
+    "selectionLabel": "{{course}} चयन",
+    "selectExisting": "मौजूदा {{course}} चुनें",
+    "createNew": "नया {{course}} बनाएं",
+    "selectPlaceholder": "एक {{course}} चुनें",
+    "addNewCourse": "नया कोर्स जोड़ें",
+    "validation": {
+        "selectCourse": "कृपया एक कोर्स चुनें"
+    },
+    "toast": {
+        "batchCreated": "बैच सफलतापूर्वक बनाया गया",
+        "createFailed": "बैच बनाने में विफल"
+    },
+    "searchPlaceholder": "{{course}} खोजें…",
+    "emptyCourses": "अभी कोई कोर्स नहीं है। ऊपर \"नया बनाएँ\" चुनें।"
+}

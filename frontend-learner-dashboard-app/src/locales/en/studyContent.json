@@ -65,10 +65,10 @@
         "availableInFewMinutes": "Video will be available in a few minutes.",
         "pendingGeneration": "Video pending generation",
         "processing": "Processing video...",
-        "dataNotFound": "Video data not found",
-        "videoNotFound": "Video {{videoId}} not found",
-        "failedToLoadUrls": "Failed to load video URLs",
-        "tryAgainLater": "Please try again later"
+        "tryAgainLater": "Please try again later",
+        "unavailableTitle": "This video isn't available right now",
+        "loadFailedTitle": "We couldn't load this video",
+        "checkConnection": "Check your connection and try again."
     },
     "slideState": {
         "noCodeData": "No code data available",

@@ -1,0 +1,253 @@
+{
+    "common": {
+        "back": "Retour",
+        "previous": "Précédent",
+        "next": "Suivant",
+        "free": "Gratuit",
+        "total": "Total",
+        "processing": "Traitement en cours...",
+        "securedPayment": "Paiement sécurisé",
+        "proceedToCheckout": "Passer à la caisse",
+        "freeEnrollment": "Inscription gratuite",
+        "addToCart": "Ajouter au panier",
+        "peopleAlsoBuy": "Les gens achètent aussi",
+        "addSuggested": "+ Ajouter",
+        "removeSuggested": "− Retirer",
+        "couponAppliedLabel": "Coupon ({{code}})",
+        "orderSummaryTitle": "Récapitulatif de la commande",
+        "courseFallbackWithIndex": "{{course}} {{index}}",
+        "genericPaymentFailed": "Le paiement a échoué. Veuillez réessayer.",
+        "couldNotInitiatePayment": "Impossible d'initier le paiement.",
+        "pay": "Payer {{currency}} {{amount}}",
+        "logoAlt": "logo",
+        "itemsSelected": "{{count}} {{course}} sélectionné(s)",
+        "basketSaved": "{{amount}} économisés",
+        "basketSavedWithPercent": "{{amount}} · {{percent}} % économisés",
+        "basketNextTierAmount": "Ajoutez {{count}} {{course}} de plus pour obtenir {{amount}} de réduction.",
+        "basketNextTierAmountMore": "Ajoutez {{count}} {{course}} de plus pour obtenir {{amount}} de réduction supplémentaire.",
+        "basketNextTierPercent": "Ajoutez {{count}} {{course}} de plus pour obtenir {{percent}} % de réduction."
+    },
+    "errors": {
+        "pageNotAvailable": {
+            "title": "Page non disponible",
+            "defaultMessage": "Une erreur s'est produite lors du chargement de cette page."
+        },
+        "instituteNotFound": {
+            "title": "Établissement introuvable",
+            "message": "Impossible de déterminer l'établissement pour cette page. Veuillez utiliser un lien valide."
+        }
+    },
+    "catalogStep": {
+        "selectPrompt": "Sélectionnez les {{courses}} auxquels vous souhaitez vous inscrire"
+    },
+    "courseFinder": {
+        "continueToRegister": "Continuer vers l'inscription",
+        "dialogHeading": "Sélectionnez votre classe",
+        "showCourses": "Afficher mes {{courses}}",
+        "defaultSubheading": "Choisissez le vôtre pour voir les {{courses}} disponibles pour vous",
+        "courseCount": "{{count}} {{courses}}",
+        "view": "Voir",
+        "skip": "Afficher tous les {{courses}}",
+        "change": "Modifier la sélection"
+    },
+    "cartStep": {
+        "basket": {
+            "spendForTier": "Dépensez {{amount}} de plus pour obtenir {{offer}} sur tout le panier.",
+            "cartItems": "{{courses}} dans votre panier",
+            "emptyTitle": "Votre panier est encore vide",
+            "emptyBody": "Choisissez au moins un {{course}} pour passer à la caisse.",
+            "browse": "Parcourir les {{courses}}",
+            "addAnother": "Ajouter un autre {{course}}",
+            "included": "Inclus",
+            "groupCount_one": "{{count}} {{course}}",
+            "groupCount_other": "{{count}} {{courses}}",
+            "oneMoreForGroup": "Un {{course}} de plus pour {{group}} ne coûte que {{amount}}.",
+            "addForTier": "Ajoutez {{count}} {{courses}} de plus pour obtenir {{offer}} sur tout le panier.",
+            "addForTier_other": "Ajoutez {{count}} {{courses}} de plus pour obtenir {{offer}} sur tout le panier.",
+            "addForTier_one": "Ajoutez {{count}} {{course}} de plus pour obtenir {{offer}} sur tout le panier.",
+            "offersHeading": "Offres pour vous",
+            "offersLabel": "Offres disponibles",
+            "offerApplied": "Appliquée à votre commande",
+            "offerReady": "Prête à appliquer",
+            "offerAddAmount": "Ajoutez {{amount}} de plus pour débloquer",
+            "offerAddCourses_one": "Ajoutez {{count}} {{course}} de plus pour débloquer",
+            "offerAddCourses_other": "Ajoutez {{count}} {{courses}} de plus pour débloquer",
+            "emptyCart": "Votre panier est vide",
+            "emptyCartBody": "Choisissez un {{course}} pour voir votre total ici.",
+            "selectedLabel": "Sélection",
+            "thisSelection": "cette sélection",
+            "removeAll": "Tout retirer",
+            "priceDetails": "Détail du prix",
+            "itemTotal_one": "Total articles ({{count}} {{course}})",
+            "itemTotal_other": "Total articles ({{count}} {{courses}})",
+            "basketDiscount": "Remise panier",
+            "percentOff": "({{percent}} % de remise)",
+            "planSavings": "Économies du forfait",
+            "offerLine": "Offre · {{label}}",
+            "pricedPerGroup": "Chaque classe est tarifée séparément : les {{courses}} d'enfants différents ne se cumulent pas.",
+            "totalPayable": "Total à payer",
+            "inclusiveTaxes": "Toutes taxes comprises",
+            "youSave": "Vous économisez {{amount}}",
+            "youSaveWithPercent": "Vous économisez {{amount}} ({{percent}} %)",
+            "securePayment": "Paiement 100 % sécurisé",
+            "viewSummary": "Voir le récapitulatif",
+            "addOneMore": "Ajoutez un {{course}} de plus pour {{amount}}.",
+            "addAnotherGroup": "Ajoutez un autre {{course}} de {{group}} pour {{amount}}."
+        },
+        "heading": {
+            "title": "Vérifiez votre panier",
+            "subtitlePlanChoice": "Vérifiez votre sélection et choisissez la formule qui vous convient avant de continuer.",
+            "subtitleDefault": "Vérifiez vos matières et retirez tout ce que vous n’aviez pas l’intention d’ajouter."
+        },
+        "backToCourses": "Retour aux cours",
+        "couponChanged": "Le panier a changé — veuillez réappliquer votre coupon.",
+        "orderSummary": {
+            "subtitle": "Vérifiez votre commande avant de procéder au paiement"
+        },
+        "item": {
+            "removeTooltip": "Retirer"
+        },
+        "subtotalItems_one": "Sous-total ({{count}} article)",
+        "subtotalItems_other": "Sous-total ({{count}} articles)",
+        "couponCard": {
+            "errors": {
+                "belowMinItems": "Ce code nécessite davantage de cours dans votre panier.",
+                "expired": "Ce code a expiré.",
+                "notStarted": "Ce code n’est pas encore actif.",
+                "limitReached": "Ce code a été entièrement utilisé.",
+                "emailRestricted": "Ce code n’est pas disponible pour votre e-mail.",
+                "notApplicable": "Ce code ne s’applique pas à ces cours."
+            },
+            "title": "Code promo",
+            "placeholder": "Entrez le code promo",
+            "apply": "Appliquer",
+            "invalidCoupon": "Coupon invalide",
+            "failedToValidate": "Échec de la validation du coupon. Veuillez réessayer.",
+            "discountOff": "− {{amount}} de réduction"
+        },
+        "subtotalItems_many": "Sous-total ({{count}} articles)"
+    },
+    "combinedPaymentStep": {
+        "title": "Paiement",
+        "subtotal": "Sous-total",
+        "allPricesIn": "Tous les prix sont en {{currency}}",
+        "completeEnrollmentFor": "Terminez votre inscription pour {{count}} {{course}}",
+        "amountPayable": "{{currency}} {{amount}} à payer",
+        "completingEnrollment": "Finalisation de votre inscription…",
+        "retryEnrollment": "Réessayer l'inscription",
+        "openingPayment": "Ouverture du paiement...",
+        "courseDescriptionForGateway": "Inscription pour {{count}} {{course}}"
+    },
+    "cpoInstallments": {
+        "noCpoOptionFoundInSelection": "Aucune option de paiement CPO trouvée dans la sélection.",
+        "noCpoOptionFound": "Aucune option de paiement CPO trouvée.",
+        "enrollmentDataMissingRetryLater": "Données d'inscription manquantes — veuillez revenir en arrière et réessayer.",
+        "enrollmentDataMissingRetry": "Données d'inscription manquantes. Veuillez réessayer.",
+        "noPendingInstallmentsFound": "Aucune échéance en attente trouvée après l'inscription.",
+        "paymentConfirmationFailed": "Échec de la confirmation du paiement.",
+        "loadingSchedule": "Chargement de l'échéancier...",
+        "failedToLoadSchedule": "Échec du chargement de l'échéancier.",
+        "selectInstallments": {
+            "title": "Sélectionner les échéances",
+            "subtitle": "Choisissez les échéances que vous souhaitez payer maintenant"
+        },
+        "installmentPaymentDescription": "Paiement d'échéance"
+    },
+    "multiEnrollForm": {
+        "title": "Détails d'inscription",
+        "subtitle": "Remplissez les informations ci-dessous pour finaliser votre inscription",
+        "enrollingFor": "Inscription pour :",
+        "fieldRequired": "{{fieldName}} est requis",
+        "tncRequired": "Veuillez accepter les conditions générales pour continuer",
+        "enterPlaceholder": "Entrez {{fieldName}}",
+        "readOurTnc": "Veuillez lire nos",
+        "termsAndConditionsLink": "Conditions générales",
+        "tncAgreeCheckbox": "J'ai lu et j'accepte les conditions générales",
+        "submissionFailed": "Échec de l'envoi. Veuillez réessayer.",
+        "saving": "Enregistrement...",
+        "continueToPayment": "Continuer vers le paiement"
+    },
+    "pageRenderer": {
+        "filterBar": {
+            "filterLabel": "Filtrer"
+        },
+        "courseDetailSheet": {
+            "viewLess": "Voir moins",
+            "viewMore": "Voir plus",
+            "priceLabel": "Prix",
+            "ratingLabel": "Note",
+            "accessLabel": "Accès",
+            "oneYear": "1 an",
+            "whatYoullLearn": "Ce que vous allez apprendre",
+            "aboutThisCourse": "À propos de ce {{course}}",
+            "whoShouldJoin": "Qui devrait participer",
+            "removeFromCart": "Retirer du panier"
+        },
+        "courseCard": {
+            "noDescriptionAvailable": "Aucune description disponible",
+            "percentOff": "-{{percent}} %",
+            "viewCourse": "Voir le cours",
+            "addedToCart": "Ajouté au panier"
+        },
+        "courseGrid": {
+            "filtersTitle": "Filtres",
+            "clearAll": "Tout effacer",
+            "showMore": "Afficher {{count}} de plus",
+            "showLess": "Afficher moins",
+            "priceRangeTitle": "Fourchette de prix",
+            "min": "Min",
+            "max": "Max",
+            "popularLabel": "Populaire",
+            "clear": "Effacer",
+            "searchPlaceholder": "Rechercher des {{courses}}…",
+            "noCoursesFound": "Aucun {{courses}} trouvé",
+            "clearFilters": "Effacer les filtres",
+            "coursePagesAriaLabel": "Pages de {{courses}}",
+            "previousPageAriaLabel": "Page précédente",
+            "nextPageAriaLabel": "Page suivante",
+            "pageAriaLabel": "Page {{page}}",
+            "resultsAvailable": "{{count}} {{course}} disponible(s)",
+            "resultsFound": "{{count}} {{course}} trouvé(s)",
+            "pageSuffix": " · page {{page}} sur {{total}}"
+        },
+        "videoEmbed": {
+            "addUrlPlaceholder": "Ajoutez une URL vidéo dans les propriétés",
+            "defaultTitle": "Vidéo"
+        }
+    },
+    "stepRail": {
+        "secureTitle": "Sûr et sécurisé",
+        "secureNote": "Vos données sont protégées"
+    },
+    "stepProgress": {
+        "ariaLabel": "Progression de l'inscription",
+        "steps": {
+            "catalog": "Choisir les {{courses}}",
+            "cart": "Panier",
+            "details": "Détails",
+            "payment": "Paiement",
+            "installments": "Échéances"
+        }
+    },
+    "success": {
+        "title": "Vous êtes inscrit(e) !",
+        "defaultMessage": "Inscription réussie à {{count}} {{course}}. Commencez à apprendre dès maintenant.",
+        "totalPaid": "Total payé",
+        "youSaved": "Vous avez économisé {{amount}}",
+        "access": {
+            "oneYear": "Accès 1 an",
+            "months_one": "Accès {{count}} mois",
+            "months_other": "Accès {{count}} mois",
+            "days_one": "Accès {{count}} jour",
+            "days_other": "Accès {{count}} jours",
+            "months_many": "Accès {{count}} mois",
+            "days_many": "Accès {{count}} jours"
+        },
+        "goToMyCourses": "Accéder à mes {{courses}}",
+        "redirecting": "Redirection vers la page suivante…",
+        "redirectNow": "Continuer maintenant",
+        "loggingIn": "Connexion en cours…",
+        "existingAccountHint": "Vous avez déjà un compte. Connectez-vous pour ouvrir vos {{courses}}.",
+        "logInToContinue": "Se connecter"
+    }
+}

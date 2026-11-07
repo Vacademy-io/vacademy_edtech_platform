@@ -1,0 +1,105 @@
+---
+title: "Streams and learning paths"
+description: "How the hosted catalogue groups courses, and how to render the same groups on your site."
+---
+
+## Streams and categories
+
+A **stream** is a top-level subject area of the catalogue; its **categories** are the areas inside it. Courses belong to them through their tags, or through their level: a course whose level is named exactly like a stream or category (its tag, title or subtitle, e.g. level "History" and category "History") belongs to it. `GET /streams` returns them in the hosted catalogue's order:
+
+```json
+{
+  "source": "folder_library",
+  "streams": [
+    {
+      "slug": "dharma",
+      "label": "धर्म | संस्कृति",
+      "subtitle": "Virtue | Civilisation",
+      "image_url": "https://d1om4dxj9e7kkd.cloudfront.net/CATALOGUE/2719d8d1-43fd-4f9f-97af-a5b067d770a6/e6004c6c-11b6-440a-a05f-546d2a94f193-bv-stream-dharma.png",
+      "accent_color": "#82b74b",
+      "coming_soon": false,
+      "course_count": 13,
+      "tag": "dharma",
+      "notify_campaign_id": null,
+      "categories": [
+        {
+          "slug": "vedic-parenting",
+          "label": "वैदिक पेरेंटिंग",
+          "subtitle": "Holistic Parenting",
+          "image_url": null,
+          "coming_soon": false,
+          "course_count": 13,
+          "accent_color": "#82b74b",
+          "notify_campaign_id": null
+        }
+      ]
+    }
+  ]
+}
+```
+
+| Field | |
+|---|---|
+| `slug` | Use it in `GET /courses?stream=` / `?category=` and in your URLs. |
+| `label`, `subtitle` | The stream's title and its secondary name. Brahm Varchas uses a Hindi title and an English subtitle. |
+| `accent_color` | `#rgb`, `#rrggbb` or `#rrggbbaa`, or `null`. Streams and categories each have one. |
+| `tag` | Streams only: the course tag the stream filters by (`dharma`). Courses carrying it are in the stream; the `popular` badge is given per stream tag. |
+| `notify_campaign_id` | On streams and categories: the CRM campaign the hosted site files "notify me" sign-ups under, set when the folder has a notify audience (typically a `coming_soon` one), else `null`. Send your own sign-ups to [`POST /leads`](/guides/enquiries) with this `campaign_id`. |
+| `coming_soon` | Show it greyed out, or hide it. It has no courses yet; offer "notify me" when `notify_campaign_id` is set. |
+| `course_count` | Courses tagged or levelled into the stream or any of its categories. A course can count in more than one stream. |
+| `source` | `folder_library` or `tags`: how the institute defines streams. `null` with an empty list when streams are off. |
+
+On a course, `stream` and `category` are the **first** stream (in this order) and its first category the course is tagged into. Their `label` is the name the hosted catalogue prints on course cards, which follows the site's label setting: for Brahm Varchas that is the English subtitle (`"Virtue | Civilisation"`), not the stream's Hindi title. Match streams by `slug`, never by label.
+
+### Stream pages
+
+```tsx app/streams/[slug]/page.tsx (excerpt)
+const { slug } = await params;
+const { streams } = await vacademy.streams();
+const stream = streams.find((s) => s.slug === slug);
+if (!stream) notFound();
+const courses = await vacademy.courses({ stream: stream.slug, page_size: 48 });
+// a category inside it:
+const parenting = await vacademy.courses({ stream: 'dharma', category: 'vedic-parenting' });
+```
+
+`stream` and `category` take comma lists: `?stream=dharma,shastra` shows courses in either stream. To show how many courses each stream or category would have under the visitor's other filters, add `facets=true` and read `facets.streams` / `facets.categories` ([Facets](/concepts/courses#facets-live-filter-counts)); `course_count` here is the unfiltered total.
+
+## Learning paths
+
+A learning path is an ordered sequence of courses ("A woman's life stages": menstruation, pregnancy, early parenting). They come from the site's Learning Paths section; a site without one returns an empty list.
+
+`GET /learning-paths` lists them, optionally only those under one stream (`?stream=swasthya`):
+
+```json
+{
+  "data": [
+    {
+      "code": "forbvy",
+      "name": "A woman's life stages",
+      "stream_slug": "swasthya",
+      "image_url": "https://d1om4dxj9e7kkd.cloudfront.net/CATALOGUE/2719d8d1-43fd-4f9f-97af-a5b067d770a6/1f650fd3-1e6d-4cb3-960d-745af4daa207-bv-path_woman.jpg",
+      "step_count": 3
+    }
+  ]
+}
+```
+
+`GET /learning-paths/{code}` returns the path with its steps in order. Each step's `course` is a [course summary](/concepts/courses) with its hosted `url`:
+
+```json
+{
+  "code": "forbvy",
+  "name": "A woman's life stages",
+  "description_html": "Care for your body and your child through each stage: menstruation, pregnancy and early motherhood.",
+  "steps": [
+    { "position": 1, "course": { "id": "8610911c-382c-41a9-9e33-2e4e0882282f", "title": "Rajaswala Paricharya", "url": "https://learning.brahmvarchas.org/store/8610911c-…", "…": "…" } },
+    { "position": 2, "course": { "id": "f7c3b58e-b3bc-4d04-b897-e250ecf60b3a", "title": "Vedic Garbha Vigyan (Encyclopedia)", "…": "…" } },
+    { "position": 3, "course": { "id": "7c12a9ec-22c3-4c55-ada1-2a93e107816f", "title": "Vedic Parenting - eBook", "…": "…" } }
+  ]
+}
+```
+
+- A step can be a course that is not published to the catalogue on its own. It is still listed, from the path's data: `subtitle`, `instructors` and `created_at` are empty, `availability` is `available`, `badges` is empty, `images` has only `preview_url`, and `duration_minutes`, `available_slots`, `max_seats`, `package_type` and `coming_soon` are `null`. `GET /courses/{id}` returns `404` for it; link to its `url`.
+- A `step_count` of `0` means the path has no steps to show yet; hide it.
+- On a course page, `series` (from `GET /courses/{id}`) names the path the course belongs to and lists its steps, with `current: true` on this course: use it for a "Part 2 of 3" strip.

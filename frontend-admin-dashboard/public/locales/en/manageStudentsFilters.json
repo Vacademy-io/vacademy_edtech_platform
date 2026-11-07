@@ -1,0 +1,28 @@
+{
+    "session": {
+        "addButton": "Add",
+        "addNewSession": "Add New Session",
+        "addSessionShort": "Add Session",
+        "createCourseFirst": "(Create a course first)",
+        "selectPlaceholder": "Select Session",
+        "addedSuccess": " {{term}} added successfully",
+        "addError": "Failed to add {{term}}"
+    },
+    "export": {
+        "exportingLoading": "Exporting...",
+        "accountDetails": {
+            "short": "Account Details",
+            "medium": "Account",
+            "full": "Export account details"
+        },
+        "data": {
+            "short": "Export",
+            "medium": "Export",
+            "full": "Export Data"
+        }
+    },
+    "actions": {
+        "applyFilters": "Apply Filters",
+        "resetAll": "Reset All"
+    }
+}

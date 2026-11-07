@@ -1,0 +1,48 @@
+{
+    "navHeading": "Réunions d'équipe",
+    "heading": "Réunions d'équipe",
+    "subtitle": "Réunions organisées par vous et votre équipe",
+    "unknownHost": "Hôte inconnu",
+    "noTeamTitle": "Vous ne gérez pas encore d'équipe",
+    "noTeamDescription": "Réunions d'équipe affiche les plannings de toutes les personnes qui vous sont rattachées. Dès que des membres de l'équipe vous seront rattachés, leurs réunions apparaîtront ici.",
+    "emptyTitle": "Aucune réunion d'équipe cette semaine",
+    "emptyDescription": "Les réunions organisées par vous ou votre équipe apparaîtront ici.",
+    "hostFilterAriaLabel": "Filtrer les réunions par hôte",
+    "allHosts": "Tous les hôtes ({{count}})",
+    "filterByHost": "Filtrer par hôte",
+    "searchHostPlaceholder": "Rechercher un hôte…",
+    "noHostFound": "Aucun hôte trouvé.",
+    "durationMinutes": "{{minutes}}m",
+    "durationHours": "{{hours}}h",
+    "durationHoursMinutes": "{{hours}}h {{minutes}}m",
+    "showingStatus": "Showing: {{status}}",
+    "clearFilter": "Clear filter",
+    "filteredEmptyTitle": "No {{status}} meetings this week",
+    "filteredEmptyDescription": "Pick another status card above, or show every meeting.",
+    "showAllMeetings": "Show all meetings",
+    "teamBadge": "Your team: {{count}} people",
+    "kpi": {
+        "thisWeek": "This week",
+        "hosts": "{{count}} hosts",
+        "onCalls": "On calls",
+        "onCallsDetail": "Booked time, not counting cancelled",
+        "pending": "Pending approval",
+        "pendingDetail": "Waiting for the host to approve"
+    },
+    "byHost": {
+        "title": "Meetings by host",
+        "subtitle": "This week",
+        "footer": "Click a host to filter. Host options come from this week’s meetings and reset when you change the week.",
+        "empty": "No meetings this week.",
+        "rowTitle": "Show only {{name}}"
+    },
+    "attention": {
+        "title": "Needs attention",
+        "pendingTitle": "Pending approval: {{count}}",
+        "pendingText": "Hosts approve from their own schedule",
+        "noShowTitle": "No-shows: {{count}}",
+        "noShowText": "Follow up or rebook them",
+        "allClear": "Nothing needs attention this week.",
+        "show": "Show"
+    }
+}

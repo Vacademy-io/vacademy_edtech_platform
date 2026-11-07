@@ -28,6 +28,19 @@ public class AudienceResponse {
     @Column(name = "audience_id", nullable = true)
     private String audienceId;
 
+    /**
+     * The lead list this response was FIRST created in, set on the first migration and never
+     * overwritten. NULL means the lead has never been moved, so {@link #audienceId} is still the
+     * original.
+     *
+     * <p>Moving a lead rewrites campaign attribution — a list that acquired 500 leads reports 400
+     * once some move out. Source-attribution reporting should read
+     * {@code COALESCE(original_audience_id, audience_id)}. The full ordered chain of moves lives
+     * in the timeline as LEAD_LIST_CHANGED events; this column is the part a query can join on.</p>
+     */
+    @Column(name = "original_audience_id")
+    private String originalAudienceId;
+
     @Column(name = "user_id")
     private String userId; // Parent user ID (references auth_service.users)
 
@@ -74,6 +87,13 @@ public class AudienceResponse {
 
     @Column(name = "applicant_id")
     private String applicantId;
+
+    /**
+     * Staff member who entered this lead from the admin panel (single add or CSV
+     * import) — Check Lead's "Enquired By". Null for every self-submitted lead.
+     */
+    @Column(name = "created_by_user_id")
+    private String createdByUserId;
 
     @Column(name = "conversion_status", length = 50)
     private String conversionStatus;
@@ -127,9 +147,22 @@ public class AudienceResponse {
     @Column(name = "tat_reminder_assignee_id", length = 255)
     private String tatReminderAssigneeId;
 
-    /** Denormalized TAT deadline (submitted_at + tatHours) for scanning + the frontend badge. */
+    /** Scheduler-stamped TAT deadline (written when a reminder stage is claimed). */
     @Column(name = "tat_due_at")
     private Timestamp tatDueAt;
+
+    /**
+     * Admin-set TAT deadline for this lead. When non-null it replaces the computed deadline
+     * everywhere (list badge, SLA filter, reports, scheduler). Null = automatic.
+     */
+    @Column(name = "tat_due_override_at")
+    private Timestamp tatDueOverrideAt;
+
+    @Column(name = "tat_due_override_by", length = 255)
+    private String tatDueOverrideBy;
+
+    @Column(name = "tat_due_override_set_at")
+    private Timestamp tatDueOverrideSetAt;
 
     /** Current pipeline status (FK to lead_status.id). Replaces the JSON/enquiry_status approach. */
     @Column(name = "lead_status_id")

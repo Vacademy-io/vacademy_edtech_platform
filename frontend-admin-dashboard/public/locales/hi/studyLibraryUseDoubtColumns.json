@@ -1,0 +1,16 @@
+{
+    "columns": {
+        "doubt": "शंका",
+        "status": "स्थिति",
+        "category": "श्रेणी",
+        "format": "प्रारूप",
+        "assignedTo": "सौंपा गया",
+        "raised": "उठाई गई",
+        "resolved": "हल की गई",
+        "actions": "कार्रवाइयाँ"
+    },
+    "learner": {
+        "unknown": "अज्ञात",
+        "guest": "अतिथि"
+    }
+}

@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from fastapi import APIRouter, Depends, Query, HTTPException, status
+from fastapi import APIRouter, Depends, Query, HTTPException, Request, status
 from fastapi.responses import StreamingResponse
 import asyncio
 import uuid
@@ -23,6 +23,20 @@ from ..core.exceptions import PaymentRequiredError
 router = APIRouter(prefix="/course", tags=["course-outline"])
 
 
+def _attach_verified_metering(service, request: Request, institute_id) -> None:
+    """Usage-event attribution from the caller's VERIFIED JWT (signature +
+    institute membership), when there is one. Without it the service records
+    the body/query user id only as an unverified claim. Never raises."""
+    try:
+        from ..services.ai_billing import metering_from_request
+
+        ctx = metering_from_request(request, institute_id)
+        if ctx is not None and getattr(ctx, "actor_user_id", None):
+            service._metering = ctx
+    except Exception:  # noqa: BLE001 - attribution never affects the request
+        pass
+
+
 @router.post(
     "/outline/v1/generate",
     response_model=CourseOutlineResponse,
@@ -30,6 +44,7 @@ router = APIRouter(prefix="/course", tags=["course-outline"])
 )
 async def generate_course_outline(
     payload: CourseOutlineRequest,
+    request: Request,
     service: CourseOutlineGenerationService = Depends(get_course_outline_service),
     db: Session = Depends(db_dependency),
 ) -> CourseOutlineResponse:
@@ -52,6 +67,7 @@ async def generate_course_outline(
                     f"credits, balance is {estimate.get('current_balance')}. Please top up."
                 ),
             )
+    _attach_verified_metering(service, request, payload.institute_id)
     try:
         return await service.generate_outline(payload)
     except PaymentRequiredError as exc:
@@ -71,6 +87,7 @@ async def stream_course_outline(
     payload: CourseUserPromptRequest,
     model: Optional[str] = Query(default=None, description="Optional LLM model to use"),
     user_id: Optional[str] = Query(default=None, description="Optional user identifier for user-level API key lookup"),
+    request: Request = None,
     service: CourseOutlineGenerationService = Depends(get_course_outline_service),
     db: Session = Depends(db_dependency),
 ) -> StreamingResponse:
@@ -139,6 +156,7 @@ async def stream_course_outline(
     )
 
     request_id = str(uuid.uuid4())
+    _attach_verified_metering(service, request, institute_id)
 
     # Heartbeat: document grounding + the single outline LLM call can be silent
     # for longer than a proxy idle timeout; an SSE comment keeps the connection

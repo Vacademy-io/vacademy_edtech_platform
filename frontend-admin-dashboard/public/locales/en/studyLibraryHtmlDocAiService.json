@@ -1,0 +1,6 @@
+{
+    "errors": {
+        "emptyDocument": "The AI returned an empty document. Try rephrasing your prompt.",
+        "requestFailed": "Request failed ({{status}})"
+    }
+}

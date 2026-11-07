@@ -1,0 +1,12 @@
+{
+    "addedToChapters_one": "Ajouté à {{count}} chapitre",
+    "addedToChapters_many": "Ajouté à {{count}} de chapitres",
+    "addedToChapters_other": "Ajouté à {{count}} chapitres",
+    "sharedChapterDeduped_one": "{{count}} chapitre partagé (dédupliqué)",
+    "sharedChapterDeduped_many": "{{count}} de chapitres partagés (dédupliqués)",
+    "sharedChapterDeduped_other": "{{count}} chapitres partagés (dédupliqués)",
+    "alreadyLinked_one": "{{count}} déjà lié",
+    "alreadyLinked_many": "{{count}} de déjà liés",
+    "alreadyLinked_other": "{{count}} déjà liés",
+    "noChangesMade": "Aucun changement effectué"
+}

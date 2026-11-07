@@ -1,0 +1,24 @@
+{
+    "heading": {
+        "title": "تفاصيل التقييم"
+    },
+    "helmet": {
+        "title": "تفاصيل التقييم",
+        "description": "تعرض هذه الصفحة جميع التفاصيل المتعلقة بالتقييم."
+    },
+    "actions": {
+        "previewAssessment": "معاينة التقييم",
+        "exportOffline": "تصدير دون اتصال",
+        "noSectionsError": "لم تتم إضافة أي أقسام لهذا التقييم."
+    },
+    "tabs": {
+        "overview": "نظرة عامة",
+        "submissions": "التقديمات",
+        "individualRespondents": "المستجيبون الأفراد",
+        "basicInfo": "المعلومات الأساسية",
+        "questions": "الأسئلة",
+        "participants": "المشاركون",
+        "accessControl": "التحكم في الوصول",
+        "reattemptRequests": "طلبات إعادة المحاولة"
+    }
+}

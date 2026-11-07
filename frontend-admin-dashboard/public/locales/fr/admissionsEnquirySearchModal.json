@@ -1,0 +1,43 @@
+{
+    "title": "Rechercher une demande",
+    "filters": {
+        "nameLabel": "Nom de l'élève / du parent",
+        "namePlaceholder": "ex. : Jean Dupont",
+        "phoneLabel": "Numéro de téléphone",
+        "phonePlaceholder": "ex. : 9876543210",
+        "trackingIdLabel": "ID de suivi",
+        "trackingIdPlaceholder": "ex. : A9KQ2"
+    },
+    "actions": {
+        "searching": "Recherche en cours...",
+        "searchEnquiries": "Rechercher des demandes",
+        "apply": "Postuler",
+        "applied": "Candidature envoyée",
+        "admit": "Admettre",
+        "admitted": "Admis"
+    },
+    "table": {
+        "headers": {
+            "trackingId": "ID de suivi",
+            "studentName": "Nom de l'élève",
+            "parentName": "Nom du parent",
+            "phone": "Téléphone",
+            "status": "Statut",
+            "application": "Candidature",
+            "admission": "Admission"
+        },
+        "empty": {
+            "noResults": "Aucune demande ne correspond à votre recherche.",
+            "prompt": "Saisissez des critères de recherche et cliquez sur Rechercher pour trouver des demandes."
+        }
+    },
+    "statusBadge": {
+        "enquiry": "Demande",
+        "applied": "Candidature envoyée",
+        "admitted": "Admis"
+    },
+    "toast": {
+        "enterAtLeastOneCriteria": "Veuillez saisir au moins un critère de recherche",
+        "searchFailed": "Échec de la recherche des demandes. Veuillez réessayer."
+    }
+}

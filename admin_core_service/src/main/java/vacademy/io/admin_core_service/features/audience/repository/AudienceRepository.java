@@ -20,6 +20,19 @@ import java.util.Optional;
 @Repository
 public interface AudienceRepository extends JpaRepository<Audience, String> {
 
+    /** Lists of an institute with this exact name (case-insensitive), any status. */
+    List<Audience> findByInstituteIdAndCampaignNameIgnoreCase(String instituteId, String campaignName);
+
+    /**
+     * Bulk id -> campaign name, for screens that show which campaign a row came from
+     * without needing the audience itself. Two-column projection: the queue resolves
+     * these for a whole page at once and has no use for the rest of the row.
+     */
+    @Query(value = "SELECT a.id, a.campaign_name FROM audience a WHERE a.id IN (:ids)",
+            nativeQuery = true)
+    List<Object[]> findIdAndCampaignNameByIds(@Param("ids") java.util.Collection<String> ids);
+
+
     /**
      * Atomically claim the right to start a bulk AI-call campaign for this audience:
      * stamps {@code last_ai_campaign_started_at = now()} only if no run was started
@@ -59,6 +72,26 @@ public interface AudienceRepository extends JpaRepository<Audience, String> {
     List<Audience> findByInstituteId(String instituteId);
 
     /**
+     * (id, tags_json) of every non-deleted list in the institute that has tags, for the
+     * tag autocomplete summary. Two columns only: the summary needs nothing else.
+     */
+    @Query("SELECT a.id, a.tagsJson FROM Audience a "
+            + "WHERE a.instituteId = :instituteId AND a.tagsJson IS NOT NULL "
+            + "AND (a.status IS NULL OR a.status <> 'DELETED')")
+    List<Object[]> findIdAndTagsJsonByInstituteId(@Param("instituteId") String instituteId);
+
+    /**
+     * Writes only the tags column, so saving tags never overwrites a concurrent edit of the
+     * rest of the list. Scoped to the institute; returns the number of rows updated.
+     */
+    @Modifying
+    @Query("UPDATE Audience a SET a.tagsJson = :tagsJson "
+            + "WHERE a.id = :audienceId AND a.instituteId = :instituteId")
+    int updateTagsJson(@Param("audienceId") String audienceId,
+                       @Param("instituteId") String instituteId,
+                       @Param("tagsJson") String tagsJson);
+
+    /**
      * Find all campaigns for a specific institute with status filter
      */
     List<Audience> findByInstituteIdAndStatus(String instituteId, String status);
@@ -79,6 +112,14 @@ public interface AudienceRepository extends JpaRepository<Audience, String> {
      * catalogue lead submissions all land on a single per-institute campaign.
      */
     Optional<Audience> findFirstByInstituteIdAndCampaignName(String instituteId, String campaignName);
+
+    /**
+     * The oldest campaign of a given type and status for an institute. Used to resolve the
+     * auto-provisioned "WhatsApp Leads" list by its type rather than its name, so an admin
+     * renaming the list does not make the next chatbot lead create a second one.
+     */
+    Optional<Audience> findFirstByInstituteIdAndCampaignTypeAndStatusOrderByCreatedAtAsc(
+            String instituteId, String campaignType, String status);
 
     /**
      * Find active campaigns for an institute

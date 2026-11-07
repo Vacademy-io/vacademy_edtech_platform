@@ -1,0 +1,70 @@
+{
+    "dialog": {
+        "title": "إعدادات العرض",
+        "description": "قم بتهيئة إعدادات الفيديو الناتج قبل بدء العرض."
+    },
+    "resolution": {
+        "label": "الدقة",
+        "optionLabel": "{{resolution}} ({{dimensions}})"
+    },
+    "fps": {
+        "label": "معدل الإطارات",
+        "optionLabel": "{{fps}} إطارًا/ثانية"
+    },
+    "captions": {
+        "label": "الترجمة المصاحبة"
+    },
+    "captionPreview": {
+        "ariaLabel": "معاينة الترجمة المصاحبة",
+        "sampleText": "هكذا ستبدو الترجمة المصاحبة بهذا الحجم."
+    },
+    "stylePreset": {
+        "label": "نمط جاهز",
+        "customBadge": "مخصص",
+        "customTooltip": "تم تعديل الإعدادات بحيث لم تعد تطابق أي نمط جاهز"
+    },
+    "position": {
+        "label": "الموضع",
+        "top": "أعلى",
+        "bottom": "أسفل"
+    },
+    "size": {
+        "label": "الحجم",
+        "small": "صغير",
+        "medium": "متوسط",
+        "large": "كبير"
+    },
+    "textColor": {
+        "label": "لون النص"
+    },
+    "background": {
+        "label": "الخلفية",
+        "opacityLabel": "شفافية الخلفية: {{value}}%"
+    },
+    "displayMode": {
+        "label": "نمط العرض",
+        "phrase": "عبارة",
+        "karaoke": "كاريوكي"
+    },
+    "font": {
+        "label": "الخط",
+        "system": "خط النظام"
+    },
+    "weight": {
+        "label": "الوزن"
+    },
+    "textOutline": {
+        "label": "حدود النص: {{width}} بكسل",
+        "colorTitle": "لون الحدود"
+    },
+    "highlightColor": {
+        "label": "لون التمييز (الكلمة النشطة في الكاريوكي)"
+    },
+    "watermark": {
+        "label": "العلامة المائية"
+    },
+    "actions": {
+        "cancel": "إلغاء",
+        "startRender": "بدء العرض"
+    }
+}

@@ -1,4 +1,6 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 import { useQuery } from '@tanstack/react-query';
 import { CaretDown, CaretRight, Users } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
@@ -30,21 +32,21 @@ function Caret({ open }: { open: boolean }) {
     );
 }
 
-function SlideRow({ slide }: { slide: ContentMapSlideNode }) {
+function SlideRow({ slide, t }: { slide: ContentMapSlideNode; t: TFunction }) {
     const Icon = slideIconFor(slide.slideType);
     return (
         <div className="flex items-center gap-2 py-1.5 pl-12 pr-3 hover:bg-neutral-50">
             <Icon size={15} className="shrink-0 text-neutral-400" />
             <span className="min-w-0 flex-1 truncate text-sm text-neutral-700">
-                {slide.title ?? 'Untitled slide'}
+                {slide.title ?? t('untitledSlide')}
             </span>
             {slide.friction && slide.baselineMedianSeconds != null && (
                 <span className="rounded-full bg-danger-50 px-2 py-0.5 text-xs font-semibold text-danger-600">
-                    friction · usually {formatDuration(slide.baselineMedianSeconds)}
+                    {t('frictionUsually', { duration: formatDuration(slide.baselineMedianSeconds) })}
                 </span>
             )}
             <span className="w-20 shrink-0 text-right text-xs tabular-nums text-neutral-400">
-                avg {formatDuration(slide.avgOnSlideSeconds)}
+                {t('avgDuration', { duration: formatDuration(slide.avgOnSlideSeconds) })}
             </span>
             <HeadsBadge count={slide.headsNow} />
         </div>
@@ -55,10 +57,12 @@ function ChapterRow({
     chapter,
     collapsed,
     toggle,
+    t,
 }: {
     chapter: ContentMapChapterNode;
     collapsed: Set<string>;
     toggle: (id: string) => void;
+    t: TFunction;
 }) {
     const key = `ch:${chapter.id}`;
     const open = !collapsed.has(key);
@@ -71,11 +75,11 @@ function ChapterRow({
             >
                 <Caret open={open} />
                 <span className="min-w-0 flex-1 truncate text-sm font-medium text-neutral-600">
-                    {chapter.name ?? 'Untitled chapter'}
+                    {chapter.name ?? t('untitledChapter')}
                 </span>
                 <HeadsBadge count={chapter.headsNow} />
             </button>
-            {open && chapter.slides.map((s) => <SlideRow key={s.id} slide={s} />)}
+            {open && chapter.slides.map((s) => <SlideRow key={s.id} slide={s} t={t} />)}
         </div>
     );
 }
@@ -84,10 +88,12 @@ function ModuleRow({
     module,
     collapsed,
     toggle,
+    t,
 }: {
     module: ContentMapModuleNode;
     collapsed: Set<string>;
     toggle: (id: string) => void;
+    t: TFunction;
 }) {
     const key = `mod:${module.id}`;
     const open = !collapsed.has(key);
@@ -100,13 +106,13 @@ function ModuleRow({
             >
                 <Caret open={open} />
                 <span className="min-w-0 flex-1 truncate text-sm font-semibold text-neutral-700">
-                    {module.name ?? 'Untitled module'}
+                    {module.name ?? t('untitledModule')}
                 </span>
                 <HeadsBadge count={module.headsNow} />
             </button>
             {open &&
                 module.chapters.map((c) => (
-                    <ChapterRow key={c.id} chapter={c} collapsed={collapsed} toggle={toggle} />
+                    <ChapterRow key={c.id} chapter={c} collapsed={collapsed} toggle={toggle} t={t} />
                 ))}
         </div>
     );
@@ -116,10 +122,12 @@ function SubjectBlock({
     subject,
     collapsed,
     toggle,
+    t,
 }: {
     subject: ContentMapSubjectNode;
     collapsed: Set<string>;
     toggle: (id: string) => void;
+    t: TFunction;
 }) {
     const key = `subj:${subject.id}`;
     const open = !collapsed.has(key);
@@ -132,19 +140,20 @@ function SubjectBlock({
             >
                 <Caret open={open} />
                 <span className="min-w-0 flex-1 truncate text-sm font-semibold text-neutral-800">
-                    {subject.name ?? 'Untitled subject'}
+                    {subject.name ?? t('untitledSubject')}
                 </span>
                 <HeadsBadge count={subject.headsNow} />
             </button>
             {open &&
                 subject.modules.map((m) => (
-                    <ModuleRow key={m.id} module={m} collapsed={collapsed} toggle={toggle} />
+                    <ModuleRow key={m.id} module={m} collapsed={collapsed} toggle={toggle} t={t} />
                 ))}
         </div>
     );
 }
 
 export default function ContentMapView({ batchId, active }: { batchId: string; active: boolean }) {
+    const { t } = useTranslation('studyLibraryPulseContentMapView');
     const { data, isLoading, isError, refetch, dataUpdatedAt, isFetching } = useQuery(
         pulseContentMapQueryOptions(batchId, active)
     );
@@ -174,10 +183,10 @@ export default function ContentMapView({ batchId, active }: { batchId: string; a
             <div className="rounded-lg border border-neutral-200 bg-white shadow-sm">
                 <PulseMessage
                     tone="danger"
-                    title="Couldn't load the content map."
+                    title={t('loadError')}
                     action={
                         <MyButton buttonType="secondary" scale="medium" onClick={() => refetch()}>
-                            Retry
+                            {t('retry')}
                         </MyButton>
                     }
                 />
@@ -193,22 +202,21 @@ export default function ContentMapView({ batchId, active }: { batchId: string; a
                 <LiveStatusLine secondsSinceFetch={secondsSinceFetch} isFetching={isFetching} />
                 {data && data.totalHeads > 0 && (
                     <p className="text-xs text-neutral-400">
-                        {data.totalHeads} learner{data.totalHeads === 1 ? '' : 's'} across{' '}
-                        {subjects.length} subject{subjects.length === 1 ? '' : 's'}
+                        {t('summary.across', {
+                            learners: t('summary.learners', { count: data.totalHeads }),
+                            subjects: t('summary.subjects', { count: subjects.length }),
+                        })}
                     </p>
                 )}
             </div>
 
             {subjects.length === 0 ? (
                 <div className="rounded-lg border border-neutral-200 bg-white shadow-sm">
-                    <PulseMessage
-                        title="No active content right now"
-                        subtitle="Slides light up here as learners open them across the course."
-                    />
+                    <PulseMessage title={t('emptyTitle')} subtitle={t('emptySubtitle')} />
                 </div>
             ) : (
                 subjects.map((s) => (
-                    <SubjectBlock key={s.id} subject={s} collapsed={collapsed} toggle={toggle} />
+                    <SubjectBlock key={s.id} subject={s} collapsed={collapsed} toggle={toggle} t={t} />
                 ))
             )}
         </div>

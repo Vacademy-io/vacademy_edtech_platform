@@ -1,0 +1,21 @@
+{
+    "title": "एक्सेस विवरण",
+    "description": "{{userName}} को दी गई एक्सेस मैपिंग और अनुमतियां देखें।",
+    "noAccess": "इस उपयोगकर्ता के लिए कोई विशेष एक्सेस मैप नहीं किया गया है।",
+    "columns": {
+        "type": "प्रकार",
+        "name": "नाम",
+        "permissions": "अनुमतियां",
+        "linkage": "लिंकेज"
+    },
+    "accessType": {
+        "course": "कोर्स",
+        "session": "सेशन",
+        "invite": "आमंत्रण",
+        "global": "ग्लोबल"
+    },
+    "linkageType": {
+        "direct": "प्रत्यक्ष"
+    },
+    "notAvailable": "लागू नहीं"
+}

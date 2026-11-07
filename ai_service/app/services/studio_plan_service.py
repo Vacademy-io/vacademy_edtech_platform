@@ -14,8 +14,9 @@ No native tool-calling (the codebase has none) — structured-JSON emission with
 `response_format=json_object`, same multi-attempt retry as reels.
 
 Stage routing: the caller passes an optional `model` (resolved from the
-project's `model_overrides` for this step); absent → settings default. Full
-V200 DB-matrix routing is wired in P10.
+project's `model_overrides` for this step); absent → the 'studio_plan' use
+case (ai_model_defaults; GLM by default). Every call walks the use case's
+fallback chain through llm_router.chat_with_chain.
 """
 from __future__ import annotations
 
@@ -25,7 +26,7 @@ import re
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional
 
-import httpx
+from .use_case_chat import chat_json, models_for
 
 from ..config import get_settings
 from . import studio_tools
@@ -34,6 +35,11 @@ from .studio_tools import ToolValidationError
 logger = logging.getLogger(__name__)
 
 _LLM_TIMEOUT_S = 60.0
+# The model comes from the 'studio_plan' use case (ai_model_defaults, set in the
+# super-admin portal; GLM by default). A project's per-step override wins, then
+# STUDIO_PLAN_LLM_MODEL (emergency override).
+_USE_CASE = "studio_plan"
+_LLM_MODEL_ENV = "STUDIO_PLAN_LLM_MODEL"
 _FENCE_RE = re.compile(r"^```(?:json)?\s*(.*?)\s*```$", re.DOTALL)
 
 # Per-step max operations the LLM may emit (post-validation cap is applied too).
@@ -334,9 +340,12 @@ class StudioPlanService:
     async def _call_llm(
         self, system: str, user: str, *, model: Optional[str]
     ) -> Optional[str]:
-        chosen = (model or "").strip() or self._settings_default_model()
+        """One call through the model chain. The project's per-step model
+        override (`model`) wins; then $STUDIO_PLAN_LLM_MODEL; then the
+        'studio_plan' use case chain (GLM by default) for failover.
+        response_format=json_object first, the chain again without it if a
+        model rejected the parameter (400). None when every model failed."""
         payload = {
-            "model": chosen,
             "messages": [
                 {"role": "system", "content": system},
                 {"role": "user", "content": user},
@@ -344,56 +353,23 @@ class StudioPlanService:
             "temperature": 0.4,
             "max_tokens": 2000,
         }
-        headers = {
-            "Authorization": f"Bearer {self._api_key}",
-            "Content-Type": "application/json",
-        }
-        attempts = [
-            {**payload, "response_format": {"type": "json_object"}},
+        result = await chat_json(
             payload,
-            payload,
-        ]
-        last_err: Optional[str] = None
-        try:
-            async with httpx.AsyncClient(timeout=_LLM_TIMEOUT_S) as client:
-                for attempt in attempts:
-                    try:
-                        resp = await client.post(self._llm_url, headers=headers, json=attempt)
-                    except httpx.TimeoutException as e:
-                        last_err = f"timeout: {e}"
-                        continue
-                    except httpx.HTTPError as e:
-                        last_err = f"transport: {e}"
-                        continue
-                    if resp.status_code == 200:
-                        try:
-                            return resp.json()["choices"][0]["message"]["content"]
-                        except Exception as e:
-                            logger.warning(f"[studio-plan] unwrap failed: {e}; body={resp.text[:300]!r}")
-                            return None
-                    if resp.status_code == 400 and "response_format" in resp.text:
-                        continue
-                    if 500 <= resp.status_code < 600 or resp.status_code in (408, 429):
-                        last_err = f"{resp.status_code}: {resp.text[:200]!r}"
-                        continue
-                    logger.warning(f"[studio-plan] {resp.status_code}: {resp.text[:300]!r}")
-                    return None
-        except Exception as e:
-            logger.warning(f"[studio-plan] unexpected error: {e}")
-            return None
-        if last_err:
-            logger.warning(f"[studio-plan] gave up after retries: {last_err}")
-        return None
+            use_case=_USE_CASE,
+            models=self._models(model),
+            api_key=self._api_key,
+            timeout=_LLM_TIMEOUT_S,
+            label="studio-plan",
+        )
+        return result.content if result is not None else None
+
+    @staticmethod
+    def _models(model: Optional[str]) -> List[str]:
+        return models_for(_USE_CASE, explicit=model, env=_LLM_MODEL_ENV)
 
     def _settings_default_model(self) -> str:
-        # Same known-good default the reels LLM services use. Kept as a method
-        # so P10 can swap in V200 stage-routing resolution. Env override:
-        # STUDIO_PLAN_LLM_MODEL.
-        import os
-        return (
-            os.getenv("STUDIO_PLAN_LLM_MODEL", "").strip()
-            or "anthropic/claude-3-5-haiku"
-        )
+        """The model a step runs on when the project sets no override."""
+        return self._models(None)[0]
 
 
 # ---------------------------------------------------------------------------

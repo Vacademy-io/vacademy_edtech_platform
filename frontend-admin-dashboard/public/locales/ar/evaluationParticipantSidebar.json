@@ -1,0 +1,14 @@
+{
+    "participantDetails": "تفاصيل المشارك",
+    "faceProfileAlt": "صورة الوجه الشخصية",
+    "attemptUploadSuccess": "تم رفع المحاولة بنجاح",
+    "fileUploadSuccess": "تم رفع الملف بنجاح",
+    "uploadFailedRetry": "فشل الرفع. الرجاء المحاولة مرة أخرى.",
+    "uploading": "جارٍ الرفع",
+    "uploadAttempt": "رفع المحاولة",
+    "submit": "إرسال",
+    "evaluate": "تقييم",
+    "confirmUploadHeading": "تأكيد الرفع؟",
+    "confirmUploadBody": "سيؤدي رفع ملف جديد إلى استبدال استجابة الطالب الحالية. هل أنت متأكد من رغبتك في المتابعة؟",
+    "upload": "رفع"
+}

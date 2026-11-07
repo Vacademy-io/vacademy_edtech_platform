@@ -14,6 +14,7 @@ import { toast } from 'sonner';
 import { Route } from '@/routes/study-library/courses/course-details/subjects/modules/chapters/slides/index';
 import { useContentStore } from '@/routes/study-library/courses/course-details/subjects/modules/chapters/slides/-stores/chapter-sidebar-store';
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { VideoCamera, CheckCircle, PlayCircle } from '@phosphor-icons/react';
 import { useInstituteDetailsStore } from '@/stores/students/students-list/useInstituteDetailsStore';
 import { getSlideStatusForUser } from '../../non-admin/hooks/useNonAdminSlides';
@@ -21,19 +22,21 @@ import {
     buildAppendReorderPayload,
     getNextSlideOrder,
 } from '../../-helper/slide-naming-utils';
+import type { TFunction } from 'i18next';
 
-const formSchema = z.object({
-    videoUrl: z
-        .string()
-        .min(1, 'URL is required')
-        .url('Please enter a valid URL')
-        .refine((url) => url.includes('vimeo.com'), {
-            message: 'Please enter a valid Vimeo URL',
-        }),
-    videoName: z.string().optional(),
-});
+const buildFormSchema = (t: TFunction) =>
+    z.object({
+        videoUrl: z
+            .string()
+            .min(1, t('validation.urlRequired'))
+            .url(t('validation.enterValidUrl'))
+            .refine((url) => url.includes('vimeo.com'), {
+                message: t('validation.enterValidVimeoUrl'),
+            }),
+        videoName: z.string().optional(),
+    });
 
-type FormValues = z.infer<typeof formSchema>;
+type FormValues = z.infer<ReturnType<typeof buildFormSchema>>;
 
 const extractVimeoId = (url: string): string => {
     const regExp = /(?:vimeo\.com\/(?:video\/)?|player\.vimeo\.com\/video\/)(\d+)/;
@@ -49,6 +52,7 @@ export const AddVimeoDialog = ({
     // When provided, the dialog edits this slide's link instead of creating a new slide.
     editSlide?: Slide;
 }) => {
+    const { t } = useTranslation('studyLibrarySlidesSidebarAddVimeoDialog');
     const { getPackageSessionId } = useInstituteDetailsStore();
     const { courseId, levelId, chapterId, moduleId, subjectId, sessionId } = Route.useSearch();
     const { addUpdateVideoSlide, updateSlideOrder } = useSlidesMutations(
@@ -74,7 +78,7 @@ export const AddVimeoDialog = ({
     const [isVideoUploading, setIsVideoUploading] = useState(false);
 
     const form = useForm<FormValues>({
-        resolver: zodResolver(formSchema),
+        resolver: zodResolver(buildFormSchema(t)),
         defaultValues: {
             videoUrl: initialUrl,
             videoName: editSlide?.video_slide?.title || editSlide?.title || '',
@@ -99,7 +103,7 @@ export const AddVimeoDialog = ({
                     return response.json();
                 })
                 .then((data) => {
-                    form.setValue('videoName', data.title || 'Vimeo Video');
+                    form.setValue('videoName', data.title || t('defaultVideoName'));
                     setVideoPreview({
                         title: data.title,
                         thumbnail: data.thumbnail_url,
@@ -109,7 +113,7 @@ export const AddVimeoDialog = ({
                 .catch(() => {
                     // oEmbed may fail for private videos or CORS issues;
                     // still allow submission with the valid Vimeo URL
-                    form.setValue('videoName', 'Vimeo Video');
+                    form.setValue('videoName', t('defaultVideoName'));
                     setVideoPreview(null);
                     setVideoDuration(0);
                 });
@@ -123,16 +127,14 @@ export const AddVimeoDialog = ({
     const handleSubmit = async (data: FormValues) => {
         const videoId = extractVimeoId(data.videoUrl);
         if (!videoId) {
-            toast.error('Invalid Vimeo URL');
+            toast.error(t('toast.invalidVimeoUrl'));
             return;
         }
 
         // Don't submit with length=0 (oEmbed failed or hasn't returned yet) —
         // that would break learner-side progress tracking on this slide forever.
         if (!videoDuration || videoDuration <= 0) {
-            toast.error(
-                'Could not read video duration from Vimeo. The video may be private or oEmbed failed. Please retry.'
-            );
+            toast.error(t('toast.durationReadFailed'));
             return;
         }
 
@@ -143,7 +145,7 @@ export const AddVimeoDialog = ({
                 const slideStatus = editSlide.status;
                 const response: string = await addUpdateVideoSlide({
                     id: editSlide.id,
-                    title: data.videoName || editSlide.title || 'Vimeo Video',
+                    title: data.videoName || editSlide.title || t('defaultVideoName'),
                     description: editSlide.description ?? null,
                     image_file_id: editSlide.image_file_id ?? null,
                     slide_order: editSlide.slide_order ?? null,
@@ -151,7 +153,7 @@ export const AddVimeoDialog = ({
                         id: editSlide.video_slide?.id || crypto.randomUUID(),
                         description: editSlide.video_slide?.description || '',
                         url: data.videoUrl,
-                        title: data.videoName || 'Vimeo Video',
+                        title: data.videoName || t('defaultVideoName'),
                         video_length_in_millis: videoDuration,
                         published_url:
                             slideStatus === 'PUBLISHED'
@@ -174,7 +176,7 @@ export const AddVimeoDialog = ({
                 if (response) {
                     refreshActiveSlideAfterEdit(data.videoUrl, videoDuration);
                     openState?.(false);
-                    toast.success('Vimeo link updated successfully!');
+                    toast.success(t('toast.linkUpdated'));
                 }
                 return;
             }
@@ -183,7 +185,7 @@ export const AddVimeoDialog = ({
             const slideStatus = getSlideStatusForUser();
             const response: string = await addUpdateVideoSlide({
                 id: slideId,
-                title: data.videoName || 'Vimeo Video',
+                title: data.videoName || t('defaultVideoName'),
                 description: null,
                 image_file_id: null,
                 slide_order: getNextSlideOrder(items || []),
@@ -191,7 +193,7 @@ export const AddVimeoDialog = ({
                     id: crypto.randomUUID(),
                     description: '',
                     url: data.videoUrl,
-                    title: data.videoName || 'Vimeo Video',
+                    title: data.videoName || t('defaultVideoName'),
                     video_length_in_millis: videoDuration,
                     published_url: slideStatus === 'PUBLISHED' ? data.videoUrl : null,
                     published_video_length_in_millis: slideStatus === 'PUBLISHED' ? videoDuration : 0,
@@ -205,10 +207,10 @@ export const AddVimeoDialog = ({
             if (response) {
                 await reorderSlidesAfterNewSlide(response);
                 openState?.(false);
-                toast.success('Vimeo video added successfully!');
+                toast.success(t('toast.videoAdded'));
             }
         } catch (error) {
-            toast.error(editSlide ? 'Failed to update link' : 'Failed to add video');
+            toast.error(editSlide ? t('toast.updateLinkFailed') : t('toast.addVideoFailed'));
         } finally {
             setIsVideoUploading(false);
         }
@@ -261,7 +263,7 @@ export const AddVimeoDialog = ({
                 setActiveItem(getSlideById(newSlideId));
             }, 500);
         } catch (error) {
-            toast.error('Slide created but reordering failed');
+            toast.error(t('toast.reorderFailed'));
         }
     };
 
@@ -286,7 +288,7 @@ export const AddVimeoDialog = ({
                                                 field.onChange(e);
                                                 handleUrlChange(e.target.value);
                                             }}
-                                            placeholder="https://vimeo.com/..."
+                                            placeholder={t('urlPlaceholder')}
                                             className="w-full rounded-lg border border-neutral-300 px-4 py-3 pr-10 text-sm"
                                             required
                                         />
@@ -309,7 +311,7 @@ export const AddVimeoDialog = ({
                                 <div className="relative shrink-0">
                                     <img
                                         src={videoPreview.thumbnail}
-                                        alt="Video thumbnail"
+                                        alt={t('videoThumbnailAlt')}
                                         className="h-12 w-16 rounded-lg object-cover"
                                     />
                                     <div className="absolute inset-0 flex items-center justify-center">
@@ -320,7 +322,7 @@ export const AddVimeoDialog = ({
                                     <p className="truncate text-sm font-medium text-neutral-700">
                                         {videoPreview.title}
                                     </p>
-                                    <p className="text-xs text-neutral-500">Vimeo Video</p>
+                                    <p className="text-xs text-neutral-500">{t('defaultVideoName')}</p>
                                 </div>
                             </div>
                         </div>
@@ -346,12 +348,12 @@ export const AddVimeoDialog = ({
                         {isVideoUploading ? (
                             <div className="flex items-center justify-center gap-2">
                                 <div className="size-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
-                                {editSlide ? 'Updating Link...' : 'Adding Video...'}
+                                {editSlide ? t('updatingLink') : t('addingVideo')}
                             </div>
                         ) : (
                             <div className="flex items-center justify-center gap-2">
                                 <VideoCamera className="size-4" />
-                                {editSlide ? 'Update Vimeo Link' : 'Add Vimeo Video'}
+                                {editSlide ? t('updateVimeoLink') : t('addVimeoVideo')}
                             </div>
                         )}
                     </MyButton>

@@ -1,0 +1,58 @@
+{
+    "step1": {
+        "planNameLabel": "اسم الخطة *",
+        "planNamePlaceholder": "أدخل اسم الخطة",
+        "planCurrencyLabel": "عملة الخطة",
+        "setAsDefault": "تعيين كخطة افتراضية"
+    },
+    "units": {
+        "days": "أيام",
+        "months": "أشهر"
+    },
+    "subscription": {
+        "title": "إعداد خطة الاشتراك",
+        "durationUnitLabel": "وحدة المدة",
+        "durationUnitHint": "ستُطبَّق هذه الوحدة على جميع فترات التسعير",
+        "pricingIntervals": "فترات التسعير",
+        "addInterval": "إضافة فترة",
+        "intervalTitleLabel": "العنوان",
+        "durationLabel": "المدة ({{unit}})",
+        "priceLabel": "السعر",
+        "featuresLabel": "الميزات",
+        "removeInterval": "إزالة الفترة",
+        "intervalPlanFallback": "خطة {{value}} {{unit}}",
+        "planChangeLabel": "Members can switch to this plan",
+        "planChangeHint": "(turn on plan switching for this option first)"
+    },
+    "donation": {
+        "title": "إعداد التبرع",
+        "suggestedAmountsLabel": "المبالغ المقترحة ({{currency}})",
+        "suggestedAmountsPlaceholder": "10, 25, 50, 100",
+        "minimumAmountLabel": "الحد الأدنى للمبلغ ({{currency}})",
+        "allowCustomAmounts": "السماح بمبالغ مخصصة"
+    },
+    "discounts": {
+        "title": "تطبيق خصومات على الخطة",
+        "subtitle": "حدد الخصومات لكل فترة أو مستوى سعر في الخطة",
+        "subscriptionIntervalColumn": "فترة الاشتراك",
+        "originalPriceColumn": "السعر الأصلي",
+        "discountTypeColumn": "نوع الخصم",
+        "discountAmountColumn": "قيمة الخصم",
+        "finalPriceColumn": "السعر النهائي",
+        "planTypeColumn": "نوع الخطة",
+        "noDiscount": "بدون خصم",
+        "percentOff": "خصم %",
+        "flatOff": "خصم ثابت",
+        "oneTimePayment": "دفعة واحدة",
+        "save": "وفّر {{amount}}",
+        "noPricingInfo": "لا تتوفر معلومات تسعير لهذا النوع من الخطط."
+    },
+    "actions": {
+        "back": "رجوع",
+        "cancel": "إلغاء",
+        "saving": "جارٍ الحفظ...",
+        "updatePlan": "تحديث الخطة",
+        "next": "التالي",
+        "updatePaymentPlan": "تحديث خطة الدفع"
+    }
+}

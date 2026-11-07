@@ -1,0 +1,8 @@
+{
+  "title": "ईमेल द्वारा {{term}}",
+  "emailInput": {
+    "label": "आमंत्रित व्यक्ति का ईमेल दर्ज करें",
+    "placeholder": "you@email.com"
+  },
+  "addButton": "जोड़ें"
+}

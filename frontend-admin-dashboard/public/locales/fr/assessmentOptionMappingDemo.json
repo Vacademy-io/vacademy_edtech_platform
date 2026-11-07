@@ -1,0 +1,45 @@
+{
+    "title": "Démo de mappage des ID d'options",
+    "subtitle": "Comment les ID d'options sont mappés vers un contenu lisible",
+    "common": {
+        "questionLabel": "Question :",
+        "responseLabel": "Réponse :"
+    },
+    "before": {
+        "title": "Avant (ID d'options bruts)",
+        "selectedOptions": "Options sélectionnées : {{ids}}"
+    },
+    "after": {
+        "title": "Après (contenu mappé)",
+        "selected": "Sélectionné : {{options}}"
+    },
+    "allOptions": {
+        "title": "Toutes les options disponibles",
+        "selectedBadge": "Sélectionné"
+    },
+    "process": {
+        "title": "Processus de mappage :",
+        "steps": {
+            "fetchQuestions": {
+                "label": "Récupérer l'API des questions :",
+                "description": "Obtenir les questions avec leurs options depuis le backend"
+            },
+            "createOptionsMap": {
+                "label": "Créer la carte des options :",
+                "description": "Mapper les ID d'options à leur texte de contenu"
+            },
+            "parseResponse": {
+                "label": "Analyser la réponse :",
+                "description": "Extraire les ID d'options sélectionnées de la réponse de l'utilisateur"
+            },
+            "mapIdsToContent": {
+                "label": "Mapper les ID au contenu :",
+                "description": "Remplacer les ID d'options par un texte lisible"
+            },
+            "displayEnhancedUi": {
+                "label": "Afficher l'interface améliorée :",
+                "description": "Afficher le contenu réel de la question et les options sélectionnées"
+            }
+        }
+    }
+}

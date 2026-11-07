@@ -1,0 +1,91 @@
+{
+    "waFieldOptions": {
+        "auto": "Automatique (correspondance par nom)",
+        "recipientName": "Nom du destinataire",
+        "mentorName": "Nom du mentor",
+        "studentName": "Nom de l'apprenant",
+        "sessionTitle": "Titre de la session",
+        "sessionDatetime": "Date et heure de la session",
+        "declineReason": "Motif de refus (demande de mentorat)"
+    },
+    "placeholderHint": {
+        "label": "Espaces réservés :"
+    },
+    "channel": {
+        "email": {
+            "label": "E-mail",
+            "subjectLabel": "Objet"
+        },
+        "inAppAlert": {
+            "label": "Alerte dans l'application",
+            "titleLabel": "Titre"
+        },
+        "push": {
+            "label": "Notification push",
+            "titleLabel": "Titre"
+        },
+        "messageLabel": "Message",
+        "usesDefault": "Utilise le message par défaut du système.",
+        "customize": "Personnaliser",
+        "resetToDefault": "Rétablir le message par défaut"
+    },
+    "whatsapp": {
+        "label": "WhatsApp",
+        "requiresTemplate": "Nécessite un modèle Meta approuvé.",
+        "approvedTemplateLabel": "Modèle approuvé",
+        "selectTemplatePlaceholder": "Sélectionner un modèle approuvé",
+        "noTemplatesFound": "Aucun modèle WhatsApp approuvé trouvé.",
+        "noTemplateMatchesSearch": "Aucun modèle approuvé ne correspond à votre recherche.",
+        "mapVariables": "Associer les variables du modèle",
+        "mapVariablesHint": "Laissez sur « Automatique » lorsque le nom de la variable du modèle correspond déjà à un champ de mentorat."
+    },
+    "header": {
+        "title": "Paramètres de mentorat",
+        "subtitle": "Choisissez comment les apprenants sont notifiés pour chaque événement de mentorat."
+    },
+    "actions": {
+        "reset": "Réinitialiser",
+        "save": "Enregistrer les modifications",
+        "saving": "Enregistrement…"
+    },
+    "toasts": {
+        "saveSuccess": "Paramètres de mentorat enregistrés",
+        "saveError": "Échec de l'enregistrement des paramètres de mentorat."
+    },
+    "whoToNotify": "Qui notifier",
+    "learnerMessageAndChannels": "Message et canaux pour l'apprenant",
+    "assignment": {
+        "title": "Mentor attribué",
+        "description": "Lorsqu'un mentor est attribué à un apprenant.",
+        "notifyStudent": "Notifier l'apprenant",
+        "notifyMentor": "Notifier le mentor"
+    },
+    "request": {
+        "title": "Demande de mentor",
+        "description": "Lorsqu'un apprenant demande un mentor depuis « Trouver un mentor ».",
+        "notifyMentorRequested": "Informer le mentor qu'il a été demandé",
+        "notifyStudentDeclined": "Informer l'apprenant en cas de refus",
+        "approvalNote": "Approuver n'envoie rien de plus — l'apprenant reçoit déjà « Vous avez un nouveau mentor » lors de l'association elle-même.",
+        "declineMessageAndChannels": "Message et canaux pour le refus"
+    },
+    "booking": {
+        "title": "Session réservée",
+        "description": "Lorsqu'un apprenant réserve une session individuelle."
+    },
+    "cancellation": {
+        "title": "Session annulée",
+        "description": "Lorsqu'une session est annulée."
+    },
+    "sessionReminder": {
+        "title": "Rappel de session",
+        "description": "Avant une session à venir.",
+        "sendReminders": "Envoyer des rappels de session",
+        "hoursBeforeSession": "Heures avant la session"
+    },
+    "checkinReminder": {
+        "title": "Rappel de suivi",
+        "description": "Lorsqu'un apprenant n'a pas rencontré son mentor depuis un moment.",
+        "sendNudges": "Envoyer des rappels de suivi",
+        "daysWithoutSession": "Jours sans session"
+    }
+}

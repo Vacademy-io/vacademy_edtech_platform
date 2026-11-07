@@ -1,0 +1,66 @@
+{
+    "notReady": {
+        "title": "Configuration du webhook",
+        "description": "Configurez et activez d'abord un fournisseur WhatsApp ci-dessus, puis configurez les webhooks ici."
+    },
+    "header": {
+        "title": "Configuration du webhook — {{provider}}",
+        "subtitle": "Connectez votre fournisseur WhatsApp pour recevoir les messages entrants"
+    },
+    "status": {
+        "channelMapping": "Mappage de canal",
+        "channelMappingHint": "Achemine les webhooks entrants vers votre établissement",
+        "connected": "Connecté : {{channelId}}",
+        "notConnected": "Non connecté"
+    },
+    "setup": {
+        "oneClickTitle": "Configuration en un clic",
+        "webhookUrlTitle": "URL du webhook",
+        "autoDescription": "Crée le mappage de canal et enregistre automatiquement le webhook auprès de {{provider}}.",
+        "manualDescription": "Crée le mappage de canal. Copiez l'URL du webhook et collez-la dans votre tableau de bord {{provider}}.",
+        "button": {
+            "settingUp": "Configuration en cours...",
+            "reRegister": "Réenregistrer le webhook avec {{provider}}",
+            "setup": "Configurer le webhook avec {{provider}}",
+            "mappingAlreadyCreated": "Mappage déjà créé",
+            "createMapping": "Créer le mappage de canal"
+        }
+    },
+    "webhookUrl": {
+        "title": "URL du webhook",
+        "copyButtonTitle": "Copier l'URL du webhook"
+    },
+    "combot": {
+        "manualSetupTitle": "Configuration manuelle du webhook",
+        "instructions": "Collez l'URL ci-dessus dans le tableau de bord Com.bot → Paramètres → Webhooks.",
+        "verifyTokenLabel": "Jeton de vérification :"
+    },
+    "verify": {
+        "title": "Étape 3 : Vérifier la connexion",
+        "description": "Testez que le point de terminaison du webhook est accessible",
+        "verifying": "Vérification en cours...",
+        "verifyEndpoint": "Vérifier le point de terminaison"
+    },
+    "instructions": {
+        "title": "Comment ça marche :",
+        "channelMapping": "<0>Mappage de canal</0> relie votre numéro WhatsApp Business à cet établissement afin que les webhooks entrants soient correctement acheminés",
+        "webhookUrl": "<0>URL du webhook</0> est l'adresse où votre fournisseur envoie les messages entrants et les mises à jour de statut de livraison",
+        "verify": "<0>Vérifier</0> contrôle que le point de terminaison est accessible publiquement et répond correctement au défi"
+    },
+    "toasts": {
+        "copiedUrl": "URL du webhook copiée",
+        "configureCredentialsFirst": "Configurez d'abord les identifiants du fournisseur (ID de numéro de téléphone / numéro WhatsApp requis)",
+        "mappingCreatedWithRouting": "Mappage de canal créé — les webhooks seront désormais acheminés vers votre établissement",
+        "createMappingFailed": "Échec de la création du mappage",
+        "endpointReachable": "Le point de terminaison du webhook est accessible",
+        "credentialsNotConfigured": "Les identifiants du fournisseur ne sont pas configurés",
+        "phoneNumberIdNotFound": "ID de numéro de téléphone / numéro WhatsApp introuvable dans les identifiants",
+        "mappingCreated": "Mappage de canal créé",
+        "comBotMappingReady": "Le mappage de canal est prêt. Copiez l'URL du webhook et définissez-la dans votre tableau de bord COMBOT.",
+        "webhookRegistered": "Webhook enregistré avec {{provider}}",
+        "setupFailed": "Échec de la configuration"
+    },
+    "errors": {
+        "verificationRequestFailed": "Échec de la demande de vérification"
+    }
+}

@@ -1,0 +1,164 @@
+{
+    "toast": {
+        "enrollmentSuccessRedirecting": "Inscription réussie ! Redirection vers le tableau de bord...",
+        "loginSuccessRedirecting": "Connexion réussie ! Redirection vers le tableau de bord...",
+        "autoRenewalConsentRequired": "Veuillez accepter les conditions de renouvellement automatique pour continuer."
+    },
+    "errors": {
+        "failedToLoadInstallmentSchedule": "Échec du chargement de l'échéancier des versements. Veuillez réessayer.",
+        "selectAtLeastOneInstallment": "Veuillez sélectionner au moins un versement à payer.",
+        "paymentAmountMustBePositive": "Le montant du paiement doit être supérieur à zéro.",
+        "noCpoPaymentOptionFound": "Aucune option de paiement échelonné trouvée.",
+        "enrollmentSucceededNoUserPlanId": "L'inscription a réussi, mais l'identifiant du plan n'a pas été renvoyé. Veuillez réessayer.",
+        "noPendingInstallmentsGenerated": "Aucun versement en attente n'a été généré. Veuillez contacter le support.",
+        "failedToCreateRazorpayOrder": "Échec de la création de la commande Razorpay",
+        "failedToInitiatePayment": "Échec du lancement du paiement",
+        "stripeNotReady": "Le paiement Stripe n'est pas encore prêt. Veuillez patienter et réessayer.",
+        "paymentProcessingFailed": "Échec du traitement du paiement",
+        "paymentFailed": "Échec du paiement",
+        "completePaymentForm": "Veuillez remplir le formulaire de paiement",
+        "cpoVendorNotSupported": "Cette passerelle de paiement n'est pas prise en charge pour l'inscription avec paiement échelonné. Veuillez contacter le support.",
+        "enrollmentFailed": "Échec de l'inscription",
+        "phonepeCheckoutFailed": "Impossible de démarrer le paiement PhonePe. Veuillez réessayer ou contacter le support.",
+        "failedToInitiatePhonepePayment": "Échec du lancement du paiement PhonePe",
+        "enrollmentCreatedNoUserPlanId": "L'inscription a été créée, mais l'identifiant du plan n'a pas été reçu. Veuillez contacter le support.",
+        "emailRequiredForPayment": "L'adresse e-mail est requise pour le paiement.",
+        "loginRequiredForPayment": "Veuillez vous connecter pour finaliser le paiement.",
+        "failedToInitializePaymentContactSupport": "Échec de l'initialisation du paiement. Veuillez réessayer ou contacter le support.",
+        "failedToLoadCashfree": "Échec du chargement de la passerelle de paiement Cashfree.",
+        "paymentInitializationFailed": "Échec de l'initialisation du paiement.",
+        "failedToInitiateCashfreePayment": "Échec du lancement du paiement Cashfree",
+        "razorpayComponentNotReady": "Le composant Razorpay n'est pas prêt",
+        "failedToCompleteEnrollment": "Échec de la finalisation de l'inscription",
+        "userPlanIdNotReceived": "L'identifiant du plan n'a pas été reçu.",
+        "paymentSessionMissingLoginRequired": "La session de paiement est absente de la réponse. Veuillez vous connecter pour finaliser le paiement.",
+        "emailRequired": "L'adresse e-mail est requise.",
+        "failedToInitializePayment": "Échec de l'initialisation du paiement.",
+        "failedToInitializePaymentFallback": "Échec de l'initialisation du paiement"
+    },
+    "autopay": {
+        "trialBanner": "Activez votre essai gratuit de {{trialDays}} jours avec ₹{{authAmount}}, annulable à tout moment dans les {{trialDays}} jours.",
+        "setupHeading": "Comment souhaitez-vous configurer le renouvellement automatique ?",
+        "upiLabel": "UPI Autopay",
+        "upiHint": "GPay, PhonePe, Paytm",
+        "cardLabel": "Carte",
+        "cardHint": "Carte de débit / crédit",
+        "consentTrial": {
+            "agreePrefix": "J'accepte :",
+            "authorizedToday": "est autorisé aujourd'hui",
+            "refundedSuffix": "(remboursé)",
+            "toStartMy": "pour démarrer mon",
+            "trialDaysLabel": "essai gratuit de {{days}} jours",
+            "fromDay": ". À partir du jour",
+            "listSeparator": ",",
+            "willBeChargedCycle": "sera facturé à chaque cycle de facturation sur mon moyen de paiement enregistré, sauf annulation préalable de ma part."
+        },
+        "consentAutoRenew": {
+            "agreePrefix": "J'accepte le renouvellement automatique :",
+            "willBeChargedPeriod": "sera facturé sur mon moyen de paiement enregistré à chaque période de facturation. Je peux annuler à tout moment depuis mon profil."
+        }
+    },
+    "stepBadge": {
+        "ofThree": "Étape {{step}} sur 3",
+        "ofTwo": "Étape {{step}} sur 2"
+    },
+    "wizardPills": {
+        "details": "Détails",
+        "plan": "Formule",
+        "confirm": "Confirmer",
+        "pay": "Payer"
+    },
+    "bundledCourses": {
+        "whatsIncluded": "Ce qui est inclus",
+        "detailsLoading": "Chargement des détails du {{course}}...",
+        "fallbackLabel": "{{course}} {{index}}"
+    },
+    "badges": {
+        "installmentPlan": "Paiement échelonné",
+        "free": "Gratuit"
+    },
+    "footer": {
+        "privacyPolicy": "Politique de confidentialité",
+        "termsAndConditions": "Conditions générales"
+    },
+    "defaultCourseEnrollmentName": "Inscription au {{course}}",
+    "defaultCourseEnrollmentDescription": "Paiement pour l'inscription au {{course}}",
+    "defaultThisCourse": "ce {{course}}",
+    "planDuration": {
+        "days_one": "{{count}} jour",
+        "days_other": "{{count}} jours",
+        "months_one": "{{count}} mois",
+        "months_other": "{{count}} mois",
+        "days_many": "{{count}} jours",
+        "months_many": "{{count}} mois"
+    },
+    "planDescriptions": {
+        "payInInstallments": "Payer en plusieurs versements",
+        "donationPlan": "Accès au plan de don.",
+        "freePlan": "Accès au plan gratuit.",
+        "oneTimePlan": "Accès au plan de paiement unique.",
+        "subscriptionPlan": "Accès au plan d'abonnement."
+    },
+    "subscriptionPlan": {
+        "discount": {
+            "percentageOff": "{{amount}} % de réduction",
+            "fixedOff": "{{amount}} {{currency}} de réduction"
+        },
+        "unit": {
+            "month": "mois",
+            "days": "jours"
+        }
+    },
+    "successStep": {
+        "title": "Demande d'inscription envoyée !",
+        "defaultMessage": {
+            "intro": "Merci de l'intérêt que vous portez à {{courseName}}. Votre demande d'inscription a été envoyée avec succès. Vos identifiants de connexion ont été envoyés à votre adresse e-mail enregistrée",
+            "outro": ". Veuillez vous connecter avec l'e-mail et le mot de passe fournis"
+        },
+        "approvalRequired": {
+            "title": "Approbation requise",
+            "body": "Votre demande d'inscription est en cours d'examen par notre équipe. Vous recevrez une notification par e-mail dès son approbation."
+        },
+        "redirectingToDashboard": "Redirection vers le tableau de bord...",
+        "continue": "Continuer",
+        "loginNow": "Se connecter"
+    },
+    "cardValidator": {
+        "tooShort": "Le numéro de carte est trop court",
+        "typeNotRecognized": "Type de carte non reconnu",
+        "invalidLength": "Longueur de carte invalide pour {{cardType}}",
+        "invalidNumber": "Le numéro de carte est invalide",
+        "invalidMonth": "Mois invalide",
+        "expired": "La carte a expiré",
+        "cvvRequired": "Le CVV est requis",
+        "cvvLength": "Le CVV doit comporter {{expectedLength}} chiffres",
+        "brands": {
+            "visa": "Visa",
+            "mastercard": "Mastercard",
+            "amex": "American Express",
+            "discover": "Discover",
+            "diners": "Diners Club",
+            "jcb": "JCB",
+            "unknown": "Inconnu"
+        }
+    },
+    "fieldValidation": {
+        "required": "Ce champ est obligatoire",
+        "invalidEmail": "Veuillez saisir une adresse e-mail valide",
+        "invalidPhone": "Veuillez saisir un numéro de téléphone valide",
+        "invalidUrl": "Veuillez saisir une URL valide",
+        "invalidNumber": "Veuillez saisir un nombre valide",
+        "invalidDate": "Veuillez saisir une date valide"
+    },
+    "ewayEncryption": {
+        "libraryUnavailable": "La bibliothèque de chiffrement n'est pas disponible. Veuillez actualiser la page et réessayer.",
+        "encryptFailed": "Échec du chiffrement des informations de paiement. Veuillez réessayer.",
+        "unexpectedError": "Une erreur inattendue s'est produite. Veuillez réessayer."
+    },
+    "useStripePayment": {
+        "notInitialized": "Stripe n'est pas initialisé. Veuillez actualiser la page.",
+        "cardElementNotFound": "Élément de carte introuvable. Veuillez actualiser la page.",
+        "processingFailed": "Échec du traitement du paiement",
+        "unexpectedError": "Une erreur inattendue s'est produite"
+    }
+}

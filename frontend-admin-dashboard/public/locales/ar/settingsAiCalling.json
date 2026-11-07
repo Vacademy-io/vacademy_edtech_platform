@@ -1,0 +1,243 @@
+{
+    "assignmentModes": {
+        "roundRobin": "بالتناوب",
+        "timeBased": "أثناء الدوام فقط",
+        "manual": "يدوي"
+    },
+    "provider": {
+        "fallbackLabel": "المزوّد",
+        "aavtaar": {
+            "label": "Aavtaar",
+            "companyCodeLabel": "رمز الشركة",
+            "companyCodePlaceholder": "رمز الشركة لدى المزوّد",
+            "tokenLabel": "رمز الوصول (Bearer Token)",
+            "tokenPlaceholder": "الصق رمز الوصول للواجهة البرمجية",
+            "campaignPlaceholder": "معرّف الحملة من المزوّد",
+            "campaignHelp": "الحملة التي تحدد نص/شخصية الذكاء الاصطناعي للمكالمات الصادرة. يوفرها مزوّد خدمة الاتصال بالذكاء الاصطناعي."
+        },
+        "vacademyAi": {
+            "label": "وكيل Vacademy AI",
+            "companyCodeLabel": "رمز الحساب",
+            "companyCodePlaceholder": "غير مطلوب — تُجرى المكالمات من رقم Vacademy Voice الخاص بك",
+            "tokenLabel": "رمز الواجهة البرمجية",
+            "tokenPlaceholder": "غير مطلوب لـ Vacademy AI",
+            "campaignPlaceholder": "اختر وكيلًا من قسم \"وكلاء الذكاء الاصطناعي\" أدناه",
+            "campaignHelp": "يتم إنشاء وكلاء Vacademy AI في قسم \"وكلاء الذكاء الاصطناعي\" أدناه — حفظ وكيل يسجّله هنا تلقائيًا (معرّفه هو معرّف الحملة)."
+        },
+        "fallback": {
+            "companyCodeLabel": "رمز الحساب / الشركة",
+            "companyCodePlaceholder": "رمز حسابك لدى المزوّد",
+            "tokenLabel": "رمز الواجهة البرمجية",
+            "tokenPlaceholder": "الصق رمز الوصول للواجهة البرمجية",
+            "campaignPlaceholder": "معرّف الحملة / الوكيل",
+            "campaignHelp": "الحملة أو الوكيل الذي يحدد نص الذكاء الاصطناعي للمكالمات الصادرة."
+        }
+    },
+    "toast": {
+        "settingsSaved": "تم حفظ إعدادات الاتصال بالذكاء الاصطناعي",
+        "settingsSaveFailed": "فشل حفظ إعدادات الاتصال بالذكاء الاصطناعي",
+        "credentialsSaved": "تم حفظ بيانات الاعتماد",
+        "credentialsSaveFailed": "فشل حفظ بيانات الاعتماد",
+        "fieldRequired": "{{field}} مطلوب.",
+        "campaignIdRequired": "معرّف الحملة الافتراضي مطلوب لتفعيل الاتصال بالذكاء الاصطناعي."
+    },
+    "enableCard": {
+        "title": "الاتصال بالذكاء الاصطناعي",
+        "description": "عند التفعيل، يتصل وكيل الذكاء الاصطناعي الصوتي بالعملاء المحتملين أولًا. يظهر التسجيل وملخص الذكاء الاصطناعي في ملف العميل المحتمل، ولا يُعيَّن مستشار إلا عندما تسمح بذلك قواعد النتائج أدناه.",
+        "enabled": "مفعّل",
+        "disabled": "معطّل",
+        "showInLeadList": "إظهار زر الاتصال بالذكاء الاصطناعي في صفوف العملاء المحتملين",
+        "showInLeadListHint": "يتحكم فقط في زر الروبوت اليدوي في قوائم العملاء المحتملين. تستمر مسارات عمل الذكاء الاصطناعي التلقائية بغض النظر عن هذا الخيار.",
+        "inboundLeadCapture": "التقاط المتصلين الواردين كعملاء محتملين",
+        "inboundLeadCaptureHint": "لخط مساعدة وارد بالذكاء الاصطناعي: عندما يتصل شخص وليس عميلًا محتملًا بالفعل، يُنشأ عميل محتمل (بمطابقة رقم الهاتف، بحيث لا يتكرر المتصلون) وتُربط المكالمة به — فتظهر في العملاء المحتملين الأخيرين وسجل المكالمات، ويمكنك المتابعة معه. إيقاف هذا الخيار يعني أن مكالمات المتصلين غير المعروفين تُسجَّل دون إنشاء عميل محتمل.",
+        "providerLabel": "مزوّد الصوت بالذكاء الاصطناعي",
+        "providerPlaceholder": "اختر مزوّدًا",
+        "providerHint": "وكيل الاتصال بالذكاء الاصطناعي المستخدم لهذه المؤسسة. بيانات الاعتماد والحملة أدناه خاصة بالمزوّد المحدد.",
+        "defaultCampaignIdLabel": "معرّف الحملة الافتراضي"
+    },
+    "campaigns": {
+        "title": "الحملات / الوكلاء",
+        "description": {
+            "part1": "سجّل معرّف كل حملة ذكاء اصطناعي وامنحها",
+            "nameWord": "اسم",
+            "part2": "وكيل (مثل «Class Feedback»). تشير مسارات العمل إلى",
+            "part3": "الاسم وليس المعرّف الخام — اختر الاسم نفسه مرة واحدة لكل مزوّد، وسيؤدي تبديل المزوّد إلى استخدام المعرّف الصحيح تلقائيًا. صنّف كل حملة كصادرة (أنت تتصل) أو واردة (يتصلون بخط الذكاء الاصطناعي)؛ تُستخدم المعرّفات الواردة لتصنيف الاستدعاءات (webhooks) الواردة (بمطابقة رقم هاتف العميل المحتمل)."
+        },
+        "agentNamePlaceholder": "اسم الوكيل (مثل Class Feedback)",
+        "campaignIdPlaceholder": "معرّف الحملة",
+        "providerPlaceholder": "المزوّد",
+        "outbound": "صادرة",
+        "inbound": "واردة",
+        "empty": "لم تُسجَّل أي حملات بعد. أضف حملة وصنّفها واردة لتفعيل اكتشاف المكالمات الواردة.",
+        "addCampaign": "إضافة حملة"
+    },
+    "credentials": {
+        "title": "بيانات الاعتماد",
+        "description": "بيانات اعتماد الواجهة البرمجية لمزوّد الاتصال بالذكاء الاصطناعي لهذه المؤسسة. يُخزَّن الرمز وسر الاستدعاء (webhook secret) بشكل مشفّر ولا يُعرضان مرة أخرى.",
+        "webhookSecretLabel": "سر الاستدعاء (Webhook)",
+        "savedPlaceholder": "•••••••• (محفوظ — اتركه فارغًا للاحتفاظ به)",
+        "webhookSecretPlaceholder": "السر لعنوان الاستدعاء ?token=",
+        "webhookHelp": "يُصادِق على استدعاء نهاية المكالمة من المزوّد. سلّم مزوّد الذكاء الاصطناعي لديك العنوان {{webhookPath}}?instituteId=…&token=<هذا السر>.",
+        "save": "حفظ بيانات الاعتماد",
+        "saving": "جارٍ الحفظ…"
+    },
+    "retryCard": {
+        "title": "إعادة المحاولة وأوقات الاتصال",
+        "description": "إذا لم يرد العميل المحتمل، تُعيد أداة الذكاء الاصطناعي المحاولة ضمن هذه الحدود قبل التوقف. لا تُجرى المحاولات إلا خلال الأوقات المحددة أدناه.",
+        "maxRetries": "الحد الأقصى لعدد المحاولات",
+        "maxPerDay": "الحد الأقصى للمكالمات يوميًا (لكل عميل محتمل)",
+        "retryGap": "الدقائق بين المحاولات",
+        "retryGapHint": "المدة التي تنتظرها الأداة قبل إعادة الاتصال بعميل محتمل لم يرد.",
+        "callingShifts": "أوقات الاتصال",
+        "callingShiftsHint": "الأوقات التي يمكن للأداة الاتصال (أو إعادة الاتصال) خلالها. أضف عدة أوقات (مثل صباحًا ومساءً). ينطبق هذا على إعادة الاتصال المجدولة؛ أما المكالمات الفورية للعملاء الجدد والمكالمات اليدوية والجماعية فتُجرى فورًا.",
+        "shiftTo": "إلى",
+        "addShift": "إضافة وقت",
+        "timezone": "المنطقة الزمنية",
+        "connectThreshold": "الحد الأدنى لثواني الاتصال",
+        "connectThresholdHint": "تُحتسب المكالمات الأقصر «غير متصلة» وتُعاد المحاولة."
+    },
+    "outcomeAction": {
+        "title": "النتيجة ← الإجراء",
+        "description": "لكل نتيجة مكالمة بالذكاء الاصطناعي، اختر ما سيحدث. النتائج غير المدرجة في أي من القائمتين تُعاد محاولتها حتى الحد الأقصى، ثم تُسند إلى شخص. أضف نتائج مخصصة أدناه للتصنيفات التي يعيدها وكيل الذكاء الاصطناعي الخاص بمؤسستك.",
+        "dispositionHeader": "التصنيف",
+        "assignHeader": "إسناد مستشار",
+        "stopHeader": "إيقاف (بلا إعادة محاولة)",
+        "removeAria": "إزالة {{disposition}}",
+        "addOutcomePlaceholder": "أضف نتيجة مخصصة (مثل رقم خاطئ)",
+        "addOutcome": "إضافة نتيجة",
+        "otherwiseHeader": "Otherwise",
+        "otherwiseRetry": "Retry, then assign after max retries",
+        "otherwiseRetryOnly": "Retry until max retries",
+        "customBadge": "custom"
+    },
+    "assignmentCard": {
+        "title": "إسناد المستشار",
+        "description": "كيفية اختيار المستشار عندما يستوفي العميل المحتمل الشروط (أو عند استنفاد المحاولات).",
+        "modeLabel": "نمط الإسناد",
+        "assignExhausted": "إسناد العملاء المحتملين غير المستجيبين إلى شخص بعد استنفاد المحاولات",
+        "reassignQualified": "Give qualified leads to this list's pool, even if they already have a counsellor",
+        "reassignQualifiedHint": "Use for lists of previously-worked leads: when the AI books or qualifies one, it goes to the pool instead of staying with whoever last held it. Leads that simply never answered are never moved."
+    },
+    "save": {
+        "saving": "جارٍ الحفظ…",
+        "save": "حفظ إعدادات الاتصال بالذكاء الاصطناعي"
+    },
+    "carrierStrip": {
+        "readyLine": "تُجرى مكالمات الذكاء الاصطناعي عبر {{line}}{{callerIdSuffix}}.",
+        "dedicatedLine": "خط Vacademy Voice مخصص",
+        "providerLine": "حساب {{provider}} الخاص بك",
+        "defaultProviderWord": "الاتصال",
+        "notReadyFallback": "لا يمكن إجراء مكالمات الذكاء الاصطناعي بعد.",
+        "manageLink": "إدارة خط الاتصال بالذكاء الاصطناعي"
+    },
+    "apiCard": {
+        "title": "واجهة API وخطافات الويب",
+        "description": "دع نظام CRM أو موقعك أو أداة الأتمتة لديك تبدأ مكالمات الذكاء الاصطناعي وتستلم نتيجة كل مكالمة. يرسل خادمك مفتاحًا مع كل طلب، ونرسل النتيجة إلى خطاف الويب عند انتهاء المكالمة.",
+        "docs": "توثيق واجهة API",
+        "copy": "نسخ",
+        "copied": "تم النسخ",
+        "copiedShort": "تم النسخ",
+        "copyFailed": "تعذّر النسخ. حدّد النص وانسخه.",
+        "loading": "جارٍ التحميل…",
+        "retry": "إعادة المحاولة",
+        "cancel": "إلغاء",
+        "done": "تم",
+        "keys": {
+            "title": "مفاتيح API",
+            "description": "احتفظ بالمفاتيح على خادمك. لا تضعها أبدًا في صفحة ويب أو تطبيق جوال.",
+            "create": "إنشاء مفتاح",
+            "empty": "لا توجد مفاتيح بعد.",
+            "loadError": "تعذّر تحميل مفاتيحك.",
+            "name": "الاسم",
+            "prefix": "المفتاح",
+            "lastUsed": "آخر استخدام",
+            "status": "الحالة",
+            "neverUsed": "أبدًا",
+            "expires": "ينتهي في {{date}}",
+            "statusActive": "نشط",
+            "statusExpired": "منتهي",
+            "statusRevoked": "ملغى",
+            "revoke": "إلغاء",
+            "revoked": "تم إلغاء المفتاح",
+            "revokeFailed": "تعذّر إلغاء المفتاح.",
+            "revokeTitle": "إلغاء هذا المفتاح؟",
+            "revokeDescription": "تتوقف الطلبات التي تستخدم \"{{name}}\" فورًا. المكالمات الموجودة في قائمة الانتظار تتم كما هي.",
+            "formHeading": "إنشاء مفتاح API للمكالمات الذكية",
+            "nameLabel": "الاسم",
+            "namePlaceholder": "مثال: نظام CRM لدينا",
+            "expiryLabel": "تاريخ الانتهاء (اختياري)",
+            "formHint": "اترك التاريخ فارغًا لمفتاح لا ينتهي.",
+            "submit": "إنشاء المفتاح",
+            "issueFailed": "تعذّر إنشاء المفتاح.",
+            "issuedHeading": "انسخ مفتاحك الآن",
+            "issuedWarning": "يُعرض المفتاح هذه المرة فقط. انسخه واحفظه على خادمك.",
+            "issuedUsage": "ابدأ مكالمة من خادمك:",
+            "errors": {
+                "nameRequired": "أدخل اسمًا.",
+                "nameTooLong": "اجعل الاسم أقل من 120 حرفًا.",
+                "expiryInvalid": "اختر تاريخًا صالحًا.",
+                "expiryInPast": "اختر تاريخًا بعد اليوم.",
+                "generic": "راجع النموذج وحاول مرة أخرى."
+            },
+            "notCopiedWarning": "لم تنسخ المفتاح. أغلق مرة أخرى للتخلي عنه؛ لا يمكن عرضه مرة أخرى.",
+            "humanCallsLabel": "يمكنها الاتصال بالمستشارين (مكالمات بشرية)",
+            "humanCallsHint": "تتيح لهذا المفتاح عرض أسماء مستشاريك وبريدهم الإلكتروني وربطهم بجهات الاتصال هاتفيًا (human_calls:read وhuman_calls:write). لا يمكن تعديل المفتاح لاحقًا.",
+            "humanCallsBadge": "مكالمات بشرية",
+            "manageCounsellorsLabel": "يمكنها إدارة المستشارين",
+            "manageCounsellorsHint": "تتيح لهذا المفتاح إضافة مستشارين (يحصل كل منهم على تسجيل دخول إلى لوحة التحكم وبريد ترحيبي)، وتعديل الاسم ورقم الجوال وامتداد Airtel، وإلغاء تفعيلهم (counsellors:manage). لا يغيّر المسؤولين أو بقية الموظفين أبدًا. لا يمكن تعديل المفتاح لاحقًا.",
+            "manageCounsellorsBadge": "يدير المستشارين",
+            "manageAgentsLabel": "يمكنها إدارة وكلاء الذكاء الاصطناعي",
+            "manageAgentsHint": "تتيح لهذا المفتاح إنشاء وكلاء الذكاء الاصطناعي وتعديلهم وتشغيلهم أو إيقافهم وحذفهم، واختيار الوكيل الافتراضي والوكيل الذي يرد على الرقم الوارد (agents:manage). لا يمكن تعديل المفتاح لاحقًا.",
+            "manageAgentsBadge": "يدير وكلاء الذكاء الاصطناعي"
+        },
+        "agents": {
+            "title": "معرّفات الوكلاء",
+            "description": "أرسل أحدها في agent_id لاختيار وكيل الذكاء الاصطناعي الذي يجري المكالمة.",
+            "empty": "لا يوجد وكلاء للمكالمات الصادرة بعد. أنشئ واحدًا في الأعلى.",
+            "disabled": "(متوقف)"
+        },
+        "webhook": {
+            "title": "خطاف الويب",
+            "description": "عند انتهاء المكالمة نرسل call.completed أو call.not_connected إلى عنوان HTTPS هذا، موقّعًا بسر خطاف الويب. تُعاد محاولة التسليم الفاشل لمدة 9 ساعات تقريبًا.",
+            "urlLabel": "عنوان URL لنقطة الاستقبال",
+            "save": "حفظ",
+            "urlRequired": "أدخل عنوان نقطة الاستقبال.",
+            "urlHttps": "استخدم عنوان https:// كاملًا.",
+            "saved": "تم حفظ خطاف الويب",
+            "saveFailed": "تعذّر حفظ خطاف الويب.",
+            "loadError": "تعذّر تحميل خطاف الويب.",
+            "secretHint": "سر التوقيع:",
+            "events": "الأحداث: {{events}}",
+            "test": "إرسال حدث تجريبي",
+            "testOk": "ردّت نقطة الاستقبال بـ {{code}}.",
+            "testFailed": "لم يُقبل الحدث التجريبي: {{reason}}",
+            "testError": "تعذّر إرسال الحدث التجريبي.",
+            "rotate": "سر جديد",
+            "rotateFailed": "تعذّر إنشاء سر جديد.",
+            "remove": "إزالة",
+            "removed": "تمت إزالة خطاف الويب",
+            "removeFailed": "تعذّرت إزالة خطاف الويب.",
+            "removeTitle": "إزالة خطاف الويب؟",
+            "removeDescription": "لن تُرسل نتائج المكالمات إلى نقطة الاستقبال بعد الآن. يمكن لخادمك جلبها عبر GET /v1/calls/{id}.",
+            "secretHeading": "انسخ سر خطاف الويب",
+            "secretWarning": "يُعرض السر هذه المرة فقط. يستخدمه خادمك للتحقق من ترويسة Telleo-Signature في كل تسليم.",
+            "secretLabel": "سر خطاف الويب",
+            "rotateTitle": "إنشاء سر توقيع جديد؟",
+            "rotateDescription": "كل تسليم من الآن فصاعدًا يُوقَّع بالسر الجديد. إلى أن يستخدمه خادمك ستفشل عمليات التحقق من التوقيع وستُعاد محاولة الأحداث. حدّث خادمك فور نسخ السر الجديد."
+        }
+    },
+    "header": {
+        "title": "AI Calling Settings",
+        "description": "AI-first calling: who the AI calls, from which line, how often it retries, and what happens after each outcome.",
+        "unsaved": "Unsaved changes",
+        "aiAgents": "AI Agents",
+        "disabledBanner": "AI calling is off. Switch it on in the AI calling tab to set up retries, outcomes and assignment."
+    },
+    "tabs": {
+        "general": "AI calling",
+        "agents": "Agents & campaigns",
+        "retries": "Retries & shifts",
+        "outcomes": "Outcome → action",
+        "assignment": "Assignment"
+    }
+}

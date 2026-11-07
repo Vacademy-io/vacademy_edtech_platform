@@ -1,0 +1,15 @@
+{
+    "heading": {
+        "uploadResponse": "Upload Response",
+        "previewData": "Preview Data"
+    },
+    "buttons": {
+        "close": "Close",
+        "done": "Done"
+    },
+    "error": {
+        "uploadFailed": "Upload failed",
+        "checkDetails": "Check the error details for more information",
+        "unknownError": "Unknown error"
+    }
+}

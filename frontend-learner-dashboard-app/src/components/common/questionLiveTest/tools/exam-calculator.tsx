@@ -1,4 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
+import type { TFunction } from "i18next";
 import { Calculator as CalculatorIcon } from "@phosphor-icons/react";
 import { cn } from "@/lib/utils";
 import { ToolPanel } from "./tool-panel";
@@ -32,74 +34,74 @@ interface CalculatorKey {
   ariaLabel?: string;
 }
 
-const BASIC_KEYS: CalculatorKey[] = [
-  { label: "C", action: "clear", tone: "danger", ariaLabel: "Clear" },
-  { label: "⌫", action: "backspace", tone: "operator", ariaLabel: "Backspace" },
-  { label: "%", insert: "%", tone: "operator", ariaLabel: "Percent" },
-  { label: "÷", insert: "÷", tone: "operator", ariaLabel: "Divide" },
+const getBasicKeys = (t: TFunction): CalculatorKey[] => [
+  { label: "C", action: "clear", tone: "danger", ariaLabel: t("calculator.keys.clear") },
+  { label: "⌫", action: "backspace", tone: "operator", ariaLabel: t("calculator.keys.backspace") },
+  { label: "%", insert: "%", tone: "operator", ariaLabel: t("calculator.keys.percent") },
+  { label: "÷", insert: "÷", tone: "operator", ariaLabel: t("calculator.keys.divide") },
 
   { label: "7", insert: "7", tone: "digit" },
   { label: "8", insert: "8", tone: "digit" },
   { label: "9", insert: "9", tone: "digit" },
-  { label: "×", insert: "×", tone: "operator", ariaLabel: "Multiply" },
+  { label: "×", insert: "×", tone: "operator", ariaLabel: t("calculator.keys.multiply") },
 
   { label: "4", insert: "4", tone: "digit" },
   { label: "5", insert: "5", tone: "digit" },
   { label: "6", insert: "6", tone: "digit" },
-  { label: "−", insert: "−", tone: "operator", ariaLabel: "Minus" },
+  { label: "−", insert: "−", tone: "operator", ariaLabel: t("calculator.keys.minus") },
 
   { label: "1", insert: "1", tone: "digit" },
   { label: "2", insert: "2", tone: "digit" },
   { label: "3", insert: "3", tone: "digit" },
-  { label: "+", insert: "+", tone: "operator", ariaLabel: "Plus" },
+  { label: "+", insert: "+", tone: "operator", ariaLabel: t("calculator.keys.plus") },
 
   { label: "0", insert: "0", tone: "digit", wide: true },
-  { label: ".", insert: ".", tone: "digit", ariaLabel: "Decimal point" },
-  { label: "=", action: "equals", tone: "equals", ariaLabel: "Equals" },
+  { label: ".", insert: ".", tone: "digit", ariaLabel: t("calculator.keys.decimalPoint") },
+  { label: "=", action: "equals", tone: "equals", ariaLabel: t("calculator.keys.equals") },
 ];
 
-const SCIENTIFIC_KEYS: CalculatorKey[] = [
-  { label: "2nd", action: "shift", tone: "function", ariaLabel: "Second function" },
-  { label: "DEG", action: "angle", tone: "function", ariaLabel: "Toggle degrees or radians" },
-  { label: "C", action: "clear", tone: "danger", ariaLabel: "Clear" },
-  { label: "⌫", action: "backspace", tone: "operator", ariaLabel: "Backspace" },
-  { label: "÷", insert: "÷", tone: "operator", ariaLabel: "Divide" },
+const getScientificKeys = (t: TFunction): CalculatorKey[] => [
+  { label: "2nd", action: "shift", tone: "function", ariaLabel: t("calculator.keys.secondFunction") },
+  { label: "DEG", action: "angle", tone: "function", ariaLabel: t("calculator.keys.toggleAngleUnit") },
+  { label: "C", action: "clear", tone: "danger", ariaLabel: t("calculator.keys.clear") },
+  { label: "⌫", action: "backspace", tone: "operator", ariaLabel: t("calculator.keys.backspace") },
+  { label: "÷", insert: "÷", tone: "operator", ariaLabel: t("calculator.keys.divide") },
 
   { label: "sin", shiftLabel: "sin⁻¹", insert: "sin(", shiftInsert: "asin(", tone: "function" },
   { label: "cos", shiftLabel: "cos⁻¹", insert: "cos(", shiftInsert: "acos(", tone: "function" },
   { label: "tan", shiftLabel: "tan⁻¹", insert: "tan(", shiftInsert: "atan(", tone: "function" },
-  { label: "(", insert: "(", tone: "operator", ariaLabel: "Open bracket" },
-  { label: ")", insert: ")", tone: "operator", ariaLabel: "Close bracket" },
+  { label: "(", insert: "(", tone: "operator", ariaLabel: t("calculator.keys.openBracket") },
+  { label: ")", insert: ")", tone: "operator", ariaLabel: t("calculator.keys.closeBracket") },
 
   { label: "ln", shiftLabel: "eˣ", insert: "ln(", shiftInsert: "exp(", tone: "function" },
   { label: "log", shiftLabel: "10ˣ", insert: "log(", shiftInsert: "10^(", tone: "function" },
-  { label: "√", shiftLabel: "∛", insert: "√(", shiftInsert: "∛(", tone: "function", ariaLabel: "Square root" },
-  { label: "x²", shiftLabel: "x³", insert: "²", shiftInsert: "³", tone: "function", ariaLabel: "Square" },
-  { label: "×", insert: "×", tone: "operator", ariaLabel: "Multiply" },
+  { label: "√", shiftLabel: "∛", insert: "√(", shiftInsert: "∛(", tone: "function", ariaLabel: t("calculator.keys.squareRoot") },
+  { label: "x²", shiftLabel: "x³", insert: "²", shiftInsert: "³", tone: "function", ariaLabel: t("calculator.keys.square") },
+  { label: "×", insert: "×", tone: "operator", ariaLabel: t("calculator.keys.multiply") },
 
   { label: "7", insert: "7", tone: "digit" },
   { label: "8", insert: "8", tone: "digit" },
   { label: "9", insert: "9", tone: "digit" },
-  { label: "xʸ", insert: "^", tone: "function", ariaLabel: "Power" },
-  { label: "−", insert: "−", tone: "operator", ariaLabel: "Minus" },
+  { label: "xʸ", insert: "^", tone: "function", ariaLabel: t("calculator.keys.power") },
+  { label: "−", insert: "−", tone: "operator", ariaLabel: t("calculator.keys.minus") },
 
   { label: "4", insert: "4", tone: "digit" },
   { label: "5", insert: "5", tone: "digit" },
   { label: "6", insert: "6", tone: "digit" },
-  { label: "π", insert: "π", tone: "function", ariaLabel: "Pi" },
-  { label: "+", insert: "+", tone: "operator", ariaLabel: "Plus" },
+  { label: "π", insert: "π", tone: "function", ariaLabel: t("calculator.keys.pi") },
+  { label: "+", insert: "+", tone: "operator", ariaLabel: t("calculator.keys.plus") },
 
   { label: "1", insert: "1", tone: "digit" },
   { label: "2", insert: "2", tone: "digit" },
   { label: "3", insert: "3", tone: "digit" },
-  { label: "e", insert: "e", tone: "function", ariaLabel: "Euler's number" },
-  { label: "%", shiftLabel: "|x|", insert: "%", shiftInsert: "abs(", tone: "operator", ariaLabel: "Percent" },
+  { label: "e", insert: "e", tone: "function", ariaLabel: t("calculator.keys.eulersNumber") },
+  { label: "%", shiftLabel: "|x|", insert: "%", shiftInsert: "abs(", tone: "operator", ariaLabel: t("calculator.keys.percent") },
 
   { label: "0", insert: "0", tone: "digit" },
-  { label: ".", insert: ".", tone: "digit", ariaLabel: "Decimal point" },
-  { label: "±", action: "sign", tone: "digit", ariaLabel: "Toggle sign" },
-  { label: "n!", shiftLabel: "1/x", insert: "!", shiftInsert: "1÷(", tone: "function", ariaLabel: "Factorial" },
-  { label: "=", action: "equals", tone: "equals", ariaLabel: "Equals" },
+  { label: ".", insert: ".", tone: "digit", ariaLabel: t("calculator.keys.decimalPoint") },
+  { label: "±", action: "sign", tone: "digit", ariaLabel: t("calculator.keys.toggleSign") },
+  { label: "n!", shiftLabel: "1/x", insert: "!", shiftInsert: "1÷(", tone: "function", ariaLabel: t("calculator.keys.factorial") },
+  { label: "=", action: "equals", tone: "equals", ariaLabel: t("calculator.keys.equals") },
 ];
 
 const TONE_CLASS: Record<KeyTone, string> = {
@@ -120,6 +122,7 @@ const KEYBOARD_INSERTS: Record<string, string> = {
 };
 
 export function ExamCalculator({ mode, onClose }: ExamCalculatorProps) {
+  const { t } = useTranslation("questionTest");
   const [expression, setExpression] = useState("");
   const [result, setResult] = useState("0");
   const [error, setError] = useState<string | null>(null);
@@ -128,7 +131,7 @@ export function ExamCalculator({ mode, onClose }: ExamCalculatorProps) {
   const containerRef = useRef<HTMLDivElement>(null);
 
   const isScientific = mode === "scientific";
-  const keys = isScientific ? SCIENTIFIC_KEYS : BASIC_KEYS;
+  const keys = isScientific ? getScientificKeys(t) : getBasicKeys(t);
 
   // Live preview while typing. A half-finished expression is the normal state,
   // so a parse failure here is silence — never a red error.
@@ -160,7 +163,9 @@ export function ExamCalculator({ mode, onClose }: ExamCalculatorProps) {
       setExpression(value);
       setError(null);
     } catch (err) {
-      setError(err instanceof CalculatorError ? err.message : "Error");
+      setError(
+        err instanceof CalculatorError ? err.message : t("calculator.genericError"),
+      );
     }
   };
 
@@ -235,7 +240,7 @@ export function ExamCalculator({ mode, onClose }: ExamCalculatorProps) {
 
   return (
     <ToolPanel
-      title="Calculator"
+      title={t("common.tools.calculator")}
       icon={<CalculatorIcon size={15} weight="duotone" />}
       onClose={onClose}
       className={isScientific ? "w-full max-w-reg-320" : "w-full max-w-reg-250"}

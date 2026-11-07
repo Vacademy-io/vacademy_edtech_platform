@@ -13,6 +13,7 @@ import 'react-quill/dist/quill.snow.css';
 import { PPTViewQuillEditor } from '@/components/quill/PPTViewQuillEditor';
 import { QuestionPaperTemplateFormProps } from '../../../-utils/question-paper-template-form';
 import { formatStructure } from '../../../-utils/helper';
+import { useTranslation } from 'react-i18next';
 
 export const ComprehensiveMultipleCorrectQuestionPaperTemplatePPTView = ({
     form,
@@ -20,6 +21,7 @@ export const ComprehensiveMultipleCorrectQuestionPaperTemplatePPTView = ({
     setCurrentQuestionIndex,
     className,
 }: QuestionPaperTemplateFormProps) => {
+    const { t } = useTranslation('assessmentComprehensiveMultipleCorrectPPTQP');
     const { control, getValues, setValue } = form;
 
     const [isDropdownVisible, setIsDropdownVisible] = useState(false); // State to track dropdown visibility
@@ -28,6 +30,10 @@ export const ComprehensiveMultipleCorrectQuestionPaperTemplatePPTView = ({
     const optionsType = getValues('optionsType') || '';
     const allQuestions = getValues('questions') || [];
 
+    // Only the options a question actually has are rendered. A FormField on
+    // `.N.isSelected` registers that path, and for a question with fewer than
+    // four options RHF then adds a phantom option with no text, which the
+    // paper save rejected (e.g. an extracted question whose options were images).
     const option1 = getValues(`questions.${currentQuestionIndex}.cmultipleChoiceOptions.${0}`);
     const option2 = getValues(`questions.${currentQuestionIndex}.cmultipleChoiceOptions.${1}`);
     const option3 = getValues(`questions.${currentQuestionIndex}.cmultipleChoiceOptions.${2}`);
@@ -80,148 +86,164 @@ export const ComprehensiveMultipleCorrectQuestionPaperTemplatePPTView = ({
 
             <div className="flex w-full grow flex-col gap-2">
                 <div className="flex gap-2">
-                    <div
-                        className={`flex w-1/2 items-center justify-between gap-4 rounded-md bg-neutral-100 p-2 ${
-                            option1?.isSelected ? 'border border-primary-300 bg-primary-50' : ''
-                        }`}
-                    >
-                        <div className="flex w-full items-center gap-4">
-                            <div className="flex size-10 items-center justify-center rounded-full bg-white px-3">
-                                <span className="!p-0 text-sm">
-                                    {optionsType ? formatStructure(optionsType, 'a') : '(a.)'}
-                                </span>
+                    {option1 && (
+                        <div
+                            className={`flex w-1/2 items-center justify-between gap-4 rounded-md bg-neutral-100 p-2 ${
+                                option1?.isSelected ? 'border border-primary-300 bg-primary-50' : ''
+                            }`}
+                        >
+                            <div className="flex w-full items-center gap-4">
+                                <div className="flex size-10 items-center justify-center rounded-full bg-white px-3">
+                                    <span className="!p-0 text-sm">
+                                        {optionsType
+                                            ? formatStructure(optionsType, 'a')
+                                            : t('optionLabelFallback', { letter: 'a' })}
+                                    </span>
+                                </div>
+                            </div>
+                            <div className="flex size-10 items-center justify-center rounded-full bg-white px-4">
+                                <FormField
+                                    control={control}
+                                    name={`questions.${currentQuestionIndex}.cmultipleChoiceOptions.${0}.isSelected`}
+                                    render={({ field }) => (
+                                        <FormItem>
+                                            <FormControl>
+                                                <Checkbox
+                                                    checked={field.value}
+                                                    onCheckedChange={field.onChange}
+                                                    className={`mt-1 size-5 border-2 shadow-none ${
+                                                        field.value
+                                                            ? 'border-none bg-green-500 text-white' // Blue background and red tick when checked
+                                                            : '' // Default styles when unchecked
+                                                    }`}
+                                                />
+                                            </FormControl>
+                                            <FormMessage />
+                                        </FormItem>
+                                    )}
+                                />
                             </div>
                         </div>
-                        <div className="flex size-10 items-center justify-center rounded-full bg-white px-4">
-                            <FormField
-                                control={control}
-                                name={`questions.${currentQuestionIndex}.cmultipleChoiceOptions.${0}.isSelected`}
-                                render={({ field }) => (
-                                    <FormItem>
-                                        <FormControl>
-                                            <Checkbox
-                                                checked={field.value}
-                                                onCheckedChange={field.onChange}
-                                                className={`mt-1 size-5 border-2 shadow-none ${
-                                                    field.value
-                                                        ? 'border-none bg-green-500 text-white' // Blue background and red tick when checked
-                                                        : '' // Default styles when unchecked
-                                                }`}
-                                            />
-                                        </FormControl>
-                                        <FormMessage />
-                                    </FormItem>
-                                )}
-                            />
-                        </div>
-                    </div>
-                    <div
-                        className={`flex w-1/2 items-center justify-between gap-4 rounded-md bg-neutral-100 p-2 ${
-                            option2?.isSelected ? 'border border-primary-300 bg-primary-50' : ''
-                        }`}
-                    >
-                        <div className="flex w-full items-center gap-4">
-                            <div className="flex size-10 items-center justify-center rounded-full bg-white px-3">
-                                <span className="!p-0 text-sm">
-                                    {optionsType ? formatStructure(optionsType, 'b') : '(b.)'}
-                                </span>
+                    )}
+                    {option2 && (
+                        <div
+                            className={`flex w-1/2 items-center justify-between gap-4 rounded-md bg-neutral-100 p-2 ${
+                                option2?.isSelected ? 'border border-primary-300 bg-primary-50' : ''
+                            }`}
+                        >
+                            <div className="flex w-full items-center gap-4">
+                                <div className="flex size-10 items-center justify-center rounded-full bg-white px-3">
+                                    <span className="!p-0 text-sm">
+                                        {optionsType
+                                            ? formatStructure(optionsType, 'b')
+                                            : t('optionLabelFallback', { letter: 'b' })}
+                                    </span>
+                                </div>
+                            </div>
+                            <div className="flex size-10 items-center justify-center rounded-full bg-white px-4">
+                                <FormField
+                                    control={control}
+                                    name={`questions.${currentQuestionIndex}.cmultipleChoiceOptions.${1}.isSelected`}
+                                    render={({ field }) => (
+                                        <FormItem>
+                                            <FormControl>
+                                                <Checkbox
+                                                    checked={field.value}
+                                                    onCheckedChange={field.onChange}
+                                                    className={`mt-1 size-5 border-2 shadow-none ${
+                                                        field.value
+                                                            ? 'border-none bg-green-500 text-white' // Blue background and red tick when checked
+                                                            : '' // Default styles when unchecked
+                                                    }`}
+                                                />
+                                            </FormControl>
+                                            <FormMessage />
+                                        </FormItem>
+                                    )}
+                                />
                             </div>
                         </div>
-                        <div className="flex size-10 items-center justify-center rounded-full bg-white px-4">
-                            <FormField
-                                control={control}
-                                name={`questions.${currentQuestionIndex}.cmultipleChoiceOptions.${1}.isSelected`}
-                                render={({ field }) => (
-                                    <FormItem>
-                                        <FormControl>
-                                            <Checkbox
-                                                checked={field.value}
-                                                onCheckedChange={field.onChange}
-                                                className={`mt-1 size-5 border-2 shadow-none ${
-                                                    field.value
-                                                        ? 'border-none bg-green-500 text-white' // Blue background and red tick when checked
-                                                        : '' // Default styles when unchecked
-                                                }`}
-                                            />
-                                        </FormControl>
-                                        <FormMessage />
-                                    </FormItem>
-                                )}
-                            />
-                        </div>
-                    </div>
+                    )}
                 </div>
                 <div className="flex gap-2">
-                    <div
-                        className={`flex w-1/2 items-center justify-between gap-4 rounded-md bg-neutral-100 p-2 ${
-                            option3?.isSelected ? 'border border-primary-300 bg-primary-50' : ''
-                        }`}
-                    >
-                        <div className="flex w-full items-center gap-4">
-                            <div className="flex size-10 items-center justify-center rounded-full bg-white px-3">
-                                <span className="!p-0 text-sm">
-                                    {optionsType ? formatStructure(optionsType, 'c') : '(c.)'}
-                                </span>
+                    {option3 && (
+                        <div
+                            className={`flex w-1/2 items-center justify-between gap-4 rounded-md bg-neutral-100 p-2 ${
+                                option3?.isSelected ? 'border border-primary-300 bg-primary-50' : ''
+                            }`}
+                        >
+                            <div className="flex w-full items-center gap-4">
+                                <div className="flex size-10 items-center justify-center rounded-full bg-white px-3">
+                                    <span className="!p-0 text-sm">
+                                        {optionsType
+                                            ? formatStructure(optionsType, 'c')
+                                            : t('optionLabelFallback', { letter: 'c' })}
+                                    </span>
+                                </div>
+                            </div>
+                            <div className="flex size-10 items-center justify-center rounded-full bg-white px-4">
+                                <FormField
+                                    control={control}
+                                    name={`questions.${currentQuestionIndex}.cmultipleChoiceOptions.${2}.isSelected`}
+                                    render={({ field }) => (
+                                        <FormItem>
+                                            <FormControl>
+                                                <Checkbox
+                                                    checked={field.value}
+                                                    onCheckedChange={field.onChange}
+                                                    className={`mt-1 size-5 border-2 shadow-none ${
+                                                        field.value
+                                                            ? 'border-none bg-green-500 text-white' // Blue background and red tick when checked
+                                                            : '' // Default styles when unchecked
+                                                    }`}
+                                                />
+                                            </FormControl>
+                                            <FormMessage />
+                                        </FormItem>
+                                    )}
+                                />
                             </div>
                         </div>
-                        <div className="flex size-10 items-center justify-center rounded-full bg-white px-4">
-                            <FormField
-                                control={control}
-                                name={`questions.${currentQuestionIndex}.cmultipleChoiceOptions.${2}.isSelected`}
-                                render={({ field }) => (
-                                    <FormItem>
-                                        <FormControl>
-                                            <Checkbox
-                                                checked={field.value}
-                                                onCheckedChange={field.onChange}
-                                                className={`mt-1 size-5 border-2 shadow-none ${
-                                                    field.value
-                                                        ? 'border-none bg-green-500 text-white' // Blue background and red tick when checked
-                                                        : '' // Default styles when unchecked
-                                                }`}
-                                            />
-                                        </FormControl>
-                                        <FormMessage />
-                                    </FormItem>
-                                )}
-                            />
-                        </div>
-                    </div>
-                    <div
-                        className={`flex w-1/2 items-center justify-between gap-4 rounded-md bg-neutral-100 p-2 ${
-                            option4?.isSelected ? 'border border-primary-300 bg-primary-50' : ''
-                        }`}
-                    >
-                        <div className="flex w-full items-center gap-4">
-                            <div className="flex size-10 items-center justify-center rounded-full bg-white px-3">
-                                <span className="!p-0 text-sm">
-                                    {optionsType ? formatStructure(optionsType, 'd') : '(d.)'}
-                                </span>
+                    )}
+                    {option4 && (
+                        <div
+                            className={`flex w-1/2 items-center justify-between gap-4 rounded-md bg-neutral-100 p-2 ${
+                                option4?.isSelected ? 'border border-primary-300 bg-primary-50' : ''
+                            }`}
+                        >
+                            <div className="flex w-full items-center gap-4">
+                                <div className="flex size-10 items-center justify-center rounded-full bg-white px-3">
+                                    <span className="!p-0 text-sm">
+                                        {optionsType
+                                            ? formatStructure(optionsType, 'd')
+                                            : t('optionLabelFallback', { letter: 'd' })}
+                                    </span>
+                                </div>
+                            </div>
+                            <div className="flex size-10 items-center justify-center rounded-full bg-white px-4">
+                                <FormField
+                                    control={control}
+                                    name={`questions.${currentQuestionIndex}.cmultipleChoiceOptions.${3}.isSelected`}
+                                    render={({ field }) => (
+                                        <FormItem>
+                                            <FormControl>
+                                                <Checkbox
+                                                    checked={field.value}
+                                                    onCheckedChange={field.onChange}
+                                                    className={`mt-1 size-5 border-2 shadow-none ${
+                                                        field.value
+                                                            ? 'border-none bg-green-500 text-white' // Blue background and red tick when checked
+                                                            : '' // Default styles when unchecked
+                                                    }`}
+                                                />
+                                            </FormControl>
+                                            <FormMessage />
+                                        </FormItem>
+                                    )}
+                                />
                             </div>
                         </div>
-                        <div className="flex size-10 items-center justify-center rounded-full bg-white px-4">
-                            <FormField
-                                control={control}
-                                name={`questions.${currentQuestionIndex}.cmultipleChoiceOptions.${3}.isSelected`}
-                                render={({ field }) => (
-                                    <FormItem>
-                                        <FormControl>
-                                            <Checkbox
-                                                checked={field.value}
-                                                onCheckedChange={field.onChange}
-                                                className={`mt-1 size-5 border-2 shadow-none ${
-                                                    field.value
-                                                        ? 'border-none bg-green-500 text-white' // Blue background and red tick when checked
-                                                        : '' // Default styles when unchecked
-                                                }`}
-                                            />
-                                        </FormControl>
-                                        <FormMessage />
-                                    </FormItem>
-                                )}
-                            />
-                        </div>
-                    </div>
+                    )}
                 </div>
             </div>
 
@@ -244,10 +266,10 @@ export const ComprehensiveMultipleCorrectQuestionPaperTemplatePPTView = ({
                         </DropdownMenuTrigger>
                         <DropdownMenuContent className="mt-1">
                             <DropdownMenuItem onClick={handleDuplicateSlide}>
-                                Duplicate Slide
+                                {t('duplicateSlide')}
                             </DropdownMenuItem>
                             <DropdownMenuItem onClick={handleDeleteSlide}>
-                                Delete Slide
+                                {t('deleteSlide')}
                             </DropdownMenuItem>
                         </DropdownMenuContent>
                     </DropdownMenu>

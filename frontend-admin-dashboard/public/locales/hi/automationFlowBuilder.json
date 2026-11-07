@@ -1,0 +1,28 @@
+{
+    "channelSelect": {
+        "metaDirect": "मेटा डायरेक्ट",
+        "allProviders": "सभी प्रदाता"
+    },
+    "settingsButton": {
+        "title": "फ़्लो सेटिंग्स — जिसमें यह भी शामिल है कि बॉट हैंडओवर करने पर किसे सूचित किया जाए",
+        "label": "सेटिंग्स"
+    },
+    "saveButton": {
+        "saving": "सहेजा जा रहा है...",
+        "dirty": "सहेजें *",
+        "default": "सहेजें"
+    },
+    "activateButton": {
+        "deactivate": "निष्क्रिय करें",
+        "activate": "सक्रिय करें"
+    },
+    "toast": {
+        "saveSuccess": "फ़्लो सफलतापूर्वक सहेजा गया",
+        "activeSaveBlocked": "सक्रिय फ़्लो को सहेजा नहीं जा सकता। पहले इसे निष्क्रिय करें, फिर सहेजें।",
+        "saveFailed": "फ़्लो सहेजने में विफल",
+        "saveFlowFirst": "पहले फ़्लो सहेजें",
+        "deactivated": "फ़्लो निष्क्रिय किया गया",
+        "activated": "फ़्लो सक्रिय किया गया",
+        "validationFailed": "सत्यापन विफल रहा"
+    }
+}

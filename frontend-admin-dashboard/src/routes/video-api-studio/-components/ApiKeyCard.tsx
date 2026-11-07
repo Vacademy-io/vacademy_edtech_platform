@@ -1,8 +1,9 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Copy, Eye, EyeOff, Trash2, Check } from 'lucide-react';
+import { Copy, Eye, EyeSlash, Trash, Check } from '@phosphor-icons/react';
 import { ApiKey } from '../-services/api-keys';
 import {
     AlertDialog,
@@ -23,6 +24,7 @@ interface ApiKeyCardProps {
 }
 
 export function ApiKeyCard({ apiKey, onRevoke, isRevoking }: ApiKeyCardProps) {
+    const { t } = useTranslation('videoApiStudioApiKeyCard');
     const [showKey, setShowKey] = useState(false);
     const [copied, setCopied] = useState(false);
 
@@ -62,7 +64,9 @@ export function ApiKeyCard({ apiKey, onRevoke, isRevoking }: ApiKeyCardProps) {
                                         : ''
                                 }
                             >
-                                {apiKey.status}
+                                {apiKey.status === 'active'
+                                    ? t('status.active')
+                                    : t('status.revoked')}
                             </Badge>
                         </div>
                         <div className="flex items-center gap-2 mb-2">
@@ -76,7 +80,7 @@ export function ApiKeyCard({ apiKey, onRevoke, isRevoking }: ApiKeyCardProps) {
                                 onClick={() => setShowKey(!showKey)}
                             >
                                 {showKey ? (
-                                    <EyeOff className="h-4 w-4" />
+                                    <EyeSlash className="h-4 w-4" />
                                 ) : (
                                     <Eye className="h-4 w-4" />
                                 )}
@@ -95,7 +99,7 @@ export function ApiKeyCard({ apiKey, onRevoke, isRevoking }: ApiKeyCardProps) {
                             </Button>
                         </div>
                         <p className="text-xs text-muted-foreground">
-                            Created: {formatDate(apiKey.created_at)}
+                            {t('created', { date: formatDate(apiKey.created_at) })}
                         </p>
                     </div>
                     <AlertDialog>
@@ -106,25 +110,23 @@ export function ApiKeyCard({ apiKey, onRevoke, isRevoking }: ApiKeyCardProps) {
                                 className="text-destructive hover:text-destructive hover:bg-destructive/10"
                                 disabled={isRevoking || apiKey.status !== 'active'}
                             >
-                                <Trash2 className="h-4 w-4" />
+                                <Trash className="h-4 w-4" />
                             </Button>
                         </AlertDialogTrigger>
                         <AlertDialogContent>
                             <AlertDialogHeader>
-                                <AlertDialogTitle>Revoke API Key</AlertDialogTitle>
+                                <AlertDialogTitle>{t('revokeDialog.title')}</AlertDialogTitle>
                                 <AlertDialogDescription>
-                                    Are you sure you want to revoke &quot;{apiKey.name}&quot;? This
-                                    action cannot be undone and any applications using this key will
-                                    stop working.
+                                    {t('revokeDialog.description', { name: apiKey.name })}
                                 </AlertDialogDescription>
                             </AlertDialogHeader>
                             <AlertDialogFooter>
-                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                <AlertDialogCancel>{t('revokeDialog.cancel')}</AlertDialogCancel>
                                 <AlertDialogAction
                                     onClick={() => onRevoke(apiKey.id)}
                                     className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                                 >
-                                    Revoke Key
+                                    {t('revokeDialog.confirm')}
                                 </AlertDialogAction>
                             </AlertDialogFooter>
                         </AlertDialogContent>

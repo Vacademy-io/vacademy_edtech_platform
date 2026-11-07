@@ -1,0 +1,64 @@
+# One-off experiments against the real pipecat classes. NEVER on the Mumbai
+# box: it is 1 vCPU / 1.9 GB and the live service alone reaches 1.5 GB RSS —
+# running a repro there OOM-killed production on 2026-09-21 (and pegged the
+# CPU on 2026-09-17). This runs a probe file from voice_bot_service/probes/
+# on a GitHub runner and never builds or deploys anything.
+name: Voice Bot Probe
+
+on:
+  workflow_dispatch:
+    inputs:
+      probe:
+        description: "pytest target under voice_bot_service (e.g. probes/test_lost_speak_frame.py)"
+        required: true
+        default: "probes/"
+      pytest_args:
+        description: "extra pytest args"
+        required: false
+        default: "-s -q"
+      command:
+        description: "instead of pytest: a shell command run inside voice_bot_service (e.g. python -m sim.timing --scenarios backchannel_mid_reply --verbose --app-log)"
+        required: false
+        default: ""
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    environment: voice-bot          # VERTEX_CREDENTIALS_JSON (see the deploy workflow)
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Run the probe
+        env:
+          VERTEX_CREDENTIALS_JSON: ${{ secrets.VERTEX_CREDENTIALS_JSON }}
+          VERTEX_PROJECT_ID: vacademy-app
+          VERTEX_LOCATION: asia-south1
+          LLM_PROVIDER: vertex
+        run: |
+          cd voice_bot_service
+          pip install -q -r requirements.txt pytest pytest-asyncio
+          if [ -n "${{ github.event.inputs.command }}" ]; then
+            ${{ github.event.inputs.command }} 2>&1 | tee probe.log
+          else
+            python -m pytest ${{ github.event.inputs.probe }} ${{ github.event.inputs.pytest_args }} -p no:cacheprovider 2>&1 | tee probe.log
+          fi
+        continue-on-error: true
+        # The step's own limit, under the job's: a hung run must still leave
+        # its log behind (a job-level cancel skips the upload — two traces lost
+        # that way on 2026-09-29).
+        timeout-minutes: 24
+
+      - name: Upload the log
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: probe-log
+          path: |
+            voice_bot_service/probe.log
+            voice_bot_service/*.log

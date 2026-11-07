@@ -26,7 +26,13 @@ public class LeadStatusDTO {
     private Integer displayOrder;
     private Boolean isDefault;
     private Boolean isActive;
+    /** Offered in the Lead Status filter dropdowns. Null on update = leave unchanged. */
+    private Boolean showInFilter;
     private Boolean isSystem;
+    /** Audit trail — who created / last changed / deleted the row (read-only). */
+    private String createdBy;
+    private String updatedBy;
+    private String deletedBy;
 
     public static LeadStatusDTO from(LeadStatus s) {
         return LeadStatusDTO.builder()
@@ -38,7 +44,11 @@ public class LeadStatusDTO {
                 .displayOrder(s.getDisplayOrder())
                 .isDefault(s.getIsDefault())
                 .isActive(s.getIsActive())
+                .showInFilter(s.getShowInFilter())
                 .isSystem(s.getIsSystem())
+                .createdBy(s.getCreatedBy())
+                .updatedBy(s.getUpdatedBy())
+                .deletedBy(s.getDeletedBy())
                 .build();
     }
 }

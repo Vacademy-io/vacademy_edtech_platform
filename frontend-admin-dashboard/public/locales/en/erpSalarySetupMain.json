@@ -1,0 +1,12 @@
+{
+    "restricted": {
+        "title": "Salary setup is restricted",
+        "description": "Salary structures and pay components are visible to HR roles only. Ask an administrator to grant you HR Manager or HR Admin access in this institute."
+    },
+    "intro": "Define what your institute pays, how each element is calculated, and which employee sits on which structure. Payroll reads this configuration every time it runs — a change here affects the next run, never a run that has already been processed.",
+    "tabs": {
+        "components": "Components",
+        "templates": "Templates",
+        "assign": "Assign"
+    }
+}

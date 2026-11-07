@@ -1,3 +1,4 @@
+import i18next from 'i18next';
 import { createBlockNode, setAttrs } from './block-node-factory';
 import { encodeBlockData, decodeBlockData } from '../../yoopta-editor-customizations/RichTextField';
 import {
@@ -21,6 +22,14 @@ import {
 
 const esc = (s: string): string =>
     s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+
+// buildExportDom below runs outside React (invoked by the Yoopta/Lexical
+// export pipeline, not rendered from a component), so useTranslation isn't
+// available — read the current locale off the shared i18next instance
+// instead, matching the module-scope-function pattern used elsewhere (e.g.
+// simple-attr-nodes.tsx, Payment/utils/utils.ts).
+const t = (key: string, options?: Record<string, unknown>): string =>
+    i18next.t(`studyLibraryPayloadNodes:${key}`, options) as string;
 
 /** Tag-stripped plaintext (legacy data-front/data-back fallback attrs). */
 const htmlToText = (html: string): string => {
@@ -76,8 +85,8 @@ export const FlashcardBlock = createBlockNode<FlashcardPayload>({
             ],
         ]);
         el.innerHTML =
-            `<div style="margin-bottom: 12px;"><div style="font-weight: 600; font-size: 12px; color: #007acc; margin-bottom: 4px;">FRONT</div><div>${p.front || ''}</div></div>` + // design-lint-ignore: serialized learner HTML needs literal colours
-            `<div><div style="font-weight: 600; font-size: 12px; color: #007acc; margin-bottom: 4px;">BACK</div><div>${p.back || ''}</div></div>`; // design-lint-ignore: serialized learner HTML needs literal colours
+            `<div style="margin-bottom: 12px;"><div style="font-weight: 600; font-size: 12px; color: #007acc; margin-bottom: 4px;">${esc(t('flashcard.front'))}</div><div>${p.front || ''}</div></div>` + // design-lint-ignore: serialized learner HTML needs literal colours
+            `<div><div style="font-weight: 600; font-size: 12px; color: #007acc; margin-bottom: 4px;">${esc(t('flashcard.back'))}</div><div>${p.back || ''}</div></div>`; // design-lint-ignore: serialized learner HTML needs literal colours
         return el;
     },
     Component: ({ payload, setPayload, readOnly }) => (
@@ -190,7 +199,7 @@ export const QuizBlock = createBlockNode<QuizPayload>({
             )
             .join('');
         el.innerHTML =
-            '<div style="font-weight: 700; font-size: 12px; color: #007acc; margin-bottom: 8px;">QUIZ</div>' + // design-lint-ignore: serialized learner HTML needs literal colours
+            `<div style="font-weight: 700; font-size: 12px; color: #007acc; margin-bottom: 8px;">${esc(t('quiz.label'))}</div>` + // design-lint-ignore: serialized learner HTML needs literal colours
             `<div style="margin-bottom: 8px;">${p.question || ''}</div>` +
             options;
         return el;
@@ -474,10 +483,10 @@ export const MultiLangCodeBlock = createBlockNode<MultiLangCodePayload>({
             ['style', CARD_STYLE],
         ]);
         el.innerHTML =
-            `<div style="font-weight: 600; font-size: 13px; color: #666; margin-bottom: 8px;">${esc(p.language.toUpperCase())} Code Editor</div>` + // design-lint-ignore: serialized learner HTML needs literal colours
+            `<div style="font-weight: 600; font-size: 13px; color: #666; margin-bottom: 8px;">${esc(t('multiLangCode.editorHeading', { language: p.language.toUpperCase() }))}</div>` + // design-lint-ignore: serialized learner HTML needs literal colours
             `<pre style="background: #263238; color: #fff; padding: 16px; border-radius: 6px; overflow-x: auto; font-size: 14px; white-space: pre;"><code>${esc(p.code)}</code></pre>` + // design-lint-ignore: serialized learner HTML needs literal colours
             (p.output
-                ? `<div style="margin-top: 8px; font-size: 13px; color: #666;">Output: <pre style="background: #f5f5f5; padding: 8px; border-radius: 4px; white-space: pre-wrap;">${esc(p.output)}</pre></div>` // design-lint-ignore: serialized learner HTML needs literal colours
+                ? `<div style="margin-top: 8px; font-size: 13px; color: #666;">${esc(t('multiLangCode.outputLabel'))} <pre style="background: #f5f5f5; padding: 8px; border-radius: 4px; white-space: pre-wrap;">${esc(p.output)}</pre></div>` // design-lint-ignore: serialized learner HTML needs literal colours
                 : '');
         return el;
     },

@@ -12,11 +12,15 @@ import vacademy.io.admin_core_service.features.student_analysis.dto.comprehensiv
 import java.sql.Timestamp;
 import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
+import java.util.TreeSet;
 
 /**
  * Parses per-attempt {@code activity_log.processed_json} (produced by the LLM-analytics pipeline —
@@ -39,18 +43,84 @@ public class LearningInsightsCollector {
 
     private static final int MAX_MISCONCEPTIONS = 8;
 
+    /** A learner under this accuracy in a topic counts as struggling with it. */
+    private static final double STRUGGLING_BELOW = 40;
+
     private final ActivityLogRepository activityLogRepository;
     private final ObjectMapper objectMapper;
 
     public LearningInsightsSection collect(String userId, LocalDate startDate, LocalDate endDate) {
+        return collect(userId, startDate, endDate, null);
+    }
+
+    /**
+     * @param sourceIds when not null, only analysed attempts of these sources (the assessments
+     *                  and slides of a picked batch) count; an empty set means nothing does.
+     */
+    public LearningInsightsSection collect(String userId, LocalDate startDate, LocalDate endDate,
+                                           Collection<String> sourceIds) {
+        if (sourceIds != null && sourceIds.isEmpty()) {
+            return LearningInsightsSection.builder().available(false).build();
+        }
         try {
             Timestamp startTs = Timestamp.valueOf(startDate.atStartOfDay());
             Timestamp endTs = Timestamp.valueOf(endDate.atTime(23, 59, 59));
 
-            List<ActivityLog> logs =
-                    activityLogRepository.findAllProcessedLogsForInsights(userId, startTs, endTs);
+            List<ActivityLog> logs = sourceIds == null
+                    ? activityLogRepository.findAllProcessedLogsForInsights(userId, startTs, endTs)
+                    : activityLogRepository.findProcessedLogsForInsightsBySources(userId, sourceIds, startTs, endTs);
 
             if (logs == null || logs.isEmpty()) {
+                return LearningInsightsSection.builder().available(false).build();
+            }
+            List<String[]> rows = new ArrayList<>();
+            for (ActivityLog l : logs) rows.add(new String[]{null, l.getProcessedJson()});
+            return fromJson(rows);
+        } catch (Exception e) {
+            log.error("[LearningInsightsCollector] Failed for userId={}: {}", userId, e.getMessage());
+            return LearningInsightsSection.builder().available(false).build();
+        }
+    }
+
+    /** Most rows parsed for a cohort roll-up; newest first. */
+    private static final int MAX_COHORT_ROWS = 3000;
+
+    /**
+     * Topic mastery, Bloom levels and confidence rolled up across a cohort (the batch report),
+     * from the newest {@value #MAX_COHORT_ROWS} analysed attempts in the window.
+     */
+    public LearningInsightsSection collectForUsers(List<String> userIds, LocalDate startDate, LocalDate endDate) {
+        return collectForUsers(userIds, startDate, endDate, null);
+    }
+
+    /** As above; with {@code sourceIds}, only analysed attempts of those assessments count. */
+    public LearningInsightsSection collectForUsers(List<String> userIds, LocalDate startDate, LocalDate endDate,
+                                                   Collection<String> sourceIds) {
+        if (userIds == null || userIds.isEmpty() || (sourceIds != null && sourceIds.isEmpty())) {
+            return LearningInsightsSection.builder().available(false).build();
+        }
+        try {
+            Timestamp startTs = Timestamp.valueOf(startDate.atStartOfDay());
+            Timestamp endTs = Timestamp.valueOf(endDate.atTime(23, 59, 59));
+            List<String[]> rows = new ArrayList<>();
+            List<Object[]> found = sourceIds == null
+                    ? activityLogRepository.findProcessedJsonForUsers(userIds, startTs, endTs, MAX_COHORT_ROWS)
+                    : activityLogRepository.findProcessedJsonForUsersAndSources(userIds, sourceIds, startTs, endTs, MAX_COHORT_ROWS);
+            for (Object[] r : found) {
+                if (r == null || r.length < 2 || r[1] == null) continue;
+                rows.add(new String[]{r[0] == null ? null : r[0].toString(), r[1].toString()});
+            }
+            return fromJson(rows);
+        } catch (Exception e) {
+            log.error("[LearningInsightsCollector] Cohort roll-up failed for {} users: {}", userIds.size(), e.getMessage());
+            return LearningInsightsSection.builder().available(false).build();
+        }
+    }
+
+    /** Each row is [userId or null, processed_json]. */
+    private LearningInsightsSection fromJson(List<String[]> rows) {
+        try {
+            if (rows == null || rows.isEmpty()) {
                 return LearningInsightsSection.builder().available(false).build();
             }
 
@@ -60,8 +130,8 @@ public class LearningInsightsCollector {
             List<LearningInsightsSection.Misconception> misconceptions = new ArrayList<>();
 
             int analyzed = 0;
-            for (ActivityLog log : logs) {
-                String json = log.getProcessedJson();
+            for (String[] row : rows) {
+                String json = row[1];
                 if (json == null || json.isBlank()) continue;
                 JsonNode root;
                 try {
@@ -74,7 +144,7 @@ public class LearningInsightsCollector {
                     continue;
                 }
 
-                accumulateTopics(root.path("topic_analysis"), topics);
+                accumulateTopics(row[0], root.path("topic_analysis"), topics);
                 accumulateBlooms(root.path("blooms_taxonomy"), blooms);
                 confidence.add(root.path("confidence_estimation"));
                 collectMisconceptions(root.path("misconception_analysis"), misconceptions);
@@ -109,14 +179,14 @@ public class LearningInsightsCollector {
                     .build();
 
         } catch (Exception e) {
-            log.error("[LearningInsightsCollector] Failed for userId={}: {}", userId, e.getMessage());
+            log.error("[LearningInsightsCollector] Failed to roll up insights: {}", e.getMessage());
             return LearningInsightsSection.builder().available(false).build();
         }
     }
 
     // ── topic_analysis ──────────────────────────────────────────────────────────
 
-    private void accumulateTopics(JsonNode node, TopicAccumulator acc) {
+    private void accumulateTopics(String userId, JsonNode node, TopicAccumulator acc) {
         if (!node.isArray()) return;
         for (JsonNode t : node) {
             String topic = asText(t, "topic");
@@ -127,7 +197,7 @@ public class LearningInsightsCollector {
             if (questions <= 0) continue;
             if (correct > questions) correct = questions;
             double avgTime = asDouble(t, "avg_time_seconds", 0.0);
-            acc.add(topic, questions, correct, avgTime);
+            acc.add(userId, topic, questions, correct, avgTime);
         }
     }
 
@@ -165,19 +235,56 @@ public class LearningInsightsCollector {
 
     // ── accumulators ────────────────────────────────────────────────────────────
 
+    /**
+     * The AI names topics freely on every attempt, so one topic arrives as "Photosynthesis",
+     * "photosynthesis process" and "Process of Photosynthesis". Names are merged on a key of
+     * their significant words: lower case, punctuation and filler words dropped, simple plurals
+     * folded, words sorted. The name shown is the spelling backed by the most questions.
+     */
+    static String topicKey(String topic) {
+        String cleaned = topic.toLowerCase(Locale.ROOT).replace("&", " and ")
+                .replaceAll("[^\\p{L}\\p{M}\\p{N}]+", " ").trim();
+        TreeSet<String> words = new TreeSet<>();
+        for (String w : cleaned.split(" ")) {
+            if (w.isEmpty() || TOPIC_FILLER.contains(w)) continue;
+            words.add(singular(w));
+        }
+        return words.isEmpty() ? cleaned : String.join(" ", words);
+    }
+
+    private static final Set<String> TOPIC_FILLER = Set.of(
+            "a", "an", "the", "of", "and", "in", "on", "to", "for", "with", "its", "their",
+            "basic", "basics", "introduction", "intro", "concept", "concepts", "fundamental",
+            "fundamentals", "overview", "understanding", "topic", "topics");
+
+    private static String singular(String w) {
+        if (w.length() <= 3) return w;
+        if (w.endsWith("ies")) return w.substring(0, w.length() - 3) + "y";
+        if (w.endsWith("ss") || w.endsWith("us") || w.endsWith("is")) return w;
+        if (w.endsWith("s")) return w.substring(0, w.length() - 1);
+        return w;
+    }
+
     private static final class TopicAccumulator {
         private final Map<String, int[]> counts = new LinkedHashMap<>();   // key → [questions, correct]
         private final Map<String, double[]> time = new LinkedHashMap<>();  // key → [weightedTimeSum]
-        private final Map<String, String> displayName = new LinkedHashMap<>();
+        private final Map<String, Map<String, Integer>> spellings = new HashMap<>(); // key → name → questions
+        private final Map<String, Map<String, int[]>> perLearner = new HashMap<>();  // key → user → [questions, correct]
 
-        void add(String topic, int questions, int correct, double avgTime) {
-            String key = topic.trim().toLowerCase(Locale.ROOT);
-            displayName.putIfAbsent(key, topic.trim());
+        void add(String userId, String topic, int questions, int correct, double avgTime) {
+            String key = topicKey(topic);
+            spellings.computeIfAbsent(key, k -> new HashMap<>()).merge(topic.trim(), questions, Integer::sum);
             counts.computeIfAbsent(key, k -> new int[2]);
             time.computeIfAbsent(key, k -> new double[1]);
             counts.get(key)[0] += questions;
             counts.get(key)[1] += correct;
             time.get(key)[0] += avgTime * questions; // weight avg time by question count
+            if (userId != null) {
+                int[] qc = perLearner.computeIfAbsent(key, k -> new HashMap<>())
+                        .computeIfAbsent(userId, k -> new int[2]);
+                qc[0] += questions;
+                qc[1] += correct;
+            }
         }
 
         List<LearningInsightsSection.TopicMastery> build() {
@@ -188,13 +295,23 @@ public class LearningInsightsCollector {
                 if (questions <= 0) continue;
                 double accuracy = round1(correct * 100.0 / questions);
                 double avgTime = round1(time.get(e.getKey())[0] / questions);
+                Integer learners = null;
+                Integer struggling = null;
+                Map<String, int[]> users = perLearner.get(e.getKey());
+                if (users != null) {
+                    learners = users.size();
+                    struggling = (int) users.values().stream()
+                            .filter(qc -> qc[0] > 0 && qc[1] * 100.0 / qc[0] < STRUGGLING_BELOW).count();
+                }
                 out.add(LearningInsightsSection.TopicMastery.builder()
-                        .topic(displayName.get(e.getKey()))
+                        .topic(displayName(e.getKey()))
                         .questions(questions)
                         .correct(correct)
                         .accuracy(accuracy)
                         .avgTimeSeconds(avgTime)
                         .masteryLevel(masteryFromAccuracy(accuracy))
+                        .learners(learners)
+                        .learnersStruggling(struggling)
                         .build());
             }
             // Highest mastery first.
@@ -202,6 +319,15 @@ public class LearningInsightsCollector {
                     (LearningInsightsSection.TopicMastery tm) -> tm.getAccuracy() == null ? 0 : tm.getAccuracy())
                     .reversed());
             return out;
+        }
+
+        /** The spelling backed by the most questions; ties go to the alphabetically first. */
+        private String displayName(String key) {
+            return spellings.get(key).entrySet().stream()
+                    .max(Map.Entry.<String, Integer>comparingByValue()
+                            .thenComparing(Map.Entry.comparingByKey(Comparator.reverseOrder())))
+                    .map(Map.Entry::getKey)
+                    .orElse(key);
         }
     }
 

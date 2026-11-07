@@ -1,0 +1,28 @@
+{
+    "loading": "Chargement de l'activité…",
+    "error": "Impossible de charger l'activité. Réessayez.",
+    "empty": "Aucune activité au cours des 30 derniers jours.",
+    "inbound": "Entrant",
+    "outbound": "Sortant",
+    "actions": {
+        "call": "Appel",
+        "followupCreated": "Suivi créé",
+        "followupClosed": "Suivi clôturé",
+        "noteAdded": "Note ajoutée",
+        "leadTransferredOut": "Prospect transféré",
+        "leadTransferredIn": "Prospect reçu",
+        "statusChanged": "Statut modifié"
+    },
+    "relativeTime": {
+        "justNow": "à l'instant",
+        "minutesAgo_one": "il y a {{count}} min",
+        "minutesAgo_many": "il y a {{count}} min",
+        "minutesAgo_other": "il y a {{count}} min",
+        "hoursAgo_one": "il y a {{count}} h",
+        "hoursAgo_many": "il y a {{count}} h",
+        "hoursAgo_other": "il y a {{count}} h",
+        "daysAgo_one": "il y a {{count}} j",
+        "daysAgo_many": "il y a {{count}} j",
+        "daysAgo_other": "il y a {{count}} j"
+    }
+}

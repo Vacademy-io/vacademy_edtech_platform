@@ -65,10 +65,10 @@
         "availableInFewMinutes": "वीडियो कुछ ही मिनटों में उपलब्ध होगा।",
         "pendingGeneration": "वीडियो बनना बाकी है",
         "processing": "वीडियो संसाधित किया जा रहा है...",
-        "dataNotFound": "वीडियो डेटा नहीं मिला",
-        "videoNotFound": "वीडियो {{videoId}} नहीं मिला",
-        "failedToLoadUrls": "वीडियो URL लोड नहीं हो सके",
-        "tryAgainLater": "कृपया बाद में पुनः प्रयास करें"
+        "tryAgainLater": "कृपया बाद में पुनः प्रयास करें",
+        "unavailableTitle": "यह वीडियो अभी उपलब्ध नहीं है",
+        "loadFailedTitle": "हम यह वीडियो लोड नहीं कर सके",
+        "checkConnection": "अपना इंटरनेट कनेक्शन जाँचें और फिर से कोशिश करें।"
     },
     "slideState": {
         "noCodeData": "कोई कोड डेटा उपलब्ध नहीं है",

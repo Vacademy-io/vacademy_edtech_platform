@@ -1,0 +1,63 @@
+{
+    "searchPlaceholder": "ابحث بالهاتف أو الاسم...",
+    "retrying": "تتم إعادة المحاولة…",
+    "tryAgain": "حاول مرة أخرى",
+    "loading": "جارٍ التحميل...",
+    "botHandedOver": "سلّمه الروبوت",
+    "notDelivered": "لم يتم التسليم",
+    "notDeliveredCount_zero": "لم يتم تسليم أي رسالة",
+    "notDeliveredCount_one": "لم يتم تسليم رسالة واحدة",
+    "notDeliveredCount_two": "لم يتم تسليم رسالتين",
+    "notDeliveredCount_few": "لم يتم تسليم {{count}} رسائل",
+    "notDeliveredCount_many": "لم يتم تسليم {{count}} رسالة",
+    "notDeliveredCount_other": "لم يتم تسليم {{count}} رسالة",
+    "notDeliveredCountShort_zero": "لا رسائل غير مسلَّمة",
+    "notDeliveredCountShort_one": "{{count}} غير مسلَّمة",
+    "notDeliveredCountShort_two": "{{count}} غير مسلَّمتين",
+    "notDeliveredCountShort_few": "{{count}} غير مسلَّمة",
+    "notDeliveredCountShort_many": "{{count}} غير مسلَّمة",
+    "notDeliveredCountShort_other": "{{count}} غير مسلَّمة",
+    "filters": {
+        "all": {
+            "label": "الكل",
+            "title": "كل محادثة"
+        },
+        "unanswered": {
+            "label": "بلا رد",
+            "title": "سلّم الروبوت هذه المحادثات ولم يرد عليها أحد بعد"
+        },
+        "failed": {
+            "label": "لم يتم التسليم",
+            "title": "محادثات رفض فيها واتساب تسليم رسالة"
+        }
+    },
+    "empty": {
+        "unanswered": "تم الرد على كل محادثة",
+        "failed": "تم تسليم كل رسالة",
+        "all": "لا توجد محادثات بعد"
+    },
+    "escalation": {
+        "maxTurns": "بلغت المحادثة حد الردود الآلية",
+        "aiError": "لم يتمكن المساعد من توليد رد",
+        "manual": "سلّمه أحد المشرفين",
+        "noInfo": "لم يكن لدى المساعد المعلومات اللازمة للرد",
+        "withMessage": "{{why}}\n\nسألوا: {{message}}",
+        "existingLead": "راسل عميل محتمل حالي مرة أخرى",
+        "crmSaveFailed": "تعذر على روبوت المحادثة حفظ هذا العميل المحتمل في CRM",
+        "withLeadMessage": "{{why}}\n\nرسالته: {{message}}",
+        "withAnswers": "{{why}}\n\nإجاباته:\n{{message}}"
+    },
+    "lastKind": {
+        "image": "صورة",
+        "video": "فيديو",
+        "audio": "صوت",
+        "voice": "رسالة صوتية",
+        "sticker": "ملصق",
+        "document": "مستند",
+        "location": "موقع",
+        "contacts": "بطاقة جهة اتصال",
+        "other": "مرفق",
+        "reaction": "تفاعل بـ {{emoji}}",
+        "reactionRemoved": "أزال تفاعلًا"
+    }
+}

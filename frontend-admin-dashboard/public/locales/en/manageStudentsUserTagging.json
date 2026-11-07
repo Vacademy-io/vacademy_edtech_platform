@@ -1,0 +1,25 @@
+{
+  "errors": {
+    "loadTitle": "Couldn't load tags",
+    "loadHint": "Something went wrong while fetching tags for this learner."
+  },
+  "toast": {
+    "addSuccess": "Tag added successfully",
+    "addError": "Failed to add tag",
+    "removeSuccess": "Tag removed successfully",
+    "removeError": "Failed to remove tag"
+  },
+  "activeSection": {
+    "heading": "Tags",
+    "activeCount_one": "{{count}} active",
+    "activeCount_other": "{{count}} active",
+    "inputPlaceholder": "Add a tag (e.g. VIP, High Performer)",
+    "addButton": "Add",
+    "defaultLabel": "(default)",
+    "removeAriaLabel": "Remove tag {{tagName}}",
+    "emptyState": "No tags yet — add one above to start segmenting this learner."
+  },
+  "inactiveSection": {
+    "heading": "Inactive Tags"
+  }
+}

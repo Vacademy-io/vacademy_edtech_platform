@@ -2,6 +2,9 @@
 // package-detail endpoint). Kept as pure functions so the page component
 // doesn't need inline structural casts.
 
+import type { EnrolledSession } from "@/hooks/use-enrollment-status";
+import type { PackageSessionSummary } from "./course-details-types";
+
 export type CourseInitSubject = {
   id: string;
   subject_name?: string;
@@ -109,4 +112,50 @@ export function derivePrimaryInstructorName({
     packageCourse?.owner_name ||
     undefined
   );
+}
+
+// Enrolled sessions built from the login-time student snapshot without the
+// institute's batches are skeletal: only the package_session id is known, and
+// package / session / level ids are "". Every check on the course page matches
+// on package_dto.id (plus session and level), so a skeletal entry reads as
+// "not enrolled" — preview mode, slides not clickable. course-init lists this
+// course's package sessions in full, so fill the skeletal entries from it.
+export function fillEnrolledSessionsFromInit(
+  enrolledSessions: EnrolledSession[],
+  courseDetailsData: unknown,
+): EnrolledSession[] {
+  const packageSessions = (
+    courseDetailsData as { package_sessions?: unknown } | null | undefined
+  )?.package_sessions;
+  if (!Array.isArray(packageSessions) || packageSessions.length === 0) {
+    return enrolledSessions;
+  }
+  const byId = new Map(
+    (packageSessions as PackageSessionSummary[]).map((ps) => [ps.id, ps]),
+  );
+  return enrolledSessions.map((enrolled) => {
+    const ps = byId.get(enrolled.id);
+    if (!ps?.package_dto?.id || enrolled.package_dto.id) return enrolled;
+    return {
+      ...enrolled,
+      session: {
+        id: ps.session?.id ?? "",
+        session_name: ps.session?.session_name ?? enrolled.session.session_name,
+        status: ps.session?.status ?? enrolled.session.status,
+        start_date: ps.session?.start_date ?? enrolled.session.start_date,
+      },
+      level: {
+        id: ps.level?.id ?? "",
+        level_name: ps.level?.level_name ?? enrolled.level.level_name,
+        duration_in_days: ps.level?.duration_in_days ?? null,
+        thumbnail_id: ps.level?.thumbnail_id ?? null,
+      },
+      start_time: ps.start_time ?? enrolled.start_time,
+      package_dto: {
+        id: ps.package_dto.id,
+        package_name: ps.package_dto.package_name ?? enrolled.package_dto.package_name,
+        thumbnail_id: ps.package_dto.thumbnail_file_id || null,
+      },
+    };
+  });
 }

@@ -1,0 +1,127 @@
+{
+    "header": {
+        "title": "Formulaire d'admission par défaut",
+        "admissionForm": "Formulaire d'admission",
+        "bulkImport": "Import groupé",
+        "subtitle": "Admissions and applications for a session — start a new one or convert an enquiry.",
+        "sessionLabel": "Session"
+    },
+    "filters": {
+        "status": "Statut",
+        "source": "Source",
+        "dateRange": "Période",
+        "class": "Classe",
+        "section": "Section",
+        "applyFilter": "Appliquer le filtre",
+        "applying": "Application en cours...",
+        "clearAll": "Tout effacer"
+    },
+    "dateRanges": {
+        "today": "Aujourd'hui",
+        "last7Days": "7 derniers jours",
+        "last30Days": "30 derniers jours",
+        "last3Months": "3 derniers mois",
+        "last6Months": "6 derniers mois",
+        "lastYear": "L'année dernière"
+    },
+    "overallStatuses": {
+        "application": "Candidature",
+        "admission": "Admission"
+    },
+    "sourceTypes": {
+        "website": "Site web",
+        "googleAds": "Google Ads",
+        "facebook": "Facebook",
+        "google": "Google",
+        "friends": "Amis",
+        "zohoForms": "Zoho Forms",
+        "audienceCampaign": "Campagne d'audience",
+        "directApplication": "Candidature directe",
+        "manualAdmission": "Admission manuelle",
+        "other": "Autre"
+    },
+    "searchByOptions": {
+        "studentName": "Nom de l'élève",
+        "applicationNo": "N° de candidature",
+        "parentMobile": "Mobile du parent"
+    },
+    "search": {
+        "criteriaHeading": "Critères de recherche",
+        "searchByLabel": "Rechercher par",
+        "enterDetailsLabel": "Saisir les détails",
+        "enterDetailsPlaceholder": "Saisir {{field}}",
+        "searchButton": "Rechercher",
+        "searching": "Recherche en cours..."
+    },
+    "results": {
+        "totalResponses": "Total des réponses :",
+        "noRecordsFound": "Aucun enregistrement ne correspond à vos critères de recherche.",
+        "createAdmission": "Créer une admission",
+        "alreadyAdmitted": "Déjà admis"
+    },
+    "table": {
+        "sNo": "N°",
+        "class": "Classe",
+        "studentName": "Nom de l'élève",
+        "gender": "Sexe",
+        "dateOfBirth": "Date de naissance",
+        "parentName": "Nom du parent",
+        "parentEmail": "E-mail du parent",
+        "parentMobile": "Mobile du parent",
+        "trackingId": "ID de suivi",
+        "status": "Statut",
+        "source": "Source",
+        "actions": "Actions"
+    },
+    "genderLabels": {
+        "male": "Homme",
+        "female": "Femme",
+        "other": "Autre"
+    },
+    "statusLabels": {
+        "new": "Nouveau",
+        "contacted": "Contacté",
+        "followUp": "Relance",
+        "qualified": "Qualifié",
+        "notEligible": "Non éligible",
+        "enquiry": "Demande",
+        "application": "Candidature",
+        "admission": "Admission"
+    },
+    "emptyState": {
+        "title": "Sélectionnez un élève pour commencer",
+        "description": "Utilisez le panneau de recherche ci-dessus pour trouver une demande ou une candidature existante. Vous pouvez aussi cliquer sur « Formulaire d'admission » pour démarrer un nouveau formulaire."
+    },
+    "admissionTypeModal": {
+        "title": "Choisir le type d'admission",
+        "subtitle": "Choisissez comment vous souhaitez créer une nouvelle admission",
+        "newAdmissionTitle": "Nouvelle admission",
+        "newAdmissionDesc": "Démarrer un nouveau formulaire d'admission",
+        "fromEnquiryTitle": "À partir d'une demande",
+        "fromEnquiryDesc": "Créer une admission à partir d'une demande existante",
+        "fromApplicationTitle": "À partir d'une candidature",
+        "fromApplicationDesc": "Créer une admission à partir d'une candidature existante"
+    },
+    "applicationModal": {
+        "title": "Saisir les détails de la candidature",
+        "applicationIdLabel": "ID de candidature / ID de suivi",
+        "applicationIdPlaceholder": "ex. : APP-12345",
+        "or": "OU",
+        "phoneLabel": "Numéro de téléphone",
+        "phonePlaceholder": "ex. : 9876543210",
+        "helperText": "Saisissez l'ID de candidature ou le numéro de téléphone de la candidature que vous souhaitez convertir en admission",
+        "cancel": "Annuler",
+        "continueButton": "Continuer",
+        "loading": "Chargement..."
+    },
+    "alerts": {
+        "enterIdOrPhone": "Veuillez saisir l'ID de candidature ou le numéro de téléphone",
+        "noApplicationFound": "Aucune candidature trouvée avec les informations fournies.",
+        "fetchFailed": "Échec de la récupération des détails de la candidature. Veuillez vérifier l'ID ou le numéro de téléphone."
+    },
+    "quickViews": {
+        "admitted": "Admitted",
+        "applications": "Applications",
+        "all": "All records"
+    }
+}

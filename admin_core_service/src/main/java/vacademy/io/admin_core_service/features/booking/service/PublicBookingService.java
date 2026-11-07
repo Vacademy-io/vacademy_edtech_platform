@@ -22,7 +22,6 @@ import vacademy.io.admin_core_service.features.live_session.dto.CancelBookingReq
 import vacademy.io.admin_core_service.features.live_session.repository.ScheduleNotificationRepository;
 import vacademy.io.admin_core_service.features.live_session.service.BookingManagementService;
 import vacademy.io.admin_core_service.features.live_session.provider.service.google.GoogleCalendarService;
-import vacademy.io.admin_core_service.features.mentorship.repository.MentorRepository;
 import vacademy.io.admin_core_service.features.mentorship.service.MentorshipNotificationService;
 import vacademy.io.common.auth.dto.UserDTO;
 import vacademy.io.common.auth.dto.UserServiceDTO;
@@ -67,7 +66,7 @@ public class PublicBookingService {
     private final BookingManagementService bookingManagementService;
     private final ScheduleNotificationRepository scheduleNotificationRepository;
     private final GoogleCalendarService googleCalendarService;
-    private final MentorRepository mentorRepository;
+    private final UserGoogleAccountService userGoogleAccountService;
     private final AudienceService audienceService;
     private final AuthService authService;
     private final InstituteCustomFiledService instituteCustomFiledService;
@@ -386,6 +385,8 @@ public class PublicBookingService {
                 .instituteId(old.getInstituteId())
                 .bookingPageId(page.getId())
                 .hostUserId(old.getHostUserId())
+                // A rescheduled meeting stays on the Google account it was first booked under.
+                .googleAccountId(old.getGoogleAccountId())
                 .startTime(request.getStartTime())
                 .inviteeName(old.getInviteeName())
                 .inviteeEmail(old.getInviteeEmail())
@@ -442,11 +443,12 @@ public class PublicBookingService {
         // Remove the mirrored Google Calendar event so cancelled/rescheduled slots
         // don't linger on the host's + invitee's calendars (best-effort, scope-gated).
         if (instance.getGoogleCalendarEventId() != null && !instance.getGoogleCalendarEventId().isBlank()) {
-            String accountId = mentorRepository
-                    .findByInstituteIdAndUserIdAndStatusNot(instance.getInstituteId(), instance.getHostUserId(), "DELETED")
-                    .map(vacademy.io.admin_core_service.features.mentorship.entity.Mentor::getGoogleAccountId)
-                    .filter(id -> id != null && !id.isBlank())
-                    .orElse(null);
+            String recorded = instance.getGoogleAccountId();
+            // null = booked before the account was recorded → resolve from the host; blank = institute default.
+            String accountId = recorded == null
+                    ? userGoogleAccountService.resolveAccountId(instance.getInstituteId(), instance.getHostUserId())
+                            .orElse(null)
+                    : (recorded.isBlank() ? null : recorded);
             googleCalendarService.deleteEvent(instance.getInstituteId(), accountId, instance.getGoogleCalendarEventId());
         }
     }

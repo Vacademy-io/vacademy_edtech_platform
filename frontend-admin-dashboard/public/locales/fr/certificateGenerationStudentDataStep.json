@@ -1,0 +1,14 @@
+{
+    "columns": {
+        "userId": "ID utilisateur",
+        "enrollmentId": "ID d'inscription",
+        "nameHeader": "Nom de {{term}}",
+        "email": "E-mail",
+        "institute": "Établissement",
+        "phoneNumber": "Numéro de téléphone"
+    },
+    "downloadTemplate": "Télécharger le modèle",
+    "headerSelected": "{{term}} sélectionné(s) ({{count}})",
+    "reviewSubtitle": "Vérifiez les données des {{term}} et importez des informations dynamiques via un fichier CSV",
+    "nextPdfAnnotation": "Suivant : annotation du PDF"
+}

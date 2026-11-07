@@ -1,4 +1,4 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { POLL_INTERVAL_MS } from '../-constants';
 import {
     addSource,
@@ -13,13 +13,46 @@ import {
     setSourceActive,
     updateKnowledgeBase,
 } from '../-services/knowledge-base-service';
+import { getCatalogue, getTaxonomy } from '../-services/library-service';
 import type { KbPurpose, KnowledgeBase, SourceKind } from '../-types';
+import type { CatalogueFilters } from '../-types/library';
 
 const KEYS = {
     all: ['knowledge-bases'] as const,
     one: (id: string) => ['knowledge-base', id] as const,
     review: (id: string) => ['knowledge-base-review', id] as const,
+    taxonomy: (language?: string) => ['knowledge-base-taxonomy', language ?? ''] as const,
+    catalogue: (filters: CatalogueFilters) => ['knowledge-base-catalogue', filters] as const,
 };
+
+/**
+ * The curriculum picker's tree (boards → classes → subjects, exams →
+ * subjects) with library counts. Static apart from the counts, so it is
+ * cached for the session and only refetched per medium.
+ */
+export const useLibraryTaxonomy = (language?: string) =>
+    useQuery({
+        queryKey: KEYS.taxonomy(language),
+        queryFn: () => getTaxonomy(language),
+        staleTime: 5 * 60 * 1000,
+        // Switching medium refetches the counts; the picker must not blink
+        // out to a skeleton while it does.
+        placeholderData: keepPreviousData,
+    });
+
+export const useLibraryCatalogue = (
+    filters: CatalogueFilters,
+    { enabled = true, keepPrevious = false }: { enabled?: boolean; keepPrevious?: boolean } = {}
+) =>
+    useQuery({
+        queryKey: KEYS.catalogue(filters),
+        queryFn: () => getCatalogue(filters),
+        enabled,
+        staleTime: 60 * 1000,
+        // A browsing grid keeps the last shelf on screen while the next loads;
+        // anything that ACTS on the answer (auto-picking a book) must not.
+        placeholderData: keepPrevious ? keepPreviousData : undefined,
+    });
 
 export const useKnowledgeBases = () =>
     useQuery({

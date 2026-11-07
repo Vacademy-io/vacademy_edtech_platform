@@ -36,17 +36,29 @@ public class ChatReportService {
     private final ChatMessageMapper messageMapper;
 
     @Transactional
-    public ChatReportResponse createReport(String reporterId, CreateReportRequest req) {
+    public ChatReportResponse createReport(String reporterId, String reporterRole, String reporterInstituteId,
+                                           CreateReportRequest req) {
         if (req.getConversationId() == null) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "CONVERSATION_REQUIRED");
         }
         ChatConversation conv = convRepository.findById(req.getConversationId())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "CONVERSATION_NOT_FOUND"));
 
-        // Only participants can report (privacy): community is open to all institute members.
-        if (!ChatConversationType.COMMUNITY.name().equals(conv.getType())
+        // Only participants can report (privacy): community is open to all institute members. An admin
+        // of THIS institute also qualifies for group channels — they are shown every batch group whether
+        // or not they ever joined one, so a member-only rule 403s the very people who work the queue.
+        boolean isInstituteAdmin = "admin".equals(ChatPermissionService.normalizeRole(reporterRole))
+                && reporterInstituteId != null && reporterInstituteId.equals(conv.getInstituteId())
+                && !ChatConversationType.DIRECT.name().equals(conv.getType());
+        if (!ChatConversationType.COMMUNITY.name().equals(conv.getType()) && !isInstituteAdmin
                 && !memberRepository.existsByConversationIdAndUserIdAndIsActiveTrue(conv.getId(), reporterId)) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "NOT_A_MEMBER");
+        }
+
+        // A report must point at a message that actually lives in the conversation it claims.
+        if (req.getMessageId() != null && messageRepository.findById(req.getMessageId())
+                .filter(m -> conv.getId().equals(m.getConversationId())).isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "MESSAGE_NOT_IN_CONVERSATION");
         }
 
         // Idempotent per (message, reporter): the partial unique index uq_chat_report_once would otherwise
@@ -119,6 +131,8 @@ public class ChatReportService {
                 .id(r.getId())
                 .instituteId(r.getInstituteId())
                 .conversationId(r.getConversationId())
+                .conversationType(convRepository.findById(r.getConversationId())
+                        .map(ChatConversation::getType).orElse(null))
                 .messageId(r.getMessageId())
                 .reporterId(r.getReporterId())
                 .reason(r.getReason())

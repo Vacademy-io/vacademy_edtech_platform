@@ -1,0 +1,6 @@
+{
+    "errors": {
+        "fetchFailed": "Échec de la récupération des détails de l'étudiant : {{message}}",
+        "unknownError": "Erreur inconnue"
+    }
+}

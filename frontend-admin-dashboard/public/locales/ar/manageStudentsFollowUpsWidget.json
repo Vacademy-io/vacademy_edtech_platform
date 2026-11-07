@@ -1,0 +1,55 @@
+{
+    "status": {
+        "pending": "قيد الانتظار",
+        "ongoing": "جارٍ",
+        "overdue": "متأخر",
+        "completed": "مكتمل"
+    },
+    "card": {
+        "closedReason": "أُغلقت: {{reason}}",
+        "created": "أُنشئ في {{date}}",
+        "edit": "تعديل المتابعة"
+    },
+    "widget": {
+        "title": "المتابعات",
+        "openCount_zero": "{{count}} متابعة مفتوحة",
+        "openCount_one": "{{count}} متابعة مفتوحة",
+        "openCount_two": "{{count}} متابعة مفتوحة",
+        "openCount_few": "{{count}} متابعات مفتوحة",
+        "openCount_many": "{{count}} متابعة مفتوحة",
+        "openCount_other": "{{count}} متابعة مفتوحة"
+    },
+    "emptyState": {
+        "title": "لا توجد متابعات مفتوحة",
+        "description": "جدول واحدة أدناه باستخدام علامة التبويب متابعة"
+    },
+    "history": {
+        "title": "سجل المتابعات",
+        "created": "تاريخ الإنشاء",
+        "nextFollowUp": "المتابعة التالية",
+        "response": "الرد",
+        "mode": "الوسيلة",
+        "nextAction": "الإجراء التالي",
+        "closingNote": "ملاحظة الإغلاق",
+        "noComment": "لا يوجد تعليق",
+        "showAll": "عرض الكل ({{count}})",
+        "showLess": "عرض أقل"
+    },
+    "edit": {
+        "title": "تعديل المتابعة",
+        "description": "صحّح التعليق أو مستوى الاهتمام. يبقى النص السابق في سجل النشاط.",
+        "interestLevel": "مستوى الاهتمام",
+        "interestPlaceholder": "اختر مستوى الاهتمام",
+        "search": "بحث…",
+        "comment": "التعليق",
+        "commentPlaceholder": "ما الذي حدث في هذه المتابعة…",
+        "commentRequired": "تشترط مؤسستك كتابة ملاحظة في كل متابعة.",
+        "closingNote": "ملاحظة الإغلاق",
+        "closingNoteRequired": "المتابعة المكتملة تحتاج إلى ملاحظة إغلاق.",
+        "cancel": "إلغاء",
+        "save": "حفظ",
+        "saving": "جارٍ الحفظ…",
+        "saved": "تم تحديث المتابعة",
+        "failed": "تعذّر تحديث المتابعة"
+    }
+}

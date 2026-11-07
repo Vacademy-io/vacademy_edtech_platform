@@ -1,0 +1,52 @@
+{
+    "readyCard": {
+        "title": "القالب جاهز",
+        "preview": "معاينة",
+        "remove": "إزالة",
+        "removing": "جارٍ الإزالة",
+        "imageAlt": "معاينة قالب الشهادة",
+        "typeLabel": "النوع",
+        "typePdf": "PDF ← صورة",
+        "typeImage": "صورة",
+        "formatLabel": "الصيغة",
+        "dimensionsLabel": "الأبعاد",
+        "uploadedLabel": "تاريخ الرفع",
+        "confirmRemove": "هل أنت متأكد من إزالة هذا القالب؟ سيؤدي ذلك أيضاً إلى مسح جميع ربط الحقول."
+    },
+    "dropzone": {
+        "processingDefault": "جارٍ معالجة الملف...",
+        "fileTypeUnsupported": "نوع الملف غير مدعوم",
+        "dropHere": "أفلت الملف هنا",
+        "uploadTitle": "رفع قالب الشهادة",
+        "processingSubtitle": "يرجى الانتظار أثناء معالجة القالب",
+        "dragDropSubtitle": "اسحب وأفلت ملف PDF أو صورة هنا، أو انقر للتصفح",
+        "chooseFile": "اختيار ملف القالب"
+    },
+    "requirements": {
+        "title": "الصيغ المدعومة:",
+        "pdf": "ملفات PDF (سيتم تحويلها إلى صورة)",
+        "png": "صور PNG",
+        "jpg": "صور JPG/JPEG",
+        "maxSize": "الحد الأقصى لحجم الملف: 50 ميغابايت",
+        "recommendation": "يُنصح باستخدام دقة عالية للحصول على جودة أفضل"
+    },
+    "processingSteps": {
+        "readingPdf": "جارٍ قراءة ملف PDF...",
+        "loadingPdf": "جارٍ تحميل مستند PDF...",
+        "renderingPdf": "جارٍ عرض PDF كصورة...",
+        "convertingImage": "جارٍ التحويل إلى صيغة صورة...",
+        "loadingImage": "جارٍ تحميل الصورة...",
+        "processingImage": "جارٍ معالجة الصورة..."
+    },
+    "errors": {
+        "title": "خطأ في الرفع",
+        "processFailed": "تعذّرت معالجة ملف {{fileType}}. يرجى التأكد من أنه ملف صالح.",
+        "uploadFailed": "تعذّر رفع الملف",
+        "loadImageFailed": "تعذّر تحميل الصورة",
+        "canvasContextFailed": "تعذّر الحصول على سياق اللوحة"
+    },
+    "fileTypes": {
+        "pdf": "PDF",
+        "image": "صورة"
+    }
+}

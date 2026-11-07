@@ -1,0 +1,28 @@
+{
+    "trigger": {
+        "label": "Exporter"
+    },
+    "dialog": {
+        "heading": "Exporter en CSV"
+    },
+    "errors": {
+        "columnsLoadFailed": "Impossible de charger la liste des colonnes. Vous pouvez tout de même exporter les colonnes de résultats standard."
+    },
+    "chooseColumns": "Choisissez les colonnes à inclure dans le fichier.",
+    "selectAll": "Tout sélectionner",
+    "clearAll": "Tout désélectionner",
+    "resultColumns": {
+        "title": "Colonnes de résultats"
+    },
+    "registrationFields": {
+        "title": "Champs du formulaire d'inscription",
+        "empty": "Cet examen ne recueille aucun détail supplémentaire lors de l'inscription."
+    },
+    "exporting": "Exportation…",
+    "exportCsvButton": "Exporter en CSV",
+    "toasts": {
+        "noData": "Aucune donnée renvoyée. Veuillez réessayer.",
+        "exportSuccess": "Résultats exportés avec succès.",
+        "exportFailed": "Échec de l'export du CSV. Veuillez réessayer."
+    }
+}

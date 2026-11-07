@@ -1,0 +1,186 @@
+{
+  "guestHome": {
+    "placeholder": "مرحبًا \"/live-class-guest/\"!"
+  },
+  "common": {
+    "errorLoadingSession": "خطأ في تحميل تفاصيل الجلسة: {{message}}",
+    "markAttendanceFailed": "فشل تسجيل الحضور",
+    "liveBadge": "مباشر",
+    "phoneExamplePlaceholder": "123 456 7890",
+    "hostedBy": "استضافة",
+    "timezoneLabel": "المنطقة الزمنية: {{tz}}",
+    "joinMeetingLink": "الانضمام إلى رابط الاجتماع"
+  },
+  "waitingRoom": {
+    "getReady": "استعد! ستبدأ الجلسة خلال:",
+    "thumbnailAlt": "صورة مصغرة للجلسة",
+    "toast": {
+      "notOpenYetTitle": "غرفة الانتظار غير مفتوحة بعد.",
+      "notOpenYetDescription": "ستفتح قبل {{minutes}} دقيقة من بدء الجلسة."
+    }
+  },
+  "embed": {
+    "bbb": {
+      "joining": "جارٍ الانضمام...",
+      "joinButton": "الانضمام إلى {{liveSession}}",
+      "joinHint": "انقر للانضمام إلى {{liveSession}} في نافذة جديدة"
+    },
+    "errors": {
+      "videoUrlUnavailable": "تعذر الحصول على رابط الفصل المرئي",
+      "notStartedOrEnded": "لم يبدأ هذا الفصل بعد أو انتهى.",
+      "joinFailed": "فشل الانضمام إلى الفصل المرئي. يرجى المحاولة مرة أخرى."
+    },
+    "youtube": {
+      "invalidUrl": "تنسيق رابط يوتيوب غير صالح",
+      "viewLiveLink": "انقر هنا لمشاهدة البث المباشر"
+    },
+    "openingNewTab": "جارٍ فتح رابط الاجتماع في علامة تبويب جديدة...",
+    "noMeetingLink": "لا يتوفر رابط اجتماع لهذه الجلسة."
+  },
+  "audienceResponse": {
+    "form": {
+      "toast": {
+        "submitFailed": "فشل إرسال الرد. يرجى المحاولة مرة أخرى."
+      },
+      "success": {
+        "defaultTitle": "تم التسجيل بنجاح!",
+        "defaultMessage": "شكرًا لردك. تم إرسال النموذج بنجاح.",
+        "confirmationEmailNotice": "سيتم إرسال بريد إلكتروني للتأكيد إليك قريبًا.",
+        "redirecting_zero": "جارٍ إعادة التوجيه خلال {{count}} ثانية",
+        "redirecting_one": "جارٍ إعادة التوجيه خلال {{count}} ثانية",
+        "redirecting_two": "جارٍ إعادة التوجيه خلال {{count}} ثانيتين",
+        "redirecting_few": "جارٍ إعادة التوجيه خلال {{count}} ثوانٍ",
+        "redirecting_many": "جارٍ إعادة التوجيه خلال {{count}} ثانية",
+        "redirecting_other": "جارٍ إعادة التوجيه خلال {{count}} ثانية",
+        "submitAnotherDefault": "إرسال رد آخر"
+      },
+      "campaign": {
+        "objectiveLabel": "الهدف:"
+      },
+      "details": {
+        "title": "يرجى تعبئة بياناتك",
+        "subtitle": "سيتم استخدام هذه المعلومات للتواصل معك بشأن الحملة.",
+        "requiredLegend": "حقل مطلوب",
+        "progress": "تم إكمال {{completed}} من {{total}} من الحقول المطلوبة"
+      },
+      "noFields": {
+        "title": "لا تتوفر حقول نموذج",
+        "description": "لا تحتوي هذه الحملة على أي حقول مخصصة معدّة.",
+        "debugCount": "الحقول المخصصة من واجهة برمجة التطبيقات: {{count}}"
+      },
+      "selectParentFirst": "اختر {{name}} أولاً",
+      "submitButton": {
+        "submitting": "جارٍ الإرسال...",
+        "default": "إرسال الرد"
+      },
+      "errors": {
+        "title": "يرجى إكمال الحقول المحددة"
+      }
+    }
+  },
+  "bookingResponse": {
+    "errorPage": {
+      "incompleteTitle": "يبدو رابط الحجز هذا غير مكتمل",
+      "incompleteDescription": "يرجى التحقق من الرابط الذي تلقيته وفتحه تمامًا كما تمت مشاركته معك.",
+      "notFoundTitle": "صفحة الحجز غير موجودة",
+      "notFoundDescription": "قد يكون رابط الحجز هذا غير صالح أو لم يعد نشطًا. يرجى التحقق من الرابط أو التواصل مع الشخص الذي شاركه معك."
+    },
+    "slotPicker": {
+      "prevDaysAria": "الأيام السابقة",
+      "nextDaysAria": "الأيام التالية",
+      "loading": "جارٍ تحميل الأوقات المتاحة…",
+      "loadError": "تعذر تحميل الأوقات المتاحة. يرجى المحاولة مرة أخرى.",
+      "noSlots": "لا توجد أوقات متاحة في {{day}}. جرّب يومًا آخر."
+    },
+    "confirmation": {
+      "pendingTitle": "تم استلام طلب الحجز",
+      "confirmedTitle": "تم تأكيد الحجز",
+      "pendingWithHost": "طلبك لـ {{title}} في انتظار تأكيد {{host}}. سنُعلمك فور الموافقة عليه.",
+      "pendingNoHost": "طلبك لـ {{title}} في انتظار التأكيد. سنُعلمك فور الموافقة عليه.",
+      "confirmedWithHost": "تم تحديد موعدك لـ {{title}} مع {{host}}.",
+      "confirmedNoHost": "تم تحديد موعدك لـ {{title}}.",
+      "emailSentWithAddress": "تم إرسال بريد إلكتروني للتأكيد بهذه التفاصيل إلى {{email}}.",
+      "emailSentGeneric": "تم إرسال تأكيد بهذه التفاصيل إليك.",
+      "manageLink": "إدارة الحجز (الإلغاء أو إعادة الجدولة)"
+    },
+    "page": {
+      "bookingFailed": "تعذر إكمال حجزك. يرجى المحاولة مرة أخرى.",
+      "minutesShort": "دقيقة",
+      "bookingInProgress": "جارٍ حجز جلستك…",
+      "chooseSession": "اختر جلسة",
+      "pickATime": "اختر وقتًا",
+      "backToTimeAria": "العودة إلى اختيار الوقت",
+      "questionsTitle": "بضعة أسئلة",
+      "detailsTitle": "بياناتك",
+      "form": {
+        "nameLabel": "الاسم",
+        "namePlaceholder": "اسمك الكامل",
+        "emailLabel": "البريد الإلكتروني",
+        "emailPlaceholder": "you@example.com",
+        "phoneLabel": "الهاتف",
+        "phonePlaceholder": "رقم هاتفك",
+        "identityHint": "يرجى تقديم بريد إلكتروني أو رقم هاتف على الأقل حتى نتمكن من مشاركة تفاصيل حجزك.",
+        "authedHint": "سنستخدم الاسم وبيانات الاتصال في حسابك — فقط أجب عن الأسئلة أدناه."
+      },
+      "submit": {
+        "booking": "جارٍ الحجز…",
+        "requestBooking": "طلب الحجز",
+        "confirmBooking": "تأكيد الحجز"
+      },
+      "validation": {
+        "nameRequired": "يرجى إدخال اسمك",
+        "emailInvalid": "يرجى إدخال بريد إلكتروني صالح",
+        "identityRequired": "يرجى تقديم بريد إلكتروني أو رقم هاتف",
+        "phoneInvalid": "يرجى إدخال رقم هاتف صالح"
+      }
+    }
+  },
+  "bookingManage": {
+    "errorPage": {
+      "incompleteTitle": "يبدو رابط الحجز هذا غير مكتمل",
+      "incompleteDescription": "يرجى فتح رابط الإدارة تمامًا كما يظهر في بريد التأكيد الإلكتروني الخاص بك."
+    },
+    "status": {
+      "confirmed": "مؤكد",
+      "pending": "في انتظار التأكيد",
+      "cancelled": "ملغى",
+      "rescheduled": "أُعيدت جدولته"
+    },
+    "notFound": {
+      "title": "الحجز غير موجود",
+      "description": "قد يكون رابط الإدارة هذا غير صالح أو منتهي الصلاحية. يرجى استخدام الرابط الموجود في بريد التأكيد الإلكتروني."
+    },
+    "toast": {
+      "cancelSuccess": "تم إلغاء حجزك.",
+      "cancelError": "تعذر إلغاء الحجز. يرجى المحاولة مرة أخرى.",
+      "rescheduleSuccess": "تمت إعادة جدولة حجزك.",
+      "rescheduleError": "تعذرت إعادة جدولة الحجز. يرجى المحاولة مرة أخرى."
+    },
+    "viewDetails": "عرض تفاصيل الحجز",
+    "backToDetailsAria": "العودة إلى تفاصيل الحجز",
+    "pickNewTime": "اختر وقتًا جديدًا",
+    "loadingAvailability": "جارٍ تحميل الأوقات المتاحة…",
+    "confirmReschedule": {
+      "confirming": "جارٍ إعادة الجدولة…",
+      "default": "تأكيد إعادة الجدولة"
+    },
+    "bookedFor": "محجوز لـ",
+    "statusNotes": {
+      "pending": "هذا الحجز في انتظار تأكيد المضيف. سيتم إعلامك فور الموافقة عليه.",
+      "cancelled": "تم إلغاء هذا الحجز.",
+      "rescheduled": "أُعيدت جدولة هذا الحجز. يرجى استخدام رابط الإدارة من أحدث تأكيد لديك لمعرفة الموعد الجديد.",
+      "past": "هذا الحجز في الماضي."
+    },
+    "reschedule": "إعادة الجدولة",
+    "cancelBooking": "إلغاء الحجز",
+    "cancelDialog": {
+      "heading": "هل تريد إلغاء هذا الحجز؟",
+      "keepBooking": "الاحتفاظ بالحجز",
+      "confirmCancel": "نعم، إلغاء",
+      "cancelling": "جارٍ الإلغاء…",
+      "releaseNotice": "سيتم تحرير موعدك في <bold>{{slot}}</bold>. لا يمكن التراجع عن هذا الإجراء.",
+      "reasonLabel": "السبب (اختياري)",
+      "reasonPlaceholder": "أخبر المضيف بسبب إلغائك"
+    }
+  }
+}

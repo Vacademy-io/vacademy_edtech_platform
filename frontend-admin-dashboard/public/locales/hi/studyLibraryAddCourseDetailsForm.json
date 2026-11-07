@@ -1,0 +1,7 @@
+{
+    "enterName": "{{label}} का नाम दर्ज करें",
+    "durationDays": "अवधि (दिन)",
+    "enterDurationInDays": "दिनों में अवधि दर्ज करें",
+    "sessions": "सेशन",
+    "startDate": "शुरुआत तारीख: {{date}}"
+}

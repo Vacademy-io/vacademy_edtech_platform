@@ -1,0 +1,38 @@
+{
+    "dialogTitle": "كود التضمين - {{campaignName}}",
+    "dialogDescription": "ضمّن هذا النموذج في موقعك الإلكتروني أو أي صفحة ويب لجمع الردود.",
+    "tabs": {
+        "buttonPopup": "زر + نافذة منبثقة",
+        "directEmbed": "تضمين مباشر"
+    },
+    "defaults": {
+        "buttonText": "سجّل الآن",
+        "popupTitle": "نموذج التسجيل"
+    },
+    "buttonPanel": {
+        "heading": "تخصيص الزر",
+        "buttonTextLabel": "نص الزر",
+        "bgColorLabel": "لون الخلفية",
+        "textColorLabel": "لون النص",
+        "borderRadiusLabel": "استدارة الحواف (بكسل)",
+        "popupTitleLabel": "عنوان النافذة المنبثقة",
+        "previewLabel": "معاينة"
+    },
+    "iframePanel": {
+        "heading": "تخصيص الإطار",
+        "widthLabel": "العرض",
+        "heightLabel": "الارتفاع الأولي (بكسل) — يتكيّف مع النموذج",
+        "previewScaledLabel": "معاينة (مصغّرة)",
+        "formPreviewTitle": "معاينة النموذج",
+        "tipPrefix": "نصيحة: استخدم",
+        "tipSuffix": "لعرض متجاوب، أو حدد بكسلات مثل"
+    },
+    "copyButton": {
+        "copy": "نسخ",
+        "copied": "تم النسخ"
+    },
+    "toasts": {
+        "copiedToClipboard": "تم النسخ إلى الحافظة!",
+        "copyFailed": "فشل النسخ"
+    }
+}

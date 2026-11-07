@@ -1,0 +1,14 @@
+{
+    "trigger": {
+        "label": "استخراج الأسئلة"
+    },
+    "dialog": {
+        "title": "استخراج الأسئلة",
+        "promptLabel": "الموجه",
+        "promptPlaceholder": "أدخل موجهك هنا",
+        "extractButton": "استخراج"
+    },
+    "tasksList": {
+        "heading": "Vsmart Extract"
+    }
+}

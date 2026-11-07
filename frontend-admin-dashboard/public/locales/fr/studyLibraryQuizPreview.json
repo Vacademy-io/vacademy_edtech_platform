@@ -1,0 +1,32 @@
+{
+    "toast": {
+        "saveSettingsFailed": "Échec de l'enregistrement des paramètres. Veuillez réessayer.",
+        "settingsSaved": "Paramètres du quiz enregistrés !",
+        "questionsAddedSuccess_one": "{{count}} question ajoutée avec succès !",
+        "questionsAddedSuccess_many": "{{count}} questions ajoutées avec succès !",
+        "questionsAddedSuccess_other": "{{count}} questions ajoutées avec succès !",
+        "addQuestionsFailed": "Échec de l'ajout des questions. Veuillez réessayer.",
+        "questionUpdated": "Question mise à jour avec succès !",
+        "updateQuestionFailed": "Échec de la mise à jour de la question. Veuillez réessayer.",
+        "enterQuestionName": "Veuillez saisir un nom de question",
+        "questionAdded": "Question ajoutée avec succès !",
+        "addQuestionFailed": "Échec de l'ajout de la question. Veuillez réessayer.",
+        "questionDeleted": "Question supprimée avec succès !",
+        "deleteQuestionFailed": "Échec de la suppression de la question. Veuillez réessayer."
+    },
+    "header": "Questions du quiz",
+    "deletedBadge": "SUPPRIMÉ",
+    "quizDeletedTitle": "Ce quiz a été supprimé",
+    "quizDeletedSubtitle": "Le contenu du quiz n'est plus disponible",
+    "unableToLoadTitle": "Impossible de charger le quiz",
+    "unableToLoadSubtitle": "Les paramètres de route ne sont pas disponibles. Veuillez actualiser la page.",
+    "noQuestionsTitle": "Aucune question pour le moment",
+    "noQuestionsSubtitle": "Ajoutez votre première question pour commencer",
+    "addNewQuestionTitle": "Ajouter une nouvelle question",
+    "editQuestionTitle": "Modifier la question {{number}}",
+    "cancel": "Annuler",
+    "addQuestion": "Ajouter la question",
+    "adding": "Ajout en cours...",
+    "saveChanges": "Enregistrer les modifications",
+    "saving": "Enregistrement en cours..."
+}

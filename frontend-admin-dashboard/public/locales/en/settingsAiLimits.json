@@ -1,0 +1,236 @@
+{
+    "heading": "AI usage limits",
+    "description": "Cap how much AI each member, role or the whole institute can use per day, week or month. Limits count list credits, so included and free usage counts too.",
+    "loadFailed": "Couldn't load usage limits. Try again in a moment.",
+    "mode": {
+        "title": "How limits behave",
+        "description": "Start with Preview to see who a limit would stop, then switch to Enforce once the numbers look right.",
+        "OFF": {
+            "label": "Off",
+            "help": "Limits are saved but not checked. AI works exactly as it does today."
+        },
+        "SHADOW": {
+            "label": "Preview",
+            "help": "Every AI call is checked and logged as 'would block', but nothing is stopped."
+        },
+        "ENFORCE": {
+            "label": "Enforce",
+            "help": "A member who reaches a hard limit is stopped until the period resets. Soft limits show a warning."
+        },
+        "enforceLocked": "Enforce has to be enabled for your institute by {{brand}}.",
+        "enforceLockedNote": "Enforce is locked for your institute. Use Preview to measure the impact; contact {{brand}} to unlock enforcement.",
+        "globallyPaused": "Enforcement is paused across the platform right now, so Enforce currently behaves like Preview.",
+        "notify": "Email admins at the soft limit",
+        "notifyHelp": "One email per limit per period when usage crosses the soft limit.",
+        "showNumbers": "Show numbers to learners",
+        "showNumbersHelp": "When on, learners see how much of their allowance is used. When off they only see that a limit was reached.",
+        "reasonPlaceholder": "Why are you changing this? (saved in the change log)"
+    },
+    "usage": {
+        "title": "Current usage",
+        "description": "Usage counted against your limits in the current period.",
+        "failed": "Couldn't load current usage.",
+        "empty": "No limited usage in this period yet.",
+        "line": "{{credits}} credits · {{requests}} requests",
+        "hard": "limit {{value}}",
+        "soft": "warn at {{value}}"
+    },
+    "periodShort": {
+        "DAY": "Today",
+        "WEEK": "This week",
+        "MONTH": "This month"
+    },
+    "period": {
+        "DAY": "Per day",
+        "WEEK": "Per week",
+        "MONTH": "Per month",
+        "PLAN_PERIOD": "Per plan period"
+    },
+    "rows": {
+        "title": "Your limits",
+        "description": "Each limit applies to one feature scope and one period. A member's own limit replaces their role limit; institute-wide pools and platform limits always apply too.",
+        "offNote": "Limits are Off, so these rules are saved but not checked. Switch to Preview to start measuring.",
+        "empty": "No limits yet. Add one to cap AI usage for a role, a member or the whole institute."
+    },
+    "platform": {
+        "title": "Set by {{brand}}",
+        "description": "Platform limits (for example a plan's fair-use cap) always apply and can't be changed here.",
+        "lockedTooltip": "Set by {{brand}}. You can't edit or override this limit."
+    },
+    "table": {
+        "appliesTo": "Applies to",
+        "feature": "Feature",
+        "period": "Period",
+        "soft": "Warn at",
+        "hard": "Limit",
+        "reason": "Reason",
+        "actions": "Actions",
+        "unlimited": "No limit",
+        "featureOff": "Off (0)"
+    },
+    "subjectKind": {
+        "INSTITUTE": "Whole institute",
+        "ROLE_CLASS": "Role group",
+        "ROLE": "Role",
+        "USER": "Specific member"
+    },
+    "subject": {
+        "institute": "Whole institute (shared pool)",
+        "eachMember": "Each {{name}}",
+        "pooled": "All {{name}} together",
+        "user": "Member"
+    },
+    "scope": {
+        "all": "All AI features"
+    },
+    "scopeKind": {
+        "ALL": "All AI features",
+        "GROUP": "A feature group",
+        "USE_CASE": "One feature"
+    },
+    "unit": {
+        "credits": "credits",
+        "requests": "requests",
+        "usd": "USD"
+    },
+    "metric": {
+        "CREDITS": "Credits",
+        "COUNT": "Requests"
+    },
+    "roleClass": {
+        "ADMIN": "Admins",
+        "TEACHER": "Teachers",
+        "STAFF": "Staff",
+        "PARENT": "Parents",
+        "LEARNER": "Learners",
+        "SYSTEM": "Automated jobs",
+        "API_KEY": "API keys",
+        "PUBLIC": "Public visitors",
+        "UNKNOWN": "Unknown"
+    },
+    "featureGroup": {
+        "tutor": "AI tutor",
+        "video": "Video",
+        "calling": "Calling",
+        "content": "Content",
+        "assessment": "Assessment",
+        "analytics": "Analytics",
+        "kb": "Knowledge base",
+        "crm": "CRM",
+        "engagement": "Engagement",
+        "agent": "Agents and assistants",
+        "media": "Media",
+        "platform": "Other"
+    },
+    "decision": {
+        "OK": "Within limit",
+        "WARN": "Near limit",
+        "WOULD_BLOCK": "Would block",
+        "BLOCK": "Blocked",
+        "NONE": "Not checked",
+        "OVERRIDDEN": "Replaced by a more specific rule",
+        "NOT_ACTIVE": "Not in use yet"
+    },
+    "actions": {
+        "cancel": "Cancel",
+        "previewImpact": "Preview impact",
+        "save": "Save",
+        "saving": "Saving…",
+        "addLimit": "Add limit",
+        "edit": "Edit limit",
+        "delete": "Remove",
+        "deleting": "Removing…"
+    },
+    "toasts": {
+        "policySaved": "Limit settings saved",
+        "rowCreated": "Limit added",
+        "rowUpdated": "Limit updated",
+        "rowDeleted": "Limit removed",
+        "saveFailed": "Couldn't save. Please try again.",
+        "deleteFailed": "Couldn't remove the limit. Please try again."
+    },
+    "delete": {
+        "title": "Remove limit",
+        "body": "Remove the limit for {{subject}} on {{feature}}? Usage already counted is kept."
+    },
+    "dialog": {
+        "addTitle": "Add a limit",
+        "editTitle": "Edit limit",
+        "previewFirst": "Run Preview impact to see the effect before saving.",
+        "subjectKind": "Applies to",
+        "roleClass": "Role group",
+        "role": "Role",
+        "user": "Member",
+        "pick": "Select…",
+        "search": "Search…",
+        "noMatches": "No matches",
+        "loading": "Loading…",
+        "pickUser": "Select a member",
+        "searchUser": "Search by name",
+        "noUsers": "No members with AI usage in the last 90 days",
+        "userHint": "Lists members who used AI in the last 90 days.",
+        "instituteHint": "One shared pool for everyone in the institute.",
+        "perMember": "Each member gets this limit",
+        "perMemberOn": "Every member of the role is capped separately.",
+        "perMemberOff": "Pooled: the whole role shares one limit.",
+        "scopeKind": "Feature scope",
+        "group": "Feature group",
+        "useCase": "Feature",
+        "useCaseKeyPlaceholder": "e.g. tutor_chat",
+        "noUseCases": "No features used in the last 90 days",
+        "pickFromList": "Pick from the list",
+        "typeKey": "Not listed? Type the feature key",
+        "period": "Period",
+        "metric": "Count",
+        "soft": "Warn at ({{unit}})",
+        "hard": "Limit ({{unit}})",
+        "optional": "Optional",
+        "limitsHelp": "Warn at shows a warning; Limit stops further use until the period resets (only when Enforce is on).",
+        "hardZero": "A limit of 0 turns this feature off for them.",
+        "userExempt": "No limit for a member exempts them from their role's limit (institute pools and platform limits still apply).",
+        "reason": "Reason",
+        "reasonPlaceholder": "Why? (saved in the change log)",
+        "errors": {
+            "subject": "Choose who this applies to.",
+            "scope": "Choose the feature or feature group.",
+            "number": "Limits must be numbers.",
+            "negative": "Limits can't be negative.",
+            "softAboveHard": "Warn at can't be higher than the limit.",
+            "noLimit": "Set a warning level, a limit, or both."
+        },
+        "editNote": "Only the warning level and the limit can be changed. To change who or what this limit covers, remove it and add a new one.",
+        "roleHint": "A custom role has to be mapped to a role group by {{brand}} before it can be limited; until then, limit its role group."
+    },
+    "preview": {
+        "loading": "Replaying the last 30 days…",
+        "failed": "Preview isn't available right now ({{error}}). You can still save.",
+        "unavailable": "service unavailable",
+        "heading": "Impact over the last 30 days",
+        "explainer_one": "{{count}} AI call replayed against this limit together with your existing limits.",
+        "explainer_other": "{{count}} AI calls replayed against this limit together with your existing limits.",
+        "stats": {
+            "events": "AI calls checked",
+            "wouldBlock": "Would be blocked",
+            "wouldWarn": "Would warn",
+            "users": "Members affected"
+        },
+        "noImpact": "Nobody would have been blocked or warned in the last 30 days.",
+        "byUser": "Most affected members",
+        "byUseCase": "Most affected features",
+        "blockedCount_one": "{{count}} blocked",
+        "blockedCount_other": "{{count}} blocked",
+        "warnedCount_one": "{{count}} warned",
+        "warnedCount_other": "{{count}} warned",
+        "truncated": "Only the most recent AI calls were replayed (the period had too many to check them all)."
+    },
+    "effective": {
+        "title": "Check a member's limits",
+        "description": "Every limit that applies to one member right now, which rule it comes from, and how much is left.",
+        "failed": "Couldn't load this member's limits.",
+        "none": "No limits apply to this member.",
+        "source": "Rule",
+        "used": "Used",
+        "resets": "Resets",
+        "status": "Status"
+    }
+}

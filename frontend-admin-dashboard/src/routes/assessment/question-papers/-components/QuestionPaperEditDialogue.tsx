@@ -11,6 +11,7 @@ import { uploadQuestionPaperFormSchema } from '../-utils/upload-question-paper-f
 import { useFilterDataForAssesment } from '../../assessment-list/-utils.ts/useFiltersData';
 import { useState } from 'react';
 import { useNamingSettings } from '@/hooks/useNamingSettings';
+import { useTranslation } from 'react-i18next';
 
 interface FormData {
     title: string;
@@ -20,6 +21,7 @@ interface FormData {
 type QuestionPaperForm = z.infer<ReturnType<typeof uploadQuestionPaperFormSchema>>;
 
 export const QuestionPaperEditDialog = ({ form }: { form: UseFormReturn<QuestionPaperForm> }) => {
+    const { t } = useTranslation('assessmentQuestionPaperEditDialogue');
     const [isDialogOpen, setIsDialogOpen] = useState(false);
     const { instituteDetails } = useInstituteDetailsStore();
     const { YearClassFilterData, SubjectFilterData } = useFilterDataForAssesment(instituteDetails);
@@ -52,13 +54,13 @@ export const QuestionPaperEditDialog = ({ form }: { form: UseFormReturn<Question
                 </Button>
             </DialogTrigger>
             <DialogContent className="gap-2 p-0">
-                <h1 className="rounded-t-lg bg-primary-50 p-4 text-primary-500">Edit</h1>
+                <h1 className="rounded-t-lg bg-primary-50 p-4 text-primary-500">{t('title')}</h1>
                 <form className="flex flex-col gap-2 p-4 pt-0">
                     <CustomInput
                         control={control}
                         name="title"
-                        label="Title"
-                        placeholder="Enter Title"
+                        label={t('titleFieldLabel')}
+                        placeholder={t('titleFieldPlaceholder')}
                         required
                     />
                     <div className="flex items-center gap-4">
@@ -93,7 +95,7 @@ export const QuestionPaperEditDialog = ({ form }: { form: UseFormReturn<Question
                             layoutVariant="default"
                             onClick={handleSubmit(onSubmit)}
                         >
-                            Save
+                            {t('saveButton')}
                         </MyButton>
                     </div>
                 </form>

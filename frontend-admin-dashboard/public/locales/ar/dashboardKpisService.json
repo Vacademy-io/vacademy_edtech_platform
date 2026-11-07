@@ -1,0 +1,32 @@
+{
+    "kpis": {
+        "activeLearners": {
+            "label": "{{learners}} النشطون",
+            "subtitle": "من إجمالي {{total}}"
+        },
+        "totalCourses": {
+            "label": "إجمالي {{courses}}",
+            "subtitle": "{{courses}} نشطة"
+        },
+        "teamMembers": {
+            "label": "أعضاء الفريق",
+            "subtitle": "{{admins}}، و{{teachers}} والموظفون"
+        },
+        "outstandingFees": {
+            "label": "الرسوم المستحقة",
+            "subtitle": "المتبقي للتحصيل، بما في ذلك المستحقات القادمة"
+        },
+        "overdueFees": {
+            "label": "الرسوم المتأخرة",
+            "subtitle": "تجاوزت تاريخ الاستحقاق ولم تُدفع"
+        },
+        "classesToday": {
+            "label": "{{sessions}} اليوم",
+            "subtitle": "{{sessions}} مجدولة"
+        }
+    },
+    "breakdown": {
+        "inactive": "غير نشط",
+        "terminated": "منتهٍ"
+    }
+}

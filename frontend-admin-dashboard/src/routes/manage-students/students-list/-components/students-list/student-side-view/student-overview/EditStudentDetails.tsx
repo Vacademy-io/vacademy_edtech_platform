@@ -8,6 +8,8 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm, FormProvider } from 'react-hook-form';
 import { z } from 'zod';
 import { useEffect, useRef, useState, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 import EnrollFormUploadImage from '@/assets/svgs/enroll-form-upload-image.svg';
 import { FileUploadComponent } from '@/components/design-system/file-upload';
 import { useFileUpload } from '@/hooks/use-file-upload';
@@ -43,30 +45,43 @@ import { getFieldsForLocation, type FieldForLocation } from '@/lib/custom-fields
 import { getSystemFieldColumnVisibility } from '@/components/design-system/utils/constants/system-field-columns';
 import { cn } from '@/lib/utils';
 
-const EditStudentDetailsFormSchema = z.object({
-    user_id: z.string().min(1, 'This field is required'),
-    username: z.string().optional(),
-    email: z.string().email('Invalid email address'),
-    full_name: z.string().min(1, 'This field is required'),
-    contact_number: z.string().min(1, 'This field is required'),
-    gender: z.string().optional(),
-    date_of_birth: z.string().optional(),
-    address_line: z.string().optional(),
-    state: z.string().optional(),
-    city: z.string().optional(),
-    pin_code: z.string().optional(),
-    institute_name: z.string().optional(),
-    fathers_name: z.string().optional(),
-    mothers_name: z.string().optional(),
-    father_mobile_number: z.string().optional(),
-    father_email: z.string().email('Invalid email').optional().or(z.literal('')),
-    mother_mobile_number: z.string().optional(),
-    mother_email: z.string().email('Invalid email').optional().or(z.literal('')),
-    face_file_id: z.string().optional().or(z.literal('')),
-    custom_fields: z.record(z.string()).optional(),
-});
+const buildEditStudentDetailsFormSchema = (t: TFunction) =>
+    z.object({
+        user_id: z.string().min(1, t('manageStudentsEditStudentDetails:validation.required')),
+        username: z.string().optional(),
+        email: z.string().email(t('manageStudentsEditStudentDetails:validation.invalidEmail')),
+        full_name: z.string().min(1, t('manageStudentsEditStudentDetails:validation.required')),
+        contact_number: z
+            .string()
+            .min(1, t('manageStudentsEditStudentDetails:validation.required')),
+        gender: z.string().optional(),
+        date_of_birth: z.string().optional(),
+        address_line: z.string().optional(),
+        state: z.string().optional(),
+        city: z.string().optional(),
+        pin_code: z.string().optional(),
+        institute_name: z.string().optional(),
+        fathers_name: z.string().optional(),
+        mothers_name: z.string().optional(),
+        father_mobile_number: z.string().optional(),
+        father_email: z
+            .string()
+            .email(t('manageStudentsEditStudentDetails:validation.invalidEmailShort'))
+            .optional()
+            .or(z.literal('')),
+        mother_mobile_number: z.string().optional(),
+        mother_email: z
+            .string()
+            .email(t('manageStudentsEditStudentDetails:validation.invalidEmailShort'))
+            .optional()
+            .or(z.literal('')),
+        face_file_id: z.string().optional().or(z.literal('')),
+        custom_fields: z.record(z.string()).optional(),
+    });
 
-export type EditStudentDetailsFormValues = z.infer<typeof EditStudentDetailsFormSchema>;
+export type EditStudentDetailsFormValues = z.infer<
+    ReturnType<typeof buildEditStudentDetailsFormSchema>
+>;
 
 // ── Local presentational helpers ──────────────────────────────────────────────
 
@@ -145,10 +160,12 @@ const FullWidth = ({ children }: { children: React.ReactNode }) => (
 // ── Main component ───────────────────────────────────────────────────────────
 
 export const EditStudentDetails = () => {
+    const { t } = useTranslation('manageStudentsEditStudentDetails');
+    const editStudentDetailsFormSchema = useMemo(() => buildEditStudentDetailsFormSchema(t), [t]);
     const { selectedStudent, setSelectedStudent } = useStudentSidebar();
     const { data: studentDetails } = useGetStudentDetails(selectedStudent?.user_id || '');
     const form = useForm<EditStudentDetailsFormValues>({
-        resolver: zodResolver(EditStudentDetailsFormSchema),
+        resolver: zodResolver(editStudentDetailsFormSchema),
         defaultValues: {},
     });
 
@@ -304,7 +321,7 @@ export const EditStudentDetails = () => {
 
     const handleDialogChange = (isOpen: boolean) => {
         if (!isOpen && form.formState.isDirty) {
-            const ok = window.confirm('Discard unsaved changes?');
+            const ok = window.confirm(t('discardConfirm'));
             if (!ok) return;
         }
         setOpenDialog(isOpen);
@@ -360,7 +377,7 @@ export const EditStudentDetails = () => {
                         isDirty ? 'bg-primary-500' : 'bg-success-500'
                     )}
                 />
-                {isDirty ? 'Unsaved changes' : 'All changes saved'}
+                {isDirty ? t('unsavedChanges') : t('allChangesSaved')}
             </span>
             <MyButton
                 type="button"
@@ -368,7 +385,7 @@ export const EditStudentDetails = () => {
                 scale="medium"
                 onClick={() => handleDialogChange(false)}
             >
-                Cancel
+                {t('cancel')}
             </MyButton>
             <MyButton
                 onAsyncClick={async () => {
@@ -376,9 +393,9 @@ export const EditStudentDetails = () => {
                     if (isValid) await form.handleSubmit(onSubmit)();
                 }}
                 disable={!isDirty}
-                loadingText="Saving..."
+                loadingText={t('saving')}
             >
-                Save Changes
+                {t('saveChanges')}
             </MyButton>
         </>
     );
@@ -396,10 +413,10 @@ export const EditStudentDetails = () => {
                             input={field.value}
                             onChangeFunction={(e) => field.onChange(e.target.value)}
                             inputType="text"
-                            inputPlaceholder="e.g. Himang Sharma"
+                            inputPlaceholder={t('fields.fullName.placeholder')}
                             className="w-full sm:w-full"
                             required={true}
-                            label="Full Name"
+                            label={t('fields.fullName.label')}
                             error={form.formState.errors.full_name?.message}
                         />
                     </FormControl>
@@ -425,7 +442,7 @@ export const EditStudentDetails = () => {
                         <FormControl>
                             <div className="flex w-full flex-col gap-1">
                                 <label className="text-sm font-medium text-neutral-700">
-                                    Gender
+                                    {t('fields.gender.label')}
                                 </label>
                                 <MyDropdown
                                     currentValue={selectedGender}
@@ -437,7 +454,7 @@ export const EditStudentDetails = () => {
                                             field.onChange(value);
                                         }
                                     }}
-                                    placeholder="Select Gender"
+                                    placeholder={t('fields.gender.placeholder')}
                                     error={form.formState.errors.gender?.message}
                                     required={false}
                                 />
@@ -460,10 +477,10 @@ export const EditStudentDetails = () => {
                             input={field.value}
                             onChangeFunction={(e) => field.onChange(e.target.value)}
                             inputType="text"
-                            inputPlaceholder="name@example.com"
+                            inputPlaceholder={t('fields.email.placeholder')}
                             className="w-full sm:w-full"
                             required={true}
-                            label="Email"
+                            label={t('fields.email.label')}
                             error={form.formState.errors.email?.message}
                         />
                     </FormControl>
@@ -481,8 +498,8 @@ export const EditStudentDetails = () => {
                     <FormControl>
                         <FullWidth>
                             <PhoneInputField
-                                label="Mobile Number"
-                                placeholder="123 456 7890"
+                                label={t('fields.mobile.label')}
+                                placeholder={t('fields.mobile.placeholder')}
                                 name="contact_number"
                                 control={form.control}
                                 required={true}
@@ -510,9 +527,9 @@ export const EditStudentDetails = () => {
                             input={field.value}
                             onChangeFunction={(e) => field.onChange(e.target.value)}
                             inputType="text"
-                            inputPlaceholder="House / street / locality"
+                            inputPlaceholder={t('fields.addressLine.placeholder')}
                             className="w-full sm:w-full"
-                            label="Address Line"
+                            label={t('fields.addressLine.label')}
                             error={form.formState.errors.address_line?.message}
                         />
                     </FormControl>
@@ -532,9 +549,9 @@ export const EditStudentDetails = () => {
                             input={field.value}
                             onChangeFunction={(e) => field.onChange(e.target.value)}
                             inputType="text"
-                            inputPlaceholder="City"
+                            inputPlaceholder={t('fields.city.placeholder')}
                             className="w-full sm:w-full"
-                            label="City"
+                            label={t('fields.city.label')}
                             error={form.formState.errors.city?.message}
                         />
                     </FormControl>
@@ -554,9 +571,9 @@ export const EditStudentDetails = () => {
                             input={field.value}
                             onChangeFunction={(e) => field.onChange(e.target.value)}
                             inputType="text"
-                            inputPlaceholder="State"
+                            inputPlaceholder={t('fields.state.placeholder')}
                             className="w-full sm:w-full"
-                            label="State"
+                            label={t('fields.state.label')}
                             error={form.formState.errors.state?.message}
                         />
                     </FormControl>
@@ -579,8 +596,8 @@ export const EditStudentDetails = () => {
                             inputType="text"
                             inputMode="numeric"
                             pattern="[0-9]*"
-                            label="Pincode"
-                            inputPlaceholder="e.g. 425562"
+                            label={t('fields.pincode.label')}
+                            inputPlaceholder={t('fields.pincode.placeholder')}
                             input={value}
                             onChangeFunction={onChange}
                             className="w-full sm:w-full"
@@ -604,9 +621,9 @@ export const EditStudentDetails = () => {
                             input={field.value}
                             onChangeFunction={(e) => field.onChange(e.target.value)}
                             inputType="text"
-                            inputPlaceholder="School / College / Institute"
+                            inputPlaceholder={t('fields.instituteName.placeholder')}
                             className="w-full sm:w-full"
-                            label="Institute Name"
+                            label={t('fields.instituteName.label')}
                             error={form.formState.errors.institute_name?.message}
                         />
                     </FormControl>
@@ -626,9 +643,9 @@ export const EditStudentDetails = () => {
                             input={field.value}
                             onChangeFunction={(e) => field.onChange(e.target.value)}
                             inputType="text"
-                            inputPlaceholder="Father / male guardian name"
+                            inputPlaceholder={t('fields.fatherName.placeholder')}
                             className="w-full sm:w-full"
-                            label="Name"
+                            label={t('fields.fatherName.label')}
                             error={form.formState.errors.fathers_name?.message}
                         />
                     </FormControl>
@@ -646,8 +663,8 @@ export const EditStudentDetails = () => {
                     <FormControl>
                         <FullWidth>
                             <PhoneInputField
-                                label="Mobile Number"
-                                placeholder="123 456 7890"
+                                label={t('fields.mobile.label')}
+                                placeholder={t('fields.mobile.placeholder')}
                                 name="father_mobile_number"
                                 control={form.control}
                                 required={false}
@@ -670,9 +687,9 @@ export const EditStudentDetails = () => {
                             input={field.value}
                             onChangeFunction={(e) => field.onChange(e.target.value)}
                             inputType="email"
-                            inputPlaceholder="name@example.com"
+                            inputPlaceholder={t('fields.email.placeholder')}
                             className="w-full sm:w-full"
-                            label="Email"
+                            label={t('fields.email.label')}
                             error={form.formState.errors.father_email?.message}
                         />
                     </FormControl>
@@ -692,9 +709,9 @@ export const EditStudentDetails = () => {
                             input={field.value}
                             onChangeFunction={(e) => field.onChange(e.target.value)}
                             inputType="text"
-                            inputPlaceholder="Mother / female guardian name"
+                            inputPlaceholder={t('fields.motherName.placeholder')}
                             className="w-full sm:w-full"
-                            label="Name"
+                            label={t('fields.motherName.label')}
                             error={form.formState.errors.mothers_name?.message}
                         />
                     </FormControl>
@@ -712,8 +729,8 @@ export const EditStudentDetails = () => {
                     <FormControl>
                         <FullWidth>
                             <PhoneInputField
-                                label="Mobile Number"
-                                placeholder="123 456 7890"
+                                label={t('fields.mobile.label')}
+                                placeholder={t('fields.mobile.placeholder')}
                                 name="mother_mobile_number"
                                 control={form.control}
                                 required={false}
@@ -736,9 +753,9 @@ export const EditStudentDetails = () => {
                             input={field.value}
                             onChangeFunction={(e) => field.onChange(e.target.value)}
                             inputType="email"
-                            inputPlaceholder="name@example.com"
+                            inputPlaceholder={t('fields.email.placeholder')}
                             className="w-full sm:w-full"
-                            label="Email"
+                            label={t('fields.email.label')}
                             error={form.formState.errors.mother_email?.message}
                         />
                     </FormControl>
@@ -787,7 +804,9 @@ export const EditStudentDetails = () => {
                                                     field.onChange(next);
                                                 }
                                             }}
-                                            placeholder={`Select ${customField.name}`}
+                                            placeholder={t('customField.selectPlaceholder', {
+                                                name: customField.name,
+                                            })}
                                             required={customField.required}
                                             disable={false}
                                         />
@@ -811,7 +830,9 @@ export const EditStudentDetails = () => {
                             <MyInput
                                 inputType={customField.type === 'number' ? 'number' : 'text'}
                                 label={customField.name}
-                                inputPlaceholder={`Enter ${customField.name}`}
+                                inputPlaceholder={t('customField.enterPlaceholder', {
+                                    name: customField.name,
+                                })}
                                 input={field.value?.[customField.id] || ''}
                                 onChangeFunction={(e) => {
                                     const next = {
@@ -832,18 +853,20 @@ export const EditStudentDetails = () => {
 
     // ── Render ───────────────────────────────────────────────────────────────
 
-    if (!selectedStudent) return <p>No Student Found</p>;
+    if (!selectedStudent) return <p>{t('noStudentFound')}</p>;
 
     return (
         <MyDialog
             trigger={
                 <MyButton buttonType="secondary" scale="medium">
                     <PencilSimple className="size-4" />
-                    Edit Details
+                    {t('trigger')}
                 </MyButton>
             }
             footer={footer}
-            heading={`Edit ${getTerminology(RoleTerms.Learner, SystemTerms.Learner)} Profile`}
+            heading={t('dialogHeading', {
+                term: getTerminology(RoleTerms.Learner, SystemTerms.Learner),
+            })}
             open={openDialog}
             onOpenChange={handleDialogChange}
             dialogWidth="max-w-2xl"
@@ -859,8 +882,8 @@ export const EditStudentDetails = () => {
                     {/* PROFILE PHOTO */}
                     <FormCard
                         icon={ImageIcon}
-                        title="Profile photo"
-                        helper="Square image, at least 200×200. Max 5 MB."
+                        title={t('sections.photo.title')}
+                        helper={t('sections.photo.helper')}
                     >
                         <div className="flex items-center gap-4">
                             {isUploading ? (
@@ -870,7 +893,7 @@ export const EditStudentDetails = () => {
                             ) : faceUrl ? (
                                 <img
                                     src={faceUrl}
-                                    alt="Profile"
+                                    alt={t('photo.alt')}
                                     className="size-20 shrink-0 rounded-full object-cover ring-2 ring-primary-100"
                                 />
                             ) : (
@@ -888,7 +911,7 @@ export const EditStudentDetails = () => {
                                     disable={isUploading}
                                 >
                                     <Upload className="size-4" />
-                                    {faceUrl ? 'Replace' : 'Upload'}
+                                    {faceUrl ? t('photo.replace') : t('photo.upload')}
                                 </MyButton>
                                 {faceUrl && (
                                     <MyButton
@@ -899,7 +922,7 @@ export const EditStudentDetails = () => {
                                         disable={isUploading}
                                     >
                                         <Trash className="size-4" />
-                                        Remove
+                                        {t('photo.remove')}
                                     </MyButton>
                                 )}
                             </div>
@@ -917,8 +940,8 @@ export const EditStudentDetails = () => {
                     {/* IDENTITY */}
                     <FormCard
                         icon={UserCircle}
-                        title="Identity"
-                        helper="Their name and basic info."
+                        title={t('sections.identity.title')}
+                        helper={t('sections.identity.helper')}
                     >
                         <Grid2>
                             {fullNameField}
@@ -929,8 +952,8 @@ export const EditStudentDetails = () => {
                     {/* CONTACT */}
                     <FormCard
                         icon={Phone}
-                        title="Contact"
-                        helper="Primary channels for reach-out."
+                        title={t('sections.contact.title')}
+                        helper={t('sections.contact.helper')}
                     >
                         <Grid2>
                             {emailField}
@@ -944,7 +967,11 @@ export const EditStudentDetails = () => {
                         showField('city') ||
                         showField('region') ||
                         showField('pin_code')) && (
-                        <FormCard icon={MapPin} title="Address" helper="Where they live.">
+                        <FormCard
+                            icon={MapPin}
+                            title={t('sections.address.title')}
+                            helper={t('sections.address.helper')}
+                        >
                             {showField('address_line') && addressLineField}
                             <Grid3>
                                 {showField('city') && cityField}
@@ -958,8 +985,8 @@ export const EditStudentDetails = () => {
                     {showField('linked_institute_name') && (
                         <FormCard
                             icon={Buildings}
-                            title="Institute"
-                            helper="Their primary place of study."
+                            title={t('sections.institute.title')}
+                            helper={t('sections.institute.helper')}
                         >
                             {instituteField}
                         </FormCard>
@@ -975,15 +1002,15 @@ export const EditStudentDetails = () => {
                         showField('parents_to_mother_email')) && (
                         <FormCard
                             icon={UsersThree}
-                            title="Family"
-                            helper="Guardians and emergency contacts."
+                            title={t('sections.family.title')}
+                            helper={t('sections.family.helper')}
                         >
                             {/* Father */}
                             {(showField('fathers_name') ||
                                 showField('parents_mobile_number') ||
                                 showField('parents_email')) && (
                                 <>
-                                    <SubGroupTitle>Father / Male guardian</SubGroupTitle>
+                                    <SubGroupTitle>{t('subgroups.father')}</SubGroupTitle>
                                     {showField('fathers_name') && fathersNameField}
                                     <Grid2>
                                         {showField('parents_mobile_number') && fatherMobileField}
@@ -996,7 +1023,7 @@ export const EditStudentDetails = () => {
                                 showField('parents_to_mother_mobile_number') ||
                                 showField('parents_to_mother_email')) && (
                                 <>
-                                    <SubGroupTitle>Mother / Female guardian</SubGroupTitle>
+                                    <SubGroupTitle>{t('subgroups.mother')}</SubGroupTitle>
                                     {showField('mothers_name') && mothersNameField}
                                     <Grid2>
                                         {showField('parents_to_mother_mobile_number') &&
@@ -1012,8 +1039,8 @@ export const EditStudentDetails = () => {
                     {hasCustomFields && (
                         <FormCard
                             icon={SlidersHorizontal}
-                            title="Additional info"
-                            helper="Custom fields configured for your institute."
+                            title={t('sections.custom.title')}
+                            helper={t('sections.custom.helper')}
                         >
                             {customFieldsData.fieldGroups.map((group: FieldGroup) => (
                                 <div key={group.id} className="flex flex-col gap-3">

@@ -34,6 +34,7 @@ import {
   handleGetManagedBooking,
   rescheduleBooking,
 } from "../booking-response/-services/booking-services";
+import { Trans, useTranslation } from "react-i18next";
 
 const manageParamsSchema = z.object({
   token: z.string().min(1),
@@ -45,55 +46,52 @@ export const Route = createFileRoute("/booking-manage/")({
   component: RouteComponent,
   // Malformed/missing search params (zod validation failure) land here — show
   // a friendly message instead of the generic error page.
-  errorComponent: () => (
-    <div className="flex min-h-screen w-full items-center justify-center bg-neutral-50 px-4">
-      <ModernCard variant="glass" padding="lg" rounded="lg" className="max-w-md">
-        <div className="flex flex-col items-center gap-4 py-6 text-center">
-          <div className="flex size-16 items-center justify-center rounded-full bg-neutral-100">
-            <CalendarX size={32} className="text-neutral-400" />
+  errorComponent: () => {
+    const { t } = useTranslation("liveClassGuest");
+    return (
+      <div className="flex min-h-screen w-full items-center justify-center bg-neutral-50 px-4">
+        <ModernCard variant="glass" padding="lg" rounded="lg" className="max-w-md">
+          <div className="flex flex-col items-center gap-4 py-6 text-center">
+            <div className="flex size-16 items-center justify-center rounded-full bg-neutral-100">
+              <CalendarX size={32} className="text-neutral-400" />
+            </div>
+            <h2 className="text-h3 font-semibold text-neutral-700">
+              {t("bookingManage.errorPage.incompleteTitle")}
+            </h2>
+            <p className="text-body text-neutral-500">
+              {t("bookingManage.errorPage.incompleteDescription")}
+            </p>
           </div>
-          <h2 className="text-h3 font-semibold text-neutral-700">
-            This booking link looks incomplete
-          </h2>
-          <p className="text-body text-neutral-500">
-            Please open the manage link exactly as it appears in your
-            confirmation email.
-          </p>
-        </div>
-      </ModernCard>
-    </div>
-  ),
+        </ModernCard>
+      </div>
+    );
+  },
 });
 
-const STATUS_STYLES: Record<string, { label: string; className: string }> = {
-  CONFIRMED: {
-    label: "Confirmed",
-    className: "bg-success-50 text-success-600 border-success-200",
-  },
-  PENDING: {
-    label: "Awaiting confirmation",
-    className: "bg-warning-50 text-warning-600 border-warning-200",
-  },
-  CANCELLED: {
-    label: "Cancelled",
-    className: "bg-danger-50 text-danger-600 border-danger-200",
-  },
-  RESCHEDULED: {
-    label: "Rescheduled",
-    className: "bg-neutral-100 text-neutral-600 border-neutral-200",
-  },
+const STATUS_CLASSNAMES: Record<string, string> = {
+  CONFIRMED: "bg-success-50 text-success-600 border-success-200",
+  PENDING: "bg-warning-50 text-warning-600 border-warning-200",
+  CANCELLED: "bg-danger-50 text-danger-600 border-danger-200",
+  RESCHEDULED: "bg-neutral-100 text-neutral-600 border-neutral-200",
 };
 
-const statusStyle = (status: string) =>
-  STATUS_STYLES[status] ?? {
-    label: status,
-    className: "bg-neutral-100 text-neutral-600 border-neutral-200",
-  };
+// Status label i18n keys — the raw backend status string is the fallback for
+// any value outside this known set.
+const STATUS_LABEL_KEYS: Record<string, string> = {
+  CONFIRMED: "bookingManage.status.confirmed",
+  PENDING: "bookingManage.status.pending",
+  CANCELLED: "bookingManage.status.cancelled",
+  RESCHEDULED: "bookingManage.status.rescheduled",
+};
+
+const statusClassName = (status: string) =>
+  STATUS_CLASSNAMES[status] ?? "bg-neutral-100 text-neutral-600 border-neutral-200";
 
 const formatSlotFull = (iso: string, tz: string) =>
   formatInTimeZone(new Date(iso), tz, "EEEE, d MMMM yyyy 'at' h:mm a");
 
 function RouteComponent() {
+  const { t } = useTranslation("liveClassGuest");
   const { token, instituteId } = Route.useSearch();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -144,11 +142,10 @@ function RouteComponent() {
               <CalendarX size={32} className="text-neutral-400" />
             </div>
             <h2 className="text-h3 font-semibold text-neutral-700">
-              Booking not found
+              {t("bookingManage.notFound.title")}
             </h2>
             <p className="text-body text-neutral-500">
-              This manage link may be invalid or expired. Please use the link
-              from your confirmation email.
+              {t("bookingManage.notFound.description")}
             </p>
           </div>
         </ModernCard>
@@ -165,7 +162,10 @@ function RouteComponent() {
   const isActionable =
     (booking.status === "CONFIRMED" || booking.status === "PENDING") && !isPast;
   const canReschedule = isActionable && !!instituteId;
-  const status = statusStyle(booking.status);
+  const statusLabel = STATUS_LABEL_KEYS[booking.status]
+    ? t(STATUS_LABEL_KEYS[booking.status])
+    : booking.status;
+  const statusClass = statusClassName(booking.status);
 
   const updateBookingCache = (view: BookingView) => {
     queryClient.setQueryData(["GET_MANAGED_BOOKING", view.manage_token], view);
@@ -180,12 +180,12 @@ function RouteComponent() {
       });
       updateBookingCache(view);
       setCancelOpen(false);
-      toast.success("Your booking has been cancelled.");
+      toast.success(t("bookingManage.toast.cancelSuccess"));
     } catch (error) {
       toast.error(
         extractBookingErrorMessage(
           error,
-          "Could not cancel the booking. Please try again."
+          t("bookingManage.toast.cancelError")
         )
       );
     } finally {
@@ -208,7 +208,7 @@ function RouteComponent() {
       setRescheduling(false);
       setPendingSlot(null);
       setJustRescheduled(true);
-      toast.success("Your booking has been rescheduled.");
+      toast.success(t("bookingManage.toast.rescheduleSuccess"));
       // The reschedule mints a NEW manage token — update the URL so the link
       // in the address bar stays valid.
       navigate({
@@ -220,7 +220,7 @@ function RouteComponent() {
       toast.error(
         extractBookingErrorMessage(
           error,
-          "Could not reschedule the booking. Please try again."
+          t("bookingManage.toast.rescheduleError")
         )
       );
       setPendingSlot(null);
@@ -233,7 +233,7 @@ function RouteComponent() {
   return (
     <div className="min-h-screen w-full bg-neutral-50">
       <div className="px-4 py-6 sm:px-6 lg:px-8">
-        <div className="mx-auto flex max-w-2xl flex-col gap-6">
+        <div className="mx-auto flex max-w-2xl flex-col gap-section">
           <ModernCard variant="glass" padding="lg" rounded="lg">
             {justRescheduled ? (
               <>
@@ -248,7 +248,7 @@ function RouteComponent() {
                     scale="medium"
                     onClick={() => setJustRescheduled(false)}
                   >
-                    View booking details
+                    {t("bookingManage.viewDetails")}
                   </MyButton>
                 </div>
               </>
@@ -264,17 +264,17 @@ function RouteComponent() {
                       setRescheduling(false);
                       setPendingSlot(null);
                     }}
-                    aria-label="Back to booking details"
+                    aria-label={t("bookingManage.backToDetailsAria")}
                   >
                     <ArrowLeft size={16} />
                   </MyButton>
                   <ModernCardTitle size="md" className="text-neutral-700">
-                    Pick a new time
+                    {t("bookingManage.pickNewTime")}
                   </ModernCardTitle>
                 </div>
                 {pageLoading || !pageData ? (
                   <div className="py-8 text-center text-body text-neutral-500">
-                    Loading availability…
+                    {t("bookingManage.loadingAvailability")}
                   </div>
                 ) : (
                   <div className="flex flex-col gap-4">
@@ -296,7 +296,7 @@ function RouteComponent() {
                       onSelectedDayKeyChange={setPickerDayKey}
                     />
                     {pendingSlot && (
-                      <div className="flex flex-col gap-3 rounded-lg border border-primary-100 bg-primary-50 p-4">
+                      <div className="flex flex-col gap-stack rounded-lg border border-primary-100 bg-primary-50 p-4">
                         <div className="flex items-center gap-2 text-body text-neutral-700">
                           <CalendarCheck
                             size={18}
@@ -316,8 +316,8 @@ function RouteComponent() {
                           className="w-full"
                         >
                           {confirmingReschedule
-                            ? "Rescheduling…"
-                            : "Confirm reschedule"}
+                            ? t("bookingManage.confirmReschedule.confirming")
+                            : t("bookingManage.confirmReschedule.default")}
                         </MyButton>
                       </div>
                     )}
@@ -334,20 +334,20 @@ function RouteComponent() {
                     <span
                       className={cn(
                         "rounded-full border px-3 py-1 text-caption font-semibold",
-                        status.className
+                        statusClass
                       )}
                     >
-                      {status.label}
+                      {statusLabel}
                     </span>
                   </div>
                 </ModernCardHeader>
 
-                <div className="flex flex-col gap-3 rounded-lg border border-neutral-200 bg-neutral-50 p-4">
+                <div className="flex flex-col gap-stack rounded-lg border border-neutral-200 bg-neutral-50 p-4">
                   {booking.host_name && (
                     <div className="flex items-center gap-2 text-body text-neutral-600">
                       <User size={18} className="shrink-0 text-primary-500" />
                       <span>
-                        Hosted by{" "}
+                        {t("common.hostedBy")}{" "}
                         <span className="font-semibold">
                           {booking.host_name}
                         </span>
@@ -365,12 +365,12 @@ function RouteComponent() {
                   </div>
                   <div className="flex items-center gap-2 text-caption text-neutral-500">
                     <Clock size={18} className="shrink-0 text-primary-500" />
-                    <span>Timezone: {tz.replace(/_/g, " ")}</span>
+                    <span>{t("common.timezoneLabel", { tz: tz.replace(/_/g, " ") })}</span>
                   </div>
                   <div className="flex items-center gap-2 text-caption text-neutral-500">
                     <User size={18} className="shrink-0 text-primary-500" />
                     <span>
-                      Booked for{" "}
+                      {t("bookingManage.bookedFor")}{" "}
                       <span className="font-semibold">
                         {booking.invitee_name}
                       </span>
@@ -381,24 +381,22 @@ function RouteComponent() {
 
                 {booking.status === "PENDING" && !isPast && (
                   <p className="mt-3 text-caption text-neutral-500">
-                    This booking is awaiting confirmation from the host. You
-                    will be notified once it is approved.
+                    {t("bookingManage.statusNotes.pending")}
                   </p>
                 )}
                 {booking.status === "CANCELLED" && (
                   <p className="mt-3 text-caption text-neutral-500">
-                    This booking has been cancelled.
+                    {t("bookingManage.statusNotes.cancelled")}
                   </p>
                 )}
                 {booking.status === "RESCHEDULED" && (
                   <p className="mt-3 text-caption text-neutral-500">
-                    This booking was rescheduled. Please use the manage link
-                    from your latest confirmation for the new time.
+                    {t("bookingManage.statusNotes.rescheduled")}
                   </p>
                 )}
                 {isPast && !isRetired && (
                   <p className="mt-3 text-caption text-neutral-500">
-                    This booking is in the past.
+                    {t("bookingManage.statusNotes.past")}
                   </p>
                 )}
 
@@ -418,8 +416,8 @@ function RouteComponent() {
                         layoutVariant="default"
                         className="w-full"
                       >
-                        <VideoCamera size={18} className="mr-2" /> Join meeting
-                        link
+                        <VideoCamera size={18} className="me-2" />{" "}
+                        {t("common.joinMeetingLink")}
                       </MyButton>
                     </a>
                   )}
@@ -435,7 +433,7 @@ function RouteComponent() {
                         onClick={() => setRescheduling(true)}
                         className="w-full sm:flex-1"
                       >
-                        Reschedule
+                        {t("bookingManage.reschedule")}
                       </MyButton>
                     )}
                     <MyButton
@@ -446,7 +444,8 @@ function RouteComponent() {
                       onClick={() => setCancelOpen(true)}
                       className="w-full !text-danger-600 sm:flex-1"
                     >
-                      <Prohibit size={18} className="mr-2" /> Cancel booking
+                      <Prohibit size={18} className="me-2" />{" "}
+                      {t("bookingManage.cancelBooking")}
                     </MyButton>
                   </div>
                 )}
@@ -458,7 +457,7 @@ function RouteComponent() {
 
       {/* Cancel confirmation dialog */}
       <MyDialog
-        heading="Cancel this booking?"
+        heading={t("bookingManage.cancelDialog.heading")}
         open={cancelOpen}
         onOpenChange={(open) => {
           setCancelOpen(open);
@@ -473,7 +472,7 @@ function RouteComponent() {
               onClick={() => setCancelOpen(false)}
               disable={cancelling}
             >
-              Keep booking
+              {t("bookingManage.cancelDialog.keepBooking")}
             </MyButton>
             <MyButton
               type="button"
@@ -483,27 +482,30 @@ function RouteComponent() {
               disable={cancelling}
               className="!bg-danger-600 hover:!bg-danger-500"
             >
-              {cancelling ? "Cancelling…" : "Yes, cancel"}
+              {cancelling
+                ? t("bookingManage.cancelDialog.cancelling")
+                : t("bookingManage.cancelDialog.confirmCancel")}
             </MyButton>
           </div>
         }
       >
-        <div className="flex flex-col gap-3 p-2">
+        <div className="flex flex-col gap-stack p-2">
           <p className="text-body text-neutral-600">
-            Your slot on{" "}
-            <span className="font-semibold">
-              {formatSlotFull(booking.start_time_utc, tz)}
-            </span>{" "}
-            will be released. This cannot be undone.
+            <Trans
+              t={t}
+              i18nKey="bookingManage.cancelDialog.releaseNotice"
+              values={{ slot: formatSlotFull(booking.start_time_utc, tz) }}
+              components={{ bold: <span className="font-semibold" /> }}
+            />
           </p>
           <label className="text-caption text-neutral-500" htmlFor="cancel-reason">
-            Reason (optional)
+            {t("bookingManage.cancelDialog.reasonLabel")}
           </label>
           <Textarea
             id="cancel-reason"
             value={cancelReason}
             onChange={(e) => setCancelReason(e.target.value)}
-            placeholder="Let the host know why you're cancelling"
+            placeholder={t("bookingManage.cancelDialog.reasonPlaceholder")}
             rows={3}
           />
         </div>

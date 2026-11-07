@@ -1,0 +1,55 @@
+{
+    "searchPlaceholder": "फ़ोन या नाम से खोजें...",
+    "retrying": "फिर से कोशिश हो रही है…",
+    "tryAgain": "फिर कोशिश करें",
+    "loading": "लोड हो रहा है...",
+    "botHandedOver": "बॉट ने सौंपा",
+    "notDelivered": "डिलीवर नहीं हुआ",
+    "notDeliveredCount_one": "{{count}} संदेश डिलीवर नहीं हुआ",
+    "notDeliveredCount_other": "{{count}} संदेश डिलीवर नहीं हुए",
+    "notDeliveredCountShort_one": "{{count}} डिलीवर नहीं हुआ",
+    "notDeliveredCountShort_other": "{{count}} डिलीवर नहीं हुए",
+    "filters": {
+        "all": {
+            "label": "सभी",
+            "title": "हर बातचीत"
+        },
+        "unanswered": {
+            "label": "अनुत्तरित",
+            "title": "चैटबॉट ने इन्हें सौंप दिया है और अभी तक किसी ने जवाब नहीं दिया"
+        },
+        "failed": {
+            "label": "डिलीवर नहीं हुआ",
+            "title": "वे बातचीत जिनमें WhatsApp ने संदेश अस्वीकार कर दिया"
+        }
+    },
+    "empty": {
+        "unanswered": "हर बातचीत का जवाब दिया जा चुका है",
+        "failed": "हर संदेश डिलीवर हो चुका है",
+        "all": "अभी तक कोई बातचीत नहीं"
+    },
+    "escalation": {
+        "maxTurns": "बातचीत अपनी स्वचालित जवाब सीमा तक पहुँच गई",
+        "aiError": "सहायक कोई जवाब नहीं बना सका",
+        "manual": "किसी एडमिन ने सौंपा",
+        "noInfo": "सहायक के पास जवाब देने के लिए जानकारी नहीं थी",
+        "withMessage": "{{why}}\n\nउन्होंने पूछा: {{message}}",
+        "existingLead": "एक मौजूदा लीड ने फिर से संदेश भेजा",
+        "crmSaveFailed": "चैटबॉट इस लीड को CRM में सेव नहीं कर सका",
+        "withLeadMessage": "{{why}}\n\nउनका संदेश: {{message}}",
+        "withAnswers": "{{why}}\n\nउनके जवाब:\n{{message}}"
+    },
+    "lastKind": {
+        "image": "फ़ोटो",
+        "video": "वीडियो",
+        "audio": "ऑडियो",
+        "voice": "वॉइस मैसेज",
+        "sticker": "स्टिकर",
+        "document": "दस्तावेज़",
+        "location": "लोकेशन",
+        "contacts": "संपर्क कार्ड",
+        "other": "अटैचमेंट",
+        "reaction": "{{emoji}} रिएक्ट किया",
+        "reactionRemoved": "रिएक्शन हटा दिया"
+    }
+}

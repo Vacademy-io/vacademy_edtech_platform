@@ -1,0 +1,36 @@
+{
+    "title": "Engagement Leaderboard",
+    "subtitle": "Top power users by engagement",
+    "allCenters": "All centers",
+    "emptyStateFiltered": "No leaderboard data for center \"{{center}}\"",
+    "emptyStateDefault": "No leaderboard data available",
+    "totalUsers_one": "{{count}} total user",
+    "totalUsers_other": "{{count}} total users",
+    "exportCsv": "Export CSV",
+    "table": {
+        "rank": "Rank",
+        "user": "User",
+        "contact": "Contact",
+        "outgoing": "Outgoing",
+        "incoming": "Incoming",
+        "total": "Total",
+        "score": "Score",
+        "anonymous": "Anonymous",
+        "childLabel": "Child: {{name}}"
+    },
+    "csv": {
+        "rank": "Rank",
+        "name": "Name",
+        "email": "Email",
+        "phone": "Phone",
+        "center": "Center",
+        "totalMessages": "Total Messages",
+        "engagementScore": "Engagement Score",
+        "notAvailable": "N/A"
+    },
+    "pagination": {
+        "pageOf": "Page {{current}} of {{total}}",
+        "previous": "Previous",
+        "next": "Next"
+    }
+}

@@ -1,0 +1,38 @@
+{
+    "header": {
+        "title": "AI Evaluations",
+        "subtitle": "Every AI evaluation run for this assessment. Open a run to review and adjust marks before releasing the result."
+    },
+    "emptyStates": {
+        "noAssessment": "No assessment selected. Open this page from an assessment's Submissions tab.",
+        "error": "Failed to load evaluations. Please try again.",
+        "noEvaluations": "No AI evaluations have been started for this assessment yet."
+    },
+    "table": {
+        "columns": {
+            "participant": "Participant",
+            "status": "Status",
+            "progress": "Progress",
+            "started": "Started",
+            "actions": "Actions"
+        },
+        "unknownParticipant": "Unknown",
+        "notAvailable": "—"
+    },
+    "status": {
+        "completed": "Completed",
+        "needsReview_one": "Needs review ({{count}})",
+        "needsReview_other": "Needs review ({{count}})",
+        "failed": "Failed",
+        "cancelled": "Cancelled",
+        "inProgress": "In progress"
+    },
+    "actions": {
+        "open": "Open",
+        "retry": "Retry"
+    },
+    "toasts": {
+        "restartSuccess": "AI evaluation restarted",
+        "restartError": "Failed to restart evaluation. Please try again."
+    }
+}

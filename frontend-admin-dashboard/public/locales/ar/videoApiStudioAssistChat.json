@@ -1,0 +1,30 @@
+{
+    "statusBubble": {
+        "workingOnIt": "جارٍ العمل عليه…",
+        "shotProgress": "اللقطة {{completed}} / {{total}}"
+    },
+    "genericDecision": {
+        "letAiDecide": "دع الذكاء الاصطناعي يقرر",
+        "approve": "موافقة"
+    },
+    "completion": {
+        "videoReady": "الفيديو الخاص بك جاهز.",
+        "preparingPreview": "جارٍ تجهيز المعاينة…",
+        "editVideo": "تعديل الفيديو",
+        "detailsAndDownload": "التفاصيل والتنزيل",
+        "saveCast": "حفظ طاقم التمثيل"
+    },
+    "header": {
+        "title": "المساعد",
+        "stop": "إيقاف",
+        "showProgress": "عرض التقدّم"
+    },
+    "postEdit": {
+        "updating": "جارٍ تحديث اللقطة…"
+    },
+    "input": {
+        "placeholderEdit": "عدّل الفيديو — مثال: «أعد اللقطة 3 — عنوان أكبر، لقطة شاشة حقيقية»",
+        "placeholderSteer": "وجّه العملية — مثال: «اجعل اللقطة 3 أكثر طرافة وأقصر»",
+        "placeholderWorking": "جارٍ العمل…"
+    }
+}

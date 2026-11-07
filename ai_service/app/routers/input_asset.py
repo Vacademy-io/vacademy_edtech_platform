@@ -27,7 +27,7 @@ from ..db import db_dependency
 from ..dependencies import get_institute_from_api_key
 from ..config import get_settings
 from ..repositories.ai_input_asset_repository import AiInputAssetRepository
-from ..services.index_service import IndexService
+from ..services.index_service import IndexService, IndexCapacityError
 
 logger = logging.getLogger(__name__)
 
@@ -184,6 +184,51 @@ async def _poll_index_status(
 # Endpoints
 # ---------------------------------------------------------------------------
 
+async def _submit_with_retry(
+    input_asset_id: str,
+    source_url: str,
+    mode: str,
+    kind: str,
+    index_service: IndexService,
+) -> None:
+    """Keep asking the worker for a slot, backing off between attempts.
+
+    Only capacity refusals come here. Anything else is a real failure and is
+    recorded as one. The schedule spans ~15 minutes, which comfortably covers
+    a queue drained by other jobs; past that the asset is marked FAILED and the
+    user can retry it explicitly.
+    """
+    backoff_s = [15, 30, 60, 60, 120, 120, 180, 300]
+    for delay in backoff_s:
+        await asyncio.sleep(delay)
+        try:
+            job_id = index_service.submit(
+                input_video_id=input_asset_id,
+                source_url=source_url,
+                mode=mode,
+                kind=kind,
+            )
+        except IndexCapacityError:
+            continue
+        except Exception as e:
+            AiInputAssetRepository().update_status(
+                input_asset_id, "FAILED", error_message=str(e)
+            )
+            logger.error(f"Index retry for {input_asset_id} failed: {e}")
+            return
+        AiInputAssetRepository().update_status(
+            input_asset_id, "QUEUED", render_job_id=job_id
+        )
+        await _poll_index_status(input_asset_id, job_id, index_service)
+        return
+
+    AiInputAssetRepository().update_status(
+        input_asset_id,
+        "FAILED",
+        error_message="Index server stayed at capacity — retry this asset",
+    )
+
+
 @router.post("/create", response_model=InputAssetResponse)
 async def create_input_asset(
     request: CreateInputAssetRequest,
@@ -218,6 +263,21 @@ async def create_input_asset(
             kind=request.kind,
         )
         repo.update_status(str(record.id), "QUEUED", render_job_id=job_id)
+    except IndexCapacityError:
+        # The worker is full, which says nothing about this asset. Uploading a
+        # batch fills the queue in seconds, and marking the overflow FAILED
+        # made a 20-image upload look like 14 broken files. Hold the asset
+        # PENDING and keep trying in the background.
+        logger.info(
+            f"Index server at capacity for {record.id}; queued for background retry"
+        )
+        asyncio.create_task(
+            _submit_with_retry(
+                str(record.id), request.source_url, request.mode, request.kind, index_svc
+            )
+        )
+        db.refresh(record)
+        return InputAssetResponse(**record.to_dict())
     except RuntimeError as e:
         repo.update_status(str(record.id), "FAILED", error_message=str(e))
         logger.error(f"Failed to submit index job: {e}")
@@ -225,6 +285,57 @@ async def create_input_asset(
         return InputAssetResponse(**record.to_dict())
 
     asyncio.create_task(_poll_index_status(str(record.id), job_id, index_svc))
+
+    db.refresh(record)
+    return InputAssetResponse(**record.to_dict())
+
+
+@router.post("/{record_id}/retry", response_model=InputAssetResponse)
+async def retry_input_asset(
+    record_id: str,
+    institute_id: str = Depends(get_institute_from_api_key),
+    db: Session = Depends(db_dependency),
+):
+    """Re-submit a FAILED asset for indexing, reusing the existing upload.
+
+    Indexing can fail for reasons that have nothing to do with the file — a
+    saturated worker being the common one. Without this the only way back was
+    to upload the same image again, which orphans the first row and pays for
+    the storage twice.
+    """
+    repo = AiInputAssetRepository(session=db)
+    record = repo.get_by_id(record_id)
+    if not record or str(record.institute_id) != str(institute_id):
+        raise HTTPException(status_code=404, detail="Asset not found")
+    if record.status in ("QUEUED", "PROCESSING"):
+        raise HTTPException(status_code=409, detail=f"Already {record.status.lower()}")
+    if record.status == "COMPLETED":
+        raise HTTPException(status_code=409, detail="Already indexed")
+
+    repo.update_status(record_id, "PENDING", error_message="")
+    index_svc = _get_index_service()
+    try:
+        job_id = index_svc.submit(
+            input_video_id=record_id,
+            source_url=record.source_url,
+            mode=record.mode,
+            kind=getattr(record, "kind", "video") or "video",
+        )
+        repo.update_status(record_id, "QUEUED", render_job_id=job_id)
+        asyncio.create_task(_poll_index_status(record_id, job_id, index_svc))
+    except IndexCapacityError:
+        asyncio.create_task(
+            _submit_with_retry(
+                record_id,
+                record.source_url,
+                record.mode,
+                getattr(record, "kind", "video") or "video",
+                index_svc,
+            )
+        )
+    except RuntimeError as e:
+        repo.update_status(record_id, "FAILED", error_message=str(e))
+        raise HTTPException(status_code=502, detail=str(e))
 
     db.refresh(record)
     return InputAssetResponse(**record.to_dict())

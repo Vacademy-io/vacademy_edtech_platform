@@ -1,0 +1,57 @@
+{
+    "heading": {
+        "titleLoading": "{{term}}",
+        "titleWithCount": "{{formattedCount}} {{term}}",
+        "subtitle": "Gérez et partagez vos {{term}} entre les campagnes."
+    },
+    "settingsButton": "Paramètres de l'audience",
+    "addButton": "Ajouter {{term}}",
+    "status": {
+        "active": "Actif",
+        "draft": "Brouillon",
+        "inactive": "Inactif"
+    },
+    "statusFilter": {
+        "allStatus": "Tous les statuts",
+        "placeholder": "Filtrer par statut"
+    },
+    "typeFilter": {
+        "allTypes": "Tous les {{term}}",
+        "placeholder": "Filtrer par {{term}}"
+    },
+    "toolbar": {
+        "searchPlaceholder": "Rechercher {{term}}",
+        "searchAriaLabel": "Rechercher {{term}}",
+        "subOrgPlaceholder": "Filtrer par sous-organisation",
+        "allSubOrgs": "Toutes les sous-organisations",
+        "subOrgFallback": "Sous-organisation"
+    },
+    "errorState": {
+        "title": "Impossible de charger {{term}}",
+        "subtitle": "Une erreur s'est produite. Veuillez réessayer."
+    },
+    "emptyState": {
+        "noMatches": "Aucun {{term}} ne correspond à vos filtres.",
+        "noneYet": "Vous n'avez encore créé aucun {{term}}.",
+        "clearFilters": "Effacer les filtres",
+        "createFirst": "Créez votre premier {{term}}"
+    },
+    "toast": {
+        "missingCampaignId": "Impossible d'ouvrir les détails de la campagne. Identifiant de campagne manquant."
+    },
+    "card": {
+        "openAriaLabel": "Ouvrir {{campaignName}}",
+        "activateHint": "Activez ce {{term}} pour générer un lien partageable.",
+        "tagsAriaLabel": "Étiquettes"
+    },
+    "actions": {
+        "addResponse": "Ajouter une réponse",
+        "addResponseTooltip": "Ajouter une réponse au nom d'un répondant",
+        "qr": "QR",
+        "qrTooltip": "Afficher un code QR à scanner pour ouvrir ce formulaire",
+        "api": "API",
+        "apiTooltip": "Obtenir les détails d'intégration API pour l'automatisation",
+        "embed": "Intégrer",
+        "embedTooltip": "Obtenir le code d'intégration pour votre site web"
+    }
+}

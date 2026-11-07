@@ -1,4 +1,6 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -25,22 +27,24 @@ interface DailyParticipationProps {
     isLoading: boolean;
 }
 
-const chartConfig = {
+const buildChartConfig = (t: TFunction) => ({
     outgoing: {
-        label: 'Outgoing Messages',
+        label: t('charts.outgoingMessagesLabel'),
         color: '#3B82F6',
     },
     incoming: {
-        label: 'Incoming Messages',
+        label: t('charts.incomingMessagesLabel'),
         color: '#10B981',
     },
     response_rate: {
-        label: 'Response Rate',
+        label: t('charts.responseRateLabel'),
         color: '#F59E0B',
     },
-};
+});
 
 export function DailyParticipation({ data, isLoading }: DailyParticipationProps) {
+    const { t } = useTranslation('challengeAnalyticsDailyParticipation');
+    const chartConfig = buildChartConfig(t);
     const [activeView, setActiveView] = useState<'chart' | 'table'>('chart');
 
     if (isLoading) {
@@ -61,11 +65,11 @@ export function DailyParticipation({ data, isLoading }: DailyParticipationProps)
             <Card className="shadow-sm">
                 <CardHeader className="flex flex-row items-center gap-2">
                     <ChartLine className="h-5 w-5 text-primary" weight="fill" />
-                    <CardTitle className="text-base font-semibold">Daily Participation Metrics</CardTitle>
+                    <CardTitle className="text-base font-semibold">{t('title')}</CardTitle>
                 </CardHeader>
                 <CardContent>
                     <div className="flex h-[300px] items-center justify-center text-gray-500">
-                        No participation data available for the selected period
+                        {t('emptyState')}
                     </div>
                 </CardContent>
             </Card>
@@ -112,26 +116,26 @@ export function DailyParticipation({ data, isLoading }: DailyParticipationProps)
                             <ChartLine className="h-5 w-5 text-blue-600" weight="fill" />
                         </div>
                         <div>
-                            <CardTitle className="text-base font-semibold">Daily Participation Metrics</CardTitle>
-                            <p className="text-xs text-gray-500">Message activity and response rates by day</p>
+                            <CardTitle className="text-base font-semibold">{t('title')}</CardTitle>
+                            <p className="text-xs text-gray-500">{t('subtitle')}</p>
                         </div>
                     </div>
                     <div className="flex items-center gap-4">
                         <div className="grid grid-cols-2 gap-4 text-sm sm:grid-cols-4">
                             <div className="rounded-lg bg-blue-50 px-3 py-2">
-                                <span className="text-xs text-gray-500">Days</span>
+                                <span className="text-xs text-gray-500">{t('kpi.days')}</span>
                                 <p className="font-semibold text-blue-700">{total_days}</p>
                             </div>
                             <div className="rounded-lg bg-purple-50 px-3 py-2">
-                                <span className="text-xs text-gray-500">Sent</span>
+                                <span className="text-xs text-gray-500">{t('kpi.sent')}</span>
                                 <p className="font-semibold text-purple-700">{total_messages_sent.toLocaleString()}</p>
                             </div>
                             <div className="rounded-lg bg-emerald-50 px-3 py-2">
-                                <span className="text-xs text-gray-500">Received</span>
+                                <span className="text-xs text-gray-500">{t('kpi.received')}</span>
                                 <p className="font-semibold text-emerald-700">{total_messages_received.toLocaleString()}</p>
                             </div>
                             <div className="rounded-lg bg-amber-50 px-3 py-2">
-                                <span className="text-xs text-gray-500">Response</span>
+                                <span className="text-xs text-gray-500">{t('kpi.response')}</span>
                                 <p className="font-semibold text-amber-700">{summary.overall_response_rate.toFixed(1)}%</p>
                             </div>
                         </div>
@@ -141,15 +145,15 @@ export function DailyParticipation({ data, isLoading }: DailyParticipationProps)
             <CardContent>
                 <Tabs value={activeView} onValueChange={(v) => setActiveView(v as 'chart' | 'table')}>
                     <TabsList className="mb-4">
-                        <TabsTrigger value="chart">Charts</TabsTrigger>
-                        <TabsTrigger value="table">Day Details</TabsTrigger>
+                        <TabsTrigger value="chart">{t('tabs.chart')}</TabsTrigger>
+                        <TabsTrigger value="table">{t('tabs.table')}</TabsTrigger>
                     </TabsList>
 
                     <TabsContent value="chart" className="mt-0">
                         <div className="grid gap-6 lg:grid-cols-2">
                             {/* Response Rate Trend */}
                             <div>
-                                <h4 className="mb-3 text-sm font-medium text-gray-700">Response Rate Trend</h4>
+                                <h4 className="mb-3 text-sm font-medium text-gray-700">{t('charts.responseRateTrend')}</h4>
                                 <div className="h-[280px]">
                                     <ResponsiveContainer width="100%" height="100%">
                                         <AreaChart data={chartData} margin={{ top: 10, right: 10, left: -10, bottom: 0 }}>
@@ -172,7 +176,7 @@ export function DailyParticipation({ data, isLoading }: DailyParticipationProps)
                                                                     {payload[0]?.payload?.day_label}
                                                                 </p>
                                                                 <p className="font-semibold text-amber-600">
-                                                                    Response Rate: {payload[0]?.value}%
+                                                                    {t('charts.responseRateValue', { value: payload[0]?.value })}
                                                                 </p>
                                                             </div>
                                                         );
@@ -195,7 +199,7 @@ export function DailyParticipation({ data, isLoading }: DailyParticipationProps)
 
                             {/* Messages Stacked Bar */}
                             <div>
-                                <h4 className="mb-3 text-sm font-medium text-gray-700">Messages by Day</h4>
+                                <h4 className="mb-3 text-sm font-medium text-gray-700">{t('charts.messagesByDay')}</h4>
                                 <div className="h-[280px]">
                                     <ResponsiveContainer width="100%" height="100%">
                                         <BarChart data={chartData} margin={{ top: 10, right: 10, left: -10, bottom: 0 }}>
@@ -213,10 +217,10 @@ export function DailyParticipation({ data, isLoading }: DailyParticipationProps)
                                                                 </p>
                                                                 <div className="mt-1 space-y-1">
                                                                     <p className="text-sm text-blue-600">
-                                                                        Outgoing: {payload[0]?.value} msgs
+                                                                        {t('charts.outgoingLabel')}: {t('charts.messagesCount', { count: Number(payload[0]?.value ?? 0) })}
                                                                     </p>
                                                                     <p className="text-sm text-emerald-600">
-                                                                        Incoming: {payload[1]?.value} msgs
+                                                                        {t('charts.incomingLabel')}: {t('charts.messagesCount', { count: Number(payload[1]?.value ?? 0) })}
                                                                     </p>
                                                                 </div>
                                                             </div>
@@ -226,8 +230,8 @@ export function DailyParticipation({ data, isLoading }: DailyParticipationProps)
                                                 }}
                                             />
                                             <Legend wrapperStyle={{ fontSize: '12px' }} />
-                                            <Bar dataKey="outgoing" name="Outgoing" stackId="a" fill="#3B82F6" radius={[0, 0, 0, 0]} />
-                                            <Bar dataKey="incoming" name="Incoming" stackId="a" fill="#10B981" radius={[4, 4, 0, 0]} />
+                                            <Bar dataKey="outgoing" name={t('charts.outgoingLabel')} stackId="a" fill="#3B82F6" radius={[0, 0, 0, 0]} />
+                                            <Bar dataKey="incoming" name={t('charts.incomingLabel')} stackId="a" fill="#10B981" radius={[4, 4, 0, 0]} />
                                         </BarChart>
                                     </ResponsiveContainer>
                                 </div>
@@ -236,7 +240,7 @@ export function DailyParticipation({ data, isLoading }: DailyParticipationProps)
 
                         {/* Combined Line + Bar Chart */}
                         <div className="mt-6">
-                            <h4 className="mb-3 text-sm font-medium text-gray-700">Complete Overview</h4>
+                            <h4 className="mb-3 text-sm font-medium text-gray-700">{t('charts.completeOverview')}</h4>
                             <div className="h-[300px]">
                                 <ResponsiveContainer width="100%" height="100%">
                                     <ComposedChart data={chartData} margin={{ top: 10, right: 30, left: -10, bottom: 0 }}>
@@ -255,13 +259,13 @@ export function DailyParticipation({ data, isLoading }: DailyParticipationProps)
                                                             </p>
                                                             <div className="space-y-1 text-sm">
                                                                 <p className="text-blue-600">
-                                                                    Outgoing: {payload[0]?.payload?.outgoing} ({payload[0]?.payload?.outgoing_users} users)
+                                                                    {t('charts.outgoingLabel')}: {payload[0]?.payload?.outgoing} ({t('charts.usersCount', { count: payload[0]?.payload?.outgoing_users ?? 0 })})
                                                                 </p>
                                                                 <p className="text-emerald-600">
-                                                                    Incoming: {payload[0]?.payload?.incoming} ({payload[0]?.payload?.incoming_users} users)
+                                                                    {t('charts.incomingLabel')}: {payload[0]?.payload?.incoming} ({t('charts.usersCount', { count: payload[0]?.payload?.incoming_users ?? 0 })})
                                                                 </p>
                                                                 <p className="font-medium text-amber-600">
-                                                                    Response: {payload[0]?.payload?.response_rate}%
+                                                                    {t('charts.responseValue', { value: payload[0]?.payload?.response_rate })}
                                                                 </p>
                                                             </div>
                                                         </div>
@@ -271,9 +275,9 @@ export function DailyParticipation({ data, isLoading }: DailyParticipationProps)
                                             }}
                                         />
                                         <Legend wrapperStyle={{ fontSize: '12px' }} />
-                                        <Bar yAxisId="left" dataKey="outgoing" name="Outgoing" fill="#3B82F6" barSize={20} radius={[2, 2, 0, 0]} />
-                                        <Bar yAxisId="left" dataKey="incoming" name="Incoming" fill="#10B981" barSize={20} radius={[2, 2, 0, 0]} />
-                                        <Line yAxisId="right" type="monotone" dataKey="response_rate" name="Response %" stroke="#F59E0B" strokeWidth={2} dot={{ r: 4 }} />
+                                        <Bar yAxisId="left" dataKey="outgoing" name={t('charts.outgoingLabel')} fill="#3B82F6" barSize={20} radius={[2, 2, 0, 0]} />
+                                        <Bar yAxisId="left" dataKey="incoming" name={t('charts.incomingLabel')} fill="#10B981" barSize={20} radius={[2, 2, 0, 0]} />
+                                        <Line yAxisId="right" type="monotone" dataKey="response_rate" name={t('charts.responseRateLabel')} stroke="#F59E0B" strokeWidth={2} dot={{ r: 4 }} />
                                     </ComposedChart>
                                 </ResponsiveContainer>
                             </div>
@@ -285,13 +289,13 @@ export function DailyParticipation({ data, isLoading }: DailyParticipationProps)
                             <table className="w-full text-sm">
                                 <thead className="bg-gray-50">
                                     <tr>
-                                        <th className="px-4 py-3 text-left font-medium text-gray-700">Day</th>
-                                        <th className="px-4 py-3 text-left font-medium text-gray-700">Label</th>
-                                        <th className="px-4 py-3 text-right font-medium text-gray-700">Outgoing</th>
-                                        <th className="px-4 py-3 text-right font-medium text-gray-700">Incoming</th>
-                                        <th className="px-4 py-3 text-right font-medium text-gray-700">Response Rate</th>
-                                        <th className="px-4 py-3 text-center font-medium text-gray-700">Trend</th>
-                                        <th className="px-4 py-3 text-center font-medium text-gray-700">Status</th>
+                                        <th className="px-4 py-3 text-start font-medium text-gray-700">{t('table.day')}</th>
+                                        <th className="px-4 py-3 text-start font-medium text-gray-700">{t('table.label')}</th>
+                                        <th className="px-4 py-3 text-end font-medium text-gray-700">{t('table.outgoing')}</th>
+                                        <th className="px-4 py-3 text-end font-medium text-gray-700">{t('table.incoming')}</th>
+                                        <th className="px-4 py-3 text-end font-medium text-gray-700">{t('table.responseRate')}</th>
+                                        <th className="px-4 py-3 text-center font-medium text-gray-700">{t('table.trend')}</th>
+                                        <th className="px-4 py-3 text-center font-medium text-gray-700">{t('table.status')}</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -329,15 +333,15 @@ export function DailyParticipation({ data, isLoading }: DailyParticipationProps)
                                                     {day.outgoing.total_messages === 0 ? (
                                                         <span className="inline-flex items-center gap-1 text-xs text-red-600">
                                                             <Warning className="h-3 w-3" weight="fill" />
-                                                            No messages
+                                                            {t('status.noMessages')}
                                                         </span>
                                                     ) : isDropOff ? (
                                                         <span className="inline-flex items-center gap-1 text-xs text-amber-600">
                                                             <Warning className="h-3 w-3" weight="fill" />
-                                                            Low engagement
+                                                            {t('status.lowEngagement')}
                                                         </span>
                                                     ) : (
-                                                        <span className="text-xs text-green-600">✓ Good</span>
+                                                        <span className="text-xs text-green-600">✓ {t('status.good')}</span>
                                                     )}
                                                 </td>
                                             </tr>
@@ -349,19 +353,19 @@ export function DailyParticipation({ data, isLoading }: DailyParticipationProps)
 
                         {/* Template Details Expandable */}
                         <div className="mt-4">
-                            <h4 className="mb-2 text-sm font-medium text-gray-700">Template Breakdown</h4>
+                            <h4 className="mb-2 text-sm font-medium text-gray-700">{t('templates.breakdown')}</h4>
                             <div className="space-y-2">
                                 {days.filter(d => d.outgoing.templates.length > 0 || d.incoming.templates.length > 0).slice(0, 5).map((day) => (
                                     <div key={day.day_number} className="rounded-lg border p-3">
-                                        <div className="font-medium text-gray-800">Day {day.day_number} - {day.day_label}</div>
+                                        <div className="font-medium text-gray-800">{t('templates.dayHeading', { day: day.day_number, label: day.day_label })}</div>
                                         <div className="mt-2 grid gap-4 md:grid-cols-2">
                                             {day.outgoing.templates.length > 0 && (
                                                 <div>
-                                                    <span className="text-xs font-medium text-blue-600">Outgoing Templates:</span>
+                                                    <span className="text-xs font-medium text-blue-600">{t('templates.outgoing')}</span>
                                                     <ul className="mt-1 space-y-0.5">
-                                                        {day.outgoing.templates.map((t, i) => (
+                                                        {day.outgoing.templates.map((tpl, i) => (
                                                             <li key={i} className="text-xs text-gray-600">
-                                                                • {t.template_identifier} ({t.total_messages} msgs)
+                                                                • {tpl.template_identifier} ({t('charts.messagesCount', { count: tpl.total_messages })})
                                                             </li>
                                                         ))}
                                                     </ul>
@@ -369,11 +373,11 @@ export function DailyParticipation({ data, isLoading }: DailyParticipationProps)
                                             )}
                                             {day.incoming.templates.length > 0 && (
                                                 <div>
-                                                    <span className="text-xs font-medium text-emerald-600">Incoming Templates:</span>
+                                                    <span className="text-xs font-medium text-emerald-600">{t('templates.incoming')}</span>
                                                     <ul className="mt-1 space-y-0.5">
-                                                        {day.incoming.templates.map((t, i) => (
+                                                        {day.incoming.templates.map((tpl, i) => (
                                                             <li key={i} className="text-xs text-gray-600">
-                                                                • {t.template_identifier} ({t.total_messages} msgs)
+                                                                • {tpl.template_identifier} ({t('charts.messagesCount', { count: tpl.total_messages })})
                                                             </li>
                                                         ))}
                                                     </ul>

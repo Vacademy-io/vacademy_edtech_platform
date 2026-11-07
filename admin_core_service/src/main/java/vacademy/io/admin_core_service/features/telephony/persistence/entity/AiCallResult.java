@@ -131,6 +131,35 @@ public class AiCallResult {
     @Column(name = "diag_faults", columnDefinition = "TEXT")
     private String diagFaults;
 
+    /**
+     * CALL / CALL_LATER / SKIP — should a human counsellor call this lead next.
+     * Exists only to colour {@link #followUpGist} and to filter on; it is never
+     * shown as a word on its own. NULL = NOT ASSESSED and must never be read as
+     * CALL — same contract as {@code diagHealth}.
+     */
+    @Column(name = "follow_up", length = 16)
+    private String followUp;
+
+    /**
+     * ONE sentence for the counsellor deciding whether to pick up the phone for this
+     * lead: the recommendation and the concrete reason from the call —
+     * "Worth a call — runs a 50-member hybrid studio, asked about pricing." Not a
+     * grade of our agent and not the disposition restated; the thing a human reads
+     * in the Call Log to decide in one glance. Capped at 240 chars by the bot.
+     * NULL = not assessed.
+     */
+    @Column(name = "follow_up_gist", length = 255)
+    private String followUpGist;
+
+    /**
+     * Words the caller actually said, measured from the transcript. The outcome
+     * classifier routes an engaged-but-unjudged call to a human off this rather than
+     * off the disposition string. NULL = not measured (pre-existing rows) and must
+     * NOT be read as 0, which is a real silent pickup.
+     */
+    @Column(name = "caller_word_count")
+    private Integer callerWordCount;
+
     @Column(name = "callback")
     private Boolean callback;
 

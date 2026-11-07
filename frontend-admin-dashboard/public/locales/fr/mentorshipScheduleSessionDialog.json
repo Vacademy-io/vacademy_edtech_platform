@@ -1,0 +1,18 @@
+{
+    "mentorFallback": "Mentor",
+    "learnerFallback": "l'étudiant",
+    "sessionBookedToast": "Séance réservée avec {{name}}",
+    "scheduleFailedFallback": "Impossible de planifier cette séance.",
+    "dialogHeading": "Planifier un 1:1",
+    "cancelButton": "Annuler",
+    "bookingButton": "Réservation en cours…",
+    "bookButton": "Réserver la séance",
+    "introParagraph": "L'étudiant reçoit la confirmation, le lien de la réunion et les rappels — exactement comme s'il avait réservé lui-même. Rien ne lui est demandé.",
+    "mentorLabel": "Mentor",
+    "mentorPlaceholder": "Choisir un mentor",
+    "mentorSearchPlaceholder": "Rechercher des mentors…",
+    "mentorEmptyText": "Aucun mentor ne correspond",
+    "learnerLabel": "Étudiant",
+    "pickTimeLabel": "Choisir un horaire",
+    "chooseMentorFirst": "Choisissez un mentor pour voir ses disponibilités."
+}

@@ -1,0 +1,40 @@
+{
+    "header": {
+        "title": "Activity & Notes"
+    },
+    "loading": "Loading activity…",
+    "error": "Failed to load activity timeline.",
+    "empty": {
+        "title": "No activity yet",
+        "description": "Notes, status changes, and other events will appear here"
+    },
+    "pagination": {
+        "pageInfo": "Page {{current}} of {{total}}",
+        "previous": "Previous",
+        "next": "Next"
+    },
+    "event": {
+        "actorPrefix": "by",
+        "viewMore": "View more",
+        "viewLess": "View less"
+    },
+    "addNote": {
+        "collapsedPlaceholder": "Add a note or log activity…",
+        "notePlaceholder": "Type your note here…",
+        "submitHint": "Ctrl+Enter to submit",
+        "cancel": "Cancel",
+        "submit": "Add Note",
+        "submitting": "Saving…",
+        "actionTypes": {
+            "note": "Note",
+            "callLog": "Call Log",
+            "followUp": "Follow Up",
+            "meeting": "Meeting"
+        },
+        "toast": {
+            "success": "Note added successfully",
+            "error": "Failed to add note. Please try again.",
+            "emptyWarning": "Please enter a note or add a recording"
+        }
+    }
+}

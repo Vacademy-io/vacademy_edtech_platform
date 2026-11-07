@@ -1,0 +1,17 @@
+{
+    "selectTerm": "Sélectionner {{term}}",
+    "expandAll": "Tout développer",
+    "collapseAll": "Tout réduire",
+    "addSlide": "Ajouter une diapositive",
+    "noSlidesInChapter": "Aucune diapositive dans ce chapitre.",
+    "noSubjectsAvailable": "Aucune matière disponible. Commencez par en ajouter une.",
+    "manageTeachers": "Gérer les enseignants",
+    "viewAndManageTeachers": "Voir et gérer les enseignants affectés à ce groupe.",
+    "selectBatchLiveSessions": "Sélectionnez un groupe pour voir ses sessions en direct.",
+    "selectBatchReports": "Sélectionnez un groupe pour voir ses rapports.",
+    "contentStructureHeading": "Structure du contenu",
+    "navigateContentStructure": "Parcourez la structure du contenu de votre cours",
+    "contentStructureAvailableElsewhere": "La vue de la structure du contenu est disponible sur la page principale des détails du cours.",
+    "missingInformation": "Informations manquantes",
+    "missingIdsBody": "L'ID du {{course}} ou du {{level}} est manquant. Veuillez vous assurer qu'ils sont fournis pour continuer."
+}

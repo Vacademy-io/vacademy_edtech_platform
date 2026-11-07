@@ -1,0 +1,17 @@
+{
+    "dropzoneHint": "अपनी PDF यहां छोड़ें, या ब्राउज़ करने के लिए क्लिक करें",
+    "dropzoneFormats": "10MB तक की PDF फ़ाइलें समर्थित हैं",
+    "invalidFileType": "कृपया केवल PDF फ़ाइलें अपलोड करें",
+    "reorderFailed": "स्लाइड बन गई लेकिन क्रम बदलना विफल रहा",
+    "pdfSelectedWithPages_one": "PDF चुनी गई: {{count}} पृष्ठ मिला।",
+    "pdfSelectedWithPages_other": "PDF चुनी गई: {{count}} पृष्ठ मिले।",
+    "pdfSelected": "PDF सफलतापूर्वक चुनी गई",
+    "selectFileFirst": "कृपया पहले एक फ़ाइल चुनें",
+    "pdfUploaded": "PDF सफलतापूर्वक अपलोड हुई!",
+    "uploadFailed": "अपलोड विफल रहा। कृपया पुनः प्रयास करें।",
+    "pageCount_one": "{{count}} पृष्ठ",
+    "pageCount_other": "{{count}} पृष्ठ",
+    "uploadingPdf": "PDF अपलोड हो रही है...",
+    "uploadingEllipsis": "अपलोड हो रहा है...",
+    "uploadPdf": "PDF अपलोड करें"
+}

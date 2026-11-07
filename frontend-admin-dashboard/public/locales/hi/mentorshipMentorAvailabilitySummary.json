@@ -1,0 +1,15 @@
+{
+    "noHoursSet": "साप्ताहिक समय तय नहीं है — शिक्षार्थियों के लिए कोई स्लॉट उपलब्ध नहीं है।",
+    "sessionDuration_one": "{{count}}-मिनट का सेशन",
+    "sessionDuration_other": "{{count}}-मिनट के सेशंस",
+    "defaultLength": "डिफ़ॉल्ट अवधि",
+    "days": {
+        "monday": "सोमवार",
+        "tuesday": "मंगलवार",
+        "wednesday": "बुधवार",
+        "thursday": "गुरुवार",
+        "friday": "शुक्रवार",
+        "saturday": "शनिवार",
+        "sunday": "रविवार"
+    }
+}

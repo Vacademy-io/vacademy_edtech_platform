@@ -18,9 +18,13 @@ import {
     File,
 } from "@phosphor-icons/react";
 import { Steps } from "@phosphor-icons/react";
+import { useTranslation } from "react-i18next";
 import { MyButton } from "@/components/design-system/button";
-import { getTerminology } from "@/components/common/layout-container/sidebar/utils";
-import { ContentTerms, SystemTerms } from "@/types/naming-settings";
+import {
+    getTerminology,
+    getTerminologyPlural,
+} from "@/components/common/layout-container/sidebar/utils";
+import { ContentTerms, RoleTerms, SystemTerms } from "@/types/naming-settings";
 import { CourseDetailsRatingsComponent } from "../../ui/course-details-ratings-page";
 
 interface LevelOption {
@@ -208,6 +212,20 @@ export const CourseSidebar = ({
     onEnrollmentClick,
     onRatingsLoadingChange,
 }: CourseSidebarProps) => {
+    const { t } = useTranslation("courseDetailsB");
+    const courseLower = getTerminology(
+        ContentTerms.Course,
+        SystemTerms.Course
+    ).toLocaleLowerCase();
+    const slidesLower = getTerminology(
+        ContentTerms.Slides,
+        SystemTerms.Slides
+    ).toLocaleLowerCase();
+    const instructorsLabel = getTerminologyPlural(
+        RoleTerms.Teacher,
+        SystemTerms.Teacher
+    );
+
     if (!hasRightSidebar) return null;
 
     const safeEnrolledSessions = enrolledSessions || [];
@@ -242,11 +260,9 @@ export const CourseSidebar = ({
                                 />
                             </div>
                             <h2 className="text-base font-bold text-gray-900">
-                                {getTerminology(
-                                    ContentTerms.Course,
-                                    SystemTerms.Course
-                                ).toLocaleLowerCase()}{" "}
-                                Overview
+                                {t("courseSidebar.overviewTitle", {
+                                    course: courseLower,
+                                })}
                             </h2>
                         </div>
 
@@ -299,12 +315,9 @@ export const CourseSidebar = ({
                             ) : slideCountQuery.error ? (
                                 <div className="p-2.5 bg-red-50 border border-red-200 rounded-lg">
                                     <p className="text-xs text-red-600 font-medium">
-                                        Error loading{" "}
-                                        {getTerminology(
-                                            ContentTerms.Slides,
-                                            SystemTerms.Slides
-                                        ).toLocaleLowerCase()}
-                                        counts
+                                        {t("courseSidebar.errorLoadingCounts", {
+                                            slides: slidesLower,
+                                        })}
                                     </p>
                                 </div>
                             ) : (
@@ -406,7 +419,7 @@ export const CourseSidebar = ({
                                                             weight="duotone"
                                                         />
                                                         <span className="text-xs font-medium text-gray-700">
-                                                            Instructors
+                                                            {instructorsLabel}
                                                         </span>
                                                     </div>
                                                     <span className="text-xs font-bold text-gray-900 bg-white px-2 py-0.5 rounded-md shadow-sm">
@@ -433,7 +446,7 @@ export const CourseSidebar = ({
                                     className="mt-2 !min-w-full !w-full text-xs h-8"
                                     onClick={onEnrollmentClick}
                                 >
-                                    Enroll
+                                    {t("courseEnrollment.enrollButton")}
                                 </MyButton>
                             )}
                     </div>

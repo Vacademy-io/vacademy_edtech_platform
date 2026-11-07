@@ -1,0 +1,38 @@
+{
+    "sectionTitle": "Team performance",
+    "teamsBadge_one": "{{count}} team",
+    "teamsBadge_other": "{{count}} teams",
+    "unassigned": "Unassigned",
+    "total": "Total",
+    "emptyHint": "No team activity in this range.",
+    "breakdownTitle": "Conversion rate by team",
+    "footnote": "Responded = leads with at least one response. Conv % = conversions ÷ leads. Avg response = mean time to first response. Attainment % = conversions ÷ target.",
+    "table": {
+        "team": "Team",
+        "head": "Head",
+        "counsellors": "Counsellors",
+        "leads": "Leads",
+        "responded": "Responded",
+        "conversions": "Conversions",
+        "convRate": "Conv %",
+        "open": "Open",
+        "overdue": "Overdue",
+        "avgResponse": "Avg response",
+        "target": "Target",
+        "attainmentPct": "Attainment %"
+    },
+    "csv": {
+        "team": "Team",
+        "head": "Head",
+        "counsellors": "Counsellors",
+        "leads": "Leads",
+        "responded": "Responded",
+        "conversions": "Conversions",
+        "conversionRatePct": "Conversion rate (%)",
+        "open": "Open",
+        "overdue": "Overdue",
+        "avgResponseMinutes": "Avg response (minutes)",
+        "target": "Target",
+        "attainmentPct": "Attainment (%)"
+    }
+}

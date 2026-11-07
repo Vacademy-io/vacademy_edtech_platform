@@ -1,0 +1,23 @@
+{
+    "settingsPopover": {
+        "title": "Paramètres des questions",
+        "questionTypeLabel": "Type de question"
+    },
+    "questionHeader": {
+        "questionLabel": "Question"
+    },
+    "trueFalseOption": {
+        "markerFallback": "({{label}}.)",
+        "trueLabel": "Vrai",
+        "falseLabel": "Faux"
+    },
+    "trueFalseOptions": {
+        "answerDefaultLabel": "Réponse :"
+    },
+    "explanationSection": {
+        "defaultLabel": "Explication :"
+    },
+    "emptyState": {
+        "message": "Veuillez ajouter une question pour afficher ses détails"
+    }
+}

@@ -1,0 +1,15 @@
+{
+    "header": {
+        "title": "Question Wise Revaluation"
+    },
+    "table": {
+        "columnQNo": "Q.No.",
+        "columnQuestion": "Question"
+    },
+    "actions": {
+        "revaluate": "Revaluate"
+    },
+    "toasts": {
+        "revaluateSuccess": "Your attempt for this assessment has been revaluated. Please check your email!"
+    }
+}

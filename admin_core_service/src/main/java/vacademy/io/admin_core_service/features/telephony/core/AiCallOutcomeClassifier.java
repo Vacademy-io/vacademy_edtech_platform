@@ -40,6 +40,35 @@ public class AiCallOutcomeClassifier {
     public AiCallDecision classify(String status, Integer durationSec, String disposition,
                                    int priorAttempts, AiCallingSettingsPojo s,
                                    List<String> agentDispositions) {
+        return classify(status, durationSec, disposition, priorAttempts, s, agentDispositions, null);
+    }
+
+    /**
+     * {@code callerWordCount} = words the caller actually said, as MEASURED by the bot
+     * (never a model judgement). Null = not measured, which preserves the exact prior
+     * behaviour for every provider and every historical row.
+     *
+     * <p>It exists to break a bad tie. A call can be a long, rich, obviously qualified
+     * conversation and STILL arrive with no usable disposition — because the label was
+     * outside the agent's vocabulary, because a guard refused an unevidenced booking,
+     * or because {@code isUntrustworthyCall} degraded a RED call to Incomplete. All
+     * three funnel into "Incomplete", and Incomplete means RETRY: we re-dial someone
+     * who just held a three-minute conversation, and nobody ever reads what they said.
+     *
+     * <p>The 2026-09-09 audit found exactly this — a 428-second call in which the
+     * caller said 433 words, and a 196-second engaged call whose Counselling_Scheduled
+     * claim was (correctly) refused for having no agreed time. Both were bound for the
+     * re-dialer.
+     *
+     * <p>So: a connected call where the caller genuinely engaged is never silently
+     * retried on a "no conclusion" label. It goes to a human, who has the transcript.
+     * Deciding this on a measured word count rather than the disposition is the whole
+     * point — the classifier we caught inventing outcomes does not get to vote on
+     * whether a lead reaches a person.
+     */
+    public AiCallDecision classify(String status, Integer durationSec, String disposition,
+                                   int priorAttempts, AiCallingSettingsPojo s,
+                                   List<String> agentDispositions, Integer callerWordCount) {
         if (s == null || !s.isEnabled()) {
             return new AiCallDecision(Action.NONE, "ai_calling_disabled");
         }
@@ -59,6 +88,12 @@ public class AiCallOutcomeClassifier {
         }
         // Genuinely retry-worthy even when connected (call-back / no conclusion).
         if (containsIgnoreCase(RETRY_WORTHY, d)) {
+            // ... UNLESS the caller actually engaged. An explicit Callback is exempt:
+            // the lead ASKED to be called again, so re-dialing is the instruction, not
+            // a failure to judge. Only the "no conclusion" labels flip to a human.
+            if (isEngaged(callerWordCount, s) && !isExplicitCallback(d)) {
+                return new AiCallDecision(Action.ASSIGN, "engaged_unjudged:" + d);
+            }
             return canRetry ? new AiCallDecision(Action.RETRY, "neutral:" + d) : exhausted(s);
         }
         // Connected call carrying a disposition the AGENT defined = a reached
@@ -72,8 +107,29 @@ public class AiCallOutcomeClassifier {
                     ? new AiCallDecision(Action.ASSIGN, "agent_terminal:" + d)
                     : new AiCallDecision(Action.STOP, "agent_terminal:" + d);
         }
-        // Truly unmapped (not in settings, not agent-defined) → neutral (unchanged).
+        // Truly unmapped (not in settings, not agent-defined) → neutral (unchanged) —
+        // with the same engaged-caller exception as above, for the same reason, and
+        // the same call-back exemption: an institute's own spelling of "call me back"
+        // lands here rather than in RETRY_WORTHY, and it is still an instruction.
+        if (isEngaged(callerWordCount, s) && !isExplicitCallback(d)) {
+            return new AiCallDecision(Action.ASSIGN, "engaged_unjudged:" + d);
+        }
         return canRetry ? new AiCallDecision(Action.RETRY, "neutral:" + d) : exhausted(s);
+    }
+
+    /**
+     * Null = not measured → never engaged, so every historical row and every provider
+     * that does not report a count keeps its exact prior routing. Zero is a real
+     * silent pickup and is likewise not engaged.
+     */
+    private boolean isEngaged(Integer callerWordCount, AiCallingSettingsPojo s) {
+        return callerWordCount != null && callerWordCount >= s.getEngagedCallerWords();
+    }
+
+    /** "Callback" and any label the institute spells as a call-back request. */
+    private boolean isExplicitCallback(String disposition) {
+        String n = disposition == null ? "" : disposition.toLowerCase().replace("_", "").replace(" ", "");
+        return n.contains("callback");
     }
 
     private AiCallDecision exhausted(AiCallingSettingsPojo s) {

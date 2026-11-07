@@ -1,0 +1,36 @@
+{
+    "createQuestionsFromAi": "Créer des questions avec l'IA",
+    "generateQuestions": {
+        "title": "Générer des questions",
+        "description": "Demandez à l'IA d'utiliser un PDF, une image ou un sujet pour générer de nouvelles questions"
+    },
+    "extractQuestions": {
+        "title": "Extraire des questions",
+        "description": "Demandez à l'IA d'extraire des questions à partir d'un PDF, d'une image ou d'un cours audio"
+    },
+    "vsmartUpload": {
+        "title": "VSmart Upload",
+        "subtitle": "(Générer des questions en téléversant des fichiers pdf, doc et ppt)",
+        "description": "Générez instantanément des sujets d'examen en téléversant des supports d'étude aux formats PDF, Word ou PowerPoint."
+    },
+    "vsmartAudio": {
+        "title": "Vsmart Audio",
+        "subtitle": "(Générer des questions en téléversant des fichiers audio)",
+        "description": "Transformez n'importe quel cours, réunion ou enregistrement audio en un sujet d'examen complet."
+    },
+    "vsmartTopics": {
+        "title": "Vsmart Topics",
+        "subtitle": "(Générer des questions en indiquant des sujets)",
+        "description": "Générez des sujets d'examen personnalisés en quelques secondes en tapant simplement un sujet, un concept ou une consigne."
+    },
+    "vsmartExtract": {
+        "title": "Vsmart Extract",
+        "subtitle": "(Extraire des questions en téléversant des fichiers pdf, doc et ppt)",
+        "description": "Extrayez facilement toutes les questions existantes de n'importe quel document PDF."
+    },
+    "vsmartImage": {
+        "title": "Vsmart Image",
+        "subtitle": "(Extraire des questions en téléversant des images)",
+        "description": "Transformez facilement des images en questions grâce à l'OCR et à l'IA."
+    }
+}

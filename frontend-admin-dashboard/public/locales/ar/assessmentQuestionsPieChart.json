@@ -1,0 +1,34 @@
+{
+    "chart": {
+        "ongoing": "قيد التقدم",
+        "pending": "قيد الانتظار",
+        "attempted": "تمت المحاولة"
+    },
+    "info": {
+        "createdOn": "تاريخ الإنشاء",
+        "startDateTime": "تاريخ ووقت البدء",
+        "endDateTime": "تاريخ ووقت الانتهاء",
+        "duration": "المدة",
+        "totalParticipants": "إجمالي المشاركين",
+        "subjectFallback": "غير متاح"
+    },
+    "durationLabel": {
+        "hoursMinutes": "{{hours}} ساعة {{minutes}} دقيقة",
+        "hoursOnly": "{{hours}} ساعة",
+        "minutesOnly": "{{minutes}} دقيقة"
+    },
+    "stats": {
+        "avgDuration": "متوسط المدة",
+        "avgDurationUnit": "دقيقة",
+        "avgMarks": "متوسط الدرجات"
+    },
+    "breakdown": {
+        "title": "تفصيل المشاركة",
+        "total_zero": "{{count}} إجمالاً",
+        "total_one": "{{count}} إجمالاً",
+        "total_two": "{{count}} إجمالاً",
+        "total_few": "{{count}} إجمالاً",
+        "total_many": "{{count}} إجمالاً",
+        "total_other": "{{count}} إجمالاً"
+    }
+}

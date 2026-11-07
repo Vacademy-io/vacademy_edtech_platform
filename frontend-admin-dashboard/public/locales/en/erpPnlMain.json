@@ -1,0 +1,30 @@
+{
+    "toast": {
+        "downloaded": "P&L snapshot downloaded"
+    },
+    "errors": {
+        "downloadFailed": "Could not download the P&L snapshot.",
+        "loadFailed": "Could not load the P&L snapshot."
+    },
+    "subtitle": "Fee revenue actually collected in {{month}}, against what payroll cost the institute for the same month.",
+    "periodLabel": "Period",
+    "preparing": "Preparing…",
+    "downloadCsv": "Download CSV",
+    "checkWarnings": "Check before relying on these figures",
+    "journal": {
+        "postedWithCount_one": "Payroll journal posted for this period ({{count}} entry).",
+        "postedWithCount_other": "Payroll journal posted for this period ({{count}} entries).",
+        "posted": "Payroll journal posted for this period.",
+        "notPosted": "No payroll journal for this period yet — approving the payroll run posts it."
+    },
+    "costByDepartment": "Cost by department",
+    "employerCostHint": "Employer cost is gross pay plus employer statutory contributions.",
+    "noCostRecorded": "No payroll cost recorded for {{month}}.",
+    "columns": {
+        "department": "Department",
+        "headcount": "Headcount",
+        "employerCost": "Employer cost",
+        "share": "Share"
+    },
+    "total": "Total"
+}

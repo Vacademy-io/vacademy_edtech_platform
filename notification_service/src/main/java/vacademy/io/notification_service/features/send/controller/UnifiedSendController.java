@@ -4,6 +4,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import vacademy.io.notification_service.features.send.dto.DeliveryStatusDTO;
 import vacademy.io.notification_service.features.send.dto.SendBatchSummaryDTO;
 import vacademy.io.notification_service.features.send.dto.UnifiedSendRequest;
 import vacademy.io.notification_service.features.send.dto.UnifiedSendResponse;
@@ -41,6 +42,21 @@ public class UnifiedSendController {
     public ResponseEntity<UnifiedSendResponse> getBatchStatus(@PathVariable String batchId) {
         UnifiedSendResponse response = unifiedSendService.getBatchStatus(batchId);
         return ResponseEntity.ok(response);
+    }
+
+    /**
+     * What the provider actually did with messages this caller sent, keyed by the messageId
+     * (WhatsApp wamid) returned in the send response.
+     * <p>
+     * The send endpoint above returns as soon as the provider accepts the message, which is NOT
+     * delivery — a message accepted at 06:51:47 is regularly rejected at 06:51:48. Anything that
+     * needs to show a real outcome sends, then polls this for a few seconds. Ids with no verdict
+     * yet come back PENDING.
+     */
+    @GetMapping("/delivery-status")
+    public ResponseEntity<List<DeliveryStatusDTO>> getDeliveryStatus(
+            @RequestParam("messageIds") List<String> messageIds) {
+        return ResponseEntity.ok(unifiedSendService.getDeliveryStatus(messageIds));
     }
 
     /**

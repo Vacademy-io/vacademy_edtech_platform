@@ -1,0 +1,19 @@
+{
+    "dialogTitle": "Ajouter un journal d'activité",
+    "dialogDescription": "Consignez une activité ou une note pour cette demande",
+    "actionTypes": {
+        "note": "Note",
+        "phoneCall": "Appel téléphonique",
+        "emailSent": "E-mail envoyé",
+        "campusVisit": "Visite du campus"
+    },
+    "notePlaceholder": "Écrivez votre note ici…",
+    "cancel": "Annuler",
+    "submit": "Ajouter l'activité",
+    "submitting": "Enregistrement…",
+    "toast": {
+        "success": "Activité enregistrée avec succès",
+        "error": "Échec de l'ajout de l'activité. Veuillez réessayer.",
+        "emptyWarning": "Veuillez saisir une note"
+    }
+}

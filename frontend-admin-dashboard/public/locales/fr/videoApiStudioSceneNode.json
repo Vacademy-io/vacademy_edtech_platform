@@ -1,0 +1,31 @@
+{
+    "ariaLabel": "Scène {{sceneNumber}} — cliquez pour les détails",
+    "aiVideoTooltip": "Vidéo générée par IA (fal.ai Veo)",
+    "aiBadge": "IA",
+    "intrinsicTooltip": "{{field}} — la narration principale est coupée pendant cette fenêtre ; le plan diffuse son propre son (audio Veo / clip source).",
+    "intrinsicBadge": "INTR",
+    "regenTooltip_one": "{{count}} tentative de régénération — cliquez pour le journal des verdicts",
+    "regenTooltip_many": "{{count}} de tentatives de régénération — cliquez pour le journal des verdicts",
+    "regenTooltip_other": "{{count}} tentatives de régénération — cliquez pour le journal des verdicts",
+    "intentRoleTooltip": "Rôle d'intention : {{value}}",
+    "backgroundTreatmentTooltip": "Traitement de l'arrière-plan : {{value}}",
+    "transitionInTooltip": "Transition d'entrée : {{value}}",
+    "workingFallback": "En cours…",
+    "htmlPreviewTitle": "Aperçu HTML de la scène {{sceneNumber}}",
+    "htmlSceneLabel": "scène HTML",
+    "textSceneLabel": "scène texte",
+    "substage": {
+        "htmlGen": "Génération du HTML",
+        "density": "Densité d'animation",
+        "bboxLint": "Vérification de la boîte englobante",
+        "brandAsset": "Vérification des éléments de marque",
+        "visionReview": "Revue visuelle",
+        "screenshot": "Capture d'écran en cours",
+        "tts": "Narration en cours de doublage",
+        "mediaPolling": "Interrogation du job média"
+    },
+    "externalCallState": {
+        "queued": "en file d'attente",
+        "polling": "interrogation en cours"
+    }
+}

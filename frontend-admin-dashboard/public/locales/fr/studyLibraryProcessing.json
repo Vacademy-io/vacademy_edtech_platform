@@ -1,0 +1,25 @@
+{
+    "pageTitle": "Traitement des ressources du cours",
+    "pageDescription": "L'IA prépare le contenu de votre cours.",
+    "heading": "Création des ressources de votre cours",
+    "generatingSubtitle": "Nous générons de vraies images et vidéos pour votre cours !",
+    "images": "Images",
+    "videos": "Vidéos",
+    "processingStatus": "Traitement des ressources de votre cours...",
+    "estimatedTimeRemaining": "Temps restant estimé :",
+    "minutesShort_one": "{{count}} min",
+    "minutesShort_many": "{{count}} min",
+    "minutesShort_other": "{{count}} min",
+    "secondsShort_one": "{{count}} s",
+    "secondsShort_many": "{{count}} s",
+    "secondsShort_other": "{{count}} s",
+    "processDurationNote": "Ce processus prend généralement 2 à 5 minutes. Vous pouvez attendre ici ou revenir plus tard.",
+    "backToCourseLibrary": "Retour à la bibliothèque de cours",
+    "dialog": {
+        "title": "Retourner à la bibliothèque de cours ?",
+        "description": "Êtes-vous sûr de vouloir retourner à la bibliothèque de cours ? Vous pouvez soit abandonner votre cours actuel, soit l'enregistrer en brouillon.",
+        "cancel": "Annuler",
+        "discardCourse": "Abandonner le cours",
+        "saveToDrafts": "Enregistrer en brouillon"
+    }
+}

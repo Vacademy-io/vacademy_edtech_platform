@@ -1,0 +1,15 @@
+{
+    "errors": {
+        "noInstitute": "تعذر تحديد مؤسستك.",
+        "pickDestination": "اختر فصلاً واحداً على الأقل للمتابعة.",
+        "emptyNotes": "هذه الملاحظات فارغة — لا يوجد ما يُضاف.",
+        "pdfUploadFailed": "تعذر رفع ملف PDF الخاص بالملاحظات.",
+        "publishAssessmentFirst": "انشر التقييم أولاً لربطه كشريحة تقييم.",
+        "noQuestions": "لا توجد أسئلة لإضافتها.",
+        "allChaptersFailed": "تعذر إضافة الشريحة إلى أي فصل."
+    },
+    "defaultTitles": {
+        "notes": "ملاحظات المحاضرة",
+        "assessment": "تقييم"
+    }
+}

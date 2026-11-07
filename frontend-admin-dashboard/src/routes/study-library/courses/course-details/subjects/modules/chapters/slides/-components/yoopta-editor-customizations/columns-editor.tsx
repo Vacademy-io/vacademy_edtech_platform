@@ -1,4 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 import { YooptaPlugin, useYooptaEditor, PluginElementRenderProps } from '@yoopta/editor';
 import { commitBlockProps } from './commitBlockProps';
 import {
@@ -14,10 +16,10 @@ interface ColumnData {
     content: string; // rich-text HTML (text and/or images)
 }
 
-const COLUMN_PRESETS = [
-    { label: '2 Columns', count: 2 },
-    { label: '3 Columns', count: 3 },
-    { label: '4 Columns', count: 4 },
+const buildColumnPresets = (t: TFunction) => [
+    { label: t('columnsCount', { count: 2 }), count: 2 },
+    { label: t('columnsCount', { count: 3 }), count: 3 },
+    { label: t('columnsCount', { count: 4 }), count: 4 },
 ];
 
 // Columns colours — centralised so the file carries no scattered literal hex.
@@ -36,7 +38,9 @@ const C = {
 };
 
 export function ColumnsBlock({ element, attributes, children, blockId }: PluginElementRenderProps) {
+    const { t } = useTranslation('studyLibraryColumnsEditor');
     const editor = useYooptaEditor();
+    const COLUMN_PRESETS = buildColumnPresets(t);
     const [columns, setColumns] = useState<ColumnData[]>(
         element?.props?.columns || [{ content: '' }, { content: '' }]
     );
@@ -126,7 +130,7 @@ export function ColumnsBlock({ element, attributes, children, blockId }: PluginE
                     gap: '6px',
                 }}
             >
-                <span style={{ fontSize: '14px', fontWeight: 600, color: C.text }}>Columns Layout</span>
+                <span style={{ fontSize: '14px', fontWeight: 600, color: C.text }}>{t('columnsLayout')}</span>
                 <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
                     {/* Column count */}
                     {COLUMN_PRESETS.map((preset) => (
@@ -153,10 +157,10 @@ export function ColumnsBlock({ element, attributes, children, blockId }: PluginE
                         onChange={(e) => updateGap(Number(e.target.value))}
                         style={{ fontSize: '11px', padding: '3px 4px', border: `1px solid ${C.controlBorder}`, borderRadius: '4px' }}
                     >
-                        <option value={8}>Tight</option>
-                        <option value={16}>Normal</option>
-                        <option value={24}>Wide</option>
-                        <option value={32}>Extra Wide</option>
+                        <option value={8}>{t('gapTight')}</option>
+                        <option value={16}>{t('gapNormal')}</option>
+                        <option value={24}>{t('gapWide')}</option>
+                        <option value={32}>{t('gapExtraWide')}</option>
                     </select>
 
                     <button
@@ -171,7 +175,7 @@ export function ColumnsBlock({ element, attributes, children, blockId }: PluginE
                             cursor: 'pointer',
                         }}
                     >
-                        {isEditing ? 'Preview' : 'Edit'}
+                        {isEditing ? t('preview') : t('edit')}
                     </button>
                 </div>
             </div>
@@ -196,12 +200,12 @@ export function ColumnsBlock({ element, attributes, children, blockId }: PluginE
                                     marginBottom: '4px',
                                 }}
                             >
-                                Column {index + 1}
+                                {t('columnLabel', { number: index + 1 })}
                             </div>
                             <RichTextField
                                 value={col.content}
                                 onChange={(html) => updateColumnContent(index, html)}
-                                placeholder={`Column ${index + 1} — text and/or image…`}
+                                placeholder={t('columnPlaceholder', { number: index + 1 })}
                                 minHeight={80}
                             />
                         </div>
@@ -219,7 +223,7 @@ export function ColumnsBlock({ element, attributes, children, blockId }: PluginE
                         >
                             {isRichTextEmpty(col.content) ? (
                                 <span style={{ color: C.placeholder, fontStyle: 'italic', fontSize: '14px' }}>
-                                    Empty column
+                                    {t('emptyColumn')}
                                 </span>
                             ) : (
                                 <RichTextHtml

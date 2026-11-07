@@ -1,0 +1,64 @@
+{
+    "errors": {
+        "couldNotLoad": "Impossible de charger les résultats de cet apprenant"
+    },
+    "actions": {
+        "retry": "Réessayer"
+    },
+    "unnamedLearner": "Apprenant sans nom",
+    "header": {
+        "quizzesDone": "Quiz effectués",
+        "average": "Moyenne",
+        "marksSoFar": "Points jusqu'à présent",
+        "outOfAcrossAllQuizzes": "Sur {{total}} pour tous les quiz",
+        "attempts": "Tentatives",
+        "passedFraction": "{{passed}}/{{total}} réussis"
+    },
+    "empty": {
+        "noQuizzesTitle": "Ce cours n'a pas encore de quiz",
+        "noQuizzesSubtitle": "Ajoutez une diapositive de quiz à un chapitre et les résultats de cet apprenant apparaîtront ici."
+    },
+    "untitledQuiz": "Quiz sans titre",
+    "notMappedToChapter": "Non associé à un chapitre",
+    "notAttempted": "Non tenté",
+    "tries_one": "{{count}} essai",
+    "tries_many": "{{count}} d'essais",
+    "tries_other": "{{count}} essais",
+    "couldNotLoadAnswers": "Impossible de charger les réponses de cet apprenant.",
+    "noRecordedAttempts": "Aucune tentative enregistrée.",
+    "attemptNumber": "Tentative {{number}}",
+    "ofTotal": "sur {{total}}",
+    "countsAsScoreTitle": "C'est la tentative dont le score est retenu",
+    "countsAsScore": "compte comme leur score",
+    "correctCount_one": "{{count}} correcte",
+    "correctCount_many": "{{count}} de correctes",
+    "correctCount_other": "{{count}} correctes",
+    "wrongCount_one": "{{count}} incorrecte",
+    "wrongCount_many": "{{count}} d'incorrectes",
+    "wrongCount_other": "{{count}} incorrectes",
+    "skippedCount_one": "{{count}} ignorée",
+    "skippedCount_many": "{{count}} d'ignorées",
+    "skippedCount_other": "{{count}} ignorées",
+    "notAnsweredCount_one": "{{count}} sans réponse",
+    "notAnsweredCount_many": "{{count}} sans réponse",
+    "notAnsweredCount_other": "{{count}} sans réponse",
+    "needManualMarkingCount_one": "{{count}} nécessite une correction manuelle",
+    "needManualMarkingCount_many": "{{count}} nécessitent une correction manuelle",
+    "needManualMarkingCount_other": "{{count}} nécessitent une correction manuelle",
+    "verdict": {
+        "correct": "Correct",
+        "wrong": "Incorrect",
+        "partial": "Partiel",
+        "skipped": "Ignoré",
+        "needsMarking": "Correction requise",
+        "notAnswered": "Sans réponse"
+    },
+    "questionNumber": "Q{{number}}.",
+    "untitledQuestion": "Question sans titre",
+    "correctAnswerAriaLabel": "Bonne réponse",
+    "learnerAnswerAriaLabel": "Réponse de l'apprenant",
+    "untitledOption": "Option sans titre",
+    "theirAnswer": "leur réponse",
+    "answeredLabel": "Répondu :",
+    "expectedLabel": "Attendu :"
+}

@@ -20,5 +20,7 @@ public class CreditPackOrderStatusDTO {
     private String status;          // INITIATED | SUCCESS | FAILED
     private String paymentStatus;   // PAYMENT_PENDING | PAID | FAILED | REFUNDED | PARTIALLY_REFUNDED
     private BigDecimal creditsGranted;   // null until PAID
-    private String invoiceUrl;           // null until invoice is rendered
+    private String invoiceUrl;           // relative PDF download path; null until invoice exists
+    private String invoiceId;
+    private String invoiceNumber;
 }

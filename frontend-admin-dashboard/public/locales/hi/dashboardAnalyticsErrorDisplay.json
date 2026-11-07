@@ -1,0 +1,10 @@
+{
+    "errorMessage": "{{widgetName}} लोड नहीं हो सका",
+    "sessionExpiredNotice": "आपका सत्र समाप्त हो गया हो सकता है या पुनः प्रमाणीकरण की आवश्यकता है।",
+    "debugInfoLabel": "डीबग जानकारी",
+    "actions": {
+        "refreshPage": "पेज रीफ्रेश करें",
+        "login": "लॉगिन करें",
+        "tryAgain": "पुनः प्रयास करें"
+    }
+}

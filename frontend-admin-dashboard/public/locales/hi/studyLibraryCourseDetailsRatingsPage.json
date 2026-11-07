@@ -1,0 +1,10 @@
+{
+    "unknownUser": "अज्ञात",
+    "title": "रेटिंग और समीक्षाएं",
+    "errorMissingCourse": "रेटिंग लोड नहीं हो सकीं - कोर्स जानकारी गुम है",
+    "errorGeneric": "रेटिंग लोड नहीं हो सकीं। कृपया बाद में फिर से प्रयास करें।",
+    "notAvailable": "उपलब्ध नहीं",
+    "reviewsCount_one": "{{count}} समीक्षा",
+    "reviewsCount_other": "{{count}} समीक्षाएं",
+    "noReviewsYet": "अभी तक कोई समीक्षा नहीं"
+}

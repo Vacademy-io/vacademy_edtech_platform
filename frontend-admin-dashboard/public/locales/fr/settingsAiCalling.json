@@ -1,0 +1,243 @@
+{
+    "assignmentModes": {
+        "roundRobin": "Tour par tour",
+        "timeBased": "Pendant la plage horaire uniquement",
+        "manual": "Manuel"
+    },
+    "provider": {
+        "fallbackLabel": "Fournisseur",
+        "aavtaar": {
+            "label": "Aavtaar",
+            "companyCodeLabel": "Code de l'entreprise",
+            "companyCodePlaceholder": "Votre code d'entreprise fournisseur",
+            "tokenLabel": "Jeton Bearer",
+            "tokenPlaceholder": "Collez le jeton d'API",
+            "campaignPlaceholder": "ID de campagne de votre fournisseur",
+            "campaignHelp": "La campagne qui définit le script/la personnalité de l'IA pour les appels sortants. Fournie par votre fournisseur d'appels IA."
+        },
+        "vacademyAi": {
+            "label": "Agent Vacademy AI",
+            "companyCodeLabel": "Code de compte",
+            "companyCodePlaceholder": "Non requis — les appels passent par votre numéro Vacademy Voice",
+            "tokenLabel": "Jeton d'API",
+            "tokenPlaceholder": "Non requis pour Vacademy AI",
+            "campaignPlaceholder": "Choisissez un agent dans la section IA Agents ci-dessous",
+            "campaignHelp": "Les agents Vacademy AI sont créés dans la section « AI Agents » ci-dessous — enregistrer un agent l'enregistre automatiquement ici (son id devient l'id de campagne)."
+        },
+        "fallback": {
+            "companyCodeLabel": "Code de compte / d'entreprise",
+            "companyCodePlaceholder": "Votre code de compte fournisseur",
+            "tokenLabel": "Jeton d'API",
+            "tokenPlaceholder": "Collez le jeton d'API",
+            "campaignPlaceholder": "ID de campagne / d'agent",
+            "campaignHelp": "La campagne ou l'agent qui définit le script IA pour les appels sortants."
+        }
+    },
+    "toast": {
+        "settingsSaved": "Paramètres d'appel IA enregistrés",
+        "settingsSaveFailed": "Échec de l'enregistrement des paramètres d'appel IA",
+        "credentialsSaved": "Identifiants enregistrés",
+        "credentialsSaveFailed": "Échec de l'enregistrement des identifiants",
+        "fieldRequired": "{{field}} est requis.",
+        "campaignIdRequired": "Un ID de campagne par défaut est requis pour activer les appels IA."
+    },
+    "enableCard": {
+        "title": "Appels IA",
+        "description": "Une fois activé, les leads sont d'abord appelés par l'agent vocal IA. L'enregistrement et le résumé IA apparaissent sur le profil du lead, et un conseiller n'est assigné que lorsque les règles de résultat ci-dessous le prévoient.",
+        "enabled": "Activé",
+        "disabled": "Désactivé",
+        "showInLeadList": "Afficher le bouton d'appel IA sur les lignes de leads",
+        "showInLeadListHint": "Contrôle uniquement le bouton robot manuel dans les listes de leads. Les workflows IA automatisés continuent de s'exécuter quel que soit ce réglage.",
+        "inboundLeadCapture": "Capturer les appelants entrants comme leads",
+        "inboundLeadCaptureHint": "Pour une ligne d'assistance IA entrante : lorsque quelqu'un appelle et n'est pas déjà un lead, un lead est créé (mis en correspondance par numéro de téléphone, afin que les appelants récurrents ne soient pas dupliqués) et l'appel y est rattaché — il apparaît donc dans les leads récents et le journal d'appels, et vous pouvez faire un suivi. Si désactivé, les appels d'appelants inconnus sont enregistrés mais aucun lead n'est créé.",
+        "providerLabel": "Fournisseur vocal IA",
+        "providerPlaceholder": "Sélectionnez un fournisseur",
+        "providerHint": "L'agent d'appel IA utilisé pour cet établissement. Les identifiants et la campagne ci-dessous concernent le fournisseur sélectionné.",
+        "defaultCampaignIdLabel": "ID de campagne par défaut"
+    },
+    "campaigns": {
+        "title": "Campagnes / Agents",
+        "description": {
+            "part1": "Enregistrez chaque id de campagne IA et donnez-lui un",
+            "nameWord": "nom",
+            "part2": "d'agent (ex. « Class Feedback »). Les workflows font référence au",
+            "part3": ", et non à l'id brut — choisissez le même nom une fois par fournisseur, et changer de fournisseur résoudra automatiquement le bon id. Marquez chaque campagne Sortant (vous appelez) ou Entrant (on appelle votre ligne IA) ; les id Entrant permettent de classer les webhooks entrants (mis en correspondance avec le lead par numéro de téléphone)."
+        },
+        "agentNamePlaceholder": "Nom de l'agent (ex. Class Feedback)",
+        "campaignIdPlaceholder": "ID de campagne",
+        "providerPlaceholder": "Fournisseur",
+        "outbound": "Sortant",
+        "inbound": "Entrant",
+        "empty": "Aucune campagne enregistrée pour l'instant. Ajoutez-en une et marquez-la Entrant pour activer la détection des appels entrants.",
+        "addCampaign": "Ajouter une campagne"
+    },
+    "credentials": {
+        "title": "Identifiants",
+        "description": "Identifiants d'API pour le fournisseur d'appels IA de cet établissement. Le jeton et le secret de webhook sont stockés chiffrés et ne sont plus jamais affichés.",
+        "webhookSecretLabel": "Secret du webhook",
+        "savedPlaceholder": "•••••••• (enregistré — laissez vide pour conserver)",
+        "webhookSecretPlaceholder": "Secret pour l'URL du webhook ?token=",
+        "webhookHelp": "Authentifie le webhook de fin d'appel du fournisseur. Communiquez à votre fournisseur IA l'URL {{webhookPath}}?instituteId=…&token=<ce secret>.",
+        "save": "Enregistrer les identifiants",
+        "saving": "Enregistrement…"
+    },
+    "retryCard": {
+        "title": "Relances et plages d'appel",
+        "description": "Si un lead ne répond pas, l'IA relance dans ces limites avant d'abandonner. Les relances ne sont passées que pendant les plages ci-dessous.",
+        "maxRetries": "Nombre maximal de relances",
+        "maxPerDay": "Appels max par jour (par lead)",
+        "retryGap": "Minutes entre les relances",
+        "retryGapHint": "Délai d'attente du bot avant de rappeler un lead sans réponse.",
+        "callingShifts": "Plages d'appel",
+        "callingShiftsHint": "Plages horaires pendant lesquelles le bot peut (re)appeler. Ajoutez plusieurs plages (ex. matin + soir). S'applique au rappel programmé des relances ; les appels immédiats pour un nouveau lead, manuels et en masse partent tout de suite.",
+        "shiftTo": "à",
+        "addShift": "Ajouter une plage",
+        "timezone": "Fuseau horaire",
+        "connectThreshold": "Secondes de connexion minimales",
+        "connectThresholdHint": "Les appels plus courts sont considérés comme « non connectés » et sont relancés."
+    },
+    "outcomeAction": {
+        "title": "Résultat → Action",
+        "description": "Pour chaque résultat d'appel IA, choisissez ce qui se passe. Les résultats absents des deux listes sont relancés jusqu'au nombre maximal de relances, puis assignés à une personne. Ajoutez des résultats personnalisés ci-dessous pour les dispositions renvoyées par votre propre agent IA.",
+        "dispositionHeader": "Disposition",
+        "assignHeader": "Assigner un conseiller",
+        "stopHeader": "Arrêter (pas de relance)",
+        "removeAria": "Supprimer {{disposition}}",
+        "addOutcomePlaceholder": "Ajouter un résultat personnalisé (ex. Mauvais numéro)",
+        "addOutcome": "Ajouter un résultat",
+        "otherwiseHeader": "Otherwise",
+        "otherwiseRetry": "Retry, then assign after max retries",
+        "otherwiseRetryOnly": "Retry until max retries",
+        "customBadge": "custom"
+    },
+    "assignmentCard": {
+        "title": "Attribution des conseillers",
+        "description": "Comment un conseiller est choisi lorsqu'un lead est qualifié (ou lorsque les relances sont épuisées).",
+        "modeLabel": "Mode d'attribution",
+        "assignExhausted": "Assigner les leads sans réponse à une personne une fois les relances épuisées",
+        "reassignQualified": "Give qualified leads to this list's pool, even if they already have a counsellor",
+        "reassignQualifiedHint": "Use for lists of previously-worked leads: when the AI books or qualifies one, it goes to the pool instead of staying with whoever last held it. Leads that simply never answered are never moved."
+    },
+    "save": {
+        "saving": "Enregistrement…",
+        "save": "Enregistrer les paramètres d'appel IA"
+    },
+    "carrierStrip": {
+        "readyLine": "Les appels IA partent depuis {{line}}{{callerIdSuffix}}.",
+        "dedicatedLine": "une ligne Vacademy Voice dédiée",
+        "providerLine": "votre compte {{provider}}",
+        "defaultProviderWord": "d'appel",
+        "notReadyFallback": "Les appels IA ne peuvent pas encore être passés.",
+        "manageLink": "Gérer la ligne d'appel IA"
+    },
+    "apiCard": {
+        "title": "API et webhooks",
+        "description": "Laissez votre CRM, votre site ou votre outil d'automatisation lancer des appels IA et recevoir le résultat de chaque appel. Votre serveur envoie une clé avec chaque requête ; nous publions le résultat sur votre webhook à la fin de l'appel.",
+        "docs": "Documentation de l'API",
+        "copy": "Copier",
+        "copied": "Copié",
+        "copiedShort": "Copié",
+        "copyFailed": "Copie impossible. Sélectionnez le texte et copiez-le.",
+        "loading": "Chargement…",
+        "retry": "Réessayer",
+        "cancel": "Annuler",
+        "done": "Terminé",
+        "keys": {
+            "title": "Clés API",
+            "description": "Gardez les clés sur votre serveur. Ne les mettez jamais dans une page web ou une application mobile.",
+            "create": "Créer une clé",
+            "empty": "Aucune clé pour l'instant.",
+            "loadError": "Impossible de charger vos clés.",
+            "name": "Nom",
+            "prefix": "Clé",
+            "lastUsed": "Dernière utilisation",
+            "status": "Statut",
+            "neverUsed": "Jamais",
+            "expires": "Expire le {{date}}",
+            "statusActive": "Active",
+            "statusExpired": "Expirée",
+            "statusRevoked": "Révoquée",
+            "revoke": "Révoquer",
+            "revoked": "Clé révoquée",
+            "revokeFailed": "Impossible de révoquer la clé.",
+            "revokeTitle": "Révoquer cette clé ?",
+            "revokeDescription": "Les requêtes qui utilisent « {{name}} » cessent de fonctionner immédiatement. Les appels déjà en file d'attente ont quand même lieu.",
+            "formHeading": "Créer une clé API d'appels IA",
+            "nameLabel": "Nom",
+            "namePlaceholder": "ex. Notre CRM",
+            "expiryLabel": "Expire le (facultatif)",
+            "formHint": "Laissez la date vide pour une clé sans expiration.",
+            "submit": "Créer la clé",
+            "issueFailed": "Impossible de créer la clé.",
+            "issuedHeading": "Copiez votre clé maintenant",
+            "issuedWarning": "La clé n'est affichée qu'une seule fois. Copiez-la et conservez-la sur votre serveur.",
+            "issuedUsage": "Lancez un appel depuis votre serveur :",
+            "errors": {
+                "nameRequired": "Saisissez un nom.",
+                "nameTooLong": "Le nom doit faire moins de 120 caractères.",
+                "expiryInvalid": "Choisissez une date valide.",
+                "expiryInPast": "Choisissez une date postérieure à aujourd'hui.",
+                "generic": "Vérifiez le formulaire et réessayez."
+            },
+            "notCopiedWarning": "Vous n'avez pas copié la clé. Fermez à nouveau pour l'abandonner ; elle ne pourra plus être affichée.",
+            "humanCallsLabel": "Peut appeler les conseillers (appels humains)",
+            "humanCallsHint": "Permet à cette clé de lister les noms et e-mails de vos conseillers et de les mettre en relation avec des contacts par téléphone (human_calls:read, human_calls:write). Une clé ne peut pas être modifiée ensuite.",
+            "humanCallsBadge": "Appels humains",
+            "manageCounsellorsLabel": "Peut gérer les conseillers",
+            "manageCounsellorsHint": "Permet à cette clé d'ajouter des conseillers (chacun reçoit un accès au tableau de bord et un e-mail de bienvenue), de modifier leur nom, leur numéro de mobile et leur extension Airtel, et de les désactiver (counsellors:manage). Elle ne modifie jamais les administrateurs ni les autres membres de l'équipe. Une clé ne peut pas être modifiée ensuite.",
+            "manageCounsellorsBadge": "Gère les conseillers",
+            "manageAgentsLabel": "Peut gérer les agents IA",
+            "manageAgentsHint": "Permet à cette clé de créer, modifier, activer ou désactiver et supprimer des agents IA, de choisir l'agent par défaut et l'agent qui répond sur un numéro entrant (agents:manage). Une clé ne peut pas être modifiée ensuite.",
+            "manageAgentsBadge": "Gère les agents IA"
+        },
+        "agents": {
+            "title": "Identifiants d'agent",
+            "description": "Envoyez l'un d'eux comme agent_id pour choisir l'agent IA qui passe l'appel.",
+            "empty": "Aucun agent sortant pour l'instant. Créez-en un ci-dessus.",
+            "disabled": "(désactivé)"
+        },
+        "webhook": {
+            "title": "Webhook",
+            "description": "À la fin d'un appel, nous envoyons call.completed ou call.not_connected à cette adresse HTTPS, signé avec votre secret de webhook. Les livraisons échouées sont retentées pendant environ 9 heures.",
+            "urlLabel": "URL du point de terminaison",
+            "save": "Enregistrer",
+            "urlRequired": "Saisissez l'adresse de votre point de terminaison.",
+            "urlHttps": "Utilisez une adresse https:// complète.",
+            "saved": "Webhook enregistré",
+            "saveFailed": "Impossible d'enregistrer le webhook.",
+            "loadError": "Impossible de charger le webhook.",
+            "secretHint": "Secret de signature :",
+            "events": "Événements : {{events}}",
+            "test": "Envoyer un événement de test",
+            "testOk": "Votre point de terminaison a répondu {{code}}.",
+            "testFailed": "L'événement de test n'a pas été accepté : {{reason}}",
+            "testError": "Impossible d'envoyer l'événement de test.",
+            "rotate": "Nouveau secret",
+            "rotateFailed": "Impossible de créer un nouveau secret.",
+            "remove": "Supprimer",
+            "removed": "Webhook supprimé",
+            "removeFailed": "Impossible de supprimer le webhook.",
+            "removeTitle": "Supprimer le webhook ?",
+            "removeDescription": "Les résultats des appels ne sont plus envoyés à votre point de terminaison. Votre serveur peut toujours les obtenir avec GET /v1/calls/{id}.",
+            "secretHeading": "Copiez votre secret de webhook",
+            "secretWarning": "Le secret n'est affiché qu'une seule fois. Votre serveur l'utilise pour vérifier l'en-tête Telleo-Signature de chaque livraison.",
+            "secretLabel": "Secret de webhook",
+            "rotateTitle": "Créer un nouveau secret de signature ?",
+            "rotateDescription": "Toutes les livraisons seront désormais signées avec le nouveau secret. Tant que votre serveur ne l'utilise pas, ses vérifications de signature échoueront et les événements seront retentés. Mettez votre serveur à jour juste après avoir copié le nouveau secret."
+        }
+    },
+    "header": {
+        "title": "AI Calling Settings",
+        "description": "AI-first calling: who the AI calls, from which line, how often it retries, and what happens after each outcome.",
+        "unsaved": "Unsaved changes",
+        "aiAgents": "AI Agents",
+        "disabledBanner": "AI calling is off. Switch it on in the AI calling tab to set up retries, outcomes and assignment."
+    },
+    "tabs": {
+        "general": "AI calling",
+        "agents": "Agents & campaigns",
+        "retries": "Retries & shifts",
+        "outcomes": "Outcome → action",
+        "assignment": "Assignment"
+    }
+}

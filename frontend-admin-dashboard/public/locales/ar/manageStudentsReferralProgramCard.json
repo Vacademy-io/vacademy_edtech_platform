@@ -1,0 +1,33 @@
+{
+    "header": {
+        "title": "إعدادات الإحالة",
+        "description": "قم بتهيئة المكافآت للمُحيلين والمُحالين عند استخدام رموز الإحالة"
+    },
+    "card": {
+        "defaultBadge": "افتراضي",
+        "changeSettings": "تغيير إعدادات الإحالة"
+    },
+    "refereeBenefit": {
+        "label": "مكافأة المُحال",
+        "freeDays": "{{value}} يوم مجاني",
+        "bonusContent": "محتوى إضافي",
+        "discountOff": "خصم {{value}}"
+    },
+    "referrerTiers": {
+        "label": "مستويات المُحيل"
+    },
+    "programSettings": {
+        "label": "إعدادات البرنامج",
+        "vestingPeriod": "فترة الاستحقاق",
+        "combineOffers": "دمج العروض",
+        "yes": "نعم",
+        "no": "لا"
+    },
+    "types": {
+        "discountPercentage": "خصم بالنسبة المئوية",
+        "discountFixed": "خصم ثابت",
+        "bonusContent": "محتوى إضافي",
+        "freeDays": "أيام مجانية",
+        "pointsSystem": "نظام النقاط"
+    }
+}

@@ -1,4 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 import { MyDialog } from '@/components/design-system/dialog';
 import { MyButton } from '@/components/design-system/button';
 import {
@@ -12,24 +14,34 @@ import { PaperPlaneTilt, Spinner } from '@phosphor-icons/react';
 import { toast } from 'sonner';
 import { useEnrollRequestsDialogStore } from '../bulk-actions-store';
 
-// Define message templates
-const MESSAGE_TEMPLATES = [
+// Define message templates. The content strings contain the app's own
+// {{placeholder}} tokens (resolved later in processSendMessageQueue by simple
+// string replacement, not by i18next) — each is translated with an identity
+// interpolation value so the token text survives translation unchanged.
+const buildMessageTemplates = (t: TFunction) => [
     {
         id: 'template1',
-        name: 'Welcome Message',
-        content: 'Hello {{name}}! Welcome to our learning platform.',
+        name: t('templates.welcome.name'),
+        content: t('templates.welcome.content', { name: '{{name}}' }),
     },
     {
         id: 'template2',
-        name: 'Session Reminder',
-        content: 'Hi {{name}}, this is a reminder about your upcoming session.',
+        name: t('templates.sessionReminder.name'),
+        content: t('templates.sessionReminder.content', { name: '{{name}}' }),
     },
     {
         id: 'template3',
-        name: 'Assignment Due',
-        content: 'Hey {{name}}, your assignment is due soon. Please complete it on time.',
+        name: t('templates.assignmentDue.name'),
+        content: t('templates.assignmentDue.content', { name: '{{name}}' }),
     },
-    { id: 'template4', name: 'Custom Message', content: 'Hi {{name}}, {{custom_message_text}}' },
+    {
+        id: 'template4',
+        name: t('templates.custom.name'),
+        content: t('templates.custom.content', {
+            name: '{{name}}',
+            custom_message_text: '{{custom_message_text}}',
+        }),
+    },
 ];
 
 type MessageSendingStatus = 'pending' | 'sending' | 'sent' | 'failed';
@@ -42,9 +54,13 @@ interface StudentMessageStatus {
 }
 
 export const SendMessageDialog = () => {
+    const { t } = useTranslation('manageStudentsSendMessageDialogEnroll');
     const { isSendMessageOpen, bulkActionInfo, closeAllDialogs } = useEnrollRequestsDialogStore();
+
+    const messageTemplates = useMemo(() => buildMessageTemplates(t), [t]);
+
     const [selectedTemplateId, setSelectedTemplateId] = useState<string>(
-        MESSAGE_TEMPLATES[0]?.id || ''
+        messageTemplates[0]?.id || ''
     );
     const [studentMessageStatuses, setStudentMessageStatuses] = useState<StudentMessageStatus[]>(
         []
@@ -79,20 +95,22 @@ export const SendMessageDialog = () => {
 
     const processSendMessageQueue = async () => {
         if (!selectedTemplateId || !bulkActionInfo) {
-            toast.error('No template selected or students available.');
+            toast.error(t('toasts.noTemplateOrStudents'));
             setIsBulkSending(false);
             return;
         }
 
-        const template = MESSAGE_TEMPLATES.find((t) => t.id === selectedTemplateId);
+        // Renamed the find() callback param from `t` to `tpl` — it would otherwise
+        // shadow the outer translation function `t` from useTranslation() above.
+        const template = messageTemplates.find((tpl) => tpl.id === selectedTemplateId);
         if (!template) {
-            toast.error('Selected template not found.');
+            toast.error(t('toasts.templateNotFound'));
             setIsBulkSending(false);
             return;
         }
 
         setIsBulkSending(true);
-        toast.info('Starting to send messages...', { id: 'bulk-send-progress' });
+        toast.info(t('toasts.startingSend'), { id: 'bulk-send-progress' });
 
         // Initialize status for all students
         const initialStatuses = bulkActionInfo.selectedStudents.map((student) => ({
@@ -117,7 +135,7 @@ export const SendMessageDialog = () => {
                 );
                 messageContent = messageContent.replace(
                     /\{\{custom_message_text\}\}/g,
-                    'Please check your dashboard for updates.'
+                    t('defaultCustomMessage')
                 );
 
                 await mockSendMessageAPI(student.user_id, student.full_name, messageContent);
@@ -139,7 +157,7 @@ export const SendMessageDialog = () => {
         setIsBulkSending(false);
         const sentCount = studentMessageStatuses.filter((s) => s.status === 'sent').length;
         const failedCount = studentMessageStatuses.filter((s) => s.status === 'failed').length;
-        toast.success(`Finished: ${sentCount} sent, ${failedCount} failed.`, {
+        toast.success(t('toasts.finished', { sent: sentCount, failed: failedCount }), {
             id: 'bulk-send-progress',
             duration: 5000,
         });
@@ -148,7 +166,7 @@ export const SendMessageDialog = () => {
     const handleClose = () => {
         if (isBulkSending) return;
         setStudentMessageStatuses([]);
-        setSelectedTemplateId(MESSAGE_TEMPLATES[0]?.id || '');
+        setSelectedTemplateId(messageTemplates[0]?.id || '');
         closeAllDialogs();
     };
 
@@ -156,10 +174,10 @@ export const SendMessageDialog = () => {
 
     return (
         <MyDialog
-            heading="Send WhatsApp Message"
+            heading={t('dialogTitle')}
             open={isSendMessageOpen}
             onOpenChange={handleClose}
-            dialogWidth="w-[90vw] max-w-md"
+            dialogWidth="max-w-md"
             footer={
                 <div className="flex items-center justify-end gap-2">
                     <MyButton
@@ -168,7 +186,7 @@ export const SendMessageDialog = () => {
                         onClick={handleClose}
                         disable={isBulkSending}
                     >
-                        Cancel
+                        {t('cancel')}
                     </MyButton>
                     <MyButton
                         buttonType="primary"
@@ -177,17 +195,17 @@ export const SendMessageDialog = () => {
                         disable={
                             !selectedTemplateId || selectedStudentsCount === 0 || isBulkSending
                         }
-                        className="min-w-[120px] bg-green-600 text-white hover:bg-green-700"
+                        className="min-w-32 bg-green-600 text-white hover:bg-green-700"
                     >
                         {isBulkSending ? (
                             <>
                                 <Spinner className="mr-2 size-4 animate-spin" />
-                                Sending...
+                                {t('sending')}
                             </>
                         ) : (
                             <>
                                 <PaperPlaneTilt className="mr-2 size-4" />
-                                Send to {selectedStudentsCount}
+                                {t('sendButton', { count: selectedStudentsCount })}
                             </>
                         )}
                     </MyButton>
@@ -196,12 +214,12 @@ export const SendMessageDialog = () => {
         >
             <div className="space-y-4">
                 <div className="mb-4 text-sm text-neutral-600">
-                    Select a template to send to {selectedStudentsCount} student(s).
+                    {t('selectTemplateNotice', { count: selectedStudentsCount })}
                 </div>
 
                 <div>
                     <label className="mb-2 block text-sm font-medium text-neutral-700">
-                        Message Template
+                        {t('templateLabel')}
                     </label>
                     <Select
                         value={selectedTemplateId}
@@ -209,10 +227,10 @@ export const SendMessageDialog = () => {
                         disabled={isBulkSending}
                     >
                         <SelectTrigger className="w-full">
-                            <SelectValue placeholder="Select a template" />
+                            <SelectValue placeholder={t('selectTemplatePlaceholder')} />
                         </SelectTrigger>
                         <SelectContent>
-                            {MESSAGE_TEMPLATES.map((template) => (
+                            {messageTemplates.map((template) => (
                                 <SelectItem key={template.id} value={template.id}>
                                     {template.name}
                                 </SelectItem>
@@ -223,10 +241,12 @@ export const SendMessageDialog = () => {
 
                 {selectedTemplateId && (
                     <div className="rounded-lg bg-neutral-50 p-3">
-                        <div className="mb-1 text-sm font-medium text-neutral-700">Preview:</div>
+                        <div className="mb-1 text-sm font-medium text-neutral-700">
+                            {t('previewLabel')}
+                        </div>
                         <div className="text-sm text-neutral-600">
-                            {MESSAGE_TEMPLATES.find((t) => t.id === selectedTemplateId)?.content ||
-                                ''}
+                            {messageTemplates.find((tpl) => tpl.id === selectedTemplateId)
+                                ?.content || ''}
                         </div>
                     </div>
                 )}
@@ -234,33 +254,36 @@ export const SendMessageDialog = () => {
                 {isBulkSending && studentMessageStatuses.length > 0 && (
                     <div className="max-h-48 space-y-2 overflow-y-auto pr-2">
                         <p className="mb-2 text-sm font-medium">
-                            Sending Progress (
-                            {
-                                studentMessageStatuses.filter(
+                            {t('sendingProgress', {
+                                done: studentMessageStatuses.filter(
                                     (s) => s.status === 'sent' || s.status === 'failed'
-                                ).length
-                            }
-                            /{studentMessageStatuses.length}):
+                                ).length,
+                                total: studentMessageStatuses.length,
+                            })}
                         </p>
                         {studentMessageStatuses.map((s) => (
                             <div
                                 key={s.userId}
                                 className="flex items-center justify-between rounded bg-neutral-100 p-1.5 text-xs"
                             >
-                                <span className="max-w-[150px] truncate">{s.name}</span>
+                                <span className="max-w-36 truncate">{s.name}</span>
                                 <div className="shrink-0">
                                     {s.status === 'pending' && (
-                                        <span className="text-neutral-500">Pending...</span>
+                                        <span className="text-neutral-500">
+                                            {t('status.pending')}
+                                        </span>
                                     )}
                                     {s.status === 'sending' && (
                                         <Spinner className="size-3 animate-spin text-blue-500" />
                                     )}
                                     {s.status === 'sent' && (
-                                        <span className="font-medium text-green-600">Sent</span>
+                                        <span className="font-medium text-green-600">
+                                            {t('status.sent')}
+                                        </span>
                                     )}
                                     {s.status === 'failed' && (
                                         <span className="font-medium text-red-600" title={s.error}>
-                                            Failed
+                                            {t('status.failed')}
                                         </span>
                                     )}
                                 </div>

@@ -1,3 +1,5 @@
+import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 import {
     PaperPlaneTilt,
     Eye,
@@ -6,43 +8,57 @@ import {
     ArrowFatDown,
     Stack,
     CheckCircle,
+    EnvelopeSimple,
+    WhatsappLogo,
+    ProhibitInset,
+    type Icon,
 } from '@phosphor-icons/react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
+import { SectionCard } from '@/routes/study-library/live-session/-components/dashboard/dashboard-charts';
+import { formatPercent } from '@/routes/dashboard/-utils/crm-dashboard';
+import { getTerminologyPlural } from '@/components/common/layout-container/sidebar/utils';
+import { ContentTerms, SystemTerms } from '@/routes/settings/-components/NamingSettings';
 import type { HubOverview, HubEmailEventType } from '../../-services/hub-api';
 
 interface Props {
     overview: HubOverview | null;
     loading: boolean;
-    /** Opens the drill-down list for an email stat (delivered/opened/clicked/bounced). */
+    /** Opens the drill-down list for an email stat (delivered/opened/clicked/bounced/complaints). */
     onEmailStatClick?: (eventType: HubEmailEventType) => void;
 }
 
 interface Stat {
     label: string;
     value: number | string;
-    icon: React.ReactNode;
+    icon: Icon;
+    /** Small line under the number (a rate or the time window). */
+    detail?: string;
     tone?: 'default' | 'muted' | 'warn' | 'good';
     onClick?: () => void;
 }
 
 export function StatsCards({ overview, loading, onEmailStatClick }: Props) {
+    const { t, i18n } = useTranslation('communicationStatsCards');
+
     if (loading && !overview) {
         return (
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                {Array.from({ length: 8 }).map((_, i) => (
-                    <Skeleton key={i} className="h-20 rounded-lg" />
-                ))}
+            <div className="space-y-4">
+                <Skeleton className="h-64 rounded-xl" />
+                <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                    <Skeleton className="h-36 rounded-xl" />
+                    <Skeleton className="h-36 rounded-xl" />
+                </div>
             </div>
         );
     }
 
     if (!overview) {
         return (
-            <Card>
-                <CardContent className="py-6 text-center text-sm text-gray-500">
-                    Could not load notification stats.
+            <Card className="rounded-xl border-neutral-200">
+                <CardContent className="py-6 text-center text-sm text-neutral-500">
+                    {t('couldNotLoad')}
                 </CardContent>
             </Card>
         );
@@ -51,131 +67,187 @@ export function StatsCards({ overview, loading, onEmailStatClick }: Props) {
     const email = overview.email;
     const wa = overview.whatsapp;
     const batches = overview.batches;
+    const windowLabel = t('windowLabel', { count: overview.windowDays });
 
     const drill = (eventType: HubEmailEventType) =>
         onEmailStatClick ? () => onEmailStatClick(eventType) : undefined;
 
     const emailStats: Stat[] = [
-        { label: 'Emails sent', value: email.sent, icon: <PaperPlaneTilt size={18} />, tone: 'default' },
-        { label: 'Delivered', value: email.delivered, icon: <CheckCircle size={18} />, tone: 'good', onClick: drill('DELIVERY') },
-        { label: 'Opened', value: email.opened, icon: <Eye size={18} />, tone: 'default', onClick: drill('OPEN') },
-        { label: 'Clicked', value: email.clicked, icon: <CursorClick size={18} />, tone: 'default', onClick: drill('CLICK') },
-        { label: 'Bounced', value: email.bounced, icon: <Warning size={18} />, tone: 'warn', onClick: drill('BOUNCE') },
-        { label: 'Inbound replies', value: email.inbound, icon: <ArrowFatDown size={18} />, tone: 'default' },
+        {
+            label: t('emailStats.sent'),
+            value: email.sent,
+            icon: PaperPlaneTilt,
+            detail: windowLabel,
+        },
+        {
+            label: t('emailStats.delivered'),
+            value: email.delivered,
+            icon: CheckCircle,
+            tone: 'good',
+            detail: t('rates.ofSent', { rate: formatPercent(email.delivered, email.sent) }),
+            onClick: drill('DELIVERY'),
+        },
+        {
+            label: t('emailStats.opened'),
+            value: email.opened,
+            icon: Eye,
+            detail: t('rates.open', { rate: formatPercent(email.opened, email.delivered) }),
+            onClick: drill('OPEN'),
+        },
+        {
+            label: t('emailStats.clicked'),
+            value: email.clicked,
+            icon: CursorClick,
+            detail: t('rates.click', { rate: formatPercent(email.clicked, email.delivered) }),
+            onClick: drill('CLICK'),
+        },
+        {
+            label: t('emailStats.bounced'),
+            value: email.bounced,
+            icon: Warning,
+            tone: 'warn',
+            detail: t('rates.bounce', { rate: formatPercent(email.bounced, email.sent) }),
+            onClick: drill('BOUNCE'),
+        },
+        {
+            label: t('emailStats.complaints'),
+            value: email.complained ?? 0,
+            icon: ProhibitInset,
+            detail: t('rates.complaints'),
+            onClick: drill('COMPLAINT'),
+        },
+        {
+            label: t('emailStats.inbound'),
+            value: email.inbound,
+            icon: ArrowFatDown,
+            detail: windowLabel,
+        },
     ];
 
     const waStats: Stat[] = [
-        { label: 'WhatsApp out', value: wa.outgoing, icon: <PaperPlaneTilt size={18} />, tone: 'default' },
-        { label: 'WhatsApp in', value: wa.incoming, icon: <ArrowFatDown size={18} />, tone: 'default' },
+        { label: t('waStats.out'), value: wa.outgoing, icon: PaperPlaneTilt, detail: windowLabel },
+        { label: t('waStats.in'), value: wa.incoming, icon: ArrowFatDown, detail: windowLabel },
+    ];
+
+    const batchStats: Stat[] = [
+        {
+            label: t('activeBatches'),
+            value: batches.active,
+            icon: Stack,
+            tone: batches.active > 0 ? 'good' : 'muted',
+        },
+        {
+            label: t('batchesCompleted', { count: overview.windowDays }),
+            value: batches.completedInWindow,
+            icon: CheckCircle,
+        },
     ];
 
     return (
         <div className="space-y-4">
-            <Section
-                title="Email"
+            <SectionCard
+                title={t('sections.email')}
+                icon={EnvelopeSimple}
                 subtitle={
                     !email.configured
-                        ? 'No sender email configured for this institute.'
+                        ? t('emailSubtitle.notConfigured')
                         : email.inboundConfigured
-                          ? 'Sender + inbound inbox configured.'
-                          : 'Sender configured. Inbound replies not yet enabled.'
+                          ? t('emailSubtitle.fullyConfigured')
+                          : t('emailSubtitle.senderOnly')
                 }
-                stats={emailStats}
-                muted={!email.configured}
-            />
+                className={cn(!email.configured && 'opacity-70')}
+            >
+                <StatGrid stats={emailStats} t={t} locale={i18n.language} />
+            </SectionCard>
 
-            <Section
-                title="WhatsApp"
-                subtitle={
-                    wa.configured
-                        ? 'WhatsApp business channel connected.'
-                        : 'No WhatsApp channel mapped to this institute.'
-                }
-                stats={waStats}
-                muted={!wa.configured}
-            />
-
-            <div className="grid grid-cols-2 gap-3">
-                <StatCard
-                    label="Active batches"
-                    value={batches.active}
-                    icon={<Stack size={18} />}
-                    tone={batches.active > 0 ? 'good' : 'muted'}
-                />
-                <StatCard
-                    label={`Batches completed (${overview.windowDays}d)`}
-                    value={batches.completedInWindow}
-                    icon={<CheckCircle size={18} />}
-                />
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                <SectionCard
+                    title={t('sections.whatsapp')}
+                    icon={WhatsappLogo}
+                    subtitle={
+                        wa.configured ? t('waSubtitle.connected') : t('waSubtitle.notConfigured')
+                    }
+                    className={cn(!wa.configured && 'opacity-70')}
+                >
+                    <StatGrid stats={waStats} t={t} locale={i18n.language} />
+                </SectionCard>
+                <SectionCard
+                    title={getTerminologyPlural(ContentTerms.Batch, SystemTerms.Batch)}
+                    icon={Stack}
+                >
+                    <StatGrid stats={batchStats} t={t} locale={i18n.language} />
+                </SectionCard>
             </div>
         </div>
     );
 }
 
-function Section({
-    title,
-    subtitle,
-    stats,
-    muted,
-}: {
-    title: string;
-    subtitle: string;
-    stats: Stat[];
-    muted?: boolean;
-}) {
+function StatGrid({ stats, t, locale }: { stats: Stat[]; t: TFunction; locale: string }) {
     return (
-        <div className={muted ? 'opacity-70' : ''}>
-            <div className="flex flex-col sm:flex-row sm:items-baseline sm:justify-between gap-0.5 mb-2">
-                <h3 className="text-sm font-semibold text-gray-700">{title}</h3>
-                <p className="text-xs text-gray-400">{subtitle}</p>
-            </div>
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
-                {stats.map((s) => (
-                    <StatCard key={s.label} {...s} />
-                ))}
-            </div>
-        </div>
-    );
-}
-
-function StatCard({ label, value, icon, tone = 'default', onClick }: Stat) {
-    const toneClasses: Record<NonNullable<Stat['tone']>, string> = {
-        default: 'text-gray-700',
-        muted: 'text-gray-400',
-        warn: 'text-amber-600',
-        good: 'text-green-600',
-    };
-    const body = (
-        <>
-            <div className="flex items-center justify-between text-xs text-gray-500">
-                <span>{label}</span>
-                <span className={toneClasses[tone]}>{icon}</span>
-            </div>
-            <div className={`mt-1 text-xl font-semibold ${toneClasses[tone]}`}>
-                {typeof value === 'number' ? value.toLocaleString() : value}
-            </div>
-        </>
-    );
-    return (
-        <Card
+        <div
             className={cn(
-                'rounded-lg border-gray-200',
-                onClick &&
-                    'cursor-pointer transition hover:border-primary-300 hover:shadow-sm focus-within:ring-2 focus-within:ring-primary-500'
+                'grid grid-cols-2 gap-3',
+                stats.length > 2 && 'md:grid-cols-3 xl:grid-cols-4'
             )}
         >
-            {onClick ? (
-                <button
-                    type="button"
-                    onClick={onClick}
-                    className="w-full text-left focus:outline-none"
-                    title={`View ${label.toLowerCase()}`}
-                >
-                    <CardContent className="p-3">{body}</CardContent>
-                </button>
-            ) : (
-                <CardContent className="p-3">{body}</CardContent>
+            {stats.map((s) => (
+                <StatTile key={s.label} {...s} t={t} locale={locale} />
+            ))}
+        </div>
+    );
+}
+
+const TONE: Record<NonNullable<Stat['tone']>, string> = {
+    default: 'text-neutral-900',
+    muted: 'text-neutral-400',
+    warn: 'text-warning-600',
+    good: 'text-success-600',
+};
+
+function StatTile({
+    label,
+    value,
+    icon: IconCmp,
+    detail,
+    tone = 'default',
+    onClick,
+    t,
+    locale,
+}: Stat & { t: TFunction; locale: string }) {
+    const body = (
+        <>
+            <div className="flex items-center justify-between gap-2 text-neutral-500">
+                <span className="truncate font-medium">
+                    <span className="text-caption">{label}</span>
+                </span>
+                <IconCmp size={16} className="shrink-0 text-neutral-400" />
+            </div>
+            <div className={cn('mt-1 font-bold tabular-nums', TONE[tone])}>
+                <span className="text-h3">
+                    {typeof value === 'number' ? value.toLocaleString(locale) : value}
+                </span>
+            </div>
+            {detail && (
+                <p className="truncate text-neutral-500">
+                    <span className="text-caption">{detail}</span>
+                </p>
             )}
-        </Card>
+        </>
+    );
+    const base = 'flex min-w-0 flex-col rounded-xl border border-neutral-200 bg-white px-3 py-2.5';
+    return onClick ? (
+        <button
+            type="button"
+            onClick={onClick}
+            title={t('viewStat', { label: label.toLowerCase() })}
+            className={cn(
+                base,
+                'text-start transition hover:border-primary-300 hover:shadow-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500'
+            )}
+        >
+            {body}
+        </button>
+    ) : (
+        <div className={base}>{body}</div>
     );
 }

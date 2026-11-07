@@ -1,0 +1,29 @@
+{
+    "whatsappLabel": "WhatsApp Number",
+    "sendingOtp": "Sending OTP...",
+    "sendOtpWhatsapp": "Send OTP (WhatsApp)",
+    "toast": {
+        "otpSent": "OTP sent to WhatsApp successfully",
+        "accountNotFound": "Account not found. Please sign up to continue.",
+        "sendOtpFailedFallback": "Failed to send OTP via WhatsApp",
+        "sendOtpFailedGeneric": "Failed to send OTP. Please try again.",
+        "loginMissingCredentials": "Logged in successfully, but missing session credentials.",
+        "loginProcessingError": "Error processing login data",
+        "invalidOtpFallback": "Invalid OTP",
+        "invalidOtpDescription": "Please check your OTP and try again.",
+        "invalidOtpGenericDescription": "Please try again",
+        "fillAllOtpFields": "Please fill all OTP fields"
+    },
+    "checkWhatsapp": "Check your WhatsApp",
+    "codeSentTo": "We've sent a 6-digit code to",
+    "backToPhoneEntry": "Back to phone entry",
+    "resendIn_one": "Resend in {{count}}s",
+    "resendIn_other": "Resend in {{count}}s",
+    "resendCode": "Resend code",
+    "verifying": "Verifying...",
+    "verifyAndSignIn": "Verify & Sign In",
+    "useEmailOtp": "Use Email OTP",
+    "useUsernamePassword": "Use Username & Password",
+    "noAccount": "Don't have an account?",
+    "signUpHere": "Sign up here"
+}

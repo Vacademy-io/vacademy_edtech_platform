@@ -1,0 +1,13 @@
+{
+    "status": {
+        "SUCCESS": "Réussi",
+        "FAILED": "Échoué",
+        "PARTIAL_SUCCESS": "Partiel",
+        "SKIPPED": "Ignoré",
+        "RUNNING": "En cours"
+    },
+    "error": "Erreur : ",
+    "details": "Détails",
+    "started": "Démarré : ",
+    "completed": "Terminé : "
+}

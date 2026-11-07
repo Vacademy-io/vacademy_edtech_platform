@@ -1,0 +1,12 @@
+{
+    "columns": {
+        "name": "الاسم",
+        "enrollmentNumber": "رقم القيد",
+        "collegeSchool": "الكلية/المدرسة",
+        "gender": "الجنس",
+        "mobileNumber": "رقم الجوال",
+        "emailId": "البريد الإلكتروني",
+        "city": "المدينة",
+        "state": "الولاية"
+    }
+}

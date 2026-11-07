@@ -1,6 +1,7 @@
 import { UserPlus } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import { LeadAvatar } from './lead-avatar';
+import { counsellorDisplayName } from './counsellor-display';
 
 /**
  * LeadCounsellor — the "Agent" cell shared by the list and the board card.
@@ -10,16 +11,27 @@ import { LeadAvatar } from './lead-avatar';
 
 interface LeadCounsellorProps {
     counsellorName?: string | null;
+    /** Authoritative: a lead with an id is owned even when the name is missing. */
+    counsellorId?: string | null;
     onAssign?: () => void;
     className?: string;
 }
 
-export function LeadCounsellor({ counsellorName, onAssign, className }: LeadCounsellorProps) {
-    if (counsellorName) {
+export function LeadCounsellor({
+    counsellorName,
+    counsellorId,
+    onAssign,
+    className,
+}: LeadCounsellorProps) {
+    const owner = counsellorDisplayName({
+        assigned_counselor_id: counsellorId,
+        assigned_counselor_name: counsellorName,
+    });
+    if (owner) {
         return (
             <div className={cn('flex min-w-0 items-center gap-2', className)}>
-                <LeadAvatar name={counsellorName} size="sm" />
-                <span className="truncate text-sm text-neutral-800">{counsellorName}</span>
+                <LeadAvatar name={owner} size="sm" />
+                <span className="truncate text-sm text-neutral-800">{owner}</span>
                 {onAssign && (
                     <button
                         type="button"

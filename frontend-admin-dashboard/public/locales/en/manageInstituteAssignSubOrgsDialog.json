@@ -1,0 +1,27 @@
+{
+    "title": "{{subOrgPlural}} for {{name}}",
+    "defaultMemberLabel": "this member",
+    "defaultMemberName": "Member",
+    "noneExist": "No {{subOrgPlural}} exist in this institute yet.",
+    "grantsAccessDescription": "Grants access to every course the {{subOrg}}'s active invites cover. This is separate from anything their role already grants.",
+    "selectLabel": "Select {{subOrgPlural}}",
+    "searchPlaceholder": "Search {{subOrgPlural}}…",
+    "noneSelected": "None selected — this member keeps no individual {{subOrg}} access.",
+    "adding_one": "Adding {{count}}.",
+    "adding_other": "Adding {{count}}.",
+    "removing_one": "Removing {{count}}.",
+    "removing_other": "Removing {{count}}.",
+    "toast": {
+        "assigned_one": "assigned {{count}}",
+        "assigned_other": "assigned {{count}}",
+        "removed_one": "removed {{count}}",
+        "removed_other": "removed {{count}}",
+        "summary": "{{name}} — {{parts}} {{subOrgPlural}}",
+        "updateFailed": "Couldn't update {{subOrgPlural}}"
+    },
+    "actions": {
+        "cancel": "Cancel",
+        "save": "Save",
+        "saving": "Saving…"
+    }
+}

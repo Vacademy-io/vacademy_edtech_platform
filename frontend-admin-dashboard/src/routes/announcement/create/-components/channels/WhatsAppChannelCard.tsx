@@ -1,6 +1,7 @@
 import { useEffect, useMemo } from 'react';
 import { ArrowClockwise, ArrowSquareOut, Link, WhatsappLogo } from '@phosphor-icons/react';
 import { useNavigate } from '@tanstack/react-router';
+import { useTranslation } from 'react-i18next';
 import { cn } from '@/lib/utils';
 import { MyButton } from '@/components/design-system/button';
 import { Input } from '@/components/ui/input';
@@ -23,6 +24,7 @@ import type { WhatsAppTemplateDTO } from '@/routes/communication/whatsapp-templa
 import { WHATSAPP_VALUE_GROUPS, WHATSAPP_VALUE_SOURCES } from '../../-utils/constants';
 import { whatsAppHeaderKind, whatsAppVariableNames } from '../../-utils/validation';
 import { EmptyState, FieldError, FieldHint, LoadFailure } from '../primitives';
+import { ReferralInvitePicker } from './ReferralInvitePicker';
 import type { FieldErrors, WhatsAppConfig, WhatsAppValueSource } from '../../-types';
 
 interface WhatsAppChannelCardProps {
@@ -95,6 +97,7 @@ export function WhatsAppChannelCard({
     errors,
     showErrors,
 }: WhatsAppChannelCardProps) {
+    const { t } = useTranslation('announcementWhatsappChannelCard');
     const navigate = useNavigate();
     const variableNames = useMemo(
         () => whatsAppVariableNames(selectedTemplate),
@@ -139,8 +142,8 @@ export function WhatsAppChannelCard({
         return (
             <EmptyState
                 Icon={WhatsappLogo}
-                title="No approved WhatsApp templates yet"
-                description="WhatsApp only delivers messages built from a template Meta has approved. Sync your WhatsApp Business account, or create a template and submit it for approval."
+                title={t('empty.title')}
+                description={t('empty.description')}
                 action={
                     <div className="flex flex-wrap justify-center gap-2">
                         <MyButton
@@ -152,14 +155,14 @@ export function WhatsAppChannelCard({
                             <ArrowClockwise
                                 className={cn('mr-1 size-4', syncing && 'animate-spin')}
                             />
-                            {syncing ? 'Syncing…' : 'Sync from Meta'}
+                            {syncing ? t('action.syncing') : t('action.syncFromMeta')}
                         </MyButton>
                         <MyButton
                             buttonType="text"
                             scale="small"
                             onClick={() => navigate({ to: '/communication/whatsapp-templates' })}
                         >
-                            Manage templates
+                            {t('action.manageTemplates')}
                             <ArrowSquareOut className="ml-1 size-4" />
                         </MyButton>
                     </div>
@@ -172,10 +175,10 @@ export function WhatsAppChannelCard({
         <div className="space-y-4">
             <div className="space-y-1">
                 <div className="flex flex-wrap items-end justify-between gap-2">
-                    <Label className="text-caption font-semibold">Approved template</Label>
+                    <Label className="text-caption font-semibold">{t('template.label')}</Label>
                     <MyButton buttonType="text" scale="small" onClick={onSync} disable={syncing}>
                         <ArrowClockwise className={cn('mr-1 size-4', syncing && 'animate-spin')} />
-                        {syncing ? 'Syncing…' : 'Sync from Meta'}
+                        {syncing ? t('action.syncing') : t('action.syncFromMeta')}
                     </MyButton>
                 </div>
                 <TemplateSearchableSelect
@@ -191,12 +194,13 @@ export function WhatsAppChannelCard({
                             variables: {},
                         });
                     }}
-                    placeholder="Search your approved templates"
+                    placeholder={t('template.searchPlaceholder')}
                     className={cn(err('whatsapp.template') && 'border-danger-400')}
                 />
                 <FieldError message={err('whatsapp.template')} />
                 <FieldHint>
-                    Only templates Meta has approved can be sent. {templates.length} available.
+                    {t('template.approvedOnlyHint')}{' '}
+                    {t('template.availableCount', { count: templates.length })}
                 </FieldHint>
             </div>
 
@@ -220,7 +224,9 @@ export function WhatsAppChannelCard({
                         )}
                         {headerKind && (
                             <p className="mb-2 rounded-sm bg-muted px-2 py-3 text-center text-caption uppercase text-muted-foreground">
-                                {headerKind} header
+                                {t('headerKind.badge', {
+                                    kind: t(`headerKind.type.${headerKind}`),
+                                })}
                             </p>
                         )}
                         <TemplateBody text={selectedTemplate.bodyText ?? ''} />
@@ -248,29 +254,42 @@ export function WhatsAppChannelCard({
             {headerKind && (
                 <div className="space-y-1">
                     <Label className="text-caption font-semibold">
-                        {headerKind.charAt(0).toUpperCase() + headerKind.slice(1)} URL
+                        {t('headerUrl.label', { kind: t(`headerKind.type.${headerKind}`) })}
                     </Label>
                     <div className="relative">
                         <Link className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
                         <Input
                             value={config.headerUrl}
                             onChange={(e) => onChange({ headerUrl: e.target.value })}
-                            placeholder={`https://…/your-${headerKind}`}
+                            placeholder={t('headerUrl.placeholder', { kind: headerKind })}
                             className={cn('pl-9', err('whatsapp.headerUrl') && 'border-danger-400')}
                         />
                     </div>
                     <FieldError message={err('whatsapp.headerUrl')} />
-                    <FieldHint>
-                        Meta rejects the entire send if a media-header template arrives without its
-                        media, so this is required.
-                    </FieldHint>
+                    <FieldHint>{t('headerUrl.requiredHint')}</FieldHint>
                 </div>
+            )}
+
+            {Object.values(config.variables).some(
+                (binding) =>
+                    binding.source === 'REFERRAL_SHORT_LINK' || binding.source === 'REFERRAL_CODE'
+            ) && (
+                <ReferralInvitePicker
+                    value={config.referralInviteId}
+                    onChange={(referralInviteId) => onChange({ referralInviteId })}
+                    hint={t('referralInviteHint', {
+                        defaultValue:
+                            'Pick the invite a friend should join (e.g. the trial). Default: the invite each member enrolled through. A member with no invite gets the placeholder unfilled.',
+                    })}
+                />
             )}
 
             {selectedTemplate && variableNames.length > 0 && (
                 <div className="space-y-2">
-                    <Label className="text-caption font-semibold">Template variables</Label>
-                    <FieldHint>Each variable is filled in per recipient at send time.</FieldHint>
+                    <Label className="text-caption font-semibold">
+                        {t('variables.label')}
+                    </Label>
+                    <FieldHint>{t('variables.hint')}</FieldHint>
                     <div className="space-y-2">
                         {variableNames.map((name) => {
                             const binding = config.variables[name] ?? {
@@ -335,7 +354,9 @@ export function WhatsAppChannelCard({
                                                         },
                                                     })
                                                 }
-                                                placeholder={`Text to use for ${name}`}
+                                                placeholder={t('variables.customValuePlaceholder', {
+                                                    name,
+                                                })}
                                                 className={cn(
                                                     err(`whatsapp.var.${name}`) &&
                                                         'border-danger-400'

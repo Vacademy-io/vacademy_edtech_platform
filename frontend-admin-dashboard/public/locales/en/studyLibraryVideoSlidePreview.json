@@ -1,0 +1,75 @@
+{
+    "loadingVideo": "Loading video...",
+    "retry": "Retry",
+    "workInProgress": "Work in progress",
+    "videoBeingGenerated": "Video is being generated...",
+    "generatingHint": "This may take a few minutes. Please check back later.",
+    "vimeoPlayerTitle": "Vimeo video player",
+    "toast": {
+        "jumpedTo": "Video jumped to {{time}}"
+    },
+    "errors": {
+        "refreshFailed": "Failed to refresh video URL",
+        "loadFailed": "Failed to load video",
+        "loadUrlsFailed": "Failed to load video URLs",
+        "urlExpiredRefreshing": "Video URL has expired. Refreshing...",
+        "playbackError": "Video playback error: {{message}}",
+        "unknownError": "Unknown error"
+    },
+    "aiVideo": {
+        "checking": "Checking the video…",
+        "progress": {
+            "title": "Generating your video",
+            "percent": "{{value}}%",
+            "shots": "Scene {{done}} of {{total}}",
+            "keepWorking": "You can keep working — we'll notify you when it's ready.",
+            "stages": {
+                "PENDING": "Waiting to start",
+                "EXTRACT": "Reading your sources",
+                "SCRIPT": "Writing the script",
+                "TTS": "Recording the narration",
+                "WORDS": "Syncing words to the voice",
+                "AVATAR": "Recording the teacher",
+                "HTML": "Designing the visuals",
+                "RENDER": "Putting the video together",
+                "WRITE_BACK": "Finishing up",
+                "AWAITING_INPUT": "Waiting for input",
+                "default": "Working on it"
+            }
+        },
+        "cancel": {
+            "button": "Cancel generation",
+            "title": "Stop generating this video?",
+            "body": "The work done so far is discarded and unused credits are refunded. A cancelled video can't be resumed.",
+            "confirm": "Stop generating",
+            "cancelling": "Stopping…",
+            "keep": "Keep generating",
+            "success": "Video generation cancelled",
+            "failed": "Couldn't cancel. Please try again."
+        },
+        "ended": {
+            "failedTitle": "This video couldn't be generated",
+            "cancelledTitle": "Video generation was cancelled",
+            "reason": "Reason: {{message}}",
+            "refunded": "The credits for it were refunded.",
+            "hint": "To try again, delete this slide and create a new AI video."
+        },
+        "render": {
+            "button": "Render MP4",
+            "idle": "Save this video as an MP4 file to download or share.",
+            "starting": "Starting the MP4 render…",
+            "queued": "Waiting for the renderer to pick this up…",
+            "running": "Rendering MP4… {{value}}%",
+            "progressLabel": "MP4 render progress",
+            "hint": "This can take a while. You can leave this page and come back later.",
+            "ready": "MP4 ready",
+            "download": "Download MP4",
+            "openInNewTab": "Open in new tab",
+            "failed": "The MP4 render failed.",
+            "failedReason": "The MP4 render failed: {{message}}",
+            "retry": "Try again",
+            "startFailed": "Couldn't start the MP4 render. Please try again.",
+            "notReady": "This video isn't ready to render yet. Try again once it has finished generating."
+        }
+    }
+}

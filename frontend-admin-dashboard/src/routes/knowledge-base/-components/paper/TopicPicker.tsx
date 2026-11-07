@@ -1,7 +1,11 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { CaretDown, CaretRight } from '@phosphor-icons/react';
 import { Checkbox } from '@/components/ui/checkbox';
 import { MyButton } from '@/components/design-system/button';
+import { MyInput } from '@/components/design-system/input';
+import { Progress } from '@/components/ui/progress';
+import { cn } from '@/lib/utils';
 import type { KbTopic } from '../../-types/paper';
 
 interface TopicPickerProps {
@@ -9,6 +13,16 @@ interface TopicPickerProps {
     /** Subtopic ids (and ids of topics that have no subtopics) currently chosen. */
     selectedLeafIds: Set<string>;
     onChange: (next: Set<string>) => void;
+    /** Search box + Expand all / Collapse all above the tree (the wizard's syllabus step). */
+    toolbar?: boolean;
+    /**
+     * Per-chapter weightage in percent, keyed by topic id. When given, a
+     * selected chapter shows a "% weightage" field and the total is tracked
+     * above the tree. Optional and partial by design — what is left blank the
+     * planner balances itself.
+     */
+    weightage?: Record<string, number>;
+    onWeightageChange?: (next: Record<string, number>) => void;
 }
 
 /** Leaves a topic contributes: its subtopics, or itself if it has none. */
@@ -43,11 +57,52 @@ export const toSelectedNodeIds = (topics: KbTopic[], selectedLeafIds: Set<string
  * — page artifacts, not subjects. Ticking a topic selects all its subtopics, so
  * the common case is one click and the detail is there only if wanted.
  */
-export const TopicPicker = ({ topics, selectedLeafIds, onChange }: TopicPickerProps) => {
+export const TopicPicker = ({
+    topics,
+    selectedLeafIds,
+    onChange,
+    toolbar = false,
+    weightage,
+    onWeightageChange,
+}: TopicPickerProps) => {
+    const { t } = useTranslation('knowledgeBaseTopicPicker');
     const [expanded, setExpanded] = useState<Set<string>>(new Set());
+    const [query, setQuery] = useState('');
 
     const allLeaves = useMemo(() => topics.flatMap(leavesOf), [topics]);
     const allSelected = allLeaves.length > 0 && allLeaves.every((id) => selectedLeafIds.has(id));
+
+    // A search narrows the tree to matching chapters/subtopics and opens the
+    // chapters whose subtopics matched, so the hit is visible without a click.
+    const needle = query.trim().toLowerCase();
+    const visible = useMemo(() => {
+        if (!needle) return topics;
+        return topics
+            .map((topic) => {
+                const subs = (topic.subtopics ?? []).filter(
+                    (sub) =>
+                        sub.title.toLowerCase().includes(needle) ||
+                        sub.keywords.some((k) => k.toLowerCase().includes(needle))
+                );
+                if (topic.title.toLowerCase().includes(needle)) return topic;
+                if (subs.length) return { ...topic, subtopics: subs };
+                return null;
+            })
+            .filter((t): t is KbTopic => t !== null);
+    }, [topics, needle]);
+    useEffect(() => {
+        if (needle)
+            setExpanded(new Set(visible.filter((v) => v.subtopics?.length).map((v) => v.id)));
+    }, [needle, visible]);
+
+    const allOpen = topics.every((topic) => !topic.subtopics?.length || expanded.has(topic.id));
+    // Only chapters that are still selected count towards the total: a
+    // weightage typed and then unticked must not keep inflating the bar.
+    const totalWeight = topics.reduce((sum, topic) => {
+        const pct = Number(weightage?.[topic.id] ?? 0) || 0;
+        const selected = leavesOf(topic).some((leaf) => selectedLeafIds.has(leaf));
+        return selected ? sum + pct : sum;
+    }, 0);
 
     const setLeaves = (ids: string[], on: boolean) => {
         const next = new Set(selectedLeafIds);
@@ -79,23 +134,91 @@ export const TopicPicker = ({ topics, selectedLeafIds, onChange }: TopicPickerPr
 
     return (
         <div className="flex flex-col gap-2">
-            <div className="flex items-center justify-between">
+            {toolbar && (
+                <MyInput
+                    label=""
+                    inputType="text"
+                    input={query}
+                    onChangeFunction={(e) => setQuery(e.target.value)}
+                    inputPlaceholder={t('searchPlaceholder')}
+                    className="w-full sm:w-full"
+                />
+            )}
+            <div className="flex flex-wrap items-center justify-between gap-2">
                 <p className="text-caption text-neutral-500">
                     {selectedLeafIds.size === 0
-                        ? 'Nothing selected — the paper will draw from everything.'
-                        : `${selectedLeafIds.size} of ${allLeaves.length} subtopics selected`}
+                        ? t('emptySelection')
+                        : t('selectedCount', {
+                              count: selectedLeafIds.size,
+                              total: allLeaves.length,
+                          })}
                 </p>
-                <MyButton
-                    buttonType="text"
-                    scale="medium"
-                    onClick={() => setLeaves(allLeaves, !allSelected)}
-                >
-                    {allSelected ? 'Clear all' : 'Select all'}
-                </MyButton>
+                <div className="flex items-center gap-1">
+                    {toolbar && (
+                        <>
+                            <MyButton
+                                buttonType="text"
+                                scale="medium"
+                                onClick={() => setLeaves(allLeaves, true)}
+                                disable={allSelected}
+                            >
+                                {t('actions.selectAll')}
+                            </MyButton>
+                            <MyButton
+                                buttonType="text"
+                                scale="medium"
+                                onClick={() => setLeaves(allLeaves, false)}
+                                disable={selectedLeafIds.size === 0}
+                            >
+                                {t('actions.clearAll')}
+                            </MyButton>
+                            <MyButton
+                                buttonType="text"
+                                scale="medium"
+                                onClick={() =>
+                                    setExpanded(
+                                        allOpen
+                                            ? new Set()
+                                            : new Set(
+                                                  topics
+                                                      .filter((x) => x.subtopics?.length)
+                                                      .map((x) => x.id)
+                                              )
+                                    )
+                                }
+                            >
+                                {allOpen ? t('actions.collapseAll') : t('actions.expandAll')}
+                            </MyButton>
+                        </>
+                    )}
+                    {!toolbar && (
+                        <MyButton
+                            buttonType="text"
+                            scale="medium"
+                            onClick={() => setLeaves(allLeaves, !allSelected)}
+                        >
+                            {allSelected ? t('actions.clearAll') : t('actions.selectAll')}
+                        </MyButton>
+                    )}
+                </div>
             </div>
+            {weightage && onWeightageChange && (
+                <div className="flex items-center gap-3">
+                    <Progress
+                        value={Math.min(100, totalWeight)}
+                        className={cn('h-1.5 flex-1', totalWeight > 100 && '[&>div]:bg-danger-500')}
+                    />
+                    <span className="text-caption text-neutral-500">
+                        {t('weightage.total', { percent: Math.round(totalWeight) })}
+                    </span>
+                </div>
+            )}
 
             <div className="flex max-h-96 flex-col divide-y divide-neutral-100 overflow-y-auto rounded-md border border-neutral-200">
-                {topics.map((topic) => {
+                {visible.length === 0 && (
+                    <p className="p-4 text-caption text-neutral-500">{t('noMatches')}</p>
+                )}
+                {visible.map((topic) => {
                     const leaves = leavesOf(topic);
                     const chosen = leaves.filter((id) => selectedLeafIds.has(id));
                     const fully = chosen.length === leaves.length;
@@ -109,7 +232,7 @@ export const TopicPicker = ({ topics, selectedLeafIds, onChange }: TopicPickerPr
                                 <Checkbox
                                     checked={fully ? true : partial ? 'indeterminate' : false}
                                     onCheckedChange={() => toggleTopic(topic)}
-                                    aria-label={`Select ${topic.title}`}
+                                    aria-label={t('selectTopicAriaLabel', { title: topic.title })}
                                     className="mt-0.5"
                                 />
                                 <button
@@ -137,12 +260,44 @@ export const TopicPicker = ({ topics, selectedLeafIds, onChange }: TopicPickerPr
                                         {hasSubs && (
                                             <span className="mt-0.5 block text-caption text-neutral-400">
                                                 {chosen.length > 0 && !fully
-                                                    ? `${chosen.length} of ${leaves.length} subtopics`
-                                                    : `${leaves.length} subtopics`}
+                                                    ? t('subtopicsPartial', {
+                                                          count: chosen.length,
+                                                          total: leaves.length,
+                                                      })
+                                                    : t('subtopicsTotal', {
+                                                          count: leaves.length,
+                                                      })}
                                             </span>
                                         )}
                                     </span>
                                 </button>
+                                {weightage && onWeightageChange && chosen.length > 0 && (
+                                    <label className="flex shrink-0 items-center gap-1 text-caption text-neutral-500">
+                                        <input
+                                            type="number"
+                                            min={0}
+                                            max={100}
+                                            value={weightage[topic.id] ?? ''}
+                                            placeholder={t('weightage.placeholder')}
+                                            onChange={(e) => {
+                                                const next = { ...weightage };
+                                                const v = e.target.value;
+                                                if (v === '') delete next[topic.id];
+                                                else
+                                                    next[topic.id] = Math.max(
+                                                        0,
+                                                        Math.min(100, Number(v))
+                                                    );
+                                                onWeightageChange(next);
+                                            }}
+                                            aria-label={t('weightage.ariaLabel', {
+                                                title: topic.title,
+                                            })}
+                                            className="w-14 rounded-md border border-neutral-200 px-1.5 py-1 text-right text-caption text-neutral-700 focus:border-primary-500 focus:outline-none"
+                                        />
+                                        %
+                                    </label>
+                                )}
                             </div>
 
                             {isOpen && hasSubs && (

@@ -1,0 +1,41 @@
+{
+  "title": "Paiement automatique et essai gratuit",
+  "autoRenew": {
+    "label": "Renouveler automatiquement les abonnements payants",
+    "description": "Débiter automatiquement le moyen de paiement enregistré de l'apprenant (mandat UPI / carte) à chaque renouvellement. Les apprenants peuvent annuler à tout moment."
+  },
+  "trial": {
+    "label": "Essai gratuit (jours)",
+    "placeholder": "0",
+    "helpText": "Donner l'accès dès maintenant et prélever le premier paiement après ce nombre de jours. Laisser 0 pour facturer immédiatement et renouveler à chaque cycle."
+  },
+  "authCharge": {
+    "label": "Prélever un débit d'autorisation",
+    "description": "Un montant symbolique est débité à l'inscription pour vérifier le moyen de paiement et enregistrer le mandat."
+  },
+  "authAmount": {
+    "label": "Montant d'autorisation",
+    "placeholder": "1",
+    "helpText": "Par défaut à 1. Prélevé uniquement lors des inscriptions à l'essai gratuit — sans essai, le premier paiement réel enregistre lui-même le mandat."
+  },
+  "authRefundable": {
+    "label": "Rembourser le montant d'autorisation",
+    "description": "Il est remboursé automatiquement dès que le mandat est enregistré. Le prix total de l'offre reste facturé à la fin de l'essai."
+  },
+  "authRequiredWarning": "Les essais gratuits nécessitent un débit d'autorisation — les passerelles de paiement n'enregistrent pas de mandat sur une commande à valeur nulle, donc le paiement automatique ne peut pas être configuré pour les inscriptions à l'essai sans cela.",
+  "maxAmount": {
+    "label": "Plafond du mandat (débit maximal par renouvellement)",
+    "placeholder": "Par défaut, le prix de l'offre",
+    "helpText": "Le mandat autorise chaque prélèvement automatique jusqu'à ce plafond, qui doit donc être au moins égal au prix récurrent de l'offre. Laisser vide pour utiliser le prix de l'offre ; définir une valeur plus élevée pour prévoir une marge en cas de taxes ou de changement de prix."
+  },
+  "gracePeriod": {
+    "label": "Délai de grâce (jours)",
+    "placeholder": "0",
+    "helpText": "Si un paiement de renouvellement échoue à la date d'échéance, conserver l'accès de l'apprenant pendant ce nombre de jours après l'expiration, le temps de retenter le prélèvement. L'accès n'est révoqué que si le paiement reste impayé à la fin du délai de grâce. Laisser vide pour aucun délai de grâce."
+  },
+  "totalDuration": {
+    "label": "Durée totale de l'abonnement (mois)",
+    "placeholder": "Sans limite",
+    "helpText": "Durée totale de l'abonnement, par exemple 12 pour un cours de 12 mois. Le paiement automatique se renouvelle jusqu'à ce terme, puis cesse de facturer — l'apprenant conserve l'accès jusqu'à la fin de la dernière période payée. Laisser vide pour un abonnement sans durée définie."
+  }
+}

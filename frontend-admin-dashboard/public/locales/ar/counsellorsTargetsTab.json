@@ -1,0 +1,41 @@
+{
+    "period": {
+        "week": "أسبوعي",
+        "month": "شهري",
+        "custom": "مخصص"
+    },
+    "periodOptions": {
+        "week": "أسبوعي (متكرر)",
+        "month": "شهري (متكرر)",
+        "custom": "نطاق مخصص"
+    },
+    "progress": {
+        "thisWeek": "هذا الأسبوع",
+        "thisMonth": "هذا الشهر"
+    },
+    "configuredTargets": {
+        "heading": "الأهداف المحددة",
+        "loading": "جارٍ التحميل…",
+        "empty": "لم يتم تحديد أي أهداف. استخدم “تحديد الأهداف” في قائمة المرشدين لإضافة هدف."
+    },
+    "toast": {
+        "removeSuccess": "تم حذف الهدف",
+        "removeError": "تعذر حذف الهدف",
+        "saveSuccess": "تم حفظ الهدف",
+        "saveError": "تعذر حفظ الهدف"
+    },
+    "form": {
+        "heading": "إضافة / تحديث هدف",
+        "metric": "المقياس",
+        "timeline": "الجدول الزمني",
+        "target": "الهدف",
+        "targetPlaceholder": "مثال: 50",
+        "from": "من",
+        "to": "إلى",
+        "save": "حفظ الهدف",
+        "saving": "جارٍ الحفظ…"
+    },
+    "row": {
+        "removeTarget": "حذف الهدف"
+    }
+}

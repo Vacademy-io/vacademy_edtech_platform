@@ -1,0 +1,28 @@
+{
+    "eventLabels": {
+        "delivery": "الرسائل المُسلَّمة",
+        "open": "الرسائل المفتوحة",
+        "click": "الرسائل المنقور عليها",
+        "bounce": "الرسائل المرتدة",
+        "complaint": "الشكاوى"
+    },
+    "window": {
+        "last24h": "آخر 24 ساعة",
+        "lastDays_zero": "آخر يوم",
+        "lastDays_one": "آخر يوم",
+        "lastDays_two": "آخر يومين",
+        "lastDays_few": "آخر {{count}} أيام",
+        "lastDays_many": "آخر {{count}} يومًا",
+        "lastDays_other": "آخر {{count}} يوم"
+    },
+    "loadingEvents": "جارٍ تحميل الأحداث من {{window}}…",
+    "eventsCount_zero": "لا أحداث في {{window}}.",
+    "eventsCount_one": "حدث واحد في {{window}}.",
+    "eventsCount_two": "حدثان في {{window}}.",
+    "eventsCount_few": "{{formattedCount}} أحداث في {{window}}.",
+    "eventsCount_many": "{{formattedCount}} حدثًا في {{window}}.",
+    "eventsCount_other": "{{formattedCount}} حدث في {{window}}.",
+    "errorLoad": "تعذّر تحميل الرسائل. حاول مرة أخرى.",
+    "emptyState": "لا {{label}} في {{window}}.",
+    "openedFrom": "فُتحت من {{ip}}"
+}

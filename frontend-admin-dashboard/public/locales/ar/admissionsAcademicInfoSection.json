@@ -1,0 +1,70 @@
+{
+    "sections": {
+        "previousSchoolDetails": "بيانات المدرسة الحالية / السابقة",
+        "transferCertificateDetails": "بيانات شهادة النقل (TC)",
+        "applyingFor": "التقديم للالتحاق بـ"
+    },
+    "fields": {
+        "previousSchoolName": {
+            "label": "اسم المدرسة السابقة",
+            "placeholder": "أدخل اسم المدرسة السابقة"
+        },
+        "previousSchoolBoard": {
+            "label": "مجلس المدرسة السابقة",
+            "placeholder": "اختر المجلس",
+            "hint": "CBSE / ICSE"
+        },
+        "lastClassAttended": {
+            "label": "آخر صف تم دراسته",
+            "placeholder": "اختر الصف"
+        },
+        "academicYear": {
+            "label": "العام الدراسي",
+            "placeholder": "سيتم تعبئة الدورة تلقائيًا",
+            "hint": "بناءً على الدورة المحددة"
+        },
+        "lastExamResult": {
+            "label": "نتيجة آخر امتحان / النسبة المئوية",
+            "placeholder": "مثال: 85% أو تقدير A1 أو 9 CGPA"
+        },
+        "subjectsStudied": {
+            "label": "المواد المدروسة (الصف السابق)",
+            "placeholder": "مثال: الإنجليزية، الهندية، الرياضيات، العلوم، الدراسات الاجتماعية"
+        },
+        "tcNumber": {
+            "label": "رقم شهادة النقل",
+            "placeholder": "أدخل رقم شهادة النقل"
+        },
+        "tcIssueDate": {
+            "label": "تاريخ إصدار شهادة النقل"
+        },
+        "tcPending": {
+            "label": "شهادة النقل معلقة / سيتم تقديمها لاحقًا",
+            "hint": "(لا يمكن تأكيد القبول دون شهادة النقل)"
+        },
+        "applyingForClass": {
+            "label": "الصف / المرحلة المطلوب الالتحاق بها",
+            "placeholder": "اختر الصف",
+            "hint": "اختر الصف أو المرحلة المطلوب الالتحاق بها"
+        },
+        "preferredBoard": {
+            "label": "المجلس المفضل",
+            "placeholder": "اختر المجلس"
+        }
+    },
+    "boardOptions": {
+        "cbse": "CBSE",
+        "icse": "ICSE",
+        "stateBoard": "مجلس الولاية",
+        "ib": "IB",
+        "igcse": "IGCSE",
+        "other": "أخرى"
+    },
+    "classLevelOptions": {
+        "kindergarten": "روضة الأطفال",
+        "nursery": "الحضانة",
+        "lkg": "LKG",
+        "ukg": "UKG"
+    },
+    "classNumber": "الصف {{number}}"
+}

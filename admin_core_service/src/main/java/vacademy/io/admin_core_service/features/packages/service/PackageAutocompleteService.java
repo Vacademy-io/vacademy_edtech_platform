@@ -15,18 +15,24 @@ import java.util.stream.Collectors;
 @Service
 public class PackageAutocompleteService {
 
+        /**
+         * Suggestions returned per query. Higher than the old 10 because the name match is a
+         * substring now — courses sharing a prefix no longer crowd out the one being typed.
+         */
+        private static final int SUGGESTION_LIMIT = 25;
+
         @Autowired
         private PackageSessionRepository packageSessionRepository;
 
         /**
-         * Autocomplete search for packages with instant results
-         * Optimized for 20,000+ packages with < 100ms response time
+         * Autocomplete search for packages with instant results.
+         * Matches any part of the course name, scoped to one institute.
          *
          * @param query       Search query (minimum 1 characters)
          * @param instituteId Required institute filter
          * @param sessionId   Required session filter
          * @param levelId     Required level filter
-         * @return Autocomplete response with top 10 suggestions
+         * @return Autocomplete response with the top suggestions, ranked by relevance
          */
         public AutocompleteResponseDTO autocomplete(
                         String query,
@@ -43,14 +49,12 @@ public class PackageAutocompleteService {
                 String sanitizedQuery = query.trim();
 
                 try {
-                        // Execute optimized query with LIMIT 10
                         List<PackageAutocompleteProjection> results = packageSessionRepository.autocompletePackages(
                                         sanitizedQuery,
                                         instituteId,
                                         sessionId,
                                         levelId,
-                                        10 // Always limit to 10 results
-                        );
+                                        SUGGESTION_LIMIT);
 
                         // Map projections to DTOs
                         List<PackageSuggestionDTO> suggestions = results.stream()
@@ -61,7 +65,8 @@ public class PackageAutocompleteService {
                                                         p.getLevelId(),
                                                         p.getLevelName(),
                                                         p.getSessionId(),
-                                                        p.getSessionName()))
+                                                        p.getSessionName(),
+                                                        p.getBatchName()))
                                         .collect(Collectors.toList());
 
                         long queryTime = System.currentTimeMillis() - startTime;

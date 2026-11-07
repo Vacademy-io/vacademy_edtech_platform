@@ -1,0 +1,104 @@
+{
+    "startOnboarding": {
+        "button": "Démarrer l'intégration",
+        "dialogHeading": "Démarrer l'intégration",
+        "cancel": "Annuler",
+        "start": "Démarrer",
+        "starting": "Démarrage…",
+        "loadingFlows": "Chargement des parcours…",
+        "noActiveFlows": "Aucun parcours d'intégration actif pour le moment — activez-en un depuis l'onglet Intégration.",
+        "flowLabel": "Parcours d'intégration",
+        "pickFlowPlaceholder": "Choisir un parcours…",
+        "started": "Intégration démarrée",
+        "startFailed": "Impossible de démarrer l'intégration pour cette personne."
+    },
+    "loadError": {
+        "title": "Impossible de charger la progression de l'intégration"
+    },
+    "empty": {
+        "title": "Aucun parcours d'intégration démarré",
+        "hint": "Cette personne n'a pas encore été placée dans un parcours d'intégration."
+    },
+    "credentials": {
+        "copiedToClipboard": "{{label}} copié dans le presse-papiers",
+        "copyFailed": "Impossible de copier {{label}}",
+        "passwordVisibilityOff": "La visibilité du mot de passe est désactivée pour cet établissement — activez-la sous Paramètres → Affichage des rôles pour voir les identifiants de connexion de cet étudiant ici.",
+        "loading": "Chargement des identifiants…",
+        "usernameLabel": "Nom d'utilisateur :",
+        "passwordLabel": "Mot de passe :",
+        "notAvailable": "N/A",
+        "notFound": "Introuvable",
+        "usernameFieldName": "Nom d'utilisateur",
+        "passwordFieldName": "Mot de passe"
+    },
+    "instance": {
+        "heading": "Intégration — {{status}}",
+        "resolvedSubjectPrefix": "Ce formulaire a été rempli par un parent au nom d'un étudiant. L'étudiant réel est",
+        "resolvedSubjectFallback": "créé",
+        "resolvedSubjectSuffix": "— cette intégration reste visible ici, sur le prospect/contact d'origine.",
+        "stepStatusWithReason": "{{status}} — {{reason}}",
+        "viewForm": "Voir le formulaire",
+        "complete": "Terminer",
+        "skip": "Ignorer",
+        "noSteps": "Aucune étape enregistrée pour le moment.",
+        "stepCompleted": "Étape marquée comme terminée",
+        "completeFailed": "Impossible de terminer cette étape.",
+        "progressSaved": "Progression enregistrée",
+        "saveFailed": "Impossible d'enregistrer cette étape.",
+        "stepSkipped": "Étape ignorée",
+        "skipFailed": "Impossible d'ignorer cette étape."
+    },
+    "status": {
+        "pending": "En attente",
+        "inProgress": "En cours",
+        "completed": "Terminée",
+        "skipped": "Ignorée"
+    },
+    "skipDialog": {
+        "heading": "Ignorer cette étape ?",
+        "cancel": "Annuler",
+        "skipStep": "Ignorer l'étape",
+        "skipping": "Ignorance en cours…",
+        "description": "« {{stepName}} » est facultative et peut être ignorée. Ajoutez un motif (facultatif).",
+        "reasonPlaceholder": "Motif (facultatif)",
+        "defaultReason": "Ignorée par l'administrateur"
+    },
+    "completeStepDialog": {
+        "heading": "Terminer — {{stepName}}",
+        "cancel": "Annuler",
+        "save": "Enregistrer",
+        "saving": "Enregistrement…",
+        "completeStep": "Terminer l'étape",
+        "completing": "Finalisation…",
+        "parentToggleLabel": "Ce formulaire a été rempli par un parent, au nom d'un étudiant",
+        "existingDetailsHint": "L'étudiant sera créé à partir des informations existantes de cette personne :",
+        "noNameOnFile": "Aucun nom enregistré",
+        "noContactOnFile": "Aucun e-mail ou numéro de mobile enregistré",
+        "studentDetailsHint": "Saisissez les propres informations de l'étudiant — c'est lui qui sera inscrit et obtiendra l'accès, pas le parent.",
+        "studentFullNameLabel": "Nom complet de l'étudiant",
+        "studentFullNamePlaceholder": "ex. Aarav Sharma",
+        "studentEmailLabel": "E-mail de l'étudiant",
+        "studentEmailPlaceholder": "student@example.com",
+        "studentMobileLabel": "Numéro de mobile de l'étudiant",
+        "studentMobilePlaceholder": "Facultatif si l'e-mail est renseigné",
+        "enrollLabel": "Inscrire à (cours / lot)",
+        "optionalIfEnrolled": "(facultatif si déjà inscrit)",
+        "skipCourseHint": "Cette étape permet de la terminer sans choisir de cours si l'étudiant a déjà une inscription active.",
+        "pickCoursePlaceholder": "Choisir un cours…",
+        "searchCoursePlaceholder": "Rechercher un cours / lot…",
+        "searchPlaceholder": "Rechercher…",
+        "noFieldsHint": "Cette étape n'a aucun champ associé — la terminer ne nécessite aucune saisie.",
+        "formFieldsLabel": "Champs du formulaire",
+        "defaultFieldLabel": "Champ"
+    },
+    "submittedFormDialog": {
+        "heading": "Formulaire — {{stepName}}",
+        "close": "Fermer",
+        "noFields": "Cette étape n'a aucun champ associé.",
+        "untitledField": "Champ sans titre",
+        "notAnswered": "Sans réponse"
+    },
+    "noAccess": {
+        "hint": "Votre rôle n'a pas accès à l'intégration pour cet établissement."
+    }
+}

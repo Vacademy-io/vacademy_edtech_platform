@@ -1,0 +1,28 @@
+{
+    "instituteLogoAlt": "logo de l'établissement",
+    "continueWithGoogle": "Continuer avec Google",
+    "continueWithGithub": "Continuer avec GitHub",
+    "orContinueWith": "ou continuer avec",
+    "usernamePlaceholder": "Entrez votre nom d'utilisateur",
+    "usernameLabel": "Nom d'utilisateur",
+    "passwordLabel": "Mot de passe",
+    "forgotPassword": "Mot de passe oublié ?",
+    "useEmailOtp": "Utiliser l'OTP par e-mail",
+    "usePhoneOtp": "Utiliser l'OTP par téléphone",
+    "loggingIn": "Connexion en cours...",
+    "login": "Connexion",
+    "noAccount": "Vous n'avez pas de compte ?",
+    "createOne": "En créer un",
+    "termsAndConditions": "Conditions générales",
+    "privacyPolicy": "Politique de confidentialité",
+    "errors": {
+        "accessDeniedTitle": "Accès refusé",
+        "studentAccessDenied": "Les étudiants ne sont pas autorisés à accéder au portail administrateur. Veuillez contacter votre administrateur.",
+        "adminRoleRequired": "Ce portail nécessite des privilèges ADMIN. Veuillez contacter votre administrateur.",
+        "notAllowedPortal": "Vous n'êtes pas autorisé à accéder à ce portail. Veuillez contacter votre administrateur.",
+        "loginFailedRetry": "Échec de la connexion. Veuillez réessayer.",
+        "loginErrorTitle": "Erreur de connexion",
+        "invalidCredentials": "Identifiants invalides",
+        "invalidUsernamePassword": "Nom d'utilisateur ou mot de passe invalide"
+    }
+}

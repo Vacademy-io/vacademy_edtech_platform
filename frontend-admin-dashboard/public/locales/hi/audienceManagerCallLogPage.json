@@ -1,0 +1,27 @@
+{
+    "header": {
+        "navTitle": "कॉल लॉग",
+        "title": "कॉल लॉग",
+        "subtitle": "आपकी पूरी टीम की हर कॉल — AI और मानव, इनबाउंड और आउटबाउंड, सभी प्रोवाइडर। फ़िल्टर करें, डिस्पोज़िशन दें और एक्सपोर्ट करें।",
+        "callingSettings": "कॉलिंग सेटिंग्स",
+        "refresh": "रीफ़्रेश करें"
+    },
+    "filters": {
+        "presetLabel": "{{days}} दिन",
+        "from": "से",
+        "to": "तक",
+        "apply": "लागू करें",
+        "reset": "रीसेट करें",
+        "noInstitute": "कॉल लॉग देखने के लिए एक संस्थान चुनें।",
+        "presetHours": "{{hours}} घं.",
+        "customHoursPlaceholder": "पिछले N घंटे",
+        "customHoursLabel": "पिछले N घंटे"
+    },
+    "counsellorPicker": {
+        "ariaLabel": "काउंसलर के अनुसार फ़िल्टर करें",
+        "allCounsellors": "सभी काउंसलर"
+    },
+    "callIntelligence": {
+        "heading": "कॉल इंटेलिजेंस"
+    }
+}

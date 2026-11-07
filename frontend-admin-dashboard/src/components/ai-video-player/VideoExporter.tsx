@@ -412,7 +412,7 @@ export async function exportVideo(
         onProgress({ phase: 'encoding', percent: 95, message: 'Reading output file...' });
 
         const outputData = await ffmpeg.readFile('output.mp4');
-        const mp4Blob = new Blob([outputData], { type: 'video/mp4' });
+        const mp4Blob = new Blob([outputData as BlobPart], { type: 'video/mp4' });
 
         // Clean up FFmpeg filesystem
         const cleanupPromises: Promise<unknown>[] = [];

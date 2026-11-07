@@ -1,0 +1,48 @@
+{
+    "relatedCourses": {
+        "course1": {
+            "name": "Advanced Mathematics",
+            "description": "Deep dive into calculus and algebra.",
+            "tags": {
+                "math": "Math",
+                "advanced": "Advanced",
+                "stem": "STEM"
+            }
+        },
+        "course2": {
+            "name": "Physics for Engineers",
+            "description": "Mechanics, thermodynamics, and more.",
+            "tags": {
+                "physics": "Physics",
+                "engineering": "Engineering"
+            }
+        },
+        "course3": {
+            "name": "Creative Writing",
+            "description": "Unlock your storytelling potential.",
+            "tags": {
+                "writing": "Writing",
+                "creativity": "Creativity",
+                "arts": "Arts"
+            }
+        }
+    },
+    "billingContactFields": {
+        "nameLabel": "Billing Contact Full Name",
+        "emailLabel": "Billing Contact Email",
+        "roleLabel": "Role"
+    },
+    "validation": {
+        "planNameRequired": "Plan name is required",
+        "descriptionRequired": "Description is required",
+        "titleRequired": "Title is required",
+        "codeRequired": "Code is required",
+        "valueRequired": "Value is required",
+        "expiryDateRequired": "Expiry date is required",
+        "programNameRequired": "Program name is required",
+        "refereeBenefitRequired": "Referee benefit is required",
+        "tierRequired": "Tier is required",
+        "rewardRequired": "Reward is required",
+        "atLeastOneTierRequired": "At least one tier is required"
+    }
+}

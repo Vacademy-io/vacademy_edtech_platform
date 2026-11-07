@@ -272,6 +272,8 @@ Update institute settings via API:
 ```bash
 POST /notification-service/v1/institute-settings
 Content-Type: application/json
+Authorization: Bearer <admin access token>
+clientId: <instituteId>
 
 {
   "instituteId": "INST_123",

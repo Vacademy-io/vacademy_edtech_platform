@@ -1,0 +1,12 @@
+{
+    "readyToSubmitHeading": "جاهز للتقديم",
+    "reachedEndPrefix": "لقد وصلت إلى نهاية",
+    "admissionFormLabel": "استمارة القبول",
+    "reachedEndSuffix": ". يرجى مراجعة جميع التفاصيل قبل التقديم النهائي.",
+    "admissionSummaryHeading": "ملخص القبول",
+    "studentNameLabel": "اسم الطالب:",
+    "classLabel": "الصف:",
+    "clickPrefix": "انقر فوق",
+    "submitAdmissionLabel": "تقديم طلب القبول",
+    "clickSuffix": "أدناه لإتمام هذا السجل."
+}

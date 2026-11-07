@@ -56,6 +56,26 @@ public class UserMobileResolver {
     }
 
     /**
+     * Same lookup, but a FAILED lookup propagates instead of being flattened
+     * into "no mobile on file".
+     *
+     * <p>{@link #findMobile} catches everything and returns empty, which suits
+     * the dial path (it is about to fail anyway with a clear message). It does
+     * NOT suit the pre-flight readiness probe behind the Call button: there,
+     * empty means "disable this person's button and tell them to add a mobile
+     * number", and an auth_service blip would say that to a counsellor whose
+     * number is sitting right there in their profile. Letting the exception out
+     * lets the probe's caller fail OPEN and leave the button alone.
+     */
+    public Optional<String> findVerifiedMobileStrict(String userId) {
+        if (userId == null || userId.isBlank()) return Optional.empty();
+        List<UserDTO> users = authService.getUsersFromAuthServiceByUserIds(List.of(userId));
+        if (users == null || users.isEmpty()) return Optional.empty();
+        String mobile = users.get(0).getMobileNumber();
+        return (mobile == null || mobile.isBlank()) ? Optional.empty() : Optional.of(mobile);
+    }
+
+    /**
      * The user's stored gender as {@code "MALE"}/{@code "FEMALE"} when set on the
      * auth record, else empty. Used to tell the AI voice bot how to address the lead
      * (honorific + Hindi second-person agreement). Form leads usually have no gender

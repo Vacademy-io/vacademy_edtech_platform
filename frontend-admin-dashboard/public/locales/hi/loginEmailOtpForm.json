@@ -1,0 +1,28 @@
+{
+    "invalidEmail": "अमान्य ईमेल पता",
+    "emailPlaceholder": "अपना ईमेल पता दर्ज करें",
+    "emailLabel": "ईमेल पता",
+    "sendingCode": "कोड भेजा जा रहा है...",
+    "sendVerificationCode": "सत्यापन कोड भेजें",
+    "checkYourEmail": "अपना ईमेल देखें",
+    "codeSentTo": "हमने 6 अंकों का कोड भेजा है",
+    "validOtpRequired": "कृपया एक मान्य 6 अंकों का सत्यापन कोड दर्ज करें",
+    "verifying": "सत्यापित किया जा रहा है...",
+    "verifyAndSignIn": "सत्यापित करें और साइन इन करें",
+    "backToEmail": "ईमेल पर वापस जाएं",
+    "resendIn_one": "{{count}} सेकंड में फिर से भेजें",
+    "resendIn_other": "{{count}} सेकंड में फिर से भेजें",
+    "resendCode": "कोड फिर से भेजें",
+    "preferUsernameLogin": "यूज़रनेम से लॉगिन करना चाहते हैं?",
+    "usePhoneOtpInstead": "इसके बजाय फोन ओटीपी का उपयोग करें?",
+    "noAccount": "खाता नहीं है?",
+    "createOne": "एक बनाएं",
+    "toast": {
+        "otpSent": "ओटीपी सफलतापूर्वक भेजा गया",
+        "emailNotRegistered": "यह ईमेल पंजीकृत नहीं है",
+        "emailNotRegisteredDescription": "कृपया किसी पंजीकृत ईमेल के साथ फिर से प्रयास करें",
+        "invalidOtp": "अमान्य ओटीपी",
+        "invalidOtpDescription": "कृपया अपना ओटीपी जांचें और फिर से प्रयास करें",
+        "fillAllOtpFields": "कृपया सभी ओटीपी फ़ील्ड भरें"
+    }
+}

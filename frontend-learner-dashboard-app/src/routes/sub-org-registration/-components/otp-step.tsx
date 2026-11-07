@@ -7,6 +7,7 @@ import {
   CaretLeft,
 } from "@phosphor-icons/react";
 import { toast } from "sonner";
+import { Trans, useTranslation } from "react-i18next";
 import { ModernCard } from "@/components/design-system/modern-card";
 import { MyButton } from "@/components/design-system/button";
 import { cn } from "@/lib/utils";
@@ -43,11 +44,12 @@ const OtpStep = ({
   isResending,
   resumeMode = false,
 }: OtpStepProps) => {
+  const { t } = useTranslation("registrationB");
   const [otp, setOtp] = useState("");
 
   const handleVerifyClick = async () => {
     if (!otp.trim() || otp.length < 4) {
-      toast.error("Please enter a valid verification code");
+      toast.error(t("subOrgRegistration.otp.toast.invalidCode"));
       return;
     }
     await onVerify(otp);
@@ -66,12 +68,12 @@ const OtpStep = ({
           <EnvelopeSimple className="size-8 text-primary-500" />
         </div>
         <h2 className="mb-2 text-xl font-semibold text-neutral-700">
-          Verify Your Email
+          {t("subOrgRegistration.otp.title")}
         </h2>
         <p className="text-sm text-neutral-500">
           {resumeMode
-            ? "We've sent a code to resume your registration to"
-            : "We've sent a verification code to"}
+            ? t("subOrgRegistration.otp.sentToResume")
+            : t("subOrgRegistration.otp.sentTo")}
         </p>
         <p className="mt-1 text-sm font-medium text-neutral-700">{email}</p>
       </div>
@@ -80,14 +82,20 @@ const OtpStep = ({
       <div className="mb-6 rounded-lg border border-warning-200 bg-warning-50 p-4">
         <div className="flex gap-3">
           <Info className="mt-0.5 size-5 flex-shrink-0 text-warning-600" />
-          <div className="text-sm text-warning-700">
-            <p className="mb-1 font-medium">Can&apos;t find the email?</p>
+          <div className="text-sm text-warning-700 space-y-1">
+            <p className="font-medium">
+              {t("subOrgRegistration.otp.cantFindEmail")}
+            </p>
             <ul className="list-inside list-disc space-y-1">
               <li>
-                Check your <strong>Spam</strong> or <strong>Junk</strong> folder
+                <Trans
+                  t={t}
+                  i18nKey="subOrgRegistration.otp.checkSpam"
+                  components={{ b1: <strong />, b2: <strong /> }}
+                />
               </li>
-              <li>Make sure the email address is correct</li>
-              <li>Wait a few seconds and refresh your inbox</li>
+              <li>{t("subOrgRegistration.otp.correctEmail")}</li>
+              <li>{t("subOrgRegistration.otp.waitRefresh")}</li>
             </ul>
           </div>
         </div>
@@ -100,7 +108,7 @@ const OtpStep = ({
             htmlFor="sub-org-otp-input"
             className="mb-2 block text-sm font-medium text-neutral-600"
           >
-            Enter Verification Code
+            {t("subOrgRegistration.otp.enterCodeLabel")}
           </label>
           <input
             id="sub-org-otp-input"
@@ -108,7 +116,7 @@ const OtpStep = ({
             inputMode="numeric"
             value={otp}
             onChange={(e) => setOtp(e.target.value.replace(/\D/g, "").slice(0, 6))}
-            placeholder="Enter 6-digit code"
+            placeholder={t("subOrgRegistration.otp.codePlaceholder")}
             className={cn(
               "w-full rounded-lg border border-neutral-300 px-4 py-3 text-center font-mono text-lg tracking-widest",
               "outline-none transition-all focus:border-primary-500 focus:ring-2 focus:ring-primary-200"
@@ -132,12 +140,12 @@ const OtpStep = ({
           {isVerifying ? (
             <>
               <SpinnerGap className="me-2 size-4 animate-spin" />
-              Verifying...
+              {t("subOrgRegistration.otp.verifying")}
             </>
           ) : (
             <>
               <CheckCircle className="me-2 size-5" />
-              Verify & Continue
+              {t("subOrgRegistration.otp.verifyContinue")}
             </>
           )}
         </MyButton>
@@ -151,7 +159,7 @@ const OtpStep = ({
             disabled={isVerifying}
           >
             <CaretLeft className="size-4" />
-            Edit Details
+            {t("subOrgRegistration.otp.editDetails")}
           </button>
 
           <button
@@ -160,7 +168,9 @@ const OtpStep = ({
             disabled={isResending || isVerifying}
             className="text-sm font-medium text-primary-500 hover:text-primary-400 disabled:opacity-50"
           >
-            {isResending ? "Sending..." : "Resend Code"}
+            {isResending
+              ? t("subOrgRegistration.otp.resending")
+              : t("subOrgRegistration.otp.resendCode")}
           </button>
         </div>
       </div>

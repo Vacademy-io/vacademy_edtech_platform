@@ -1,0 +1,23 @@
+{
+    "pickNewSlot": "اختر موعدًا جديدًا",
+    "sessionCancelled": "تم إلغاء الجلسة",
+    "sessionMoved": "تم نقل الجلسة",
+    "cancelFailed": "تعذّر إلغاء الجلسة.",
+    "rescheduleFailed": "تعذّر نقل الجلسة.",
+    "cancelHeading": "إلغاء الجلسة",
+    "rescheduleHeading": "إعادة جدولة الجلسة",
+    "keepAsIs": "الإبقاء كما هي",
+    "saving": "جارٍ الحفظ…",
+    "cancelSession": "إلغاء الجلسة",
+    "moveSession": "نقل الجلسة",
+    "learnerFallback": "المتعلم",
+    "mentorFallback": "المرشد",
+    "cancelBody": "سيتم إبلاغ <bold1>{{studentName}}</bold1> و<bold2>{{mentorName}}</bold2> بالإلغاء، وستتم إزالة إدخال التقويم والتذكيرات.",
+    "rescheduleBody": "سيتم تحرير الموعد القديم وإنشاء حجز جديد لـ <bold1>{{studentName}}</bold1>. إذا تم حجز الموعد الجديد للتو، سيُطلب منك اختيار موعد آخر.",
+    "learnerFallbackLower": "المتعلم",
+    "newDateTime": "التاريخ والوقت الجديدان",
+    "reasonCancelPlaceholder": "مثال: المرشد غير متفرغ لظروف صحية",
+    "reasonOptionalPlaceholder": "ملاحظة اختيارية",
+    "reasonCancelLabel": "السبب (يُعرض للمتعلم)",
+    "reasonOptionalLabel": "السبب (اختياري)"
+}

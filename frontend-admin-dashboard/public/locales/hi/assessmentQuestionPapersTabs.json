@@ -1,0 +1,15 @@
+{
+    "filters": {
+        "yearClass": "वर्ष/कक्षा",
+        "tags": "टैग"
+    },
+    "actions": {
+        "filter": "फ़िल्टर करें",
+        "reset": "रीसेट करें",
+        "tryAgain": "पुनः प्रयास करें"
+    },
+    "emptyStates": {
+        "noQuestionPapers": "कोई प्रश्न पत्र उपलब्ध नहीं है",
+        "noFavouriteQuestionPapers": "अभी तक किसी प्रश्न पत्र को पसंदीदा के रूप में चिह्नित नहीं किया गया है"
+    }
+}

@@ -2,8 +2,13 @@
  * Build API payload from course configuration
  */
 export function buildApiPayload(courseConfig: any): any {
-    const numChapters = courseConfig.durationFormatStructure?.numberOfSessions;
-    const topicsPerSession = courseConfig.durationFormatStructure?.topicsPerSession;
+    // A knowledge base decides the course's shape (its topics are the chapters,
+    // its sections the slides), so chapter / slide counts are never sent for a
+    // KB-grounded course — the server ignores them too, but the prompt text
+    // below must not mention them either.
+    const kbBound = !!courseConfig.kbGrounding?.knowledge_base_id;
+    const numChapters = kbBound ? undefined : courseConfig.durationFormatStructure?.numberOfSessions;
+    const topicsPerSession = kbBound ? undefined : courseConfig.durationFormatStructure?.topicsPerSession;
     
     // Calculate total slides: slides per chapter * number of chapters
     const totalSlides = numChapters && topicsPerSession 
@@ -65,13 +70,13 @@ export function buildApiPayload(courseConfig: any): any {
             durationOptions.push(`Number of Modules: ${duration.numberOfModules}`);
         }
         
-        if (duration.numberOfSessions) {
+        if (!kbBound && duration.numberOfSessions) {
             durationOptions.push(`Number of Sessions (Chapters): ${duration.numberOfSessions}`);
         }
         if (duration.sessionLength) {
             durationOptions.push(`Session Length: ${duration.sessionLength} minutes`);
         }
-        if (duration.topicsPerSession) {
+        if (!kbBound && duration.topicsPerSession) {
             durationOptions.push(`Topics per Session: ${duration.topicsPerSession}`);
         }
         if (duration.includeQuizzes) durationOptions.push('Include Quizzes');

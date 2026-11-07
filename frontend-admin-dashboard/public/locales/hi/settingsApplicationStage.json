@@ -1,0 +1,78 @@
+{
+    "emptyState": {
+        "title": "अभी तक कोई आवेदन चरण नहीं है",
+        "description": "अपनी प्रवेश प्रक्रिया को परिभाषित करने के लिए चरण बनाएं",
+        "addFirstStage": "पहला चरण जोड़ें"
+    },
+    "stageCard": {
+        "first": "पहला",
+        "last": "अंतिम",
+        "paymentOptionIdLabel": "भुगतान विकल्प आईडी:"
+    },
+    "toast": {
+        "qrUploadSuccess": "QR कोड सफलतापूर्वक अपलोड हुआ",
+        "qrUploadError": "QR कोड अपलोड करने में विफल",
+        "stageAddedSuccess": "आवेदन चरण सफलतापूर्वक जोड़ा गया",
+        "stageAddError": "चरण जोड़ने में विफल",
+        "stageNameRequired": "कृपया चरण का नाम दर्ज करें",
+        "sequenceInvalid": "कृपया एक मान्य क्रम संख्या दर्ज करें",
+        "paymentOptionRequired": "कृपया एक भुगतान विकल्प चुनें"
+    },
+    "dialog": {
+        "heading": "आवेदन चरण जोड़ें",
+        "cancel": "रद्द करें",
+        "addStage": "चरण जोड़ें",
+        "adding": "जोड़ा जा रहा है…",
+        "stageName": {
+            "label": "चरण का नाम",
+            "placeholder": "जैसे, आवेदन फ़ॉर्म, भुगतान"
+        },
+        "stageType": {
+            "label": "चरण का प्रकार",
+            "placeholder": "प्रकार चुनें",
+            "form": "फ़ॉर्म",
+            "payment": "भुगतान"
+        },
+        "sequence": {
+            "label": "क्रम",
+            "placeholder": "1"
+        },
+        "workflowType": {
+            "label": "वर्कफ़्लो प्रकार",
+            "placeholder": "वर्कफ़्लो प्रकार चुनें"
+        },
+        "lastStage": "अंतिम चरण",
+        "paymentSection": {
+            "heading": "भुगतान कॉन्फ़िगरेशन",
+            "paymentOption": {
+                "label": "भुगतान विकल्प",
+                "loading": "भुगतान विकल्प लोड हो रहे हैं…",
+                "empty": "कोई भुगतान विकल्प नहीं मिला। कृपया पहले भुगतान सेटिंग्स में एक बनाएं।",
+                "placeholder": "भुगतान विकल्प चुनें"
+            },
+            "displayText": {
+                "label": "प्रदर्शन पाठ",
+                "placeholder": "भुगतान से पहले आवेदकों को दिखाया जाने वाला संदेश",
+                "defaultValue": "जारी रखने के लिए कृपया आवेदन शुल्क का भुगतान करें।"
+            },
+            "qrCode": {
+                "label": "भुगतान QR कोड",
+                "previewAlt": "QR पूर्वावलोकन",
+                "uploadCta": "QR कोड अपलोड करने के लिए क्लिक करें",
+                "uploadHint": "PNG, JPG, SVG — अधिकतम 5 MB",
+                "fileId": "फ़ाइल आईडी: {{fileId}}"
+            },
+            "upi": {
+                "vpaLabel": "UPI आईडी (VPA)",
+                "vpaPlaceholder": "जैसे, school@oksbi",
+                "payeeLabel": "प्राप्तकर्ता का नाम",
+                "payeePlaceholder": "जैसे, Vacademy School"
+            }
+        }
+    },
+    "main": {
+        "title": "आवेदन सेटिंग्स",
+        "description": "उन चरणों को कॉन्फ़िगर करें जिनसे आवेदक प्रवेश प्रक्रिया के दौरान गुजरते हैं",
+        "addStage": "चरण जोड़ें"
+    }
+}

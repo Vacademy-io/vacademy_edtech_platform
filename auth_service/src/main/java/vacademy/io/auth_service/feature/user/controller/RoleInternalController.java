@@ -5,12 +5,16 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import vacademy.io.auth_service.feature.user.dto.ModifyUserRolesDTO;
 import vacademy.io.auth_service.feature.user.dto.UserRoleFilterDTO;
+import vacademy.io.auth_service.feature.user.repository.UserInstituteRoleRepository;
 import vacademy.io.auth_service.feature.user.service.RoleService;
 import vacademy.io.common.auth.dto.UserWithRolesDTO;
 import vacademy.io.common.auth.enums.UserRoleStatus;
 
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 @RestController
@@ -19,6 +23,9 @@ public class RoleInternalController {
 
     @Autowired
     private RoleService roleService;
+
+    @Autowired
+    private UserInstituteRoleRepository userInstituteRoleRepository;
 
     @PostMapping("/users-of-status")
     public ResponseEntity<List<UserWithRolesDTO>> getUsersOfRole(@RequestBody List<String> roles,
@@ -44,6 +51,37 @@ public class RoleInternalController {
      * receive the {@code STUDENT} role on enrollment, since the per-row
      * learner-portal login check rejects users without it.
      */
+    /**
+     * Every role row the user holds, per institute, with its status — so another service can
+     * tell "counsellor here only" from "also staff (or a learner) somewhere else" without
+     * reading this database. Rows without an institute (legacy global rows) are left out.
+     */
+    @GetMapping("/memberships")
+    public ResponseEntity<List<Map<String, String>>> memberships(@RequestParam String userId) {
+        List<Map<String, String>> out = new ArrayList<>();
+        for (UserInstituteRoleRepository.InstituteRoleRow r : userInstituteRoleRepository.findInstituteRolesByUserId(userId)) {
+            Map<String, String> m = new LinkedHashMap<>();
+            m.put("institute_id", r.getInstituteId());
+            m.put("role_name", r.getRoleName());
+            m.put("status", r.getStatus());
+            out.add(m);
+        }
+        return ResponseEntity.ok(out);
+    }
+
+    /**
+     * HMAC-internal: pause (DISABLED) or restore (ACTIVE) only the named roles of one user in
+     * one institute. Body: JSON array of role names. Returns {"updated": n}.
+     */
+    @PutMapping("/role-status")
+    public ResponseEntity<Map<String, Integer>> updateRoleStatus(@RequestParam String instituteId,
+                                                                 @RequestParam String userId,
+                                                                 @RequestParam String status,
+                                                                 @RequestBody List<String> roles) {
+        int n = roleService.updateRoleStatusForRoles(instituteId, userId, roles, status);
+        return ResponseEntity.ok(Map.of("updated", n));
+    }
+
     @PostMapping("/add-user-roles")
     public ResponseEntity<String> addUserRolesInternal(@RequestBody ModifyUserRolesDTO addRolesToUserDTO) {
         String response = roleService.addRolesToUser(

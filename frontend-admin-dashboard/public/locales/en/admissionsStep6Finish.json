@@ -1,0 +1,12 @@
+{
+    "readyToSubmitHeading": "Ready to Submit",
+    "reachedEndPrefix": "You have reached the end of the",
+    "admissionFormLabel": "Admission Form",
+    "reachedEndSuffix": ". Please review all details before final submission.",
+    "admissionSummaryHeading": "Admission Summary",
+    "studentNameLabel": "Student Name:",
+    "classLabel": "Class:",
+    "clickPrefix": "Click",
+    "submitAdmissionLabel": "Submit Admission",
+    "clickSuffix": "below to finalize this record."
+}

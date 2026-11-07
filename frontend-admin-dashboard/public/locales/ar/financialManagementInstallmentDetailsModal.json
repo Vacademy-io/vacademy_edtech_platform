@@ -1,0 +1,19 @@
+{
+    "installmentDetails": "تفاصيل القسط",
+    "errors": {
+        "unableToLoad": "تعذر تحميل تفاصيل القسط. يرجى المحاولة مرة أخرى."
+    },
+    "empty": {
+        "noInstallmentsFound": "لم يتم العثور على أقساط لمجموعة الدفع هذه."
+    },
+    "table": {
+        "feeType": "نوع الرسوم",
+        "instNumber": "رقم القسط",
+        "expected": "المتوقع",
+        "discount": "الخصم",
+        "paid": "المدفوع",
+        "due": "المستحق",
+        "dueDate": "تاريخ الاستحقاق",
+        "status": "الحالة"
+    }
+}

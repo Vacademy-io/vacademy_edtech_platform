@@ -1,0 +1,33 @@
+{
+    "header": {
+        "title": "Utilisateurs les plus actifs",
+        "subtitle": "Meilleurs contributeurs par activité et engagement"
+    },
+    "error": {
+        "message": "Échec du chargement des utilisateurs actifs"
+    },
+    "empty": {
+        "message": "Aucune donnée d'activité utilisateur disponible"
+    },
+    "status": {
+        "online": "En ligne",
+        "recent": "Récent",
+        "offline": "Hors ligne",
+        "unknown": "Inconnu"
+    },
+    "device": {
+        "desktop": "Ordinateur",
+        "mobile": "Mobile",
+        "tablet": "Tablette"
+    },
+    "stats": {
+        "sessions_one": "{{count}} session",
+        "sessions_many": "{{count}} sessions",
+        "sessions_other": "{{count}} sessions",
+        "calls_one": "{{count}} appel",
+        "calls_many": "{{count}} appels",
+        "calls_other": "{{count}} appels",
+        "totalTime": "Temps total",
+        "last": "Dernière : {{date}}"
+    }
+}

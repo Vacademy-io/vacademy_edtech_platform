@@ -1,0 +1,34 @@
+{
+    "title": "Analyse de l'attrition et du churn",
+    "noData": "Aucune donnée disponible pour l'analyse du churn",
+    "subtitle": "Identifiez les points d'abandon et optimisez l'engagement",
+    "churnRate": "Taux de churn",
+    "retention": "Rétention",
+    "funnelHeading": "Entonnoir d'abandon des utilisateurs",
+    "funnelInsufficientData": "Données insuffisantes pour la visualisation de l'entonnoir",
+    "usersTooltip_one": "{{count}} utilisateur",
+    "usersTooltip_many": "{{count}} d'utilisateurs",
+    "usersTooltip_other": "{{count}} utilisateurs",
+    "critical": "Critique",
+    "urgent": "Urgent",
+    "warning": "Avertissement",
+    "noCriticalIssues": "Aucun problème critique détecté ! L'engagement est sain.",
+    "recommendationsHeading": "Recommandations",
+    "alerts": {
+        "noOutgoingMessages": "Le jour {{dayNumber}} n'a aucun message sortant",
+        "lowResponseRate": "Le jour {{dayNumber}} a un taux de réponse de {{rate}} %",
+        "suddenDrop": "Baisse de {{dropPercentage}} % du jour {{previousDay}} au jour {{dayNumber}}"
+    },
+    "actions": {
+        "scheduleContentImmediately": "Planifier du contenu immédiatement",
+        "reviewAndOptimizeContent": "Revoir et optimiser le contenu",
+        "investigateContentChange": "Étudier le changement de contenu"
+    },
+    "recommendations": {
+        "scheduleAutomatedMessages": "Planifier des messages automatisés pour les jours sans contenu",
+        "reviewContentStrategy": "Revoir la stratégie de contenu - baisses d'engagement importantes détectées",
+        "addIncentives": "Envisager d'ajouter des incitations ou des accroches d'engagement en milieu de défi",
+        "abTestFormats": "Tester différents formats de message en A/B pour améliorer les taux de réponse",
+        "healthyEngagement": "Excellent travail ! Les niveaux d'engagement sont sains. Envisagez de cibler les utilisateurs actifs pour des parrainages."
+    }
+}

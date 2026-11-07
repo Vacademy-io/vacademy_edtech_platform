@@ -1,0 +1,28 @@
+{
+    "errors": {
+        "fileSizeExceeded": "La taille du fichier dépasse la limite de 1 Mo",
+        "invalidFileType": "Veuillez importer un fichier CSV",
+        "missingRows": "Le fichier CSV doit contenir au moins une ligne d'en-tête et une ligne de données",
+        "emptyFile": "Le fichier CSV est vide ou mal formé",
+        "parseFailed": "Échec de l'analyse du fichier CSV. Veuillez vérifier son format."
+    },
+    "heading": "Import de données dynamiques",
+    "clearUpload": "Effacer l'import",
+    "processing": "Traitement du CSV...",
+    "uploadPrompt": "Importer un CSV de données dynamiques",
+    "dropHint": "Glissez-déposez ou cliquez pour sélectionner • Max 1 Mo • Format CSV uniquement",
+    "selectFile": "Sélectionner un fichier CSV",
+    "issuesFound": "Problèmes détectés dans l'import CSV",
+    "uploadSuccessful": "Import CSV réussi",
+    "rowsProcessed_one": "{{count}} ligne traitée",
+    "rowsProcessed_many": "{{count}} lignes traitées",
+    "rowsProcessed_other": "{{count}} lignes traitées",
+    "columnsCount_one": "{{count}} colonne",
+    "columnsCount_many": "{{count}} colonnes",
+    "columnsCount_other": "{{count}} colonnes",
+    "dynamicFieldsCount_one": "{{count}} champ dynamique",
+    "dynamicFieldsCount_many": "{{count}} champs dynamiques",
+    "dynamicFieldsCount_other": "{{count}} champs dynamiques",
+    "detectedColumns": "Colonnes détectées",
+    "required": "(obligatoire)"
+}

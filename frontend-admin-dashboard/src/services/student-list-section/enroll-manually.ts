@@ -6,6 +6,7 @@ import { getTokenDecodedData, getTokenFromCookie } from '@/lib/auth/sessionUtili
 import { TokenKey } from '@/constants/auth/tokens';
 import { getCustomFieldSettingsFromCache } from '@/services/custom-field-settings';
 import { getSelectedSubOrgId } from '@/lib/auth/facultyAccessUtils';
+import { toAdminDiscountPayload } from '@/services/admin-discounts';
 
 type EnrollStudentResponse = string;
 
@@ -82,6 +83,13 @@ export const enrollStudent = async ({
                 payment_option_id: formData.stepThreeData?.invite?.payment_option_id || '',
                 plan_id: formData.stepFourData?.plan_id || undefined,
                 payment_initiation_request: paymentInitiationRequest,
+                // Admin-granted discount (ONE_TIME / SUBSCRIPTION only). Omitted when "No
+                // discount" — the backend then charges the plan price as before.
+                admin_discount: toAdminDiscountPayload(formData.stepFourData?.admin_discount, {
+                    includeCycles:
+                        (formData.stepThreeData?.invite?.payment_option_type || '').toUpperCase() ===
+                        'SUBSCRIPTION',
+                }),
                 custom_field_values: customFieldValues,
                 start_date: formData.stepThreeData?.start_date || new Date().toISOString(),
                 // Admin-entered override. Sent only when it is a real positive number, so

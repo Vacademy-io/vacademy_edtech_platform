@@ -140,9 +140,15 @@ public class SalesDashboardService {
     // ────────────────────────────────────────────────────────────────
 
     /**
-     * Where conversions are coming from. Per source_type (the audience_response
-     * tag — META / GOOGLE / ORGANIC / etc.) we count both inbound lead volume
-     * and the converted subset, so the UI can render a conversion-rate %.
+     * Where leads (and conversions) are coming from. Per source_type (the audience_response
+     * tag — WALK_IN / AUDIENCE_CAMPAIGN / SELF_SIGNUP / META_LEAD_ADS / etc.) we count both
+     * inbound lead volume and the converted subset, so the UI can render a conversion-rate %.
+     *
+     * Each lead lands in exactly ONE source, resolved like the rest of the report suite:
+     * best_source_type, then the representative response's source_type, then the earliest
+     * response by user_id within this institute, else 'unknown'. Joining every response by
+     * user_id used to count a lead under each source it had touched, so the rows summed to
+     * more than the lead count.
      *
      * Scoped via the same caller/team rules as the funnel — see {@link #scopedUsers}.
      */
@@ -159,15 +165,24 @@ public class SalesDashboardService {
         String userClause = userScopeClause(users, "ulp.assigned_counselor_id");
         String dateClause = andDateRange("ulp.created_at", from, to);
 
-        String sql = "SELECT COALESCE(ar.source_type, 'unknown') AS source, " +
-                "       COUNT(DISTINCT ulp.id) AS leads, " +
-                "       COUNT(DISTINCT CASE WHEN ulp.conversion_status = 'CONVERTED' THEN ulp.id END) AS conversions " +
-                "FROM user_lead_profile ulp " +
-                "LEFT JOIN audience_response ar ON ar.user_id = ulp.user_id " +
-                "WHERE ulp.institute_id = ? " +
+        // Resolved in an inner query, grouped in the outer one: Postgres rejects GROUP BY on a
+        // correlated subquery expression repeated from the select list.
+        String sql = "SELECT t.source, " +
+                "       COUNT(*) AS leads, " +
+                "       COUNT(CASE WHEN t.conversion_status = 'CONVERTED' THEN 1 END) AS conversions " +
+                "FROM (" +
+                "  SELECT COALESCE(ulp.best_source_type, ar.source_type, " +
+                "           (SELECT ar2.source_type FROM audience_response ar2 " +
+                "             JOIN audience a2 ON a2.id = ar2.audience_id AND a2.institute_id = ulp.institute_id " +
+                "             WHERE ar2.user_id = ulp.user_id ORDER BY ar2.created_at LIMIT 1), 'unknown') AS source, " +
+                "         ulp.conversion_status " +
+                "  FROM user_lead_profile ulp " +
+                "  LEFT JOIN audience_response ar ON ar.id = ulp.best_score_response_id " +
+                "  WHERE ulp.institute_id = ? " +
                 dateClause +
                 userClause +
-                "GROUP BY COALESCE(ar.source_type, 'unknown') " +
+                ") t " +
+                "GROUP BY t.source " +
                 "ORDER BY leads DESC";
 
         List<Object> args = new ArrayList<>();
@@ -534,7 +549,16 @@ public class SalesDashboardService {
      */
     private List<String> scopedUsers(String instituteId, String teamId, String callerUserId) {
         if (teamId != null && !teamId.isBlank()) {
-            return scopeService.usersInTeams(java.util.List.of(teamId));
+            List<String> teamUsers = scopeService.usersInTeams(java.util.List.of(teamId));
+            // A scoped caller may only drill into the part of a team inside their own scope.
+            if (callerUserId != null && !callerUserId.isBlank()
+                    && scopeService.isScopedCaller(instituteId, callerUserId)) {
+                Set<String> allowed = new HashSet<>(
+                        scopeService.scopedCounsellorUserIds(instituteId, callerUserId));
+                teamUsers = teamUsers.stream().filter(allowed::contains).toList();
+            }
+            // An empty team (or none of it in scope) means zero rows, never "no filter".
+            return teamUsers.isEmpty() ? NO_USERS : teamUsers;
         }
         if (callerUserId != null && !callerUserId.isBlank()
                 && scopeService.isScopedCaller(instituteId, callerUserId)) {
@@ -551,22 +575,28 @@ public class SalesDashboardService {
 
     /**
      * "Scope to this single counsellor" override used by the per-counsellor
-     * widgets in the detail drawer. Falls back to the caller's full scope
-     * if the requested counsellor is outside the caller's RBAC subtree —
-     * silently denying the narrow rather than throwing keeps the widget
-     * graceful when a manager picks someone they shouldn't see anyway.
+     * widgets in the detail drawer. Returns {@link #NO_USERS} (zero rows) when the requested counsellor is
+     * outside the caller's RBAC subtree, so the widget renders empty instead of
+     * throwing and never widens to the whole institute.
      */
     private List<String> narrowToCounsellor(String instituteId, String callerUserId, String counsellorUserId) {
         if (callerUserId != null && !callerUserId.isBlank()
                 && scopeService.isScopedCaller(instituteId, callerUserId)) {
             Set<String> allowed = new HashSet<>(
                     scopeService.scopedCounsellorUserIds(instituteId, callerUserId));
-            if (!allowed.isEmpty() && !allowed.contains(counsellorUserId)) {
-                return Collections.emptyList();
+            if (!allowed.contains(counsellorUserId)) {
+                // Outside the caller's scope: zero rows. An empty list would mean "no filter".
+                return NO_USERS;
             }
         }
         return List.of(counsellorUserId);
     }
+
+    /**
+     * Matches no user id, so the scope clause yields zero rows. Used where an empty
+     * scope must mean nothing visible; a plain empty list means no filter at all.
+     */
+    private static final List<String> NO_USERS = List.of("__no_user__");
 
     private String userScopeClause(List<String> users) {
         return userScopeClause(users, "assigned_counselor_id");

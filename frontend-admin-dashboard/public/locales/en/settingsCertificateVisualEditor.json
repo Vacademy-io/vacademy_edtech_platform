@@ -1,0 +1,62 @@
+{
+    "toolbar": {
+        "fieldsPlaced_one": "{{count}} field placed",
+        "fieldsPlaced_other": "{{count}} fields placed",
+        "dropToAdd": "— drop to add",
+        "uploadCustomImage": "Upload custom image"
+    },
+    "canvas": {
+        "removeFieldTitle": "Remove"
+    },
+    "badge": {
+        "certificateIdFieldLabel": "Certificate ID",
+        "autoStampTitle": "Stamped automatically on every certificate — drag to position it yourself",
+        "stopPrintingTitle": "Don't print this automatically",
+        "turnOffAriaLabel": "Turn off the automatic stamp",
+        "certificateNumberLabel": "Certificate number",
+        "stampedFooter": "{{names}} is stamped bottom-right on every certificate. Drag the dashed box to position it yourself, or remove it to stop printing it at all."
+    },
+    "properties": {
+        "title": "Field Properties",
+        "removeButton": "Remove",
+        "closeTitle": "Close properties",
+        "fontSize": {
+            "label": "Font Size",
+            "pxValue": "{{value}}px",
+            "customPlaceholder": "Custom px"
+        },
+        "fontFamily": {
+            "label": "Font Family"
+        },
+        "fontWeight": {
+            "label": "Font Weight",
+            "normal": "Normal",
+            "bold": "Bold"
+        },
+        "textColor": {
+            "label": "Text Color"
+        },
+        "textAlignment": {
+            "label": "Text Alignment",
+            "left": "Left",
+            "center": "Center",
+            "right": "Right"
+        },
+        "backgroundColor": {
+            "label": "Background Color",
+            "clear": "Clear",
+            "current": "Current: {{value}}",
+            "transparentValue": "transparent"
+        },
+        "position": {
+            "label": "Position",
+            "x": "X Position",
+            "y": "Y Position"
+        },
+        "fieldSize": {
+            "label": "Field Size",
+            "width": "Width",
+            "height": "Height"
+        }
+    }
+}

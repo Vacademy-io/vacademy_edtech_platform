@@ -1,0 +1,40 @@
+---
+title: "API reference"
+description: "Base URL, authentication and conventions."
+---
+
+## Base URL
+
+```
+https://api.telleo.ai/v1
+```
+
+## Authentication
+
+Send your AI calling API key in the `X-API-Key` header (or `Authorization: Bearer <key>`). See [Authentication](/authentication).
+
+## Conventions
+
+- Request and response bodies are JSON, with `snake_case` field names.
+- Timestamps are ISO-8601 in UTC, e.g. `2026-10-13T09:30:02Z`.
+- Phone numbers are E.164, e.g. `+919876543210`.
+- Ids carry a prefix: `call_…`, `batch_…`, `evt_…`. Agent ids are UUIDs.
+- Every response has an `X-Request-Id` header.
+- Errors share one shape. See [Errors](/platform/errors).
+
+## Endpoints
+
+| | |
+|---|---|
+| `POST /calls` | Start a call |
+| `GET /calls` | List calls |
+| `GET /calls/{id}` | Get a call |
+| `POST /calls/{id}/cancel` | Cancel a queued call |
+| `POST /batches` | Start up to 1,000 calls |
+| `GET /batches/{id}` | Batch progress |
+| `GET /agents` | Your agents and the variables they use |
+| `GET /credits` | Your credit balance |
+| `GET /usage` | Calls, talk time and credits per day |
+| `GET` `PUT` `DELETE /webhook` | Your webhook endpoint |
+| `POST /webhook/rotate-secret` | New signing secret |
+| `POST /webhook/test` | Send a test event |

@@ -1,0 +1,51 @@
+{
+    "filters": {
+        "pending": "En attente",
+        "approved": "Approuvé",
+        "rejected": "Rejeté",
+        "all": "Tous"
+    },
+    "status": {
+        "approved": "Approuvé",
+        "rejected": "Rejeté",
+        "pending": "En attente"
+    },
+    "requestType": {
+        "timeIncrease": "Augmentation du temps",
+        "reattempt": "Nouvelle tentative"
+    },
+    "summary": {
+        "currentlyAllowed": "Actuellement autorisé : {{value}}",
+        "used": "Utilisé : {{value}}",
+        "requested": "Demandé le {{date}}",
+        "reviewedOn": "le {{date}}",
+        "grantedCount_one": "{{count}} tentative accordée",
+        "grantedCount_many": "{{count}} tentatives accordées",
+        "grantedCount_other": "{{count}} tentatives accordées"
+    },
+    "form": {
+        "attemptsToGrantLabel": "Tentatives à accorder",
+        "attemptsRangeError": "1 à 20"
+    },
+    "actions": {
+        "approve": "Approuver",
+        "reject": "Rejeter"
+    },
+    "toasts": {
+        "granted_one": "{{count}} tentative accordée à {{name}}.",
+        "granted_many": "{{count}} tentatives accordées à {{name}}.",
+        "granted_other": "{{count}} tentatives accordées à {{name}}.",
+        "theLearner": "l'apprenant",
+        "rejected": "Demande rejetée.",
+        "updateFailed": "Impossible de mettre à jour cette demande. Veuillez réessayer."
+    },
+    "error": {
+        "title": "Impossible de charger les demandes",
+        "tryAgain": "Réessayer"
+    },
+    "empty": {
+        "titleAll": "Aucune demande",
+        "titleFiltered": "Aucune demande {{status}}",
+        "description": "Les apprenants peuvent demander une nouvelle tentative ou plus de temps depuis l'examen. Leurs demandes apparaissent ici."
+    }
+}

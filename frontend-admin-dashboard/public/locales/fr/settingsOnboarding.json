@@ -1,0 +1,17 @@
+{
+    "title": "Paramètre d'intégration",
+    "description": "Contrôle si les parcours d'intégration (listes de contrôle ordonnées qu'un prospect/étudiant suit entre \"accepté de rejoindre\" et \"pleinement inscrit\") sont disponibles à l'échelle de l'établissement. Désactiver ce paramètre masque l'entrée Intégration de la barre latérale, le générateur de parcours et l'onglet Intégration de la vue latérale étudiant, sans supprimer les parcours ou la progression existants.",
+    "loading": "Chargement des paramètres d'intégration…",
+    "toggle": {
+        "enabled": "Activer les parcours d'intégration",
+        "disabled": "Parcours d'intégration désactivés"
+    },
+    "footer": {
+        "save": "Enregistrer",
+        "saving": "Enregistrement…"
+    },
+    "toasts": {
+        "settingsSaved": "Paramètres d'intégration enregistrés",
+        "saveFailed": "Échec de l'enregistrement des paramètres d'intégration"
+    }
+}

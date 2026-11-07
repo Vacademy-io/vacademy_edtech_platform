@@ -1,20 +1,23 @@
 import React from 'react';
 import { useState } from 'react';
-import { Link, useNavigate } from '@tanstack/react-router';
+import { Link, useLocation, useNavigate } from '@tanstack/react-router';
 import { SidebarItemProps } from '../../../../types/layout-container/layout-container-types';
-import { useRouter } from '@tanstack/react-router';
 import { cn } from '@/lib/utils';
 import { LockKey } from '@phosphor-icons/react';
 import { getCategoryColors } from './sidebar-colors';
 import { recordRecentTab } from './recent-tabs-store';
+import { isSidebarLinkActive } from './helper';
 
 export const NonCollapsibleItem = ({ icon, title, to, locked, category }: SidebarItemProps) => {
     const [hover, setHover] = useState<boolean>(false);
-    const router = useRouter();
     const navigate = useNavigate();
-    const currentRoute = router.state.location.pathname;
+    const { pathname: currentRoute, search: currentSearch } = useLocation();
     const colors = getCategoryColors(category as 'CRM' | 'LMS' | 'AI');
-    const isActive = to && currentRoute.includes(to);
+    const isActive = isSidebarLinkActive(
+        to,
+        currentRoute,
+        currentSearch as Record<string, unknown>
+    );
 
     const handleLockedClick = (e: React.MouseEvent) => {
         if (locked) {
@@ -70,7 +73,11 @@ export const NonCollapsibleItem = ({ icon, title, to, locked, category }: Sideba
                     weight: hover || isActive ? 'fill' : 'regular',
                     className: cn(
                         'flex-shrink-0 transition-colors duration-150',
-                        hover || isActive ? (isActive ? colors.pillText : colors.text) : 'text-neutral-500'
+                        hover || isActive
+                            ? isActive
+                                ? colors.pillText
+                                : colors.text
+                            : 'text-neutral-500'
                     ),
                 })}
 
@@ -81,8 +88,8 @@ export const NonCollapsibleItem = ({ icon, title, to, locked, category }: Sideba
                     isActive
                         ? cn(colors.pillText, 'font-medium')
                         : hover
-                            ? cn(colors.text, 'font-medium')
-                            : 'text-neutral-600'
+                          ? cn(colors.text, 'font-medium')
+                          : 'text-neutral-600'
                 )}
             >
                 {title}

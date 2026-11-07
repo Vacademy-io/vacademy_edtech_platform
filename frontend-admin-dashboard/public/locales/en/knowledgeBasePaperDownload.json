@@ -1,0 +1,42 @@
+{
+    "button": "Download PDF",
+    "preparing": "Preparing PDF…",
+    "questionPaper": "Question paper",
+    "withAnswerKey": "Question paper + answer key",
+    "failed": "Could not prepare the PDF. Please try again.",
+    "shareLink": "Share link…",
+    "share": {
+        "heading": "Share this paper",
+        "description": "Publish the PDF behind a link you can send on WhatsApp or email. Anyone with the link can download it.",
+        "questionPaperHint": "For students — questions only.",
+        "answerKeyHint": "Contains the answers and marking scheme. Share with teachers only.",
+        "createLink": "Create link",
+        "publishing": "Publishing…",
+        "republish": "Publish again (new link)",
+        "ready": "Link ready · PDF {{size}}",
+        "linkLabel": "Shareable link",
+        "copy": "Copy",
+        "copiedButton": "Copied",
+        "copied": "Link copied",
+        "copyFailed": "Could not copy the link",
+        "whatsapp": "Share on WhatsApp",
+        "failed": "Could not publish the paper. Please try again."
+    },
+    "preview": {
+        "menuItem": "Preview paper",
+        "heading": "Paper preview",
+        "answerKeyTab": "With answer key",
+        "download": "Download",
+        "share": "Share link",
+        "close": "Close",
+        "rendering": "Laying out the paper…",
+        "failed": "Could not render the paper.",
+        "retry": "Try again"
+    },
+    "theme": {
+        "label": "Layout",
+        "classic": "Classic (board style)",
+        "compact": "Compact two-column",
+        "coaching": "Coaching classes (inline answers)"
+    }
+}

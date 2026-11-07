@@ -4,7 +4,7 @@ import authenticatedAxiosInstance from '@/lib/auth/axiosInstance';
 import { getInstituteId } from '@/constants/helper';
 import { GET_INSITITUTE_SETTINGS } from '@/constants/urls';
 import { getRolesForCurrentInstitute } from '@/lib/auth/instituteUtils';
-import { normalizeRoleKey } from '@/constants/slide-download-permission';
+import { effectiveRoleKey, normalizeRoleKey } from '@/constants/slide-download-permission';
 
 const SETTING_KEY = 'SLIDE_CONTENT_PROTECTION_SETTING';
 
@@ -66,7 +66,14 @@ export function SlideProtectionGuard() {
     let enabled = false;
     if (!isDevBypass() && data) {
         if (data.roles && typeof data.roles === 'object') {
-            enabled = roles.map(normalizeRoleKey).some((r) => data.roles![r] === true);
+            // Highest role wins (ADMIN > TEACHER > LEARNER), same rule as the
+            // download permission, so staff who are also enrolled as students
+            // get one consistent answer across both settings.
+            const canonicalRoles = roles.map(normalizeRoleKey).filter(Boolean);
+            const effectiveRole = effectiveRoleKey(canonicalRoles);
+            enabled = effectiveRole
+                ? data.roles[effectiveRole] === true
+                : canonicalRoles.some((r) => data.roles![r] === true);
         } else {
             enabled = !!data.enabled; // legacy institute-wide
         }

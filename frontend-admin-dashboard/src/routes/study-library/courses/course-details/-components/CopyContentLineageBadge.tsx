@@ -1,4 +1,6 @@
 import { CaretDown, Info } from 'phosphor-react';
+import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import {
     useCopyContentLineage,
@@ -20,6 +22,7 @@ export const CopyContentLineageBadge = ({
 }: {
     packageSessionId: string | null | undefined;
 }) => {
+    const { t } = useTranslation('studyLibraryCopyContentLineageBadge');
     const { data, isLoading } = useCopyContentLineage(packageSessionId);
 
     if (!packageSessionId || isLoading || !data) return null;
@@ -31,17 +34,17 @@ export const CopyContentLineageBadge = ({
     // Pick a label that hints at the contents without forcing the user to open
     // the popover — "Copy history" is the catch-all when both directions apply.
     const triggerLabel = hasUpstream && hasDownstream
-        ? 'Copy history'
+        ? t('copyHistory')
         : hasUpstream
-            ? 'Copied content'
-            : `Used by ${data.copiedTo.length} batch${data.copiedTo.length === 1 ? '' : 'es'}`;
+            ? t('copiedContent')
+            : t('usedByBatches', { count: data.copiedTo.length });
 
     return (
         <Popover>
             <PopoverTrigger asChild>
                 <button
                     type="button"
-                    aria-label="Show copy history"
+                    aria-label={t('showCopyHistory')}
                     className="inline-flex items-center gap-1 rounded-md border border-blue-200 bg-blue-50 px-2 py-0.5 text-[11px] font-medium text-blue-700 transition-colors hover:bg-blue-100 focus:outline-none focus:ring-2 focus:ring-blue-200"
                 >
                     <Info size={13} weight="fill" />
@@ -55,17 +58,18 @@ export const CopyContentLineageBadge = ({
                 sideOffset={6}
             >
                 <div className="border-b bg-blue-50 px-4 py-2 text-xs font-medium uppercase tracking-wide text-blue-700">
-                    Copy history
+                    {t('copyHistory')}
                 </div>
                 <div className="flex flex-col gap-3 px-4 py-3">
                     {hasUpstream && data.copiedFrom && (
                         <UpstreamSection
                             source={data.copiedFrom}
                             mode={data.copiedBy as CopyContentMode | null}
+                            t={t}
                         />
                     )}
                     {hasDownstream && (
-                        <DownstreamSection refs={data.copiedTo} />
+                        <DownstreamSection refs={data.copiedTo} t={t} />
                     )}
                 </div>
             </PopoverContent>
@@ -76,30 +80,30 @@ export const CopyContentLineageBadge = ({
 const UpstreamSection = ({
     source,
     mode,
+    t,
 }: {
     source: CopyContentBatchRef;
     mode: CopyContentMode | null;
+    t: TFunction;
 }) => (
     <section>
         <div className="text-xs font-medium uppercase tracking-wide text-neutral-500">
-            Content was brought in from
+            {t('contentBroughtInFrom')}
         </div>
-        <div className="mt-1 text-sm text-neutral-800">{batchLabel(source)}</div>
+        <div className="mt-1 text-sm text-neutral-800">{batchLabel(source, t)}</div>
         {mode && (
             <div className="mt-0.5 text-xs">
-                <ModeChip mode={mode} />
+                <ModeChip mode={mode} t={t} />
             </div>
         )}
     </section>
 );
 
-const DownstreamSection = ({ refs }: { refs: CopyContentBatchRef[] }) => (
+const DownstreamSection = ({ refs, t }: { refs: CopyContentBatchRef[]; t: TFunction }) => (
     <section>
         <div className="text-xs font-medium uppercase tracking-wide text-neutral-500">
-            Used as source by{' '}
-            <span className="text-neutral-700">
-                {refs.length} batch{refs.length === 1 ? '' : 'es'}
-            </span>
+            {t('usedAsSourceBy')}{' '}
+            <span className="text-neutral-700">{t('batchCount', { count: refs.length })}</span>
         </div>
         <ul className="mt-1 flex max-h-44 flex-col gap-1.5 overflow-y-auto">
             {refs.map((ref) => (
@@ -107,10 +111,10 @@ const DownstreamSection = ({ refs }: { refs: CopyContentBatchRef[] }) => (
                     key={ref.packageSessionId}
                     className="flex flex-col rounded border border-neutral-200 bg-neutral-50 px-2 py-1.5"
                 >
-                    <span className="text-sm text-neutral-800">{batchLabel(ref)}</span>
+                    <span className="text-sm text-neutral-800">{batchLabel(ref, t)}</span>
                     {ref.copiedBy && (
                         <span className="mt-0.5 text-xs">
-                            <ModeChip mode={ref.copiedBy} />
+                            <ModeChip mode={ref.copiedBy} t={t} />
                         </span>
                     )}
                 </li>
@@ -119,7 +123,7 @@ const DownstreamSection = ({ refs }: { refs: CopyContentBatchRef[] }) => (
     </section>
 );
 
-const ModeChip = ({ mode }: { mode: CopyContentMode }) => {
+const ModeChip = ({ mode, t }: { mode: CopyContentMode; t: TFunction }) => {
     const isReference = mode === 'REFERENCE';
     return (
         <span
@@ -130,12 +134,12 @@ const ModeChip = ({ mode }: { mode: CopyContentMode }) => {
                     : 'bg-blue-100 text-blue-800',
             ].join(' ')}
         >
-            {isReference ? 'Linked copy' : 'Separate copy'}
+            {isReference ? t('linkedCopy') : t('separateCopy')}
         </span>
     );
 };
 
-const batchLabel = (ref: CopyContentBatchRef) => {
+const batchLabel = (ref: CopyContentBatchRef, t: TFunction) => {
     const parts = [ref.courseName, ref.sessionName, ref.levelName].filter(Boolean);
-    return parts.length > 0 ? parts.join(' · ') : 'Unknown batch';
+    return parts.length > 0 ? parts.join(' · ') : t('unknownBatch');
 };

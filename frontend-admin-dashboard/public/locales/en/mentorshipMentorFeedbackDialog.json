@@ -1,0 +1,10 @@
+{
+    "heading": "Session feedback — {{mentorName}}",
+    "mentorFallback": "mentor",
+    "outOfFive": "{{count}} out of 5",
+    "ratedSessions_one": "from {{count}} rated session",
+    "ratedSessions_other": "from {{count}} rated sessions",
+    "noSessionsRated": "No sessions rated yet. Learners are asked to rate a session once it has taken place.",
+    "couldNotLoadFeedback": "Couldn't load feedback.",
+    "noFeedbackYet": "Nothing to show yet — ratings appear here as learners submit them."
+}

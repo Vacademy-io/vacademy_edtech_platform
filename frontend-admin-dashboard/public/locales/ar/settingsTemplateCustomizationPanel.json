@@ -1,0 +1,27 @@
+{
+    "header": {
+        "title": "تخصيص \"{{name}}\"",
+        "subtitle": "عدّل الألوان والنصوص في القالب. تتحدث لوحة المعاينة مباشرةً.",
+        "resetTooltip": "استعادة الألوان والنصوص الافتراضية لهذا القالب",
+        "resetButton": "إعادة التعيين"
+    },
+    "groups": {
+        "colors": "الألوان",
+        "text": "النص",
+        "layout": "التخطيط"
+    },
+    "fields": {
+        "primaryColor": "اللون الأساسي",
+        "secondaryColor": "اللون الثانوي",
+        "backgroundColor": "الخلفية",
+        "titleText": "العنوان الرئيسي",
+        "subtitleText": "العنوان الفرعي",
+        "presentedText": "سطر \"مُقدَّم إلى\"",
+        "forCompletionText": "سطر إتمام الدورة",
+        "borderWidth": {
+            "label": "عرض الحدود / اللمسة البارزة",
+            "hint": "سُمك الحدود (أو عرض الشريط البارز في تصميم Modern Minimal)."
+        },
+        "hexPlaceholder": "#000000"
+    }
+}

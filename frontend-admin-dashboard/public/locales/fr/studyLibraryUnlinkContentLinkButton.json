@@ -1,0 +1,19 @@
+{
+    "removedFrom": "Retiré de {{chapterName}}",
+    "couldNotRemove": "Impossible de retirer le lien. Veuillez réessayer.",
+    "addedTo": "Ajouté à",
+    "removeFromAriaLabel": "Retirer de {{chapterName}}",
+    "remove": "Retirer",
+    "removeThisSlideTitle": "Retirer cette diapositive ?",
+    "removeThisSlideDescription": "Cela retirera également la diapositive du chapitre.",
+    "cancel": "Annuler",
+    "removingEllipsis": "Retrait en cours…",
+    "rename": "Renommer",
+    "renameAriaLabel": "Renommer la diapositive dans {{chapterName}}",
+    "renameTitle": "Renommer la diapositive",
+    "nameLabel": "Nom",
+    "save": "Enregistrer",
+    "savingEllipsis": "Enregistrement…",
+    "renamed": "Nom mis à jour",
+    "couldNotRename": "Impossible de renommer. Veuillez réessayer."
+}

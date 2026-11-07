@@ -1,0 +1,49 @@
+{
+    "defaultMemberName": "Membre",
+    "enrolledCourses_one": "Cours inscrit ({{count}})",
+    "enrolledCourses_many": "Cours inscrit ({{count}})",
+    "enrolledCourses_other": "Cours inscrits ({{count}})",
+    "readOnlyLedger": {
+        "title": "Registre en lecture seule",
+        "body": "Seul l'administrateur de l'institut parent peut modifier les échéances, appliquer des remises CPO ou enregistrer des paiements hors ligne sur le registre de cet administrateur {{org}}."
+    },
+    "noMemberSelected": "Aucun membre sélectionné.",
+    "channels": {
+        "inApp": "in-app",
+        "email": "e-mail"
+    },
+    "toast": {
+        "linkCopied": "Lien de paiement copié",
+        "copyFailed": "Impossible de copier dans le presse-papiers",
+        "reminderSentTo": "Rappel envoyé à {{email}}",
+        "reminderFired": "Rappel envoyé",
+        "reminderFailed": "Échec de l'envoi du rappel",
+        "toRecipient": "à {{email}}",
+        "invoiceReminderSentVia": "Rappel envoyé{{where}} via {{channels}}",
+        "invoiceReminderNoChannels": "Rappel{{where}} — aucun canal n'a délivré le message (vérifiez les paramètres de facturation)",
+        "invoiceReminderFailed": "Échec de l'envoi du rappel de facture"
+    },
+    "invoices": {
+        "heading": "Factures",
+        "loading": "Chargement des factures...",
+        "headingWithCount_one": "Facture ({{count}})",
+        "headingWithCount_many": "Facture ({{count}})",
+        "headingWithCount_other": "Factures ({{count}})",
+        "createInvoice": "Créer une facture",
+        "noInvoicesYet": "Aucune facture pour le moment. Créez-en une avec le bouton ci-dessus.",
+        "sendInstallmentReminderTitle": "Envoyer un rappel d'échéance",
+        "resendPaymentReminderTitle": "Renvoyer le rappel de paiement dû (e-mail + alerte in-app)",
+        "sending": "Envoi…",
+        "remind": "Rappeler",
+        "copyPaymentLinkTitle": "Copier le lien de paiement de l'apprenant",
+        "copied": "Copié",
+        "copyLink": "Copier le lien",
+        "markPaidTitle": "Enregistrer un paiement hors ligne / manuel pour cette facture",
+        "markPaid": "Marquer comme payée",
+        "viewPdfTitle": "Afficher le PDF dans un nouvel onglet",
+        "view": "Afficher",
+        "downloadPdfTitle": "Télécharger le PDF de la facture",
+        "save": "Enregistrer",
+        "noPdf": "Aucun PDF"
+    }
+}

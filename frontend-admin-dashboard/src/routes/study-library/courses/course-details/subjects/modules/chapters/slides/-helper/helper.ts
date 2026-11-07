@@ -15,6 +15,7 @@ import {
     encodeAllowedFileTypes,
 } from '../-form-schemas/assignmentFormSchema';
 import { parseHtmlToString } from '@/lib/utils';
+import type { TFunction } from 'i18next';
 
 // Convert a UTC ISO timestamp from the backend ("2026-03-25T09:00:00Z")
 // into a "YYYY-MM-DDTHH:mm" string in the admin's LOCAL timezone for the
@@ -689,11 +690,15 @@ export function convertToQuizBackendSlideFormat({
     status,
     notify,
     newSlide,
+    t,
 }: {
     activeItem: Slide;
     status: string;
     notify: boolean;
     newSlide: boolean;
+    /** Threaded in from the calling component's `useTranslation()` — this
+     *  helper isn't a component/hook, so it can't call useTranslation itself. */
+    t: TFunction;
 }) {
     return {
         id: activeItem?.id || '',
@@ -708,7 +713,11 @@ export function convertToQuizBackendSlideFormat({
         document_slide: null,
         question_slide: null,
         quiz_slide: activeItem?.quiz_slide
-            ? convertToQuizSlideFormat(activeItem.quiz_slide.questions as any, activeItem?.source_id)
+            ? convertToQuizSlideFormat(
+                  activeItem.quiz_slide.questions as any,
+                  t,
+                  activeItem?.source_id
+              )
             : null,
         assignment_slide: null,
         is_loaded: true,
@@ -880,12 +889,16 @@ export function cleanVideoQuestions(data: Slide[]) {
     return cleanedData;
 }
 
-export function convertToQuizSlideFormat(questionList: MyQuestion[], sourceId?: string) {
+export function convertToQuizSlideFormat(
+  questionList: MyQuestion[],
+  t: TFunction,
+  sourceId?: string
+) {
   const quizSlideId = sourceId ?? crypto.randomUUID();
 
   return {
     id: quizSlideId,
-    title: 'Untitled Quiz',
+    title: t('studyLibrarySlidesHelper:quiz.untitledQuiz'),
     description: generateTextBlock(''),
     questions: questionList.map((q, index) => {
       // Get the appropriate options based on question type

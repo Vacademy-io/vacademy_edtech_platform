@@ -1,0 +1,6 @@
+{
+    "errors": {
+        "fetchFailed": "فشل جلب بيانات الطالب: {{message}}",
+        "unknownError": "خطأ غير معروف"
+    }
+}

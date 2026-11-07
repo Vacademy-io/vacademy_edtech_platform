@@ -1,0 +1,38 @@
+{
+    "sectionTitle": "टीम प्रदर्शन",
+    "teamsBadge_one": "{{count}} टीम",
+    "teamsBadge_other": "{{count}} टीमें",
+    "unassigned": "असाइन नहीं की गई",
+    "total": "कुल",
+    "emptyHint": "इस अवधि में कोई टीम गतिविधि नहीं है।",
+    "breakdownTitle": "टीम के अनुसार रूपांतरण दर",
+    "footnote": "प्रतिक्रिया दी = कम से कम एक प्रतिक्रिया पाने वाले लीड्स। रूपांतरण % = रूपांतरण ÷ लीड्स। औसत प्रतिक्रिया = पहली प्रतिक्रिया तक का औसत समय। लक्ष्य प्राप्ति % = रूपांतरण ÷ लक्ष्य।",
+    "table": {
+        "team": "टीम",
+        "head": "प्रमुख",
+        "counsellors": "काउंसलर",
+        "leads": "लीड्स",
+        "responded": "प्रतिक्रिया दी",
+        "conversions": "रूपांतरण",
+        "convRate": "रूपांतरण %",
+        "open": "खुला",
+        "overdue": "अतिदेय",
+        "avgResponse": "औसत प्रतिक्रिया",
+        "target": "लक्ष्य",
+        "attainmentPct": "लक्ष्य प्राप्ति %"
+    },
+    "csv": {
+        "team": "टीम",
+        "head": "प्रमुख",
+        "counsellors": "काउंसलर",
+        "leads": "लीड्स",
+        "responded": "प्रतिक्रिया दी",
+        "conversions": "रूपांतरण",
+        "conversionRatePct": "रूपांतरण दर (%)",
+        "open": "खुला",
+        "overdue": "अतिदेय",
+        "avgResponseMinutes": "औसत प्रतिक्रिया (मिनट)",
+        "target": "लक्ष्य",
+        "attainmentPct": "लक्ष्य प्राप्ति (%)"
+    }
+}

@@ -200,7 +200,9 @@ Dropdown actions:
 
 Driven by `useAudienceCampaignForm` (RHF + Zod). Loads custom fields via `getCampaignCustomFieldsAsync()` (or from `useGetCampaignById` when editing). Submits through `useCreateAudienceCampaign` or `useUpdateAudienceCampaign` depending on mode.
 
-Below the custom-fields card it renders **Post Submit Configuration** (§13) — the audience-list twin of the enroll invite's "Post Form Fill Configuration" card.
+Below the custom-fields card it renders **Form Heading & Text** (`components/audience/FormTextEditor.tsx`), then **Post Submit Configuration** (§13) — the audience-list twin of the enroll invite's "Post Form Fill Configuration" card.
+
+**Form Heading & Text** edits the words at the top of the public form: the page heading (blank = the list's own name; rich text via `RichTextEditor` in `minimalToolbar` mode) and the form card's heading + sub-heading (sub-heading is rich text too), each block with its own left / center / right alignment (`headingAlign`, `formHeaderAlign`). It is always shown, unlike the **Form Appearance** card, which only appears once an institute turns it on in Settings → Lead Settings → Forms. Both cards edit the same `formAppearance` value inside `setting_json`, so there is one save path, and the heading fields live only in Form Heading & Text, never in both cards. `headline` and `formSubtitle` hold plain text OR sanitized HTML: values saved before rich text existed still render as plain text, and an emptied editor (`<p></p>`) falls back to the default wording. Both are capped at 5,000 chars, not the 500 used for labels, so a cut never lands inside a tag. Any new key must be added in four places: the admin service, the learner `form-appearance.ts` (the two DEFAULT objects must match), **and** `formAppearanceSchema` in `-schema/AudienceCampaignSchema.ts`. That last one is a strict `z.object`, so a key missing there is silently dropped on save.
 
 ### Leads table — `CampaignUsersTable`
 
@@ -672,3 +674,215 @@ entity with their own creation flow and do not read this block.
 | [audience-post-submit-settings.ts](src/services/audience-post-submit-settings.ts) | Types, defaults, parse/merge, validation, institute-default fetch/save |
 | [PostSubmitConfigurationEditor.tsx](src/components/audience/PostSubmitConfigurationEditor.tsx) | The one editor UI (single column + Preview dialog), used by both the campaign form and Settings |
 | [AudienceFormSettings.tsx](src/routes/settings/-components/AudienceFormSettings.tsx) | Settings → Lead Settings → Forms |
+
+## 14. Share QR Code
+
+Every campaign card exposes a **QR** action (button in the card footer, and
+**Share QR Code** in the card's ⋮ menu). It opens `ShareQrDialog`: a scannable
+preview, the form link with a copy button, **Download PNG** / **Download SVG**,
+and **Print**.
+
+### 14.1 The QR encodes the long URL by default
+
+`createCampaignLink(...)` — the same `/audience-response?instituteId=…&audienceId=…`
+URL the card already shows — is what goes into the symbol unless the admin
+explicitly opts out. It is deliberately **not** routed through the platform
+shortener by default.
+
+A short link is revocable: `media_service` can flip a `short_links` row's status
+and take every printed copy down with it. A QR that has been printed onto
+standees, flyers or a backdrop cannot be reissued, so anything in the middle that
+somebody can switch off is a live outage waiting to happen. Encoding the
+destination directly means the only way to break the code is to delete the
+campaign itself.
+
+The dialog does offer **"Encode the short link in the QR code"** (see §15) —
+fewer characters means a lower-version symbol with coarser modules, which scans
+from further away. The panel underneath the QR follows the toggle: with it off
+the code reads "This QR code never expires"; with it on it says the code depends
+on the short link. Whichever value is encoded is the one the preview, the PNG,
+the SVG **and** the print sheet all read, via a single `qrValue` — a downloaded
+artefact can never disagree with the symbol on screen.
+
+This also holds on the backend side: `AudienceService.getCampaignById` applies
+no status filter and no date comparison, and neither the learner route nor the
+form component reads `start_date` / `end_date` / `status`. The campaign's date
+window is display-only, so the form — and therefore the QR — keeps accepting
+submissions past the end date.
+
+### 14.2 Encoding parameters (don't change these casually)
+
+| Constant | Value | Why |
+|---|---|---|
+| `QR_ERROR_CORRECTION` | `'Q'` | 25% recovery — survives print smudges and a thumb over a corner. `'H'` pushes the URL to version 12 (65×65), and finer modules scan *worse* from a distance. |
+| `QR_MARGIN_MODULES` | `4` | The spec's quiet zone. **qrcode.react defaults this to 0**, which produces a symbol most scanners refuse once it sits on a coloured background. Must be passed on every symbol — preview, PNG, SVG and print. |
+| `QR_DOWNLOAD_PX` | `1024` | A4 at 300dpi. The PNG comes from a separate off-layout `QRCodeCanvas`, not from rasterising the 216px preview. |
+
+The export canvas is collapsed with `size-0 overflow-hidden`, never `hidden`
+(`display:none`), so it is guaranteed to have painted before `toDataURL` reads it.
+
+### 14.3 Key files
+
+| File | Role |
+|---|---|
+| [ShareQrDialog.tsx](src/routes/audience-manager/list/-components/share-qr-dialog/ShareQrDialog.tsx) | The dialog: preview, copy, PNG/SVG download, print sheet |
+| [createCampaignLink.ts](src/routes/audience-manager/list/-utils/createCampaignLink.ts) | Builds the encoded URL (shared with Copy link and the embed code) |
+| [audienceManagerShareQrDialog.json](public/locales/en/audienceManagerShareQrDialog.json) | Catalog (also `ar` / `fr` / `hi`) |
+
+---
+
+## 15. Short links
+
+Every share surface on a campaign can hand out a `u.<domain>/s/<code>` URL
+alongside the full one:
+
+| Surface | Control |
+|---|---|
+| Card link row (`CampaignLink`) | **Short** / **Full** toggle beside **Copy** |
+| Card ⋮ menu | **Copy Short Link** |
+| Share QR dialog | A **Short link** row with its own copy button, plus the optional QR toggle |
+| "Share link ready" panel, create/edit dialog | Same **Short** / **Full** toggle |
+
+All four are gated on one institute switch — see §15.2.
+
+The create/edit panel is the highest-intent surface — it appears the moment a campaign goes
+live — and it is the one that needs a note. It hands `CampaignLink` an already-built
+`presetLink`, which carries no campaign id, and shortening is keyed on that id. So the form
+now also tracks `latestCampaignId` beside `latestCampaignShareLink` and passes it through.
+`presetLink` still wins for what is *displayed*, so the short link's destination is the preset
+URL rather than one rebuilt from the id — pinned by a test.
+
+### 15.3 The code is 6 characters, and NOT the campaign name
+
+`toShortCodeHint(sourceId)` in `short-link.ts` derives a stable 6-character
+lowercase code from the campaign id, and `useShortLink` applies it internally —
+callers cannot supply one.
+
+The name is deliberately not used. media_service slugifies a hint into up to 50
+characters, so "Class 10 Science Olympiad Registration 2026" produces a *short*
+link longer than the URL it replaces. Prod carries the evidence: of ~22,400
+`short_links` rows, **22,310 are exactly 6 characters**, and every outlier is a
+slug — the longest being `/s/dont-believe-everything-you-think`.
+
+It is deterministic rather than random because the code is part of the react-query
+key: a fresh random string per render would change the key and refire the request.
+Hashing the id gives the same code in every component, on every render, across
+reloads. Distribution measured at 5 collisions per 200,000 ids (~0.0025%), and the
+server resolves a collision by appending a suffix, so those degrade to a slightly
+longer code rather than a wrong one. A `presetLink` with no id (the
+only other caller shape) still gets no toggle at all.
+
+**Not wired: `/admissions/enquiries`.** Its Copy button builds an enquiry link via
+`createCampaignLink(..., isEnquiry: true)` and would be the natural home for the
+`ENQUIRY_CAMPAIGN` source, which exists and is correct but is currently only reachable through
+`ShareQrDialog`'s `isEnquiry` prop (a pre-existing prop no caller sets). Left alone
+deliberately — enquiries are a different module and were outside the ask.
+
+### 15.1 What the platform already provides
+
+`media_service` has run the shortener since long before this feature — ~22k rows
+across `ENROLL_INVITE`, `COUPON_CODE`, `REFERRAL_LINK`, `PRODUCT_PAGE` and
+others. Nothing new was needed on the backend:
+
+- `POST /media-service/public/v1/short-link/get-or-create`
+  `{ source, sourceId, destinationUrl, instituteId, shortCode }` →
+  `{ shortName, absoluteUrl }`. Unauthenticated (`/media-service/public/**` is
+  `permitAll`), so the FE calls it with a bare axios rather than the
+  authenticated instance — there is no 401 to recover from, and routing it
+  through the refresh/logout interceptor would let a shortening hiccup bounce an
+  admin out of the app.
+- `GET https://u.vacademy.io/s/{code}` → 302 to the destination.
+- `instituteId` selects a per-institute short domain from `backend_base_url`
+  (7 institutes have one, e.g. `u.shikshanation.com`); everyone else lands on
+  `u.vacademy.io`.
+- `shortCode` is a **hint**, not a reservation: the server slugifies it
+  (`"Open Day 2026"` → `open-day-2026`) and appends a random suffix on collision,
+  so callers never have to check.
+
+### 15.2 The institute switch (Settings → Lead Settings → Forms)
+
+`AUDIENCE_FORM_SETTING` → `shortLinksEnabled`, read through
+`useAudienceShortLinksEnabled()`.
+
+**It defaults ON, and the read is `!== false`, not `=== true`.** That asymmetry
+with its neighbour `formAppearanceEnabled` is deliberate and load-bearing: as of
+2026-09-01 exactly **one** institute in prod has an `AUDIENCE_FORM_SETTING` row at
+all, and **zero** have a `shortLinksEnabled` key. Copying the `=== true` pattern
+from the switch above it would therefore have shipped the feature switched off for
+every institute on the platform. Absence must read as ON; only an explicit
+`false` hides it.
+
+It also reads ON while the request is in flight, so the controls do not pop in a
+beat late for the ~100% of institutes that never touch the setting. That optimism
+is safe for *rendering* and unsafe for *writing*, so the hook returns two flags,
+not one:
+
+- `enabled` — optimistic. Gates what is DISPLAYED. Showing a control speculatively
+  costs nothing.
+- `isResolved` — whether the institute's real preference is known. Gates anything
+  that can WRITE. Shortening INSERTs a `short_links` row, so an institute that has
+  explicitly opted out must not get one minted just because an admin reached a
+  share surface before the settings GET came back. All four surfaces gate their
+  `useShortLink({ enabled })` on this; two tests pin it by asserting no POST is
+  issued while unresolved.
+
+The other cost of the optimism is one transitional state, and it is handled: `CampaignLink`'s
+`displayedLink` is gated on `canShorten`, so an admin who toggles to the short URL
+just before the switch resolves OFF is dropped back to the full address instead of
+being stranded on a short link with the toggle gone.
+
+`saveAudienceFormSettings` POSTs a `setting_data` blob that **REPLACES** the stored
+one, so `shortLinksEnabled` has to be written on every save alongside
+`postSubmitConfiguration` and `formAppearanceEnabled`. Omitting it would silently
+undo an institute's opt-out the next time anything else on that page is saved —
+`src/services/__tests__/audience-form-settings/test.ts` pins the exact key set.
+
+### 15.3 Identity, and why shortening is lazy
+
+The server keys a link on `(source, sourceId)` — asking twice returns the code
+that already exists. That is what makes a link an admin has printed or broadcast
+stable. Sources used here: `AUDIENCE_CAMPAIGN`, and `ENQUIRY_CAMPAIGN` for
+enquiry forms, kept distinct because the two point at different learner-portal
+routes.
+
+Get-or-create is a **write** — it inserts a row. So `useShortLink` takes an
+`enabled` flag that defaults to `false`: a page of campaign cards must not mint a
+link for every campaign the moment it renders. The card and the ⋮ menu enable it
+on click; the share dialog enables it on open, which is already an explicit
+"I want to share this" action.
+
+### 15.4 Failure is never fatal
+
+The hook never retries and never throws at its caller. Every consumer falls back
+to the long URL when `shortUrl` is null — the card reverts to **Full** with a
+toast, the dialog shows a note in place of the short-link row and hides the QR
+toggle. A dead shortener must not cost an admin the ability to share a form.
+
+The hook sets `networkMode: 'always'`. React Query's default `'online'` mode would
+**pause** the fetch when the browser reports itself offline — `isFetching` false,
+no error, no data — and every consumer here waits on "either a URL or an error",
+so a paused query is a dead click that never resolves and never explains itself.
+Letting the request fail fast gives them the error path they already handle.
+
+### 15.5 Clipboard
+
+`copyTextToClipboard` ([clipboard.ts](src/lib/clipboard.ts)) is used wherever a
+copy happens *after* a network round-trip. `navigator.clipboard.writeText` is
+gated on a **recent** user gesture in Safari and Firefox, so waiting on
+get-or-create first can get the write rejected even though the user did click;
+the hidden-textarea + `execCommand` fallback has no such window.
+
+### 15.6 Key files
+
+| File | Role |
+|---|---|
+| [short-link.ts](src/services/short-link.ts) | `getOrCreateShortLink` + the `SHORT_LINK_SOURCE` values |
+| [use-audience-short-links-enabled.ts](src/hooks/use-audience-short-links-enabled.ts) | The institute switch, shared on the settings page's own query key |
+| [AudienceFormSettings.tsx](src/routes/settings/-components/AudienceFormSettings.tsx) | The **Short Links** card in Settings |
+| [use-short-link.ts](src/hooks/use-short-link.ts) | Lazy, cached, non-throwing hook around it |
+| [clipboard.ts](src/lib/clipboard.ts) | Copy helper with the Safari/Firefox fallback |
+| [CampaignLink.tsx](src/routes/audience-manager/list/-components/create-campaign-dialog/CampaignLink.tsx) | Card link row + Short/Full toggle |
+| [audience-campaign-card-menu-options.tsx](src/routes/audience-manager/list/-components/audience-invite/audience-campaign-card-menu-options.tsx) | **Copy Short Link** menu item |
+| [audience-short-link.test.tsx](src/routes/audience-manager/list/-components/audience-short-link.test.tsx) | Lazy fetch, swap, copy target, both failure paths, retry, the QR toggle and the institute switch |
+| [copy-short-link-menu.test.tsx](src/routes/audience-manager/list/-components/copy-short-link-menu.test.tsx) | The ⋮ path, whose dropdown unmounts on select so a toast is the only feedback there is. Two mocking traps live here: the import graph calls `axios.create()` at module scope (a `post`-only axios mock kills the file at import), and Radix opens on **pointerdown**, not click |
+| [share-qr-encoding.test.tsx](src/routes/audience-manager/list/-components/share-qr-encoding.test.tsx) | Renders the **real** `QRCodeSVG` and asserts the serialised symbol actually changes (and drops a QR version) when the toggle flips — the stubbed suite above can only prove the right URL was handed to the component |

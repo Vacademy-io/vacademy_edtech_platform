@@ -1,0 +1,35 @@
+{
+    "meta": {
+        "meetingType": "نوع الاجتماع",
+        "lastEntry": "آخر دخول",
+        "date": "التاريخ",
+        "time": "وقت البدء",
+        "teacherUnassigned": "غير معيَّن",
+        "teacherUnknown": "مدرّس غير معروف"
+    },
+    "batches": {
+        "more": "+{{count}} أخرى",
+        "less": "عرض أقل"
+    },
+    "actions": {
+        "openSession": "فتح الجلسة",
+        "copyJoinLink": "نسخ رابط الانضمام",
+        "generateQrCode": "إنشاء رمز QR",
+        "downloadQrCode": "تنزيل رمز QR",
+        "viewParticipants": "عرض تفاصيل المشاركين",
+        "viewDetails": "عرض التفاصيل",
+        "editSession": "تعديل {{term}}",
+        "deleteSession": "حذف {{term}}",
+        "startAsHost": "ابدأ كمضيف",
+        "openClassLink": "فتح رابط الحصة"
+    },
+    "qrHeading": "رمز QR للانضمام",
+    "earlyStart": {
+        "title": "هل تريد بدء هذه الحصة مبكرًا؟",
+        "bodyWithTime": "تبدأ هذه الحصة خلال {{time}}. البدء الآن ينشئ غرفة الاجتماع — وقد ينضم المتعلمون الذين لديهم الرابط قبل أن تكون جاهزًا.",
+        "body": "لم تبدأ هذه الحصة بعد. البدء الآن ينشئ غرفة الاجتماع.",
+        "cancel": "إلغاء",
+        "confirm": "ابدأ على أي حال"
+    },
+    "privateLinkWarning": "يعمل هذا الرابط فقط للمتعلمين المسجَّلين بالفعل في هذه الدفعة. لمشاركته على نطاق أوسع، عدِّل الجلسة واضبط وصولها على Public."
+}

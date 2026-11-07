@@ -1,0 +1,7 @@
+{
+    "generatingPdf": "Génération du PDF",
+    "mayTakeAMoment": "Cela peut prendre un moment...",
+    "donePages": "Terminé ({{current}} sur {{total}})",
+    "savingFile": "Enregistrement du fichier, cela peut prendre un moment",
+    "percentComplete": "{{percent}} % terminé"
+}

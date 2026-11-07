@@ -1,0 +1,57 @@
+{
+    "thisMonth": "ce mois-ci",
+    "notYet": "Pas encore",
+    "keepTheRun": "Conserver le cycle",
+    "adminOnlyNotice": "Le traitement, l'approbation et le paiement d'un cycle sont réservés aux administrateurs RH. Vous pouvez consulter chaque montant ici.",
+    "buttons": {
+        "processRun": "Traiter le cycle",
+        "approveRun": "Approuver le cycle",
+        "markAsPaid": "Marquer comme payé",
+        "rejectAndRecalculate": "Rejeter et recalculer",
+        "cancelRun": "Annuler le cycle"
+    },
+    "process": {
+        "heading": "Traiter la paie de {{period}}",
+        "processing": "Traitement…",
+        "body1": "Ceci calcule un bulletin de paie pour chaque employé couvert par ce cycle — revenus, retenues légales, échéances de prêts et remboursements approuvés.",
+        "body2Prefix": "Cela",
+        "body2Bold": "verrouille aussi la présence et les congés de {{period}}",
+        "body2Suffix": ", donc toute correction après cette étape nécessite de rejeter le cycle d'abord.",
+        "body3": "Le traitement s'exécute de façon synchrone et prend plus de temps selon le nombre d'employés. Les employés qu'il ne peut pas calculer sont listés sous Erreurs plutôt que de faire échouer tout le cycle."
+    },
+    "approve": {
+        "heading": "Approuver la paie de {{period}}",
+        "keepReviewing": "Continuer la révision",
+        "approving": "Approbation…",
+        "body1Prefix": "L'approbation",
+        "body1Bold": "publie l'écriture comptable",
+        "body1Suffix": "pour ce cycle — charges salariales, dettes légales et net à payer sont tous inscrits dans les comptes.",
+        "body2": "Vérifiez d'abord les totaux et les employés en attente. L'approbation peut encore être annulée avec Rejeter, mais cela inverse aussi l'écriture."
+    },
+    "markPaid": {
+        "heading": "Marquer la paie de {{period}} comme payée",
+        "marking": "Marquage en tant que payé…",
+        "body1": "Faites cela une fois que l'argent a réellement quitté la banque. Chaque entrée du cycle est marquée payée et le cycle se clôture.",
+        "body2": "Un cycle payé ne peut plus être rejeté ni annulé — c'est la dernière étape."
+    },
+    "reject": {
+        "title": "Rejeter la paie de {{period}} ?",
+        "intro": "Cela annule tout ce que le traitement a fait :",
+        "item1": "Les échéances de prêts déduites par ce cycle sont annulées",
+        "item2": "Les remboursements sont dissociés et redeviennent réclamables",
+        "item3": "Chaque entrée de bulletin calculée est supprimée",
+        "item4": "L'écriture comptable est inversée",
+        "returnsPrefix": "Le cycle revient au statut",
+        "draft": "Brouillon",
+        "returnsSuffix": "afin que vous puissiez corriger les données et le traiter à nouveau. Rien n'est perdu définitivement, mais les chiffres de cet écran le sont.",
+        "rejecting": "Rejet en cours…",
+        "confirm": "Rejeter et revenir au brouillon"
+    },
+    "cancel": {
+        "title": "Annuler la paie de {{period}} ?",
+        "body1": "Le cycle est clôturé comme annulé et sort du parcours normal. Toute échéance de prêt et tout remboursement qu'il avait réclamés sont restitués aux employés.",
+        "body2": "Un nouveau cycle peut alors être créé pour {{period}} — annuler sert à recommencer, pas à corriger.",
+        "cancelling": "Annulation…",
+        "confirm": "Annuler ce cycle"
+    }
+}

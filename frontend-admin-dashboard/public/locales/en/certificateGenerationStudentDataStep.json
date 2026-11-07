@@ -1,0 +1,14 @@
+{
+    "columns": {
+        "userId": "User ID",
+        "enrollmentId": "Enrollment ID",
+        "nameHeader": "{{term}} Name",
+        "email": "Email",
+        "institute": "Institute",
+        "phoneNumber": "Phone Number"
+    },
+    "downloadTemplate": "Download Template",
+    "headerSelected": "Selected {{term}} ({{count}})",
+    "reviewSubtitle": "Review {{term}} data and upload dynamic information via CSV",
+    "nextPdfAnnotation": "Next: PDF Annotation"
+}

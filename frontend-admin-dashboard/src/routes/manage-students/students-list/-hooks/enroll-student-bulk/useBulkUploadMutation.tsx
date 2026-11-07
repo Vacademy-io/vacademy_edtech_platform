@@ -9,6 +9,7 @@ import { STUDENT_CSV_UPLOAD_URL } from '@/constants/urls';
 import axios from 'axios';
 import authenticatedAxiosInstance from '@/lib/auth/axiosInstance';
 import { getSelectedSubOrgId } from '@/lib/auth/facultyAccessUtils';
+import { useTranslation } from 'react-i18next';
 
 interface SubmitBulkUploadParams {
     data: SchemaFields[];
@@ -59,10 +60,12 @@ const submitBulkUploadData = async ({
 export const useBulkUploadMutation = (
     options?: Omit<UseMutationOptions<string, Error, SubmitBulkUploadParams, unknown>, 'mutationFn'>
 ) => {
+    const { t } = useTranslation('manageStudentsUseBulkUploadMutation');
+
     return useMutation<string, Error, SubmitBulkUploadParams, unknown>({
         mutationFn: submitBulkUploadData,
         onSuccess: (data, variables, context) => {
-            toast.success('CSV uploaded successfully');
+            toast.success(t('toast.uploadSuccess'));
             if (options?.onSuccess) {
                 options.onSuccess(data, variables, context);
             }
@@ -74,10 +77,10 @@ export const useBulkUploadMutation = (
                     status: error.response?.status,
                     headers: error.response?.headers,
                 });
-                toast.error(error.response?.data?.message || 'Failed to upload students');
+                toast.error(error.response?.data?.message || t('toast.uploadFailed'));
             } else {
                 console.error('Unexpected error:', error);
-                toast.error('An unexpected error occurred');
+                toast.error(t('toast.unexpectedError'));
             }
 
             if (options?.onError) {

@@ -1,0 +1,52 @@
+{
+    "status": {
+        "pending": "En attente",
+        "ongoing": "En cours",
+        "overdue": "En retard",
+        "completed": "Terminé"
+    },
+    "card": {
+        "closedReason": "Clôturé : {{reason}}",
+        "created": "Créé le {{date}}",
+        "edit": "Modifier le suivi"
+    },
+    "widget": {
+        "title": "Relances",
+        "openCount_one": "{{count}} ouverte",
+        "openCount_many": "{{count}} ouvertes",
+        "openCount_other": "{{count}} ouvertes"
+    },
+    "emptyState": {
+        "title": "Aucune relance ouverte",
+        "description": "Planifiez-en une ci-dessous via l'onglet Relance"
+    },
+    "history": {
+        "title": "Historique des suivis",
+        "created": "Créé le",
+        "nextFollowUp": "Prochain suivi",
+        "response": "Réponse",
+        "mode": "Mode",
+        "nextAction": "Action suivante",
+        "closingNote": "Note de clôture",
+        "noComment": "Aucun commentaire",
+        "showAll": "Tout afficher ({{count}})",
+        "showLess": "Afficher moins"
+    },
+    "edit": {
+        "title": "Modifier le suivi",
+        "description": "Corrigez le commentaire ou le niveau d’intérêt. Le texte précédent reste dans le journal d’activité.",
+        "interestLevel": "Niveau d’intérêt",
+        "interestPlaceholder": "Choisir le niveau d’intérêt",
+        "search": "Rechercher…",
+        "comment": "Commentaire",
+        "commentPlaceholder": "Ce qui s’est passé lors de ce suivi…",
+        "commentRequired": "Votre établissement exige une note pour chaque suivi.",
+        "closingNote": "Note de clôture",
+        "closingNoteRequired": "Un suivi terminé doit avoir une note de clôture.",
+        "cancel": "Annuler",
+        "save": "Enregistrer",
+        "saving": "Enregistrement…",
+        "saved": "Suivi mis à jour",
+        "failed": "Impossible de mettre à jour le suivi"
+    }
+}

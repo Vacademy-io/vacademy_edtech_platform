@@ -36,12 +36,11 @@ from __future__ import annotations
 
 import json
 import logging
-import os
 import re
 from dataclasses import dataclass, field
 from typing import Any, Optional, Sequence
 
-import httpx
+from .use_case_chat import chat_json, models_for
 
 from ..config import get_settings
 from .reels_engagement_service import (
@@ -57,9 +56,12 @@ logger = logging.getLogger(__name__)
 # ---------------------------------------------------------------------------
 
 _LLM_TIMEOUT_S = 30.0
+# The model comes from the 'reels_preview' use case (ai_model_defaults, set in
+# the super-admin portal; GLM by default) and the call walks its fallback chain
+# through llm_router.chat_with_chain. REELS_PREVIEW_LLM_MODEL, when set, is
+# tried first (emergency override).
+_USE_CASE = "reels_preview"
 _LLM_MODEL_ENV = "REELS_PREVIEW_LLM_MODEL"
-# Haiku-class default — cheap + fast. Override per institute via env if needed.
-_LLM_DEFAULT_MODEL = "anthropic/claude-3-5-haiku"
 
 # Cut planner constraints.
 MIN_CUT_SPAN_S = 0.080         # below this = sub-syllable, audible artifact risk
@@ -203,6 +205,13 @@ class EnrichedPayload:
 # Service
 # ---------------------------------------------------------------------------
 
+def preview_models() -> list[str]:
+    """The model chain for /preview enrichment: $REELS_PREVIEW_LLM_MODEL (if
+    set), then the 'reels_preview' use case chain. `[0]` is also the model the
+    /preview credit estimate is priced at."""
+    return models_for(_USE_CASE, env=_LLM_MODEL_ENV)
+
+
 class ReelsPreviewService:
     """Single-candidate enrichment. Stateless — instantiate per /preview call."""
 
@@ -210,7 +219,8 @@ class ReelsPreviewService:
         self._settings = get_settings()
         self._api_key = self._settings.openrouter_api_key
         self._llm_url = self._settings.llm_base_url
-        self._model = os.getenv(_LLM_MODEL_ENV, "").strip() or _LLM_DEFAULT_MODEL
+        self._models = preview_models()
+        self._model = self._models[0]
 
     @property
     def has_llm(self) -> bool:
@@ -360,7 +370,6 @@ class ReelsPreviewService:
             duration_tolerance_sec=duration_tolerance_sec,
         )
         payload = {
-            "model": self._model,
             "messages": [
                 {"role": "system", "content": system},
                 {"role": "user", "content": user},
@@ -371,66 +380,19 @@ class ReelsPreviewService:
             "temperature": 0.7,
             "max_tokens": 1500,
         }
-        headers = {
-            "Authorization": f"Bearer {self._api_key}",
-            "Content-Type": "application/json",
-        }
 
-        raw: Optional[str] = None
-        try:
-            async with httpx.AsyncClient(timeout=_LLM_TIMEOUT_S) as client:
-                # Multi-attempt strategy:
-                #  1. response_format=json_object (best quality)
-                #  2. plain payload (fallback if provider rejects response_format)
-                #  3. plain payload, second try (retry on transient 5xx/timeout
-                #     from attempt 2 — providers sometimes hiccup briefly)
-                attempts: list[dict] = [
-                    {**payload, "response_format": {"type": "json_object"}},
-                    payload,
-                    payload,
-                ]
-                last_error_summary: Optional[str] = None
-                for i, attempt in enumerate(attempts):
-                    try:
-                        resp = await client.post(self._llm_url, headers=headers, json=attempt)
-                    except httpx.TimeoutException as e:
-                        last_error_summary = f"timeout: {e}"
-                        # Retry on next attempt — transient.
-                        continue
-                    except httpx.HTTPError as e:
-                        # Connection-level error: try once more (next attempt).
-                        last_error_summary = f"transport: {e}"
-                        continue
-                    if resp.status_code == 200:
-                        try:
-                            data = resp.json()
-                            raw = data["choices"][0]["message"]["content"]
-                            break
-                        except Exception as e:
-                            logger.warning(
-                                f"[ReelsPreview] LLM unwrap failed: {e}; body={resp.text[:300]!r}"
-                            )
-                            return None
-                    elif resp.status_code == 400 and "response_format" in resp.text:
-                        # Provider rejects response_format — fall through to plain.
-                        continue
-                    elif 500 <= resp.status_code < 600 or resp.status_code in (408, 429):
-                        # 5xx / request timeout / rate limit → retry next attempt.
-                        last_error_summary = f"{resp.status_code}: {resp.text[:200]!r}"
-                        continue
-                    else:
-                        # 4xx other than 400/408/429 — caller error; don't retry.
-                        logger.warning(
-                            f"[ReelsPreview] LLM {resp.status_code}: {resp.text[:300]!r}"
-                        )
-                        return None
-                if raw is None and last_error_summary:
-                    logger.warning(
-                        f"[ReelsPreview] LLM gave up after {len(attempts)} attempts: {last_error_summary}"
-                    )
-        except Exception as e:
-            logger.warning(f"[ReelsPreview] LLM unexpected error: {e}")
-            return None
+        # Through the model chain: response_format=json_object first, then the
+        # chain again without it if a model rejected the parameter (400).
+        # Transport errors / 5xx / empty replies move to the next model.
+        result = await chat_json(
+            payload,
+            use_case=_USE_CASE,
+            models=self._models,
+            api_key=self._api_key,
+            timeout=_LLM_TIMEOUT_S,
+            label="ReelsPreview",
+        )
+        raw: Optional[str] = result.content if result is not None else None
 
         if not raw:
             return None

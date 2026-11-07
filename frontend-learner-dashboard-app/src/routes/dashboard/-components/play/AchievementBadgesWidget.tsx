@@ -8,6 +8,7 @@ import iconBadges from "@/assets/cleaner-play/icon-badges.webp";
 import { getTerminology } from "@/components/common/layout-container/sidebar/utils";
 import { ContentTerms, SystemTerms } from "@/types/naming-settings";
 import { BadgeVisual } from "../badge-icons";
+import { isManualTrigger } from "@/services/badge-config";
 
 const BadgeItem: React.FC<{ badge: PlayBadge }> = ({ badge }) => {
   const { t } = useTranslation("dashboard");
@@ -20,7 +21,9 @@ const BadgeItem: React.FC<{ badge: PlayBadge }> = ({ badge }) => {
           reason: badge.awardReason,
         })
       : t("badges.awardedTooltip", { name: badge.name })
-    : t("badges.tooltip", { name: badge.name, description: badge.description });
+    : !unlocked && isManualTrigger(badge.trigger)
+      ? t("badges.manualLockedTooltip", { name: badge.name })
+      : t("badges.tooltip", { name: badge.name, description: badge.description });
   return (
     <div className="flex w-16 flex-col items-center gap-1" title={tooltip}>
       <div
@@ -83,7 +86,7 @@ export const AchievementBadgesWidget: React.FC = () => {
   }
 
   return (
-    <div className="flex h-full flex-col gap-3 rounded-play-card-sm border border-border bg-play-accent-soft p-4 shadow-play-soft-card">
+    <div className="flex h-full flex-col gap-stack rounded-play-card-sm border border-border bg-play-accent-soft p-4 shadow-play-soft-card">
       <div className="flex items-center gap-3">
         <img src={iconBadges} alt="" aria-hidden="true" className="h-11 w-11 shrink-0 object-contain" />
         <div>

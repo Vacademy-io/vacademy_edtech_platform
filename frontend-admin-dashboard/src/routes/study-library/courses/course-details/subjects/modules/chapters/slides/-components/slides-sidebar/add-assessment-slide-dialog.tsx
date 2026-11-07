@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useRouter } from '@tanstack/react-router';
 import { toast } from 'sonner';
+import { useTranslation } from 'react-i18next';
 import { MagnifyingGlass } from '@phosphor-icons/react';
 
 import { MyButton } from '@/components/design-system/button';
@@ -56,6 +57,7 @@ const AssessmentSlideRow = ({
     onSelect: () => void;
     fallbackName: string;
 }) => {
+    const { t } = useTranslation('studyLibraryAddAssessmentSlideDialog');
     const isDraft = row.status === 'DRAFT';
     const displayName = row.name?.trim() || fallbackName;
     return (
@@ -86,7 +88,7 @@ const AssessmentSlideRow = ({
                         }`}
                         title={
                             isDraft
-                                ? 'Draft assessments cannot be taken until published'
+                                ? t('tooltips.draftAssessmentTooltip')
                                 : undefined
                         }
                     >
@@ -96,12 +98,12 @@ const AssessmentSlideRow = ({
             </div>
             <div className="flex flex-wrap gap-x-3 text-xs text-neutral-500">
                 {typeof row.duration === 'number' && row.duration > 0 ? (
-                    <span>{row.duration} min</span>
+                    <span>{t('labels.durationMinutes', { count: row.duration })}</span>
                 ) : null}
                 {row.evaluation_type ? <span>{row.evaluation_type}</span> : null}
                 {row.bound_end_time && new Date(`${row.bound_end_time.replace(" ", "T")}Z`).getFullYear() !== 9999 ? (
                     <span>
-                        Ends {convertToLocalDateTime(row.bound_end_time)}
+                        {t('labels.ends', { date: convertToLocalDateTime(row.bound_end_time) })}
                     </span>
                 ) : null}
             </div>
@@ -114,6 +116,7 @@ export const AddAssessmentSlideDialog = ({
 }: {
     openState?: ((open: boolean) => void) | undefined;
 }) => {
+    const { t } = useTranslation('studyLibraryAddAssessmentSlideDialog');
     const router = useRouter();
     const { courseId, levelId, chapterId, moduleId, subjectId, sessionId } =
         router.state.location.search;
@@ -193,14 +196,14 @@ export const AddAssessmentSlideDialog = ({
     // Build a stable per-row fallback "Assessment N" label using the page-
     // global page offset so it doesn't reset on each re-render.
     const fallbackNameFor = (index: number) =>
-        `Assessment ${pageNo * PAGE_SIZE + index + 1}`;
+        t('fallbackAssessmentName', { number: pageNo * PAGE_SIZE + index + 1 });
 
     // Shared: create the ASSESSMENT slide for a given assessment, append it, and
     // activate it. Used by both "link existing" and "quick create".
     const linkAssessmentAsSlide = async (assessmentId: string, assessmentName: string) => {
         const slideId = crypto.randomUUID();
         const assessmentSlideId = crypto.randomUUID();
-        const title = `Assessment: ${assessmentName}`;
+        const title = t('assessmentSlideTitle', { name: assessmentName });
 
         const payload: AssessmentSlidePayload = {
             id: slideId,
@@ -222,7 +225,7 @@ export const AddAssessmentSlideDialog = ({
         };
 
         const response = await addUpdateAssessmentSlide(payload);
-        if (!response) throw new Error('Failed to link assessment');
+        if (!response) throw new Error(t('errors.linkFailed'));
 
         // Reorder so the new slide appears at the bottom
         const currentSlides = (items as Slide[]) || [];
@@ -270,16 +273,16 @@ export const AddAssessmentSlideDialog = ({
             const fallback =
                 selectedIndex >= 0
                     ? fallbackNameFor(selectedIndex)
-                    : generateUniqueSlideTitle((items as Slide[]) || [], 'Assessment');
+                    : generateUniqueSlideTitle((items as Slide[]) || [], t('assessmentFallbackBaseName'));
             const assessmentName = selectedRow.name?.trim() || fallback;
 
             await linkAssessmentAsSlide(selectedRow.assessment_id, assessmentName);
 
-            toast.success('Assessment linked as a slide');
+            toast.success(t('toasts.linkedAsSlide'));
             openState?.(false);
         } catch (err) {
             console.error('Failed to link assessment slide', err);
-            toast.error((err as Error)?.message || 'Failed to link assessment');
+            toast.error((err as Error)?.message || t('errors.linkFailed'));
         }
     };
 
@@ -291,7 +294,7 @@ export const AddAssessmentSlideDialog = ({
                     type="text"
                     value={searchInput}
                     onChange={(e) => setSearchInput(e.target.value)}
-                    placeholder="Search assessments by name..."
+                    placeholder={t('search.placeholder')}
                     className="w-full rounded-md border border-neutral-200 bg-white py-2 pl-9 pr-3 text-sm text-neutral-800 placeholder:text-neutral-400 focus:border-primary-400 focus:outline-none focus:ring-1 focus:ring-primary-400"
                     autoFocus
                 />
@@ -300,17 +303,17 @@ export const AddAssessmentSlideDialog = ({
             <div className="max-h-96 min-h-52 overflow-y-auto rounded-md border border-neutral-200 p-2">
                 {isLoading ? (
                     <div className="py-10 text-center text-sm text-neutral-500">
-                        Loading assessments...
+                        {t('states.loading')}
                     </div>
                 ) : isError ? (
                     <div className="py-10 text-center text-sm text-red-500">
-                        Failed to load assessments. Please retry.
+                        {t('states.loadFailed')}
                     </div>
                 ) : rows.length === 0 ? (
                     <div className="py-10 text-center text-sm text-neutral-500">
                         {debouncedSearch
-                            ? 'No assessments matched your search.'
-                            : 'No assessments available for this institute.'}
+                            ? t('states.noSearchMatches')
+                            : t('states.noAssessmentsAvailable')}
                     </div>
                 ) : (
                     <div className="flex flex-col gap-2">
@@ -330,7 +333,7 @@ export const AddAssessmentSlideDialog = ({
             {totalPages > 1 && (
                 <div className="flex items-center justify-between text-xs text-neutral-500">
                     <span>
-                        Page {pageNo + 1} of {totalPages}
+                        {t('pagination.pageOf', { page: pageNo + 1, totalPages })}
                     </span>
                     <div className="flex gap-2">
                         <button
@@ -339,7 +342,7 @@ export const AddAssessmentSlideDialog = ({
                             onClick={() => setPageNo((p) => Math.max(0, p - 1))}
                             className="rounded border border-neutral-200 px-2 py-1 disabled:opacity-40"
                         >
-                            Prev
+                            {t('pagination.prev')}
                         </button>
                         <button
                             type="button"
@@ -347,7 +350,7 @@ export const AddAssessmentSlideDialog = ({
                             onClick={() => setPageNo((p) => p + 1)}
                             className="rounded border border-neutral-200 px-2 py-1 disabled:opacity-40"
                         >
-                            Next
+                            {t('pagination.next')}
                         </button>
                     </div>
                 </div>
@@ -360,7 +363,7 @@ export const AddAssessmentSlideDialog = ({
                     onClick={() => openState?.(false)}
                     disable={isUpdating}
                 >
-                    Cancel
+                    {t('actions.cancel')}
                 </MyButton>
                 <MyButton
                     buttonType="primary"
@@ -368,7 +371,7 @@ export const AddAssessmentSlideDialog = ({
                     onClick={handleLink}
                     disable={!selectedRow || isUpdating}
                 >
-                    {isUpdating ? 'Linking...' : 'Link as slide'}
+                    {isUpdating ? t('actions.linking') : t('actions.linkAsSlide')}
                 </MyButton>
             </DialogFooter>
         </div>

@@ -11,6 +11,9 @@ import {
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { BookOpen, ClipboardText } from "@phosphor-icons/react";
+import { useTranslation } from "react-i18next";
+import { getTerminologyPlural } from "@/components/common/layout-container/sidebar/utils";
+import { RoleTerms, SystemTerms } from "@/types/naming-settings";
 
 export const Route = createFileRoute("/planning/")({
   component: PlanningPage,
@@ -19,20 +22,22 @@ export const Route = createFileRoute("/planning/")({
 function PlanningPage() {
   const navigate = useNavigate();
   const { setNavHeading } = useNavHeadingStore();
+  const { t } = useTranslation("planning");
+  const teachers = getTerminologyPlural(RoleTerms.Teacher, SystemTerms.Teacher);
 
   // Set navigation heading
   useEffect(() => {
-    setNavHeading("Planning & Activity");
-  }, [setNavHeading]);
+    setNavHeading(t("hub.heading"));
+  }, [setNavHeading, t]);
 
   return (
     <LayoutContainer>
       <div className="container mx-auto space-y-4 p-2">
         {/* Header */}
         <div>
-          <h2 className="text-2xl font-semibold">Planning & Activity</h2>
+          <h2 className="text-2xl font-semibold">{t("hub.heading")}</h2>
           <p className="mt-2 text-muted-foreground">
-            View plannings and activities shared by your teachers
+            {t("hub.subtitle", { teachers })}
           </p>
         </div>
 
@@ -48,16 +53,16 @@ function PlanningPage() {
                   <BookOpen className="size-6 text-primary" />
                 </div>
                 <div>
-                  <CardTitle>Plannings</CardTitle>
+                  <CardTitle>{t("hub.plannings.title")}</CardTitle>
                   <CardDescription>
-                    View plannings from your teachers
+                    {t("hub.plannings.description", { teachers })}
                   </CardDescription>
                 </div>
               </div>
             </CardHeader>
             <CardContent>
               <Button variant="outline" className="w-full">
-                View Plannings
+                {t("hub.plannings.cta")}
               </Button>
             </CardContent>
           </Card>
@@ -72,16 +77,16 @@ function PlanningPage() {
                   <ClipboardText className="size-6 text-secondary-foreground" />
                 </div>
                 <div>
-                  <CardTitle>Activities</CardTitle>
+                  <CardTitle>{t("hub.activities.title")}</CardTitle>
                   <CardDescription>
-                    View activities from your teachers
+                    {t("hub.activities.description", { teachers })}
                   </CardDescription>
                 </div>
               </div>
             </CardHeader>
             <CardContent>
               <Button variant="outline" className="w-full">
-                View activities
+                {t("hub.activities.cta")}
               </Button>
             </CardContent>
           </Card>

@@ -1,0 +1,9 @@
+{
+    "tabs": {
+        "selectBatch": "बैच चुनें",
+        "selectIndividually": "व्यक्तिगत रूप से चुनें"
+    },
+    "batchList": {
+        "selectSectionPlaceholder": "अनुभाग चुनें"
+    }
+}

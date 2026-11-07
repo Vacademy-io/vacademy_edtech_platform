@@ -1,0 +1,78 @@
+{
+    "heading": "Disponibilité",
+    "cancel": "Annuler",
+    "save": "Enregistrer",
+    "saving": "Enregistrement…",
+    "loading": "Chargement de votre disponibilité…",
+    "intro": "Définissez quand et comment les apprenants peuvent réserver des sessions 1:1 avec vous.",
+    "to": "à",
+    "unavailable": "Indisponible",
+    "savedToast": "Disponibilité enregistrée",
+    "saveFailed": "Échec de l'enregistrement de la disponibilité",
+    "timezoneNote": {
+        "prefix": "Les horaires ci-dessous sont en",
+        "suffix": "."
+    },
+    "days": {
+        "monday": "Lundi",
+        "tuesday": "Mardi",
+        "wednesday": "Mercredi",
+        "thursday": "Jeudi",
+        "friday": "Vendredi",
+        "saturday": "Samedi",
+        "sunday": "Dimanche"
+    },
+    "location": {
+        "heading": "Lieu de la réunion",
+        "description": "Où se déroule l'appel vidéo lorsqu'un apprenant réserve une session.",
+        "googleMeetOption": "Google Meet (généré automatiquement à chaque réservation)",
+        "customLinkOption": "Zoom / BigBlueButton / lien personnalisé",
+        "meetingLinkLabel": "Lien de la réunion",
+        "meetingLinkPlaceholder": "https://zoom.us/j/… ou l'URL de votre salle BigBlueButton"
+    },
+    "weeklyHours": {
+        "heading": "Horaires hebdomadaires",
+        "description": "Activez les jours où vous êtes disponible, et définissez les heures pendant lesquelles les apprenants peuvent réserver."
+    },
+    "overrides": {
+        "heading": "Congés et dates spécifiques",
+        "addDate": "Ajouter une date",
+        "addDateTitle": "Ajouter une date à bloquer ou avec des horaires personnalisés",
+        "description": "Bloquez une journée entière, ou attribuez des horaires différents à une date précise — cela remplace vos horaires hebdomadaires ci-dessus.",
+        "empty": "Aucune exception de date pour le moment.",
+        "unavailable": "Indisponible",
+        "customHours": "Horaires personnalisés",
+        "removeAriaLabel": "Supprimer cette exception de date",
+        "removeTitle": "Supprimer cette exception de date"
+    },
+    "sessionSettings": {
+        "heading": "Paramètres de session",
+        "description": "Durée de session par défaut et règles de planification associées — préavis, marges, et jusqu'à combien de temps à l'avance les apprenants peuvent réserver.",
+        "defaultDuration": "Durée par défaut",
+        "minimumNotice": "Préavis minimum (heures)",
+        "bufferBefore": "Marge avant (min)",
+        "bufferAfter": "Marge après (min)",
+        "bookingHorizon": "Horizon de réservation (jours)",
+        "minutesOption_one": "{{count}} minute",
+        "minutesOption_many": "{{count}} de minutes",
+        "minutesOption_other": "{{count}} minutes"
+    },
+    "sessionTypes": {
+        "heading": "Types de session",
+        "addType": "Ajouter un type",
+        "addTypeTitle": "Proposer une autre durée réservable",
+        "description": "Facultatif. Proposez plusieurs durées réservables (par ex. « Discussion rapide » 15 min, « Approfondissement » 60 min) — l'apprenant en choisit une lors de la réservation. Laissez vide pour utiliser la durée par défaut ci-dessus.",
+        "empty": "Aucun type de session pour le moment.",
+        "namePlaceholder": "Nom (par ex. Discussion carrière)",
+        "minutesShortOption_one": "{{count}} min",
+        "minutesShortOption_many": "{{count}} min",
+        "minutesShortOption_other": "{{count}} min",
+        "removeAriaLabel": "Supprimer ce type de session",
+        "removeTitle": "Supprimer ce type de session"
+    },
+    "validation": {
+        "endAfterStart": "{{day}} : l'heure de fin doit être après l'heure de début.",
+        "enableOneDay": "Activez au moins un jour pour que les apprenants puissent réserver.",
+        "addMeetingLink": "Ajoutez votre lien de réunion (Zoom, BigBlueButton, ou autre)."
+    }
+}

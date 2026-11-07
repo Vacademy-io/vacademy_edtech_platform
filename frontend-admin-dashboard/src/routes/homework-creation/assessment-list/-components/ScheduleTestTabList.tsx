@@ -1,6 +1,7 @@
 import { Badge } from '@/components/ui/badge';
 import { TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ScheduleTestTab } from '@/types/assessments/assessment-list';
+import { useTranslation } from 'react-i18next';
 
 const ScheduleTestTabList = ({
     selectedTab,
@@ -9,6 +10,7 @@ const ScheduleTestTabList = ({
     selectedTab: string;
     scheduleTestTabsData: ScheduleTestTab[];
 }) => {
+    const { t } = useTranslation('homeworkCreationScheduleTestTabList');
     return (
         <TabsList className="inline-flex h-auto justify-start gap-4 rounded-none border-b !bg-transparent p-0">
             <TabsTrigger
@@ -20,10 +22,10 @@ const ScheduleTestTabList = ({
                 }`}
             >
                 <span className={`${selectedTab === 'liveTests' ? 'text-primary-500' : ''}`}>
-                    Live
+                    {t('tabs.live')}
                 </span>
                 <Badge
-                    className="rounded-[10px] bg-primary-500 p-0 px-2 text-[9px] text-white"
+                    className="rounded-lg bg-primary-500 p-0 px-2 text-2xs text-white"
                     variant="outline"
                 >
                     {scheduleTestTabsData[0]?.data?.content &&
@@ -41,10 +43,10 @@ const ScheduleTestTabList = ({
                 }`}
             >
                 <span className={`${selectedTab === 'upcomingTests' ? 'text-primary-500' : ''}`}>
-                    Upcoming
+                    {t('tabs.upcoming')}
                 </span>
                 <Badge
-                    className="rounded-[10px] bg-primary-500 p-0 px-2 text-[9px] text-white"
+                    className="rounded-lg bg-primary-500 p-0 px-2 text-2xs text-white"
                     variant="outline"
                 >
                     {scheduleTestTabsData[1]?.data?.content?.length
@@ -61,10 +63,10 @@ const ScheduleTestTabList = ({
                 }`}
             >
                 <span className={`${selectedTab === 'previousTests' ? 'text-primary-500' : ''}`}>
-                    Previous
+                    {t('tabs.previous')}
                 </span>
                 <Badge
-                    className="rounded-[10px] bg-primary-500 p-0 px-2 text-[9px] text-white"
+                    className="rounded-lg bg-primary-500 p-0 px-2 text-2xs text-white"
                     variant="outline"
                 >
                     {scheduleTestTabsData[2]?.data?.content?.length
@@ -81,10 +83,10 @@ const ScheduleTestTabList = ({
                 }`}
             >
                 <span className={`${selectedTab === 'draftTests' ? 'text-primary-500' : ''}`}>
-                    Drafts
+                    {t('tabs.drafts')}
                 </span>
                 <Badge
-                    className="rounded-[10px] bg-primary-500 p-0 px-2 text-[9px] text-white"
+                    className="rounded-lg bg-primary-500 p-0 px-2 text-2xs text-white"
                     variant="outline"
                 >
                     {scheduleTestTabsData[3]?.data?.content?.length

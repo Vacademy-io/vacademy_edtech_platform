@@ -1,0 +1,14 @@
+{
+    "newUsers": "Nouveaux utilisateurs",
+    "retainers": "Fidélisés",
+    "totalUsers_one": "Total des utilisateurs",
+    "totalUsers_many": "Total des utilisateurs",
+    "totalUsers_other": "Total des utilisateurs",
+    "new": "Nouveau",
+    "retainer": "Fidélisé",
+    "last24Hours": "Dernières 24 heures",
+    "last7Days": "7 derniers jours",
+    "last30Days": "30 derniers jours",
+    "weeklyUserTrends": "Tendances hebdomadaires des utilisateurs",
+    "userRegistrationsLast7Days": "Inscriptions d'utilisateurs au cours des 7 derniers jours"
+}

@@ -1,0 +1,37 @@
+{
+    "menu": {
+        "openMenu": "मेन्यू खोलें",
+        "edit": "संपादित करें",
+        "addResponse": "प्रतिक्रिया जोड़ें",
+        "bulkImportCsv": "बल्क इम्पोर्ट सीएसवी",
+        "sendMessage": "संदेश भेजें",
+        "configureWorkflow": "वर्कफ़्लो कॉन्फ़िगर करें",
+        "viewLinkedWorkflows": "लिंक किए गए वर्कफ़्लो देखें",
+        "bookingSettings": "बुकिंग सेटिंग्स",
+        "shareQrCode": "QR कोड साझा करें",
+        "copyShortLink": "छोटा लिंक कॉपी करें",
+        "apiIntegration": "एपीआई एकीकरण",
+        "getEmbedCode": "एम्बेड कोड प्राप्त करें",
+        "delete": "हटाएं"
+    },
+    "deleteDialog": {
+        "title": "{{term}} हटाएं",
+        "description": "क्या आप वाकई अभियान \"{{campaignName}}\" को हटाना चाहते हैं? यह क्रिया पूर्ववत नहीं की जा सकती।",
+        "cancel": "रद्द करें",
+        "deleting": "हटाया जा रहा है...",
+        "confirm": "हटाएं"
+    },
+    "toast": {
+        "deleteSuccess": "अभियान सफलतापूर्वक हटाया गया",
+        "deleteError": "अभियान हटाने में विफल",
+        "editComingSoon": "अभियान संपादित करने की सुविधा जल्द आ रही है",
+        "campaignIdMissing": "अभियान आईडी गुम है",
+        "shortLinkCopied": "छोटा लिंक कॉपी हो गया",
+        "shortLinkCopyFailed": "छोटा लिंक बन गया, पर कॉपी नहीं हो सका",
+        "shortLinkFailed": "छोटा लिंक नहीं बन सका"
+    },
+    "defaults": {
+        "campaignName": "अभियान",
+        "thisCampaign": "यह अभियान"
+    }
+}

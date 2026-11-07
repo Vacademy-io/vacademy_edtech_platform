@@ -14,6 +14,8 @@ import {
     GET_EXPORT_PDF_URL_RANK_MARK,
     GET_EXPORT_PDF_URL_RESPONDENT_LIST,
     GET_EXPORT_PDF_URL_STUDENT_REPORT,
+    GET_EXPORT_PDF_URL_AI_STUDENT_REPORT,
+    GET_AI_STUDENT_REPORT_STATUS_URL,
     GET_EXPORT_PDF_URL_SUBMISSIONS_LIST,
     GET_INDIVIDUAL_STUDENT_DETAILS_URL,
     GET_LEADERBOARD_URL,
@@ -233,6 +235,65 @@ export const handleGetStudentReportExportPDF = async (
     return response?.data;
 };
 
+export type AiStudentReportStatus = 'AVAILABLE' | 'NOT_GENERATED' | 'UNSUPPORTED';
+
+export interface AiStudentReportStatusResponse {
+    status: AiStudentReportStatus;
+    available: boolean;
+    requires_generation: boolean;
+    message?: string;
+}
+
+/**
+ * Whether the AI diagnostic report for this attempt already exists. Free and
+ * read-only — asked before offering the download so the teacher is told
+ * up-front whether it will cost AI credits.
+ */
+export const getAiStudentReportStatus = async (
+    assessmentId: string,
+    instituteId: string | undefined,
+    attemptId: string
+): Promise<AiStudentReportStatusResponse> => {
+    const response = await authenticatedAxiosInstance({
+        method: 'GET',
+        url: GET_AI_STUDENT_REPORT_STATUS_URL,
+        params: {
+            assessmentId,
+            attemptId,
+            instituteId,
+        },
+    });
+    return response?.data;
+};
+
+/**
+ * The teacher's AI diagnostic PDF. Generates the analysis on the first download
+ * for an attempt, which is the call that spends AI credits; later downloads of
+ * the same attempt reuse the stored analysis and cost nothing.
+ */
+export const handleGetAiStudentReportExportPDF = async (
+    assessmentId: string,
+    instituteId: string | undefined,
+    attemptId: string,
+    generate = true
+) => {
+    const response = await authenticatedAxiosInstance({
+        method: 'GET',
+        responseType: 'blob',
+        headers: {
+            Accept: 'application/pdf',
+        },
+        url: GET_EXPORT_PDF_URL_AI_STUDENT_REPORT,
+        params: {
+            assessmentId,
+            attemptId,
+            instituteId,
+            generate,
+        },
+    });
+    return response?.data;
+};
+
 export const handleGetRespondentExportPDF = async (
     instituteId: string | undefined,
     sectionId: string,
@@ -328,7 +389,12 @@ export const handleExportResultCSV = async (
     instituteId: string | undefined,
     assessmentId: string,
     assessmentType: string,
-    customFieldIds?: string[]
+    customFieldIds?: string[],
+    // Present only for the not-attempted sheet, which is not a slice of the attempt
+    // tables at all and so needs the tab's own scope (batch source + PENDING, plus
+    // whatever batch chips and name search are on screen) rather than the
+    // all-sources result scope below.
+    notAttemptedScope?: { batches: string[]; name: string }
 ) => {
     const response = await authenticatedAxiosInstance({
         method: 'POST',
@@ -337,16 +403,27 @@ export const handleExportResultCSV = async (
             instituteId,
             assessmentId,
         },
-        data: {
-            name: '',
-            assessment_type: assessmentType,
-            attempt_type: ['ENDED'],
-            registration_source: '', // empty = all sources (batch + open)
-            batches: [],
-            status: ['ACTIVE'],
-            custom_field_ids: customFieldIds ?? null,
-            sort_columns: {},
-        },
+        data: notAttemptedScope
+            ? {
+                  name: notAttemptedScope.name,
+                  assessment_type: assessmentType,
+                  attempt_type: ['PENDING'],
+                  registration_source: 'BATCH_PREVIEW_REGISTRATION',
+                  batches: notAttemptedScope.batches,
+                  status: ['ACTIVE'],
+                  custom_field_ids: null,
+                  sort_columns: {},
+              }
+            : {
+                  name: '',
+                  assessment_type: assessmentType,
+                  attempt_type: ['ENDED'],
+                  registration_source: '', // empty = all sources (batch + open)
+                  batches: [],
+                  status: ['ACTIVE'],
+                  custom_field_ids: customFieldIds ?? null,
+                  sort_columns: {},
+              },
     });
     return response?.data;
 };
@@ -370,12 +447,15 @@ export interface ResultExportColumns {
 
 export const getResultExportColumns = async (
     instituteId: string | undefined,
-    assessmentId: string
+    assessmentId: string,
+    // Which sheet the dialog is about to export. The not-attempted sheet carries
+    // contact columns instead of marks, and no registration fields at all.
+    notAttempted = false
 ): Promise<ResultExportColumns> => {
     const response = await authenticatedAxiosInstance({
         method: 'GET',
         url: GET_EXPORT_CSV_COLUMNS_SUBMISSIONS_LIST,
-        params: { instituteId, assessmentId },
+        params: { instituteId, assessmentId, notAttempted },
     });
     return response?.data;
 };

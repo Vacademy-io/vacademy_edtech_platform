@@ -1,0 +1,15 @@
+{
+    "trigger": {
+        "viewList": "सूची देखें"
+    },
+    "dialog": {
+        "title": "प्रतिभागियों की सूची"
+    },
+    "filters": {
+        "genderLabel": "लिंग"
+    },
+    "filterButtons": {
+        "filter": "फ़िल्टर करें",
+        "reset": "रीसेट करें"
+    }
+}

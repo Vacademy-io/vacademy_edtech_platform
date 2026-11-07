@@ -1,0 +1,16 @@
+{
+    "form": {
+        "sessionNameLabel": "{{term}} का नाम",
+        "sessionNamePlaceholder": "उदा. 2024-2025",
+        "startDateLabel": "आरंभ तिथि",
+        "startDatePlaceholder": "YYYY-MM-DD",
+        "selectLevelsHeading": "कोर्स से स्तर चुनें"
+    },
+    "toast": {
+        "courseAddedSuccess": "{{term}} सफलतापूर्वक जोड़ा गया",
+        "courseAddFailed": "{{term}} जोड़ने में विफल"
+    },
+    "button": {
+        "addCourse": "{{term}} जोड़ें"
+    }
+}

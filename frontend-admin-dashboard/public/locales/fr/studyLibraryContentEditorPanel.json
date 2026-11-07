@@ -1,0 +1,42 @@
+{
+    "emptyState": {
+        "selectPage": "Sélectionnez une page pour afficher son contenu"
+    },
+    "status": {
+        "pending": "En attente",
+        "generating": "Génération en cours..."
+    },
+    "prompt": {
+        "heading": "Invite de génération IA",
+        "noPromptAvailable": "Aucune invite disponible pour cette diapositive.",
+        "contentWillGenerate": "Le contenu sera généré lorsque vous cliquerez sur \"Générer le contenu de la page\""
+    },
+    "generating": {
+        "heading": "Génération du contenu",
+        "subtext": "L'IA crée le contenu de cette page...",
+        "promptPreview": "Invite : {{prompt}}..."
+    },
+    "code": {
+        "defaultComment": "// Commencez à écrire votre code ici"
+    },
+    "video": {
+        "scriptLabel": "Script",
+        "descriptionLabel": "Description",
+        "generationStatusLabel": "Statut de génération de la vidéo :",
+        "scriptWillAppear": "Le script s'affichera une fois la génération terminée.",
+        "noContentAvailable": "Aucun contenu disponible"
+    },
+    "quiz": {
+        "questionOf": "Question {{current}} sur {{total}}",
+        "explanationLabel": "Explication :",
+        "defaultQuestion": "Quel est le concept principal abordé dans cette section ?",
+        "defaultOptionA": "Option A",
+        "defaultOptionB": "Option B",
+        "defaultOptionC": "Option C",
+        "defaultOptionD": "Option D",
+        "defaultExplanation": "Voici l'explication de la bonne réponse."
+    },
+    "assignment": {
+        "noContent": "Aucun contenu de devoir"
+    }
+}

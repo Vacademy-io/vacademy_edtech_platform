@@ -1,0 +1,270 @@
+{
+  "common": {
+    "error": "त्रुटि",
+    "unexpectedError": "एक अनपेक्षित त्रुटि हुई। कृपया पुनः प्रयास करें।",
+    "amountToPay": "भुगतान राशि:"
+  },
+  "inviteUnavailable": {
+    "notStarted": "इस {{course}} के लिए नामांकन अभी शुरू नहीं हुआ है। कृपया बाद में देखें।",
+    "closed": "इस {{course}} के लिए नामांकन फ़िलहाल बंद है।"
+  },
+  "applyReferral": {
+    "title": "रेफ़रल कोड",
+    "placeholder": "रेफ़रल कोड दर्ज करें",
+    "apply": "लागू करें",
+    "applying": "लागू किया जा रहा है...",
+    "applied": "लागू किया गया",
+    "errors": {
+      "empty": "कृपया एक रेफ़रल कोड दर्ज करें",
+      "invalid": "अमान्य रेफ़रल कोड",
+      "applyFailed": "रेफ़रल कोड लागू नहीं हो सका। कृपया पुनः प्रयास करें।"
+    }
+  },
+  "cashfreeCheckout": {
+    "title": "Cashfree भुगतान",
+    "description": "Cashfree के सुरक्षित भुगतान पृष्ठ को खोलने के लिए नीचे क्लिक करें। आप वहाँ अपने कार्ड की जानकारी दर्ज करेंगे।",
+    "notReady": "भुगतान अभी तैयार नहीं है। कृपया प्रतीक्षा करें।",
+    "gatewayUnavailable": "भुगतान गेटवे उपलब्ध नहीं है।",
+    "initFailed": "भुगतान आरंभ करने में विफलता।",
+    "processFailed": "भुगतान संसाधित नहीं किया जा सका।",
+    "redirecting": "रीडायरेक्ट किया जा रहा है...",
+    "proceed": "भुगतान के लिए आगे बढ़ें",
+    "preparing": "भुगतान तैयार किया जा रहा है...",
+    "loading": "भुगतान फ़ॉर्म लोड हो रहा है...",
+    "securedBy": "आपका भुगतान Cashfree द्वारा सुरक्षित है",
+    "methods": "कार्ड, UPI, नेट बैंकिंग, वॉलेट और अन्य"
+  },
+  "razorpayCheckout": {
+    "title": "Razorpay भुगतान",
+    "description": "भुगतान के लिए आगे बढ़ने हेतु \"नामांकन पूर्ण करें\" पर क्लिक करें",
+    "defaultCourseName": "{{course}} नामांकन",
+    "defaultCourseDescription": "{{course}} नामांकन हेतु भुगतान",
+    "scriptLoadFailed": "Razorpay भुगतान गेटवे लोड करने में विफल",
+    "gatewayLoadFailed": "भुगतान गेटवे लोड करने में विफल",
+    "gatewayNotReady": "भुगतान गेटवे तैयार नहीं है",
+    "gatewayNotInitialized": "भुगतान गेटवे आरंभ नहीं हुआ है",
+    "paymentCancelled": "भुगतान रद्द कर दिया गया। नामांकन बन चुका है परंतु भुगतान लंबित है।",
+    "gatewayOpenFailed": "भुगतान गेटवे खोलने में विफल",
+    "securedBy": "आपका भुगतान Razorpay द्वारा सुरक्षित है",
+    "methods": "Razorpay क्रेडिट/डेबिट कार्ड, नेट बैंकिंग, UPI और वॉलेट का समर्थन करता है"
+  },
+  "stripeCheckout": {
+    "title": "सुरक्षित भुगतान",
+    "description": "नीचे अपने कार्ड की जानकारी दर्ज करें।",
+    "notLoaded": "Stripe अभी लोड नहीं हुआ है। कृपया पुनः प्रयास करें।",
+    "cardElementNotFound": "कार्ड एलिमेंट नहीं मिला। कृपया पृष्ठ को रीफ़्रेश करें।",
+    "processingError": "भुगतान संसाधित करते समय एक त्रुटि हुई।",
+    "createMethodFailed": "भुगतान विधि बनाने में विफलता।"
+  },
+  "ewayCardForm": {
+    "cardNumber": "कार्ड नंबर",
+    "cardNumberPlaceholder": "1234 5678 9012 3456",
+    "cardholderName": "कार्डधारक का नाम",
+    "cardholderNamePlaceholder": "राहुल शर्मा",
+    "expiryDate": "समाप्ति तिथि",
+    "expiryPlaceholder": "MM/YY",
+    "cvv": "CVV",
+    "cvvPlaceholder": "123",
+    "cvvPlaceholderAmex": "1234",
+    "securityNotice": "भेजे जाने से पहले आपके कार्ड की जानकारी एन्क्रिप्ट की जाती है। हम आपकी कार्ड जानकारी कभी संग्रहीत नहीं करते।",
+    "browserUnsupported": "आपका ब्राउज़र सुरक्षित भुगतान एन्क्रिप्शन का समर्थन नहीं करता। कृपया Chrome, Firefox, Safari या Edge जैसे आधुनिक ब्राउज़र का उपयोग करें।",
+    "errors": {
+      "expiryRequired": "समाप्ति तिथि आवश्यक है",
+      "nameRequired": "नाम आवश्यक है"
+    }
+  },
+  "courseInfoCard": {
+    "learnersWillGain": "{{learners}} को क्या मिलेगा",
+    "aboutCourse": "{{course}} के बारे में"
+  },
+  "cpoInstallment": {
+    "title": "किश्तें चुनें",
+    "subtitle": "चुनें कि आप अभी कौन-सी किश्तें भरना चाहते हैं",
+    "selectAll": "सभी चुनें",
+    "selectOverdue": "बकाया चुनें ({{count}})",
+    "clear": "साफ़ करें",
+    "installmentFallback": "किश्त",
+    "paid": "भुगतान हो गया",
+    "due": "देय तिथि: {{date}}",
+    "daysOverdue": "{{days}} दिन बकाया",
+    "overdue": "बकाया",
+    "settled": "निपटाया गया",
+    "paidSoFar": "अब तक भुगतान: {{amount}}",
+    "customAmountLabel": "इसके बजाय एक कस्टम राशि दर्ज करें",
+    "amountPlaceholder": "0.00",
+    "allocationHint": "भुगतान देय तिथि के क्रम में चुनी गई किश्तों में बाँटा जाएगा।",
+    "customAmount": "कस्टम राशि",
+    "installmentsSelected_one": "{{count}} किश्त चुनी गई",
+    "installmentsSelected_other": "{{count}} किश्तें चुनी गईं",
+    "totalOutstanding": "कुल बकाया: {{amount}}",
+    "noDuesFound": "कोई बकाया नहीं मिला",
+    "allSettled": "सभी किश्तें निपटाई जा चुकी प्रतीत होती हैं।"
+  },
+  "enrollmentPolicy": {
+    "thisCourse": "इस {{course}}",
+    "successTitle": "नामांकन सफल",
+    "completeStepsPrefix": "इस तक अपनी पहुँच सक्रिय करने के लिए निम्नलिखित चरण पूरे करें:",
+    "whatsappVerification": "WhatsApp सत्यापन",
+    "alreadyEnrolledTitle": "पहले से नामांकित",
+    "alreadyEnrolledMessage": "आप पहले से ही इस {{course}} में नामांकित हैं। कृपया पहले अपना मौजूदा नामांकन पूरा करें।",
+    "wantToUpgrade": "अपग्रेड करना चाहते हैं?",
+    "upgradePremiumFallback": "प्रीमियम सुविधाओं तक पहुँच पाने के लिए अपग्रेड करें।",
+    "upgradeNow": "अभी अपग्रेड करें",
+    "close": "बंद करें",
+    "goToDashboard": "डैशबोर्ड पर जाएं",
+    "loginNow": "अभी लॉगिन करें",
+    "readyToContinue": "जारी रखने के लिए तैयार हैं?",
+    "reenrollmentBlockedFallback": "पुनः नामांकन अभी उपलब्ध नहीं है। कृपया बाद में पुनः प्रयास करें।",
+    "upgradeToContinueLearning": "सीखना जारी रखने के लिए अपग्रेड करें",
+    "clickBelowToJoin": "सदस्यता से जुड़ने के लिए नीचे क्लिक करें।",
+    "activeMembershipTitle": "आपकी एक सक्रिय सदस्यता है",
+    "activeMembershipMessage": "आप हमारी सक्रिय सदस्यता योजना में हैं। कृपया WhatsApp संदेश देखें और हर दिन {{session}} से जुड़ने के लिए टेक्स्ट या ईमेल से मिले लिंक का उपयोग करें। "
+  },
+  "navigationButtons": {
+    "previous": "पिछला",
+    "processing": "संसाधित किया जा रहा है...",
+    "completeEnrollment": "नामांकन पूर्ण करें",
+    "payNow": "अभी भुगतान करें",
+    "confirmAndPay": "पुष्टि करें और भुगतान करें",
+    "next": "अगला"
+  },
+  "onetimePlan": {
+    "percentOff": "{{amount}}% छूट",
+    "fixedOff": "{{currency}}{{amount}} छूट"
+  },
+  "paymentGatewayWrapper": {
+    "unsupportedTitle": "असमर्थित भुगतान गेटवे",
+    "unsupportedMessage": "भुगतान गेटवे \"{{vendor}}\" समर्थित नहीं है।"
+  },
+  "paymentInfoStep": {
+    "securePayment": "सुरक्षित भुगतान",
+    "enterCardDetails": "नीचे अपने कार्ड की जानकारी दर्ज करें।",
+    "loadingStripeConfig": "Stripe कॉन्फ़िगरेशन लोड हो रहा है...",
+    "stripeConfigErrorTitle": "Stripe कॉन्फ़िगरेशन त्रुटि",
+    "stripeLoadFailed": "Stripe कॉन्फ़िगरेशन लोड करने में विफलता। कृपया पुनः प्रयास करें।",
+    "stripeUnavailable": "Stripe भुगतान गेटवे लोड नहीं हो सका। कृपया सहायता से संपर्क करें।",
+    "instituteId": "संस्थान ID: {{instituteId}}",
+    "errorDetail": "त्रुटि: {{error}}",
+    "stripeKeyMissingTitle": "Stripe कुंजी गायब है",
+    "stripeKeyMissingMessage": "कॉन्फ़िगरेशन में Stripe पब्लिशेबल कुंजी नहीं मिली।",
+    "availableKeys": "उपलब्ध कुंजियाँ: {{keys}}",
+    "loadingPaymentForm": "भुगतान फ़ॉर्म लोड हो रहा है...",
+    "gatewayNotConfiguredTitle": "भुगतान गेटवे कॉन्फ़िगर नहीं किया गया",
+    "gatewayNotConfiguredMessage": "भुगतान गेटवे \"{{vendor}}\" अभी समर्थित नहीं है। कृपया सहायता से संपर्क करें।",
+    "phonepe": {
+      "title": "PhonePe से भुगतान करें",
+      "description": "आपको अपना भुगतान पूरा करने के लिए सुरक्षित रूप से PhonePe पर रीडायरेक्ट किया जाएगा। भुगतान के बाद, आप स्वतः यहाँ वापस आ जाएंगे।",
+      "descriptionWithAmount": "आपको {{currency}} {{amount}} का भुगतान पूरा करने के लिए सुरक्षित रूप से PhonePe पर रीडायरेक्ट किया जाएगा। भुगतान के बाद, आप स्वतः यहाँ वापस आ जाएंगे।",
+      "clickPrefix": "आगे बढ़ने के लिए नीचे",
+      "clickSuffix": "पर क्लिक करें।"
+    }
+  },
+  "paymentPending": {
+    "title": "भुगतान लंबित",
+    "subtitle": "आगे बढ़ने के लिए अपना भुगतान पूरा करें",
+    "amount": "राशि:",
+    "status": "स्थिति:",
+    "completePayment": "भुगतान पूर्ण करें",
+    "viewInvoice": "इनवॉइस देखें",
+    "redirectNotice": "आपको एक सुरक्षित भुगतान पृष्ठ पर रीडायरेक्ट किया जाएगा",
+    "securityNotice": "भुगतान सुरक्षित रूप से संसाधित किए जाते हैं"
+  },
+  "paymentSelection": {
+    "donation": {
+      "title": "दान करें",
+      "subtitle": "अपने उदार योगदान से हमारे उद्देश्य का समर्थन करें",
+      "suggestedAmounts": "सुझाई गई राशियाँ",
+      "customAmount": "कस्टम राशि",
+      "minimumPlaceholder": "न्यूनतम {{amount}}",
+      "minimumAmount": "न्यूनतम दान राशि: {{amount}}",
+      "yourDonation": "आपका दान:"
+    },
+    "regular": {
+      "title": "भुगतान योजना चुनें",
+      "subtitle": "वह भुगतान विकल्प चुनें जो आपके लिए सबसे उपयुक्त हो"
+    }
+  },
+  "registrationStep": {
+    "title": "पंजीकरण विवरण",
+    "subtitle": "{{course}} में नामांकन के लिए अपना विवरण भरें",
+    "phonePlaceholder": "123 456 7890",
+    "reset": "रीसेट करें",
+    "next": "अगला",
+    "sending": "भेजा जा रहा है...",
+    "billingContact": {
+      "fullNameLabel": "बिलिंग संपर्क का पूरा नाम",
+      "emailLabel": "बिलिंग संपर्क ईमेल",
+      "roleLabel": "भूमिका",
+      "addSeparate": "एक अलग बिलिंग संपर्क जोड़ें",
+      "addSeparateHint": "यदि इस नामांकन के लिए इनवॉइस और नवीनीकरण सूचनाएं प्राप्त करने वाला व्यक्ति आपसे अलग है (जैसे माता-पिता / अभिभावक, आपका नियोक्ता, या आपकी वित्त टीम), तो इसे चुनें।",
+      "namePlaceholder": "पहला नाम और अंतिम नाम",
+      "selectPlaceholder": "चुनें…"
+    },
+    "errors": {
+      "fillRequiredFields": "कृपया सभी आवश्यक फ़ील्ड भरें",
+      "enterEmail": "कृपया अपना ईमेल पता दर्ज करें",
+      "enterValidEmail": "कृपया एक मान्य ईमेल पता दर्ज करें",
+      "pleaseEnterField": "कृपया {{field}} दर्ज करें",
+      "pleaseEnterValidField": "कृपया मान्य {{field}} दर्ज करें"
+    },
+    "otp": {
+      "title": "अपना ईमेल सत्यापित करें",
+      "sentTo": "हमने एक सत्यापन कोड इस पते पर भेजा है",
+      "cantFindEmail": "ईमेल नहीं मिल रहा?",
+      "checkSpamPrefix": "अपना",
+      "spam": "स्पैम",
+      "orWord": "या",
+      "junk": "जंक",
+      "folderSuffix": "फ़ोल्डर जाँचें",
+      "checkEmailCorrect": "सुनिश्चित करें कि ईमेल पता सही है",
+      "waitAndRefresh": "कुछ सेकंड प्रतीक्षा करें और अपना इनबॉक्स रीफ़्रेश करें",
+      "enterCodeLabel": "सत्यापन कोड दर्ज करें",
+      "enterCodePlaceholder": "6-अंकों का कोड दर्ज करें",
+      "verifying": "सत्यापित किया जा रहा है...",
+      "verifiedProceeding": "सत्यापित! आगे बढ़ रहे हैं...",
+      "verifyAndContinue": "सत्यापित करें और जारी रखें",
+      "editDetails": "विवरण संपादित करें",
+      "resendCode": "कोड पुनः भेजें",
+      "codeSent": "सत्यापन कोड आपके ईमेल पर भेज दिया गया है",
+      "sendFailed": "सत्यापन कोड भेजने में विफलता। कृपया पुनः प्रयास करें",
+      "codeResent": "सत्यापन कोड पुनः भेज दिया गया",
+      "resendFailed": "पुनः भेजने में विफलता। कृपया पुनः प्रयास करें",
+      "enterValidCode": "कृपया एक मान्य सत्यापन कोड दर्ज करें",
+      "verifiedSuccess": "ईमेल सफलतापूर्वक सत्यापित हो गया!",
+      "invalidCode": "अमान्य कोड। कृपया जाँचें और पुनः प्रयास करें"
+    }
+  },
+  "reviewStep": {
+    "orderSummary": "ऑर्डर सारांश",
+    "reviewOrder": "भुगतान के लिए आगे बढ़ने से पहले अपने ऑर्डर की समीक्षा करें",
+    "courseBannerAlt": "{{course}} बैनर",
+    "planDetails": "योजना विवरण",
+    "plan": "योजना:",
+    "validity": "वैधता:",
+    "referralBenefits": "रेफ़रल लाभ",
+    "pricing": {
+      "title": "मूल्य निर्धारण",
+      "price": "मूल्य:",
+      "discount": "छूट:",
+      "referralDiscount": "रेफ़रल छूट:",
+      "percentageSuffix": " ({{percentage}}%)",
+      "couponLabel": "कूपन ({{code}}):",
+      "totalPrice": "कुल मूल्य:",
+      "allPricesIn": "सभी मूल्य {{currency}} में हैं",
+      "free": "मुफ़्त",
+      "months_one": "{{count}} महीना",
+      "months_other": "{{count}} महीने",
+      "days_one": "{{count}} दिन",
+      "days_other": "{{count}} दिन"
+    },
+    "benefits": {
+      "freeMembershipDays": "{{days}} मुफ़्त सदस्यता दिन 🎉",
+      "bonusContent": "{{course}} में नामांकन के बाद आपको बोनस सामग्री {{deliveryText}} मिलेगी। 🎉",
+      "rewardPoints": "{{course}} में नामांकन के बाद {{points}} रिवॉर्ड पॉइंट ⭐️ कमाएं। 🎉",
+      "mediumEmail": "ईमेल",
+      "mediumWhatsapp": "WhatsApp",
+      "onOneMedium": " {{medium}} पर",
+      "onTwoMediums": " {{medium1}} और {{medium2}} पर"
+    }
+  }
+}

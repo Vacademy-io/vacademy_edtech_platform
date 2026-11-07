@@ -1,0 +1,14 @@
+{
+    "jupyterNotebook": "Jupyter Notebook",
+    "jupyterDescription": "Carnets de codage interactifs avec vidéo",
+    "scratchProject": "Projet Scratch",
+    "scratchDescription": "Blocs de programmation visuelle avec vidéo",
+    "codeEditor": "Éditeur de code",
+    "codeDescription": "Environnement de code interactif avec vidéo",
+    "videoSlideNotFound": "Diapositive vidéo introuvable",
+    "convertSuccess": "Vidéo convertie en écran partagé {{type}} avec succès !",
+    "convertError": "Échec de la conversion en écran partagé {{type}}",
+    "convertToSplitScreen": "Convertir en écran partagé",
+    "dialogSubtitle": "Ajouter un environnement interactif avec vidéo",
+    "creatingSlide": "Création de la diapositive à écran partagé..."
+}

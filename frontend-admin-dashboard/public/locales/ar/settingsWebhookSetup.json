@@ -1,0 +1,66 @@
+{
+    "notReady": {
+        "title": "إعداد الويب هوك",
+        "description": "قم أولاً بتهيئة وتفعيل مزود واتساب أعلاه، ثم قم بإعداد الويب هوك هنا."
+    },
+    "header": {
+        "title": "إعداد الويب هوك — {{provider}}",
+        "subtitle": "قم بربط مزود واتساب الخاص بك لاستقبال الرسائل الواردة"
+    },
+    "status": {
+        "channelMapping": "تعيين القناة",
+        "channelMappingHint": "يوجّه الويب هوك الواردة إلى مؤسستك",
+        "connected": "متصل: {{channelId}}",
+        "notConnected": "غير متصل"
+    },
+    "setup": {
+        "oneClickTitle": "إعداد بنقرة واحدة",
+        "webhookUrlTitle": "رابط الويب هوك",
+        "autoDescription": "ينشئ تعيين القناة ويسجل الويب هوك تلقائيًا مع {{provider}}.",
+        "manualDescription": "ينشئ تعيين القناة. انسخ رابط الويب هوك والصقه في لوحة تحكم {{provider}}.",
+        "button": {
+            "settingUp": "جارٍ الإعداد...",
+            "reRegister": "إعادة تسجيل الويب هوك مع {{provider}}",
+            "setup": "إعداد الويب هوك مع {{provider}}",
+            "mappingAlreadyCreated": "تم إنشاء التعيين بالفعل",
+            "createMapping": "إنشاء تعيين القناة"
+        }
+    },
+    "webhookUrl": {
+        "title": "رابط الويب هوك",
+        "copyButtonTitle": "نسخ رابط الويب هوك"
+    },
+    "combot": {
+        "manualSetupTitle": "إعداد يدوي للويب هوك",
+        "instructions": "الصق الرابط أعلاه في لوحة تحكم Com.bot ← الإعدادات ← الويب هوك.",
+        "verifyTokenLabel": "رمز التحقق:"
+    },
+    "verify": {
+        "title": "الخطوة 3: التحقق من الاتصال",
+        "description": "تحقق من إمكانية الوصول إلى نقطة نهاية الويب هوك",
+        "verifying": "جارٍ التحقق...",
+        "verifyEndpoint": "التحقق من نقطة النهاية"
+    },
+    "instructions": {
+        "title": "كيف يعمل:",
+        "channelMapping": "<0>تعيين القناة</0> يربط رقم واتساب بزنس الخاص بك بهذه المؤسسة حتى يتم توجيه الويب هوك الواردة بشكل صحيح",
+        "webhookUrl": "<0>رابط الويب هوك</0> هو المكان الذي يرسل إليه مزودك الرسائل الواردة وتحديثات حالة التسليم",
+        "verify": "<0>التحقق</0> يتأكد من أن نقطة النهاية متاحة للعامة وتستجيب للتحدي بشكل صحيح"
+    },
+    "toasts": {
+        "copiedUrl": "تم نسخ رابط الويب هوك",
+        "configureCredentialsFirst": "قم بتهيئة بيانات اعتماد المزود أولاً (مطلوب معرف رقم الهاتف / رقم واتساب)",
+        "mappingCreatedWithRouting": "تم إنشاء تعيين القناة — سيتم الآن توجيه الويب هوك إلى مؤسستك",
+        "createMappingFailed": "فشل إنشاء التعيين",
+        "endpointReachable": "يمكن الوصول إلى نقطة نهاية الويب هوك",
+        "credentialsNotConfigured": "لم يتم تهيئة بيانات اعتماد المزود",
+        "phoneNumberIdNotFound": "لم يتم العثور على معرف رقم الهاتف / رقم واتساب في بيانات الاعتماد",
+        "mappingCreated": "تم إنشاء تعيين القناة",
+        "comBotMappingReady": "تعيين القناة جاهز. انسخ رابط الويب هوك وقم بتعيينه في لوحة تحكم COMBOT الخاصة بك.",
+        "webhookRegistered": "تم تسجيل الويب هوك مع {{provider}}",
+        "setupFailed": "فشل الإعداد"
+    },
+    "errors": {
+        "verificationRequestFailed": "فشل طلب التحقق"
+    }
+}

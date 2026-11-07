@@ -12,6 +12,7 @@ import { handleUpdateAttempt } from '@/routes/assessment/assessment-list/assessm
 import { getTokenDecodedData, getTokenFromCookie } from '@/lib/auth/sessionUtility';
 import { TokenKey } from '@/constants/auth/tokens';
 import { FileType } from '@/types/common/file-upload';
+import { useTranslation } from 'react-i18next';
 
 const ACCEPTED_FILE_TYPES: FileType[] = ['application/pdf'];
 
@@ -42,6 +43,7 @@ export const UploadAnswerSheetDialog = ({
     open: controlledOpen,
     onOpenChange,
 }: UploadAnswerSheetDialogProps) => {
+    const { t } = useTranslation('evaluationUploadAnswerSheetDialog');
     const [internalOpen, setInternalOpen] = useState(false);
     const isControlled = controlledOpen !== undefined;
     const open = isControlled ? controlledOpen : internalOpen;
@@ -82,10 +84,10 @@ export const UploadAnswerSheetDialog = ({
                 source: instituteId,
                 sourceId: 'ASSESSMENT_MANUAL_EVALUATION',
             });
-            if (!newFileId) throw new Error('File upload failed, please try again');
+            if (!newFileId) throw new Error(t('uploadFailedTryAgain'));
 
             await handleUpdateAttempt(attemptId, newFileId);
-            toast.success("Answer sheet uploaded for the student");
+            toast.success(t('answerSheetUploaded'));
             onUploaded(newFileId);
             setOpen(false);
             reset();
@@ -97,7 +99,7 @@ export const UploadAnswerSheetDialog = ({
                 ?.data?.ex;
             toast.error(
                 backendMessage ??
-                    (error instanceof Error ? error.message : 'Could not upload the answer sheet')
+                    (error instanceof Error ? error.message : t('couldNotUploadAnswerSheet'))
             );
         } finally {
             setIsProcessing(false);
@@ -108,7 +110,7 @@ export const UploadAnswerSheetDialog = ({
         <MyDialog
             open={open}
             onOpenChange={handleOpenChange}
-            heading="Upload Student's Answer Sheet"
+            heading={t('uploadStudentAnswerSheetHeading')}
             trigger={trigger}
             dialogWidth="max-w-md"
             footer={
@@ -120,7 +122,7 @@ export const UploadAnswerSheetDialog = ({
                         disable={isProcessing}
                         onClick={() => handleOpenChange(false)}
                     >
-                        Cancel
+                        {t('cancel')}
                     </MyButton>
                     <MyButton
                         buttonType="primary"
@@ -128,18 +130,15 @@ export const UploadAnswerSheetDialog = ({
                         type="button"
                         disable={!selectedFile}
                         onAsyncClick={handleSubmit}
-                        loadingText="Uploading..."
+                        loadingText={t('uploadingEllipsis')}
                     >
-                        Upload &amp; View
+                        {t('uploadAndView')}
                     </MyButton>
                 </>
             }
         >
             <div className="flex flex-col gap-4">
-                <p className="text-sm text-neutral-500">
-                    If the student couldn&apos;t upload their response, upload the answer sheet they
-                    shared with you (e.g. over email or WhatsApp) to evaluate it on their behalf.
-                </p>
+                <p className="text-sm text-neutral-500">{t('uploadOnBehalfHint')}</p>
 
                 <Form {...form}>
                     <FileUploadComponent
@@ -159,16 +158,16 @@ export const UploadAnswerSheetDialog = ({
                                     </span>
                                 </div>
                                 <span className="shrink-0 text-xs font-medium text-primary-500">
-                                    Change
+                                    {t('change')}
                                 </span>
                             </div>
                         ) : (
                             <div className="flex flex-col items-center justify-center gap-2 rounded-lg border border-dashed border-neutral-300 p-8 text-center hover:border-primary-300">
                                 <UploadSimple className="size-8 text-neutral-400" />
                                 <p className="text-sm font-medium text-neutral-700">
-                                    Click to upload or drag &amp; drop
+                                    {t('clickToUploadOrDrag')}
                                 </p>
-                                <p className="text-xs text-neutral-400">PDF only</p>
+                                <p className="text-xs text-neutral-400">{t('pdfOnly')}</p>
                             </div>
                         )}
                     </FileUploadComponent>

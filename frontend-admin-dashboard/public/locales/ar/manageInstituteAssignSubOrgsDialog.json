@@ -1,0 +1,43 @@
+{
+    "title": "{{subOrgPlural}} لـ {{name}}",
+    "defaultMemberLabel": "هذا العضو",
+    "defaultMemberName": "عضو",
+    "noneExist": "لا يوجد {{subOrgPlural}} في هذه المؤسسة بعد.",
+    "grantsAccessDescription": "يمنح الوصول إلى كل دورة تغطيها الدعوات النشطة لـ {{subOrg}}. هذا منفصل عما يمنحه دورهم بالفعل.",
+    "selectLabel": "اختر {{subOrgPlural}}",
+    "searchPlaceholder": "ابحث عن {{subOrgPlural}}…",
+    "noneSelected": "لم يتم تحديد أي شيء — لن يحتفظ هذا العضو بأي وصول فردي إلى {{subOrg}}.",
+    "adding_zero": "لا يُضاف شيء.",
+    "adding_one": "جارٍ إضافة واحد.",
+    "adding_two": "جارٍ إضافة اثنين.",
+    "adding_few": "جارٍ إضافة {{count}}.",
+    "adding_many": "جارٍ إضافة {{count}}.",
+    "adding_other": "جارٍ إضافة {{count}}.",
+    "removing_zero": "لا يُحذف شيء.",
+    "removing_one": "جارٍ حذف واحد.",
+    "removing_two": "جارٍ حذف اثنين.",
+    "removing_few": "جارٍ حذف {{count}}.",
+    "removing_many": "جارٍ حذف {{count}}.",
+    "removing_other": "جارٍ حذف {{count}}.",
+    "toast": {
+        "assigned_zero": "لم يُعيَّن شيء",
+        "assigned_one": "عُيِّن واحد",
+        "assigned_two": "عُيِّن اثنان",
+        "assigned_few": "عُيِّن {{count}}",
+        "assigned_many": "عُيِّن {{count}}",
+        "assigned_other": "عُيِّن {{count}}",
+        "removed_zero": "لم يُحذف شيء",
+        "removed_one": "حُذف واحد",
+        "removed_two": "حُذف اثنان",
+        "removed_few": "حُذف {{count}}",
+        "removed_many": "حُذف {{count}}",
+        "removed_other": "حُذف {{count}}",
+        "summary": "{{name}} — {{parts}} {{subOrgPlural}}",
+        "updateFailed": "تعذّر تحديث {{subOrgPlural}}"
+    },
+    "actions": {
+        "cancel": "إلغاء",
+        "save": "حفظ",
+        "saving": "جارٍ الحفظ…"
+    }
+}

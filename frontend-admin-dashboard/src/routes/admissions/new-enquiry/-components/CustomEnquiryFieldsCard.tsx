@@ -14,6 +14,7 @@ import {
     type FieldGroup,
 } from '@/services/custom-field-settings';
 import { useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 
 interface CustomEnquiryFieldsCardProps {
     customFieldValues: Record<string, string>;
@@ -39,6 +40,8 @@ const CustomEnquiryFieldsCard = ({
     customFieldValues,
     onFieldChange,
 }: CustomEnquiryFieldsCardProps) => {
+    const { t } = useTranslation('admissionsCustomEnquiryFieldsCard');
+
     // Get organized fields: groups and individual fields in correct order
     const organizedFields = useMemo(() => {
         const settings = getCustomFieldSettingsFromCache();
@@ -116,7 +119,11 @@ const CustomEnquiryFieldsCard = ({
                     required={field.required}
                 >
                     <SelectTrigger id={field.id}>
-                        <SelectValue placeholder={`Select ${field.name.toLowerCase()}`} />
+                        <SelectValue
+                            placeholder={t('placeholder.select', {
+                                fieldName: field.name.toLowerCase(),
+                            })}
+                        />
                     </SelectTrigger>
                     <SelectContent>
                         {field.options?.map((option, index) => (
@@ -132,7 +139,9 @@ const CustomEnquiryFieldsCard = ({
                     type={field.type === 'number' ? 'number' : 'text'}
                     value={customFieldValues[field.id] || ''}
                     onChange={(e) => onFieldChange(field.id, e.target.value)}
-                    placeholder={`Enter ${field.name.toLowerCase()}`}
+                    placeholder={t('placeholder.enter', {
+                        fieldName: field.name.toLowerCase(),
+                    })}
                     required={field.required}
                 />
             )}
@@ -142,8 +151,8 @@ const CustomEnquiryFieldsCard = ({
     return (
         <Card className="mb-4">
             <CardHeader>
-                <CardTitle>Additional Information</CardTitle>
-                <CardDescription>Required and optional details for this enquiry</CardDescription>
+                <CardTitle>{t('header.title')}</CardTitle>
+                <CardDescription>{t('header.description')}</CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
                 {organizedFields.map((item, index) => {

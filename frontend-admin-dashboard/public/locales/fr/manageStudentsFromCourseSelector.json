@@ -1,0 +1,31 @@
+{
+    "toasts": {
+        "selectLevelFirst": "Veuillez d'abord sélectionner un niveau de cours",
+        "loadFailed": "Échec du chargement des étudiants du cours",
+        "alreadyInList": "Tous les étudiants sélectionnés figurent déjà dans votre liste",
+        "added_one": "{{count}} étudiant ajouté",
+        "added_many": "{{count}} étudiants ajoutés",
+        "added_other": "{{count}} étudiants ajoutés"
+    },
+    "labels": {
+        "sourceCourse": "{{courseTerm}} source",
+        "statusFilter": "Filtre de statut"
+    },
+    "placeholders": {
+        "select": "Sélectionner {{term}}"
+    },
+    "status": {
+        "active": "Actif",
+        "inactive": "Inactif",
+        "invited": "Invité"
+    },
+    "actions": {
+        "loading": "Chargement…",
+        "load": "Charger {{learnersTerm}}",
+        "add": "Ajouter {{count}} {{term}}"
+    },
+    "list": {
+        "selectedCount": "{{checked}}/{{total}} sélectionné(s)",
+        "empty": "Aucun {{learnersTerm}} trouvé. Cliquez sur « {{loadLabel}} » pour rechercher."
+    }
+}

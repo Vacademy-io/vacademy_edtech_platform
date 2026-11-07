@@ -1,0 +1,17 @@
+{
+    "newUsers": "مستخدمون جدد",
+    "retainers": "المحتفظ بهم",
+    "totalUsers_zero": "لا يوجد مستخدمون",
+    "totalUsers_one": "إجمالي المستخدمين",
+    "totalUsers_two": "إجمالي المستخدمين",
+    "totalUsers_few": "إجمالي المستخدمين",
+    "totalUsers_many": "إجمالي المستخدمين",
+    "totalUsers_other": "إجمالي المستخدمين",
+    "new": "جديد",
+    "retainer": "محتفظ به",
+    "last24Hours": "آخر 24 ساعة",
+    "last7Days": "آخر 7 أيام",
+    "last30Days": "آخر 30 يومًا",
+    "weeklyUserTrends": "اتجاهات المستخدمين الأسبوعية",
+    "userRegistrationsLast7Days": "تسجيلات المستخدمين خلال آخر 7 أيام"
+}

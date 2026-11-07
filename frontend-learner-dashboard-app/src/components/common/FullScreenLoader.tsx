@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import { DashboardLoader } from "@/components/core/dashboard-loader";
 
 interface FullScreenLoaderProps {
@@ -13,12 +14,13 @@ interface FullScreenLoaderProps {
  * index.html boot splash so the transition reads as one continuous loader.
  */
 export function FullScreenLoader({ label }: FullScreenLoaderProps) {
+  const { t } = useTranslation("layoutCommonA");
   return (
     <div
       className="fixed inset-0 z-50 bg-background"
       role="status"
       aria-live="polite"
-      aria-label={label || "Loading"}
+      aria-label={label || t("fullScreenLoader.loadingFallback")}
     >
       <DashboardLoader fullscreen />
       {label ? (

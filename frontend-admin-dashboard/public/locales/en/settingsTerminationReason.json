@@ -1,0 +1,23 @@
+{
+    "loading": "Loading...",
+    "header": {
+        "title": "Termination Reason",
+        "description": "When an admin removes a learner from a course with Hard Terminate, ask why. The reason is saved in the admin activity log."
+    },
+    "enabled": {
+        "label": "Ask for a reason",
+        "description": "Show a reason box when Hard Terminate is selected."
+    },
+    "required": {
+        "label": "Make the reason mandatory",
+        "description": "The learner cannot be terminated until a reason is entered."
+    },
+    "saveButton": {
+        "saving": "Saving...",
+        "save": "Save Changes"
+    },
+    "toasts": {
+        "saveSuccess": "Termination reason setting saved",
+        "saveError": "Failed to save setting"
+    }
+}

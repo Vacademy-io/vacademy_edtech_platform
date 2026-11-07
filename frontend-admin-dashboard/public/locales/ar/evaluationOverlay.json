@@ -1,0 +1,7 @@
+{
+    "generatingPdf": "جارٍ إنشاء ملف PDF",
+    "mayTakeAMoment": "قد يستغرق هذا بعض الوقت...",
+    "donePages": "تم ({{current}} من {{total}})",
+    "savingFile": "جارٍ حفظ الملف، قد يستغرق هذا بعض الوقت",
+    "percentComplete": "{{percent}}% مكتمل"
+}

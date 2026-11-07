@@ -16,6 +16,7 @@ import {
   Globe,
 } from "@phosphor-icons/react";
 import { useRouter } from "@tanstack/react-router";
+import { calculateOverallCompletion } from "@/utils/study-library/overall-completion";
 import { Slide, useSlides } from "@/hooks/study-library/use-slides";
 import { DashboardLoader } from "@/components/core/dashboard-loader";
 import { DownloadNodeButton } from "@/components/common/offline/download-node-button";
@@ -56,20 +57,7 @@ import i18n from "@/i18n";
 //     return 20; // Fallback
 // };
 
-// Helper function to calculate overall completion percentage
-export const calculateOverallCompletion = (slides: Slide[]): number => {
-  if (!slides || slides.length === 0) return 0;
-
-  const totalSlides = slides.length;
-  const totalCompletion = slides.reduce((sum, slide) => {
-    // Treat null/undefined percentage_completed as 0, and cap each slide at 100%
-    const percentage = Math.min(slide.percentage_completed ?? 0, 100);
-    return sum + percentage;
-  }, 0);
-
-  // Cap the overall result at 100%
-  return Math.min(Math.round(totalCompletion / totalSlides), 100);
-};
+export { calculateOverallCompletion };
 
 // Helper function to get slide status
 export const getSlideStatus = (percentage: number | null | undefined) => {
@@ -775,11 +763,15 @@ export const ChapterSidebarSlides = () => {
                 const sessionId =
                   currentSearch.sessionId || (await getPackageSessionId());
 
-                // ✅ Navigate with all required parameters
+                // ✅ Navigate with all required parameters. A citation's
+                // ?page / ?t belong to the slide it named, never to this one.
+                const nextSearch = { ...currentSearch };
+                delete nextSearch.page;
+                delete nextSearch.t;
                 router.navigate({
                   to: router.state.location.pathname,
                   search: {
-                    ...currentSearch,
+                    ...nextSearch,
                     slideId: slide.id,
                     sessionId: sessionId || "",
                   },

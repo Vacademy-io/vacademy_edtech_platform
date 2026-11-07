@@ -1,0 +1,46 @@
+{
+    "navHeading": "الأفراد",
+    "heading": "تغطية الموظفين",
+    "subheading": "كل من في فريقك، وما إذا كان لديه ملف موارد بشرية. إنشاء ملف هنا يعيد استخدام حسابه الحالي — لا مستخدم جديد ولا دعوة.",
+    "allEmployees": "جميع الموظفين",
+    "stats": {
+        "teamMembers": "أعضاء الفريق",
+        "withHrProfile": "لديهم ملف موارد بشرية",
+        "coveredPercent": "{{percent}}% مُغطّى",
+        "teachingNoProfile": "يُدرّسون بلا ملف",
+        "paidButInvisible": "هؤلاء يتقاضون رواتب لكنهم غير مرئيين في كشف الرواتب",
+        "everyTeacherCovered": "كل معلم لديه تغطية"
+    },
+    "searchPlaceholder": "ابحث بالاسم أو البريد الإلكتروني",
+    "clearFilters": "مسح الفلاتر",
+    "errors": {
+        "load": "تعذر تحميل تغطية الموظفين."
+    },
+    "empty": {
+        "noMatchTitle": "لا يوجد أحد يطابق هذا البحث",
+        "noneTitle": "لا يوجد أعضاء فريق",
+        "noMatchDescription": "جرّب اسمًا آخر، أو امسح فلتر الدور.",
+        "noneDescription": "ادعُ الأشخاص إلى معهدك من إدارة المعهد ← الفرق، ثم عد لمنحهم ملفات موارد بشرية."
+    },
+    "table": {
+        "name": "الاسم",
+        "email": "البريد الإلكتروني",
+        "roles": "الأدوار",
+        "teaches": "يُدرّس",
+        "hrProfile": "ملف الموارد البشرية",
+        "role": "الدور"
+    },
+    "teamMember": "عضو الفريق",
+    "yes": "نعم",
+    "no": "لا",
+    "viewProfile": "عرض الملف",
+    "noneYet": "لا يوجد بعد",
+    "createHrProfile": "إنشاء ملف موارد بشرية",
+    "roles": {
+        "admin": "مسؤول",
+        "teacher": "معلم",
+        "evaluator": "مُقيِّم",
+        "contentCreator": "منشئ محتوى",
+        "assessmentCreator": "منشئ تقييم"
+    }
+}

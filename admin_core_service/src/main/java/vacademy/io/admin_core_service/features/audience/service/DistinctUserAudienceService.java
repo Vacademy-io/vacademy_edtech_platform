@@ -36,6 +36,27 @@ import java.util.stream.Collectors;
 @Service
 public class DistinctUserAudienceService {
 
+    /**
+     * The search split into %token% patterns for LIKE ALL, pipe-separated.
+     *
+     * Names here are routinely stored jammed together ("DrBhagyshriRajput") while people
+     * type them spaced and in any order, and half a contact's identity can sit on the name
+     * and half on the email ("Dr Manish" / manishbachhav27.mb@...). A single substring match
+     * found neither. Requiring every token somewhere in the name+email text finds both.
+     *
+     * Pipe is the separator because STRING_TO_ARRAY needs one and a pipe in a typed name is
+     * far-fetched; any that appear are dropped rather than splitting the token.
+     */
+    private static String searchTokensCsv(String nameSearch) {
+        if (nameSearch == null || nameSearch.isBlank()) return null;
+        String[] parts = nameSearch.toLowerCase().replace('|', ' ').trim().split("\\s+");
+        List<String> tokens = new ArrayList<>();
+        for (String part : parts) {
+            if (!part.isBlank()) tokens.add("%" + part + "%");
+        }
+        return tokens.isEmpty() ? null : String.join("|", tokens);
+    }
+
     private static final Logger logger = LoggerFactory.getLogger(DistinctUserAudienceService.class);
 
     @Autowired
@@ -66,6 +87,9 @@ public class DistinctUserAudienceService {
     private vacademy.io.admin_core_service.features.common.service.CustomFieldListFilterResolver customFieldListFilterResolver;
 
     @Autowired
+    private vacademy.io.admin_core_service.features.utm_attribution.service.UtmListFilterResolver utmListFilterResolver;
+
+    @Autowired
     private ObjectMapper objectMapper;
 
     public CombinedUserAudienceResponseDTO getCombinedUsersWithCustomFields(CombinedUserAudienceRequestDTO request) {
@@ -94,6 +118,31 @@ public class DistinctUserAudienceService {
             return emptyResponse(request, audienceIds);
         }
 
+        // Lead/enquiry contacts are bare auth Users with no institute role and no
+        // student row, so a name that lives only on the auth User cannot be matched
+        // in SQL. Resolve it to user ids here and let the query match on them, the
+        // same way AudienceService.getLeads already does for the leads list.
+        //
+        // instituteId is deliberately NOT passed: searchUserIdsByQuery scopes to users
+        // holding a user_role for the institute, which no lead has. Broadening is safe
+        // because the ids are only ever intersected with ar.user_id, and that branch is
+        // already institute-scoped by its JOIN on audience.
+        //
+        // Placed AFTER the early return and gated on includeAudienceRespondents: the ids
+        // are read by the audience half of the UNION only, so a Students-only request or
+        // a request with both sources off must not pay for the round trip.
+        String searchUserIdsCsv = null;
+        if (nameSearch != null && includeAudienceRespondents) {
+            try {
+                List<String> ids = authService.searchUserIdsByQuery(nameSearch, null);
+                if (ids != null && !ids.isEmpty()) {
+                    searchUserIdsCsv = String.join(",", ids);
+                }
+            } catch (Exception e) {
+                logger.warn("auth-service user search failed for query='{}': {}", nameSearch, e.getMessage());
+            }
+        }
+
         // ── Step 1: Paginated user IDs from DB ────────────────────────────────
         // The UNION ALL query handles both institute users and audience respondents.
         // When a source is excluded, pass the __EXCLUDE__ sentinel so its part
@@ -115,6 +164,19 @@ public class DistinctUserAudienceService {
         if (cfResolution.shortCircuitsToEmpty()) {
             return emptyResponse(request, audienceIds);
         }
+        // Campaign (UTM) filter: resolve touches → user ids (either-match across
+        // the learner row and the person's leads) and AND with the custom-field
+        // set, so the paging query stays unchanged.
+        if (vacademy.io.admin_core_service.features.utm_attribution.service.UtmListFilterResolver
+                .hasFilter(request.getUtmFilters())) {
+            cfResolution = cfResolution.and(utmListFilterResolver.resolve(
+                    request.getUtmFilters(),
+                    vacademy.io.admin_core_service.features.common.service.CustomFieldListFilterResolver.Surface.CONTACT,
+                    request.getInstituteId()));
+            if (cfResolution.shortCircuitsToEmpty()) {
+                return emptyResponse(request, audienceIds);
+            }
+        }
 
         Page<String> userPage = instituteStudentRepository.findPagedCombinedUserIds(
                 request.getInstituteId(),
@@ -123,10 +185,12 @@ public class DistinctUserAudienceService {
                 includeInstituteUsers ? request.getPaymentStatuses() : null,
                 includeInstituteUsers ? request.getSubOrgUserTypes() : null,
                 nameSearch,
+                searchTokensCsv(nameSearch),
                 genders,
                 effectiveAudienceIds,
                 cfResolution.matchedIdsCsv(),
                 cfResolution.excludedIdsCsv(),
+                searchUserIdsCsv,
                 (request.getSortCustomFieldId() != null && !request.getSortCustomFieldId().isBlank())
                         ? request.getSortCustomFieldId() : null,
                 // SQL compares :cfSortDirection = 'ASC' literally — normalize

@@ -36,6 +36,9 @@ const ACCEPTED_IMAGE_TYPES = ['image/png', 'image/jpeg', 'image/webp'];
 const MAX_VIDEO_SIZE_BYTES = 500 * 1024 * 1024; // 500MB
 const MAX_IMAGE_SIZE_BYTES = 10 * 1024 * 1024; // 10MB
 
+/** Filename without its extension — the default asset name for a picked file. */
+const stripExt = (filename: string) => filename.replace(/\.[^.]+$/, '');
+
 export function AssetsTab() {
     const instituteId = getInstituteId();
     const apiKey = useVimotionApiKey(instituteId);
@@ -300,89 +303,164 @@ function UploadModal({ apiKey, onClose }: { apiKey: string; onClose: () => void 
     const queryClient = useQueryClient();
     const { uploadFile, getPublicUrl } = useFileUpload();
 
-    const [file, setFile] = useState<File | null>(null);
-    const [name, setName] = useState('');
-    const [kind, setKind] = useState<InputAssetKind>('video');
+    // One row per picked file. A batch uploads sequentially and each row carries
+    // its own outcome, so one rejected file does not discard the rest of a
+    // 16-screenshot selection the user just spent time assembling.
+    type Row = {
+        file: File;
+        name: string;
+        kind: InputAssetKind;
+        status: 'pending' | 'uploading' | 'done' | 'error';
+        error?: string;
+    };
+
+    const [rows, setRows] = useState<Row[]>([]);
     const [videoMode, setVideoMode] = useState<'demo' | 'podcast'>('demo');
     const [imageMode, setImageMode] = useState<InputAssetMode>('photo');
     const [busy, setBusy] = useState(false);
 
-    const handleFilePick = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const f = e.target.files?.[0];
-        e.target.value = '';
-        if (!f) return;
+    const hasVideo = rows.some((r) => r.kind === 'video');
+    const hasImage = rows.some((r) => r.kind === 'image');
+    const doneCount = rows.filter((r) => r.status === 'done').length;
+    const canUpload =
+        rows.length > 0 &&
+        rows.every((r) => r.name.trim()) &&
+        rows.some((r) => r.status !== 'done');
 
-        if (ACCEPTED_VIDEO_TYPES.includes(f.type)) {
-            if (f.size > MAX_VIDEO_SIZE_BYTES) {
-                toast.error('Video too large. Max 500MB.');
-                return;
+    const handleFilePick = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const picked = Array.from(e.target.files ?? []);
+        e.target.value = '';
+        if (!picked.length) return;
+
+        const accepted: Row[] = [];
+        const rejected: string[] = [];
+
+        for (const f of picked) {
+            if (ACCEPTED_VIDEO_TYPES.includes(f.type)) {
+                if (f.size > MAX_VIDEO_SIZE_BYTES) {
+                    rejected.push(`${f.name} — over 500MB`);
+                    continue;
+                }
+                accepted.push({
+                    file: f,
+                    name: stripExt(f.name),
+                    kind: 'video',
+                    status: 'pending',
+                });
+            } else if (ACCEPTED_IMAGE_TYPES.includes(f.type)) {
+                if (f.size > MAX_IMAGE_SIZE_BYTES) {
+                    rejected.push(`${f.name} — over 10MB`);
+                    continue;
+                }
+                accepted.push({
+                    file: f,
+                    name: stripExt(f.name),
+                    kind: 'image',
+                    status: 'pending',
+                });
+            } else {
+                rejected.push(`${f.name} — unsupported format`);
             }
-            setKind('video');
-        } else if (ACCEPTED_IMAGE_TYPES.includes(f.type)) {
-            if (f.size > MAX_IMAGE_SIZE_BYTES) {
-                toast.error('Image too large. Max 10MB.');
-                return;
-            }
-            setKind('image');
-        } else {
-            toast.error('Unsupported format. Use MP4/WebM/MOV or PNG/JPEG/WebP.');
-            return;
         }
 
-        setFile(f);
-        setName(f.name.replace(/\.[^.]+$/, ''));
+        // Append rather than replace, so a second pick adds to the batch.
+        // De-duplicated on name+size: re-picking the same folder is an easy way
+        // to end up indexing — and paying for — the same still twice.
+        if (accepted.length) {
+            setRows((prev) => {
+                const seen = new Set(prev.map((r) => `${r.file.name}:${r.file.size}`));
+                return [
+                    ...prev,
+                    ...accepted.filter((r) => !seen.has(`${r.file.name}:${r.file.size}`)),
+                ];
+            });
+        }
+        if (rejected.length) {
+            toast.error(
+                rejected.length === 1
+                    ? `Skipped ${rejected[0]}`
+                    : `Skipped ${rejected.length} files: ${rejected.slice(0, 3).join('; ')}`
+            );
+        }
     };
 
+    const setRow = (idx: number, patch: Partial<Row>) =>
+        setRows((prev) => prev.map((r, i) => (i === idx ? { ...r, ...patch } : r)));
+
     const handleUpload = async () => {
-        if (!file || !name.trim()) return;
-        const mode: InputAssetMode = kind === 'video' ? videoMode : (imageMode as InputAssetMode);
-
+        if (!canUpload) return;
         setBusy(true);
-        try {
-            const fileId = await uploadFile({
-                file,
-                setIsUploading: () => {},
-                userId: getUserId(),
-                source: kind === 'video' ? 'AI_INPUT_VIDEO' : 'AI_INPUT_IMAGE',
-                sourceId: 'ADMIN',
-                publicUrl: true,
-            });
-            if (!fileId) throw new Error('Upload failed');
-            const sourceUrl = await getPublicUrl(fileId);
-            if (!sourceUrl) throw new Error('Failed to get URL');
 
-            await createInputAsset(apiKey, {
-                name: name.trim(),
-                kind,
-                mode,
-                source_url: sourceUrl,
-            });
+        let ok = 0;
+        const failed: string[] = [];
 
-            toast.success(`"${name}" uploaded — indexing started`);
-            queryClient.invalidateQueries({ queryKey: ['input-assets'] });
+        for (let i = 0; i < rows.length; i++) {
+            const row = rows[i];
+            if (!row || row.status === 'done') continue;
+
+            const mode: InputAssetMode =
+                row.kind === 'video' ? videoMode : (imageMode as InputAssetMode);
+
+            setRow(i, { status: 'uploading', error: undefined });
+            try {
+                const fileId = await uploadFile({
+                    file: row.file,
+                    setIsUploading: () => {},
+                    userId: getUserId(),
+                    source: row.kind === 'video' ? 'AI_INPUT_VIDEO' : 'AI_INPUT_IMAGE',
+                    sourceId: 'ADMIN',
+                    publicUrl: true,
+                });
+                if (!fileId) throw new Error('Upload failed');
+                const sourceUrl = await getPublicUrl(fileId);
+                if (!sourceUrl) throw new Error('Failed to get URL');
+
+                await createInputAsset(apiKey, {
+                    name: row.name.trim(),
+                    kind: row.kind,
+                    mode,
+                    source_url: sourceUrl,
+                });
+                setRow(i, { status: 'done' });
+                ok++;
+            } catch (err) {
+                const message = err instanceof Error ? err.message : 'Upload failed';
+                setRow(i, { status: 'error', error: message });
+                failed.push(row.name);
+            }
+        }
+
+        queryClient.invalidateQueries({ queryKey: ['input-assets'] });
+        setBusy(false);
+
+        if (ok) toast.success(`${ok} asset${ok === 1 ? '' : 's'} uploaded — indexing started`);
+        if (failed.length) {
+            // Leave the modal open: failed rows keep their names and can be
+            // retried without re-picking the whole batch.
+            toast.error(`${failed.length} failed. Press Upload again to retry.`);
+        } else {
             onClose();
-        } catch (err) {
-            toast.error(err instanceof Error ? err.message : 'Upload failed');
-        } finally {
-            setBusy(false);
         }
     };
 
     return (
         <div
             className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
-            onClick={onClose}
+            onClick={busy ? undefined : onClose}
         >
             <div
                 onClick={(e) => e.stopPropagation()}
                 className="max-h-[90vh] w-full max-w-md overflow-y-auto rounded-2xl bg-white p-5 shadow-xl"
             >
                 <div className="flex items-center justify-between">
-                    <h2 className="text-base font-semibold text-neutral-900">Upload asset</h2>
+                    <h2 className="text-base font-semibold text-neutral-900">
+                        {rows.length > 1 ? `Upload ${rows.length} assets` : 'Upload asset'}
+                    </h2>
                     <button
                         type="button"
                         onClick={onClose}
-                        className="rounded-md p-1 text-neutral-500 hover:bg-neutral-100"
+                        disabled={busy}
+                        className="rounded-md p-1 text-neutral-500 hover:bg-neutral-100 disabled:opacity-50"
                     >
                         <X className="size-4" />
                     </button>
@@ -391,77 +469,91 @@ function UploadModal({ apiKey, onClose }: { apiKey: string; onClose: () => void 
                 <input
                     ref={fileInputRef}
                     type="file"
+                    multiple
                     accept="video/mp4,video/webm,video/quicktime,image/png,image/jpeg,image/webp"
                     className="hidden"
                     onChange={handleFilePick}
                 />
 
-                {!file ? (
+                {!rows.length ? (
                     <button
                         type="button"
                         onClick={() => fileInputRef.current?.click()}
                         className="mt-4 flex w-full flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-neutral-300 bg-neutral-50 p-10 text-sm text-neutral-600 transition-colors hover:border-neutral-400 hover:bg-neutral-100"
                     >
                         <Upload className="size-6 text-neutral-400" />
-                        <span className="font-medium">Choose a file</span>
+                        <span className="font-medium">Choose files</span>
                         <span className="text-xs text-neutral-500">
                             Video: MP4 / WebM / MOV · max 500MB
                         </span>
                         <span className="text-xs text-neutral-500">
                             Image: PNG / JPEG / WebP · max 10MB
                         </span>
+                        <span className="text-xs text-neutral-400">Select several at once</span>
                     </button>
                 ) : (
                     <div className="mt-4 space-y-4">
-                        <div className="flex items-center gap-2 rounded-md bg-neutral-50 px-3 py-2 text-sm">
-                            {kind === 'image' ? (
-                                <ImageIcon className="size-4 text-neutral-500" />
-                            ) : (
-                                <Clapperboard className="size-4 text-neutral-500" />
+                        <div className="space-y-1.5">
+                            {rows.map((row, i) => (
+                                <div
+                                    key={`${row.file.name}:${row.file.size}`}
+                                    className="flex items-center gap-2 rounded-md bg-neutral-50 px-2 py-1.5 text-sm"
+                                >
+                                    {row.status === 'done' ? (
+                                        <CheckCircle2 className="size-4 shrink-0 text-emerald-600" />
+                                    ) : row.status === 'error' ? (
+                                        <AlertCircle className="size-4 shrink-0 text-red-500" />
+                                    ) : row.status === 'uploading' ? (
+                                        <VimotionLoader size={16} label="Uploading" />
+                                    ) : row.kind === 'image' ? (
+                                        <ImageIcon className="size-4 shrink-0 text-neutral-500" />
+                                    ) : (
+                                        <Clapperboard className="size-4 shrink-0 text-neutral-500" />
+                                    )}
+                                    <input
+                                        type="text"
+                                        value={row.name}
+                                        onChange={(e) => setRow(i, { name: e.target.value })}
+                                        disabled={busy || row.status === 'done'}
+                                        title={row.error || row.file.name}
+                                        className={cn(
+                                            'w-full flex-1 rounded border border-transparent bg-transparent px-1 py-0.5 text-sm focus:border-neutral-300 focus:bg-white focus:outline-none disabled:text-neutral-500',
+                                            !row.name.trim() && 'border-red-300'
+                                        )}
+                                        placeholder="Asset name"
+                                    />
+                                    {!busy && row.status !== 'done' && (
+                                        <button
+                                            type="button"
+                                            onClick={() =>
+                                                setRows((prev) => prev.filter((_, j) => j !== i))
+                                            }
+                                            className="shrink-0 text-neutral-400 hover:text-neutral-900"
+                                            aria-label={`Remove ${row.name}`}
+                                        >
+                                            <X className="size-3.5" />
+                                        </button>
+                                    )}
+                                </div>
+                            ))}
+                            {!busy && (
+                                <button
+                                    type="button"
+                                    onClick={() => fileInputRef.current?.click()}
+                                    className="text-xs font-medium text-neutral-600 hover:text-neutral-900"
+                                >
+                                    + Add more
+                                </button>
                             )}
-                            <span className="flex-1 truncate">{file.name}</span>
-                            <button
-                                type="button"
-                                onClick={() => setFile(null)}
-                                className="text-xs text-neutral-500 hover:text-neutral-900"
-                            >
-                                Change
-                            </button>
                         </div>
 
-                        <div className="space-y-1.5">
-                            <label className="text-xs font-medium text-neutral-700">Name</label>
-                            <input
-                                type="text"
-                                value={name}
-                                onChange={(e) => setName(e.target.value)}
-                                className="w-full rounded-md border border-neutral-200 px-3 py-2 text-sm focus:border-neutral-400 focus:outline-none"
-                                placeholder="Asset name"
-                            />
-                        </div>
-
-                        <div className="space-y-1.5">
-                            <label className="text-xs font-medium text-neutral-700">Type</label>
-                            <div className="flex flex-wrap gap-1.5">
-                                {kind === 'video' ? (
-                                    <>
-                                        <ModeChip
-                                            active={videoMode === 'demo'}
-                                            onClick={() => setVideoMode('demo')}
-                                            Icon={Monitor}
-                                        >
-                                            Demo
-                                        </ModeChip>
-                                        <ModeChip
-                                            active={videoMode === 'podcast'}
-                                            onClick={() => setVideoMode('podcast')}
-                                            Icon={Mic}
-                                        >
-                                            Podcast
-                                        </ModeChip>
-                                    </>
-                                ) : (
-                                    (['photo', 'screenshot', 'diagram'] as const).map((m) => (
+                        {hasImage && (
+                            <div className="space-y-1.5">
+                                <label className="text-xs font-medium text-neutral-700">
+                                    Image type{hasVideo ? ' (applies to all images)' : ''}
+                                </label>
+                                <div className="flex flex-wrap gap-1.5">
+                                    {(['photo', 'screenshot', 'diagram'] as const).map((m) => (
                                         <ModeChip
                                             key={m}
                                             active={imageMode === m}
@@ -470,20 +562,56 @@ function UploadModal({ apiKey, onClose }: { apiKey: string; onClose: () => void 
                                         >
                                             {m.charAt(0).toUpperCase() + m.slice(1)}
                                         </ModeChip>
-                                    ))
-                                )}
+                                    ))}
+                                </div>
                             </div>
-                        </div>
+                        )}
+
+                        {hasVideo && (
+                            <div className="space-y-1.5">
+                                <label className="text-xs font-medium text-neutral-700">
+                                    Video type{hasImage ? ' (applies to all videos)' : ''}
+                                </label>
+                                <div className="flex flex-wrap gap-1.5">
+                                    <ModeChip
+                                        active={videoMode === 'demo'}
+                                        onClick={() => setVideoMode('demo')}
+                                        Icon={Monitor}
+                                    >
+                                        Demo
+                                    </ModeChip>
+                                    <ModeChip
+                                        active={videoMode === 'podcast'}
+                                        onClick={() => setVideoMode('podcast')}
+                                        Icon={Mic}
+                                    >
+                                        Podcast
+                                    </ModeChip>
+                                </div>
+                            </div>
+                        )}
 
                         <div className="flex gap-2 pt-2">
                             <button
                                 type="button"
                                 onClick={handleUpload}
-                                disabled={busy || !name.trim()}
+                                disabled={busy || !canUpload}
                                 className="inline-flex h-10 flex-1 items-center justify-center gap-2 rounded-md bg-neutral-900 text-sm font-medium text-white transition-colors hover:bg-neutral-800 disabled:cursor-not-allowed disabled:opacity-50"
                             >
-                                {busy ? <VimotionLoader size={16} className="text-white" label="Uploading" /> : <Upload className="size-4" />}
-                                {busy ? 'Uploading…' : 'Upload & Index'}
+                                {busy ? (
+                                    <VimotionLoader
+                                        size={16}
+                                        className="text-white"
+                                        label="Uploading"
+                                    />
+                                ) : (
+                                    <Upload className="size-4" />
+                                )}
+                                {busy
+                                    ? `Uploading ${Math.min(doneCount + 1, rows.length)} of ${rows.length}…`
+                                    : rows.length > 1
+                                      ? `Upload & Index ${rows.length}`
+                                      : 'Upload & Index'}
                             </button>
                             <button
                                 type="button"
@@ -612,4 +740,3 @@ function formatTimestamp(iso: string): string {
     if (diffDay < 7) return `${diffDay}d ago`;
     return date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
 }
-

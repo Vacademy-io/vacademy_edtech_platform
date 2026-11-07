@@ -1,0 +1,8 @@
+{
+    "tabs": {
+        "pending": "En attente",
+        "approved": "Approuvé",
+        "rejected": "Rejeté",
+        "allHistory": "Tout l'historique"
+    }
+}

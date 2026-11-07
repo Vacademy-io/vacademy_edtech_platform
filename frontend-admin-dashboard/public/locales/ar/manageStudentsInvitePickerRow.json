@@ -1,0 +1,66 @@
+{
+    "badge": {
+        "auto": "تلقائي (افتراضي)",
+        "selectedFallback": "دعوة محددة"
+    },
+    "actions": {
+        "change": "تغيير",
+        "close": "إغلاق"
+    },
+    "autoOption": {
+        "title": "تلقائي (افتراضي)",
+        "description": "سيستخدم الخادم الدعوة الافتراضية أو ينشئها تلقائيًا"
+    },
+    "divider": "أو اختر دعوة محددة",
+    "search": {
+        "placeholder": "البحث عن الدعوات..."
+    },
+    "codeLabel": "الرمز: {{code}}",
+    "list": {
+        "empty": "لم يتم العثور على دعوات لهذا الكورس",
+        "bundled_zero": "مجمّعة (بدون كورسات إضافية) ({{count}})",
+        "bundled_one": "مجمّعة (كورس واحد) ({{count}})",
+        "bundled_two": "مجمّعة (كورسان) ({{count}})",
+        "bundled_few": "مجمّعة ({{count}} كورسات)",
+        "bundled_many": "مجمّعة ({{count}} كورسًا)",
+        "bundled_other": "مجمّعة ({{count}} كورس)"
+    },
+    "errors": {
+        "loadInviteDetailsFailed": "فشل تحميل تفاصيل الدعوة. يرجى المحاولة مرة أخرى."
+    },
+    "summary": {
+        "invite": {
+            "label": "الدعوة",
+            "bundled": "دعوة مجمّعة (متعددة الكورسات)"
+        },
+        "paymentOption": {
+            "label": "خيار الدفع",
+            "approvalRequired": "يتطلب موافقة",
+            "none": "لم يتم تحديد خيار دفع"
+        },
+        "plan": {
+            "label": "الخطة",
+            "priceLabel": "السعر:",
+            "validity_zero": "بدون مدة صلاحية ({{count}})",
+            "validity_one": "صلاحية يوم واحد ({{count}})",
+            "validity_two": "صلاحية يومين ({{count}})",
+            "validity_few": "صلاحية {{count}} أيام",
+            "validity_many": "صلاحية {{count}} يومًا",
+            "validity_other": "صلاحية {{count}} يوم",
+            "none": "لا توجد خطة — لا يمكن لهذه الدعوة تسجيل أحد حتى يتم تحديد سعر"
+        },
+        "access": {
+            "label": "الوصول",
+            "days_zero": "بدون أيام ({{count}})",
+            "days_one": "يوم واحد ({{count}})",
+            "days_two": "يومان ({{count}})",
+            "days_few": "{{count}} أيام",
+            "days_many": "{{count}} يومًا",
+            "days_other": "{{count}} يوم",
+            "unlimited": "غير محدود",
+            "from": "من {{date}}",
+            "to": "إلى {{date}}",
+            "overrideLabel": "تجاوز أيام الوصول:"
+        }
+    }
+}

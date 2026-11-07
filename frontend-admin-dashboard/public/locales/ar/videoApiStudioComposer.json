@@ -1,0 +1,82 @@
+{
+    "dropzone": {
+        "hint": "أفلت الصور أو ملفات PDF هنا"
+    },
+    "preview": {
+        "empty": "لا يوجد شيء للمعاينة"
+    },
+    "textarea": {
+        "placeholder": "صِف ما تريد إنشاءه…"
+    },
+    "attach": {
+        "title": "إرفاق صور أو ملفات PDF مرجعية",
+        "ariaLabel": "إرفاق ملفات مرجعية"
+    },
+    "pdfExtract": {
+        "title": "استخراج نص PDF واستخدامه كمُوجّه (يستبدل النص الحالي)",
+        "ariaLabel": "استخراج PDF كمُوجّه"
+    },
+    "previewToggle": {
+        "title": "تبديل معاينة Markdown/LaTeX",
+        "ariaLabel": "تبديل المعاينة"
+    },
+    "dialogueChip": {
+        "title": "مشاهد الحوار القصصي مُفعّلة (تم ضبطها في الإعدادات)",
+        "modeDrama": "دراما",
+        "modeStorybook": "كتاب قصصي",
+        "modelOmni": "أومني",
+        "modelSeedance": "سيدانس"
+    },
+    "durationChip": {
+        "title": "المدة المستهدفة (تم ضبطها في الإعدادات)"
+    },
+    "send": {
+        "titleReady": "إنشاء (Enter)",
+        "titleAvatarMissing": "اختر مقدّمًا من ⚙ الإعدادات ← المقدّم قبل الإنشاء",
+        "ariaReady": "إنشاء",
+        "ariaAvatarMissing": "اختر مقدّمًا قبل الإنشاء"
+    },
+    "footer": {
+        "courseCta": "تريد إنشاء دورة كاملة عبر الذكاء الاصطناعي؟",
+        "credits_zero": "{{value}} رصيد",
+        "credits_one": "رصيد واحد ({{value}})",
+        "credits_two": "رصيدان ({{value}})",
+        "credits_few": "{{value}} أرصدة",
+        "credits_many": "{{value}} رصيدًا",
+        "credits_other": "{{value}} رصيد"
+    },
+    "toasts": {
+        "sampleAudioUnavailable": "عيّنة الصوت غير متاحة بعد",
+        "hostMissingTitle": "اختر مقدّمًا أولاً",
+        "hostMissingDescription": "افتح ⚙ الإعدادات ← علامة تبويب المقدّم واختر صورة رمزية محفوظة، أو احفظ واحدة في علامة تبويب الصور الرمزية.",
+        "pdfExtractSuccess": "تم استخراج محتوى PDF بنجاح",
+        "pdfExtractFailed": "فشل استخراج المحتوى من PDF",
+        "filesSkipped_zero": "تم تخطي {{count}} ملف (تُقبل الصور وملفات PDF فقط)",
+        "filesSkipped_one": "تم تخطي {{count}} ملف واحد (تُقبل الصور وملفات PDF فقط)",
+        "filesSkipped_two": "تم تخطي {{count}} ملفين (تُقبل الصور وملفات PDF فقط)",
+        "filesSkipped_few": "تم تخطي {{count}} ملفات (تُقبل الصور وملفات PDF فقط)",
+        "filesSkipped_many": "تم تخطي {{count}} ملفًا (تُقبل الصور وملفات PDF فقط)",
+        "filesSkipped_other": "تم تخطي {{count}} ملف (تُقبل الصور وملفات PDF فقط)",
+        "maxFilesAllowed_zero": "الحد الأقصى {{count}} ملف مسموح به",
+        "maxFilesAllowed_one": "الحد الأقصى {{count}} ملف واحد مسموح به",
+        "maxFilesAllowed_two": "الحد الأقصى {{count}} ملفان مسموح بهما",
+        "maxFilesAllowed_few": "الحد الأقصى {{count}} ملفات مسموح بها",
+        "maxFilesAllowed_many": "الحد الأقصى {{count}} ملفًا مسموح به",
+        "maxFilesAllowed_other": "الحد الأقصى {{count}} ملف مسموح به",
+        "fileSizeExceeded": "{{fileName}} يتجاوز الحد الأقصى {{maxSizeMb}} ميجابايت",
+        "filesAttached_zero": "تم إرفاق {{count}} ملف",
+        "filesAttached_one": "تم إرفاق {{count}} ملف واحد",
+        "filesAttached_two": "تم إرفاق {{count}} ملفين",
+        "filesAttached_few": "تم إرفاق {{count}} ملفات",
+        "filesAttached_many": "تم إرفاق {{count}} ملفًا",
+        "filesAttached_other": "تم إرفاق {{count}} ملف",
+        "filesAttachedPartial": "تم إرفاق {{success}}، وفشل {{failed}}",
+        "filesUploadFailed_zero": "فشل رفع {{count}} ملف",
+        "filesUploadFailed_one": "فشل رفع {{count}} ملف واحد",
+        "filesUploadFailed_two": "فشل رفع {{count}} ملفين",
+        "filesUploadFailed_few": "فشل رفع {{count}} ملفات",
+        "filesUploadFailed_many": "فشل رفع {{count}} ملفًا",
+        "filesUploadFailed_other": "فشل رفع {{count}} ملف",
+        "attachmentsUploadFailed": "فشل رفع المرفقات"
+    }
+}

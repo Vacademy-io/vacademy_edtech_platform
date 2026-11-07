@@ -1,5 +1,6 @@
 import { Component, type ErrorInfo, type ReactNode } from "react";
 import { WarningCircle } from "@phosphor-icons/react";
+import i18n from "@/i18n";
 import { MyButton } from "@/components/design-system/button";
 
 interface InlineErrorBoundaryProps {
@@ -44,12 +45,12 @@ export class InlineErrorBoundary extends Component<
     if (!this.state.hasError) return this.props.children;
 
     const {
-      title = "This section couldn't be shown",
-      description = "Something went wrong while loading it. Your answers and the timer are unaffected.",
+      title = i18n.t("courseComponentsExtra:inlineErrorBoundary.defaultTitle"),
+      description = i18n.t("courseComponentsExtra:inlineErrorBoundary.defaultDescription"),
     } = this.props;
 
     return (
-      <div className="mt-4 flex flex-col items-center gap-3 rounded-lg border border-danger-200 bg-danger-50 p-6 text-center">
+      <div className="mt-4 flex flex-col items-center gap-stack rounded-lg border border-danger-200 bg-danger-50 p-6 text-center">
         <WarningCircle size={32} weight="duotone" className="text-danger-500" />
         <p className="text-body font-semibold text-neutral-800">{title}</p>
         <p className="text-caption text-neutral-600">{description}</p>
@@ -58,7 +59,7 @@ export class InlineErrorBoundary extends Component<
           scale="medium"
           onClick={this.handleReset}
         >
-          Try again
+          {i18n.t("courseComponentsExtra:common.tryAgain")}
         </MyButton>
       </div>
     );

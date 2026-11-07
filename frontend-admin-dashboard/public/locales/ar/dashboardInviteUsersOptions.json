@@ -1,0 +1,45 @@
+{
+  "menu": {
+    "editUser": "تعديل",
+    "resendInvite": "إعادة إرسال الدعوة",
+    "cancelInvite": "إلغاء الدعوة"
+  },
+  "editUser": {
+    "title": "تعديل",
+    "nameLabel": "الاسم الكامل",
+    "namePlaceholder": "الاسم الكامل (الأول والأخير)",
+    "emailLabel": "البريد الإلكتروني",
+    "emailPlaceholder": "أدخل البريد الإلكتروني",
+    "roleTypeLabel": "نوع الدور",
+    "submit": "تعديل المستخدم",
+    "validation": {
+      "nameRequired": "الاسم الكامل مطلوب",
+      "emailRequired": "البريد الإلكتروني مطلوب",
+      "emailInvalid": "صيغة البريد الإلكتروني غير صحيحة",
+      "roleRequired": "مطلوب نوع دور واحد على الأقل"
+    },
+    "toast": {
+      "success": "تم تحديث دعوة هذا المستخدم بنجاح!"
+    }
+  },
+  "resendInvite": {
+    "title": "إعادة إرسال الدعوة",
+    "attention": "تنبيه",
+    "confirmPrefix": "هل أنت متأكد أنك تريد إعادة إرسال الدعوة إلى",
+    "confirmSuffix": "؟",
+    "confirmButton": "نعم",
+    "toast": {
+      "success": "تمت إعادة إرسال دعوة هذا المستخدم بنجاح!"
+    }
+  },
+  "cancelInvite": {
+    "title": "إلغاء الدعوة",
+    "attention": "تنبيه",
+    "confirmPrefix": "هل أنت متأكد أنك تريد إلغاء الدعوة الخاصة بـ",
+    "confirmSuffix": "؟",
+    "confirmButton": "نعم",
+    "toast": {
+      "success": "تم إلغاء دعوة هذا المستخدم بنجاح!"
+    }
+  }
+}

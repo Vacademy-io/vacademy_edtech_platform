@@ -1,3 +1,4 @@
+import { Trans, useTranslation } from 'react-i18next';
 import { Lock } from '@phosphor-icons/react';
 import { LayoutContainer } from '@/components/common/layout-container/layout-container';
 
@@ -13,6 +14,7 @@ interface Props {
  * feature the institute hasn't opted into.
  */
 export function FeatureDisabledNotice({ title, settingsLabel }: Props) {
+    const { t } = useTranslation('counsellorsFeatureDisabledNotice');
     return (
         <LayoutContainer>
             <div className="mx-auto flex max-w-md flex-col items-center justify-center gap-3 p-12 text-center">
@@ -21,9 +23,12 @@ export function FeatureDisabledNotice({ title, settingsLabel }: Props) {
                 </div>
                 <h2 className="text-h3 font-medium text-neutral-900">{title}</h2>
                 <p className="text-subtitle text-neutral-500">
-                    This feature is currently disabled for your institute. An admin can turn it
-                    on under <span className="font-medium">Settings → Admin Display Settings →{' '}
-                    {settingsLabel}</span>.
+                    <Trans
+                        t={t}
+                        i18nKey="disabledMessage"
+                        values={{ settingsLabel }}
+                        components={{ bold: <span className="font-medium" /> }}
+                    />
                 </p>
             </div>
         </LayoutContainer>

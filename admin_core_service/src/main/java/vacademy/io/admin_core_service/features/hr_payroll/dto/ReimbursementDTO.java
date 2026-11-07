@@ -29,4 +29,5 @@ public class ReimbursementDTO {
     private String status;
     private String approvedBy;
     private String rejectionReason;
+    private String currency;
 }

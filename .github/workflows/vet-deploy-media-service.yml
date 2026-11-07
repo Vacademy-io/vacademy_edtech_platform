@@ -130,10 +130,10 @@ jobs:
           DEPLOYMENT_NAME: media-service
           NAMESPACE: default
         run: |
-          kubectl set image deployment/$DEPLOYMENT_NAME 
-            $DEPLOYMENT_NAME=$ECR_REGISTRY/$REPOSITORY:$IMAGE_TAG 
+          kubectl set image deployment/$DEPLOYMENT_NAME \
+            $DEPLOYMENT_NAME=$ECR_REGISTRY/$REPOSITORY:$IMAGE_TAG \
             --namespace $NAMESPACE
-          kubectl rollout status deployment/$DEPLOYMENT_NAME 
+          kubectl rollout status deployment/$DEPLOYMENT_NAME \
             --namespace $NAMESPACE --timeout=10m
 
       - name: Roll back if the new image failed to come up
@@ -144,6 +144,6 @@ jobs:
         run: |
           echo "::error::Rollout failed — reverting to the previous working image."
           kubectl rollout undo deployment/$DEPLOYMENT_NAME --namespace $NAMESPACE || true
-          kubectl rollout status deployment/$DEPLOYMENT_NAME 
+          kubectl rollout status deployment/$DEPLOYMENT_NAME \
             --namespace $NAMESPACE --timeout=10m || true
           kubectl get pods -l app=$DEPLOYMENT_NAME --namespace $NAMESPACE || true

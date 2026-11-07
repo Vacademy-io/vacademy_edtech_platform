@@ -1,0 +1,16 @@
+{
+    "status": {
+        "new": "Nouveau",
+        "contacted": "Contacté",
+        "qualified": "Qualifié",
+        "notEligible": "Non éligible",
+        "followUp": "Relance",
+        "closed": "Clôturé",
+        "converted": "Converti",
+        "admitted": "Admis"
+    },
+    "conversion": {
+        "hot": "Chaud",
+        "cold": "Froid"
+    }
+}

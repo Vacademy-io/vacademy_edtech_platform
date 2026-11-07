@@ -1,0 +1,14 @@
+{
+    "jupyterNotebook": "Jupyter Notebook",
+    "jupyterDescription": "Interactive coding notebooks with video",
+    "scratchProject": "Scratch Project",
+    "scratchDescription": "Visual programming blocks with video",
+    "codeEditor": "Code Editor",
+    "codeDescription": "Interactive code environment with video",
+    "videoSlideNotFound": "Video slide not found",
+    "convertSuccess": "Video converted to split-screen {{type}} successfully!",
+    "convertError": "Failed to convert to split-screen {{type}}",
+    "convertToSplitScreen": "Convert to Split Screen",
+    "dialogSubtitle": "Add interactive environment with video",
+    "creatingSlide": "Creating split screen slide..."
+}

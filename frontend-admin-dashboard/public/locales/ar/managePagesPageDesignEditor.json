@@ -1,0 +1,231 @@
+{
+    "palette": {
+        "header": { "label": "الترويسة", "description": "الشعار + شريط التنقل" },
+        "heroSection": { "label": "بانر البطل", "description": "تخطيط مقسم مع مجموعة صور" },
+        "footer": { "label": "التذييل", "description": "روابط + شريط حقوق النشر" },
+        "productCourseGrid": { "label": "شبكة الدورات", "description": "قائمة الدورات مع عوامل التصفية" },
+        "textBlock": { "label": "كتلة نصية", "description": "فقرة نص منسق" },
+        "imageBlock": { "label": "صورة", "description": "صورة قابلة للنقر بعرض كامل" },
+        "videoEmbed": { "label": "تضمين فيديو", "description": "تضمين يوتيوب / فيميو" },
+        "htmlBlock": { "label": "كتلة HTML", "description": "HTML / CSS مخصص (معزول، بدون سكريبتات)" },
+        "statsHighlights": { "label": "إحصائيات", "description": "أبرز الأرقام الرئيسية" },
+        "testimonialSection": { "label": "الشهادات", "description": "آراء الطلاب" },
+        "faqSection": { "label": "الأسئلة الشائعة", "description": "الأسئلة المتكررة" },
+        "ctaBanner": { "label": "بانر دعوة لاتخاذ إجراء", "description": "قسم دعوة لاتخاذ إجراء" },
+        "featureGrid": { "label": "شبكة الميزات", "description": "أبرز مزايا البرنامج" },
+        "stepsProcess": { "label": "خطوات / عملية", "description": "كيف يعمل" },
+        "marquee": { "label": "شريط متحرك", "description": "شريط نص متحرك" }
+    },
+    "groups": {
+        "layout": "التخطيط",
+        "course": "الدورة",
+        "content": "المحتوى",
+        "marketing": "التسويق"
+    },
+    "heroLayouts": {
+        "split": { "label": "منقسم", "description": "النص يسارًا، الصورة يمينًا" },
+        "centered": { "label": "في المنتصف", "description": "النص في المنتصف، بعرض كامل" }
+    },
+    "colorField": {
+        "reset": "إعادة تعيين"
+    },
+    "common": {
+        "sectionColors": "ألوان القسم",
+        "background": "الخلفية",
+        "backgroundColor": "لون الخلفية",
+        "textColor": "لون النص",
+        "heading": "العنوان",
+        "subheading": "العنوان الفرعي",
+        "description": "الوصف",
+        "content": "المحتوى",
+        "title": "العنوان",
+        "image": "صورة",
+        "alignment": "المحاذاة",
+        "alignLeft": "يسار",
+        "alignCenter": "وسط",
+        "alignRight": "يمين",
+        "ctaButton": "زر الدعوة لاتخاذ إجراء",
+        "buttonBackground": "خلفية الزر",
+        "buttonTextColor": "لون نص الزر",
+        "add": "إضافة",
+        "labelPlaceholder": "التسمية",
+        "urlPlaceholder": "الرابط",
+        "urlOrSectionPlaceholder": "رابط أو #القسم",
+        "enrollNowPlaceholder": "سجّل الآن",
+        "descriptionEllipsisPlaceholder": "الوصف…",
+        "noEditorFor": "لا يوجد محرر لـ \"{{type}}\""
+    },
+    "heroEditor": {
+        "layoutLabel": "التخطيط",
+        "tags": "الوسوم",
+        "addTag": "إضافة وسم",
+        "tagPlaceholder": "وسم",
+        "headingPlaceholder": "بناء أسس قوية…",
+        "subheadingPlaceholder": "عنوان فرعي داعم قصير…",
+        "descriptionPlaceholder": "أضف وصفًا داعمًا…",
+        "ctaTextPlaceholder": "استكشف الدورات",
+        "ctaUrlPlaceholder": "رابط أو #courses",
+        "rightSideImage": "الصورة الجانبية اليمنى",
+        "singleImage": "صورة واحدة",
+        "photoCollage": "مجموعة صور (حتى 5)",
+        "collageHint": "تظهر كشبكة فسيفساء على الجانب.",
+        "photoLabel": "صورة {{number}}",
+        "backgroundImageOptional": "صورة الخلفية (اختياري)",
+        "backgroundImageHint": "تُعرض كخلفية بعرض كامل خلف النص المتوسط."
+    },
+    "headerEditor": {
+        "navLinkColor": "لون روابط التنقل",
+        "siteTitle": "عنوان الموقع",
+        "siteTitlePlaceholder": "أكاديميتي",
+        "logo": "الشعار",
+        "navLinks": "روابط التنقل",
+        "addLink": "إضافة رابط"
+    },
+    "footerEditor": {
+        "brandName": "اسم العلامة التجارية",
+        "brandTagline": "شعار العلامة التجارية",
+        "brandTaglinePlaceholder": "التعلّم بلا حدود.",
+        "linkSections": "أقسام الروابط",
+        "sectionTitlePlaceholder": "عنوان القسم",
+        "addLink": "إضافة رابط",
+        "copyrightNote": "ملاحظة حقوق النشر",
+        "copyrightPlaceholder": "© {{year}} أكاديميتي"
+    },
+    "courseGridEditor": {
+        "sectionTitle": "عنوان القسم",
+        "sectionTitlePlaceholder": "دوراتنا",
+        "layoutPreset": "نمط التخطيط",
+        "layoutGrid3": "شبكة 3",
+        "layoutGrid4": "شبكة 4",
+        "layoutList": "قائمة",
+        "showFilters": "إظهار عوامل التصفية",
+        "showPrice": "إظهار السعر",
+        "showBadge": "إظهار الشارة"
+    },
+    "textBlockEditor": {
+        "contentPlaceholder": "اكتب نصك هنا…"
+    },
+    "imageBlockEditor": {
+        "altText": "النص البديل",
+        "altTextPlaceholder": "نص بديل وصفي",
+        "linkUrlOptional": "رابط الصورة (اختياري)"
+    },
+    "htmlBlockEditor": {
+        "html": "HTML",
+        "cssScoped": "CSS (مخصص لهذا القسم)"
+    },
+    "statsEditor": {
+        "headingPlaceholder": "أرقامنا",
+        "stats": "الإحصائيات",
+        "valuePlaceholder": "+10,000",
+        "labelPlaceholder": "الطلاب"
+    },
+    "testimonialEditor": {
+        "headingPlaceholder": "ماذا يقول متعلمونا",
+        "testimonials": "الشهادات",
+        "namePlaceholder": "الاسم",
+        "rolePlaceholder": "الدور",
+        "feedbackPlaceholder": "الملاحظات…"
+    },
+    "faqEditor": {
+        "headingPlaceholder": "الأسئلة الشائعة",
+        "questions": "الأسئلة",
+        "questionPlaceholder": "سؤال؟",
+        "answerPlaceholder": "الإجابة…"
+    },
+    "videoEmbedEditor": {
+        "videoUrl": "رابط الفيديو",
+        "caption": "التسمية التوضيحية",
+        "aspectRatio": "نسبة العرض إلى الارتفاع"
+    },
+    "ctaBannerEditor": {
+        "showButton": "إظهار الزر"
+    },
+    "featureGridEditor": {
+        "headingPlaceholder": "لماذا تختارنا",
+        "columns": "الأعمدة",
+        "features": "الميزات",
+        "iconEmojiPlaceholder": "أيقونة/رمز تعبيري"
+    },
+    "stepsEditor": {
+        "headingPlaceholder": "كيف تعمل",
+        "layout": "التخطيط",
+        "horizontal": "أفقي",
+        "vertical": "عمودي",
+        "steps": "الخطوات",
+        "stepTitlePlaceholder": "عنوان الخطوة"
+    },
+    "marqueeEditor": {
+        "icons": {
+            "none": "بلا",
+            "star": "نجمة",
+            "check": "علامة صح",
+            "graduate": "خريج",
+            "trophy": "كأس",
+            "rocket": "صاروخ",
+            "bulb": "مصباح",
+            "books": "كتب",
+            "fire": "نار",
+            "sparkle": "بريق",
+            "diamond": "ماسة",
+            "circle": "دائرة",
+            "pipe": "خط عمودي"
+        },
+        "appearance": "المظهر",
+        "iconColor": "لون الأيقونة",
+        "fontSize": "حجم الخط",
+        "motion": "الحركة",
+        "speed": "السرعة",
+        "speedSlow": "بطيء",
+        "speedMedium": "متوسط",
+        "speedFast": "سريع",
+        "direction": "الاتجاه",
+        "directionLeft": "يسار",
+        "directionRight": "يمين",
+        "pauseOnHover": "إيقاف مؤقت عند التمرير",
+        "defaultSeparatorIcon": "أيقونة الفاصل الافتراضية",
+        "defaultItem1": "العنصر 1",
+        "defaultItem2": "العنصر 2",
+        "newItem": "عنصر جديد",
+        "items": "العناصر",
+        "addItem": "إضافة عنصر",
+        "itemTextPlaceholder": "نص العنصر",
+        "noItemsYet": "لا توجد عناصر بعد. أضف بعضها أعلاه."
+    },
+    "layersPanel": {
+        "noComponentsYet": "لا توجد مكونات بعد"
+    },
+    "canvas": {
+        "moveUp": "نقل لأعلى",
+        "moveDown": "نقل لأسفل",
+        "hideComponent": "إخفاء المكون",
+        "showComponent": "إظهار المكون",
+        "removeComponent": "إزالة المكون",
+        "hiddenBadge": "مخفي",
+        "viewportDesktop": "سطح المكتب",
+        "viewportTablet": "لوحي",
+        "viewportMobile": "جوال",
+        "emptyHint": "اسحب المكونات هنا أو انقر على + للإضافة",
+        "componentCountHint_zero": "لا توجد مكونات ({{count}}) · انقر للتحديد",
+        "componentCountHint_one": "مكوّن واحد ({{count}}) · انقر للتحديد",
+        "componentCountHint_two": "مكوّنان ({{count}}) · انقر للتحديد",
+        "componentCountHint_few": "{{count}} مكونات · انقر للتحديد",
+        "componentCountHint_many": "{{count}} مكوّنًا · انقر للتحديد",
+        "componentCountHint_other": "{{count}} مكوّن · انقر للتحديد",
+        "pageEmptyTitle": "هذه الصفحة فارغة",
+        "pageEmptyHint": "اسحب من اللوحة اليسرى أو انقر على + لإضافة مكونات"
+    },
+    "rightPanel": {
+        "pageSettings": "إعدادات الصفحة",
+        "brandColor": "لون العلامة التجارية",
+        "selectComponentHint": "انقر على أي مكون في اللوحة لتعديل خصائصه.",
+        "hide": "إخفاء",
+        "show": "إظهار",
+        "remove": "إزالة",
+        "design": "التصميم"
+    },
+    "sidebar": {
+        "addTab": "إضافة",
+        "layersTab": "الطبقات"
+    }
+}

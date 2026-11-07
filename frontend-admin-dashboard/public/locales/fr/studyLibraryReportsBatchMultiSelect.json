@@ -1,0 +1,7 @@
+{
+    "label": "{{term}}",
+    "placeholder": "Sélectionnez un ou plusieurs {{term}}…",
+    "hint": "Choisissez un ou plusieurs {{term}} — le rapport est généré pour chacun.",
+    "selectedCount": "{{count}} sélectionné(s)",
+    "clear": "Effacer"
+}

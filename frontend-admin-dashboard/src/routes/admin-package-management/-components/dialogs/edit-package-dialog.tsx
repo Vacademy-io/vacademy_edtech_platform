@@ -22,6 +22,8 @@ import { UploadFileInS3 } from '@/services/upload_file';
 import { getTokenFromCookie, getTokenDecodedData } from '@/lib/auth/sessionUtility';
 import { TokenKey } from '@/constants/auth/tokens';
 import { DashboardLoader } from '@/components/core/dashboard-loader';
+import { getTerminology } from '@/components/common/layout-container/sidebar/utils';
+import { ContentTerms, SystemTerms } from '@/routes/settings/-components/NamingSettings';
 
 interface EditPackageDialogProps {
     packageDto: PackageDTO;
@@ -187,7 +189,10 @@ export const EditPackageDialog = ({ packageDto, trigger }: EditPackageDialogProp
                         />
                     </div>
                     <div className="grid gap-2">
-                        <Label>About the Course (HTML)</Label>
+                        <Label>
+                            About the {getTerminology(ContentTerms.Course, SystemTerms.Course)}{' '}
+                            (HTML)
+                        </Label>
                         <Textarea
                             className="min-h-[100px] font-mono text-xs"
                             value={formData.about_the_course_html}
@@ -307,7 +312,10 @@ export const EditPackageDialog = ({ packageDto, trigger }: EditPackageDialogProp
                             </div>
                         </div>
                         <div className="grid gap-2">
-                            <Label>Course Media (Video/Image)</Label>
+                            <Label>
+                                {getTerminology(ContentTerms.Course, SystemTerms.Course)} Media
+                                (Video/Image)
+                            </Label>
                             <div className="flex flex-col gap-1">
                                 <Input
                                     type="file"

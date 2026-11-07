@@ -1,0 +1,60 @@
+{
+    "menu": {
+        "viewDetails": "عرض تفاصيل الاختبار",
+        "deleteAssessment": "حذف الاختبار"
+    },
+    "common": {
+        "open": "فتح",
+        "attention": "تنبيه"
+    },
+    "reminderMessage": {
+        "prefix": "سيتم إرسال تذكير بالاختبار إلى جميع",
+        "participantsCount_zero": "{{count}} مشارك",
+        "participantsCount_one": "{{count}} مشارك واحد",
+        "participantsCount_two": "{{count}} مشاركَين",
+        "participantsCount_few": "{{count}} مشاركين",
+        "participantsCount_many": "{{count}} مشاركًا",
+        "participantsCount_other": "{{count}} مشارك",
+        "suffix": "الذين لم يظهروا بعد من الدفعات المخصصة."
+    },
+    "dialogs": {
+        "reminder": {
+            "title": "إرسال تذكير",
+            "send": "إرسال"
+        },
+        "delete": {
+            "title": "حذف الاختبار",
+            "confirmPrefix": "هل أنت متأكد أنك تريد حذف",
+            "confirmSuffix": "؟",
+            "delete": "حذف"
+        },
+        "pause": {
+            "title": "إيقاف الحالة المباشرة مؤقتًا",
+            "dateLabel": "التاريخ",
+            "datePlaceholder": "التاريخ",
+            "pauseUntilLabel": "إيقاف حتى",
+            "timePlaceholder": "الوقت",
+            "pause": "إيقاف مؤقت"
+        },
+        "resume": {
+            "title": "استئناف الحالة المباشرة",
+            "confirmPrefix": "هل تريد استئناف اختبارك المباشر",
+            "sampleAssessmentName": "العين البشرية والعالم الملون",
+            "confirmSuffix": "؟",
+            "resume": "استئناف"
+        },
+        "reopen": {
+            "title": "إعادة فتح الاختبار",
+            "selectDateTime": "حدد تاريخ ووقت إعادة فتح الاختبار",
+            "startDateTimeLabel": "تاريخ ووقت البدء",
+            "endDateTimeLabel": "تاريخ ووقت الانتهاء",
+            "datePlaceholder": "التاريخ",
+            "timePlaceholder": "الوقت",
+            "reopen": "إعادة فتح"
+        }
+    },
+    "toasts": {
+        "deleteSuccess": "تم حذف الاختبار بنجاح!",
+        "slidesDeleteFailed": "تم حذف الاختبار، ولكن تعذّرت إزالة شرائح الدورة الخاصة به."
+    }
+}

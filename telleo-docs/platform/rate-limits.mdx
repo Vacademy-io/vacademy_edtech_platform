@@ -1,0 +1,21 @@
+---
+title: "Rate limits"
+description: "How many requests a key can make."
+---
+
+Each API key can make **300 requests per minute**. Beyond that, requests fail with `429 rate_limited` and a `Retry-After` header with the seconds to wait.
+
+```http
+HTTP/1.1 429 Too Many Requests
+Retry-After: 12
+
+{"error": {"code": "rate_limited", "message": "Too many requests. Retry after 12 seconds.", "request_id": "…"}}
+```
+
+This limit counts API requests, not calls. How many calls run at once is set by your plan's lines (see [Queue and limits](/concepts/queue-and-limits)).
+
+## Staying under it
+
+- Queue many calls with **one** `POST /v1/batches` (up to 1,000 rows) instead of 1,000 `POST /v1/calls`.
+- Use **webhooks** instead of polling `GET /v1/calls/{id}`.
+- When you must poll, poll a batch (`GET /v1/batches/{id}`) every 30–60 seconds, not each call.

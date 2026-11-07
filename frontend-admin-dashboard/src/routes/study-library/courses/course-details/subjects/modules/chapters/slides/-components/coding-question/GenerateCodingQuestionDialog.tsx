@@ -1,4 +1,6 @@
 import { useCallback, useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 import { Sparkle, CheckCircle, WarningCircle, CircleNotch, ArrowLeft } from '@phosphor-icons/react';
 import { MyDialog } from '@/components/design-system/dialog';
 import { MyButton } from '@/components/design-system/button';
@@ -47,14 +49,14 @@ function cleanOutput(s: string): string {
     return (s ?? '').replace(/\n?\[Editor \(Pyodide:[^\]]*\]\s*$/, '').trim();
 }
 
-function errText(e: unknown): string {
+function errText(e: unknown, t: TFunction): string {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const any = e as any;
     return (
         any?.response?.data?.detail ||
         any?.response?.data?.message ||
         any?.message ||
-        'Generation failed. Please try again.'
+        t('errors.generationFailed')
     );
 }
 
@@ -66,6 +68,8 @@ export function GenerateCodingQuestionDialog({
     defaultLanguages,
     onApply,
 }: Props) {
+    const { t, i18n } = useTranslation('studyLibraryGenerateCodingQuestionDialog');
+    const { t: tCodeEditorUtils } = useTranslation('studyLibraryCodeEditorUtils');
     const [idea, setIdea] = useState('');
     const [languages, setLanguages] = useState<LangId[]>(
         defaultLanguages?.length ? defaultLanguages : ['python']
@@ -104,7 +108,7 @@ export function GenerateCodingQuestionDialog({
         if (!idea.trim() || languages.length === 0) return;
         setError(null);
         setPhase('working');
-        setWorkingMsg('Generating the question…');
+        setWorkingMsg(t('working.generating'));
         try {
             const resp = await generateCodingQuestion({
                 idea: idea.trim(),
@@ -116,17 +120,23 @@ export function GenerateCodingQuestionDialog({
 
             // Self-verify: run the reference solution against every generated
             // test case in-browser and compare (trim + exact, any accepted).
-            setWorkingMsg('Verifying test cases against the reference solution…');
+            setWorkingMsg(t('working.verifying'));
             const rows: VerifyRow[] = [];
             for (const tc of resp.test_cases) {
                 let actual = '';
                 let errored = false;
                 try {
-                    const r = await executeCode(resp.solution.source_code, resp.solution.language, {
-                        stdin: tc.input,
-                        cpuSeconds: resp.settings.cpu_seconds,
-                        memoryKb: resp.settings.memory_kb,
-                    });
+                    const r = await executeCode(
+                        resp.solution.source_code,
+                        resp.solution.language,
+                        {
+                            stdin: tc.input,
+                            cpuSeconds: resp.settings.cpu_seconds,
+                            memoryKb: resp.settings.memory_kb,
+                        },
+                        tCodeEditorUtils,
+                        i18n.language
+                    );
                     errored = !!r.hasError;
                     actual = cleanOutput(r.output);
                 } catch {
@@ -135,7 +145,7 @@ export function GenerateCodingQuestionDialog({
                 const passed =
                     !errored && tc.accepted_outputs.some((a) => (a ?? '').trim() === actual);
                 rows.push({
-                    label: tc.label || 'Test',
+                    label: tc.label || t('review.testFallbackLabel'),
                     input: tc.input,
                     expected: tc.accepted_outputs,
                     actual,
@@ -150,10 +160,10 @@ export function GenerateCodingQuestionDialog({
             setVerify(rows);
             setPhase('review');
         } catch (e) {
-            setError(errText(e));
+            setError(errText(e, t));
             setPhase('input');
         }
-    }, [idea, languages, difficulty, numTests]);
+    }, [idea, languages, difficulty, numTests, t, tCodeEditorUtils, i18n.language]);
 
     const handleApply = useCallback(() => {
         if (!generated) return;
@@ -199,10 +209,10 @@ export function GenerateCodingQuestionDialog({
             <div className="flex w-full items-center justify-between gap-2">
                 <MyButton buttonType="secondary" scale="medium" onClick={reset}>
                     <ArrowLeft className="mr-1 size-4" />
-                    Start over
+                    {t('footer.startOver')}
                 </MyButton>
                 <MyButton buttonType="primary" scale="medium" onClick={handleApply}>
-                    Apply to question
+                    {t('footer.applyToQuestion')}
                 </MyButton>
             </div>
         );
@@ -212,6 +222,7 @@ export function GenerateCodingQuestionDialog({
                 <ToolCostBadge
                     credits={cost.credits}
                     sufficient={cost.sufficient}
+                    coverage={cost.coverage}
                     loading={cost.isLoading}
                     className="mr-auto"
                 />
@@ -221,7 +232,7 @@ export function GenerateCodingQuestionDialog({
                     onClick={() => onOpenChange(false)}
                     disable={phase === 'working'}
                 >
-                    Cancel
+                    {t('footer.cancel')}
                 </MyButton>
                 <MyButton
                     buttonType="primary"
@@ -230,7 +241,7 @@ export function GenerateCodingQuestionDialog({
                     disable={!canGenerate}
                 >
                     <Sparkle className="mr-1 size-4" weight="fill" />
-                    Generate
+                    {t('footer.generate')}
                 </MyButton>
             </div>
         );
@@ -243,7 +254,7 @@ export function GenerateCodingQuestionDialog({
                 if (!o) reset();
                 onOpenChange(o);
             }}
-            heading="Generate coding question with AI"
+            heading={t('heading')}
             dialogWidth="max-w-2xl"
             footer={footer}
         >
@@ -251,17 +262,18 @@ export function GenerateCodingQuestionDialog({
                 <div className="flex flex-col items-center justify-center gap-3 py-10 text-center">
                     <CircleNotch className="size-8 animate-spin text-primary-500" />
                     <p className="text-sm font-medium">{workingMsg}</p>
-                    <p className="text-xs text-muted-foreground">
-                        This usually takes 10–30 seconds.
-                    </p>
+                    <p className="text-xs text-muted-foreground">{t('working.etaHint')}</p>
                 </div>
             ) : phase === 'review' && generated ? (
                 <div className="space-y-4">
                     <div>
                         <div className="text-sm font-semibold">{generated.title}</div>
                         <div className="text-xs text-muted-foreground">
-                            {generated.allowed_languages.join(', ')} ·{' '}
-                            {generated.test_cases.length} test cases · model {generated.model_used}
+                            {t('review.summaryLine', {
+                                languages: generated.allowed_languages.join(', '),
+                                count: generated.test_cases.length,
+                                model: generated.model_used,
+                            })}
                         </div>
                     </div>
 
@@ -280,10 +292,12 @@ export function GenerateCodingQuestionDialog({
                             <WarningCircle className="size-4 shrink-0" weight="fill" />
                         )}
                         <span>
-                            Ran the reference solution against all {verify.length} tests:{' '}
-                            {passCount} matched
+                            {t('review.verifySummary', {
+                                count: verify.length,
+                                passed: passCount,
+                            })}
                             {mismatchCount > 0 &&
-                                ` · ${mismatchCount} will be auto-corrected to the reference output`}
+                                t('review.autoCorrectSuffix', { count: mismatchCount })}
                             .
                         </span>
                     </div>
@@ -314,26 +328,28 @@ export function GenerateCodingQuestionDialog({
                                     {v.label}
                                     <span className="text-muted-foreground">
                                         {v.passed
-                                            ? '(verified)'
+                                            ? t('review.status.verified')
                                             : v.errored
-                                              ? '(solution errored — kept AI output)'
-                                              : '(mismatch — using reference output)'}
+                                              ? t('review.status.errored')
+                                              : t('review.status.mismatch')}
                                     </span>
                                 </div>
                                 {!v.passed && !v.errored && (
                                     <div className="mt-1 grid grid-cols-2 gap-2 font-mono">
                                         <div>
-                                            <div className="text-muted-foreground">AI expected</div>
+                                            <div className="text-muted-foreground">
+                                                {t('review.aiExpected')}
+                                            </div>
                                             <pre className="overflow-auto rounded bg-white p-1">
-                                                {v.expected[0] || '(empty)'}
+                                                {v.expected[0] || t('review.empty')}
                                             </pre>
                                         </div>
                                         <div>
                                             <div className="text-muted-foreground">
-                                                Reference output
+                                                {t('review.referenceOutput')}
                                             </div>
                                             <pre className="overflow-auto rounded bg-white p-1">
-                                                {v.actual || '(empty)'}
+                                                {v.actual || t('review.empty')}
                                             </pre>
                                         </div>
                                     </div>
@@ -341,26 +357,23 @@ export function GenerateCodingQuestionDialog({
                             </div>
                         ))}
                     </div>
-                    <p className="text-xs text-muted-foreground">
-                        Apply to load this into the Problem / Test Cases / Settings / Starter Code
-                        tabs, where you can review and edit before saving.
-                    </p>
+                    <p className="text-xs text-muted-foreground">{t('review.applyHint')}</p>
                 </div>
             ) : (
                 <div className="space-y-4">
                     <div>
-                        <Label className="text-sm">Describe the problem</Label>
+                        <Label className="text-sm">{t('input.describeLabel')}</Label>
                         <Textarea
                             value={idea}
                             onChange={(e) => setIdea(e.target.value)}
-                            placeholder="e.g. Given an array and a target, return the indices of the two numbers that add up to the target. Rough is fine — the AI fills in the I/O format, tests, and starter code."
+                            placeholder={t('input.describePlaceholder')}
                             rows={5}
                             className="text-sm"
                         />
                     </div>
 
                     <div>
-                        <Label className="text-sm">Languages</Label>
+                        <Label className="text-sm">{t('input.languagesLabel')}</Label>
                         <div className="mt-1 flex flex-wrap gap-2">
                             {ALL_LANG_IDS.map((l) => {
                                 const active = languages.includes(l);
@@ -385,7 +398,7 @@ export function GenerateCodingQuestionDialog({
 
                     <div className="flex flex-wrap gap-6">
                         <div>
-                            <Label className="text-sm">Difficulty</Label>
+                            <Label className="text-sm">{t('input.difficultyLabel')}</Label>
                             <div className="mt-1 flex gap-2">
                                 {DIFFICULTIES.map((d) => (
                                     <button
@@ -399,13 +412,13 @@ export function GenerateCodingQuestionDialog({
                                                 : 'border-gray-200 text-gray-600 hover:bg-gray-50'
                                         )}
                                     >
-                                        {d}
+                                        {t(`input.difficulties.${d}`)}
                                     </button>
                                 ))}
                             </div>
                         </div>
                         <div>
-                            <Label className="text-sm">Test cases</Label>
+                            <Label className="text-sm">{t('input.testCasesLabel')}</Label>
                             <Input
                                 type="number"
                                 min={2}
@@ -423,7 +436,7 @@ export function GenerateCodingQuestionDialog({
 
                     {cost.sufficient === false && (
                         <p className="text-xs text-amber-700">
-                            Not enough AI credits for this action.
+                            {t('input.insufficientCredits')}
                         </p>
                     )}
                     {error && <p className="text-xs text-red-600">{error}</p>}

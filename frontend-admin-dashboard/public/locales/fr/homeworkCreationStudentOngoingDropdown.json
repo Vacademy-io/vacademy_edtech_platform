@@ -1,0 +1,22 @@
+{
+    "dropdown": {
+        "increaseSubmissionTime": "Augmenter le temps de soumission",
+        "closeSubmission": "Clôturer la soumission"
+    },
+    "dialogs": {
+        "attentionLabel": "Attention",
+        "closeButton": "Fermer",
+        "closeSubmission": {
+            "title": "Clôturer la soumission",
+            "confirmMessagePrefix": "Êtes-vous sûr de vouloir clôturer la soumission d'évaluation de"
+        },
+        "increaseAssessmentTime": {
+            "title": "Augmenter le temps d'évaluation",
+            "entireAssessment": "Évaluation entière",
+            "increaseBy": "Augmenter de",
+            "selectSectionPlaceholder": "Sélectionner une section",
+            "sectionNumber": "Section {{number}}",
+            "questionNumber": "Question {{number}}"
+        }
+    }
+}

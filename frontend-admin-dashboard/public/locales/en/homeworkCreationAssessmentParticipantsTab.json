@@ -1,0 +1,14 @@
+{
+    "heading": "Assessment Participants",
+    "participantsCountInternal_one": "{{count}} participant (Internal)",
+    "participantsCountInternal_other": "{{count}} participants (Internal)",
+    "joinLink": "Join Link",
+    "qrCode": "QR Code",
+    "notifyParticipantsViaEmail": "Notify Participants via Email:",
+    "whenAssessmentCreated": "When Assessment is created:",
+    "beforeAssessmentGoesLive": "Before Assessment goes live:",
+    "minutesValue_one": "{{count}} Min",
+    "minutesValue_other": "{{count}} Min",
+    "whenAssessmentGoesLive": "When Assessment goes live:",
+    "whenAssessmentReportsGenerated": "When assessment reports are generated:"
+}

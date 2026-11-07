@@ -1,0 +1,28 @@
+{
+    "header": {
+        "title": "Quelques éléments rendraient tout cela plus réel"
+    },
+    "item": {
+        "shotLabel": "· plan {{number}}",
+        "skip": "Ignorer",
+        "undo": "Annuler",
+        "willBeUsed": "Sera utilisé"
+    },
+    "upload": {
+        "altText": "image importée",
+        "uploading": "Importation…",
+        "replace": "Remplacer",
+        "upload": "Importer",
+        "failed": "Échec de l'import. Essayez une image plus légère."
+    },
+    "data": {
+        "placeholder": "Votre chiffre réel — p. ex. « 38 % d'inscriptions en plus en 2025 »"
+    },
+    "footer": {
+        "providedCount": "{{count}} sur {{total}} fournis — le reste sera généré par l'IA.",
+        "allOptional": "Tout est facultatif — ignorez et l'IA s'occupe de tout créer."
+    },
+    "actions": {
+        "continue": "Continuer"
+    }
+}

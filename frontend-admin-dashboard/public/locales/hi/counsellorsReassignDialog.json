@@ -1,0 +1,64 @@
+{
+    "title": {
+        "markInactive": "{{name}} को निष्क्रिय करें",
+        "reassignFrom_one": "{{name}} से {{count}} लीड फिर से असाइन करें",
+        "reassignFrom_other": "{{name}} से {{count}} लीड फिर से असाइन करें",
+        "reassign_one": "{{count}} लीड फिर से असाइन करें",
+        "reassign_other": "{{count}} लीड फिर से असाइन करें"
+    },
+    "fallback": {
+        "counsellor": "काउंसलर",
+        "they": "उनके पास"
+    },
+    "markInactive": {
+        "noLeads": "{{name}} को कोई असाइन की गई लीड नहीं है — पुष्टि करने पर वे केवल ऑफ़लाइन हो जाएंगे।",
+        "withLeads_one": "पहले उनकी {{count}} असाइन की गई लीड को फिर से असाइन करें। पुष्टि करने पर वे उसी ट्रांज़ैक्शन में ऑफ़लाइन हो जाएंगे।",
+        "withLeads_other": "पहले उनकी {{count}} असाइन की गई लीड को फिर से असाइन करें। पुष्टि करने पर वे उसी ट्रांज़ैक्शन में ऑफ़लाइन हो जाएंगे।"
+    },
+    "showingFirstOf": "{{total}} में से पहली {{shown}} दिखाई जा रही हैं — पुष्टि करने पर सभी {{total}} स्थानांतरित होंगी।",
+    "moveTo": "इन्हें भेजें",
+    "moveAllTo": "सभी को भेजें",
+    "selectCounsellorPlaceholder": "— एक काउंसलर चुनें —",
+    "offlineLabel": "(ऑफ़लाइन)",
+    "ratingSuffix": "· रेटिंग {{rating}}",
+    "roundRobinActive_one": "लीड {{count}} सक्रिय काउंसलर में समान रूप से बांटी जाएंगी।",
+    "roundRobinActive_other": "लीड {{count}} सक्रिय काउंसलरों में समान रूप से बांटी जाएंगी।",
+    "roundRobinAll_one": "लीड {{count}} काउंसलर में समान रूप से बांटी जाएंगी।",
+    "roundRobinAll_other": "लीड {{count}} काउंसलरों में समान रूप से बांटी जाएंगी।",
+    "generatingPreview": "पूर्वावलोकन तैयार किया जा रहा है…",
+    "noOpenLeads": "फिर से असाइन करने के लिए कोई खुली लीड नहीं है।",
+    "leadsAdjustTargets_one": "{{count}} लीड · लक्ष्य इनलाइन समायोजित करें",
+    "leadsAdjustTargets_other": "{{count}} लीड · लक्ष्य इनलाइन समायोजित करें",
+    "reshuffle": "फिर से बाँटें",
+    "tableLead": "लीड",
+    "tableTargetCounsellor": "लक्ष्य काउंसलर",
+    "cancel": "रद्द करें",
+    "markInactiveWithoutReassign": "बिना फिर से असाइन किए निष्क्रिय करें",
+    "markingInactive": "निष्क्रिय किया जा रहा है…",
+    "working": "कार्य जारी है…",
+    "reassigning": "फिर से असाइन किया जा रहा है…",
+    "confirmMarkInactive": "निष्क्रिय करने की पुष्टि करें",
+    "reassignAndMarkInactive": "फिर से असाइन करें और निष्क्रिय करें",
+    "confirmReassign": "फिर से असाइन करने की पुष्टि करें",
+    "modeLabel": {
+        "single": "एक को भेजें",
+        "roundRobin": "राउंड-रॉबिन",
+        "manual": "कस्टम (पूर्वावलोकन)"
+    },
+    "modeDescription": {
+        "single": "सभी लीड → एक लक्ष्य",
+        "roundRobin": "सक्रिय काउंसलरों में बांटें",
+        "manual": "प्रति-लीड ओवरराइड"
+    },
+    "toast": {
+        "previewFailed": "पूर्वावलोकन विफल रहा",
+        "pickTarget": "लीड प्राप्त करने के लिए एक काउंसलर चुनें",
+        "generatePreviewFirst": "पहले एक पूर्वावलोकन तैयार करें",
+        "reassignFailed": "फिर से असाइन करना विफल रहा",
+        "markedInactive": "निष्क्रिय कर दिया गया",
+        "reassignedAndMarkedInactive_one": "{{count}} लीड फिर से असाइन की गई और निष्क्रिय कर दिया गया",
+        "reassignedAndMarkedInactive_other": "{{count}} लीड फिर से असाइन की गईं और निष्क्रिय कर दिया गया",
+        "reassignedCount_one": "{{count}} लीड फिर से असाइन की गई",
+        "reassignedCount_other": "{{count}} लीड फिर से असाइन की गईं"
+    }
+}

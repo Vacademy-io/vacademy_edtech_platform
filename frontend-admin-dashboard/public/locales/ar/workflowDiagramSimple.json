@@ -1,0 +1,57 @@
+{
+    "title": "مخطط الأتمتة",
+    "nodeCount_zero": "لا توجد عقد",
+    "nodeCount_one": "عقدة واحدة",
+    "nodeCount_two": "عقدتان",
+    "nodeCount_few": "{{count}} عقد",
+    "nodeCount_many": "{{count}} عقدة",
+    "nodeCount_other": "{{count}} عقدة",
+    "connectionCount_zero": "لا توجد اتصالات",
+    "connectionCount_one": "اتصال واحد",
+    "connectionCount_two": "اتصالان",
+    "connectionCount_few": "{{count}} اتصالات",
+    "connectionCount_many": "{{count}} اتصالًا",
+    "connectionCount_other": "{{count}} اتصال",
+    "emptyState": {
+        "title": "لا يوجد مخطط سير عمل متاح",
+        "description": "قد لا يحتوي سير العمل هذا على أي عقد تم تكوينها"
+    },
+    "tip": {
+        "label": "تلميح:",
+        "description": "انقر واسحب للتنقل داخل المخطط. استخدم عناصر التحكم بالتكبير للتكبير والتصغير. انقر على أي عقدة لعرض تفاصيلها."
+    },
+    "executions": {
+        "title": "عمليات التنفيذ",
+        "count_zero": "لا توجد عمليات تنفيذ",
+        "count_one": "عملية تنفيذ واحدة",
+        "count_two": "عمليتا تنفيذ",
+        "count_few": "{{count}} عمليات تنفيذ",
+        "count_many": "{{count}} عملية تنفيذ",
+        "count_other": "{{count}} عملية تنفيذ"
+    },
+    "filters": {
+        "startDateTime": "تاريخ ووقت البداية",
+        "endDateTime": "تاريخ ووقت النهاية",
+        "search": "بحث",
+        "reset": "إعادة تعيين",
+        "timezoneNote": "يتم إرسال الأوقات بتوقيت GMT/UTC في الطلب."
+    },
+    "table": {
+        "started": "بدأ",
+        "completed": "اكتمل",
+        "status": "الحالة",
+        "idempotencyKey": "مفتاح عدم التكرار",
+        "loading": "جارٍ تحميل عمليات التنفيذ…",
+        "loadFailed": "فشل تحميل عمليات التنفيذ",
+        "empty": "لم يتم العثور على عمليات تنفيذ للفترة المحددة."
+    },
+    "pagination": {
+        "pageOf": "صفحة {{page}} من {{total}}",
+        "previous": "السابق",
+        "next": "التالي"
+    },
+    "nodeDetails": {
+        "description": "الوصف:",
+        "configuration": "تفاصيل التكوين:"
+    }
+}

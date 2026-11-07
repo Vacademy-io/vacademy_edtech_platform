@@ -1,0 +1,28 @@
+{
+    "session": {
+        "addButton": "إضافة",
+        "addNewSession": "إضافة جلسة جديدة",
+        "addSessionShort": "إضافة جلسة",
+        "createCourseFirst": "(أنشئ دورة أولاً)",
+        "selectPlaceholder": "اختر الجلسة",
+        "addedSuccess": " تمت إضافة {{term}} بنجاح",
+        "addError": "فشلت إضافة {{term}}"
+    },
+    "export": {
+        "exportingLoading": "جارٍ التصدير...",
+        "accountDetails": {
+            "short": "تفاصيل الحساب",
+            "medium": "الحساب",
+            "full": "تصدير تفاصيل الحساب"
+        },
+        "data": {
+            "short": "تصدير",
+            "medium": "تصدير",
+            "full": "تصدير البيانات"
+        }
+    },
+    "actions": {
+        "applyFilters": "تطبيق الفلاتر",
+        "resetAll": "إعادة تعيين الكل"
+    }
+}

@@ -1,4 +1,5 @@
 import { useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useQuery, useQueryClient, type QueryKey } from '@tanstack/react-query';
 import {
     getVideoStatus,
@@ -88,6 +89,10 @@ export function useVideoState(
     // new interval until the next natural refetch.
     usePollingPriorityValue();
 
+    // Bound to the derivation namespace — `derivePipelineFromStatus` renders
+    // its "X cut from production" node errors through this `t`.
+    const { t } = useTranslation('videoApiStudioDerivePipelineState');
+
     const queryClient = useQueryClient();
 
     const query = useQuery<VideoStatusResponse>({
@@ -124,18 +129,24 @@ export function useVideoState(
 
     const pipelineState = useMemo<PipelineState | null>(() => {
         if (!query.data) return null;
-        return derivePipelineFromStatus(query.data, {
-            startedAtMs: opts?.startedAtMs,
-            promptOverride: opts?.promptOverride,
-            contentTypeOverride: opts?.contentTypeOverride,
-            orientationOverride: opts?.orientationOverride,
-        });
+        return derivePipelineFromStatus(
+            query.data,
+            {
+                startedAtMs: opts?.startedAtMs,
+                promptOverride: opts?.promptOverride,
+                contentTypeOverride: opts?.contentTypeOverride,
+                orientationOverride: opts?.orientationOverride,
+            },
+            undefined,
+            t
+        );
     }, [
         query.data,
         opts?.startedAtMs,
         opts?.promptOverride,
         opts?.contentTypeOverride,
         opts?.orientationOverride,
+        t,
     ]);
 
     return {

@@ -1,0 +1,55 @@
+{
+    "restriction": {
+        "banner": "التعديل مقيّد: هذه الدورة {{status}}.",
+        "statusPublished": "منشورة",
+        "statusUnderReview": "قيد المراجعة",
+        "publishedHint": "انتقل إلى دوراتي لإنشاء نسخة قابلة للتعديل.",
+        "reviewHint": "لا يمكنك تعديل المحتوى أثناء وجوده قيد المراجعة."
+    },
+    "addedToCatalog": "أُضيف إلى الكتالوج",
+    "offlineSettings": "إعدادات عدم الاتصال",
+    "advancedIds": {
+        "moreOptions": "المزيد من الخيارات",
+        "title": "متقدم",
+        "notAvailable": "{{label}} غير متاح",
+        "copied": "تم نسخ {{label}}",
+        "copyFailed": "فشل النسخ",
+        "courseId": "معرّف {{course}}",
+        "packageSessionId": "معرّف جلسة الحزمة",
+        "sessionId": "معرّف {{session}}",
+        "levelId": "معرّف {{level}}"
+    },
+    "viewLess": "عرض أقل",
+    "viewMore": "عرض المزيد",
+    "youtubePlayerTitle": "مشغّل فيديو يوتيوب",
+    "videoNotSupported": "متصفحك لا يدعم وسم الفيديو.",
+    "courseBannerAlt": "شعار {{course}}",
+    "batchSubgroup": "الدفعة / المجموعة الفرعية",
+    "selectBatch": "اختر الدفعة",
+    "errorLoadingSlideCounts": "خطأ في تحميل عدد الشرائح",
+    "courseHighlights": "أبرز ما في {{course}}",
+    "whatYoullLearn": "ماذا ستتعلم؟",
+    "aboutThis": "عن هذا {{course}}",
+    "whoShouldJoin": "من يجب أن ينضم؟",
+    "authors": "المؤلفون",
+    "loadingInstructors": "جارٍ تحميل المعلمين...",
+    "dripCondition": {
+        "saveFailed": "فشل حفظ شرط النشر التدريجي. يرجى المحاولة مرة أخرى.",
+        "updateFailed": "فشل تحديث شرط النشر التدريجي. يرجى المحاولة مرة أخرى.",
+        "deleteFailed": "فشل حذف شرط النشر التدريجي. يرجى المحاولة مرة أخرى."
+    },
+    "slideType": {
+        "aiContent": "محتوى بالذكاء الاصطناعي",
+        "video": "فيديو",
+        "codeEditor": "محرر الأكواد",
+        "pdf": "PDF",
+        "document": "مستند",
+        "presentation": "عرض تقديمي",
+        "jupyterNotebook": "دفتر Jupyter",
+        "scratchProject": "مشروع Scratch",
+        "question": "سؤال",
+        "quiz": "اختبار قصير",
+        "assignment": "واجب",
+        "defaultSlide": "شريحة"
+    }
+}

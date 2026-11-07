@@ -1,0 +1,48 @@
+{
+    "header": {
+        "addButton": "जोड़ें",
+        "upcomingSessionsCount_one": "{{count}} आगामी सत्र",
+        "upcomingSessionsCount_other": "{{count}} आगामी सत्र",
+        "noUpcomingSessions": "कोई आगामी सत्र निर्धारित नहीं है"
+    },
+    "emptyState": {
+        "noSessionsScheduledYet": "अभी तक कोई {{term}} निर्धारित नहीं है"
+    },
+    "sessionCard": {
+        "upcomingLabel": "आगामी",
+        "deleteSession": "सत्र हटाएं",
+        "viewParticipantDetails": "प्रतिभागी विवरण देखें"
+    },
+    "moreCount_one": "+{{count}} और",
+    "moreCount_other": "+{{count}} और",
+    "participantDialog": {
+        "heading": "प्रतिभागी विवरण",
+        "tabs": {
+            "registeredUsers": "पंजीकृत उपयोगकर्ता",
+            "attendance": "उपस्थिति"
+        },
+        "registration": {
+            "title": "पंजीकरण",
+            "exportButton": "निर्यात करें"
+        },
+        "attendance": {
+            "title": "उपस्थिति",
+            "exportButton": "निर्यात करें"
+        }
+    },
+    "deleteDialog": {
+        "heading": "उपस्थिति रिपोर्ट",
+        "confirmMessage": "क्या आप इस सत्र की हर क्लास को हटाना चाहते हैं",
+        "yes": "हाँ",
+        "no": "नहीं"
+    },
+    "csvExport": {
+        "registrationsDownloaded": "पंजीकरण सफलतापूर्वक डाउनलोड किए गए।",
+        "attendanceDownloaded": "उपस्थिति रिपोर्ट सफलतापूर्वक डाउनलोड की गई।",
+        "attendanceStatus": {
+            "present": "उपस्थित",
+            "absent": "अनुपस्थित",
+            "unmarked": "अचिह्नित"
+        }
+    }
+}

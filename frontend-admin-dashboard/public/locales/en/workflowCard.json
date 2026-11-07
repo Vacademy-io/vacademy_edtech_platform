@@ -1,0 +1,49 @@
+{
+    "unknownDate": "Unknown",
+    "noDescription": "No description available",
+    "type": "Type:",
+    "schedules": "Schedules",
+    "cronBadge": "CRON",
+    "lastRun": "last: {{time}}",
+    "nextRun": "next: {{time}}",
+    "andMore_one": "and {{count}} more…",
+    "andMore_other": "and {{count}} more…",
+    "noScheduleAdded": "No schedule added",
+    "trigger": "Trigger",
+    "appliesTo": "Applies to: {{type}}",
+    "noTriggerDetails": "No trigger details",
+    "created": "Created {{time}}",
+    "updated": "Updated {{time}}",
+    "cron": {
+        "am": "AM",
+        "pm": "PM",
+        "everyDayAt": "Every day at {{time}}",
+        "everyDaysAt": "Every {{days}} at {{time}}",
+        "onDayOfEveryMonthAt": "On day {{day}} of every month at {{time}}",
+        "onDayOfMonthsAt": "On day {{day}} of {{months}} at {{time}}",
+        "everyDayOfMonthsAt": "Every day of {{months}} at {{time}}",
+        "days": {
+            "sunday": "Sunday",
+            "monday": "Monday",
+            "tuesday": "Tuesday",
+            "wednesday": "Wednesday",
+            "thursday": "Thursday",
+            "friday": "Friday",
+            "saturday": "Saturday"
+        },
+        "months": {
+            "january": "January",
+            "february": "February",
+            "march": "March",
+            "april": "April",
+            "may": "May",
+            "june": "June",
+            "july": "July",
+            "august": "August",
+            "september": "September",
+            "october": "October",
+            "november": "November",
+            "december": "December"
+        }
+    }
+}

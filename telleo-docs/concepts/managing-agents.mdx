@@ -1,0 +1,179 @@
+---
+title: "Managing agents"
+description: "Create and edit AI agents, pick voices, choose the default agent and which agent answers each number, and delete agents safely."
+---
+
+Everything you can do on the dashboard's **AI Agents** screen you can also do through the API, with a key that has the `agents:manage` [scope](/authentication#scopes). Reading agents, voices, the default agent and your numbers only needs `calls:read`.
+
+| Request | What it does |
+|---|---|
+| `GET /v1/agents` | Agents you can call with. `?include_disabled=true` lists every agent. |
+| `GET /v1/agents/{id}` | One agent's whole configuration with `agents:manage`; a summary (no script, handoff numbers, action rules or booking page) with only `calls:read`. |
+| `POST /v1/agents` | Creates an agent. |
+| `PATCH /v1/agents/{id}` | Changes only the fields you send. |
+| `POST /v1/agents/{id}/enable` / `disable` | Turns it on or off. |
+| `DELETE /v1/agents/{id}` | Deletes an agent nothing uses any more. |
+| `GET /v1/voices` | Voice engines, their voices, languages and price per minute. |
+| `GET` / `PUT /v1/settings/default-agent` | Your account's default agent. |
+| `GET /v1/numbers`, `PUT /v1/numbers/{id}/agent` | Which agent answers each of your inbound numbers. |
+
+## Creating an agent
+
+```bash
+curl https://api.telleo.ai/v1/agents \
+  -H "X-API-Key: $TELLEO_API_KEY" \
+  -H "Idempotency-Key: agent-admissions-v1" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "Riya – admissions",
+    "language": "hinglish",
+    "tts_model": "google",
+    "voice": "hi-IN-Chirp3-HD-Kore",
+    "opening_line": "Hi {{name}}, this is Riya from Shiksha Academy. Is this a good time?",
+    "system_prompt": "You are Riya, an admissions counsellor at Shiksha Academy. …",
+    "extraction_questions": ["Which course are you interested in?", "Preferred batch timing?"],
+    "handoff_numbers": ["+919800000001"],
+    "max_call_minutes": 8
+  }'
+```
+
+`name`, `system_prompt` and `opening_line` are required. Everything else has a default: the agent is turned on, places calls (`direction: "outbound"`), speaks Hindi or Hinglish, and uses the `google` engine with its default voice.
+
+| Field | Values |
+|---|---|
+| `name` | Up to 128 characters, unique in your account ignoring case (`409 agent_name_taken`). |
+| `direction` | `outbound` places calls, `inbound` answers your numbers, `both` does both. |
+| `language` | `hinglish`, `hindi`, `english`, `punjabi`, `marathi`, `gujarati`, `bengali`, `tamil`, `telugu`, `kannada`, `malayalam`, `odia`, a code such as `hi`, or a tag such as `ta-IN`. |
+| `tts_model`, `voice` | An engine and one of its voices from [`GET /v1/voices`](#voices). |
+| `opening_line`, `system_prompt` | The first sentence and the script. `{{placeholders}}` are filled per call; see [Agents and variables](/concepts/agents-and-variables). |
+| `extraction_questions` | Up to 50 questions whose answers come back in `outcome.answers`. |
+| `dispositions` | Up to 50 labels the agent may give a call; empty uses your account's defaults. |
+| `handoff_numbers` | Up to 10 E.164 numbers the agent can transfer a caller to. |
+| `max_call_minutes` | 1 to 30; `null` is 10. |
+| `pace`, `temperature`, `voice_modulation` | 0.5–2.0, 0.01–2.0 and 1.0–2.5; `null` uses the default. |
+| `booking_page_id` | One of your booking pages, for agents that book meetings. |
+| `send_rules` | WhatsApp, email or booking actions, as in the dashboard editor (snake_case fields). Not used on API calls. |
+
+The API checks every value and **refuses** what the dashboard would quietly repair. An engine or voice it does not know is `422` with the valid options in `details`, never replaced by a default voice; a number out of range is `400`, never clamped:
+
+```json
+{
+  "error": {
+    "code": "invalid_voice",
+    "message": "Voice priya is not a google voice. Pick one of valid_voices (GET /v1/voices).",
+    "details": { "tts_model": "google", "valid_voices": ["hi-IN-Chirp3-HD-Achird", "hi-IN-Chirp3-HD-Charon", "…"] }
+  }
+}
+```
+
+`speech_cache_mode` is shown on every agent but set by our support team only.
+
+## Editing an agent
+
+`PATCH` changes **only the fields you send**. Everything else keeps its stored value, including the voice engine, the action rules and the speech cache. Send `null` to clear a field that can be empty (`language`, `max_call_minutes`, `pace`, `booking_page_id`…), and `[]` to empty a list.
+
+```bash
+curl -X PATCH https://api.telleo.ai/v1/agents/17ea33d2-5b6c-4c1e-9a1f-2d4e6f8a9b0c \
+  -H "X-API-Key: $TELLEO_API_KEY" -H "Content-Type: application/json" \
+  -d '{ "opening_line": "Namaste {{name}}! Riya here from Shiksha Academy.", "max_call_minutes": 6 }'
+```
+
+Changing `tts_model` needs a `voice` of the new engine in the same request, because the engines share no voices.
+
+### Avoiding lost updates
+
+Two systems editing the same agent can overwrite each other's changes. Send the agent's `updated_at` from your last read as an `If-Match` header (or as `expected_updated_at` in the body): when the agent changed since, the request is refused with `409 version_conflict` (`details.current_updated_at`) and nothing is saved. Read it again, re-apply your change and retry. Without the header the last write wins, as before.
+
+```bash
+curl -X PATCH https://api.telleo.ai/v1/agents/17ea33d2-… \
+  -H "X-API-Key: $TELLEO_API_KEY" -H "Content-Type: application/json" \
+  -H 'If-Match: "2026-10-19T10:15:00.123456Z"' \
+  -d '{ "max_call_minutes": 6 }'
+```
+
+## Turning an agent off
+
+`POST /v1/agents/{id}/disable` turns the agent off and **cancels every call still waiting for it**, whatever started it: API calls, workflows, bulk campaigns or a counsellor's AI call button. Each canceled call carries the reason, and the response says how many (`waiting_calls_canceled`). Calls already ringing finish normally.
+
+The response warns you when the agent is your [default agent](#the-default-agent) (calls that rely on the default are canceled until you choose another) or answers an inbound number (callers hear that the assistant is unavailable until you [move the number](#inbound-numbers)).
+
+`POST /v1/agents/{id}/enable` turns it back on. Calls canceled while it was off are not restored; start them again.
+
+<Note>
+Cancelling applies to an agent that exists and is turned **off**. When a waiting call's agent cannot be found at all — it was deleted, or your default agent setting names an agent that does not exist — API calls are canceled, but workflow, bulk and manual calls still dial with a generic voice, as they always have. Set a [default agent](#the-default-agent) that exists to avoid that.
+</Note>
+
+## Voices
+
+`GET /v1/voices` lists every engine with its voices and what a connected minute costs:
+
+```json
+{
+  "object": "list",
+  "data": [
+    {
+      "id": "google", "object": "tts_model", "label": "Google Chirp3-HD",
+      "note": "Recommended — clearest Hindi; cheaper per minute than Sarvam",
+      "default_voice": "hi-IN-Chirp3-HD-Achird",
+      "languages": ["hindi", "hinglish", "english"],
+      "pricing": { "credits_per_minute": 6.0, "ai_credits_per_minute": 5.0, "telephony_credits_per_minute": 1.0 },
+      "voices": [ { "id": "hi-IN-Chirp3-HD-Kore", "gender": "female", "label": "hi-IN-Chirp3-HD-Kore" } ]
+    }
+  ],
+  "languages": ["hinglish", "hindi", "english", "…"],
+  "has_more": false
+}
+```
+
+The voice's `gender` matters for Hindi: the agent conjugates first-person verbs to match it. `deepgram` speaks English only; an agent in any other language cannot use it (`422 voice_language_mismatch`). `pricing` is `null` if prices could not be read at that moment.
+
+## The default agent
+
+Workflow, bulk and manual AI calls that do not name an agent use your account's **default agent**.
+
+```bash
+curl -X PUT https://api.telleo.ai/v1/settings/default-agent \
+  -H "X-API-Key: $TELLEO_API_KEY" -H "Content-Type: application/json" \
+  -d '{ "agent_id": "17ea33d2-5b6c-4c1e-9a1f-2d4e6f8a9b0c" }'
+```
+
+The agent must be turned on and place calls (`outbound` or `both`). Only this one setting changes; the rest of your AI calling settings are kept. If someone has the AI Calling settings page open in the dashboard while you change it, saving that page afterwards can put the old default back; read it again with `GET` if in doubt.
+
+API calls always name their agent with `agent_id` and are not affected by the default.
+
+## Inbound numbers
+
+On **Vacademy Voice**, a call to one of your numbers plays the number's IVR menu, and an **AI agent step** in that menu hands the caller to an agent. `GET /v1/numbers` shows, per number, which agent answers and how:
+
+| `routing.type` | Meaning |
+|---|---|
+| `ai_agent` | An AI agent answers every call. |
+| `menu_with_ai_agent` | The caller reaches the agent through a menu option. |
+| `menu_with_several_ai_agents` | Different options go to different agents (`routing.agents`). |
+| `menu_without_ai_agent` | The menu sends callers to people, voicemail or recordings. |
+| `no_menu` | No IVR menu: calls ring your counsellors. |
+
+`PUT /v1/numbers/{id}/agent` with `{"agent_id": …}` points the number's AI step at another agent. To keep it safe, the API only does this when the change is unambiguous: the number plays a menu with **exactly one** AI agent step and **no other number** plays the same menu. Anything else is `409 number_routing_complex` with `details.reason` (`no_menu`, `menu_without_ai_agent`, `menu_with_several_ai_agents` or `menu_shared`); change those in the dashboard's IVR builder. The agent must be turned on and answer calls (`direction` `inbound` or `both`).
+
+## Deleting an agent
+
+`DELETE /v1/agents/{id}` deletes an agent nothing uses any more. While something still relies on it, it is refused with `409 agent_in_use` and a list of the places, so nothing silently falls back to another voice:
+
+```json
+{
+  "error": {
+    "code": "agent_in_use",
+    "message": "This agent is still in use. Point these at another agent (or remove them), then delete it.",
+    "details": {
+      "used_by": [
+        { "type": "default_agent" },
+        { "type": "ivr_step", "menu_id": "m-1", "menu_name": "Main", "menu_enabled": true, "step_id": "n-2", "step_label": "Talk to AI" },
+        { "type": "workflow", "workflow_id": "w-1", "workflow_name": "New lead nurture", "workflow_status": "active", "node_id": "nt-9", "node_name": "AI call" },
+        { "type": "waiting_calls", "count": 12 }
+      ]
+    }
+  }
+}
+```
+
+Choose another default, move the numbers, change the workflows, and turn the agent off (which cancels its waiting calls); then delete it. Deleted agents cannot be restored. Workflows that are active or drafts count; inactive (deleted) workflows do not.

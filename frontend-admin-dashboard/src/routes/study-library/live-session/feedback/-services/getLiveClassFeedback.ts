@@ -29,6 +29,7 @@ const postFeedbackSearch = async (
             start_date: params.startDate,
             end_date: params.endDate,
             search_query: params.searchQuery || null,
+            rating_below: params.ratingBelow ?? null,
             page,
             size,
         }
@@ -100,6 +101,7 @@ export const useFeedbackSummary = (params: LiveClassFeedbackSearchParams) =>
                 startDate: params.startDate,
                 endDate: params.endDate,
                 searchQuery: params.searchQuery,
+                ratingBelow: params.ratingBelow,
             },
         ],
         queryFn: () => fetchAllLiveClassFeedback(params),

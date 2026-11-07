@@ -1,0 +1,31 @@
+{
+    "title": "Change invoice numbering?",
+    "description": "New invoices will use the new format from now on.",
+    "before": {
+        "label": "Last invoice used"
+    },
+    "after": {
+        "label": "Next invoice will be"
+    },
+    "impact": {
+        "prefix": "The",
+        "suffix_one": "invoice already issued keeps its existing numbers — nothing is renumbered, and no number is ever reused.",
+        "suffix_other": "invoices already issued keep their existing numbers — nothing is renumbered, and no number is ever reused.",
+        "none": "This institute has not issued any invoices yet, so nothing is affected by the change."
+    },
+    "warning": {
+        "text": "This format produces numbers that are not strictly sequential. Many tax authorities require invoice numbers to run in an unbroken sequence — check with your accountant before saving."
+    },
+    "confirm": {
+        "instructionPrefix": "Type",
+        "instructionSuffix": "to confirm"
+    },
+    "checkbox": {
+        "label": "I understand that invoices created from now on will use the new format."
+    },
+    "footer": {
+        "cancel": "Cancel",
+        "save": "Save numbering",
+        "saving": "Saving…"
+    }
+}

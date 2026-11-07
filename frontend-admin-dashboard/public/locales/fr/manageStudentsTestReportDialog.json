@@ -1,0 +1,46 @@
+{
+    "title": "Rapport de test de l'élève",
+    "toast": {
+        "exportPdfSuccess": "Les données du rapport de test ont été exportées en PDF avec succès !"
+    },
+    "info": {
+        "subject": "Matière :",
+        "attemptDate": "Date de la tentative :",
+        "marks": "Notes :",
+        "completionTime": "Temps de réalisation :",
+        "minutes": "{{value}} min",
+        "startTime": "Heure de début :",
+        "endTime": "Heure de fin :"
+    },
+    "score": {
+        "heading": "Rapport de score",
+        "rank": "Rang",
+        "percentile": "Percentile",
+        "marks": "Notes"
+    },
+    "response": {
+        "heading": "Répartition des réponses",
+        "attempted": "Tentées :",
+        "skipped": "Passées :"
+    },
+    "marksBreakdown": {
+        "heading": "Répartition des notes",
+        "correctRespondents": "Réponses correctes :",
+        "partiallyCorrectRespondents": "Réponses partiellement correctes :",
+        "wrongRespondents": "Réponses incorrectes :",
+        "skipped": "Passées :"
+    },
+    "review": {
+        "heading": "Révision des réponses",
+        "question": "Question ({{number}}.)",
+        "timeTakenSeconds_one": "{{count}} sec",
+        "timeTakenSeconds_many": "{{count}} sec",
+        "timeTakenSeconds_other": "{{count}} sec",
+        "studentAnswer": "Réponse de l'élève :",
+        "marksLabel": "{{marks}} points",
+        "correctAnswer": "Réponse correcte :",
+        "explanation": "Explication :",
+        "noResponse": "Aucune réponse",
+        "empty": "Aucune révision de réponse disponible"
+    }
+}

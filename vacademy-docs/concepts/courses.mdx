@@ -1,0 +1,349 @@
+---
+title: "Courses"
+description: "Course ids, versions, languages, formats, prices and availability; filters, sorting, badges and facets."
+---
+
+The API lists what the institute has **published to its catalogue**, exactly as the hosted catalogue site lists it. A course that is not published is absent: `GET /courses/{id}` returns `404 not_found`.
+
+## A course and its versions
+
+One course can be sold in several **versions**: levels or batches (`Beginner`, `2026 batch`) and, on sites with course languages on, language editions (an English and a Hindi eBook). The API returns **one entry per course**; its versions are in `variants`:
+
+```json
+{
+  "id": "7c12a9ec-22c3-4c55-ada1-2a93e107816f",
+  "title": "Vedic Parenting - eBook",
+  "languages": [
+    { "code": "en", "label": "English", "chip": "EN" },
+    { "code": "hi", "label": "Hindi", "chip": "हिं" }
+  ],
+  "variants": [
+    {
+      "package_session_id": "92e89046-5865-4cf7-bea6-ac1e8b7bd328",
+      "enroll_invite_id": "5a975e3c-429f-4bfe-9143-43ffcf807748",
+      "title": "Vedic Parenting - eBook",
+      "level": null,
+      "session_id": "5416ef11-e765-4052-95f0-dff187076250",
+      "session_name": "Virtue | Civilisation",
+      "language": { "code": "en", "label": "English", "chip": "EN" },
+      "url": "https://learning.brahmvarchas.org/store/7c12a9ec-22c3-4c55-ada1-2a93e107816f?enrollInviteId=5a975e3c-429f-4bfe-9143-43ffcf807748&packageSessionId=92e89046-5865-4cf7-bea6-ac1e8b7bd328&level=default",
+      "availability": "available",
+      "price": { "amount": 251.0, "compare_at_amount": null, "currency": "INR", "is_free": false }
+    },
+    {
+      "package_session_id": "5c4fcbf5-851c-455c-90b4-f74217ded156",
+      "enroll_invite_id": "f2496594-7a63-47eb-8b22-a0af43e75fb6",
+      "title": "वैदिक पेरेंटिंग - ई पुस्तक",
+      "level": null,
+      "session_id": "5416ef11-e765-4052-95f0-dff187076250",
+      "session_name": "Virtue | Civilisation",
+      "language": { "code": "hi", "label": "Hindi", "chip": "हिं" },
+      "url": "https://learning.brahmvarchas.org/store/c150dfcf-96e0-4712-b709-b0528e1f4a09?enrollInviteId=f2496594-7a63-47eb-8b22-a0af43e75fb6&packageSessionId=5c4fcbf5-851c-455c-90b4-f74217ded156&level=default",
+      "availability": "available",
+      "price": { "amount": 251.0, "compare_at_amount": null, "currency": "INR", "is_free": false }
+    }
+  ]
+}
+```
+
+- **`id`** is the course id. It stays the same whichever version is shown. Use it in your routes and in `GET /courses/{id}`.
+- A language edition may be a separate course on the platform with its own id (here the Hindi eBook is `c150dfcf-…`). `GET /courses/{id}` accepts that id too and shows that edition, but the response `id` is still the course id. The hosted page of an edition is in its variant's `url`.
+- The top-level fields (`title`, `subtitle`, `image_url`, `url`, `level`, `price`, `availability`) describe the version **shown**: the first in catalogue order, or the one in `language` when you pass it.
+- `level` is `null` for a course without named levels.
+- Each variant also has its own `title` (the Hindi edition's is in Hindi) and `session_id` / `session_name`, the session (batch) it belongs to. Filter by session with `?session=`.
+
+## Languages
+
+`GET /site` lists the site's course languages; the list is empty when the institute has course languages off. Then `languages` is `[]` on every course and `language` parameters are ignored.
+
+With languages on:
+
+- `GET /courses?language=hi` keeps the courses available in Hindi and shows their Hindi version. An unknown code matches nothing. `language=en,hi` keeps courses available in either; the version shown is then the first in catalogue order.
+- `GET /courses/{id}?language=hi` shows the Hindi version (title, url, price, `seo`) when there is one, else the default version.
+- `chip` is the short text the hosted site prints on course cards (`EN`, `हिं`); it falls back to `label` when the institute has not set one. It is on `GET /site` `languages`, on a course's `languages` and on `variants[].language`.
+- A version's language comes from its level name (`Hindi`, `Beginner (English)`) or a course tag that is exactly a language name or code. A course whose language cannot be detected has `languages: []`.
+
+## Formats
+
+Formats ("E-books", "Live sessions") are defined per site. `GET /site` lists them in display order; each course lists its own in `formats`. Filter with `GET /courses?format=ebook` (any of several: `format=ebook,live`). An unknown key matches nothing. A site without formats returns `[]` everywhere.
+
+## Tags
+
+`tags` are the course's tags as authored, from all its versions. Some carry meaning on the hosted site (`format-ebook`, stream tags); show the ones that make sense to your visitors. Filter with `GET /courses?tag=for-parents` (any of several: `tag=a,b`; case-insensitive, whole tag).
+
+## Price and availability
+
+`availability` says whether the version shown can be bought now:
+
+| `availability` | Meaning | `price` |
+|---|---|---|
+| `available` | On sale or open for enrolment. | Set, or `null` when prices are hidden |
+| `coming_soon` | Announced, not on sale yet. | `null` |
+| `not_started` | Enrolment opens later. | `null` |
+| `closed` | Enrolment ended or the invite is inactive. | `null` |
+
+`price`:
+
+| Field | |
+|---|---|
+| `amount` | Major units (rupees for INR), e.g. `251.0`. `0` when free. |
+| `compare_at_amount` | A higher list price to show struck through, or `null`. |
+| `currency` | ISO 4217, e.g. `INR`. |
+| `is_free` | `true` when `amount` is `0`. |
+| `varies` | `true` when the versions on sale have different prices. Show "From" `min_amount`. |
+| `min_amount`, `max_amount` | The lowest and highest price among the versions on sale now that match your filters: the "from ₹X" range. Both equal `amount` when there is one price. They never reveal a hidden paid price. |
+
+**Hidden prices.** An institute can hide prices on its catalogue (`GET /site` returns `price_visible: false`). Paid courses then have `price: null` and `price_visible: false`: show "See price" and link to `url`. Free courses still show `price` with `is_free: true`.
+
+The [quickstart's `priceLabel`](/quickstart#2-the-fetch-helper) implements these rules.
+
+## Listing, filtering and sorting
+
+`GET /courses` filters the way the hosted catalogue's Courses page does. Most filters take a **comma list**: the values of one parameter are OR-ed, different parameters are AND-ed. A single value behaves exactly as it always has.
+
+```bash
+# Hindi or English e-books in the Dharma stream, cheapest first
+curl "https://api.vacademy.ai/catalog/v1/courses?stream=dharma&format=ebook&language=hi,en&sort=price_asc" \
+  -H "X-API-Key: $VACADEMY_CATALOG_KEY"
+```
+
+| Parameter | Matches | Comma list |
+|---|---|---|
+| `q` | Words, in any order, case-insensitive: a course matches when the whole text is a substring of any version's title, its plain-text description, an instructor's name or a course tag, or when every word is found among those (a word of 3+ letters also matches the start of one: `geo` finds Geography). Month names and their short forms match (`April` = `Apr`), so do `2024` and `'24`, and singular and plural. Filler such as `pdf`, `ebook`, `course`, `notes`, `for`, `the` is not required. | |
+| `stream`, `category` | Stream or category slugs from `GET /streams`. `category` is looked up in the given `stream`s, else in every stream. | Yes |
+| `format` | Format keys from `GET /site`. | Yes |
+| `badge` | `bestseller`, `popular`, `new`, `free` ([below](#badges-and-popularity)). Anything else is a `400`. | Yes |
+| `custom` | Options of the site's own filter groups ([below](#custom-filter-groups)). | Yes |
+| `language` | Language codes from `GET /site`. | Yes |
+| `level` | Level names, case-insensitive. Book-store convention: `Buy` and `Rent` also match a version whose package type, or any of its fields, is `Buy` / `Rent`. | Yes |
+| `session` | Session ids (`variants[].session_id`). | Yes |
+| `instructor` | Instructor names, case-insensitive: a version's first instructor, as in the hosted site's Instructor filter. | Yes |
+| `tag` | Tags, case-insensitive, whole tag. | Yes |
+| `price` | `free` (price `0`) or `paid` (price above `0`). Anything else is a `400`. | |
+| `price_min`, `price_max` | Inclusive bounds, numbers `0` or more (else `400`). | |
+| `availability` | `available`, `coming_soon`, `not_started`, `closed`, on the version shown. | |
+
+- **One version must pass every version filter.** `language`, `price`, `price_min`, `price_max`, `level`, `session`, `tag` and `instructor` are tested on the course's versions, and a course matches when **one** version passes all of them: `language=hi&price=paid` means "has a paid Hindi version", not "has a Hindi version and some paid version". The course's `price` then reflects the versions that matched.
+- **Unknown values match nothing.** An unknown stream or category slug, format key, language code, custom group or option returns an empty page, never an error and never everything.
+- **Coming-soon versions have no price yet**: they never match `price`, `price_min` or `price_max`.
+- **Hidden prices.** When the site hides prices (`price_visible: false`), price filters still apply to the real prices, as on the hosted site, but amounts stay hidden in the response.
+- `page` starts at 1; `page_size` is 1 to 100 (default 24). `total` and `has_more` tell you whether to show a next page.
+
+### Sorting
+
+| `sort` | Order |
+|---|---|
+| `newest` (default) | By `created_at` (the newest version's creation time), newest first. |
+| `oldest` | By `created_at`, oldest first. |
+| `price_asc`, `price_desc` | By the lowest price on sale now among the versions that match your filters. |
+| `rating` | Highest `rating` first; unrated courses last. |
+| `title`, `title_desc` | By title, A–Z / Z–A (case-insensitive). |
+| `popular` | By `popularity_rank` (most enrolled first); unranked courses follow in catalogue order. |
+| `relevance` | With `q`: titles holding the whole `q` first, then titles with the most of its words, then newest. Without `q`, the same as `newest`. |
+
+Ties keep the catalogue's order. Any other value is `400 invalid_request` with `details.param: "sort"`. `GET /courses` always defaults to `newest`; the site's own default is in [`GET /site` `catalog.default_sort`](#mirror-the-hosted-catalogue).
+
+## Badges and popularity
+
+Every course carries `badges` (an array) and `popularity_rank`:
+
+```json
+{ "id": "7c12a9ec-22c3-4c55-ada1-2a93e107816f", "title": "Vedic Parenting - eBook", "badges": ["bestseller", "new", "popular"], "popularity_rank": 1 }
+```
+
+| Badge | Earned when |
+|---|---|
+| `bestseller` | The course is among the top N **paid** courses by enrolment rank (N = `catalog.badges.bestseller_top`, default 3). |
+| `popular` | It is the best-ranked course of its stream. |
+| `new` | It was created within `catalog.badges.new_days` days (default 60). |
+| `free` | Its cheapest version on sale now costs `0`. |
+
+- `badges` lists **every** badge the course earned, in priority order: the site's `catalog.badges.types` first, then the rest. `?badge=new` matches on all of them, whatever the site displays.
+- The hosted site shows a pill only when `catalog.badges.enabled` is `true`, only for types in `catalog.badges.types`, and at most `catalog.badges.max` per card. To show the same pills, filter and trim with those settings:
+
+  ```ts
+  const { badges: rules } = (await vacademy.site()).catalog;
+  const pills = rules.enabled ? c.badges.filter((b) => rules.types.includes(b)).slice(0, rules.max) : [];
+  ```
+
+- `popularity_rank` is `1` for the course with the most learners enrolled (active enrolments, institute-wide). It is `null` when nobody is enrolled. A course that folds several language packages takes the best rank among them. Ranks refresh every 10 minutes. If they cannot be read, the request still succeeds with `popularity_rank: null` everywhere, no `bestseller`/`popular` badges, and `sort=popular` in catalogue order.
+
+## Facets: live filter counts
+
+Add `facets=true` (or `1`) to `GET /courses` to get, beside the page, how many courses each filter option would show:
+
+```bash
+curl "https://api.vacademy.ai/catalog/v1/courses?stream=dharma&language=en,hi&facets=true&page_size=1" \
+  -H "X-API-Key: $VACADEMY_CATALOG_KEY"
+```
+
+```json
+{
+  "data": [{ "id": "7c12a9ec-22c3-4c55-ada1-2a93e107816f", "title": "Vedic Parenting - eBook", "…": "…" }],
+  "page": 1,
+  "page_size": 1,
+  "total": 1,
+  "has_more": false,
+  "facets": {
+    "streams": [
+      { "slug": "shastra", "label": "Scriptures | Texts", "count": 2 },
+      { "slug": "dharma", "label": "Virtue | Civilisation", "count": 1 },
+      { "slug": "kala", "label": "Skills | Craft", "count": 1 }
+    ],
+    "categories": [{ "slug": "vedic-parenting", "label": "Holistic Parenting", "count": 1 }],
+    "formats": [{ "key": "ebook", "label": "E-books", "count": 1 }],
+    "languages": [
+      { "code": "en", "label": "English", "count": 1 },
+      { "code": "hi", "label": "Hindi", "count": 1 }
+    ],
+    "levels": [],
+    "sessions": [{ "id": "5416ef11-e765-4052-95f0-dff187076250", "label": "Virtue | Civilisation", "count": 1 }],
+    "instructors": [{ "key": "Abhishek", "label": "Abhishek", "count": 1 }],
+    "tags": [
+      { "key": "for-parents", "label": "for-parents", "count": 1 },
+      { "key": "format-ebook", "label": "format-ebook", "count": 1 }
+    ],
+    "badges": [
+      { "key": "bestseller", "label": "Bestseller", "count": 1 },
+      { "key": "new", "label": "New", "count": 1 },
+      { "key": "popular", "label": "Popular", "count": 1 }
+    ],
+    "price": { "free": 0, "paid": 1, "under": [{ "max": 250.0, "count": 0 }, { "max": 500.0, "count": 1 }] },
+    "custom": { "for": { "parents": 1, "students": 0 } }
+  }
+}
+```
+
+(Shortened. `price.under` and `custom` here come from a site with price steps of ₹250 and ₹500 and a "For" filter group; Brahm Varchas has neither, so it returns `"under": []` and `"custom": {}`.)
+
+- **Each group is counted against every other active filter**, not its own. Above, `stream=dharma` is selected, yet `streams` still says how many courses `shastra` or `kala` would show with the same languages. That is what the hosted site's live counts show, and a group never collapses to its own selection.
+- Counts cover the whole result set, not just the page.
+- Only options with a count above `0` are listed, except in `custom` groups whose `show_empty` is `true`, which keep their zeros.
+- `categories` are those of the selected streams, or of all streams when none is selected.
+- Apply an option with the key it names: `streams[].slug` → `stream`, `categories[].slug` → `category`, `formats[].key` → `format`, `languages[].code` → `language`, `levels[].key` → `level`, `sessions[].id` → `session`, `instructors[].key` → `instructor`, `tags[].key` (lower-case) → `tag`, `badges[].key` → `badge`, `price.free` / `price.paid` → `price`, `price.under[].max` → `price_max`, `custom` → `custom=<group>:<option>`.
+- Without `facets` (or with `facets=false`), the response has no `facets` key. Any other value is a `400`.
+
+## Custom filter groups
+
+An institute can add its own filter groups to the hosted Courses page ("For: Parents / Students", or one built from the site's formats). They are in `GET /site` `catalog.custom_filters`, each with an `id` and `options[].id`. An option matches a course when any of its versions carries one of the option's tags or level names.
+
+```bash
+# courses for parents OR students, that are also free
+curl "https://api.vacademy.ai/catalog/v1/courses?custom=for:parents,for:students&price=free" \
+  -H "X-API-Key: $VACADEMY_CATALOG_KEY"
+```
+
+`custom=<group id>:<option id>,…`: options of one group are OR-ed, groups are AND-ed. An unknown group or option selects nothing (no results). A token without a colon is `400 invalid_request` with `details.param: "custom"`.
+
+## Card fields
+
+Besides the fields above, every course summary (in `GET /courses`, `GET /courses/{id}` and learning-path steps) has:
+
+| Field | |
+|---|---|
+| `images` | `{preview_url, banner_url, thumbnail_url}`, each an absolute URL or `null`. `image_url` is unchanged: the first of preview, banner, thumbnail. |
+| `badges`, `popularity_rank` | See [Badges and popularity](#badges-and-popularity). |
+| `duration_minutes` | The course's read time in minutes, or `null` when not set. |
+| `available_slots`, `max_seats` | Seats available and the seat limit, as the institute set them, or `null`. |
+| `package_type` | The course's package type as authored (e.g. `Buy`, `Rent`), or `null`. |
+| `coming_soon` | `null`, or for a course announced as Coming Soon: `{launch_date, button_text, ribbon_text, notify_campaign_id}`. `launch_date` is `yyyy-MM-dd` or `null`. Send "notify me" sign-ups to [`POST /leads`](/guides/enquiries) with `campaign_id` set to `notify_campaign_id` when it is set. |
+
+```json
+"images": {
+  "preview_url": "https://d1om4dxj9e7kkd.cloudfront.net/…/32aa2224-c7b1-46cf-b7ae-ebf1a37c5e34.png",
+  "banner_url": "https://d1om4dxj9e7kkd.cloudfront.net/…/bdfde708-f79a-41e4-896b-53cfec2219cc.png",
+  "thumbnail_url": null
+},
+"price": { "amount": 251.0, "compare_at_amount": null, "currency": "INR", "is_free": false, "varies": false, "min_amount": 251.0, "max_amount": 251.0 },
+"duration_minutes": null,
+"available_slots": null,
+"max_seats": null,
+"package_type": null,
+"coming_soon": null
+```
+
+## Mirror the hosted catalogue
+
+`GET /site` returns `catalog`: the settings of the hosted site's Courses section, so your page can offer the same sort menu, quick filters, filter panels, badges and search chips. Brahm Varchas's:
+
+```json
+"catalog": {
+  "default_sort": "newest",
+  "sort_options": ["newest", "oldest", "price_asc", "price_desc", "rating", "title", "title_desc", "popular"],
+  "show_filter_counts": false,
+  "quick_filters": [],
+  "price_filter": { "enabled": false, "label": null, "show_free": true, "max_options": [] },
+  "language_filter": { "enabled": true, "label": "Language" },
+  "category_filter": {
+    "enabled": true,
+    "label": "Category  ·  श्रेणी",
+    "scope": "all",
+    "label_mode": "both",
+    "sort": "count",
+    "hide_coming_soon": true,
+    "visible_count": 6,
+    "show_all_label": "+ Show all {count} categories"
+  },
+  "badges": { "enabled": false, "types": [], "new_days": 60, "bestseller_top": 3, "max": 2 },
+  "custom_filters": [],
+  "popular_searches": []
+}
+```
+
+| Field | |
+|---|---|
+| `default_sort`, `sort_options` | The site's default sort and the sorts its menu offers, as `sort` values. `GET /courses` itself still defaults to `newest`: pass `sort=<default_sort>` to match. |
+| `show_filter_counts` | Whether the site prints facet counts beside options. |
+| `quick_filters` | One-tap chips: `{id, label, kind, value, params}`. `kind` is `popular`, `new`, `bestseller`, `free`, `language` or `price_max`; `params` are the `GET /courses` parameters that apply it, e.g. `{"sort": "popular"}`, `{"badge": "new"}`, `{"price": "free"}`, `{"language": "hi"}`, `{"price_max": 250.0}`. |
+| `price_filter` | `{enabled, label, show_free, max_options}`. `max_options` are "Under ₹X" steps: apply with `price_max`; their counts are `facets.price.under`. |
+| `language_filter` | `{enabled, label}`. |
+| `category_filter` | `{enabled, label, scope, label_mode, sort, hide_coming_soon, visible_count, show_all_label}`. `scope`: `stream` (categories of the selected stream only) or `all`. `label_mode`: show the category's `title`, `subtitle` or `both`. `sort`: `folder` order or by `count`. `visible_count`: show that many, then a "show all" link labelled `show_all_label` (`{count}` is the total). |
+| `badges` | `{enabled, types, new_days, bestseller_top, max}`: see [Badges and popularity](#badges-and-popularity). |
+| `custom_filters` | `[{id, label, source, options: [{id, label}], show_counts, show_empty, visible_count}]`. `source` is `course_formats` when the group's options are the site's formats, else `null`. |
+| `popular_searches` | The search hero's "Popular:" chips: `{label, kind, search, stream, category, quick_filter, route}`. `kind` `search` → `q=search`; `stream` → `stream` (and `category`); `quick_filter` → the quick filter with that `id`; `route` → a link to that path. Unused keys are `null`. |
+
+Here is a sample with badges, quick filters, a price filter and a custom group turned on:
+
+```json
+"quick_filters": [
+  { "id": "popular-0", "label": "Popular", "kind": "popular", "value": null, "params": { "sort": "popular" } },
+  { "id": "free-1", "label": "Free", "kind": "free", "value": null, "params": { "price": "free" } },
+  { "id": "language-2", "label": "हिंदी", "kind": "language", "value": "hi", "params": { "language": "hi" } },
+  { "id": "priceMax-3", "label": "Under 250", "kind": "price_max", "value": 250.0, "params": { "price_max": 250.0 } }
+],
+"price_filter": { "enabled": true, "label": null, "show_free": true, "max_options": [250.0, 500.0] },
+"badges": { "enabled": true, "types": ["bestseller", "new", "free"], "new_days": 60, "bestseller_top": 3, "max": 2 },
+"custom_filters": [
+  {
+    "id": "for",
+    "label": "For",
+    "source": null,
+    "options": [{ "id": "parents", "label": "Parents" }, { "id": "students", "label": "Students" }],
+    "show_counts": false,
+    "show_empty": true,
+    "visible_count": null
+  }
+],
+"popular_searches": [
+  { "label": "Vedic Parenting", "kind": "search", "search": "vedic parenting", "stream": null, "category": null, "quick_filter": null, "route": null },
+  { "label": "Ayurveda", "kind": "stream", "search": null, "stream": "swasthya", "category": null, "quick_filter": null, "route": null }
+]
+```
+
+## Detail fields
+
+`GET /courses/{id}` adds what a course page needs:
+
+| Field | |
+|---|---|
+| `description_html` / `description_text` | The course description. |
+| `about_html` / `about_text` | "About this course". |
+| `why_learn_html`, `who_should_learn_html` | Optional sections; `null` when empty. |
+| `mode` | `self_paced`, `live` or `null`. |
+| `faqs` | `[{question, answer_html}]`. |
+| `preview_video` | `{kind: "youtube" \| "vimeo", id, embed_url}`, `{kind: "url", url, embed_url: null}`, or `null`. |
+| `authors` | `[{name, subtitle, bio_html, image_url}]`. Never an email. |
+| `series` | The learning path this course is a step of: `{name, steps: [{course_id, title, url, current}]}`, or `null`. |
+| `seo`, `structured_data` | See [Course pages and SEO](/concepts/course-pages-and-seo). |
+
+Every `*_html` field is sanitised (jsoup relaxed safelist; images only from `http(s)` URLs) and `null` when it has no visible content. `GET /courses/{id}/outline` returns subject, module and chapter titles per version.

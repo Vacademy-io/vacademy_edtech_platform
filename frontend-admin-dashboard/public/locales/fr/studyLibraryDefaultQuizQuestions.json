@@ -1,0 +1,29 @@
+{
+    "q1": {
+        "question": "Quel est l'objectif principal de l'apprentissage automatique ?",
+        "options": {
+            "0": "Créer des bases de données",
+            "1": "Permettre aux ordinateurs d'apprendre à partir de données",
+            "2": "Concevoir des interfaces utilisateur",
+            "3": "Gérer la sécurité réseau"
+        }
+    },
+    "q2": {
+        "question": "Quelle méthode d'ensemble combine plusieurs apprenants faibles de façon séquentielle ?",
+        "options": {
+            "0": "Bagging",
+            "1": "Boosting",
+            "2": "Stacking",
+            "3": "Forêt aléatoire (Random Forest)"
+        }
+    },
+    "q3": {
+        "question": "Que signifie PCA dans la réduction de dimensionnalité ?",
+        "options": {
+            "0": "Analyse en composantes principales",
+            "1": "Évaluation de corrélation primaire",
+            "2": "Algorithme de composantes progressives",
+            "3": "Approche de classification pratique"
+        }
+    }
+}

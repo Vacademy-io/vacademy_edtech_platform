@@ -1,4 +1,5 @@
 import { useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import { usePushNotifications } from "@/hooks/usePushNotifications";
 
 /**
@@ -6,6 +7,8 @@ import { usePushNotifications } from "@/hooks/usePushNotifications";
  * This is loaded after initial render to avoid blocking the main bundle.
  */
 export const NotificationInitializer = () => {
+    const { t } = useTranslation("miscComponents");
+
     // Initialize push notifications when app starts
     usePushNotifications();
 
@@ -34,7 +37,7 @@ export const NotificationInitializer = () => {
                     const title =
                         payload?.notification?.title ||
                         payload?.data?.title ||
-                        "New notification";
+                        t("notificationInitializer.newNotification");
                     const body = payload?.notification?.body || payload?.data?.body || "";
                     const id = payload?.messageId || String(Date.now());
                     pushNotificationService.dispatch({

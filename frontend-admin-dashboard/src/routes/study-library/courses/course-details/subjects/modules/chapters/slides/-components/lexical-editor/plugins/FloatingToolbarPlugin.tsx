@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import * as ReactDOM from 'react-dom';
+import { useTranslation } from 'react-i18next';
 import {
     $getSelection,
     $isRangeSelection,
@@ -27,6 +28,7 @@ import { cn } from '@/lib/utils';
 /** Selection-anchored formatting toolbar: bold / italic / underline /
  *  strikethrough / highlight / inline code / link. */
 export function FloatingToolbarPlugin() {
+    const { t } = useTranslation('studyLibraryFloatingToolbarPlugin');
     const [editor] = useLexicalComposerContext();
     const toolbarRef = useRef<HTMLDivElement>(null);
     const [visible, setVisible] = useState(false);
@@ -90,12 +92,16 @@ export function FloatingToolbarPlugin() {
     if (!visible) return null;
 
     const buttons: Array<{ format: TextFormatType; icon: React.ReactNode; label: string }> = [
-        { format: 'bold', icon: <TextB size={16} />, label: 'Bold' },
-        { format: 'italic', icon: <TextItalic size={16} />, label: 'Italic' },
-        { format: 'underline', icon: <TextUnderline size={16} />, label: 'Underline' },
-        { format: 'strikethrough', icon: <TextStrikethrough size={16} />, label: 'Strikethrough' },
-        { format: 'highlight', icon: <HighlighterCircle size={16} />, label: 'Highlight' },
-        { format: 'code', icon: <Code size={16} />, label: 'Inline code' },
+        { format: 'bold', icon: <TextB size={16} />, label: t('bold') },
+        { format: 'italic', icon: <TextItalic size={16} />, label: t('italic') },
+        { format: 'underline', icon: <TextUnderline size={16} />, label: t('underline') },
+        {
+            format: 'strikethrough',
+            icon: <TextStrikethrough size={16} />,
+            label: t('strikethrough'),
+        },
+        { format: 'highlight', icon: <HighlighterCircle size={16} />, label: t('highlight') },
+        { format: 'code', icon: <Code size={16} />, label: t('inlineCode') },
     ];
 
     return ReactDOM.createPortal(
@@ -110,7 +116,7 @@ export function FloatingToolbarPlugin() {
                     <input
                         autoFocus
                         type="url"
-                        placeholder="https://…"
+                        placeholder={t('urlPlaceholder')}
                         className="w-52 rounded-sm border border-neutral-200 px-2 py-1 text-caption outline-none"
                         value={linkDraft}
                         onMouseDown={(e) => e.stopPropagation()}
@@ -126,7 +132,7 @@ export function FloatingToolbarPlugin() {
                     />
                     <button
                         type="button"
-                        aria-label="Apply link"
+                        aria-label={t('applyLink')}
                         className="rounded-sm p-1 text-success-600"
                         onClick={() => {
                             editor.dispatchCommand(TOGGLE_LINK_COMMAND, linkDraft || null);
@@ -137,7 +143,7 @@ export function FloatingToolbarPlugin() {
                     </button>
                     <button
                         type="button"
-                        aria-label="Cancel"
+                        aria-label={t('cancel')}
                         className="rounded-sm p-1 text-neutral-500"
                         onClick={() => setLinkEditing(false)}
                     >
@@ -163,8 +169,8 @@ export function FloatingToolbarPlugin() {
                     ))}
                     <button
                         type="button"
-                        aria-label="Link"
-                        title="Link"
+                        aria-label={t('link')}
+                        title={t('link')}
                         className={cn(
                             'rounded-md p-1.5 text-neutral-600 hover:bg-neutral-100',
                             isLink && 'bg-primary-50 text-primary-500'

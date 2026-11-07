@@ -75,7 +75,9 @@ export const AssignCoursesToTagsDialog = ({
             const data = await fetchPaginatedBatches({ page: 0, size: 100 });
             setBatches(data.content || []);
         } catch {
-            toast.error('Failed to load courses');
+            toast.error(
+                `Failed to load ${getTerminologyPlural(ContentTerms.Course, SystemTerms.Course).toLocaleLowerCase()}`
+            );
         } finally {
             setIsLoadingBatches(false);
         }
@@ -237,7 +239,7 @@ export const AssignCoursesToTagsDialog = ({
 
             <input
                 type="text"
-                placeholder="Search courses..."
+                placeholder={`Search ${getTerminologyPlural(ContentTerms.Course, SystemTerms.Course).toLocaleLowerCase()}...`}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="w-full rounded-lg border border-neutral-200 px-3 py-2 text-sm outline-none focus:border-primary-400 focus:ring-1 focus:ring-primary-200"
@@ -276,7 +278,12 @@ export const AssignCoursesToTagsDialog = ({
                 <div className="flex max-h-[260px] flex-col gap-2 overflow-y-auto pr-1">
                     {filteredBatches.length === 0 ? (
                         <p className="py-4 text-center text-sm text-neutral-400">
-                            No courses found
+                            No{' '}
+                            {getTerminologyPlural(
+                                ContentTerms.Course,
+                                SystemTerms.Course
+                            ).toLocaleLowerCase()}{' '}
+                            found
                         </p>
                     ) : (
                         filteredBatches.map((b) => {
@@ -320,7 +327,8 @@ export const AssignCoursesToTagsDialog = ({
             {renderTagSummary()}
 
             <p className="text-sm text-neutral-600">
-                Configure enrollment settings for each course.
+                Configure enrollment settings for each{' '}
+                {getTerminology(ContentTerms.Course, SystemTerms.Course).toLocaleLowerCase()}.
             </p>
 
             <div className="flex max-h-[280px] flex-col gap-3 overflow-y-auto pr-1">
@@ -478,8 +486,9 @@ export const AssignCoursesToTagsDialog = ({
                     )}
                 </div>
                 <p className="text-xs text-neutral-500">
-                    {resolvedUserIds.length} user(s) × {psConfigs.length} course(s) ={' '}
-                    {summary.total_requested} total enrollments processed
+                    {resolvedUserIds.length} user(s) × {psConfigs.length}{' '}
+                    {getTerminology(ContentTerms.Course, SystemTerms.Course).toLocaleLowerCase()}(s)
+                    = {summary.total_requested} total enrollments processed
                 </p>
             </div>
         );
@@ -487,7 +496,10 @@ export const AssignCoursesToTagsDialog = ({
 
     // ── Stepper ──
     const stepLabels: { key: WizardStep; label: string }[] = [
-        { key: 'SELECT_COURSES', label: 'Courses' },
+        {
+            key: 'SELECT_COURSES',
+            label: getTerminologyPlural(ContentTerms.Course, SystemTerms.Course),
+        },
         { key: 'CONFIGURE', label: 'Configure' },
         { key: 'PREVIEW', label: 'Preview' },
         { key: 'RESULTS', label: 'Done' },

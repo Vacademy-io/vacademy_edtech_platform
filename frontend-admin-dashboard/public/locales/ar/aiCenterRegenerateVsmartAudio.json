@@ -1,0 +1,33 @@
+{
+    "heading": "فيسمارت الصوت",
+    "fields": {
+        "text": {
+            "label": "النص",
+            "placeholder": "أدخل النص"
+        },
+        "numQuestions": {
+            "label": "عدد الأسئلة",
+            "placeholder": "أدخل عدد الأسئلة"
+        },
+        "classLevel": {
+            "label": "المستوى الدراسي",
+            "placeholder": "أدخل المستوى الدراسي"
+        },
+        "topics": {
+            "label": "المواضيع",
+            "placeholder": "أدخل المواضيع"
+        },
+        "questionType": {
+            "label": "نوع السؤال",
+            "placeholder": "أدخل نوع السؤال"
+        },
+        "questionLanguage": {
+            "label": "لغة الأسئلة",
+            "placeholder": "أدخل لغة الأسئلة"
+        }
+    },
+    "actions": {
+        "cancel": "إلغاء",
+        "regenerate": "إعادة إنشاء"
+    }
+}

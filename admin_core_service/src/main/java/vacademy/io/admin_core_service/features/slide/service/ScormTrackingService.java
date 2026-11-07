@@ -73,6 +73,11 @@ public class ScormTrackingService {
                 ? new HashMap<>(dto.getCmiJson())
                 : new HashMap<>();
         cmi.put("cmi.entry", isResume ? "resume" : "ab-initio");
+        // Learner identity (1.2 and 2004 spellings). Packages that keep their
+        // own browser-storage copy of progress key it on this; without it every
+        // account opened in the same browser reads the same copy.
+        cmi.put("cmi.core.student_id", userId);
+        cmi.put("cmi.learner_id", userId);
         dto.setCmiJson(cmi);
         return dto;
     }
@@ -134,7 +139,7 @@ public class ScormTrackingService {
      * Returns null when the package hasn't reported enough to derive any
      * percentage yet — caller should skip the cascade rather than write 0.
      */
-    Double computeScormCompletionPercentage(ScormLearnerProgress progress) {
+    public static Double computeScormCompletionPercentage(ScormLearnerProgress progress) {
         String completion = progress.getCompletionStatus();
         boolean lockedComplete = "completed".equalsIgnoreCase(completion)
                 || "passed".equalsIgnoreCase(completion);

@@ -1,0 +1,70 @@
+{
+    "sections": {
+        "previousSchoolDetails": "वर्तमान / पिछले स्कूल का विवरण",
+        "transferCertificateDetails": "स्थानांतरण प्रमाण पत्र (TC) विवरण",
+        "applyingFor": "प्रवेश हेतु आवेदन"
+    },
+    "fields": {
+        "previousSchoolName": {
+            "label": "पिछले स्कूल का नाम",
+            "placeholder": "पिछले स्कूल का नाम दर्ज करें"
+        },
+        "previousSchoolBoard": {
+            "label": "पिछले स्कूल का बोर्ड",
+            "placeholder": "बोर्ड चुनें",
+            "hint": "CBSE / ICSE"
+        },
+        "lastClassAttended": {
+            "label": "अंतिम पढ़ी गई कक्षा",
+            "placeholder": "कक्षा चुनें"
+        },
+        "academicYear": {
+            "label": "शैक्षणिक वर्ष",
+            "placeholder": "सत्र स्वतः भर जाएगा",
+            "hint": "चयनित सत्र के आधार पर"
+        },
+        "lastExamResult": {
+            "label": "अंतिम परीक्षा परिणाम / प्रतिशत",
+            "placeholder": "जैसे, 85% या A1 ग्रेड या 9 CGPA"
+        },
+        "subjectsStudied": {
+            "label": "पढ़े गए विषय (पिछली कक्षा)",
+            "placeholder": "जैसे, अंग्रेज़ी, हिंदी, गणित, विज्ञान, सामाजिक विज्ञान"
+        },
+        "tcNumber": {
+            "label": "TC नंबर",
+            "placeholder": "TC नंबर दर्ज करें"
+        },
+        "tcIssueDate": {
+            "label": "TC जारी करने की तिथि"
+        },
+        "tcPending": {
+            "label": "TC लंबित / बाद में जमा किया जाएगा",
+            "hint": "(TC के बिना प्रवेश की पुष्टि नहीं की जा सकती)"
+        },
+        "applyingForClass": {
+            "label": "जिस कक्षा / ग्रेड में प्रवेश लेना है",
+            "placeholder": "कक्षा चुनें",
+            "hint": "प्रवेश के लिए कक्षा या ग्रेड चुनें"
+        },
+        "preferredBoard": {
+            "label": "बोर्ड वरीयता",
+            "placeholder": "बोर्ड चुनें"
+        }
+    },
+    "boardOptions": {
+        "cbse": "CBSE",
+        "icse": "ICSE",
+        "stateBoard": "राज्य बोर्ड",
+        "ib": "IB",
+        "igcse": "IGCSE",
+        "other": "अन्य"
+    },
+    "classLevelOptions": {
+        "kindergarten": "किंडरगार्टन",
+        "nursery": "नर्सरी",
+        "lkg": "LKG",
+        "ukg": "UKG"
+    },
+    "classNumber": "कक्षा {{number}}"
+}

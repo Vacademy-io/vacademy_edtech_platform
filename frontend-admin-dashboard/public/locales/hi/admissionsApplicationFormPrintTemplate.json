@@ -1,0 +1,76 @@
+{
+    "header": {
+        "applicationFormTitle": "आवेदन पत्र",
+        "institutePlaceholder": "संस्थान का नाम",
+        "instituteLogoAlt": "संस्थान का लोगो",
+        "pastePhoto": "फ़ोटो चिपकाएँ",
+        "dateLabel": "दिनांक:",
+        "academicYearLabel": "शैक्षणिक वर्ष:"
+    },
+    "sections": {
+        "studentDetails": "छात्र विवरण",
+        "healthInformation": "स्वास्थ्य जानकारी",
+        "academicInformation": "शैक्षणिक जानकारी",
+        "fathersDetails": "पिता का विवरण",
+        "mothersDetails": "माता का विवरण",
+        "guardianDetails": "अभिभावक विवरण",
+        "emergencyContact": "आपातकालीन संपर्क",
+        "addressDetails": "पता विवरण"
+    },
+    "fields": {
+        "fullNameBirthCertificate": "पूरा नाम (जन्म प्रमाण पत्र के अनुसार)",
+        "dateOfBirth": "जन्म तिथि",
+        "gender": "लिंग",
+        "nationality": "राष्ट्रीयता",
+        "religion": "धर्म",
+        "category": "श्रेणी",
+        "bloodGroup": "रक्त समूह",
+        "motherTongue": "मातृभाषा",
+        "languagesKnown": "ज्ञात भाषाएँ",
+        "idType": "पहचान प्रकार",
+        "idNumber": "पहचान संख्या",
+        "medicalConditions": "चिकित्सीय स्थितियाँ / एलर्जी",
+        "dietaryRestrictions": "आहार संबंधी प्रतिबंध",
+        "specialEducationNeeds": "विशेष शिक्षा आवश्यकताएँ",
+        "physicallyChallenged": "शारीरिक रूप से विकलांग",
+        "applyingForClass": "किस कक्षा के लिए आवेदन",
+        "preferredBoard": "पसंदीदा बोर्ड",
+        "academicYear": "शैक्षणिक वर्ष",
+        "previousSchoolName": "पिछले विद्यालय का नाम",
+        "previousSchoolBoard": "पिछले विद्यालय का बोर्ड",
+        "lastClassAttended": "अंतिम उपस्थित कक्षा",
+        "lastExamResult": "अंतिम परीक्षा परिणाम",
+        "subjectsStudied": "पढ़े गए विषय",
+        "tcNumber": "टीसी संख्या",
+        "tcIssueDate": "टीसी जारी करने की तिथि",
+        "tcPending": "टीसी लंबित",
+        "name": "नाम",
+        "mobile": "मोबाइल",
+        "email": "ईमेल",
+        "qualification": "योग्यता",
+        "occupation": "व्यवसाय",
+        "annualIncome": "वार्षिक आय",
+        "relation": "संबंध",
+        "relationship": "रिश्ता",
+        "currentAddress": "वर्तमान पता",
+        "permanentAddress": "स्थायी पता",
+        "sameAsCurrentAddress": "वर्तमान पते के समान"
+    },
+    "values": {
+        "yes": "हाँ",
+        "no": "नहीं"
+    },
+    "signature": {
+        "roleParentGuardian": "माता-पिता / अभिभावक",
+        "roleStudent": "छात्र",
+        "rolePrincipal": "प्रधानाचार्य",
+        "label": "{{role}} के हस्ताक्षर"
+    },
+    "declaration": {
+        "title": "घोषणा",
+        "text": "मैं घोषणा करता/करती हूँ कि ऊपर दी गई सभी जानकारी मेरी सर्वोत्तम जानकारी के अनुसार सत्य और सही है। मैं समझता/समझती हूँ कि कोई भी गलत जानकारी आवेदन / प्रवेश को रद्द किए जाने का कारण बन सकती है।"
+    },
+    "footer": {
+        "generatedOn": "यह एक कंप्यूटर द्वारा जनरेट किया गया दस्तावेज़ है। {{date}} को जनरेट किया गया।"
+    }
+}

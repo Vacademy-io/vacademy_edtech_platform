@@ -1,0 +1,132 @@
+---
+title: "Claude Code"
+description: "Add your institute's server to Claude Code with one command, then sign in from the /mcp menu."
+icon: "terminal"
+---
+
+Claude Code is Anthropic's coding agent for the terminal and IDEs. It connects to Vacademy MCP over HTTP and signs in through your browser.
+
+<Note>
+Commands may change. These steps match Anthropic's Claude Code MCP documentation as of October 2026. See [Connect Claude Code to tools via MCP](https://code.claude.com/docs/en/mcp).
+</Note>
+
+## Add the server
+
+Copy the server URL from **Settings → MCP Server** in your admin portal, then run:
+
+```bash
+claude mcp add --transport http vacademy https://<your backend>/ai-service/mcp/i/<institute_id>
+```
+
+`vacademy` is just the name Claude Code shows for this server. You can pick another, such as your institute's short name.
+
+### Choose where it is saved
+
+Add `--scope` to choose who gets the server:
+
+| Scope | Flag | Who gets it | Saved in |
+| :--- | :--- | :--- | :--- |
+| Local (default) | `--scope local` | You, in this project only | `~/.claude.json` |
+| User | `--scope user` | You, in every project | `~/.claude.json` |
+| Project | `--scope project` | Everyone who uses this repository | `.mcp.json` in the project root |
+
+For example, to have it in every project:
+
+```bash
+claude mcp add --transport http --scope user vacademy https://<your backend>/ai-service/mcp/i/<institute_id>
+```
+
+A project-scoped `.mcp.json` looks like this. It holds only the URL, never a token, so it is safe to commit. Each teammate still signs in as themselves.
+
+```json .mcp.json
+{
+  "mcpServers": {
+    "vacademy": {
+      "type": "http",
+      "url": "https://<your backend>/ai-service/mcp/i/<institute_id>"
+    }
+  }
+}
+```
+
+## Sign in
+
+<Steps>
+  <Step title="Open the MCP menu">
+    Start Claude Code and type `/mcp`. Pick the `vacademy` server and choose to authenticate.
+
+    From the shell, `claude mcp login vacademy` does the same.
+  </Step>
+  <Step title="Approve in your browser">
+    A browser tab opens on your institute's admin portal. Sign in with your own account and click **Approve**.
+  </Step>
+  <Step title="Check the connection">
+    Back in Claude Code, ask:
+
+    ```text
+    Who am I connected as?
+    ```
+
+    Claude Code calls the `whoami` tool to answer. In `/mcp`, the `vacademy` server should show as connected, with its tools listed. Only `whoami`? Every area is Off for your role. Ask an admin to set one to View.
+  </Step>
+</Steps>
+
+<Note>
+No client ID is needed. Claude Code registers itself and listens for the sign-in on your own machine (`localhost`), which the server accepts.
+</Note>
+
+## Manage it
+
+```bash
+claude mcp list             # servers and their status
+claude mcp get vacademy     # details for this server
+claude mcp logout vacademy  # sign out (clear stored tokens)
+claude mcp remove vacademy  # remove the server and its stored tokens
+```
+
+Inside Claude Code, `/mcp` shows the status and lets you clear authentication.
+
+## Good uses in Claude Code
+
+Claude Code is handy when you work with files on your machine. For example:
+
+```text
+Read ./brochure.pdf and build a draft landing page for our NEET 2027 batch from it. Use our brand colours from whoami. Give me the editor link when it's done.
+```
+
+```text
+Here is a Figma link for our new homepage: <figma link>. Follow your Figma playbook and save it as a draft site.
+```
+
+```text
+Turn ./syllabus.md into a draft course with one chapter per heading, then run the course review and fix what it reports.
+```
+
+These need the matching Edit levels. Website and course edits are saved as drafts that an admin publishes.
+
+## Prompts and playbooks
+
+The server also offers a ready-made prompt and design playbooks. They appear only when the **Website** area is on for your role.
+
+- **Prompt as a slash command.** If you named the server `vacademy`:
+
+  ```text
+  /mcp__vacademy__figma_to_site https://www.figma.com/design/<file>/...
+  ```
+
+- **Playbooks as resources.** Type `@` and pick one, for example `@vacademy:vacademy://playbook/figma`.
+
+Claude Code reads the Figma file with its own Figma connection, so connect your Figma tools in Claude Code too. See [Prompting tips](/mcp-server/usage/prompting-tips#ready-made-prompts-and-playbooks).
+
+## Using a fixed client ID
+
+You only need this if your organisation requires every app to use a pre-registered client.
+
+1. An admin creates a client ID under **Settings → MCP Server → Client IDs for other apps**, with the redirect URL `http://localhost:<port>/callback`. Pick a free port, for example `8080`.
+2. Add the server with that client ID and port. There is no client secret.
+
+```bash
+claude mcp add --transport http \
+  --client-id <client id> --callback-port 8080 \
+  vacademy https://<your backend>/ai-service/mcp/i/<institute_id>
+```

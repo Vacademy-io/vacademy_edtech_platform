@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { toast } from 'sonner';
+import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 import { SettingsPageShell, SettingToggleRow } from '@/components/settings/shell';
 import { MyButton } from '@/components/design-system/button';
 import { Switch } from '@/components/ui/switch';
@@ -38,18 +40,20 @@ import {
 } from '../-services/scheduled-reports-service';
 
 /** Names this screen generates itself, and may therefore replace. */
-const DEFAULT_NAMES = ['Daily digest', 'Weekly digest', 'Monthly digest'];
-
-function defaultNameFor(frequency: ReportSchedule['frequency']) {
-    return frequency === 'daily'
-        ? 'Daily digest'
-        : frequency === 'monthly'
-          ? 'Monthly digest'
-          : 'Weekly digest';
+function defaultNames(t: TFunction) {
+    return [t('defaultNames.daily'), t('defaultNames.weekly'), t('defaultNames.monthly')];
 }
 
-function isDefaultName(name: string) {
-    return DEFAULT_NAMES.includes((name ?? '').trim());
+function defaultNameFor(t: TFunction, frequency: ReportSchedule['frequency']) {
+    return frequency === 'daily'
+        ? t('defaultNames.daily')
+        : frequency === 'monthly'
+          ? t('defaultNames.monthly')
+          : t('defaultNames.weekly');
+}
+
+function isDefaultName(t: TFunction, name: string) {
+    return defaultNames(t).includes((name ?? '').trim());
 }
 
 /**
@@ -73,11 +77,11 @@ function downloadPreview(html: string | null) {
 }
 
 /** Full-size view, for a report too tall to read in a dialog. */
-function openPreviewInTab(html: string | null) {
+function openPreviewInTab(t: TFunction, html: string | null) {
     if (!html) return;
     const url = URL.createObjectURL(new Blob([html], { type: 'text/html;charset=utf-8' }));
     const opened = window.open(url, '_blank', 'noopener');
-    if (!opened) toast.error('Allow pop-ups to open the preview in a new tab.');
+    if (!opened) toast.error(t('toasts.popupBlocked'));
     setTimeout(() => URL.revokeObjectURL(url), 60_000);
 }
 
@@ -99,12 +103,7 @@ function openPreviewInTab(html: string | null) {
  */
 
 const DAYS = ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN'];
-const SCOPES = [
-    { v: 'INSTITUTE', label: 'Whole institute' },
-    { v: 'BATCH', label: 'Per batch' },
-    { v: 'SUBJECT', label: 'Per subject' },
-    { v: 'FACULTY', label: 'Per faculty' },
-];
+const SCOPE_VALUES = ['INSTITUTE', 'BATCH', 'SUBJECT', 'FACULTY'] as const;
 const ROLES = ['ADMIN', 'TEACHER', 'EVALUATOR'];
 
 /**
@@ -114,29 +113,35 @@ const ROLES = ['ADMIN', 'TEACHER', 'EVALUATOR'];
  * detail, and "who actually received this, and did it land" is the half of the
  * audit that matters when someone asks why they did not get their report.
  */
-const makeRunColumns = (onInspect: (run: ReportRun) => void): ColumnDef<ReportRun>[] => [
+const makeRunColumns = (
+    t: TFunction,
+    onInspect: (run: ReportRun) => void
+): ColumnDef<ReportRun>[] => [
     {
         accessorKey: 'createdAt',
-        header: 'When',
+        header: t('history.columns.when'),
         cell: ({ row }) => new Date(row.original.createdAt).toLocaleString(),
     },
-    { accessorKey: 'scopeLabel', header: 'Report' },
+    { accessorKey: 'scopeLabel', header: t('history.columns.report') },
     {
         accessorKey: 'status',
-        header: 'Status',
+        header: t('history.columns.status'),
         cell: ({ row }) =>
             row.original.skipReason
-                ? `${row.original.status} — ${row.original.skipReason}`
+                ? t('history.statusWithSkipReason', {
+                      status: row.original.status,
+                      skipReason: row.original.skipReason,
+                  })
                 : row.original.status,
     },
-    { accessorKey: 'recipientCount', header: 'Recipients' },
-    { accessorKey: 'namedLearners', header: 'Learners named' },
+    { accessorKey: 'recipientCount', header: t('history.columns.recipients') },
+    { accessorKey: 'namedLearners', header: t('history.columns.learnersNamed') },
     {
         id: 'detail',
         header: '',
         cell: ({ row }) => (
             <MyButton buttonType="text" onClick={() => onInspect(row.original)}>
-                Who received it
+                {t('history.columns.whoReceivedIt')}
             </MyButton>
         ),
     },
@@ -145,12 +150,15 @@ const makeRunColumns = (onInspect: (run: ReportRun) => void): ColumnDef<ReportRu
 const MAX_DOCS_PER_RUN = 50;
 
 export default function ScheduledReportsSettings() {
+    const { t } = useTranslation('settingsScheduledReports');
     const [config, setConfig] = useState<ReportSettingConfig>(EMPTY_REPORT_SETTING);
     const [saving, setSaving] = useState(false);
     const [preview, setPreview] = useState<Record<string, ScopePreview | null>>({});
     const [inspecting, setInspecting] = useState<ReportRun | null>(null);
     const [recipients, setRecipients] = useState<ReportRunRecipient[] | null>(null);
     const [recipientsError, setRecipientsError] = useState<string | null>(null);
+
+    const SCOPES = SCOPE_VALUES.map((v) => ({ v, label: t(`scopes.${v}`) }));
 
     const inspectRun = async (run: ReportRun) => {
         setInspecting(run);
@@ -161,7 +169,7 @@ export default function ScheduledReportsSettings() {
         } catch {
             // Distinguish "failed to load" from "nobody received it" — a run that
             // legitimately reached zero people looks identical otherwise.
-            setRecipientsError('Could not load the recipient list for this run.');
+            setRecipientsError(t('toasts.recipientsLoadError'));
         }
     };
     const [rendered, setRendered] = useState<PreviewResult | null>(null);
@@ -209,7 +217,7 @@ export default function ScheduledReportsSettings() {
             const p = await previewScope(schedule);
             setPreview((prev) => ({ ...prev, [schedule.id]: p }));
         } catch {
-            toast.error('Could not work out how many reports this would create');
+            toast.error(t('toasts.previewScopeError'));
         }
     }
 
@@ -218,7 +226,7 @@ export default function ScheduledReportsSettings() {
         try {
             setRendered(await previewReport(schedule));
         } catch {
-            toast.error('Could not build the preview');
+            toast.error(t('toasts.previewBuildError'));
         } finally {
             setBusyId(null);
         }
@@ -229,13 +237,18 @@ export default function ScheduledReportsSettings() {
         // happens, not afterwards in the audit log.
         const who =
             schedule.recipients.roles.length > 0
-                ? `everyone with the ${schedule.recipients.roles.join('/')} role`
-                : `${schedule.recipients.userIds.length} selected recipient(s)`;
+                ? t('confirmSend.roleAudience', {
+                      roles: schedule.recipients.roles.map((r) => t(`roles.${r}`)).join('/'),
+                  })
+                : t('confirmSend.selectedAudience', {
+                      count: schedule.recipients.userIds.length,
+                  });
         if (
             !window.confirm(
-                `Send "${schedule.name}" now to ${who}?\n\n` +
-                    `This sends real email, charges credits, and cannot be recalled. ` +
-                    `Use Preview if you only want to see it.`
+                t('confirmSend.message', {
+                    name: schedule.name,
+                    who,
+                })
             )
         ) {
             return;
@@ -245,7 +258,7 @@ export default function ScheduledReportsSettings() {
             toast.success(await runReportNow(schedule));
             refetchRuns();
         } catch {
-            toast.error('Could not send the report');
+            toast.error(t('toasts.sendError'));
         } finally {
             setBusyId(null);
         }
@@ -258,26 +271,30 @@ export default function ScheduledReportsSettings() {
             const p = preview[s.id];
             if (p?.exceedsCap) {
                 toast.error(
-                    `"${s.name}" would create ${p.documentsPerRun} reports per run, above the ${MAX_DOCS_PER_RUN} limit. Narrow the scope first.`
+                    t('validation.exceedsCap', {
+                        name: s.name,
+                        documentsPerRun: p.documentsPerRun,
+                        max: MAX_DOCS_PER_RUN,
+                    })
                 );
                 return;
             }
             if (s.sections.length === 0) {
-                toast.error(`"${s.name}" has no sections selected.`);
+                toast.error(t('validation.noSections', { name: s.name }));
                 return;
             }
             if (s.recipients.roles.length === 0 && s.recipients.userIds.length === 0) {
-                toast.error(`"${s.name}" has no recipients.`);
+                toast.error(t('validation.noRecipients', { name: s.name }));
                 return;
             }
         }
         setSaving(true);
         try {
             await saveReportSetting(config);
-            toast.success('Scheduled reports saved');
+            toast.success(t('toasts.saveSuccess'));
             refetchRuns();
         } catch {
-            toast.error('Could not save scheduled reports');
+            toast.error(t('toasts.saveError'));
         } finally {
             setSaving(false);
         }
@@ -285,19 +302,19 @@ export default function ScheduledReportsSettings() {
 
     return (
         <SettingsPageShell
-            title="Scheduled Reports"
-            description="Send institute activity to your team on a schedule, instead of waiting for someone to come and look."
+            title={t('page.title')}
+            description={t('page.description')}
             maxWidth="max-w-5xl"
             actions={
                 <MyButton onClick={handleSave} disabled={saving || isLoading}>
-                    {saving ? 'Saving…' : 'Save'}
+                    {saving ? t('page.saving') : t('page.save')}
                 </MyButton>
             }
         >
             <div className="flex flex-col gap-6">
                 <SettingToggleRow
-                    label="Enable scheduled reports"
-                    description="When off, nothing is generated and nothing is charged."
+                    label={t('toggles.enable.label')}
+                    description={t('toggles.enable.description')}
                     control={
                         <Switch
                             checked={config.enabled}
@@ -307,8 +324,8 @@ export default function ScheduledReportsSettings() {
                 />
 
                 <SettingToggleRow
-                    label="Timezone"
-                    description="Report days and windows are worked out in this timezone."
+                    label={t('toggles.timezone.label')}
+                    description={t('toggles.timezone.description')}
                     control={
                         <MyInput
                             inputType="text"
@@ -348,14 +365,14 @@ export default function ScheduledReportsSettings() {
                                             }))
                                         }
                                     >
-                                        Remove
+                                        {t('schedule.remove')}
                                     </MyButton>
                                 </div>
                             </div>
 
                             {/* ── What goes in it ── */}
                             <p className="mb-2 text-caption font-medium text-neutral-600">
-                                Sections
+                                {t('schedule.sectionsLabel')}
                             </p>
                             <div className="mb-4 flex flex-col gap-2">
                                 {sections.map((sec) => (
@@ -381,12 +398,12 @@ export default function ScheduledReportsSettings() {
                                             {sec.title}
                                             {sec.identifying && (
                                                 <Badge className="ml-2" variant="outline">
-                                                    names learners
+                                                    {t('schedule.namesLearnersBadge')}
                                                 </Badge>
                                             )}
                                             {!sec.available && (
                                                 <span className="ml-2 text-caption text-neutral-500">
-                                                    no data in the last 30 days
+                                                    {t('schedule.noDataBadge')}
                                                 </span>
                                             )}
                                             <span className="block text-caption text-neutral-500">
@@ -402,17 +419,16 @@ export default function ScheduledReportsSettings() {
                                     problem that does not exist. */}
                                 {sectionsError ? (
                                     <p className="text-caption text-danger-600">
-                                        Could not load the available sections. Refresh to try
-                                        again — this is not the same as having no data.
+                                        {t('schedule.sectionsError')}
                                     </p>
                                 ) : sectionsLoading ? (
                                     <p className="text-caption text-neutral-500">
-                                        Checking which sections have data…
+                                        {t('schedule.sectionsLoading')}
                                     </p>
                                 ) : (
                                     sections.length === 0 && (
                                         <p className="text-caption text-neutral-500">
-                                            No section has data for this institute yet.
+                                            {t('schedule.noSectionsAvailable')}
                                         </p>
                                     )
                                 )}
@@ -430,9 +446,10 @@ export default function ScheduledReportsSettings() {
                                             // switched to daily would arrive contradicting
                                             // itself. Carry the default across, but never
                                             // clobber a name the admin actually chose.
-                                            ...(isDefaultName(s.name)
+                                            ...(isDefaultName(t, s.name)
                                                 ? {
                                                       name: defaultNameFor(
+                                                          t,
                                                           v as ReportSchedule['frequency']
                                                       ),
                                                   }
@@ -444,9 +461,13 @@ export default function ScheduledReportsSettings() {
                                         <SelectValue />
                                     </SelectTrigger>
                                     <SelectContent>
-                                        <SelectItem value="daily">Daily</SelectItem>
-                                        <SelectItem value="weekly">Weekly</SelectItem>
-                                        <SelectItem value="monthly">Monthly</SelectItem>
+                                        <SelectItem value="daily">{t('frequency.daily')}</SelectItem>
+                                        <SelectItem value="weekly">
+                                            {t('frequency.weekly')}
+                                        </SelectItem>
+                                        <SelectItem value="monthly">
+                                            {t('frequency.monthly')}
+                                        </SelectItem>
                                     </SelectContent>
                                 </Select>
 
@@ -461,7 +482,7 @@ export default function ScheduledReportsSettings() {
                                         <SelectContent>
                                             {DAYS.map((d) => (
                                                 <SelectItem key={d} value={d}>
-                                                    {d}
+                                                    {t(`days.${d}`)}
                                                 </SelectItem>
                                             ))}
                                         </SelectContent>
@@ -479,7 +500,7 @@ export default function ScheduledReportsSettings() {
                                     }
                                 />
                                 <span className="text-caption text-neutral-500">
-                                    hour ({config.timezone})
+                                    {t('schedule.hourSuffix', { timezone: config.timezone })}
                                 </span>
                             </div>
 
@@ -505,21 +526,21 @@ export default function ScheduledReportsSettings() {
                                     </SelectContent>
                                 </Select>
                                 <MyButton buttonType="secondary" onClick={() => runPreview(s)}>
-                                    Check how many reports
+                                    {t('schedule.checkReports')}
                                 </MyButton>
                                 <MyButton
                                     buttonType="secondary"
                                     disabled={busyId === s.id || s.sections.length === 0}
                                     onClick={() => handlePreview(s)}
                                 >
-                                    {busyId === s.id ? 'Building…' : 'Preview'}
+                                    {busyId === s.id ? t('schedule.building') : t('schedule.previewButton')}
                                 </MyButton>
                                 <MyButton
                                     buttonType="text"
                                     disabled={busyId === s.id || s.sections.length === 0}
                                     onClick={() => handleRunNow(s)}
                                 >
-                                    Send now
+                                    {t('schedule.sendNow')}
                                 </MyButton>
                             </div>
 
@@ -537,33 +558,33 @@ export default function ScheduledReportsSettings() {
                                             : 'border-border bg-neutral-50'
                                     }`}
                                 >
-                                    <b>{p.documentsPerRun}</b> report
-                                    {p.documentsPerRun === 1 ? '' : 's'} per run ×{' '}
-                                    <b>{p.runsPerMonth}</b> runs = <b>{p.documentsPerMonth}</b> a
-                                    month.
+                                    <b>{p.documentsPerRun}</b>{' '}
+                                    {t('preview.reportsPerRun', { count: p.documentsPerRun })}{' '}
+                                    <b>{p.runsPerMonth}</b> {t('preview.runsEqualsMonth')}{' '}
+                                    <b>{p.documentsPerMonth}</b> {t('preview.aMonth')}
                                     {p.exceedsCap && (
                                         <span className="block">
-                                            That is above the {MAX_DOCS_PER_RUN}-per-run limit and
-                                            will not run. Narrow the scope.
+                                            {t('preview.exceedsCap', { max: MAX_DOCS_PER_RUN })}
                                         </span>
                                     )}
                                     <span className="block">
                                         {p.creditsPerDocument === 0 ? (
-                                            <>Free — no AI analysis on this schedule.</>
+                                            <>{t('preview.freeNoAi')}</>
                                         ) : (
                                             <>
-                                                <b>{p.creditsPerDocument}</b> credits per report
+                                                <b>{p.creditsPerDocument}</b>{' '}
+                                                {t('preview.creditsPerReport')}
                                                 {' → '}
-                                                <b>{p.creditsPerRun}</b> per run,{' '}
-                                                <b>{p.creditsPerMonth}</b> a month for the AI
-                                                analysis. The report itself is free; recipients
-                                                are free; scope is what multiplies.
+                                                <b>{p.creditsPerRun}</b> {t('preview.perRun')}{' '}
+                                                <b>{p.creditsPerMonth}</b>{' '}
+                                                {t('preview.aMonthAiAnalysis')}
                                             </>
                                         )}
                                     </span>
                                     {p.sampleLabels?.length > 1 && (
                                         <span className="block text-caption text-neutral-500">
-                                            e.g. {p.sampleLabels.slice(0, 3).join(', ')}…
+                                            {t('preview.exampleLabel')}{' '}
+                                            {p.sampleLabels.slice(0, 3).join(', ')}…
                                         </span>
                                     )}
                                 </div>
@@ -571,7 +592,7 @@ export default function ScheduledReportsSettings() {
 
                             {/* ── Who ── */}
                             <p className="mb-2 text-caption font-medium text-neutral-600">
-                                Send to
+                                {t('schedule.sendToLabel')}
                             </p>
                             <div className="mb-2 flex flex-wrap gap-4">
                                 {ROLES.map((r) => (
@@ -591,7 +612,7 @@ export default function ScheduledReportsSettings() {
                                                 })
                                             }
                                         />
-                                        {r}
+                                        {t(`roles.${r}`)}
                                     </label>
                                 ))}
                             </div>
@@ -605,16 +626,12 @@ export default function ScheduledReportsSettings() {
                                         }
                                     />
                                     <span>
-                                        Add AI analysis
+                                        {t('ai.label')}
                                         <Badge className="ml-2" variant="secondary">
-                                            2 credits per report
+                                            {t('ai.badge')}
                                         </Badge>
                                         <span className="block text-caption text-neutral-500">
-                                            Reads the figures below and writes what to do about
-                                            them — what to fix, who to reach, what learners are
-                                            asking for. The report itself is free; only this is
-                                            charged, and only when an analysis is actually
-                                            produced.
+                                            {t('ai.description')}
                                         </span>
                                     </span>
                                 </label>
@@ -624,7 +641,7 @@ export default function ScheduledReportsSettings() {
                                 the only point at which refusing is still free. */}
                             <div className="mb-3 flex flex-wrap items-center gap-2">
                                 <span className="text-caption text-neutral-600">
-                                    Refuse a run costing more than
+                                    {t('creditCap.prefix')}
                                 </span>
                                 <MyInput
                                     inputType="number"
@@ -644,10 +661,12 @@ export default function ScheduledReportsSettings() {
                                                     : Math.floor(n),
                                         });
                                     }}
-                                    inputPlaceholder="no cap"
+                                    inputPlaceholder={t('creditCap.placeholder')}
                                     className="w-28"
                                 />
-                                <span className="text-caption text-neutral-600">credits</span>
+                                <span className="text-caption text-neutral-600">
+                                    {t('creditCap.suffix')}
+                                </span>
                             </div>
 
                             <RecipientPicker
@@ -659,14 +678,12 @@ export default function ScheduledReportsSettings() {
                                 }
                             />
                             <p className="mb-4 text-caption text-neutral-500">
-                                Only people with an account can receive these — reports can name
-                                learners, so there is no free-text email option. Teachers are
-                                automatically limited to their own batches.
+                                {t('recipients.helperText')}
                             </p>
 
                             <SettingToggleRow
-                                label="Skip when there is nothing to report"
-                                description="Recommended. Otherwise a quiet week still sends an empty report."
+                                label={t('toggles.skip.label')}
+                                description={t('toggles.skip.description')}
                                 control={
                                     <Switch
                                         checked={s.skipIfNoData}
@@ -686,20 +703,16 @@ export default function ScheduledReportsSettings() {
                         setConfig((c) => ({ ...c, schedules: [...c.schedules, newSchedule()] }))
                     }
                 >
-                    Add a schedule
+                    {t('addSchedule')}
                 </MyButton>
 
                 {/* ── Delivery history / audit ── */}
                 <div>
-                    <p className="mb-2 text-subtitle font-medium">Recent reports</p>
+                    <p className="mb-2 text-subtitle font-medium">{t('history.title')}</p>
                     {runsError ? (
-                        <p className="text-caption text-danger-600">
-                            Could not load delivery history.
-                        </p>
+                        <p className="text-caption text-danger-600">{t('history.loadError')}</p>
                     ) : runs.length === 0 && !runsLoading ? (
-                        <p className="text-caption text-neutral-500">
-                            Nothing sent yet. Reports appear here once a schedule runs.
-                        </p>
+                        <p className="text-caption text-neutral-500">{t('history.empty')}</p>
                     ) : (
                         <MyTable<ReportRun>
                             data={{
@@ -710,7 +723,7 @@ export default function ScheduledReportsSettings() {
                                 total_elements: runs.length,
                                 last: true,
                             }}
-                            columns={makeRunColumns(inspectRun)}
+                            columns={makeRunColumns(t, inspectRun)}
                             isLoading={runsLoading}
                             error={runsError}
                             currentPage={0}
@@ -721,27 +734,27 @@ export default function ScheduledReportsSettings() {
 
             {inspecting && (
                 <MyDialog
-                    heading="Who received it"
+                    heading={t('whoReceivedDialog.heading')}
                     open={true}
                     onOpenChange={() => setInspecting(null)}
                     dialogWidth="max-w-3xl"
                 >
                     <div className="flex flex-col gap-3">
                         <p className="text-caption text-neutral-500">
-                            {inspecting.scopeLabel || 'Institute report'} ·{' '}
-                            {new Date(inspecting.createdAt).toLocaleString()}
+                            {inspecting.scopeLabel || t('whoReceivedDialog.instituteReportFallback')}{' '}
+                            · {new Date(inspecting.createdAt).toLocaleString()}
                             {inspecting.skipReason ? ` · ${inspecting.skipReason}` : ''}
                         </p>
                         {recipientsError && (
                             <p className="text-caption text-danger-600">{recipientsError}</p>
                         )}
                         {!recipientsError && recipients === null && (
-                            <p className="text-caption text-neutral-500">Loading…</p>
+                            <p className="text-caption text-neutral-500">
+                                {t('whoReceivedDialog.loading')}
+                            </p>
                         )}
                         {recipients?.length === 0 && (
-                            <p className="text-body">
-                                Nobody received this run. If it was skipped, the reason is above.
-                            </p>
+                            <p className="text-body">{t('whoReceivedDialog.emptyState')}</p>
                         )}
                         {recipients && recipients.length > 0 && (
                             <div className="max-h-96 overflow-y-auto">
@@ -751,18 +764,23 @@ export default function ScheduledReportsSettings() {
                                         className="flex flex-wrap items-center gap-2 border-b border-border py-2 text-body"
                                     >
                                         <span className="min-w-48 truncate">
-                                            {r.email || '(no email on file)'}
+                                            {r.email || t('whoReceivedDialog.noEmail')}
                                         </span>
-                                        <Badge variant="secondary">{r.role || 'unknown role'}</Badge>
+                                        <Badge variant="secondary">
+                                            {r.role || t('whoReceivedDialog.unknownRole')}
+                                        </Badge>
                                         <Badge
                                             variant={r.delivered ? 'secondary' : 'destructive'}
                                         >
-                                            {r.delivered ? 'delivered' : 'not delivered'}
+                                            {r.delivered
+                                                ? t('whoReceivedDialog.delivered')
+                                                : t('whoReceivedDialog.notDelivered')}
                                         </Badge>
                                         {r.namedLearners ? (
                                             <span className="text-caption text-neutral-500">
-                                                {r.namedLearners} learner
-                                                {r.namedLearners === 1 ? '' : 's'} named
+                                                {t('whoReceivedDialog.namedLearners', {
+                                                    count: r.namedLearners,
+                                                })}
                                             </span>
                                         ) : null}
                                         {r.sectionsSent && (
@@ -785,15 +803,14 @@ export default function ScheduledReportsSettings() {
 
             {rendered && (
                 <MyDialog
-                    heading="Report preview"
+                    heading={t('reportPreviewDialog.heading')}
                     open={true}
                     onOpenChange={() => setRendered(null)}
                     dialogWidth="max-w-3xl"
                 >
                     <div className="flex flex-col gap-3">
                         <p className="text-caption text-neutral-500">
-                            Exactly what you would receive. Nothing has been sent and nothing has
-                            been charged.
+                            {t('reportPreviewDialog.subtitle')}
                         </p>
                         {rendered.note && (
                             <p className="rounded-md border border-warning-500 bg-warning-50 p-2 text-caption text-warning-700">
@@ -803,7 +820,7 @@ export default function ScheduledReportsSettings() {
                         {rendered.html ? (
                             <>
                                 <iframe
-                                    title="Report preview"
+                                    title={t('reportPreviewDialog.iframeTitle')}
                                     className="h-96 w-full rounded-md border border-border bg-white"
                                     sandbox=""
                                     srcDoc={rendered.html}
@@ -811,20 +828,20 @@ export default function ScheduledReportsSettings() {
                                 <div className="flex justify-end gap-2">
                                     <MyButton
                                         buttonType="secondary"
-                                        onClick={() => openPreviewInTab(rendered.html)}
+                                        onClick={() => openPreviewInTab(t, rendered.html)}
                                     >
-                                        Open in new tab
+                                        {t('reportPreviewDialog.openInNewTab')}
                                     </MyButton>
                                     <MyButton
                                         buttonType="secondary"
                                         onClick={() => downloadPreview(rendered.html)}
                                     >
-                                        Download HTML
+                                        {t('reportPreviewDialog.downloadHtml')}
                                     </MyButton>
                                 </div>
                             </>
                         ) : (
-                            <p className="text-body">Nothing would be sent for this schedule.</p>
+                            <p className="text-body">{t('reportPreviewDialog.nothingToSend')}</p>
                         )}
                     </div>
                 </MyDialog>

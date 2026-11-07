@@ -4,6 +4,7 @@ import { RoleTypeEmptyScreen } from '@/svgs';
 import InviteUsersOptions from './InviteUsersOptions';
 import { RolesDummyDataType, UserRolesDataEntry } from '@/types/dashboard/user-roles';
 import { mapRoleToCustomName } from '@/utils/roleUtils';
+import { useTranslation } from 'react-i18next';
 
 interface InviteUsersTabProps {
     selectedTab: keyof RolesDummyDataType;
@@ -16,12 +17,13 @@ const InviteUsersTab: React.FC<InviteUsersTabProps> = ({
     selectedTabData,
     refetchData,
 }) => {
+    const { t } = useTranslation('dashboardInviteUsersTab');
     return (
         <>
             {selectedTab === 'invites' && selectedTabData.length === 0 ? (
-                <div className="flex h-[60vh] w-screen flex-col items-center justify-center">
+                <div className="flex h-[60vh] w-screen flex-col items-center justify-center">{/* design-lint-ignore: viewport-relative empty-state height, no fixed-height token fits a full-page empty state */}
                     <RoleTypeEmptyScreen />
-                    <p>No users have been invited yet.</p>
+                    <p>{t('emptyState.message')}</p>
                 </div>
             ) : (
                 <TabsContent key="invites" value="invites" className="mt-6 flex flex-col gap-6">
@@ -41,14 +43,14 @@ const InviteUsersTab: React.FC<InviteUsersTabProps> = ({
                                                         key={index}
                                                         className={`whitespace-nowrap rounded-lg border border-neutral-300 py-1.5 font-thin shadow-none ${
                                                             role.role_name === 'ADMIN'
-                                                                ? 'bg-[#F4F9FF]'
+                                                                ? 'bg-info-50'
                                                                 : role.role_name ===
                                                                     'CONTENT CREATOR'
-                                                                  ? 'bg-[#F4FFF9]'
+                                                                  ? 'bg-success-50'
                                                                   : role.role_name ===
                                                                       'ASSESSMENT CREATOR'
-                                                                    ? 'bg-[#FFF4F5]'
-                                                                    : 'bg-[#F5F0FF]'
+                                                                    ? 'bg-danger-50'
+                                                                    : 'bg-violet-50'
                                                         }`}
                                                     >
                                                         {customRoleName}

@@ -1,0 +1,24 @@
+{
+    "tiles": {
+        "submissionsAttempts": {
+            "label": "التسليمات / المحاولات"
+        },
+        "submitted": {
+            "label": "مُسلَّم"
+        },
+        "evaluated": {
+            "label": "تم التقييم"
+        },
+        "pendingEvaluation": {
+            "label": "بانتظار التقييم"
+        },
+        "resultsReleased": {
+            "label": "تم نشر النتائج"
+        },
+        "avgHighLow": {
+            "label": "المتوسط / الأعلى / الأدنى  (/ {{totalMarks}})",
+            "value": "{{avg}} / {{high}} / {{low}}"
+        },
+        "ratio": "{{numerator}} / {{denominator}}"
+    }
+}

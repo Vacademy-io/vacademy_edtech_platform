@@ -1,0 +1,9 @@
+{
+    "saveCourseFirst": "Enregistrez d'abord le cours pour configurer ses paramètres.",
+    "tabs": {
+        "lms": "Intégration LMS",
+        "workflows": "Déclencheurs de workflow",
+        "suborg": "Sous-organisation",
+        "json": "Paramètres avancés (JSON)"
+    }
+}

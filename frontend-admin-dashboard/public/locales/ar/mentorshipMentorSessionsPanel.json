@@ -1,0 +1,89 @@
+{
+    "filters": {
+        "all": "الكل",
+        "upcoming": "القادمة",
+        "awaitingReview": "بانتظار المراجعة",
+        "completed": "المكتملة",
+        "noShows": "الغياب",
+        "cancelled": "الملغاة"
+    },
+    "fallback": {
+        "mentor": "الموجّه",
+        "learner": "المتعلم",
+        "mentorLower": "الموجّه",
+        "learnerLower": "المتعلم"
+    },
+    "columns": {
+        "mentor": "الموجّه",
+        "mentee": "المتعلم الموجَّه",
+        "when": "الوقت",
+        "duration": "المدة",
+        "topic": "الموضوع",
+        "status": "الحالة",
+        "rating": "التقييم",
+        "actions": "إجراءات"
+    },
+    "openSessionDetails": "فتح تفاصيل الجلسة",
+    "durationMinutes_zero": "{{count}} دقيقة",
+    "durationMinutes_one": "دقيقة واحدة",
+    "durationMinutes_two": "دقيقتان",
+    "durationMinutes_few": "{{count}} دقائق",
+    "durationMinutes_many": "{{count}} دقيقة",
+    "durationMinutes_other": "{{count}} دقيقة",
+    "durationMinutesShort_zero": "{{count}} دقيقة",
+    "durationMinutesShort_one": "دقيقة واحدة",
+    "durationMinutesShort_two": "دقيقتان",
+    "durationMinutesShort_few": "{{count}} دقائق",
+    "durationMinutesShort_many": "{{count}} دقيقة",
+    "durationMinutesShort_other": "{{count}} دقيقة",
+    "whoAndTemplate": "{{mentor}} مع {{student}}",
+    "viewSessionAria": "عرض تفاصيل الجلسة الخاصة بـ {{who}}",
+    "viewSessionDetailsTitle": "عرض تفاصيل الجلسة",
+    "joinSessionAria": "الانضمام إلى الجلسة مع {{who}}",
+    "noMeetingLinkAria": "لا يوجد رابط اجتماع بعد لـ {{who}}",
+    "joinMeetingTitle": "الانضمام إلى الاجتماع",
+    "noMeetingLinkTitle": "لا يوجد رابط اجتماع بعد",
+    "rescheduleAria": "إعادة جدولة هذه الجلسة",
+    "rescheduleTitle": "إعادة الجدولة",
+    "cancelAria": "إلغاء هذه الجلسة",
+    "cancelTitle": "إلغاء",
+    "mentorsFilterLabel": "الموجّه",
+    "mentorsSearchPlaceholder": "ابحث عن الموجّهين",
+    "loadError": "تعذّر تحميل الجلسات.",
+    "retry": "إعادة المحاولة",
+    "emptyStateFiltered": "لا توجد جلسات مطابقة لهذا الفلتر",
+    "emptyStateAll": "لا توجد جلسات بعد",
+    "emptyStateHint": "ستظهر هنا الجلسات المحجوزة عبر صفحات حجز الموجّهين.",
+    "lifecycle": {
+        "completed": "مكتملة",
+        "noShow": "غياب",
+        "cancelled": "ملغاة",
+        "rescheduled": "أُعيدت جدولتها",
+        "upcoming": "قادمة",
+        "awaitingReview": "بانتظار المراجعة"
+    },
+    "detailDialog": {
+        "heading": "تفاصيل الجلسة",
+        "defaultTitle": "جلسة إرشاد",
+        "openMeetingLink": "فتح رابط الاجتماع",
+        "mentorNotesLabel": "ملاحظات الموجّه",
+        "learnerFeedbackLabel": "تقييم المتعلم",
+        "ratingOutOfFive": "{{rating}}/5"
+    },
+    "fieldLabels": {
+        "mentor": "الموجّه",
+        "learner": "المتعلم",
+        "when": "الوقت",
+        "duration": "المدة",
+        "topic": "الموضوع",
+        "bookingStatus": "حالة الحجز"
+    },
+    "searchPlaceholder": "Search by mentor, {{learner}} or topic",
+    "shownCount_one": "{{count}} session shown",
+    "shownCount_other": "{{count}} sessions shown",
+    "week": {
+        "title": "This week",
+        "subtitle": "Today and the next six days · click a session for details",
+        "more": "+{{count}} more"
+    }
+}

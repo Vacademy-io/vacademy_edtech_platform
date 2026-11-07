@@ -1,0 +1,42 @@
+{
+    "workSummary": {
+        "title": "Work summary",
+        "lastDaysSuffix_one": "· last {{count}} day",
+        "lastDaysSuffix_other": "· last {{count}} days",
+        "statusesMovedTo": "Statuses moved to"
+    },
+    "metric": {
+        "statusChanges": "Status changes",
+        "callsMade": "Calls made",
+        "connected": "Connected",
+        "reach": "Reach"
+    },
+    "coaching": {
+        "loading": "Loading coaching insights…",
+        "loadError": "Couldn’t load insights. If Call Intelligence isn’t deployed on this backend, this won’t be available yet.",
+        "noAnalyzedCalls": "No AI-analyzed calls yet for this counsellor.",
+        "enableHint": "Enable CRM Intelligence and analyze some calls to see call-quality coaching.",
+        "metric": {
+            "callsAnalyzed": "Calls analyzed",
+            "avgCallerRating": "Avg caller rating",
+            "avgOutcomeRating": "Avg outcome rating",
+            "focusAreas": "Focus areas"
+        },
+        "skillBreakdown": {
+            "title": "Skill breakdown",
+            "weakestFirst": "· weakest first"
+        },
+        "whatToImprove": "What to improve",
+        "tipCallCount_one": "{{count}}× call",
+        "tipCallCount_other": "{{count}}× calls",
+        "objections": {
+            "title": "Objections they hit most",
+            "handled": "handled {{handled}}/{{total}}"
+        },
+        "recentCalls": {
+            "title": "Recent analyzed calls",
+            "callerRating": "Caller {{rating}}",
+            "outcomeRating": "Outcome {{rating}}"
+        }
+    }
+}

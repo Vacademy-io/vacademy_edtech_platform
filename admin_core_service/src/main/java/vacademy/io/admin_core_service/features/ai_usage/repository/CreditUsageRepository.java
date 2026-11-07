@@ -77,4 +77,97 @@ public interface CreditUsageRepository extends Repository<AiTokenUsage, UUID> {
                                @Param("fromTs") Timestamp fromTs,
                                @Param("toTs") Timestamp toTs,
                                Pageable pageable);
+
+    // ── Automations chatbot (request_type='chatbot') ────────────────────────
+    // ChatbotAiService stamps batch_id with the chatbot_flow id and puts the
+    // flow name in the description, so a per-flow rollup needs no cross-service
+    // join (chatbot_flow lives in the notification-service database).
+
+    // Per-flow rollup for the window.
+    // Object[]{ flow_id, net_credits, turn_count, user_count, last_used_at, sample_description }.
+    @Query(value = "SELECT ct.batch_id AS flow_id, " +
+            "       SUM(ABS(ct.amount)) AS net_credits, " +
+            "       COUNT(*) AS turn_count, " +
+            "       COUNT(DISTINCT COALESCE(ct.subject_user_id, ct.user_id)) AS user_count, " +
+            "       MAX(ct.created_at) AS last_used_at, " +
+            "       (array_agg(ct.description ORDER BY ct.created_at DESC))[1] AS sample_description " +
+            "FROM credit_transactions ct " +
+            "WHERE ct.institute_id = :instituteId " +
+            "  AND ct.request_type = 'chatbot' " +
+            "  AND ct.transaction_type = 'USAGE_DEDUCTION' " +
+            "  AND ct.created_at >= :fromTs AND ct.created_at < :toTs " +
+            "GROUP BY ct.batch_id " +
+            "ORDER BY net_credits DESC",
+            nativeQuery = true)
+    List<Object[]> findChatbotUsageByFlow(@Param("instituteId") String instituteId,
+                                          @Param("fromTs") Timestamp fromTs,
+                                          @Param("toTs") Timestamp toTs);
+
+    // Institute-wide totals for the window. Object[]{ net_credits, turn_count, user_count }.
+    @Query(value = "SELECT COALESCE(SUM(ABS(ct.amount)), 0) AS net_credits, " +
+            "       COUNT(*) AS turn_count, " +
+            "       COUNT(DISTINCT COALESCE(ct.subject_user_id, ct.user_id)) AS user_count " +
+            "FROM credit_transactions ct " +
+            "WHERE ct.institute_id = :instituteId " +
+            "  AND ct.request_type = 'chatbot' " +
+            "  AND ct.transaction_type = 'USAGE_DEDUCTION' " +
+            "  AND ct.created_at >= :fromTs AND ct.created_at < :toTs",
+            nativeQuery = true)
+    List<Object[]> findChatbotTotals(@Param("instituteId") String instituteId,
+                                     @Param("fromTs") Timestamp fromTs,
+                                     @Param("toTs") Timestamp toTs);
+
+    // Paginated per-turn log, optionally narrowed to one flow.
+    // Object[]{ id, created_at, batch_id, uid, model_name, amount, description }.
+    // :flowId is nullable — CAST keeps Postgres from erroring on an untyped NULL parameter.
+    @Query(value = "SELECT ct.id, ct.created_at, ct.batch_id, " +
+            "       COALESCE(ct.subject_user_id, ct.user_id) AS uid, " +
+            "       ct.model_name, ABS(ct.amount), ct.description " +
+            "FROM credit_transactions ct " +
+            "WHERE ct.institute_id = :instituteId " +
+            "  AND ct.request_type = 'chatbot' " +
+            "  AND ct.transaction_type = 'USAGE_DEDUCTION' " +
+            "  AND (CAST(:flowId AS TEXT) IS NULL OR ct.batch_id = CAST(:flowId AS TEXT)) " +
+            "  AND ct.created_at >= :fromTs AND ct.created_at < :toTs " +
+            "ORDER BY ct.created_at DESC",
+            countQuery = "SELECT COUNT(*) FROM credit_transactions ct " +
+                    "WHERE ct.institute_id = :instituteId " +
+                    "  AND ct.request_type = 'chatbot' " +
+                    "  AND ct.transaction_type = 'USAGE_DEDUCTION' " +
+                    "  AND (CAST(:flowId AS TEXT) IS NULL OR ct.batch_id = CAST(:flowId AS TEXT)) " +
+                    "  AND ct.created_at >= :fromTs AND ct.created_at < :toTs",
+            nativeQuery = true)
+    Page<Object[]> findChatbotLogs(@Param("instituteId") String instituteId,
+                                   @Param("flowId") String flowId,
+                                   @Param("fromTs") Timestamp fromTs,
+                                   @Param("toTs") Timestamp toTs,
+                                   Pageable pageable);
+
+    // Cost of past runs of one feature for one institute, for the before-you-run estimate.
+    // A run is one learner in one hour (a report makes several AI calls within minutes).
+    // list_credits is what the run would debit, so plan-covered runs still count.
+    // Object[]{runs, avg_credits_per_run}.
+    @Query(value = "WITH runs AS ( " +
+            "  SELECT e.subject_user_id, date_trunc('hour', e.occurred_at) AS h, SUM(e.list_credits) AS c " +
+            "  FROM ai_usage_event e " +
+            "  WHERE e.institute_id = :instituteId AND e.use_case = :useCase " +
+            "    AND e.subject_user_id IS NOT NULL AND e.occurred_at >= :since " +
+            "  GROUP BY e.subject_user_id, date_trunc('hour', e.occurred_at) " +
+            ") SELECT COUNT(*), AVG(c) FROM runs",
+            nativeQuery = true)
+    List<Object[]> findRunCostForInstitute(@Param("instituteId") String instituteId,
+                                           @Param("useCase") String useCase,
+                                           @Param("since") Timestamp since);
+
+    // Same across every institute, when one institute has too few runs of its own.
+    @Query(value = "WITH runs AS ( " +
+            "  SELECT e.subject_user_id, date_trunc('hour', e.occurred_at) AS h, SUM(e.list_credits) AS c " +
+            "  FROM ai_usage_event e " +
+            "  WHERE e.use_case = :useCase " +
+            "    AND e.subject_user_id IS NOT NULL AND e.occurred_at >= :since " +
+            "  GROUP BY e.subject_user_id, date_trunc('hour', e.occurred_at) " +
+            ") SELECT COUNT(*), AVG(c) FROM runs",
+            nativeQuery = true)
+    List<Object[]> findRunCostForPlatform(@Param("useCase") String useCase,
+                                          @Param("since") Timestamp since);
 }

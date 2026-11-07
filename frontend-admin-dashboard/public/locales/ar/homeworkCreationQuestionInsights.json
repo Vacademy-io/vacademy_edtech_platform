@@ -1,0 +1,37 @@
+{
+    "question": {
+        "label": "السؤال ({{number}}.) ",
+        "correctAnswer": "الإجابة الصحيحة:",
+        "explanation": "الشرح:",
+        "topCorrectResponses": "أفضل 3 إجابات صحيحة سريعة",
+        "responseTime_zero": "{{count}} ثانية",
+        "responseTime_one": "{{count}} ثانية واحدة",
+        "responseTime_two": "{{count}} ثانيتان",
+        "responseTime_few": "{{count}} ثوانٍ",
+        "responseTime_many": "{{count}} ثانية",
+        "responseTime_other": "{{count}} ثانية"
+    },
+    "stats": {
+        "totalAttempts_zero": "إجمالي المحاولات: {{count}} طالب",
+        "totalAttempts_one": "إجمالي المحاولات: {{count}} طالب واحد",
+        "totalAttempts_two": "إجمالي المحاولات: {{count}} طالبان",
+        "totalAttempts_few": "إجمالي المحاولات: {{count}} طلاب",
+        "totalAttempts_many": "إجمالي المحاولات: {{count}} طالبًا",
+        "totalAttempts_other": "إجمالي المحاولات: {{count}} طالب",
+        "correctRespondents": "المجيبون الصحيحون: ",
+        "partiallyCorrectRespondents": "المجيبون الصحيحون جزئيًا: ",
+        "wrongRespondents": "المجيبون الخاطئون: ",
+        "skipped": "تم التخطي: ",
+        "notAvailable": "غير متاح",
+        "viewList": "عرض القائمة"
+    },
+    "dialog": {
+        "correctRespondents": "المجيبون الصحيحون",
+        "partiallyCorrectRespondents": "المجيبون الصحيحون جزئيًا",
+        "wrongRespondents": "المجيبون الخاطئون",
+        "skippedRespondents": "من تخطوا السؤال"
+    },
+    "toasts": {
+        "exportPdfSuccess": "تم تصدير بيانات تحليلات أسئلة الطلاب بصيغة PDF بنجاح"
+    }
+}

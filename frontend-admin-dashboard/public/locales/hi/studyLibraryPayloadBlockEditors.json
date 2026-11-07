@@ -1,0 +1,62 @@
+{
+    "flashcard": {
+        "title": "फ्लैशकार्ड",
+        "flip": "पलटें",
+        "front": "आगे",
+        "back": "पीछे",
+        "frontPlaceholder": "कार्ड का अगला भाग…",
+        "backPlaceholder": "कार्ड का पिछला भाग…",
+        "aspectRatio": "पहलू अनुपात:"
+    },
+    "tabs": {
+        "title": "टैब की गई सामग्री",
+        "addTab": "टैब जोड़ें",
+        "tabDefaultLabel": "टैब {{number}}",
+        "tabLabelPlaceholder": "टैब लेबल",
+        "contentPlaceholder": "टैब की सामग्री…"
+    },
+    "quiz": {
+        "title": "क्विज़",
+        "mcq": "बहुविकल्पीय",
+        "trueFalse": "सही/गलत",
+        "true": "सही",
+        "false": "गलत",
+        "questionPlaceholder": "प्रश्न…",
+        "optionPlaceholder": "विकल्प {{letter}}…",
+        "addOption": "विकल्प जोड़ें",
+        "explanationLabel": "स्पष्टीकरण (उत्तर देने के बाद दिखाया जाएगा)",
+        "explanationPlaceholder": "यह सही उत्तर क्यों है?"
+    },
+    "timeline": {
+        "title": "समयरेखा",
+        "addStep": "चरण जोड़ें",
+        "stepDefaultTitle": "चरण {{number}}",
+        "stepTitlePlaceholder": "चरण का शीर्षक",
+        "descriptionPlaceholder": "विवरण (वैकल्पिक)",
+        "stepColorAriaLabel": "चरण का रंग"
+    },
+    "columns": {
+        "title": "कॉलम ({{count}})",
+        "addColumn": "कॉलम जोड़ें",
+        "removeLast": "आखिरी हटाएं",
+        "columnPlaceholder": "कॉलम {{number}}…"
+    },
+    "accordion": {
+        "title": "एकॉर्डियन",
+        "addSection": "अनुभाग जोड़ें",
+        "sectionDefaultHeading": "अनुभाग {{number}}",
+        "toggleSectionAriaLabel": "अनुभाग टॉगल करें",
+        "sectionHeadingPlaceholder": "अनुभाग शीर्षक",
+        "sectionContentPlaceholder": "अनुभाग की सामग्री…"
+    },
+    "code": {
+        "languageAriaLabel": "कोड की भाषा",
+        "placeholder": "// कोड"
+    },
+    "multiLangCode": {
+        "title": "{{language}} कोड एडिटर",
+        "languageAriaLabel": "भाषा",
+        "placeholder": "# {{language}} कोड — शिक्षार्थियों को एक इंटरैक्टिव रनर मिलता है",
+        "output": "आउटपुट:"
+    }
+}

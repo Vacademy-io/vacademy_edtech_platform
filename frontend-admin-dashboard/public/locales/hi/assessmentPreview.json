@@ -1,0 +1,26 @@
+{
+    "toasts": {
+        "updateSuccess": "इस मूल्यांकन का प्रश्न पत्र सफलतापूर्वक अपडेट कर दिया गया है!",
+        "incompleteQuestions": "आपके कुछ प्रश्न अधूरे हैं या उन पर ध्यान देने की आवश्यकता है!"
+    },
+    "header": {
+        "joinLinkLabel": "जॉइन लिंक:"
+    },
+    "announcementDialog": {
+        "title": "लाइव मूल्यांकन घोषणा",
+        "empty": "कोई घोषणा मौजूद नहीं है",
+        "timestampPlaceholder": "आज, सुबह 11:28 बजे"
+    },
+    "actions": {
+        "save": "सहेजें",
+        "exit": "बाहर निकलें",
+        "addQuestion": "प्रश्न जोड़ें"
+    },
+    "questionTypes": {
+        "mcqSingleCorrect": "MCQ (एकल सही उत्तर)",
+        "mcqMultipleCorrect": "MCQ (एकाधिक सही उत्तर)"
+    },
+    "emptyStates": {
+        "noQuestions": "कोई प्रश्न मौजूद नहीं है।"
+    }
+}

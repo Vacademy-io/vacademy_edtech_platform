@@ -1,4 +1,6 @@
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
+import i18next from 'i18next';
 import { toast } from 'sonner';
 import {
     MagnifyingGlass,
@@ -51,14 +53,18 @@ const PAGE_SIZE = 10;
 const formatDiscount = (c: CouponSummary): string => {
     if (!c.discount_type) return '—';
     if (c.discount_type === 'PERCENTAGE') {
-        const cap = c.max_discount_point ? `, max ₹${c.max_discount_point.toLocaleString()}` : '';
+        const cap = c.max_discount_point
+            ? i18next.t('settingsCouponList:discount.maxCap', {
+                  amount: c.max_discount_point.toLocaleString(i18next.language),
+              })
+            : '';
         return `${c.discount_point}%${cap}`;
     }
     return `₹${(c.discount_point ?? 0).toLocaleString()}`;
 };
 
 const formatValidity = (c: CouponSummary): string => {
-    if (!c.redeem_end_date) return 'No expiry';
+    if (!c.redeem_end_date) return i18next.t('settingsCouponList:validity.noExpiry');
     const end = new Date(c.redeem_end_date).toLocaleDateString(undefined, {
         day: 'numeric',
         month: 'short',
@@ -66,7 +72,7 @@ const formatValidity = (c: CouponSummary): string => {
     });
     return c.redeem_start_date
         ? `${new Date(c.redeem_start_date).toLocaleDateString(undefined, { day: 'numeric', month: 'short' })} → ${end}`
-        : `until ${end}`;
+        : i18next.t('settingsCouponList:validity.until', { date: end });
 };
 
 const statusChipStatus = (status: CouponStatus): 'SUCCESS' | 'INFO' | 'DANGER' | 'WARNING' => {
@@ -92,6 +98,7 @@ const useDebounced = <T,>(value: T, delayMs = 300): T => {
 };
 
 export const CouponList = ({ onCreate, onEdit }: CouponListProps) => {
+    const { t } = useTranslation('settingsCouponList');
     const [search, setSearch] = useState('');
     const [status, setStatus] = useState<'ALL' | CouponStatus>('ALL');
     const [page, setPage] = useState(0);
@@ -108,21 +115,17 @@ export const CouponList = ({ onCreate, onEdit }: CouponListProps) => {
     const deleteMutation = useDeleteCoupon();
 
     const handleDelete = (coupon: CouponSummary) => {
-        if (
-            !window.confirm(
-                `Delete coupon "${coupon.code}"? Existing redemptions are preserved; this only prevents new applications.`
-            )
-        ) {
+        if (!window.confirm(t('confirm.deleteMessage', { code: coupon.code }))) {
             return;
         }
         deleteMutation.mutate(coupon.id, {
-            onSuccess: () => toast.success(`Coupon "${coupon.code}" deleted`),
+            onSuccess: () => toast.success(t('toasts.deleted', { code: coupon.code })),
             onError: (e) => {
                 const message =
                     (e as { response?: { data?: { message?: string } } })?.response?.data
                         ?.message ??
                     (e as Error).message ??
-                    'Could not delete coupon';
+                    t('errors.deleteFailed');
                 toast.error(message);
             },
         });
@@ -148,9 +151,9 @@ export const CouponList = ({ onCreate, onEdit }: CouponListProps) => {
                                 setSearch(e.target.value);
                                 setPage(0);
                             }}
-                            placeholder="Search by code"
+                            placeholder={t('filters.searchPlaceholder')}
                             className="pl-9"
-                            aria-label="Search coupons by code"
+                            aria-label={t('filters.searchAriaLabel')}
                         />
                     </div>
                     <Select
@@ -160,20 +163,20 @@ export const CouponList = ({ onCreate, onEdit }: CouponListProps) => {
                             setPage(0);
                         }}
                     >
-                        <SelectTrigger className="sm:w-48" aria-label="Filter by status">
+                        <SelectTrigger className="sm:w-48" aria-label={t('filters.statusAriaLabel')}>
                             <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
-                            <SelectItem value="ALL">All statuses</SelectItem>
-                            <SelectItem value="ACTIVE">Active</SelectItem>
-                            <SelectItem value="INACTIVE">Inactive</SelectItem>
-                            <SelectItem value="DELETED">Deleted</SelectItem>
+                            <SelectItem value="ALL">{t('status.all')}</SelectItem>
+                            <SelectItem value="ACTIVE">{t('status.active')}</SelectItem>
+                            <SelectItem value="INACTIVE">{t('status.inactive')}</SelectItem>
+                            <SelectItem value="DELETED">{t('status.deleted')}</SelectItem>
                         </SelectContent>
                     </Select>
                 </div>
                 <MyButton buttonType="primary" scale="medium" onClick={onCreate}>
                     <Plus size={16} />
-                    Create coupon
+                    {t('actions.createCoupon')}
                 </MyButton>
             </div>
 
@@ -183,7 +186,7 @@ export const CouponList = ({ onCreate, onEdit }: CouponListProps) => {
                     <SkeletonRows />
                 ) : isError ? (
                     <ErrorState
-                        message={(error as Error)?.message ?? 'Could not load coupons'}
+                        message={(error as Error)?.message ?? t('errors.loadFailed')}
                         onRetry={() => refetch()}
                     />
                 ) : rows.length === 0 ? (
@@ -192,12 +195,12 @@ export const CouponList = ({ onCreate, onEdit }: CouponListProps) => {
                     <Table>
                         <TableHeader>
                             <TableRow>
-                                <TableHead>Code</TableHead>
-                                <TableHead>Discount</TableHead>
-                                <TableHead>Validity</TableHead>
-                                <TableHead>Usage</TableHead>
-                                <TableHead>Status</TableHead>
-                                <TableHead className="text-right">Actions</TableHead>
+                                <TableHead>{t('table.code')}</TableHead>
+                                <TableHead>{t('table.discount')}</TableHead>
+                                <TableHead>{t('table.validity')}</TableHead>
+                                <TableHead>{t('table.usage')}</TableHead>
+                                <TableHead>{t('table.status')}</TableHead>
+                                <TableHead className="text-end">{t('table.actions')}</TableHead>
                             </TableRow>
                         </TableHeader>
                         <TableBody>
@@ -209,7 +212,7 @@ export const CouponList = ({ onCreate, onEdit }: CouponListProps) => {
                                         </span>
                                         {c.source_type === 'PRODUCT_PAGE' && (
                                             <span className="ml-2 text-caption text-neutral-400">
-                                                product page
+                                                {t('table.productPageBadge')}
                                             </span>
                                         )}
                                     </TableCell>
@@ -280,35 +283,39 @@ const SkeletonRows = () => (
 );
 
 const EmptyState = ({ hasFilters, onCreate }: { hasFilters: boolean; onCreate: () => void }) => {
+    const { t } = useTranslation('settingsCouponList');
     const learnerPlural = getTerminologyPlural(RoleTerms.Learner, SystemTerms.Learner);
     return (
     <div className="flex flex-col items-center justify-center px-6 py-16 text-center">
         <Tag size={36} className="mb-3 text-neutral-300" />
         <h3 className="text-subtitle font-semibold text-neutral-700">
-            {hasFilters ? 'No coupons match these filters' : 'No coupons yet'}
+            {hasFilters ? t('empty.filteredTitle') : t('empty.emptyTitle')}
         </h3>
         <p className="mt-1 max-w-sm text-caption text-neutral-500">
             {hasFilters
-                ? 'Try clearing the search or status filter.'
-                : `Create a coupon to let ${learnerPlural.toLowerCase()} apply a discount at checkout.`}
+                ? t('empty.filteredSubtitle')
+                : t('empty.emptySubtitle', { learnerPlural: learnerPlural.toLowerCase() })}
         </p>
         {!hasFilters && (
             <MyButton buttonType="primary" scale="medium" onClick={onCreate} className="mt-4">
                 <Plus size={16} />
-                Create coupon
+                {t('actions.createCoupon')}
             </MyButton>
         )}
     </div>
     );
 };
 
-const ErrorState = ({ message, onRetry }: { message: string; onRetry: () => void }) => (
-    <div className="flex flex-col items-center justify-center px-6 py-16 text-center">
-        <WarningCircle size={36} className="mb-3 text-danger-500" />
-        <h3 className="text-subtitle font-semibold text-neutral-700">Couldn&apos;t load coupons</h3>
-        <p className="mt-1 max-w-md text-caption text-neutral-500">{message}</p>
-        <MyButton buttonType="secondary" scale="medium" onClick={onRetry} className="mt-4">
-            Try again
-        </MyButton>
-    </div>
-);
+const ErrorState = ({ message, onRetry }: { message: string; onRetry: () => void }) => {
+    const { t } = useTranslation('settingsCouponList');
+    return (
+        <div className="flex flex-col items-center justify-center px-6 py-16 text-center">
+            <WarningCircle size={36} className="mb-3 text-danger-500" />
+            <h3 className="text-subtitle font-semibold text-neutral-700">{t('errors.loadTitle')}</h3>
+            <p className="mt-1 max-w-md text-caption text-neutral-500">{message}</p>
+            <MyButton buttonType="secondary" scale="medium" onClick={onRetry} className="mt-4">
+                {t('actions.tryAgain')}
+            </MyButton>
+        </div>
+    );
+};

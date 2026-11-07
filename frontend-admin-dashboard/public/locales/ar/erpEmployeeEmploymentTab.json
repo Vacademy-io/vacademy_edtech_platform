@@ -1,0 +1,26 @@
+{
+    "title": "التوظيف",
+    "changeStatus": "تغيير الحالة",
+    "fields": {
+        "currentStatus": "الحالة الحالية",
+        "employmentType": "نوع التوظيف",
+        "noticePeriod": "فترة الإشعار"
+    },
+    "noticePeriodDays_zero": "لا توجد أيام إشعار",
+    "noticePeriodDays_one": "يوم إشعار واحد",
+    "noticePeriodDays_two": "يوما إشعار",
+    "noticePeriodDays_few": "{{count}} أيام إشعار",
+    "noticePeriodDays_many": "{{count}} يومًا إشعار",
+    "noticePeriodDays_other": "{{count}} يوم إشعار",
+    "milestones": {
+        "joined": "تاريخ الالتحاق",
+        "probationEnds": "نهاية فترة التجربة",
+        "confirmed": "تاريخ التثبيت",
+        "resigned": "تاريخ الاستقالة",
+        "lastWorkingDay": "آخر يوم عمل"
+    },
+    "notRecorded": "غير مسجّل",
+    "employmentEnded": "انتهى التوظيف · {{status}}",
+    "noExitReason": "لا يوجد سبب مغادرة مسجّل.",
+    "settlementHint": "جهّز التسوية النهائية الكاملة من إدارة الموارد البشرية ← الرواتب."
+}

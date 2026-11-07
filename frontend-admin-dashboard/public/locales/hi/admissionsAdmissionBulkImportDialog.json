@@ -1,0 +1,81 @@
+{
+    "dialog": {
+        "title": "प्रवेश थोक आयात",
+        "description": "CSV अपलोड करें, वैकल्पिक रूप से कक्षा चुनें, पूर्वावलोकन करें और आयात की पुष्टि करें"
+    },
+    "steps": {
+        "label": "चरण {{number}}"
+    },
+    "upload": {
+        "templateHint": "CSV टेम्पलेट डाउनलोड करें और भरे हुए शिक्षार्थी उत्तर अपलोड करें",
+        "downloadTemplateButton": "टेम्पलेट डाउनलोड करें",
+        "clickToUpload": "`.csv` फ़ाइल अपलोड करने के लिए क्लिक करें",
+        "rowsSummary": "मान्य पंक्तियाँ: {{validCount}} | छोड़ी गई पंक्तियाँ: {{skippedCount}}"
+    },
+    "classStep": {
+        "description": "प्रवेश जमा करने के लिए आवश्यक कक्षा/बैच चुनें। यदि आप इसे छोड़ देते हैं, तो पहला उपलब्ध विकल्प उपयोग किया जाएगा।",
+        "noClassOption": "कोई कक्षा चयनित नहीं"
+    },
+    "preview": {
+        "summary_one": "{{count}} मान्य पंक्ति का पूर्वावलोकन",
+        "summary_other": "{{count}} मान्य पंक्तियों का पूर्वावलोकन",
+        "columns": {
+            "studentName": "छात्र का नाम",
+            "gender": "लिंग",
+            "dateOfBirth": "जन्म तिथि",
+            "fatherName": "पिता का नाम",
+            "fatherEmail": "पिता का ईमेल",
+            "fatherMobile": "पिता का मोबाइल",
+            "motherName": "माता का नाम",
+            "motherEmail": "माता का ईमेल",
+            "motherMobile": "माता का मोबाइल",
+            "guardianName": "अभिभावक का नाम",
+            "guardianMobile": "अभिभावक का मोबाइल",
+            "status": "स्थिति",
+            "source": "स्रोत"
+        }
+    },
+    "actions": {
+        "back": "वापस",
+        "cancel": "रद्द करें",
+        "next": "अगला",
+        "confirmImport": "आयात की पुष्टि करें",
+        "importing": "आयात हो रहा है..."
+    },
+    "errors": {
+        "onlyCsvSupported": "केवल .csv फ़ाइलें समर्थित हैं",
+        "missingColumns": "आवश्यक कॉलम गायब हैं: {{columns}}",
+        "failedToParseCsv": "CSV पार्स करने में विफल",
+        "instituteNotLoaded": "संस्थान का विवरण लोड नहीं हुआ",
+        "sessionRequired": "सत्र आवश्यक है",
+        "selectClassRequired": "कृपया एक कक्षा/बैच चुनें"
+    },
+    "toast": {
+        "importSuccess_one": "{{count}} प्रवेश आयात किया गया ({{failedCount}} विफल)",
+        "importSuccess_other": "{{count}} प्रवेश आयात किए गए ({{failedCount}} विफल)",
+        "importError": "प्रवेश आयात करने में विफल"
+    },
+    "genderLabel": {
+        "MALE": "पुरुष",
+        "FEMALE": "महिला",
+        "OTHER": "अन्य"
+    },
+    "statusLabel": {
+        "NEW": "नया",
+        "CONTACTED": "संपर्क किया गया",
+        "QUALIFIED": "योग्य",
+        "NOT_ELIGIBLE": "अयोग्य",
+        "FOLLOW_UP": "फॉलो-अप",
+        "CLOSED": "बंद",
+        "CONVERTED": "परिवर्तित",
+        "ADMITTED": "प्रवेशित"
+    },
+    "sourceLabel": {
+        "WEBSITE": "वेबसाइट",
+        "GOOGLE_ADS": "गूगल विज्ञापन",
+        "FACEBOOK": "फेसबुक",
+        "INSTAGRAM": "इंस्टाग्राम",
+        "REFERRAL": "रेफरल",
+        "OTHER": "अन्य"
+    }
+}

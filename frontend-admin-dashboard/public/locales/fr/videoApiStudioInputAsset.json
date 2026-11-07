@@ -1,0 +1,6 @@
+{
+    "errors": {
+        "createFailed": "Échec de la création ({{status}}) : {{detail}}",
+        "deleteFailed": "Échec de la suppression ({{status}})"
+    }
+}

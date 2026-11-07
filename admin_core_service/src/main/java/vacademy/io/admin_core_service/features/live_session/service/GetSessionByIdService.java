@@ -45,6 +45,9 @@ public class GetSessionByIdService {
     @Autowired
     private final LiveSessionPaymentService liveSessionPaymentService;
 
+    @Autowired
+    private final LiveSessionInstructorService instructorService;
+
     @Data
     public static class SessionDetailsResponse {
         private GetSessionByIdResponseDTO schedule;
@@ -58,6 +61,12 @@ public class GetSessionByIdService {
         private String whatsappOtpTemplateName;
         // "Save registrants to audience list(s)" config, for edit-wizard prefill.
         private vacademy.io.admin_core_service.features.live_session.dto.LiveSessionAudiencePushConfigDTO audiencePushConfig;
+        /**
+         * Instructors / presenters, for edit-wizard prefill (V524). Falls back
+         * to the creator for sessions scheduled before instructors existed, so
+         * the picker is never empty on an old session.
+         */
+        private java.util.List<vacademy.io.admin_core_service.features.live_session.dto.LiveSessionInstructorDTO> instructors;
     }
 
     public SessionDetailsResponse getFullSessionDetails(String sessionId) {
@@ -75,6 +84,7 @@ public class GetSessionByIdService {
                         .vendor(liveSessionPaymentService.getConfiguredVendor(sessionId).orElse(null))
                         .build()));
         liveSessionRepository.findById(sessionId).ifPresent(session -> {
+            response.setInstructors(instructorService.getInstructorDetails(session));
             response.setRequireEmailVerification(session.getRequireEmailVerification());
             response.setRequirePhoneVerification(session.getRequirePhoneVerification());
             response.setWhatsappOtpTemplateName(session.getWhatsappOtpTemplateName());
@@ -192,6 +202,7 @@ public class GetSessionByIdService {
         // Load BBB config from LiveSession entity if available
         if (first != null && first.getSessionId() != null) {
             liveSessionRepository.findById(first.getSessionId()).ifPresent(liveSession -> {
+                dto.setShowToLearners(liveSession.getShowToLearners());
                 if (liveSession.getBbbConfigJson() != null && !liveSession.getBbbConfigJson().isBlank()) {
                     try {
                         Map<String, Object> bbbCfg = new com.fasterxml.jackson.databind.ObjectMapper()

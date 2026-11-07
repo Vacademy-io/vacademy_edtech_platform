@@ -1,0 +1,65 @@
+{
+    "actions": {
+        "save": "सहेजें",
+        "cancel": "रद्द करें",
+        "uploading": "अपलोड हो रहा है…",
+        "showPreview": "पूर्वावलोकन दिखाएं",
+        "hidePreview": "पूर्वावलोकन छिपाएं"
+    },
+    "fields": {
+        "titleOptional": "शीर्षक (वैकल्पिक)"
+    },
+    "math": {
+        "title": "गणित (LaTeX)",
+        "clickToAdd": "LaTeX जोड़ने के लिए क्लिक करें",
+        "displayModeLabel": "डिस्प्ले मोड (केंद्रित)"
+    },
+    "mermaid": {
+        "title": "मरमेड आरेख",
+        "render": "रेंडर करें"
+    },
+    "audio": {
+        "title": "ऑडियो",
+        "noAudioUploaded": "कोई ऑडियो अपलोड नहीं किया गया",
+        "upload": "ऑडियो अपलोड करें",
+        "replace": "ऑडियो बदलें",
+        "uploadFailed": "ऑडियो अपलोड विफल"
+    },
+    "pdf": {
+        "title": "पीडीएफ़",
+        "openInNewTab": "पीडीएफ़ नए टैब में खोलें",
+        "noPdfUploaded": "कोई पीडीएफ़ अपलोड नहीं किया गया",
+        "upload": "पीडीएफ़ अपलोड करें",
+        "replace": "पीडीएफ़ बदलें",
+        "uploadFailed": "पीडीएफ़ अपलोड विफल"
+    },
+    "fillBlanks": {
+        "title": "रिक्त स्थान भरें",
+        "clickToAddSentence": "वाक्य जोड़ने के लिए क्लिक करें — उत्तर को {blank:answer} के रूप में चिह्नित करें",
+        "sentencePlaceholder": "पानी {blank:100} डिग्री सेल्सियस पर उबलता है।"
+    },
+    "jupyter": {
+        "title": "ज्यूपिटर नोटबुक",
+        "titleWithProject": "ज्यूपिटर नोटबुक: {{projectName}}",
+        "previewTitle": "ज्यूपिटर नोटबुक पूर्वावलोकन",
+        "notConfigured": "कोई नोटबुक कॉन्फ़िगर नहीं की गई — प्रोजेक्ट नाम और GitHub URL आवश्यक है।",
+        "fields": {
+            "projectName": "प्रोजेक्ट नाम",
+            "repositoryUrl": "GitHub रिपॉज़िटरी URL",
+            "branch": "ब्रांच (main)",
+            "notebookLocation": "नोटबुक स्थान (root)"
+        }
+    },
+    "scratch": {
+        "title": "स्क्रैच प्रोजेक्ट",
+        "previewTitle": "स्क्रैच प्रोजेक्ट",
+        "notConfigured": "कोई स्क्रैच प्रोजेक्ट कॉन्फ़िगर नहीं किया गया — प्रोजेक्ट ID आवश्यक है।",
+        "fields": {
+            "projectId": "स्क्रैच प्रोजेक्ट ID"
+        }
+    },
+    "toc": {
+        "title": "विषय-सूची",
+        "description": "शिक्षार्थियों के लिए दस्तावेज़ शीर्षकों से रूपरेखा स्वतः जनरेट होती है।"
+    }
+}

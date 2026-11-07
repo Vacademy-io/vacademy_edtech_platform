@@ -1,0 +1,14 @@
+{
+    "noLiveTests": "Aucun test n'est actuellement en direct.",
+    "noUpcomingTests": "Aucun test à venir n'est programmé.",
+    "noPreviousTests": "Aucun test précédent disponible.",
+    "noDraftTests": "Aucun brouillon de test disponible.",
+    "mode": "Mode",
+    "type": "Type",
+    "assessmentsList": "Liste des évaluations",
+    "helmet": {
+        "title": "Évaluer les tests",
+        "description": "Cette page affiche la liste de tous les tests programmés et permet également d'y programmer une évaluation."
+    },
+    "noCourseDialogType": "Créer une évaluation"
+}

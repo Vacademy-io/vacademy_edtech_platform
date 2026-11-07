@@ -1,0 +1,49 @@
+{
+    "groups": {
+        "earnings": "आय",
+        "deductions": "कटौती",
+        "employerContributions": "नियोक्ता योगदान"
+    },
+    "table": {
+        "columns": {
+            "component": "घटक",
+            "calculation": "गणना",
+            "monthly": "मासिक",
+            "annual": "वार्षिक"
+        },
+        "overridden": "इस कर्मचारी के लिए ओवरराइड किया गया"
+    },
+    "errors": {
+        "loadFailed": "इस कर्मचारी की वेतन संरचना लोड नहीं की जा सकी।"
+    },
+    "empty": {
+        "noStructure": {
+            "title": "अभी तक कोई वेतन संरचना नहीं दी गई",
+            "description": "इसे ERP → वेतन से असाइन करें। तब तक इस कर्मचारी को पेरोल रन में छोड़ दिया जाएगा।"
+        },
+        "noComponents": {
+            "title": "इस संरचना में कोई घटक नहीं है",
+            "description": "पेरोल को पेस्लिप की गणना करने के लिए वेतन टेम्पलेट में घटक जोड़ें।"
+        }
+    },
+    "card": {
+        "defaultStructureName": "वर्तमान वेतन संरचना",
+        "defaultRevisionName": "वेतन संरचना",
+        "componentBreakdown": "घटक विवरण",
+        "revisionHistory": "संशोधन इतिहास",
+        "noEarlierStructures": "कोई पहले की संरचना नहीं — यह पहली असाइन की गई है।"
+    },
+    "fields": {
+        "ctcAnnual": "सीटीसी (वार्षिक)",
+        "ctcMonthly": "सीटीसी (मासिक)",
+        "grossMonthly": "सकल (मासिक)",
+        "netMonthly": "शुद्ध (मासिक)",
+        "effectiveFrom": "इस तिथि से प्रभावी",
+        "currency": "मुद्रा",
+        "status": "स्थिति",
+        "revisionReason": "संशोधन कारण"
+    },
+    "history": {
+        "open": "खुला"
+    }
+}

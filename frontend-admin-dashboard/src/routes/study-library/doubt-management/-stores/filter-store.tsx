@@ -21,6 +21,9 @@ const defaultFilters: DoubtFilter = {
     status: [],
     types: [],
     batch_ids: [],
+    assignee_user_ids: [],
+    unassigned_only: false,
+    workflow_statuses: [],
     // Seed at store creation so the first inbox query is already institute-scoped — avoids the
     // mount-time fetch with a blank institute (which returns an empty page) + a second refetch.
     institute_id: getCurrentInstituteId() ?? '',

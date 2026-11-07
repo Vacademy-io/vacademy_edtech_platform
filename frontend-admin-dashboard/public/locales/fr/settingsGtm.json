@@ -1,0 +1,73 @@
+{
+    "loading": "Chargement des paramètres GTM…",
+    "card": {
+        "title": "Google Tag Manager",
+        "description": {
+            "part1": "Injectez votre conteneur GTM sur les pages d'inscription des apprenants. Cela active le suivi des conversions, les pixels de remarketing et toutes les balises que vous configurez dans votre espace de travail GTM. Un événement ",
+            "part2": " est envoyé au dataLayer lors d'une inscription réussie."
+        }
+    },
+    "toggle": {
+        "enabled": "Activé",
+        "disabled": "Désactivé"
+    },
+    "containerId": {
+        "label": "ID du conteneur",
+        "placeholder": "GTM-XXXXXXX",
+        "hint": "Trouvez votre ID de conteneur dans GTM → Admin → Paramètres du conteneur."
+    },
+    "errors": {
+        "invalidContainerId": "ID de conteneur GTM invalide. Format attendu : GTM-XXXXXXX"
+    },
+    "toasts": {
+        "saveSuccess": "Paramètres GTM enregistrés",
+        "saveError": "Échec de l'enregistrement des paramètres GTM"
+    },
+    "footer": {
+        "save": "Enregistrer les paramètres GTM",
+        "saving": "Enregistrement…"
+    },
+    "utm": {
+        "card": {
+            "title": "Générateur de liens UTM",
+            "description": "Générez des liens balisés pour les formulaires d’audience, sessions en direct, évaluations, invitations d’inscription, pages produit et sites catalogue. Désactivé par défaut — une fois activé, une action « Générer un lien UTM » apparaît dans chacun de ces menus de partage."
+        },
+        "surfacesHint": "S’applique aux : formulaires d’audience, sessions en direct, évaluations, invitations d’inscription, pages produit et sites catalogue.",
+        "defaultSource": {
+            "label": "Source par défaut",
+            "placeholder": "whatsapp"
+        },
+        "defaultMedium": {
+            "label": "Support par défaut",
+            "placeholder": "social"
+        },
+        "sources": {
+            "label": "Sources autorisées",
+            "placeholder": "whatsapp, instagram, google",
+            "hint": "Séparées par des virgules. Proposées en premier dans le générateur pour garder un nommage cohérent."
+        },
+        "mediums": {
+            "label": "Supports autorisés",
+            "placeholder": "social, cpc, email",
+            "hint": "Séparés par des virgules. Proposés en premier dans le générateur pour garder un nommage cohérent."
+        },
+        "requireCampaign": {
+            "label": "Exiger un nom de campagne",
+            "hint": "Bloque la génération tant que utm_campaign est vide. Une source et un support sans campagne sont la cause habituelle d’un rapport illisible."
+        },
+        "anyPage": {
+            "label": "Créer un lien pour une autre page",
+            "hint": "Les pages de connexion, d'inscription ou d'atterrissage n'ont pas de menu de partage. Choisissez-en une ou saisissez un chemin, puis générez le lien balisé.",
+            "placeholder": "/login",
+            "action": "Générer le lien UTM",
+            "presets": {
+                "login": "Page de connexion",
+                "signup": "Page d'inscription",
+                "home": "Accueil"
+            }
+        },
+        "footer": {
+            "save": "Enregistrer les paramètres de liens"
+        }
+    }
+}

@@ -1,0 +1,55 @@
+{
+    "restriction": {
+        "banner": "Modification restreinte : ce cours est {{status}}.",
+        "statusPublished": "publié",
+        "statusUnderReview": "en cours de relecture",
+        "publishedHint": "Rendez-vous dans Mes cours pour créer une copie modifiable.",
+        "reviewHint": "Vous ne pouvez pas modifier le contenu tant qu'il est en cours de relecture."
+    },
+    "addedToCatalog": "Ajouté au catalogue",
+    "offlineSettings": "Paramètres hors ligne",
+    "advancedIds": {
+        "moreOptions": "Plus d'options",
+        "title": "Avancé",
+        "notAvailable": "{{label}} n'est pas disponible",
+        "copied": "{{label}} copié",
+        "copyFailed": "Échec de la copie",
+        "courseId": "ID {{course}}",
+        "packageSessionId": "ID de session de pack",
+        "sessionId": "ID {{session}}",
+        "levelId": "ID {{level}}"
+    },
+    "viewLess": "Voir moins",
+    "viewMore": "Voir plus",
+    "youtubePlayerTitle": "Lecteur vidéo YouTube",
+    "videoNotSupported": "Votre navigateur ne prend pas en charge la balise vidéo.",
+    "courseBannerAlt": "Bannière du {{course}}",
+    "batchSubgroup": "Groupe / Sous-groupe",
+    "selectBatch": "Sélectionner un groupe",
+    "errorLoadingSlideCounts": "Erreur lors du chargement du nombre de diapositives",
+    "courseHighlights": "Points forts du {{course}}",
+    "whatYoullLearn": "Qu'allez-vous apprendre ?",
+    "aboutThis": "À propos de ce {{course}}",
+    "whoShouldJoin": "Qui devrait rejoindre ?",
+    "authors": "Auteurs",
+    "loadingInstructors": "Chargement des enseignants...",
+    "dripCondition": {
+        "saveFailed": "Échec de l'enregistrement de la condition de diffusion. Veuillez réessayer.",
+        "updateFailed": "Échec de la mise à jour de la condition de diffusion. Veuillez réessayer.",
+        "deleteFailed": "Échec de la suppression de la condition de diffusion. Veuillez réessayer."
+    },
+    "slideType": {
+        "aiContent": "Contenu IA",
+        "video": "Vidéo",
+        "codeEditor": "Éditeur de code",
+        "pdf": "PDF",
+        "document": "Document",
+        "presentation": "Présentation",
+        "jupyterNotebook": "Notebook Jupyter",
+        "scratchProject": "Projet Scratch",
+        "question": "Question",
+        "quiz": "Quiz",
+        "assignment": "Devoir",
+        "defaultSlide": "Diapositive"
+    }
+}

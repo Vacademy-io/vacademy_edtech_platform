@@ -1,0 +1,66 @@
+{
+    "toolbar": {
+        "fieldsPlaced_zero": "{{count}} حقل موضوع",
+        "fieldsPlaced_one": "{{count}} حقل موضوع",
+        "fieldsPlaced_two": "{{count}} حقلان موضوعان",
+        "fieldsPlaced_few": "{{count}} حقول موضوعة",
+        "fieldsPlaced_many": "{{count}} حقلاً موضوعاً",
+        "fieldsPlaced_other": "{{count}} حقل موضوع",
+        "dropToAdd": "— أفلت هنا للإضافة",
+        "uploadCustomImage": "رفع صورة مخصّصة"
+    },
+    "canvas": {
+        "removeFieldTitle": "إزالة"
+    },
+    "badge": {
+        "certificateIdFieldLabel": "معرّف الشهادة",
+        "autoStampTitle": "يُطبع تلقائياً على كل شهادة — اسحب لتحديد موضعه بنفسك",
+        "stopPrintingTitle": "عدم طباعة هذا تلقائياً",
+        "turnOffAriaLabel": "إيقاف الطباعة التلقائية",
+        "certificateNumberLabel": "رقم الشهادة",
+        "stampedFooter": "يُطبع {{names}} أسفل يمين كل شهادة. اسحب المربع المتقطع لتحديد موضعه بنفسك، أو أزله لإيقاف طباعته نهائياً."
+    },
+    "properties": {
+        "title": "خصائص الحقل",
+        "removeButton": "إزالة",
+        "closeTitle": "إغلاق الخصائص",
+        "fontSize": {
+            "label": "حجم الخط",
+            "pxValue": "{{value}}px",
+            "customPlaceholder": "حجم مخصّص بالبكسل"
+        },
+        "fontFamily": {
+            "label": "نوع الخط"
+        },
+        "fontWeight": {
+            "label": "وزن الخط",
+            "normal": "عادي",
+            "bold": "عريض"
+        },
+        "textColor": {
+            "label": "لون النص"
+        },
+        "textAlignment": {
+            "label": "محاذاة النص",
+            "left": "يسار",
+            "center": "وسط",
+            "right": "يمين"
+        },
+        "backgroundColor": {
+            "label": "لون الخلفية",
+            "clear": "مسح",
+            "current": "الحالي: {{value}}",
+            "transparentValue": "شفاف"
+        },
+        "position": {
+            "label": "الموضع",
+            "x": "الموضع X",
+            "y": "الموضع Y"
+        },
+        "fieldSize": {
+            "label": "حجم الحقل",
+            "width": "العرض",
+            "height": "الارتفاع"
+        }
+    }
+}

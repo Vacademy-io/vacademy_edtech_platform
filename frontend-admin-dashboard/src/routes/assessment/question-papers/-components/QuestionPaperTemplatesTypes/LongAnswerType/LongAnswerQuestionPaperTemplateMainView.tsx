@@ -12,6 +12,7 @@ import { QUESTION_TYPES } from '@/constants/dummy-data';
 import { useEffect } from 'react';
 import { CollapsibleQuillEditor } from '../CollapsibleQuillEditor';
 import { Badge } from '@/components/ui/badge';
+import { useTranslation } from 'react-i18next';
 
 export const LongAnswerQuestionPaperTemplateMainView = ({
     form,
@@ -20,13 +21,14 @@ export const LongAnswerQuestionPaperTemplateMainView = ({
     showQuestionNumber = true,
     examType,
 }: QuestionPaperTemplateFormProps) => {
+    const { t } = useTranslation('assessmentLongAnswerTemplateQP');
     console.log('🎯 LongAnswerQuestionPaperTemplateMainView rendered', {
         examType,
         currentQuestionIndex,
         isSurvey: examType === 'SURVEY'
     });
     const { control, getValues } = form;
-    const explanationsType = getValues('explanationsType') || 'Explanation:';
+    const explanationsType = getValues('explanationsType') || t('explanation.defaultLabel');
     const questionsType = getValues('questionsType') || '';
     const allQuestions = getValues('questions') || [];
     const tags = getValues(`questions.${currentQuestionIndex}.tags`) || [];
@@ -46,7 +48,7 @@ export const LongAnswerQuestionPaperTemplateMainView = ({
     if (allQuestions.length === 0) {
         return (
             <div className="flex h-screen w-full items-center justify-center">
-                <h1>Please add a question to show question details</h1>
+                <h1>{t('emptyState.noQuestions')}</h1>
             </div>
         );
     }
@@ -55,7 +57,7 @@ export const LongAnswerQuestionPaperTemplateMainView = ({
         <div className={className}>
             {getValues(`questions.${currentQuestionIndex}.parentRichTextContent`) && (
                 <div className="flex w-full flex-col !flex-nowrap items-start gap-1">
-                    <span>Comprehension Text</span>
+                    <span>{t('label.comprehensionText')}</span>
                     <FormField
                         control={control}
                         name={`questions.${currentQuestionIndex}.parentRichTextContent`}
@@ -77,7 +79,7 @@ export const LongAnswerQuestionPaperTemplateMainView = ({
             <div className="flex w-full flex-col !flex-nowrap items-start gap-1">
                 <div className="flex items-center gap-2">
                     <span>
-                        Question
+                        {t('label.question')}
                         {showQuestionNumber && (
                             <>
                                 &nbsp;
@@ -118,7 +120,7 @@ export const LongAnswerQuestionPaperTemplateMainView = ({
 
             {examType !== 'SURVEY' && (
                 <div className="flex w-full flex-col !flex-nowrap items-start gap-1">
-                    <span>Answer</span>
+                    <span>{t('label.answer')}</span>
                     <FormField
                         control={control}
                         name={`questions.${currentQuestionIndex}.subjectiveAnswerText`}

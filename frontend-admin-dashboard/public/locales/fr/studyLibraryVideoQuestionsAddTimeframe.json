@@ -1,0 +1,9 @@
+{
+    "addQuestion": "Ajouter une question",
+    "timeStamp": "Horodatage",
+    "hrs": "h",
+    "min": "min",
+    "sec": "s",
+    "useCurrentPosition": "Utiliser la position actuelle",
+    "allowSkip": "Autoriser les étudiants à passer cette question"
+}

@@ -1,0 +1,124 @@
+{
+    "status": {
+        "pending": "التقييم لم يبدأ بعد",
+        "inProgress": "التقييم قيد التنفيذ",
+        "initiated": "بدأ التقييم",
+        "processing": "جارٍ معالجة ورقة إجابة الطالب",
+        "extracting": "جارٍ استخراج إجابات الطالب",
+        "evaluating": "جارٍ تقييم إجابات الطالب",
+        "grading": "جارٍ تصحيح الإجابات المقيَّمة",
+        "completed": "اكتمل التقييم",
+        "failed": "فشل التقييم",
+        "cancelled": "تم إلغاء التقييم",
+        "unknown": "غير معروف"
+    },
+    "common": {
+        "loading": "جارٍ التحميل..."
+    },
+    "nav": {
+        "heading": "التقييم بالذكاء الاصطناعي"
+    },
+    "error": {
+        "title": "خطأ في تحميل التقدم",
+        "loadFailed": "فشل تحميل تقدم التقييم",
+        "goBack": "رجوع"
+    },
+    "toasts": {
+        "evaluationStopped": "تم إيقاف التقييم بنجاح!",
+        "stopFailed": "فشل إيقاف التقييم",
+        "answerSheetUnavailable": "ورقة الإجابة غير متوفرة",
+        "answerSheetLoadFailed": "فشل تحميل ورقة الإجابة",
+        "evaluationCompleted": "اكتمل التقييم بنجاح!",
+        "evaluationFailedRetry": "فشل التقييم. يرجى المحاولة مرة أخرى.",
+        "marksUpdated": "تم تحديث الدرجات",
+        "marksUpdateFailed": "فشل تحديث الدرجات. يرجى المحاولة مرة أخرى."
+    },
+    "header": {
+        "participant": "المشارك",
+        "assessment": "التقييم",
+        "status": "الحالة",
+        "duration": "المدة",
+        "progress": "التقدم",
+        "stop": "إيقاف",
+        "stopping": "جارٍ الإيقاف..."
+    },
+    "summary": {
+        "totalScore": "الدرجة الإجمالية",
+        "percentage": "النسبة المئوية",
+        "completed": "مكتمل",
+        "pending": "قيد الانتظار"
+    },
+    "filters": {
+        "all": "الكل",
+        "completed": "مكتمل",
+        "pending": "قيد الانتظار",
+        "ariaLabel": "تصفية الأسئلة"
+    },
+    "answerSheet": {
+        "loading": "جارٍ التحميل...",
+        "button": "ورقة الإجابة",
+        "panelTitle": "ورقة إجابة الطالب",
+        "close": "إغلاق"
+    },
+    "banners": {
+        "aiDrafted": "قام الذكاء الاصطناعي بصياغة هذا التقييم. راجع كل سؤال، وعدّل الدرجات أو الملاحظات إن لزم الأمر، ثم اعتمد النتيجة.",
+        "needsReview_zero": "لا توجد أسئلة ({{count}}) تحتاج إلى مراجعتك، ولم يتم تقييمها تلقائيًا.",
+        "needsReview_one": "سؤال واحد ({{count}}) لم يتم تقييمه تلقائيًا ويحتاج إلى مراجعتك. افتحه أدناه لإدخال الدرجات قبل اعتماد النتيجة.",
+        "needsReview_two": "سؤالان ({{count}}) لم يتم تقييمهما تلقائيًا ويحتاجان إلى مراجعتك. افتحهما أدناه لإدخال الدرجات قبل اعتماد النتيجة.",
+        "needsReview_few": "{{count}} أسئلة لم يتم تقييمها تلقائيًا وتحتاج إلى مراجعتك. افتحها أدناه لإدخال الدرجات قبل اعتماد النتيجة.",
+        "needsReview_many": "{{count}} سؤالًا لم يتم تقييمها تلقائيًا وتحتاج إلى مراجعتك. افتحها أدناه لإدخال الدرجات قبل اعتماد النتيجة.",
+        "needsReview_other": "{{count}} سؤال لم يتم تقييمها تلقائيًا وتحتاج إلى مراجعتك. افتحها أدناه لإدخال الدرجات قبل اعتماد النتيجة."
+    },
+    "emptyState": {
+        "all": "لا توجد أسئلة لعرضها",
+        "completed": "لا توجد أسئلة مكتملة لعرضها",
+        "pending": "لا توجد أسئلة قيد الانتظار لعرضها"
+    },
+    "question": {
+        "qLabel": "س{{number}}",
+        "title": "السؤال {{number}}",
+        "reviewedPrefix": "تمت مراجعته من قِبلك · ",
+        "completedAt": "اكتمل {{time}}",
+        "pendingStatus": "قيد الانتظار",
+        "failedGradeMessage": "تعذر على الذكاء الاصطناعي تقييم هذا السؤال — يحتاج إلى مراجعتك",
+        "editedBadge": "معدَّل",
+        "needsReviewBadge": "يحتاج إلى مراجعة",
+        "reviewMeta": {
+            "reviewedViaApiBy": "تمت المراجعة عبر API بواسطة {{reviewer}}",
+            "reviewedViaApi": "تمت المراجعة عبر API",
+            "reviewedBy": "تمت المراجعة بواسطة {{reviewer}}",
+            "reviewed": "تمت المراجعة",
+            "approvedViaApiBy": "تم الاعتماد عبر API بواسطة {{reviewer}}",
+            "approvedViaApi": "تم الاعتماد عبر API",
+            "approvedBy": "تم الاعتماد بواسطة {{reviewer}}",
+            "approved": "تم الاعتماد"
+        }
+    },
+    "teacherReview": {
+        "failedTitle": "لم يتم تقييم هذا السؤال تلقائيًا.",
+        "aiDraftedTitle": "درجات مقترحة من الذكاء الاصطناعي",
+        "failedHint": "أدخل الدرجات والملاحظات لتقييمه بنفسك.",
+        "aiDraftedHint": "عدّل الدرجات أو الملاحظات إذا كنت لا توافق على تقييم الذكاء الاصطناعي.",
+        "gradeManually": "التقييم يدويًا",
+        "edit": "تعديل",
+        "marksLabel": "الدرجات",
+        "feedbackLabel": "الملاحظات",
+        "feedbackPlaceholder": "ملاحظات لهذا السؤال",
+        "cancel": "إلغاء",
+        "save": "حفظ الدرجات",
+        "saving": "جارٍ الحفظ..."
+    },
+    "details": {
+        "questionHeading": "السؤال",
+        "correctAnswerHeading": "الإجابة الصحيحة",
+        "studentAnswerHeading": "إجابة الطالب",
+        "feedbackHeading": "الملاحظات",
+        "gradingBreakdownHeading": "تفاصيل التصحيح"
+    },
+    "table": {
+        "criteria": "المعيار",
+        "reason": "السبب",
+        "marks": "الدرجات",
+        "totalMarksAwarded": "إجمالي الدرجات الممنوحة:"
+    }
+}

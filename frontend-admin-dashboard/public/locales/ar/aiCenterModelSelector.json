@@ -1,0 +1,10 @@
+{
+    "aiModelLabel": "نموذج الذكاء الاصطناعي",
+    "unableToLoadModels": "تعذّر تحميل النماذج",
+    "tooltipDescription": "اختر نموذج ذكاء اصطناعي للمعالجة. يُنصح باستخدام النموذج الافتراضي في معظم الحالات.",
+    "selectModel": "اختر نموذجًا",
+    "defaultRecommended": "الافتراضي (موصى به)",
+    "defaultModelSummary": "{{name}} - {{description}}",
+    "availableModels": "النماذج المتاحة",
+    "footerNote": "تختلف قدرات النماذج فيما بينها. يعمل النموذج الافتراضي بشكل أفضل لمعظم المهام."
+}

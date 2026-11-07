@@ -15,13 +15,23 @@ public interface TelephonyCounsellorEndpointRepository
     Optional<TelephonyCounsellorEndpoint> findByCounsellorUserIdAndProviderType(
             String counsellorUserId, String providerType);
 
-    /** Promotion: an Airtel extension → the counsellor it belongs to. */
-    Optional<TelephonyCounsellorEndpoint> findByProviderTypeAndExtensionAndEnabledTrue(
-            String providerType, String extension);
+    /**
+     * Promotion: an Airtel extension → the counsellor it belongs to, within the institute the
+     * call record was attributed to. Extensions are only unique inside one Airtel account, so
+     * a global lookup could file one institute's call under another institute's counsellor
+     * (or fail outright when two rows matched). A list, so a duplicate left over from before
+     * the per-institute uniqueness check reads as ambiguous rather than throwing.
+     */
+    List<TelephonyCounsellorEndpoint> findByInstituteIdAndProviderTypeAndExtensionAndEnabledTrue(
+            String instituteId, String providerType, String extension);
 
-    /** Promotion: an Airtel sourceUserId → the counsellor (alternate key). */
-    Optional<TelephonyCounsellorEndpoint> findByProviderTypeAndProviderUserIdAndEnabledTrue(
-            String providerType, String providerUserId);
+    /** Promotion: an Airtel sourceUserId → the counsellor (alternate key), per institute. */
+    List<TelephonyCounsellorEndpoint> findByInstituteIdAndProviderTypeAndProviderUserIdAndEnabledTrue(
+            String instituteId, String providerType, String providerUserId);
+
+    /** Uniqueness of an extension inside one institute (enabled or not). */
+    List<TelephonyCounsellorEndpoint> findByInstituteIdAndProviderTypeAndExtension(
+            String instituteId, String providerType, String extension);
 
     List<TelephonyCounsellorEndpoint> findByInstituteIdAndProviderType(
             String instituteId, String providerType);

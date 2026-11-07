@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { OfflineResponseState, QuestionResponseState } from '../-utils/types';
 import { RichContentRenderer } from './RichContentRenderer';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
@@ -33,6 +34,7 @@ export const TableViewResponseForm = ({
     onResponseChange,
     onSubmit,
 }: TableViewResponseFormProps) => {
+    const { t } = useTranslation('assessmentTableViewResponseForm');
     const [viewingQuestion, setViewingQuestion] = useState<QuestionWithOptions | null>(null);
 
     const handleOptionClick = (question: QuestionWithOptions, optionId: string) => {
@@ -78,10 +80,10 @@ export const TableViewResponseForm = ({
                             <table className="w-full text-sm">
                                 <thead className="border-b bg-gray-50 text-xs font-medium uppercase text-gray-500">
                                     <tr>
-                                        <th className="w-16 px-3 py-2 text-left">#</th>
-                                        <th className="w-16 px-3 py-2 text-center">View</th>
-                                        <th className="px-3 py-2 text-left">Options</th>
-                                        <th className="w-24 px-3 py-2 text-center">Marks</th>
+                                        <th className="w-16 px-3 py-2 text-start">{t('table.headers.number')}</th>
+                                        <th className="w-16 px-3 py-2 text-center">{t('table.headers.view')}</th>
+                                        <th className="px-3 py-2 text-start">{t('table.headers.options')}</th>
+                                        <th className="w-24 px-3 py-2 text-center">{t('table.headers.marks')}</th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y">
@@ -99,7 +101,7 @@ export const TableViewResponseForm = ({
                                             <tr key={question.question_id} className="hover:bg-gray-50">
                                                 {/* Question Number */}
                                                 <td className="px-3 py-2 font-semibold text-gray-700">
-                                                    Q{qNum}.
+                                                    {t('table.questionNumber', { number: qNum })}
                                                 </td>
 
                                                 {/* View Button */}
@@ -108,7 +110,7 @@ export const TableViewResponseForm = ({
                                                         onClick={() => setViewingQuestion(question)}
                                                         className="rounded border border-gray-300 px-2 py-0.5 text-xs text-gray-600 hover:bg-gray-100"
                                                     >
-                                                        View
+                                                        {t('table.viewButton')}
                                                     </button>
                                                 </td>
 
@@ -128,7 +130,10 @@ export const TableViewResponseForm = ({
                                                                             ? 'bg-primary-500 text-white ring-2 ring-primary-300'
                                                                             : 'border border-gray-300 text-gray-600 hover:border-primary-400 hover:bg-primary-50'
                                                                     }`}
-                                                                    title={option.text?.content?.replace(/<[^>]*>/g, '') || `Option ${label}`}
+                                                                    title={
+                                                                        option.text?.content?.replace(/<[^>]*>/g, '') ||
+                                                                        t('table.optionFallback', { label })
+                                                                    }
                                                                 >
                                                                     {label}
                                                                 </button>
@@ -150,7 +155,7 @@ export const TableViewResponseForm = ({
                                                             )
                                                         }
                                                         className="w-16 rounded border px-2 py-1 text-center text-sm"
-                                                        placeholder="-"
+                                                        placeholder={t('table.marksPlaceholder')}
                                                     />
                                                 </td>
                                             </tr>
@@ -169,13 +174,13 @@ export const TableViewResponseForm = ({
                     onClick={onSubmit}
                     className="rounded-md bg-green-600 px-8 py-2 text-sm font-medium text-white hover:bg-green-700"
                 >
-                    Submit
+                    {t('actions.submit')}
                 </button>
             </div>
 
             {/* Question Preview Dialog */}
             <Dialog open={!!viewingQuestion} onOpenChange={() => setViewingQuestion(null)}>
-                <DialogContent className="max-h-[80vh] max-w-2xl overflow-y-auto">
+                <DialogContent className="max-h-dialog-tall max-w-2xl overflow-y-auto">
                     {viewingQuestion && (
                         <div className="flex flex-col gap-4 pt-4">
                             <div className="flex items-center justify-between">

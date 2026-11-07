@@ -37,7 +37,9 @@ interface CartStore {
   addItem: (item: Omit<CartItem, 'quantity'>) => Promise<void>;
   removeItem: (enrollInviteId: string) => Promise<void>;
   updateQuantity: (enrollInviteId: string, quantity: number) => Promise<void>;
-  clearCart: () => void;
+  /** Empties one mode's cart (default: the current mode) and, for the rent cart, the rent plan;
+   *  resolves once storage has the change. */
+  clearCart: (mode?: 'buy' | 'rent') => Promise<void>;
   getTotal: () => number;
   getItemCount: () => number;
   getItemCountByMode: (mode: 'buy' | 'rent') => Promise<number>; // Get count for specific mode
@@ -52,6 +54,42 @@ interface CartStore {
 const STORAGE_KEY_BUY = 'cart_items_buy';
 const STORAGE_KEY_RENT = 'cart_items_rent';
 const PLAN_STORAGE_KEY = 'cart_plan';
+
+/**
+ * localStorage keys the storefront checkout leaves behind while a payment is
+ * unsettled: the order to verify, the credentials/tokens used to sign the
+ * learner in afterwards, and when the order was started (so an order that
+ * never settles can be given up on).
+ */
+export const PENDING_CHECKOUT_KEYS = [
+  'pendingOrderId',
+  'pendingOrderCreatedAt',
+  'pendingUsername',
+  'pendingUserPassword',
+  'pendingAccessToken',
+  'pendingRefreshToken',
+  'pendingInstituteId',
+  'pendingCartMode',
+] as const;
+
+/** Forgets the unsettled checkout: call once the payment is paid, failed, or given up on. */
+export const clearPendingCheckout = (): void => {
+  if (typeof window === 'undefined') return;
+  for (const key of PENDING_CHECKOUT_KEYS) {
+    localStorage.removeItem(key);
+  }
+};
+
+/**
+ * Which cart the unsettled order was placed from, as the checkout noted it. The cart
+ * mode itself lives in per-tab sessionStorage, so a later visit can't tell rent from buy.
+ * Undefined for an order noted before the mode was kept.
+ */
+export const getPendingCartMode = (): 'buy' | 'rent' | undefined => {
+  if (typeof window === 'undefined') return undefined;
+  const mode = localStorage.getItem('pendingCartMode');
+  return mode === 'buy' || mode === 'rent' ? mode : undefined;
+};
 
 // Get current cart mode based on levelFilter
 const getCartMode = (): 'buy' | 'rent' => {
@@ -205,12 +243,27 @@ export const useCartStore = create<CartStore>((set, get) => ({
     await saveCartToStorage(updatedItems, mode);
   },
 
-  clearCart: () => {
-    const mode = getCartMode();
-    set({ items: [] });
-    saveCartToStorage([], mode);
-    set({ membershipPlan: null });
-    savePlanToStorage(null);
+  clearCart: async (forMode) => {
+    const mode = forMode ?? getCartMode();
+    // The rent plan is only part of the rent cart; a bought-books checkout
+    // must not wipe the plan someone picked for their rent cart.
+    const clearsPlan = mode === 'rent';
+    // `items` holds the current mode's cart: leave it when clearing the other one.
+    const clearsItems = mode === getCartMode();
+    set({
+      ...(clearsItems ? { items: [] } : {}),
+      ...(clearsPlan ? { membershipPlan: null } : {}),
+    });
+    // Native storage (Capacitor Preferences) is async: wait for it, or a
+    // reload straight after (the redirect to the dashboard) restores the cart.
+    await Promise.all([
+      saveCartToStorage([], mode),
+      clearsPlan ? savePlanToStorage(null) : Promise.resolve(),
+    ]);
+    if (typeof window !== 'undefined') {
+      // Header badges and the other cart views listen for this.
+      window.dispatchEvent(new CustomEvent('cartUpdated'));
+    }
   },
 
   setMembershipPlan: (plan) => {

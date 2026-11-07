@@ -1,0 +1,68 @@
+{
+    "courseEnrollment": {
+        "configuration": {
+            "title": "Configuration de {{course}}",
+            "previewBadge": "Mode aperçu de {{course}}",
+            "previewDescription": "Parcourez la structure du {{course}}. Inscrivez-vous pour accéder aux {{slides}} et aux ressources.",
+            "selectSession": "Sélectionner {{session}}",
+            "selectLevel": "Sélectionner {{level}}",
+            "noSessionsTitleAll": "Aucun {{session}} disponible pour ce {{course}}",
+            "noSessionsTitleEnrolled": "Vous n'êtes inscrit à aucun {{session}} pour ce {{course}}",
+            "noSessionsDescriptionAll": "Ce {{course}} ne dispose peut-être d'aucun {{session}} actif configuré.",
+            "noSessionsDescriptionEnrolled": "Veuillez contacter votre {{teacher}} ou votre {{admin}} pour vous inscrire."
+        },
+        "certificate": {
+            "title": "Certificat disponible",
+            "description": "Vous pouvez maintenant consulter ou télécharger votre certificat.",
+            "viewButton": "Voir le certificat"
+        },
+        "enrollButton": "S'inscrire"
+    },
+    "courseSidebar": {
+        "overviewTitle": "Aperçu du {{course}}",
+        "errorLoadingCounts": "Erreur lors du chargement du nombre de {{slides}}"
+    },
+    "chapterPath": {
+        "emptyModule": "Rien à apprendre ici pour l'instant. Revenez bientôt !",
+        "slideState": {
+            "completed": "terminé",
+            "current": "à suivre",
+            "locked": "verrouillé",
+            "upcoming": "non commencé"
+        },
+        "slideAriaLabel": "{{title}} — {{state}}",
+        "enrollToStart": "Inscrivez-vous pour commencer à apprendre",
+        "locked": "Verrouillé",
+        "start": "Commencer",
+        "chapterTitle": "{{chapter}} : {{name}}",
+        "moduleComplete": "{{module}} terminé !",
+        "finishLine": "Ligne d'arrivée",
+        "previousModule": "{{module}} précédent",
+        "nextModule": "{{module}} suivant",
+        "moduleProgress": "{{module}} {{current}} sur {{total}}",
+        "noSlidesYet": "Ce {{module}} ne contient encore aucun {{slides}}."
+    },
+    "courseContent": {
+        "whatYoullLearn": "Ce que vous apprendrez",
+        "aboutThisCourse": "À propos de ce {{course}}",
+        "whoShouldJoin": "Qui devrait participer",
+        "instructorsHeading": "{{teacher}}s"
+    },
+    "videoPlayer": {
+        "vimeoTitle": "Lecteur vidéo Vimeo",
+        "youtubeTitle": "Lecteur vidéo YouTube",
+        "unsupported": "Votre navigateur ne prend pas en charge la balise vidéo."
+    },
+    "certificateGeneration": {
+        "toast": {
+            "successTitle": "Certificat généré avec succès !",
+            "successDescription": "Vous pouvez maintenant consulter votre certificat.",
+            "error": "Échec de la génération du certificat. Veuillez réessayer plus tard."
+        }
+    },
+    "enrollmentActions": {
+        "toast": {
+            "updateFailed": "Échec de la mise à jour du statut d'inscription. Veuillez actualiser la page."
+        }
+    }
+}

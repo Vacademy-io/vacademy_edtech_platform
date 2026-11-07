@@ -30,6 +30,19 @@ public class LedgerBatchResponse {
     public static class SubjectLedger {
         private ChannelLedger whatsapp;
         private ChannelLedger email;
+        /** B5: contacts from every system, phone and email together; null unless asked for. */
+        private ContactLedger contact;
+    }
+
+    @Data
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class ContactLedger {
+        /** Touches in the contact window from any automated source (engine, workflow, announcement, chatbot per day). */
+        private long touches;
+        /** Last message a person sent from the inbox, any time in the window (the counsellor hold). */
+        private Instant lastHumanSentAt;
     }
 
     @Data

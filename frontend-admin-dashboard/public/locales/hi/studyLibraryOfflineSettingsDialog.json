@@ -1,0 +1,11 @@
+{
+    "offlineSettings": "ऑफ़लाइन सेटिंग्स",
+    "failedToLoadOfflineSettings": "ऑफ़लाइन सेटिंग्स लोड करने में विफल",
+    "offlineSettingsSaved": "ऑफ़लाइन सेटिंग्स सहेजी गईं",
+    "failedToSaveOfflineSettings": "ऑफ़लाइन सेटिंग्स सहेजने में विफल",
+    "allowOfflineDownloadsByDefault": "डिफ़ॉल्ट रूप से ऑफ़लाइन डाउनलोड की अनुमति दें",
+    "appliesToEverythingDescription": "यह इस कोर्स की हर उस चीज़ पर लागू होता है जो किसी अधिक विशिष्ट नियम द्वारा कवर नहीं की गई है।",
+    "fineTuneFromMenu": "इसके <strong>मेनू</strong> से प्रति विषय, मॉड्यूल, अध्याय या स्लाइड को बारीकी से समायोजित करें",
+    "blockAlwaysWins": "<strong>ब्लॉक हमेशा प्राथमिकता लेता है</strong> - किसी अध्याय को ब्लॉक करने से उसकी स्लाइड्स भी ब्लॉक हो जाती हैं, भले ही वे अनुमत हों।",
+    "embeddedContentNeedsInternet": "YouTube/Vimeo/एम्बेडेड सामग्री को हमेशा इंटरनेट की आवश्यकता होती है — इन सेटिंग्स के बावजूद इसे डाउनलोड नहीं किया जा सकता।"
+}

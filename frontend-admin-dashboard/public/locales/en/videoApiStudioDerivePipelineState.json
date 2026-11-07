@@ -1,0 +1,11 @@
+{
+  "errors": {
+    "researchCut": "Research cut from production",
+    "beatsCut": "Beat planning cut from production",
+    "talentCut": "Talent cut from production",
+    "scoreCut": "Score cut from production",
+    "shotPlanningCut": "Shot planning cut from production",
+    "narrationWritingCut": "Narration writing cut from production",
+    "productionHalted": "Production halted"
+  }
+}

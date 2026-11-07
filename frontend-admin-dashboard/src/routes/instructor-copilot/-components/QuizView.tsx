@@ -14,6 +14,7 @@ import { cn } from '@/lib/utils';
 import type { QuizGenerationResponse } from '@/services/instructor-copilot';
 import katex from 'katex';
 import 'katex/dist/katex.min.css';
+import { useTranslation } from 'react-i18next';
 
 interface QuizViewProps {
     data: QuizGenerationResponse;
@@ -56,12 +57,13 @@ const HtmlContent = ({ content, className }: { content: string; className?: stri
 };
 
 export const QuizView = ({ data }: QuizViewProps) => {
+    const { t } = useTranslation('instructorCopilotQuizView');
     const [currentIndex, setCurrentIndex] = useState(0);
 
     if (!data || !data.questions || data.questions.length === 0) {
         return (
             <div className="text-center text-slate-500">
-                <p>No quiz questions available.</p>
+                <p>{t('noQuestionsAvailable')}</p>
             </div>
         );
     }
@@ -71,7 +73,7 @@ export const QuizView = ({ data }: QuizViewProps) => {
     if (!currentQuestion) {
         return (
             <div className="text-center text-slate-500">
-                <p>Question not found.</p>
+                <p>{t('questionNotFound')}</p>
             </div>
         );
     }
@@ -105,7 +107,7 @@ export const QuizView = ({ data }: QuizViewProps) => {
                 <div className="flex flex-wrap items-center gap-2">
                     <Badge variant="secondary" className="gap-1">
                         <ListNumbers size={14} />
-                        {data.questions.length} Questions
+                        {t('questionsCount', { count: data.questions.length })}
                     </Badge>
                     <Badge variant="outline">{data.difficulty}</Badge>
                     {data.subjects.slice(0, 2).map((subject, idx) => (
@@ -127,7 +129,10 @@ export const QuizView = ({ data }: QuizViewProps) => {
                     <div className="flex items-start justify-between">
                         <div className="flex-1">
                             <CardTitle className="text-lg">
-                                Question {currentIndex + 1} of {data.questions.length}
+                                {t('questionOf', {
+                                    current: currentIndex + 1,
+                                    total: data.questions.length,
+                                })}
                             </CardTitle>
                             <CardDescription className="mt-2 text-base text-slate-700 dark:text-slate-300">
                                 <HtmlContent content={currentQuestion.text.content} />
@@ -154,7 +159,7 @@ export const QuizView = ({ data }: QuizViewProps) => {
                     {currentQuestion.options && currentQuestion.options.length > 0 && (
                         <div className="mb-6 space-y-3">
                             <h4 className="mb-3 font-semibold text-slate-700 dark:text-slate-300">
-                                Options:
+                                {t('options')}
                             </h4>
                             {currentQuestion.options.map((option) => {
                                 const isCorrect = correctIds.includes(option.preview_id);
@@ -205,7 +210,7 @@ export const QuizView = ({ data }: QuizViewProps) => {
                             <div className="rounded-lg border border-blue-200 bg-blue-50/50 p-4 dark:border-blue-800 dark:bg-blue-900/20">
                                 <h4 className="mb-2 flex items-center gap-2 font-semibold text-blue-900 dark:text-blue-300">
                                     <ArrowsLeftRight size={18} />
-                                    Explanation
+                                    {t('explanation')}
                                 </h4>
                                 <div className="text-sm text-blue-800 dark:text-blue-200">
                                     <HtmlContent
@@ -220,7 +225,7 @@ export const QuizView = ({ data }: QuizViewProps) => {
                         <div className="mt-4">
                             <h4 className="mb-2 flex items-center gap-2 text-sm font-semibold text-slate-600 dark:text-slate-400">
                                 <Tag size={16} />
-                                Tags:
+                                {t('tags')}
                             </h4>
                             <div className="flex flex-wrap gap-2">
                                 {currentQuestion.tags.map((tag, idx) => (
@@ -243,11 +248,14 @@ export const QuizView = ({ data }: QuizViewProps) => {
                     className="gap-2"
                 >
                     <CaretLeft size={16} />
-                    Previous
+                    {t('previous')}
                 </Button>
 
                 <span className="text-sm font-medium text-slate-500">
-                    Question {currentIndex + 1} of {data.questions.length}
+                    {t('questionOf', {
+                        current: currentIndex + 1,
+                        total: data.questions.length,
+                    })}
                 </span>
 
                 <Button
@@ -256,7 +264,7 @@ export const QuizView = ({ data }: QuizViewProps) => {
                     disabled={data.questions.length <= 1}
                     className="gap-2"
                 >
-                    Next
+                    {t('next')}
                     <CaretRight size={16} />
                 </Button>
             </div>

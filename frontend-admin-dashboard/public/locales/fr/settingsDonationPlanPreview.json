@@ -1,0 +1,10 @@
+{
+    "title": "Soutenez l'éducation gratuite",
+    "chooseAmount": "Choisissez un montant à donner",
+    "customAmount": {
+        "label": "{{currency}} {{symbol}} Autre",
+        "placeholder": "Saisissez un montant personnalisé",
+        "minimumAmount": "Montant minimum : {{symbol}}{{amount}}"
+    },
+    "continueButton": "Continuer"
+}

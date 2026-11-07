@@ -1,0 +1,14 @@
+{
+    "roleLabels": {
+        "admin": "مسؤول",
+        "student": "طالب",
+        "parent": "ولي أمر"
+    },
+    "actions": {
+        "view": "عرض",
+        "edit": "تعديل"
+    },
+    "addRolePlaceholder": "إضافة دور…",
+    "addRoleButton": "إضافة",
+    "removeRole": "إزالة {{role}}"
+}

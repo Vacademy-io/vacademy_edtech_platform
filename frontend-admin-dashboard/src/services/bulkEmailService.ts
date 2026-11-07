@@ -5,6 +5,7 @@
  * and template variable mapping for all pages
  */
 
+import axios from 'axios';
 import {
     studentDataEnrichmentService,
     type EnrichedStudentData,
@@ -61,6 +62,9 @@ export interface BulkEmailResult {
         error: string;
     }>;
     payload?: BulkEmailPayload;
+    /** Still sending in the background. Counts are not final yet. */
+    inProgress?: boolean;
+    batchId?: string;
 }
 
 export class BulkEmailService {
@@ -498,6 +502,8 @@ export class BulkEmailService {
             // Multi-recipient sends go through the durable batch queue (forceAsync):
             // the sync path sends each email inside the HTTP request and times out
             // on larger selections even though delivery continues server-side.
+            // A multi-recipient mail is a commercial blast, so it asks for the unsubscribe footer.
+            // The server adds it only when that keeps the same sender.
             let unifiedResponse: UnifiedSendResponse = await sendNotification({
                 instituteId: instituteId || '',
                 channel: 'EMAIL',
@@ -507,191 +513,69 @@ export class BulkEmailService {
                     emailSubject: subject,
                     emailBody: template,
                     emailType: 'UTILITY_EMAIL',
+                    commercialBulk: recipients.length > 1,
                     source: source,
                     sourceId: sourceId,
                 },
             });
 
-            // Async batch: poll until it finishes so the caller gets real counts.
+            // Async batch: poll so short sends get real counts. Large sends are paced and run
+            // far longer than this poll, so running out of attempts is not a failure.
+            let inProgress = false;
             if (unifiedResponse.batchId && unifiedResponse.status === 'PROCESSING') {
                 try {
                     unifiedResponse = await waitForBatchCompletion(unifiedResponse.batchId);
                 } catch {
-                    // Polling timed out — the batch is still running server-side.
-                    // Report what we know instead of failing the whole send.
+                    inProgress = true;
                 }
             }
 
+            if (unifiedResponse.status === 'STOPPED') {
+                errors.push({
+                    studentId: 'all',
+                    studentName: 'All Students',
+                    error: `Sending stopped automatically because too many recent emails bounced. ${unifiedResponse.accepted} were sent before it stopped.`,
+                });
+            }
+
             const result: BulkEmailResult = {
-                success: unifiedResponse.status !== 'FAILED',
+                success: unifiedResponse.status !== 'FAILED' && unifiedResponse.status !== 'STOPPED',
                 totalStudents: students.length,
-                processedStudents: unifiedResponse.accepted + unifiedResponse.failed,
-                failedStudents: unifiedResponse.failed + errors.length,
+                processedStudents: inProgress
+                    ? recipients.length
+                    : unifiedResponse.accepted + unifiedResponse.failed,
+                failedStudents: inProgress ? errors.length : unifiedResponse.failed + errors.length,
                 errors,
                 payload,
+                inProgress,
+                batchId: unifiedResponse.batchId,
             };
 
             return result;
         } catch (error) {
-            // If API fails, try individual email sending as fallback
-
-            try {
-                // Re-create users array for fallback
-                const fallbackUsers: Array<{
-                    user_id: string;
-                    channel_id: string;
-                    placeholders: Record<string, string>;
-                }> = [];
-
-                for (const student of enrichedStudents) {
-                    try {
-                        // Create placeholders object for API
-                        let placeholders: Record<string, string> = {};
-
-                        if (usedVariables.length > 0) {
-                            // Map template variables for this student only if template has variables
-                            const mappedSubject = mapTemplateVariables(subject, {
-                                context,
-                                student: student,
-                            });
-
-                            const mappedBody = mapTemplateVariables(template, {
-                                context,
-                                student: student,
-                            });
-
-                            // Add all mapped variables as placeholders
-                            Object.keys(student).forEach((key) => {
-                                const value = student[key];
-                                if (value !== undefined && value !== null) {
-                                    // Convert camelCase to snake_case for API
-                                    const apiKey = key.replace(/([A-Z])/g, '_$1').toLowerCase();
-                                    placeholders[apiKey] = String(value);
-                                }
-                            });
-
-                            // Add specific mappings for common variables
-                            const fallbackFullName = student.full_name || '';
-                            const [fallbackFirstName, ...fallbackRest] = fallbackFullName.split(' ');
-                            placeholders.name = fallbackFullName;
-                            placeholders.first_name = fallbackFirstName || '';
-                            placeholders.last_name = fallbackRest.join(' ');
-                            placeholders.email = student.email || '';
-                            placeholders.mobile_number = student.mobile_number || '';
-                            placeholders.current_date = new Date().toLocaleDateString();
-                            placeholders.custom_message_text = '';
-                        } else {
-                            // No variables, create minimal placeholders
-                            placeholders = {
-                                name: student.full_name || student.name || 'Student',
-                                student_name: student.full_name || student.name || 'Student',
-                                email: student.email || '',
-                                student_email: student.email || '',
-                            };
-                        }
-
-                        fallbackUsers.push({
-                            user_id: student.user_id,
-                            channel_id:
-                                notificationType === 'EMAIL'
-                                    ? student.email
-                                    : student.mobile_number,
-                            placeholders,
-                        });
-                    } catch (studentError) {
-                        // Ignore individual student errors in fallback
-                    }
-                }
-
-                const fallbackResult = await this.sendIndividualEmails(
-                    fallbackUsers,
-                    template,
-                    subject,
-                    context,
-                    usedVariables
-                );
-                return fallbackResult;
-            } catch (fallbackError) {
-                return {
-                    success: false,
-                    totalStudents: students.length,
-                    processedStudents: 0,
-                    failedStudents: students.length,
-                    errors: [
-                        {
-                            studentId: 'all',
-                            studentName: 'All Students',
-                            error: error instanceof Error ? error.message : 'Unknown error',
-                        },
-                    ],
-                };
-            }
-        }
-    }
-
-    /**
-     * Fallback: Send individual emails when bulk API fails
-     */
-    private async sendIndividualEmails(
-        users: Array<{ user_id: string; channel_id: string; placeholders: Record<string, string> }>,
-        template: string,
-        subject: string,
-        context: string,
-        usedVariables: string[] = []
-    ): Promise<BulkEmailResult> {
-        const instituteId = this.getInstituteId();
-
-        let successCount = 0;
-        let failureCount = 0;
-        const errors: Array<{ studentId: string; studentName: string; error: string }> = [];
-
-        // Send one-by-one via unified send as fallback
-        for (const user of users) {
-            try {
-                const response = await sendNotification({
-                    instituteId: instituteId || '',
-                    channel: 'EMAIL',
-                    recipients: [{
-                        email: user.channel_id,
-                        userId: user.user_id,
-                        variables: user.placeholders,
-                    }],
-                    options: {
-                        emailSubject: subject,
-                        emailBody: template,
-                        emailType: 'UTILITY_EMAIL',
-                        source: 'STUDENT_MANAGEMENT_BULK_EMAIL',
-                        sourceId: `fallback-${Date.now()}`,
+            // Never resend from here. A lost response does not mean the batch was not queued, so
+            // sending again one by one could email everyone twice.
+            const rejected =
+                axios.isAxiosError(error) &&
+                (error.response?.status ?? 500) >= 400 &&
+                (error.response?.status ?? 500) < 500;
+            const reason = error instanceof Error ? error.message : 'Unknown error';
+            return {
+                success: false,
+                totalStudents: students.length,
+                processedStudents: 0,
+                failedStudents: students.length,
+                errors: [
+                    {
+                        studentId: 'all',
+                        studentName: 'All Students',
+                        error: rejected
+                            ? reason
+                            : `We could not confirm this send, so it may still be going out. Check before sending again. (${reason})`,
                     },
-                });
-
-                if (response.accepted > 0) {
-                    successCount++;
-                } else {
-                    failureCount++;
-                    errors.push({
-                        studentId: user.user_id,
-                        studentName: user.placeholders.name || 'Unknown',
-                        error: response.results?.[0]?.error || 'Send failed',
-                    });
-                }
-            } catch (error) {
-                failureCount++;
-                errors.push({
-                    studentId: user.user_id,
-                    studentName: user.placeholders.name || 'Unknown',
-                    error: error instanceof Error ? error.message : 'Unknown error',
-                });
-            }
+                ],
+            };
         }
-
-        return {
-            success: successCount > 0,
-            totalStudents: users.length,
-            processedStudents: successCount,
-            failedStudents: failureCount,
-            errors,
-        };
     }
 
     /**

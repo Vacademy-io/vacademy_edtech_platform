@@ -1,0 +1,47 @@
+{
+    "defaultMemberName": "सदस्य",
+    "enrolledCourses_one": "नामांकित कोर्स ({{count}})",
+    "enrolledCourses_other": "नामांकित कोर्स ({{count}})",
+    "readOnlyLedger": {
+        "title": "केवल-पढ़ने योग्य लेजर",
+        "body": "केवल मूल संस्थान व्यवस्थापक ही इस {{org}} व्यवस्थापक की किस्तों को संपादित, CPO छूट लागू, या ऑफ़लाइन भुगतान दर्ज कर सकता है।"
+    },
+    "noMemberSelected": "कोई सदस्य चयनित नहीं है।",
+    "channels": {
+        "inApp": "इन-ऐप",
+        "email": "ईमेल"
+    },
+    "toast": {
+        "linkCopied": "भुगतान लिंक कॉपी किया गया",
+        "copyFailed": "क्लिपबोर्ड पर कॉपी नहीं किया जा सका",
+        "reminderSentTo": "{{email}} को रिमाइंडर भेजा गया",
+        "reminderFired": "रिमाइंडर भेजा गया",
+        "reminderFailed": "रिमाइंडर भेजने में विफल",
+        "toRecipient": "{{email}} को",
+        "invoiceReminderSentVia": "रिमाइंडर {{where}} {{channels}} के माध्यम से भेजा गया",
+        "invoiceReminderNoChannels": "रिमाइंडर {{where}} — कोई चैनल डिलीवर नहीं हुआ (इनवॉइस सेटिंग्स जांचें)",
+        "invoiceReminderFailed": "इनवॉइस रिमाइंडर भेजने में विफल"
+    },
+    "invoices": {
+        "heading": "इनवॉइस",
+        "loading": "इनवॉइस लोड हो रहे हैं...",
+        "headingWithCount_one": "इनवॉइस ({{count}})",
+        "headingWithCount_other": "इनवॉइस ({{count}})",
+        "createInvoice": "इनवॉइस बनाएं",
+        "noInvoicesYet": "अभी तक कोई इनवॉइस नहीं। ऊपर दिए गए बटन से एक बनाएं।",
+        "sendInstallmentReminderTitle": "किस्त-देय रिमाइंडर भेजें",
+        "resendPaymentReminderTitle": "भुगतान-देय रिमाइंडर पुनः भेजें (ईमेल + इन-ऐप अलर्ट)",
+        "sending": "भेजा जा रहा है…",
+        "remind": "रिमाइंडर भेजें",
+        "copyPaymentLinkTitle": "शिक्षार्थी भुगतान लिंक कॉपी करें",
+        "copied": "कॉपी किया गया",
+        "copyLink": "लिंक कॉपी करें",
+        "markPaidTitle": "इस इनवॉइस के लिए ऑफ़लाइन / मैनुअल भुगतान दर्ज करें",
+        "markPaid": "भुगतान के रूप में चिह्नित करें",
+        "viewPdfTitle": "नए टैब में PDF देखें",
+        "view": "देखें",
+        "downloadPdfTitle": "इनवॉइस PDF डाउनलोड करें",
+        "save": "सहेजें",
+        "noPdf": "कोई PDF नहीं"
+    }
+}

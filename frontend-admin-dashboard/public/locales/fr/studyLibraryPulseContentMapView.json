@@ -1,0 +1,21 @@
+{
+    "untitledSlide": "Diapositive sans titre",
+    "untitledChapter": "Chapitre sans titre",
+    "untitledModule": "Module sans titre",
+    "untitledSubject": "Matière sans titre",
+    "frictionUsually": "friction · habituellement {{duration}}",
+    "avgDuration": "moy. {{duration}}",
+    "loadError": "Impossible de charger la carte du contenu.",
+    "retry": "Réessayer",
+    "emptyTitle": "Aucun contenu actif pour le moment",
+    "emptySubtitle": "Les diapositives s'affichent ici dès que les apprenants les ouvrent dans le cours.",
+    "summary": {
+        "learners_one": "{{count}} apprenant",
+        "learners_many": "{{count}} apprenants",
+        "learners_other": "{{count}} apprenants",
+        "subjects_one": "{{count}} matière",
+        "subjects_many": "{{count}} matières",
+        "subjects_other": "{{count}} matières",
+        "across": "{{learners}} sur {{subjects}}"
+    }
+}

@@ -1,0 +1,39 @@
+{
+    "dialog": {
+        "heading": "Booking Settings"
+    },
+    "states": {
+        "loadError": "Couldn't load booking settings. Try again."
+    },
+    "empty": {
+        "description": "Enable bookings for \"{{audienceName}}\" — leads on this list get a public page where they can pick a slot on the host's calendar.",
+        "defaultTitle": "{{audienceName}} Meeting"
+    },
+    "active": {
+        "linkLabel": "Public booking link",
+        "statusActive": "Active",
+        "statusInactive": "Inactive",
+        "linkPlaceholder": "Link available once the page has a slug",
+        "copy": "Copy",
+        "activate": "Activate",
+        "deactivate": "Deactivate",
+        "delete": "Delete"
+    },
+    "deleteDialog": {
+        "title": "Delete booking page",
+        "description": "Are you sure you want to delete the booking page for \"{{audienceName}}\"? Its public link will stop working. This action cannot be undone.",
+        "cancel": "Cancel",
+        "deleting": "Deleting...",
+        "confirm": "Delete"
+    },
+    "toast": {
+        "copySuccess": "Booking link copied",
+        "copyError": "Could not copy the link",
+        "deactivateSuccess": "Booking page deactivated",
+        "activateSuccess": "Booking page activated",
+        "statusUpdateError": "Failed to update the booking page status",
+        "deleteSuccess": "Booking page deleted",
+        "deleteError": "Failed to delete the booking page",
+        "enableSuccess": "Bookings are now enabled for this list"
+    }
+}

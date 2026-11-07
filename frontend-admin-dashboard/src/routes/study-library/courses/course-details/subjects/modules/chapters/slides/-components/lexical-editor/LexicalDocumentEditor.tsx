@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { LexicalComposer } from '@lexical/react/LexicalComposer';
 import { useLexicalComposerContext } from '@lexical/react/LexicalComposerContext';
 import { RichTextPlugin } from '@lexical/react/LexicalRichTextPlugin';
@@ -96,6 +97,7 @@ export default function LexicalDocumentEditor({
     onReady,
     onDebouncedHtml,
 }: LexicalDocumentEditorProps) {
+    const { t } = useTranslation('studyLibraryLexicalDocumentEditor');
     // One composer per slide (caller passes key={slideId} too, belt+braces).
     const [initialConfig] = useState(() => ({
         namespace: `doc-slide-${slideId}`,
@@ -125,7 +127,7 @@ export default function LexicalDocumentEditor({
                     }
                     placeholder={
                         <div className="pointer-events-none absolute left-7 top-1 text-lg text-gray-400">
-                            Click to start writing here...
+                            {t('placeholder')}
                         </div>
                     }
                     ErrorBoundary={LexicalErrorBoundary}
@@ -138,7 +140,7 @@ export default function LexicalDocumentEditor({
                 <TabIndentationPlugin />
                 <HorizontalRulePlugin />
                 <MarkdownShortcutPlugin transformers={TRANSFORMERS} />
-                {!readOnly && <SlashMenuPlugin extraOptions={buildCustomBlockOptions()} />}
+                {!readOnly && <SlashMenuPlugin extraOptions={buildCustomBlockOptions(t)} />}
                 {!readOnly && <FloatingToolbarPlugin />}
                 {!readOnly && anchorElem && <DragHandlePlugin anchorElem={anchorElem} />}
                 <EditablePlugin readOnly={readOnly} />

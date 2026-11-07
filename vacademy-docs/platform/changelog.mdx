@@ -1,0 +1,42 @@
+---
+title: "Changelog"
+description: "Changes to the Vacademy Catalogue API."
+---
+
+<Update label="16 October 2026" description="v1 · discovery">
+  Filters, sorts, badges and facets that match the hosted catalogue's Courses page. **Additive, no breaking change**: every existing parameter and field is unchanged, and a single value of an existing parameter behaves exactly as before. See [Courses](/concepts/courses#listing-filtering-and-sorting).
+
+  **`GET /courses` parameters**
+
+  - Comma lists (OR within a parameter, AND across parameters) for `stream`, `category`, `format`, `language` and `tag`, and for the new `level`, `instructor`, `session` and `badge`. Version-level filters (`language`, `price`, `price_min`, `price_max`, `level`, `session`, `tag`, `instructor`) must all hold on the same version of a course.
+  - New filters: `level`, `instructor`, `session`, `badge` (`bestseller`, `popular`, `new`, `free`), `price` (`free`, `paid`), `price_min`, `price_max`, and `custom` (`<group id>:<option id>`, the site's own filter groups).
+  - `sort` adds `oldest`, `rating`, `title_desc` and `popular`.
+  - `facets=true` adds `facets`: live counts per stream, category, format, language, level, session, instructor, tag, badge, price and custom option, each counted against the other active filters.
+  - `q` now also matches the plain-text description and instructor names.
+  - Invalid `badge`, `price`, `price_min`, `price_max`, `custom` or `facets` values return `400 invalid_request` with `details.param`. Unknown format keys and custom groups or options match nothing, like unknown slugs.
+
+  **Course fields** (list items, course detail, learning-path steps)
+
+  - `images` (`preview_url`, `banner_url`, `thumbnail_url`), `badges`, `popularity_rank`, `duration_minutes`, `available_slots`, `max_seats`, `package_type`, `coming_soon` (`launch_date`, `button_text`, `ribbon_text`, `notify_campaign_id`).
+  - `price.min_amount` and `price.max_amount`: the "from ₹X" range of the matching versions on sale now.
+  - `chip` on languages (`EN`, `हिं`), also on `variants[].language` and `GET /site` `languages`.
+  - `variants[].title`, `variants[].session_id`, `variants[].session_name`.
+
+  **Other endpoints**
+
+  - `GET /site` adds `catalog`: the hosted Courses section's default sort, sort menu, quick filters, price / language / category filter settings, badge rules, custom filter groups and the hero's popular searches.
+  - `GET /streams` adds `tag` and `notify_campaign_id` on streams, and `accent_color` and `notify_campaign_id` on categories.
+</Update>
+
+<Update label="16 October 2026" description="v1">
+  - A course whose level is named like a stream or category (its tag, title or subtitle) now belongs to it, as on the hosted catalogue: `stream`, `category`, `?stream=` / `?category=` filters and `course_count` include it. No field changed.
+</Update>
+
+<Update label="15 October 2026" description="v1">
+  First public version of the Catalogue API at `https://api.vacademy.ai/catalog/v1`.
+
+  - Read: site settings, courses (search, filters, sort, pages), course detail with `seo` and schema.org `structured_data`, course outline, streams and categories, learning paths, sitemap.
+  - Enquiries: `POST /leads` into the institute's CRM, with duplicate detection and per-visitor limits.
+  - Publishable `vak_pub_` keys, self-serve in **Settings → Integrations → Catalogue API & websites**.
+  - Browser calls locked to DNS-verified websites (and localhost); server-side calls need no verification.
+</Update>

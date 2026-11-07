@@ -14,6 +14,7 @@ interface DialogStore {
     isIndividualShareCredentialsOpen: boolean;
     isSendMessageOpen: boolean;
     isSendEmailOpen: boolean;
+    isAwardBadgeOpen: boolean;
     selectedStudent: StudentTable | null;
     bulkActionInfo: BulkActionInfo | null;
     isBulkAction: boolean;
@@ -38,6 +39,7 @@ interface DialogStore {
     openBulkShareCredentialsDialog: (info: BulkActionInfo) => void;
     openBulkSendMessageDialog: (info: BulkActionInfo) => void;
     openBulkSendEmailDialog: (info: BulkActionInfo) => void;
+    openBulkAwardBadgeDialog: (info: BulkActionInfo) => void;
 
     closeAllDialogs: () => void;
 }
@@ -53,6 +55,7 @@ export const useDialogStore = create<DialogStore>((set) => ({
     isIndividualShareCredentialsOpen: false,
     isSendMessageOpen: false,
     isSendEmailOpen: false,
+    isAwardBadgeOpen: false,
     selectedStudent: null,
     bulkActionInfo: null,
     isBulkAction: false,
@@ -162,6 +165,12 @@ export const useDialogStore = create<DialogStore>((set) => ({
             bulkActionInfo: info,
             isBulkAction: true,
         }),
+    openBulkAwardBadgeDialog: (info) =>
+        set({
+            isAwardBadgeOpen: true,
+            bulkActionInfo: info,
+            isBulkAction: true,
+        }),
 
     closeAllDialogs: () =>
         set({
@@ -175,6 +184,7 @@ export const useDialogStore = create<DialogStore>((set) => ({
             isIndividualShareCredentialsOpen: false,
             isSendMessageOpen: false,
             isSendEmailOpen: false,
+            isAwardBadgeOpen: false,
             selectedStudent: null,
             bulkActionInfo: null,
             isBulkAction: false,

@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Form, FormProvider, useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { FormControl, FormField, FormItem } from '@/components/ui/form';
@@ -22,6 +23,7 @@ import { ContentTerms, SystemTerms } from '@/routes/settings/-components/NamingS
 import { getTerminology } from '@/components/common/layout-container/sidebar/utils';
 
 export const EnrollBulkDialog = () => {
+    const { t } = useTranslation('manageStudentsEnrollBulkDialog');
     const { getCourseFromPackage, getSessionFromPackage, getLevelsFromPackage, instituteDetails } =
         useInstituteDetailsStore();
     const [openSetFormatDialog, setOpenSetFormatDialog] = useState(false);
@@ -93,10 +95,10 @@ export const EnrollBulkDialog = () => {
             { requestData: requestData },
             {
                 onSuccess: () => {
-                    toast.success('Course created successfully');
+                    toast.success(t('toasts.courseCreatedSuccess'));
                 },
                 onError: () => {
-                    toast.error('Failed to create batch');
+                    toast.error(t('toasts.createBatchFailed'));
                 },
             }
         );
@@ -123,19 +125,20 @@ export const EnrollBulkDialog = () => {
             {
                 onSuccess: () => {
                     toast.success(
-                        ` ${getTerminology(
-                            ContentTerms.Session,
-                            SystemTerms.Session
-                        )} added successfully`
+                        t('toasts.itemAddedSuccess', {
+                            term: getTerminology(ContentTerms.Session, SystemTerms.Session),
+                        })
                     );
                 },
                 onError: (error) => {
                     toast.error(
                         error.message ||
-                            `Failed to add ${getTerminology(
-                                ContentTerms.Session,
-                                SystemTerms.Session
-                            ).toLocaleLowerCase()}`
+                            t('toasts.addItemFailed', {
+                                term: getTerminology(
+                                    ContentTerms.Session,
+                                    SystemTerms.Session
+                                ).toLocaleLowerCase(),
+                            })
                     );
                 },
             }
@@ -156,10 +159,10 @@ export const EnrollBulkDialog = () => {
             { requestData: requestData, packageId: packageId || '', sessionId: sessionId || '' },
             {
                 onSuccess: () => {
-                    toast.success('Level added successfully');
+                    toast.success(t('toasts.levelAddedSuccess'));
                 },
                 onError: (error) => {
-                    toast.error(error.message || 'Failed to add course');
+                    toast.error(error.message || t('toasts.addLevelFailedFallback'));
                 },
             }
         );
@@ -255,10 +258,12 @@ export const EnrollBulkDialog = () => {
                                                     currentValue={value?.name ?? ''}
                                                     dropdownList={courseList}
                                                     handleChange={onChange}
-                                                    placeholder={`Select ${getTerminology(
-                                                        ContentTerms.Course,
-                                                        SystemTerms.Course
-                                                    )}`}
+                                                    placeholder={t('placeholders.select', {
+                                                        term: getTerminology(
+                                                            ContentTerms.Course,
+                                                            SystemTerms.Course
+                                                        ),
+                                                    })}
                                                     error={
                                                         form.formState.errors.course?.id?.message ||
                                                         form.formState.errors.course?.name?.message
@@ -292,10 +297,12 @@ export const EnrollBulkDialog = () => {
                                                     currentValue={value?.name ?? ''}
                                                     dropdownList={sessionList}
                                                     handleChange={onChange}
-                                                    placeholder={`Select ${getTerminology(
-                                                        ContentTerms.Session,
-                                                        SystemTerms.Session
-                                                    )}`}
+                                                    placeholder={t('placeholders.select', {
+                                                        term: getTerminology(
+                                                            ContentTerms.Session,
+                                                            SystemTerms.Session
+                                                        ),
+                                                    })}
                                                     error={
                                                         form.formState.errors.session?.id
                                                             ?.message ||
@@ -331,10 +338,12 @@ export const EnrollBulkDialog = () => {
                                                     currentValue={value?.name ?? ''}
                                                     dropdownList={levelList}
                                                     handleChange={onChange}
-                                                    placeholder={`Select ${getTerminology(
-                                                        ContentTerms.Level,
-                                                        SystemTerms.Level
-                                                    )}`}
+                                                    placeholder={t('placeholders.select', {
+                                                        term: getTerminology(
+                                                            ContentTerms.Level,
+                                                            SystemTerms.Level
+                                                        ),
+                                                    })}
                                                     error={
                                                         form.formState.errors.level?.id?.message ||
                                                         form.formState.errors.level?.name?.message
@@ -364,7 +373,7 @@ export const EnrollBulkDialog = () => {
                                     form.getValues('level')?.id === ''
                                 }
                             >
-                                Enroll
+                                {t('buttons.enroll')}
                             </MyButton>
                         </div>
                     </form>

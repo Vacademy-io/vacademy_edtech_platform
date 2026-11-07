@@ -1,0 +1,42 @@
+{
+    "title": "Soumissions",
+    "loading": "Chargement des soumissions…",
+    "noSubmissionsYet": "Aucune soumission pour le moment.",
+    "learnerFallback": "Apprenant",
+    "submittedAt": "Soumis le {{date}}",
+    "pageOfTotal": "Page {{page}} sur {{total}}",
+    "status": {
+        "evaluated": "Évalué",
+        "evaluating": "Évaluation en cours",
+        "pending": "En attente"
+    },
+    "actions": {
+        "reEvaluate": "Réévaluer",
+        "quickEvaluate": "Évaluation rapide",
+        "tool": "Outil"
+    },
+    "errors": {
+        "couldNotLoadSubmissions": "Impossible de charger les soumissions. Ouvrez « Afficher les soumissions » pour les voir.",
+        "couldNotLoadQuestion": "Impossible de charger la question de l'évaluation. Veuillez essayer l'outil complet.",
+        "enterMarks": "Veuillez saisir des points.",
+        "submitFailed": "Échec de l'envoi de l'évaluation. Veuillez réessayer."
+    },
+    "toast": {
+        "evaluationSubmitted": "Évaluation envoyée",
+        "evaluationSubmittedDescription": "La soumission de {{name}} a été évaluée."
+    },
+    "dialog": {
+        "heading": "Évaluer — {{name}}",
+        "marks": "Points",
+        "outOfMarks": " (sur {{max}})",
+        "remarks": "Remarques",
+        "optional": "(facultatif)",
+        "remarksPlaceholder": "Ajoutez des remarques que l'apprenant verra…",
+        "evaluatedPdf": "PDF évalué",
+        "choosePdf": "Choisir un PDF",
+        "noFileChosen": "Aucun fichier choisi",
+        "cancel": "Annuler",
+        "submitting": "Envoi en cours…",
+        "submitEvaluation": "Envoyer l'évaluation"
+    }
+}

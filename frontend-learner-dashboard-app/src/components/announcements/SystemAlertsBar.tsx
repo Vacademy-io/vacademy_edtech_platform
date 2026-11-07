@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { createPortal } from 'react-dom';
 import { Capacitor } from '@capacitor/core';
 import { Bell, X, CaretDown, CaretUp, SpinnerGap, Trash } from "@phosphor-icons/react";
@@ -30,6 +31,7 @@ interface SystemAlertsBarProps {
 }
 
 export const SystemAlertsBar: React.FC<SystemAlertsBarProps> = ({ className = '' }) => {
+  const { t } = useTranslation('courseComponentsExtra');
   const {
     alerts,
     unreadCount,
@@ -130,13 +132,13 @@ export const SystemAlertsBar: React.FC<SystemAlertsBarProps> = ({ className = ''
   const getPriorityText = (priority?: string) => {
     switch (priority) {
       case 'HIGH':
-        return 'High Priority';
+        return t('systemAlertsBar.priority.high');
       case 'MEDIUM':
-        return 'Medium Priority';
+        return t('systemAlertsBar.priority.medium');
       case 'LOW':
-        return 'Low Priority';
+        return t('systemAlertsBar.priority.low');
       default:
-        return 'Normal Priority';
+        return t('systemAlertsBar.priority.normal');
     }
   };
 
@@ -166,7 +168,7 @@ export const SystemAlertsBar: React.FC<SystemAlertsBarProps> = ({ className = ''
       data-message-id={alert.messageId}
       onClick={() => handleAlertClick(alert)}
     >
-      <CardContent className="p-3 sm:p-4">
+      <CardContent className="p-3 sm:p-card">
         <div className="flex items-start justify-between gap-1">
           <div className="flex-1 min-w-0 overflow-hidden">
             <div className="flex items-center gap-1.5 sm:gap-2 mb-1.5 sm:mb-2 flex-wrap">
@@ -192,7 +194,7 @@ export const SystemAlertsBar: React.FC<SystemAlertsBarProps> = ({ className = ''
 
             <div className="flex items-center justify-between text-xs text-gray-500 flex-wrap gap-2">
               <span className="truncate">
-                {alert.createdByName && `By ${alert.createdByName}`}
+                {alert.createdByName && t('systemAlertsBar.byAuthor', { name: alert.createdByName })}
                 {alert.createdByName && alert.createdAt && ' • '}
                 {alert.createdAt && formatLocalDateTime(alert.createdAt)}
               </span>
@@ -243,7 +245,7 @@ export const SystemAlertsBar: React.FC<SystemAlertsBarProps> = ({ className = ''
         >
           <div className="p-3 sm:p-4 border-b border-gray-200">
             <div className="flex items-center justify-between gap-2">
-              <h3 className="font-medium text-gray-900 text-sm sm:text-base">System Alerts</h3>
+              <h3 className="font-medium text-gray-900 text-sm sm:text-base">{t('systemAlertsBar.title')}</h3>
               <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0">
                 {alerts.length > 0 && (
                   <AlertDialog>
@@ -255,24 +257,23 @@ export const SystemAlertsBar: React.FC<SystemAlertsBarProps> = ({ className = ''
                         disabled={loading}
                       >
                         <Trash className="h-4 w-4 me-1" />
-                        Clear All
+                        {t('common.clearAll')}
                       </Button>
                     </AlertDialogTrigger>
                     <AlertDialogContent className="z-50">
                       <AlertDialogHeader>
-                        <AlertDialogTitle>Clear All Notifications</AlertDialogTitle>
+                        <AlertDialogTitle>{t('systemAlertsBar.clearAllTitle')}</AlertDialogTitle>
                         <AlertDialogDescription>
-                          Are you sure you want to dismiss all {alerts.length} notification{alerts.length === 1 ? '' : 's'}?
-                          This action cannot be undone.
+                          {t('systemAlertsBar.clearAllDescription', { count: alerts.length })}
                         </AlertDialogDescription>
                       </AlertDialogHeader>
                       <AlertDialogFooter>
-                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogCancel>{t('common.cancel')}</AlertDialogCancel>
                         <AlertDialogAction
                           onClick={dismissAll}
                           className="bg-red-600 hover:bg-red-700 focus:ring-red-600"
                         >
-                          Clear All
+                          {t('common.clearAll')}
                         </AlertDialogAction>
                       </AlertDialogFooter>
                     </AlertDialogContent>
@@ -284,7 +285,7 @@ export const SystemAlertsBar: React.FC<SystemAlertsBarProps> = ({ className = ''
                   onClick={handleRefresh}
                   disabled={loading}
                 >
-                  {loading ? <SpinnerGap className="h-4 w-4 animate-spin" /> : 'Refresh'}
+                  {loading ? <SpinnerGap className="h-4 w-4 animate-spin" /> : t('common.refresh')}
                 </Button>
               </div>
             </div>
@@ -301,12 +302,12 @@ export const SystemAlertsBar: React.FC<SystemAlertsBarProps> = ({ className = ''
               {loading && alerts.length === 0 ? (
                 <div className="flex items-center justify-center py-8">
                   <SpinnerGap className="h-6 w-6 animate-spin text-gray-400" />
-                  <span className="ms-2 text-sm text-gray-500">Loading alerts...</span>
+                  <span className="ms-2 text-sm text-gray-500">{t('systemAlertsBar.loadingAlerts')}</span>
                 </div>
               ) : alerts.length === 0 ? (
-                <div className="text-center py-8">
-                  <Bell className="h-8 w-8 text-gray-400 mx-auto mb-2" />
-                  <p className="text-sm text-gray-500">No system alerts</p>
+                <div className="text-center py-8 space-y-2">
+                  <Bell className="h-8 w-8 text-gray-400 mx-auto" />
+                  <p className="text-sm text-gray-500">{t('systemAlertsBar.noAlerts')}</p>
                 </div>
               ) : (
                 <>
@@ -323,10 +324,10 @@ export const SystemAlertsBar: React.FC<SystemAlertsBarProps> = ({ className = ''
                         {loading ? (
                           <>
                             <SpinnerGap className="h-4 w-4 animate-spin me-2" />
-                            Loading...
+                            {t('common.loading')}
                           </>
                         ) : (
-                          'Load More'
+                          t('common.loadMore')
                         )}
                       </Button>
                     </div>
@@ -350,8 +351,8 @@ export const SystemAlertsBar: React.FC<SystemAlertsBarProps> = ({ className = ''
           className="w-full max-w-vw-95 sm:max-w-2xl max-h-screen-90  overflow-hidden flex flex-col"
           onClick={(e) => e.stopPropagation()}
         >
-          <CardContent className="p-1 sm:p-8 flex flex-col overflow-hidden">
-            <div className="flex items-start justify-between mb-4 flex-shrink-0">
+          <CardContent className="p-1 sm:p-8 flex flex-col overflow-hidden gap-4">
+            <div className="flex items-start justify-between flex-shrink-0">
               <div className="flex-1 min-w-0 me-2">
                 {selectedAlert.title && (
                   <h2 className="text-base sm:text-lg font-semibold text-gray-900 mb-2 break-words">
@@ -364,7 +365,11 @@ export const SystemAlertsBar: React.FC<SystemAlertsBarProps> = ({ className = ''
                       {getPriorityText(selectedAlert.priority)}
                     </Badge>
                   )}
-                  {selectedAlert.createdByName && <span className="truncate">By {selectedAlert.createdByName}</span>}
+                  {selectedAlert.createdByName && (
+                    <span className="truncate">
+                      {t('systemAlertsBar.byAuthor', { name: selectedAlert.createdByName })}
+                    </span>
+                  )}
                   {selectedAlert.createdAt && (
                     <span className="truncate">{formatLocalDateTime(selectedAlert.createdAt)}</span>
                   )}
@@ -380,7 +385,7 @@ export const SystemAlertsBar: React.FC<SystemAlertsBarProps> = ({ className = ''
               </Button>
             </div>
 
-            <Separator className="mb-4 flex-shrink-0" />
+            <Separator className="flex-shrink-0" />
 
             <div className="overflow-y-auto flex-1 min-h-0">
               <div className="prose prose-sm max-w-none">

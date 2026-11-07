@@ -1,0 +1,7 @@
+{
+    "title": "Notifications d'équipe",
+    "description": "Saisissez les adresses e-mail des membres de l'équipe qui doivent être avertis chaque fois que quelqu'un remplit ce formulaire d'invitation. Laissez vide pour n'envoyer aucune notification.",
+    "emailInput": {
+        "placeholder": "Saisissez les adresses e-mail"
+    }
+}

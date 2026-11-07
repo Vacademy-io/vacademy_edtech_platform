@@ -8,6 +8,9 @@ import authenticatedAxiosInstance from "@/lib/auth/axiosInstance";
 import { ZOOM_SDK_SIGNATURE_ENDPOINT } from "@/constants/urls";
 import { DashboardLoader } from "@/components/core/dashboard-loader";
 import { Button } from "@/components/ui/button";
+import { useTranslation } from "react-i18next";
+import { getTerminology } from "@/components/common/layout-container/sidebar/utils";
+import { ContentTerms, SystemTerms } from "@/types/naming-settings";
 
 /**
  * Joins a live Zoom meeting using the Web Meeting SDK **Client View** (the
@@ -190,6 +193,8 @@ export default function ZoomMeetingSdkPlayer({
      *  and does NOT route here.) */
     nativeFallbackUrl?: string;
 }) {
+    const { t } = useTranslation("study");
+    const liveClass = getTerminology(ContentTerms.LiveSession, SystemTerms.LiveSession).toLowerCase();
     const startedRef = useRef(false);
     const [phase, setPhase] = useState<Phase>("loading");
     const [errorMsg, setErrorMsg] = useState<string | null>(null);
@@ -222,8 +227,8 @@ export default function ZoomMeetingSdkPlayer({
             ?.message;
         setErrorMsg(
             status === 409
-                ? serverMsg ?? "This live class is still being set up. Please refresh in a moment."
-                : "We couldn't load this live class. Please refresh, or contact your instructor."
+                ? serverMsg ?? t("liveClass.zoomSdk.stillSettingUp", { liveClass })
+                : t("liveClass.zoomSdk.couldNotLoad", { liveClass })
         );
         setPhase("error");
     }, [error]);
@@ -237,7 +242,7 @@ export default function ZoomMeetingSdkPlayer({
         // clear message instead of booting the SDK with bad params.
         if (!data.meetingNumber || !data.signature || !data.sdkKey) {
             setErrorMsg(
-                "This live class is not ready to join yet — it may still be getting set up. Please refresh in a moment, or contact your instructor if it continues."
+                t("liveClass.zoomSdk.notReadyToJoin", { liveClass })
             );
             setPhase("error");
             return;
@@ -282,7 +287,7 @@ export default function ZoomMeetingSdkPlayer({
                                 console.error("[Zoom Learner ClientView] join failed:", err);
                                 if (!cancelled) {
                                     hideZmmtgRoot(); // else the empty Zoom shell covers the error UI
-                                    setErrorMsg(`Could not join the Zoom meeting (${err?.errorCode ?? "join error"}).`);
+                                    setErrorMsg(t("liveClass.zoomSdk.couldNotJoin", { code: err?.errorCode ?? t("liveClass.zoomSdk.joinError") }));
                                     setPhase("error");
                                 }
                             },
@@ -296,7 +301,7 @@ export default function ZoomMeetingSdkPlayer({
                         console.error("[Zoom Learner ClientView] init failed:", err);
                         if (!cancelled) {
                             hideZmmtgRoot();
-                            setErrorMsg(`Could not initialise the Zoom meeting (${err?.errorCode ?? "init error"}).`);
+                            setErrorMsg(t("liveClass.zoomSdk.couldNotInit", { code: err?.errorCode ?? t("liveClass.zoomSdk.initError") }));
                             setPhase("error");
                         }
                     },
@@ -305,7 +310,7 @@ export default function ZoomMeetingSdkPlayer({
                 if (cancelled) return;
                 console.error("[Zoom Learner ClientView] load failed:", err);
                 hideZmmtgRoot();
-                setErrorMsg("Could not load the Zoom meeting. Check your connection and try again.");
+                setErrorMsg(t("liveClass.zoomSdk.couldNotLoadCheckConnection"));
                 setPhase("error");
             }
         })();
@@ -326,16 +331,16 @@ export default function ZoomMeetingSdkPlayer({
         // Capture the URL so TS narrows it (no non-null assertion in the handler).
         const fallbackUrl = Capacitor.isNativePlatform() ? nativeFallbackUrl : undefined;
         return (
-            <div className="flex h-full w-full flex-col items-center justify-center gap-3 p-8 text-center">
-                <p className="text-red-600">{errorMsg ?? "Failed to load the Zoom meeting."}</p>
-                <p className="text-sm text-neutral-500">Please refresh the page or try rejoining.</p>
+            <div className="flex h-full w-full flex-col items-center justify-center gap-stack p-8 text-center">
+                <p className="text-red-600">{errorMsg ?? t("liveClass.zoomSdk.failedToLoad")}</p>
+                <p className="text-sm text-neutral-500">{t("liveClass.zoomSdk.refreshOrRejoin")}</p>
                 {fallbackUrl && (
                     <Button
                         className="mt-2 gap-2"
                         onClick={() => void launchZoomExternally(data, fallbackUrl)}
                     >
                         <ArrowSquareOut size={18} />
-                        Open in Zoom app
+                        {t("liveClass.zoomSdk.openInZoomApp")}
                     </Button>
                 )}
             </div>
@@ -346,10 +351,10 @@ export default function ZoomMeetingSdkPlayer({
 
     return (
         <div className="relative flex h-full w-full items-center justify-center bg-black">
-            <div className="flex flex-col items-center gap-3 text-white">
+            <div className="flex flex-col items-center gap-stack text-white">
                 <DashboardLoader />
                 <span className="text-sm">
-                    {phase === "loading" ? "Preparing meeting…" : "Joining meeting…"}
+                    {phase === "loading" ? t("liveClass.zoomSdk.preparingMeeting") : t("liveClass.zoomSdk.joiningMeeting")}
                 </span>
             </div>
         </div>

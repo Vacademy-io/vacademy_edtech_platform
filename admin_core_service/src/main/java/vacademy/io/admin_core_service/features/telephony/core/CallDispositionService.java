@@ -16,6 +16,7 @@ import vacademy.io.common.exceptions.VacademyException;
 import java.sql.Timestamp;
 import java.util.List;
 import java.util.UUID;
+import vacademy.io.admin_core_service.features.live_activity.core.LiveActivityCounsellorRecorder;
 
 /**
  * The "quick disposition" a counsellor sets after a call. Two responsibilities:
@@ -32,6 +33,7 @@ import java.util.UUID;
 public class CallDispositionService {
 
     private final CallDispositionCatalogRepository catalogRepo;
+    private final LiveActivityCounsellorRecorder liveActivityCounsellorRecorder;
     private final TelephonyCallLogRepository callLogRepo;
     private final LeadStatusRepository leadStatusRepository;
     private final LeadStatusService leadStatusService;
@@ -166,6 +168,16 @@ public class CallDispositionService {
                         callLogId, call.getResponseId(), e.getMessage());
             }
         }
+        // Live activity feed: "a counsellor just wrapped a call with outcome X". This is the
+        // richest counsellor signal available -- one transactional write path carrying the
+        // actor, the lead, the human-readable outcome and free-text notes.
+        //
+        // Note the bulk endpoint (POST /bulk/disposition) must route through this same
+        // method, or bulk dispositions silently never reach the feed.
+        liveActivityCounsellorRecorder.recordDisposition(
+                instituteId, callLogId, call.getCounsellorUserId(), actorUserId,
+                outcome.getDispositionKey(), outcome.getLabel(), notes, call.getToNumber());
+
         return new AppliedDisposition(call, outcome, synced);
     }
 

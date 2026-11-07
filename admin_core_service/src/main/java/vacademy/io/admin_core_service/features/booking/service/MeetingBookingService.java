@@ -21,7 +21,6 @@ import vacademy.io.admin_core_service.features.live_session.enums.NotificationTy
 import vacademy.io.admin_core_service.features.live_session.provider.dto.ProviderMeetingCreateRequestDTO;
 import vacademy.io.admin_core_service.features.live_session.provider.service.ProviderMeetingBatchService;
 import vacademy.io.admin_core_service.features.live_session.provider.service.google.GoogleCalendarService;
-import vacademy.io.admin_core_service.features.mentorship.repository.MentorRepository;
 import vacademy.io.admin_core_service.features.live_session.repository.SessionScheduleRepository;
 import vacademy.io.admin_core_service.features.live_session.service.Step1Service;
 import vacademy.io.admin_core_service.features.live_session.service.Step2Service;
@@ -78,7 +77,7 @@ public class MeetingBookingService {
     private final SessionScheduleRepository sessionScheduleRepository;
     private final ProviderMeetingBatchService providerMeetingBatchService;
     private final GoogleCalendarService googleCalendarService;
-    private final MentorRepository mentorRepository;
+    private final UserGoogleAccountService userGoogleAccountService;
     private final AuthService authService;
     private final NotificationService notificationService;
     private final MentorshipNotificationService mentorshipNotificationService;
@@ -133,6 +132,8 @@ public class MeetingBookingService {
         }
         OffsetDateTime end = start.plusMinutes(duration);
 
+        requireNoOtherMeetingThatDay(request, start, zone);
+
         BookingReminderConfigDTO reminderConfig = request.getReminderConfig() != null
                 ? request.getReminderConfig()
                 : (page != null ? bookingPageService.readReminderConfig(page) : null);
@@ -159,7 +160,7 @@ public class MeetingBookingService {
             instance = allocateMeetLink(instance, title, duration, timezone);
         }
         if ("CONFIRMED".equals(instance.getStatus())) {
-            instance = pushCalendarEvent(instance, title, timezone);
+            instance = pushCalendarEvent(instance, title, timezone, request.getParticipantUserIds());
         }
         sendConfirmationEmail(instance, title, zone, reminderConfig);
         sendConfirmationWhatsapp(instance, title, zone, reminderConfig);
@@ -170,6 +171,44 @@ public class MeetingBookingService {
                 instance.getInviteeName(), title, formatWhen(instance, zone), false);
 
         return toDTO(instance, Map.of(), page != null ? page.getTitle() : null);
+    }
+
+    /**
+     * One meeting per person per day. The same lead was booked twice for one morning (11:30
+     * by hand, 10:00 from the call) and received two invites; a second meeting that day is
+     * refused so the existing one is rescheduled instead. A reschedule is not affected: it
+     * marks the old instance RESCHEDULED before creating the new one.
+     */
+    void requireNoOtherMeetingThatDay(MeetingBookingRequestDTO request, OffsetDateTime start, ZoneId zone) {
+        String responseId = blankToNull(request.getAudienceResponseId());
+        String userId = blankToNull(request.getInviteeUserId());
+        String phone10 = phone10(request.getInviteePhone());
+        String email = request.getInviteeEmail() == null || request.getInviteeEmail().isBlank()
+                ? null : request.getInviteeEmail().trim().toLowerCase();
+        if (responseId == null && userId == null && phone10 == null && email == null) return;
+        java.time.ZonedDateTime dayStart = start.atZoneSameInstant(zone).toLocalDate().atStartOfDay(zone);
+        List<BookingInstance> sameDay = bookingInstanceRepository.findLiveBookingsOfPersonBetween(
+                request.getInstituteId(), responseId, userId, phone10, email,
+                java.sql.Timestamp.from(dayStart.toInstant()),
+                java.sql.Timestamp.from(dayStart.plusDays(1).toInstant()));
+        if (sameDay.isEmpty()) return;
+        BookingInstance existing = sameDay.get(0);
+        String who = firstNonBlank(request.getInviteeName(), existing.getInviteeName(), "This person");
+        String when = existing.getScheduledStartUtc() == null ? "that day"
+                : java.time.format.DateTimeFormatter.ofPattern("EEE d MMM 'at' h:mm a", java.util.Locale.ENGLISH)
+                        .format(existing.getScheduledStartUtc().toInstant().atZone(zone));
+        throw new vacademy.io.common.exceptions.ConflictException(who + " already has a meeting on " + when
+                + ". Reschedule or cancel that one instead of booking a second meeting the same day.");
+    }
+
+    private static String blankToNull(String s) {
+        return s == null || s.isBlank() ? null : s.trim();
+    }
+
+    private static String phone10(String phone) {
+        if (phone == null) return null;
+        String digits = phone.replaceAll("[^0-9]", "");
+        return digits.length() >= 10 ? digits.substring(digits.length() - 10) : null;
     }
 
     private BookingInstance persistBooking(MeetingBookingRequestDTO request, CustomUserDetails user,
@@ -230,6 +269,7 @@ public class MeetingBookingService {
                 .liveSessionId(session.getId())
                 .scheduleId(scheduleId)
                 .hostUserId(hostUserId)
+                .googleAccountId(chooseGoogleAccount(request, hostUserId))
                 .inviteeUserId(request.getInviteeUserId())
                 .audienceResponseId(request.getAudienceResponseId())
                 .inviteeName(request.getInviteeName())
@@ -278,7 +318,7 @@ public class MeetingBookingService {
                     .timezone(timezone)
                     // Per-mentor Google: mint the Meet under the mentor's own account when
                     // connected; null → institute default (unchanged behavior).
-                    .providerAccountId(hostGoogleAccountId(instance.getInstituteId(), instance.getHostUserId()))
+                    .providerAccountId(googleAccountOf(instance))
                     .build());
             String meetLink = sessionScheduleRepository.findBySessionId(instance.getLiveSessionId()).stream()
                     .map(SessionSchedule::getCustomMeetingLink)
@@ -299,28 +339,35 @@ public class MeetingBookingService {
     /**
      * Post-commit one-way Google Calendar push: create an event on the institute's
      * connected Google account with the host + invitee as attendees (sendUpdates=all),
-     * so the booking reflects on both calendars. Scope-gated and best-effort inside
+     * so the booking reflects on both calendars. Internal participants picked in the
+     * New Meeting dialog are invited too. Scope-gated and best-effort inside
      * {@link GoogleCalendarService} — a booking is never rolled back if this fails,
      * and institutes without Calendar consent are simply skipped.
      */
-    private BookingInstance pushCalendarEvent(BookingInstance instance, String title, String timezone) {
+    private BookingInstance pushCalendarEvent(BookingInstance instance, String title, String timezone,
+                                              List<String> participantUserIds) {
         try {
             List<String> attendees = new ArrayList<>();
             if (instance.getInviteeEmail() != null && !instance.getInviteeEmail().isBlank()) {
                 attendees.add(instance.getInviteeEmail());
             }
+            Set<String> staffIds = new LinkedHashSet<>();
+            staffIds.add(instance.getHostUserId());
+            if (participantUserIds != null) {
+                participantUserIds.stream().filter(id -> id != null && !id.isBlank()).forEach(staffIds::add);
+            }
             try {
-                authService.getUsersFromAuthServiceByUserIds(List.of(instance.getHostUserId())).stream()
-                        .filter(u -> u.getEmail() != null && !u.getEmail().isBlank())
-                        .findFirst()
-                        .ifPresent(h -> attendees.add(h.getEmail()));
+                authService.getUsersFromAuthServiceByUserIds(new ArrayList<>(staffIds)).stream()
+                        .map(u -> u.getEmail())
+                        .filter(e -> e != null && !e.isBlank())
+                        .forEach(attendees::add);
             } catch (Exception ignore) {
-                // host email is best-effort — the event still lands with the invitee
+                // host/participant emails are best-effort — the event still lands with the invitee
             }
             String description = "Booking with " + firstNonBlank(instance.getInviteeName(), "invitee", "");
             Optional<String> eventId = googleCalendarService.createEvent(
                     instance.getInstituteId(),
-                    hostGoogleAccountId(instance.getInstituteId(), instance.getHostUserId()),
+                    googleAccountOf(instance),
                     title, description,
                     instance.getScheduledStartUtc().toInstant(), instance.getScheduledEndUtc().toInstant(),
                     timezone, attendees, instance.getMeetLink());
@@ -334,18 +381,22 @@ public class MeetingBookingService {
         return instance;
     }
 
-    /** The Google account the booking's host mentor connected (null → institute default). */
-    private String hostGoogleAccountId(String instituteId, String hostUserId) {
-        if (instituteId == null || hostUserId == null) return null;
-        try {
-            return mentorRepository
-                    .findByInstituteIdAndUserIdAndStatusNot(instituteId, hostUserId, "DELETED")
-                    .map(vacademy.io.admin_core_service.features.mentorship.entity.Mentor::getGoogleAccountId)
-                    .filter(id -> id != null && !id.isBlank())
-                    .orElse(null);
-        } catch (Exception e) {
-            return null;
-        }
+    /**
+     * Which Google account a new booking uses, stored on the instance as an id ("" = institute
+     * default): an explicit account, else the requested user's connection (engagement engine —
+     * unconnected falls back to the institute default), else the host's own connection.
+     */
+    private String chooseGoogleAccount(MeetingBookingRequestDTO request, String hostUserId) {
+        if (request.getGoogleAccountId() != null) return request.getGoogleAccountId();
+        String owner = request.getGoogleAccountUserId() != null && !request.getGoogleAccountUserId().isBlank()
+                ? request.getGoogleAccountUserId() : hostUserId;
+        return userGoogleAccountService.resolveAccountId(request.getInstituteId(), owner).orElse("");
+    }
+
+    /** The account recorded on the booking; null → institute default. */
+    private String googleAccountOf(BookingInstance instance) {
+        String id = instance.getGoogleAccountId();
+        return id == null || id.isBlank() ? null : id;
     }
 
     /** Direct on-booking confirmation to the invitee's email + the host, best effort. */
@@ -436,11 +487,84 @@ public class MeetingBookingService {
      * post-persist. Covers BOTH booking-page bookings and AI-call auto-bookings, since
      * both flow through createBooking with the page's reminder config.
      */
+    /**
+     * Set while the engine itself is answering a lead on WhatsApp about this meeting: it sends its own
+     * confirmation there (in the lead's language), so the template confirmation would be a second message.
+     */
+    private static final ThreadLocal<Boolean> ENGINE_CONFIRMS_ON_WHATSAPP = new ThreadLocal<>();
+
+    public static <T> T withEngineConfirmingOnWhatsapp(java.util.function.Supplier<T> work) {
+        ENGINE_CONFIRMS_ON_WHATSAPP.set(Boolean.TRUE);
+        try {
+            return work.get();
+        } finally {
+            ENGINE_CONFIRMS_ON_WHATSAPP.remove();
+        }
+    }
+
+    @org.springframework.beans.factory.annotation.Autowired
+    @org.springframework.context.annotation.Lazy
+    private vacademy.io.admin_core_service.features.engagement.service.EngagementSystemTemplates systemTemplates;
+
+    @org.springframework.beans.factory.annotation.Autowired
+    @org.springframework.context.annotation.Lazy
+    private vacademy.io.admin_core_service.features.institute.repository.InstituteRepository instituteRepository;
+
+    /**
+     * A booking whose page has no WhatsApp template of its own is confirmed with the institute's shared
+     * meeting-confirmation template (the lead's name, the institute, when and where), found or made once
+     * for the institute. Only when WhatsApp is set up and the page did not turn confirmations off.
+     */
+    private void sendSharedWhatsappConfirmation(BookingInstance instance, String title, ZoneId zone) {
+        try {
+            String phone = instance.getInviteePhone();
+            if (phone == null || phone.isBlank()) return;
+            var state = systemTemplates.ensure(instance.getInstituteId(),
+                    vacademy.io.admin_core_service.features.engagement.service.EngagementSystemTemplates.Kind.MEETING_CONFIRMATION);
+            if (!state.usable()) {
+                log.info("Booking {}: the shared WhatsApp confirmation template is {}, so no WhatsApp confirmation yet",
+                        instance.getId(), state.status());
+                return;
+            }
+            String institute = instituteRepository.findById(instance.getInstituteId())
+                    .map(vacademy.io.common.institute.entity.Institute::getInstituteName).orElse("us");
+            java.util.Map<String, String> vars = new java.util.LinkedHashMap<>();
+            vars.put("name", firstNonBlank(instance.getInviteeName(), "there", null));
+            vars.put("institute", institute == null || institute.isBlank() ? "us" : institute);
+            vars.put("meeting_time", formatWhen(instance, zone));
+            vars.put("meeting_link", firstNonBlank(instance.getMeetLink(), "the link in your email", null));
+            UnifiedSendRequest.Recipient recipient = UnifiedSendRequest.Recipient.builder()
+                    .phone(PhoneCountryUtil.normalizePhone(phone, true))
+                    .userId(instance.getInviteeUserId())
+                    .name(vars.get("name"))
+                    .variables(vars)
+                    .build();
+            notificationService.sendUnified(UnifiedSendRequest.builder()
+                    .instituteId(instance.getInstituteId())
+                    .channel("WHATSAPP")
+                    .templateName(state.name())
+                    .languageCode(firstNonBlank(state.language(), "en", "en"))
+                    .recipients(List.of(recipient))
+                    .build());
+            log.info("Booking {} WHATSAPP confirmation sent via the shared template {}", instance.getId(), state.name());
+        } catch (Exception e) {
+            log.warn("Booking {} shared WhatsApp confirmation failed: {}", instance.getId(), e.getMessage());
+        }
+    }
+
     private void sendConfirmationWhatsapp(BookingInstance instance, String title, ZoneId zone,
                                           BookingReminderConfigDTO config) {
         boolean enabled = config == null || !Boolean.FALSE.equals(config.getOnBookingConfirmation());
         List<String> channels = config != null && config.getChannels() != null
                 ? config.getChannels() : List.of();
+        boolean ownTemplate = config != null && channels.contains("WHATSAPP")
+                && config.getWhatsappTemplateName() != null && !config.getWhatsappTemplateName().isBlank();
+        if (enabled && !ownTemplate) {
+            if (!Boolean.TRUE.equals(ENGINE_CONFIRMS_ON_WHATSAPP.get())) {
+                sendSharedWhatsappConfirmation(instance, title, zone);
+            }
+            return;
+        }
         if (!enabled || !channels.contains("WHATSAPP")) return;
         if (config == null || config.getWhatsappTemplateName() == null
                 || config.getWhatsappTemplateName().isBlank()) {

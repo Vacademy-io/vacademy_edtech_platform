@@ -14,11 +14,14 @@ import {
   VideoCamera,
 } from "@phosphor-icons/react";
 import { Button } from "@/components/ui/button";
+import { InstructorLine } from "./InstructorLine";
 import {
   formatSessionTimeInUserTimezone,
   getTimezoneDisplayInfo,
 } from "@/utils/timezone";
 import { toast } from "sonner";
+import { useTranslation } from "react-i18next";
+import { formatDate } from "@/lib/formatters";
 import { getPublicUrl } from "@/services/upload_file";
 import {
   PastSessionDetails,
@@ -36,12 +39,13 @@ const AttendanceBadge = ({
 }: {
   status: PastSessionDetails["attendance_status"];
 }) => {
+  const { t } = useTranslation("study");
   if (!status) return null;
   if (status === "PRESENT") {
     return (
       <span className="inline-flex items-center gap-1 rounded-full bg-success-100 px-2 py-1 text-xs font-medium text-success-700 dark:bg-success-900/30 dark:text-success-300">
         <CheckCircle size={14} weight="fill" />
-        Present
+        {t("liveClass.pastSession.attendance.present")}
       </span>
     );
   }
@@ -49,14 +53,14 @@ const AttendanceBadge = ({
     return (
       <span className="inline-flex items-center gap-1 rounded-full bg-danger-100 px-2 py-1 text-xs font-medium text-danger-700 dark:bg-danger-900/30 dark:text-danger-300">
         <XCircle size={14} weight="fill" />
-        Absent
+        {t("liveClass.pastSession.attendance.absent")}
       </span>
     );
   }
   return (
     <span className="inline-flex items-center gap-1 rounded-full bg-neutral-100 px-2 py-1 text-xs font-medium text-neutral-500 dark:bg-neutral-800 dark:text-neutral-400">
       <MinusCircle size={14} />
-      Not marked
+      {t("liveClass.pastSession.attendance.notMarked")}
     </span>
   );
 };
@@ -66,26 +70,27 @@ const ActivityChips = ({
 }: {
   activity: PastSessionDetails["activity"];
 }) => {
+  const { t } = useTranslation("study");
   if (!activity) return null;
   const chips: { icon: JSX.Element; label: string }[] = [];
 
   if (activity.duration_minutes != null) {
     chips.push({
       icon: <Clock size={12} />,
-      label: `Attended ${activity.duration_minutes} min`,
+      label: t("liveClass.pastSession.activity.attended", { minutes: activity.duration_minutes }),
     });
   }
   if (activity.chats != null) {
-    chips.push({ icon: <ChatTeardrop size={12} />, label: `${activity.chats} chats` });
+    chips.push({ icon: <ChatTeardrop size={12} />, label: t("liveClass.pastSession.activity.chats", { count: activity.chats }) });
   }
   if (activity.poll_votes != null) {
-    chips.push({ icon: <ChartBar size={12} />, label: `${activity.poll_votes} poll votes` });
+    chips.push({ icon: <ChartBar size={12} />, label: t("liveClass.pastSession.activity.pollVotes", { count: activity.poll_votes }) });
   }
   if (activity.raise_hand != null) {
-    chips.push({ icon: <HandPalm size={12} />, label: `${activity.raise_hand} hand raises` });
+    chips.push({ icon: <HandPalm size={12} />, label: t("liveClass.pastSession.activity.handRaises", { count: activity.raise_hand }) });
   }
   if (activity.emojis != null) {
-    chips.push({ icon: <Smiley size={12} />, label: `${activity.emojis} reactions` });
+    chips.push({ icon: <Smiley size={12} />, label: t("liveClass.pastSession.activity.reactions", { count: activity.emojis }) });
   }
 
   if (chips.length === 0) return null;
@@ -106,6 +111,7 @@ const ActivityChips = ({
 };
 
 export const PastSessionCard = ({ session }: PastSessionCardProps) => {
+  const { t } = useTranslation("study");
   const [activeRecording, setActiveRecording] = useState<LearnerRecording | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
 
@@ -120,9 +126,9 @@ export const PastSessionCard = ({ session }: PastSessionCardProps) => {
       try {
         const url = await getPublicUrl(material.file_id);
         if (url) window.open(url, "_blank", "noopener,noreferrer");
-        else toast.error("Could not open this material.");
+        else toast.error(t("liveClass.pastSession.toast.materialOpenFailed"));
       } catch {
-        toast.error("Could not open this material.");
+        toast.error(t("liveClass.pastSession.toast.materialOpenFailed"));
       }
       return;
     }
@@ -146,7 +152,10 @@ export const PastSessionCard = ({ session }: PastSessionCardProps) => {
   };
 
   const recordingLabel = (recording: LearnerRecording, index: number) =>
-    recording.part_label || (recordings.length > 1 ? `Part ${index + 1}` : "Watch Recording");
+    recording.part_label ||
+    (recordings.length > 1
+      ? t("liveClass.pastSession.recording.part", { number: index + 1 })
+      : t("liveClass.pastSession.recording.watch"));
 
   const cardBody = (
     <>
@@ -164,10 +173,12 @@ export const PastSessionCard = ({ session }: PastSessionCardProps) => {
         </div>
       )}
 
+      <InstructorLine instructors={session.instructors} className="mb-2" />
+
       <div className="flex items-center gap-2 text-sm text-neutral-600 dark:text-neutral-300 mb-2">
         <Clock size={16} className="text-neutral-500 dark:text-neutral-400" />
         <span>
-          {new Date(session.meeting_date).toLocaleDateString("en-US", {
+          {formatDate(session.meeting_date, {
             weekday: "short",
             year: "numeric",
             month: "short",
@@ -204,16 +215,16 @@ export const PastSessionCard = ({ session }: PastSessionCardProps) => {
               onClick={() => handleWatch(recording)}
             >
               <PlayCircle size={16} className="me-1.5" />
-              {recording.expired ? "Recording expired" : recordingLabel(recording, idx)}
+              {recording.expired ? t("liveClass.pastSession.recording.expired") : recordingLabel(recording, idx)}
             </Button>
           ))}
         </div>
       )}
 
       {materials.length > 0 && (
-        <div className="mt-2">
-          <p className="text-xs font-medium text-neutral-500 dark:text-neutral-400 mb-1.5">
-            Class materials
+        <div className="mt-2 space-y-1.5">
+          <p className="text-xs font-medium text-neutral-500 dark:text-neutral-400">
+            {t("liveClass.pastSession.materialsLabel")}
           </p>
           <div className="flex flex-wrap items-center gap-2">
             {materials.map((material) => (
@@ -228,7 +239,7 @@ export const PastSessionCard = ({ session }: PastSessionCardProps) => {
                 ) : (
                   <VideoCamera size={16} className="me-1.5" />
                 )}
-                <span className="max-w-48 truncate">{material.title || "Material"}</span>
+                <span className="max-w-48 truncate">{material.title || t("liveClass.pastSession.materialFallback")}</span>
               </Button>
             ))}
           </div>

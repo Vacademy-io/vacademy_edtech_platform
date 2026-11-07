@@ -1,0 +1,13 @@
+{
+    "untitledField": "حقل بلا عنوان",
+    "newFieldBadge": "(جديد)",
+    "mandatoryLabel": "إلزامي",
+    "hiddenLabel": "مخفي",
+    "accessButton": "الصلاحيات",
+    "emptyState": "لم يتم إرفاق أي حقول بعد. أرفق حقلاً مخصصًا موجودًا أو أنشئ حقلاً جديدًا.",
+    "pickerPlaceholderEmpty": "لا مزيد من الحقول لإرفاقها",
+    "pickerPlaceholderDefault": "إرفاق حقل (حقول) موجودة…",
+    "attachButton": "إرفاق",
+    "attachButtonWithCount": "إرفاق ({{count}})",
+    "createNewFieldButton": "إنشاء حقل جديد"
+}

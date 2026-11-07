@@ -1,0 +1,21 @@
+{
+    "dropdown": {
+        "sendReminder": "रिमाइंडर भेजें",
+        "removeParticipants": "प्रतिभागियों को हटाएं"
+    },
+    "dialogs": {
+        "attentionLabel": "ध्यान दें",
+        "sendReminder": {
+            "title": "रिमाइंडर भेजें",
+            "confirmMessagePrefix": "एक रिमाइंडर भेजा जाएगा",
+            "confirmMessageSuffix": "को, जो अभी तक मूल्यांकन में शामिल नहीं हुए हैं",
+            "sendButton": "भेजें"
+        },
+        "removeParticipant": {
+            "title": "प्रतिभागी हटाएं",
+            "confirmMessagePrefix": "क्या आप वाकई हटाना चाहते हैं",
+            "confirmMessageSuffix": "को इस मूल्यांकन से?",
+            "removeButton": "हटाएं"
+        }
+    }
+}

@@ -134,7 +134,8 @@ public class InstituteInternalService {
                             "/admin-core-service/institute/setting/v1/save-setting?instituteId=" + instituteId
                                     + "&settingKey=EMAIL_SETTING",
                             requestBody,
-                            authToken);
+                            authToken,
+                            instituteId);
                 } else {
                     // Fallback to HMAC request
                     log.info("Using HMAC request (no auth token provided)");
@@ -182,12 +183,16 @@ public class InstituteInternalService {
      * Make authenticated request to admin-core-service
      */
     private ResponseEntity<String> makeAuthenticatedRequest(String baseUrl, String endpoint, String requestBody,
-            String authToken) {
+            String authToken, String instituteId) {
         try {
             // Create HTTP headers with Bearer token
             org.springframework.http.HttpHeaders headers = new org.springframework.http.HttpHeaders();
             headers.set("Content-Type", "application/json");
             headers.set("Authorization", "Bearer " + authToken);
+            // admin-core resolves the caller's roles for the clientId institute only, and its
+            // save-setting checks the caller is staff of instituteId with clientId == instituteId.
+            // Without this header the forwarded token resolves to no role and the save is refused.
+            headers.set("clientId", instituteId);
 
             // Create HTTP entity with headers and body
             org.springframework.http.HttpEntity<String> entity = new org.springframework.http.HttpEntity<>(requestBody,

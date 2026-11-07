@@ -27,6 +27,8 @@
  */
 import { useEffect, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 import { toast } from 'sonner';
 import authenticatedAxiosInstance from '@/lib/auth/axiosInstance';
 import {
@@ -87,9 +89,9 @@ async function fetchChildren(parentUserId: string): Promise<GuardianLinkedUser[]
     return response.data ?? [];
 }
 
-function extractErrorMessage(err: unknown): string {
+function extractErrorMessage(err: unknown, t: TFunction): string {
     const e = err as { response?: { data?: { message?: string } }; message?: string };
-    return e?.response?.data?.message || e?.message || 'Failed to link guardian.';
+    return e?.response?.data?.message || e?.message || t('toast.linkGuardianFailedDefault');
 }
 
 // ── Inline link form (shared by both directions) ───────────────────────────────
@@ -112,6 +114,7 @@ function InlineLinkForm({
     onCancel,
     submitting,
 }: InlineLinkFormProps) {
+    const { t } = useTranslation('manageStudentsParentProfile');
     const [person, setPerson] = useState<ParentLinkPersonInput | undefined>(undefined);
     const ready = isParentLinkPersonValid(person);
 
@@ -126,7 +129,7 @@ function InlineLinkForm({
             />
             <div className="flex items-center justify-end gap-2">
                 <MyButton buttonType="secondary" scale="small" onClick={onCancel} disable={submitting}>
-                    Cancel
+                    {t('linkForm.cancel')}
                 </MyButton>
                 <MyButton
                     buttonType="primary"
@@ -134,7 +137,7 @@ function InlineLinkForm({
                     onClick={() => person && onSubmit(person)}
                     disable={!ready || submitting}
                 >
-                    {submitting ? 'Linking…' : `Link ${personLabel}`}
+                    {submitting ? t('linkForm.linking') : t('linkForm.linkButton', { person: personLabel })}
                 </MyButton>
             </div>
         </div>
@@ -144,6 +147,7 @@ function InlineLinkForm({
 // ── Back-navigation trail ───────────────────────────────────────────────────────
 
 function BackTrail({ current, onBack }: { current: ViewedPerson; onBack: () => void }) {
+    const { t } = useTranslation('manageStudentsParentProfile');
     return (
         <button
             type="button"
@@ -151,7 +155,7 @@ function BackTrail({ current, onBack }: { current: ViewedPerson; onBack: () => v
             className="flex items-center gap-1.5 self-start text-caption font-medium text-primary-500 hover:text-primary-700"
         >
             <ArrowLeft size={14} weight="bold" />
-            Back — viewing {current.name}
+            {t('backTrail.label', { name: current.name })}
         </button>
     );
 }
@@ -163,6 +167,7 @@ interface StudentParentProfileProps {
 }
 
 export function StudentParentProfile({ userId }: StudentParentProfileProps) {
+    const { t } = useTranslation('manageStudentsParentProfile');
     const [copiedField, setCopiedField] = useState<string>('');
     const [showLinkForm, setShowLinkForm] = useState(false);
     // In-panel pivot history: empty = viewing `userId` itself. Each entry is a
@@ -210,14 +215,18 @@ export function StudentParentProfile({ userId }: StudentParentProfileProps) {
         setHistory((h) => h.slice(0, -1));
     };
 
-    const handleCopy = async (text: string, fieldName: string) => {
+    // `fieldKey` is a stable internal id used for the `copiedField` equality
+    // check (never translated — comparing translated display text for logic
+    // would silently break in every non-English locale). `fieldLabel` is the
+    // translated, human-readable name shown in the toast.
+    const handleCopy = async (text: string, fieldKey: string, fieldLabel: string) => {
         try {
             await navigator.clipboard.writeText(text);
-            setCopiedField(fieldName);
-            toast.success(`${fieldName} copied to clipboard!`);
+            setCopiedField(fieldKey);
+            toast.success(t('toast.copiedToClipboard', { field: fieldLabel }));
             setTimeout(() => setCopiedField(''), 2000);
         } catch {
-            toast.error(`Failed to copy ${fieldName}`);
+            toast.error(t('toast.copyFailed', { field: fieldLabel }));
         }
     };
 
@@ -248,6 +257,10 @@ export function StudentParentProfile({ userId }: StudentParentProfileProps) {
     // this profile is a student with a resolved guardian id.
     const guardianId = parentQuery.data?.id ?? '';
     const credentialsQuery = useStudentCredentails({ userId: guardianId });
+    // Raw password value (untranslated) kept separately from the display
+    // string below — logic (e.g. whether to show a copy button) must branch
+    // on this, never on the translated placeholder text.
+    const guardianRawPassword = guardianId ? credentialsQuery.data?.password : undefined;
 
     // This student's OWN login (currentId itself, not the guardian's) -- a
     // guardian-linked child created via onboarding/parent-add-student flows
@@ -258,7 +271,7 @@ export function StudentParentProfile({ userId }: StudentParentProfileProps) {
     // shown here too, gated by the same allowViewPassword display setting.
     const ownCredentialsQuery = useStudentCredentails({ userId: currentId });
     const guardianPassword = guardianId
-        ? credentialsQuery.data?.password || (credentialsQuery.isLoading ? 'Loading...' : 'Password not found')
+        ? guardianRawPassword || (credentialsQuery.isLoading ? t('status.loading') : t('status.passwordNotFound'))
         : null;
 
     // Emails the guardian's credentials so they can onboard to the Parent
@@ -276,15 +289,15 @@ export function StudentParentProfile({ userId }: StudentParentProfileProps) {
             if (result.sent) {
                 toast.success(
                     result.recipient_email
-                        ? `Guardian credentials sent to ${result.recipient_email}`
-                        : 'Guardian credentials sent'
+                        ? t('toast.guardianCredentialsSentTo', { email: result.recipient_email })
+                        : t('toast.guardianCredentialsSent')
                 );
             } else {
-                toast.warning(result.reason || 'Could not send guardian credentials');
+                toast.warning(result.reason || t('toast.guardianCredentialsNotSent'));
             }
         },
         onError: () => {
-            toast.error('Failed to send guardian credentials');
+            toast.error(t('toast.guardianCredentialsSendFailed'));
         },
     });
 
@@ -313,12 +326,14 @@ export function StudentParentProfile({ userId }: StudentParentProfileProps) {
                   };
         try {
             await linkGuardian(request);
-            toast.success(direction === 'STUDENT_ADDS_PARENT' ? 'Guardian linked' : 'Student linked');
+            toast.success(
+                direction === 'STUDENT_ADDS_PARENT' ? t('toast.guardianLinked') : t('toast.studentLinked')
+            );
             setShowLinkForm(false);
             queryClient.invalidateQueries({ queryKey: ['parent-link-children', currentId] });
             queryClient.invalidateQueries({ queryKey: ['parent-link-parent', currentId] });
         } catch (err) {
-            toast.error(extractErrorMessage(err));
+            toast.error(extractErrorMessage(err, t));
         }
     };
 
@@ -329,33 +344,40 @@ export function StudentParentProfile({ userId }: StudentParentProfileProps) {
     // for why this needs to exist here specifically.
     const ownCredentialsBlock =
         allowViewPassword === false ? (
-            <p className="text-2xs text-muted-foreground">
-                Password visibility is off for this institute — enable it under Settings → Role
-                Display to view this student&apos;s login here.
-            </p>
+            <p className="text-2xs text-muted-foreground">{t('ownLogin.passwordHidden')}</p>
         ) : (
-            <ProfileSectionCard icon={Key} heading="This Student's Login">
+            <ProfileSectionCard icon={Key} heading={t('ownLogin.heading')}>
                 <dl>
                     <ProfileFieldRow
-                        label="Username"
+                        label={t('fields.username')}
                         value={ownCredentialsQuery.data?.username ?? null}
-                        copied={copiedField === 'Student Username'}
+                        copied={copiedField === 'studentUsername'}
                         onCopy={
                             ownCredentialsQuery.data?.username
-                                ? () => handleCopy(ownCredentialsQuery.data!.username, 'Student Username')
+                                ? () =>
+                                      handleCopy(
+                                          ownCredentialsQuery.data!.username,
+                                          'studentUsername',
+                                          t('toastFields.studentUsername')
+                                      )
                                 : undefined
                         }
                     />
                     <ProfileFieldRow
-                        label="Password"
+                        label={t('fields.password')}
                         value={
                             ownCredentialsQuery.data?.password ??
-                            (ownCredentialsQuery.isLoading ? 'Loading…' : 'Not found')
+                            (ownCredentialsQuery.isLoading ? t('status.loading') : t('status.notFound'))
                         }
-                        copied={copiedField === 'Student Password'}
+                        copied={copiedField === 'studentPassword'}
                         onCopy={
                             ownCredentialsQuery.data?.password
-                                ? () => handleCopy(ownCredentialsQuery.data!.password, 'Student Password')
+                                ? () =>
+                                      handleCopy(
+                                          ownCredentialsQuery.data!.password,
+                                          'studentPassword',
+                                          t('toastFields.studentPassword')
+                                      )
                                 : undefined
                         }
                     />
@@ -377,7 +399,7 @@ export function StudentParentProfile({ userId }: StudentParentProfileProps) {
             <div className="flex flex-col gap-3">
                 {backTrail}
                 <ProfileError
-                    title="Couldn't load guardian information"
+                    title={t('errors.loadGuardianInfo')}
                     onRetry={() => childrenQuery.refetch()}
                 />
             </div>
@@ -393,13 +415,13 @@ export function StudentParentProfile({ userId }: StudentParentProfileProps) {
                 <ProfileHero
                     icon={Users}
                     tone="info"
-                    eyebrow="Guardian Profile"
-                    title="This is a guardian profile"
-                    subtitle={`Linked to ${children.length} ${children.length === 1 ? 'child' : 'children'}`}
+                    eyebrow={t('guardianHero.eyebrow')}
+                    title={t('guardianHero.title')}
+                    subtitle={t('guardianHero.linkedToChildren', { count: children.length })}
                 />
                 <ProfileSectionCard
                     icon={Users}
-                    heading="Linked Children"
+                    heading={t('linkedChildren.heading')}
                     action={
                         guardianLinkingEnabled && !showLinkForm ? (
                             <MyButton
@@ -407,7 +429,7 @@ export function StudentParentProfile({ userId }: StudentParentProfileProps) {
                                 scale="small"
                                 onClick={() => setShowLinkForm(true)}
                             >
-                                <Plus size={14} weight="bold" /> Add Child
+                                <Plus size={14} weight="bold" /> {t('linkedChildren.addChild')}
                             </MyButton>
                         ) : undefined
                     }
@@ -418,10 +440,13 @@ export function StudentParentProfile({ userId }: StudentParentProfileProps) {
                                 key={child.id}
                                 type="button"
                                 onClick={() =>
-                                    goInto({ id: child.id, name: child.full_name || child.email || 'this learner' })
+                                    goInto({
+                                        id: child.id,
+                                        name: child.full_name || child.email || t('fallback.thisLearner'),
+                                    })
                                 }
                                 className="flex flex-col gap-0.5 py-2 text-left first:pt-0 last:pb-0 hover:opacity-80"
-                                title="View this learner's guardian info"
+                                title={t('linkedChildren.viewLearnerTooltip')}
                             >
                                 <span className="text-sm font-medium text-primary-600 underline-offset-2 hover:underline">
                                     {child.full_name || '—'}
@@ -439,7 +464,7 @@ export function StudentParentProfile({ userId }: StudentParentProfileProps) {
                         <div className="mt-3 border-t border-border pt-3">
                             <InlineLinkForm
                                 instituteId={instituteId}
-                                personLabel="Student"
+                                personLabel={t('roles.student')}
                                 searchRoles={['STUDENT']}
                                 submitting={isLinking}
                                 onCancel={() => setShowLinkForm(false)}
@@ -458,7 +483,7 @@ export function StudentParentProfile({ userId }: StudentParentProfileProps) {
             <div className="flex flex-col gap-3">
                 {backTrail}
                 <ProfileError
-                    title="Couldn't load guardian information"
+                    title={t('errors.loadGuardianInfo')}
                     onRetry={() => parentQuery.refetch()}
                 />
             </div>
@@ -474,15 +499,15 @@ export function StudentParentProfile({ userId }: StudentParentProfileProps) {
                 {ownCredentialsBlock}
                 <ProfileEmpty
                     icon={Users}
-                    title="No guardian linked yet"
-                    hint="Link an existing guardian, or add a new one, right from here."
+                    title={t('noGuardian.title')}
+                    hint={t('noGuardian.hint')}
                 />
                 {guardianLinkingEnabled && (
-                    <ProfileSectionCard icon={Users} heading="Link a Guardian">
+                    <ProfileSectionCard icon={Users} heading={t('linkGuardianSection.heading')}>
                         {showLinkForm ? (
                             <InlineLinkForm
                                 instituteId={instituteId}
-                                personLabel="Guardian"
+                                personLabel={t('roles.guardian')}
                                 searchRoles={['PARENT']}
                                 submitting={isLinking}
                                 onCancel={() => setShowLinkForm(false)}
@@ -494,7 +519,7 @@ export function StudentParentProfile({ userId }: StudentParentProfileProps) {
                                 scale="small"
                                 onClick={() => setShowLinkForm(true)}
                             >
-                                <Plus size={14} weight="bold" /> Add Guardian
+                                <Plus size={14} weight="bold" /> {t('linkGuardianSection.addGuardian')}
                             </MyButton>
                         )}
                     </ProfileSectionCard>
@@ -509,7 +534,7 @@ export function StudentParentProfile({ userId }: StudentParentProfileProps) {
             {ownCredentialsBlock}
             <ProfileSectionCard
                 icon={Users}
-                heading="Guardian"
+                heading={t('guardianSection.heading')}
                 action={
                     <div className="flex items-center gap-3">
                         <button
@@ -517,46 +542,57 @@ export function StudentParentProfile({ userId }: StudentParentProfileProps) {
                             onClick={() => shareCredentials()}
                             disabled={sharingCredentials}
                             className="flex items-center gap-1 text-caption font-medium text-primary-500 hover:text-primary-700 hover:underline disabled:cursor-not-allowed disabled:opacity-50"
-                            title="Email these credentials so the guardian can log in to the parent portal"
+                            title={t('guardianSection.shareCredentialsTooltip')}
                         >
                             <PaperPlaneTilt className="size-3.5" />
-                            {sharingCredentials ? 'Sending…' : 'Share credentials'}
+                            {sharingCredentials ? t('guardianSection.sending') : t('guardianSection.shareCredentials')}
                         </button>
                         <button
                             type="button"
                             onClick={() =>
-                                goInto({ id: guardian.id, name: guardian.full_name || guardian.email || 'this guardian' })
+                                goInto({
+                                    id: guardian.id,
+                                    name: guardian.full_name || guardian.email || t('fallback.thisGuardian'),
+                                })
                             }
                             className="text-caption font-medium text-primary-500 hover:text-primary-700 hover:underline"
-                            title="View this guardian's own profile"
+                            title={t('guardianSection.viewProfileTooltip')}
                         >
-                            View guardian's profile →
+                            {t('guardianSection.viewProfileLink')}
                         </button>
                     </div>
                 }
             >
                 <dl>
-                    <ProfileFieldRow label="Name" value={guardian.full_name} />
+                    <ProfileFieldRow label={t('fields.name')} value={guardian.full_name} />
                     <ProfileFieldRow
-                        label="Username"
+                        label={t('fields.username')}
                         value={guardian.username}
-                        copied={copiedField === 'Username'}
-                        onCopy={guardian.username ? () => handleCopy(guardian.username!, 'Username') : undefined}
-                    />
-                    <ProfileFieldRow
-                        label="Email"
-                        value={guardian.email}
-                        copied={copiedField === 'Email'}
-                        onCopy={guardian.email ? () => handleCopy(guardian.email!, 'Email') : undefined}
-                    />
-                    <ProfileFieldRow label="Mobile" value={guardian.mobile_number} />
-                    <ProfileFieldRow
-                        label="Password"
-                        value={guardianPassword}
-                        copied={copiedField === 'Password'}
+                        copied={copiedField === 'username'}
                         onCopy={
-                            guardianPassword && guardianPassword !== 'Password not found' && guardianPassword !== 'Loading...'
-                                ? () => handleCopy(guardianPassword, 'Password')
+                            guardian.username
+                                ? () => handleCopy(guardian.username!, 'username', t('toastFields.username'))
+                                : undefined
+                        }
+                    />
+                    <ProfileFieldRow
+                        label={t('fields.email')}
+                        value={guardian.email}
+                        copied={copiedField === 'email'}
+                        onCopy={
+                            guardian.email
+                                ? () => handleCopy(guardian.email!, 'email', t('toastFields.email'))
+                                : undefined
+                        }
+                    />
+                    <ProfileFieldRow label={t('fields.mobile')} value={guardian.mobile_number} />
+                    <ProfileFieldRow
+                        label={t('fields.password')}
+                        value={guardianPassword}
+                        copied={copiedField === 'password'}
+                        onCopy={
+                            guardianRawPassword
+                                ? () => handleCopy(guardianRawPassword, 'password', t('toastFields.password'))
                                 : undefined
                         }
                     />

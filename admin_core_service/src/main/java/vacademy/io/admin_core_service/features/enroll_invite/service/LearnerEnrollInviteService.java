@@ -27,6 +27,9 @@ public class LearnerEnrollInviteService {
     @Autowired
     private WorkflowTriggerService workflowTriggerService;
 
+    @Autowired
+    private InviteFormAdminNotificationService inviteFormAdminNotificationService;
+
     /**
      * Fetches and validates an active enroll invite by instituteId and inviteCode.
      *
@@ -54,6 +57,8 @@ public class LearnerEnrollInviteService {
                 .orElseThrow(() -> new VacademyException("Enroll invite not found."));
 
         EnrollInviteDTO result = enrollInviteService.buildFullEnrollInviteDTO(enrollInvite, instituteId);
+        // This endpoint is open — keep the team-notification email list out of the payload.
+        result.setSettingJson(inviteFormAdminNotificationService.redactFromSettingJson(result.getSettingJson()));
 
         // Only fire the form-fill workflow when the invite is actually open for enrollment.
         if (EnrollInviteAvailabilityUtil.isAvailable(enrollInvite)) {

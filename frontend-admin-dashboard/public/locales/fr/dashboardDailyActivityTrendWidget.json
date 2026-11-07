@@ -1,0 +1,35 @@
+{
+    "header": {
+        "title": "Tendance d'activité quotidienne",
+        "subtitle": "Activité des utilisateurs au cours de la semaine passée"
+    },
+    "error": {
+        "message": "Impossible de charger les données de tendance"
+    },
+    "empty": {
+        "message": "Aucune activité enregistrée cette semaine"
+    },
+    "stats": {
+        "users": "Utilisateurs",
+        "sessions": "Sessions",
+        "avgDuration": "Durée moyenne",
+        "avgDurationUnit": "min"
+    },
+    "chart": {
+        "months": [
+            "janv.",
+            "févr.",
+            "mars",
+            "avr.",
+            "mai",
+            "juin",
+            "juil.",
+            "août",
+            "sept.",
+            "oct.",
+            "nov.",
+            "déc."
+        ],
+        "dateLabel": "{{day}} {{month}}"
+    }
+}

@@ -1,0 +1,12 @@
+{
+    "label": {
+        "part1": "Enroll",
+        "part2": "on approval"
+    },
+    "message": {
+        "approvalDisabled": "Approval is disabled because you already have a free plan with approval. This plan will be created without approval.",
+        "approvalRequired": "Approval is required because you already have a free plan without approval. This plan will be created with approval.",
+        "editingRequiresApproval": "{{learners}} who enroll on this plan wait in Enroll Requests until an admin approves them.",
+        "editingNoApproval": "{{learners}} who enroll on this plan are activated immediately, with no approval step."
+    }
+}

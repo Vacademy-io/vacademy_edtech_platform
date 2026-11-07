@@ -1,0 +1,77 @@
+{
+    "batchDialog": {
+        "moreLink_one": "+{{count}} और",
+        "moreLink_other": "+{{count}} और",
+        "title": "मूल्यांकन बैच"
+    },
+    "info": {
+        "createdOn": "बनाया गया: {{date}}",
+        "subject": "{{label}}: {{name}}",
+        "startDateTime": "प्रारंभ तिथि और समय: {{date}}",
+        "endDateTime": "समाप्ति तिथि और समय: {{date}}",
+        "duration": {
+            "label": "अवधि: ",
+            "hours_one": "{{count}} घंटा",
+            "hours_other": "{{count}} घंटे",
+            "minutes_one": "{{count}} मिनट",
+            "minutes_other": "{{count}} मिनट"
+        },
+        "totalParticipants_one": "कुल प्रतिभागी: {{count}}",
+        "totalParticipants_other": "कुल प्रतिभागी: {{count}}"
+    },
+    "joinLink": {
+        "label": "जॉइन लिंक:",
+        "privateWarning": "यह लिंक तभी काम करता है जब असेसमेंट Public हो। शेयर करने से पहले Step 3 में इसे Public करें।"
+    },
+    "types": {
+        "examination": "परीक्षा",
+        "mock": "मॉक टेस्ट",
+        "practice": "अभ्यास",
+        "survey": "सर्वे",
+        "offline": "ऑफ़लाइन परीक्षा",
+        "assignment": "असाइनमेंट"
+    },
+    "status": {
+        "live": "लाइव",
+        "upcoming": "आगामी",
+        "closed": "बंद",
+        "draft": "ड्राफ़्ट"
+    },
+    "meta": {
+        "starts": "शुरू",
+        "ends": "समाप्त",
+        "duration": "अवधि",
+        "participants": "प्रतिभागी",
+        "evaluation": "मूल्यांकन",
+        "evaluationAuto": "स्वचालित",
+        "evaluationManual": "मैनुअल",
+        "createdOn": "बनाया गया {{date}}"
+    },
+    "batches": {
+        "less": "कम दिखाएँ"
+    },
+    "actions": {
+        "viewDetails": "विवरण देखें"
+    },
+    "privateLink": {
+        "title": "जॉइन लिंक सिर्फ़ ओपन टेस्ट में काम करता है",
+        "body": "यह असेसमेंट प्राइवेट (क्लोज़्ड टेस्ट) है। जिन लर्नर्स को आपने असाइन किया है, वे इसे अपने लर्नर ऐप से देते हैं — उन्हें लिंक की ज़रूरत नहीं है। जॉइन लिंक और QR कोड तभी काम करेंगे जब यह ओपन टेस्ट होगा: असेसमेंट एडिट करें, Step 3 \"प्रतिभागी जोड़ें\" में जाएँ और \"ओपन टेस्ट\" चुनें।",
+        "ariaLabel": "जॉइन लिंक क्यों काम नहीं करेगा"
+    },
+    "share": {
+        "copyLink": "जॉइन लिंक कॉपी करें",
+        "qrCode": "QR कोड दिखाएँ",
+        "copied": "जॉइन लिंक कॉपी हो गया",
+        "copiedPrivate": "लिंक कॉपी हो गया, लेकिन यह तभी काम करेगा जब आप इस असेसमेंट को \"ओपन टेस्ट\" में बदलेंगे (Step 3, \"प्रतिभागी जोड़ें\")।"
+    },
+    "qrDialog": {
+        "title": "जॉइन लिंक और QR कोड",
+        "description": "लर्नर कोड स्कैन करके या लिंक खोलकर रजिस्टर कर सकते हैं और असेसमेंट दे सकते हैं।",
+        "copy": "कॉपी करें",
+        "download": "QR कोड डाउनलोड करें"
+    },
+    "source": {
+        "api": "स्रोत: API",
+        "apiTooltip": "AI मूल्यांकन API से बनाया गया"
+    }
+}

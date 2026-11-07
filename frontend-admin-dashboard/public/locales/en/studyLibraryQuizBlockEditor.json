@@ -1,0 +1,42 @@
+{
+    "header": {
+        "quizBlock": "Quiz Block",
+        "mcq": "MCQ",
+        "trueFalse": "True/False",
+        "preview": "Preview",
+        "edit": "Edit"
+    },
+    "toolbar": {
+        "bold": "Bold",
+        "italic": "Italic",
+        "underline": "Underline",
+        "bulletList": "Bullet list",
+        "numberedList": "Numbered list",
+        "insertLink": "Insert link",
+        "insertImage": "Insert image"
+    },
+    "prompts": {
+        "linkUrl": "Link URL:"
+    },
+    "labels": {
+        "question": "Question",
+        "options": "Options (click the circle to mark the correct answer)",
+        "explanation": "Explanation (shown after answering)"
+    },
+    "actions": {
+        "markCorrect": "Mark as correct answer",
+        "removeOption": "Remove option",
+        "addOption": "+ Add Option"
+    },
+    "placeholders": {
+        "question": "Enter your question…",
+        "option": "Option {{label}}",
+        "explanation": "Explain the correct answer…"
+    },
+    "preview": {
+        "noQuestion": "No question set",
+        "checkAnswer": "Check Answer",
+        "tryAgain": "Try Again",
+        "explanationLabel": "Explanation:"
+    }
+}

@@ -1,0 +1,41 @@
+{
+    "sidebar": {
+        "stepLabel": "चरण {{number}}",
+        "done": "· पूर्ण"
+    },
+    "steps": {
+        "basicInfo": {
+            "label": "बुनियादी जानकारी",
+            "description": "नाम, समय-सारणी और सेटिंग्स"
+        },
+        "addQuestions": {
+            "label": "प्रश्न जोड़ें",
+            "description": "प्रश्न अपलोड करें या बनाएं"
+        },
+        "addParticipants": {
+            "label": "प्रतिभागी जोड़ें",
+            "description": "चुनें कि कौन इसे दे सकता है"
+        },
+        "accessControl": {
+            "label": "एक्सेस कंट्रोल",
+            "description": "प्रबंधन के लिए अनुमतियां"
+        }
+    },
+    "examTypeLabel": {
+        "exam": "परीक्षा",
+        "mock": "मॉक असेसमेंट",
+        "practice": "अभ्यास असेसमेंट",
+        "survey": "सर्वेक्षण",
+        "manualUploadExam": "मैनुअल अपलोड परीक्षा"
+    },
+    "header": {
+        "stepOf": "चरण {{current}} / {{total}}",
+        "completed": "{{count}} / {{total}} पूर्ण"
+    },
+    "helmet": {
+        "titleSurvey": "सर्वेक्षण बनाएं",
+        "titleAssessment": "असेसमेंट बनाएं",
+        "descriptionSurvey": "यह पेज एडमिन के माध्यम से छात्रों के लिए सर्वेक्षण बनाने हेतु है।",
+        "descriptionAssessment": "यह पेज एडमिन के माध्यम से छात्रों के लिए असेसमेंट बनाने हेतु है।"
+    }
+}

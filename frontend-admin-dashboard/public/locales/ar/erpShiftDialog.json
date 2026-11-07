@@ -1,0 +1,48 @@
+{
+    "cancel": "إلغاء",
+    "saving": "جارٍ الحفظ…",
+    "toast": {
+        "updated": "تم تحديث الوردية",
+        "created": "تم إنشاء الوردية"
+    },
+    "errors": {
+        "save": "تعذر حفظ الوردية."
+    },
+    "dialog": {
+        "editHeading": "تعديل الوردية",
+        "addHeading": "إضافة وردية",
+        "saveChanges": "حفظ التغييرات",
+        "createShift": "إنشاء وردية"
+    },
+    "fields": {
+        "name": "الاسم",
+        "namePlaceholder": "الوردية العامة",
+        "code": "الرمز",
+        "codePlaceholder": "GEN",
+        "codeDescription": "أحرف كبيرة، بلا مسافات — يُستخدم عند تعيين الموظفين بشكل جماعي.",
+        "startTime": "وقت البدء",
+        "endTime": "وقت الانتهاء",
+        "breakMinutes": "الاستراحة (بالدقائق)",
+        "breakDescription": "تُخصم من ساعات العمل.",
+        "gracePeriodMinutes": "فترة السماح (بالدقائق)",
+        "gracePeriodDescription": "المدة التي يمكن أن يتأخر بها أحدهم عن تسجيل الحضور قبل احتساب اليوم متأخرًا.",
+        "minHoursFullDay": "الحد الأدنى لساعات اليوم الكامل",
+        "minHoursHalfDay": "الحد الأدنى لساعات نصف اليوم"
+    },
+    "switches": {
+        "nightShiftLabel": "وردية ليلية",
+        "nightShiftDescription": "تمتد الوردية عبر منتصف الليل — تسجيل الخروج بعد الساعة 00:00 يظل ينتمي لليوم الذي بدأت فيه.",
+        "defaultShiftLabel": "الوردية الافتراضية",
+        "defaultShiftDescription": "يُعامل الموظفون الذين لم تُعيَّن لهم وردية على أنهم في هذه الوردية."
+    },
+    "validation": {
+        "nameRequired": "أدخل اسمًا للوردية",
+        "codeMinLength": "الرمز يجب ألا يقل عن حرفين",
+        "codeFormat": "أحرف كبيرة وأرقام وشرطات سفلية فقط — بلا مسافات",
+        "startTimeRequired": "وقت البدء مطلوب",
+        "endTimeRequired": "وقت الانتهاء مطلوب",
+        "wholeMinutesOnly": "دقائق صحيحة فقط",
+        "hoursExampleFull": "ساعات، مثال: 8 أو 7.5",
+        "hoursExampleHalf": "ساعات، مثال: 4"
+    }
+}

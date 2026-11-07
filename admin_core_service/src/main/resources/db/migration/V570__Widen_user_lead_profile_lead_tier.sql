@@ -1,0 +1,13 @@
+-- ================================================================================
+-- V570: widen user_lead_profile.lead_tier to fit custom tier keys
+-- ================================================================================
+--
+-- lead_tier was VARCHAR(10) from the HOT / WARM / COLD days (V195). Since V528 an
+-- institute can define its own tiers, and lead_tier stores lead_tier.tier_key,
+-- which is VARCHAR(100). Picking a custom tier with a key longer than 10
+-- characters (e.g. VERY_INTERESTED) failed the UPDATE with "value too long", so
+-- the admin's tier change never saved.
+--
+-- Widening a VARCHAR is a catalog-only change in Postgres (no table rewrite);
+-- the (institute_id, lead_tier) index is kept as is.
+ALTER TABLE user_lead_profile ALTER COLUMN lead_tier TYPE VARCHAR(100);

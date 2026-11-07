@@ -1,0 +1,5 @@
+{
+    "oauthFailed": "Échec d'OAuth. Redirection vers la connexion...",
+    "oauthProcessingFailed": "Échec du traitement OAuth. Redirection vers la connexion...",
+    "handlingOauthRedirect": "Traitement de la redirection OAuth..."
+}

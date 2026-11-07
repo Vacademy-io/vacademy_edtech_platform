@@ -14,6 +14,7 @@ import vacademy.io.admin_core_service.features.ota_update.repository.OtaBundleVe
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -49,17 +50,7 @@ public class OtaUpdateService {
         Set<String> strictAppIds = strictTargetAppIds();
 
         for (OtaBundleVersion version : activeVersions) {
-            // App targeting.
-            if (version.getTargetAppIds() != null && !version.getTargetAppIds().isBlank()) {
-                Set<String> targetIds = Arrays.stream(version.getTargetAppIds().split(","))
-                        .map(String::trim)
-                        .collect(Collectors.toSet());
-                if (appId == null || !targetIds.contains(appId)) {
-                    continue;
-                }
-            } else if (appId != null && strictAppIds.contains(appId)) {
-                // Untargeted bundle ("all apps") — skip for strict apps so a
-                // foreign app's bundle can never land in their WebView.
+            if (!servesApp(version, appId, strictAppIds)) {
                 continue;
             }
 
@@ -86,6 +77,55 @@ public class OtaUpdateService {
         }
 
         return OtaCheckResponse.noUpdate();
+    }
+
+    /**
+     * Would this bundle be handed to {@code appId} at all? Targeting only — the caller decides
+     * whether it also wants the native-version floor and the "newer than what you have" test.
+     *
+     * <p>Shared by {@link #checkForUpdate} and {@link #resolveServedBundle} on purpose: the rule
+     * that an untargeted bundle is served to everyone *except* the strict-target apps is the one
+     * piece of OTA logic that has bitten us before, and two copies of it would eventually disagree
+     * about what a client is actually running.
+     */
+    private boolean servesApp(OtaBundleVersion version, String appId, Set<String> strictAppIds) {
+        String targets = version.getTargetAppIds();
+        if (targets != null && !targets.isBlank()) {
+            Set<String> targetIds = Arrays.stream(targets.split(","))
+                    .map(String::trim)
+                    .collect(Collectors.toSet());
+            return appId != null && targetIds.contains(appId);
+        }
+        // Untargeted bundle ("all apps") — withheld from strict apps so a foreign app's bundle can
+        // never land in their WebView.
+        return appId == null || !strictAppIds.contains(appId);
+    }
+
+    /**
+     * The OTA bundle this app is currently being served — the newest active bundle for the
+     * platform whose targeting includes it. Read-only, for status screens.
+     *
+     * <p>Two deliberate differences from {@link #checkForUpdate}, which answers a device's
+     * question rather than an operator's:
+     * <ul>
+     *   <li>No {@code minNativeVersion} floor, because there is no device here to compare against.
+     *       The floor is reported instead, so a bundle that some installs are too old to receive
+     *       is visible rather than silently absent.</li>
+     *   <li>No "newer than what you have" test — this is what the app is pointed at, not a diff.</li>
+     * </ul>
+     *
+     * <p>An app that no bundle targets legitimately resolves to the untargeted "all apps" bundle,
+     * which is usually a surprise worth seeing: it is how a white-label app ends up running another
+     * app's JavaScript.
+     */
+    public Optional<OtaBundleVersion> resolveServedBundle(String platform, String appId) {
+        if (platform == null || platform.isBlank() || appId == null || appId.isBlank()) {
+            return Optional.empty();
+        }
+        Set<String> strictAppIds = strictTargetAppIds();
+        return repository.findActiveVersionsForPlatform(platform.toUpperCase()).stream()
+                .filter(version -> servesApp(version, appId, strictAppIds))
+                .findFirst();
     }
 
     public OtaVersionDTO registerVersion(OtaRegisterRequest request, String publishedBy) {

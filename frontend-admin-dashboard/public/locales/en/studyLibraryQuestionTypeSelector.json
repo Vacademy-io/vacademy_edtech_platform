@@ -1,0 +1,15 @@
+{
+    "addQuestion": "Add Question",
+    "quickAccess": "Quick Access",
+    "mcqSingleCorrect": "MCQ (Single correct)",
+    "mcqMultipleCorrect": "MCQ (Multiple correct)",
+    "numerical": "Numerical",
+    "trueFalse": "True False",
+    "writingSkills": "Writing Skills",
+    "longAnswer": "Long Answer",
+    "singleWord": "Single Word",
+    "readingSkills": "Reading Skills",
+    "comprehensionMcqSingleCorrect": "Comprehension MCQ (Single correct)",
+    "comprehensionMcqMultipleCorrect": "Comprehension MCQ (Multiple correct)",
+    "comprehensionNumeric": "Comprehension Numeric"
+}

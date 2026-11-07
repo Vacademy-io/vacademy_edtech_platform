@@ -1,0 +1,62 @@
+{
+    "dropzone": {
+        "hint": "Drop images or PDFs here"
+    },
+    "preview": {
+        "empty": "Nothing to preview"
+    },
+    "textarea": {
+        "placeholder": "Describe what you want to create…"
+    },
+    "attach": {
+        "title": "Attach reference images or PDFs",
+        "ariaLabel": "Attach reference files"
+    },
+    "pdfExtract": {
+        "title": "Extract PDF text and use as prompt (replaces current text)",
+        "ariaLabel": "Extract PDF as prompt"
+    },
+    "previewToggle": {
+        "title": "Toggle Markdown/LaTeX preview",
+        "ariaLabel": "Toggle preview"
+    },
+    "dialogueChip": {
+        "title": "Story dialogue scenes are ON (set in Settings)",
+        "modeDrama": "Drama",
+        "modeStorybook": "Storybook",
+        "modelOmni": "Omni",
+        "modelSeedance": "Seedance"
+    },
+    "durationChip": {
+        "title": "Target duration (set in Settings)"
+    },
+    "send": {
+        "titleReady": "Generate (Enter)",
+        "titleAvatarMissing": "Pick a host in ⚙ Settings → Host before generating",
+        "ariaReady": "Generate",
+        "ariaAvatarMissing": "Pick a host before generating"
+    },
+    "footer": {
+        "courseCta": "Want to create an entire course via AI?",
+        "credits_one": "{{value}} credit",
+        "credits_other": "{{value}} credits"
+    },
+    "toasts": {
+        "sampleAudioUnavailable": "Sample audio not available yet",
+        "hostMissingTitle": "Pick a host first",
+        "hostMissingDescription": "Open the ⚙ Settings → Host tab and pick a saved avatar, or save one in the Avatars tab.",
+        "pdfExtractSuccess": "PDF content extracted successfully",
+        "pdfExtractFailed": "Failed to extract content from PDF",
+        "filesSkipped_one": "{{count}} file skipped (only images and PDFs accepted)",
+        "filesSkipped_other": "{{count}} files skipped (only images and PDFs accepted)",
+        "maxFilesAllowed_one": "Maximum {{count}} file allowed",
+        "maxFilesAllowed_other": "Maximum {{count}} files allowed",
+        "fileSizeExceeded": "{{fileName}} exceeds {{maxSizeMb}}MB limit",
+        "filesAttached_one": "{{count}} file attached",
+        "filesAttached_other": "{{count}} files attached",
+        "filesAttachedPartial": "{{success}} attached, {{failed}} failed",
+        "filesUploadFailed_one": "Failed to upload {{count}} file",
+        "filesUploadFailed_other": "Failed to upload {{count}} files",
+        "attachmentsUploadFailed": "Failed to upload attachments"
+    }
+}

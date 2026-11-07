@@ -1,4 +1,5 @@
 import { Lock } from "@phosphor-icons/react";
+import { useTranslation } from "react-i18next";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import {
@@ -24,6 +25,7 @@ export function LockedBadge({
   showText = true,
   unlockMessage,
 }: LockedBadgeProps) {
+  const { t } = useTranslation("courseComponentsExtra");
   const iconSize = size === "sm" ? 12 : size === "md" ? 14 : 16;
 
   const badge = (
@@ -39,7 +41,7 @@ export function LockedBadge({
       )}
     >
       <Lock size={iconSize} weight="fill" />
-      {showText && <span>Locked</span>}
+      {showText && <span>{t("dripConditions.common.locked")}</span>}
     </Badge>
   );
 

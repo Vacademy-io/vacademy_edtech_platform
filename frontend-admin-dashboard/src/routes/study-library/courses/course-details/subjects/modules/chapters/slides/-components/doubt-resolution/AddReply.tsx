@@ -15,8 +15,10 @@ import {
     DialogFooter,
 } from '@/components/ui/dialog';
 import { MyButton as Button } from '@/components/design-system/button';
+import { useTranslation } from 'react-i18next';
 
 export const AddReply = ({ parent, refetch }: { parent: DoubtType; refetch: () => void }) => {
+    const { t } = useTranslation('studyLibraryHandleAddReply');
     const userId = getUserId();
     const userName = getUserName();
     const { activeItem } = useContentStore();
@@ -47,7 +49,7 @@ export const AddReply = ({ parent, refetch }: { parent: DoubtType; refetch: () =
             delete_assignee_request: parent.delete_assignee_request,
             all_doubt_assignee: parent.all_doubt_assignee,
         };
-        await handleAddReply({ replyData, addReply, setReply: setTeacherReply, refetch });
+        await handleAddReply({ replyData, addReply, setReply: setTeacherReply, refetch, t });
     };
 
     return (

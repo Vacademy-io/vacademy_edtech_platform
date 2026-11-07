@@ -1,0 +1,52 @@
+{
+    "common": {
+        "accessRestricted": "الوصول مقيد"
+    },
+    "errors": {
+        "institute": {
+            "title": "تعذّر تحميل تفاصيل المؤسسة",
+            "hint": "حدث خطأ أثناء جلب تفاصيل المؤسسة. يرجى المحاولة مرة أخرى.",
+            "hintRestricted": "ليس لديك إذن لعرض تفاصيل المؤسسة. يرجى التواصل مع المسؤول."
+        },
+        "report": {
+            "title": "تعذّر تحميل سجلات الاختبارات",
+            "hint": "حدث خطأ أثناء جلب سجلات الاختبارات. يرجى المحاولة مرة أخرى.",
+            "hintRestricted": "ليس لديك إذن لعرض سجلات الاختبارات. يرجى التواصل مع المسؤول."
+        }
+    },
+    "hero": {
+        "eyebrow": "أداء الاختبارات",
+        "avgScore": "متوسط الدرجات {{score}}",
+        "noAttempts": "لا توجد محاولات بعد",
+        "testsRecorded_zero": "لا توجد اختبارات مسجلة ({{count}})",
+        "testsRecorded_one": "اختبار واحد مسجل ({{count}})",
+        "testsRecorded_two": "اختباران مسجلان ({{count}})",
+        "testsRecorded_few": "{{count}} اختبارات مسجلة",
+        "testsRecorded_many": "{{count}} اختبارًا مسجلًا",
+        "testsRecorded_other": "{{count}} اختبار مسجل",
+        "testsAssignedHint": "ستظهر الاختبارات المخصصة لهذا المتعلم هنا."
+    },
+    "filters": {
+        "all": "الكل",
+        "completed": "مكتمل",
+        "pending": "معلّق",
+        "live": "مباشر",
+        "ariaLabel": "تصفية محاولات الاختبار حسب الحالة"
+    },
+    "empty": {
+        "title": "لا توجد اختبارات بعد",
+        "hint": "لم يخضع هذا المتعلم لأي تقييم بعد."
+    },
+    "list": {
+        "subjectFallback": "غير متاح"
+    },
+    "status": {
+        "attempted": "تمت المحاولة",
+        "notAttempted": "لم تتم المحاولة",
+        "pending": "معلّق"
+    },
+    "actions": {
+        "viewReport": "عرض التقرير",
+        "sendReminder": "إرسال تذكير"
+    }
+}

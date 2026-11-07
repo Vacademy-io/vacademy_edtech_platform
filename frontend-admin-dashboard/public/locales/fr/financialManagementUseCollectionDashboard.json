@@ -1,0 +1,36 @@
+{
+    "vendorLabels": {
+        "onlinePortal": "Portail en ligne",
+        "cash": "Espèces",
+        "bankTransfer": "Virement bancaire",
+        "other": "Autre",
+        "offlineUnspecified": "Hors ligne (mode non renseigné)"
+    },
+    "summaryCards": {
+        "projectedRevenue": "Revenu prévu",
+        "tillNowExpected": "Attendu à ce jour",
+        "tillNowCollected": "Collecté à ce jour",
+        "totalOverdue": "Total en retard",
+        "totalDue": "Total dû"
+    },
+    "pipeline": {
+        "codes": {
+            "projectedRevenue": "RP",
+            "tillNowExpected": "AJ",
+            "tillNowCollected": "CJ",
+            "totalOverdue": "TR",
+            "totalDue": "TD"
+        },
+        "tooltips": {
+            "projectedRevenue": "Revenu prévu",
+            "tillNowExpected": "Attendu à ce jour",
+            "tillNowCollected": "Collecté à ce jour",
+            "totalOverdue": "Total en retard",
+            "totalDue": "Total dû"
+        }
+    },
+    "gauge": {
+        "collected": "Collecté",
+        "remaining": "Restant"
+    }
+}

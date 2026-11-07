@@ -31,4 +31,11 @@ public class CreateEngineRequest {
     private Integer holdoutPct;
     /** Phase 2: human-approved sends before this engine may auto-send (null = global default). */
     private Integer firstN;
+    /**
+     * Institute team members alerted by bell alert and email when the engine needs a human. Staff
+     * of the engine's institute only; null on an edit leaves the current contacts as they are.
+     */
+    private List<String> notifyUserIds;
+    /** Material the agent may send when asked (brochures, demo videos…). Optional. */
+    private List<EngagementAssetRequest> assets;
 }

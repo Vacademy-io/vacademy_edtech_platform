@@ -1,0 +1,42 @@
+{
+    "workSummary": {
+        "title": "कार्य सारांश",
+        "lastDaysSuffix_one": "· पिछले {{count}} दिन",
+        "lastDaysSuffix_other": "· पिछले {{count}} दिनों",
+        "statusesMovedTo": "जिन स्थितियों में बदला गया"
+    },
+    "metric": {
+        "statusChanges": "स्थिति परिवर्तन",
+        "callsMade": "की गई कॉलें",
+        "connected": "जुड़ी हुई कॉलें",
+        "reach": "पहुंच"
+    },
+    "coaching": {
+        "loading": "कोचिंग जानकारी लोड की जा रही है…",
+        "loadError": "जानकारी लोड नहीं हो सकी। यदि इस बैकएंड पर कॉल इंटेलिजेंस तैनात नहीं है, तो यह अभी उपलब्ध नहीं होगी।",
+        "noAnalyzedCalls": "इस काउंसलर के लिए अभी तक कोई AI-विश्लेषित कॉल नहीं है।",
+        "enableHint": "कॉल-गुणवत्ता कोचिंग देखने के लिए CRM इंटेलिजेंस सक्षम करें और कुछ कॉलों का विश्लेषण करें।",
+        "metric": {
+            "callsAnalyzed": "विश्लेषित कॉलें",
+            "avgCallerRating": "औसत कॉलर रेटिंग",
+            "avgOutcomeRating": "औसत परिणाम रेटिंग",
+            "focusAreas": "फोकस क्षेत्र"
+        },
+        "skillBreakdown": {
+            "title": "कौशल विश्लेषण",
+            "weakestFirst": "· सबसे कमजोर पहले"
+        },
+        "whatToImprove": "सुधार के लिए क्या करें",
+        "tipCallCount_one": "{{count}}× कॉल",
+        "tipCallCount_other": "{{count}}× कॉलें",
+        "objections": {
+            "title": "सबसे अधिक सामना की गई आपत्तियां",
+            "handled": "{{handled}}/{{total}} संभाली गईं"
+        },
+        "recentCalls": {
+            "title": "हाल की विश्लेषित कॉलें",
+            "callerRating": "कॉलर {{rating}}",
+            "outcomeRating": "परिणाम {{rating}}"
+        }
+    }
+}

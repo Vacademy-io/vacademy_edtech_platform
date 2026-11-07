@@ -1,0 +1,11 @@
+{
+    "cardTitle": "Sous-organisation",
+    "loading": "Chargement…",
+    "fieldLabel": "Sous-organisation associée",
+    "description": "Lorsque cette option est activée, inscrire un apprenant à ce cours crée une sous-organisation pour lui. S'applique à tous les groupes de ce cours.",
+    "toast": {
+        "enabled": "Association à la sous-organisation activée",
+        "disabled": "Association à la sous-organisation désactivée",
+        "updateFailed": "Échec de la mise à jour de l'association à la sous-organisation"
+    }
+}

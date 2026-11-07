@@ -1,5 +1,7 @@
 import { useState, useRef, useEffect, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 import { Input } from '@/components/ui/input';
 import { MagnifyingGlass, X } from '@phosphor-icons/react';
 import { FilterChips } from '@/components/design-system/chips';
@@ -19,11 +21,11 @@ interface ManageFinancesFiltersProps {
     selectedSessionId: string;
 }
 
-const STATUS_OPTIONS = [
-    { id: 'PAID', label: 'Paid' },
-    { id: 'PARTIAL', label: 'Partial' },
-    { id: 'PENDING', label: 'Pending' },
-    { id: 'OVERDUE', label: 'Overdue' },
+const buildStatusOptions = (t: TFunction) => [
+    { id: 'PAID', label: t('status.paid') },
+    { id: 'PARTIAL', label: t('status.partial') },
+    { id: 'PENDING', label: t('status.pending') },
+    { id: 'OVERDUE', label: t('status.overdue') },
 ];
 
 type FilterItem = { id: string; label: string };
@@ -34,6 +36,8 @@ export function ManageFinancesFilters({
     onClearFilters,
     selectedSessionId,
 }: ManageFinancesFiltersProps) {
+    const { t } = useTranslation('financialManagementManageFinancesFilters');
+    const STATUS_OPTIONS = useMemo(() => buildStatusOptions(t), [t]);
     const { getCourseFromPackage, getAllLevels, instituteDetails } =
         useInstituteDetailsStore();
 
@@ -242,7 +246,7 @@ export function ManageFinancesFilters({
                     </div>
                     <Input
                         type="search"
-                        placeholder="Search by name or phone..."
+                        placeholder={t('searchPlaceholder')}
                         className="pl-9 h-8 rounded-lg border-gray-300 bg-gray-50 text-sm font-medium text-gray-700 focus:border-blue-500 hover:bg-white"
                         value={searchInput}
                         onChange={(e) => setSearchInput(e.target.value)}
@@ -260,7 +264,7 @@ export function ManageFinancesFilters({
 
                 {/* Fee Type filter */}
                 <FilterChips
-                    label="Fee Type"
+                    label={t('feeType')}
                     filterList={feeTypeOptions}
                     selectedFilters={selectedFeeTypes}
                     handleSelect={handleFeeTypeSelect}
@@ -277,7 +281,7 @@ export function ManageFinancesFilters({
 
                 {/* Status filter */}
                 <FilterChips
-                    label="Status"
+                    label={t('status.label')}
                     filterList={STATUS_OPTIONS}
                     selectedFilters={selectedStatuses}
                     handleSelect={handleStatusSelect}
@@ -316,7 +320,7 @@ export function ManageFinancesFilters({
                         className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-semibold text-red-600 bg-red-50 border border-red-200 hover:bg-red-100 transition flex-shrink-0"
                     >
                         <X size={12} weight="bold" />
-                        Clear All
+                        {t('clearAll')}
                     </button>
                 )}
             </div>

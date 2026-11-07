@@ -1,0 +1,48 @@
+{
+    "common": {
+        "open": "Ouvrir",
+        "attention": "Attention",
+        "dateText": "Date",
+        "timeText": "Heure",
+        "reminderBodyPrefix": "Un rappel de devoir sera envoyé à tous les",
+        "participants_one": "{{count}} participant",
+        "participants_many": "{{count}} participants",
+        "participants_other": "{{count}} participants",
+        "reminderBodySuffix": "qui ne se sont pas encore présentés parmi les groupes assignés."
+    },
+    "menu": {
+        "viewHomeworkDetails": "Voir les détails du devoir",
+        "deleteHomework": "Supprimer le devoir"
+    },
+    "reminderDialog": {
+        "title": "Envoyer un rappel",
+        "send": "Envoyer"
+    },
+    "deleteDialog": {
+        "title": "Supprimer le devoir",
+        "confirmPrefix": "Êtes-vous sûr de vouloir supprimer",
+        "confirmSuffix": " ?",
+        "slidesDeleteFailedToast": "Le devoir a été supprimé, mais ses diapositives de cours n'ont pas pu être retirées.",
+        "successToast": "Le devoir a été supprimé avec succès !",
+        "delete": "Supprimer"
+    },
+    "pauseDialog": {
+        "title": "Suspendre le statut en direct",
+        "pauseUntilLabel": "Suspendre jusqu'à",
+        "pause": "Suspendre"
+    },
+    "resumeDialog": {
+        "title": "Reprendre le statut en direct",
+        "confirmPrefix": "Voulez-vous reprendre votre devoir en direct",
+        "testName": "L'œil humain et le monde coloré",
+        "confirmSuffix": " ?",
+        "resume": "Reprendre"
+    },
+    "reopenDialog": {
+        "title": "Rouvrir le devoir",
+        "selectDateTime": "Sélectionnez la date et l'heure de réouverture du devoir",
+        "startDateTimeLabel": "Date et heure de début",
+        "endDateTimeLabel": "Date et heure de fin",
+        "reopen": "Rouvrir"
+    }
+}

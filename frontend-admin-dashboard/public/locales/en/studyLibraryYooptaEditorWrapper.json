@@ -1,0 +1,11 @@
+{
+    "errors": {
+        "loadFailed": "Failed to load content. Please try again.",
+        "loadingContentPrefix": "Error loading content:",
+        "initFailed": "Editor initialization failed",
+        "refreshAndRetry": "Please refresh the page and try again."
+    },
+    "actions": {
+        "retry": "Retry"
+    }
+}

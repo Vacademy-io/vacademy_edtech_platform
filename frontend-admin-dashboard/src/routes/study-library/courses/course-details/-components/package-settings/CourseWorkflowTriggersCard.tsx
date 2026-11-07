@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { MyButton } from '@/components/design-system/button';
@@ -47,6 +48,7 @@ interface TriggerRow {
 export const CourseWorkflowTriggersCard: React.FC<CourseWorkflowTriggersCardProps> = ({
     packageId,
 }) => {
+    const { t } = useTranslation('studyLibraryCourseWorkflowTriggersCard');
     const [events, setEvents] = useState<TriggerEventOption[]>([]);
     const [workflows, setWorkflows] = useState<InstituteWorkflowOption[]>([]);
     const [rows, setRows] = useState<TriggerRow[]>([]);
@@ -85,7 +87,7 @@ export const CourseWorkflowTriggersCard: React.FC<CourseWorkflowTriggersCardProp
             );
         } catch (e) {
             console.error('Failed to load workflow triggers', e);
-            toast.error('Failed to load workflow triggers');
+            toast.error(t('toast.loadFailed'));
         } finally {
             setLoading(false);
         }
@@ -106,12 +108,12 @@ export const CourseWorkflowTriggersCard: React.FC<CourseWorkflowTriggersCardProp
         try {
             const res = await savePackageWorkflowTriggers(packageId, valid);
             toast.success(
-                `Workflow triggers saved (${res.created} added, ${res.removed} removed).`
+                t('toast.saveSuccess', { created: res.created, removed: res.removed })
             );
             await load();
         } catch (e) {
             console.error('Failed to save workflow triggers', e);
-            toast.error(e instanceof Error ? e.message : 'Failed to save workflow triggers');
+            toast.error(e instanceof Error ? e.message : t('toast.saveFailed'));
         } finally {
             setSaving(false);
             setConfirmOpen(false);
@@ -123,31 +125,24 @@ export const CourseWorkflowTriggersCard: React.FC<CourseWorkflowTriggersCardProp
             <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                     <Lightning className="size-5 text-primary-500" weight="fill" />
-                    Workflow Triggers
+                    {t('title')}
                 </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
                 {loading ? (
                     <div className="flex items-center justify-center py-8 text-neutral-500">
-                        <CircleNotch className="mr-2 size-5 animate-spin" /> Loading…
+                        <CircleNotch className="me-2 size-5 animate-spin" /> {t('loading')}
                     </div>
                 ) : (
                     <>
-                        <p className="text-sm text-neutral-500">
-                            Run a workflow automatically when something happens for this course —
-                            e.g. enrol the learner in your LMS when they enrol here. Pick the event
-                            and the workflow; add as many as you need.
-                        </p>
+                        <p className="text-sm text-neutral-500">{t('description')}</p>
 
                         {workflows.length === 0 && (
-                            <p className="text-sm text-neutral-400">
-                                No workflows in this institute yet — create one under Automations
-                                first.
-                            </p>
+                            <p className="text-sm text-neutral-400">{t('noWorkflows')}</p>
                         )}
 
                         {rows.length === 0 ? (
-                            <p className="text-sm text-neutral-400">No workflow triggers yet.</p>
+                            <p className="text-sm text-neutral-400">{t('noTriggersYet')}</p>
                         ) : (
                             rows.map((row, i) => (
                                 <div
@@ -159,7 +154,7 @@ export const CourseWorkflowTriggersCard: React.FC<CourseWorkflowTriggersCardProp
                                         onValueChange={(v) => updateRow(i, 'triggerEventName', v)}
                                     >
                                         <SelectTrigger>
-                                            <SelectValue placeholder="When… (event)" />
+                                            <SelectValue placeholder={t('whenEventPlaceholder')} />
                                         </SelectTrigger>
                                         <SelectContent>
                                             {events.map((e) => (
@@ -174,7 +169,7 @@ export const CourseWorkflowTriggersCard: React.FC<CourseWorkflowTriggersCardProp
                                         onValueChange={(v) => updateRow(i, 'workflowId', v)}
                                     >
                                         <SelectTrigger>
-                                            <SelectValue placeholder="Run workflow…" />
+                                            <SelectValue placeholder={t('runWorkflowPlaceholder')} />
                                         </SelectTrigger>
                                         <SelectContent>
                                             {workflows.map((w) => (
@@ -188,7 +183,7 @@ export const CourseWorkflowTriggersCard: React.FC<CourseWorkflowTriggersCardProp
                                         variant="ghost"
                                         size="icon"
                                         onClick={() => removeRow(i)}
-                                        aria-label="Remove trigger"
+                                        aria-label={t('removeTrigger')}
                                     >
                                         <Trash className="size-4 text-danger-500" />
                                     </Button>
@@ -203,7 +198,7 @@ export const CourseWorkflowTriggersCard: React.FC<CourseWorkflowTriggersCardProp
                                 onClick={addRow}
                                 className="gap-1 text-primary-600"
                             >
-                                <Plus className="size-4" /> Add trigger
+                                <Plus className="size-4" /> {t('addTrigger')}
                             </Button>
                             <MyButton
                                 onClick={() => setConfirmOpen(true)}
@@ -211,7 +206,7 @@ export const CourseWorkflowTriggersCard: React.FC<CourseWorkflowTriggersCardProp
                                 className="gap-2 bg-primary-500"
                             >
                                 <FloppyDisk className="size-4" />
-                                {saving ? 'Saving…' : 'Save triggers'}
+                                {saving ? t('saving') : t('saveTriggers')}
                             </MyButton>
                         </div>
                     </>
@@ -221,16 +216,13 @@ export const CourseWorkflowTriggersCard: React.FC<CourseWorkflowTriggersCardProp
             <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
                 <AlertDialogContent>
                     <AlertDialogHeader>
-                        <AlertDialogTitle>Update this course&apos;s automations?</AlertDialogTitle>
+                        <AlertDialogTitle>{t('confirmDialog.title')}</AlertDialogTitle>
                         <AlertDialogDescription>
-                            This changes which workflows run for this course and takes effect
-                            immediately. Workflows you added will start firing on their events (e.g.
-                            enrolment); any you removed will stop. Make sure the list is correct
-                            before saving.
+                            {t('confirmDialog.description')}
                         </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
-                        <AlertDialogCancel disabled={saving}>Cancel</AlertDialogCancel>
+                        <AlertDialogCancel disabled={saving}>{t('cancel')}</AlertDialogCancel>
                         <AlertDialogAction
                             onClick={(e) => {
                                 e.preventDefault();
@@ -239,7 +231,7 @@ export const CourseWorkflowTriggersCard: React.FC<CourseWorkflowTriggersCardProp
                             disabled={saving}
                             className="bg-primary-500"
                         >
-                            {saving ? 'Saving…' : 'Yes, save'}
+                            {saving ? t('saving') : t('confirmDialog.yesSave')}
                         </AlertDialogAction>
                     </AlertDialogFooter>
                 </AlertDialogContent>

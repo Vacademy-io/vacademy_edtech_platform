@@ -1,0 +1,6 @@
+{
+    "heading": "Send Reminder",
+    "confirmPrefix": "Are you sure you want to send reminder for",
+    "confirmSuffix": "?",
+    "done": "Done"
+}

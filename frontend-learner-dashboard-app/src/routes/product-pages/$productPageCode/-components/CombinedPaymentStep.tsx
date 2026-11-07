@@ -1,6 +1,10 @@
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 import { useProductPageStore } from '../-stores/product-page-store';
-import { enrollForProductPage } from '../-services/product-page-service';
+import { enrollForProductPage, handleGetProductPage } from '../-services/product-page-service';
+import { checkoutErrorOf, type CheckoutError } from '../-utils/checkout-error';
+import { enrollOutcomeOf } from '../-utils/enroll-outcome';
 import {
     pushCombinedPaymentInitiated,
     pushCombinedEnrollmentSuccess,
@@ -9,7 +13,19 @@ import {
 import { RazorpayCheckoutForm } from '@/components/common/enroll-by-invite/-components/razorpay-checkout-form';
 import type { RazorpayCheckoutFormRef } from '@/components/common/enroll-by-invite/-components/razorpay-checkout-form';
 import { ArrowLeft, SpinnerGap, ShieldCheck } from "@phosphor-icons/react";
-import type { ProductPageData, ProductPageSettings } from '../-types/product-page-types';
+import { getTerminology, getTerminologyPlural } from '@/components/common/layout-container/sidebar/utils';
+import { ContentTerms, SystemTerms } from '@/types/naming-settings';
+import type {
+    ProductPageData,
+    ProductPageEnrollResponse,
+    ProductPageSettings,
+} from '../-types/product-page-types';
+import { resolveLearnerIdentity } from '../-utils/learner-identity';
+import {
+    clearPurchasedFromSiteCart,
+    notePendingSiteCartPurchase,
+    purchasedPackageSessionIds,
+} from '../-utils/site-cart-housekeeping';
 
 interface CombinedPaymentStepProps {
     pageData: ProductPageData;
@@ -21,6 +37,8 @@ interface CombinedPaymentStepProps {
     onSuccess: () => void;
 }
 
+type RazorpayOrderDetails = Parameters<RazorpayCheckoutFormRef['openPayment']>[0];
+
 export const CombinedPaymentStep = ({
     pageData,
     settings,
@@ -30,41 +48,187 @@ export const CombinedPaymentStep = ({
     onBack,
     onSuccess,
 }: CombinedPaymentStepProps) => {
+    const { t, i18n } = useTranslation('productPages');
+    const course = getTerminology(ContentTerms.Course, SystemTerms.Course);
+    const coursePlural = getTerminologyPlural(ContentTerms.Course, SystemTerms.Course);
+    const courseTermFor = (count: number) => (count === 1 ? course : coursePlural).toLocaleLowerCase();
     const {
-        selectedPsOptionIds, registrationData, userId, couponCode,
-        discountAmount, totalPrice, finalPrice, utmParams,
+        selectedPsOptionIds, registrationData, userId, couponCode, discountAmount,
+        clearCoupon, finalPrice, utmParams, setLoginCode,
     } = useProductPageStore();
 
-    const razorpayRef = useRef<RazorpayCheckoutFormRef>(null);
+    const razorpayRef = useRef<RazorpayCheckoutFormRef | null>(null);
     const hasAutoEnrolledRef = useRef(false);
     const [isProcessing, setIsProcessing] = useState(false);
     const [paymentError, setPaymentError] = useState<string | null>(null);
+    // Set once the server answers with a Razorpay order on a page drawn for
+    // another gateway (see openRazorpayOrder): this basket pays through
+    // Razorpay, so Razorpay's checkout takes the place of the page's Pay button.
+    const [razorpayAnswered, setRazorpayAnswered] = useState(false);
+    // That order, until Razorpay's checkout is ready to open it.
+    const pendingRazorpayOrderRef = useRef<RazorpayOrderDetails | null>(null);
+    const quietOpenRef = useRef<(() => void) | null>(null);
+    const showsRazorpayCheckout = vendor === 'RAZORPAY' || razorpayAnswered;
 
-    const selectedMappings = pageData.mappings
-        .filter((m) => selectedPsOptionIds.includes(m.ps_invite_payment_option_id))
-        .map((m) => ({
-            ps_invite_payment_option_id: m.ps_invite_payment_option_id,
-            payment_plan_id: m.payment_plan_id,
-            amount: m.payment_plan?.actual_price ?? 0,
-        }));
+    const selectedPageMappings = pageData.mappings.filter((m) =>
+        selectedPsOptionIds.includes(m.ps_invite_payment_option_id)
+    );
+    const selectedMappings = selectedPageMappings.map((m) => ({
+        ps_invite_payment_option_id: m.ps_invite_payment_option_id,
+        payment_plan_id: m.payment_plan_id,
+        amount: m.payment_plan?.actual_price ?? 0,
+    }));
+    // The site-wide cart is per institute; the page's and the route's are the
+    // same institute in practice — both are tried (see site-cart-housekeeping).
+    const cartInstituteIds = [pageData.institute_id, instituteId];
 
     const currency = (pageData.currency || pageData.mappings[0]?.payment_plan?.currency || 'INR') as string;
     const amount = finalPrice();
-    const subtotal = totalPrice();
 
-    const emailEntry = Object.values(registrationData).find(
-        (f) => f.type?.toLowerCase().includes('email') || f.name?.toLowerCase().includes('email')
-    );
-    const phoneEntry = Object.values(registrationData).find(
-        (f) => f.type?.toLowerCase().includes('phone') || f.name?.toLowerCase().includes('phone') || f.name?.toLowerCase().includes('mobile')
-    );
-    const nameEntry = Object.values(registrationData).find(
-        (f) => f.name?.toLowerCase().includes('name') && !f.name?.toLowerCase().includes('email') && !f.name?.toLowerCase().includes('phone')
-    );
+    // These three prefill the payment vendor's contact block, so they must be
+    // the same values the enrolment is created under. Shared resolver: a label
+    // search for "name" also matches "School Name". See learner-identity.
+    const {
+        email: userEmail,
+        phone: userPhone,
+        name: userName,
+    } = resolveLearnerIdentity(Object.values(registrationData));
 
-    const userEmail = emailEntry?.value || '';
-    const userPhone = phoneEntry?.value || '';
-    const userName = nameEntry?.value || '';
+    const queryClient = useQueryClient();
+    const priceChangedMessage = t(
+        'common.priceChangedReload',
+        'The price of a course in your cart has changed. Please review your cart and try again.'
+    );
+    // A 409 means a price on this page changed since it loaded: refetch it so
+    // the cart shows the current prices before the learner tries again.
+    const showCheckoutError = ({ message, priceChanged }: CheckoutError) => {
+        setPaymentError(message);
+        pushCombinedPaymentFailed(message, vendor, utmParams);
+        if (priceChanged) {
+            void queryClient.invalidateQueries({
+                queryKey: handleGetProductPage(pageData.code, pageData.institute_id).queryKey,
+            });
+        }
+    };
+    const failCheckout = (err: unknown, fallback: string) =>
+        showCheckoutError(checkoutErrorOf(err, fallback, priceChangedMessage));
+
+    /**
+     * Opens Razorpay Checkout for an order the server created. On a page drawn
+     * for Razorpay its checkout is on screen and opens the order at once. On a
+     * store page whose first course sells through another gateway it is not:
+     * the step switches to Razorpay's checkout, which opens the order as soon
+     * as Razorpay has loaded — and whose Pay button is there should it not.
+     */
+    const openRazorpayOrder = (order: { orderId: string; keyId: string }) => {
+        const details: RazorpayOrderDetails = {
+            razorpayKeyId: order.keyId,
+            razorpayOrderId: order.orderId,
+            amount: amount * 100,
+            currency,
+            contact: userPhone,
+            email: userEmail,
+        };
+        if (razorpayRef.current) {
+            razorpayRef.current.openPayment(details);
+            return;
+        }
+        pendingRazorpayOrderRef.current = details;
+        setRazorpayAnswered(true);
+    };
+
+    // Razorpay's checkout hands over a fresh handle every time it renders; while
+    // an order waits, each one tries to open it. Until Razorpay's script has
+    // loaded the attempt fails — that is waiting, not an error, so what it
+    // reports stays off the screen.
+    const attachRazorpayCheckout = useCallback((handle: RazorpayCheckoutFormRef | null) => {
+        razorpayRef.current = handle;
+        const details = pendingRazorpayOrderRef.current;
+        if (!handle || !details) return;
+        let failed = false;
+        quietOpenRef.current = () => {
+            failed = true;
+        };
+        try {
+            handle.openPayment(details);
+        } finally {
+            quietOpenRef.current = null;
+        }
+        if (!failed) pendingRazorpayOrderRef.current = null;
+    }, []);
+
+    const handleRazorpayError = (err: string) => {
+        if (quietOpenRef.current) {
+            quietOpenRef.current();
+            return;
+        }
+        setPaymentError(err);
+        setIsProcessing(false);
+    };
+
+    /**
+     * Acts on the server's answer — the server, not this page, picks the
+     * gateway (see enroll-outcome): follow a hosted payment page, open Razorpay
+     * for an order still to be paid, or finish.
+     */
+    const settleEnrollment = async (result: ProductPageEnrollResponse, fallback: string) => {
+        const outcome = enrollOutcomeOf(result);
+
+        if (outcome.kind === 'redirect') {
+            // The gateway confirms by webhook after the visitor has left;
+            // note what this buys so the site cart can drop it once paid.
+            await notePendingSiteCartPurchase({
+                paymentLogId: result.payment_log_id,
+                instituteIds: cartInstituteIds,
+                packageSessionIds: purchasedPackageSessionIds(result, selectedPageMappings),
+            });
+            window.location.href = outcome.paymentUrl;
+            return;
+        }
+
+        if (outcome.kind === 'unpayable') {
+            failCheckout(null, fallback);
+            return;
+        }
+
+        if (outcome.kind === 'razorpay') {
+            // This page showed the basket as free and the server wants payment:
+            // the page's prices are out of date. Show the current ones before
+            // anyone is asked to pay them.
+            if (amount <= 0) {
+                // With a coupon in play the coupon may be what went out of date,
+                // and refetching the page never corrects a coupon — every retry
+                // would ask for another unpaid order. So it goes: the step shows
+                // the price without it, and the learner can apply it again for
+                // what it takes off now.
+                if (discountAmount > 0) {
+                    clearCoupon();
+                    showCheckoutError({
+                        message: t('cartStep.couponChanged', 'Cart changed — please re-apply your coupon.'),
+                        priceChanged: true,
+                    });
+                    return;
+                }
+                showCheckoutError({ message: priceChangedMessage, priceChanged: true });
+                return;
+            }
+            openRazorpayOrder(outcome);
+            return;
+        }
+
+        // Synchronously here, not on the success screen: that screen may
+        // redirect away. A no-op without a site cart.
+        if (outcome.paid) {
+            void clearPurchasedFromSiteCart(
+                cartInstituteIds,
+                purchasedPackageSessionIds(result, selectedPageMappings)
+            );
+        }
+
+        setLoginCode(result.login_code ?? null);
+        pushCombinedEnrollmentSuccess(amount, selectedPsOptionIds.length, utmParams);
+        onSuccess();
+    };
 
     const doEnroll = async (paymentInitiationRequest: Record<string, unknown>) => {
         setIsProcessing(true);
@@ -81,18 +245,9 @@ export const CombinedPaymentStep = ({
                 paymentInitiationRequest,
                 utmParams,
             });
-
-            if (result.payment_url) {
-                window.location.href = result.payment_url;
-                return;
-            }
-
-            pushCombinedEnrollmentSuccess(amount, selectedPsOptionIds.length, utmParams);
-            onSuccess();
+            await settleEnrollment(result, t('common.genericPaymentFailed'));
         } catch (err) {
-            const msg = err instanceof Error ? err.message : 'Payment failed. Please try again.';
-            setPaymentError(msg);
-            pushCombinedPaymentFailed(msg, vendor, utmParams);
+            failCheckout(err, t('common.genericPaymentFailed'));
         } finally {
             setIsProcessing(false);
         }
@@ -130,6 +285,9 @@ export const CombinedPaymentStep = ({
     const handleRazorpayPay = async () => {
         setIsProcessing(true);
         setPaymentError(null);
+        // Paying by hand asks for a fresh order; one still waiting to open on
+        // its own must not pop up over it.
+        pendingRazorpayOrderRef.current = null;
         try {
             pushCombinedPaymentInitiated(amount, selectedPsOptionIds.length, vendor, utmParams);
             const result = await enrollForProductPage({
@@ -147,87 +305,36 @@ export const CombinedPaymentStep = ({
                 },
                 utmParams,
             });
-
-            if (result.order_id && result.razorpay_key_id && razorpayRef.current) {
-                razorpayRef.current.openPayment({
-                    razorpayKeyId: result.razorpay_key_id,
-                    razorpayOrderId: result.order_id,
-                    amount: amount * 100,
-                    currency,
-                    contact: userPhone,
-                    email: userEmail,
-                });
-            }
+            // Usually the Razorpay order this button asked for. On a store page
+            // whose first selected course sells through another gateway the
+            // server answers with that gateway instead: a payment page to
+            // follow, or an enrolment that is already through.
+            await settleEnrollment(result, t('common.couldNotInitiatePayment'));
         } catch (err) {
-            const msg = err instanceof Error ? err.message : 'Could not initiate payment.';
-            setPaymentError(msg);
-            pushCombinedPaymentFailed(msg, vendor, utmParams);
+            failCheckout(err, t('common.couldNotInitiatePayment'));
         } finally {
             setIsProcessing(false);
         }
     };
 
-    const orderSummaryContent = (
-        <>
-            <div className="border-b border-gray-100 px-5 py-4">
-                <h2 className="font-semibold text-gray-900">Order Summary</h2>
-            </div>
-            <div className="divide-y divide-gray-100">
-                {selectedMappings.map((m) => {
-                    const mapping = pageData.mappings.find(
-                        (pm) => pm.ps_invite_payment_option_id === m.ps_invite_payment_option_id
-                    );
-                    const nameParts = [mapping?.package_name, mapping?.level_name, mapping?.session_name].filter(Boolean);
-                    const courseName = nameParts.join(' | ') || mapping?.payment_plan?.name || 'Course';
-                    return (
-                        <div key={m.ps_invite_payment_option_id} className="px-5 py-3">
-                            <p className="mb-1 text-xs font-semibold text-gray-800 leading-snug">{courseName}</p>
-                            <div className="flex justify-between text-sm text-gray-500">
-                                <span>{mapping?.payment_plan?.name}</span>
-                                <span className="font-medium text-gray-900">
-                                    {m.amount > 0 ? `${currency} ${m.amount.toLocaleString()}` : 'Free'}
-                                </span>
-                            </div>
-                        </div>
-                    );
-                })}
-            </div>
-            <div className="space-y-2 border-t border-gray-100 px-5 py-4">
-                {discountAmount > 0 && (
-                    <div className="flex justify-between text-sm text-green-600">
-                        <span>Coupon ({couponCode})</span>
-                        <span>− {currency} {discountAmount.toLocaleString()}</span>
-                    </div>
-                )}
-                {subtotal !== amount && (
-                    <div className="flex justify-between text-sm text-gray-400 line-through">
-                        <span>Subtotal</span>
-                        <span>{currency} {subtotal.toLocaleString()}</span>
-                    </div>
-                )}
-                <div className="flex justify-between pt-1 text-base font-bold text-gray-900">
-                    <span>Total</span>
-                    <span>{currency} {amount.toLocaleString()}</span>
-                </div>
-                <p className="text-end text-xs text-gray-400">All prices in {currency}</p>
-            </div>
-        </>
-    );
-
     return (
         <>
-            {/* Two-column body */}
-            <div className="mx-auto max-w-3xl px-4 py-8 lg:flex lg:items-start lg:gap-8">
-                {/* Left: payment form */}
-                <div className="min-w-0 flex-1">
-                    {/* Order summary — mobile only, shown above the payment form */}
-                    <div className="mb-6 overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm lg:hidden">
-                        {orderSummaryContent}
-                    </div>
-
-                    <h1 className="mb-1 text-xl font-bold text-gray-900">Payment</h1>
-                    <p className="mb-6 text-sm text-gray-500">
-                        Complete your enrollment for {selectedPsOptionIds.length} course{selectedPsOptionIds.length !== 1 ? 's' : ''}
+            {/* Line items and totals live in CheckoutLayout's OrderSummaryPanel,
+                which is on screen throughout checkout — this step shows only
+                the payment action itself. */}
+            <div className="px-5 py-6 sm:px-6">
+                <div className="min-w-0">
+                    <h1 className="mb-1 text-lg font-bold text-gray-900">{t('combinedPaymentStep.title')}</h1>
+                    <p className="mb-6 text-caption text-gray-500">
+                        {t('combinedPaymentStep.completeEnrollmentFor', {
+                            count: selectedPsOptionIds.length,
+                            course: courseTermFor(selectedPsOptionIds.length),
+                        })}
+                        {' · '}
+                        {t('combinedPaymentStep.amountPayable', {
+                            currency,
+                            amount: amount.toLocaleString(i18n.language),
+                        })}
                     </p>
 
                     {paymentError && (
@@ -248,31 +355,31 @@ export const CombinedPaymentStep = ({
                                 className="flex w-full items-center justify-center gap-2 rounded-xl bg-green-600 px-5 py-3 text-sm font-semibold text-white transition-opacity hover:opacity-90 disabled:opacity-60"
                             >
                                 {isProcessing ? (
-                                    <><SpinnerGap className="size-4 animate-spin" /> Completing your enrollment…</>
+                                    <><SpinnerGap className="size-4 animate-spin" /> {t('combinedPaymentStep.completingEnrollment')}</>
                                 ) : (
-                                    'Retry Enrollment'
+                                    t('combinedPaymentStep.retryEnrollment')
                                 )}
                             </button>
                         ) : (
                             <div className="flex w-full items-center justify-center gap-2 rounded-xl bg-green-600 px-5 py-3 text-sm font-semibold text-white">
-                                <SpinnerGap className="size-4 animate-spin" /> Completing your enrollment…
+                                <SpinnerGap className="size-4 animate-spin" /> {t('combinedPaymentStep.completingEnrollment')}
                             </div>
                         )
-                    ) : vendor === 'RAZORPAY' ? (
+                    ) : showsRazorpayCheckout ? (
                         <>
                             <RazorpayCheckoutForm
-                                ref={razorpayRef}
+                                ref={attachRazorpayCheckout}
                                 error={paymentError}
                                 amount={amount}
                                 currency={currency}
                                 userName={userName}
                                 courseName={pageData.name}
-                                courseDescription={`Enrollment for ${selectedPsOptionIds.length} course(s)`}
+                                courseDescription={t('combinedPaymentStep.courseDescriptionForGateway', {
+                                    count: selectedPsOptionIds.length,
+                                    course: courseTermFor(selectedPsOptionIds.length),
+                                })}
                                 onPaymentReady={handleRazorpaySuccess}
-                                onError={(err) => {
-                                    setPaymentError(err);
-                                    setIsProcessing(false);
-                                }}
+                                onError={handleRazorpayError}
                                 isProcessing={isProcessing}
                             />
                             <button
@@ -283,9 +390,9 @@ export const CombinedPaymentStep = ({
                                 style={{ backgroundColor: primaryColor }}
                             >
                                 {isProcessing ? (
-                                    <><SpinnerGap className="size-4 animate-spin" /> Opening payment...</>
+                                    <><SpinnerGap className="size-4 animate-spin" /> {t('combinedPaymentStep.openingPayment')}</>
                                 ) : (
-                                    <>Pay {currency} {amount.toLocaleString()}</>
+                                    t('common.pay', { currency, amount: amount.toLocaleString(i18n.language) })
                                 )}
                             </button>
                         </>
@@ -298,9 +405,9 @@ export const CombinedPaymentStep = ({
                             style={{ backgroundColor: primaryColor }}
                         >
                             {isProcessing ? (
-                                <><SpinnerGap className="size-4 animate-spin" /> Processing...</>
+                                <><SpinnerGap className="size-4 animate-spin" /> {t('common.processing')}</>
                             ) : (
-                                <>Pay {currency} {amount.toLocaleString()}</>
+                                t('common.pay', { currency, amount: amount.toLocaleString(i18n.language) })
                             )}
                         </button>
                     )}
@@ -314,20 +421,13 @@ export const CombinedPaymentStep = ({
                                 className="flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-700 disabled:opacity-40"
                             >
                                 <ArrowLeft className="size-4" />
-                                Back
+                                {t('common.back')}
                             </button>
                         ) : <div />}
                         <div className="flex items-center gap-1.5 text-xs text-gray-400">
                             <ShieldCheck className="size-3.5" />
-                            Secured payment
+                            {t('common.securedPayment')}
                         </div>
-                    </div>
-                </div>
-
-                {/* Right: order summary (desktop only) */}
-                <div className="hidden lg:mt-0 lg:block lg:w-72 lg:shrink-0">
-                    <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">
-                        {orderSummaryContent}
                     </div>
                 </div>
             </div>

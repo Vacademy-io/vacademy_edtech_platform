@@ -1,0 +1,52 @@
+{
+    "loading": "جارٍ تحميل المجموعات…",
+    "header": {
+        "title": "مجموعات المستشارين",
+        "description": "تجمع المجموعة المستشارين وتحدد كيفية تعيين العملاء المحتملين من حملاتها تلقائيًا. يمكن أن تنتمي كل حملة إلى مجموعة واحدة فقط.",
+        "createPool": "+ إنشاء مجموعة"
+    },
+    "emptyState": {
+        "message": "لا توجد مجموعات بعد. أنشئ مجموعتك الأولى لبدء التعيين التلقائي للعملاء المحتملين.",
+        "createPool": "إنشاء مجموعة"
+    },
+    "modes": {
+        "manual": "يدوي",
+        "roundRobin": "تناوب دوري",
+        "timeBased": "قائم على الوقت"
+    },
+    "card": {
+        "campaignsCount_zero": "لا توجد حملات ({{count}})",
+        "campaignsCount_one": "حملة واحدة ({{count}})",
+        "campaignsCount_two": "حملتان ({{count}})",
+        "campaignsCount_few": "{{count}} حملات",
+        "campaignsCount_many": "{{count}} حملة",
+        "campaignsCount_other": "{{count}} حملة",
+        "counselorsCount_zero": "لا يوجد مستشارون ({{count}})",
+        "counselorsCount_one": "مستشار واحد ({{count}})",
+        "counselorsCount_two": "مستشاران ({{count}})",
+        "counselorsCount_few": "{{count}} مستشارين",
+        "counselorsCount_many": "{{count}} مستشارًا",
+        "counselorsCount_other": "{{count}} مستشار",
+        "actionsAriaLabel": "إجراءات المجموعة",
+        "edit": "تعديل",
+        "triggerWorkflow": "تشغيل سير العمل",
+        "delete": "حذف"
+    },
+    "deleteDialog": {
+        "title": "حذف مجموعة \"{{name}}\"؟",
+        "description": "هذا يزيل المجموعة نهائيًا، وجدول نوباتها، وجميع إعدادات الأعضاء. لا يتأثر المستشارون المعينون للعملاء المحتملين الحاليين؛ لن يتم تعيين العملاء المحتملين الجدد على حملات هذه المجموعة تلقائيًا بعد الآن.",
+        "campaignsAttachedWarning_zero": "لا تزال هذه المجموعة تحتوي على {{count}} حملة مرفقة، لذا لا حاجة لإزالة أي شيء.",
+        "campaignsAttachedWarning_one": "لا تزال هذه المجموعة تحتوي على {{count}} حملة واحدة مرفقة. يجب إزالة جميع الحملات من المجموعة أولاً.",
+        "campaignsAttachedWarning_two": "لا تزال هذه المجموعة تحتوي على {{count}} حملتين مرفقتين. يجب إزالة جميع الحملات من المجموعة أولاً.",
+        "campaignsAttachedWarning_few": "لا تزال هذه المجموعة تحتوي على {{count}} حملات مرفقة. يجب إزالة جميع الحملات من المجموعة أولاً.",
+        "campaignsAttachedWarning_many": "لا تزال هذه المجموعة تحتوي على {{count}} حملة مرفقة. يجب إزالة جميع الحملات من المجموعة أولاً.",
+        "campaignsAttachedWarning_other": "لا تزال هذه المجموعة تحتوي على {{count}} حملة مرفقة. يجب إزالة جميع الحملات من المجموعة أولاً.",
+        "cancel": "إلغاء",
+        "deleting": "جارٍ الحذف…",
+        "delete": "حذف"
+    },
+    "toasts": {
+        "deleted": "تم حذف المجموعة \"{{name}}\"",
+        "deleteFailed": "فشل حذف المجموعة"
+    }
+}

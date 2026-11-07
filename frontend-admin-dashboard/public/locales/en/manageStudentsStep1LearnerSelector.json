@@ -1,0 +1,26 @@
+{
+    "summary": {
+        "learnersSelected_one": "{{count}} learner selected",
+        "learnersSelected_other": "{{count}} learners selected"
+    },
+    "chip": {
+        "editing": "(editing…)",
+        "newUser": "(new user)",
+        "editTitle": "Edit",
+        "removeTitle": "Remove"
+    },
+    "tabs": {
+        "search": "Search Existing",
+        "fromCourse": "From {{term}}",
+        "csv": "Import CSV",
+        "manual": "Add Manually"
+    },
+    "search": {
+        "placeholder": "Search by name, email, or username…",
+        "searching": "Searching…",
+        "added": "Added",
+        "addAction": "+ Add",
+        "noResults": "No students found matching \"{{query}}\"",
+        "minChars": "Type at least 2 characters to search"
+    }
+}

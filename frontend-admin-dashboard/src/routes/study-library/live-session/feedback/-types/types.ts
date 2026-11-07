@@ -40,6 +40,8 @@ export interface LiveClassFeedbackSearchParams {
     startDate: string; // yyyy-MM-dd
     endDate: string; // yyyy-MM-dd
     searchQuery: string;
+    /** Only feedback whose primary star rating is strictly below this; null = no rating filter. */
+    ratingBelow: number | null;
     page: number;
     size: number;
 }

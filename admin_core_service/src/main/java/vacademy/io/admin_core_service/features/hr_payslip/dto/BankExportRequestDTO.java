@@ -15,5 +15,5 @@ import lombok.NoArgsConstructor;
 public class BankExportRequestDTO {
 
     private String payrollRunId;
-    private String format; // CSV or XLSX
+    private String format; // CSV, XLSX, or bank text templates: HDFC, ICICI, SBI
 }

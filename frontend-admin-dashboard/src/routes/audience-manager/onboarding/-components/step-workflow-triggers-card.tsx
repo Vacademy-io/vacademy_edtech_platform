@@ -7,7 +7,8 @@
  * Only usable once the step already exists (editing, not creating) — a
  * trigger needs a real step id to attach to.
  */
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
 import {
     Select,
@@ -24,7 +25,7 @@ import { fetchInstituteWorkflows, type InstituteWorkflowOption } from '@/service
 import {
     fetchOnboardingStepTriggers,
     saveOnboardingStepTriggers,
-    ONBOARDING_STEP_TRIGGER_EVENTS,
+    buildOnboardingStepTriggerEvents,
     type OnboardingStepTrigger,
     type OnboardingStepTriggerEvent,
 } from '../-services/onboarding-service';
@@ -41,6 +42,8 @@ interface TriggerRow {
 }
 
 export function StepWorkflowTriggersCard({ instituteId, flowId, stepId }: StepWorkflowTriggersCardProps) {
+    const { t } = useTranslation('audienceManagerOnboardingService');
+    const triggerEvents = useMemo(() => buildOnboardingStepTriggerEvents(t), [t]);
     const [workflows, setWorkflows] = useState<InstituteWorkflowOption[]>([]);
     const [rows, setRows] = useState<TriggerRow[]>([]);
     const [loading, setLoading] = useState(true);
@@ -132,7 +135,7 @@ export function StepWorkflowTriggersCard({ instituteId, flowId, stepId }: StepWo
                                         <SelectValue placeholder="When…" />
                                     </SelectTrigger>
                                     <SelectContent>
-                                        {ONBOARDING_STEP_TRIGGER_EVENTS.map((e) => (
+                                        {triggerEvents.map((e) => (
                                             <SelectItem key={e.key} value={e.key}>
                                                 {e.label}
                                             </SelectItem>

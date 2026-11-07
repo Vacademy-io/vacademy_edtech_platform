@@ -1,0 +1,108 @@
+{
+    "history": {
+        "empty": "Aucune utilisation de l’IA pour l’instant",
+        "emptyFiltered": "Aucune utilisation ne correspond à ces filtres",
+        "error": "Impossible de charger l’historique d’utilisation. Veuillez réessayer plus tard.",
+        "prev": "Préc.",
+        "next": "Suiv.",
+        "pageOf": "{{page}} / {{pages}}",
+        "balanceAfter": "Solde : {{balance}}",
+        "otherUsage": "Utilisation de l’IA",
+        "showDetails": "Afficher les détails",
+        "hideDetails": "Masquer les détails"
+    },
+    "filters": {
+        "allUsers": "Tous les utilisateurs",
+        "allRoles": "Tous les rôles",
+        "allFeatures": "Toutes les fonctionnalités",
+        "user": "Utilisateur",
+        "role": "Rôle",
+        "feature": "Fonctionnalité",
+        "clear": "Effacer",
+        "export": "Exporter en CSV",
+        "exporting": "Exportation…",
+        "exportFailed": "Impossible d’exporter l’utilisation",
+        "exportFailedHint": "Veuillez réessayer dans un instant."
+    },
+    "amount": {
+        "included": "Inclus",
+        "free": "Gratuit",
+        "ownKey": "Votre clé",
+        "notCharged": "Non facturé (solde faible)",
+        "refunded": "{{credits}} remboursés",
+        "includedInPlan": "Inclus dans le forfait",
+        "fromAllowance": "Sur le crédit du forfait",
+        "splitAllowance": "{{credits}} sur le crédit du forfait"
+    },
+    "details": {
+        "promptTokens": "Jetons d’entrée",
+        "completionTokens": "Jetons de sortie",
+        "cachedTokens": "Jetons en cache",
+        "images": "Images",
+        "seconds": "Secondes",
+        "minutes": "Minutes",
+        "characters": "Caractères",
+        "listCredits": "Prix catalogue",
+        "charged": "Facturé",
+        "refundedCredits": "Remboursé",
+        "batch": "Lot",
+        "model": "Modèle",
+        "onBehalfOf": "Pour",
+        "byUser": "Par",
+        "realCost": "Coût fournisseur (équipe uniquement)",
+        "status": "Statut",
+        "fromAllowance": "Sur le crédit du forfait"
+    },
+    "ledger": {
+        "usage": "Utilisation",
+        "grant": "Attribution",
+        "adminGrant": "Attribution admin",
+        "adminDeduction": "Ajustement admin",
+        "refund": "Remboursement",
+        "purchase": "Achat",
+        "transaction": "Transaction"
+    },
+    "roleClass": {
+        "ADMIN": "Admin",
+        "TEACHER": "Enseignant",
+        "STAFF": "Personnel",
+        "PARENT": "Parent",
+        "LEARNER": "Apprenant",
+        "SYSTEM": "Système",
+        "API_KEY": "Clé API",
+        "PUBLIC": "Public",
+        "UNKNOWN": "Inconnu"
+    },
+    "surface": {
+        "ADMIN_APP": "Application admin",
+        "LEARNER_APP": "Application apprenant",
+        "PUBLIC": "Page publique",
+        "PARTNER_API": "API partenaire",
+        "WHATSAPP": "WhatsApp",
+        "PHONE": "Téléphone",
+        "SCHEDULED": "Planifié",
+        "INTERNAL": "Interne",
+        "UNKNOWN": "Inconnu"
+    },
+    "analytics": {
+        "byFeature": "Par fonctionnalité",
+        "byRole": "Par rôle",
+        "topUsers": "Principaux utilisateurs",
+        "dailyTrend": "Tendance quotidienne",
+        "charged": "Facturé",
+        "list": "Prix catalogue",
+        "credits": "{{credits}} crédits",
+        "events": "Utilisations : {{count}}",
+        "total": "{{credits}} crédits · utilisations : {{events}}",
+        "empty": "Aucune utilisation de l’IA sur cette période",
+        "error": "Impossible de charger les analyses. Veuillez réessayer plus tard.",
+        "dayTooltip": "{{date}} : {{credits}}"
+    },
+    "plan": {
+        "grace": "Période de grâce",
+        "periodEnds": "Fin de période le {{date}}",
+        "allowance": "Crédit du forfait",
+        "allowanceLeft": "{{remaining}} sur {{total}} restants",
+        "includedCount": "Fonctionnalités incluses : {{count}}"
+    }
+}

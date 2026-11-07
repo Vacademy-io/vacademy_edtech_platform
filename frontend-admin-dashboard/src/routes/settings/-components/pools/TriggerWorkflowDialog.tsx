@@ -17,6 +17,8 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 import { v4 as uuidv4 } from 'uuid';
 import { toast } from 'sonner';
 import {
@@ -59,7 +61,7 @@ import { createMessageTemplate } from '@/services/message-template-service';
 import { useLeadStatuses } from '@/hooks/use-lead-statuses';
 import { getUserId } from '@/utils/userDetails';
 import type { WorkflowBuilderDTO } from '@/types/workflow/workflow-types';
-import { SAMPLE_TEMPLATES } from '@/routes/workflow/create/-components/sample-email-templates';
+import { buildSampleTemplates } from '@/routes/workflow/create/-components/sample-email-templates';
 
 const LEAD_STATUS_CHANGED = 'LEAD_STATUS_CHANGED';
 /** Sentinel for the "any status change" option in the status picker. */
@@ -81,14 +83,22 @@ type Channel = 'EMAIL' | 'WHATSAPP';
 // name; the values are the lead user's name / email / mobile, not a separate parent).
 type Recipient = 'counselor' | 'lead';
 
-const LEAD_EVENTS: { value: string; label: string }[] = [
-    { value: 'LEAD_ASSIGNED_TO_COUNSELOR', label: 'Lead assigned to counselor' },
-    { value: 'LEAD_TAT_REMINDER_BEFORE', label: 'Lead TAT reminder (before breach)' },
-    { value: 'LEAD_TAT_OVERDUE', label: 'Lead TAT overdue' },
-    { value: 'FOLLOW_UP_DUE', label: 'Follow-up due' },
-    { value: 'FOLLOW_UP_OVERDUE', label: 'Follow-up overdue' },
-    { value: 'LEAD_STATUS_CHANGED', label: 'Lead status changed' },
-];
+function buildLeadEvents(t: TFunction): { value: string; label: string }[] {
+    return [
+        {
+            value: 'LEAD_ASSIGNED_TO_COUNSELOR',
+            label: t('event.options.leadAssignedToCounselor'),
+        },
+        {
+            value: 'LEAD_TAT_REMINDER_BEFORE',
+            label: t('event.options.leadTatReminderBefore'),
+        },
+        { value: 'LEAD_TAT_OVERDUE', label: t('event.options.leadTatOverdue') },
+        { value: 'FOLLOW_UP_DUE', label: t('event.options.followUpDue') },
+        { value: 'FOLLOW_UP_OVERDUE', label: t('event.options.followUpOverdue') },
+        { value: LEAD_STATUS_CHANGED, label: t('event.options.leadStatusChanged') },
+    ];
+}
 
 export function TriggerWorkflowDialog({
     open,
@@ -97,7 +107,14 @@ export function TriggerWorkflowDialog({
     poolId,
     scopeLabel,
 }: TriggerWorkflowDialogProps) {
+    const { t } = useTranslation('settingsTriggerWorkflow');
+    const { t: tSampleTemplate } = useTranslation('workflowSampleEmailTemplates');
+    const SAMPLE_TEMPLATES = useMemo(
+        () => buildSampleTemplates(tSampleTemplate),
+        [tSampleTemplate]
+    );
     const queryClient = useQueryClient();
+    const leadEvents = buildLeadEvents(t);
 
     const [actionType, setActionType] = useState<ActionType | null>(null);
     const [event, setEvent] = useState('');
@@ -158,7 +175,7 @@ export function TriggerWorkflowDialog({
         mutationFn: async () => {
             const sample = SAMPLE_TEMPLATES[event];
             if (!sample) {
-                throw new Error('No sample template available for this event.');
+                throw new Error(t('toasts.noSampleTemplate'));
             }
             return createMessageTemplate({
                 name: sample.name,
@@ -169,14 +186,14 @@ export function TriggerWorkflowDialog({
             });
         },
         onSuccess: (created) => {
-            toast.success(`Sample template "${created.name}" created`);
+            toast.success(t('toasts.sampleCreated', { name: created.name }));
             queryClient.invalidateQueries({
                 queryKey: ['trigger-workflow-templates', instituteId, channel],
             });
             setSelectedTemplate(created.name);
         },
         onError: (err) => {
-            toast.error(err instanceof Error ? err.message : 'Failed to create template');
+            toast.error(err instanceof Error ? err.message : t('toasts.sampleCreateFailed'));
         },
     });
 
@@ -187,11 +204,11 @@ export function TriggerWorkflowDialog({
                 queryKey: ['GET_ACTIVE_WORKFLOWS_WITH_SCHEDULES'],
                 refetchType: 'all',
             });
-            toast.success('Workflow created');
+            toast.success(t('toasts.workflowCreated'));
             onOpenChange(false);
         },
         onError: (err) => {
-            toast.error(err instanceof Error ? err.message : 'Failed to create workflow');
+            toast.error(err instanceof Error ? err.message : t('toasts.workflowCreateFailed'));
         },
     });
 
@@ -347,11 +364,11 @@ export function TriggerWorkflowDialog({
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent className="max-h-screen max-w-lg overflow-y-auto">
                 <DialogHeader>
-                    <DialogTitle>Trigger workflow</DialogTitle>
+                    <DialogTitle>{t('dialog.title')}</DialogTitle>
                     <DialogDescription>
-                        Run an automation for{' '}
-                        <span className="font-semibold">&ldquo;{scopeLabel}&rdquo;</span> when a lead
-                        event fires.
+                        {t('dialog.descriptionPrefix')}{' '}
+                        <span className="font-semibold">&ldquo;{scopeLabel}&rdquo;</span>{' '}
+                        {t('dialog.descriptionSuffix')}
                     </DialogDescription>
                 </DialogHeader>
 
@@ -359,22 +376,22 @@ export function TriggerWorkflowDialog({
                     {/* Step 1 — what do you want to do? */}
                     <div className="space-y-1.5">
                         <Label className="text-sm font-medium">
-                            What do you want to do? <span className="text-danger-500">*</span>
+                            {t('actionType.label')} <span className="text-danger-500">*</span>
                         </Label>
                         <div className="grid grid-cols-2 gap-2">
                             <ChoiceCard
                                 selected={actionType === 'communication'}
                                 onClick={() => setActionType('communication')}
                                 icon={<Lightning size={18} />}
-                                title="Communication"
-                                description="Send an email or WhatsApp message."
+                                title={t('actionType.communication.title')}
+                                description={t('actionType.communication.description')}
                             />
                             <ChoiceCard
                                 selected={actionType === 'payload'}
                                 onClick={() => setActionType('payload')}
                                 icon={<Code size={18} />}
-                                title="Paste data to payload"
-                                description="POST the event data to a URL."
+                                title={t('actionType.payload.title')}
+                                description={t('actionType.payload.description')}
                             />
                         </div>
                     </div>
@@ -383,14 +400,14 @@ export function TriggerWorkflowDialog({
                     {actionType && (
                         <div className="space-y-1.5">
                             <Label className="text-sm font-medium">
-                                Trigger on which event? <span className="text-danger-500">*</span>
+                                {t('event.label')} <span className="text-danger-500">*</span>
                             </Label>
                             <Select value={event} onValueChange={setEvent}>
                                 <SelectTrigger>
-                                    <SelectValue placeholder="Select a lead event" />
+                                    <SelectValue placeholder={t('event.placeholder')} />
                                 </SelectTrigger>
                                 <SelectContent>
-                                    {LEAD_EVENTS.map((e) => (
+                                    {leadEvents.map((e) => (
                                         <SelectItem key={e.value} value={e.value}>
                                             {e.label}
                                         </SelectItem>
@@ -403,13 +420,15 @@ export function TriggerWorkflowDialog({
                     {/* Lead status changed — pick which status to fire on (else fires on any change) */}
                     {actionType && event === LEAD_STATUS_CHANGED && (
                         <div className="space-y-1.5">
-                            <Label className="text-sm font-medium">When status changes to</Label>
+                            <Label className="text-sm font-medium">{t('statusGate.label')}</Label>
                             <Select value={targetStatus} onValueChange={setTargetStatus}>
                                 <SelectTrigger>
-                                    <SelectValue placeholder="Any status" />
+                                    <SelectValue placeholder={t('statusGate.placeholder')} />
                                 </SelectTrigger>
                                 <SelectContent>
-                                    <SelectItem value={ANY_STATUS}>Any status change</SelectItem>
+                                    <SelectItem value={ANY_STATUS}>
+                                        {t('statusGate.anyStatusChange')}
+                                    </SelectItem>
                                     {leadStatuses.map((s) => (
                                         <SelectItem key={s.id} value={s.status_key}>
                                             {s.label}
@@ -417,10 +436,7 @@ export function TriggerWorkflowDialog({
                                     ))}
                                 </SelectContent>
                             </Select>
-                            <p className="text-xs text-muted-foreground">
-                                Matches the lead&apos;s new status. Pick a status to fire only on that
-                                change, or keep &ldquo;Any status change&rdquo;.
-                            </p>
+                            <p className="text-xs text-muted-foreground">{t('statusGate.hint')}</p>
                         </div>
                     )}
 
@@ -429,7 +445,7 @@ export function TriggerWorkflowDialog({
                         <>
                             <div className="space-y-1.5">
                                 <Label className="text-sm font-medium">
-                                    Channel <span className="text-danger-500">*</span>
+                                    {t('channel.label')} <span className="text-danger-500">*</span>
                                 </Label>
                                 <div className="grid grid-cols-2 gap-2">
                                     <ChoiceCard
@@ -439,7 +455,7 @@ export function TriggerWorkflowDialog({
                                             setSelectedTemplate('');
                                         }}
                                         icon={<EnvelopeSimple size={18} />}
-                                        title="Email"
+                                        title={t('channel.email')}
                                     />
                                     <ChoiceCard
                                         selected={channel === 'WHATSAPP'}
@@ -448,14 +464,14 @@ export function TriggerWorkflowDialog({
                                             setSelectedTemplate('');
                                         }}
                                         icon={<WhatsappLogo size={18} />}
-                                        title="WhatsApp"
+                                        title={t('channel.whatsapp')}
                                     />
                                 </div>
                             </div>
 
                             <div className="space-y-1.5">
                                 <Label className="text-sm font-medium">
-                                    Send notification to{' '}
+                                    {t('recipient.label')}{' '}
                                     <span className="text-danger-500">*</span>
                                 </Label>
                                 <Select
@@ -467,11 +483,9 @@ export function TriggerWorkflowDialog({
                                     </SelectTrigger>
                                     <SelectContent>
                                         <SelectItem value="counselor">
-                                            Assigned counsellor (default)
+                                            {t('recipient.counselor')}
                                         </SelectItem>
-                                        <SelectItem value="lead">
-                                            Lead&apos;s own contact
-                                        </SelectItem>
+                                        <SelectItem value="lead">{t('recipient.lead')}</SelectItem>
                                     </SelectContent>
                                 </Select>
                             </div>
@@ -479,7 +493,7 @@ export function TriggerWorkflowDialog({
                             <div className="space-y-1.5">
                                 <div className="flex items-center justify-between">
                                     <Label className="text-sm font-medium">
-                                        Template <span className="text-danger-500">*</span>
+                                        {t('template.label')} <span className="text-danger-500">*</span>
                                     </Label>
                                     {channel === 'EMAIL' && !!SAMPLE_TEMPLATES[event] && (
                                         <button
@@ -490,8 +504,8 @@ export function TriggerWorkflowDialog({
                                         >
                                             <Sparkle size={14} weight="fill" />
                                             {createSampleTemplateMutation.isPending
-                                                ? 'Creating sample…'
-                                                : 'Create sample template'}
+                                                ? t('template.creatingSample')
+                                                : t('template.createSample')}
                                         </button>
                                     )}
                                 </div>
@@ -500,17 +514,15 @@ export function TriggerWorkflowDialog({
                                     value={selectedTemplate}
                                     onChange={setSelectedTemplate}
                                     loading={templatesLoading}
-                                    placeholder="Select a template"
-                                    emptyText="No template matches your search."
+                                    placeholder={t('template.placeholder')}
+                                    emptyText={t('template.emptyText')}
                                     portal={false}
                                 />
                                 {templates.length === 0 && !templatesLoading && (
                                     <p className="text-xs text-warning-600">
-                                        No {channel === 'EMAIL' ? 'email' : 'WhatsApp'} templates
-                                        found.{' '}
-                                        {channel === 'WHATSAPP'
-                                            ? 'Create an approved WhatsApp template first.'
-                                            : 'Click "Create sample template" above for a ready-made starter.'}
+                                        {channel === 'EMAIL'
+                                            ? t('template.noneFoundEmail')
+                                            : t('template.noneFoundWhatsapp')}
                                     </p>
                                 )}
                             </div>
@@ -521,17 +533,14 @@ export function TriggerWorkflowDialog({
                     {actionType === 'payload' && event && (
                         <div className="space-y-1.5">
                             <Label className="text-sm font-medium">
-                                Destination URL <span className="text-danger-500">*</span>
+                                {t('payload.label')} <span className="text-danger-500">*</span>
                             </Label>
                             <Input
                                 value={payloadUrl}
                                 onChange={(e) => setPayloadUrl(e.target.value)}
-                                placeholder="https://example.com/webhook"
+                                placeholder={t('payload.placeholder')}
                             />
-                            <p className="text-xs text-muted-foreground">
-                                The event&apos;s context (lead, counselor, pool, etc.) is POSTed as
-                                JSON.
-                            </p>
+                            <p className="text-xs text-muted-foreground">{t('payload.hint')}</p>
                         </div>
                     )}
 
@@ -540,24 +549,26 @@ export function TriggerWorkflowDialog({
                         <>
                             <div className="space-y-1.5">
                                 <Label className="text-sm font-medium">
-                                    Workflow name <span className="text-danger-500">*</span>
+                                    {t('name.label')} <span className="text-danger-500">*</span>
                                 </Label>
                                 <Input
                                     value={name}
                                     onChange={(e) => setName(e.target.value)}
-                                    placeholder="e.g. Notify parent on follow-up due"
+                                    placeholder={t('name.placeholder')}
                                 />
                             </div>
                             <div className="space-y-1.5">
                                 <Label className="text-sm font-medium">
-                                    Description{' '}
-                                    <span className="text-xs text-muted-foreground">(optional)</span>
+                                    {t('description.label')}{' '}
+                                    <span className="text-xs text-muted-foreground">
+                                        {t('description.optional')}
+                                    </span>
                                 </Label>
                                 <Textarea
                                     value={description}
                                     onChange={(e) => setDescription(e.target.value)}
                                     rows={2}
-                                    placeholder="What does this workflow do?"
+                                    placeholder={t('description.placeholder')}
                                 />
                             </div>
                         </>
@@ -571,7 +582,7 @@ export function TriggerWorkflowDialog({
                         onClick={() => onOpenChange(false)}
                         disable={createWorkflowMutation.isPending}
                     >
-                        Cancel
+                        {t('footer.cancel')}
                     </MyButton>
                     <MyButton
                         buttonType="primary"
@@ -579,7 +590,7 @@ export function TriggerWorkflowDialog({
                         onClick={() => createWorkflowMutation.mutate()}
                         disable={!canSubmit || createWorkflowMutation.isPending}
                     >
-                        {createWorkflowMutation.isPending ? 'Creating…' : 'Create workflow'}
+                        {createWorkflowMutation.isPending ? t('footer.creating') : t('footer.create')}
                     </MyButton>
                 </DialogFooter>
             </DialogContent>

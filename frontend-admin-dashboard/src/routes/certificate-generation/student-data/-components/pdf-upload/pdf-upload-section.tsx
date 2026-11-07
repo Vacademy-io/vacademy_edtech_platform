@@ -1,4 +1,5 @@
 import { useState, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useDropzone } from 'react-dropzone';
 import { ImageTemplate } from '@/types/certificate/certificate-types';
 import { MyButton } from '@/components/design-system/button';
@@ -29,6 +30,7 @@ export const PdfUploadSection = ({
     uploadedTemplate,
     isLoading = false,
 }: PdfUploadSectionProps) => {
+    const { t, i18n } = useTranslation('certificateGenerationPdfUploadSection');
     const [isProcessing, setIsProcessing] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [processingStep, setProcessingStep] = useState<string>('');
@@ -36,18 +38,18 @@ export const PdfUploadSection = ({
 
     // Convert PDF to image using canvas
     const convertPdfToImage = useCallback(async (file: File): Promise<ImageTemplate> => {
-        setProcessingStep('Reading PDF file...');
+        setProcessingStep(t('processingSteps.readingPdf'));
 
         // Read file as ArrayBuffer
         const arrayBuffer = await file.arrayBuffer();
 
-        setProcessingStep('Loading PDF document...');
+        setProcessingStep(t('processingSteps.loadingPdf'));
 
         // Load PDF document
         const pdf = await pdfjsLib.getDocument(arrayBuffer).promise;
 
         // For certificates, we typically only need the first page
-        setProcessingStep('Rendering PDF to image...');
+        setProcessingStep(t('processingSteps.renderingPdf'));
         const page = await pdf.getPage(1);
 
         // Get viewport with high DPI for better quality
@@ -71,7 +73,7 @@ export const PdfUploadSection = ({
             viewport: viewport,
         }).promise;
 
-        setProcessingStep('Converting to image format...');
+        setProcessingStep(t('processingSteps.convertingImage'));
 
         // Convert canvas to image data URL (PNG for better quality)
         const imageDataUrl = canvas.toDataURL('image/png', 1.0);
@@ -92,23 +94,23 @@ export const PdfUploadSection = ({
 
         setProcessingStep('');
         return template;
-    }, []);
+    }, [t]);
 
     // Convert image file to template
     const convertImageToTemplate = useCallback(async (file: File): Promise<ImageTemplate> => {
-        setProcessingStep('Loading image...');
+        setProcessingStep(t('processingSteps.loadingImage'));
 
         return new Promise((resolve, reject) => {
             const img = document.createElement('img');
 
             img.onload = () => {
-                setProcessingStep('Processing image...');
+                setProcessingStep(t('processingSteps.processingImage'));
 
                 // Create canvas to get image data
                 const canvas = document.createElement('canvas');
                 const ctx = canvas.getContext('2d');
                 if (!ctx) {
-                    reject(new Error('Failed to get canvas context'));
+                    reject(new Error(t('errors.canvasContextFailed')));
                     return;
                 }
 
@@ -140,7 +142,7 @@ export const PdfUploadSection = ({
             };
 
             img.onerror = () => {
-                reject(new Error('Failed to load image'));
+                reject(new Error(t('errors.loadImageFailed')));
             };
 
             // Load image from file
@@ -152,7 +154,7 @@ export const PdfUploadSection = ({
             };
             reader.readAsDataURL(file);
         });
-    }, []);
+    }, [t]);
 
     const processFile = useCallback(
         async (file: File): Promise<ImageTemplate> => {
@@ -172,14 +174,19 @@ export const PdfUploadSection = ({
             } catch (err) {
                 console.error('Error processing file:', err);
                 throw new Error(
-                    `Failed to process ${file.type === 'application/pdf' ? 'PDF' : 'image'} file. Please ensure it's a valid file.`
+                    t('errors.processFailed', {
+                        fileType:
+                            file.type === 'application/pdf'
+                                ? t('fileTypes.pdf')
+                                : t('fileTypes.image'),
+                    })
                 );
             } finally {
                 setIsProcessing(false);
                 setProcessingStep('');
             }
         },
-        [convertPdfToImage, convertImageToTemplate]
+        [convertPdfToImage, convertImageToTemplate, t]
     );
 
     const onDrop = useCallback(
@@ -193,10 +200,10 @@ export const PdfUploadSection = ({
                 const template = await processFile(file);
                 onImageTemplateUpload(template);
             } catch (err) {
-                setError(err instanceof Error ? err.message : 'Failed to upload file');
+                setError(err instanceof Error ? err.message : t('errors.uploadFailed'));
             }
         },
-        [processFile, onImageTemplateUpload]
+        [processFile, onImageTemplateUpload, t]
     );
 
     const { getRootProps, getInputProps, isDragActive, isDragReject } = useDropzone({
@@ -212,9 +219,7 @@ export const PdfUploadSection = ({
     });
 
     const removeTemplate = async () => {
-        const confirmed = window.confirm(
-            'Are you sure you want to remove this template? This will also clear all field mappings.'
-        );
+        const confirmed = window.confirm(t('readyCard.confirmRemove'));
 
         if (confirmed) {
             setIsRemoving(true);
@@ -233,12 +238,12 @@ export const PdfUploadSection = ({
     if (uploadedTemplate) {
         const fileExtension = uploadedTemplate.originalFileName.split('.').pop()?.toUpperCase() || uploadedTemplate.format.toUpperCase();
         const uploadedAt = new Date(uploadedTemplate.createdAt);
-        const uploadedDateLabel = uploadedAt.toLocaleDateString(undefined, {
+        const uploadedDateLabel = uploadedAt.toLocaleDateString(i18n.language, {
             month: 'short',
             day: 'numeric',
             year: 'numeric',
         });
-        const uploadedTimeLabel = uploadedAt.toLocaleTimeString(undefined, {
+        const uploadedTimeLabel = uploadedAt.toLocaleTimeString(i18n.language, {
             hour: 'numeric',
             minute: '2-digit',
         });
@@ -253,7 +258,7 @@ export const PdfUploadSection = ({
                         </span>
                         <div className="min-w-0">
                             <div className="truncate text-sm font-semibold text-neutral-800">
-                                Template ready
+                                {t('readyCard.title')}
                             </div>
                             <div className="truncate text-[11px] text-neutral-500">
                                 {uploadedTemplate.originalFileName}
@@ -266,7 +271,7 @@ export const PdfUploadSection = ({
                             className="inline-flex h-7 items-center gap-1 rounded-md border border-neutral-200 bg-white px-2.5 text-[11px] font-medium text-neutral-700 transition hover:bg-neutral-50"
                         >
                             <Eye className="size-3" />
-                            Preview
+                            {t('readyCard.preview')}
                         </button>
                         <button
                             type="button"
@@ -277,12 +282,12 @@ export const PdfUploadSection = ({
                             {isRemoving ? (
                                 <>
                                     <div className="size-3 animate-spin rounded-full border border-neutral-300 border-t-neutral-600" />
-                                    Removing
+                                    {t('readyCard.removing')}
                                 </>
                             ) : (
                                 <>
                                     <X className="size-3" />
-                                    Remove
+                                    {t('readyCard.remove')}
                                 </>
                             )}
                         </button>
@@ -294,7 +299,7 @@ export const PdfUploadSection = ({
                     <div className="overflow-hidden rounded-lg border border-neutral-200 bg-[linear-gradient(45deg,#f3f4f6_25%,transparent_25%,transparent_75%,#f3f4f6_75%),linear-gradient(45deg,#f3f4f6_25%,transparent_25%,transparent_75%,#f3f4f6_75%)] bg-[length:16px_16px] bg-[position:0_0,8px_8px]">
                             <img
                                 src={uploadedTemplate.imageDataUrl}
-                                alt="Certificate template preview"
+                                alt={t('readyCard.imageAlt')}
                                 className="h-auto max-h-72 w-full object-contain"
                             />
                     </div>
@@ -304,21 +309,23 @@ export const PdfUploadSection = ({
                 <dl className="grid grid-cols-2 gap-x-4 gap-y-2 px-4 py-3 text-[11px] sm:grid-cols-4">
                     <div className="min-w-0">
                         <dt className="font-medium uppercase tracking-wide text-neutral-400">
-                            Type
+                            {t('readyCard.typeLabel')}
                         </dt>
                         <dd className="mt-0.5 truncate text-neutral-700">
-                            {uploadedTemplate.sourceType === 'pdf' ? 'PDF → Image' : 'Image'}
+                            {uploadedTemplate.sourceType === 'pdf'
+                                ? t('readyCard.typePdf')
+                                : t('readyCard.typeImage')}
                         </dd>
                     </div>
                     <div className="min-w-0">
                         <dt className="font-medium uppercase tracking-wide text-neutral-400">
-                            Format
+                            {t('readyCard.formatLabel')}
                         </dt>
                         <dd className="mt-0.5 truncate text-neutral-700">{fileExtension}</dd>
                     </div>
                     <div className="min-w-0">
                         <dt className="font-medium uppercase tracking-wide text-neutral-400">
-                            Dimensions
+                            {t('readyCard.dimensionsLabel')}
                         </dt>
                         <dd className="mt-0.5 truncate text-neutral-700">
                             {uploadedTemplate.width} × {uploadedTemplate.height}
@@ -326,7 +333,7 @@ export const PdfUploadSection = ({
                     </div>
                     <div className="min-w-0">
                         <dt className="font-medium uppercase tracking-wide text-neutral-400">
-                            Uploaded
+                            {t('readyCard.uploadedLabel')}
                         </dt>
                         <dd className="mt-0.5 truncate text-neutral-700">
                             {uploadedDateLabel}
@@ -385,17 +392,17 @@ export const PdfUploadSection = ({
                     <div>
                         <p className="text-lg font-medium text-neutral-700">
                             {isProcessing
-                                ? processingStep || 'Processing file...'
+                                ? processingStep || t('dropzone.processingDefault')
                                 : isDragActive
                                   ? isDragReject
-                                      ? 'File type not supported'
-                                      : 'Drop file here'
-                                  : 'Upload Certificate Template'}
+                                      ? t('dropzone.fileTypeUnsupported')
+                                      : t('dropzone.dropHere')
+                                  : t('dropzone.uploadTitle')}
                         </p>
                         <p className="mt-1 text-sm text-neutral-500">
                             {isProcessing
-                                ? 'Please wait while we process your template'
-                                : 'Drag and drop your PDF or image file here, or click to browse'}
+                                ? t('dropzone.processingSubtitle')
+                                : t('dropzone.dragDropSubtitle')}
                         </p>
                     </div>
 
@@ -405,8 +412,8 @@ export const PdfUploadSection = ({
                             scale="medium"
                             className="pointer-events-none"
                         >
-                            <Image className="mr-2 size-4" />
-                            Choose Template File
+                            <Image className="me-2 size-4" />
+                            {t('dropzone.chooseFile')}
                         </MyButton>
                     )}
                 </div>
@@ -414,14 +421,14 @@ export const PdfUploadSection = ({
                 {/* Requirements */}
                 <div className="mt-6 rounded-lg bg-white/50 p-4">
                     <h4 className="mb-2 text-xs font-medium text-neutral-600">
-                        Supported formats:
+                        {t('requirements.title')}
                     </h4>
                     <ul className="space-y-1 text-xs text-neutral-500">
-                        <li>• PDF files (will be converted to image)</li>
-                        <li>• PNG images</li>
-                        <li>• JPG/JPEG images</li>
-                        <li>• Maximum file size: 50MB</li>
-                        <li>• Recommended: High resolution for better quality</li>
+                        <li>• {t('requirements.pdf')}</li>
+                        <li>• {t('requirements.png')}</li>
+                        <li>• {t('requirements.jpg')}</li>
+                        <li>• {t('requirements.maxSize')}</li>
+                        <li>• {t('requirements.recommendation')}</li>
                     </ul>
                 </div>
             </div>
@@ -434,7 +441,9 @@ export const PdfUploadSection = ({
                             <X className="size-4 text-red-600" />
                         </div>
                         <div>
-                            <h3 className="text-sm font-medium text-red-800">Upload Error</h3>
+                            <h3 className="text-sm font-medium text-red-800">
+                                {t('errors.title')}
+                            </h3>
                             <p className="mt-1 text-xs text-red-700">{error}</p>
                         </div>
                     </div>

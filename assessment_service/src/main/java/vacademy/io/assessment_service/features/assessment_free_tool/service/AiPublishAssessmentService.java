@@ -34,10 +34,8 @@ import java.util.UUID;
  * Publishes an AI-generated MCQ assessment (built from a class recording
  * transcript) into the assessment_service tables so learners can take it.
  *
- * Different from AssessmentFreeToolCreateService — that path is the
- * wizard's two-step create (assessment + sections) and intentionally
- * does NOT persist MCQ options. This service handles the full single-call
- * path required for AI-generated content: Assessment + Section +
+ * Handles the full single-call path required for AI-generated content
+ * (MCQ options included): Assessment + Section +
  * Question (with auto_evaluation_json wired to a pre-generated option UUID)
  * + Option rows + section mapping with markingJson.
  *

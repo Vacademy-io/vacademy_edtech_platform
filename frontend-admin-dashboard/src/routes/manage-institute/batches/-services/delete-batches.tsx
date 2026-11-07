@@ -1,5 +1,6 @@
 import { useQueryClient } from '@tanstack/react-query';
 import { useMutation } from '@tanstack/react-query';
+import { invalidateInstituteDetails } from '@/services/student-list-section/getInstituteDetails';
 import authenticatedAxiosInstance from '@/lib/auth/axiosInstance';
 import { DELETE_BATCHES } from '@/constants/urls';
 export const useDeleteBatches = () => {
@@ -13,7 +14,7 @@ export const useDeleteBatches = () => {
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['GET_INIT_STUDY_LIBRARY'] });
-            queryClient.invalidateQueries({ queryKey: ['GET_BOTH_INSTITUTE_APIS'] });
+            invalidateInstituteDetails(queryClient);
             queryClient.invalidateQueries({ queryKey: ['students'] });
             queryClient.invalidateQueries({ queryKey: ['GET_SESSION_DATA'] });
             queryClient.invalidateQueries({ queryKey: ['GET_BATCHES'] });

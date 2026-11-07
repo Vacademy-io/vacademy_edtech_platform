@@ -1,0 +1,123 @@
+{
+    "sections": {
+        "basicInformation": "المعلومات الأساسية",
+        "demographics": "البيانات الديموغرافية",
+        "identification": "إثبات الهوية",
+        "healthInformation": "المعلومات الصحية"
+    },
+    "fields": {
+        "fullName": {
+            "label": "الاسم الكامل",
+            "hint": "(حسب شهادة الميلاد)",
+            "placeholder": "أدخل الاسم الكامل للطالب"
+        },
+        "dateOfBirth": {
+            "label": "تاريخ الميلاد"
+        },
+        "gender": {
+            "label": "الجنس"
+        },
+        "nationality": {
+            "label": "الجنسية",
+            "placeholder": "اختر الجنسية"
+        },
+        "religion": {
+            "label": "الديانة",
+            "placeholder": "اختر"
+        },
+        "category": {
+            "label": "الفئة",
+            "placeholder": "اختر"
+        },
+        "bloodGroup": {
+            "label": "فصيلة الدم",
+            "placeholder": "اختر"
+        },
+        "motherTongue": {
+            "label": "اللغة الأم",
+            "placeholder": "اختر"
+        },
+        "languagesKnown": {
+            "label": "اللغات المعروفة",
+            "placeholder": "مثال: الإنجليزية، الهندية، المراثية"
+        },
+        "idType": {
+            "label": "نوع الهوية",
+            "placeholder": "اختر نوع الهوية"
+        },
+        "idNumber": {
+            "label": "رقم الهوية",
+            "placeholder": "أدخل رقم الهوية"
+        },
+        "aadhaarNumber": "رقم آدهار",
+        "medicalConditions": {
+            "label": "الحالات الطبية / الحساسية (إن وجدت)",
+            "placeholder": "مثال: الربو، السكري، حساسية الطعام، إلخ"
+        },
+        "dietaryRestrictions": {
+            "label": "القيود الغذائية",
+            "placeholder": "مثال: نباتي، بدون مكسرات، إلخ"
+        }
+    },
+    "genderLabels": {
+        "male": "ذكر",
+        "female": "أنثى",
+        "other": "آخر"
+    },
+    "nationalityOptions": {
+        "indian": "هندي",
+        "other": "أخرى"
+    },
+    "religionOptions": {
+        "hindu": "هندوسي",
+        "muslim": "مسلم",
+        "christian": "مسيحي",
+        "sikh": "سيخي",
+        "jain": "جايني",
+        "buddhist": "بوذي",
+        "other": "أخرى"
+    },
+    "categoryOptions": {
+        "general": "عام",
+        "obc": "OBC",
+        "sc": "SC",
+        "st": "ST",
+        "ews": "EWS"
+    },
+    "bloodGroupOptions": {
+        "aPositive": "A+",
+        "aNegative": "A-",
+        "bPositive": "B+",
+        "bNegative": "B-",
+        "oPositive": "O+",
+        "oNegative": "O-",
+        "abPositive": "AB+",
+        "abNegative": "AB-"
+    },
+    "motherTongueOptions": {
+        "hindi": "الهندية",
+        "english": "الإنجليزية",
+        "gujarati": "الغوجاراتية",
+        "marathi": "المراثية",
+        "tamil": "التاميلية",
+        "telugu": "التيلوغوية",
+        "kannada": "الكانادية",
+        "bengali": "البنغالية",
+        "malayalam": "المالايالامية",
+        "punjabi": "البنجابية",
+        "odia": "الأوديا",
+        "urdu": "الأردية",
+        "other": "أخرى"
+    },
+    "checkboxLanguages": {
+        "hindi": "الهندية",
+        "english": "الإنجليزية",
+        "regional": "إقليمية"
+    },
+    "idTypeOptions": {
+        "aadhaarCard": "بطاقة آدهار",
+        "birthCertificate": "شهادة الميلاد",
+        "passport": "جواز السفر",
+        "other": "أخرى"
+    }
+}

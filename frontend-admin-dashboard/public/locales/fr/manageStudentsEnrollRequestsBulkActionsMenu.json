@@ -1,0 +1,24 @@
+{
+    "menu": {
+        "shareCredentials": "Partager les identifiants",
+        "sendWhatsappMessage": "Envoyer un message WhatsApp",
+        "sendEmail": "Envoyer un e-mail",
+        "acceptRequest": "Accepter la demande",
+        "declineRequest": "Refuser la demande"
+    },
+    "actionInfo": {
+        "selectedStudents_one": "{{count}} étudiant sélectionné",
+        "selectedStudents_many": "{{count}} étudiants sélectionnés",
+        "selectedStudents_other": "{{count}} étudiants sélectionnés"
+    },
+    "errors": {
+        "noneEnrolled": "Aucun des contacts sélectionnés n'est inscrit à un groupe ; cette action ne peut donc pas leur être appliquée.",
+        "noneActionable": "Aucun des contacts sélectionnés ne possède de compte utilisateur ; rien ne peut donc leur être envoyé.",
+        "someNotEnrolled_one": "1 contact sélectionné a été écarté : il n'est inscrit à aucun groupe.",
+        "someNotEnrolled_many": "{{count}} contacts sélectionnés ont été écartés : ils ne sont inscrits à aucun groupe.",
+        "someNotEnrolled_other": "{{count}} contacts sélectionnés ont été écartés : ils ne sont inscrits à aucun groupe.",
+        "someNoAccount_one": "1 contact sélectionné a été écarté : il ne possède pas encore de compte utilisateur.",
+        "someNoAccount_many": "{{count}} contacts sélectionnés ont été écartés : ils ne possèdent pas encore de compte utilisateur.",
+        "someNoAccount_other": "{{count}} contacts sélectionnés ont été écartés : ils ne possèdent pas encore de compte utilisateur."
+    }
+}

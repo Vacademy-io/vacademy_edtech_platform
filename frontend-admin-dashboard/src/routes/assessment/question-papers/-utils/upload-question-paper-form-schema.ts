@@ -179,7 +179,12 @@ const validateNumericTypeConstraints = (question: any, ctx: z.RefinementCtx) => 
 
     const check = numericType ? typeChecks[numericType] : undefined;
 
-    if (check && !validAnswers.every(check)) {
+    // Empty answer boxes are null and are dropped on save; check only what is typed.
+    const typedAnswers = validAnswers.filter(
+        (answer: unknown) => answer !== null && answer !== ''
+    );
+
+    if (check && !typedAnswers.every(check)) {
         ctx.addIssue({
             path: ['validAnswers'],
             code: z.ZodIssueCode.custom,
@@ -333,7 +338,13 @@ export const uploadQuestionPaperFormSchema = (examType?: string) => {
                 parentRichTextContent: z.union([z.string(), z.null()]).optional(),
                 decimals: z.number().optional(),
                 numericType: z.string().optional(),
-                validAnswers: z.union([z.array(z.union([z.number(), z.string()])), z.null()]).optional(),
+                // An answer box left empty is null in the form; drop it before validating.
+                validAnswers: z
+                    .preprocess(
+                        (value) => (Array.isArray(value) ? value.filter((a) => a !== null) : value),
+                        z.union([z.array(z.union([z.number(), z.string()])), z.null()])
+                    )
+                    .optional(),
                 questionResponseType: z.union([z.string(), z.null()]).optional(),
                 subjectiveAnswerText: z.string().optional(),
                 questionPoints: z.string().optional(),

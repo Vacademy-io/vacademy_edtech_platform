@@ -1,0 +1,13 @@
+{
+    "header": {
+        "title": "Customize Campaign Form",
+        "description": "Configure the fields students will fill out. Fields from settings are automatically loaded."
+    },
+    "sharedFieldNotice_one": "This field is shared with {{count}} other form{{names}}. Its type, label and options are stored once, so changing them here changes them there too.",
+    "sharedFieldNotice_other": "This field is shared with {{count}} other forms{{names}}. Its type, label and options are stored once, so changing them here changes them there too.",
+    "actions": {
+        "addPhoneNumber": "Add Phone Number",
+        "addCustomField": "Add Custom Field",
+        "previewForm": "Preview Registration Form"
+    }
+}

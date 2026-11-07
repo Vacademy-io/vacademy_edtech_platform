@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import { Elements } from "@stripe/react-stripe-js";
 import { loadStripe } from "@stripe/stripe-js";
 import { PaymentForm } from "./PaymentForm";
@@ -25,6 +26,7 @@ export const DonationPaymentStep = ({
   onError,
   onBack,
 }: DonationPaymentStepProps) => {
+  const { t } = useTranslation("coursesRouteA");
   const [stripePromise, setStripePromise] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
@@ -69,10 +71,10 @@ export const DonationPaymentStep = ({
           const stripeInstance = loadStripe(publishableKey);
           setStripePromise(stripeInstance);
         } else {
-          onError("Payment gateway not configured");
+          onError(t("donation.paymentStep.errors.gatewayNotConfigured"));
         }
       } catch (error) {
-        onError("Failed to load payment gateway");
+        onError(t("donation.paymentStep.errors.failedToLoad"));
       } finally {
         setLoading(false);
       }
@@ -83,9 +85,9 @@ export const DonationPaymentStep = ({
 
   if (loading) {
     return (
-      <div className="text-center py-8">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto mb-4"></div>
-        <p className="text-sm text-gray-600">Loading payment gateway...</p>
+      <div className="text-center py-8 space-y-4">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto"></div>
+        <p className="text-sm text-gray-600">{t("donation.paymentStep.loadingGateway")}</p>
       </div>
     );
   }
@@ -93,7 +95,7 @@ export const DonationPaymentStep = ({
   if (!stripePromise) {
     return (
       <div className="text-center py-8">
-        <p className="text-sm text-red-600">Payment gateway not available</p>
+        <p className="text-sm text-red-600">{t("donation.paymentStep.gatewayUnavailable")}</p>
       </div>
     );
   }
@@ -102,17 +104,17 @@ export const DonationPaymentStep = ({
     <>
       <div className="mb-2 bg-white border border-neutral-300 rounded-lg p-3">
         <div className="flex items-center justify-between mb-2">
-          <span className="font-semibold text-gray-700">Donation Summary</span>
+          <span className="font-semibold text-gray-700">{t("donation.summary.title")}</span>
         </div>
         <div className="flex items-center justify-between text-sm mb-1">
-          <span className="text-gray-600">Amount:</span>
+          <span className="text-gray-600">{t("donation.summary.amountLabel")}</span>
           <span className="font-semibold text-gray-900">
             {getCurrencySymbol(currency)}
             {amount}
           </span>
         </div>
         <div className="flex items-center justify-between text-sm mb-1">
-          <span className="text-gray-600">Email:</span>
+          <span className="text-gray-600">{t("donation.summary.emailLabel")}</span>
           <span className="font-semibold text-gray-900">{email}</span>
         </div>
         <button
@@ -120,13 +122,13 @@ export const DonationPaymentStep = ({
           onClick={onBack}
           style={{ boxShadow: "none", textDecoration: "none" }}
         >
-          Edit
+          {t("donation.summary.editButton")}
         </button>
       </div>
 
-      <div className="mb-2">
-        <div className="flex items-center justify-between mb-1">
-          <label className="block text-xs text-gray-600">Card Details</label>
+      <div className="mb-2 space-y-1">
+        <div className="flex items-center justify-between">
+          <label className="block text-xs text-gray-600">{t("donation.paymentStep.cardDetailsLabel")}</label>
         </div>
 
         <Elements stripe={stripePromise}>

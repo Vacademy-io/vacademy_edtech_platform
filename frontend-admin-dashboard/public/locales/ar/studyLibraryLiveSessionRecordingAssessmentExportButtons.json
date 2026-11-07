@@ -1,0 +1,72 @@
+{
+    "defaultTitle": "التقييم",
+    "errors": {
+        "couldNotGeneratePdf": "تعذر إنشاء ملف PDF"
+    },
+    "header": {
+        "instituteLogoAlt": "شعار المؤسسة",
+        "instituteFallback": "المؤسسة",
+        "answerKey": "دليل الإجابات",
+        "questionPaper": "ورقة الأسئلة",
+        "questionsCount_zero": "لا توجد أسئلة",
+        "questionsCount_one": "سؤال واحد",
+        "questionsCount_two": "سؤالان",
+        "questionsCount_few": "{{count}} أسئلة",
+        "questionsCount_many": "{{count}} سؤالاً",
+        "questionsCount_other": "{{count}} سؤال",
+        "marksCount_zero": "لا توجد درجات",
+        "marksCount_one": "درجة واحدة",
+        "marksCount_two": "درجتان",
+        "marksCount_few": "{{count}} درجات",
+        "marksCount_many": "{{count}} درجة",
+        "marksCount_other": "{{count}} درجة"
+    },
+    "studentDetails": {
+        "ariaLabel": "بيانات الطالب",
+        "fields": {
+            "name": "الاسم",
+            "rollNo": "رقم القيد",
+            "classBatch": "الصف / الدفعة",
+            "date": "التاريخ"
+        }
+    },
+    "footer": {
+        "confidential": "سري"
+    },
+    "actions": {
+        "exportPdf": "تصدير PDF"
+    },
+    "dropdown": {
+        "chooseVersion": "اختر نسخة",
+        "studentVersion": "نسخة الطالب",
+        "answerKey": "دليل الإجابات"
+    },
+    "dialog": {
+        "exportStudentPdf": "تصدير PDF للطالب",
+        "exportAnswerKeyPdf": "تصدير PDF لدليل الإجابات",
+        "cancel": "إلغاء",
+        "tickSectionsHint": "حدد الأقسام التي تريد تضمينها في ملف PDF المصدَّر.",
+        "rows": {
+            "includeStudentDetails": {
+                "label": "تضمين حقول بيانات الطالب",
+                "description": "يضيف شريط تعبئة في الصفحة الأولى — الاسم، رقم القيد، الصف / الدفعة، التاريخ. أوقف هذا الخيار للحصول على نسخة تدريبية أبسط."
+            },
+            "showTitle": {
+                "label": "إظهار عنوان التقييم",
+                "description": "يخفي العنوان الكبير المتمركز (حالياً \"{{title}}\") في كل صفحة. يبقى الترويسة وشارة النسخة كما هما."
+            },
+            "showHeaderInfo": {
+                "label": "إظهار شريط معلومات الترويسة"
+            },
+            "showFooterDate": {
+                "label": "إظهار التاريخ في التذييل",
+                "description": "يطبع تاريخ التصدير بجانب اسم المؤسسة في تذييل الصفحة."
+            },
+            "showFooterConfidential": {
+                "label": "إظهار \"سري\" في التذييل",
+                "descriptionLong": "يضيف تسمية \"سري\" إلى تذييل الصفحة. مفيد للامتحانات؛ يمكن إزالته للنسخ التدريبية العادية.",
+                "descriptionShort": "يضيف تسمية \"سري\" إلى تذييل الصفحة."
+            }
+        }
+    }
+}

@@ -6,25 +6,28 @@ import {
     ChartTooltipContent,
 } from '@/components/ui/chart';
 import { QuestionInsightsQuestionStatus } from '../-utils/assessment-details-interface';
+import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 
-const chartConfig = {
-    correct: {
-        label: 'Correct',
-        color: 'hsl(var(--chart-1))',
-    },
-    partiallyCorrect: {
-        label: 'Partially Correct',
-        color: 'hsl(var(--chart-2))',
-    },
-    wrongResponse: {
-        label: 'Wrong Response',
-        color: 'hsl(var(--chart-3))',
-    },
-    skipped: {
-        label: 'Skipped',
-        color: 'hsl(var(--chart-4))',
-    },
-} satisfies ChartConfig;
+const buildChartConfig = (t: TFunction) =>
+    ({
+        correct: {
+            label: t('legend.correct'),
+            color: 'hsl(var(--chart-1))',
+        },
+        partiallyCorrect: {
+            label: t('legend.partiallyCorrect'),
+            color: 'hsl(var(--chart-2))',
+        },
+        wrongResponse: {
+            label: t('legend.wrongResponse'),
+            color: 'hsl(var(--chart-3))',
+        },
+        skipped: {
+            label: t('legend.skipped'),
+            color: 'hsl(var(--chart-4))',
+        },
+    }) satisfies ChartConfig;
 
 export function QuestionInsightsAnalysisChartComponent({
     questionStatus,
@@ -33,30 +36,32 @@ export function QuestionInsightsAnalysisChartComponent({
     questionStatus: QuestionInsightsQuestionStatus;
     skipped: number;
 }) {
+    const { t } = useTranslation('assessmentQuestionInsightsAnalysisChart');
+    const chartConfig = buildChartConfig(t);
     const chartData = [
         {
             responseType: 'correct',
             value: questionStatus?.correctAttempt,
-            fill: '#97D4B4',
+            fill: 'hsl(var(--success-300))',
         },
         {
             responseType: 'partiallyCorrect',
             value: questionStatus?.partialCorrectAttempt,
-            fill: '#FFDD82',
+            fill: 'hsl(var(--warning-300))',
         },
         {
             responseType: 'wrongResponse',
             value: questionStatus?.incorrectAttempt,
-            fill: '#F49898',
+            fill: 'hsl(var(--danger-400))',
         },
         {
             responseType: 'skipped',
             value: skipped,
-            fill: '#EEE',
+            fill: 'hsl(var(--muted))',
         },
     ];
     return (
-        <ChartContainer config={chartConfig} className="mx-auto aspect-square h-[180px]">
+        <ChartContainer config={chartConfig} className="mx-auto aspect-square h-44">
             <PieChart>
                 <ChartTooltip cursor={false} content={<ChartTooltipContent hideLabel />} />
                 <Pie

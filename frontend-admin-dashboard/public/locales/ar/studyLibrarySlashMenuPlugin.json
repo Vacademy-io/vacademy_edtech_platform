@@ -1,0 +1,44 @@
+{
+    "options": {
+        "text": {
+            "title": "نص",
+            "description": "ابدأ بكتابة نص عادي."
+        },
+        "heading1": {
+            "title": "عنوان 1",
+            "description": "عنوان قسم كبير"
+        },
+        "heading2": {
+            "title": "عنوان 2",
+            "description": "عنوان قسم متوسط"
+        },
+        "heading3": {
+            "title": "عنوان 3",
+            "description": "عنوان قسم صغير"
+        },
+        "quote": {
+            "title": "اقتباس",
+            "description": "أضف اقتباسًا"
+        },
+        "bulletedList": {
+            "title": "قائمة نقطية",
+            "description": "قائمة نقطية بسيطة"
+        },
+        "numberedList": {
+            "title": "قائمة مرقمة",
+            "description": "قائمة مرقمة"
+        },
+        "todoList": {
+            "title": "قائمة مهام",
+            "description": "قائمة مع مربعات اختيار"
+        },
+        "table": {
+            "title": "جدول",
+            "description": "إضافة جدول بسيط"
+        },
+        "divider": {
+            "title": "فاصل",
+            "description": "افصل بين الكتل"
+        }
+    }
+}

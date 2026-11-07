@@ -1,0 +1,24 @@
+{
+    "profile": {
+        "avatarAlt": "प्रोफ़ाइल",
+        "unknownName": "अज्ञात"
+    },
+    "status": {
+        "cancelledMember": "सदस्यता रद्द",
+        "cancelledMemberTooltip": "सदस्यता रद्द कर दी गई है — योजना समाप्त होने तक पहुंच जारी रहेगी"
+    },
+    "roles": {
+        "admin": "प्रैक्टिस एडमिन",
+        "learner": "प्रैक्टिस स्टाफ़"
+    },
+    "actions": {
+        "deleteLead": "लीड हटाएं",
+        "openFullProfile": "पूरी प्रोफ़ाइल खोलें",
+        "closePanel": "पैनल बंद करें"
+    },
+    "tabBar": {
+        "ariaLabel": "प्रोफ़ाइल अनुभाग",
+        "scrollLeft": "टैब बाईं ओर स्क्रॉल करें",
+        "scrollRight": "टैब दाईं ओर स्क्रॉल करें"
+    }
+}

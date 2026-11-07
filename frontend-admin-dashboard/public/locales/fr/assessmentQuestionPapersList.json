@@ -1,0 +1,35 @@
+{
+    "config": {
+        "backToList": "Retour à la liste",
+        "createdOn": "Créé le {{date}}",
+        "selectQuestionCount": "Combien de questions inclure ?",
+        "modeAll": "Toutes les questions",
+        "modeRandom": "Sélection aléatoire",
+        "modeTags": "Aléatoire par étiquette",
+        "modeManual": "Sélectionner manuellement",
+        "modeManualHint": "— choisissez des questions précises à l'écran suivant",
+        "randomPlaceholder": "ex. 20",
+        "questionsLabel": "questions",
+        "tagAvailable_one": "{{count}} disponible",
+        "tagAvailable_many": "{{count}} disponibles",
+        "tagAvailable_other": "{{count}} disponibles",
+        "total": "Total",
+        "totalQuestions_one": "{{count}} question",
+        "totalQuestions_many": "{{count}} questions",
+        "totalQuestions_other": "{{count}} questions",
+        "cancel": "Annuler",
+        "chooseQuestions": "Choisir les questions",
+        "addRandomCount_one": "Ajouter {{count}} question aléatoire",
+        "addRandomCount_many": "Ajouter {{count}} questions aléatoires",
+        "addRandomCount_other": "Ajouter {{count}} questions aléatoires",
+        "addAllQuestions": "Ajouter toutes les questions"
+    },
+    "list": {
+        "viewButton": "Voir",
+        "deleteQuestionPaper": "Supprimer le sujet d'examen",
+        "createdOnLabel": "Créé le :",
+        "notAvailable": "N/D",
+        "yearClassLabel": "Année/Classe :",
+        "subjectLabel": "Matière :"
+    }
+}

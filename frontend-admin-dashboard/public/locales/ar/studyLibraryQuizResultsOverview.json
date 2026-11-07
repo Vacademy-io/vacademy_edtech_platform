@@ -1,0 +1,66 @@
+{
+    "filter": {
+        "all": "جميع الاختبارات",
+        "attempted": "تمت المحاولة",
+        "notStarted": "لم تبدأ",
+        "needsAttention": "تحتاج إلى اهتمام"
+    },
+    "sort": {
+        "courseOrder": "ترتيب الدورة",
+        "lowestAvgScore": "أقل متوسط درجات",
+        "highestAvgScore": "أعلى متوسط درجات",
+        "lowestParticipation": "أقل مشاركة",
+        "mostRecentActivity": "أحدث نشاط"
+    },
+    "header": {
+        "quiz": "الاختبار",
+        "questions": "الأسئلة",
+        "attempted": "تمت المحاولة",
+        "avgScore": "متوسط الدرجات",
+        "passed": "ناجح",
+        "lastActivity": "آخر نشاط"
+    },
+    "untitledQuiz": "اختبار بلا عنوان",
+    "marks_zero": "بلا درجات",
+    "marks_one": "درجة واحدة",
+    "marks_two": "درجتان",
+    "marks_few": "{{count}} درجات",
+    "marks_many": "{{count}} درجة",
+    "marks_other": "{{count}} درجة",
+    "noAttemptsYet": "لا توجد محاولات بعد",
+    "passLabel": "النجاح {{percent}}%",
+    "noPassMark": "لا توجد درجة نجاح",
+    "error": {
+        "title": "تعذّر تحميل نتائج الاختبار",
+        "subtitle": "فشل الطلب. تحقق من اتصالك وحاول مرة أخرى."
+    },
+    "retry": "إعادة المحاولة",
+    "stat": {
+        "quizzes": "الاختبارات",
+        "quizzesHintNotStarted_zero": "لا يوجد اختبار لم يبدأ بعد",
+        "quizzesHintNotStarted_one": "اختبار واحد لم يبدأ بعد",
+        "quizzesHintNotStarted_two": "اختباران لم يبدآ بعد",
+        "quizzesHintNotStarted_few": "{{count}} اختبارات لم تبدأ بعد",
+        "quizzesHintNotStarted_many": "{{count}} اختبارًا لم تبدأ بعد",
+        "quizzesHintNotStarted_other": "{{count}} اختبار لم تبدأ بعد",
+        "quizzesHintAllAttempts": "تمت محاولة جميعها",
+        "learnersStarted": "المتعلمون الذين بدأوا",
+        "learnersStartedHint": "أكملوا اختبارًا واحدًا على الأقل",
+        "avgScore": "متوسط الدرجات",
+        "avgScoreHint": "عبر جميع المحاولات",
+        "needsAttention": "تحتاج إلى اهتمام",
+        "needsAttentionHint": "اختبارات بمتوسط أقل من 50٪"
+    },
+    "search": {
+        "placeholder": "ابحث عن اختبارات أو فصول"
+    },
+    "filterGroupAriaLabel": "تصفية الاختبارات",
+    "refreshAriaLabel": "تحديث نتائج الاختبار",
+    "empty": {
+        "noneTitle": "لا توجد اختبارات في هذه الدورة بعد",
+        "filteredTitle": "لا توجد اختبارات مطابقة لهذه الفلاتر",
+        "noneSubtitle": "أضف شريحة اختبار إلى فصل، وستظهر النتائج هنا فور محاولة المتعلمين لها.",
+        "filteredSubtitle": "جرّب مصطلح بحث مختلفًا أو امسح الفلاتر."
+    },
+    "clearFilters": "مسح الفلاتر"
+}

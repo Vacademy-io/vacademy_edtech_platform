@@ -1,0 +1,12 @@
+{
+    "switchToVisualPicker": "Switch to visual picker",
+    "switchToRawSpelInput": "Switch to raw SpEL input",
+    "advancedPlaceholder": "#ctx['variable']",
+    "visualPlaceholder": "Click to pick a variable...",
+    "searchPlaceholder": "Search variables...",
+    "spelBadge": "SpEL",
+    "noVariablesAvailable": "No variables available",
+    "noVariablesHint": "Connect this node to upstream nodes (like Trigger or Query) to see their output data here.",
+    "switchToAdvancedHint": "Or switch to Advanced mode to type a SpEL expression manually",
+    "fromGroup": "From: {{group}}"
+}

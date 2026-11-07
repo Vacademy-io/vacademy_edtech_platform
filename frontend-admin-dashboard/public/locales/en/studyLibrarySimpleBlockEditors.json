@@ -1,0 +1,65 @@
+{
+    "actions": {
+        "save": "Save",
+        "cancel": "Cancel",
+        "uploading": "Uploading…",
+        "showPreview": "Show preview",
+        "hidePreview": "Hide preview"
+    },
+    "fields": {
+        "titleOptional": "Title (optional)"
+    },
+    "math": {
+        "title": "Math (LaTeX)",
+        "clickToAdd": "Click to add LaTeX",
+        "displayModeLabel": "Display mode (centered)"
+    },
+    "mermaid": {
+        "title": "Mermaid diagram",
+        "render": "Render"
+    },
+    "audio": {
+        "title": "Audio",
+        "noAudioUploaded": "No audio uploaded",
+        "upload": "Upload audio",
+        "replace": "Replace audio",
+        "uploadFailed": "Audio upload failed"
+    },
+    "pdf": {
+        "title": "PDF",
+        "openInNewTab": "Open PDF in new tab",
+        "noPdfUploaded": "No PDF uploaded",
+        "upload": "Upload PDF",
+        "replace": "Replace PDF",
+        "uploadFailed": "PDF upload failed"
+    },
+    "fillBlanks": {
+        "title": "Fill in the Blanks",
+        "clickToAddSentence": "Click to add a sentence — mark answers as {blank:answer}",
+        "sentencePlaceholder": "Water boils at {blank:100} degrees Celsius."
+    },
+    "jupyter": {
+        "title": "Jupyter Notebook",
+        "titleWithProject": "Jupyter Notebook: {{projectName}}",
+        "previewTitle": "Jupyter Notebook Preview",
+        "notConfigured": "No notebook configured — project name and GitHub URL needed.",
+        "fields": {
+            "projectName": "Project name",
+            "repositoryUrl": "GitHub repository URL",
+            "branch": "Branch (main)",
+            "notebookLocation": "Notebook location (root)"
+        }
+    },
+    "scratch": {
+        "title": "Scratch Project",
+        "previewTitle": "Scratch Project",
+        "notConfigured": "No Scratch project configured — project ID needed.",
+        "fields": {
+            "projectId": "Scratch project ID"
+        }
+    },
+    "toc": {
+        "title": "Table of Contents",
+        "description": "Outline is auto-generated from document headings for learners."
+    }
+}

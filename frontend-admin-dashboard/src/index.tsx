@@ -8,9 +8,31 @@ import RootNotFoundComponent from './components/core/default-not-found';
 import RootPendingComponent from './components/core/default-pending';
 import './index.css';
 // import { ThemeProvider } from "./providers/theme-provider";
+
+// Evict service workers left behind by earlier builds (vite-plugin-pwa era).
+// A stale Workbox worker serves its precached index.html for every navigation,
+// pinning the browser to a dead bundle — reloads included. public/sw.js is the
+// network-side kill switch for browsers still running the old bundle; this is
+// the in-app half for anyone who reaches the new code with a stray
+// registration. The firebase messaging worker (push notifications, no fetch
+// handler) is the one registration we keep.
+if ('serviceWorker' in navigator) {
+    navigator.serviceWorker
+        .getRegistrations()
+        .then((registrations) => {
+            registrations.forEach((registration) => {
+                const worker =
+                    registration.active ?? registration.waiting ?? registration.installing;
+                if (worker && !worker.scriptURL.endsWith('/firebase-messaging-sw.js')) {
+                    registration.unregister().catch(() => {});
+                }
+            });
+        })
+        .catch(() => {});
+}
 import { SidebarProvider } from './components/ui/sidebar';
 import { routeTree } from './routeTree.gen';
-import './i18n';
+import { catalogsReady } from './i18n';
 import { Toaster } from './components/ui/sonner';
 import { ThemeProvider } from './providers/theme/theme-provider';
 import { CourseSettingsProvider } from './providers/course-settings-provider';
@@ -23,13 +45,16 @@ import {
     getCachedInstituteBranding,
 } from '@/services/domain-routing';
 import { OtaUpdateBanner } from '@/components/ota-update/OtaUpdateBanner';
+import { PaperReadWatcher } from '@/components/common/paper-reads/PaperReadWatcher';
 import { resolveFontStack } from '@/utils/font';
 import { useTitleStore } from '@/stores/useTitleStore';
 import { getTokenFromCookie, getTokenDecodedData } from '@/lib/auth/sessionUtility';
 import { TokenKey } from '@/constants/auth/tokens';
 import { useInstituteDetailsStore } from '@/stores/students/students-list/useInstituteDetailsStore';
 import { installChunkErrorHandler } from '@/lib/chunk-reload';
+import { rememberComponentStack } from '@/lib/error-component-stack';
 import { initNative, isNative, getPlatform, shouldForceVimShell, getFlavor } from '@/native';
+import { isEvalezyMode } from '@/lib/evalezy-mode';
 
 // Recover stale tabs whose cached chunk URLs 404 after a new deploy.
 // Must run before React renders so failures during the first lazy import
@@ -84,6 +109,9 @@ const router = createRouter({
     defaultNotFoundComponent: RootNotFoundComponent,
     defaultErrorComponent: RootErrorComponent,
     defaultPendingComponent: RootPendingComponent,
+    // No route sets its own onCatch, so this sees every render error the
+    // error pages show; it keeps the component stack for "Report Issue".
+    defaultOnCatch: rememberComponentStack,
 });
 
 // Register the router instance for type safety
@@ -270,6 +298,18 @@ if (!rootElement.innerHTML) {
                 ? await resolveInstituteForDomain(flavor.brandingDomain!, flavor.brandingSubdomain!)
                 : await resolveInstituteForCurrentHost();
             if (!data) {
+                // No institute owns evalezy.vacademy.io or the Evalezy app (any
+                // institute's admin signs in there), so it wears the Evalezy brand.
+                if (isEvalezyMode()) {
+                    titleStore.setGlobalTitle('Evalezy');
+                    // Absolute: the title store's favicon observer compares it with
+                    // link.href (always absolute) and would reset a relative one forever.
+                    titleStore.setGlobalFavicon(
+                        new URL('/evalezy-favicon.svg', window.location.origin).href
+                    );
+                    useInstituteLogoStore.getState().setInstituteLogo?.('/evalezy-logo.svg');
+                    return;
+                }
                 // If no data from API, ensure we have a fallback title
                 titleStore.setGlobalTitle('Admin Dashboard');
                 return;
@@ -346,6 +386,13 @@ if (!rootElement.innerHTML) {
 
     await initializeBranding();
 
+    // Hold first render until the active language's catalogs are seeded (see
+    // src/i18n.ts) — otherwise components that freeze t() output (useMemo with
+    // [] deps, react-query fetchers) capture raw keys for good. The timeout is
+    // the escape hatch: a CDN hiccup degrades to the old flash-of-keys
+    // behaviour instead of a blank page.
+    await Promise.race([catalogsReady, new Promise((resolve) => setTimeout(resolve, 4000))]);
+
     const root = ReactDOM.createRoot(rootElement);
     const app = (
         // <ThemeProvider defaultTheme="light" storageKey="ui-theme">
@@ -355,6 +402,7 @@ if (!rootElement.innerHTML) {
                     <SidebarProvider>
                         <RouterProvider router={router} />
                         <OtaUpdateBanner />
+                        <PaperReadWatcher onOpen={(path) => router.history.push(path)} />
                         <Toaster />
                     </SidebarProvider>
                 </CourseSettingsProvider>

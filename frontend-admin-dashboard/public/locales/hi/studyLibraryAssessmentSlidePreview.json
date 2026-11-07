@@ -1,0 +1,30 @@
+{
+    "noAssessmentLinked": "इस स्लाइड से कोई असेसमेंट लिंक नहीं है।",
+    "status": {
+        "scheduled": "निर्धारित",
+        "closed": "बंद",
+        "open": "खुला"
+    },
+    "availability": {
+        "range": "{{opens}} → {{closes}}",
+        "from": "{{opens}} से",
+        "until": "{{closes}} तक",
+        "anytime": "कभी भी"
+    },
+    "linkedAssessment": "लिंक किया गया असेसमेंट",
+    "loadingEllipsis": "लोड हो रहा है…",
+    "viewSubmissions": "सबमिशन देखें",
+    "manageInAssessments": "असेसमेंट में प्रबंधित करें",
+    "couldNotLoadDetails": "असेसमेंट विवरण लोड नहीं हो सके। लिंक शिक्षार्थियों के लिए फिर भी काम कर सकता है।",
+    "totalMarks": "कुल अंक",
+    "availableToLearners": "शिक्षार्थियों के लिए उपलब्ध",
+    "lockedUntil": "यह स्लाइड शिक्षार्थियों के लिए {{date}} तक लॉक है।",
+    "itOpens": "यह खुल जाए",
+    "closedOnDate": "यह स्लाइड {{date}} को बंद हुई — शिक्षार्थी अब इसे नहीं दे सकते।",
+    "closedNoDate": "यह स्लाइड बंद हो चुकी है — शिक्षार्थी अब इसे नहीं दे सकते।",
+    "instructions": "निर्देश",
+    "loadingInstructions": "निर्देश लोड हो रहे हैं…",
+    "noInstructionsProvided": "कोई निर्देश नहीं दिया गया।",
+    "submitted": "सबमिट किया गया",
+    "enrolled": "नामांकित"
+}

@@ -1,0 +1,8 @@
+{
+    "dialog": {
+        "heading": "إزالة المشاركين",
+        "confirmMessagePrefix": "هل أنت متأكد أنك تريد إزالة المشاركين لـ",
+        "confirmMessageSuffix": "؟",
+        "done": "تم"
+    }
+}

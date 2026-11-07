@@ -2,6 +2,8 @@ import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import type { ColumnDef } from '@tanstack/react-table';
 import ReactMarkdown from 'react-markdown';
 import type { Components } from 'react-markdown';
+import { useTranslation } from 'react-i18next';
+import i18next from 'i18next';
 import {
     ChatCircleDots,
     ListBullets,
@@ -103,6 +105,7 @@ const mdComponents: Components = {
 
 // ── header summary ──────────────────────────────────────────────────────────
 function LearnerHeader({ learner }: { learner: SelectedLearner }) {
+    const { t } = useTranslation('settingsLearnerActivityDialog');
     const roleList = useMemo(
         () =>
             Array.from(
@@ -142,11 +145,14 @@ function LearnerHeader({ learner }: { learner: SelectedLearner }) {
                 <div className="mt-1 flex flex-wrap items-center gap-2">
                     <span className="inline-flex items-center gap-1 rounded-md bg-primary-50 px-2 py-1 text-caption font-medium text-primary-600">
                         <Coins className="size-3.5" weight="fill" />
-                        {learner.totalCredits.toFixed(2)} credits
+                        {t('header.credits', {
+                            count: learner.totalCredits,
+                            value: learner.totalCredits.toFixed(2),
+                        })}
                     </span>
                     <span className="inline-flex items-center gap-1 rounded-md bg-neutral-100 px-2 py-1 text-caption font-medium text-neutral-600">
                         <Lightning className="size-3.5" weight="fill" />
-                        {learner.requestCount} requests
+                        {t('header.requests', { count: learner.requestCount })}
                     </span>
                 </div>
             </div>
@@ -168,8 +174,14 @@ function toolLabel(message: ConversationMessage): string {
         }
     }
     const pretty = toolName ? prettify(toolName) : null;
-    if (message.type === 'tool_call') return pretty ? `Used tool: ${pretty}` : 'AI used a tool';
-    return pretty ? `${pretty} result` : 'Tool result';
+    if (message.type === 'tool_call') {
+        return pretty
+            ? i18next.t('settingsLearnerActivityDialog:toolLabel.usedTool', { name: pretty })
+            : i18next.t('settingsLearnerActivityDialog:toolLabel.usedToolGeneric');
+    }
+    return pretty
+        ? i18next.t('settingsLearnerActivityDialog:toolLabel.toolResult', { name: pretty })
+        : i18next.t('settingsLearnerActivityDialog:toolLabel.toolResultGeneric');
 }
 
 function MessageBubble({ message }: { message: ConversationMessage }) {
@@ -211,29 +223,28 @@ function MessageBubble({ message }: { message: ConversationMessage }) {
 }
 
 function TranscriptPane({ sessionId }: { sessionId: string | null }) {
+    const { t } = useTranslation('settingsLearnerActivityDialog');
     const messagesQ = useConversationMessagesQuery(sessionId);
 
     if (!sessionId) {
         return (
             <div className="flex flex-1 flex-col items-center justify-center gap-2 p-8 text-center">
                 <ChatCircleDots className="size-8 text-neutral-300" />
-                <p className="text-body text-neutral-400">
-                    Select a conversation to read the full transcript.
-                </p>
+                <p className="text-body text-neutral-400">{t('transcript.selectConversation')}</p>
             </div>
         );
     }
     if (messagesQ.isLoading) {
         return (
             <div className="flex flex-1 items-center justify-center p-8">
-                <p className="animate-pulse text-body text-neutral-400">Loading transcript…</p>
+                <p className="animate-pulse text-body text-neutral-400">{t('transcript.loading')}</p>
             </div>
         );
     }
     if (messagesQ.error) {
         return (
             <div className="flex flex-1 items-center justify-center p-8">
-                <p className="text-body text-danger-600">Could not load this transcript.</p>
+                <p className="text-body text-danger-600">{t('transcript.loadError')}</p>
             </div>
         );
     }
@@ -241,7 +252,7 @@ function TranscriptPane({ sessionId }: { sessionId: string | null }) {
     if (messages.length === 0) {
         return (
             <div className="flex flex-1 items-center justify-center p-8">
-                <p className="text-body text-neutral-400">This conversation has no messages.</p>
+                <p className="text-body text-neutral-400">{t('transcript.empty')}</p>
             </div>
         );
     }
@@ -265,6 +276,7 @@ function SessionListItem({
     active: boolean;
     onClick: () => void;
 }) {
+    const { t } = useTranslation('settingsLearnerActivityDialog');
     const Icon = contextIcon(session.contextType);
     const isVoice = !!session.sessionMode && session.sessionMode !== 'text';
     return (
@@ -290,7 +302,9 @@ function SessionListItem({
                 </span>
             </div>
             <p className="line-clamp-2 text-body text-neutral-700">
-                {session.preview || <span className="text-neutral-400">No learner message</span>}
+                {session.preview || (
+                    <span className="text-neutral-400">{t('conversations.noMessagePreview')}</span>
+                )}
             </p>
             <div className="flex items-center gap-2 text-caption text-neutral-400">
                 <span className="inline-flex items-center gap-1">
@@ -315,6 +329,7 @@ function ConversationsTab({
     learner: SelectedLearner;
     range: UsageDateRange;
 }) {
+    const { t } = useTranslation('settingsLearnerActivityDialog');
     const [sessionPage, setSessionPage] = useState(0);
     const [selectedSessionId, setSelectedSessionId] = useState<string | null>(null);
 
@@ -333,7 +348,9 @@ function ConversationsTab({
     if (conversationsQ.isLoading) {
         return (
             <div className="flex min-h-0 flex-1 items-center justify-center p-8">
-                <p className="animate-pulse text-body text-neutral-400">Loading conversations…</p>
+                <p className="animate-pulse text-body text-neutral-400">
+                    {t('conversations.loading')}
+                </p>
             </div>
         );
     }
@@ -345,10 +362,13 @@ function ConversationsTab({
                 <div className="flex size-14 items-center justify-center rounded-full bg-neutral-100">
                     <ChatCircleDots className="size-7 text-neutral-400" />
                 </div>
-                <p className="text-subtitle font-semibold text-neutral-600">No AI conversations yet</p>
+                <p className="text-subtitle font-semibold text-neutral-600">
+                    {t('conversations.emptyTitle')}
+                </p>
                 <p className="max-w-sm text-body text-neutral-400">
-                    {learner.name || 'This member'} hasn’t chatted with the Student-AI tutor in the
-                    selected date range. Try widening the date range to see more.
+                    {t('conversations.emptyDescription', {
+                        name: learner.name || t('conversations.thisMember'),
+                    })}
                 </p>
             </div>
         );
@@ -390,6 +410,7 @@ function ConversationsTab({
 
 // ── credit-activity tab ─────────────────────────────────────────────────────
 function ActivityTab({ learner, range }: { learner: SelectedLearner; range: UsageDateRange }) {
+    const { t } = useTranslation('settingsLearnerActivityDialog');
     const [logPage, setLogPage] = useState(0);
     const logsQ = useUsageUserLogsQuery(learner.userId, logPage, PAGE_SIZE, range);
 
@@ -397,20 +418,20 @@ function ActivityTab({ learner, range }: { learner: SelectedLearner; range: Usag
         () => [
             {
                 accessorKey: 'createdAt',
-                header: 'When',
+                header: t('activity.columns.when'),
                 size: 200,
                 cell: ({ row }) =>
                     row.original.createdAt ? formatDateTime(row.original.createdAt) : '—',
             },
             {
                 accessorKey: 'requestType',
-                header: 'Tool',
+                header: t('activity.columns.tool'),
                 size: 220,
                 cell: ({ row }) => prettify(row.original.requestType),
             },
             {
                 accessorKey: 'model',
-                header: 'Model',
+                header: t('activity.columns.model'),
                 size: 400,
                 cell: ({ row }) => (
                     <span className="block truncate" title={row.original.model || undefined}>
@@ -420,7 +441,7 @@ function ActivityTab({ learner, range }: { learner: SelectedLearner; range: Usag
             },
             {
                 accessorKey: 'credits',
-                header: 'Credits',
+                header: t('activity.columns.credits'),
                 size: 160,
                 cell: ({ row }) => (
                     <span className="font-semibold text-neutral-800">
@@ -429,14 +450,14 @@ function ActivityTab({ learner, range }: { learner: SelectedLearner; range: Usag
                 ),
             },
         ],
-        []
+        [t]
     );
 
     return (
         <div className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto p-4">
             <div className="flex items-center gap-2 text-caption text-neutral-500">
                 <ListBullets className="size-4" />
-                Every credit deduction across all AI tools in the selected period.
+                {t('activity.description')}
             </div>
             <MyTable<UsageLogRow>
                 data={logsQ.data}
@@ -483,6 +504,7 @@ function TabPill({
 }
 
 export function LearnerActivityDialog({ learner, range, onClose }: Props) {
+    const { t } = useTranslation('settingsLearnerActivityDialog');
     const [tab, setTab] = useState<'conversations' | 'activity'>('conversations');
 
     // Reset to the first tab whenever a new learner is opened.
@@ -507,11 +529,11 @@ export function LearnerActivityDialog({ learner, range, onClose }: Props) {
                                 onClick={() => setTab('conversations')}
                             >
                                 <ChatCircleDots className="size-4" />
-                                Conversations
+                                {t('tabs.conversations')}
                             </TabPill>
                             <TabPill active={tab === 'activity'} onClick={() => setTab('activity')}>
                                 <Coins className="size-4" />
-                                Credit activity
+                                {t('tabs.creditActivity')}
                             </TabPill>
                         </div>
                         <div className="flex min-h-0 flex-1 flex-col">

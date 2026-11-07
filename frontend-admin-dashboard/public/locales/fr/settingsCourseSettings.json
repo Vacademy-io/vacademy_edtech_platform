@@ -1,0 +1,17 @@
+{
+    "header": {
+        "title": "Paramètres du cours",
+        "subtitle": "Configurez la façon dont les cours sont créés et gérés dans votre établissement"
+    },
+    "loading": "Chargement des paramètres du cours...",
+    "success": {
+        "saved": "Paramètres du cours enregistrés avec succès !"
+    },
+    "errors": {
+        "generic": "Échec de l'opération : {{operation}}. Veuillez réessayer.",
+        "loadFailed": "Échec du chargement des paramètres du cours. Veuillez actualiser la page pour réessayer.",
+        "operations": {
+            "saveCourseSettings": "enregistrer les paramètres du cours"
+        }
+    }
+}

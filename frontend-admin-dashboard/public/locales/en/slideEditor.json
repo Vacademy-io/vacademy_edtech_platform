@@ -1,0 +1,108 @@
+{
+    "presentation": {
+        "autoPublished": "Presentation auto-published for review",
+        "publishedSuccess": "Presentation published successfully!",
+        "publishFailed": "Failed to publish presentation",
+        "uploadFailed": "Failed to upload presentation data",
+        "noContentToPublish": "No content to publish. Please add some content first.",
+        "editorNotReady": "Editor not ready. Please try again.",
+        "saveError": "Error saving presentation",
+        "savedSuccess": "Presentation saved successfully!",
+        "savedUnsync": "Presentation saved as draft (unsync from published version)!"
+    },
+    "doc": {
+        "degradedSkip": "Some content on the previous slide could not be saved automatically. Open it and click Save to retry.",
+        "shrunkSkip": "The previous slide became much shorter than what was saved, so it was NOT overwritten. Please reopen it to check your content is intact.",
+        "autoSaveFailed": "Failed to auto-save changes",
+        "readError": "Could not read editor content. Please try again.",
+        "saveErrorGeneric": "error saving document",
+        "convertedToLexical": "Converted to the new editor.",
+        "convertFailed": "Could not convert this document. Please try again.",
+        "corruptNotSaved": "This slide could not be read correctly, so it was NOT saved. Your saved content is safe — reload the page to get it back, then redo any recent edits.",
+        "corruptNotPublished": "Some blocks on this slide could not be read, so publishing was stopped to protect your content. Please reload the page and try again."
+    },
+    "images": {
+        "someFailedToUpload": "Warning: {{count}} images failed to upload",
+        "savedWithImages": "Slide saved with {{count}} images uploaded!"
+    },
+    "slide": {
+        "savedDraft": "slide saved in draft successfully!",
+        "saveErrorGeneric": "Error in saving the slide",
+        "publishErrorGeneric": "Error in publishing the slide",
+        "genericSaveErrorLower": "error saving slide",
+        "typeSavedSuccess": "{{type}} saved successfully!",
+        "typeUpToDate": "{{type}} is already up to date!",
+        "typeUpToDateAutoSaved": "{{type}} is up to date! Changes are auto-saved.",
+        "typeSaveError": "Error saving {{type}} slide",
+        "forcedOverride": "Slide saved (forced override).",
+        "discardedRestored": "Changes discarded — restored to the last saved version.",
+        "autoPublished": "Slide auto-published for review",
+        "renameUnsupported": "This slide type can't be renamed here."
+    },
+    "ui": {
+        "openDoubtSidebar": "Open Doubt Resolution Sidebar",
+        "unsavedChanges": "Unsaved changes",
+        "viewChanges": "View changes",
+        "discardChanges": "Discard changes",
+        "slideDeletedTitle": "This slide has been deleted",
+        "slideDeletedBody": "The slide content is no longer available",
+        "assignmentError": "Assignment Error",
+        "assignmentLoadFailed": "Failed to load assignment: {{message}}",
+        "loadingEditor": "Loading editor...",
+        "splitScreenLoadingError": "Split Screen Loading Error",
+        "splitScreenLoadingErrorBody": "Failed to load the split screen component. This is usually a temporary issue.",
+        "retry": "Retry",
+        "splitScreenUnavailable": "Split screen component unavailable",
+        "showFallback": "Show Fallback",
+        "keepEditing": "Keep editing",
+        "saving": "Saving...",
+        "saveDraft": "Save Draft",
+        "unpublish": "Unpublish",
+        "unpublishShort": "Unpub",
+        "publish": "Publish",
+        "publishShort": "Pub",
+        "discardDialogHeading": "Discard changes",
+        "discardDialogBody": "This will throw away the unsaved edits on this {{term}} and restore the last saved version. This cannot be undone."
+    },
+    "integrity": {
+        "actionSaved": "saved",
+        "actionPublished": "published",
+        "imagesInTable": "This slide has {{count}} image(s) inside a table, which the editor cannot open or keep. It was NOT {{action}}, so nothing is lost — your slide is safe as-is. To edit it, the image(s) must be moved out of the table first; please contact support.",
+        "incomplete": "This slide did not load completely ({{missing}} missing). To protect your content it was NOT {{action}}. Please reload the page and try again."
+    },
+    "splitScreen": {
+        "savedSuccess": "Split screen project saved successfully!",
+        "autoSaveFailed": "Failed to save split screen data automatically",
+        "slideSavedSuccess": "Split screen slide saved successfully!",
+        "slideSaveError": "Error saving split screen slide: {{error}}",
+        "saveFailed": "Failed to save split screen data"
+    },
+    "notebook": {
+        "saveFailed": "Failed to save notebook changes"
+    },
+    "scratch": {
+        "saveFailed": "Failed to save Scratch project changes"
+    },
+    "code": {
+        "saveFailed": "Failed to save code changes"
+    },
+    "quiz": {
+        "savedDraft": "Quiz saved in draft successfully!",
+        "saveError": "Error saving quiz slide"
+    },
+    "audio": {
+        "missingData": "Audio slide data is missing",
+        "savedSuccess": "Audio slide saved successfully!",
+        "saveError": "Error saving audio slide"
+    },
+    "scorm": {
+        "missingData": "SCORM slide data is missing",
+        "savedSuccess": "SCORM slide saved successfully!",
+        "saveError": "Error saving SCORM slide"
+    },
+    "assessment": {
+        "missingData": "Assessment slide data is missing",
+        "savedSuccess": "Assessment slide saved successfully!",
+        "saveError": "Error saving assessment slide"
+    }
+}

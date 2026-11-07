@@ -1,0 +1,22 @@
+{
+    "errors": {
+        "unknownPyodideError": "Une erreur inconnue s'est produite lors du chargement de Pyodide.",
+        "pyodideTimedOut": "Le chargement de Pyodide a expiré. Cela peut être dû à une connexion Internet lente ou à des problèmes de CDN. Veuillez actualiser la page et réessayer.",
+        "pyodideDownloadFailed": "Échec du téléchargement de Pyodide. Veuillez vérifier votre connexion Internet et réessayer.",
+        "pyodideError": "Erreur Pyodide : {{message}}",
+        "loadingError": "Erreur de chargement : {{message}}",
+        "pyodideLoadingErrorBlock": "Erreur de chargement de Pyodide :\n{{errorMessage}}\n\nVeuillez essayer :\n1. Actualiser la page\n2. Vérifier votre connexion Internet\n3. Réessayer dans quelques instants",
+        "noCodeToExecute": "Aucun code à exécuter. Veuillez d'abord écrire du code.",
+        "judge0Error": "Erreur Judge0 : {{message}}\n\nRemarque : ce.judge0.com applique une limite de débit ; en cas d'erreur 429, patientez puis réessayez.",
+        "genericError": "Erreur : {{message}}"
+    },
+    "output": {
+        "codeExecutedNoOutput": "Code exécuté avec succès (aucune sortie)",
+        "noOutputParen": "(aucune sortie)",
+        "interactiveInputNotSupported": "\nRemarque : la saisie interactive (input()) n'est pas prise en charge dans cet environnement.",
+        "errorLabel": "ERREUR : {{message}}"
+    },
+    "simulation": {
+        "pythonWelcome": "Bonjour, {{name}} ! Bienvenue dans la programmation !\nSomme des nombres : 15\n\nRemarque : ceci est une simulation Python. Pour une exécution Python réelle, il vous faudrait un interpréteur Python."
+    }
+}

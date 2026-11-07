@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { MyButton } from '@/components/design-system/button';
 import { Header } from '@/routes/manage-students/students-list/-schemas/student-bulk-enroll/csv-bulk-init';
 import { useBulkUploadStore } from '@/routes/manage-students/students-list/-stores/enroll-students-bulk/useBulkUploadStore';
@@ -37,6 +38,7 @@ export const PreviewDialog: React.FC<PreviewDialogProps> = ({
     instituteId,
     packageSessionId,
 }) => {
+    const { t } = useTranslation('manageStudentsPreviewDialog');
     const { csvErrors, setIsEditing } = useBulkUploadStore();
     const [selectedErrorRow, setSelectedErrorRow] = useState<number | null>(null);
     const [showErrorDialog, setShowErrorDialog] = useState(false);
@@ -78,7 +80,7 @@ export const PreviewDialog: React.FC<PreviewDialogProps> = ({
                     layoutVariant="default"
                     onClick={handleClose}
                 >
-                    {uploadCompleted ? 'Close' : 'Done'}
+                    {uploadCompleted ? t('buttons.close') : t('buttons.done')}
                 </MyButton>
             </div>
         </footer>
@@ -88,11 +90,15 @@ export const PreviewDialog: React.FC<PreviewDialogProps> = ({
         <MyDialog
             open={isOpen}
             onOpenChange={handleClose}
-            heading={uploadCompleted && uploadResponse ? 'Upload Response' : 'Preview Data'}
-            dialogWidth="w-[80vw] overflow-x-hidden no-scrollbar"
+            heading={
+                uploadCompleted && uploadResponse
+                    ? t('heading.uploadResponse')
+                    : t('heading.previewData')
+            }
+            dialogWidth="w-dialog-xl overflow-x-hidden no-scrollbar"
             footer={footer}
         >
-            <div className="no-scrollbar max-h-[80vh] w-[80vw] overflow-x-hidden p-0 font-normal">
+            <div className="no-scrollbar max-h-dialog-tall w-dialog-xl overflow-x-hidden p-0 font-normal">
                 {uploadCompleted && uploadResponse ? (
                     // Show upload results using the new component
                     <div className="no-scrollbar flex flex-col gap-4">
@@ -134,10 +140,10 @@ export const PreviewDialog: React.FC<PreviewDialogProps> = ({
                     errors={[
                         {
                             path: [selectedErrorRow, 'ERROR'],
-                            message: 'Upload failed',
-                            resolution: 'Check the error details for more information',
+                            message: t('error.uploadFailed'),
+                            resolution: t('error.checkDetails'),
                             currentVal: String(
-                                uploadResponse[selectedErrorRow]?.ERROR || 'Unknown error'
+                                uploadResponse[selectedErrorRow]?.ERROR || t('error.unknownError')
                             ),
                             format: '',
                         },

@@ -1,0 +1,370 @@
+{
+    "myMentors": {
+        "page": {
+            "title": "Mes mentors",
+            "subtitle": "Réservez des séances et envoyez des messages à vos mentors attitrés.",
+            "findMentor": "Trouver un mentor"
+        },
+        "tabs": {
+            "mine": "Mes mentors",
+            "sessions": "Mes séances",
+            "find": "Trouver un mentor",
+            "requests": "Mes demandes"
+        },
+        "rateBanner": {
+            "question": "Comment s'est passée votre séance avec {{mentor}} ?",
+            "helper": "Une évaluation rapide aide votre établissement à garder le mentorat utile.",
+            "cta": "Évaluer la séance"
+        },
+        "common": {
+            "yourMentor": "votre mentor",
+            "yourSession": "votre séance",
+            "mentor": "Mentor",
+            "thisMentor": "ce mentor",
+            "anyAvailableMentor": "N'importe quel mentor disponible",
+            "cancel": "Annuler",
+            "retry": "Réessayer",
+            "tryAgain": "Réessayer"
+        },
+        "find": {
+            "searchPlaceholder": "Rechercher par nom ou par sujet",
+            "askAnyTitle": "Laissez votre {{admin}} choisir un mentor pour vous",
+            "askAnyCta": "Pas sûr ? Demandez n'importe quel mentor",
+            "loadError": "Impossible de charger les mentors.",
+            "empty": {
+                "searchTitle": "Aucun mentor ne correspond à votre recherche",
+                "noneTitle": "Aucun mentor répertorié pour le moment",
+                "searchDescription": "Essayez un autre sujet, ou demandez à votre {{admin}} de vous mettre en relation avec n'importe quel mentor.",
+                "noneDescription": "Votre établissement n'a pas encore répertorié de mentors à consulter.",
+                "clearSearch": "Effacer la recherche"
+            }
+        },
+        "mine": {
+            "loadError": "Impossible de charger vos mentors.",
+            "empty": {
+                "title": "Aucun mentor pour le moment",
+                "descriptionCanFind": "Consultez les mentors proposés par votre établissement et faites une demande pour celui qui convient.",
+                "descriptionNoFind": "Dès qu'un mentor vous sera attribué, il apparaîtra ici."
+            }
+        },
+        "requests": {
+            "loadError": "Impossible de charger vos demandes.",
+            "empty": {
+                "title": "Aucune demande pour le moment",
+                "description": "Faites une demande de mentor et vous pourrez suivre la demande ici."
+            },
+            "requestedOn": "Demandé le {{date}}",
+            "withdraw": "Retirer",
+            "toast": {
+                "withdrawn": "Demande retirée",
+                "withdrawFailed": "Impossible de retirer la demande."
+            },
+            "status": {
+                "pending": "En attente d'approbation",
+                "approved": "Approuvée",
+                "declined": "Non approuvée",
+                "cancelled": "Retirée"
+            }
+        },
+        "requestDialog": {
+            "toast": {
+                "sent": "Demande envoyée — votre {{admin}} la confirmera sous peu",
+                "sendFailed": "Impossible d'envoyer votre demande. Veuillez réessayer."
+            },
+            "headingNamed": "Demande à {{mentor}}",
+            "headingAny": "Demander un mentor",
+            "sending": "Envoi en cours…",
+            "sendRequest": "Envoyer la demande",
+            "anyMentorHelp": "Votre {{admin}} vous mettra en relation avec un mentor adapté à vos besoins.",
+            "messageLabel": "Avec quoi avez-vous besoin d'aide ?",
+            "messagePlaceholder": "ex. Je bloque sur le mouvement de rotation et j'ai besoin d'un plan d'étude avant mon prochain contrôle",
+            "messageHelper": "Facultatif, mais cela aide votre {{admin}} à bien vous associer."
+        },
+        "rateDialog": {
+            "heading": "Évaluez votre séance",
+            "notNow": "Pas maintenant",
+            "pickStarFirst": "Choisissez d'abord une note en étoiles",
+            "saving": "Enregistrement…",
+            "submit": "Envoyer l'avis",
+            "question": "Comment s'est passée {{session}} avec {{mentor}} ?",
+            "starRatingAriaLabel": "Note en étoiles",
+            "starAriaLabel_one": "{{count}} étoile",
+            "starAriaLabel_many": "{{count}} étoiles",
+            "starAriaLabel_other": "{{count}} étoiles",
+            "tapToRate": "Touchez une étoile pour évaluer",
+            "commentLabel": "Voulez-vous ajouter quelque chose ?",
+            "commentPlaceholder": "Qu'est-ce qui a fonctionné, et qu'est-ce qui aiderait la prochaine fois ?",
+            "commentHelper": "Facultatif. Partagé avec votre établissement, pas avec les autres apprenants.",
+            "toast": {
+                "thanks": "Merci — votre avis aide votre mentor",
+                "saveFailed": "Impossible d'enregistrer votre avis. Veuillez réessayer."
+            },
+            "rating": {
+                "1": "Pas utile",
+                "2": "Pourrait être mieux",
+                "3": "Correct",
+                "4": "Utile",
+                "5": "Excellent"
+            }
+        },
+        "manageDialog": {
+            "toast": {
+                "cancelled": "Séance annulée",
+                "moved": "Séance déplacée",
+                "cancelFailed": "Impossible d'annuler la séance.",
+                "moveFailed": "Impossible de déplacer la séance."
+            },
+            "headingCancel": "Annuler cette séance",
+            "headingMove": "Déplacer cette séance",
+            "keepAsIs": "Garder telle quelle",
+            "pickTimeFirst": "Choisissez d'abord un nouveau créneau",
+            "saving": "Enregistrement…",
+            "cancelSession": "Annuler la séance",
+            "moveSession": "Déplacer la séance",
+            "cancelDescription": "Votre mentor sera informé de l'annulation, et l'entrée de calendrier ainsi que les rappels seront supprimés. Vous pouvez réserver un autre créneau à tout moment.",
+            "reasonPlaceholder": "ex. Cela tombe en même temps qu'un cours",
+            "reasonLabel": "Motif (partagé avec votre mentor)",
+            "noAvailability": "Nous ne pouvons pas afficher les disponibilités de ce mentor pour le moment — il se peut qu'il n'ait pas configuré de page de réservation. Vous pouvez plutôt annuler cette séance, ou le contacter pour convenir d'un nouveau créneau.",
+            "loadingTimes": "Chargement des créneaux disponibles…",
+            "loadAvailabilityFailed": "Impossible de charger les disponibilités de votre mentor."
+        },
+        "mentorCard": {
+            "chatOpenFailed": "Impossible d'ouvrir la discussion. Veuillez réessayer.",
+            "bookSession": "Réserver une séance",
+            "message": "Message",
+            "bookingNotSetUp": "Réservation non configurée"
+        },
+        "directoryCard": {
+            "fullyBookedNow": "Complet pour le moment",
+            "fullyBooked": "Complet",
+            "placesLeft_one": "{{count}} place restante",
+            "placesLeft_many": "{{count}} places restantes",
+            "placesLeft_other": "{{count}} places restantes",
+            "alreadyYourMentor": "Déjà votre mentor",
+            "requestPending": "Demande envoyée — en attente d'approbation",
+            "requestAsMentor": "Demander comme mentor"
+        },
+        "sessionsTab": {
+            "loadError": "Impossible de charger vos séances.",
+            "empty": {
+                "title": "Aucune séance pour le moment",
+                "description": "Réservez un tête-à-tête avec l'un de vos mentors et il apparaîtra ici, avec la possibilité de le déplacer ou de l'annuler."
+            },
+            "upcoming": "À venir",
+            "past": "Passées",
+            "nothingBooked": "Rien de réservé pour le moment.",
+            "durationMinutes": "{{count}} min",
+            "join": "Rejoindre",
+            "reschedule": "Reprogrammer",
+            "cancel": "Annuler",
+            "youRated": "Vous avez noté cette séance {{rating}}/5",
+            "status": {
+                "upcoming": "À venir",
+                "awaitingReview": "En attente de votre mentor",
+                "completed": "Terminée",
+                "noShow": "Marquée comme absence",
+                "cancelled": "Annulée",
+                "rescheduled": "Déplacée"
+            }
+        }
+    },
+    "leaderboard": {
+        "badgesDialog": {
+            "titleNamed": "Badges de {{name}}",
+            "titleGeneric": "Badges",
+            "none": "Aucun badge obtenu pour le moment."
+        },
+        "viewBadges": "Voir les badges",
+        "pointsSuffix": "{{points}} pts",
+        "pts": "pts",
+        "title": "Classement",
+        "error": {
+            "title": "Impossible de charger le classement",
+            "description": "Veuillez vérifier le lien ou réessayer dans un instant."
+        },
+        "empty": {
+            "title": "Aucun classement pour le moment",
+            "description": "Les apprenants montent dans le classement en étudiant, en assistant aux cours en direct et en obtenant des badges."
+        },
+        "footerSummary": "apprenants · classés selon l'activité d'apprentissage",
+        "namesAnonymized": "Les noms sont anonymisés pour préserver la confidentialité",
+        "poweredBy": "Propulsé par {{instituteName}}",
+        "allCourses": "Tous les {{courses}}"
+    },
+    "media": {
+        "notFound": "Média introuvable",
+        "loadFailed": "Le média demandé n'a pas pu être chargé.",
+        "video": "Vidéo",
+        "invalidYoutubeUrl": "URL YouTube invalide",
+        "pdfDocument": "Document PDF",
+        "image": "Image",
+        "videoNotSupported": "Votre navigateur ne prend pas en charge la balise vidéo.",
+        "unknownFile": "Fichier inconnu",
+        "previewUnsupported": "L'aperçu de ce type de fichier n'est pas pris en charge",
+        "openFile": "Ouvrir le fichier"
+    },
+    "verify": {
+        "scan": {
+            "title": "Vérifier un certificat",
+            "description": "Scannez le code sur le certificat avec n'importe quelle application de scan et collez le résultat, ou saisissez le code de vérification imprimé à côté.",
+            "inputLabel": "Code scanné ou lien de vérification",
+            "inputPlaceholder": "ex. EDU2026001*A1B2C3D4E5",
+            "checking": "Vérification…",
+            "verify": "Vérifier",
+            "numberNotEnough": "Le numéro du certificat seul ne suffit pas à le vérifier — il faut le code scanné ou le code de vérification imprimé avec lui. C'est ce qui empêche quiconque de deviner les certificats d'un établissement.",
+            "noRecordMatch": "Nous n'avons aucun enregistrement correspondant à ce que vous avez saisi."
+        },
+        "verifiedVia": {
+            "codeEntered": "code que vous avez saisi",
+            "qrCode": "code QR"
+        },
+        "certificateVerificationTitle": "Vérification du certificat",
+        "enterCodeInstead": "Saisir plutôt le code du certificat",
+        "cards": {
+            "checkingAriaLabel": "Vérification du certificat",
+            "checking": "Vérification de ce certificat…",
+            "invalidTitle": "Impossible de vérifier ce certificat",
+            "noRecordPrefix": "Nous n'avons aucun enregistrement du certificat",
+            "noRecordSuffix": "avec ce lien de vérification.",
+            "linksMustBeFull": "Les liens doivent être scannés ou copiés en entier — un lien partiel ne sera pas vérifié. Si vous l'avez saisi à la main, scannez plutôt le code sur le certificat.",
+            "errorTitle": "Impossible de joindre le service de vérification",
+            "errorDescription": "Cela ne signifie pas que le certificat est invalide. Vérifiez votre connexion et réessayez."
+        },
+        "certificate": {
+            "theAwardingInstitute": "l'établissement émetteur",
+            "verifiedBy": "Vérifié par",
+            "genuine": "Ce certificat est authentique",
+            "confirmsIssued": "{{instituteName}} confirme avoir délivré le certificat ci-dessous.",
+            "checkedUsing": "Vérifié à l'aide de {{verifiedVia}}.",
+            "issuedTo": "Délivré à",
+            "certificateNumber": "Numéro du certificat",
+            "issuedOn": "Délivré le",
+            "completion": "Achèvement",
+            "namePartial": "Le nom du destinataire est partiellement masqué pour protéger sa confidentialité. Il correspond au nom imprimé sur le certificat."
+        }
+    },
+    "unsubscribe": {
+        "errors": {
+            "generic": "Nous n'avons pas pu mettre à jour vos préférences pour le moment. Veuillez réessayer."
+        },
+        "generalUpdates": "Mises à jour générales",
+        "yourAccount": "votre compte",
+        "channel": {
+            "email": "E-mail",
+            "whatsapp": "WhatsApp",
+            "notification": "notification"
+        },
+        "messages": {
+            "resubscribed": "Vous êtes de nouveau abonné aux mises à jour {{channel}}.",
+            "unsubscribed": "Vous vous êtes désabonné des mises à jour {{channel}}."
+        },
+        "header": {
+            "title": "Mettez à jour vos notifications",
+            "descriptionPrefix": "Nous mettons à jour votre préférence de message pour"
+        },
+        "support": {
+            "title": "Besoin d'autre chose ?",
+            "description": "Contactez notre équipe d'assistance et nous vous aiderons à ajuster vos préférences de communication.",
+            "emailPrefix": "Envoyez un e-mail à",
+            "emailSuffix": "en indiquant l'objet du message que vous avez reçu.",
+            "retrying": "Nouvelle tentative…",
+            "tryAgain": "Réessayer"
+        },
+        "returnToVacademy": "Retour à Vacademy",
+        "invalidLink": {
+            "title": "Lien indisponible",
+            "description": "Ce lien de désabonnement manque d'informations requises ou a peut-être expiré. Contactez notre équipe d'assistance et nous mettrons à jour vos préférences manuellement."
+        },
+        "summary": {
+            "retrying": "Nouvelle tentative…",
+            "tryAgain": "Réessayer",
+            "pleaseWait": "Veuillez patienter…",
+            "resubscribe": "Se réabonner",
+            "unsubscribe": "Se désabonner"
+        },
+        "status": {
+            "updating": "Mise à jour de votre préférence",
+            "hangTight": "Veuillez patienter pendant que nous mettons à jour les notifications pour {{recipient}}.",
+            "updated": "Préférence mise à jour",
+            "couldNotUpdate": "Nous n'avons pas pu mettre à jour ceci"
+        }
+    },
+    "referral": {
+        "navHeading": "Mes parrainages",
+        "copiedToClipboard": "{{type}} copié dans le presse-papiers",
+        "loading": "Chargement...",
+        "loadError": "Erreur lors du chargement des coupons",
+        "noDataTitle": "Aucune donnée de parrainage disponible",
+        "noDataDescription": "Aucune donnée de coupon ou de parrainage trouvée. Veuillez contacter votre administrateur pour obtenir de l'aide.",
+        "hero": {
+            "titlePrefix": "Invitez des amis,",
+            "titleHighlight": "obtenez des récompenses",
+            "description": "Partagez le plaisir d'apprendre avec vos amis et gagnez des récompenses tous les deux.",
+            "shareNote": "Partagez votre code de parrainage avec des amis, et vous recevrez tous les deux des récompenses de parrainage exclusives.",
+            "yourCodeTitle": "Votre code de parrainage",
+            "codeHelper": "Vos amis peuvent saisir ce code pour s'inscrire via votre parrainage",
+            "imageAlt": "Illustration de méditation d'une personne en posture du lotus entourée de plantes"
+        },
+        "inviteCode": "Code d'invitation",
+        "inviteLinks": {
+            "title": "Vos liens de parrainage",
+            "inviteLinkColumn": "Lien d'invitation",
+            "shareColumn": "Partager",
+            "noInvites": "Aucune invitation disponible",
+            "unknownCourse": "{{course}} inconnu",
+            "linkCopied": "Lien d'invitation copié dans le presse-papiers",
+            "shareTitle": "Rejoignez-moi dans ce parcours d'apprentissage !",
+            "shareText": "J'ai trouvé ce/cette {{course}} formidable et j'ai pensé que cela pourrait vous intéresser. Utilisez mon lien de parrainage pour commencer :",
+            "copyLink": "Copier le lien",
+            "shareLink": "Partager le lien"
+        },
+        "table": {
+            "title": "Vos parrainages",
+            "memberName": "Nom du membre",
+            "memberEmail": "E-mail du membre",
+            "rewardStatus": "Statut de la récompense",
+            "viewDetails": "Voir les détails",
+            "viewDetailsTitle": "Voir les détails du parrainage",
+            "yourBenefits": "Vos avantages",
+            "noBenefitLogs": "Aucun historique d'avantages disponible",
+            "noneFound": "Aucun parrainage trouvé pour le moment.",
+            "noneFoundHelper": "Commencez à inviter des amis pour voir vos parrainages ici !"
+        },
+        "status": {
+            "pending": "En attente"
+        },
+        "benefit": {
+            "earnedPoints": "{{points}} points gagnés",
+            "receivedDays": "{{days}} jours d'adhésion gratuite reçus",
+            "percentageDiscountText": "Obtenez une réduction sur votre prochain achat",
+            "flatDiscountText": "Obtenez une réduction forfaitaire sur votre prochain achat",
+            "contentText": "Du contenu exclusif vous sera livré",
+            "unknown": "Avantage inconnu",
+            "percentageDiscount": "Réduction en pourcentage",
+            "flatDiscount": "Réduction forfaitaire",
+            "freeMembershipDays": "Jours d'adhésion gratuite",
+            "contentBenefit": "Avantage contenu",
+            "rewardPoints": "Points de récompense"
+        }
+    },
+    "myReports": {
+        "detail": {
+            "loadError": "Impossible de charger ce rapport. Veuillez réessayer.",
+            "couldNotLoad": "Impossible de charger le rapport",
+            "reportNotFound": "Rapport introuvable.",
+            "backToReports": "Retour aux rapports",
+            "inProgress": "Rapport en cours",
+            "generationFailed": "Échec de la génération du rapport. Veuillez contacter votre établissement.",
+            "stillGenerating": "Votre rapport est toujours en cours de génération. Veuillez revenir bientôt.",
+            "downloadPdf": "Télécharger le PDF",
+            "contentUnavailable": "Contenu du rapport indisponible",
+            "contentUnavailableDescription": "Le contenu du rapport n'a pas pu être chargé. Veuillez réessayer plus tard.",
+            "backToMyReports": "Retour à Mes rapports"
+        },
+        "activity": {
+            "insightsUnavailable": "Analyses indisponibles",
+            "insightsUnavailableDescription": "Ce rapport n'a pas pu être ouvert. Il est peut-être encore en préparation.",
+            "typeInsights": "Analyses {{type}}"
+        }
+    }
+}

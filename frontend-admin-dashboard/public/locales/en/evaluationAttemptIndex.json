@@ -1,0 +1,10 @@
+{
+    "evaluateResponse": "Evaluate Response",
+    "pageDescription": "This page shows all details related to an assessment.",
+    "couldNotLoadAnswerSheet": "Couldn't load the answer sheet",
+    "couldNotLoadAnswerSheetBody": "The student's uploaded response could not be loaded. It may not have been submitted yet, or the file is temporarily unavailable. If the student shared their answer sheet another way, you can upload it on their behalf.",
+    "back": "Back",
+    "retry": "Retry",
+    "uploadAnswerSheet": "Upload Answer Sheet",
+    "gettingResponseFile": "Getting response file please wait..."
+}

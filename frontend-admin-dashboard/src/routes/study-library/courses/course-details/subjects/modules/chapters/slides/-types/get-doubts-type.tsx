@@ -37,4 +37,10 @@ export interface DoubtFilter {
     batch_ids?: string[];
     /** Scopes the admin inbox to one institute; required so general (batchless) queries are visible. */
     institute_id?: string;
+    /** Only doubts with an ACTIVE explicit assignee among these staff user ids. Empty ⇒ off. */
+    assignee_user_ids?: string[];
+    /** Only doubts with no explicit assignee. OR-ed with assignee_user_ids. */
+    unassigned_only?: boolean;
+    /** Configurable workflow status keys (PENDING, IN_PROGRESS, RESOLVED, …). Empty ⇒ all. */
+    workflow_statuses?: string[];
 }

@@ -1,0 +1,150 @@
+{
+    "fields": {
+        "studentName": "اسم الطالب",
+        "instituteName": "اسم المؤسسة",
+        "instituteLogo": "شعار المؤسسة",
+        "courseName": "اسم الدورة",
+        "packageName": "اسم الباقة",
+        "packageLevel": "مستوى الباقة",
+        "sessionName": "اسم الجلسة",
+        "completionDate": "تاريخ الإكمال",
+        "completionPercentage": "نسبة الإكمال %",
+        "dateOfCompletion": "تاريخ الإكمال",
+        "certificateId": "معرّف الشهادة",
+        "certificateQr": "رمز QR",
+        "certificateBarcode": "الباركود",
+        "certificateShortCode": "رمز التحقق",
+        "enrollmentNumber": "رقم التسجيل",
+        "email": "البريد الإلكتروني",
+        "mobileNumber": "رقم الجوال",
+        "themeColor": "لون السمة"
+    },
+    "dragChip": {
+        "title": "اسحب إلى القالب لوضع {{field}}"
+    },
+    "customFields": {
+        "sectionLabel": "حقولك الخاصة",
+        "addField": "إضافة حقل",
+        "description": "لكل ما لا تغطيه الحقول المدمجة — درجة، لقب أحد الموقّعين، أو سطر اعتماد. يصبح كل حقل شريحة يمكنك سحبها إلى أي مكان في التصميم.",
+        "empty": "لا توجد حقول مخصصة حتى الآن.",
+        "fieldNameLabel": "اسم الحقل",
+        "fieldNamePlaceholder": "الدرجة",
+        "valueSourceLabel": "مصدر القيمة",
+        "valueSourceStatic": "نفس النص في كل شهادة",
+        "valueSourceCustom": "إجابة المتعلّم الخاصة",
+        "learnerKeyLabel": "مفتاح الحقل المخصص للمتعلّم",
+        "textToPrintLabel": "النص المطلوب طباعته",
+        "textToPrintPlaceholder": "مدير الدراسات",
+        "fallbackLabel": "إذا لم تكن لدى المتعلّم إجابة",
+        "removeField": "إزالة {{name}}",
+        "fieldFallback": "الحقل",
+        "placedAsPrefix": "يوضع على الشهادة بالشكل",
+        "duplicateWarning": "يشترك حقلان في هذا الاسم — سيُستخدم الأول فقط.",
+        "needsName": "أعطِ هذا الحقل اسمًا حتى يمكن وضعه.",
+        "learnerValuePlaceholder": "قيمة المتعلّم"
+    },
+    "page": {
+        "title": "إعدادات الشهادة",
+        "description": "صمّم الشهادة، وحدّد كيفية ترقيمها وترميزها، وأعدّ الصفحة التي يصل إليها من يمسحها ضوئيًا.",
+        "saveChanges": "حفظ التغييرات"
+    },
+    "warnings": {
+        "logoNotSet": "لم يتم تعيين شعار المؤسسة — قم بتحميل واحد من لوحة التحكم ← تعديل ملف المؤسسة حتى يظهر على الشهادات الصادرة وشريط التنقل.",
+        "themeNotSetPart1": "لم يتم تعيين لون سمة المؤسسة — الحدود المرتبطة بـ",
+        "themeNotSetPart2": "ستعود افتراضيًا إلى"
+    },
+    "autoIssue": {
+        "heading": "إصدار الشهادات تلقائيًا",
+        "description": "عند التفعيل، يحصل المتعلّمون على شهادة بمجرد أن يتجاوز إكمالهم للدورة الحد الأدنى أدناه.",
+        "thresholdLabel": "حد الإكمال (%)",
+        "thresholdHint": "يحصل المتعلّمون على شهادة بمجرد أن يتجاوز إكمالهم للدورة هذا الحد. الافتراضي 80؛ ويعيد الخادم التحقق منه عند الإصدار."
+    },
+    "settingsTabs": {
+        "design": "التصميم",
+        "numbering": "الترقيم والرموز",
+        "verification": "صفحة التحقق"
+    },
+    "numbering": {
+        "badgeTypeLabel": "الرمز القابل للمسح على الشهادة",
+        "qrOption": "رمز QR (افتراضي)",
+        "barcodeOption": "باركود (Code 128)",
+        "badgeHintPart1": "يُطبع بجانب رقم الشهادة، أسفل اليمين — يوضح لك التصميم أدناه المكان بالضبط. لوضعه بنفسك بدلاً من ذلك، اسحب تلك الشارة، أو اسحب حقل",
+        "badgeHintSlash": "/",
+        "badgeHintPart2": "إلى التصميم. وينطبق الأمر نفسه على الرقم: أينما تضع",
+        "badgeHintPart3": "، يتوقف عن الطباعة تلقائيًا، حتى لا تحصل على نسختين أبدًا.",
+        "barcodeContentLabel": "ما الذي يشفّره الباركود",
+        "barcodeNumberOption": "رقم الشهادة فقط (افتراضي)",
+        "barcodeVerificationOption": "رمز التحقق — يمكن لأي شخص مسحه ضوئيًا للتحقق من الشهادة",
+        "barcodeVerificationHintPart1": "يعطي مسح الباركود رمزًا يتحقق من الشهادة على صفحة التحقق الخاصة بك. يحمل ضعف كمية البيانات تقريبًا مقارنة بالرقم وحده، لذا يجب ألا يقل عرضه عن",
+        "barcodeVerificationHintPart2": "ليظل قابلاً للمسح على صفحة مطبوعة — يحذرك التصميم أدناه إذا كان ضيقًا جدًا.",
+        "barcodeNumberHint": "يعطي المسح رقم الشهادة كنص. يحدد ذلك هوية الشهادة لكنه لا يثبت شيئًا، لأن الرقم وحده ليس دليلًا. بدّل إلى رمز التحقق حتى يتحقق مسح الباركود فعليًا.",
+        "autoStampHeading": "الختم التلقائي",
+        "autoStampDescription": "يُطبع أسفل اليمين على الشهادات التي لا يضع تصميمها هذه العناصر بنفسه. أي حقل تضعه على التصميم يتفوق دائمًا على الختم.",
+        "stampCodeLabel": "ختم {{code}}",
+        "barcodeWord": "الباركود",
+        "qrCodeWord": "رمز QR",
+        "stampCodeOnHint": "تحمل كل شهادة رمزًا قابلاً للمسح الضوئي.",
+        "stampCodeOffHint": "معطّل — لا يمكن التحقق من الشهادات التي لا تحمل رمزها الخاص عبر المسح.",
+        "stampNumberLabel": "ختم رقم الشهادة",
+        "stampNumberOnHint": "تُظهر كل شهادة رقمها في مكان ما.",
+        "stampNumberOffHint": "معطّل — لا يزال الرقم يُخصَّص ويظل قابلاً للتحقق، لكنه لا يُطبع إلا إذا وضعه تصميمك."
+    },
+    "verification": {
+        "multiPageWarning": "يحتوي ملف PDF هذا على {{count}} صفحة — ستصبح الأولى فقط هي المستند.",
+        "pdfReadError": "تعذّرت قراءة ملف PDF هذا."
+    },
+    "design": {
+        "pageFieldsHeading": "الصفحة والحقول",
+        "pageFieldsDescription": "الحجم الذي تُطبع به الشهادة، وأي قيم خاصة بك تريد وضعها عليها.",
+        "pageSizeLabel": "حجم الصفحة",
+        "a4Landscape": "A4 أفقي",
+        "a4Portrait": "A4 عمودي",
+        "a3Landscape": "A3 أفقي",
+        "a3Portrait": "A3 عمودي",
+        "customSize": "مخصص",
+        "widthLabel": "العرض (مم)",
+        "heightLabel": "الارتفاع (مم)",
+        "generatorHeading": "تصميم القالب وإصدار الشهادات",
+        "generatorDescription": "قم بتحميل قالب وأضِف تعليقات توضيحية بحقول بيانات الطالب",
+        "editorModeVisual": "مرئي",
+        "editorModeHtml": "HTML",
+        "downloadTemplate": "تنزيل القالب",
+        "downloadError": "فشل تنزيل معاينة القالب.",
+        "viewUpload": "تحميل",
+        "viewDesign": "التصميم",
+        "viewPreview": "معاينة",
+        "notDefaultWarningPart1": "أنت تعدّل",
+        "thisTemplateFallback": "هذا القالب",
+        "notDefaultWarningPart2": ". لا يزال المتعلّمون يتلقون",
+        "defaultTemplateFallback": "القالب الافتراضي",
+        "notDefaultWarningPart3": ". استخدم",
+        "makeDefaultLabel": "تعيين كافتراضي",
+        "notDefaultWarningPart4": "على إحدى البطاقات أعلاه لتغيير ذلك.",
+        "dragAFieldLabel": "اسحب حقلاً",
+        "fieldsPlaced_zero": "{{count}} حقل موضوع",
+        "fieldsPlaced_one": "{{count}} حقل موضوع",
+        "fieldsPlaced_two": "{{count}} حقلان موضوعان",
+        "fieldsPlaced_few": "{{count}} حقول موضوعة",
+        "fieldsPlaced_many": "{{count}} حقلًا موضوعًا",
+        "fieldsPlaced_other": "{{count}} حقل موضوع"
+    },
+    "htmlEditor": {
+        "insertToken": "إدراج رمز",
+        "resetToDefault": "إعادة التعيين إلى الافتراضي",
+        "insertTokenTitle": "إدراج {{token}} عند المؤشر",
+        "textareaPlaceholder": "<!-- الصق أو اكتب HTML لشهادتك. استخدم شرائح الرموز أعلاه لإدراج حقول ديناميكية مثل {{token}}. -->",
+        "livePreview": "معاينة مباشرة (بيانات نموذجية)"
+    },
+    "preview": {
+        "zoomOut": "تصغير",
+        "zoomIn": "تكبير",
+        "fitToScreen": "ملاءمة الشاشة",
+        "htmlIframeTitle": "معاينة شهادة HTML",
+        "iframeTitle": "معاينة الشهادة",
+        "longNamesLabel": "معاينة بأسماء طويلة"
+    },
+    "save": {
+        "success": "تم حفظ إعدادات الشهادة بنجاح!",
+        "error": "فشل حفظ إعدادات الشهادة. يرجى المحاولة مرة أخرى."
+    }
+}

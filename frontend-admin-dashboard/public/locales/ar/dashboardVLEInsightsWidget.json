@@ -1,0 +1,41 @@
+{
+    "heading": "رؤى {{plural}}",
+    "subtitle": "الخطط والمقاعد والنمو عبر شبكتك",
+    "manage": "إدارة",
+    "planStatus": {
+        "title": "حالة الخطة",
+        "active": "نشطة",
+        "pending": "قيد الانتظار",
+        "expired": "منتهية",
+        "inactive": "غير نشطة",
+        "none": "بلا خطة"
+    },
+    "seatUtilization": {
+        "title": "استخدام المقاعد",
+        "seatsFraction": "{{used}} / {{total}} مقعدًا",
+        "seatsAvailable_zero": "{{formatted}} مقعد متاح عبر الشبكة",
+        "seatsAvailable_one": "{{formatted}} مقعد متاح عبر الشبكة",
+        "seatsAvailable_two": "{{formatted}} مقعدان متاحان عبر الشبكة",
+        "seatsAvailable_few": "{{formatted}} مقاعد متاحة عبر الشبكة",
+        "seatsAvailable_many": "{{formatted}} مقعدًا متاحًا عبر الشبكة",
+        "seatsAvailable_other": "{{formatted}} مقعد متاح عبر الشبكة"
+    },
+    "growth": {
+        "title": "التسجيلات الجديدة",
+        "tooltipLabel": "{{plural}} جديدة"
+    },
+    "months": {
+        "jan": "ينا",
+        "feb": "فبر",
+        "mar": "مار",
+        "apr": "أبر",
+        "may": "ماي",
+        "jun": "يون",
+        "jul": "يول",
+        "aug": "أغس",
+        "sep": "سبت",
+        "oct": "أكت",
+        "nov": "نوف",
+        "dec": "ديس"
+    }
+}

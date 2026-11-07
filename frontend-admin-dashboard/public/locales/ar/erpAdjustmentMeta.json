@@ -1,0 +1,12 @@
+{
+    "adjustmentType": {
+        "earning": "استحقاق",
+        "deduction": "خصم"
+    },
+    "runScope": {
+        "regular": "عادية",
+        "offCycle": "خارج الدورة",
+        "fnf": "التسوية النهائية",
+        "bonus": "مكافأة"
+    }
+}

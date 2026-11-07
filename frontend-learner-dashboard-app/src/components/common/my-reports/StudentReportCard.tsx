@@ -6,6 +6,7 @@
  * Shared design: an identical component exists in the admin app. Keep the two in sync.
  */
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import remarkBreaks from 'remark-breaks';
@@ -17,11 +18,16 @@ import type {
     V2SubjectMarksItem,
     V2SubjectPerformance,
     V2Misconception,
+    V2Assessment,
 } from '@/services/student-reports-api';
+import { getTerminology, getTerminologyPlural } from '@/components/common/layout-container/sidebar/utils';
+import { ContentTerms, SystemTerms } from '@/types/naming-settings';
+import themeData from '@/constants/themes/theme.json';
 import './report-card.css';
 
 const PLACEHOLDER_SUBJECTS = new Set([
-    'unknown', 'other', 'others', 'n/a', 'na', 'general', 'misc', 'miscellaneous', '-',
+    'unknown',
+    'default', 'other', 'others', 'n/a', 'na', 'general', 'misc', 'miscellaneous', '-',
 ]);
 const isRealSubject = (s?: string | null) => {
     const v = s?.trim().toLowerCase();
@@ -31,6 +37,44 @@ const isRealSubject = (s?: string | null) => {
 const BLOOM_ORDER = ['remember', 'understand', 'apply', 'analyze', 'evaluate', 'create'];
 const cap = (s: string) => (s ? s.charAt(0).toUpperCase() + s.slice(1) : s);
 const round = (n?: number | null) => (n == null ? null : Math.round(n));
+
+// institute_theme_code is a hex (sometimes without '#') or a preset code ("primary" = default
+// orange) — CSS/SVG can't paint a preset code, so the accent resolved to nothing and the charts lost
+// their marks. Map it through the app's own theme table.
+const resolveThemeColor = (code?: string | null): string | undefined => {
+    const c = code?.trim();
+    if (!c) return undefined;
+    if (/^#([0-9a-f]{3}|[0-9a-f]{6}|[0-9a-f]{8})$/i.test(c)) return c;
+    if (/^([0-9a-f]{3}|[0-9a-f]{6})$/i.test(c)) return `#${c}`;
+    return themeData.themes.find((t) => t.code === c.toLowerCase())?.colors.primary?.['500'];
+};
+
+// "default 12th Commerce (default)" → "12th Commerce": "default" is the placeholder level/session.
+const cleanBatchLabel = (s?: string | null) =>
+    (s ?? '')
+        .replace(/\(\s*default\s*\)/gi, '')
+        .replace(/^\s*default\s+/i, '')
+        .replace(/\s{2,}/g, ' ')
+        .trim();
+
+// 32 → "32", 4.5 → "4.5", 66.67 → "66.7" — half marks are real, don't round them away.
+const fmtNum = (n?: number | null) => (n == null ? '' : String(Math.round(n * 10) / 10));
+
+const gradeTone = (grade?: string) =>
+    ['A+', 'A', 'B+', 'B'].includes(grade ?? '')
+        ? 'good'
+        : grade === 'C'
+          ? 'attn'
+          : grade === 'D'
+            ? 'risk'
+            : '';
+
+// AI text fields are plain text, but older reports carry stray **bold** markers — render them.
+function InlineMd({ text }: { text?: string | null }) {
+    if (!text) return null;
+    const parts = text.replace(/^#{1,6}\s+/gm, '').split(/\*\*(.+?)\*\*/g);
+    return <>{parts.map((p, i) => (i % 2 === 1 ? <strong key={i}>{p}</strong> : p))}</>;
+}
 
 const fmtDate = (iso?: string) => {
     if (!iso) return '';
@@ -55,6 +99,7 @@ const statusPalette = (status?: string) => {
 
 // ── charts ────────────────────────────────────────────────────────────────
 function BloomRadar({ blooms }: { blooms: V2BloomLevel[] }) {
+    const { t } = useTranslation('layoutCommonB');
     const byLevel = new Map(blooms.map((b) => [b.level?.toLowerCase(), b]));
     const data = BLOOM_ORDER.map((lvl) => ({ label: cap(lvl), v: byLevel.get(lvl)?.accuracy ?? 0 }));
     const size = 230;
@@ -66,7 +111,7 @@ function BloomRadar({ blooms }: { blooms: V2BloomLevel[] }) {
     const pt = (i: number, r: number): [number, number] => [cx + r * Math.cos(ang(i)), cy + r * Math.sin(ang(i))];
     const poly = (r: (i: number) => number) => data.map((_, i) => pt(i, r(i)).map((x) => x.toFixed(1)).join(',')).join(' ');
     return (
-        <svg width="250" height={size} viewBox={`-46 0 322 ${size}`} role="img" aria-label="Thinking-skill radar chart">
+        <svg width="250" height={size} viewBox={`-46 0 322 ${size}`} role="img" aria-label={t('studentReportCard.charts.radarAriaLabel')}>
             {[0.25, 0.5, 0.75, 1].map((f) => (
                 <polygon key={f} points={poly(() => R * f)} fill="none" stroke="var(--line)" strokeWidth="1" />
             ))}
@@ -93,6 +138,7 @@ function BloomRadar({ blooms }: { blooms: V2BloomLevel[] }) {
 }
 
 function ConfidenceDonut({ knows, guesses, wrong, overall }: { knows: number; guesses: number; wrong: number; overall?: number | null }) {
+    const { t } = useTranslation('layoutCommonB');
     const segs = [
         { v: knows, c: 'var(--good)' },
         { v: guesses, c: 'var(--attn)' },
@@ -104,7 +150,7 @@ function ConfidenceDonut({ knows, guesses, wrong, overall }: { knows: number; gu
     const sw = 15;
     let off = 0;
     return (
-        <svg width="120" height="120" viewBox="0 0 120 120" role="img" aria-label="Confidence calibration donut">
+        <svg width="120" height="120" viewBox="0 0 120 120" role="img" aria-label={t('studentReportCard.charts.confidenceDonutAriaLabel')}>
             <circle cx="60" cy="60" r={r} fill="none" stroke="var(--surface-2)" strokeWidth={sw} />
             {segs.map((s, i) => {
                 const len = (C * s.v) / total;
@@ -119,7 +165,7 @@ function ConfidenceDonut({ knows, guesses, wrong, overall }: { knows: number; gu
             <text x="60" y="56" textAnchor="middle" fontSize="22" fontWeight="700" fill="var(--ink)" fontFamily="var(--mono)">
                 {overall != null ? `${round(overall)}%` : '—'}
             </text>
-            <text x="60" y="74" textAnchor="middle" fontSize="10.5" fill="var(--ink-3)">confidence</text>
+            <text x="60" y="74" textAnchor="middle" fontSize="10.5" fill="var(--ink-3)">{t('studentReportCard.charts.confidence')}</text>
         </svg>
     );
 }
@@ -144,10 +190,193 @@ const StarIcon = () => (
     </svg>
 );
 
+const GRADES = ['A+', 'A', 'B+', 'B', 'C', 'D'];
+const GRADE_KEY: Record<string, string> = {
+    'A+': 'ap',
+    A: 'a',
+    'B+': 'bp',
+    B: 'b',
+    C: 'c',
+    D: 'd',
+};
+const GRADE_CLASS: Record<string, string> = {
+    'A+': 'g-ap',
+    A: 'g-a',
+    'B+': 'g-bp',
+    B: 'g-b',
+    C: 'g-c',
+    D: 'g-d',
+};
+const classPct = (a: V2Assessment) =>
+    a.class_average != null && a.total_marks > 0 ? (a.class_average / a.total_marks) * 100 : null;
+
+// Score over time: the learner (accent line, faint wash, ringed dots) against the class average (grey).
+// Only the best and weakest points are labelled; hover a dot for the test, the list below has every value.
+function ScoreTrend({ items }: { items: V2Assessment[] }) {
+    const { t } = useTranslation('layoutCommonB');
+    const pts = items.filter((a) => a.percentage != null);
+    const n = pts.length;
+    if (n < 2) return null;
+    const W = 660;
+    const H = 190;
+    const L = 34;
+    const R = 18;
+    const T = 18;
+    const B = 24;
+    const x = (i: number) => L + ((W - L - R) * i) / (n - 1);
+    const y = (v: number) => T + (H - T - B) * (1 - Math.max(0, Math.min(100, v)) / 100);
+    const line = pts.map((a, i) => `${x(i).toFixed(1)},${y(a.percentage).toFixed(1)}`).join(' ');
+    const classLine = pts
+        .map((a, i) => {
+            const c = classPct(a);
+            return c == null ? null : `${x(i).toFixed(1)},${y(c).toFixed(1)}`;
+        })
+        .filter(Boolean)
+        .join(' ');
+    let hi = 0;
+    let lo = 0;
+    pts.forEach((a, i) => {
+        if (a.percentage > pts[hi]!.percentage) hi = i;
+        if (a.percentage < pts[lo]!.percentage) lo = i;
+    });
+    const months: { i: number; m: string }[] = [];
+    pts.forEach((a, i) => {
+        const m = a.date ? new Date(a.date).toLocaleDateString('en-IN', { month: 'short' }) : '';
+        if (m && m !== months[months.length - 1]?.m) months.push({ i, m });
+    });
+    const anchor = (px: number) => (px < L + 16 ? 'start' : px > W - R - 16 ? 'end' : 'middle');
+    return (
+        <svg
+            viewBox={`0 0 ${W} ${H}`}
+            width="100%"
+            role="img"
+            aria-label={t('studentReportCard.sections.trend.ariaLabel')}
+        >
+            {[0, 25, 50, 75, 100].map((g) => (
+                <g key={g}>
+                    <line
+                        x1={L}
+                        x2={W - R}
+                        y1={y(g)}
+                        y2={y(g)}
+                        stroke="var(--line)"
+                        strokeWidth="1"
+                    />
+                    <text x={L - 6} y={y(g) + 3} textAnchor="end" fontSize="9" fill="var(--ink-3)">
+                        {g}%
+                    </text>
+                </g>
+            ))}
+            {months.map(({ i, m }) => (
+                <text
+                    key={i}
+                    x={x(i)}
+                    y={H - 6}
+                    textAnchor={i === 0 ? 'start' : 'middle'}
+                    fontSize="9"
+                    fill="var(--ink-3)"
+                >
+                    {m}
+                </text>
+            ))}
+            {classLine && (
+                <polyline
+                    points={classLine}
+                    fill="none"
+                    stroke="var(--class-gray)"
+                    strokeWidth="2"
+                    strokeLinejoin="round"
+                />
+            )}
+            <polygon
+                points={`${line} ${x(n - 1).toFixed(1)},${y(0).toFixed(1)} ${x(0).toFixed(1)},${y(0).toFixed(1)}`}
+                fill="var(--accent)"
+                fillOpacity="0.08"
+            />
+            <polyline
+                points={line}
+                fill="none"
+                stroke="var(--accent)"
+                strokeWidth="2"
+                strokeLinejoin="round"
+            />
+            {pts.map((a, i) => (
+                <circle
+                    key={i}
+                    cx={x(i)}
+                    cy={y(a.percentage)}
+                    r="4"
+                    fill="var(--accent)"
+                    stroke="var(--surface)"
+                    strokeWidth="2"
+                >
+                    <title>{`${a.name} — ${fmtNum(a.percentage)}%`}</title>
+                </circle>
+            ))}
+            {(hi === lo ? [hi] : [hi, lo]).map((i) => (
+                <text
+                    key={`x${i}`}
+                    x={x(i)}
+                    y={i === hi ? y(pts[i]!.percentage) - 9 : y(pts[i]!.percentage) + 16}
+                    textAnchor={anchor(x(i))}
+                    fontSize="10"
+                    fontWeight="700"
+                    fill="var(--ink)"
+                >
+                    {fmtNum(pts[i]!.percentage)}%
+                </text>
+            ))}
+        </svg>
+    );
+}
+
+// One row per grade — the band it covers, a bar, and how many tests landed in it. A stacked bar
+// with an "A ×6" legend was unreadable to a parent; every row now says it in words.
+function GradeMix({ items }: { items: V2Assessment[] }) {
+    const { t } = useTranslation('layoutCommonB');
+    const counts = GRADES.map((g) => ({ g, n: items.filter((a) => a.grade === g).length }));
+    const max = Math.max(...counts.map((c) => c.n));
+    if (!max) return null;
+    const total = counts.reduce((sum, c) => sum + c.n, 0);
+    const bOrAbove = counts.slice(0, 4).reduce((sum, c) => sum + c.n, 0);
+    return (
+        <div className="gmix-wrap">
+            <div className="mini-title">
+                {t('studentReportCard.sections.gradeMix.title')}:{' '}
+                <span className="gmix-sum">
+                    {t('studentReportCard.sections.gradeMix.summary', { good: bOrAbove, total, count: total })}
+                </span>
+            </div>
+            {counts.map((c) => (
+                <div className="gm-row" key={c.g}>
+                    <span className="gm-label">
+                        <b>{c.g}</b>{' '}
+                        {t(`studentReportCard.sections.gradeMix.range.${GRADE_KEY[c.g]}`)}
+                    </span>
+                    <div className="bar">
+                        {/* design-lint-ignore: bar width is the data value */}
+                        <i
+                            className={GRADE_CLASS[c.g]}
+                            style={{ width: `${(c.n / max) * 100}%` }}
+                        />
+                    </div>
+                    <span className={c.n ? 'gm-n' : 'gm-n zero'}>
+                        {t('studentReportCard.sections.gradeMix.testCount', { count: c.n })}
+                    </span>
+                </div>
+            ))}
+        </div>
+    );
+}
+
 // ── main component ─────────────────────────────────────────────────────────
 export function StudentReportCard({ data, fallbackLogoUrl }: { data: V2ReportData; fallbackLogoUrl?: string }) {
+    const { t } = useTranslation('layoutCommonB');
+    const subject = getTerminology(ContentTerms.Subjects, SystemTerms.Subjects);
+    const course = getTerminology(ContentTerms.Course, SystemTerms.Course);
+    const liveClassesTerm = getTerminologyPlural(ContentTerms.LiveSession, SystemTerms.LiveSession);
     const { meta, student, institute, period, overview } = data;
-    const accent = institute?.theme_color || '#2E7D6B'; // design-lint-ignore: institute-supplied theme colour
+    const accent = resolveThemeColor(institute?.theme_color) || '#2E7D6B'; // design-lint-ignore: institute-supplied theme colour
     // Prefer the logo baked into the report; fall back to the app's institute-settings logo.
     const logoUrl = institute?.logo_url || fallbackLogoUrl || '';
     const status = statusPalette(overview?.overall_status);
@@ -161,6 +390,9 @@ export function StudentReportCard({ data, fallbackLogoUrl }: { data: V2ReportDat
 
     const subjectMarks = (data.subject_marks?.subjects ?? []).filter((s) => isRealSubject(s.subject));
     const subjectPerf = (data.academics?.subject_performance ?? []).filter((s) => isRealSubject(s.subject));
+    const assessments = [...(data.academics?.available ? data.academics.assessments ?? [] : [])].sort((a, b) =>
+        (a.date ?? '~').localeCompare(b.date ?? '~'),
+    );
     const habits = data.study_habits;
     const achievements = data.achievements ?? [];
     const narrative = data.narrative;
@@ -198,9 +430,10 @@ export function StudentReportCard({ data, fallbackLogoUrl }: { data: V2ReportDat
                             )}
                         </div>
                         <div>
-                            <div className="brand-name">{institute?.name ?? 'Institute'}</div>
+                            <div className="brand-name">{institute?.name ?? t('studentReportCard.fallbacks.institute')}</div>
                             <div className="brand-sub">
-                                {[student?.class, student?.batch].filter(Boolean).join(' · ') || 'Progress Report'}
+                                {/* class and batch hold the same string today — show it once */}
+                                {[...new Set([student?.class, student?.batch].map(cleanBatchLabel).filter(Boolean))].join(' · ') || t('studentReportCard.fallbacks.progressReport')}
                             </div>
                         </div>
                     </div>
@@ -212,10 +445,11 @@ export function StudentReportCard({ data, fallbackLogoUrl }: { data: V2ReportDat
                 <section className="verdict" style={{ '--status-color': status.color, '--status-soft': status.soft } as React.CSSProperties}>
                     <div className="verdict-top">
                         <div>
-                            <h1 className="student-name">{student?.name ?? 'Student'}</h1>
+                            <h1 className="student-name">{student?.name ?? t('studentReportCard.fallbacks.student')}</h1>
                             <div className="student-meta">
-                                {[student?.roll_no && `Roll ${student.roll_no}`, student?.enrollment_no && `Enrolment ${student.enrollment_no}`,
-                                meta?.generated_at && `Generated ${fmtDate(meta.generated_at)}`].filter(Boolean).join(' · ')}
+                                {[student?.roll_no && student.roll_no !== student.enrollment_no && t('studentReportCard.masthead.roll', { roll: student.roll_no }),
+                                student?.enrollment_no && t('studentReportCard.masthead.enrolment', { enrollment: student.enrollment_no }),
+                                meta?.generated_at && t('studentReportCard.masthead.generated', { date: fmtDate(meta.generated_at) })].filter(Boolean).join(' · ')}
                             </div>
                         </div>
                         <div style={{ display: 'flex', alignItems: 'center' }}>
@@ -225,8 +459,16 @@ export function StudentReportCard({ data, fallbackLogoUrl }: { data: V2ReportDat
                             {overview?.overall_grade && <span className="grade-chip">{overview.overall_grade}</span>}
                         </div>
                     </div>
-                    {overview?.one_line && <p className="oneliner">{overview.one_line}</p>}
-                    {data.parent_summary && <p className="parent-summary">{data.parent_summary}</p>}
+                    {overview?.one_line && (
+                        <p className="oneliner">
+                            <InlineMd text={overview.one_line} />
+                        </p>
+                    )}
+                    {data.parent_summary && (
+                        <p className="parent-summary">
+                            <InlineMd text={data.parent_summary} />
+                        </p>
+                    )}
                 </section>
 
                 {/* KPI row */}
@@ -235,7 +477,10 @@ export function StudentReportCard({ data, fallbackLogoUrl }: { data: V2ReportDat
                         {metrics.map((m) => (
                             <div className="kpi" key={m.key}>
                                 <div className="kpi-label">{m.label}</div>
-                                <div className="kpi-val tnum">
+                                {/* a word value ("Business Studies") at the numeric size wraps onto two lines */}
+                                <div
+                                    className={`kpi-val tnum${typeof m.value === 'string' && m.value.length > 9 ? ' word' : ''}`}
+                                >
                                     {String(m.value)}{m.unit && <span className="u">{m.unit}</span>}
                                 </div>
                                 {(m.change || m.trend) && (
@@ -248,12 +493,37 @@ export function StudentReportCard({ data, fallbackLogoUrl }: { data: V2ReportDat
                     </section>
                 )}
 
+                {/* Score over time + grade mix */}
+                {assessments.length >= 2 && (
+                    <section className="section">
+                        <div className="section-head">
+                            <h2 className="section-title">
+                                {t('studentReportCard.sections.trend.title')}
+                            </h2>
+                            <span className="section-note trend-legend">
+                                <span>
+                                    <i className="lk-me" />
+                                    {firstName}
+                                </span>
+                                <span>
+                                    <i className="lk-class" />
+                                    {t('studentReportCard.sections.trend.classAverage')}
+                                </span>
+                            </span>
+                        </div>
+                        <div className="card">
+                            <ScoreTrend items={assessments} />
+                            <GradeMix items={assessments} />
+                        </div>
+                    </section>
+                )}
+
                 {/* Attendance */}
                 {attendance && (
                     <section className="section">
                         <div className="section-head">
-                            <h2 className="section-title">Attendance</h2>
-                            {attendance.change_vs_previous && <span className="section-note">{attendance.change_vs_previous} vs last period</span>}
+                            <h2 className="section-title">{t('studentReportCard.sections.attendance.title')}</h2>
+                            {attendance.change_vs_previous && <span className="section-note">{t('studentReportCard.sections.attendance.vsLastPeriod', { change: attendance.change_vs_previous })}</span>}
                         </div>
                         <div className="card">
                             <div className="bar-row">
@@ -261,10 +531,10 @@ export function StudentReportCard({ data, fallbackLogoUrl }: { data: V2ReportDat
                                 <span className="bar-val tnum">{round(attendance.overall_percentage) ?? 0}%</span>
                             </div>
                             <div className="stat-mini">
-                                {attendance.present != null && <div><div className="n tnum" style={{ color: 'var(--good)' }}>{attendance.present}</div><div className="l">Present</div></div>}
-                                {attendance.absent != null && <div><div className="n tnum" style={{ color: 'var(--risk)' }}>{attendance.absent}</div><div className="l">Absent</div></div>}
-                                {attendance.late != null && attendance.late > 0 && <div><div className="n tnum" style={{ color: 'var(--attn)' }}>{attendance.late}</div><div className="l">Late</div></div>}
-                                {attendance.total_sessions != null && <div><div className="n tnum">{attendance.total_sessions}</div><div className="l">Total sessions</div></div>}
+                                {attendance.present != null && <div><div className="n tnum" style={{ color: 'var(--good)' }}>{attendance.present}</div><div className="l">{t('studentReportCard.sections.attendance.present')}</div></div>}
+                                {attendance.absent != null && <div><div className="n tnum" style={{ color: 'var(--risk)' }}>{attendance.absent}</div><div className="l">{t('studentReportCard.sections.attendance.absent')}</div></div>}
+                                {attendance.late != null && attendance.late > 0 && <div><div className="n tnum" style={{ color: 'var(--attn)' }}>{attendance.late}</div><div className="l">{t('studentReportCard.sections.attendance.late')}</div></div>}
+                                {attendance.total_sessions != null && <div><div className="n tnum">{attendance.total_sessions}</div><div className="l">{t('studentReportCard.sections.attendance.totalSessions')}</div></div>}
                             </div>
                             {attendance.note && <p className="chart-cap" style={{ marginTop: 10 }}>{attendance.note}</p>}
                         </div>
@@ -275,27 +545,27 @@ export function StudentReportCard({ data, fallbackLogoUrl }: { data: V2ReportDat
                 {(blooms.length > 0 || conf) && (
                     <section className="section">
                         <div className="section-head">
-                            <h2 className="section-title">How {firstName} Thinks</h2>
-                            {li?.attempts_analyzed ? <span className="section-note">from AI analysis of {li.attempts_analyzed} recent attempts</span> : null}
+                            <h2 className="section-title">{t('studentReportCard.sections.thinking.title', { firstName })}</h2>
+                            {li?.attempts_analyzed ? <span className="section-note">{t('studentReportCard.sections.thinking.note', { count: li.attempts_analyzed })}</span> : null}
                         </div>
                         <div className="grid-2">
                             {blooms.length > 0 && (
                                 <div className="card">
-                                    <div className="card-title">Thinking-skill profile</div>
-                                    <p className="chart-cap">Accuracy across cognitive levels (Bloom's taxonomy)</p>
+                                    <div className="card-title">{t('studentReportCard.sections.thinking.radarTitle')}</div>
+                                    <p className="chart-cap">{t('studentReportCard.sections.thinking.radarCaption')}</p>
                                     <div style={{ display: 'grid', placeItems: 'center', marginTop: 6 }}><BloomRadar blooms={blooms} /></div>
                                 </div>
                             )}
                             {conf && (
                                 <div className="card">
-                                    <div className="card-title">Knows vs. guesses</div>
-                                    <p className="chart-cap">Confidence calibration across answered questions</p>
+                                    <div className="card-title">{t('studentReportCard.sections.thinking.confidenceTitle')}</div>
+                                    <p className="chart-cap">{t('studentReportCard.sections.thinking.confidenceCaption')}</p>
                                     <div style={{ display: 'flex', alignItems: 'center', gap: 18, marginTop: 14 }}>
                                         <ConfidenceDonut knows={conf.knows ?? 0} guesses={conf.guesses ?? 0} wrong={conf.high_confidence_wrong ?? 0} overall={conf.overall} />
                                         <div className="conf-stats" style={{ flex: 1 }}>
-                                            <div className="conf-row"><span className="conf-key"><span className="swatch" style={{ background: 'var(--good)' }} />Confidently right</span><span className="conf-num">{conf.knows ?? 0}</span></div>
-                                            <div className="conf-row"><span className="conf-key"><span className="swatch" style={{ background: 'var(--attn)' }} />Right but unsure</span><span className="conf-num">{conf.guesses ?? 0}</span></div>
-                                            <div className="conf-row"><span className="conf-key"><span className="swatch" style={{ background: 'var(--risk)' }} />Confidently wrong</span><span className="conf-num">{conf.high_confidence_wrong ?? 0}</span></div>
+                                            <div className="conf-row"><span className="conf-key"><span className="swatch" style={{ background: 'var(--good)' }} />{t('studentReportCard.sections.thinking.confidentlyRight')}</span><span className="conf-num">{conf.knows ?? 0}</span></div>
+                                            <div className="conf-row"><span className="conf-key"><span className="swatch" style={{ background: 'var(--attn)' }} />{t('studentReportCard.sections.thinking.rightButUnsure')}</span><span className="conf-num">{conf.guesses ?? 0}</span></div>
+                                            <div className="conf-row"><span className="conf-key"><span className="swatch" style={{ background: 'var(--risk)' }} />{t('studentReportCard.sections.thinking.confidentlyWrong')}</span><span className="conf-num">{conf.high_confidence_wrong ?? 0}</span></div>
                                         </div>
                                     </div>
                                 </div>
@@ -308,8 +578,8 @@ export function StudentReportCard({ data, fallbackLogoUrl }: { data: V2ReportDat
                 {topicMastery.length > 0 && (
                     <section className="section">
                         <div className="section-head">
-                            <h2 className="section-title">Topic Mastery</h2>
-                            <span className="section-note">accuracy per topic, all attempts this period</span>
+                            <h2 className="section-title">{t('studentReportCard.sections.topicMastery.title')}</h2>
+                            <span className="section-note">{t('studentReportCard.sections.topicMastery.note')}</span>
                         </div>
                         <div className="card">
                             {topicMastery.map((t: V2TopicMastery) => (
@@ -327,8 +597,8 @@ export function StudentReportCard({ data, fallbackLogoUrl }: { data: V2ReportDat
                 {(subjectMarks.length > 0 || subjectPerf.length > 0) && (
                     <section className="section">
                         <div className="section-head">
-                            <h2 className="section-title">Marks by Subject</h2>
-                            <span className="section-note">across assessments, assignments, quizzes &amp; questions</span>
+                            <h2 className="section-title">{t('studentReportCard.sections.marksBySubject.title', { subject })}</h2>
+                            <span className="section-note">{t('studentReportCard.sections.marksBySubject.note')}</span>
                         </div>
                         <div className="card">
                             {subjectMarks.length > 0 && (
@@ -346,7 +616,7 @@ export function StudentReportCard({ data, fallbackLogoUrl }: { data: V2ReportDat
                             )}
                             {subjectPerf.length > 0 && (
                                 <div style={{ marginTop: subjectMarks.length > 0 ? 18 : 0, borderTop: subjectMarks.length > 0 ? '1px solid var(--line)' : 'none', paddingTop: 6 }}>
-                                    <p className="chart-cap" style={{ marginBottom: 6 }}>Subject performance vs. class average</p>
+                                    <p className="chart-cap" style={{ marginBottom: 6 }}>{t('studentReportCard.sections.marksBySubject.vsClassAverage', { subject })}</p>
                                     {subjectPerf.map((sp: V2SubjectPerformance) => (
                                         <div className="subj-vs" key={sp.subject}>
                                             <span style={{ fontWeight: 500 }}>{sp.subject}</span>
@@ -367,13 +637,53 @@ export function StudentReportCard({ data, fallbackLogoUrl }: { data: V2ReportDat
                     </section>
                 )}
 
+                {/* Assessments — every graded test in the period, oldest first */}
+                {assessments.length > 0 && (
+                    <section className="section">
+                        <div className="section-head">
+                            <h2 className="section-title">{t('studentReportCard.sections.assessments.title')}</h2>
+                            <span className="section-note">
+                                {t('studentReportCard.sections.assessments.caption', { count: assessments.length })}
+                            </span>
+                        </div>
+                        <div className="card">
+                            {assessments.map((a: V2Assessment, i) => (
+                                <div className="asmt" key={i}>
+                                    <div>
+                                        <div className="asmt-name">{a.name}</div>
+                                        <div className="asmt-meta">
+                                            {[fmtDate(a.date), isRealSubject(a.subject) ? a.subject : null]
+                                                .filter(Boolean)
+                                                .join(' · ')}
+                                        </div>
+                                    </div>
+                                    <div className="asmt-score tnum">
+                                        {a.marks != null && a.total_marks != null
+                                            ? `${fmtNum(a.marks)}/${fmtNum(a.total_marks)}`
+                                            : '—'}
+                                        {a.percentage != null && (
+                                            <span className="pct"> · {fmtNum(a.percentage)}%</span>
+                                        )}
+                                    </div>
+                                    <div className="asmt-rank tnum">
+                                        {a.rank != null ? t('studentReportCard.sections.assessments.rank', { rank: a.rank }) : ''}
+                                    </div>
+                                    <div className={`grade ${gradeTone(a.grade)}`}>
+                                        {a.grade ?? '—'}
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </section>
+                )}
+
                 {/* Strengths / Areas to improve */}
                 {(strengths.length > 0 || areas.length > 0) && (
                     <section className="section">
                         <div className="grid-2">
                             {strengths.length > 0 && (
                                 <div className="card">
-                                    <div className="mini-title">Strengths</div>
+                                    <div className="mini-title">{t('studentReportCard.sections.strengthsAreas.strengths')}</div>
                                     {strengths.map((s, i) => (
                                         <div className="subj-vs" key={i} style={{ gridTemplateColumns: '1fr auto' }}>
                                             <span style={{ fontWeight: 500 }}>{s.topic}</span>
@@ -384,7 +694,7 @@ export function StudentReportCard({ data, fallbackLogoUrl }: { data: V2ReportDat
                             )}
                             {areas.length > 0 && (
                                 <div className="card">
-                                    <div className="mini-title">Areas to Improve</div>
+                                    <div className="mini-title">{t('studentReportCard.sections.strengthsAreas.areasToImprove')}</div>
                                     {areas.map((s, i) => (
                                         <div className="subj-vs" key={i} style={{ gridTemplateColumns: '1fr auto' }}>
                                             <span style={{ fontWeight: 500 }}>{s.topic}</span>
@@ -401,8 +711,8 @@ export function StudentReportCard({ data, fallbackLogoUrl }: { data: V2ReportDat
                 {misconceptions.length > 0 && (
                     <section className="section">
                         <div className="section-head">
-                            <h2 className="section-title">What to Work On Next</h2>
-                            <span className="section-note">specific misconceptions + how to fix them</span>
+                            <h2 className="section-title">{t('studentReportCard.sections.misconceptions.title')}</h2>
+                            <span className="section-note">{t('studentReportCard.sections.misconceptions.note')}</span>
                         </div>
                         <div className="card">
                             {misconceptions.map((m: V2Misconception, i) => (
@@ -425,17 +735,17 @@ export function StudentReportCard({ data, fallbackLogoUrl }: { data: V2ReportDat
                         <div className="grid-2">
                             {habits?.available && (
                                 <div className="card">
-                                    <div className="card-title">Study habits</div>
-                                    <p className="chart-cap">Daily study minutes this period</p>
+                                    <div className="card-title">{t('studentReportCard.sections.studyHabits.title')}</div>
+                                    <p className="chart-cap">{t('studentReportCard.sections.studyHabits.caption')}</p>
                                     <div className="habit-top" style={{ marginTop: 12 }}>
                                         {habits.longest_streak_days != null && (
-                                            <div className="habit-stat"><div className="n tnum">{habits.longest_streak_days}<span style={{ fontSize: 13, color: 'var(--ink-3)' }}> days</span></div><div className="l">Longest streak</div></div>
+                                            <div className="habit-stat"><div className="n tnum">{habits.longest_streak_days}<span style={{ fontSize: 13, color: 'var(--ink-3)' }}> {t('studentReportCard.sections.studyHabits.days')}</span></div><div className="l">{t('studentReportCard.sections.studyHabits.longestStreak')}</div></div>
                                         )}
                                         {habits.consistency_rating && (
-                                            <div className="habit-stat"><div className="n" style={{ color: 'var(--good)' }}>{habits.consistency_rating}</div><div className="l">Consistency</div></div>
+                                            <div className="habit-stat"><div className="n" style={{ color: 'var(--good)' }}>{habits.consistency_rating}</div><div className="l">{t('studentReportCard.sections.studyHabits.consistency')}</div></div>
                                         )}
                                         {habits.active_days != null && habits.total_days != null && (
-                                            <div className="habit-stat"><div className="n tnum">{habits.active_days}</div><div className="l">Active days / {habits.total_days}</div></div>
+                                            <div className="habit-stat"><div className="n tnum">{habits.active_days}</div><div className="l">{t('studentReportCard.sections.studyHabits.activeDaysOf', { total: habits.total_days })}</div></div>
                                         )}
                                     </div>
                                     {(habits.daily_study_minutes?.length ?? 0) > 0 && <Sparkline mins={habits.daily_study_minutes!.map((d) => d.minutes ?? 0)} />}
@@ -443,8 +753,8 @@ export function StudentReportCard({ data, fallbackLogoUrl }: { data: V2ReportDat
                             )}
                             {achievements.length > 0 && (
                                 <div className="card">
-                                    <div className="card-title">Achievements</div>
-                                    <p className="chart-cap">Badges &amp; certificates earned</p>
+                                    <div className="card-title">{t('studentReportCard.sections.achievements.title')}</div>
+                                    <p className="chart-cap">{t('studentReportCard.sections.achievements.caption')}</p>
                                     <div className="badges" style={{ marginTop: 14 }}>
                                         {achievements.map((a, i) => (
                                             <span className="badge" key={i}><StarIcon />{a.title}</span>
@@ -460,15 +770,15 @@ export function StudentReportCard({ data, fallbackLogoUrl }: { data: V2ReportDat
                 {courseProgress && (
                     <section className="section">
                         <div className="section-head">
-                            <h2 className="section-title">Course Progress</h2>
-                            <span className="section-note">{round(courseProgress.overall_completion_percentage) ?? 0}% complete overall</span>
+                            <h2 className="section-title">{t('studentReportCard.sections.courseProgress.title', { course })}</h2>
+                            <span className="section-note">{t('studentReportCard.sections.courseProgress.percentComplete', { percent: round(courseProgress.overall_completion_percentage) ?? 0 })}</span>
                         </div>
                         <div className="card">
                             <div className="bar-row">
                                 <div className="bar lg"><i style={{ width: `${round(courseProgress.overall_completion_percentage) ?? 0}%`, background: 'var(--accent)' }} /></div>
                                 <span className="bar-val tnum">{round(courseProgress.overall_completion_percentage) ?? 0}%</span>
                             </div>
-                            {(courseProgress.subjects ?? []).map((s, i) => (
+                            {(courseProgress.subjects ?? []).filter((s) => isRealSubject(s.subject)).map((s, i) => (
                                 <div className="subj-vs" key={i} style={{ gridTemplateColumns: '132px 1fr auto' }}>
                                     <span style={{ fontWeight: 500 }}>{s.subject}</span>
                                     <div className="bar"><i style={{ width: `${round(s.completion_percentage) ?? 0}%`, background: pctVar(s.completion_percentage) }} /></div>
@@ -485,25 +795,25 @@ export function StudentReportCard({ data, fallbackLogoUrl }: { data: V2ReportDat
                         <div className="grid-2">
                             {liveClasses && (
                                 <div className="card">
-                                    <div className="mini-title">Live Classes</div>
+                                    <div className="mini-title">{t('studentReportCard.sections.liveClasses.title', { liveClasses: liveClassesTerm })}</div>
                                     <div className="statlist">
-                                        <div className="stat"><span className="stat-k">Total classes</span><span className="stat-v tnum">{liveClasses.total ?? 0}</span></div>
-                                        <div className="stat"><span className="stat-k">Attended</span><span className="stat-v good tnum">{liveClasses.attended ?? 0}</span></div>
-                                        <div className="stat"><span className="stat-k">Missed</span><span className="stat-v risk tnum">{liveClasses.missed ?? 0}</span></div>
-                                        <div className="stat"><span className="stat-k">Attendance</span><span className="stat-v tnum">{round(liveClasses.attendance_percentage) ?? 0}%</span></div>
+                                        <div className="stat"><span className="stat-k">{t('studentReportCard.sections.liveClasses.total')}</span><span className="stat-v tnum">{liveClasses.total ?? 0}</span></div>
+                                        <div className="stat"><span className="stat-k">{t('studentReportCard.sections.liveClasses.attended')}</span><span className="stat-v good tnum">{liveClasses.attended ?? 0}</span></div>
+                                        <div className="stat"><span className="stat-k">{t('studentReportCard.sections.liveClasses.missed')}</span><span className="stat-v risk tnum">{liveClasses.missed ?? 0}</span></div>
+                                        <div className="stat"><span className="stat-k">{t('studentReportCard.sections.liveClasses.attendance')}</span><span className="stat-v tnum">{round(liveClasses.attendance_percentage) ?? 0}%</span></div>
                                     </div>
                                 </div>
                             )}
                             {assignments && (
                                 <div className="card">
-                                    <div className="mini-title">Assignments</div>
+                                    <div className="mini-title">{t('studentReportCard.sections.assignments.title')}</div>
                                     <div className="statlist">
-                                        {assignments.assigned != null && assignments.assigned > 0 && <div className="stat"><span className="stat-k">Assigned</span><span className="stat-v tnum">{assignments.assigned}</span></div>}
-                                        <div className="stat"><span className="stat-k">Submitted</span><span className="stat-v good tnum">{assignments.submitted ?? 0}</span></div>
-                                        <div className="stat"><span className="stat-k">On time</span><span className="stat-v tnum">{assignments.on_time ?? 0}</span></div>
-                                        {assignments.late != null && assignments.late > 0 && <div className="stat"><span className="stat-k">Late</span><span className="stat-v attn tnum">{assignments.late}</span></div>}
-                                        {assignments.pending != null && assignments.pending > 0 && <div className="stat"><span className="stat-k">Pending</span><span className="stat-v risk tnum">{assignments.pending}</span></div>}
-                                        {assignments.avg_score_percentage != null && <div className="stat"><span className="stat-k">Avg. score</span><span className="stat-v tnum">{round(assignments.avg_score_percentage)}%</span></div>}
+                                        {assignments.assigned != null && assignments.assigned > 0 && <div className="stat"><span className="stat-k">{t('studentReportCard.sections.assignments.assigned')}</span><span className="stat-v tnum">{assignments.assigned}</span></div>}
+                                        <div className="stat"><span className="stat-k">{t('studentReportCard.sections.assignments.submitted')}</span><span className="stat-v good tnum">{assignments.submitted ?? 0}</span></div>
+                                        <div className="stat"><span className="stat-k">{t('studentReportCard.sections.assignments.onTime')}</span><span className="stat-v tnum">{assignments.on_time ?? 0}</span></div>
+                                        {assignments.late != null && assignments.late > 0 && <div className="stat"><span className="stat-k">{t('studentReportCard.sections.assignments.late')}</span><span className="stat-v attn tnum">{assignments.late}</span></div>}
+                                        {assignments.pending != null && assignments.pending > 0 && <div className="stat"><span className="stat-k">{t('studentReportCard.sections.assignments.pending')}</span><span className="stat-v risk tnum">{assignments.pending}</span></div>}
+                                        {assignments.avg_score_percentage != null && <div className="stat"><span className="stat-k">{t('studentReportCard.sections.assignments.avgScore')}</span><span className="stat-v tnum">{round(assignments.avg_score_percentage)}%</span></div>}
                                     </div>
                                 </div>
                             )}
@@ -514,12 +824,12 @@ export function StudentReportCard({ data, fallbackLogoUrl }: { data: V2ReportDat
                 {/* Doubts & engagement */}
                 {doubts && (
                     <section className="section">
-                        <div className="section-head"><h2 className="section-title">Doubts &amp; Engagement</h2></div>
+                        <div className="section-head"><h2 className="section-title">{t('studentReportCard.sections.doubts.title')}</h2></div>
                         <div className="card">
                             <div className="statlist">
-                                <div className="stat"><span className="stat-k">Questions asked</span><span className="stat-v tnum">{doubts.questions_asked ?? 0}</span></div>
-                                <div className="stat"><span className="stat-k">Resolved</span><span className="stat-v good tnum">{doubts.resolved ?? 0}</span></div>
-                                {doubts.avg_resolution_hours != null && doubts.avg_resolution_hours > 0 && <div className="stat"><span className="stat-k">Avg. resolution time</span><span className="stat-v tnum">{round(doubts.avg_resolution_hours)} hrs</span></div>}
+                                <div className="stat"><span className="stat-k">{t('studentReportCard.sections.doubts.questionsAsked')}</span><span className="stat-v tnum">{doubts.questions_asked ?? 0}</span></div>
+                                <div className="stat"><span className="stat-k">{t('studentReportCard.sections.doubts.resolved')}</span><span className="stat-v good tnum">{doubts.resolved ?? 0}</span></div>
+                                {doubts.avg_resolution_hours != null && doubts.avg_resolution_hours > 0 && <div className="stat"><span className="stat-k">{t('studentReportCard.sections.doubts.avgResolutionTime')}</span><span className="stat-v tnum">{t('studentReportCard.sections.doubts.hours', { count: round(doubts.avg_resolution_hours) ?? 0 })}</span></div>}
                             </div>
                             {doubts.note && <p className="chart-cap" style={{ marginTop: 10 }}>{doubts.note}</p>}
                         </div>
@@ -531,24 +841,24 @@ export function StudentReportCard({ data, fallbackLogoUrl }: { data: V2ReportDat
                     <section className="section">
                         {(ai.cross_domain_insights?.length ?? 0) > 0 && (
                             <div className="card" style={{ marginBottom: 16 }}>
-                                <div className="mini-title">What we noticed</div>
+                                <div className="mini-title">{t('studentReportCard.sections.aiInsights.whatWeNoticed')}</div>
                                 <ul className="insights">
-                                    {ai.cross_domain_insights.map((c, i) => <li key={i}>{c}</li>)}
+                                    {ai.cross_domain_insights.map((c, i) => <li key={i}><InlineMd text={c} /></li>)}
                                 </ul>
                             </div>
                         )}
                         {(ai.recommendations?.length ?? 0) > 0 && (
                             <div className="card" style={{ marginBottom: ai.summary ? 16 : 0 }}>
-                                <div className="mini-title">Recommended next steps</div>
+                                <div className="mini-title">{t('studentReportCard.sections.aiInsights.recommendedNextSteps')}</div>
                                 {ai.recommendations.map((rec, i) => {
                                     const p = (rec.priority || '').toLowerCase();
                                     const pc = p.includes('high') ? 'high' : p.includes('low') ? 'low' : 'medium';
                                     return (
                                         <div className="rec" key={i}>
-                                            <span className={`pri ${pc}`}>{rec.priority || 'Medium'}</span>
+                                            <span className={`pri ${pc}`}>{rec.priority || t('studentReportCard.sections.aiInsights.mediumPriority')}</span>
                                             <div>
-                                                {rec.area && <div className="rec-area">{rec.area}</div>}
-                                                <div className="rec-sug">{rec.suggestion}</div>
+                                                {rec.area && <div className="rec-area">{rec.area.replace(/\*\*/g, '')}</div>}
+                                                <div className="rec-sug"><InlineMd text={rec.suggestion} /></div>
                                             </div>
                                         </div>
                                     );
@@ -557,8 +867,8 @@ export function StudentReportCard({ data, fallbackLogoUrl }: { data: V2ReportDat
                         )}
                         {ai.summary && (
                             <div className="card">
-                                <div className="mini-title">AI summary</div>
-                                <p className="ai-summary">{ai.summary}</p>
+                                <div className="mini-title">{t('studentReportCard.sections.aiInsights.aiSummary')}</div>
+                                <p className="ai-summary"><InlineMd text={ai.summary} /></p>
                             </div>
                         )}
                     </section>
@@ -568,14 +878,14 @@ export function StudentReportCard({ data, fallbackLogoUrl }: { data: V2ReportDat
                 {narrative && (narrative.progress || narrative.student_efforts || narrative.learning_frequency || narrative.remedial_points || narrative.topics_of_improvement || narrative.topics_of_degradation) && (
                     <section className="section">
                         <details className="deep">
-                            <summary>Detailed analysis <span className="chev">▸</span></summary>
+                            <summary>{t('studentReportCard.sections.narrative.detailedAnalysis')} <span className="chev">▸</span></summary>
                             <div className="deep-body">
-                                <NarrativeBlock title="Learning frequency" md={narrative.learning_frequency} />
-                                <NarrativeBlock title="Progress" md={narrative.progress} />
-                                <NarrativeBlock title="Effort vs. output" md={narrative.student_efforts} />
-                                <NarrativeBlock title="Topics improving" md={narrative.topics_of_improvement} />
-                                <NarrativeBlock title="Topics needing attention" md={narrative.topics_of_degradation} />
-                                <NarrativeBlock title="Action checklist" md={narrative.remedial_points} />
+                                <NarrativeBlock title={t('studentReportCard.sections.narrative.learningFrequency')} md={narrative.learning_frequency} />
+                                <NarrativeBlock title={t('studentReportCard.sections.narrative.progress')} md={narrative.progress} />
+                                <NarrativeBlock title={t('studentReportCard.sections.narrative.effortVsOutput')} md={narrative.student_efforts} />
+                                <NarrativeBlock title={t('studentReportCard.sections.narrative.topicsImproving')} md={narrative.topics_of_improvement} />
+                                <NarrativeBlock title={t('studentReportCard.sections.narrative.topicsNeedingAttention')} md={narrative.topics_of_degradation} />
+                                <NarrativeBlock title={t('studentReportCard.sections.narrative.actionChecklist')} md={narrative.remedial_points} />
                             </div>
                         </details>
                     </section>
@@ -605,7 +915,10 @@ function NarrativeBlock({ title, md }: { title: string; md?: string }) {
     return (
         <>
             <h3>{title}</h3>
-            <ReactMarkdown remarkPlugins={[remarkGfm, remarkBreaks]}>{md}</ReactMarkdown>
+            {/* "- ## Mathematics:" — a header opening a bullet renders as a heading inside the list */}
+            <ReactMarkdown remarkPlugins={[remarkGfm, remarkBreaks]}>
+                {md.replace(/^(\s*[-*]\s+)#{1,6}\s*/gm, '$1')}
+            </ReactMarkdown>
         </>
     );
 }

@@ -1,0 +1,19 @@
+{
+    "header": {
+        "title": "اختيار المشاركين",
+        "description": "اختر دفعات كاملة أو حدد المتعلمين بشكل فردي."
+    },
+    "tabs": {
+        "selectBatch": "اختيار الدفعة",
+        "selectIndividually": "اختيار فردي"
+    },
+    "batchList": {
+        "sectionPlaceholder": "اختر القسم",
+        "searchPlaceholder": "البحث حسب الدورة أو المستوى",
+        "clearSearchAriaLabel": "مسح البحث",
+        "emptyState": {
+            "message": "لا توجد دورات أو مستويات مطابقة لـ \"{{query}}\"",
+            "clearSearch": "مسح البحث"
+        }
+    }
+}

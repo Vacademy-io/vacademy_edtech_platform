@@ -1,5 +1,10 @@
 import React from 'react';
-import { useNavigate, useParams } from '@tanstack/react-router';
+import { useParams } from '@tanstack/react-router';
+import { RouteMatcher } from '../-services/route-matcher';
+import { useCatalogueTag } from './CatalogueTagContext';
+import { useCatalogueLocale } from '../-utils/catalogue-locale';
+import { withLocaleParam } from '../-utils/catalogue-site-language';
+import { useSiteNavigate } from '../-utils/catalogue-route-search';
 
 interface CatalogueLinkProps extends React.AnchorHTMLAttributes<HTMLAnchorElement> {
     /** The route value — can be a page slug ("about-us"), "homepage", full URL, or #anchor */
@@ -15,9 +20,15 @@ interface CatalogueLinkProps extends React.AnchorHTMLAttributes<HTMLAnchorElemen
  * - Internal routes → SPA navigation via TanStack Router
  */
 export const CatalogueLink: React.FC<CatalogueLinkProps> = ({ to, children, target, className, style, ...rest }) => {
-    const navigate = useNavigate();
+    const siteNavigate = useSiteNavigate();
     const params = useParams({ strict: false }) as { tagName?: string };
-    const tagName = params.tagName || '';
+    // Context first: on a root-mounted host the param is a page route, not the tag.
+    const tagName = useCatalogueTag(params.tagName || '');
+    // A visitor reading the site in a non-base language keeps it on every
+    // internal link — in the href too, so crawlers and new tabs reach the
+    // translated page. null on single-language sites (links unchanged).
+    const siteLocale = useCatalogueLocale();
+    const carryLocale = siteLocale.enabled && siteLocale.locale !== siteLocale.baseLocale ? siteLocale.locale : null;
 
     if (!to || to === '#') {
         return <span className={className} style={style} {...rest}>{children}</span>;
@@ -53,16 +64,28 @@ export const CatalogueLink: React.FC<CatalogueLinkProps> = ({ to, children, targ
         );
     }
 
-    // Internal route (possibly with anchor)
-    const normalizedRoute = routePart.toLowerCase().replace(/^\//, '').replace(/\/$/, '').trim();
-    const isHome = normalizedRoute === 'home' || normalizedRoute === 'homepage' || normalizedRoute === '' || normalizedRoute === '/';
-    const fullPath = isHome ? `/${tagName}` : `/${tagName}/${normalizedRoute}`;
-    const fullHref = fullPath + hashPart;
+    // Internal route (possibly with anchor). A page route may arrive as
+    // "/new/contact" (authored as an absolute site path) — strip the tag so a
+    // root-mounted host does not emit "/new/contact" for a page that lives at
+    // "/contact"; RouteMatcher.pagePath() then applies whichever prefix the
+    // host actually uses.
+    const escapedTag = tagName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const strippedRoute = tagName
+        ? routePart.replace(new RegExp(`^/?${escapedTag}(?=/|$)`, 'i'), '')
+        : routePart;
+    const fullPath = RouteMatcher.pagePath(tagName, strippedRoute);
+    const linkPath = withLocaleParam(fullPath, carryLocale);
+    const fullHref = linkPath + hashPart;
 
     const handleClick = (e: React.MouseEvent) => {
         if (e.metaKey || e.ctrlKey || target === '_blank') return;
         e.preventDefault();
-        navigate({ to: fullPath }).then(() => {
+        // `navigate({ to })` with the authored address, exactly as always —
+        // unless the router is carrying a site language, when an address with
+        // its own query string goes by `href` so ?lang= joins that query
+        // instead of following a second "?" (see siteNavigateOptions). Without
+        // a language to carry, linkPath is fullPath.
+        siteNavigate(linkPath).then(() => {
             if (hashPart) {
                 // Wait for page render, then scroll to anchor
                 requestAnimationFrame(() => {

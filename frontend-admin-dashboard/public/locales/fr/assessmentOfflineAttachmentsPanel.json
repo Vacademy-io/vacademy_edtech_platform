@@ -1,0 +1,32 @@
+{
+    "header": {
+        "title": "Pièces jointes",
+        "optionalPdfOnly": "Facultatif · PDF uniquement",
+        "selectedCount_one": "· {{count}} sur 3 sélectionnée",
+        "selectedCount_many": "· {{count}} sur 3 sélectionnées",
+        "selectedCount_other": "· {{count}} sur 3 sélectionnées"
+    },
+    "description": "Téléchargé lorsque vous soumettez cette saisie.",
+    "slots": {
+        "student": {
+            "label": "Copie de réponse de l'élève",
+            "hint": "Le scan de ce que l'élève a écrit. Affiché comme sa réponse soumise."
+        },
+        "checked": {
+            "label": "Copie corrigée",
+            "hint": "La copie évaluée avec vos notes et remarques. Affichée à l'élève avec son résultat."
+        },
+        "report": {
+            "label": "Rapport",
+            "hint": "Un rapport de résultat facultatif que vous avez préparé en dehors de la plateforme."
+        }
+    },
+    "removeAria": "Supprimer {{label}}",
+    "dropzone": {
+        "uploadPrompt": "Cliquez pour téléverser ou glissez-déposez"
+    },
+    "rejections": {
+        "notPdf": "\"{{fileName}}\" n'est pas un PDF. Les scans doivent être téléversés au format PDF.",
+        "emptyFile": "\"{{fileName}}\" est vide (0 octet). Réexportez-le et réessayez."
+    }
+}

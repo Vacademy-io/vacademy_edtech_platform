@@ -54,6 +54,9 @@ export const START_ASSESSMENT = `${BASE_URL}/assessment-service/assessment/learn
 export const ASSESSMENT_SAVE = `${BASE_URL}/assessment-service/assessment/learner/status/update`;
 export const ASSESSMENT_SUBMIT = `${BASE_URL}/assessment-service/assessment/learner/status/submit`;
 export const RESTART_ASSESSMENT = `${BASE_URL}/assessment-service/assessment/learner/status/restart`;
+// Proctoring (assessment_service V48): per-assessment config, batched device events.
+export const PROCTORING_CONFIG = `${BASE_URL}/assessment-service/assessment/learner/proctoring/config`;
+export const PROCTORING_EVENTS = `${BASE_URL}/assessment-service/assessment/learner/proctoring/events`;
 // Learner-raised reattempt / time-extension requests, reviewed by an admin.
 export const REATTEMPT_REQUEST = `${BASE_URL}/assessment-service/learner/reattempt-request/v1`;
 export const REATTEMPT_REQUEST_MINE = `${BASE_URL}/assessment-service/learner/reattempt-request/v1/mine`;
@@ -76,7 +79,14 @@ export const CPO_OPEN_DUES_URL = `${BASE_URL}/admin-core-service/open/v1/fee/cpo
 export const CPO_OPEN_PAY_INSTALLMENTS_URL = `${BASE_URL}/admin-core-service/open/v1/fee/cpo-pay-installments`;
 export const CPO_OPEN_SCHEDULE_URL = `${BASE_URL}/admin-core-service/open/v1/fee/cpo-schedule`;
 export const CPO_ENROLL_WITHOUT_PAYMENT_URL = `${BASE_URL}/admin-core-service/v1/learner/enroll`;
+// GET ?paymentLogId=<id> → { payment_status: PAID | PAYMENT_PENDING | FAILED, … }. Also the status check
+// the storefront cart polls after Razorpay returns (the name's spelling is historical; keep it).
 export const PEYMENT_LOG_STATUS_URL = `${BASE_URL}/admin-core-service/open/v1/payment-log`;
+// POST ?paymentLogId=<id> → { released: n }. No login: puts back the stock held for an unpaid
+// order when the learner closes the gateway window (holds also expire on their own after 30 min).
+export const STOCK_HOLD_RELEASE_URL = `${BASE_URL}/admin-core-service/open/v1/stock-hold/release`;
+// POST [packageSessionId, ...] → { packageSessionId: copiesLeft }; a session with no stock limit is absent. No login.
+export const STOCK_AVAILABILITY_URL = `${BASE_URL}/admin-core-service/open/v1/stock-hold/availability`;
 export const GET_PAYMENT_GATEWAY_DETAILS_URL = `${BASE_URL}/admin-core-service/open/v1/institute/payment-setting/payment-gateway-details`;
 export const ENROLLMENT_INVITE_URL = `${BASE_URL}/admin-core-service/open/learner/enroll-invite`;
 // learner/v1/enroll + Cashfree status – localhost:8072 in dev, BASE_URL in production (override via VITE_ENROLL_API_BASE_URL)
@@ -96,8 +106,18 @@ export const LEARNER_PAYMENT_METHOD_BILLING_DETAILS = `${BASE_URL}/admin-core-se
 
 // Learner self-service subscriptions + autopay mandate (list + cancel)
 export const LEARNER_SUBSCRIPTION_LIST = `${BASE_URL}/admin-core-service/learner/subscription/v1`;
+export const LEARNER_SUBSCRIPTION_RENEW_COMPLETE = (userPlanId: string) =>
+  `${LEARNER_SUBSCRIPTION_LIST}/${userPlanId}/renew-complete`;
 export const LEARNER_SUBSCRIPTION_CANCEL = (userPlanId: string) =>
   `${BASE_URL}/admin-core-service/learner/subscription/v1/${userPlanId}/cancel`;
+
+// Plan change (upgrade / downgrade). The options endpoint prices every switchable plan
+// for this learner at this moment; the change endpoint books it. Same path is used with
+// DELETE to call off a downgrade that has not landed yet.
+export const LEARNER_PLAN_CHANGE_OPTIONS = (userPlanId: string) =>
+  `${BASE_URL}/admin-core-service/learner/subscription/v1/${userPlanId}/change-options`;
+export const LEARNER_PLAN_CHANGE = (userPlanId: string) =>
+  `${BASE_URL}/admin-core-service/learner/subscription/v1/${userPlanId}/change-plan`;
 
 export const EXPORT_ASSESSMENT_REPORT = `${BASE_URL}/assessment-service/assessment/learner/report/pdf`;
 export const EXPORT_AI_REPORT = `${BASE_URL}/assessment-service/assessment/learner/report/ai-pdf`;
@@ -113,6 +133,7 @@ export const ADD_UPDATE_DOCUMENT_ACTIVITY = `${BASE_URL}/admin-core-service/lear
 // (checklist ticks, fill-in-the-blank answers, inline MCQ choices). GET lists
 // all blocks for the current learner; POST upserts one block.
 export const SLIDE_INTERACTION = `${BASE_URL}/admin-core-service/learner-tracking/v1/slide-interaction`;
+export const LEARNER_NOTES = `${BASE_URL}/admin-core-service/learner-notes/v1`;
 export const MARK_SLIDE_COMPLETION = `${BASE_URL}/admin-core-service/learner-tracking/v1/mark-slide-completion`;
 export const SUBMIT_SLIDE_ANSWERS = `${BASE_URL}/admin-core-service/learner-tracking/activity-log/video-question-slide/add-or-update`;
 export const SUBMIT_ASSIGNMENT_SLIDE_ANSWERS = `${BASE_URL}/admin-core-service/learner-tracking/activity-log/assignment-slide/add-or-update-assignment-slide-activity-log`;
@@ -146,7 +167,6 @@ export const GET_PUBLIC_URL_PUBLIC = `${BASE_URL}/media-service/public/get-publi
 export const ACKNOWLEDGE_FOR_PUBLIC_URL = `${BASE_URL}/media-service/acknowledge-get-details`;
 export const GET_DASHBOARD_DATA = `${BASE_URL}/admin-core-service/learner/v1/get-dashboard-details`;
 export const ACCEPT_TNC = `${BASE_URL}/admin-core-service/learner/v1/accept-tnc`;
-export const GET_ASSESSMENT_COUNT = `${BASE_URL}/assessment-service/assessment/learner-assessment/v1/assessment-count-for-user-id`;
 export const GET_NOTIFCATIONS = `${BASE_URL}/`;
 export const GET_ANNOUNCEMENTS = `${BASE_URL}/`;
 export const GET_OPEN_REGISTRATION_DETAILS = `${BASE_URL}/assessment-service/open-registrations/v1/assessment-page`;
@@ -198,9 +218,17 @@ export const GET_INSTITUTE_SETTING_DATA = `${BASE_URL}/admin-core-service/instit
 // Open (unauthenticated) guest-query endpoints — used by the login page pre-auth.
 export const OPEN_DOUBT_CONFIG = `${BASE_URL}/admin-core-service/open/institute/v1/doubts/config`;
 export const OPEN_DOUBT_CREATE = `${BASE_URL}/admin-core-service/open/institute/v1/doubts/create`;
+// Open (unauthenticated) read of STUDENT_DISPLAY_SETTINGS — lets pre-login screens
+// (login page, public catalogue) honour learner display toggles such as signup.enabled.
+export const OPEN_STUDENT_DISPLAY_SETTINGS = `${BASE_URL}/admin-core-service/open/institute/setting/v1/student-display`;
 export const GET_USER_BASIC_DETAILS = `${BASE_URL}/auth-service/v1/user-details/get-basic-details`;
 export const GET_USER_ROLES_DETAILS = `${BASE_URL}/auth-service/v1/user-details/get`;
 export const UPDATE_USER_DETAILS = `${BASE_URL}/auth-service/v1/user-details/update-user`;
+
+// Where a learner should land once their password is set, when their coursework lives on a
+// connected WordPress/LearnDash site rather than in Vacademy. Takes no userId - it answers
+// only for the caller, from their token.
+export const LEARNER_LMS_LANDING = `${BASE_URL}/admin-core-service/learner/lms/v1/landing`;
 
 // User enrollment check API endpoint (expects POST request with empty body)
 export const GET_USER_DETAILS_BY_EMAIL = `${BASE_URL}/auth-service/open/user-details/by-email`;
@@ -382,6 +410,7 @@ export const VALIDATE_PRODUCT_PAGE_COUPON = `${PRODUCT_PAGE_OPEN_URL}/validate-c
 export const PRODUCT_PAGE_FORM_SUBMIT = `${PRODUCT_PAGE_OPEN_URL}/form-submit`;
 export const PRODUCT_PAGE_ENROLL = `${PRODUCT_PAGE_OPEN_URL}/enroll`;
 export const PRODUCT_PAGE_CPO_ENROLL = `${PRODUCT_PAGE_OPEN_URL}/cpo-enroll`;
+export const PRODUCT_PAGE_LOGIN_CODE_EXCHANGE = `${PRODUCT_PAGE_OPEN_URL}/login-code/exchange`;
 
 // Invoice payment (open — no auth required for viewing or initiating)
 export const GET_INVOICE_PUBLIC = (invoiceId: string) =>

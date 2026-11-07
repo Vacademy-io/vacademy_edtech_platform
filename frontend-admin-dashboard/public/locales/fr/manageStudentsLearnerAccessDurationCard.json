@@ -1,0 +1,7 @@
+{
+  "title": "Durée d’accès de l’apprenant",
+  "durationLabel": "Durée d’accès (jours)",
+  "durationPlaceholder": "Laisser vide pour un accès illimité",
+  "planControlledHelpText": "Ce plan définit sa propre durée d’accès, qui prend le pas sur ce champ. Modifiez-la plutôt sur le plan de paiement.",
+  "freeFormHelpText": "Durée pendant laquelle les apprenants conservent l’accès après leur inscription. Laisser vide pour un accès illimité. Les administrateurs peuvent la prolonger plus tard depuis le profil de l’apprenant."
+}

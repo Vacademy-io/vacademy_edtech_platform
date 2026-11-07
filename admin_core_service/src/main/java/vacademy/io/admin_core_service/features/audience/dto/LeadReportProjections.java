@@ -23,6 +23,7 @@ public final class LeadReportProjections {
     public interface ResponseStatsProjection {
         Long getRespondedLeads();
         Double getAvgResponseMinutes();
+        Double getMedianResponseMinutes();
         Long getTatMetCount();      // null when tat_hours param is null (TAT disabled)
     }
 
@@ -35,6 +36,7 @@ public final class LeadReportProjections {
     /** GROUP BY source_type, with converted sub-count. */
     public interface SourceCountProjection {
         String getSourceType();
+        Boolean getFromCampaignType();
         Long getTotalCount();
         Long getConvertedCount();
     }

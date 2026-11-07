@@ -1,0 +1,33 @@
+{
+    "whatsappLabel": "رقم واتساب",
+    "sendingOtp": "جاري إرسال الرمز...",
+    "sendOtpWhatsapp": "إرسال الرمز (واتساب)",
+    "toast": {
+        "otpSent": "تم إرسال الرمز عبر واتساب بنجاح",
+        "accountNotFound": "الحساب غير موجود. يرجى التسجيل للمتابعة.",
+        "sendOtpFailedFallback": "فشل إرسال الرمز عبر واتساب",
+        "sendOtpFailedGeneric": "فشل إرسال الرمز. يرجى المحاولة مرة أخرى.",
+        "loginMissingCredentials": "تم تسجيل الدخول بنجاح، ولكن بيانات الجلسة مفقودة.",
+        "loginProcessingError": "حدث خطأ أثناء معالجة بيانات تسجيل الدخول",
+        "invalidOtpFallback": "رمز غير صالح",
+        "invalidOtpDescription": "يرجى التحقق من الرمز والمحاولة مرة أخرى.",
+        "invalidOtpGenericDescription": "يرجى المحاولة مرة أخرى",
+        "fillAllOtpFields": "يرجى ملء جميع حقول الرمز"
+    },
+    "checkWhatsapp": "تحقق من واتساب الخاص بك",
+    "codeSentTo": "لقد أرسلنا رمزًا مكونًا من 6 أرقام إلى",
+    "backToPhoneEntry": "العودة إلى إدخال الهاتف",
+    "resendIn_zero": "إعادة الإرسال خلال {{count}} ثانية",
+    "resendIn_one": "إعادة الإرسال خلال ثانية واحدة",
+    "resendIn_two": "إعادة الإرسال خلال ثانيتين",
+    "resendIn_few": "إعادة الإرسال خلال {{count}} ثوانٍ",
+    "resendIn_many": "إعادة الإرسال خلال {{count}} ثانية",
+    "resendIn_other": "إعادة الإرسال خلال {{count}} ثانية",
+    "resendCode": "إعادة إرسال الرمز",
+    "verifying": "جارٍ التحقق...",
+    "verifyAndSignIn": "تحقق وسجّل الدخول",
+    "useEmailOtp": "استخدام رمز البريد الإلكتروني",
+    "useUsernamePassword": "استخدام اسم المستخدم وكلمة المرور",
+    "noAccount": "ليس لديك حساب؟",
+    "signUpHere": "سجّل هنا"
+}

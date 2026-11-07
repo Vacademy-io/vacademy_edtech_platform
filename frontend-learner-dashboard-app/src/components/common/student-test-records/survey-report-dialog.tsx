@@ -1,4 +1,5 @@
 import { useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import { Card } from "@/components/ui/card";
 import { parseHtmlToString } from "@/lib/utils";
 import { SurveyReportDialogProps, SurveyQuestion, SurveySection } from "@/types/assessments/survey-report-type";
@@ -8,11 +9,12 @@ export const SurveyReportDialog = ({
   surveyReport,
   assessmentDetails,
 }: SurveyReportDialogProps) => {
+  const { t } = useTranslation("testRecords");
   const { setNavHeading } = useNavHeadingStore();
 
   useEffect(() => {
-    setNavHeading("Survey Report");
-  }, [setNavHeading]);
+    setNavHeading(t("surveyReportDialog.title"));
+  }, [setNavHeading, t]);
 
   const renderQuestionResponse = (question: SurveyQuestion) => {
     try {
@@ -33,7 +35,7 @@ export const SurveyReportDialog = ({
                 ))
               ) : (
                 <div className="p-3 bg-gray-50 border border-gray-200 rounded-lg">
-                  <span className="text-sm text-gray-500">No response</span>
+                  <span className="text-sm text-gray-500">{t("questionResponseRenderer.noResponse")}</span>
                 </div>
               )}
             </div>
@@ -50,7 +52,7 @@ export const SurveyReportDialog = ({
                 </div>
               ) : (
                 <div className="p-3 bg-gray-50 border border-gray-200 rounded-lg">
-                  <span className="text-sm text-gray-500">No response</span>
+                  <span className="text-sm text-gray-500">{t("questionResponseRenderer.noResponse")}</span>
                 </div>
               )}
             </div>
@@ -66,7 +68,7 @@ export const SurveyReportDialog = ({
                 </div>
               ) : (
                 <div className="p-3 bg-gray-50 border border-gray-200 rounded-lg">
-                  <span className="text-sm text-gray-500">No response</span>
+                  <span className="text-sm text-gray-500">{t("questionResponseRenderer.noResponse")}</span>
                 </div>
               )}
             </div>
@@ -83,7 +85,7 @@ export const SurveyReportDialog = ({
                 </div>
               ) : (
                 <div className="p-3 bg-gray-50 border border-gray-200 rounded-lg">
-                  <span className="text-sm text-gray-500">No response</span>
+                  <span className="text-sm text-gray-500">{t("questionResponseRenderer.noResponse")}</span>
                 </div>
               )}
             </div>
@@ -92,7 +94,7 @@ export const SurveyReportDialog = ({
         default:
           return (
             <div className="p-3 bg-gray-50 border border-gray-200 rounded-lg">
-              <span className="text-sm text-gray-500">Response not available</span>
+              <span className="text-sm text-gray-500">{t("surveyReportDialog.responseNotAvailable")}</span>
             </div>
           );
       }
@@ -100,7 +102,7 @@ export const SurveyReportDialog = ({
       console.error("Error parsing response:", error);
       return (
         <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
-          <span className="text-sm text-red-600">Error parsing response</span>
+          <span className="text-sm text-red-600">{t("surveyReportDialog.errorParsingResponse")}</span>
         </div>
       );
     }
@@ -110,18 +112,18 @@ export const SurveyReportDialog = ({
     return (
       <div className="flex justify-center items-center h-screen">
         <div className="text-center">
-          <h2 className="text-xl font-semibold text-gray-600">No survey data available</h2>
+          <h2 className="text-xl font-semibold text-gray-600">{t("surveyReportDialog.noSurveyData")}</h2>
         </div>
       </div>
     );
   }
 
   const { sections } = surveyReport;
-  
+
   // Get survey name from assessment details
-  const surveyName = assessmentDetails && assessmentDetails.length > 0 
-    ? assessmentDetails[0]?.saved_data?.name || "Survey Report"
-    : "Survey Report";
+  const surveyName = assessmentDetails && assessmentDetails.length > 0
+    ? assessmentDetails[0]?.saved_data?.name || t("surveyReportDialog.title")
+    : t("surveyReportDialog.title");
 
   return (
     <div className="w-full max-w-6xl mx-auto p-6 space-y-8">
@@ -134,7 +136,7 @@ export const SurveyReportDialog = ({
       {sections.map((section: SurveySection) => (
         <div key={section.section_id} className="space-y-6">
           {/* Questions Grid */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-section">
             {section.questions.map((question: SurveyQuestion, index: number) => (
               <Card key={question.question_id} className="p-6 border border-gray-200 shadow-sm">
                 <div className="space-y-4">
@@ -166,7 +168,7 @@ export const SurveyReportDialog = ({
 
                   {/* Response */}
                   <div className="ms-12">
-                    <h4 className="text-xs font-medium text-gray-600 mb-2">Your Response</h4>
+                    <h4 className="text-xs font-medium text-gray-600 mb-2">{t("common.yourResponse")}</h4>
                     {renderQuestionResponse(question)}
                   </div>
                 </div>

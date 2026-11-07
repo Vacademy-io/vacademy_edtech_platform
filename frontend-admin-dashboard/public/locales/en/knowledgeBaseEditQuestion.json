@@ -1,0 +1,26 @@
+{
+    "heading": "Edit question {{number}}",
+    "fields": {
+        "question": "Question",
+        "htmlHint": "Plain text or HTML. Maths between $…$ is typeset on the paper.",
+        "options": "Options",
+        "tickOne": "tick the correct one",
+        "tickAll": "tick every correct one",
+        "markCorrect": "Mark option {{letter}} as correct",
+        "removeOption": "Remove option",
+        "addOption": "Add option",
+        "answer": "Model answer",
+        "scheme": "Marking scheme",
+        "schemeHint": "One step per line; printed in the teacher’s answer key."
+    },
+    "errors": {
+        "emptyQuestion": "The question cannot be empty.",
+        "optionsAndAnswer": "Give at least two options and tick the correct one.",
+        "saveFailed": "Could not save the question."
+    },
+    "actions": {
+        "cancel": "Cancel",
+        "save": "Save changes",
+        "saving": "Saving…"
+    }
+}

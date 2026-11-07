@@ -1,0 +1,13 @@
+# Brahm Varchas Figma inputs are CLIENT MATERIAL: they live in a private S3
+# prefix (see README.md) and must never be committed. Keep local copies
+# outside the repo; these patterns catch the usual accidental drops here.
+inputs/
+assets/
+fig/
+fixture/
+*.xml
+*.tsx
+*.png
+*.notes.md
+*.notes.txt
+card*.json

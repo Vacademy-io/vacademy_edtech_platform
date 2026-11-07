@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import { Section } from '@/types/assessments/assessment-steps';
 import { OfflineResponseState } from '../-utils/types';
 
@@ -24,6 +25,8 @@ export const QuestionNavigator = ({
     onSelectSection,
     onSelectQuestion,
 }: QuestionNavigatorProps) => {
+    const { t } = useTranslation('assessmentQuestionNavigator');
+
     return (
         <div className="flex flex-col gap-4">
             {/* Section Tabs */}
@@ -75,14 +78,16 @@ export const QuestionNavigator = ({
             {/* Legend */}
             <div className="flex gap-4 text-xs text-gray-500">
                 <span className="flex items-center gap-1">
-                    <span className="inline-block h-3 w-3 rounded bg-primary-500" /> Current
+                    <span className="inline-block h-3 w-3 rounded bg-primary-500" />{' '}
+                    {t('legend.current')}
                 </span>
                 <span className="flex items-center gap-1">
                     <span className="inline-block h-3 w-3 rounded border border-green-300 bg-green-100" />{' '}
-                    Answered
+                    {t('legend.answered')}
                 </span>
                 <span className="flex items-center gap-1">
-                    <span className="inline-block h-3 w-3 rounded bg-gray-100" /> Unanswered
+                    <span className="inline-block h-3 w-3 rounded bg-gray-100" />{' '}
+                    {t('legend.unanswered')}
                 </span>
             </div>
         </div>

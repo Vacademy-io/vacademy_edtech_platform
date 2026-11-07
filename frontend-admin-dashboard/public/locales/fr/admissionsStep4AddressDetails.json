@@ -1,0 +1,20 @@
+{
+    "current": {
+        "heading": "Adresse actuelle"
+    },
+    "address": {
+        "label": "Adresse",
+        "placeholder": "Saisissez l'adresse complète"
+    },
+    "locality": {
+        "label": "Localité la plus proche",
+        "placeholder": "Saisissez la localité/le point de repère"
+    },
+    "sameAsPermanent": {
+        "label": "L'adresse actuelle est identique à l'adresse permanente"
+    },
+    "permanent": {
+        "heading": "Adresse permanente",
+        "addressPlaceholder": "Saisissez l'adresse permanente complète"
+    }
+}

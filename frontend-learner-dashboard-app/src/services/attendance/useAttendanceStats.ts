@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { fetchAttendanceReport, ScheduleItem } from "./getAttendanceReport";
 import { useGetBatchesQuery } from "../get-batches";
-import { format, parseISO, subDays, subMonths, isPast, isToday } from "date-fns";
+import { format, parseISO, subDays, isPast, isToday } from "date-fns";
 
 export type AttendancePeriod = "7d" | "30d" | "90d";
 
@@ -13,6 +13,15 @@ export interface AttendanceStats {
   absentDays: number;
   unmarkedDays: number;
   totalSessions: number;
+  /**
+   * yyyy-MM-dd of the EARLIEST class day actually counted, or null when none.
+   *
+   * The window the learner picks is only an upper bound: the backend also floors
+   * results at their enrolment date, and a studio may simply have no older
+   * sessions. When that happens "30 Days" and "3 Months" return the identical
+   * set and the card looks frozen — surfacing the real span explains why.
+   */
+  firstClassDay: string | null;
 }
 
 /**
@@ -43,6 +52,7 @@ export function computeAttendanceStats(
       absentDays: 0,
       unmarkedDays: 0,
       totalSessions: schedules?.length ?? 0,
+      firstClassDay: null,
     };
   }
 
@@ -119,19 +129,30 @@ export function computeAttendanceStats(
     absentDays,
     unmarkedDays,
     totalSessions: schedules.length,
+    // dayStatuses is built from a Map keyed by date, so sort rather than assume order.
+    firstClassDay:
+      dayStatuses.length > 0
+        ? dayStatuses.map((d) => d.date).sort()[0]!
+        : null,
   };
 }
 
+/**
+ * Calendar days each period covers, INCLUDING today.
+ *
+ * The backend filters `meeting_date BETWEEN startDate AND endDate` — both ends
+ * inclusive — so subtracting the full period length made every window one day
+ * too long: "7 Days" spanned 8 calendar days and could report 8 class days out
+ * of a 7-day period. Subtract length-1 so the label matches what is counted.
+ */
+const PERIOD_DAYS: Record<AttendancePeriod, number> = {
+  "7d": 7,
+  "30d": 30,
+  "90d": 90,
+};
+
 function getPeriodStartDate(period: AttendancePeriod): Date {
-  const now = new Date();
-  switch (period) {
-    case "7d":
-      return subDays(now, 7);
-    case "30d":
-      return subDays(now, 30);
-    case "90d":
-      return subMonths(now, 3);
-  }
+  return subDays(new Date(), PERIOD_DAYS[period] - 1);
 }
 
 export const useAttendanceStats = (options?: {

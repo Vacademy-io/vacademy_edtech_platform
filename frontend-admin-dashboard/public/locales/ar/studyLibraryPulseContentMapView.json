@@ -1,0 +1,27 @@
+{
+    "untitledSlide": "شريحة بلا عنوان",
+    "untitledChapter": "فصل بلا عنوان",
+    "untitledModule": "وحدة بلا عنوان",
+    "untitledSubject": "مادة بلا عنوان",
+    "frictionUsually": "احتكاك · عادةً {{duration}}",
+    "avgDuration": "متوسط {{duration}}",
+    "loadError": "تعذّر تحميل خريطة المحتوى.",
+    "retry": "إعادة المحاولة",
+    "emptyTitle": "لا يوجد محتوى نشط حاليًا",
+    "emptySubtitle": "تظهر الشرائح هنا عندما يفتحها المتعلمون عبر الدورة.",
+    "summary": {
+        "learners_zero": "{{count}} متعلم",
+        "learners_one": "متعلم واحد",
+        "learners_two": "متعلمان",
+        "learners_few": "{{count}} متعلمين",
+        "learners_many": "{{count}} متعلمًا",
+        "learners_other": "{{count}} متعلم",
+        "subjects_zero": "{{count}} مادة",
+        "subjects_one": "مادة واحدة",
+        "subjects_two": "مادتان",
+        "subjects_few": "{{count}} مواد",
+        "subjects_many": "{{count}} مادة",
+        "subjects_other": "{{count}} مادة",
+        "across": "{{learners}} عبر {{subjects}}"
+    }
+}

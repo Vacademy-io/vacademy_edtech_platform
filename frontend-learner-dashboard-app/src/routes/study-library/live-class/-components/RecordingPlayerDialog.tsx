@@ -8,6 +8,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Copy, ArrowSquareOut } from "@phosphor-icons/react";
 import { toast } from "sonner";
+import { useTranslation } from "react-i18next";
 import { getPublicUrl } from "@/services/upload_file";
 import { appendYouTubeEmbedOrigin } from "@/utils/youtube-embed";
 import { LearnerRecording } from "../-types/types";
@@ -33,6 +34,7 @@ export const RecordingPlayerDialog = ({
   open,
   onOpenChange,
 }: RecordingPlayerDialogProps) => {
+  const { t, i18n } = useTranslation("study");
   const [s3Url, setS3Url] = useState<string | null>(null);
   const [resolving, setResolving] = useState(false);
 
@@ -50,7 +52,7 @@ export const RecordingPlayerDialog = ({
         if (!cancelled) setS3Url(resolved);
       } catch (err) {
         console.error("Failed to resolve recording URL:", err);
-        if (!cancelled) toast.error("Failed to load the recording.");
+        if (!cancelled) toast.error(t("liveClass.recordingDialog.toast.loadFailed"));
       } finally {
         if (!cancelled) setResolving(false);
       }
@@ -65,7 +67,7 @@ export const RecordingPlayerDialog = ({
   const handleCopyPasscode = async () => {
     if (!recording.passcode) return;
     await navigator.clipboard.writeText(recording.passcode);
-    toast.success("Passcode copied");
+    toast.success(t("liveClass.recordingDialog.toast.passcodeCopied"));
   };
 
   return (
@@ -81,7 +83,7 @@ export const RecordingPlayerDialog = ({
           <div className="mt-2">
             {resolving || !s3Url ? (
               <div className="flex h-64 items-center justify-center text-neutral-500 dark:text-neutral-400">
-                Loading recording…
+                {t("liveClass.recordingDialog.loading")}
               </div>
             ) : (
               <video
@@ -117,7 +119,7 @@ export const RecordingPlayerDialog = ({
               />
             ) : (
               <div className="flex h-full items-center justify-center text-neutral-300">
-                Unable to embed this video.
+                {t("liveClass.recordingDialog.unableToEmbed")}
               </div>
             )}
           </div>
@@ -126,22 +128,25 @@ export const RecordingPlayerDialog = ({
         {recording.playback_type === "ZOOM_CLOUD" && (
           <div className="mt-2 space-y-3 rounded-lg border border-neutral-200 dark:border-neutral-800 p-4">
             <p className="text-sm text-neutral-600 dark:text-neutral-300">
-              This recording is hosted on Zoom Cloud. Open it in a new tab to watch.
+              {t("liveClass.recordingDialog.zoomCloudHosted")}
             </p>
             {recording.passcode && (
               <div className="flex items-center gap-2">
                 <span className="text-sm text-neutral-600 dark:text-neutral-300">
-                  Passcode: <span className="font-mono font-medium">{recording.passcode}</span>
+                  {t("liveClass.recordingDialog.passcodeLabel")}{" "}
+                  <span className="font-mono font-medium">{recording.passcode}</span>
                 </span>
                 <Button variant="outline" size="sm" onClick={handleCopyPasscode}>
                   <Copy size={14} className="me-1.5" />
-                  Copy
+                  {t("liveClass.recordingDialog.copy")}
                 </Button>
               </div>
             )}
             {recording.expires_at && (
               <p className="text-xs text-neutral-500 dark:text-neutral-400">
-                This link may expire around {new Date(recording.expires_at).toLocaleDateString()}.
+                {t("liveClass.recordingDialog.expiresAround", {
+                  date: new Date(recording.expires_at).toLocaleDateString(i18n.language),
+                })}
               </p>
             )}
             {recording.url && (
@@ -151,7 +156,7 @@ export const RecordingPlayerDialog = ({
                 onClick={() => window.open(recording.url, "_blank", "noopener,noreferrer")}
               >
                 <ArrowSquareOut size={16} className="me-1.5" />
-                Open recording
+                {t("liveClass.recordingDialog.openRecording")}
               </Button>
             )}
           </div>

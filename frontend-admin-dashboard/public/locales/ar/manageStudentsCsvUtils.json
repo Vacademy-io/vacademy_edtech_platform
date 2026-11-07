@@ -1,0 +1,15 @@
+{
+    "validation": {
+        "required": "{{field}} مطلوب",
+        "requiredResolution": "يرجى إدخال قيمة لحقل {{field}}",
+        "usernameNoSpaces": "لا يمكن أن يحتوي اسم المستخدم على مسافات",
+        "usernameNoSpacesResolution": "قم بإزالة المسافات من اسم المستخدم",
+        "usernameNoSpacesFormat": "لا يُسمح بالمسافات",
+        "invalidValue": "قيمة غير صالحة لحقل {{field}}",
+        "invalidValueResolution": "يجب أن تكون القيمة واحدة من: {{options}}",
+        "invalidDateFormat": "تنسيق تاريخ غير صالح لحقل {{field}}",
+        "invalidDateFormatResolution": "يجب أن يكون التاريخ بالتنسيق: {{format}}",
+        "invalidFormat": "تنسيق غير صالح لحقل {{field}}",
+        "checkFormat": "يرجى التحقق من التنسيق"
+    }
+}

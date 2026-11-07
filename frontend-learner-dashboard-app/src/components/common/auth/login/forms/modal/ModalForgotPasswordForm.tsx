@@ -208,8 +208,8 @@ export function ModalForgotPasswordForm({
                         >
                             <div className="flex items-start space-x-2">
                                 <Shield className="w-4 h-4 text-gray-600 mt-0.5 flex-shrink-0" />
-                                <div>
-                                    <p className="text-xs font-medium text-gray-800 mb-1">
+                                <div className="space-y-1">
+                                    <p className="text-xs font-medium text-gray-800">
                                         {t("forgotPassword.accountSecurity")}
                                     </p>
                                     <p className="text-xs text-gray-600">

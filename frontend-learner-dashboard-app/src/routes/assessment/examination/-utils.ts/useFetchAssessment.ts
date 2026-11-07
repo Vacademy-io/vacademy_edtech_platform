@@ -1,6 +1,7 @@
 import { useAssessmentStore } from "@/stores/assessment-store";
 import authenticatedAxiosInstance from "@/lib/auth/axiosInstance";
 import { toast } from "sonner";
+import i18next from "i18next";
 import { getBackendErrorMessage } from "@/utils/error-message";
 import {
   Assessment_List_Filter,
@@ -21,6 +22,11 @@ import {
   getEnrolledBatchIds,
 } from "@/services/studentDetails";
 import { useContentStore } from "@/stores/study-library/chapter-sidebar-store";
+import {
+  fetchLearnerAssessmentFolders,
+  OTHERS_FOLDER_ID,
+  type LearnerFolderList,
+} from "@/services/assessment-folders";
 
 export const getStoredDetails = async () => {
   const studentData = await Preferences.get({ key: "StudentDetails" });
@@ -54,7 +60,7 @@ const getStartAssessmentDetails = async () => {
   };
 };
 
-const getDuration = async (): Promise<{
+export const getDuration = async (): Promise<{
   can_switch_section: boolean;
   duration: number;
   distribution_duration: distribution_duration_types;
@@ -87,12 +93,14 @@ export const fetchAssessmentData = async (
   pageNo: number,
   pageSize: number,
   assessmentType: assessmentTypes,
-  assessment_types: string
+  assessment_types: string,
+  /** Assessment folder id, or OTHERS_FOLDER_ID for tests in no folder. */
+  folderId?: string
 ) => {
   try {
     const { student, institute } = await getStoredDetails();
     if (!student || !institute) {
-      toast.error("Missing student or institute details.");
+      toast.error(i18next.t("assessment:util.toast.missingDetails"));
       return;
     }
     // Source batch_ids from a LIVE /details fetch (every enrolled batch) instead
@@ -111,6 +119,11 @@ export const fetchAssessmentData = async (
       get_upcoming_assessments: assessmentType === assessmentTypes.UPCOMING,
       institute_ids: [institute.id],
       sort_columns: {},
+      ...(folderId === OTHERS_FOLDER_ID
+        ? { unfiled_only: true }
+        : folderId
+          ? { folder_id: folderId }
+          : {}),
     };
 
     const response = await authenticatedAxiosInstance.post(
@@ -133,6 +146,22 @@ export const fetchAssessmentData = async (
   } finally {
     // setLoading(false);
   }
+};
+
+/** The folders this learner has tests in, scoped exactly like the assessment list. */
+export const fetchAssessmentFolderList = async (
+  assessment_types: string
+): Promise<LearnerFolderList | null> => {
+  const { student, institute } = await getStoredDetails();
+  if (!student || !institute) return null;
+  const batchIds = await getEnrolledBatchIds(institute.id, student.user_id);
+  return fetchLearnerAssessmentFolders({
+    instituteId: institute.id,
+    batchIds:
+      batchIds?.length > 0 ? batchIds : [student.package_session_id].filter(Boolean),
+    userIds: [student.user_id],
+    assessmentTypes: [assessment_types],
+  });
 };
 
 export const storeAssessmentInfo = async (assessmentInfo: any) => {
@@ -177,7 +206,7 @@ export const fetchPreviewData = async (
   try {
     const { student, institute } = await getStoredDetails();
     if (!student || !institute) {
-      toast.error("Missing student or institute details.");
+      toast.error(i18next.t("assessment:util.toast.missingDetails"));
       return;
     }
 
@@ -201,7 +230,7 @@ export const fetchPreviewData = async (
     const student_details = await getStudentDetails();
 
     if (!student_details) {
-      toast.error("Student details not found.");
+      toast.error(i18next.t("assessment:util.toast.studentDetailsNotFound"));
       return;
     }
 
@@ -353,7 +382,7 @@ export const fetchPreviewData = async (
     toast.error(
       getBackendErrorMessage(
         error,
-        "Unable to start the assessment. Please try again."
+        i18next.t("assessment:util.toast.startFailed")
       )
     );
   }

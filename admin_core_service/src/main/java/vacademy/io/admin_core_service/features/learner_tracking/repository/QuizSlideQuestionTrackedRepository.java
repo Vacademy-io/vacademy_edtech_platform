@@ -17,6 +17,8 @@ public interface QuizSlideQuestionTrackedRepository extends JpaRepository<QuizSl
     @Query("DELETE FROM QuizSlideQuestionTracked qz WHERE qz.activityLog.id = :activityId")
     void deleteByActivityId(@Param("activityId") String activityId);
 
+    long countByActivityLogId(String activityLogId);
+
     /**
      * Student report v2 "Marks by Subject": per-slide QUIZ marks for a user in a date range.
      *

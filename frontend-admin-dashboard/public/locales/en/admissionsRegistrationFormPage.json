@@ -1,0 +1,71 @@
+{
+    "pageTitle": "New Application",
+    "sectionHasErrors": "Has errors",
+    "stepProgress": "Step {{current}} of {{total}}",
+    "sections": {
+        "student": {
+            "label": "Student Details",
+            "shortLabel": "Student"
+        },
+        "academic": {
+            "label": "Academic Info",
+            "shortLabel": "Academic"
+        },
+        "parent": {
+            "label": "Parent & Guardian",
+            "shortLabel": "Parent"
+        },
+        "address": {
+            "label": "Address",
+            "shortLabel": "Address"
+        },
+        "payment": {
+            "label": "Payment",
+            "shortLabel": "Payment"
+        }
+    },
+    "buttons": {
+        "downloadPdf": "Download PDF",
+        "generatingPdf": "Generating...",
+        "print": "Print",
+        "previous": "Previous",
+        "next": "Next",
+        "submitApplication": "Submit Application",
+        "backToList": "Back to List"
+    },
+    "toasts": {
+        "pdfTemplateNotReady": "PDF template not ready. Please try again.",
+        "generatingPdf": "Generating PDF...",
+        "pdfDownloaded": "PDF downloaded!",
+        "pdfGenerationFailed": "Failed to generate PDF. Please try again.",
+        "popupBlocked": "Pop-up blocked. Please allow pop-ups to print.",
+        "submitFailed": "Failed to submit application. Please try again."
+    },
+    "validation": {
+        "studentNameRequired": "Student name is required",
+        "dobRequired": "Date of birth is required",
+        "genderRequired": "Gender is required",
+        "nationalityRequired": "Nationality is required",
+        "categoryRequired": "Category is required",
+        "classRequired": "Please select a class/grade from the Academic Info section",
+        "boardRequired": "Board preference is required",
+        "parentRequired": "At least one parent (father or mother) with name and mobile is required",
+        "fatherEmailInvalid": "Father email address is invalid",
+        "motherEmailInvalid": "Mother email address is invalid",
+        "addressFieldsRequired": "Please fill all required address fields (Street, Area, City, State)",
+        "countryRequired": "Country is required",
+        "pincodeInvalid": "Please enter a valid 6-digit pincode",
+        "sessionMissing": "Session ID is missing. Please select a session from the registration list"
+    },
+    "confirmSubmit": "Are you sure you want to submit this application? Please review all details before proceeding.",
+    "print": {
+        "documentTitle": "Application Form - {{name}}"
+    },
+    "payment": {
+        "defaultFeeName": "Application / Registration Fee"
+    },
+    "header": {
+        "backToList": "Back to applications",
+        "stepBadge": "Step {{current}} of {{total}}"
+    }
+}

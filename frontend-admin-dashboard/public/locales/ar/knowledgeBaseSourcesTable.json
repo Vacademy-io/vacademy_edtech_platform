@@ -1,0 +1,64 @@
+{
+    "counts": {
+        "pages_zero": "لا صفحات ({{formatted}})",
+        "pages_one": "صفحة واحدة ({{formatted}})",
+        "pages_two": "صفحتان ({{formatted}})",
+        "pages_few": "{{formatted}} صفحات",
+        "pages_many": "{{formatted}} صفحة",
+        "pages_other": "{{formatted}} صفحة",
+        "passages_zero": "لا مقاطع ({{formatted}})",
+        "passages_one": "مقطع واحد ({{formatted}})",
+        "passages_two": "مقطعان ({{formatted}})",
+        "passages_few": "{{formatted}} مقاطع",
+        "passages_many": "{{formatted}} مقطعًا",
+        "passages_other": "{{formatted}} مقطع",
+        "figures_zero": "لا رسوم أو جداول ({{formatted}})",
+        "figures_one": "رسم أو جدول واحد ({{formatted}})",
+        "figures_two": "رسمان أو جدولان ({{formatted}})",
+        "figures_few": "{{formatted}} رسوم وجداول",
+        "figures_many": "{{formatted}} رسمًا وجدولًا",
+        "figures_other": "{{formatted}} رسم وجدول",
+        "credits_zero": "لا أرصدة ({{formatted}})",
+        "credits_one": "رصيد واحد ({{formatted}})",
+        "credits_two": "رصيدان ({{formatted}})",
+        "credits_few": "{{formatted}} أرصدة",
+        "credits_many": "{{formatted}} رصيدًا",
+        "credits_other": "{{formatted}} رصيد",
+        "ocrPages_zero": "لا صفحات ممسوحة ({{formatted}})",
+        "ocrPages_one": "صفحة ممسوحة واحدة تمت قراءتها ({{formatted}})",
+        "ocrPages_two": "صفحتان ممسوحتان تمت قراءتهما ({{formatted}})",
+        "ocrPages_few": "{{formatted}} صفحات ممسوحة تمت قراءتها",
+        "ocrPages_many": "{{formatted}} صفحة ممسوحة تمت قراءتها",
+        "ocrPages_other": "{{formatted}} صفحة ممسوحة تمت قراءتها"
+    },
+    "aria": {
+        "stopUsing": "التوقف عن استخدام {{title}}",
+        "startUsing": "بدء استخدام {{title}}",
+        "actionsFor": "إجراءات لـ {{title}}"
+    },
+    "toast": {
+        "nowUsed": "يُستخدم الآن للإجابات",
+        "noLongerUsed": "لم يعد يُستخدم للإجابات",
+        "updateFailed": "تعذر تحديث هذا",
+        "reindexing": "جارٍ قراءته مرة أخرى — لن يتم احتسابه مرتين.",
+        "reindexFailed": "تعذر بدء إعادة القراءة",
+        "removeSuccess": "تمت الإزالة",
+        "removeFailed": "تعذر إزالة هذا المصدر"
+    },
+    "readAgain": "قراءة مرة أخرى",
+    "remove": "إزالة",
+    "stage": {
+        "working": "جارٍ العمل",
+        "gettingStarted": "جارٍ البدء"
+    },
+    "partialWarning": "تعذرت قراءة {{lowConfidence}} من أصل {{total}} صفحة بشكل موثوق. الباقي قابل للاستخدام — أعد رفع مسح أوضح لتلك الصفحات إذا كان الأمر مهمًا.",
+    "notActive": "لا يُستخدم حاليًا للإجابات.",
+    "emptyState": "لم تتم إضافة شيء بعد. أضف كتابًا دراسيًا أو مجموعة ملاحظات أو ورقة أسئلة سابقة للبدء.",
+    "deleteDialog": {
+        "title": "إزالة هذا المصدر؟",
+        "description": "سيتم حذف «{{title}}» وكل ما تمت قراءته منه. إضافته مرة أخرى لاحقًا ستكلف أرصدة مرة أخرى. لإيقاف استخدامه دون فقدان العمل، أوقف تشغيله بدلاً من ذلك.",
+        "cancel": "إلغاء",
+        "removing": "جارٍ الإزالة…",
+        "confirm": "إزالة"
+    }
+}

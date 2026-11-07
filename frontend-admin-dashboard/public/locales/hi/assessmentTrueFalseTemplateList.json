@@ -1,0 +1,20 @@
+{
+    "settingsPopover": {
+        "title": "प्रश्न सेटिंग्स",
+        "questionTypeLabel": "प्रश्न प्रकार"
+    },
+    "questionHeader": {
+        "questionLabel": "प्रश्न"
+    },
+    "trueFalseOptions": {
+        "answerLabel": "उत्तर:"
+    },
+    "trueFalseOption": {
+        "markerFallback": "({{label}}.)",
+        "trueLabel": "सत्य",
+        "falseLabel": "असत्य"
+    },
+    "explanationSection": {
+        "label": "व्याख्या:"
+    }
+}

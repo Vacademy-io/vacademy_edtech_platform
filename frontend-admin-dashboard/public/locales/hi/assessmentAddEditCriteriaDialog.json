@@ -1,0 +1,60 @@
+{
+    "dialog": {
+        "headingEdit": "मूल्यांकन मानदंड संपादित करें",
+        "headingAdd": "मूल्यांकन मानदंड जोड़ें"
+    },
+    "footer": {
+        "cancel": "रद्द करें",
+        "save": "मानदंड सहेजें"
+    },
+    "questionInfo": {
+        "typeLabel": "प्रश्न प्रकार:",
+        "maxMarksLabel": "अधिकतम अंक:"
+    },
+    "tabs": {
+        "manual": "मैन्युअल",
+        "ai": "AI से जनरेट करें",
+        "template": "टेम्पलेट का उपयोग करें"
+    },
+    "manual": {
+        "criteriaHeading": "मानदंड {{index}}",
+        "nameLabel": "मानदंड का नाम",
+        "namePlaceholder": "जैसे, सामग्री की गुणवत्ता",
+        "descriptionLabel": "विवरण",
+        "descriptionPlaceholder": "जैसे, सामग्री की गहराई और सटीकता",
+        "maxMarksLabel": "अधिकतम अंक",
+        "maxMarksPlaceholder": "0",
+        "addCriteria": "मानदंड जोड़ें",
+        "saveAsTemplateLabel_one": "पुन: उपयोग के लिए टेम्पलेट के रूप में सहेजें ({{questionType}} - {{count}} अंक)",
+        "saveAsTemplateLabel_other": "पुन: उपयोग के लिए टेम्पलेट के रूप में सहेजें ({{questionType}} - {{count}} अंक)",
+        "totalMarks_one": "कुल: {{achieved}} / {{count}} अंक",
+        "totalMarks_other": "कुल: {{achieved}} / {{count}} अंक",
+        "totalMarksValidSuffix": " ✓",
+        "totalMarksInvalidSuffix": " (प्रश्न के अंकों से मेल खाना चाहिए)"
+    },
+    "ai": {
+        "generatedBanner": "✓ मानदंड सफलतापूर्वक जनरेट हो गए!",
+        "marksBadge_one": "{{count}} अंक",
+        "marksBadge_other": "{{count}} अंक",
+        "regenerate": "पुनः जनरेट करें",
+        "emptyPrompt": "इस प्रश्न के लिए AI से मूल्यांकन मानदंड जनरेट करवाएं",
+        "generateButton": "AI से जनरेट करें"
+    },
+    "template": {
+        "selectPrompt": "उपयोग करने के लिए एक टेम्पलेट चुनें:",
+        "emptyState": "इस प्रश्न प्रकार के लिए कोई टेम्पलेट नहीं मिला",
+        "criteriaCount_one": "{{count}} मानदंड",
+        "criteriaCount_other": "{{count}} मानदंड",
+        "marksCount_one": "{{count}} अंक",
+        "marksCount_other": "{{count}} अंक"
+    },
+    "toasts": {
+        "criteriaGenerated": "मानदंड सफलतापूर्वक जनरेट हो गए!",
+        "generateFailed": "मानदंड जनरेट करने में विफल। कृपया पुनः प्रयास करें।",
+        "templateSaved": "मानदंड टेम्पलेट के रूप में सहेजे गए!",
+        "templateSaveFailed": "टेम्पलेट सहेजने में विफल",
+        "invalidMarksDistribution": "अमान्य अंक वितरण",
+        "criteriaSaved": "मानदंड सफलतापूर्वक सहेजे गए!",
+        "incompleteCriteria": "सहेजने से पहले कृपया मानदंड पूरा करें"
+    }
+}

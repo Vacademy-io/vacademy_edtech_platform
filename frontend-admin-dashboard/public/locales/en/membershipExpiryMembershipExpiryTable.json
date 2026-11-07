@@ -1,0 +1,33 @@
+{
+    "columns": {
+        "user": "User",
+        "plan": "Plan",
+        "status": "Status",
+        "autoRenewal": "Auto-Renewal",
+        "planEndDate": "Plan End Date",
+        "finalExpiry": "Final Expiry",
+        "reenrollment": "Re-enrollment"
+    },
+    "unknownUser": "Unknown User",
+    "unknownPlan": "Unknown Plan",
+    "notApplicable": "N/A",
+    "autoRenewal": "Auto-Renewal",
+    "noAutoRenewal": "No Auto-Renewal",
+    "paymentAttemptOn": "Payment will be attempted on {{date}}",
+    "scheduledDate": "scheduled date",
+    "autoRenewalDisabled": "Auto-renewal is disabled for this membership",
+    "gracePeriod_one": "{{count}} day grace period",
+    "gracePeriod_other": "{{count}} days grace period",
+    "notAllowed": "Not Allowed",
+    "availableNow": "Available Now",
+    "reenrollmentGap_one": "{{count}} day gap required before re-enrollment",
+    "reenrollmentGap_other": "{{count}} days gap required before re-enrollment",
+    "reenrollImmediately": "Can re-enroll immediately after expiry",
+    "errorLoadingData": "Error loading data",
+    "status": {
+        "ended": "Ended",
+        "aboutToEnd": "About To End",
+        "lifetime": "Lifetime",
+        "active": "Active"
+    }
+}

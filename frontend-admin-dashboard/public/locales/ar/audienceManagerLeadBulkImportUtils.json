@@ -1,0 +1,18 @@
+{
+    "errors": {
+        "unknownCounsellorEmail": "بريد إلكتروني غير معروف للمرشد: {{email}}",
+        "ambiguousCounsellorName": "يوجد أكثر من مرشد باسم \"{{name}}\" — استخدم بريده الإلكتروني بدلاً من ذلك",
+        "unknownCounsellor": "مرشد غير معروف: {{name}}",
+        "unknownLeadStatus": "حالة عميل محتمل غير معروفة: {{status}}.",
+        "validStatuses": "الحالات الصالحة: {{statuses}}",
+        "fieldRequired": "{{field}} مطلوب",
+        "invalidEmail": "بريد إلكتروني غير صالح: {{email}}",
+        "invalidMobile": "رقم جوال غير صالح: {{mobile}}"
+    },
+    "csvTemplate": {
+        "leadOwnerColumn": "مالك العميل المحتمل (بريد المرشد الإلكتروني)",
+        "leadStatusColumn": "حالة العميل المحتمل",
+        "sampleName": "جون دو",
+        "sampleStatus": "جديد"
+    }
+}

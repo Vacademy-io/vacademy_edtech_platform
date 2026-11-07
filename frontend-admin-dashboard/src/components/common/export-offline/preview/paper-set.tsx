@@ -3,8 +3,8 @@ import { QuestionComponent } from './question-component';
 import type { Section } from '../types/question';
 import { useMemo, useRef, useEffect, useState } from 'react';
 import type { ExportSettings } from '../contexts/export-settings-context';
-import { useInstituteDetailsStore } from '@/stores/students/students-list/useInstituteDetailsStore';
 import { Input } from '@/components/ui/input';
+import { PaperTitleBlock, totalMarksOf } from './paper-title-block';
 
 interface PaperSetProps {
     sections: Section[];
@@ -13,16 +13,24 @@ interface PaperSetProps {
     className?: string;
     // eslint-disable-next-line
     instructions?: any;
+    title?: string;
+    durationMins?: number;
 }
 
-export function PaperSet({ sections, setNumber, settings, instructions }: PaperSetProps) {
+export function PaperSet({
+    sections,
+    setNumber,
+    settings,
+    instructions,
+    title,
+    durationMins,
+}: PaperSetProps) {
     const [heights, setHeights] = useState({
         initialHeader: 0,
         instructionsHeight: 0,
         sectionHeader: 0,
         questions: [] as number[],
     });
-    const { instituteDetails } = useInstituteDetailsStore();
 
     const initialHeaderRef = useRef<HTMLDivElement>(null);
     const instructionsRef = useRef<HTMLDivElement>(null);
@@ -60,29 +68,25 @@ export function PaperSet({ sections, setNumber, settings, instructions }: PaperS
         setHeights(newHeights);
     }, [sections, settings]);
 
+    // Name / Roll No. blanks are for the copy a student writes on, not the key
+    const showCustomFields = settings.includeCustomInputFields && !settings.exportSolutionKey;
+
     const renderHeader = (isInstructionPage = false) => (
         <div ref={initialHeaderRef} className="mb-6">
-            {settings.showInstitutionLetterhead && (
-                <div className="mb-6 border-b pb-4 text-center">
-                    {settings.customLetterheadImage ? (
-                        <img
-                            src={settings.customLetterheadImage}
-                            alt="Letterhead"
-                            className="mx-auto mb-2 max-h-24"
-                        />
-                    ) : (
-                        <h1 className="text-2xl font-bold">{instituteDetails?.institute_name}</h1>
-                    )}
-                </div>
-            )}
+            <PaperTitleBlock
+                settings={settings}
+                title={title}
+                totalMarks={totalMarksOf(sections.flatMap((section) => section.questions))}
+                durationMins={durationMins}
+                questionCount={sections.reduce((n, section) => n + section.questions.length, 0)}
+                setCode={
+                    settings.includeQuestionSetCode
+                        ? String.fromCharCode(65 + setNumber)
+                        : undefined
+                }
+            />
 
-            {settings.includeQuestionSetCode && (
-                <div className="mb-4 text-right text-sm text-gray-600">
-                    Set Code: {String.fromCharCode(65 + setNumber)}
-                </div>
-            )}
-
-            {settings.includeCustomInputFields && settings.customFields && (
+            {showCustomFields && settings.customFields && (
                 <div className="mb-6 space-y-4">
                     {settings.customFields
                         .filter((field) => field.enabled)
@@ -118,7 +122,7 @@ export function PaperSet({ sections, setNumber, settings, instructions }: PaperS
                 </div>
             )}
 
-            {isInstructionPage && instructions && (
+            {isInstructionPage && instructions?.content && (
                 <div ref={instructionsRef} className="mb-6">
                     <h2 className="mb-4 text-xl font-semibold">Instructions</h2>
                     <div
@@ -249,6 +253,7 @@ export function PaperSet({ sections, setNumber, settings, instructions }: PaperS
                                 questionNumber={questionIndex + 1}
                                 showMarks={settings.showMarksPerQuestion}
                                 showCheckboxes={settings.showCheckboxesBeforeOptions}
+                                showAnswers={settings.exportSolutionKey}
                                 answerSpacing={
                                     settings.answerSpacings?.[question.question_id] || 10
                                 }
@@ -280,6 +285,7 @@ export function PaperSet({ sections, setNumber, settings, instructions }: PaperS
                                     questionNumber={questionIndex + 1}
                                     showMarks={settings.showMarksPerQuestion}
                                     showCheckboxes={settings.showCheckboxesBeforeOptions}
+                                    showAnswers={settings.exportSolutionKey}
                                     answerSpacing={
                                         settings.answerSpacings?.[question.question_id] || 10
                                     }
@@ -340,6 +346,7 @@ export function PaperSet({ sections, setNumber, settings, instructions }: PaperS
                                     questionNumber={questionIndex + 1}
                                     showMarks={settings.showMarksPerQuestion}
                                     showCheckboxes={settings.showCheckboxesBeforeOptions}
+                                    showAnswers={settings.exportSolutionKey}
                                     answerSpacing={
                                         settings.answerSpacings?.[question.question_id] || 10
                                     }

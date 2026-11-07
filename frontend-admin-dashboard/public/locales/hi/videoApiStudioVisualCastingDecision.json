@@ -1,0 +1,28 @@
+{
+    "header": {
+        "title_one": "विज़ुअल चुनें ({{count}} शॉट)",
+        "title_other": "विज़ुअल चुनें ({{count}} शॉट्स)"
+    },
+    "empty": {
+        "noCandidates": "समीक्षा के लिए कोई विज़ुअल उम्मीदवार नहीं।",
+        "continue": "जारी रखें"
+    },
+    "shot": {
+        "queryFallback": "विज़ुअल",
+        "generateWithAi": "AI से जनरेट करें",
+        "searchPlaceholderClips": "क्लिप खोजें…",
+        "searchPlaceholderPhotos": "फ़ोटो खोजें…",
+        "search": "खोजें",
+        "upload": "अपलोड करें",
+        "noCandidates": "कोई उम्मीदवार नहीं — खोजें, अपलोड करें, या AI को जनरेट करने दें।",
+        "yours": "आपका"
+    },
+    "footer": {
+        "letAiDoAll": "AI को सब कुछ करने दें",
+        "useThese": "इन्हें उपयोग करें"
+    },
+    "toast": {
+        "noResults": "कोई परिणाम नहीं — अलग शब्द आज़माएँ।",
+        "uploadFailed": "अपलोड विफल रहा। छोटी छवि आज़माएँ।"
+    }
+}

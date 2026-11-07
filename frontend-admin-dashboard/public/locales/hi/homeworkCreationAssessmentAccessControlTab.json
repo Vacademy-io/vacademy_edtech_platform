@@ -1,0 +1,15 @@
+{
+    "sections": {
+        "creationAccessTitle": "होमवर्क निर्माण पहुँच",
+        "liveNotificationsTitle": "लाइव होमवर्क सूचनाएँ",
+        "submissionReportsTitle": "होमवर्क सबमिशन और रिपोर्ट पहुँच",
+        "evaluationTitle": "मूल्यांकन पहुँच"
+    },
+    "roles": {
+        "admin": "एडमिन",
+        "contentCreator": "कंटेंट क्रिएटर",
+        "assessmentCreator": "असेसमेंट क्रिएटर",
+        "evaluator": "मूल्यांकनकर्ता",
+        "teacher": "शिक्षक"
+    }
+}

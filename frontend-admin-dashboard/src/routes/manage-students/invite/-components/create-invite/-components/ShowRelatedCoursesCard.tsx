@@ -1,19 +1,32 @@
+import { useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { UseFormReturn } from 'react-hook-form';
-import { InviteLinkFormValues, relatedCourses } from '../GenerateInviteLinkSchema';
+import { InviteLinkFormValues, getRelatedCourses } from '../GenerateInviteLinkSchema';
 import { Switch as ShadSwitch } from '@/components/ui/switch';
+import { getTerminologyPlural } from '@/components/common/layout-container/sidebar/utils';
+import { ContentTerms, SystemTerms } from '@/routes/settings/-components/NamingSettings';
 
 interface InviteViaEmailCardProps {
     form: UseFormReturn<InviteLinkFormValues>;
 }
 
 const ShowRelatedCoursesCard = ({ form }: InviteViaEmailCardProps) => {
+    // getRelatedCourses() reads i18next.t() live (it used to be a `relatedCourses` constant
+    // frozen at module-import time, before the namespace could ever load). Recompute it here
+    // — memoized on the active language — instead of importing a frozen array.
+    const { i18n } = useTranslation();
+    const relatedCourses = useMemo(() => getRelatedCourses(), [i18n.language]);
+    const coursesTerm = getTerminologyPlural(ContentTerms.Course, SystemTerms.Course);
+
     return (
         <Card className="mb-4">
             <CardHeader>
-                <CardTitle className="text-lg font-semibold">Include Related Courses</CardTitle>
+                <CardTitle className="text-lg font-semibold">
+                    Include Related {coursesTerm}
+                </CardTitle>
                 <span className="text-sm text-gray-600">
-                    Show related courses to students on the invite page
+                    Show related {coursesTerm.toLocaleLowerCase()} to students on the invite page
                 </span>
             </CardHeader>
             <CardContent>
@@ -23,13 +36,13 @@ const ShowRelatedCoursesCard = ({ form }: InviteViaEmailCardProps) => {
                         onCheckedChange={(value) => form.setValue('showRelatedCourses', value)}
                     />
                     <span className="text-sm text-gray-700">
-                        Show related courses on invite page
+                        Show related {coursesTerm.toLocaleLowerCase()} on invite page
                     </span>
                 </div>
                 {form.watch('showRelatedCourses') && (
                     <>
                         <hr className="my-4 border-t border-gray-200" />
-                        <p className="mb-4">Related Courses</p>
+                        <p className="mb-4">Related {coursesTerm}</p>
                         <div className="mb-2 grid grid-cols-1 gap-4 md:grid-cols-2">
                             {relatedCourses.map((course) => (
                                 <Card
@@ -65,8 +78,8 @@ const ShowRelatedCoursesCard = ({ form }: InviteViaEmailCardProps) => {
                             ))}
                         </div>
                         <span className="text-xs text-gray-600">
-                            These courses will be displayed as suggestions on the invite page to
-                            encourage additional enrollments.
+                            These {coursesTerm.toLocaleLowerCase()} will be displayed as suggestions
+                            on the invite page to encourage additional enrollments.
                         </span>
                     </>
                 )}

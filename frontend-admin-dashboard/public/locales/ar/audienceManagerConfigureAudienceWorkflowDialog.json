@@ -1,0 +1,87 @@
+{
+    "dialog": {
+        "title": "تكوين سير العمل",
+        "description": "قم بإعداد رسالة تلقائية لـ <bold>“{{audienceName}}”</bold>. للتدفقات الأكثر تعقيدًا (التأخيرات، الشروط، خطوات متعددة)، استخدم أداة إنشاء سير العمل الكاملة."
+    },
+    "kind": {
+        "label": "نوع سير العمل",
+        "confirmation": {
+            "title": "تأكيد",
+            "description": "يُرسل فورًا عند تقديم عميل محتمل للنموذج."
+        },
+        "followup": {
+            "title": "متابعة",
+            "description": "يُرسل بعد N يوم من تقديم عميل محتمل للنموذج."
+        }
+    },
+    "fields": {
+        "followupDays": {
+            "label": "كم عدد الأيام بعد التقديم لإرسال المتابعة؟",
+            "helper": "يعمل سير العمل يوميًا في الساعة 9:00 صباحًا بتوقيت الهند ويرسل رسالة إلى العملاء المحتملين الذين يكون تاريخ تقديمهم قبل هذا العدد من الأيام بالضبط. لإرسال البريد في عدة أيام (مثل اليوم 3 واليوم 7)، أنشئ سير عمل منفصلًا لكل منها."
+        },
+        "name": {
+            "label": "اسم سير العمل",
+            "placeholder": "مثال: بريد ترحيبي وتأكيد للعملاء المحتملين الجدد"
+        },
+        "description": {
+            "label": "الوصف",
+            "optional": "(اختياري)",
+            "placeholder": "ما الذي يقوم به سير العمل هذا؟"
+        },
+        "channel": {
+            "label": "الإرسال عبر",
+            "email": "البريد الإلكتروني فقط",
+            "whatsapp": "واتساب فقط",
+            "both": "البريد الإلكتروني + واتساب",
+            "helper": "تواصل مع العملاء المحتملين عبر البريد الإلكتروني أو واتساب أو كليهما."
+        },
+        "template": {
+            "label": "قالب البريد الإلكتروني",
+            "loading": "جارٍ تحميل القوالب...",
+            "placeholder": "-- اختر قالبًا --",
+            "noneFound": "لم يتم العثور على قوالب بريد إلكتروني. أنشئ قالبًا في قسم الاتصالات أولاً.",
+            "untitledFallback": "بدون عنوان"
+        },
+        "whatsappTemplate": {
+            "label": "قالب واتساب",
+            "placeholder": "-- اختر قالب واتساب --",
+            "noneFound": "لم يتم العثور على قوالب واتساب معتمدة. تتم مزامنتها من Meta — افتح الاتصالات ← قوالب واتساب وقم بالمزامنة، أو اعتمد القالب في Meta أولاً.",
+            "helper": "تُملأ متغيراته تلقائيًا من حقول كل عميل محتمل."
+        }
+    },
+    "nameSuggestion": {
+        "confirmation": "{{audienceName}} — التأكيد",
+        "followup_zero": "{{audienceName}} — متابعة بعد {{count}} يوم",
+        "followup_one": "{{audienceName}} — متابعة بعد {{count}} يوم واحد",
+        "followup_two": "{{audienceName}} — متابعة بعد {{count}} يومين",
+        "followup_few": "{{audienceName}} — متابعة بعد {{count}} أيام",
+        "followup_many": "{{audienceName}} — متابعة بعد {{count}} يومًا",
+        "followup_other": "{{audienceName}} — متابعة بعد {{count}} يوم"
+    },
+    "actions": {
+        "cancel": "إلغاء",
+        "submit": "إنشاء سير العمل",
+        "submitting": "جارٍ الإنشاء..."
+    },
+    "toast": {
+        "success": "تم إنشاء سير العمل",
+        "errorFallback": "فشل إنشاء سير العمل"
+    },
+    "dto": {
+        "confirmation": {
+            "descriptionFallback": "إرسال رسالة تأكيد عند تقديم عميل محتمل لـ \"{{audienceName}}\"",
+            "triggerNodeName": "المشغّل: تم تقديم نموذج الجمهور"
+        },
+        "followup": {
+            "descriptionFallback_zero": "إرسال رسالة متابعة إلى العملاء المحتملين الذين قدموا \"{{audienceName}}\" قبل {{count}} يوم بالضبط",
+            "descriptionFallback_one": "إرسال رسالة متابعة إلى العملاء المحتملين الذين قدموا \"{{audienceName}}\" قبل {{count}} يوم واحد بالضبط",
+            "descriptionFallback_two": "إرسال رسالة متابعة إلى العملاء المحتملين الذين قدموا \"{{audienceName}}\" قبل {{count}} يومين بالضبط",
+            "descriptionFallback_few": "إرسال رسالة متابعة إلى العملاء المحتملين الذين قدموا \"{{audienceName}}\" قبل {{count}} أيام بالضبط",
+            "descriptionFallback_many": "إرسال رسالة متابعة إلى العملاء المحتملين الذين قدموا \"{{audienceName}}\" قبل {{count}} يومًا بالضبط",
+            "descriptionFallback_other": "إرسال رسالة متابعة إلى العملاء المحتملين الذين قدموا \"{{audienceName}}\" قبل {{count}} يوم بالضبط",
+            "queryNodeName": "جلب العملاء المحتملين الأخيرين"
+        },
+        "sendNodeName": "إرسال: {{templateName}}",
+        "sendWhatsappNodeName": "واتساب: {{templateName}}"
+    }
+}

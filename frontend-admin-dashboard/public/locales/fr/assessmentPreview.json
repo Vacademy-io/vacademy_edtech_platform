@@ -1,0 +1,26 @@
+{
+    "toasts": {
+        "updateSuccess": "Le sujet de cette évaluation a été mis à jour avec succès !",
+        "incompleteQuestions": "Certaines de vos questions sont incomplètes ou nécessitent votre attention !"
+    },
+    "header": {
+        "joinLinkLabel": "Lien de participation :"
+    },
+    "announcementDialog": {
+        "title": "Annonce d'évaluation en direct",
+        "empty": "Aucune annonce n'existe",
+        "timestampPlaceholder": "Aujourd'hui, 11h28"
+    },
+    "actions": {
+        "save": "Enregistrer",
+        "exit": "Quitter",
+        "addQuestion": "Ajouter une question"
+    },
+    "questionTypes": {
+        "mcqSingleCorrect": "QCM (réponse unique)",
+        "mcqMultipleCorrect": "QCM (réponses multiples)"
+    },
+    "emptyStates": {
+        "noQuestions": "Aucune question n'existe."
+    }
+}

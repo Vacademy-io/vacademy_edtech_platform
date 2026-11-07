@@ -1,0 +1,38 @@
+{
+    "loading": {
+        "respondents": "सर्वेक्षण प्रतिभागी लोड हो रहे हैं...",
+        "questions": "प्रश्न डेटा लोड हो रहा है..."
+    },
+    "error": {
+        "title": "प्रतिभागियों को लोड करने में त्रुटि",
+        "tryAgain": "पुनः प्रयास करें"
+    },
+    "empty": {
+        "title": "कोई प्रतिभागी नहीं मिला",
+        "description": "इस असेसमेंट के लिए कोई सर्वेक्षण प्रतिक्रिया नहीं मिली।"
+    },
+    "navigation": {
+        "previous": "पिछला",
+        "next": "अगला",
+        "respondentLabel": "प्रतिभागी",
+        "ofTotal": "{{count}} में से"
+    },
+    "respondent": {
+        "unknownName": "अज्ञात",
+        "noEmail": "कोई ईमेल नहीं",
+        "batch": "बैच: {{name}}"
+    },
+    "response": {
+        "noResponse": "कोई प्रतिक्रिया नहीं",
+        "unknownType": "अज्ञात प्रतिक्रिया प्रकार",
+        "unknownQuestionId": "अज्ञात",
+        "unknownQuestionType": "अज्ञात",
+        "defaultQuestionContent": "सर्वेक्षण प्रश्न",
+        "parseError": "प्रतिक्रिया डेटा पार्स करने में त्रुटि",
+        "questionPrefix": "प्र{{number}}.",
+        "label": "प्रतिक्रिया:",
+        "visited": "देखा गया",
+        "markedForReview": "समीक्षा के लिए चिह्नित",
+        "noneAvailable": "इस प्रतिभागी के लिए कोई प्रतिक्रिया उपलब्ध नहीं है।"
+    }
+}

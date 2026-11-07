@@ -112,7 +112,7 @@ public class LeadStatusService {
     }
 
     @Transactional
-    public LeadStatus create(String instituteId, LeadStatusDTO dto) {
+    public LeadStatus create(String instituteId, LeadStatusDTO dto, String actorUserId) {
         String key = normalizeKey(dto.getStatusKey(), dto.getLabel());
         leadStatusRepository.findByInstituteIdAndStatusKey(instituteId, key).ifPresent(s -> {
             throw new VacademyException("A status with key " + key + " already exists");
@@ -124,7 +124,12 @@ public class LeadStatusService {
                 .color(dto.getColor())
                 .displayOrder(dto.getDisplayOrder() != null ? dto.getDisplayOrder() : 0)
                 .isDefault(Boolean.TRUE.equals(dto.getIsDefault()))
+                // Absent on create means "offer it" — what every caller meant before
+                // this column existed.
+                .showInFilter(dto.getShowInFilter() == null || Boolean.TRUE.equals(dto.getShowInFilter()))
                 .isActive(true)
+                .createdBy(actorUserId)
+                .updatedBy(actorUserId)
                 .updatedAt(new Timestamp(System.currentTimeMillis()))
                 .build());
         if (Boolean.TRUE.equals(saved.getIsDefault())) {
@@ -134,15 +139,23 @@ public class LeadStatusService {
     }
 
     @Transactional
-    public LeadStatus update(String id, LeadStatusDTO dto) {
+    public LeadStatus update(String id, LeadStatusDTO dto, String actorUserId) {
         LeadStatus s = leadStatusRepository.findById(id)
                 .orElseThrow(() -> new VacademyException("Lead status not found: " + id));
+        Timestamp now = new Timestamp(System.currentTimeMillis());
         if (dto.getLabel() != null) s.setLabel(dto.getLabel());
         if (dto.getColor() != null) s.setColor(dto.getColor());
         if (dto.getDisplayOrder() != null) s.setDisplayOrder(dto.getDisplayOrder());
-        if (dto.getIsActive() != null) s.setIsActive(dto.getIsActive());
+        if (dto.getIsActive() != null) {
+            // is_active = false through this endpoint is a soft delete just like DELETE, so it
+            // must leave the same trail; otherwise a status disappears with no deleted_by and the
+            // audit answer to "who removed this?" depends on which endpoint was used.
+            applyActiveChange(s, Boolean.TRUE.equals(dto.getIsActive()), actorUserId, now);
+        }
         if (dto.getIsDefault() != null) s.setIsDefault(dto.getIsDefault());
-        s.setUpdatedAt(new Timestamp(System.currentTimeMillis()));
+        if (dto.getShowInFilter() != null) s.setShowInFilter(dto.getShowInFilter());
+        s.setUpdatedBy(actorUserId);
+        s.setUpdatedAt(now);
         LeadStatus saved = leadStatusRepository.save(s);
         if (Boolean.TRUE.equals(saved.getIsDefault())) {
             clearOtherDefaults(saved.getInstituteId(), saved.getId());
@@ -152,15 +165,37 @@ public class LeadStatusService {
 
     /** Soft delete a custom status — keeps history references valid. System defaults cannot be deleted. */
     @Transactional
-    public void deactivate(String id) {
+    public void deactivate(String id, String actorUserId) {
         leadStatusRepository.findById(id).ifPresent(s -> {
             if (Boolean.TRUE.equals(s.getIsSystem())) {
                 throw new VacademyException("Default lead statuses (New / Converted / Lost) cannot be deleted.");
             }
-            s.setIsActive(false);
-            s.setUpdatedAt(new Timestamp(System.currentTimeMillis()));
+            Timestamp now = new Timestamp(System.currentTimeMillis());
+            applyActiveChange(s, false, actorUserId, now);
+            s.setUpdatedBy(actorUserId);
+            s.setUpdatedAt(now);
             leadStatusRepository.save(s);
         });
+    }
+
+    /**
+     * Flip is_active and keep the delete trail honest, for both the DELETE endpoint and an
+     * {@code is_active} change sent through the update endpoint.
+     *
+     * <p>Deactivating stamps deleted_by/deleted_at only on the active → inactive transition, so
+     * re-saving an already-deleted row keeps the original remover. Reactivating clears the pair,
+     * so a live row never carries a delete trail.</p>
+     */
+    private void applyActiveChange(LeadStatus status, boolean active, String actorUserId, Timestamp now) {
+        boolean wasActive = !Boolean.FALSE.equals(status.getIsActive());
+        status.setIsActive(active);
+        if (active) {
+            status.setDeletedBy(null);
+            status.setDeletedAt(null);
+        } else if (wasActive || status.getDeletedAt() == null) {
+            status.setDeletedBy(actorUserId);
+            status.setDeletedAt(now);
+        }
     }
 
     private void clearOtherDefaults(String instituteId, String keepId) {
@@ -213,7 +248,7 @@ public class LeadStatusService {
                 .build());
 
         logStatusChangeToTimeline(saved, oldStatusId, target, actorUserId, source);
-        emitStatusChanged(saved, instituteId, oldStatusId, target);
+        emitStatusChanged(saved, instituteId, oldStatusId, target, source, actorUserId);
 
         // Keep the user's profile conversion_status (what the side-view reads) in sync with this
         // per-response change, so the leads list and the side-view never disagree. Best-effort —
@@ -282,7 +317,8 @@ public class LeadStatusService {
         }
     }
 
-    private void emitStatusChanged(AudienceResponse lead, String instituteId, String oldStatusId, LeadStatus target) {
+    private void emitStatusChanged(AudienceResponse lead, String instituteId, String oldStatusId, LeadStatus target,
+                                   String source, String actorUserId) {
         if (instituteId == null || instituteId.isBlank()) return;
         try {
             String oldKey = oldStatusId == null ? null
@@ -291,6 +327,13 @@ public class LeadStatusService {
             leadTriggerContextBuilder.put(ctx, "changeType", "LEAD_STATUS");
             leadTriggerContextBuilder.put(ctx, "oldStatus", oldKey);
             leadTriggerContextBuilder.put(ctx, "newStatus", target.getStatusKey());
+            // WHO moved the status — the same token written to lead_status_history.source
+            // ("MANUAL" | "MANUAL_DISPOSITION" | "AI_CALLING" | "AI_WORKFLOW" | ...). Without
+            // it a workflow on this event cannot tell a human's change from one the workflow
+            // itself caused, and a graph that reacts to a status by writing another status
+            // re-triggers itself (this event has no idempotency dedup — strategy UUID).
+            leadTriggerContextBuilder.put(ctx, "statusChangeSource", source != null ? source : "MANUAL");
+            leadTriggerContextBuilder.put(ctx, "statusChangedByUserId", actorUserId);
             workflowTriggerService.handleTriggerEvents(
                     WorkflowTriggerEvent.LEAD_STATUS_CHANGED.name(), lead.getId(), instituteId, ctx);
         } catch (Exception ex) {

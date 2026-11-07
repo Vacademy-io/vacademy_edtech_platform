@@ -1,0 +1,56 @@
+{
+    "yes": "Oui",
+    "no": "Non",
+    "leave": "Congé",
+    "leaveFallback": "congé",
+    "leaveTypeFallback": "type de congé",
+    "uncapped": "Illimité",
+    "upTo": "Jusqu'à {{count}}",
+    "open": "ouvert",
+    "fromJoining": "Depuis l'embauche",
+    "daysCount_one": "{{count}} jour",
+    "daysCount_many": "{{count}} de jours",
+    "daysCount_other": "{{count}} jours",
+    "editLeaveType": "Modifier {{name}}",
+    "editLeavePolicy": "Modifier la politique {{name}}",
+    "columns": {
+        "leaveType": "Type de congé",
+        "code": "Code",
+        "paid": "Payé",
+        "carryForward": "Report",
+        "encashable": "Encaissable",
+        "document": "Justificatif",
+        "minDays": "Jours min.",
+        "maxConsecutive": "Max consécutifs",
+        "appliesTo": "S'applique à",
+        "status": "Statut",
+        "annualQuota": "Quota annuel",
+        "accrual": "Acquisition",
+        "perPeriod": "Par période",
+        "proRata": "Au prorata",
+        "applicableAfter": "Applicable après",
+        "effective": "Effectif"
+    },
+    "intro": "Les types de congés accordés par votre établissement, et la quantité attribuée à chaque employé. Les demandes et les soldes lisent cette configuration, donc une modification ici affecte les futures acquisitions et approbations — jamais un congé déjà approuvé.",
+    "tabs": {
+        "types": "Types de congé",
+        "policies": "Politiques"
+    },
+    "typesTabIntro": "Les types de congé eux-mêmes — leurs règles, pas leur quota. Les codes sont ce sur quoi les soldes et la paie se basent, traitez-les donc comme des identifiants plutôt que des libellés.",
+    "addLeaveType": "Ajouter un type de congé",
+    "errors": {
+        "loadTypes": "Impossible de charger les types de congé.",
+        "loadPolicies": "Impossible de charger les politiques de congé."
+    },
+    "emptyTypes": {
+        "title": "Aucun type de congé pour l'instant",
+        "description": "Commencez par les congés que vous accordez réellement — congé occasionnel, maladie et acquis sont les trois habituels. Le congé sans solde vaut aussi la peine d'être ajouté : la paie le traite comme une perte de salaire."
+    },
+    "policiesTabIntro": "La quantité de chaque type de congé qu'un employé reçoit, et le rythme auquel l'acquisition planifiée la crédite. Un type de congé sans politique active n'accorde rien à personne.",
+    "addPolicy": "Ajouter une politique",
+    "emptyPolicies": {
+        "title": "Aucune politique pour l'instant",
+        "descriptionNoTypes": "Créez d'abord un type de congé — une politique doit s'y rattacher.",
+        "description": "Attribuez à chaque type de congé un quota et un rythme d'acquisition. D'ici là, l'exécution de l'acquisition n'a rien à créditer."
+    }
+}

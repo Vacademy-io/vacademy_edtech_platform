@@ -1,0 +1,188 @@
+{
+    "dialog": {
+        "heading": "إدخال بيانات غير متصل بالجملة"
+    },
+    "footer": {
+        "close": "إغلاق",
+        "cancel": "إلغاء",
+        "chooseAnotherFile": "اختيار ملف آخر",
+        "retryingText": "جارٍ إعادة المحاولة...",
+        "importingText": "جارٍ الاستيراد...",
+        "retryImport": "إعادة محاولة الاستيراد",
+        "importStudents_zero": "استيراد {{count}} طالب",
+        "importStudents_one": "استيراد طالب واحد ({{count}})",
+        "importStudents_two": "استيراد طالبين ({{count}})",
+        "importStudents_few": "استيراد {{count}} طلاب",
+        "importStudents_many": "استيراد {{count}} طالبًا",
+        "importStudents_other": "استيراد {{count}} طالب"
+    },
+    "pick": {
+        "errors": {
+            "studentsLoadFailed": {
+                "title": "تعذّر تحميل قائمة الطلاب",
+                "detail": "لا يمكن مطابقة أسماء المستخدمين حتى يتم تحميلها. أغلق هذا الحوار وأعد فتحه للمحاولة مرة أخرى."
+            },
+            "noBatchLearners": {
+                "title": "لا يوجد متعلمو دفعات في هذا التقييم",
+                "detail": "يطابق الاستيراد الجماعي الطلاب بواسطة اسم المستخدم من دفعات التقييم. أضف دفعات إلى التقييم، أو أدخل هؤلاء الطلاب واحدًا تلو الآخر."
+            },
+            "zipInvalid": {
+                "title": "تعذّر استخدام ملف الضغط هذا"
+            }
+        },
+        "template": {
+            "title": "1. ابدأ من قالب",
+            "loadingStudents": "جارٍ تحميل قائمة الطلاب…",
+            "description_zero": "التنزيلان معبّآن مسبقًا بـ {{count}} طالب في دفعات هذا التقييم، لذا عليك فقط ملء الدرجات وأسماء الملفات.",
+            "description_one": "التنزيلان معبّآن مسبقًا بـ {{count}} طالب واحد في دفعات هذا التقييم، لذا عليك فقط ملء الدرجات وأسماء الملفات.",
+            "description_two": "التنزيلان معبّآن مسبقًا بـ {{count}} طالبين في دفعات هذا التقييم، لذا عليك فقط ملء الدرجات وأسماء الملفات.",
+            "description_few": "التنزيلان معبّآن مسبقًا بـ {{count}} طلاب في دفعات هذا التقييم، لذا عليك فقط ملء الدرجات وأسماء الملفات.",
+            "description_many": "التنزيلان معبّآن مسبقًا بـ {{count}} طالبًا في دفعات هذا التقييم، لذا عليك فقط ملء الدرجات وأسماء الملفات.",
+            "description_other": "التنزيلان معبّآن مسبقًا بـ {{count}} طالب في دفعات هذا التقييم، لذا عليك فقط ملء الدرجات وأسماء الملفات.",
+            "downloadCsv": "تنزيل CSV",
+            "building": "جارٍ الإنشاء...",
+            "downloadSampleZip": "تنزيل ملف ضغط نموذجي"
+        },
+        "upload": {
+            "title": "2. تحميل ملف الضغط المعبّأ",
+            "description": "يجب أن يحتوي ملف الضغط على <manifest>manifest.csv</manifest> بالإضافة إلى ملفات PDF الممسوحة ضوئيًا. يتم التقاط ملفات PDF الموجودة في <answers>answers/</answers> أو <checked>checked/</checked> أو <reports>reports/</reports> والمسمّاة باسم المستخدم تلقائيًا. لا يُشترط أي عمود — فالملف المسمّى باسم الطالب يعرّفه بنفسه. لا يُحفظ شيء حتى تراجع المعاينة.",
+            "readingZip": "جارٍ قراءة ملف الضغط...",
+            "clickOrDrag": "انقر للتحميل أو اسحب وأفلت",
+            "zipOnly": "ملفات ‎.zip فقط"
+        }
+    },
+    "preview": {
+        "readyCount": "{{count}} جاهز",
+        "pdfsToUpload_zero": "{{count}} ملف PDF ليُحمَّل",
+        "pdfsToUpload_one": "{{count}} ملف PDF واحد ليُحمَّل",
+        "pdfsToUpload_two": "{{count}} ملفا PDF ليُحمَّلا",
+        "pdfsToUpload_few": "{{count}} ملفات PDF ليُحمَّل",
+        "pdfsToUpload_many": "{{count}} ملف PDF ليُحمَّل",
+        "pdfsToUpload_other": "{{count}} ملف PDF ليُحمَّل",
+        "problemsCount": "{{count}} به مشاكل",
+        "downloadProblemsCsv": "تنزيل CSV للمشاكل",
+        "errors": {
+            "manifestInvalid": {
+                "title": "لا يمكن استيراد هذا البيان"
+            },
+            "importFailed": {
+                "title": "فشل الاستيراد",
+                "retryNote": "ملفاتك مُحمَّلة بالفعل — \"إعادة محاولة الاستيراد\" تعيد إرسالها دون إعادة التحميل."
+            },
+            "noRowsReady": {
+                "title": "لا توجد صفوف جاهزة للاستيراد",
+                "detail": "كل صف في manifest.csv به مشكلة. أصلح المشكلات المدرجة أدناه (أو نزّل CSV المشكلات) وحمّل ملف الضغط مرة أخرى."
+            }
+        },
+        "uploadFailures": {
+            "header_zero": "تم تخطي {{count}} صف لأنه تعذّر تحميل ملفاته",
+            "header_one": "تم تخطي {{count}} صف واحد لأنه تعذّر تحميل ملفه",
+            "header_two": "تم تخطي {{count}} صفين لأنه تعذّر تحميل ملفيهما",
+            "header_few": "تم تخطي {{count}} صفوف لأنه تعذّر تحميل ملفاتها",
+            "header_many": "تم تخطي {{count}} صفًا لأنه تعذّر تحميل ملفاتها",
+            "header_other": "تم تخطي {{count}} صف لأنه تعذّر تحميل ملفاتها",
+            "lineDetail": "السطر {{line}} ({{username}}): {{errors}}",
+            "andMore_zero": "…و{{count}} أخرى — راجع CSV المشكلات.",
+            "andMore_one": "…و{{count}} واحد آخر — راجع CSV المشكلات.",
+            "andMore_two": "…و{{count}} اثنان آخران — راجع CSV المشكلات.",
+            "andMore_few": "…و{{count}} أخرى — راجع CSV المشكلات.",
+            "andMore_many": "…و{{count}} أخرى — راجع CSV المشكلات.",
+            "andMore_other": "…و{{count}} أخرى — راجع CSV المشكلات."
+        },
+        "warnings": {
+            "marksReleased": "الصفوف التي تحتوي على قيمة total_marks سيُطلق نتيجتها للطالب.",
+            "newAttempt": "يضيف الاستيراد محاولة جديدة لكل طالب. لإصلاح الأخطاء، أعد تحميل الصفوف المتأثرة فقط — وليس الملف بأكمله."
+        },
+        "ignoredColumns": {
+            "header": "الأعمدة المتجاهَلة: {{columns}}",
+            "hint": "تحقق من وجود خطأ إملائي إذا كنت تتوقع قراءة هذه الأعمدة. الأعمدة المعروفة: {{columns}}."
+        },
+        "unreferencedFiles": {
+            "header_zero": "سيتم تجاهل {{count}} ملف في ملف الضغط",
+            "header_one": "سيتم تجاهل {{count}} ملف واحد في ملف الضغط",
+            "header_two": "سيتم تجاهل {{count}} ملفين في ملف الضغط",
+            "header_few": "سيتم تجاهل {{count}} ملفات في ملف الضغط",
+            "header_many": "سيتم تجاهل {{count}} ملفًا في ملف الضغط",
+            "header_other": "سيتم تجاهل {{count}} ملف في ملف الضغط",
+            "noFileAttachedSuffix": " — لا يحتوي أي صف على ملف مرفق، لذا ستُستورد الدرجات فقط",
+            "hint": "سمّها في manifest.csv، أو ضعها في <answers>answers/</answers> أو <checked>checked/</checked> أو <reports>reports/</reports> باسم مسمّى باسم مستخدم الطالب."
+        },
+        "progress": {
+            "uploading": "جارٍ تحميل {{done}} من {{total}} ملفات…"
+        }
+    },
+    "table": {
+        "headers": {
+            "line": "السطر",
+            "student": "الطالب",
+            "marks": "الدرجات",
+            "answer": "الإجابة",
+            "checked": "المُصحَّح",
+            "report": "التقرير",
+            "status": "الحالة"
+        },
+        "status": {
+            "ready": "جاهز"
+        },
+        "footerNote_zero": "يتم عرض {{visible}} من {{total}} صف — سيُستورد {{hidden}} أخرى دون مشاكل.",
+        "footerNote_one": "يتم عرض {{visible}} من {{total}} صف — سيُستورد {{hidden}} صف واحد آخر دون مشاكل.",
+        "footerNote_two": "يتم عرض {{visible}} من {{total}} صف — سيُستورد {{hidden}} صفان آخران دون مشاكل.",
+        "footerNote_few": "يتم عرض {{visible}} من {{total}} صف — سيُستورد {{hidden}} صفوف أخرى دون مشاكل.",
+        "footerNote_many": "يتم عرض {{visible}} من {{total}} صف — سيُستورد {{hidden}} صفًا آخر دون مشاكل.",
+        "footerNote_other": "يتم عرض {{visible}} من {{total}} صف — سيُستورد {{hidden}} صف آخر دون مشاكل."
+    },
+    "done": {
+        "errors": {
+            "somethingWrong": {
+                "title": "حدث خطأ ما"
+            }
+        },
+        "importedCount": "{{count}} مستورد",
+        "notImportedCount": "{{count}} غير مستورد",
+        "resultLine": "{{rowLabel}} ({{username}}): {{message}}"
+    },
+    "slotCell": {
+        "auto": "تلقائي"
+    },
+    "common": {
+        "emptyValue": "—"
+    },
+    "toasts": {
+        "importedWithFailures_zero": "تم استيراد {{success}} من {{count}} طالب — فشل {{failed}}.",
+        "importedWithFailures_one": "تم استيراد {{success}} من {{count}} طالب واحد — فشل {{failed}}.",
+        "importedWithFailures_two": "تم استيراد {{success}} من {{count}} طالبين — فشل {{failed}}.",
+        "importedWithFailures_few": "تم استيراد {{success}} من {{count}} طلاب — فشل {{failed}}.",
+        "importedWithFailures_many": "تم استيراد {{success}} من {{count}} طالبًا — فشل {{failed}}.",
+        "importedWithFailures_other": "تم استيراد {{success}} من {{count}} طالب — فشل {{failed}}.",
+        "importedSuccess_zero": "تم استيراد {{count}} طالب.",
+        "importedSuccess_one": "تم استيراد {{count}} طالب واحد.",
+        "importedSuccess_two": "تم استيراد {{count}} طالبين.",
+        "importedSuccess_few": "تم استيراد {{count}} طلاب.",
+        "importedSuccess_many": "تم استيراد {{count}} طالبًا.",
+        "importedSuccess_other": "تم استيراد {{count}} طالب.",
+        "noProblemsToDownload": "لا توجد مشاكل لتنزيلها."
+    },
+    "errors": {
+        "couldNotBuildCsvTemplate": "تعذّر إنشاء قالب CSV.",
+        "couldNotBuildSampleZip": "تعذّر إنشاء ملف الضغط النموذجي.",
+        "couldNotReadZip": "تعذّر قراءة ملف الضغط هذا.",
+        "noRowsUploaded": "تعذّر تحميل أي من الصفوف، لذا لم يُستورد شيء. راجع المشكلات أدناه.",
+        "bulkImportFailed": "فشل الاستيراد الجماعي. يرجى المحاولة مرة أخرى.",
+        "couldNotBuildProblemsCsv": "تعذّر إنشاء CSV المشكلات.",
+        "uploadNoFileId": "تحميل \"{{name}}\" لم يُعِد معرّف ملف",
+        "fileUploadFailed": "فشل تحميل الملف",
+        "importFailedGeneric": "فشل الاستيراد"
+    },
+    "validation": {
+        "notZip": "\"{{fileName}}\" ليس ملف ‎.zip. ضع manifest.csv وملفات PDF في أرشيف مضغوط وحمّله.",
+        "emptyZip": "\"{{fileName}}\" فارغ (0 بايت). أعد إنشاء ملف الضغط وحاول مرة أخرى.",
+        "studentsNotLoaded": "تعذّر تحميل قائمة الطلاب، لذا لا يمكن مطابقة أسماء المستخدمين. أغلق هذا الحوار وأعد فتحه للمحاولة مرة أخرى.",
+        "noBatchLearners": "لا يحتوي هذا التقييم على متعلمي دفعات للمطابقة معهم. يطابق الاستيراد الجماعي الطلاب بواسطة اسم المستخدم من دفعات التقييم.",
+        "noManifestFound": "لم يُعثر على manifest.csv في ملف الضغط هذا. نزّل ملف الضغط النموذجي أعلاه لمعرفة التنسيق المتوقع.",
+        "manifestEmpty": "{{manifestPath}} فارغ. املأ صفًا واحدًا على الأقل وأعد الضغط.",
+        "manifestNoDataRows": "{{manifestPath}} يحتوي على رأس دون صفوف بيانات. أضف صفًا لكل طالب وأعد الضغط."
+    },
+    "network": {
+        "unreachable": "تعذّر الوصول إلى الخادم. تحقق من اتصالك وحاول مرة أخرى."
+    }
+}

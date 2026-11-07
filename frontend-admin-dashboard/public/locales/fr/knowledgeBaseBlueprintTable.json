@@ -1,0 +1,36 @@
+{
+    "typeLabel": {
+        "MCQS": "Choix multiple",
+        "MCQM": "Choix multiple (plusieurs réponses)",
+        "TRUE_FALSE": "Vrai / faux",
+        "ONE_WORD": "Un mot",
+        "LONG_ANSWER": "Réponse longue",
+        "NUMERIC": "Numérique",
+        "PASSAGE": "Passage / compréhension",
+        "ASSERTION_REASON": "Assertion–raison"
+    },
+    "difficultyLabel": {
+        "EASY": "Facile",
+        "MEDIUM": "Moyen",
+        "HARD": "Difficile"
+    },
+    "columns": {
+        "section": "Section",
+        "whatItTests": "Ce qu'elle évalue",
+        "type": "Type",
+        "questions": "Questions",
+        "marksEach": "Points par question",
+        "difficulty": "Difficulté",
+        "total": "Total"
+    },
+    "aria": {
+        "oneFewer": "Une question de moins dans {{topic}}",
+        "oneMore": "Une question de plus dans {{topic}}",
+        "marksPer": "Points par question dans {{topic}}",
+        "remove": "Supprimer {{topic}}"
+    },
+    "footer": {
+        "total": "Total"
+    },
+    "pageRange": "p. {{range}}"
+}

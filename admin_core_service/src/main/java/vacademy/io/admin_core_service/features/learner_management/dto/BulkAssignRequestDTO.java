@@ -32,4 +32,10 @@ public class BulkAssignRequestDTO {
 
     /** Options: duplicate handling, dry run, notifications */
     private BulkAssignOptionsDTO options;
+
+    /**
+     * Enroll the assignments together as one admission package (one schedule, one discount,
+     * one admission receipt). Null = each course on its own, as before.
+     */
+    private AdmissionPackageDTO admissionPackage;
 }

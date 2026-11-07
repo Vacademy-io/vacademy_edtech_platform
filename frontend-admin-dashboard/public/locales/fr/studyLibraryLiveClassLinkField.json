@@ -1,0 +1,34 @@
+{
+    "urlInputPlaceholder": "Entrez l'URL de la classe en direct",
+    "defaultDayName": "ce jour",
+    "actions": {
+        "apply": "Appliquer",
+        "cancel": "Annuler",
+        "confirmAndApply": "Confirmer et appliquer"
+    },
+    "dialog": {
+        "heading": "Où souhaitez-vous appliquer ce nouveau lien ?"
+    },
+    "options": {
+        "onlyThis": {
+            "title": "Seulement cette session",
+            "description": "Appliquer le nouveau lien uniquement pour cette session particulière",
+            "example": "Exemple : seule cette session de {{dayName}} aura le nouveau lien"
+        },
+        "currentDayAllSessions": {
+            "title": "Toutes les sessions de ce {{dayName}}",
+            "description": "Appliquer le nouveau lien à toutes les sessions de ce {{dayName}}",
+            "example": "Exemple : toutes les sessions de ce {{dayName}} auront le nouveau lien"
+        },
+        "allFuture": {
+            "title": "Toutes les sessions à venir",
+            "description": "Appliquer le nouveau lien pour aujourd'hui et toutes les sessions futures à ce créneau horaire",
+            "example": "Exemple : tous les prochains {{dayName}} à cette heure de session auront le nouveau lien"
+        },
+        "allFutureAllSessions": {
+            "title": "Toutes les sessions des prochains {{dayName}}",
+            "description": "Appliquer le nouveau lien à toutes les sessions de tous les prochains {{dayName}}",
+            "example": "Exemple : toutes les sessions de chaque futur {{dayName}} auront le nouveau lien"
+        }
+    }
+}

@@ -1,0 +1,42 @@
+{
+    "questionType": {
+        "mcqs": "एकल विकल्प",
+        "mcqm": "बहु विकल्प",
+        "trueFalse": "सही/गलत",
+        "numeric": "संख्यात्मक",
+        "oneWord": "एक शब्द",
+        "longAnswer": "दीर्घ उत्तर"
+    },
+    "response": {
+        "noResponse": "कोई प्रतिक्रिया नहीं",
+        "unknownAnswerFormat": "अज्ञात उत्तर प्रारूप",
+        "noCorrectAnswerAvailable": "कोई सही उत्तर उपलब्ध नहीं है",
+        "noCorrectOptionsAvailable": "कोई सही विकल्प उपलब्ध नहीं है",
+        "unknownCorrectAnswerFormat": "अज्ञात सही उत्तर प्रारूप"
+    },
+    "states": {
+        "loading": "उन्नत सर्वेक्षण डेटा लोड हो रहा है...",
+        "errorPrefix": "त्रुटि:",
+        "noRespondentsFound": "कोई प्रतिवादी नहीं मिला।",
+        "noResponsesAvailable": "इस प्रतिवादी के लिए कोई प्रतिक्रिया उपलब्ध नहीं है।"
+    },
+    "header": {
+        "batch": "बैच:",
+        "correctCount": "{{correct}}/{{total}} सही",
+        "accuracy": "{{value}}% सटीकता"
+    },
+    "navigation": {
+        "previous": "पिछला",
+        "of": "{{total}} में से",
+        "next": "अगला"
+    },
+    "question": {
+        "numberedTitle": "प्रश्न {{order}}. {{content}}",
+        "userAnswer": "उपयोगकर्ता का उत्तर:",
+        "markedForReview": "समीक्षा के लिए चिह्नित",
+        "correctAnswer": "सही उत्तर:",
+        "allOptions": "सभी विकल्प:",
+        "timeTakenSeconds": "{{count}} सेकंड",
+        "questionNumber": "प्रश्न #{{order}}"
+    }
+}

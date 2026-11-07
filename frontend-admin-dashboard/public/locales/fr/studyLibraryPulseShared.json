@@ -1,0 +1,6 @@
+{
+    "liveRefreshing": "En direct · actualisation…",
+    "liveUpdatedAgo_one": "En direct · mis à jour il y a {{count}} s",
+    "liveUpdatedAgo_many": "En direct · mis à jour il y a {{count}} de s",
+    "liveUpdatedAgo_other": "En direct · mis à jour il y a {{count}} s"
+}

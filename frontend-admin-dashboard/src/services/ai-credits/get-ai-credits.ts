@@ -1,3 +1,4 @@
+import { isInEvalezyShell } from '@/lib/evalezy-mode';
 import authenticatedAxiosInstance from '@/lib/auth/axiosInstance';
 import { getCurrentInstituteId } from '@/lib/auth/instituteUtils';
 import { AI_SERVICE_BASE_URL } from '@/constants/urls';
@@ -99,17 +100,41 @@ export type ToolKey =
     | 'html_document'
     | 'html_document_edit'
     | 'html_document_pdf'
+    // Pictures for an HTML page or an AI-drafted reading, per picture.
+    | 'html_document_image'
+    // AI engagement planner: a drafted plan (priced per task requested) and one regenerated task.
+    | 'engagement_plan'
+    | 'engagement_item'
     | 'copy_check_evaluation'
+    // Vsmart Extract: a teacher's own paper digitised verbatim (V527);
+    // the _ocr surcharge applies only to scanned PDFs (MathPix, per page)
+    | 'extract_questions'
+    | 'extract_questions_ocr'
     // Knowledge Base (V435)
     | 'kb_ingest_page'
     | 'kb_ingest_url'
     | 'kb_ask'
+    // Knowledge Base companions for learners (V535)
+    | 'kb_companion_lesson'
+    | 'kb_companion_practice'
+    | 'kb_companion_ask'
+    | 'kb_companion_speech'
     // Question papers from a knowledge base (V441)
     | 'kb_paper_blueprint'
     | 'kb_paper_questions'
     | 'kb_paper_regenerate'
     // One-time permanent unlock of a curated library (V445)
-    | 'kb_library_unlock';
+    | 'kb_library_unlock'
+    // Live AI tutor: per-slide teaching-plan compile and per-image media (V494)
+    | 'tutor_compile_slide'
+    | 'tutor_media_image'
+    | 'tutor_voice_prepare'
+    | 'tutor_avatar_minute'
+    // Voice lessons: one charge per started minute (V496)
+    | 'tutor_live_minute'
+    // One AI-written analysis per ASSESSMENT, charged once then free to
+    // re-download (admin_core V500 + ai_service DEFAULT_TOOL_PRICING).
+    | 'assessment_class_ai_report';
 export type ToolUnitField = 'questions' | 'audio_minutes' | 'chars' | 'flat' | 'pages';
 export type ToolParams = Record<string, string | number | boolean | undefined>;
 
@@ -187,7 +212,10 @@ export const fetchAiUsageForecast = async (): Promise<UsageForecast> => {
     const INSTITUTE_ID = getCurrentInstituteId();
 
     const response = await authenticatedAxiosInstance.get<UsageForecast>(
-        `${AI_SERVICE_BASE_URL}/credits/v1/institutes/${INSTITUTE_ID}/forecast`
+        // Evalezy reads a true daily average; the portal keeps its active-days figure.
+        `${AI_SERVICE_BASE_URL}/credits/v1/institutes/${INSTITUTE_ID}/forecast${
+            isInEvalezyShell() ? '?per_calendar_day=true' : ''
+        }`
     );
     return response.data;
 };
@@ -322,9 +350,19 @@ export const useUserAiUsageQuery = (userId: string, days = 7, enabled = true) =>
     });
 };
 
+/**
+ * Rates can differ per institute (per-institute pricing overrides, spec §10.3-10.4):
+ * /credits/v1/tool-pricing merges the overrides of the `clientId` institute the
+ * request carries. The cache key therefore includes the institute, so switching
+ * institutes never shows the previous institute's rates for up to 10 minutes.
+ */
+export const toolPricingQueryKey = (instituteId: string | undefined) =>
+    ['GET_TOOL_PRICING', instituteId ?? null] as const;
+
 export const useToolPricingQuery = (enabled = true) => {
+    const instituteId = getCurrentInstituteId();
     return useQuery({
-        queryKey: ['GET_TOOL_PRICING'],
+        queryKey: toolPricingQueryKey(instituteId),
         queryFn: fetchToolPricing,
         enabled,
         staleTime: 10 * 60 * 1000, // 10 minutes — rates change rarely
@@ -337,6 +375,19 @@ export const useToolPricingQuery = (enabled = true) => {
  * instantly as inputs change without a network round-trip. MUST stay in sync with
  * ai_service/app/services/tool_cost_estimator.py (and the V321 seed).
  */
+/** Credits per page on a per-page rate row, or null when the row does not price pages. */
+export const perPageCredits = (row: ToolPricingRow | null | undefined): number | null =>
+    row?.unit_field === 'pages' ? Number(row.per_unit_credits) || 0 : null;
+
+/**
+ * What a credit history row says. A charge's description ends with the tool and rate it used,
+ * kept for reconciliation; a copy check from before descriptions named the copy reads as one.
+ */
+export const creditHistoryText = (description: string | null | undefined): string => {
+    const text = (description ?? '').replace(/\s*\[[a-z0-9_]+; rate [^\]]*\]\s*$/, '');
+    return /^evaluation using /.test(text) ? 'AI evaluation' : text;
+};
+
 export const computeToolCredits = (
     row: ToolPricingRow | undefined,
     params: ToolParams
@@ -350,7 +401,19 @@ export const computeToolCredits = (
     switch (row.unit_field) {
         case 'questions': {
             const n = Math.max(0, Number(params.num_questions) || 0);
-            total += n * perUnit;
+            const slabs = extra.slabs as
+                | Array<{ upto: number | null; credits: string | number }>
+                | undefined;
+            if (Array.isArray(slabs) && slabs.length > 0) {
+                // Range pricing (Vsmart Extract): the first band whose ceiling
+                // the count does not exceed; a null ceiling catches the rest.
+                const band =
+                    slabs.find((s) => s.upto == null || n <= Number(s.upto)) ??
+                    slabs[slabs.length - 1];
+                total += Number(band?.credits) || 0;
+            } else {
+                total += n * perUnit;
+            }
             // Explicit image_count (charge time) wins; else include_images is the
             // preview upper bound of one image per question.
             let images = 0;

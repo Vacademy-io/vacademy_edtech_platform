@@ -18,6 +18,9 @@ public interface LeaveBalanceRepository extends JpaRepository<LeaveBalance, Stri
 
     List<LeaveBalance> findByEmployee_Id(String employeeId);
 
+    /** Every employee's balances for one year — the HR-wide balance view. */
+    List<LeaveBalance> findByEmployee_InstituteIdAndYear(String instituteId, Integer year);
+
     @Query("SELECT CASE WHEN COUNT(lb) > 0 THEN true ELSE false END FROM LeaveBalance lb " +
             "WHERE lb.employee.id IN :employeeIds AND lb.year = :year")
     boolean existsByEmployeeIdsAndYear(@Param("employeeIds") List<String> employeeIds, @Param("year") Integer year);

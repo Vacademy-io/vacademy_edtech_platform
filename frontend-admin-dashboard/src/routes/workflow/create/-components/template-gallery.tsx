@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useQuery } from '@tanstack/react-query';
 import { getWorkflowTemplatesQuery, WorkflowTemplateItem } from '@/services/workflow-service';
 import { useWorkflowBuilderStore } from '../-stores/workflow-builder-store';
@@ -19,6 +20,7 @@ interface TemplateGalleryProps {
 }
 
 export function TemplateGallery({ instituteId }: TemplateGalleryProps) {
+    const { t } = useTranslation('workflowTemplateGallery');
     const [open, setOpen] = useState(false);
     const { data: templates, isLoading } = useQuery(getWorkflowTemplatesQuery(instituteId));
     const {
@@ -84,18 +86,18 @@ export function TemplateGallery({ instituteId }: TemplateGalleryProps) {
             <DialogTrigger asChild>
                 <Button variant="outline" size="sm" className="gap-1.5">
                     <Lightning size={14} />
-                    Templates
+                    {t('templatesButton')}
                 </Button>
             </DialogTrigger>
             <DialogContent className="max-w-2xl max-h-[70vh] overflow-y-auto">
                 <DialogHeader>
-                    <DialogTitle>Workflow Templates</DialogTitle>
+                    <DialogTitle>{t('dialogTitle')}</DialogTitle>
                 </DialogHeader>
 
                 {isLoading ? (
-                    <div className="py-8 text-center text-sm text-gray-500">Loading templates...</div>
+                    <div className="py-8 text-center text-sm text-gray-500">{t('loadingTemplates')}</div>
                 ) : Object.keys(grouped).length === 0 ? (
-                    <div className="py-8 text-center text-sm text-gray-500">No templates available</div>
+                    <div className="py-8 text-center text-sm text-gray-500">{t('noTemplatesAvailable')}</div>
                 ) : (
                     <div className="flex flex-col gap-6">
                         {Object.entries(grouped).map(([category, items]) => (
@@ -108,12 +110,12 @@ export function TemplateGallery({ instituteId }: TemplateGalleryProps) {
                                         <button
                                             key={template.id}
                                             onClick={() => handleApplyTemplate(template)}
-                                            className="rounded-lg border bg-white p-3 text-left transition-colors hover:border-blue-300 hover:bg-blue-50"
+                                            className="rounded-lg border bg-white p-3 text-start transition-colors hover:border-blue-300 hover:bg-blue-50"
                                         >
                                             <div className="flex items-center gap-2 mb-1">
                                                 <span className="font-medium text-sm">{template.name}</span>
                                                 {template.is_system && (
-                                                    <Badge variant="secondary" className="text-[10px]">System</Badge>
+                                                    <Badge variant="secondary" className="text-[10px]">{t('systemBadge')}</Badge>
                                                 )}
                                             </div>
                                             <p className="text-xs text-gray-500 line-clamp-2">

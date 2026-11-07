@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { AdmissionFormData } from '../AdmissionFormWizard';
 
 interface Props {
@@ -8,6 +9,7 @@ interface Props {
 }
 
 export default function Step6Finish({ formData, handleChange, admissionId }: Props) {
+    const { t } = useTranslation('admissionsStep6Finish');
     return (
         <div className="flex flex-col items-center justify-center p-12 text-center duration-200 animate-in fade-in zoom-in-95">
             <div className="mb-6 flex h-20 w-20 items-center justify-center rounded-full border border-green-200 bg-green-100 shadow-sm">
@@ -27,26 +29,26 @@ export default function Step6Finish({ formData, handleChange, admissionId }: Pro
                 </svg>
             </div>
 
-            <h2 className="mb-2 text-2xl font-bold text-gray-800">Ready to Submit</h2>
+            <h2 className="mb-2 text-2xl font-bold text-gray-800">{t('readyToSubmitHeading')}</h2>
             <p className="mb-6 max-w-xl text-lg text-gray-600">
-                You have reached the end of the{' '}
-                <span className="font-semibold text-gray-800">Admission Form</span>. Please review
-                all details before final submission.
+                {t('reachedEndPrefix')}{' '}
+                <span className="font-semibold text-gray-800">{t('admissionFormLabel')}</span>
+                {t('reachedEndSuffix')}
             </p>
 
             <div className="mb-8 w-full max-w-md rounded-lg border border-gray-200 bg-gray-50 p-6">
                 <h3 className="mb-4 border-b pb-2 text-sm font-semibold uppercase tracking-wider text-gray-500">
-                    Admission Summary
+                    {t('admissionSummaryHeading')}
                 </h3>
                 <div className="flex flex-col gap-3 text-left">
                     <div className="flex justify-between">
-                        <span className="text-gray-600">Student Name:</span>
+                        <span className="text-gray-600">{t('studentNameLabel')}</span>
                         <span className="font-medium text-gray-800">
                             {formData.studentFirstName} {formData.studentLastName}
                         </span>
                     </div>
                     <div className="flex justify-between">
-                        <span className="text-gray-600">Class:</span>
+                        <span className="text-gray-600">{t('classLabel')}</span>
                         <span className="font-medium text-gray-800">
                             {formData.studentClass || '-'}
                         </span>
@@ -55,8 +57,9 @@ export default function Step6Finish({ formData, handleChange, admissionId }: Pro
             </div>
 
             <div className="mt-8 text-sm text-gray-500">
-                Click <span className="font-semibold text-gray-700">Submit Admission</span> below to
-                finalize this record.
+                {t('clickPrefix')}{' '}
+                <span className="font-semibold text-gray-700">{t('submitAdmissionLabel')}</span>{' '}
+                {t('clickSuffix')}
             </div>
         </div>
     );
