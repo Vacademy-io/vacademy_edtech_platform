@@ -219,6 +219,22 @@
         "campaignValue": "{{campaignName}}",
         "body2": "Please reach within {{tat}} time."
     },
+    "leadReattempt": {
+        "subject": "Reattempt: {{leadName}} enquired again",
+        "greeting": "Hi {{counselorName}},",
+        "body1": "One of your leads has sent a new enquiry.",
+        "nameLabel": "Name:",
+        "nameValue": "{{leadName}}",
+        "mobileLabel": "Mobile:",
+        "mobileValue": "{{leadMobile}}",
+        "emailLabel": "Email:",
+        "emailValue": "{{leadEmail}}",
+        "sourceLabel": "Came again via:",
+        "sourceValue": "{{reattemptSource}}",
+        "campaignLabel": "Campaign:",
+        "campaignValue": "{{campaignName}}",
+        "body2": "They are interested again. Please call them soon."
+    },
     "leadTatReminderBefore": {
         "subject": "Reminder: respond to {{leadName}} within {{minutesToBreach}} minutes",
         "heading": "Lead awaiting your response",

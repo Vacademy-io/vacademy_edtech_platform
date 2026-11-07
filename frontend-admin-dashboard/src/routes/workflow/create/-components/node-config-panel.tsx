@@ -29,6 +29,26 @@ import {
 } from '@/services/workflow-service';
 import { whatsappTemplateParamSpec } from '@/components/shared/leads/lead-template-variables';
 
+/**
+ * The list each read-only prebuilt query puts on the context (mirror of
+ * PrebuiltQueryOutputs.java). A QUERY node copies the query's own keys and never writes its
+ * resultKey, so `#ctx['queryResult']` is always empty and a send node reading it sends nothing.
+ */
+const QUERY_LIST_KEY: Record<string, string> = {
+    fetch_audience_responses_filtered: 'leads',
+    getAudienceResponsesByDayDifference: 'leads',
+    fetch_batch_attendance_report: 'students',
+    fetch_students_by_batch: 'students',
+    fetch_ssigm_by_package: 'ssigm_list',
+    getUpcomingAutopayCharges: 'autopayDueList',
+    getManualRenewalDuePlans: 'manualRenewalList',
+    getSSIGMByStatusAndPackageSessionIds: 'ssigmList',
+    fetch_institute_admin_emails: 'adminContacts',
+    fetch_expiring_memberships: 'expiringMemberships',
+    fetch_live_session_attendance: 'presentStudents',
+    getUpcomingFeeInstallments: 'feePaymentList',
+};
+
 /** Handles auto-fill of system params and smart input for required query params */
 /**
  * Which entities the trigger actually fires for, editable inline.
@@ -303,9 +323,9 @@ export function NodeConfigPanel() {
                             } else if (queryKey === 'fetch_batch_attendance_report' || queryKey === 'fetch_students_by_batch') {
                                 dataSources.push({ label: t('email.students'), value: "#ctx['students']", description: t('email.studentsDesc') });
                             } else if (queryKey === 'fetch_ssigm_by_package' || queryKey === 'getSSIGMByStatusAndPackageSessionIds') {
-                                dataSources.push({ label: t('email.enrolledStudents'), value: "#ctx['ssigm_list']", description: t('email.enrolledStudentsDesc') });
-                            } else if (queryKey) {
-                                dataSources.push({ label: t('email.queryResults', { queryKey }), value: "#ctx['queryResult']", description: t('email.queryResultsDesc') });
+                                dataSources.push({ label: t('email.enrolledStudents'), value: `#ctx['${QUERY_LIST_KEY[queryKey]}']`, description: t('email.enrolledStudentsDesc') });
+                            } else if (queryKey && QUERY_LIST_KEY[queryKey]) {
+                                dataSources.push({ label: t('email.queryResults', { queryKey }), value: `#ctx['${QUERY_LIST_KEY[queryKey]}']`, description: t('email.queryResultsDesc') });
                             }
                         }
                     }
@@ -577,9 +597,9 @@ export function NodeConfigPanel() {
                             } else if (queryKey === 'fetch_batch_attendance_report' || queryKey === 'fetch_students_by_batch') {
                                 whatsappDataSources.push({ label: t('whatsapp.students'), value: "#ctx['students']", description: t('whatsapp.studentsDesc') });
                             } else if (queryKey === 'fetch_ssigm_by_package' || queryKey === 'getSSIGMByStatusAndPackageSessionIds') {
-                                whatsappDataSources.push({ label: t('whatsapp.enrolledStudents'), value: "#ctx['ssigm_list']", description: t('whatsapp.enrolledStudentsDesc') });
-                            } else if (queryKey) {
-                                whatsappDataSources.push({ label: t('whatsapp.queryResults', { queryKey }), value: "#ctx['queryResult']", description: t('whatsapp.queryResultsDesc') });
+                                whatsappDataSources.push({ label: t('whatsapp.enrolledStudents'), value: `#ctx['${QUERY_LIST_KEY[queryKey]}']`, description: t('whatsapp.enrolledStudentsDesc') });
+                            } else if (queryKey && QUERY_LIST_KEY[queryKey]) {
+                                whatsappDataSources.push({ label: t('whatsapp.queryResults', { queryKey }), value: `#ctx['${QUERY_LIST_KEY[queryKey]}']`, description: t('whatsapp.queryResultsDesc') });
                             }
                         }
                     }

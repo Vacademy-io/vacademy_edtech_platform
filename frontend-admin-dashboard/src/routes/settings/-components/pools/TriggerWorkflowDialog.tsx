@@ -97,6 +97,8 @@ function buildLeadEvents(t: TFunction): { value: string; label: string }[] {
         { value: 'FOLLOW_UP_DUE', label: t('event.options.followUpDue') },
         { value: 'FOLLOW_UP_OVERDUE', label: t('event.options.followUpOverdue') },
         { value: LEAD_STATUS_CHANGED, label: t('event.options.leadStatusChanged') },
+        // A lead enquired again; counselorEmail is the lead's owner.
+        { value: 'LEAD_REATTEMPT', label: t('event.options.leadReattempt') },
     ];
 }
 

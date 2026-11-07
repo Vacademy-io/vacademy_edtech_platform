@@ -219,6 +219,22 @@
         "campaignValue": "{{campaignName}}",
         "body2": "يرجى التواصل خلال {{tat}}."
     },
+    "leadReattempt": {
+        "subject": "إعادة محاولة: أرسل {{leadName}} استفسارًا جديدًا",
+        "greeting": "مرحبًا {{counselorName}}،",
+        "body1": "أرسل أحد عملائك المحتملين استفسارًا جديدًا.",
+        "nameLabel": "الاسم:",
+        "nameValue": "{{leadName}}",
+        "mobileLabel": "الجوال:",
+        "mobileValue": "{{leadMobile}}",
+        "emailLabel": "البريد الإلكتروني:",
+        "emailValue": "{{leadEmail}}",
+        "sourceLabel": "عاد عبر:",
+        "sourceValue": "{{reattemptSource}}",
+        "campaignLabel": "الحملة:",
+        "campaignValue": "{{campaignName}}",
+        "body2": "إنه مهتم مرة أخرى. يرجى الاتصال به قريبًا."
+    },
     "leadTatReminderBefore": {
         "subject": "تذكير: رد على {{leadName}} خلال {{minutesToBreach}} دقيقة",
         "heading": "عميل محتمل بانتظار ردك",

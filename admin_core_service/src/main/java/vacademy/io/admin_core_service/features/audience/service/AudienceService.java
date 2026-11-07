@@ -2442,8 +2442,9 @@ public class AudienceService {
      * repeats, a "Reattempt" entry in that lead's journey, a bell to the counsellor who owns
      * it (not when that counsellor added the enquiry themselves), the lead's tier set to the
      * configured one (e.g. Very Hot), and a priority follow-up for the counsellor that the
-     * Follow-ups page lists first. Does nothing for a first-time lead, with every switch off,
-     * or when no active lead is found to repeat. Callers run it before the repeat-lead status
+     * Follow-ups page lists first. With any switch on, it also emits the LEAD_REATTEMPT workflow
+     * trigger, so an institute's workflow can e.g. email the counsellor. Does nothing for a
+     * first-time lead, with every switch off, or when no active lead is found to repeat. Callers run it before the repeat-lead status
      * reset, so "is the earlier lead still open" reads its status from before this enquiry.
      * Best-effort like the other intake steps: a failure is logged and never fails intake.
      *
@@ -2501,20 +2502,18 @@ public class AudienceService {
         // The counsellor who owns the repeat after assignment (the previous owner under
         // SAME_AS_PREVIOUS); the lead it repeats' owner when that lookup has nothing.
         String ownerId = null;
-        if (reattempt.notifyOwner() || reattempt.followUp()) {
-            try {
-                if (StringUtils.hasText(leadUserId)) {
-                    ownerId = userLeadProfileRepository.findByUserIdAndInstituteId(leadUserId, instituteId)
-                            .map(p -> p.getAssignedCounselorId())
-                            .filter(StringUtils::hasText)
-                            .orElse(null);
-                }
-            } catch (Exception e) {
-                logger.error("Repeat lead {}: owner lookup failed: {}", savedResponse.getId(), e.getMessage());
+        try {
+            if (StringUtils.hasText(leadUserId)) {
+                ownerId = userLeadProfileRepository.findByUserIdAndInstituteId(leadUserId, instituteId)
+                        .map(p -> p.getAssignedCounselorId())
+                        .filter(StringUtils::hasText)
+                        .orElse(null);
             }
-            if (ownerId == null && StringUtils.hasText(primary.getCounsellorId())) {
-                ownerId = primary.getCounsellorId();
-            }
+        } catch (Exception e) {
+            logger.error("Repeat lead {}: owner lookup failed: {}", savedResponse.getId(), e.getMessage());
+        }
+        if (ownerId == null && StringUtils.hasText(primary.getCounsellorId())) {
+            ownerId = primary.getCounsellorId();
         }
 
         if (reattempt.followUp()) {
@@ -2530,6 +2529,38 @@ public class AudienceService {
                 logger.error("Repeat lead {}: failed to notify the owner: {}",
                         savedResponse.getId(), e.getMessage());
             }
+        }
+
+        emitLeadReattempt(savedResponse, primary, leadUserId, instituteId, ownerId, email, phone,
+                sourceLabel, campaignName, sameListRepeat);
+    }
+
+    /**
+     * The LEAD_REATTEMPT workflow trigger for a repeat enquiry: the lead and its owner (so a
+     * workflow can mail the counsellor) plus what the new enquiry carried. Placeholder emails
+     * are left out. Best-effort; never fails intake.
+     */
+    private void emitLeadReattempt(AudienceResponse savedResponse, AudienceResponseRepository.PrimaryLeadRow primary,
+            String leadUserId, String instituteId, String ownerId, String email, String phone,
+            String sourceLabel, String campaignName, boolean sameListRepeat) {
+        String leadId = StringUtils.hasText(leadUserId) ? leadUserId : primary.getUserId();
+        if (!StringUtils.hasText(leadId)) {
+            return;
+        }
+        try {
+            Map<String, Object> keys = new HashMap<>();
+            keys.put("reattemptSource", sourceLabel);
+            keys.put("reattemptEmail", StringUtils.hasText(email) && !placeholderEmailService.isPlaceholder(email)
+                    ? email.trim() : null);
+            keys.put("reattemptMobile", StringUtils.hasText(phone) ? phone.trim() : null);
+            keys.put("reattemptResponseId", savedResponse.getId());
+            keys.put("previousResponseId", primary.getResponseId());
+            keys.put("previousStatus", primary.getStatusKey());
+            keys.put("sameListRepeat", sameListRepeat);
+            userLeadProfileService.emitLeadReattempt(instituteId, leadId, ownerId,
+                    savedResponse.getAudienceId(), campaignName, keys);
+        } catch (Exception e) {
+            logger.error("Repeat lead {}: failed to emit LEAD_REATTEMPT: {}", savedResponse.getId(), e.getMessage());
         }
     }
 

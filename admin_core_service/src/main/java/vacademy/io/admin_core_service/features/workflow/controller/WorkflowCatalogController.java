@@ -248,6 +248,7 @@ public class WorkflowCatalogController {
         eventMeta.put("LEAD_TAT_OVERDUE", new String[]{"Lead TAT Overdue", "Fires when the counselor has not acted on a lead by its TAT/SLA deadline", "CRM", "AUDIENCE"});
         eventMeta.put("FOLLOW_UP_DUE", new String[]{"Follow-up Due", "Fires when a lead follow-up is approaching its SLA deadline", "CRM", "AUDIENCE"});
         eventMeta.put("FOLLOW_UP_OVERDUE", new String[]{"Follow-up Overdue", "Fires when a lead follow-up has crossed its SLA deadline", "CRM", "AUDIENCE"});
+        eventMeta.put("LEAD_REATTEMPT", new String[]{"Lead Enquired Again (Reattempt)", "Fires when an existing lead sends a new enquiry, a repeat or duplicate from any source; the counselor keys are the lead's owner", "CRM", "AUDIENCE"});
         eventMeta.put("LEAD_STATUS_CHANGED", new String[]{"Lead Status Changed", "Fires when a lead's status/tier changes (carries oldStatus and newStatus)", "CRM", "AUDIENCE"});
         // Assessment
         eventMeta.put("ASSESSMENT_CREATE", new String[]{"Assessment Created", "Fires when a new assessment is saved as a draft", "Assessment", "ASSESSMENT"});
@@ -345,6 +346,18 @@ public class WorkflowCatalogController {
                 ctxVar("notifyRoles", "Roles to notify"),
                 ctxVar("dueAt", "Deadline (ISO timestamp)"),
                 ctxVar("minutesToBreach", "Minutes until breach")));
+
+        // A repeat enquiry: the lead + its owner (base), where audienceId / campaignName /
+        // poolId are the list the new enquiry came in on, plus what that enquiry carried.
+        List<Map<String, String>> reattempt = new ArrayList<>(base);
+        reattempt.addAll(List.of(
+                ctxVar("reattemptSource", "Where the new enquiry came from (e.g. Website form, Meta Lead Ads)"),
+                ctxVar("reattemptEmail", "Email the new enquiry came with (may differ from leadEmail)"),
+                ctxVar("reattemptMobile", "Mobile the new enquiry came with (may differ from leadMobile)"),
+                ctxVar("reattemptResponseId", "ID of the new enquiry"),
+                ctxVar("previousResponseId", "ID of the earlier enquiry it repeats"),
+                ctxVar("previousStatus", "Status of the earlier enquiry before this one (e.g. NEW, LOST)"),
+                ctxVar("sameListRepeat", "true when the lead enquired again in the same list")));
 
         // Status changes add the old/new status keys.
         List<Map<String, String>> status = new ArrayList<>(base);
@@ -499,6 +512,7 @@ public class WorkflowCatalogController {
         out.put(WorkflowTriggerEvent.FOLLOW_UP_DUE.name(), sla);
         out.put(WorkflowTriggerEvent.FOLLOW_UP_OVERDUE.name(), sla);
         out.put(WorkflowTriggerEvent.LEAD_STATUS_CHANGED.name(), status);
+        out.put(WorkflowTriggerEvent.LEAD_REATTEMPT.name(), reattempt);
         out.put(WorkflowTriggerEvent.ASSESSMENT_CREATE.name(), assessmentCreated);
         out.put(WorkflowTriggerEvent.ASSESSMENT_PUBLISHED.name(), assessmentPublished);
         out.put(WorkflowTriggerEvent.ASSESSMENT_START.name(), attemptStart);

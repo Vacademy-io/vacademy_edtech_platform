@@ -57,11 +57,19 @@ public class WorkflowContextSchemaService {
                         "Name of the trigger event", "#ctx['triggerEventName']"));
             }
             case "QUERY" -> {
-                String resultKey = config != null ? (String) config.getOrDefault("resultKey", "queryResult") : "queryResult";
-                vars.add(var(nodeId, nodeName, nodeType, resultKey, "List<Map>",
-                        "Query result rows", "#ctx['" + resultKey + "']"));
-                vars.add(var(nodeId, nodeName, nodeType, resultKey + "Count", "Number",
-                        "Number of rows returned", "#ctx['" + resultKey + "Count']"));
+                // The QUERY node copies the query's own result keys onto the context and never
+                // writes its resultKey, so offer only the keys the chosen query really puts
+                // there. Offering resultKey / 'queryResult' handed admins a list that is always
+                // empty: a send node reading it sent nothing, with no error.
+                Object prebuiltKey = config != null ? config.get("prebuiltKey") : null;
+                List<String> outputs = PrebuiltQueryOutputs
+                        .keysOf(prebuiltKey instanceof String k ? k : null)
+                        .orElse(List.of());
+                for (int i = 0; i < outputs.size(); i++) {
+                    String key = outputs.get(i);
+                    vars.add(var(nodeId, nodeName, nodeType, key, i == 0 ? "List<Map>" : "Object",
+                            i == 0 ? "Query result rows" : "Query output", "#ctx['" + key + "']"));
+                }
             }
             case "TRANSFORM" -> {
                 vars.add(var(nodeId, nodeName, nodeType, "transformedData", "Map<String, Object>",

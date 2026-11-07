@@ -219,6 +219,22 @@
         "campaignValue": "{{campaignName}}",
         "body2": "Veuillez le contacter dans un délai de {{tat}}."
     },
+    "leadReattempt": {
+        "subject": "Nouvelle tentative : {{leadName}} a refait une demande",
+        "greeting": "Bonjour {{counselorName}},",
+        "body1": "L'un de vos prospects a envoyé une nouvelle demande.",
+        "nameLabel": "Nom :",
+        "nameValue": "{{leadName}}",
+        "mobileLabel": "Mobile :",
+        "mobileValue": "{{leadMobile}}",
+        "emailLabel": "E-mail :",
+        "emailValue": "{{leadEmail}}",
+        "sourceLabel": "Revenu via :",
+        "sourceValue": "{{reattemptSource}}",
+        "campaignLabel": "Campagne :",
+        "campaignValue": "{{campaignName}}",
+        "body2": "Il est de nouveau intéressé. Merci de l'appeler rapidement."
+    },
     "leadTatReminderBefore": {
         "subject": "Rappel : répondez à {{leadName}} dans les {{minutesToBreach}} minutes",
         "heading": "Prospect en attente de votre réponse",

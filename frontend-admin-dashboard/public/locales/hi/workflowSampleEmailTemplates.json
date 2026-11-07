@@ -219,6 +219,22 @@
         "campaignValue": "{{campaignName}}",
         "body2": "कृपया {{tat}} समय के भीतर संपर्क करें।"
     },
+    "leadReattempt": {
+        "subject": "रीअटेम्प्ट: {{leadName}} ने दोबारा पूछताछ की",
+        "greeting": "नमस्ते {{counselorName}},",
+        "body1": "आपके एक लीड ने नई पूछताछ भेजी है।",
+        "nameLabel": "नाम:",
+        "nameValue": "{{leadName}}",
+        "mobileLabel": "मोबाइल:",
+        "mobileValue": "{{leadMobile}}",
+        "emailLabel": "ईमेल:",
+        "emailValue": "{{leadEmail}}",
+        "sourceLabel": "दोबारा आया:",
+        "sourceValue": "{{reattemptSource}}",
+        "campaignLabel": "अभियान:",
+        "campaignValue": "{{campaignName}}",
+        "body2": "वे फिर से रुचि दिखा रहे हैं। कृपया जल्द कॉल करें।"
+    },
     "leadTatReminderBefore": {
         "subject": "अनुस्मारक: {{minutesToBreach}} मिनट में {{leadName}} को जवाब दें",
         "heading": "लीड आपकी प्रतिक्रिया की प्रतीक्षा कर रहा है",

@@ -493,6 +493,31 @@ export function buildSampleTemplates(t: TFunction): Record<string, SampleEmailTe
 </div>`,
   },
 
+  LEAD_REATTEMPT: {
+    name: 'Lead Reattempt — Counsellor Notice',
+    subject: tt('leadReattempt.subject', ['leadName']),
+    variables: [
+      'counselorName',
+      'leadName',
+      'leadMobile',
+      'leadEmail',
+      'reattemptSource',
+      'campaignName',
+    ],
+    html: `<div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;padding:24px">
+  <h2 style="color:#1a1a1a">${tt('leadReattempt.greeting', ['counselorName'])}</h2>
+  <p style="color:#444;line-height:1.6">${t('leadReattempt.body1')}</p>
+  <ul style="color:#444;line-height:1.8">
+    <li><strong>${t('leadReattempt.nameLabel')}</strong> ${tt('leadReattempt.nameValue', ['leadName'])}</li>
+    <li><strong>${t('leadReattempt.mobileLabel')}</strong> ${tt('leadReattempt.mobileValue', ['leadMobile'])}</li>
+    <li><strong>${t('leadReattempt.emailLabel')}</strong> ${tt('leadReattempt.emailValue', ['leadEmail'])}</li>
+    <li><strong>${t('leadReattempt.sourceLabel')}</strong> ${tt('leadReattempt.sourceValue', ['reattemptSource'])}</li>
+    <li><strong>${t('leadReattempt.campaignLabel')}</strong> ${tt('leadReattempt.campaignValue', ['campaignName'])}</li>
+  </ul>
+  <p style="color:#444;line-height:1.6">${t('leadReattempt.body2')}</p>
+</div>`,
+  },
+
   LEAD_TAT_REMINDER_BEFORE: {
     name: 'Lead TAT — Reminder',
     subject: tt('leadTatReminderBefore.subject', ['leadName', 'minutesToBreach']),

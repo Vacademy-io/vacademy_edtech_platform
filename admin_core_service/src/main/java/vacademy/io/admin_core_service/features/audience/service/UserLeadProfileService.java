@@ -410,6 +410,53 @@ public class UserLeadProfileService {
     }
 
     /**
+     * LEAD_REATTEMPT: an existing lead sent a new enquiry (a repeat or duplicate, from any
+     * source). Carries the same lead and counselor keys as LEAD_ASSIGNED_TO_COUNSELOR, where the
+     * counselor is the lead's owner once this enquiry has been handled, so a workflow can email
+     * the counsellor. {@code audienceId}, {@code campaignName} and {@code poolId} are those of the
+     * list the new enquiry came in on, and it is emitted with eventId = that list, so a
+     * list-scoped trigger runs instead of the global ones. {@code reattemptKeys} adds the
+     * reattempt* keys about the new enquiry. Emit-only and best-effort: never throws.
+     */
+    public void emitLeadReattempt(String instituteId, String leadUserId, String counselorId,
+                                  String audienceId, String campaignName, Map<String, Object> reattemptKeys) {
+        if (instituteId == null || instituteId.isBlank() || leadUserId == null || leadUserId.isBlank()) return;
+        try {
+            String counselorName = null;
+            if (counselorId != null && !counselorId.isBlank()) {
+                counselorName = userLeadProfileRepository.findByUserIdAndInstituteId(leadUserId, instituteId)
+                        .filter(p -> counselorId.equals(p.getAssignedCounselorId()))
+                        .map(UserLeadProfile::getAssignedCounselorName)
+                        .orElse(null);
+                if (counselorName == null || counselorName.isBlank()) {
+                    counselorName = resolveCounselorName(counselorId);
+                }
+            }
+            Map<String, Object> ctx = leadTriggerContextBuilder.forUser(
+                    instituteId, leadUserId, counselorId, counselorName);
+            enrichWithLeadContact(ctx, leadUserId);
+            enrichTatInfo(ctx, instituteId);
+            if (audienceId != null && !audienceId.isBlank()) {
+                ctx.put("audienceId", audienceId);
+                String poolId = leadTriggerContextBuilder.resolvePoolId(audienceId);
+                if (poolId != null) {
+                    ctx.put("poolId", poolId);
+                } else {
+                    ctx.remove("poolId");
+                }
+            }
+            leadTriggerContextBuilder.put(ctx, "campaignName", campaignName);
+            if (reattemptKeys != null) {
+                reattemptKeys.forEach((k, v) -> leadTriggerContextBuilder.put(ctx, k, v));
+            }
+            safeEmit(WorkflowTriggerEvent.LEAD_REATTEMPT.name(),
+                    audienceId != null && !audienceId.isBlank() ? audienceId : leadUserId, instituteId, ctx);
+        } catch (Exception e) {
+            log.warn("[LeadTrigger] Failed to emit LEAD_REATTEMPT for user {}: {}", leadUserId, e.getMessage());
+        }
+    }
+
+    /**
      * Add the lead's parent contact + pool to a user-grain ctx so communication workflows
      * (SEND_EMAIL / SEND_WHATSAPP) have a recipient — the same fields AUDIENCE_LEAD_SUBMISSION
      * and the TAT scheduler already carry. Sourced from the user's audience_response (prefers

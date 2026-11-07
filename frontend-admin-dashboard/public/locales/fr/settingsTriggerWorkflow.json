@@ -24,7 +24,8 @@
             "leadTatOverdue": "Délai du lead dépassé",
             "followUpDue": "Relance à effectuer",
             "followUpOverdue": "Relance en retard",
-            "leadStatusChanged": "Statut du lead modifié"
+            "leadStatusChanged": "Statut du lead modifié",
+            "leadReattempt": "Le lead a refait une demande (nouvelle tentative)"
         }
     },
     "statusGate": {

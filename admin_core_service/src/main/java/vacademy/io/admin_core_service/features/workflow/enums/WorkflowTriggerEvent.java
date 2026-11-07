@@ -68,6 +68,9 @@ public enum WorkflowTriggerEvent {
     FOLLOW_UP_DUE,
     FOLLOW_UP_OVERDUE,
     LEAD_STATUS_CHANGED,
+    // An existing lead sent a new enquiry (a repeat / duplicate, from any source). Keyed by
+    // eventId = the new enquiry's list (audienceId); counselor keys are the lead's owner.
+    LEAD_REATTEMPT,
     // Fired when an inbound AI call is received (lead dialed our AI line — detected by
     // a campaign id tagged INBOUND in AI_CALLING_SETTING). Keyed by eventId = responseId.
     LEAD_CALLED_BACK,

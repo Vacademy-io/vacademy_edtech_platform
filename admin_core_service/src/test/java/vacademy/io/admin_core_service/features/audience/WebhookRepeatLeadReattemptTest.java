@@ -180,6 +180,67 @@ class WebhookRepeatLeadReattemptTest {
         verify(notifier).notifyReattempt("inst-1", OWNER, "Asha Rao", "Meta Lead Ads", "Diploma 2027", "user-new");
     }
 
+    /**
+     * A repeat emits LEAD_REATTEMPT for the lead's owner, keyed by the list the new enquiry came
+     * in on, with what that enquiry carried, so a workflow can email the counsellor.
+     */
+    @Test
+    @SuppressWarnings("unchecked")
+    void repeatEmitsTheReattemptTriggerForTheOwner() {
+        repeatWith(new ReattemptSettings(true, true, true, true, false, null));
+        when(profiles.findByUserIdAndInstituteId("user-new", "inst-1")).thenReturn(Optional.of(ownedBy(OWNER)));
+        when(((vacademy.io.admin_core_service.features.audience.service.PlaceholderEmailService)
+                getQuiet("placeholderEmailService")).isPlaceholder(any())).thenReturn(false);
+
+        submit();
+
+        ArgumentCaptor<Map<String, Object>> keys = ArgumentCaptor.forClass(Map.class);
+        verify(profileService).emitLeadReattempt(eq("inst-1"), eq("user-new"), eq(OWNER), eq("aud-1"),
+                eq("Diploma 2027"), keys.capture());
+        assertEquals("Meta Lead Ads", keys.getValue().get("reattemptSource"));
+        assertEquals("asha@example.com", keys.getValue().get("reattemptEmail"));
+        assertEquals("+919876543210", keys.getValue().get("reattemptMobile"));
+        assertEquals("resp-new", keys.getValue().get("reattemptResponseId"));
+        assertEquals("resp-old", keys.getValue().get("previousResponseId"));
+        assertEquals("CALL_BACK", keys.getValue().get("previousStatus"));
+        assertEquals(false, keys.getValue().get("sameListRepeat"));
+    }
+
+    /** A placeholder email is not handed to the workflow as the enquiry's email. */
+    @Test
+    @SuppressWarnings("unchecked")
+    void reattemptTriggerLeavesOutAPlaceholderEmail() {
+        repeatWith(new ReattemptSettings(true, false, false, false, false, null));
+        when(profiles.findByUserIdAndInstituteId("user-new", "inst-1")).thenReturn(Optional.of(ownedBy(OWNER)));
+        when(((vacademy.io.admin_core_service.features.audience.service.PlaceholderEmailService)
+                getQuiet("placeholderEmailService")).isPlaceholder("asha@example.com")).thenReturn(true);
+
+        submit();
+
+        ArgumentCaptor<Map<String, Object>> keys = ArgumentCaptor.forClass(Map.class);
+        verify(profileService).emitLeadReattempt(eq("inst-1"), eq("user-new"), eq(OWNER), eq("aud-1"),
+                eq("Diploma 2027"), keys.capture());
+        assertEquals(null, keys.getValue().get("reattemptEmail"));
+    }
+
+    @Test
+    void switchesOffEmitNoReattemptTrigger() {
+        repeatWith(ReattemptSettings.OFF);
+        when(profiles.findByUserIdAndInstituteId("user-new", "inst-1")).thenReturn(Optional.of(ownedBy(OWNER)));
+
+        submit();
+
+        verify(profileService, never()).emitLeadReattempt(any(), any(), any(), any(), any(), any());
+    }
+
+    private Object getQuiet(String field) {
+        try {
+            return get(field);
+        } catch (Exception e) {
+            throw new IllegalStateException(e);
+        }
+    }
+
     @Test
     void eachSwitchActsAlone() {
         repeatWith(new ReattemptSettings(true, false, false, false, false, null));
