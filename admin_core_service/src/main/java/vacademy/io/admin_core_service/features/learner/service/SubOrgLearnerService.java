@@ -89,6 +89,7 @@ public class SubOrgLearnerService {
     private final vacademy.io.admin_core_service.features.suborg.service.SubOrgExitService subOrgExitService;
     private final UserPlanRepository userPlanRepository;
     private final EnrollInviteRepository enrollInviteRepository;
+    private final vacademy.io.admin_core_service.features.suborg.service.SubOrgSeatCapResolver seatCapResolver;
     private final StudentSubOrgRepository studentSubOrgRepository;
     private final PackageSessionEnrollInviteToPaymentOptionService packageSessionEnrollInviteToPaymentOptionService;
     private final FacultyService facultyService;
@@ -373,7 +374,7 @@ public class SubOrgLearnerService {
 
         // 5. Validate member count limit + dedupe enrollment per PS
         for (String psId : psIds) {
-            validateMemberCountLimit(request.getSubOrgId(), psId);
+            validateMemberCountLimit(request.getSubOrgId(), request.getInstituteId(), psId);
         }
         for (String psId : psIds) {
             // Re-use existing helper by temporarily setting the field — single-PS dedupe.
@@ -1235,7 +1236,7 @@ public class SubOrgLearnerService {
 
     }
 
-    private void validateMemberCountLimit(String subOrgId, String packageSessionId) {
+    private void validateMemberCountLimit(String subOrgId, String instituteId, String packageSessionId) {
         String userPlanId = findRootAdminPlanId(subOrgId, packageSessionId);
         if (userPlanId == null) {
             log.warn("ROOT_ADMIN mapping has no user_plan_id for batch {} - skipping validation",
@@ -1261,7 +1262,7 @@ public class SubOrgLearnerService {
             return;
         }
 
-        Integer memberCountLimit = paymentPlan.getMemberCount();
+        Integer memberCountLimit = seatCapResolver.resolve(subOrgId, instituteId, paymentPlan);
 
         if (memberCountLimit == null) {
             log.info("No member_count limit set for payment_plan: {} - allowing unlimited enrollment",
