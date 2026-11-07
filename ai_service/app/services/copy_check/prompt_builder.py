@@ -22,7 +22,10 @@ signatures, same output JSON keys, same hard-cap phrasing. Changes:
 from __future__ import annotations
 
 import json
+import re
 from typing import Any, Optional
+
+from .option_letter import letters_out_of_order
 
 
 # ---------------------------- Criteria generation ----------------------------
@@ -423,7 +426,15 @@ def _question_context(question: dict[str, Any]) -> str:
     """
     options = question.get("options") or []
     parts: list[str] = []
-    if options:
+    printed = letters_out_of_order(options)
+    if printed:
+        # The options carry their own letters and arrived in another order. A
+        # position next to them ("position 3 / C: B. was cooking") gave one
+        # option two letters, and the key a letter the student never saw.
+        parts.append("**Options (a student refers to an option by the letter printed with it):**\n"
+                     + "\n".join(f"  {options[pos - 1].get('text')}"
+                                  for _letter, pos in sorted(printed.items())))
+    elif options:
         rendered: list[str] = []
         for i, opt in enumerate(options):
             text = opt.get("text") or opt.get("preview_id") or str(opt)
@@ -431,6 +442,8 @@ def _question_context(question: dict[str, Any]) -> str:
         parts.append("**Options:**\n" + "\n".join(rendered))
     correct = question.get("correct_answer")
     if correct:
+        if printed:
+            correct = re.sub(r"Option\s+\d+\s*:\s*", "", str(correct))
         parts.append(f"**Correct answer:** {correct}")
     return "\n".join(parts)
 
@@ -444,15 +457,43 @@ def _roman(n: int) -> str:
 _CHOICE_TYPES = ("MCQ", "MCQS", "MCQM", "TRUE_FALSE")
 
 
-def _type_instructions(question_type: str, has_key: bool = False) -> str:
+def _answer_rows_hint(question: dict[str, Any], layout_map: dict[str, Any]) -> str:
+    """Where the copy's structure says this answer is (copy_structure.py)."""
+    rows = question.get("answer_rows_hint") or []
+    if not rows:
+        return ""
+    wanted = set(rows)
+    said = " / ".join(
+        str(line.get("text") or "").strip()
+        for page in layout_map.get("pages") or []
+        for line in page.get("lines") or []
+        if line.get("line_id") in wanted
+    )
+    span = rows[0] if len(rows) == 1 else f"{rows[0]} to {rows[-1]}"
+    hint = (f"**Where this answer is:** row(s) {span}, which read: \"{said}\". Grade what is written there, "
+            "put every mark on these rows, and take extracted_answer and answer_rows from them. The rows "
+            "around them are other questions' answers.\n")
+    missed = question.get("answer_rows_missed")
+    if missed == "unmarked":
+        hint += "You previously found no answer for this question. It is on the rows above; mark it there.\n"
+    elif missed:
+        hint += (f"You previously marked row {missed} for this question. That row belongs to another "
+                 "question; mark this question on the rows above.\n")
+    return hint
+
+
+def _type_instructions(question_type: str, has_key: bool = False, printed_options: bool = False) -> str:
     """Per-type grading rule. `has_key` = a correct answer was supplied above;
     only then is the grader told not to decide the key itself — a legacy
     question with no stored key must still be gradable on the model's judgement,
-    as it always was."""
+    as it always was. `printed_options` = the options carry their own letters."""
     t = (question_type or "").upper()
     key_rule = " Grade ONLY against the correct answer given above; never decide the key yourself." if has_key else ""
     if t in _CHOICE_TYPES:
         text = (
+            "MCQ: Match the option by the letter printed with it, or by its words. Award full "
+            "marks if the student names the correct option, even if its text is misspelled." + key_rule
+        ) if printed_options else (
             "MCQ: Match the option POSITION (number), not exact text. Accept "
             "'2', 'B', 'b', 'ii', 'option 2' as equivalent, and the option's own "
             "printed label such as '(b)'. Award full marks if position matches, even "
@@ -565,7 +606,7 @@ def build_grading_prompt(
     return f"""Mark the student's handwritten answer to the question below.
 
 **Question as numbered on the paper:** {label}
-{_section_hint(question)}**Other questions that may appear on the same pages (do NOT grade these):** {neighbours}
+{_section_hint(question)}{_answer_rows_hint(question, layout_map)}**Other questions that may appear on the same pages (do NOT grade these):** {neighbours}
 **Question type:** {question.get('question_type')}
 **Question:**
 {question['question_text']}
@@ -580,7 +621,7 @@ def build_grading_prompt(
 {_transcript_for_prompt(layout_map, page_ids)}
 
 **Type-specific grading:**
-{_type_instructions(question.get('question_type'), bool(question.get('correct_answer')))}
+{_type_instructions(question.get('question_type'), bool(question.get('correct_answer')), bool(letters_out_of_order(question.get('options'))))}
 
 **Annotation regime for this question:**
 {_annotation_regime(question.get('question_type'), max_marks)}

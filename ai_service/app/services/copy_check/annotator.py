@@ -3964,6 +3964,289 @@ def page_id_for(order: Optional[dict], page_no: int) -> Optional[str]:
     return None
 
 
+def _list_page_pitch(rects: list) -> float:
+    """The distance from one row to the next on a page, in points."""
+    centres = sorted((r.y0 + r.y1) / 2.0 for r in rects)
+    gaps = sorted(b - a for a, b in zip(centres, centres[1:]) if b - a > 1.0)
+    return gaps[len(gaps) // 2] if gaps else 0.0
+
+
+def _draw_list_marks(doc: Any, verdicts: list[dict[str, Any]], layout_map: dict[str, Any], order: dict,
+                     dims: dict, content: dict, paper: dict, ink_maps: dict, paper_rows: dict,
+                     shade_by_page: dict, occupied: dict, line_h_by_page: dict, outside: bool,
+                     ) -> tuple[set[int], set[Any], dict]:
+    """_draw_list_pages, which never costs a copy its marks: whatever it had not
+    drawn when it failed goes through the normal placement."""
+    done: set[int] = set()
+    scores: set[Any] = set()
+    placements: dict = {}
+    try:
+        _draw_list_pages(doc, verdicts, layout_map, order, dims, content, paper, ink_maps, paper_rows,
+                         shade_by_page, occupied, line_h_by_page, outside, done, scores, placements)
+    except Exception:
+        logger.warning("copy-check: row-by-row marks failed; using the normal placement", exc_info=True)
+    finally:
+        _CLIP[0] = _SHADE[0] = _INK_MAP[0] = _PAPER[0] = _LINE_H[0] = _PLACED[0] = None
+    return done, scores, placements
+
+
+def _draw_list_pages(doc: Any, verdicts: list[dict[str, Any]], layout_map: dict[str, Any], order: dict,
+                     dims: dict, content: dict, paper: dict, ink_maps: dict, paper_rows: dict,
+                     shade_by_page: dict, occupied: dict, line_h_by_page: dict, outside: bool,
+                     done: set[int], scores: set[Any], placements: dict) -> None:
+    """Lay out the marks of a page of one-line answers, row by row.
+
+    Every mark elsewhere in this module is sized for written work and placed one
+    at a time. On a list of 30 answers that wrote scores taller than the rows
+    (29pt on 22pt), so each was refused by its neighbours' and drifted: "1/1"
+    beside other questions' answers, the rest as stray circled figures. A
+    teacher marks such a page in one pattern: tick or cross just past the
+    answer, the correct option after it, the mark at the end of the line. The
+    copy's structure (copy_structure.py) says which pages are like this.
+
+    Fills in the ids of the annotations drawn here, the questions whose score
+    was drawn, and their placements. What cannot go on its row (a row two
+    questions share, a score with a mark already in its way) is left to the
+    normal placement below. A copy with no structure draws nothing here.
+    """
+    import fitz
+
+    structure = layout_map.get("structure") or {}
+    kinds = structure.get("pages") or {}
+    objective = set(structure.get("answers") or {})
+    if not kinds:
+        return
+
+    by_page: dict[str, list] = {}
+    for v in verdicts:
+        anns = v.get("annotations") or []
+        score = next((a for a in anns if (a.get("style") or "").lower() == "score"), None)
+        if score is None or not score.get("target"):
+            continue
+        row = str(score["target"])
+        pid = str(score.get("page_id") or row.rsplit("_", 1)[0])
+        kind = kinds.get(pid)
+        if kind == "one_line_list" or (kind == "mixed" and str(v.get("question_id")) in objective):
+            by_page.setdefault(pid, []).append((v, score, row))
+
+    for page_layout in layout_map.get("pages") or []:
+        pid = str(page_layout.get("page_id"))
+        marks = by_page.get(pid)
+        page_no = order.get(pid)
+        wh = dims.get(pid)
+        if not marks or page_no is None or not wh or not 0 <= page_no < doc.page_count:
+            continue
+        page = doc[page_no]
+        crect = content.get(page_no, page.rect)
+        sx, sy = crect.width / wh[0], crect.height / wh[1]
+        sheet = paper.get(pid) or crect
+        imap = ink_maps.get(pid)
+        # A detected sheet that misses the rows it should hold is wrong, not the
+        # rows: one photo's sheet came out as a strip along the foot of the
+        # page, and all 28 answers above it went unmarked.
+        def on_sheet(line: dict) -> bool:
+            b = line.get("box") or []
+            return len(b) == 4 and sheet.contains(fitz.Point((float(b[0]) + float(b[2]) / 2.0) * sx,
+                                                             (float(b[1]) + float(b[3]) / 2.0) * sy))
+        page_rows = page_layout.get("lines") or []
+        if sum(1 for ln in page_rows if on_sheet(ln)) < len(page_rows) * 0.8:
+            logger.warning("copy-check: the sheet found on %s misses its rows; using the whole page", pid)
+            sheet = crect
+        rows: dict[str, Any] = {}
+        ends: dict[str, float] = {}
+        row_texts = {str(ln.get("line_id")): ln.get("text") for ln in page_rows}
+        for line in page_layout.get("lines") or []:
+            box = line.get("box")
+            if not line.get("line_id") or not box or len(box) != 4:
+                continue
+            x, y, w, h = (float(n) for n in box)
+            rows[str(line["line_id"])] = fitz.Rect(x * sx, y * sy, (x + w) * sx, (y + h) * sy)
+            ends[str(line["line_id"])] = (x + w) * sx
+        # From every row of the page: the rows carrying marks skip the second
+        # lines of longer answers, which made this nearly two lines on one copy.
+        pitch = _list_page_pitch([rows[str(ln["line_id"])] for ln in page_layout.get("lines") or []
+                                  if not ln.get("printed") and str(ln.get("line_id")) in rows])
+        if pitch <= 0.0:
+            continue
+        pitch = min(pitch, 40.0 * _page_k(page))
+        # A row's box can sit a little off its words, so the mark goes on the
+        # measured line of writing nearest the box. Pairing rows and lines in
+        # order (row_align) is not used here: a page's header rows shift that
+        # pairing by a whole line, and a list has no spare lines to absorb it.
+        lines: list[float] = []
+        if imap and imap.get("ink") is not None:
+            lsy = float(imap["sy"])
+            lines = [(a + b) * lsy / 2.0 for a, b in row_align.ink_lines(imap["ink"])
+                     if (b - a) * lsy <= pitch * 1.6]
+
+        def row_middle(r: Any) -> float:
+            c = (r.y0 + r.y1) / 2.0
+            near = min(lines, key=lambda m: abs(m - c), default=None)
+            return near if near is not None and abs(near - c) <= pitch * 0.45 else c
+
+        _CLIP[0] = sheet
+        _SHADE[0] = shade_by_page.get(pid)
+        _INK_MAP[0] = imap
+        # Not the paper mask: a fold or a shadow across a photo reads as "not
+        # paper" for rows the student plainly wrote on, and it refused the pen
+        # on them and broke the marks up stroke by stroke (six rows of one copy
+        # lost theirs). Marks here sit beside writing, inside the column below.
+        _PAPER[0] = None
+        _LINE_H[0] = line_h_by_page.get(pid)
+        _ROW_SLOPE[0] = 0.0
+        _INK_SPAN[0] = None
+        placed = occupied.setdefault(pid + ":notes", [])
+        _PLACED[0] = placed
+
+        # One column for the page's marks, where the paper ends on most rows:
+        # the same bad mask reads 170pt on an A4 sheet for some rows.
+        found = sorted(pe for pe in (_paper_right_edge(paper_rows.get(pid), rows[r].y0, rows[r].y1)
+                                     for _v, _s, r in marks if r in rows) if pe is not None)
+        # With no photograph to measure, the "sheet" is only the extent of the
+        # writing, which on a list of short answers stops mid-page: the blank
+        # paper beside them is the whole point of the column.
+        if found:
+            edge = min(crect.x1, found[len(found) * 3 // 4])
+        else:
+            edge = sheet.x1 if sheet.width >= crect.width * 0.6 else crect.x1 - 12.0
+        edge -= 5.0
+        sheet = fitz.Rect(sheet.x0, sheet.y0, max(sheet.x1, edge + 1.0), sheet.y1)
+        _CLIP[0] = sheet
+        score_size = max(10.0, min(pitch * 0.72, 20.0 * _page_k(page)))
+        note_size = max(9.0, min(pitch * 0.58, 14.0 * _page_k(page)))
+        mark_size = max(12.0, min(pitch * 0.9, 24.0 * _page_k(page)))
+
+        used: set[str] = set()
+        for v, score, row in sorted(marks, key=lambda t: rows[t[2]].y0 if t[2] in rows else 0.0):
+            rect = rows.get(row)
+            if rect is None or row in used:
+                continue          # two questions on one row: normal placement decides
+            used.add(row)
+            q_no = v.get("question_number")
+            rng = _hand_rng("list-row", q_no, page_no, row)
+            mid = row_middle(rect)
+            band = fitz.Rect(rect.x0, mid - pitch * 0.45, sheet.x1, mid + pitch * 0.45)
+            ink_band = fitz.Rect(rect.x0, mid - pitch * 0.35, rect.x1, mid + pitch * 0.35)
+            words_end = _words_end(imap, ink_band, pitch * 1.5)
+            box_end = ends.get(row, rect.x1)
+            if words_end is not None and words_end < box_end - pitch * 2.0:
+                # Thin ink on a scan breaks up into gaps: a tick then landed
+                # after the first word of a line. The box says the line goes
+                # on, so look across a wider gap before believing it stops.
+                words_end = _words_end(imap, ink_band, pitch * 4.0) or words_end
+            row_text = str(row_texts.get(row) or "")
+            if words_end is not None and words_end - rect.x0 < len(row_text) * pitch * 0.2 <= rect.width:
+                # Still far too short for the words the row holds: very thin ink.
+                words_end = box_end
+            # A stray stroke left of the row can stop the measure before the
+            # words begin; the box then says more than the ink does.
+            words_end = (min(words_end, box_end + pitch)
+                         if words_end is not None and words_end > rect.x0 else box_end)
+            # Anything already on this row, the circled total at the top of page one.
+            on_row = [o for o in placed if o.intersects(band)]
+
+            text = _latin1(str(score.get("text") or "").strip())
+            if not text:
+                continue
+            width = _pen_text_width(text, score_size)
+            score_x = edge - width
+            base_y = mid + score_size * 0.35
+            top, foot = base_y - score_size * 0.85, base_y + score_size * 0.35
+
+            def score_box_at(left: float) -> Any:
+                return fitz.Rect(left - 1.0, top, left + width + 1.0, foot)
+
+            def clashes(box: Any) -> list:
+                # Inset: rows a little closer than the page's pitch may touch
+                # the descenders of the mark above without reading as one mark.
+                inner = fitz.Rect(box.x0, box.y0 + 2.0, box.x1, box.y1 - 2.0)
+                return [o for o in on_row if inner.intersects(o)]
+
+            hits = clashes(score_box_at(score_x))
+            if hits:
+                # The circled total sits over the column on page one's first
+                # rows: the mark goes just left of it, on the same line.
+                score_x = min(o.x0 for o in hits) - width - 3.0
+                hits = clashes(score_box_at(score_x))
+            score_box = score_box_at(score_x)
+            room = score_x - 3.0
+            if score_x <= words_end + 2.0:
+                # Writing to the paper's edge: half a line down or up, in the
+                # column, wherever that gap is really empty.
+                column_x = edge - width
+                for dy in (pitch * 0.5, -pitch * 0.5):
+                    shifted = fitz.Rect(column_x - 1.0, top + dy, column_x + width + 1.0, foot + dy)
+                    inner = fitz.Rect(shifted.x0, shifted.y0 + 2.0, shifted.x1, shifted.y1 - 2.0)
+                    if _ink_under(imap, shifted) <= 0.05 and not any(inner.intersects(o) for o in placed):
+                        score_x, score_box, base_y, hits = column_x, shifted, base_y + dy, []
+                        break
+            # A score still in the column stays there even on the end of a full
+            # line: sent to the normal placement it floated into the left margin
+            # beside other answers. Only one pushed left of the circled total,
+            # into the writing, goes there.
+            if not hits and (score_x > words_end + 2.0 or score_box.x0 >= edge - width - 2.0):
+                _pen_text(page, fitz.Point(score_x, base_y), text, score_size, _ps.colour(_NOTE_TEXT), rng,
+                          slant=rng.uniform(-2.0, 2.0), max_x=sheet.x1 - 1.0)
+                placed.append(score_box)
+                done.add(id(score))
+                scores.add(q_no)
+            room = min(room, score_x - 3.0) if score_x > words_end + 2.0 else sheet.x1 - 2.0
+
+            x = words_end + rng.uniform(5.0, 9.0)
+            all_marks = [a for a in v.get("annotations") or []
+                         if (a.get("style") or "").lower() in ("tick", "cross")]
+            mark = all_marks[0] if all_marks else None
+            if str(v.get("question_id")) in objective:
+                # One answer, one mark, on this row. Enforcement can leave a
+                # verdict with only its score (a score and no tick read as an
+                # unchecked answer), and a grader's second tick on the answer's
+                # first line landed through the writing.
+                for extra in all_marks[1:]:
+                    done.add(id(extra))
+                if mark is None and not v.get("annotations_edited"):
+                    mark = {"style": "tick" if float(v.get("marks_awarded") or 0) > 0 else "cross"}
+            if mark is not None:
+                style = (mark.get("style") or "").lower()
+                cy = mid - mark_size / 2.0 + rng.uniform(-1.0, 1.0)
+                if x + mark_size > room:
+                    # Writing to the paper's edge: over the end of the last word
+                    # and a little high, not across a question number in the margin.
+                    x = room - mark_size
+                    cy -= pitch * 0.3
+                in_way = [o for o in placed if fitz.Rect(x, mid - pitch * 0.3, x + mark_size,
+                                                         mid + pitch * 0.3).intersects(o)]
+                if in_way:
+                    # Only a mark from the row above reaches this far: step left
+                    # of it. The normal placement's answer to a full row is a
+                    # big mark in the margin, across the question number.
+                    x = min(o.x0 for o in in_way) - mark_size - 2.0
+                _draw_tick_or_cross(page, style, x, cy, mark_size, _ps.colour(_STYLE_COLOR.get(style, _HIGHLIGHT)),
+                                    rng, fitz.Rect(rect.x0, mid - pitch * 0.45, rect.x1, mid + pitch * 0.45), x, x)
+                done.add(id(mark))
+                x = max(x, words_end) + mark_size + 4.0
+
+            note_ann = next((a for a in v.get("annotations") or []
+                             if (a.get("style") or "").lower() == "margin_note" and a.get("text")), None)
+            # A note in another script needs the shaper the normal placement has.
+            if (note_ann is not None and not outside
+                    and not _needs_shaping(str(note_ann["text"]))):
+                limit = min([room] + [o.x0 for o in on_row if o.x0 > x])
+                note = _latin1(str(note_ann["text"])).strip()
+                # "Wrong option." says what the cross already says; the correct
+                # option is the part a row cannot do without.
+                short = re.sub(r"^\s*wrong (option|answer)\.?\s*", "", note, flags=re.I)
+                for words, size in ((note, note_size), (short, note_size), (short, 9.0)):
+                    width = _pen_text_width(words, size)
+                    if x + width <= limit:
+                        note_y = mid + size * 0.35
+                        _pen_text(page, fitz.Point(x, note_y), words, size, _ps.colour(_NOTE_TEXT), rng,
+                                  slant=rng.uniform(-1.5, 1.5), max_x=limit)
+                        placed.append(fitz.Rect(x, note_y - size * 0.85, x + width, note_y + size * 0.35))
+                        done.add(id(note_ann))
+                        break
+            placements[q_no] = (page_no, rect.y1, rect.x1)
+
+
 def _place_question_scores(doc: Any, placements: dict[int, tuple],
                            verdicts: list[dict[str, Any]],
                            paper: Optional[dict[str, Any]] = None,
@@ -4797,6 +5080,23 @@ def build_annotated_pdf(
         _INK_MAP[0] = None
 
     draw_total()
+
+    # Pages of one-line answers are laid out row by row first; only what does
+    # not fit its row goes through the placement below.
+    list_done, list_scores, list_placed = _draw_list_marks(
+        doc, verdicts, layout_map, order, dims, content, paper, ink_maps, paper_rows,
+        shade_by_page, occupied, line_h_by_page, outside)
+    scores_written |= list_scores
+    placements.update(list_placed)
+    drawn += len(list_done)
+    ordered = [va for va in ordered if id(va[1]) not in list_done]
+    if outside:
+        # The panel lists a question from where its marks are, drawn here or not.
+        for v_idx, v in enumerate(verdicts):
+            spot = list_placed.get(v.get("question_number"))
+            if spot is not None:
+                key = (spot[0], v_idx)
+                panel_anchor[key] = min(panel_anchor.get(key, spot[1]), spot[1])
 
     for verdict, ann in ordered:
         q_no = verdict.get("question_number")

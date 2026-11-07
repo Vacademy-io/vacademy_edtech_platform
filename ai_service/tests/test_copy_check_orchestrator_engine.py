@@ -599,3 +599,104 @@ def test_indian_scripts_are_read_with_the_language_check_model(env, monkeypatch)
     _run(_payload())
     assert env["vision_models"][0] == "strong-reader"
     assert "strong-reader" not in env["vision_models"][1:]
+
+
+def _mcq(qid, n, key_pos=1):
+    options = [{"text": "A. right"}, {"text": "B. other"}, {"text": "C. third"}, {"text": "D. fourth"}]
+    return {"question_id": qid, "question_text": f"Question {n}", "question_type": "MCQS", "max_marks": 1,
+            "paper_label": str(n), "options": options, "correct_answer": f"Option {key_pos}: A. right"}
+
+
+def _list_copy(env, monkeypatch):
+    """Eight numbered one-line answers; the grader puts q5 on q4's row."""
+    from ai_service.app.services.copy_check import answer_language
+
+    async def no_samples(*a, **k):
+        return {}
+
+    async def no_detect(*a, **k):
+        return answer_language.Detected("", 0.0)
+
+    monkeypatch.setattr(answer_language, "sample_images", no_samples)
+    monkeypatch.setattr(answer_language, "detect", no_detect)
+    env["layout"] = {"pdf_url": "u", "pages": [{"page_id": "p1", "lines": [
+        {"line_id": f"p1_r{i}", "text": f"{i} A. right"} for i in range(1, 9)]}]}
+    env["grades"] = {f"q{i}": {"marks_awarded": 1, "extracted_answer": f"{i} A. right",
+                               "answer_rows": [f"p1_r{i}", f"p1_r{i}"]} for i in range(1, 9)}
+    return [_mcq(f"q{i}", i) for i in range(1, 9)]
+
+
+def test_structure_second_ask_takes_the_right_row(env, monkeypatch):
+    questions = _list_copy(env, monkeypatch)
+    wrong = {"marks_awarded": 0, "extracted_answer": "4 B. other", "answer_rows": ["p1_r4", "p1_r4"]}
+    right = env["grades"]["q5"]
+    answers = iter([wrong, right])
+    original = env["grades"]
+
+    class Grades(dict):
+        def __getitem__(self, key):
+            return next(answers) if key == "q5" else original[key]
+
+    env["grades"] = Grades(original)
+    assert _run(_payload(questions=questions)) == orchestrator.RUN_BILLED
+    assert env["graded"].count("q5") == 2
+    done = [p for name, p in env["posts"] if name == "question"]
+    q5 = next(p for p in done if p.get("question_id") == "q5")
+    assert q5["marks_awarded"] == 1
+
+
+def test_structure_pins_a_verdict_the_grader_keeps_misplacing(env, monkeypatch):
+    questions = _list_copy(env, monkeypatch)
+    env["grades"]["q5"] = {"marks_awarded": 0, "extracted_answer": "4 B. other", "answer_rows": ["p1_r4", "p1_r4"]}
+    assert _run(_payload(questions=questions)) == orchestrator.RUN_BILLED
+    assert env["graded"].count("q5") == 2
+    rendered = next(v for v in env["rendered"] if v["question_id"] == "q5")
+    assert rendered["extracted_answer"] == "5 A. right"
+    assert rendered["marks_awarded"] == 1
+    # Java's row ends up saying what the copy says.
+    last = [p for name, p in env["posts"] if name == "question" and p.get("question_id") == "q5"][-1]
+    assert last["marks_awarded"] == 1 and last["extracted_answer"] == "5 A. right"
+
+
+def test_a_failed_move_to_the_row_leaves_the_graders_verdict(env, monkeypatch):
+    questions = _list_copy(env, monkeypatch)
+    env["grades"]["q5"] = {"marks_awarded": 0, "extracted_answer": "4 B. other", "answer_rows": ["p1_r4", "p1_r4"]}
+
+    def boom(*a, **k):
+        raise ValueError("boom")
+
+    monkeypatch.setattr(orchestrator.copy_structure, "pin_to_rows", boom)
+    assert _run(_payload(questions=questions)) == orchestrator.RUN_BILLED
+    rendered = next(v for v in env["rendered"] if v["question_id"] == "q5")
+    assert rendered["extracted_answer"] == "4 B. other"
+
+
+def test_structure_is_dropped_when_the_grader_disagrees_with_most_of_it(env, monkeypatch):
+    _list_copy(env, monkeypatch)
+    n = 14
+    env["layout"] = {"pdf_url": "u", "pages": [{"page_id": "p1", "lines": [
+        {"line_id": f"p1_r{i}", "text": f"{i} A. right"} for i in range(1, n + 1)]}]}
+    env["grades"] = {f"q{i}": {"marks_awarded": 1, "extracted_answer": f"{i} A. right",
+                               "answer_rows": [f"p1_r{n + 1 - i}", f"p1_r{n + 1 - i}"]} for i in range(1, n + 1)}
+    questions = [_mcq(f"q{i}", i) for i in range(1, n + 1)]
+    assert _run(_payload(questions=questions)) == orchestrator.RUN_BILLED
+    # The first answers are asked twice; once it is doubted, nothing more is.
+    assert env["graded"].count("q1") == 2
+    assert env["graded"].count(f"q{n}") == 1
+    # A structure the grader outvoted has changed nothing: every verdict is the
+    # grader's own, and a teacher's re-draw will not go by its rows either.
+    assert all(v["extracted_answer"].endswith("A. right") and v.get("confidence") != 0.4 for v in env["rendered"])
+    q1 = next(v for v in env["rendered"] if v["question_id"] == "q1")
+    assert q1["answer_rows"] == [f"p1_r{n}", f"p1_r{n}"]
+
+
+def test_written_paper_never_takes_the_structure_path(env):
+    assert _run(_payload()) == orchestrator.RUN_BILLED
+    assert env["graded"] == ["q1", "q2", "q3"]
+
+
+def test_api_copy_never_takes_the_structure_path(env, monkeypatch):
+    questions = _list_copy(env, monkeypatch)
+    env["grades"]["q5"] = {"marks_awarded": 0, "extracted_answer": "4 B. other", "answer_rows": ["p1_r4", "p1_r4"]}
+    _run(_payload(questions=questions, billing_actor="apikey:key-1", page_count=1))
+    assert env["graded"].count("q5") == 1
