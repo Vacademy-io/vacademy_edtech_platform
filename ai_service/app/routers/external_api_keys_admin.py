@@ -20,6 +20,7 @@ from sqlalchemy.orm import Session
 from ..core.security import get_current_user
 from ..db import db_dependency
 from ..schemas.auth import CustomUserDetails
+from ..services import external_api_alerts as alerts
 from ..services import external_api_keys as keys
 from ..services import vendor_balances as balances
 from ..services.external_api_log import AUTO_CAPTURE_SETTING
@@ -203,6 +204,102 @@ def vendor_balances(
     """Each key goes only to its own vendor. Cached per replica; see services/vendor_balances.py."""
     _require_super_admin(current_user)
     return {"balances": balances.balance_cache.get(refresh=refresh)}
+
+
+class AlertSettingsUpdate(BaseModel):
+    emails: str = Field("", max_length=1000)
+    consecutive_failures: int = Field(..., ge=2, le=50)
+    repeat_hours: int = Field(..., ge=1, le=168)
+
+
+class AlertMute(BaseModel):
+    vendor: str = Field(..., max_length=255)
+    key_hint: str = Field(..., max_length=16)
+    muted: bool
+
+
+@router.get("/alerts", summary="APIs out of credits or failing, and who gets told")
+def api_alerts(
+    db: Session = Depends(db_dependency),
+    current_user: CustomUserDetails = Depends(get_current_user),
+):
+    _require_super_admin(current_user)
+    response: Dict[str, Any] = {
+        "emails": get_platform_setting(alerts.EMAILS_SETTING, default="", db=db),
+        "consecutive_failures": get_platform_setting(alerts.THRESHOLD_SETTING, db=db),
+        "repeat_hours": get_platform_setting(alerts.REPEAT_SETTING, db=db),
+        "alerts": [],
+        "tables_ready": False,
+    }
+    # Created by admin_core's Flyway, which may deploy after this service.
+    if not db.execute(text("SELECT to_regclass('external_api_alert') IS NOT NULL")).scalar():
+        return response
+    details = keys.parse_details(get_platform_setting(keys.DETAILS_SETTING, default="{}", db=db))
+    rows = db.execute(text("""
+        SELECT vendor, key_hint, kind, is_open, muted, opened_at, resolved_at, last_failed_at, last_notified_at,
+               consecutive_failures, last_http_status, last_error
+        FROM external_api_alert
+        WHERE is_open OR muted OR resolved_at > now() - interval '7 days'
+        ORDER BY is_open DESC, COALESCE(resolved_at, opened_at) DESC
+        LIMIT 100
+    """)).mappings().all()
+    response["alerts"] = [{**row, "account": alerts.account_for(details, row["key_hint"])} for row in rows]
+    response["tables_ready"] = True
+    return response
+
+
+@router.put("/alerts/settings", summary="Save who gets API alerts and when")
+def save_alert_settings(
+    body: AlertSettingsUpdate,
+    db: Session = Depends(db_dependency),
+    current_user: CustomUserDetails = Depends(get_current_user),
+):
+    _require_super_admin(current_user)
+    invalid = alerts.invalid_emails(body.emails)
+    if invalid:
+        raise HTTPException(status_code=422, detail=f"Not a valid email address: {invalid[0]}")
+    if body.emails.count(",") >= alerts.MAX_RECIPIENTS:
+        raise HTTPException(status_code=422, detail=f"At most {alerts.MAX_RECIPIENTS} addresses")
+    emails = alerts.parse_emails(body.emails)
+    set_platform_setting(db, alerts.EMAILS_SETTING, ", ".join(emails), updated_by=current_user.user_id)
+    set_platform_setting(db, alerts.THRESHOLD_SETTING, body.consecutive_failures, updated_by=current_user.user_id)
+    set_platform_setting(db, alerts.REPEAT_SETTING, body.repeat_hours, updated_by=current_user.user_id)
+    logger.info("External API alert settings saved by %s", current_user.user_id)
+    return {"emails": ", ".join(emails)}
+
+
+@router.post("/alerts/test", summary="Send a test alert to the saved addresses")
+async def test_alert_email(current_user: CustomUserDetails = Depends(get_current_user)):
+    _require_super_admin(current_user)
+    emails = alerts.parse_emails(get_platform_setting(alerts.EMAILS_SETTING, default=""))
+    if not emails:
+        raise HTTPException(status_code=422, detail="Save at least one email address first")
+    sent = await alerts.send_email(
+        emails,
+        "API alert: test",
+        "<p>This is a test from the health dashboard. API alerts will arrive at this address.</p>",
+    )
+    if not sent:
+        raise HTTPException(status_code=502, detail="The notification service did not accept the email")
+    return {"sent_to": emails}
+
+
+@router.put("/alerts/mute", summary="Stop or restart emails about one key")
+def mute_alert(
+    body: AlertMute,
+    db: Session = Depends(db_dependency),
+    current_user: CustomUserDetails = Depends(get_current_user),
+):
+    _require_super_admin(current_user)
+    result = db.execute(
+        text("UPDATE external_api_alert SET muted = :muted WHERE vendor = :vendor AND key_hint = :key_hint"),
+        body.model_dump(),
+    )
+    if not result.rowcount:
+        raise HTTPException(status_code=404, detail="No alert for that key")
+    db.commit()
+    logger.info("External API alert for %s %s: muted=%s by %s", body.vendor, body.key_hint, body.muted, current_user.user_id)
+    return {"muted": body.muted}
 
 
 @router.post("/key-accounts/openrouter-check", summary="Ask OpenRouter who created one of our keys")

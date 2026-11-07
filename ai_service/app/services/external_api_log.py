@@ -125,12 +125,14 @@ def record_external_call(
     credits: float = 1,
     source_service: str = "ai",
     automatic: bool = False,
+    hint: Optional[str] = None,
 ) -> bool:
     """Queue one row. Returns True when queued. Never raises and never blocks on I/O.
 
     This is the one call a new integration needs: its vendor registers itself and appears
     on the dashboard. `credential` is the key's name in external_apis.key_details, which
     prices the row. `automatic` rows (httpx_capture) are dropped unless that capture is on.
+    `hint` is a ready-made key_hint, for a caller that should not hand the key on.
     """
     global _pending
     try:
@@ -141,7 +143,7 @@ def record_external_call(
             "status": status,
             "http_status": http_status,
             "duration_ms": duration_ms,
-            "key_hint": key_hint(api_key),
+            "key_hint": hint or key_hint(api_key),
             "institute_id": institute_id,
             "run_id": run_id,
             "request": json.dumps(request_summary, default=str) if request_summary is not None else None,

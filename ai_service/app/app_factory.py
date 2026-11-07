@@ -193,6 +193,13 @@ async def _lifespan(app: FastAPI):
         start_billing_reconciliation()
     except Exception as exc:  # noqa: BLE001
         _logger.warning("copy-check billing reconciliation startup skipped: %s", exc)
+    # Third-party API alerts: every few minutes, emails the team about an API that is
+    # out of credits or keeps failing. One replica runs each pass (advisory lock).
+    try:
+        from .services.external_api_alerts import start_external_api_alerts
+        start_external_api_alerts()
+    except Exception as exc:  # noqa: BLE001
+        _logger.warning("external API alerts startup skipped: %s", exc)
     # Vacademy Assistant help corpus: keep the deployed pgvector corpus in sync
     # with app/data/help_knowledge.jsonl. Change-detected, so an unchanged corpus
     # is a no-op. Lazy import + background task so it can't block app boot.
