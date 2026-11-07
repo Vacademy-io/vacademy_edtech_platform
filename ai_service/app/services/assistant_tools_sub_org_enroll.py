@@ -68,7 +68,9 @@ ENROLL_SCHEMA: Dict[str, Any] = {
             "- enroll (same arguments + confirm_token): does it, learner by learner, and reports each one.\n"
             "csv: the filled-in sub_orgs(action='enroll_template') as CSV text (header row first). learners: "
             "[{learner_id} (an existing learner, from learners(action='find')) | a row with the template columns "
-            "{email, full_name, mobile_number?, …, custom_fields?: {label: value}}] "
+            "{email, full_name, mobile_number?, username?, password?, …, custom_fields?: {label: value}}] (username "
+            "defaults to the email and password is generated; an email that already has an account keeps its own "
+            "login, change it with learner_edit; never repeat a password in the chat) "
             f"(max {MAX_LEARNERS} in total). batch_ids: some of the sub-org's course batch_ids (default: all).\n"
             "options: {credentials_file: bool — a CSV of every added learner's username + password, delivered as a "
             "private download link valid 30 minutes — ASK the admin}. Login-details emails follow Course Settings "
@@ -158,8 +160,10 @@ def _new_user(row: Dict[str, Any], label: str, fields: List[Dict[str, Any]], pro
         problems.append(f"{label}: '{phone}' is not a valid mobile number.")
     if not name:
         problems.append(f"{label}: full_name is required.")
-    if val("username") and any(c.isspace() for c in val("username")):
-        problems.append(f"{label}: username cannot contain spaces.")
+    if val("username") and ld.username_problem(val("username"), email):
+        problems.append(f"{label}: {ld.username_problem(val('username'), email)}")
+    if val("password") and ld.password_problem(val("password")):
+        problems.append(f"{label}: {ld.password_problem(val('password'))}")
     gender = val("gender").upper()
     if gender and gender not in GENDERS:
         problems.append(f"{label}: gender must be MALE, FEMALE or OTHER.")
@@ -199,6 +203,8 @@ def _new_user(row: Dict[str, Any], label: str, fields: List[Dict[str, Any]], pro
     for key in _TEXT_KEYS:
         if val(key):
             user[key] = val(key)
+    if val("username"):
+        user["username_explicit"] = True  # the admin typed it: the institute's username strategy must not replace it
     if gender:
         user["gender"] = gender
     if dob:
@@ -269,6 +275,27 @@ async def _resolve_learners(ctx: ToolContext, args: Dict[str, Any]) -> Tuple[Lis
         if not r["existing"] and r["user"]["email"] in by_email:
             r["learner_id"] = by_email[r["user"]["email"]]["user_id"]
             r["matched"] = by_email[r["user"]["email"]].get("full_name")
+            # They keep the login they already have: do not send a typed one that will not be applied.
+            typed = [r["user"].pop(k, None) for k in ("username", "password", "username_explicit")]
+            r["login_ignored"] = any(typed)
+
+    # auth-service attaches a new-user request to whoever holds its username, so a taken one must stop here.
+    typed = [r for r in out if r["user"].get("username") and r["user"]["username"].lower() != r["user"]["email"]]
+    problems = []
+    first: Dict[str, str] = {}
+    for r in typed:
+        name = r["user"]["username"]
+        if name in first:
+            problems.append(f"{r['label']} repeats the username of {first[name]} ({name}).")
+        first.setdefault(name, r["label"])
+    taken = await ld.usernames_taken(ctx, [r["user"]["username"] for r in typed])
+    if taken is None:
+        return [], _err("username_check_failed", message=ld.USERNAME_CHECK_FAILED)
+    problems += [f"{r['label']}: username '{r['user']['username']}' already belongs to another account."
+                 for r in typed if r["user"]["username"] in taken]
+    if problems:
+        return [], _err("invalid_learners", problems=problems[:50], problem_count=len(problems),
+                        message="Nothing was checked against the sub-org yet — fix these rows and preview again.")
     return out, None
 
 
@@ -323,6 +350,12 @@ async def _build(ctx: ToolContext, args: Dict[str, Any]) -> Tuple[Optional[Dict[
         row = {"row": r["label"], "learner": r["user"].get("full_name"), "email": r["user"]["email"],
                "account": "existing learner" if r["learner_id"] else "new (or an account from elsewhere)",
                "add_to": [names[b] for b in into], **({"skipped": skipped} if skipped else {})}
+        if r["user"].get("username"):
+            row["username"] = r["user"]["username"]
+        if r["user"].get("password"):
+            row["password"] = "as given (hidden)"
+        if r.get("login_ignored"):
+            row["login"] = "already has an account here, so it keeps its own login (use learner_edit to change it)"
         rows.append(row)
         if not into:
             continue
@@ -448,6 +481,13 @@ async def _action_enroll(args: Dict[str, Any], ctx: ToolContext) -> Dict[str, An
     from .assistant_tools_learner_enroll import _ensure_passwords
     ids = [r["learner_id"] for r in added if r.get("learner_id")]
     logins, set_for = await _ensure_passwords(ctx, ids)
+    typed = {r["body"]["user"]["email"]: r["body"]["user"] for r in plan["requests"]}
+    not_applied = [{"learner": a["learner"], "email": a["email"]} for a in added
+                   if ld.login_not_applied(typed.get(a["email"]) or {}, logins.get(a.get("learner_id")))]
+    if not_applied:
+        out["login_not_applied"] = {"learners": not_applied[:_MAX_RESULT_ROWS],
+                                    "message": "These emails already had an account, so they kept their own login. "
+                                               "Change it with learner_edit if the admin wants the new one."}
     if set_for:
         out["passwords_set"] = (f"{len(set_for)} learner(s) had an account with no password (an existing Vacademy "
                                 "account), so a password was created for them" +

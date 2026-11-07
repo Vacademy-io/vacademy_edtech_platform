@@ -341,7 +341,7 @@ public class UserOperationService {
      * directly on the entity and tell nobody, which left every one of those
      * copies stale.
      */
-    public String updateUserPassword(UserCredentials userCredentials, CustomUserDetails userDetails) {
+    public String updateUserPassword(UserCredentials userCredentials, CustomUserDetails userDetails, boolean notify) {
         User before = userRepository.findById(userCredentials.getUserId()).orElse(null);
         String oldUsername = before != null ? before.getUsername() : null;
         String oldEmail = before != null ? before.getEmail() : null;
@@ -368,8 +368,26 @@ public class UserOperationService {
             // connected to (async, best-effort — never blocks/fails the password change).
             institutePolicyService.syncLmsPassword(user.getId(), user.getEmail(), user.getPassword());
         }
-        sendPasswordToUser(user);
+        if (notify) {
+            sendPasswordToUser(user);
+        }
         return "Password updated successfully";
+    }
+
+    /** The given usernames that already belong to an account (exact match, as uk_users_username). */
+    public List<String> findTakenUsernames(List<String> usernames) {
+        List<String> wanted = usernames == null ? List.of() : usernames.stream()
+                .filter(StringUtils::hasText)
+                .map(String::trim)
+                .distinct()
+                .toList();
+        if (wanted.isEmpty()) {
+            return List.of();
+        }
+        if (wanted.size() > 500) {
+            throw new VacademyException("At most 500 usernames can be checked at a time");
+        }
+        return userRepository.findExistingUsernames(wanted);
     }
 
     /**

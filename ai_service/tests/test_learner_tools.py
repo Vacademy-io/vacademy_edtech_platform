@@ -93,6 +93,7 @@ class Backend:
         self.phone_owners = []
         self.dry_run_outcome = "SUCCESS"
         self.workflows = []
+        self.taken = set()
 
     async def admin_core(self, ctx_, method, path, *, params=None, body=None, timeout=30.0):
         self.calls.append({"method": method, "path": path, "params": params or {}, "body": body})
@@ -118,6 +119,8 @@ class Backend:
 
     async def auth_call(self, ctx_, method, path, *, body=None, params=None, timeout=20.0):
         self.calls.append({"method": method, "path": path, "params": params or {}, "body": body})
+        if path.endswith("/usernames-taken"):
+            return [u for u in body if u in self.taken]
         return "Password updated"
 
     def rows(self, ctx_, sql, params):
@@ -315,7 +318,7 @@ async def test_csv_rows_are_validated_like_the_dashboard_and_nothing_is_sent_on_
     assert out["error"] == "invalid_learners"
     text = " ".join(out["problems"])
     for needle in ("row 2: 'bad-email' is not a valid email", "row 3: email is required",
-                   "row 4: full_name is required", "username cannot contain spaces", "payment_date '32/13/2025'",
+                   "row 4: full_name is required", "username must be 3-100 characters with no spaces", "payment_date '32/13/2025'",
                    "cf_shoe_size"):
         assert needle in text, needle
     assert not backend.assign_calls()
@@ -413,10 +416,40 @@ async def test_parent_only_edit_still_names_the_learner(backend):
     assert body["learner_extra_details"] == {"fathers_name": "Mr Rao"}
 
 
-@pytest.mark.parametrize("field", ["email", "username"])
-async def test_email_and_username_are_locked(backend, field):
-    out = await edit({"action": "preview", "learner_id": "u-sarthak", "changes": {field: "new@x.com"}})
+async def test_email_is_locked(backend):
+    out = await edit({"action": "preview", "learner_id": "u-sarthak", "changes": {"email": "new@x.com"}})
     assert out["error"] == "field_locked"
+
+
+async def test_username_and_password_are_set_silently_through_auth(backend):
+    args = {"learner_id": "u-sarthak", "username": "sarthak_new", "password": "S3cret-pass"}
+    out = await edit({"action": "preview", **args})
+    assert "S3cret-pass" not in json.dumps(out) and out["login_details_sent"] == "not sent"
+    assert {"field": "username", "from": "sarthak", "to": "sarthak_new"} in out["changes"]
+    done = await edit({"action": "apply", **args, "confirm_token": out["confirm_token"]})
+    assert done["saved"] == ["username", "password"] and not _profile_calls(backend)
+    pwd = next(c for c in backend.calls if c["path"].endswith("/update-password"))
+    assert pwd["params"] == {"notify": "false"}
+    assert pwd["body"] == {"user_id": "u-sarthak", "username": "sarthak_new", "password": "S3cret-pass"}
+    assert not [c for c in backend.calls if c["path"].endswith("/learner-credentials/v1/send")]
+
+
+async def test_username_in_changes_works_and_bad_ones_are_refused(backend):
+    out = await edit({"action": "preview", "learner_id": "u-sarthak", "changes": {"username": "sarthak_2"}})
+    assert out["changes"] == [{"field": "username", "from": "sarthak", "to": "sarthak_2"}]
+    backend.taken = {"someone"}
+    for name, needle in (("someone", "another account"), ("a b", "no spaces"), ("x@y.com", "'@'")):
+        out = await edit({"action": "preview", "learner_id": "u-sarthak", "username": name})
+        assert needle in " ".join(out["problems"]), name
+    assert (await edit({"action": "preview", "learner_id": "u-sarthak", "username": "sarthak"}))["error"] == "no_changes"
+
+
+async def test_new_rows_with_a_taken_username_are_refused(backend):
+    backend.taken = {"taken_name"}
+    out = await enroll({"action": "preview", "courses": [{"course_id": "course-1"}],
+                        "learners": [{"email": "new@x.com", "full_name": "New", "username": "taken_name"}]})
+    assert out["error"] == "invalid_learners" and "another account" in out["problems"][0]
+    assert not backend.assign_calls()
 
 
 async def test_password_goes_through_auth_and_is_never_echoed(backend):

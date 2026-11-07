@@ -91,6 +91,7 @@ class Backend:
         self.fields = [{"field_id": "cf-city", "label": "Home City", "type": "text", "required": False}]
         self.workflows = []
         self.fail_emails = set()
+        self.taken = set()
 
     async def admin_core(self, ctx_, method, path, *, params=None, body=None, timeout=30.0):
         self.calls.append({"method": method, "path": path, "params": params or {}, "body": body})
@@ -120,6 +121,8 @@ class Backend:
             return [{"name": n} for n in self.roles + ["Guest"]]
         if path.endswith("/users-credential"):
             return [{"user_id": i, "username": i, "password": "pw"} for i in body]
+        if path.endswith("/usernames-taken"):
+            return [u for u in body if u in self.taken]
         return "ok"
 
     def writes(self, path):
@@ -316,6 +319,31 @@ async def test_add_admin_is_root_admin_on_every_course_and_only_once(backend):
                     "status": "ACTIVE", "comma_separated_org_roles": "ROOT_ADMIN"}
 
 
+async def test_add_admin_takes_a_typed_login_and_hides_the_password(backend):
+    backend.admins["so-1"] = []
+    args = {"change": "add_admin", "sub_org_id": "so-1",
+            "admin": {"full_name": "Neha", "email": "neha@x.com", "username": "admin_neha", "password": "admin_neha"}}
+    prev = await edit({"action": "preview", **args})
+    assert prev["will_do"]["login"] == {"username": "admin_neha", "password": "as given (hidden)"}
+    assert "confirm_token" in prev and '"password": "admin_neha"' not in json.dumps(prev)
+    done = await edit({"action": "apply", **args, "confirm_token": prev["confirm_token"]})
+    user = backend.writes(sd.ADD_MEMBER_PATH)[0]["body"]["user"]
+    assert user["username"] == "admin_neha" and user["password"] == "admin_neha" and user["username_explicit"] is True
+    # The fake account answers with a different login: an existing account keeps its own, and the tool says so.
+    assert "login_not_applied" in done
+
+
+async def test_add_admin_refuses_a_taken_or_bad_username(backend):
+    backend.admins["so-1"] = []
+    backend.taken = {"stranger"}
+    base = {"action": "preview", "change": "add_admin", "sub_org_id": "so-1"}
+    out = await edit({**base, "admin": {"full_name": "Neha", "email": "neha@x.com", "username": "stranger"}})
+    assert out["error"] == "username_taken"
+    out = await edit({**base, "admin": {"full_name": "Neha", "email": "neha@x.com", "username": "a b", "password": "x"}})
+    assert out["error"] == "invalid_admin" and len(out["problems"]) == 2
+    assert not backend.writes(sd.ADD_MEMBER_PATH)
+
+
 # ── sub_org_enroll ───────────────────────────────────────────────────────
 CSV = ("email,full_name,mobile_number,cf_home_city\n"
        "asha@x.com,Asha Verma,+91 91234 56789,Delhi\n")
@@ -339,6 +367,28 @@ async def test_csv_preview_then_enroll_adds_learners_only(backend):
                     "package_session_ids": ["ps-1", "ps-2"], "sub_org_id": "so-1", "institute_id": "inst-1",
                     "status": "ACTIVE", "comma_separated_org_roles": "LEARNER",
                     "custom_field_values": [{"custom_field_id": "cf-city", "value": "Delhi"}]}
+
+
+async def test_learner_rows_can_set_a_login_and_taken_usernames_stop_the_upload(backend):
+    csv_text = "email,full_name,username,password\nasha@x.com,Asha,asha_01,asha_pass\n"
+    prev = await enroll({"action": "preview", "sub_org_id": "so-1", "csv": csv_text})
+    assert prev["learners"][0]["username"] == "asha_01" and prev["learners"][0]["password"] == "as given (hidden)"
+    assert "asha_pass" not in json.dumps(prev)
+    await enroll({"action": "enroll", "sub_org_id": "so-1", "csv": csv_text, "confirm_token": prev["confirm_token"]})
+    user = backend.writes(sd.ADD_MEMBER_PATH)[0]["body"]["user"]
+    assert user["username"] == "asha_01" and user["password"] == "asha_pass" and user["username_explicit"] is True
+    backend.taken = {"asha_01"}
+    out = await enroll({"action": "preview", "sub_org_id": "so-1", "csv": csv_text})
+    assert out["error"] == "invalid_learners" and "another account" in out["problems"][0]
+
+
+async def test_a_learner_who_already_exists_keeps_their_login(backend):
+    csv_text = "email,full_name,username,password\nold@x.com,Old Learner,new_name,new_pass\n"
+    prev = await enroll({"action": "preview", "sub_org_id": "so-1", "csv": csv_text})
+    assert "keeps its own login" in prev["learners"][0]["login"]
+    await enroll({"action": "enroll", "sub_org_id": "so-1", "csv": csv_text, "confirm_token": prev["confirm_token"]})
+    user = backend.writes(sd.ADD_MEMBER_PATH)[0]["body"]["user"]
+    assert "username" not in user and "password" not in user
 
 
 async def test_enroll_needs_the_token_and_refuses_strangers(backend):

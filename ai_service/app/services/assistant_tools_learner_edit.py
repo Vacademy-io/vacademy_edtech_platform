@@ -12,15 +12,17 @@ Safety (MCP has no confirm card):
   confirm_token signed over the exact change and the learner's current values;
   ``apply`` refuses without a matching, unexpired token (so a change made in
   the dashboard in between forces a fresh preview);
-* email and username are never changed (they are how learners log in and what
-  integrations match on); the username is never even sent — a non-blank
-  username makes auth-service rename the login;
+* the email is never changed; the username is only ever sent to update-password (a
+  non-blank username in the profile call would rename the login outside the preview),
+  and a username someone else holds is refused at preview;
 * the target must be a learner of THIS institute — admin-core's
   /learner/info/v1/profile does not check that itself;
 * only the changed fields are sent; admin-core and auth-service leave blank
   fields alone, which also means a field cannot be cleared from here;
-* the password goes through auth-service's own update-password with the
-  caller's token, so its access guard applies; it is never echoed back.
+* username and password go through auth-service's own update-password with the
+  caller's token, so its access guard applies and a rename reaches every copy of the
+  username; the password is never echoed back, and nothing is mailed unless
+  send_credentials_via asks for it (notify=false).
 """
 from __future__ import annotations
 
@@ -42,7 +44,7 @@ PROFILE_PATH = "/admin-core-service/learner/info/v1/profile"
 PASSWORD_PATH = "/auth-service/v1/user-operation/update-password"
 CREDENTIALS_PATH = "/admin-core-service/learner-credentials/v1/send"
 
-LOCKED_FIELDS = ("email", "username")
+LOCKED_FIELDS = ("email",)
 #: field → where it goes in the /profile request.
 USER_FIELDS = ("full_name", "mobile_number", "gender", "date_of_birth", "address_line", "city", "region", "pin_code")
 EXTRA_FIELDS = ("fathers_name", "mothers_name", "parents_mobile_number", "parents_email",
@@ -58,19 +60,21 @@ EDIT_SCHEMA: Dict[str, Any] = {
     "function": {
         "name": EDIT_TOOL_NAME,
         "description": (
-            "Change a learner's details: name, mobile number, password, gender, date of birth, address, city, "
-            "state, PIN code, parents' names / phones / emails, school, and the institute's custom fields. Email "
-            "and username can never be changed here. First find the learner with learners(action='find') — when "
+            "Change a learner's details: name, mobile number, username, password, gender, date of birth, address, "
+            "city, state, PIN code, parents' names / phones / emails, school, and the institute's custom fields. Also "
+            "sets the login of a sub-org admin (their learner_id is in sub_orgs(action='get')). Email can never be "
+            "changed here. First find the learner with learners(action='find') — when "
             "several match, show them (name, email, phone, courses) and ask which one; never guess. Then:\n"
-            "- preview (learner_id, changes?: {field: new value}, password?, custom_fields?: {label or field_id: "
+            "- preview (learner_id, changes?: {field: new value}, username?, password?, custom_fields?: {label or field_id: "
             "value}): checks the change and shows each field's current → new value. Nothing is saved. Returns a "
             "confirm_token (valid 15 min).\n"
-            "- apply (same arguments + confirm_token, send_credentials_via?: [EMAIL, WHATSAPP] — after a password "
-            "change, sends the learner their login details; ask the admin): saves it.\n"
+            "- apply (same arguments + confirm_token, send_credentials_via?: [EMAIL, WHATSAPP] — after a username or "
+            "password change, sends the learner their login details; ask the admin. Without it nothing is sent): "
+            "saves it.\n"
             f"changes keys: {', '.join(EDITABLE_FIELDS)}. gender: MALE | FEMALE | OTHER. date_of_birth: YYYY-MM-DD. "
-            "Phone numbers with country code. A field cannot be blanked from here. The password is set to exactly "
-            "what the admin gives (min 6 characters, no spaces) — never make one up unless asked, and do not repeat "
-            "it back in the chat."
+            "Phone numbers with country code. A field cannot be blanked from here. The username (3-100 characters, "
+            "no spaces, no '@', must be free) and password are set to exactly what the admin gives (password: min 6 "
+            "characters, no spaces) — never make one up unless asked, and do not repeat the password back in the chat."
         ),
         "parameters": {
             "type": "object",
@@ -80,6 +84,7 @@ EDIT_SCHEMA: Dict[str, Any] = {
                 # would point every edit at the admin's own account.
                 "learner_id": {"type": "string", "description": "The learner's learner_id (from learners(action='find'))."},
                 "changes": {"type": "object", "description": "{field: new value} — only the fields to change."},
+                "username": {"type": "string", "description": "A new login username."},
                 "password": {"type": "string", "description": "A new login password."},
                 "custom_fields": {"type": "object", "description": "{label or field_id: value}."},
                 "send_credentials_via": {"type": "array", "items": {"type": "string", "enum": list(_CHANNELS)}},
@@ -132,13 +137,16 @@ async def _build(ctx: ToolContext, args: Dict[str, Any]) -> Tuple[Optional[Dict[
     if "password" in raw and not args.get("password"):
         args = {**args, "password": raw.pop("password")}
     raw.pop("password", None)
+    if "username" in raw and not args.get("username"):
+        args = {**args, "username": raw.pop("username")}
+    raw.pop("username", None)
 
     problems: List[str] = []
     locked = [f for f in LOCKED_FIELDS if f in raw]
     if locked:
         return None, {}, _err("field_locked", fields=locked,
-                              message="Email and username cannot be changed from here — they are how the learner "
-                                      "logs in. The admin can change them in the dashboard.")
+                              message="The email cannot be changed from here — it is how the learner logs in. The "
+                                      "admin can change it in the dashboard.")
     unknown = [k for k in raw if k not in EDITABLE_FIELDS]
     if unknown:
         problems.append(f"Unknown field(s): {', '.join(sorted(unknown))}. Editable: {', '.join(EDITABLE_FIELDS)}.")
@@ -193,9 +201,26 @@ async def _build(ctx: ToolContext, args: Dict[str, Any]) -> Tuple[Optional[Dict[
     password = args.get("password")
     if password is not None:
         password = str(password)
-        if len(password) < 6 or len(password) > 64 or any(c.isspace() for c in password):
-            problems.append("password must be 6-64 characters with no spaces.")
+        bad_password = ld.password_problem(password)
+        if bad_password:
+            problems.append(bad_password)
             password = None
+
+    username = str(args.get("username") or "").strip() or None
+    if username == learner.get("username"):
+        username = None
+    if username:
+        bad_username = ld.username_problem(username)
+        taken = None if bad_username else await ld.usernames_taken(ctx, [username])
+        if bad_username:
+            problems.append(bad_username)
+            username = None
+        elif taken is None:
+            problems.append(ld.USERNAME_CHECK_FAILED)
+            username = None
+        elif username in taken:
+            problems.append(f"username '{username}' already belongs to another account — pick a different one.")
+            username = None
 
     custom: List[Dict[str, str]] = []
     cf_report: List[Dict[str, Any]] = []
@@ -231,23 +256,28 @@ async def _build(ctx: ToolContext, args: Dict[str, Any]) -> Tuple[Optional[Dict[
     bad = [c for c in channels if c not in _CHANNELS]
     if bad:
         problems.append(f"send_credentials_via takes EMAIL and/or WHATSAPP (not {', '.join(bad)}).")
-    if channels and not password:
-        problems.append("send_credentials_via is only for a password change.")
+    if channels and not password and not username:
+        problems.append("send_credentials_via is only for a username or password change.")
 
     if problems:
         return None, {}, _err("invalid_change", problems=problems, message="Nothing was saved.")
-    if not changes and not custom and not password:
+    if not changes and not custom and not password and not username:
         return None, {}, _err("no_changes", message="Those values are already the learner's current details.")
 
     change = {"user_id": learner["user_id"], "changes": changes, "custom_fields": custom,
+              "username": username, "current_username": learner.get("username") if username else None,
               "password_sha": hashlib.sha256(password.encode()).hexdigest() if password else None,
               "send_credentials_via": sorted(set(channels)),
               # The current values are signed too: an edit made elsewhere after the preview voids the token.
               "current": {f: learner.get(f) for f in changes}}
     rows = [{"field": f, "from": learner.get(f), "to": v} for f, v in changes.items()] + cf_report
+    if username:
+        rows.append({"field": "username", "from": learner.get("username"), "to": username})
+        warnings.append("The old username stops working as soon as this is applied.")
     if password:
         rows.append({"field": "password", "from": "(hidden)", "to": "(new password, hidden)"})
-    return change, {"learner": learner, "rows": rows, "warnings": warnings, "password": password}, None
+    return change, {"learner": learner, "rows": rows, "warnings": warnings, "password": password,
+                    "username": username}, None
 
 
 def _profile_request(change: Dict[str, Any]) -> Dict[str, Any]:
@@ -277,6 +307,7 @@ async def _action_preview(args: Dict[str, Any], ctx: ToolContext) -> Dict[str, A
         return problem
     return {"learner": _who(context["learner"]), "changes": context["rows"],
             "warnings": context["warnings"] or None,
+            "login_details_sent": change["send_credentials_via"] or "not sent",
             "confirm_token": ld.issue_token(ctx, EDIT_TOOL_NAME, change),
             "next": "Show the admin these changes (never the password itself) and ask them to confirm. On a clear "
                     "yes call learner_edit(action='apply') with the SAME arguments and this confirm_token."}
@@ -296,17 +327,18 @@ async def _action_apply(args: Dict[str, Any], ctx: ToolContext) -> Dict[str, Any
         if cbd.is_error(resp):
             failed.append({"what": "profile", "message": resp.get("message")})
         else:
-            saved += [r["field"] for r in context["rows"] if r["field"] != "password"]
-    if context["password"]:
-        resp = await ld.auth_call(ctx, "POST", PASSWORD_PATH,
-                                  body={"user_id": learner["user_id"], "password": context["password"]})
+            saved += [r["field"] for r in context["rows"] if r["field"] not in ("username", "password")]
+    login = {k: context[k] for k in ("username", "password") if context[k]}
+    if login:
+        resp = await ld.auth_call(ctx, "POST", PASSWORD_PATH, params={"notify": "false"},
+                                  body={"user_id": learner["user_id"], **login})
         if cbd.is_error(resp):
-            failed.append({"what": "password", "message": resp.get("message")})
+            failed.append({"what": " and ".join(login), "message": resp.get("message")})
         else:
-            saved.append("password")
+            saved += list(login)
     out: Dict[str, Any] = {"learner": _who(learner), "saved": saved, "failed": failed or None,
                            "done": not failed}
-    if "password" in saved and change["send_credentials_via"]:
+    if login and set(login) <= set(saved) and change["send_credentials_via"]:
         sent = await cbd.admin_core(ctx, "POST", CREDENTIALS_PATH, params={
             "instituteId": ctx.principal.institute_id, "userId": learner["user_id"],
             "channels": ",".join(change["send_credentials_via"])})

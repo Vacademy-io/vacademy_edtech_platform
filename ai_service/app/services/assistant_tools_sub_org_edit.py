@@ -64,8 +64,11 @@ EDIT_SCHEMA: Dict[str, Any] = {
             "several and the option is paid). Returns the sub-org and the admin's invite link.\n"
             "- update: sub_org_id + any of add_courses [{course_id, batch_id?}], member_count, validity_in_days, "
             "admin_roles, team_roles, admin_permissions. The preview shows before → after.\n"
-            "- add_admin: sub_org_id + admin {full_name, email, mobile_number?}: makes that person the sub-org's "
-            "admin on all its courses (an account is created when the email has none). Only when the sub-org has no "
+            "- add_admin: sub_org_id + admin {full_name, email, mobile_number?, username?, password?}: makes that "
+            "person the sub-org's admin on all its courses (an account is created when the email has none). username "
+            "defaults to the email and password is generated when not given; set them only to what the admin asks "
+            "for and never repeat the password in the chat. An email that already has an account keeps its own login "
+            "(change it with learner_edit, also for an admin who already exists). Only when the sub-org has no "
             "admin yet. Alternative: send the admin the invite link from sub_orgs(action='get')."
         ),
         "parameters": {
@@ -86,7 +89,8 @@ EDIT_SCHEMA: Dict[str, Any] = {
                 "team_roles": {"type": "array", "items": {"type": "string"}},
                 "admin_permissions": {"type": "array", "items": {"type": "string", "enum": list(sd.ADMIN_PERMISSIONS)}},
                 "vendor": {"type": "string", "description": "create: payment gateway name (when several)."},
-                "admin": {"type": "object", "description": "add_admin: {full_name, email, mobile_number?}"},
+                "admin": {"type": "object",
+                          "description": "add_admin: {full_name, email, mobile_number?, username?, password?}"},
                 "confirm_token": {"type": "string", "description": "apply: the token preview returned."},
             },
             "required": ["action", "change"],
@@ -412,6 +416,8 @@ async def _plan_add_admin(ctx: ToolContext, args: Dict[str, Any]) -> Tuple[Optio
     email = str(admin.get("email") or "").strip().lower()
     name = " ".join(str(admin.get("full_name") or "").split())
     phone = str(admin.get("mobile_number") or "").strip()
+    username = str(admin.get("username") or "").strip()
+    password = str(admin.get("password") or "")
     problems = []
     if not ld.valid_email(email):
         problems.append("admin.email must be a valid email (it is their login).")
@@ -419,6 +425,10 @@ async def _plan_add_admin(ctx: ToolContext, args: Dict[str, Any]) -> Tuple[Optio
         problems.append("admin.full_name is required.")
     if phone and not ld.valid_phone(phone):
         problems.append(f"'{phone}' is not a valid mobile number.")
+    if username and ld.username_problem(username, email):
+        problems.append("admin." + ld.username_problem(username, email))
+    if password and ld.password_problem(password):
+        problems.append("admin." + ld.password_problem(password))
     if problems:
         return None, _err("invalid_admin", problems=problems)
     existing = sd.admins(ctx, org["id"])
@@ -436,8 +446,18 @@ async def _plan_add_admin(ctx: ToolContext, args: Dict[str, Any]) -> Tuple[Optio
     if not roles:
         return None, _err("no_admin_roles", message="The sub-org has no admin roles set. Set admin_roles with "
                                                     "change='update' first.")
+    if username and username.lower() != email:
+        taken = await ld.usernames_taken(ctx, [username])
+        if taken is None:
+            return None, _err("username_check_failed", message=ld.USERNAME_CHECK_FAILED)
+        if username in taken:
+            # auth-service would attach this request to whoever holds the username: a stranger made admin.
+            return None, _err("username_taken", username=username,
+                              message="That username already belongs to another account. Ask for a different one.")
     body: Dict[str, Any] = {
         "user": {k: v for k, v in {"email": email, "full_name": name, "mobile_number": phone or None,
+                                   "username": username or None, "password": password or None,
+                                   "username_explicit": True if username else None,
                                    "roles": [str(roles[0])]}.items() if v},
         "package_session_ids": [c["batch_id"] for c in courses],
         "sub_org_id": org["id"],
@@ -450,12 +470,13 @@ async def _plan_add_admin(ctx: ToolContext, args: Dict[str, Any]) -> Tuple[Optio
     view = {
         "sub_org": org.get("name"), "admin": {"full_name": name, "email": email, **({"mobile_number": phone}
                                                                                    if phone else {})},
+        "login": {"username": username or email, "password": "as given (hidden)" if password else "generated"},
         "role": roles[0], "courses": [f"{c['course']} ({c['batch']})" for c in courses],
         "plan": {"payment_option": main.get("payment_option_name"), "payment_type": main.get("payment_type")},
         "emails": {"login_details_email": ("sent to them if this is a new account (Course Settings → "
                                            "'Send credentials' is on)" if toggles["send_credentials"]
                                            else "not sent (turned off in Course Settings)")},
-        "notes": ["An email that already has a Vacademy account is used as is (its name and phone are kept).",
+        "notes": ["An email that already has a Vacademy account is used as is (its name, phone and login are kept).",
                   "Payments for the admin's plan are recorded from the dashboard."],
     }
     named = sorted({n for names in automations.values() for n in names})
@@ -518,8 +539,14 @@ async def _action_apply(args: Dict[str, Any], ctx: ToolContext) -> Dict[str, Any
         user = data.get("user") if isinstance(data.get("user"), dict) else {}
         out.update(admin={"learner_id": user.get("id"), "email": user.get("email"), "username": user.get("username")},
                    message=data.get("message"),
-                   next="They sign in to the admin dashboard with this email. To resend their login details use the "
-                        "sub-org's 'Share credentials' in the dashboard.")
+                   next="They sign in to the admin dashboard with this username. To resend their login details use "
+                        "the sub-org's 'Share credentials' in the dashboard.")
+        requested = plan["body"]["user"]
+        if user.get("id") and (requested.get("username") or requested.get("password")):
+            logins = await ld.login_credentials(ctx, [user["id"]])
+            if ld.login_not_applied(requested, logins.get(user["id"])):
+                out["login_not_applied"] = ("This email already had an account, so it kept its own login. Change it "
+                                            "with learner_edit if the admin wants the new one.")
     return out
 
 
