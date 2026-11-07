@@ -63,6 +63,20 @@
         "upgrade": "Recharger"
     },
     "profile": {
+        "privacyPolicy": "Politique de confidentialité",
+        "delete": {
+            "title": "Supprimer le compte",
+            "hint": "Supprimez votre compte de cet établissement. Vous ne pourrez plus vous y connecter.",
+            "action": "Supprimer mon compte",
+            "confirmTitle": "Supprimer votre compte ?",
+            "confirmBody": "Vous perdrez l’accès à {{institute}} et serez déconnecté. Cette action ne peut pas être annulée depuis l’application.",
+            "confirmHelp": "Les copies et les résultats appartiennent à votre établissement et y restent. Pour supprimer tout l’établissement ou effacer vos données personnelles, écrivez à hello@evalezy.com.",
+            "cancel": "Garder mon compte",
+            "confirm": "Supprimer le compte",
+            "working": "Suppression…",
+            "done": "Votre compte a été supprimé",
+            "failed": "Impossible de supprimer votre compte. Veuillez réessayer."
+        },
         "view": "Voir le profil",
         "title": "Profil",
         "institute": "Établissement",
