@@ -15,9 +15,8 @@ Safety (MCP has no confirm card; add-member has no dry run and no access check):
   add_admin); additive only, nobody is removed;
 * the sub-org must be a child of this institute and the courses must be the sub-org's
   own; institute_id / sub_org_id / roles are set here, never taken from the model;
-* seats: admin-core only enforces the admin plan's member_count, which is empty for
-  sub-orgs on a shared option or CPO — the preview enforces the cap the admin set
-  (MEMBER_COUNT) per course and refuses an upload that would go over it;
+* seats: the preview enforces the same cap as admin-core (MEMBER_COUNT, else the admin
+  plan's member_count) per course and refuses an upload that would go over it;
 * a learner already ACTIVE in a course — in this sub-org or outside it — is skipped for
   that course (admin-core would otherwise give them a second active enrolment);
 * not one transaction: each learner commits on their own, so the result reports every

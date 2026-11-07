@@ -15,11 +15,9 @@ member endpoints these tools call (``/sub-org/v1/add-member``) check neither the
 caller nor that the sub-org belongs to the institute, so this scoping is the
 cross-tenant guard — same rule as learner_data.
 
-Seats: admin-core's own seat check reads ``payment_plan.member_count`` of the
-ROOT_ADMIN's plan, which is empty (unlimited) whenever the sub-org reuses a shared
-institute option or a CPO — i.e. every sub-org the dashboard creates — while the
-cap the admin typed lives in ``SUB_ORG_SETTING.MEMBER_COUNT``. The tools enforce
-the cap the admin sees: MEMBER_COUNT, else the admin plan's member_count. Usage is
+Seats: same rule as admin-core's ``SubOrgSeatCapResolver``: ``SUB_ORG_SETTING.MEMBER_COUNT``
+(the cap the admin typed), else the ROOT_ADMIN plan's ``member_count``. A shared option's
+plan says nothing about one sub-org, so the setting wins. Usage is
 counted exactly like admin-core (per batch, ACTIVE, ROOT_ADMIN excluded, stamped
 sub_org_id OR a user plan from one of the sub-org's invites).
 """

@@ -173,6 +173,9 @@ public class LearnerEnrollRequestService {
     private vacademy.io.admin_core_service.features.suborg.service.SubOrgSubscriptionService subOrgSubscriptionService;
 
     @Autowired
+    private vacademy.io.admin_core_service.features.suborg.service.SubOrgSeatCapResolver seatCapResolver;
+
+    @Autowired
     @Lazy
     private vacademy.io.admin_core_service.features.suborg.service.SubOrgPartnerOnboardingService subOrgPartnerOnboardingService;
 
@@ -504,7 +507,7 @@ public class LearnerEnrollRequestService {
         if (EnrollInviteTag.SUBORG_LEARNER.name().equals(enrollInvite.getTag())
                 && enrollInvite.getSubOrgId() != null) {
             for (String psId : enrollDTO.getPackageSessionIds()) {
-                validateSubOrgSeatLimit(enrollInvite.getSubOrgId(), psId);
+                validateSubOrgSeatLimit(enrollInvite.getSubOrgId(), enrollInvite.getInstituteId(), psId);
             }
         }
 
@@ -950,12 +953,12 @@ public class LearnerEnrollRequestService {
 
     /**
      * Validates seat limit for SUBORG_LEARNER enrollments.
-     * Finds ROOT_ADMIN's UserPlan → PaymentPlan.memberCount for the sub-org + PS.
+     * The cap comes from {@link vacademy.io.admin_core_service.features.suborg.service.SubOrgSeatCapResolver}.
      * Counts active learner members (excluding ROOT_ADMIN) and rejects if at
      * capacity.
      * Each PS is validated independently.
      */
-    private void validateSubOrgSeatLimit(String subOrgId, String packageSessionId) {
+    private void validateSubOrgSeatLimit(String subOrgId, String instituteId, String packageSessionId) {
         Optional<StudentSessionInstituteGroupMapping> rootAdminOpt = ssigmRepository
                 .findRootAdminMappingBySubOrgAndPackageSession(subOrgId, packageSessionId);
         if (rootAdminOpt.isEmpty() || rootAdminOpt.get().getUserPlanId() == null) {
@@ -969,7 +972,7 @@ public class LearnerEnrollRequestService {
             return;
         }
 
-        Integer memberCount = userPlanOpt.get().getPaymentPlan().getMemberCount();
+        Integer memberCount = seatCapResolver.resolve(subOrgId, instituteId, userPlanOpt.get().getPaymentPlan());
         if (memberCount == null) {
             return; // No limit set — unlimited
         }
