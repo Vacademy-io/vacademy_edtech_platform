@@ -116,6 +116,35 @@ public class LiveSessionRepositoryCustomImpl implements LiveSessionRepositoryCus
             parameters.put("visibilityAllowedUserIds", scope.bindableUserIds());
         }
 
+        // Teaches-this-class filter: the same effective rule as
+        // LiveSessionInstructorService, an ACTIVE instructor, else the creator.
+        List<String> instructorUserIds = request.getInstructorUserIds();
+        if (instructorUserIds != null) {
+            if (instructorUserIds.isEmpty()) {
+                // An empty IN list is a syntax error, and "nobody" must not read as "everybody".
+                conditions.add("1 = 0");
+            } else {
+                conditions.add("""
+                        (
+                            EXISTS (
+                                SELECT 1 FROM live_session_instructors i
+                                WHERE i.session_id = s.id
+                                  AND i.status = 'ACTIVE'
+                                  AND i.user_id IN :instructorUserIds
+                            )
+                            OR (
+                                s.created_by_user_id IN :instructorUserIds
+                                AND NOT EXISTS (
+                                    SELECT 1 FROM live_session_instructors i2
+                                    WHERE i2.session_id = s.id
+                                      AND i2.status = 'ACTIVE'
+                                )
+                            )
+                        )""");
+                parameters.put("instructorUserIds", instructorUserIds);
+            }
+        }
+
         // Status filter (default: exclude DELETED from live_session)
         if (request.getStatuses() != null && !request.getStatuses().isEmpty()) {
             conditions.add("s.status IN :statuses");
@@ -140,8 +169,13 @@ public class LiveSessionRepositoryCustomImpl implements LiveSessionRepositoryCus
         boolean isLiveOnly = statuses != null && statuses.size() == 1 &&
                 statuses.stream().anyMatch(s -> s.equalsIgnoreCase("LIVE"));
 
-        // Apply smart date defaults if not provided
-        if (startDate == null && endDate == null) {
+        if (Boolean.TRUE.equals(request.getTodayInSessionTimezone())) {
+            // The whole of today in the session's timezone, past and upcoming alike. Comes first
+            // because statuses=[LIVE] with no dates means "live right now" in the branch below.
+            conditions.add(
+                    "ss.meeting_date = CAST((CURRENT_TIMESTAMP AT TIME ZONE COALESCE(NULLIF(s.timezone, ''), 'Asia/Kolkata')) AS date)");
+        } else if (startDate == null && endDate == null) {
+            // Apply smart date defaults if not provided
             if (isLiveOnly) {
                 // For LIVE status only: get sessions that are ACTUALLY LIVE RIGHT NOW
                 // This means:

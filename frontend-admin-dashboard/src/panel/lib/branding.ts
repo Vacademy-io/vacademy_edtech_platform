@@ -84,6 +84,33 @@ export function applyCachedBranding(): void {
     applyFont(branding.fontFamily);
 }
 
+/**
+ * Signed-out branding comes from what /sync already returned, with no Bearer call.
+ * The logo and font stay until the institute changes; they come from refreshBranding
+ * once a teacher signs in.
+ */
+export function applyDeviceBranding(device: {
+    institute_id: string;
+    institute_name: string | null;
+    theme_code: string | null;
+}): void {
+    const cached = getCachedBranding();
+    const sameInstitute = cached?.instituteId === device.institute_id;
+    const next: PanelBranding = {
+        instituteId: device.institute_id,
+        name: device.institute_name ?? (sameInstitute ? cached?.name : undefined),
+        logoUrl: sameInstitute ? cached?.logoUrl : null,
+        themeCode:
+            device.theme_code ||
+            (sameInstitute ? cached?.themeCode : undefined) ||
+            DEFAULT_THEME_CODE,
+        fontFamily: sameInstitute ? cached?.fontFamily : null,
+    };
+    if (sameInstitute && cached?.name === next.name && cached?.themeCode === next.themeCode) return;
+    if (!sameInstitute) removeKey(THEME_ROLE_SETTINGS_KEY);
+    storeAndApply(next);
+}
+
 function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
     return new Promise<T>((resolve, reject) => {
         const timer = window.setTimeout(() => reject(new Error('branding timeout')), ms);

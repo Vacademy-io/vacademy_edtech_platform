@@ -6,6 +6,10 @@
  *
  *   node scripts/panel/verify-panel-dist.mjs        # exit 1 on any FAIL
  *
+ * Checks PANEL_OUT_DIR when set (as vite.panel.config.ts writes there), else dist-panel/.
+ * A lab build sets PANEL_LAB_BUILD=1 to turn check 8 into INFO; that is refused for
+ * dist-panel/ itself, which is what cap sync ships.
+ *
  * Checks
  *  1. Every .js parses with acorn 8.15.0 at ecmaVersion 2020 (module; workers
  *     may be classic scripts) and has zero `?.` / `??` / bigint tokens and no
@@ -28,15 +32,20 @@
  *  7. index.html (not panel.html) with relative asset URLs; MIN=66 in
  *     index.html == PANEL_MIN_CHROME == mobile-flavors.json minWebViewMajor;
  *     panel.en/hi.json key parity.
+ *  8. Release: no chunk carries the Phase 0 login (login-root) or a backend URL on a
+ *     loopback or private address (scripts/panel/release-guard.mjs).
  */
 import fs from 'node:fs';
 import path from 'node:path';
 import zlib from 'node:zlib';
 import { createRequire } from 'node:module';
 import { fileURLToPath } from 'node:url';
+import { findReleaseProblems } from './release-guard.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
-const DIST = path.join(ROOT, 'dist-panel');
+const RELEASE_DIST = path.join(ROOT, 'dist-panel');
+const DIST = process.env.PANEL_OUT_DIR ? path.resolve(process.env.PANEL_OUT_DIR) : RELEASE_DIST;
+const LAB_BUILD = process.env.PANEL_LAB_BUILD === '1';
 const MANIFEST_DIR = path.join(ROOT, 'node_modules/.cache/panel');
 const require = createRequire(import.meta.url);
 const acorn = require(path.join(ROOT, 'node_modules/.pnpm/acorn@8.15.0/node_modules/acorn'));
@@ -597,6 +606,24 @@ const onlyEn = [...en].filter((k) => !hi.has(k));
 const onlyHi = [...hi].filter((k) => !en.has(k));
 if (onlyEn.length || onlyHi.length) fail('i18n-parity', 'panel.{en,hi}.json', `en-only: ${onlyEn.join(',')} hi-only: ${onlyHi.join(',')}`);
 else ok('i18n-parity', 'panel.{en,hi}.json', `${en.size} keys`);
+
+// --------------------------------------------------------- 8. Release ---
+
+const labOptOut = LAB_BUILD && path.resolve(DIST) !== path.resolve(RELEASE_DIST);
+if (LAB_BUILD && !labOptOut) {
+    fail('release-lab-flag', 'dist-panel', 'PANEL_LAB_BUILD=1 needs PANEL_OUT_DIR outside dist-panel');
+}
+let releaseProblems = 0;
+for (const file of files.filter((f) => /\.(?:js|html)$/.test(f))) {
+    const src = sources.get(file) ?? fs.readFileSync(file, 'utf8');
+    for (const problem of findReleaseProblems(src)) {
+        releaseProblems++;
+        if (labOptOut) info(`release-${problem.kind}`, rel(file), `lab build: ${problem.detail}`);
+        else fail(`release-${problem.kind}`, rel(file), problem.detail);
+    }
+}
+if (!releaseProblems) ok('release', path.basename(DIST), 'no login-root, no private backend URL');
+else if (labOptOut) info('release', DIST, 'PANEL_LAB_BUILD=1: release checks reported only. Never ship this build.');
 
 for (const entry of allowEntries) {
     if (!entry.used) info('allowlist-unused', entry.api, entry.reason.slice(0, 90));

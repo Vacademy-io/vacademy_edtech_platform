@@ -51,7 +51,8 @@ export const strings = {
         },
         errors: {
             load: 'Could not load this list',
-            loadHint: 'Check the internet connection and try again.',
+            loadHint:
+                'Check the internet connection and try again. With no internet, only lessons opened here before are available.',
             notFound: 'This lesson is no longer available',
             notFoundHint: 'It may have been moved or deleted. Go back and pick it again.',
             backToList: 'Back to the list',
@@ -162,7 +163,8 @@ export const strings = {
         },
         errors: {
             load: 'यह सूची लोड नहीं हो सकी',
-            loadHint: 'इंटरनेट कनेक्शन जाँचें और फिर से कोशिश करें।',
+            loadHint:
+                'इंटरनेट कनेक्शन जाँचें और फिर से कोशिश करें। इंटरनेट के बिना केवल यहाँ पहले खोले गए पाठ ही मिलेंगे।',
             notFound: 'यह पाठ अब उपलब्ध नहीं है',
             notFoundHint: 'हो सकता है इसे हटाया या बदला गया हो। वापस जाकर फिर से चुनें।',
             backToList: 'सूची पर लौटें',

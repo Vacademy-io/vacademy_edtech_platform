@@ -1,5 +1,6 @@
 package vacademy.io.admin_core_service.features.live_session.dto;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.databind.PropertyNamingStrategies;
 import com.fasterxml.jackson.databind.annotation.JsonNaming;
 import jakarta.validation.constraints.Max;
@@ -87,4 +88,14 @@ public class SessionSearchRequest {
 
     // Time Status Filter: UPCOMING, LIVE, PAST
     private String timeStatus;
+
+    // Server-side only, never read from JSON, so the public /search contract is unchanged.
+    // Classes these users teach: an ACTIVE instructor, or the creator when there is none.
+    @JsonIgnore
+    private List<String> instructorUserIds;
+
+    // Server-side only. True means "meeting_date is today in the session's own timezone" and
+    // takes the place of every date default and of startDate/endDate.
+    @JsonIgnore
+    private Boolean todayInSessionTimezone;
 }

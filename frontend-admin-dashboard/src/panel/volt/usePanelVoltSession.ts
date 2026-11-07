@@ -19,8 +19,10 @@ import {
     clearActiveSession,
     endSession,
     getCachedSession,
+    noteRefusedSession,
     readActiveSession,
     updateActiveSession,
+    restorePresenterKey,
     type ActiveVoltSession,
 } from './activeSession';
 import {
@@ -28,8 +30,11 @@ import {
     type PresenterSseConnection,
     type PresenterSseStatus,
 } from './presenterSse';
+import { navigate } from '../router';
 import {
+    forgetPresenterKey,
     getUpdatedDetails,
+    isPresenterKeyRefused,
     isServerRejection,
     moveSession,
     startSession,
@@ -70,6 +75,17 @@ export function usePanelVoltSession(sessionId: string | undefined): PanelVoltSes
     const [attempt, setAttempt] = useState(0);
     const sseRef = useRef<PresenterSseConnection | null>(null);
 
+    /** The deck screen explains a refused key and offers the ways forward. */
+    const leaveRefused = useCallback(() => {
+        const refusal = sessionId ? noteRefusedSession(sessionId) : null;
+        if (!refusal) {
+            setPhase('lost');
+            return;
+        }
+        setPhase('checking');
+        navigate('volt', { view: 'deck', id: refusal.presentationId }, { replace: true });
+    }, [sessionId]);
+
     // ---------------------------------------------------------------- resolve
     useEffect(() => {
         let cancelled = false;
@@ -82,6 +98,7 @@ export function usePanelVoltSession(sessionId: string | undefined): PanelVoltSes
             return undefined;
         }
         setRecord(stored);
+        restorePresenterKey(stored);
 
         // Straight after create the in-memory DTO is fresh; once live, the server's
         // copy (current slide, slide timer) is the truth, so re-read it.
@@ -118,6 +135,7 @@ export function usePanelVoltSession(sessionId: string | undefined): PanelVoltSes
                 if (isServerRejection(error)) {
                     // Unknown or FINISHED on the server: nothing left to resume.
                     clearActiveSession(sessionId);
+                    forgetPresenterKey();
                     setPhase('lost');
                 } else {
                     setErrorDetail(voltErrorMessage(error));
@@ -136,6 +154,7 @@ export function usePanelVoltSession(sessionId: string | undefined): PanelVoltSes
         const connection = openPresenterSse(sessionId, {
             onParticipants: (list) => setParticipants(list),
             onStatus: setSseStatus,
+            onRefused: leaveRefused,
             onState: (state) => {
                 if (state.sessionStatus === 'FINISHED') {
                     clearActiveSession(sessionId);
@@ -149,7 +168,7 @@ export function usePanelVoltSession(sessionId: string | undefined): PanelVoltSes
             connection.close();
             if (sseRef.current === connection) sseRef.current = null;
         };
-    }, [sessionId, sseWanted]);
+    }, [sessionId, sseWanted, leaveRefused]);
 
     // ------------------------------------------------------------------ start
     const start = useCallback(
@@ -162,10 +181,14 @@ export function usePanelVoltSession(sessionId: string | undefined): PanelVoltSes
                 updateActiveSession(sessionId, { status: 'live', slideIndex: 0 });
                 setPhase('live');
             } catch (error) {
+                if (isPresenterKeyRefused(error)) {
+                    leaveRefused();
+                    return;
+                }
                 toast.error(t('live.startFailed'), { description: voltErrorMessage(error) });
             }
         },
-        [sessionId, t]
+        [sessionId, t, leaveRefused]
     );
 
     // ------------------------------------------------------------------- move
@@ -189,6 +212,10 @@ export function usePanelVoltSession(sessionId: string | undefined): PanelVoltSes
                         setSlideStartTimestamp(result.slide_start_timestamp);
                     }
                 } catch (error) {
+                    if (isPresenterKeyRefused(error)) {
+                        leaveRefused();
+                        break;
+                    }
                     // One toast per failed sync (ActualPresentationDisplay.tsx:306), then stop.
                     toast.error(t('live.moveFailed'), { description: voltErrorMessage(error) });
                     sentRef.current = null;
@@ -198,7 +225,7 @@ export function usePanelVoltSession(sessionId: string | undefined): PanelVoltSes
         } finally {
             inFlightRef.current = false;
         }
-    }, [sessionId, t]);
+    }, [sessionId, t, leaveRefused]);
 
     const move = useCallback(
         (index: number, slideOrder: number) => {
@@ -215,10 +242,16 @@ export function usePanelVoltSession(sessionId: string | undefined): PanelVoltSes
     // -------------------------------------------------------------------- end
     const end = useCallback(async () => {
         if (!sessionId) return;
-        await endSession(sessionId);
+        try {
+            await endSession(sessionId);
+        } catch (error) {
+            if (!isPresenterKeyRefused(error)) throw error;
+            leaveRefused();
+            return;
+        }
         sseRef.current?.close();
         setPhase('finished');
-    }, [sessionId]);
+    }, [sessionId, leaveRefused]);
 
     const retry = useCallback(() => setAttempt((value) => value + 1), []);
     const reconnect = useCallback(() => sseRef.current?.reconnect(), []);

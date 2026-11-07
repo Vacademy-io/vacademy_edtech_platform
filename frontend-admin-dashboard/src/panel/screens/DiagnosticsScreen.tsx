@@ -6,7 +6,11 @@
  * multi-touch counter, a feature table (incl. whether window.Promise is still
  * native — core-js would replace it at V8 66), backend reachability, the
  * default-Home status with settings shortcuts, build info, captured errors and
- * a QR of the whole report for support. "Continue" marks first run done.
+ * a QR of the whole report for support. "Continue" marks first run done. On a
+ * paired panel it also shows the institute, room, short device id and last sync; no
+ * token or secret is ever displayed. Once paired, Android settings and Switch Home
+ * are for an admin of this institute, and Wi-Fi and Date appear when the panel is
+ * offline or its date is wrong.
  */
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import axios from 'axios';
@@ -20,6 +24,11 @@ import { MyButton } from '@/components/design-system/button';
 import { StatusChip, type StatusType } from '@/components/design-system/status-chips';
 import { DOMAIN_ROUTING_RESOLVE } from '@/constants/urls';
 import { PANEL_MIN_CHROME, PANEL_STORAGE_KEYS } from '../config';
+import { isPanelDateWrong } from '../device/activity';
+import { getAppVersionCode } from '../device/deviceInfo';
+import { useDeviceRecord } from '../device/store';
+import { isPanelOffline, useSyncSnapshot } from '../device/syncLoop';
+import { canUseDeviceSettings, usePanelSession } from '../lib/session';
 import { PanelTopBar } from '../components/PanelTopBar';
 import { PanelStage, PanelStageBody } from '../components/PanelStage';
 import { PanelEmpty, PanelLoading } from '../components/PanelScreenState';
@@ -203,8 +212,84 @@ function chip(ok: boolean, text: string, warn = false): ReactNode {
     );
 }
 
+/** Short enough to read out over the phone, and never the secret. */
+function shortDeviceId(id: string): string {
+    return id.length > 8 ? id.slice(0, 8) : id;
+}
+
+function PairingSection() {
+    const { t } = useTranslation('device');
+    const device = useDeviceRecord();
+    const sync = useSyncSnapshot();
+    if (!device) {
+        return (
+            <Section title={t('diagnostics.section')}>
+                <PanelEmpty className="p-4" title={t('diagnostics.notPaired')} />
+            </Section>
+        );
+    }
+    const offline = isPanelOffline();
+    const appVersion = getAppVersionCode();
+    const ageS =
+        sync.lastSyncAt === null
+            ? null
+            : Math.max(0, Math.round((Date.now() - sync.lastSyncAt) / 1000));
+    let lastSync = t('diagnostics.never');
+    if (ageS !== null) {
+        lastSync =
+            ageS < 120
+                ? t('diagnostics.secondsAgo', { count: ageS })
+                : t('diagnostics.minutesAgo', { count: Math.round(ageS / 60) });
+    }
+    const belowMinimum =
+        appVersion !== null &&
+        sync.minAppVersionCode !== null &&
+        appVersion < sync.minAppVersionCode;
+    return (
+        <Section title={t('diagnostics.section')}>
+            <dl>
+                <InfoRow label={t('diagnostics.status')}>
+                    {device.revoked_at
+                        ? chip(false, t('diagnostics.statusRemoved'), true)
+                        : offline
+                          ? chip(false, t('diagnostics.statusOffline'), true)
+                          : chip(true, t('diagnostics.statusOk'))}
+                </InfoRow>
+                <InfoRow label={t('diagnostics.institute')}>
+                    {device.institute_name ?? device.institute_id}
+                </InfoRow>
+                <InfoRow label={t('diagnostics.room')}>{device.room_name ?? '—'}</InfoRow>
+                <InfoRow label={t('diagnostics.deviceId')}>
+                    {shortDeviceId(device.device_id)}
+                </InfoRow>
+                <InfoRow label={t('diagnostics.lastSync')}>{lastSync}</InfoRow>
+                <InfoRow label={t('diagnostics.serverOffset')}>
+                    {t('diagnostics.offsetValue', {
+                        value: Math.round(sync.serverOffsetMs / 1000),
+                    })}
+                </InfoRow>
+                {appVersion !== null && (
+                    <InfoRow label={t('diagnostics.appVersion')}>
+                        {belowMinimum
+                            ? chip(
+                                  false,
+                                  t('diagnostics.appVersionWarning', {
+                                      current: appVersion,
+                                      min: sync.minAppVersionCode,
+                                  }),
+                                  true
+                              )
+                            : appVersion}
+                    </InfoRow>
+                )}
+            </dl>
+        </Section>
+    );
+}
+
 export default function DiagnosticsScreen() {
     const { t } = useTranslation('panel');
+    usePanelSession();
     const { params } = usePanelRoute();
     const firstRun = params.firstRun === '1';
     const native = isNativePanel();
@@ -233,6 +318,13 @@ export default function DiagnosticsScreen() {
         );
         return () => window.clearInterval(timer);
     }, []);
+
+    const adminSettings = canUseDeviceSettings();
+    const networkSettings = adminSettings || isPanelOffline() || isPanelDateWrong();
+    const settingsTargets: PanelSettingsTarget[] = [
+        ...(adminSettings ? (['home', 'settings'] as PanelSettingsTarget[]) : []),
+        ...(networkSettings ? (['wifi', 'date'] as PanelSettingsTarget[]) : []),
+    ];
 
     const chromeOk = web.chromeMajor !== null && web.chromeMajor >= PANEL_MIN_CHROME;
     const info = device.data ?? null;
@@ -292,6 +384,7 @@ export default function DiagnosticsScreen() {
                         </p>
                     )}
                     <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
+                        <PairingSection />
                         <Section title={t('diagnostics.sections.browser')}>
                             <dl>
                                 <InfoRow label={t('diagnostics.chrome')}>
@@ -407,16 +500,9 @@ export default function DiagnosticsScreen() {
                                     </InfoRow>
                                 </dl>
                             )}
-                            {native && (
+                            {native && settingsTargets.length > 0 && (
                                 <div className="grid grid-cols-2 gap-4 pt-6">
-                                    {(
-                                        [
-                                            'home',
-                                            'settings',
-                                            'wifi',
-                                            'date',
-                                        ] as PanelSettingsTarget[]
-                                    ).map((target) => (
+                                    {settingsTargets.map((target) => (
                                         <MyButton
                                             key={target}
                                             buttonType="secondary"

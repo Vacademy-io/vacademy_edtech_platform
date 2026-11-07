@@ -1,13 +1,26 @@
 /**
- * Panel session: username/password login against the admin login-root
- * endpoint, the same accessToken/refreshToken cookies as the admin app, the
- * institute choice, and sign-out that keeps the device's panel settings.
+ * Panel session: the same accessToken/refreshToken cookies as the admin app, and
+ * sign-out that keeps the device's panel settings.
  *
- * Flow copied from hooks/login/login-button.tsx + lib/auth/loginFlowHandler.ts
- * (first part only); neither is imported (loginFlowHandler pulls 52 files).
+ * Paired mode: the access cookie is a short JWT and the refresh cookie an opaque
+ * session token, both from a QR approval or /session/login-password. The server
+ * decides when a session is over. Signed in means the session token cookie exists
+ * and the server has not ended it; JWT expiry is never compared with this panel's
+ * clock, which can be wrong.
+ *
+ * Phase 0 (lab builds only, VITE_PANEL_LEGACY_LOGIN=1, unpaired): username and
+ * password against login-root, with the institute choice. Flow copied from
+ * hooks/login/login-button.tsx + lib/auth/loginFlowHandler.ts (first part only);
+ * neither is imported (loginFlowHandler pulls 52 files).
  */
 import { useSyncExternalStore } from 'react';
 import { LOGIN_URL } from '@/constants/urls';
+import type {
+    PanelClientEndReason,
+    PanelRedeemedSession,
+    PanelSessionEndReason,
+    SessionLoginPasswordResponse,
+} from '@/classroom-shared/apiTypes';
 import {
     getInstituteSelectionResult,
     getInstitutesFromToken,
@@ -19,20 +32,42 @@ import {
 import {
     PANEL_ACTIVITY_WRITE_MS,
     PANEL_IDLE_SIGNOUT_MS,
+    PANEL_LEGACY_LOGIN,
     PANEL_LIVE_SESSION_EXEMPT_MS,
     PANEL_STORAGE_KEYS,
     SHARED_STORAGE_KEYS,
 } from '../config';
+import { hasCode, isOfflineFailure, isPublicError, postPublic } from '../device/publicApi';
+import {
+    clearPendingEnd,
+    clearSessionMeta,
+    deviceCredentials,
+    readActiveDevice,
+    readDevice,
+    readSessionMeta,
+    subscribeDevice,
+    subscribeDeviceEvents,
+    usesDeviceAuth,
+    writePendingEnd,
+    writeSessionMeta,
+} from '../device/store';
+import { setOpenedClassEnd } from '../device/activity';
+import { resetNavBaseline } from '../seams/remoteTarget';
+import { AUTH_REQUIRED_SCREENS, getCurrentRoute, navigate } from '../router';
 import {
     clearPanelSession,
     decodeAccessToken,
     getAccessToken,
     getInstituteIdForRequests,
     getRefreshToken,
+    noteTokenLifetimes,
     notifySessionChanged,
+    refreshAccessToken,
+    setSessionEndHandler,
     subscribeSession,
     writeAuthCookies,
 } from './api';
+import { closeMeeting } from './native';
 import { readJson, readString, removeKey, writeString } from './storage';
 
 export type PanelLoginErrorCode =
@@ -104,6 +139,7 @@ export async function loginWithPassword(
     username: string,
     password: string
 ): Promise<PanelLoginResult> {
+    if (!PANEL_LEGACY_LOGIN) throw new PanelLoginError('SERVER');
     const cached = readString(SHARED_STORAGE_KEYS.selectedInstituteId);
     const cachedId = cached && cached !== 'null' ? cached : undefined;
     let tokens: { accessToken: string; refreshToken: string };
@@ -150,8 +186,9 @@ export function getPanelInstitutes(): Institute[] {
 }
 
 /**
- * Institute the panel works in: the selected one when the signed-in user has a
- * valid role there, else their first valid institute, else null.
+ * Institute the panel works in: the device's on a paired panel. Otherwise the
+ * selected one when the signed-in user has a valid role there, else their first
+ * valid institute, else null.
  */
 export function getPanelInstituteId(): string | null {
     if (!isSignedIn()) return null;
@@ -159,8 +196,13 @@ export function getPanelInstituteId(): string | null {
     return getInstituteIdForRequests();
 }
 
-/** Signed in = an access token that is still valid, or one we can refresh. */
+/**
+ * Paired: the session token cookie exists and the server has not ended it (ending a
+ * session clears the cookie and the meta). Phase 0: an access token that is still
+ * valid, or one we can refresh.
+ */
 export function isSignedIn(): boolean {
+    if (usesDeviceAuth()) return !!getRefreshToken() && !!readSessionMeta() && !!readActiveDevice();
     const token = getAccessToken();
     if (!token) return false;
     const exp = decodeAccessToken(token)?.exp;
@@ -171,7 +213,13 @@ export function isSignedIn(): boolean {
 export function getCurrentUser(): PanelUser | null {
     if (!isSignedIn()) return null;
     const data = decodeAccessToken();
-    if (!data) return null;
+    if (!data) {
+        // Paired, with the JWT cookie gone: the session is still good until the next refresh.
+        const meta = readSessionMeta();
+        if (!meta || !usesDeviceAuth()) return null;
+        const name = meta.user_name || '';
+        return { id: meta.user_id, fullName: name, email: '', username: name, roles: [] };
+    }
     const roles: string[] = [];
     Object.keys(data.authorities || {}).forEach((id) => {
         (data.authorities[id]?.roles || []).forEach((role) => {
@@ -276,6 +324,8 @@ export function readLastActivity(): number | null {
  *   cleared regardless afterwards.
  */
 export function enforceIdleSignOutAtBoot(timeoutMs = 5000): Promise<boolean> {
+    // Paired: the server decides at the first refresh.
+    if (usesDeviceAuth()) return Promise.resolve(false);
     if (!isSignedIn()) return Promise.resolve(false);
     const now = Date.now();
     if (isVoltSessionIdleExempt(now)) {
@@ -325,12 +375,8 @@ async function runHandlers(handlers: Set<SignOutHandler>): Promise<void> {
     }
 }
 
-/**
- * Sign out: before-handlers (Volt ends a live session), then clear ONLY the two
- * auth cookies, then after-handlers (query cache). UI that calls this asks for
- * confirmation first when isVoltSessionActive() is true.
- */
-export async function signOut(): Promise<void> {
+/** Before-handlers, plus a live Volt session whose chunk was never loaded this boot. */
+async function endLiveWork(): Promise<void> {
     await runHandlers(beforeSignOutHandlers);
     // Volt registers its handler when its chunk loads. After an app restart the
     // record can exist while that chunk was never loaded this boot: end the
@@ -343,8 +389,269 @@ export async function signOut(): Promise<void> {
             console.error('[panel/session] could not end the live session at sign-out', error);
         }
     }
+}
+
+function withLimit(work: Promise<void>, ms: number): Promise<void> {
+    return new Promise((resolve) => {
+        const timer = window.setTimeout(resolve, ms);
+        const done = () => {
+            window.clearTimeout(timer);
+            resolve();
+        };
+        work.then(done, done);
+    });
+}
+
+/**
+ * Local half of ending a paired session: the cookies, the meta, the nav baseline and the
+ * end time of a class opened from a card, which belongs to this teacher only.
+ */
+function clearDeviceSession(): void {
+    clearSessionMeta();
+    resetNavBaseline();
+    setOpenedClassEnd(null);
     clearPanelSession();
-    await runHandlers(afterSignOutHandlers);
+}
+
+const SIGN_OUT_END_TIMEOUT_MS = 3000;
+const LIVE_WORK_LIMIT_MS = 5000;
+
+/** Tells the server, with a short limit; a miss goes to panel.pendingEnd for the sync loop. */
+async function endOnServer(reason: PanelClientEndReason): Promise<void> {
+    const sessionToken = getRefreshToken();
+    const device = readDevice();
+    if (!sessionToken || !device) return;
+    try {
+        await postPublic(
+            '/session/end',
+            { ...deviceCredentials(device), session_token: sessionToken, reason },
+            { timeout: SIGN_OUT_END_TIMEOUT_MS }
+        );
+    } catch (error) {
+        if (!isPublicError(error) || error.kind === 'offline') {
+            writePendingEnd({ session_token: sessionToken, reason });
+        }
+    }
+}
+
+let ending: Promise<void> | null = null;
+
+function singleEnd(work: () => Promise<void>): Promise<void> {
+    if (ending) return ending;
+    const run: Promise<void> = work().finally(() => {
+        if (ending === run) ending = null;
+    });
+    ending = run;
+    return run;
+}
+
+/**
+ * Sign out: before-handlers (Volt ends a live session), /session/end on a paired
+ * panel, then clear ONLY the two auth cookies, then after-handlers (query cache).
+ * UI that calls this asks for confirmation first when isVoltSessionActive() is true.
+ */
+export function signOut(reason: PanelClientEndReason = 'SIGN_OUT'): Promise<void> {
+    return singleEnd(async () => {
+        void closeMeeting();
+        await withLimit(endLiveWork(), LIVE_WORK_LIMIT_MS);
+        if (usesDeviceAuth()) {
+            await endOnServer(reason);
+            clearDeviceSession();
+        } else {
+            clearPanelSession();
+        }
+        await runHandlers(afterSignOutHandlers);
+    });
+}
+
+// ------------------------------------------------- server-side session end ---
+
+export interface PanelSessionEndNotice {
+    /** Null when the panel was not told why. */
+    reason: PanelSessionEndReason | null;
+}
+
+const sessionEndListeners = new Set<(notice: PanelSessionEndNotice) => void>();
+
+/** An end nobody was subscribed for yet, such as one during the boot refresh. */
+let undeliveredEnd: PanelSessionEndNotice | null = null;
+
+/**
+ * A session ended that this panel did not sign out of itself. For the toast. An end
+ * that came before anyone subscribed goes to the first subscriber, once, on the next
+ * task, so the toaster has mounted by then.
+ */
+export function subscribeSessionEnded(
+    listener: (notice: PanelSessionEndNotice) => void
+): () => void {
+    sessionEndListeners.add(listener);
+    const waiting = undeliveredEnd;
+    if (waiting) {
+        undeliveredEnd = null;
+        window.setTimeout(() => {
+            if (sessionEndListeners.has(listener)) listener(waiting);
+            else undeliveredEnd = waiting;
+        }, 0);
+    }
+    return () => {
+        sessionEndListeners.delete(listener);
+    };
+}
+
+/**
+ * The server said the session is over (sync, refresh), or a call kept failing after
+ * a refresh (`tellServer`). Volt gets a chance to end while the JWT still works, then
+ * the session is cleared and any screen that needs one goes back to Home.
+ */
+export function endSessionLocally(
+    reason: PanelSessionEndReason | null,
+    options: { tellServer?: boolean } = {}
+): Promise<void> {
+    if (!getRefreshToken() && !getAccessToken()) return Promise.resolve();
+    return singleEnd(async () => {
+        void closeMeeting();
+        await withLimit(endLiveWork(), LIVE_WORK_LIMIT_MS);
+        if (options.tellServer) {
+            const sessionToken = getRefreshToken();
+            if (sessionToken) writePendingEnd({ session_token: sessionToken, reason: 'SIGN_OUT' });
+        }
+        clearDeviceSession();
+        await runHandlers(afterSignOutHandlers);
+        if (AUTH_REQUIRED_SCREENS.indexOf(getCurrentRoute().screen) >= 0) {
+            navigate('home', undefined, { replace: true });
+        }
+        if (sessionEndListeners.size === 0) undeliveredEnd = { reason };
+        sessionEndListeners.forEach((listener) => listener({ reason }));
+    });
+}
+
+setSessionEndHandler((reason, options) => {
+    void endSessionLocally(reason, options);
+});
+
+subscribeDeviceEvents((event) => {
+    if (event.type === 'REVOKED') void endSessionLocally(null);
+});
+
+// ---------------------------------------------------------- paired sign-in ---
+
+export interface AdoptResult {
+    /** Same teacher as before: the caller keeps the current screen and its state. */
+    sameUser: boolean;
+}
+
+/**
+ * Tokens from a redeemed challenge or a password sign-in. A different teacher takes
+ * over cleanly: the old session is already over on the server, its JWT still ends a
+ * live Volt session, and the query cache goes. The same teacher just gets new tokens.
+ */
+export async function adoptRedeemedSession(body: PanelRedeemedSession): Promise<AdoptResult> {
+    const previous = readSessionMeta();
+    const hadSession = !!getRefreshToken() && !!previous;
+    const sameUser = hadSession && previous?.user_id === body.user.id;
+    if (hadSession && !sameUser) {
+        void closeMeeting();
+        await withLimit(endLiveWork(), LIVE_WORK_LIMIT_MS);
+        await runHandlers(afterSignOutHandlers);
+    }
+    // A class opened from a card, and an end notice nobody saw, belong to whoever was here.
+    if (!sameUser) setOpenedClassEnd(null);
+    undeliveredEnd = null;
+    // The approval already ended whatever an undelivered /session/end was for.
+    clearPendingEnd();
+    const now = Date.now();
+    writeSessionMeta({
+        session_id: body.session_id,
+        user_id: body.user.id,
+        user_name: body.user.name,
+        started_at_ms: now,
+        last_refresh_wall_ms: now,
+    });
+    writeAuthCookies(body.access_token, body.session_token);
+    noteTokenLifetimes(body.expires_in_s, body.session_expires_in_s);
+    notifySessionChanged();
+    recordActivity(true);
+    return { sameUser };
+}
+
+export type DevicePasswordErrorCode =
+    | 'BAD_CREDENTIALS'
+    | 'NOT_STAFF'
+    | 'PASSWORD_DISABLED'
+    | 'OFFLINE'
+    | 'SERVER';
+
+export class DevicePasswordError extends Error {
+    code: DevicePasswordErrorCode;
+    constructor(code: DevicePasswordErrorCode) {
+        super(code);
+        this.name = 'DevicePasswordError';
+        this.code = code;
+    }
+}
+
+/** Password sign-in on a panel an admin switched it on for. Never touches login-root. */
+export async function loginWithDevicePassword(
+    username: string,
+    password: string
+): Promise<AdoptResult> {
+    const device = readActiveDevice();
+    if (!device) throw new DevicePasswordError('SERVER');
+    try {
+        const body = await postPublic<SessionLoginPasswordResponse>('/session/login-password', {
+            ...deviceCredentials(device),
+            username: username.trim(),
+            password,
+        });
+        return await adoptRedeemedSession(body);
+    } catch (error) {
+        if (isOfflineFailure(error)) throw new DevicePasswordError('OFFLINE');
+        if (hasCode(error, 'BAD_CREDENTIALS')) throw new DevicePasswordError('BAD_CREDENTIALS');
+        if (hasCode(error, 'NOT_STAFF')) throw new DevicePasswordError('NOT_STAFF');
+        if (hasCode(error, 'PASSWORD_DISABLED')) throw new DevicePasswordError('PASSWORD_DISABLED');
+        throw new DevicePasswordError('SERVER');
+    }
+}
+
+/** ADMIN at the device's institute. The JWT's authorities carry only that institute. */
+export function isDeviceInstituteAdmin(): boolean {
+    const device = readActiveDevice();
+    if (!device || !isSignedIn()) return false;
+    const roles = decodeAccessToken()?.authorities?.[device.institute_id]?.roles ?? [];
+    return roles.indexOf('ADMIN') >= 0;
+}
+
+/**
+ * Android settings and Switch Home: open before pairing, since the installer needs
+ * them. Once paired, only for an admin of this institute.
+ */
+export function canUseDeviceSettings(): boolean {
+    return !readActiveDevice() || isDeviceInstituteAdmin();
+}
+
+// -------------------------------------------------------------------- boot ---
+
+/**
+ * Cookies with no paired session behind them cannot be used: a release panel holds
+ * nothing but a device session. Clears tokens left by an older build or lab login.
+ */
+export function clearStrayCookies(): void {
+    if (!usesDeviceAuth()) return;
+    if (!getAccessToken() && !getRefreshToken()) return;
+    if (!readActiveDevice() || !readSessionMeta() || !getRefreshToken()) clearDeviceSession();
+}
+
+/**
+ * Device and session at boot: refresh once, so a session that ended while the panel
+ * was off is gone before the first authenticated screen. Bounded, because the panel
+ * must still start with no network, and network failure keeps the session.
+ */
+export function refreshSessionAtBoot(timeoutMs = 3000): Promise<void> {
+    if (!usesDeviceAuth() || !isSignedIn()) return Promise.resolve();
+    return withLimit(
+        refreshAccessToken().then(() => undefined),
+        timeoutMs
+    );
 }
 
 // ---------------------------------------------------------------- hooks ---
@@ -356,7 +663,7 @@ let snapshotValue: { user: PanelUser | null; instituteId: string | null } = {
 };
 
 function getSnapshot() {
-    const key = `${getAccessToken() ?? ''}|${readString(SHARED_STORAGE_KEYS.selectedInstituteId) ?? ''}`;
+    const key = `${getAccessToken() ?? ''}|${getRefreshToken() ?? ''}|${readDevice()?.revoked_at ?? ''}|${readDevice()?.device_id ?? ''}|${readString(SHARED_STORAGE_KEYS.selectedInstituteId) ?? ''}`;
     if (key !== snapshotKey) {
         snapshotKey = key;
         snapshotValue = { user: getCurrentUser(), instituteId: getPanelInstituteId() };
@@ -372,8 +679,17 @@ export interface PanelSession {
 }
 
 /** Reactive session (re-renders on login, logout, refresh and institute change). */
+function subscribeSessionOrDevice(listener: () => void): () => void {
+    const offSession = subscribeSession(listener);
+    const offDevice = subscribeDevice(listener);
+    return () => {
+        offSession();
+        offDevice();
+    };
+}
+
 export function usePanelSession(): PanelSession {
-    const snapshot = useSyncExternalStore(subscribeSession, getSnapshot, getSnapshot);
+    const snapshot = useSyncExternalStore(subscribeSessionOrDevice, getSnapshot, getSnapshot);
     return {
         user: snapshot.user,
         instituteId: snapshot.instituteId,

@@ -4,6 +4,7 @@
   "exclude": [
     "/.well-known/*",
     "/badge-library/*",
+    "/classroom",
     "/email-editor/*",
     "/locales/*",
     "/sw.js",

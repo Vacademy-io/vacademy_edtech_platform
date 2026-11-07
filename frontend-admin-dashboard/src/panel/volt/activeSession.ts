@@ -10,7 +10,15 @@
 import { PANEL_STORAGE_KEYS } from '../config';
 import { getCurrentUser } from '../lib/session';
 import { readJson, removeKey, writeJson } from '../lib/storage';
-import { createSession, finishSession, isServerRejection } from './voltApi';
+import {
+    createSession,
+    finishSession,
+    forgetPresenterKey,
+    isPresenterKeyRefused,
+    isServerRejection,
+    rememberPresenterKey,
+    voltErrorMessage,
+} from './voltApi';
 import type { VoltLiveSession, VoltSessionOptions } from './types';
 
 export interface ActiveVoltSession {
@@ -26,6 +34,8 @@ export interface ActiveVoltSession {
     createdAt: number;
     /** Teacher who started it; idle sign-out ignores records of another user (SEC-2). */
     userId?: string;
+    /** Sent on every presenter call. Absent on a record from before keys existed. */
+    presenterKey?: string;
 }
 
 const listeners = new Set<() => void>();
@@ -64,7 +74,13 @@ export function readActiveSession(): ActiveVoltSession | null {
             typeof value.defaultSecondsForQuestion === 'number'
                 ? value.defaultSecondsForQuestion
                 : 0,
+        presenterKey: typeof value.presenterKey === 'string' ? value.presenterKey : undefined,
     };
+}
+
+/** Puts a stored session's key back in use (after a restart, or from a Resume or End). */
+export function restorePresenterKey(record: ActiveVoltSession): void {
+    rememberPresenterKey(record.sessionId, record.presenterKey);
 }
 
 export function writeActiveSession(record: ActiveVoltSession): void {
@@ -103,14 +119,48 @@ export function getCachedSession(sessionId: string): VoltLiveSession | undefined
     return sessionCache.get(sessionId);
 }
 
+/**
+ * A session the server will not let this panel run. The key cannot become right later
+ * and no call can end the session from here, so the record is dropped, and the deck
+ * screen says what happened until it is dismissed. In memory only.
+ */
+export interface PresenterKeyRefusal {
+    sessionId: string;
+    presentationId: string;
+}
+
+let refusal: PresenterKeyRefusal | null = null;
+
+export function readPresenterKeyRefusal(): PresenterKeyRefusal | null {
+    return refusal;
+}
+
+export function dismissPresenterKeyRefusal(): void {
+    refusal = null;
+    notify();
+}
+
+/** Safe to call twice for one session. Null when there is no such session to report. */
+export function noteRefusedSession(sessionId: string): PresenterKeyRefusal | null {
+    if (refusal?.sessionId === sessionId) return refusal;
+    const current = readActiveSession();
+    if (current?.sessionId !== sessionId) return null;
+    refusal = { sessionId, presentationId: current.presentationId };
+    sessionCache.delete(sessionId);
+    clearActiveSession(sessionId);
+    return refusal;
+}
+
 /** Create a live session and remember it as the panel's active session. */
 export async function createLiveSession(
     presentationId: string,
     title: string,
     options: Partial<VoltSessionOptions>
 ): Promise<ActiveVoltSession> {
-    const session = await createSession(presentationId, options);
+    const { session, presenterKey } = await createSession(presentationId, options);
     cacheSession(session);
+    rememberPresenterKey(session.session_id, presenterKey);
+    refusal = null;
     const record: ActiveVoltSession = {
         sessionId: session.session_id,
         inviteCode: session.invite_code,
@@ -124,6 +174,7 @@ export async function createLiveSession(
             session.default_seconds_for_question ?? options.default_seconds_for_question ?? 0,
         createdAt: Date.now(),
         userId: getCurrentUser()?.id || undefined,
+        presenterKey,
     };
     writeActiveSession(record);
     return record;
@@ -132,14 +183,21 @@ export async function createLiveSession(
 /**
  * Finish the session on the server and forget it. A server-side rejection
  * (unknown or already finished session) counts as ended; a network failure
- * rethrows and keeps the record so the teacher can try again.
+ * rethrows and keeps the record so the teacher can try again. A refused key
+ * rethrows too, with the session reported through noteRefusedSession.
  */
 export async function endSession(sessionId: string): Promise<void> {
+    const stored = readActiveSession();
+    if (stored?.sessionId === sessionId) restorePresenterKey(stored);
     try {
         await finishSession(sessionId);
     } catch (error) {
+        if (isPresenterKeyRefused(error)) noteRefusedSession(sessionId);
         if (!isServerRejection(error)) throw error;
-        console.warn('[panel/volt] finish rejected; treating the session as ended', error);
+        console.warn(
+            '[panel/volt] finish rejected; treating the session as ended',
+            voltErrorMessage(error)
+        );
     }
     sessionCache.delete(sessionId);
     clearActiveSession(sessionId);
@@ -152,11 +210,17 @@ export async function endSession(sessionId: string): Promise<void> {
  */
 export async function endActiveVoltSession(): Promise<void> {
     const record = readActiveSession();
-    if (!record) return;
-    try {
-        await endSession(record.sessionId);
-    } catch (error) {
-        console.error('[panel/volt] could not end the live session at sign-out', error);
-        clearActiveSession(record.sessionId);
+    if (record) {
+        try {
+            await endSession(record.sessionId);
+        } catch (error) {
+            console.error(
+                '[panel/volt] could not end the live session at sign-out',
+                voltErrorMessage(error)
+            );
+            clearActiveSession(record.sessionId);
+        }
     }
+    forgetPresenterKey();
+    refusal = null;
 }

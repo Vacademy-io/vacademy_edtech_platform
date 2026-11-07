@@ -31,6 +31,8 @@ def flavorSpecs = new JsonSlurper().parse(file("mobile-flavors.json"))
             // src/panel/config.ts and MIN in panel.html).
             panelMode      : cfg.panelMode == true,
             minWebViewMajor: (cfg.minWebViewMajor ?: 0) as int,
+            // Hosts PanelDevice.openMeeting may open (exact names). Absent → none.
+            meetingHosts   : (cfg.meetingHosts ?: []) as List,
         ]
     }
 
@@ -97,6 +99,7 @@ android {
                 // them; flavors without panelMode get false / 0 (admin unchanged).
                 resValue "bool", "panel_mode", spec.panelMode ? "true" : "false"
                 resValue "integer", "panel_min_webview_major", "${spec.minWebViewMajor}"
+                resValue "string", "panel_meeting_hosts", spec.meetingHosts.join(',')
             }
         }
     }

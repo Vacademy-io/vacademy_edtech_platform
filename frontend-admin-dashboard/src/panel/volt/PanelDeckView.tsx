@@ -1,8 +1,10 @@
 /**
  * One deck: loads every slide (with progress), previews the first slide and
- * offers Present (local, no session) and Present live (creates a session).
+ * offers Present (local, no session) and, when flags.volt_live_enabled is on,
+ * Present live (creates a session). A session already open keeps its Resume and
+ * End banner whatever the flag says, so it can always be ended.
  */
-import { useState } from 'react';
+import { useState, useSyncExternalStore } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import { Broadcast, CircleNotch, Play, Presentation, WarningCircle } from '@phosphor-icons/react';
@@ -11,14 +13,20 @@ import { Progress } from '@/components/ui/progress';
 import { PanelEmpty, PanelError } from '../components/PanelScreenState';
 import { PanelStage, PanelStageBody } from '../components/PanelStage';
 import { PanelTopBar } from '../components/PanelTopBar';
+import { useSyncSnapshot } from '../device/syncLoop';
 import { goBack, navigate } from '../router';
-import { createLiveSession } from './activeSession';
+import {
+    createLiveSession,
+    dismissPresenterKeyRefusal,
+    readPresenterKeyRefusal,
+    subscribeActiveSession,
+} from './activeSession';
 import { LiveSessionDialog } from './LiveSessionDialog';
 import { ActiveSessionBanner, useActiveVoltSession } from './PanelDeckList';
 import { PanelSceneView } from './PanelSceneView';
 import { QuizSlideView } from './QuizSlideView';
 import { useVoltDeck } from './useVoltDeck';
-import { voltErrorMessage } from './voltApi';
+import { presenterKeyRefusedCopy, voltErrorMessage } from './voltApi';
 import type { DeckLoadProgress, PanelSlide } from './types';
 
 /** Loading state with real progress (Excalidraw slide files fetched / total). */
@@ -53,15 +61,47 @@ function SlidePreview({ slide }: { slide: PanelSlide }) {
     );
 }
 
+function PresenterKeyRefusedNotice() {
+    const { t } = useTranslation('volt');
+    const copy = presenterKeyRefusedCopy();
+    return (
+        <section
+            role="alert"
+            className="flex items-center justify-between rounded-lg border border-warning-300 bg-warning-50 p-6"
+        >
+            <div className="flex min-w-0 items-center space-x-4">
+                <WarningCircle size={48} className="shrink-0 text-warning-600" aria-hidden />
+                <div className="min-w-0 space-y-1">
+                    <h2 className="text-h3 font-semibold text-neutral-800">{copy.title}</h2>
+                    <p className="text-title text-neutral-600">{copy.body}</p>
+                </div>
+            </div>
+            <div className="shrink-0 pl-6">
+                <MyButton
+                    buttonType="secondary"
+                    scale="large"
+                    className="h-16 px-6"
+                    onClick={dismissPresenterKeyRefusal}
+                >
+                    {t('responses.close')}
+                </MyButton>
+            </div>
+        </section>
+    );
+}
+
 export function PanelDeckView({ presentationId }: { presentationId: string }) {
     const { t } = useTranslation('volt');
     const { query: deckQuery, progress } = useVoltDeck(presentationId);
     const activeSession = useActiveVoltSession();
+    const keyRefusal = useSyncExternalStore(subscribeActiveSession, readPresenterKeyRefusal);
+    const voltLiveEnabled = useSyncSnapshot().flags.volt_live_enabled;
     const [liveOpen, setLiveOpen] = useState(false);
     const deck = deckQuery.data;
     const first = deck?.slides[0];
 
     const startLive = async (options: Parameters<typeof createLiveSession>[2]) => {
+        if (!voltLiveEnabled) return;
         try {
             const record = await createLiveSession(presentationId, deck?.title || '', options);
             setLiveOpen(false);
@@ -131,33 +171,41 @@ export function PanelDeckView({ presentationId }: { presentationId: string }) {
                                     <span>{t('deck.present')}</span>
                                 </span>
                             </MyButton>
-                            <MyButton
-                                buttonType="secondary"
-                                scale="large"
-                                className="h-16 w-full px-8"
-                                disabled={!!otherLive}
-                                onClick={() => {
-                                    if (thisLive && activeSession) {
-                                        navigate('volt', {
-                                            view: 'live',
-                                            id: presentationId,
-                                            sid: activeSession.sessionId,
-                                        });
-                                    } else {
-                                        setLiveOpen(true);
-                                    }
-                                }}
-                            >
-                                <span className="flex items-center justify-center space-x-3">
-                                    <Broadcast size={28} aria-hidden />
-                                    <span>
-                                        {thisLive ? t('resume.resume') : t('deck.presentLive')}
-                                    </span>
-                                </span>
-                            </MyButton>
-                            <p className="text-title text-neutral-500">
-                                {otherLive ? t('deck.otherLiveHint') : t('deck.presentLiveHint')}
-                            </p>
+                            {voltLiveEnabled && (
+                                <>
+                                    <MyButton
+                                        buttonType="secondary"
+                                        scale="large"
+                                        className="h-16 w-full px-8"
+                                        disabled={!!otherLive}
+                                        onClick={() => {
+                                            if (thisLive && activeSession) {
+                                                navigate('volt', {
+                                                    view: 'live',
+                                                    id: presentationId,
+                                                    sid: activeSession.sessionId,
+                                                });
+                                            } else {
+                                                setLiveOpen(true);
+                                            }
+                                        }}
+                                    >
+                                        <span className="flex items-center justify-center space-x-3">
+                                            <Broadcast size={28} aria-hidden />
+                                            <span>
+                                                {thisLive
+                                                    ? t('resume.resume')
+                                                    : t('deck.presentLive')}
+                                            </span>
+                                        </span>
+                                    </MyButton>
+                                    <p className="text-title text-neutral-500">
+                                        {otherLive
+                                            ? t('deck.otherLiveHint')
+                                            : t('deck.presentLiveHint')}
+                                    </p>
+                                </>
+                            )}
                         </div>
                     </div>
                 </div>
@@ -169,9 +217,16 @@ export function PanelDeckView({ presentationId }: { presentationId: string }) {
         <PanelStage>
             <PanelTopBar title={deck?.title || t('list.title')} onBack={goBack} />
             <PanelStageBody className="p-8">
-                <div className="mx-auto max-w-screen-2xl">{body}</div>
+                <div className="mx-auto max-w-screen-2xl space-y-8">
+                    {keyRefusal && <PresenterKeyRefusedNotice />}
+                    {body}
+                </div>
             </PanelStageBody>
-            <LiveSessionDialog open={liveOpen} onOpenChange={setLiveOpen} onConfirm={startLive} />
+            <LiveSessionDialog
+                open={liveOpen && voltLiveEnabled}
+                onOpenChange={setLiveOpen}
+                onConfirm={startLive}
+            />
         </PanelStage>
     );
 }

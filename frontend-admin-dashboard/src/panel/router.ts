@@ -4,11 +4,14 @@
  * Every navigation is a real history entry (or a replace), so the Android back
  * button / Capacitor's goBack walks it naturally. No @tanstack/react-router.
  */
-import { useEffect, useState } from 'react';
+import { createContext, useContext, useEffect, useState } from 'react';
+import { usesDeviceAuth } from './device/store';
 
 export type PanelScreen =
     | 'diagnostics'
     | 'login'
+    | 'pair'
+    | 'signin'
     | 'institutes'
     | 'home'
     | 'whiteboard'
@@ -18,6 +21,8 @@ export type PanelScreen =
 export const PANEL_SCREENS: readonly PanelScreen[] = [
     'diagnostics',
     'login',
+    'pair',
+    'signin',
     'institutes',
     'home',
     'whiteboard',
@@ -119,8 +124,15 @@ export function subscribeRoute(listener: () => void): () => void {
     };
 }
 
+/**
+ * While a signed-in teacher has the sign-in card open over a screen (Switch teacher,
+ * rescan, Connect phone), that screen stays mounted and must keep seeing its own route.
+ */
+export const FrozenRouteContext = createContext<PanelRoute | null>(null);
+
 /** The current screen + query params; re-renders on every hash change. */
 export function usePanelRoute(): PanelRoute {
+    const frozen = useContext(FrozenRouteContext);
     const [hash, setHash] = useState(() => window.location.hash);
     useEffect(() => {
         const update = () => setHash(window.location.hash);
@@ -128,21 +140,24 @@ export function usePanelRoute(): PanelRoute {
         update();
         return unsubscribe;
     }, []);
-    return parseHash(hash);
+    return frozen ?? parseHash(hash);
 }
 
 /**
- * Login redirect for auth-required screens (replaces the current entry).
- * The original target comes back through `#/login?next=<screen>?<query>`.
+ * Sign-in redirect for auth-required screens (replaces the current entry). Goes to
+ * the QR sign-in on a paired panel and to the Phase 0 form otherwise. The original
+ * target comes back through `?next=<screen>?<query>`.
  */
 export function redirectToLogin(route: PanelRoute): void {
     const next = buildHash(route.screen, route.params).replace(/^#\//, '');
-    navigate('login', { next }, { replace: true });
+    navigate(usesDeviceAuth() ? 'signin' : 'login', { next }, { replace: true });
 }
 
 /** Resolve a `next` param written by redirectToLogin back into a route. */
 export function routeFromNext(next: string | undefined): PanelRoute | null {
     if (!next) return null;
     const route = parseHash(`#/${next}`);
-    return route.screen === 'login' ? null : route;
+    return route.screen === 'login' || route.screen === 'signin' || route.screen === 'pair'
+        ? null
+        : route;
 }

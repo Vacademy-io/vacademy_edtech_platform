@@ -29,6 +29,15 @@
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
     <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS" />
 
+    <!-- Lets PanelDevice.openExternal see what would open a link, on API 30 and later. -->
+    <queries>
+        <intent>
+            <action android:name="android.intent.action.VIEW" />
+            <category android:name="android.intent.category.BROWSABLE" />
+            <data android:scheme="https" />
+        </intent>
+    </queries>
+
     <!-- No adb backup (review finding SEC-7): on the Android 9-11 targets `adb backup`
          would copy app_webview (the teacher's auth cookies) and localStorage off a shared
          panel. Classroom flavor only; main / admin keep allowBackup="true". -->
@@ -58,6 +67,16 @@
                 <category android:name="android.intent.category.LEANBACK_LAUNCHER" />
             </intent-filter>
         </activity>
+
+        <!-- Live class host, opened only by PanelDevice.openMeeting. Classroom flavor only:
+             no other flavor can start it. Not launchable from outside the app. The theme keeps
+             MainActivity visible underneath; the Activity sets its own opaque theme and
+             landscape orientation in onCreate. -->
+        <activity
+            android:name="io.vacademy.admin.app.panel.PanelMeetingActivity"
+            android:configChanges="orientation|keyboardHidden|keyboard|screenSize|locale|smallestScreenSize|screenLayout|uiMode|navigation|density"
+            android:exported="false"
+            android:theme="@android:style/Theme.Translucent.NoTitleBar" />
 
         <!-- TODO(classroom push): re-enable when a Firebase client exists for
              io.vacademy.classroom and the panel actually registers for push. -->

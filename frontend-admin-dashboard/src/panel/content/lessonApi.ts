@@ -15,6 +15,8 @@
  * Same fetch shapes as courses/-services/getStudyLibraryDetails.ts,
  * getModulesWithChapters.ts and getAllSlides.ts (not imported: their modules
  * write into admin zustand stores).
+ *
+ * Lists are network-first with the teacher's saved copy behind them (offline/).
  */
 import { useQuery } from '@tanstack/react-query';
 import { GET_MODULES_WITH_CHAPTERS, GET_SLIDES, INIT_STUDY_LIBRARY } from '@/constants/urls';
@@ -28,6 +30,7 @@ import type { Slide } from '@/routes/study-library/courses/course-details/subjec
 import { getPublicUrl } from '@/services/upload_file';
 import { getLmsVideoRender, type LmsVideoRenderState } from '@/services/lms-ai-video';
 import { panelApi } from '../lib/api';
+import { backoffDelay, networkFirst, refreshWhileSaved } from '../offline/networkFirst';
 
 export type { CourseWithSessionsType, PackageSessionType, SubjectType, ModulesWithChapters, Slide };
 
@@ -36,6 +39,23 @@ const LIST_STALE_MS = 10 * 60 * 1000;
 
 const INACTIVE_STATUSES = ['DELETED', 'INACTIVE'];
 
+/** Tries after a first failure; list and file calls back off between them. */
+const NETWORK_RETRIES = 3;
+
+function libraryKey(instituteId: string): string {
+    return `library:${instituteId}`;
+}
+
+function modulesKey(subjectId: string, packageSessionId: string): string {
+    return `modules:${subjectId}:${packageSessionId}`;
+}
+
+function slidesKey(scope: SlideScope): string {
+    return 'chapterId' in scope
+        ? `slides:c:${scope.chapterId}`
+        : `slides:p:${scope.packageSessionId}`;
+}
+
 function isListed(status: string | null | undefined): boolean {
     return INACTIVE_STATUSES.indexOf((status || '').toUpperCase()) < 0;
 }
@@ -43,30 +63,36 @@ function isListed(status: string | null | undefined): boolean {
 // ------------------------------------------------------------- fetchers ---
 
 export async function fetchStudyLibrary(instituteId: string): Promise<CourseWithSessionsType[]> {
-    const response = await panelApi.get<CourseWithSessionsType[]>(INIT_STUDY_LIBRARY, {
-        params: { instituteId },
+    return networkFirst(libraryKey(instituteId), async () => {
+        const response = await panelApi.get<CourseWithSessionsType[]>(INIT_STUDY_LIBRARY, {
+            params: { instituteId },
+        });
+        return Array.isArray(response.data) ? response.data : [];
     });
-    return Array.isArray(response.data) ? response.data : [];
 }
 
 export async function fetchModulesWithChapters(
     subjectId: string,
     packageSessionId: string
 ): Promise<ModulesWithChapters[]> {
-    const response = await panelApi.get<ModulesWithChapters[]>(GET_MODULES_WITH_CHAPTERS, {
-        params: { subjectId, packageSessionId },
+    return networkFirst(modulesKey(subjectId, packageSessionId), async () => {
+        const response = await panelApi.get<ModulesWithChapters[]>(GET_MODULES_WITH_CHAPTERS, {
+            params: { subjectId, packageSessionId },
+        });
+        return Array.isArray(response.data) ? response.data : [];
     });
-    return Array.isArray(response.data) ? response.data : [];
 }
 
 export type SlideScope = { chapterId: string } | { packageSessionId: string };
 
 export async function fetchSlides(scope: SlideScope): Promise<Slide[]> {
-    const response = await panelApi.get<Slide[]>(GET_SLIDES, { params: scope });
-    const slides = Array.isArray(response.data) ? response.data : [];
-    return slides
-        .filter((slide) => isListed(slide.status))
-        .sort((a, b) => (a.slide_order ?? 0) - (b.slide_order ?? 0));
+    return networkFirst(slidesKey(scope), async () => {
+        const response = await panelApi.get<Slide[]>(GET_SLIDES, { params: scope });
+        const slides = Array.isArray(response.data) ? response.data : [];
+        return slides
+            .filter((slide) => isListed(slide.status))
+            .sort((a, b) => (a.slide_order ?? 0) - (b.slide_order ?? 0));
+    });
 }
 
 /**
@@ -131,6 +157,9 @@ export function useStudyLibrary(instituteId: string | null) {
         queryFn: () => fetchStudyLibrary(instituteId as string),
         enabled: !!instituteId,
         staleTime: LIST_STALE_MS,
+        retry: NETWORK_RETRIES,
+        retryDelay: backoffDelay,
+        refetchInterval: refreshWhileSaved(libraryKey(instituteId ?? '')),
     });
 }
 
@@ -143,6 +172,9 @@ export function useModulesWithChapters(
         queryFn: () => fetchModulesWithChapters(subjectId as string, packageSessionId as string),
         enabled: !!subjectId && !!packageSessionId,
         staleTime: LIST_STALE_MS,
+        retry: NETWORK_RETRIES,
+        retryDelay: backoffDelay,
+        refetchInterval: refreshWhileSaved(modulesKey(subjectId ?? '', packageSessionId ?? '')),
     });
 }
 
@@ -153,12 +185,19 @@ export function useSlides(scope: SlideScope | null) {
         queryFn: () => fetchSlides(scope as SlideScope),
         enabled: !!scope,
         staleTime: 60 * 1000,
+        retry: NETWORK_RETRIES,
+        retryDelay: backoffDelay,
+        refetchInterval: scope ? refreshWhileSaved(slidesKey(scope)) : false,
     });
 }
 
 /**
  * Signed URL for a media file id, resolved on EVERY mount (staleTime 0,
  * gcTime 0): a panel left on a lesson overnight must not reuse an expired link.
+ * The saved copy of a PDF or scene is looked up before this runs (offline/).
+ * Not fetched again when the network comes back: PanelPlayer keys the player on
+ * dataUpdatedAt, so a new answer would reload the page or video from the start. An
+ * expired link has its own path (onExpired, Retry).
  */
 export function useSignedUrl(fileId: string | null) {
     return useQuery({
@@ -167,16 +206,23 @@ export function useSignedUrl(fileId: string | null) {
         enabled: !!fileId,
         staleTime: 0,
         gcTime: 0,
+        refetchOnReconnect: false,
+        retry: NETWORK_RETRIES,
+        retryDelay: backoffDelay,
     });
 }
 
-/** MP4 render state of an AI video (404 = never rendered through /lms-video). */
+/**
+ * MP4 render state of an AI video (404 = never rendered through /lms-video). Not
+ * fetched again on reconnect, for the same reason as useSignedUrl.
+ */
 export function useAiVideoRender(videoId: string) {
     return useQuery({
         queryKey: ['panel', 'lessons', 'ai-render', videoId],
         queryFn: () => fetchAiVideoRender(videoId),
         staleTime: 0,
         gcTime: 0,
+        refetchOnReconnect: false,
         retry: false,
     });
 }

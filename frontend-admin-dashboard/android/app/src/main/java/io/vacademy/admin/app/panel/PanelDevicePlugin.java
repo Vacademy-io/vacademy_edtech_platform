@@ -20,12 +20,14 @@ import android.util.Base64;
 import android.util.DisplayMetrics;
 import android.view.Display;
 import android.view.WindowManager;
+import androidx.activity.result.ActivityResult;
 import androidx.core.content.FileProvider;
 import com.getcapacitor.JSArray;
 import com.getcapacitor.JSObject;
 import com.getcapacitor.Plugin;
 import com.getcapacitor.PluginCall;
 import com.getcapacitor.PluginMethod;
+import com.getcapacitor.annotation.ActivityCallback;
 import com.getcapacitor.annotation.CapacitorPlugin;
 import io.vacademy.admin.app.R;
 import java.io.File;
@@ -48,12 +50,28 @@ import java.io.OutputStream;
  *       (rejects with code NO_ACTIVITY / INVALID_TARGET)</li>
  *   <li>{@code saveImage({base64, fileName, mimeType}) → {uri, displayPath}}
  *       (rejects with INVALID_ARGUMENT / SAVE_FAILED)</li>
+ *   <li>{@code openExternal({url}) → {opened, reason?}} (https only, never rejects; reason
+ *       INVALID_URL / NO_HANDLER / ERROR)</li>
+ *   <li>{@code openMeeting({url}) → {opened, reason?}} (https only, and only to a host in
+ *       R.string.panel_meeting_hosts; never rejects; resolves when {@link PanelMeetingActivity}
+ *       closes; reason INVALID_URL / ALREADY_OPEN / NO_HANDLER / ERROR)</li>
+ *   <li>{@code closeMeeting() → {}} (closes the meeting screen if one is open; never rejects)</li>
  * </ul>
  */
 @CapacitorPlugin(name = "PanelDevice")
 public class PanelDevicePlugin extends Plugin {
 
     static final String ALBUM = "Vacademy Classroom";
+
+    private static final String REASON_INVALID_URL = "INVALID_URL";
+    private static final String REASON_NO_HANDLER = "NO_HANDLER";
+    private static final String REASON_ALREADY_OPEN = "ALREADY_OPEN";
+    private static final String REASON_ERROR = "ERROR";
+    /** Android TV's placeholder for "no browser": it takes the intent and shows nothing. */
+    private static final String TV_BROWSER_STUB_PACKAGE = "com.android.tv.frameworkpackagestubs";
+
+    /** One meeting at a time: a second tap on Start must not stack another class on top. */
+    private boolean meetingOpen;
 
     @PluginMethod
     public void getInfo(PluginCall call) {
@@ -206,7 +224,89 @@ public class PanelDevicePlugin extends Plugin {
         }
     }
 
+    @PluginMethod
+    public void openExternal(PluginCall call) {
+        Uri uri = PanelMeetingActivity.parseHttps(call.getString("url"));
+        if (uri == null) {
+            resolveOpen(call, false, REASON_INVALID_URL);
+            return;
+        }
+        Intent intent = new Intent(Intent.ACTION_VIEW, uri);
+        intent.addCategory(Intent.CATEGORY_BROWSABLE);
+        // Its own task: the panel app can be the Home app and must stay as it was underneath.
+        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+        try {
+            ResolveInfo target = getContext().getPackageManager()
+                    .resolveActivity(intent, PackageManager.MATCH_DEFAULT_ONLY);
+            if (target != null && target.activityInfo != null
+                    && TV_BROWSER_STUB_PACKAGE.equals(target.activityInfo.packageName)) {
+                resolveOpen(call, false, REASON_NO_HANDLER);
+                return;
+            }
+            getContext().startActivity(intent);
+            resolveOpen(call, true, null);
+        } catch (ActivityNotFoundException e) {
+            resolveOpen(call, false, REASON_NO_HANDLER);
+        } catch (RuntimeException e) {
+            resolveOpen(call, false, REASON_ERROR);
+        }
+    }
+
+    @PluginMethod
+    public void openMeeting(PluginCall call) {
+        String url = call.getString("url");
+        Uri uri = PanelMeetingActivity.parseHttps(url);
+        // The host list comes from the build, not from the page.
+        if (uri == null || !PanelMeetingActivity.isAllowedMeetingHost(getContext(), uri)) {
+            resolveOpen(call, false, REASON_INVALID_URL);
+            return;
+        }
+        if (meetingOpen) {
+            resolveOpen(call, false, REASON_ALREADY_OPEN);
+            return;
+        }
+        Intent intent = new Intent(getContext(), PanelMeetingActivity.class);
+        intent.putExtra(PanelMeetingActivity.EXTRA_URL, url);
+        meetingOpen = true;
+        try {
+            startActivityForResult(call, intent, "onMeetingClosed");
+        } catch (ActivityNotFoundException e) {
+            meetingOpen = false;
+            bridge.releaseCall(call);
+            resolveOpen(call, false, REASON_NO_HANDLER);
+        } catch (RuntimeException e) {
+            meetingOpen = false;
+            bridge.releaseCall(call);
+            resolveOpen(call, false, REASON_ERROR);
+        }
+    }
+
+    /** The panel's session ended: the meeting screen, with its microphone and camera, goes too. */
+    @PluginMethod
+    public void closeMeeting(PluginCall call) {
+        Intent intent = new Intent(PanelMeetingActivity.ACTION_CLOSE);
+        intent.setPackage(getContext().getPackageName());
+        getContext().sendBroadcast(intent);
+        call.resolve();
+    }
+
+    @ActivityCallback
+    private void onMeetingClosed(PluginCall call, ActivityResult result) {
+        meetingOpen = false;
+        // Null when the panel page reloaded while the meeting was in front: nobody is waiting.
+        if (call == null) return;
+        bridge.releaseCall(call);
+        resolveOpen(call, true, null);
+    }
+
     // --- helpers -------------------------------------------------------------
+
+    private static void resolveOpen(PluginCall call, boolean opened, String reason) {
+        JSObject ret = new JSObject();
+        ret.put("opened", opened);
+        if (reason != null) ret.put("reason", reason);
+        call.resolve(ret);
+    }
 
     /** API 29+: shared Pictures/Vacademy Classroom via MediaStore (no permission needed). */
     private JSObject saveViaMediaStore(byte[] bytes, String name, String mimeType) throws IOException {

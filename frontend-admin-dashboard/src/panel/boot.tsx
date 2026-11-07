@@ -9,7 +9,11 @@ import { createRoot } from 'react-dom/client';
 import { CircleNotch } from '@phosphor-icons/react';
 import { getCachedBranding, applyCachedBranding, refreshBranding } from './lib/branding';
 import { initPanelI18n } from './i18n';
-import { enforceIdleSignOutAtBoot } from './lib/session';
+import { loadPanelDeviceInfo } from './device/deviceInfo';
+import { startSyncLoop } from './device/syncLoop';
+import { startOffline } from './offline/init';
+import { applyBootResume } from './offline/resume';
+import { clearStrayCookies, enforceIdleSignOutAtBoot, refreshSessionAtBoot } from './lib/session';
 import { PanelApp } from './PanelApp';
 
 function PanelSplash({ name }: { name: string }) {
@@ -54,9 +58,13 @@ export function boot(): void {
         } catch (error) {
             recordBootError('branding', error);
         }
-        // A session left idle past the 3 h limit (panel powered off, app restarted)
-        // is signed out BEFORE the first authenticated render (review finding SEC-1).
-        // Resolves at once unless a stale live-session record has to be ended (≤ 5 s).
+        // Paired: cookies with no session behind them go, the sync loop starts, and a
+        // session refreshes once before the first authenticated render, so one that
+        // ended while the panel was off never shows. Bounded at 3 s for no network.
+        // Phase 0: a session left idle past the 3 h limit (panel powered off, app
+        // restarted) is signed out BEFORE the first authenticated render (review
+        // finding SEC-1). Resolves at once unless a stale live-session record has to
+        // be ended (≤ 5 s).
         let mounted = false;
         const mount = () => {
             if (mounted) return;
@@ -68,10 +76,31 @@ export function boot(): void {
             mount();
         };
         try {
-            enforceIdleSignOutAtBoot().then(mount, idleFailed);
+            clearStrayCookies();
+            void loadPanelDeviceInfo();
+            startSyncLoop();
+            startOffline();
+        } catch (error) {
+            recordBootError('device', error);
+        }
+        const brand = () => {
+            refreshBranding().catch((error) => recordBootError('refreshBranding', error));
+        };
+        try {
+            enforceIdleSignOutAtBoot()
+                .then(() => refreshSessionAtBoot())
+                .then(() => {
+                    try {
+                        applyBootResume();
+                    } catch (error) {
+                        recordBootError('resume', error);
+                    }
+                })
+                .then(mount, idleFailed)
+                .then(brand);
         } catch (error) {
             idleFailed(error);
+            brand();
         }
-        refreshBranding().catch((error) => recordBootError('refreshBranding', error));
     }, 0);
 }

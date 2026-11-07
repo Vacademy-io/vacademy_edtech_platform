@@ -1,0 +1,30 @@
+/*
+ * Phone page styles. The marker below is replaced at build time with the token
+ * blocks of src/index.css (see vite.classroom.config.ts), so tokens cannot drift
+ * and the page does not carry the rest of that file.
+ */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* classroom-tokens */
+
+@layer base {
+    * {
+        @apply border-border;
+    }
+    body {
+        @apply bg-background text-foreground;
+        -webkit-tap-highlight-color: transparent;
+    }
+}
+
+/* MyButton's secondary text is a fixed neutral, too dark on the dark surface. A rule
+   here rather than a utility, so src/classroom-phone adds nothing to the main CSS. */
+.phone-secondary-text {
+    color: hsl(var(--foreground)) !important;
+}
+
+.phone-press:active:not(:disabled) {
+    background-color: hsl(var(--muted));
+}

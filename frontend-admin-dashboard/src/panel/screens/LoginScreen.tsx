@@ -1,6 +1,8 @@
 /**
- * Panel sign-in: username + password only (Phase 1 adds QR sign-in; no OAuth /
- * OTP here). Flow copied from login-form.tsx L385-470, not imported (it uses
+ * Password form. On a paired panel it is #/signin?mode=password and posts to
+ * /session/login-password, where an admin has allowed that for the panel. In a lab
+ * build with VITE_PANEL_LEGACY_LOGIN=1 an unpaired panel also gets the Phase 0
+ * login here. Flow copied from login-form.tsx L385-470, not imported (it uses
  * @tanstack/react-router). Shared device: the browser is told not to save the
  * password (MyInput's default autocomplete opt-out).
  */
@@ -15,8 +17,16 @@ import { MyInput } from '@/components/design-system/input';
 import { MyButton } from '@/components/design-system/button';
 import { PanelTopBar } from '../components/PanelTopBar';
 import { PanelStage, PanelStageBody } from '../components/PanelStage';
+import { PANEL_LEGACY_LOGIN } from '../config';
+import { readDevice, usesDeviceAuth } from '../device/store';
 import { refreshBranding } from '../lib/branding';
-import { PanelLoginError, loginWithPassword, usePanelSession } from '../lib/session';
+import {
+    DevicePasswordError,
+    PanelLoginError,
+    loginWithDevicePassword,
+    loginWithPassword,
+    usePanelSession,
+} from '../lib/session';
 import { getPanelLanguage, setPanelLanguage, PANEL_LANGUAGES, type PanelLanguage } from '../i18n';
 import { goBack, navigate, routeFromNext, usePanelRoute } from '../router';
 
@@ -24,8 +34,10 @@ const INPUT_CLASS = 'h-16 text-h3 sm:w-full';
 
 export default function LoginScreen() {
     const { t } = useTranslation('panel');
+    const { t: td } = useTranslation('device');
     const { params } = usePanelRoute();
     const { isSignedIn } = usePanelSession();
+    const deviceMode = !PANEL_LEGACY_LOGIN || usesDeviceAuth();
     const [formError, setFormError] = useState<string | null>(null);
     const [language, setLanguage] = useState<PanelLanguage>(getPanelLanguage);
 
@@ -46,14 +58,32 @@ export default function LoginScreen() {
         else navigate('home', undefined, { replace: true });
     };
 
-    // Already signed in (e.g. back button): nothing to do here.
+    // Already signed in (e.g. back button): nothing to do here. On a paired panel a
+    // signed-in teacher can be here on purpose, handing over by password.
     useEffect(() => {
-        if (isSignedIn) goNext();
+        if (isSignedIn && !deviceMode) goNext();
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     const onSubmit = async (values: LoginValues) => {
         setFormError(null);
+        if (deviceMode) {
+            try {
+                const result = await loginWithDevicePassword(values.username, values.password);
+                void refreshBranding();
+                // Same teacher: back past the QR card to the screen they were on.
+                if (isSignedIn && result.sameUser) window.history.go(-2);
+                else goNext();
+            } catch (error) {
+                const code = error instanceof DevicePasswordError ? error.code : 'SERVER';
+                setFormError(
+                    td(`password.errors.${code}`, { institute: readDevice()?.institute_name ?? '' })
+                );
+                form.setValue('password', '');
+            }
+            return;
+        }
+        if (!PANEL_LEGACY_LOGIN) return;
         try {
             const result = await loginWithPassword(values.username, values.password);
             if (result.status === 'pick') {
@@ -102,8 +132,8 @@ export default function LoginScreen() {
     };
 
     return (
-        <PanelStage>
-            <PanelTopBar onBack={goBack} showHome={false} />
+        <PanelStage className={deviceMode ? 'z-50' : undefined}>
+            <PanelTopBar onBack={goBack} showHome={false} sessionActions={false} />
             <PanelStageBody className="p-8">
                 {/* Two columns from md (768): an Android TV is 960 CSS px wide, and in
                     one column the sign-in card sat below its 540 px fold. Narrower than
@@ -111,11 +141,13 @@ export default function LoginScreen() {
                 <div className="mx-auto grid max-w-6xl grid-cols-1 gap-10 md:grid-cols-2">
                     <section className="space-y-6">
                         <h2 className="text-h1 font-semibold text-neutral-800">
-                            {t('login.title')}
+                            {deviceMode ? td('password.title') : t('login.title')}
                         </h2>
-                        <p className="text-title text-neutral-500">{t('login.subtitle')}</p>
+                        <p className="text-title text-neutral-500">
+                            {deviceMode ? td('password.subtitle') : t('login.subtitle')}
+                        </p>
                         <p className="text-subtitle text-neutral-500">
-                            {t('login.sharedDeviceNote')}
+                            {deviceMode ? td('password.note') : t('login.sharedDeviceNote')}
                         </p>
                         <div className="space-y-4 pt-4">
                             <MyButton

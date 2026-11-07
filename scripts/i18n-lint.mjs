@@ -40,7 +40,9 @@ const FRONTEND_FILE = /^frontend-(admin-dashboard|learner-dashboard-app)\/src\/.
 const RULES = [
   {
     id: 'physical-direction-utility',
-    appliesTo: /\.(tsx|ts|css)$/,
+    // Not the classroom panel app: it targets Chrome 66 WebViews, which lack the CSS logical
+    // properties (margin-inline-start, inset-inline-start) the logical utilities compile to.
+    appliesTo: /^(?!frontend-admin-dashboard\/src\/panel\/).*\.(tsx|ts|css)$/,
     test: /(?<!\w)(?:ml|mr|pl|pr)-\d|(?<!\w)(?:left|right)-\d|(?<!\w)text-(?:left|right)(?![\w-])|(?<!\w)space-x-\d/g,
     hint(match) {
       const swaps = { ml: 'ms', mr: 'me', pl: 'ps', pr: 'pe' };

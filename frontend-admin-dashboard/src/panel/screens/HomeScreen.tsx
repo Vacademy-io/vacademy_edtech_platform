@@ -1,9 +1,17 @@
 /**
- * Panel Home: big launch tiles. Whiteboard always works; Present (Volt) and
- * Lessons need a signed-in teacher; Diagnostics always. In the classroom APK
- * (PanelDevice available) two escape hatches open Android settings and the
- * Home-app chooser, so a panel that uses us as its launcher is never a dead end.
+ * Panel Home.
+ *
+ * Signed in: Today's classes above the tiles. Signed out on a paired panel: the sign-in
+ * QR with Whiteboard and Diagnostics beside it, and no class name anywhere. Lab builds
+ * with no device behind them keep the Phase 0 tiles.
+ *
+ * Android settings and Switch Home open the way out of the app, so they stay for the
+ * installer before pairing and afterwards only for an admin of this institute. Wi-Fi and
+ * Date settings appear in the offline and wrong-date states of the card or the strip.
+ *
+ * The sign-in card and the strip are separate chunks, so neither weighs on first paint.
  */
+import { Suspense, lazy } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import {
@@ -15,17 +23,35 @@ import {
     SignIn,
     Stethoscope,
 } from '@phosphor-icons/react';
+import { clearTodayCache } from '../classes/todayCache';
+import { TodaySkeleton } from '../classes/TodaySkeleton';
+import { useArrowFocus } from '../classes/useArrowFocus';
+import { PanelLoading } from '../components/PanelScreenState';
 import { PanelTopBar } from '../components/PanelTopBar';
 import { PanelStage, PanelStageBody, PanelFullscreenButton } from '../components/PanelStage';
 import { PanelTile } from '../components/PanelTile';
-import { usePanelSession } from '../lib/session';
+import { subscribeDeviceEvents, useDeviceRecord, usesDeviceAuth } from '../device/store';
+import { canUseDeviceSettings, usePanelSession } from '../lib/session';
 import { isNativePanel, openDeviceSettings, type PanelSettingsTarget } from '../lib/native';
 import { navigate, type PanelScreen } from '../router';
+
+const TodayStrip = lazy(() => import('../classes/TodayStrip'));
+const SignInCard = lazy(() =>
+    import('../device/SignInCard').then((module) => ({ default: module.SignInCard }))
+);
+
+// A stored list belongs to one institute and to a panel that is still paired there.
+subscribeDeviceEvents((event) => {
+    if (event.type === 'REVOKED' || event.type === 'INSTITUTE_CHANGED') clearTodayCache();
+});
 
 export default function HomeScreen() {
     const { t } = useTranslation('panel');
     const { user, isSignedIn } = usePanelSession();
-    const native = isNativePanel();
+    const device = useDeviceRecord();
+    const paired = usesDeviceAuth();
+    const showDeviceSettings = isNativePanel() && canUseDeviceSettings();
+    useArrowFocus();
 
     const open = (screen: PanelScreen, needsSignIn: boolean) => {
         if (needsSignIn && !isSignedIn) {
@@ -40,31 +66,83 @@ export default function HomeScreen() {
         if (!ok) toast.error(t('home.settingsUnavailable'));
     };
 
+    const whiteboardTile = (className?: string) => (
+        <PanelTile
+            icon={PencilLine}
+            label={t('home.tiles.whiteboard')}
+            description={t('home.tiles.whiteboardHint')}
+            onClick={() => open('whiteboard', false)}
+            className={className}
+        />
+    );
+    const diagnosticsTile = (className?: string) => (
+        <PanelTile
+            icon={Stethoscope}
+            label={t('home.tiles.diagnostics')}
+            description={t('home.tiles.diagnosticsHint')}
+            onClick={() => navigate('diagnostics')}
+            className={className}
+        />
+    );
+
+    if (paired && !isSignedIn) {
+        return (
+            <PanelStage>
+                <PanelTopBar actions={<PanelFullscreenButton />} />
+                <PanelStageBody className="p-4">
+                    <div className="mx-auto flex max-w-screen-2xl items-stretch">
+                        <Suspense
+                            fallback={
+                                <div className="flex min-w-0 flex-1 items-center justify-center rounded-lg border border-border bg-card p-4">
+                                    <PanelLoading />
+                                </div>
+                            }
+                        >
+                            <SignInCard
+                                showActions={false}
+                                className="flex min-w-0 flex-1 flex-col justify-center"
+                            />
+                        </Suspense>
+                        <div className="ml-4 w-72 shrink-0 space-y-4">
+                            {whiteboardTile('min-h-0 p-4')}
+                            {diagnosticsTile('min-h-0 p-4')}
+                        </div>
+                    </div>
+                </PanelStageBody>
+            </PanelStage>
+        );
+    }
+
     const lockedLabel = isSignedIn ? undefined : t('home.signInToUse');
 
     return (
         <PanelStage>
             <PanelTopBar actions={<PanelFullscreenButton />} />
-            <PanelStageBody className="p-8">
-                <div className="mx-auto max-w-screen-2xl space-y-8">
-                    <div className="space-y-1">
-                        <h2 className="text-h1 font-semibold text-neutral-800">
-                            {isSignedIn && user
-                                ? t('home.greeting', { name: user.fullName || user.username })
-                                : t('home.greetingSignedOut')}
-                        </h2>
-                        <p className="text-title text-neutral-500">
-                            {isSignedIn ? t('home.subtitle') : t('home.subtitleSignedOut')}
-                        </p>
-                    </div>
+            <PanelStageBody className="p-6">
+                <div className="mx-auto max-w-screen-2xl space-y-6">
+                    {paired && device && user ? (
+                        <Suspense fallback={<TodaySkeleton />}>
+                            <TodayStrip
+                                key={`${user.id}|${device.institute_id}`}
+                                userId={user.id}
+                                instituteId={device.institute_id}
+                            />
+                        </Suspense>
+                    ) : (
+                        <div className="space-y-1">
+                            <h2 className="text-h1 font-semibold text-neutral-800">
+                                {isSignedIn && user
+                                    ? t('home.greeting', { name: user.fullName || user.username })
+                                    : t('home.greetingSignedOut')}
+                            </h2>
+                            <p className="text-title text-neutral-500">
+                                {isSignedIn ? t('home.subtitle') : t('home.subtitleSignedOut')}
+                            </p>
+                        </div>
+                    )}
 
                     <div className="grid grid-cols-2 gap-6 2xl:grid-cols-4">
-                        <PanelTile
-                            icon={PencilLine}
-                            label={t('home.tiles.whiteboard')}
-                            description={t('home.tiles.whiteboardHint')}
-                            onClick={() => open('whiteboard', false)}
-                        />
+                        {whiteboardTile()}
                         <PanelTile
                             icon={PresentationChart}
                             label={t('home.tiles.volt')}
@@ -87,13 +165,8 @@ export default function HomeScreen() {
                                 onClick={() => navigate('login')}
                             />
                         )}
-                        <PanelTile
-                            icon={Stethoscope}
-                            label={t('home.tiles.diagnostics')}
-                            description={t('home.tiles.diagnosticsHint')}
-                            onClick={() => navigate('diagnostics')}
-                        />
-                        {native && (
+                        {diagnosticsTile()}
+                        {showDeviceSettings && (
                             <PanelTile
                                 icon={GearSix}
                                 label={t('home.tiles.androidSettings')}
@@ -101,7 +174,7 @@ export default function HomeScreen() {
                                 onClick={() => void openSettings('settings')}
                             />
                         )}
-                        {native && (
+                        {showDeviceSettings && (
                             <PanelTile
                                 icon={HouseLine}
                                 label={t('home.tiles.switchHome')}

@@ -9,6 +9,7 @@
  *     so slide positions still match the live session's slide list.
  */
 import type { ExcalidrawElement } from '@excalidraw/excalidraw/element/types';
+import { networkFirst } from '../offline/networkFirst';
 import { getDeck, getPublicUrl } from './voltApi';
 import type {
     DeckLoadProgress,
@@ -21,6 +22,8 @@ import type {
 } from './types';
 
 const CONCURRENCY = 4;
+/** A big deck legitimately takes a while over a slow connection. */
+const DECK_SLOW_MS = 20 * 1000;
 
 /** Correct options as stored in auto_evaluation_json (snake or camel case). */
 function correctOptionIds(question: VoltQuestion): string[] {
@@ -134,10 +137,24 @@ function wireToSlide(slide: VoltWireSlide): PanelSlide {
 }
 
 /**
- * Load a whole deck. `onProgress` reports Excalidraw slide files fetched so far
- * (question slides need no fetch). Rejects only when the deck itself fails.
+ * Load a whole deck, from the network or, when that fails, from this teacher's saved
+ * copy. A deck with failed slides is not saved, and a whole saved copy is preferred
+ * over it. `onProgress` reports Excalidraw slide files fetched so far (question slides
+ * need no fetch). Rejects only when the deck itself fails.
  */
-export async function loadDeck(
+export function loadDeck(
+    presentationId: string,
+    onProgress?: (progress: DeckLoadProgress) => void,
+    signal?: AbortSignal
+): Promise<PanelDeck> {
+    return networkFirst(
+        `deck:${presentationId}`,
+        () => fetchWholeDeck(presentationId, onProgress, signal),
+        { isPartial: (deck) => deck.failedCount > 0, slowMs: DECK_SLOW_MS }
+    );
+}
+
+async function fetchWholeDeck(
     presentationId: string,
     onProgress?: (progress: DeckLoadProgress) => void,
     signal?: AbortSignal

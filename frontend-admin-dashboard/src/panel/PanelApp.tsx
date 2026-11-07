@@ -12,7 +12,7 @@
  * never synchronously in boot(). A late boot removes the pre-flight card when
  * the watchdog showed it only because of its 20 s timeout.
  */
-import { Suspense, lazy, useEffect, type ComponentType, type ReactNode } from 'react';
+import { Suspense, lazy, useEffect, useRef, type ComponentType, type ReactNode } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
@@ -22,7 +22,10 @@ import { MyButton } from '@/components/design-system/button';
 // PostCSS-processed copy of sonner's runtime-injected styles (its 47 :where()
 // selectors are dropped by Chrome 66-87; postcss-panel-legacy unwraps them).
 import 'sonner/dist/styles.css';
-import { PANEL_IDLE_SIGNOUT_MS, PANEL_STORAGE_KEYS } from './config';
+import { PANEL_IDLE_SIGNOUT_MS, PANEL_LEGACY_LOGIN, PANEL_STORAGE_KEYS } from './config';
+import { SessionOverlays } from './device/SessionOverlays';
+import { useDeviceRecord, usesDeviceAuth } from './device/store';
+import { FrozenRouteContext } from './router';
 import { subscribeThemeCode } from './lib/branding';
 import {
     isSignedIn,
@@ -39,6 +42,7 @@ import {
     navigate,
     redirectToLogin,
     usePanelRoute,
+    type PanelRoute,
     type PanelScreen,
 } from './router';
 import { PanelRootErrorBoundary, PanelScreenErrorBoundary } from './components/PanelErrorBoundary';
@@ -46,16 +50,28 @@ import { PanelError, PanelLoading } from './components/PanelScreenState';
 import { PanelStage } from './components/PanelStage';
 import DiagnosticsScreen from './screens/DiagnosticsScreen';
 import HomeScreen from './screens/HomeScreen';
-import InstitutePickerScreen from './screens/InstitutePickerScreen';
-import LoginScreen from './screens/LoginScreen';
 
+function NoScreen() {
+    return null;
+}
+
+const SignInScreen = lazy(() => import('./device/SignInScreen'));
+const PairScreen = lazy(() => import('./device/PairScreen'));
+// Phase 0 only. A release build has no route to login-root, so these are not in it.
+const LoginScreen = PANEL_LEGACY_LOGIN ? lazy(() => import('./screens/LoginScreen')) : NoScreen;
+const InstitutePickerScreen = PANEL_LEGACY_LOGIN
+    ? lazy(() => import('./screens/InstitutePickerScreen'))
+    : NoScreen;
 const WhiteboardScreen = lazy(() => import('./whiteboard'));
 const VoltScreen = lazy(() => import('./volt'));
 const LessonsScreen = lazy(() => import('./content'));
+const OfflineLayer = lazy(() => import('./offline/OfflineLayer'));
 
-const SCREENS: Record<PanelScreen, ComponentType> = {
+const SCREENS: Record<PanelScreen, ComponentType<Record<string, never>>> = {
     diagnostics: DiagnosticsScreen,
     login: LoginScreen,
+    pair: PairScreen,
+    signin: SignInScreen,
     institutes: InstitutePickerScreen,
     home: HomeScreen,
     whiteboard: WhiteboardScreen,
@@ -104,9 +120,10 @@ function PanelBrandingSync() {
 }
 
 /**
- * Signs the teacher out after PANEL_IDLE_SIGNOUT_MS without input (not during a
- * fresh live Volt session). The last-activity time is persisted (throttled) so
- * boot.tsx can enforce the same limit across reboots (enforceIdleSignOutAtBoot).
+ * Phase 0 only (paired mode uses SessionOverlays): signs the teacher out after
+ * PANEL_IDLE_SIGNOUT_MS without input (not during a fresh live Volt session). The
+ * last-activity time is persisted (throttled) so boot.tsx can enforce the same limit
+ * across reboots (enforceIdleSignOutAtBoot).
  */
 function PanelIdleSignOut() {
     const { t } = useTranslation('panel');
@@ -121,7 +138,7 @@ function PanelIdleSignOut() {
         const events = ['pointerdown', 'keydown', 'wheel'];
         events.forEach((name) => window.addEventListener(name, mark, { passive: true }));
         const timer = window.setInterval(() => {
-            if (!isSignedIn()) {
+            if (usesDeviceAuth() || !isSignedIn()) {
                 lastActivity = Date.now();
                 return;
             }
@@ -175,9 +192,20 @@ function ScreenFallback({ error, reset }: { error: string; reset: () => void }) 
     );
 }
 
+/** The screens an unpaired panel may use. Everything else needs a device. */
+const WORKS_UNPAIRED: readonly PanelScreen[] = ['pair', 'diagnostics', 'whiteboard'];
+
 function PanelRouterOutlet() {
     const route = usePanelRoute();
     const { isSignedIn: signedIn } = usePanelSession();
+    const device = useDeviceRecord();
+    const deviceMode = !PANEL_LEGACY_LOGIN || device !== null;
+    const paired = !!device && !device.revoked_at;
+    const needsPairing = deviceMode && !paired && WORKS_UNPAIRED.indexOf(route.screen) < 0;
+    const donePairing = paired && route.screen === 'pair';
+    // The Phase 0 screens do not exist in device mode; #/login goes to the QR.
+    const oldLogin = deviceMode && route.screen === 'login';
+    const oldPicker = deviceMode && route.screen === 'institutes';
     const needsAuth = AUTH_REQUIRED_SCREENS.indexOf(route.screen) >= 0;
     const firstRun = readString(PANEL_STORAGE_KEYS.firstRunDone) === null;
     const redirectFirstRun = firstRun && route.screen !== 'diagnostics';
@@ -185,14 +213,49 @@ function PanelRouterOutlet() {
     useEffect(() => {
         if (redirectFirstRun) {
             navigate('diagnostics', { firstRun: '1' }, { replace: true });
+        } else if (needsPairing) {
+            navigate('pair', undefined, { replace: true });
+        } else if (donePairing || oldPicker) {
+            navigate('home', undefined, { replace: true });
+        } else if (oldLogin) {
+            navigate('signin', route.params, { replace: true });
         } else if (needsAuth && !signedIn) {
             redirectToLogin(route);
         }
         // route identity changes every render; screen + flags are what matter.
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [redirectFirstRun, needsAuth, signedIn, route.screen]);
+    }, [
+        redirectFirstRun,
+        needsPairing,
+        donePairing,
+        oldLogin,
+        oldPicker,
+        needsAuth,
+        signedIn,
+        route.screen,
+    ]);
 
-    if (redirectFirstRun || (needsAuth && !signedIn)) {
+    // A signed-in teacher opening the sign-in card keeps the current screen, and its
+    // state, mounted underneath: a rescan by the same teacher must not reset it.
+    // Only when already signed in on the way in: signing in on the plain screen must
+    // not swap it for the overlay in the moment before it navigates away.
+    const lastScreenRoute = useRef<PanelRoute>({ screen: 'home', params: {} });
+    const enteredSignedIn = useRef(false);
+    if (route.screen !== 'signin') {
+        lastScreenRoute.current = route;
+        enteredSignedIn.current = signedIn;
+    }
+    const overSignIn = route.screen === 'signin' && signedIn && enteredSignedIn.current;
+    const shownRoute = overSignIn ? lastScreenRoute.current : route;
+
+    if (
+        redirectFirstRun ||
+        needsPairing ||
+        donePairing ||
+        oldLogin ||
+        oldPicker ||
+        (needsAuth && !signedIn)
+    ) {
         return (
             <PanelStage className="items-center justify-center">
                 <PanelLoading />
@@ -200,10 +263,10 @@ function PanelRouterOutlet() {
         );
     }
 
-    const Screen = SCREENS[route.screen];
+    const Screen = SCREENS[shownRoute.screen];
     return (
         <PanelScreenErrorBoundary
-            key={route.screen}
+            key={shownRoute.screen}
             fallback={(error, reset) => <ScreenFallback error={error} reset={reset} />}
         >
             <Suspense
@@ -213,7 +276,10 @@ function PanelRouterOutlet() {
                     </PanelStage>
                 }
             >
-                <Screen />
+                <FrozenRouteContext.Provider value={overSignIn ? shownRoute : null}>
+                    <Screen />
+                </FrozenRouteContext.Provider>
+                {overSignIn && <SignInScreen overlay />}
                 <BootMarker />
             </Suspense>
         </PanelScreenErrorBoundary>
@@ -240,8 +306,14 @@ export function PanelApp() {
         <PanelRootErrorBoundary>
             <PanelProviders>
                 <PanelBrandingSync />
-                <PanelIdleSignOut />
+                {PANEL_LEGACY_LOGIN && <PanelIdleSignOut />}
                 <PanelRouterOutlet />
+                <SessionOverlays />
+                {usesDeviceAuth() && (
+                    <Suspense fallback={null}>
+                        <OfflineLayer />
+                    </Suspense>
+                )}
                 <Toaster theme="light" position="top-center" />
             </PanelProviders>
         </PanelRootErrorBoundary>

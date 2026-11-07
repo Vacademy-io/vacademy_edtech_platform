@@ -7,7 +7,9 @@
  * - isEvalSupported:false (CVE-2024-4367 class) via transformGetDocumentParams.
  * - Only the page-navigation + zoom plugins (their functions, not their UI):
  *   a big 10-foot toolbar instead of default-layout's search/print/thumbnails.
- * - PageDown/PageUp/arrow keys turn pages (classroom presenter clickers).
+ * - PageDown/PageUp/arrow keys turn pages (classroom presenter clickers), except while a
+ *   dialog, the sign-in overlay or the offline lock is on top.
+ * - The phone remote turns pages too (seams/remoteTarget), once the file has loaded.
  *
  * Not reused: simple-pdf-viewer.tsx (unpkg worker + default layout),
  * pdf-viewer.tsx (route import), react-pdf, services/pdf-page-count.ts.
@@ -36,6 +38,7 @@ import { zoomPlugin } from '@react-pdf-viewer/zoom';
 import '@react-pdf-viewer/core/lib/styles/index.css';
 import { MyButton } from '@/components/design-system/button';
 import { PanelError, PanelLoading } from '../components/PanelScreenState';
+import { useRemoteTarget } from '../seams/remoteTarget';
 import pdfWorkerUrl from './pdf.worker.ts?worker&url';
 import { patchNullTransfer } from './pdfWorker/postMessageShim';
 import { installCanvasGetTransform } from './canvasTransformShim';
@@ -50,6 +53,11 @@ installCanvasGetTransform();
 const MIN_SCALE = 0.25;
 const MAX_SCALE = 4;
 const ZOOM_STEP = 1.25;
+
+/** A dialog, the sign-in overlay or the offline lock: keys belong to it, not to the page. */
+function overlayOnTop(): boolean {
+    return !!document.querySelector('[role="dialog"], [role="alertdialog"], [data-panel-lock]');
+}
 
 type GetDocumentParams = Parameters<NonNullable<ViewerProps['transformGetDocumentParams']>>[0];
 
@@ -66,11 +74,13 @@ function withoutEval(options: GetDocumentParams): GetDocumentParams {
 
 export interface PanelPdfViewerProps {
     url: string;
+    /** Shown on the phone remote next to the page number. */
+    title?: string;
     /** Re-resolves the signed URL (the link may have expired). */
     onRetry: () => void;
 }
 
-export default function PanelPdfViewer({ url, onRetry }: PanelPdfViewerProps) {
+export default function PanelPdfViewer({ url, title, onRetry }: PanelPdfViewerProps) {
     const { t } = useTranslation('content');
     const navigation = pageNavigationPlugin({ enableShortcuts: false });
     const zoom = zoomPlugin({ enableShortcuts: false });
@@ -78,11 +88,23 @@ export default function PanelPdfViewer({ url, onRetry }: PanelPdfViewerProps) {
     const [pages, setPages] = useState(0);
     const [scale, setScale] = useState(1);
 
-    const { jumpToNextPage, jumpToPreviousPage } = navigation;
+    const { jumpToNextPage, jumpToPreviousPage, jumpToPage } = navigation;
     const { zoomTo } = zoom;
+
+    useRemoteTarget(
+        pages > 0
+            ? {
+                  next: () => jumpToNextPage(),
+                  prev: () => jumpToPreviousPage(),
+                  state: { index: page, total: pages, title: title || '' },
+                  seek: (target) => jumpToPage(target),
+              }
+            : null
+    );
 
     useEffect(() => {
         const onKey = (event: KeyboardEvent) => {
+            if (overlayOnTop()) return;
             if (
                 event.key === 'PageDown' ||
                 event.key === 'ArrowRight' ||

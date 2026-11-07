@@ -7,6 +7,9 @@
  *   whiteboard  — src/panel/whiteboard/strings.ts
  *   volt        — src/panel/volt/strings.ts
  *   content     — src/panel/content/strings.ts
+ *   device      — src/panel/device/strings.ts
+ *   classes     — src/panel/classes/strings.ts
+ *   offline     — src/panel/offline/strings.ts
  *   studyLibraryDeckPlayer, fileVideoPlayer — the reused admin players; fetched
  *     on demand from ./locales/<lng>/<ns>.json (emitted by vite.panel.config.ts)
  *     with ensureNamespaces() BEFORE those players mount.
@@ -20,13 +23,24 @@ import { readString, writeString } from '../lib/storage';
 import { strings as whiteboardStrings } from '../whiteboard/strings';
 import { strings as voltStrings } from '../volt/strings';
 import { strings as contentStrings } from '../content/strings';
+import { strings as deviceStrings } from '../device/strings';
+import { strings as classesStrings } from '../classes/strings';
+import { strings as offlineStrings } from '../offline/strings';
 import panelEn from './panel.en.json';
 import panelHi from './panel.hi.json';
 
 export type PanelLanguage = 'en' | 'hi';
 export const PANEL_LANGUAGES: readonly PanelLanguage[] = ['en', 'hi'];
 
-export const PANEL_NAMESPACES = ['panel', 'whiteboard', 'volt', 'content'] as const;
+export const PANEL_NAMESPACES = [
+    'panel',
+    'whiteboard',
+    'volt',
+    'content',
+    'device',
+    'classes',
+    'offline',
+] as const;
 
 function initialLanguage(): PanelLanguage {
     const saved = readString(SHARED_STORAGE_KEYS.locale);
@@ -41,12 +55,18 @@ export function initPanelI18n(): void {
             whiteboard: whiteboardStrings.en,
             volt: voltStrings.en,
             content: contentStrings.en,
+            device: deviceStrings.en,
+            classes: classesStrings.en,
+            offline: offlineStrings.en,
         },
         hi: {
             panel: panelHi,
             whiteboard: whiteboardStrings.hi,
             volt: voltStrings.hi,
             content: contentStrings.hi,
+            device: deviceStrings.hi,
+            classes: classesStrings.hi,
+            offline: offlineStrings.hi,
         },
     };
     const lng = initialLanguage();

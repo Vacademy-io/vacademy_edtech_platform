@@ -6,8 +6,10 @@
  *   .presenterStream) — a 3 h SseEmitter with 'presenter_heartbeat' every 30 s.
  *   Events: 'participants' (full list), 'session_state_presenter'
  *   ({sessionStatus, currentSlideIndex, totalSlides} on connect, {sessionStatus:
- *   'FINISHED'} on finish). The endpoint is permitAll: it sends NO auth, and the
- *   auth cookies are host-only on the dashboard host, so `withCredentials` does
+ *   'FINISHED'} on finish). EventSource cannot set headers, so a keyed session's
+ *   presenter key goes in the URL as ?presenter_token= (voltApi.presenterStreamUrl),
+ *   a name the server's log redaction recognises; never log that URL.
+ *   The auth cookies are host-only on the dashboard host, so `withCredentials` does
  *   not carry a token (from https://localhost in the APK it carries nothing).
  *   CORS echoes any origin with credentials, so the APK origin is accepted.
  *
@@ -15,10 +17,9 @@
  * completes the first (LiveSessionService.setPresenterEmitter). Callers must hold
  * exactly one adapter per session for both the waiting room and the live view.
  *
- * Kept behind this adapter so a token-in-query or fetch-stream reader can be
- * swapped in if engage/** stops being permitAll.
+ * Kept behind this adapter so a fetch-stream reader can be swapped in later.
  */
-import { PRESENTER_SSE_URL_BASE } from './voltApi';
+import { isStreamKeyRefused, presenterStreamUrl } from './voltApi';
 import type { VoltParticipant, VoltPresenterState } from './types';
 
 export type PresenterSseStatus = 'connecting' | 'connected' | 'reconnecting' | 'closed';
@@ -27,6 +28,8 @@ export interface PresenterSseHandlers {
     onParticipants?: (participants: VoltParticipant[]) => void;
     onState?: (state: VoltPresenterState) => void;
     onStatus?: (status: PresenterSseStatus) => void;
+    /** The server refused the presenter key. The connection has closed itself. */
+    onRefused?: () => void;
 }
 
 export interface PresenterSseConnection {
@@ -114,9 +117,7 @@ export function openPresenterSse(
         touch();
         let next: EventSource;
         try {
-            next = new EventSource(`${PRESENTER_SSE_URL_BASE}${encodeURIComponent(sessionId)}`, {
-                withCredentials: true,
-            });
+            next = new EventSource(presenterStreamUrl(sessionId), { withCredentials: true });
         } catch (error) {
             console.error('[panel/volt] EventSource failed', error);
             failures += 1;
@@ -136,9 +137,18 @@ export function openPresenterSse(
             if (closed || source !== next) return;
             failures += 1;
             if (next.readyState === EventSource.CLOSED) {
-                // The browser gave up (HTTP error / bad content type): retry ourselves.
+                // The browser gave up (HTTP error / bad content type): a refused key
+                // never heals, anything else we retry ourselves.
                 setStatus('reconnecting');
-                scheduleRetry();
+                void isStreamKeyRefused(sessionId).then((refused) => {
+                    if (closed || source !== next) return;
+                    if (refused) {
+                        close();
+                        handlers.onRefused?.();
+                    } else {
+                        scheduleRetry();
+                    }
+                });
             } else {
                 // readyState CONNECTING: the browser is already retrying.
                 setStatus('reconnecting');

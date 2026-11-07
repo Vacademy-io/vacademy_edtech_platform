@@ -24,6 +24,7 @@ import {
     subscribeActiveSession,
     type ActiveVoltSession,
 } from './activeSession';
+import { networkFirst } from '../offline/networkFirst';
 import { listDecks, voltErrorMessage } from './voltApi';
 import type { VoltDeckSummary } from './types';
 
@@ -124,7 +125,8 @@ export function PanelDeckList() {
 
     const query = useQuery({
         queryKey: voltDecksQueryKey(instituteId),
-        queryFn: ({ signal }) => listDecks(instituteId ?? '', signal),
+        queryFn: ({ signal }) =>
+            networkFirst(`decks:${instituteId ?? ''}`, () => listDecks(instituteId ?? '', signal)),
         enabled: !!instituteId,
         staleTime: 60 * 1000,
     });

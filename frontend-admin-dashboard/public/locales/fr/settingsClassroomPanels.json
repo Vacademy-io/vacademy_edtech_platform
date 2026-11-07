@@ -1,0 +1,200 @@
+{
+    "notAdmin": "Seul un administrateur de l'établissement peut gérer les écrans de classe.",
+    "common": {
+        "cancel": "Annuler",
+        "done": "Terminé",
+        "none": "Aucun",
+        "noMatchTitle": "Aucun résultat",
+        "noRoomMatch": "Aucune salle trouvée.",
+        "retry": "Réessayer",
+        "save": "Enregistrer",
+        "searchRooms": "Rechercher des salles",
+        "stale": "Actualisation impossible. Ces informations peuvent être anciennes.",
+        "working": "Veuillez patienter…"
+    },
+    "errors": {
+        "BUSY": "Le serveur est occupé. Réessayez dans un instant.",
+        "DEVICE_NOT_ACTIVE": "Cet écran a été retiré et ne peut donc pas être modifié.",
+        "FORBIDDEN": "Vous devez être administrateur de cet établissement pour effectuer cette action.",
+        "NOT_FOUND": "Élément introuvable. Il a peut-être déjà été retiré.",
+        "RATE_LIMITED": "Trop de tentatives. Attendez une minute, puis réessayez.",
+        "ROOM_HAS_DEVICE": "Cette salle a un écran. Déplacez ou retirez d'abord l'écran.",
+        "ROOM_NAME_TAKEN": "Une salle porte déjà ce nom.",
+        "ROOM_OCCUPIED": "Cette salle a déjà un écran. Choisissez une autre salle ou retirez d'abord cet écran.",
+        "ROOM_OTHER_INSTITUTE": "Cette salle appartient à un autre établissement.",
+        "TRY_AGAIN": "L'opération n'a pas pu aboutir. Réessayez dans un instant.",
+        "WRONG_NUMBER": "Ce nombre ne correspond pas.",
+        "generic": "Une erreur est survenue. Réessayez.",
+        "network": "Impossible de joindre le serveur. Vérifiez votre connexion, puis réessayez."
+    },
+    "panels": {
+        "title": "Écrans",
+        "description": "Les écrans de classe associés à cet établissement et les personnes qui y sont connectées.",
+        "add": "Ajouter un écran",
+        "search": "Rechercher par salle",
+        "showRemoved": "Afficher les écrans retirés",
+        "noMatch": "Aucun écran ne correspond à cette recherche.",
+        "loadError": "Impossible de charger les écrans.",
+        "empty": {
+            "title": "Aucun écran pour l'instant",
+            "body": "L'écran doit d'abord afficher un code de configuration. Ouvrez l'application Classroom sur l'écran, puis ajoutez-le ici avec ce code."
+        },
+        "columns": {
+            "room": "Salle",
+            "state": "État",
+            "teacher": "Enseignant",
+            "device": "Écran",
+            "paired": "Associé par",
+            "password": "Mot de passe",
+            "actions": "Actions"
+        },
+        "status": {
+            "online": "En ligne",
+            "offline": "Hors ligne",
+            "waiting": "En attente de confirmation",
+            "removed": "Retiré"
+        },
+        "lastSeen": "Vu pour la dernière fois {{when}}",
+        "neverSeen": "Pas encore vu",
+        "lastIp": "Dernière IP {{ip}}",
+        "unknownModel": "Modèle inconnu",
+        "appVersion": "Application {{version}}",
+        "webview": "WebView {{version}}",
+        "liveClassHint": "Les cours en direct démarrent depuis l'appareil de l'enseignant",
+        "teacher": {
+            "none": "Personne n'est connecté",
+            "unknown": "Enseignant inconnu",
+            "viaQr": "Connecté par QR",
+            "viaPassword": "Connecté par mot de passe",
+            "approvedFrom": "Approuvé depuis {{ip}}"
+        },
+        "passwordToggle": "Autoriser la connexion par mot de passe sur l'écran de {{room}}",
+        "actionsFor": "Actions pour l'écran de {{room}}",
+        "actions": {
+            "move": "Déplacer vers une autre salle",
+            "endSession": "Mettre fin à la session",
+            "revoke": "Retirer l'écran"
+        }
+    },
+    "move": {
+        "title": "Déplacer l'écran de {{room}}",
+        "roomLabel": "Nouvelle salle",
+        "roomPlaceholder": "Sélectionnez une salle",
+        "roomRequired": "Choisissez une salle.",
+        "noFreeRooms": "Toutes les salles ont un écran. Ajoutez d'abord une salle.",
+        "help": "Inutile de vous rendre devant l'écran. Il affiche le nouveau nom de salle en moins d'une minute.",
+        "submit": "Déplacer l'écran",
+        "success": "Écran déplacé vers {{room}}."
+    },
+    "revoke": {
+        "title": "Retirer l'écran de {{room}} ?",
+        "body": "La personne connectée est déconnectée et l'écran revient à sa page de configuration en moins d'une minute. {{room}} redevient libre. Pour réutiliser cet écran, il faudra un nouveau code de configuration.",
+        "confirm": "Retirer l'écran",
+        "success": "Écran de {{room}} retiré."
+    },
+    "endSession": {
+        "title": "Mettre fin à la session de {{room}} ?",
+        "body": "{{teacher}} sera déconnecté de l'écran de {{room}} en moins d'une minute.",
+        "confirm": "Mettre fin à la session",
+        "success": "Session terminée."
+    },
+    "addPanel": {
+        "title": "Ajouter un écran",
+        "code": {
+            "intro": "Ouvrez l'application Classroom sur l'écran. Il affiche un code de configuration et un nombre.",
+            "label": "Code de configuration",
+            "placeholder": "K7QF-2M9X",
+            "invalid": "Saisissez le code à 8 caractères affiché sur l'écran.",
+            "notFound": "Aucun écran n'affiche ce code. Vérifiez-le ou utilisez le nouveau code affiché sur l'écran.",
+            "submit": "Continuer"
+        },
+        "details": {
+            "panelLabel": "Informations de cet écran",
+            "roomLabel": "Salle",
+            "roomPlaceholder": "Sélectionnez une salle",
+            "roomRequired": "Choisissez une salle.",
+            "roomHasPanel": "{{room}} (a un écran)",
+            "newRoomLabel": "Nom de la nouvelle salle",
+            "useNewRoom": "Ajouter plutôt une nouvelle salle",
+            "useExistingRoom": "Choisir plutôt une salle existante",
+            "numberLabel": "Nombre affiché sur l'écran",
+            "numberHelp": "Touchez le même nombre que celui que vous voyez sur l'écran.",
+            "numberRequired": "Touchez le nombre affiché sur l'écran.",
+            "warning": "N'associez qu'un écran que vous voyez en ce moment. Si quelqu'un vous a envoyé ce code par message ou par téléphone, arrêtez-vous ici.",
+            "wrongNumber": "Ce nombre ne correspond pas. L'écran affiche maintenant un nouveau code. Saisissez-le pour réessayer.",
+            "expired": "Ce code a expiré ou a déjà été utilisé. Saisissez le nouveau code affiché sur l'écran.",
+            "submit": "Associer l'écran"
+        },
+        "replace": {
+            "title": "Remplacer l'écran de {{room}} ?",
+            "body": "{{room}} a déjà un écran : {{model}}, {{seen}}. Le remplacement retire cet écran et déconnecte la personne qui l'utilise. Il faudra un nouveau code de configuration pour le réutiliser.",
+            "lastSeen": "vu pour la dernière fois {{when}}",
+            "neverSeen": "pas encore vu",
+            "confirm": "Remplacer l'écran"
+        },
+        "done": {
+            "title": "Touchez maintenant Confirm sur l'écran",
+            "body": "{{room}} sera prête dès votre confirmation.",
+            "activeTitle": "{{room}} est prête",
+            "activeBody": "Les enseignants peuvent maintenant se connecter sur cet écran.",
+            "declinedTitle": "L'écran a refusé cette association",
+            "declinedBody": "{{room}} est de nouveau libre. Utilisez le nouveau code affiché sur l'écran pour réessayer.",
+            "another": "Ajouter un autre"
+        }
+    },
+    "rooms": {
+        "title": "Salles",
+        "description": "Chaque salle accueille un écran. Les enseignants voient le nom de la salle sur l'écran et sur leur téléphone.",
+        "search": "Rechercher des salles",
+        "noPanel": "Aucun écran",
+        "hasPanel": "A un écran",
+        "noMatch": "Aucune salle ne correspond à cette recherche.",
+        "loadError": "Impossible de charger les salles.",
+        "addPanelFor": "Ajouter un écran à {{room}}",
+        "actionsFor": "Actions pour {{room}}",
+        "empty": {
+            "title": "Aucune salle pour l'instant",
+            "body": "Ajoutez vos salles maintenant ou nommez une nouvelle salle en ajoutant un écran. L'écran doit d'abord afficher un code de configuration."
+        },
+        "columns": {
+            "name": "Salle",
+            "panel": "Écran",
+            "actions": "Actions"
+        },
+        "actions": {
+            "rename": "Renommer",
+            "archive": "Archiver"
+        },
+        "name": {
+            "label": "Nom de la salle",
+            "placeholder": "Salle 101",
+            "required": "Saisissez un nom de salle.",
+            "tooLong": "Utilisez au maximum {{max}} caractères."
+        },
+        "add": {
+            "open": "Ajouter une salle",
+            "title": "Ajouter une salle"
+        },
+        "rename": {
+            "title": "Renommer la salle"
+        },
+        "paste": {
+            "open": "Coller une liste",
+            "title": "Coller une liste de salles",
+            "label": "Noms des salles",
+            "help": "Une salle par ligne, {{max}} au maximum. Les noms qui existent déjà sont ignorés.",
+            "required": "Saisissez au moins un nom de salle.",
+            "tooMany": "Collez au maximum {{max}} salles à la fois.",
+            "lineTooLong": "Utilisez au maximum {{max}} caractères par salle : {{name}}",
+            "submit": "Ajouter les salles",
+            "created": "Salles ajoutées : {{total}}",
+            "skipped": "Déjà présentes, ignorées : {{total}}"
+        },
+        "archive": {
+            "title": "Archiver {{room}} ?",
+            "body": "La salle est retirée de cette liste. Les sessions passées sont conservées et vous pourrez ajouter plus tard une salle du même nom.",
+            "confirm": "Archiver la salle",
+            "success": "{{room}} archivée."
+        }
+    }
+}

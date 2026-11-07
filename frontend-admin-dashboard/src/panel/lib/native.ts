@@ -48,11 +48,37 @@ export interface PanelSaveImageResult {
     displayPath: string;
 }
 
+/**
+ * Why a URL did not open. NO_PLUGIN comes from this file (web, admin APK, or an APK older
+ * than 0.2.0); the rest come from native.
+ */
+export type PanelOpenFailure =
+    | 'NO_PLUGIN'
+    | 'INVALID_URL'
+    | 'NO_HANDLER'
+    | 'ALREADY_OPEN'
+    | 'ERROR';
+
+export interface PanelOpenResult {
+    opened: boolean;
+    /** Set when `opened` is false. */
+    reason?: PanelOpenFailure;
+}
+
 export interface PanelDevicePlugin {
     getInfo(): Promise<PanelDeviceInfo>;
     /** Rejects with code 'NO_ACTIVITY' when the device has no such settings screen. */
     openSettings(options: { target: PanelSettingsTarget }): Promise<Record<string, never>>;
     saveImage(options: PanelSaveImageOptions): Promise<PanelSaveImageResult>;
+    /** https only. Hands the URL to another app on the panel; never rejects. */
+    openExternal(options: { url: string }): Promise<PanelOpenResult>;
+    /**
+     * https only, and only to a meeting host the APK was built with. Resolves when the
+     * meeting screen closes; never rejects.
+     */
+    openMeeting(options: { url: string }): Promise<PanelOpenResult>;
+    /** Closes the meeting screen if one is open. An APK without it rejects with UNIMPLEMENTED. */
+    closeMeeting(): Promise<Record<string, never>>;
 }
 
 const PanelDevice = registerPlugin<PanelDevicePlugin>('PanelDevice');
@@ -126,6 +152,56 @@ export async function openDeviceSettings(target: PanelSettingsTarget): Promise<b
     } catch (error) {
         console.warn(`[panel/native] openSettings(${target}) failed`, error);
         return false;
+    }
+}
+
+/** The call failed in the JS layer: a plugin without the method rejects with UNIMPLEMENTED. */
+function openFailure(error: unknown): PanelOpenResult {
+    const code = (error as { code?: unknown } | null)?.code;
+    return { opened: false, reason: code === 'UNIMPLEMENTED' ? 'NO_PLUGIN' : 'ERROR' };
+}
+
+/**
+ * Open an https URL in another app on the panel, such as a browser. On `opened:false` the
+ * caller offers the "start on your device" QR instead.
+ */
+export async function openExternal(url: string): Promise<PanelOpenResult> {
+    const device = getPanelDevice();
+    if (!device) return { opened: false, reason: 'NO_PLUGIN' };
+    try {
+        return await device.openExternal({ url });
+    } catch (error) {
+        console.warn('[panel/native] openExternal failed', error);
+        return openFailure(error);
+    }
+}
+
+/**
+ * Open a live class in the native meeting screen. With `opened:true` the promise settles only
+ * when that screen closes. Do not log `url`: it can be a moderator join link.
+ */
+export async function openMeeting(url: string): Promise<PanelOpenResult> {
+    const device = getPanelDevice();
+    if (!device) return { opened: false, reason: 'NO_PLUGIN' };
+    try {
+        return await device.openMeeting({ url });
+    } catch (error) {
+        console.warn('[panel/native] openMeeting failed', error);
+        return openFailure(error);
+    }
+}
+
+/**
+ * Closes the native meeting screen, if one is open, when the panel's session ends. Never
+ * rejects: on the web, or with an APK that lacks the method, there is nothing to close.
+ */
+export async function closeMeeting(): Promise<void> {
+    const device = getPanelDevice();
+    if (!device) return;
+    try {
+        await device.closeMeeting();
+    } catch (error) {
+        console.warn('[panel/native] closeMeeting failed', error);
     }
 }
 

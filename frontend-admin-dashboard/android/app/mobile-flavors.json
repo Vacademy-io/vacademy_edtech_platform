@@ -18,7 +18,8 @@
     "deepLinkHost": "classroom.vacademy.io",
     "panelMode": true,
     "minWebViewMajor": 66,
-    "versionName": "0.1.0",
-    "versionCode": 1
+    "meetingHosts": ["meet.vacademy.io", "meet2.vacademy.io"],
+    "versionName": "0.2.0",
+    "versionCode": 2
   }
 }

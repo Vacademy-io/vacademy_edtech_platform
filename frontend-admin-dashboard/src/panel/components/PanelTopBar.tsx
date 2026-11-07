@@ -1,14 +1,28 @@
 /**
  * Panel top bar: back, institute logo + name (or a screen title), custom
  * actions, clock, signed-in teacher, Home and Sign out. ≥ h-16 touch targets.
+ * Under it, the session-ending warning when one is due.
  * space-x-* only (flex `gap` needs Chrome 84).
  */
 import { useEffect, useState, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
-import { ArrowLeft, House, SignOut, UserCircle } from '@phosphor-icons/react';
+import {
+    ArrowLeft,
+    DeviceMobile,
+    House,
+    SignOut,
+    UserCircle,
+    UsersThree,
+    WifiSlash,
+} from '@phosphor-icons/react';
 import { toast } from 'sonner';
 import { MyButton } from '@/components/design-system/button';
 import { cn } from '@/lib/utils';
+import { isPanelDateWrong, registerTopBar } from '../device/activity';
+import { SessionCapRow } from '../device/SessionOverlays';
+import { isBackendReachable, subscribeReachability } from '../device/publicApi';
+import { useDeviceRecord, usesDeviceAuth } from '../device/store';
+import { useSyncSnapshot } from '../device/syncLoop';
 import { usePanelBranding } from '../lib/branding';
 import { isVoltSessionActive, usePanelSession } from '../lib/session';
 import { navigate } from '../router';
@@ -24,6 +38,16 @@ function useClock(): string {
     return now;
 }
 
+function useReachable(): boolean {
+    const [reachable, setReachable] = useState(isBackendReachable);
+    useEffect(() => {
+        const update = () => setReachable(isBackendReachable());
+        update();
+        return subscribeReachability(update);
+    }, []);
+    return reachable;
+}
+
 export interface PanelTopBarProps {
     /** Screen title; when absent the institute name is shown. */
     title?: string;
@@ -33,17 +57,43 @@ export interface PanelTopBarProps {
     actions?: ReactNode;
     /** Show the Home button (default: true whenever onBack is set). */
     showHome?: boolean;
+    /** Connect phone, Switch teacher and Sign out (default: true). Off on the sign-in screen. */
+    sessionActions?: boolean;
     className?: string;
 }
 
-export function PanelTopBar({ title, onBack, actions, showHome, className }: PanelTopBarProps) {
+/** The bar, then the session-ending warning in flow under it, so it never covers the bar. */
+export function PanelTopBar(props: PanelTopBarProps) {
+    return (
+        <>
+            <TopBarRow {...props} />
+            {props.sessionActions !== false && <SessionCapRow />}
+        </>
+    );
+}
+
+function TopBarRow({
+    title,
+    onBack,
+    actions,
+    showHome,
+    sessionActions = true,
+    className,
+}: PanelTopBarProps) {
     const { t } = useTranslation('panel');
+    const { t: td } = useTranslation('device');
+    const device = useDeviceRecord();
+    const sync = useSyncSnapshot();
     const branding = usePanelBranding();
     const { user, isSignedIn, signOut } = usePanelSession();
     const clock = useClock();
     const [confirmOpen, setConfirmOpen] = useState(false);
     const [liveSession, setLiveSession] = useState(false);
     const homeVisible = showHome ?? !!onBack;
+    const deviceMode = usesDeviceAuth();
+    const reachable = useReachable();
+
+    useEffect(() => registerTopBar(), []);
 
     const askSignOut = () => {
         setLiveSession(isVoltSessionActive());
@@ -94,16 +144,65 @@ export function PanelTopBar({ title, onBack, actions, showHome, className }: Pan
                     {clock}
                 </span>
                 {isSignedIn && user && (
-                    <span className="hidden max-w-xs items-center space-x-2 truncate text-subtitle text-neutral-600 lg:flex">
+                    <span className="flex max-w-xs items-center space-x-2 truncate text-subtitle text-neutral-600">
                         <UserCircle size={32} className="shrink-0" aria-hidden />
-                        <span className="truncate">{user.fullName || user.username}</span>
+                        <span className="truncate">
+                            {deviceMode && device?.room_name
+                                ? td('chips.name', {
+                                      name: user.fullName || user.username,
+                                      room: device.room_name,
+                                  })
+                                : user.fullName || user.username}
+                        </span>
                     </span>
+                )}
+                {deviceMode && isSignedIn && !reachable && (
+                    <span className="flex items-center space-x-2 text-subtitle text-danger-500">
+                        <WifiSlash size={28} aria-hidden />
+                        <span className="hidden lg:inline">
+                            {isPanelDateWrong() ? td('chips.wrongDate') : td('chips.offline')}
+                        </span>
+                    </span>
+                )}
+                {deviceMode && isSignedIn && sync.session?.phone_connected && (
+                    <span className="flex items-center space-x-2 text-subtitle text-success-600">
+                        <DeviceMobile size={28} aria-hidden />
+                        <span className="hidden lg:inline">{td('chips.phoneConnected')}</span>
+                    </span>
+                )}
+                {deviceMode && isSignedIn && sessionActions && !sync.session?.phone_connected && (
+                    <MyButton
+                        buttonType="secondary"
+                        scale="large"
+                        className="h-16 px-6 sm:min-w-0"
+                        aria-label={td('topBar.connectPhone')}
+                        onClick={() => navigate('signin', { purpose: 'attach' })}
+                    >
+                        <span className="flex items-center space-x-2">
+                            <DeviceMobile size={28} aria-hidden />
+                            <span className="hidden lg:inline">{td('topBar.connectPhone')}</span>
+                        </span>
+                    </MyButton>
+                )}
+                {deviceMode && isSignedIn && sessionActions && (
+                    <MyButton
+                        buttonType="secondary"
+                        scale="large"
+                        className="h-16 px-6 sm:min-w-0"
+                        aria-label={td('topBar.switchTeacher')}
+                        onClick={() => navigate('signin')}
+                    >
+                        <span className="flex items-center space-x-2">
+                            <UsersThree size={28} aria-hidden />
+                            <span className="hidden lg:inline">{td('topBar.switchTeacher')}</span>
+                        </span>
+                    </MyButton>
                 )}
                 {homeVisible && (
                     <MyButton
                         buttonType="secondary"
                         scale="large"
-                        className="h-16 px-6"
+                        className="h-16 px-6 sm:min-w-0"
                         onClick={() => navigate('home')}
                     >
                         <span className="flex items-center space-x-2">
@@ -112,11 +211,11 @@ export function PanelTopBar({ title, onBack, actions, showHome, className }: Pan
                         </span>
                     </MyButton>
                 )}
-                {isSignedIn && (
+                {isSignedIn && sessionActions && (
                     <MyButton
                         buttonType="secondary"
                         scale="large"
-                        className="h-16 px-6"
+                        className="h-16 px-6 sm:min-w-0"
                         onClick={askSignOut}
                     >
                         <span className="flex items-center space-x-2">

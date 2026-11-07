@@ -11,8 +11,13 @@
  *   HTML_VIDEO    → MP4 from /lms-video/v1/render when rendered, else a card
  *   YouTube/Vimeo → EmbedPlayer
  *   anything else → "Open this on a computer"
- * Signed URLs are resolved on every open (useSignedUrl: staleTime/gcTime 0).
+ * Signed URLs are resolved on every open (seams/fileSource, by default
+ * useSignedUrl: staleTime/gcTime 0).
  * Every heavy player is its own lazy chunk.
+ *
+ * Phone remote (seams/remoteTarget): this component drives scene, file-video
+ * and ai-video slides. PanelPdfViewer registers for PDF pages itself, and deck,
+ * YouTube, Vimeo, missing and unsupported slides have no target.
  */
 import { Suspense, lazy, useEffect, useState, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -26,7 +31,9 @@ import { PanelEmpty, PanelError, PanelLoading } from '../components/PanelScreenS
 import { PanelScreenErrorBoundary } from '../components/PanelErrorBoundary';
 import { ensureNamespaces } from '../i18n';
 import { goBack, navigate } from '../router';
-import { useAiVideoRender, useSignedUrl, useSlides } from './lessonApi';
+import { useLessonFileUrl, type LessonFileKind } from '../seams/fileSource';
+import { useRemoteTarget } from '../seams/remoteTarget';
+import { useAiVideoRender, useSlides } from './lessonApi';
 import { lessonPathFrom, slideScopeOf, toParams } from './lessonPath';
 import { EmbedPlayer } from './EmbedPlayer';
 import { SLIDE_TYPE_ICONS } from './slideIcons';
@@ -44,6 +51,9 @@ const ContentSceneView = lazy(() => import('./ContentSceneView'));
 
 /** Stage colour per player: video-like players sit on black. */
 const DARK_KINDS: PlayableSource['kind'][] = ['deck', 'youtube', 'vimeo'];
+
+/** Slide kinds where a remote press moves to the previous / next slide. */
+const REMOTE_SLIDE_KINDS: PlayableSource['kind'][] = ['scene', 'file-video', 'ai-video'];
 
 function Centered({ children, className }: { children: ReactNode; className?: string }) {
     return (
@@ -83,13 +93,15 @@ interface SignedControls {
 /** Resolves a media file id to a fresh signed URL, with loading / error states. */
 function SignedUrlGate({
     fileId,
+    kind,
     render,
 }: {
     fileId: string;
+    kind: LessonFileKind;
     render: (url: string, controls: SignedControls) => ReactNode;
 }) {
     const { t } = useTranslation('content');
-    const signed = useSignedUrl(fileId);
+    const signed = useLessonFileUrl(fileId, kind);
     const [autoRefreshUsed, setAutoRefreshUsed] = useState(false);
     const { refetch } = signed;
 
@@ -181,7 +193,15 @@ function AiVideo({ videoId }: { videoId: string }) {
     return notReady(t('player.aiNotReadyBody'));
 }
 
-function SourceView({ source, typeLabel }: { source: PlayableSource; typeLabel: string }) {
+function SourceView({
+    source,
+    typeLabel,
+    title,
+}: {
+    source: PlayableSource;
+    typeLabel: string;
+    title: string;
+}) {
     const { t } = useTranslation('content');
     switch (source.kind) {
         case 'deck':
@@ -196,8 +216,14 @@ function SourceView({ source, typeLabel }: { source: PlayableSource; typeLabel: 
             return (
                 <SignedUrlGate
                     fileId={source.fileId}
+                    kind="pdf"
                     render={(url, controls) => (
-                        <PanelPdfViewer key={controls.version} url={url} onRetry={controls.retry} />
+                        <PanelPdfViewer
+                            key={controls.version}
+                            url={url}
+                            title={title}
+                            onRetry={controls.retry}
+                        />
                     )}
                 />
             );
@@ -205,6 +231,7 @@ function SourceView({ source, typeLabel }: { source: PlayableSource; typeLabel: 
             return (
                 <SignedUrlGate
                     fileId={source.fileId}
+                    kind="scene"
                     render={(url, controls) => (
                         <ContentSceneView
                             key={controls.version}
@@ -220,6 +247,7 @@ function SourceView({ source, typeLabel }: { source: PlayableSource; typeLabel: 
                 <NamespaceGate namespaces={['fileVideoPlayer']}>
                     <SignedUrlGate
                         fileId={source.fileId}
+                        kind="file-video"
                         render={(url, controls) => (
                             <PanelVideo
                                 key={controls.version}
@@ -289,6 +317,17 @@ export function PanelPlayer({ params }: { params: Record<string, string> }) {
 
     const source = slide ? resolveSlideSource(slide) : null;
     const typeLabel = source ? t(`types.${source.type}`) : '';
+    const slideTitle = slide?.title || typeLabel;
+
+    useRemoteTarget(
+        slide && source && REMOTE_SLIDE_KINDS.indexOf(source.kind) >= 0
+            ? {
+                  next: () => open(next),
+                  prev: () => open(previous),
+                  state: { index, total: slides.length, title: slideTitle },
+              }
+            : null
+    );
 
     let body: ReactNode;
     if (slidesQuery.isLoading) {
@@ -348,7 +387,7 @@ export function PanelPlayer({ params }: { params: Record<string, string> }) {
                         />
                     }
                 >
-                    <SourceView source={source} typeLabel={typeLabel} />
+                    <SourceView source={source} typeLabel={typeLabel} title={slideTitle} />
                 </Suspense>
             </PanelScreenErrorBoundary>
         );

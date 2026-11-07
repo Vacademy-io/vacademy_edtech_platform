@@ -11,6 +11,7 @@
  * ArrowLeft/Right, PageUp/PageDown, Space (Shift+Space back) for remotes and
  * clickers, and a tap-to-enlarge join QR. Slides render as static canvases
  * (PanelSceneView), so a touch can never pan or zoom a slide off-centre.
+ * The phone remote (seams/remoteTarget) goes through the same `go` as the keys.
  */
 import { useCallback, useEffect, useMemo, useRef, useState, type PointerEvent } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -39,6 +40,7 @@ import { toast } from 'sonner';
 import { PanelConfirmDialog } from '../components/PanelConfirmDialog';
 import { navigate } from '../router';
 import { PanelFullscreenButton, PanelStage } from '../components/PanelStage';
+import { useRemoteTarget } from '../seams/remoteTarget';
 import { PanelResponseOverlay } from './PanelResponseOverlay';
 import { PanelSceneView } from './PanelSceneView';
 import { QuizSlideView } from './QuizSlideView';
@@ -137,6 +139,19 @@ export function PanelVoltPresenter({
             onNavigate(next);
         },
         [safeIndex, total, onNavigate]
+    );
+
+    useRemoteTarget(
+        total > 0
+            ? {
+                  next: () => go(1),
+                  prev: () => go(-1),
+                  state: { index: safeIndex, total, title: slide?.title || deck.title || '' },
+                  seek: (target) => {
+                      if (target >= 0 && target < total) onNavigate(target);
+                  },
+              }
+            : null
     );
 
     // Keyboard, remotes and clickers.

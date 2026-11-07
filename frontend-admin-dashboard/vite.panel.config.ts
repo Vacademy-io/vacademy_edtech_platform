@@ -22,7 +22,10 @@ import panelLegacyCss from './scripts/panel/postcss-panel-legacy.mjs';
 const ROOT = __dirname;
 const SRC = path.resolve(ROOT, 'src');
 const PANEL_SRC = path.resolve(SRC, 'panel');
-const OUT_DIR = path.resolve(ROOT, 'dist-panel');
+// PANEL_OUT_DIR: lab builds only (a build with VITE_BACKEND_URL must not end up in dist-panel).
+const OUT_DIR = process.env.PANEL_OUT_DIR
+    ? path.resolve(process.env.PANEL_OUT_DIR)
+    : path.resolve(ROOT, 'dist-panel');
 const MANIFEST_DIR = path.resolve(ROOT, 'node_modules/.cache/panel');
 const TARGET = 'chrome66';
 
@@ -269,6 +272,9 @@ export default defineConfig({
     root: ROOT,
     base: './',
     publicDir: false,
+    // Its own dev cache (esbuild target chrome66), so running this never invalidates the
+    // main app's node_modules/.vite, and the other way round.
+    cacheDir: 'node_modules/.vite-panel',
     plugins: [
         panelResetWorkerManifest(),
         panelLegacyRegex(),
@@ -284,6 +290,10 @@ export default defineConfig({
     define: {
         __VERSION__: JSON.stringify('0.16.11'),
         __PANEL_BUILD__: JSON.stringify(PANEL_BUILD),
+        // Lab builds only. Fixed at build time so a release bundle has no route to login-root.
+        'import.meta.env.VITE_PANEL_LEGACY_LOGIN': JSON.stringify(
+            process.env.VITE_PANEL_LEGACY_LOGIN ?? ''
+        ),
     },
     resolve: {
         alias: [

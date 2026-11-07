@@ -1,0 +1,200 @@
+{
+    "notAdmin": "Only an institute admin can manage classroom panels.",
+    "common": {
+        "cancel": "Cancel",
+        "done": "Done",
+        "none": "None",
+        "noMatchTitle": "Nothing found",
+        "noRoomMatch": "No room found.",
+        "retry": "Try again",
+        "save": "Save",
+        "searchRooms": "Search rooms",
+        "stale": "Could not refresh. This may be out of date.",
+        "working": "Please wait…"
+    },
+    "errors": {
+        "BUSY": "The server is busy. Try again in a moment.",
+        "DEVICE_NOT_ACTIVE": "This panel was removed, so it cannot be changed.",
+        "FORBIDDEN": "You need to be an admin of this institute to do this.",
+        "NOT_FOUND": "This was not found. It may have been removed already.",
+        "RATE_LIMITED": "Too many attempts. Wait a minute and try again.",
+        "ROOM_HAS_DEVICE": "This room has a panel. Move or remove the panel first.",
+        "ROOM_NAME_TAKEN": "A room with this name already exists.",
+        "ROOM_OCCUPIED": "This room already has a panel. Pick another room, or remove that panel first.",
+        "ROOM_OTHER_INSTITUTE": "This room belongs to another institute.",
+        "TRY_AGAIN": "This could not finish just now. Try again in a moment.",
+        "WRONG_NUMBER": "That number did not match.",
+        "generic": "Something went wrong. Try again.",
+        "network": "Could not reach the server. Check your connection and try again."
+    },
+    "panels": {
+        "title": "Panels",
+        "description": "Classroom panels paired to this institute, and who is signed in on them.",
+        "add": "Add a panel",
+        "search": "Search by room",
+        "showRemoved": "Show removed panels",
+        "noMatch": "No panel matches this search.",
+        "loadError": "Could not load panels.",
+        "empty": {
+            "title": "No panels yet",
+            "body": "A panel must first show a setup code. Open the Classroom app on the panel, then add it here with that code."
+        },
+        "columns": {
+            "room": "Room",
+            "state": "Status",
+            "teacher": "Teacher",
+            "device": "Panel",
+            "paired": "Paired by",
+            "password": "Password",
+            "actions": "Actions"
+        },
+        "status": {
+            "online": "Online",
+            "offline": "Offline",
+            "waiting": "Waiting for Confirm",
+            "removed": "Removed"
+        },
+        "lastSeen": "Last seen {{when}}",
+        "neverSeen": "Not seen yet",
+        "lastIp": "Last IP {{ip}}",
+        "unknownModel": "Unknown model",
+        "appVersion": "App {{version}}",
+        "webview": "WebView {{version}}",
+        "liveClassHint": "Live classes start from the teacher's device",
+        "teacher": {
+            "none": "No one signed in",
+            "unknown": "Unknown teacher",
+            "viaQr": "Signed in with QR",
+            "viaPassword": "Signed in with password",
+            "approvedFrom": "Approved from {{ip}}"
+        },
+        "passwordToggle": "Allow password sign-in on the panel in {{room}}",
+        "actionsFor": "Actions for the panel in {{room}}",
+        "actions": {
+            "move": "Move to another room",
+            "endSession": "End session",
+            "revoke": "Remove panel"
+        }
+    },
+    "move": {
+        "title": "Move the panel in {{room}}",
+        "roomLabel": "New room",
+        "roomPlaceholder": "Select a room",
+        "roomRequired": "Pick a room.",
+        "noFreeRooms": "Every room has a panel. Add a room first.",
+        "help": "No visit to the panel is needed. It shows the new room name within a minute.",
+        "submit": "Move panel",
+        "success": "Panel moved to {{room}}."
+    },
+    "revoke": {
+        "title": "Remove the panel in {{room}}?",
+        "body": "Whoever is signed in on it is signed out, and it returns to its setup screen within a minute. {{room}} becomes free. To use this panel again you need a new setup code.",
+        "confirm": "Remove panel",
+        "success": "Panel in {{room}} removed."
+    },
+    "endSession": {
+        "title": "End the session in {{room}}?",
+        "body": "{{teacher}} is signed out of the panel in {{room}} within a minute.",
+        "confirm": "End session",
+        "success": "Session ended."
+    },
+    "addPanel": {
+        "title": "Add a panel",
+        "code": {
+            "intro": "Open the Classroom app on the panel. It shows a setup code and a number.",
+            "label": "Setup code",
+            "placeholder": "K7QF-2M9X",
+            "invalid": "Enter the 8-character code shown on the panel.",
+            "notFound": "No panel is showing this code. Check it, or use the new code on the panel.",
+            "submit": "Continue"
+        },
+        "details": {
+            "panelLabel": "This panel reports",
+            "roomLabel": "Room",
+            "roomPlaceholder": "Select a room",
+            "roomRequired": "Pick a room.",
+            "roomHasPanel": "{{room}} (has a panel)",
+            "newRoomLabel": "New room name",
+            "useNewRoom": "Add a new room instead",
+            "useExistingRoom": "Pick an existing room instead",
+            "numberLabel": "Number shown on the panel",
+            "numberHelp": "Tap the same number you can see on the panel.",
+            "numberRequired": "Tap the number shown on the panel.",
+            "warning": "Only pair a panel you can see right now. If someone sent you this code by message or phone, stop here.",
+            "wrongNumber": "That number didn't match. The panel now shows a new code. Enter it to try again.",
+            "expired": "This code has expired or was already used. Enter the new code shown on the panel.",
+            "submit": "Pair panel"
+        },
+        "replace": {
+            "title": "Replace the panel in {{room}}?",
+            "body": "{{room}} already has a panel: {{model}}, {{seen}}. Replacing removes that panel and signs out anyone using it. It needs a new setup code to be used again.",
+            "lastSeen": "last seen {{when}}",
+            "neverSeen": "not seen yet",
+            "confirm": "Replace panel"
+        },
+        "done": {
+            "title": "Now tap Confirm on the panel",
+            "body": "{{room}} is ready once you confirm.",
+            "activeTitle": "{{room}} is ready",
+            "activeBody": "Teachers can now sign in on this panel.",
+            "declinedTitle": "The panel declined this pairing",
+            "declinedBody": "{{room}} is free again. Use the new code on the panel to try again.",
+            "another": "Add another"
+        }
+    },
+    "rooms": {
+        "title": "Rooms",
+        "description": "Each room holds one panel. The room name is what teachers see on the panel and on their phone.",
+        "search": "Search rooms",
+        "noPanel": "No panel",
+        "hasPanel": "Has a panel",
+        "noMatch": "No room matches this search.",
+        "loadError": "Could not load rooms.",
+        "addPanelFor": "Add a panel to {{room}}",
+        "actionsFor": "Actions for {{room}}",
+        "empty": {
+            "title": "No rooms yet",
+            "body": "Add your rooms now, or name a new room when you add a panel. A panel must first show a setup code."
+        },
+        "columns": {
+            "name": "Room",
+            "panel": "Panel",
+            "actions": "Actions"
+        },
+        "actions": {
+            "rename": "Rename",
+            "archive": "Archive"
+        },
+        "name": {
+            "label": "Room name",
+            "placeholder": "Room 101",
+            "required": "Enter a room name.",
+            "tooLong": "Use at most {{max}} characters."
+        },
+        "add": {
+            "open": "Add room",
+            "title": "Add room"
+        },
+        "rename": {
+            "title": "Rename room"
+        },
+        "paste": {
+            "open": "Paste a list",
+            "title": "Paste a list of rooms",
+            "label": "Room names",
+            "help": "One room per line, up to {{max}}. Names that already exist are skipped.",
+            "required": "Enter at least one room name.",
+            "tooMany": "Paste at most {{max}} rooms at a time.",
+            "lineTooLong": "Use at most {{max}} characters for each room: {{name}}",
+            "submit": "Add rooms",
+            "created": "Rooms added: {{total}}",
+            "skipped": "Already there, skipped: {{total}}"
+        },
+        "archive": {
+            "title": "Archive {{room}}?",
+            "body": "The room is removed from this list. Past sessions are kept, and you can add a room with the same name later.",
+            "confirm": "Archive room",
+            "success": "{{room}} archived."
+        }
+    }
+}

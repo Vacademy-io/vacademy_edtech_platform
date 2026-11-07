@@ -168,6 +168,7 @@ export const enum SettingsTabs {
     Appearance = 'appearance',
     LearnerActivity = 'learnerActivity',
     Mentorship = 'mentorship',
+    ClassroomPanels = 'classroomPanels',
 }
 
 export const DAYS_IN_MONTH = 30;

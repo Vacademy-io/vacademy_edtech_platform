@@ -49,6 +49,9 @@ import LanguageSettings from '../-components/LanguageSettings';
 import AppearanceSettings from '../-components/Appearance/AppearanceSettings';
 import LearnerActivitySettings from '../-components/LearnerActivitySettings';
 import LearnerCredentialSettings from '../-components/LearnerCredentialSettings';
+import ClassroomPanelsSettings from '../-components/ClassroomPanels/ClassroomPanelsSettings';
+import { getInstituteId } from '@/constants/helper';
+import { isAdminForInstitute } from '@/lib/auth/roleUtils';
 
 /** Top-level settings navigation categories — order here is display order. */
 export type SettingsDomain =
@@ -287,6 +290,19 @@ export const getAvailableSettingsTabs = (): SettingsTabEntry[] => {
             domain: 'LMS',
             group: 'Content & Delivery',
         },
+        // A role opted in to the settings page is not necessarily an admin of the institute, and
+        // every call behind this screen needs one, so only admins are offered it.
+        ...(isAdminForInstitute(getInstituteId())
+            ? [
+                  {
+                      tab: SettingsTabs.ClassroomPanels,
+                      value: 'Classroom Panels',
+                      component: ClassroomPanelsSettings,
+                      domain: 'LMS' as const,
+                      group: 'Content & Delivery',
+                  },
+              ]
+            : []),
         // ── LMS — Learner Experience ─────────────────────────────────────────
         {
             tab: SettingsTabs.StudentDisplay,
