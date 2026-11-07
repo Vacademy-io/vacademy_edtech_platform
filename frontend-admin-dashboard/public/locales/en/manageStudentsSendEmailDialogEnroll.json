@@ -24,6 +24,7 @@
         "failed": "Failed"
     },
     "toasts": {
+        "sendInBackground": "Sending in the background at a paced rate. This continues if you close this page, so please do not send it again.",
         "templateLoaded": "Template \"{{name}}\" loaded.",
         "subjectBodyRequired": "Subject and body are required.",
         "noValidRecipients": "No valid recipients to send email to.",

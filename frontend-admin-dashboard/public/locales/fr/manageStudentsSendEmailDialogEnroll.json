@@ -26,6 +26,7 @@
         "failed": "Échec"
     },
     "toasts": {
+        "sendInBackground": "Envoi en arrière-plan à un rythme contrôlé. Il continue si vous fermez cette page, veuillez donc ne pas renvoyer.",
         "templateLoaded": "Modèle « {{name}} » chargé.",
         "subjectBodyRequired": "L'objet et le corps du message sont requis.",
         "noValidRecipients": "Aucun destinataire valide pour l'envoi de l'e-mail.",

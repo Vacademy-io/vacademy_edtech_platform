@@ -242,7 +242,9 @@ export const SendEmailDialog = () => {
             });
 
             if (result.success) {
-                if (result.failedStudents === 0) {
+                if (result.inProgress) {
+                    toast.info(t('toasts.sendInBackground'), { id: 'bulk-email-progress' });
+                } else if (result.failedStudents === 0) {
                     toast.success(
                         t('toasts.sendSuccess', { count: result.processedStudents }),
                         { id: 'bulk-email-progress' }

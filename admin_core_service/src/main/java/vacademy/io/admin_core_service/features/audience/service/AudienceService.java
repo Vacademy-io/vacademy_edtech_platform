@@ -253,6 +253,7 @@ public class AudienceService {
      * 30s read timeout (spurious 510 while delivery continues server-side).
      */
     private static final int ASYNC_SEND_THRESHOLD = 10;
+    private static final int AUDIENCE_MESSAGE_LOOKUP_SIZE = 1000;
 
     public List<String> getConvertedUserIdsByCampaign(String audienceId, String instituteId) {
         logger.info("Getting converted user IDs for campaign: {} (institute: {})", audienceId, instituteId);
@@ -7376,18 +7377,23 @@ public class AudienceService {
                 .distinct()
                 .collect(Collectors.toList());
 
+        // Stops on failure: carrying on would quietly leave out every lead whose contact lives
+        // on the user record, and the send would still look successful.
         Map<String, UserDTO> userMap = new HashMap<>();
-        if (!userIds.isEmpty()) {
+        for (int i = 0; i < userIds.size(); i += AUDIENCE_MESSAGE_LOOKUP_SIZE) {
+            List<String> idsPage = userIds.subList(i, Math.min(i + AUDIENCE_MESSAGE_LOOKUP_SIZE, userIds.size()));
+            List<UserDTO> users;
             try {
-                List<UserDTO> users = authService.getUsersFromAuthServiceByUserIds(userIds);
-                if (users != null) {
-                    for (UserDTO u : users) {
-                        userMap.put(u.getId(), u);
-                    }
-                }
+                users = authService.getUsersFromAuthServiceByUserIds(idsPage);
             } catch (Exception e) {
-                logger.warn("Failed to fetch user details for audience message, proceeding without: {}",
-                        e.getMessage());
+                logger.error("Failed to fetch user details for audience message {}: {}",
+                        request.getAudienceId(), e.getMessage(), e);
+                throw new VacademyException("Could not load lead details, so nothing was sent. Please try again.");
+            }
+            if (users != null) {
+                for (UserDTO u : users) {
+                    userMap.put(u.getId(), u);
+                }
             }
         }
 
@@ -7440,9 +7446,11 @@ public class AudienceService {
 
         // Map: responseId -> (fieldId -> value)
         Map<String, Map<String, String>> customFieldMap = new HashMap<>();
-        if (!responseIds.isEmpty()) {
-            List<CustomFieldValues> cfValues = customFieldValuesRepository
-                    .findBySourceTypeAndSourceIdIn("AUDIENCE_RESPONSE", responseIds);
+        // Paged: one IN list for a whole large audience can pass Postgres' bind parameter limit.
+        for (int i = 0; i < responseIds.size(); i += AUDIENCE_MESSAGE_LOOKUP_SIZE) {
+            List<CustomFieldValues> cfValues = customFieldValuesRepository.findBySourceTypeAndSourceIdIn(
+                    "AUDIENCE_RESPONSE",
+                    responseIds.subList(i, Math.min(i + AUDIENCE_MESSAGE_LOOKUP_SIZE, responseIds.size())));
             for (CustomFieldValues cfv : cfValues) {
                 customFieldMap
                         .computeIfAbsent(cfv.getSourceId(), k -> new HashMap<>())
@@ -7537,6 +7545,10 @@ public class AudienceService {
         if (StringUtils.hasText(request.getEmailType())) {
             optsBuilder.emailType(request.getEmailType());
         }
+        // A blast to several leads is marketing. A single-lead message stays as chosen.
+        if ("EMAIL".equals(channel) && recipients.size() > 1) {
+            optsBuilder.commercialBulk(true);
+        }
         if (("PUSH".equals(channel) || "SYSTEM_ALERT".equals(channel)) && StringUtils.hasText(request.getSubject())) {
             optsBuilder.pushTitle(request.getSubject());
         }
@@ -7614,6 +7626,7 @@ public class AudienceService {
                 .recipientCount(recipients.size())
                 .accepted(sendResponse.getAccepted())
                 .failed(sendResponse.getFailed())
+                .skipped(skipped)
                 .batchId(sendResponse.getBatchId())
                 .status(sendResponse.getStatus())
                 .build();

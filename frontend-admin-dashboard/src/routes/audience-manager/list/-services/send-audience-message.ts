@@ -33,6 +33,7 @@ export interface SendAudienceMessageResponse {
     recipient_count: number;
     accepted: number;
     failed: number;
+    skipped?: number;
     batch_id?: string;
     status: string;
 }

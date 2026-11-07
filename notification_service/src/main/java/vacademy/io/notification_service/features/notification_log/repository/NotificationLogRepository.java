@@ -1372,6 +1372,27 @@ public interface NotificationLogRepository extends JpaRepository<NotificationLog
      * A message with no row here, or a null deliveryStatus, is still awaiting its webhook; that is
      * not a failure and must not be rendered as one.
      */
+    /**
+     * One row of [delivered, transient bounces, permanent bounces, complaints] for an institute's
+     * email sent since the given UTC time. Joined back to the EMAIL row so a late event for older
+     * mail cannot stop a current send.
+     */
+    @Query(value = """
+            SELECT
+                COUNT(*) FILTER (WHERE e.body LIKE 'Email Event: DELIVERY%' AND e.body NOT LIKE 'Email Event: DELIVERYDELAY%'),
+                COUNT(*) FILTER (WHERE e.body LIKE 'Email Event: BOUNCE%' AND e.body LIKE '%Bounce Type: Transient%'),
+                COUNT(*) FILTER (WHERE e.body LIKE 'Email Event: BOUNCE%' AND e.body LIKE '%Bounce Type: Permanent%'),
+                COUNT(*) FILTER (WHERE e.body LIKE 'Email Event: COMPLAINT%')
+            FROM notification_log e
+            JOIN notification_log n ON n.id = e.source
+            WHERE e.notification_type = 'EMAIL_EVENT'
+              AND e.notification_date > :since
+              AND n.notification_date > :since
+              AND n.institute_id = :instituteId
+            """, nativeQuery = true)
+    List<Object[]> countEmailOutcomesSince(@Param("instituteId") String instituteId,
+                                           @Param("since") java.time.LocalDateTime since);
+
     interface DeliveryStatusRow {
         String getMessageId();
         String getDeliveryStatus();

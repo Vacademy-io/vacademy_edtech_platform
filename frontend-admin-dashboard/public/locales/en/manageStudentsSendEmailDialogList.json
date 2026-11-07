@@ -28,6 +28,7 @@
         "supportEmail": "Support Email"
     },
     "toasts": {
+        "sendInBackground": "Sending in the background at a paced rate. This continues if you close this page, so please do not send it again.",
         "loadTemplatesFailed": "Failed to load email templates",
         "templateContentFailed": "Failed to load template content",
         "noValidRecipients": "No valid recipients to send email to.",

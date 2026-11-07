@@ -423,7 +423,12 @@ public class UnifiedSendService implements SendChannelRouter {
         }
 
         // Resolve emailType and fromAddress ONCE before the loop (same for all recipients in a batch)
-        String emailType = opts.getEmailType() != null ? opts.getEmailType() : "UTILITY_EMAIL";
+        boolean commercialBulk = Boolean.TRUE.equals(opts.getCommercialBulk()) && request.getInstituteId() != null;
+        String emailType = commercialBulk
+                ? bulkEmailType(opts.getEmailType(), true,
+                        emailService.resolveFromEmailAddress(request.getInstituteId(), "PROMOTIONAL_EMAIL"),
+                        emailService.resolveFromEmailAddress(request.getInstituteId(), "UTILITY_EMAIL"))
+                : opts.getEmailType() != null ? opts.getEmailType() : "UTILITY_EMAIL";
         String fromForUnsubCheck = null;
         if (request.getInstituteId() != null) {
             try {
@@ -700,6 +705,10 @@ public class UnifiedSendService implements SendChannelRouter {
         String batchId = UUID.randomUUID().toString();
 
         try {
+            if (BatchProcessorService.isPacedEmail(request.getChannel(),
+                    request.getOptions() != null ? request.getOptions().getSource() : null)) {
+                request.setRecipients(dedupeEmailRecipients(request.getRecipients()));
+            }
             SendBatch batch = SendBatch.builder()
                     .id(batchId)
                     .instituteId(request.getInstituteId())
@@ -731,6 +740,39 @@ public class UnifiedSendService implements SendChannelRouter {
         }
     }
 
+    /**
+     * Drops only an exact repeat: same address, ignoring case, and same personalisation. Siblings
+     * often share one address and each must get their own mail, so a different message is never
+     * dropped. A recipient with no address or with attachments is always kept.
+     */
+    static List<UnifiedSendRequest.Recipient> dedupeEmailRecipients(List<UnifiedSendRequest.Recipient> recipients) {
+        Set<String> seen = new HashSet<>();
+        List<UnifiedSendRequest.Recipient> unique = new ArrayList<>(recipients.size());
+        for (UnifiedSendRequest.Recipient recipient : recipients) {
+            String email = recipient.getEmail();
+            boolean alwaysKeep = email == null || email.isBlank()
+                    || (recipient.getAttachments() != null && !recipient.getAttachments().isEmpty());
+            Map<String, String> variables = recipient.getVariables() != null ? recipient.getVariables() : Map.of();
+            String key = (email == null ? "" : email.trim().toLowerCase(java.util.Locale.ROOT)) + "|" + new TreeMap<>(variables);
+            if (alwaysKeep || seen.add(key)) {
+                unique.add(recipient);
+            }
+        }
+        return unique;
+    }
+
+    /**
+     * A bulk commercial send carries the unsubscribe footer by going out as promotional, but only
+     * when that resolves to the same sender. Otherwise the admin's chosen address would silently
+     * change, or an unverified promotional sender would drop the mail to the platform default.
+     */
+    static String bulkEmailType(String requestedType, boolean commercialBulk, String promotionalFrom, String utilityFrom) {
+        String type = requestedType != null ? requestedType : "UTILITY_EMAIL";
+        return commercialBulk && "UTILITY_EMAIL".equalsIgnoreCase(type)
+                && promotionalFrom != null && promotionalFrom.equals(utilityFrom)
+                ? "PROMOTIONAL_EMAIL" : type;
+    }
+
     private static final java.util.regex.Pattern UNRESOLVED = java.util.regex.Pattern.compile("\\{\\{\\s*[\\w.\\-]+\\s*\\}\\}");
 
     /** Remove any {{placeholder}} left after substitution, tidying "Hi {{x}}," → "Hi,". */
@@ -749,7 +791,9 @@ public class UnifiedSendService implements SendChannelRouter {
                 .total(batch.getTotalRecipients())
                 .accepted(batch.getSentCount())
                 .failed(batch.getFailedCount())
-                .status(batch.getStatus())
+                // A paced email batch can wait on its lane for a while. Callers poll while
+                // PROCESSING and treat anything else as final, so a queued batch must read as running.
+                .status("QUEUED".equals(batch.getStatus()) ? "PROCESSING" : batch.getStatus())
                 .build();
     }
 

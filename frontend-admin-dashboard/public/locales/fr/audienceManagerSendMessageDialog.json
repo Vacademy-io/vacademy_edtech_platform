@@ -106,6 +106,7 @@
         "statusLabel": "Statut",
         "recipientsLabel": "Destinataires",
         "acceptedLabel": "Accepté",
+        "skippedLabel": "Ignorés (sans contact)",
         "failedLabel": "Échoué",
         "processingNotice": "Traitement en arrière-plan (lot : {{batchId}})",
         "close": "Fermer",

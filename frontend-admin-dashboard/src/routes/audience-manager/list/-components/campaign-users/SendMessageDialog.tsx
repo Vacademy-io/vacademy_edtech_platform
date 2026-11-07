@@ -1029,6 +1029,14 @@ export function SendMessageDialog({
                                 {sendResult.failed}
                             </span>
                         </div>
+                        {(sendResult.skipped ?? 0) > 0 && (
+                            <div className="flex justify-between">
+                                <span className="text-muted-foreground">
+                                    {t('review.skippedLabel')}
+                                </span>
+                                <span className="font-medium">{sendResult.skipped}</span>
+                            </div>
+                        )}
                     </div>
                     {sendResult.batch_id && (
                         <p className="text-xs text-muted-foreground">
