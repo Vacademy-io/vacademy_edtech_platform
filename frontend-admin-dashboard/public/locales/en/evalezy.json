@@ -63,6 +63,20 @@
         "upgrade": "Recharge"
     },
     "profile": {
+        "privacyPolicy": "Privacy policy",
+        "delete": {
+            "title": "Delete account",
+            "hint": "Remove your account from this institute. You will no longer be able to sign in to it.",
+            "action": "Delete my account",
+            "confirmTitle": "Delete your account?",
+            "confirmBody": "You will lose access to {{institute}} and be signed out. This cannot be undone from the app.",
+            "confirmHelp": "Copies and results belong to your institute and stay with it. To delete the whole institute or to have your personal details erased, email hello@evalezy.com.",
+            "cancel": "Keep my account",
+            "confirm": "Delete account",
+            "working": "Deleting…",
+            "done": "Your account has been deleted",
+            "failed": "Could not delete your account. Please try again."
+        },
         "view": "View profile",
         "title": "Profile",
         "institute": "Institute",

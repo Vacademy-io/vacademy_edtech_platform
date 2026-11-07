@@ -2,7 +2,7 @@ import { useEffect, type ReactNode } from 'react';
 import { createFileRoute, Link } from '@tanstack/react-router';
 import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
-import { Buildings, CaretRight, Sparkle } from '@phosphor-icons/react';
+import { ArrowSquareOut, Buildings, CaretRight, ShieldCheck, Sparkle } from '@phosphor-icons/react';
 import useAdminLogoStore from '@/components/common/layout-container/sidebar/admin-logo-zustand';
 import { DashboardLoader } from '@/components/core/dashboard-loader';
 import { MyButton } from '@/components/design-system/button';
@@ -14,10 +14,13 @@ import { handleGetAdminDetails } from '@/services/student-list-section/getAdminD
 import { useInstituteQuery } from '@/services/student-list-section/getInstituteDetails';
 import { getPublicUrl } from '@/services/upload_file';
 import { isUserAdmin, getUserName } from '@/utils/userDetails';
+import { DeleteAccountSection } from './-components/DeleteAccountSection';
 
 export const Route = createFileRoute('/evalezy/profile')({
     component: EvalezyProfile,
 });
+
+const PRIVACY_POLICY_URL = 'https://evalezy.com/privacy/';
 
 const initialsOf = (name?: string | null) =>
     (name ?? '')
@@ -157,6 +160,19 @@ function EvalezyProfile() {
                 {t('credits.title')}
                 <CaretRight size={14} className="ml-auto shrink-0 text-neutral-400" />
             </Link>
+
+            <a
+                href={PRIVACY_POLICY_URL}
+                target="_blank"
+                rel="noreferrer"
+                className="flex items-center gap-2 rounded-lg border border-neutral-200 bg-white p-4 text-body font-medium text-neutral-800"
+            >
+                <ShieldCheck size={16} className="shrink-0 text-neutral-500" />
+                {t('profile.privacyPolicy')}
+                <ArrowSquareOut size={14} className="ml-auto shrink-0 text-neutral-400" />
+            </a>
+
+            <DeleteAccountSection userId={user.id} instituteName={institute?.institute_name} />
         </div>
     );
 }
