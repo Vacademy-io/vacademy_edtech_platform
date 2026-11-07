@@ -44,6 +44,9 @@ public class CustomOAuth2SuccessHandler implements AuthenticationSuccessHandler 
     @Autowired
     private ProductConfigClient productConfigClient;
 
+    @Autowired
+    private OAuthReturnUrlPolicy returnUrlPolicy;
+
     // Removed unused InstitutePolicyService field
 
     @Value("${teacher.portal.client.url:https://dash.vacademy.io}")
@@ -77,6 +80,11 @@ public class CustomOAuth2SuccessHandler implements AuthenticationSuccessHandler 
 
         if (redirectUrl == null) {
             log.error("Redirect URL is null after decoding state. Aborting process.");
+            return;
+        }
+
+        if (!returnUrlPolicy.isAllowed(redirectUrl, host -> isSelfSignupReturnHost(encodedState, host))) {
+            sendErrorRedirect(response, fallbackUrl, "invalid_return_url");
             return;
         }
 
@@ -388,6 +396,11 @@ public class CustomOAuth2SuccessHandler implements AuthenticationSuccessHandler 
         } catch (Exception e) {
             return null;
         }
+    }
+
+    private boolean isSelfSignupReturnHost(String encodedState, String host) {
+        ProductConfigDTO product = selfSignupProduct(encodedState);
+        return product != null && product.allowsReturnTo(host);
     }
 
     /**
