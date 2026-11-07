@@ -312,6 +312,50 @@ async def login_credentials(ctx: ToolContext, user_ids: List[str]) -> Dict[str, 
     return out
 
 
+# ── typed logins ─────────────────────────────────────────────────────────
+
+USERNAMES_TAKEN_PATH = "/auth-service/v1/user-operation/usernames-taken"
+USERNAME_CHECK_FAILED = "Could not check whether that username is free, so nothing was done. Try again."
+
+
+def username_problem(value: Any, email: Any = None) -> Optional[str]:
+    """Why this typed username cannot be used, else None. An '@' is only accepted as the person's own email."""
+    name = str(value or "").strip()
+    if len(name) < 3 or len(name) > 100 or any(c.isspace() for c in name):
+        return "username must be 3-100 characters with no spaces."
+    if "@" in name and name.lower() != str(email or "").strip().lower():
+        return "username cannot contain '@' unless it is the person's own email."
+    return None
+
+
+def password_problem(value: Any) -> Optional[str]:
+    password = str(value if value is not None else "")
+    if len(password) < 6 or len(password) > 64 or any(c.isspace() for c in password):
+        return "password must be 6-64 characters with no spaces."
+    return None
+
+
+async def usernames_taken(ctx: ToolContext, usernames: List[str]) -> Optional[set]:
+    """
+    The usernames that already belong to an account, or None when that could not be checked. auth-service
+    attaches a new-user request to whoever holds its username, so an unchecked username could enrol the
+    person into a stranger's account: callers refuse on None.
+    """
+    wanted = list(dict.fromkeys(str(u).strip() for u in usernames if str(u or "").strip()))
+    if not wanted:
+        return set()
+    data = await auth_call(ctx, "POST", USERNAMES_TAKEN_PATH, params={"instituteId": ctx.principal.institute_id},
+                           body=wanted, timeout=30.0)
+    return {str(u) for u in data} if isinstance(data, list) else None
+
+
+def login_not_applied(requested: Dict[str, Any], login: Optional[Dict[str, Any]]) -> bool:
+    """True when a typed username / password did not land (an existing account keeps its own login)."""
+    if not login:
+        return False
+    return any(requested.get(key) and requested[key] != login.get(key) for key in ("username", "password"))
+
+
 # ── confirm tokens ───────────────────────────────────────────────────────
 
 def _secret() -> bytes:
@@ -359,6 +403,7 @@ def token_error(reason: str, action: str) -> Dict[str, Any]:
 
 __all__ = [
     "CONFIRM_TTL_SECONDS", "PROFILE_FIELDS", "digits", "valid_email", "valid_phone", "parse_day", "not_future",
+    "USERNAME_CHECK_FAILED", "username_problem", "password_problem", "usernames_taken", "login_not_applied",
     "search_learners", "target_learner_id", "missing_learner_error", "learner_profile", "learners_by_ids", "match_existing", "enrolments",
     "org_associated_batches", "user_identifier", "notification_toggles", "custom_field_catalogue", "cf_column",
     "ENROLMENT_EVENT", "enrolment_automations",

@@ -66,7 +66,7 @@ class AccountEndpointGuardWiringTest {
         UserCredentials body = new UserCredentials();
         body.setUserId("victim");
         body.setPassword("pwned");
-        assertThrows(VacademyException.class, () -> controller.updatePassword(body, caller));
+        assertThrows(VacademyException.class, () -> controller.updatePassword(body, true, caller));
         verifyNoInteractions(service);
     }
 

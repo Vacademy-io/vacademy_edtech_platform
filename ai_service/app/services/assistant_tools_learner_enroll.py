@@ -226,8 +226,10 @@ def _new_user(row: Dict[str, Any], label: str, identifier: str, fields: List[Dic
         problems.append(f"{label}: '{phone}' is not a valid mobile number.")
     if not name:
         problems.append(f"{label}: full_name is required.")
-    if val("username") and any(c.isspace() for c in val("username")):
-        problems.append(f"{label}: username cannot contain spaces.")
+    if val("username") and ld.username_problem(val("username"), email):
+        problems.append(f"{label}: {ld.username_problem(val('username'), email)}")
+    if val("password") and ld.password_problem(val("password")):
+        problems.append(f"{label}: {ld.password_problem(val('password'))}")
     gender = val("gender").upper()
     if gender and gender not in GENDERS:
         problems.append(f"{label}: gender must be MALE, FEMALE or OTHER.")
@@ -352,9 +354,23 @@ async def _resolve_learners(ctx: ToolContext, args: Dict[str, Any]) -> Tuple[Dic
             user_ids.append(hit["user_id"])
             known[hit["user_id"]] = {"user_id": hit["user_id"], "full_name": hit.get("full_name"),
                                      "email": user.get("email")}
-            matched.append({"row": label, "learner": hit.get("full_name"), "learner_id": hit["user_id"]})
+            matched.append({"row": label, "learner": hit.get("full_name"), "learner_id": hit["user_id"],
+                            **({"login": "keeps their own login (use learner_edit to change it)"}
+                               if user.get("username") or user.get("password") else {})})
         else:
             new_users.append(user)
+    # auth-service attaches a new-user request to whoever holds its username, so a taken one must stop here.
+    typed = [u["username"] for u in new_users
+             if u.get("username") and u["username"].lower() != str(u.get("email") or "")]
+    repeated = sorted({name for name in typed if typed.count(name) > 1})
+    taken = await ld.usernames_taken(ctx, typed)
+    if taken is None:
+        return {}, _err("username_check_failed", message=ld.USERNAME_CHECK_FAILED)
+    clashes = [f"username '{name}' is used by more than one row." for name in repeated] + \
+              [f"username '{name}' already belongs to another account." for name in dict.fromkeys(typed) if name in taken]
+    if clashes:
+        return {}, _err("invalid_learners", problems=clashes[:50], problem_count=len(clashes),
+                        message="Nothing was checked against the courses yet — fix these rows and preview again.")
     first_paid = next((u["payment_date"] for u in new_users if u.get("payment_date")), None)
     return {"user_ids": list(dict.fromkeys(user_ids)), "new_users": new_users, "matched": matched,
             "names": {uid: (p.get("full_name") or p.get("email")) for uid, p in known.items()},
@@ -526,7 +542,8 @@ async def _action_preview(args: Dict[str, Any], ctx: ToolContext) -> Dict[str, A
                      # Exactly what will be sent for each new learner — show it, so nothing the admin did not
                      # give (a phone number, say) slips in unnoticed.
                      "new_learner_details": [
-                         {k: u.get(k) for k in ("full_name", "email", "mobile_number", "username") if u.get(k)}
+                         {**{k: u.get(k) for k in ("full_name", "email", "mobile_number", "username") if u.get(k)},
+                          **({"password": "as given (hidden)"} if u.get("password") else {})}
                          for u in learners["new_users"][:50]] or None},
         "options": body["options"],
         **report,
@@ -541,7 +558,8 @@ async def _action_preview(args: Dict[str, Any], ctx: ToolContext) -> Dict[str, A
     if learners["new_users"]:
         out["accounts_note"] = (
             "A 'new' learner whose email (or mobile) already has a Vacademy account — from a website form, an OTP "
-            "sign-up or another institute — is enrolled with THAT account and keeps its own details (name, phone). "
+            "sign-up or another institute — is enrolled with THAT account and keeps its own details (name, phone, "
+            "login). "
             "If it has no password yet, one is created after enrolling.")
     out["emails"] = await _emails(ctx, body, context)
     out["credentials_file"] = ("a private download link with every enrolled learner's username and password will be "
@@ -568,6 +586,15 @@ async def _action_enroll(args: Dict[str, Any], ctx: ToolContext) -> Dict[str, An
                            "manage_url": f"{cbd.admin_base(ctx)}/manage-students/students-list"}
     enrolled = _enrolled_ids(response)
     logins, set_for = await _ensure_passwords(ctx, enrolled)
+    typed = {str(u["email"]).lower(): u for u in context["learners"]["new_users"] if u.get("email")}
+    ids_by_email = {str(r["user_email"]).lower(): r["user_id"] for r in response.get("results") or []
+                    if r.get("user_email") and r.get("user_id")}
+    not_applied = [email for email, u in typed.items()
+                   if ld.login_not_applied(u, logins.get(ids_by_email.get(email)))]
+    if not_applied:
+        out["login_not_applied"] = {"emails": not_applied[:_MAX_RESULT_ROWS],
+                                    "message": "These emails already had an account, so they kept their own login. "
+                                               "Change it with learner_edit if the admin wants the new one."}
     if set_for:
         out["passwords_set"] = (f"{len(set_for)} learner(s) had an account with no password (an existing Vacademy "
                                 "account, e.g. from a website form or OTP sign-up), so a password was created for "

@@ -40,10 +40,25 @@ public class UserOperationController {
     @PostMapping("/update-password")
     public ResponseEntity<String> updatePassword(
             @RequestBody UserCredentials userCredentials,
+            @RequestParam(name = "notify", required = false, defaultValue = "true") boolean notify,
             @RequestAttribute("user") CustomUserDetails userDetails) {
         // The target is from the body: the user, a super-admin, or staff of their institute
         // (ADMIN when the target is staff anywhere) — not any signed-in user.
         userAccountAccessGuard.requireCanChangeCredentials(userDetails, userCredentials.getUserId());
-        return ResponseEntity.ok(userOperationService.updateUserPassword(userCredentials, userDetails));
+        return ResponseEntity.ok(userOperationService.updateUserPassword(userCredentials, userDetails, notify));
+    }
+
+    /**
+     * Which of these usernames already belong to an account. Creating a user with a taken username
+     * attaches the request to that account, so a caller that lets an admin type a username checks
+     * here first. Staff only: this reveals that an account exists.
+     */
+    @PostMapping("/usernames-taken")
+    public ResponseEntity<List<String>> usernamesTaken(
+            @RequestBody List<String> usernames,
+            @RequestParam("instituteId") String instituteId,
+            @RequestAttribute("user") CustomUserDetails userDetails) {
+        userAccountAccessGuard.requireStaffOf(userDetails, instituteId);
+        return ResponseEntity.ok(userOperationService.findTakenUsernames(usernames));
     }
 }
