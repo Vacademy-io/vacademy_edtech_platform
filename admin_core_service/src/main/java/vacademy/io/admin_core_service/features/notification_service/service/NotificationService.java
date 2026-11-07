@@ -107,7 +107,7 @@ public class NotificationService {
                 .options(UnifiedSendRequest.SendOptions.builder()
                         .emailSubject(dto.getSubject())
                         .emailBody(dto.getBody())
-                        .emailType("UTILITY_EMAIL")
+                        .emailType(dto.getEmailType() != null ? dto.getEmailType() : "UTILITY_EMAIL")
                         .source(dto.getSource())
                         .sourceId(dto.getSourceId())
                         .build())

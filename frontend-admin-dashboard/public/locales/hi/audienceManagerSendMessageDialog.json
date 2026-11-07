@@ -105,6 +105,7 @@
         "statusLabel": "स्थिति",
         "recipientsLabel": "प्राप्तकर्ता",
         "acceptedLabel": "स्वीकृत",
+        "skippedLabel": "छोड़े गए (संपर्क नहीं)",
         "failedLabel": "विफल",
         "processingNotice": "बैकग्राउंड में प्रोसेस हो रहा है (बैच: {{batchId}})",
         "close": "बंद करें",

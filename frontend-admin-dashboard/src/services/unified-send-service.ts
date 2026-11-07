@@ -25,6 +25,7 @@ export interface UnifiedSendOptions {
     emailSubject?: string;
     emailBody?: string;
     emailType?: 'UTILITY_EMAIL' | 'PROMOTIONAL_EMAIL' | 'TRANSACTIONAL_EMAIL';
+    commercialBulk?: boolean;
     fromEmail?: string;
     fromName?: string;
 
@@ -88,7 +89,7 @@ export interface UnifiedSendResponse {
     total: number;
     accepted: number;
     failed: number;
-    status: 'COMPLETED' | 'PROCESSING' | 'PARTIAL' | 'FAILED';
+    status: 'COMPLETED' | 'PROCESSING' | 'PARTIAL' | 'FAILED' | 'STOPPED';
     results?: RecipientResult[];
 }
 

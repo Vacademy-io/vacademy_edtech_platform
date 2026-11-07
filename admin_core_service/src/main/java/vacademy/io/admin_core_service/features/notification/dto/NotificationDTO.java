@@ -14,5 +14,7 @@ public class NotificationDTO {
     private String subject;
     private String source;
     private String sourceId;
+    /** Optional. Null means UTILITY_EMAIL. Commercial types get the unsubscribe footer. */
+    private String emailType;
     private List<NotificationToUserDTO> users;
 }

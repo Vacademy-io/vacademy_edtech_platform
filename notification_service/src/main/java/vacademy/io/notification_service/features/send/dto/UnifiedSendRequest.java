@@ -84,6 +84,8 @@ public class UnifiedSendRequest {
         private String emailSubject;
         private String emailBody;
         private String emailType; // UTILITY_EMAIL, PROMOTIONAL_EMAIL, TRANSACTIONAL_EMAIL
+        /** Bulk marketing mail: add the unsubscribe footer when that keeps the same sender. */
+        private Boolean commercialBulk;
         private String previewText; // Hidden preview text shown in inbox before opening
         @JsonProperty("fromEmail")
         private String fromEmail;

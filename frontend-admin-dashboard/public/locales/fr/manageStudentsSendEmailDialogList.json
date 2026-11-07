@@ -28,6 +28,7 @@
         "supportEmail": "E-mail du support"
     },
     "toasts": {
+        "sendInBackground": "Envoi en arrière-plan à un rythme contrôlé. Il continue si vous fermez cette page, veuillez donc ne pas renvoyer.",
         "loadTemplatesFailed": "Échec du chargement des modèles d'e-mail",
         "templateContentFailed": "Échec du chargement du contenu du modèle",
         "noValidRecipients": "Aucun destinataire valide pour l'envoi de l'e-mail.",

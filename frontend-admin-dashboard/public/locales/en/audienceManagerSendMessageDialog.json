@@ -105,6 +105,7 @@
         "statusLabel": "Status",
         "recipientsLabel": "Recipients",
         "acceptedLabel": "Accepted",
+        "skippedLabel": "Skipped (no contact)",
         "failedLabel": "Failed",
         "processingNotice": "Processing in background (batch: {{batchId}})",
         "close": "Close",

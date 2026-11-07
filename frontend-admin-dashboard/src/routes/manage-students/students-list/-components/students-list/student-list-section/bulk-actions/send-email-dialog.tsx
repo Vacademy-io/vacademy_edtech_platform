@@ -297,7 +297,9 @@ export const SendEmailDialog = () => {
                 },
             });
             setSendResult(result);
-            if (result.success) {
+            if (result.inProgress) {
+                toast.info(t('toasts.sendInBackground'));
+            } else if (result.success) {
                 toast.success(t('toasts.sendSuccess'));
             } else {
                 const validationError = result.errors?.find((e) => e.studentId === 'validation');

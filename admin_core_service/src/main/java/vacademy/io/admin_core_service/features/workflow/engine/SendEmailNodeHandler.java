@@ -194,8 +194,15 @@ public class SendEmailNodeHandler implements NodeHandler {
             int chunkSize = DEFAULT_CHUNK_SIZE;
             long throttleMs = DEFAULT_THROTTLE_MS;
             long chunkTimeoutMs = DEFAULT_CHUNK_TIMEOUT_MS;
+            // Optional, e.g. "PROMOTIONAL_EMAIL" on a marketing node so its mail carries the
+            // unsubscribe footer. Unset stays utility: most workflow mail is receipts and reminders,
+            // which an unsubscribed learner must still get.
+            String nodeLevelEmailType = null;
             try {
                 com.fasterxml.jackson.databind.JsonNode configRoot = objectMapper.readTree(nodeConfigJson);
+                if (configRoot.has("emailType") && !configRoot.get("emailType").asText("").isBlank()) {
+                    nodeLevelEmailType = configRoot.get("emailType").asText().trim().toUpperCase(java.util.Locale.ROOT);
+                }
                 if (configRoot.has("templateName") && !configRoot.get("templateName").asText("").isBlank()) {
                     nodeLevelTemplateName = configRoot.get("templateName").asText();
                 }
@@ -220,6 +227,7 @@ public class SendEmailNodeHandler implements NodeHandler {
             } catch (Exception e) {
                 log.warn("Failed to parse node-level template config", e);
             }
+            final String finalNodeEmailType = nodeLevelEmailType;
 
             for (Object item : items) {
                 Map<String, Object> itemContext = new HashMap<>(context);
@@ -321,7 +329,7 @@ public class SendEmailNodeHandler implements NodeHandler {
                     }
 
                     // --- Deduplication Check ---
-                    String dedupeKey = recipient + "::" + subject;
+                    String dedupeKey = recipient.trim().toLowerCase(java.util.Locale.ROOT) + "::" + subject;
                     if (sentLog.contains(dedupeKey)) {
                         log.warn("Duplicate email request for {} with subject ''{}''. Skipping.", recipient, subject);
                         skippedCount++;
@@ -385,6 +393,7 @@ public class SendEmailNodeHandler implements NodeHandler {
 
                         NotificationDTO batchDTO = regularBatchMap.computeIfAbsent(groupingKey, k -> {
                             NotificationDTO newDto = new NotificationDTO();
+                            newDto.setEmailType(finalNodeEmailType);
                             newDto.setSubject(subject);
                             newDto.setBody(body);
                             newDto.setNotificationType("EMAIL");
@@ -1245,6 +1254,7 @@ public class SendEmailNodeHandler implements NodeHandler {
                     chunkDto.setNotificationType(batch.getNotificationType());
                     chunkDto.setSource(batch.getSource());
                     chunkDto.setSourceId(batch.getSourceId());
+                    chunkDto.setEmailType(batch.getEmailType());
                     chunkDto.setUsers(new ArrayList<>(users.subList(i, end)));
                 }
                 int chunkUserCount = end - i;

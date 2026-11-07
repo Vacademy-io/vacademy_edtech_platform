@@ -109,6 +109,7 @@
         "statusLabel": "الحالة",
         "recipientsLabel": "المستلمون",
         "acceptedLabel": "مقبول",
+        "skippedLabel": "تم التخطي (بدون جهة اتصال)",
         "failedLabel": "فشل",
         "processingNotice": "قيد المعالجة في الخلفية (الدفعة: {{batchId}})",
         "close": "إغلاق",
