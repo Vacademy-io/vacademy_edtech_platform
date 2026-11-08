@@ -35,6 +35,11 @@ public class LeadReportSummaryDTO {
      * team into the leads list, which filters by counsellor and has no team filter of its own.
      */
     private List<String> scopeCounsellorIds;
+    /**
+     * True when the lead counts leave out converted leads (Lead Settings hides them in All
+     * Leads), so a drill-through opens the list without converted leads too.
+     */
+    private boolean excludesConverted;
 
     @Data
     @NoArgsConstructor

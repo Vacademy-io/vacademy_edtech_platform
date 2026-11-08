@@ -60,6 +60,8 @@ export interface LeadReportSummary {
     trend_by_day: DailyTrendPoint[];
     /** Counsellors a team filter resolved to (absent without one) — carried into drill-throughs. */
     scope_counsellor_ids?: string[] | null;
+    /** Counts leave out converted leads (hidden in All Leads) — drill-throughs do the same. */
+    excludes_converted?: boolean;
 }
 
 export async function fetchLeadReportSummary(

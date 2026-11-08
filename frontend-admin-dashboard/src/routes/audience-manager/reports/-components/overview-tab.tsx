@@ -27,6 +27,7 @@ import {
 import { cn } from '@/lib/utils';
 import { fetchLeadReportSummary } from '../-services/get-lead-reports';
 import {
+    ALL_ACTIVE_VALUE,
     ALL_STATUSES_VALUE,
     CUSTOM_DATE_VALUE,
 } from '../../recent-leads/-components/recent-leads-search';
@@ -106,15 +107,22 @@ export function OverviewTab({
      * Recent Leads search for a drill-through: the window the report actually covered (resolved
      * server-side, so the default last-30-days applies too), the counsellor and campaign the
      * report is scoped to, and every status unless the drill picks one — so the list holds
-     * exactly the leads the clicked number counted.
+     * exactly the leads the clicked number counted. When the report leaves out converted
+     * leads (as All Leads does), the list does too: "All except Converted", plus the picked
+     * status if any.
      */
-    const drillSearch = (extra: {
+    const drillSearch = ({
+        status,
+        ...extra
+    }: {
         status?: string;
         source?: string;
         campaignType?: string;
         tier?: string;
     }) => ({
-        status: ALL_STATUSES_VALUE,
+        status: summary?.excludes_converted
+            ? [ALL_ACTIVE_VALUE, status].filter(Boolean).join(',')
+            : status ?? ALL_STATUSES_VALUE,
         range: CUSTOM_DATE_VALUE,
         // Empty inputs would fail the route's yyyy-MM-dd schema — omit them instead.
         from: summary?.from_date ? summary.from_date.slice(0, 10) : fromDate || undefined,
@@ -165,8 +173,8 @@ export function OverviewTab({
                     tone="primary"
                     loading={isLoading && !summary}
                     onClick={() =>
-                        // Total = every status incl. Converted, so override the
-                        // recent-leads default "Active leads" filter to match.
+                        // Total = every status (incl. Converted unless the report
+                        // leaves them out), so drillSearch sets the status filter to match.
                         navigate({ to: RECENT_LEADS_ROUTE, search: drillSearch({}) })
                     }
                 />

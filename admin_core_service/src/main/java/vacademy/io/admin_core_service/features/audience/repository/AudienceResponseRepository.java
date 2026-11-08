@@ -2975,6 +2975,7 @@ public interface AudienceResponseRepository extends JpaRepository<AudienceRespon
                               AND (ar.overall_status IS NULL OR ar.overall_status != 'OPTED_OUT')
                               AND ar.audience_status = 'ACTIVE'
                               AND (:excludeDuplicates = false OR COALESCE(ar.is_duplicate, FALSE) = FALSE)
+                              AND (:excludeConverted = false OR ulp.conversion_status IS NULL OR ulp.conversion_status != 'CONVERTED')
                               AND (:scopeUsersCsv IS NULL OR lu.user_id = ANY(STRING_TO_ARRAY(:scopeUsersCsv, ',')) OR ulp.assigned_counselor_id = ANY(STRING_TO_ARRAY(:scopeUsersCsv, ',')))
                               AND (:audienceId IS NULL OR ar.audience_id = :audienceId)
                               AND (:sourceType IS NULL OR ar.source_type = :sourceType)
@@ -2986,7 +2987,8 @@ public interface AudienceResponseRepository extends JpaRepository<AudienceRespon
                         @Param("scopeUsersCsv") String scopeUsersCsv,
                         @Param("audienceId") String audienceId,
                         @Param("sourceType") String sourceType,
-                        @Param("excludeDuplicates") boolean excludeDuplicates);
+                        @Param("excludeDuplicates") boolean excludeDuplicates,
+                        @Param("excludeConverted") boolean excludeConverted);
 
         /**
          * Response stats aggregate. "first response" = MIN(response event) for the lead — the
@@ -3022,6 +3024,7 @@ public interface AudienceResponseRepository extends JpaRepository<AudienceRespon
                                   AND (ar.overall_status IS NULL OR ar.overall_status != 'OPTED_OUT')
                                   AND ar.audience_status = 'ACTIVE'
                                   AND (:excludeDuplicates = false OR COALESCE(ar.is_duplicate, FALSE) = FALSE)
+                                  AND (:excludeConverted = false OR ulp.conversion_status IS NULL OR ulp.conversion_status != 'CONVERTED')
                                   AND (:scopeUsersCsv IS NULL OR lu.user_id = ANY(STRING_TO_ARRAY(:scopeUsersCsv, ',')) OR ulp.assigned_counselor_id = ANY(STRING_TO_ARRAY(:scopeUsersCsv, ',')))
                                   AND (:audienceId IS NULL OR ar.audience_id = :audienceId)
                                   AND (:sourceType IS NULL OR ar.source_type = :sourceType)
@@ -3043,7 +3046,8 @@ public interface AudienceResponseRepository extends JpaRepository<AudienceRespon
                         @Param("scopeUsersCsv") String scopeUsersCsv,
                         @Param("audienceId") String audienceId,
                         @Param("sourceType") String sourceType,
-                        @Param("excludeDuplicates") boolean excludeDuplicates);
+                        @Param("excludeDuplicates") boolean excludeDuplicates,
+                        @Param("excludeConverted") boolean excludeConverted);
 
         /** Status breakdown: rows of (status_key, count). */
         @Query(value = """
@@ -3065,6 +3069,7 @@ public interface AudienceResponseRepository extends JpaRepository<AudienceRespon
                               AND (ar.overall_status IS NULL OR ar.overall_status != 'OPTED_OUT')
                               AND ar.audience_status = 'ACTIVE'
                               AND (:excludeDuplicates = false OR COALESCE(ar.is_duplicate, FALSE) = FALSE)
+                              AND (:excludeConverted = false OR ulp.conversion_status IS NULL OR ulp.conversion_status != 'CONVERTED')
                               AND (:scopeUsersCsv IS NULL OR lu.user_id = ANY(STRING_TO_ARRAY(:scopeUsersCsv, ',')) OR ulp.assigned_counselor_id = ANY(STRING_TO_ARRAY(:scopeUsersCsv, ',')))
                               AND (:audienceId IS NULL OR ar.audience_id = :audienceId)
                               AND (:sourceType IS NULL OR ar.source_type = :sourceType)
@@ -3077,7 +3082,8 @@ public interface AudienceResponseRepository extends JpaRepository<AudienceRespon
                         @Param("scopeUsersCsv") String scopeUsersCsv,
                         @Param("audienceId") String audienceId,
                         @Param("sourceType") String sourceType,
-                        @Param("excludeDuplicates") boolean excludeDuplicates);
+                        @Param("excludeDuplicates") boolean excludeDuplicates,
+                        @Param("excludeConverted") boolean excludeConverted);
 
         /** Source breakdown: rows of (source_type, total, converted). */
         @Query(value = """
@@ -3101,6 +3107,7 @@ public interface AudienceResponseRepository extends JpaRepository<AudienceRespon
                               AND (ar.overall_status IS NULL OR ar.overall_status != 'OPTED_OUT')
                               AND ar.audience_status = 'ACTIVE'
                               AND (:excludeDuplicates = false OR COALESCE(ar.is_duplicate, FALSE) = FALSE)
+                              AND (:excludeConverted = false OR ulp.conversion_status IS NULL OR ulp.conversion_status != 'CONVERTED')
                               AND (:scopeUsersCsv IS NULL OR lu.user_id = ANY(STRING_TO_ARRAY(:scopeUsersCsv, ',')) OR ulp.assigned_counselor_id = ANY(STRING_TO_ARRAY(:scopeUsersCsv, ',')))
                               AND (:audienceId IS NULL OR ar.audience_id = :audienceId)
                               AND (:sourceType IS NULL OR ar.source_type = :sourceType)
@@ -3114,7 +3121,8 @@ public interface AudienceResponseRepository extends JpaRepository<AudienceRespon
                         @Param("scopeUsersCsv") String scopeUsersCsv,
                         @Param("audienceId") String audienceId,
                         @Param("sourceType") String sourceType,
-                        @Param("excludeDuplicates") boolean excludeDuplicates);
+                        @Param("excludeDuplicates") boolean excludeDuplicates,
+                        @Param("excludeConverted") boolean excludeConverted);
 
         /** Tier breakdown: explicit lead_tier wins, else the institute catalog band, else the legacy bucket, else UNCLASSIFIED. */
         @Query(value = """
@@ -3144,6 +3152,7 @@ public interface AudienceResponseRepository extends JpaRepository<AudienceRespon
                               AND (ar.overall_status IS NULL OR ar.overall_status != 'OPTED_OUT')
                               AND ar.audience_status = 'ACTIVE'
                               AND (:excludeDuplicates = false OR COALESCE(ar.is_duplicate, FALSE) = FALSE)
+                              AND (:excludeConverted = false OR ulp.conversion_status IS NULL OR ulp.conversion_status != 'CONVERTED')
                               AND (:scopeUsersCsv IS NULL OR lu.user_id = ANY(STRING_TO_ARRAY(:scopeUsersCsv, ',')) OR ulp.assigned_counselor_id = ANY(STRING_TO_ARRAY(:scopeUsersCsv, ',')))
                               AND (:audienceId IS NULL OR ar.audience_id = :audienceId)
                               AND (:sourceType IS NULL OR ar.source_type = :sourceType)
@@ -3156,7 +3165,8 @@ public interface AudienceResponseRepository extends JpaRepository<AudienceRespon
                         @Param("scopeUsersCsv") String scopeUsersCsv,
                         @Param("audienceId") String audienceId,
                         @Param("sourceType") String sourceType,
-                        @Param("excludeDuplicates") boolean excludeDuplicates);
+                        @Param("excludeDuplicates") boolean excludeDuplicates,
+                        @Param("excludeConverted") boolean excludeConverted);
 
         /** Daily trend: GROUP BY the submission day in the institute timezone (:zone). */
         @Query(value = """
@@ -3179,6 +3189,7 @@ public interface AudienceResponseRepository extends JpaRepository<AudienceRespon
                               AND (ar.overall_status IS NULL OR ar.overall_status != 'OPTED_OUT')
                               AND ar.audience_status = 'ACTIVE'
                               AND (:excludeDuplicates = false OR COALESCE(ar.is_duplicate, FALSE) = FALSE)
+                              AND (:excludeConverted = false OR ulp.conversion_status IS NULL OR ulp.conversion_status != 'CONVERTED')
                               AND (:scopeUsersCsv IS NULL OR lu.user_id = ANY(STRING_TO_ARRAY(:scopeUsersCsv, ',')) OR ulp.assigned_counselor_id = ANY(STRING_TO_ARRAY(:scopeUsersCsv, ',')))
                               AND (:audienceId IS NULL OR ar.audience_id = :audienceId)
                               AND (:sourceType IS NULL OR ar.source_type = :sourceType)
@@ -3193,7 +3204,8 @@ public interface AudienceResponseRepository extends JpaRepository<AudienceRespon
                         @Param("scopeUsersCsv") String scopeUsersCsv,
                         @Param("audienceId") String audienceId,
                         @Param("sourceType") String sourceType,
-                        @Param("excludeDuplicates") boolean excludeDuplicates);
+                        @Param("excludeDuplicates") boolean excludeDuplicates,
+                        @Param("excludeConverted") boolean excludeConverted);
 
         /**
          * Per-counsellor aggregate row. Counsellor resolution mirrors the leads list filter.
