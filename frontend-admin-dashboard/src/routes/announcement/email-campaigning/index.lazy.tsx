@@ -53,6 +53,8 @@ import { buildEmailCampaignPayload, interpretApiError } from './-utils/payload';
 import { parseKeep } from '../-utils/campaign';
 import { RecipientPreviewDialog } from '../-components/RecipientPreviewDialog';
 import { TestSendDialog } from '../-components/TestSendDialog';
+import { useAnnouncementEmailCost } from '../-hooks/useAnnouncementEmailCost';
+import { EmailCostEstimate } from '@/components/common/email-billing/EmailCostEstimate';
 import type { EmailSectionId, FieldErrors } from './-types';
 
 export const Route = createLazyFileRoute('/announcement/email-campaigning/')({
@@ -198,6 +200,12 @@ function EmailCampaigningPage({
         [draft.draft.rules, draft.batchById, draft.tagNameById]
     );
 
+    // A campaign the institute cannot pay for is refused whole at delivery. Only a new send that
+    // goes out now is held back here — credits may be added before a scheduled one runs.
+    const emailCost = useAnnouncementEmailCost(recipients, true, draft.draft.htmlContent);
+    const creditBlocked =
+        !isEditing && draft.draft.scheduleType === 'IMMEDIATE' && !emailCost.allowed;
+
     const senderLabel = useMemo(() => {
         const sender = draft.senders.find((s) => senderKey(s) === draft.draft.fromKey);
         return sender ? `${sender.name} <${sender.email}>` : '';
@@ -235,6 +243,12 @@ function EmailCampaigningPage({
 
         if (locked) {
             toast.error(t('locked.toast', { status: draft.prefill.status ?? '' }));
+            return;
+        }
+
+        if (creditBlocked) {
+            toast.error('Not enough free emails or credits for this send. Add credits first.');
+            scrollToSection('audience');
             return;
         }
 
@@ -351,6 +365,7 @@ function EmailCampaigningPage({
     // ------------------------------------------------------------------ review dialog body
     const reviewBody = (
         <div className="space-y-6">
+            <EmailCostEstimate {...emailCost.estimateParams} />
             <CampaignSummary
                 draft={draft.draft}
                 recipients={recipients}
@@ -534,6 +549,7 @@ function EmailCampaigningPage({
                                         onRetry={draft.reloadCustomFields}
                                     />
                                 )}
+                                <EmailCostEstimate {...emailCost.estimateParams} className="mt-4" />
                             </section>
 
                             <section id={SECTION_ID.settings} className="scroll-mt-24">
@@ -708,7 +724,7 @@ function EmailCampaigningPage({
                             buttonType="primary"
                             scale="medium"
                             onClick={handleSubmit}
-                            disable={formDisabled}
+                            disable={formDisabled || creditBlocked}
                         >
                             <PaperPlaneTilt className="me-1 size-4" />
                             {primaryLabel}
@@ -734,7 +750,7 @@ function EmailCampaigningPage({
                         <MyButton
                             buttonType="primary"
                             scale="medium"
-                            disable={formDisabled}
+                            disable={formDisabled || creditBlocked}
                             onClick={() => void handleSubmit()}
                         >
                             {primaryLabel}

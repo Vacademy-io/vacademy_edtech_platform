@@ -39,7 +39,11 @@ import {
     toTemplateOptions,
 } from '@/components/templates/TemplateSearchableSelect';
 import { WhatsAppTemplatePreview } from '@/components/templates/WhatsAppTemplatePreview';
-import { sendNotification, getDeliveryStatus } from '@/services/unified-send-service';
+import {
+    sendNotification,
+    getDeliveryStatus,
+    insufficientCreditsMessage,
+} from '@/services/unified-send-service';
 import type { DeliveryStatus, UnifiedSendResponse } from '@/services/unified-send-service';
 import {
     fetchCustomFieldSetup,
@@ -97,7 +101,16 @@ export function resolveSendVerdict({
     // panel. Null means the provider gave none, and the caller shows its own fallback copy.
     let reason: string | null = null;
     if (rejected) {
-        reason = sendResult.results?.find((r) => !r.success)?.error ?? null;
+        const failedResult = sendResult.results?.find((r) => !r.success);
+        if (sendResult.status === 'INSUFFICIENT_CREDITS') {
+            reason = insufficientCreditsMessage(sendResult);
+        } else if (failedResult?.status === 'BLOCKED_NO_CREDITS') {
+            // Held back, not lost: say where to find it.
+            reason =
+                'Not sent — no credits. It is kept under Settings → Email usage, so you can resend it after adding credits.';
+        } else {
+            reason = failedResult?.error ?? null;
+        }
     } else if (failedOnDelivery) {
         const code = delivery?.errorCode ? ` (${delivery.errorCode})` : '';
         reason = delivery?.errorMessage ? `${delivery.errorMessage}${code}` : null;

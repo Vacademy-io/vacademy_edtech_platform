@@ -64,7 +64,19 @@ export interface RecipientResult {
     phone?: string;
     email?: string;
     success: boolean;
-    status: 'SENT' | 'FAILED' | 'SKIPPED_OPT_OUT' | 'QUEUED';
+    /**
+     * BLOCKED_NO_CREDITS: the institute had no free emails or credits left, so this email was not
+     * sent; it is kept under Settings → Email usage to resend after a top-up.
+     */
+    status:
+        | 'SENT'
+        | 'FAILED'
+        | 'SKIPPED_OPT_OUT'
+        | 'QUEUED'
+        | 'DEFERRED'
+        | 'SKIPPED_UNSUBSCRIBED'
+        | 'SKIPPED_BLOCKED'
+        | 'BLOCKED_NO_CREDITS';
     error?: string;
     /**
      * Provider message id (WhatsApp wamid) for an accepted send. Feed it to getDeliveryStatus to
@@ -89,8 +101,24 @@ export interface UnifiedSendResponse {
     total: number;
     accepted: number;
     failed: number;
-    status: 'COMPLETED' | 'PROCESSING' | 'PARTIAL' | 'FAILED' | 'STOPPED';
+    /**
+     * INSUFFICIENT_CREDITS: a bulk email the institute could not pay for was refused whole —
+     * nothing went out (accepted = 0). Each result's `error` says what it needed.
+     */
+    status: 'COMPLETED' | 'PROCESSING' | 'PARTIAL' | 'FAILED' | 'STOPPED' | 'INSUFFICIENT_CREDITS';
     results?: RecipientResult[];
+}
+
+/** Copy shown when a bulk email was refused for lack of free emails or credits. */
+export const INSUFFICIENT_EMAIL_CREDITS_MESSAGE =
+    'Not sent: there are not enough free emails or credits for this send. Add credits, then send again.';
+
+/** Per-recipient label for an email held back for lack of credits. */
+export const BLOCKED_NO_CREDITS_LABEL = 'Not sent — no credits';
+
+/** The server's reason for a refused bulk email, or our own plain copy. */
+export function insufficientCreditsMessage(response: UnifiedSendResponse): string {
+    return response.results?.find((r) => r.error)?.error ?? INSUFFICIENT_EMAIL_CREDITS_MESSAGE;
 }
 
 // ==================== API Functions ====================

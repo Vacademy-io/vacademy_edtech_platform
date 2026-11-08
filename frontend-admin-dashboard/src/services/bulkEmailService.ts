@@ -16,6 +16,8 @@ import { getCurrentInstituteId } from '@/lib/auth/instituteUtils';
 import { getTokenFromCookie } from '@/lib/auth/sessionUtility';
 import { TokenKey } from '@/constants/auth/tokens';
 import {
+    BLOCKED_NO_CREDITS_LABEL,
+    insufficientCreditsMessage,
     sendNotification,
     waitForBatchCompletion,
     type UnifiedSendResponse,
@@ -65,6 +67,8 @@ export interface BulkEmailResult {
     /** Still sending in the background. Counts are not final yet. */
     inProgress?: boolean;
     batchId?: string;
+    /** Refused whole: not enough free emails or credits. Nothing went out. */
+    insufficientCredits?: boolean;
 }
 
 export class BulkEmailService {
@@ -530,6 +534,38 @@ export class BulkEmailService {
                 }
             }
 
+            // Refused whole for lack of free emails or credits: say so once, not per student.
+            if (unifiedResponse.status === 'INSUFFICIENT_CREDITS') {
+                return {
+                    success: false,
+                    totalStudents: students.length,
+                    processedStudents: 0,
+                    failedStudents: students.length,
+                    errors: [
+                        {
+                            studentId: 'credits',
+                            studentName: 'All Students',
+                            error: insufficientCreditsMessage(unifiedResponse),
+                        },
+                    ],
+                    payload,
+                    insufficientCredits: true,
+                };
+            }
+
+            // Single emails held back for lack of credits (kept to resend from Email usage). Listed
+            // for the admin only — `failed` already counts them.
+            const nameByEmail = new Map<string, string>(
+                students.map((s) => [String(s.email ?? '').toLowerCase(), s.full_name || s.name || ''])
+            );
+            const heldBack = (unifiedResponse.results ?? [])
+                .filter((r) => r.status === 'BLOCKED_NO_CREDITS')
+                .map((r) => ({
+                    studentId: r.email ?? 'unknown',
+                    studentName: nameByEmail.get((r.email ?? '').toLowerCase()) || r.email || '',
+                    error: BLOCKED_NO_CREDITS_LABEL,
+                }));
+
             if (unifiedResponse.status === 'STOPPED') {
                 errors.push({
                     studentId: 'all',
@@ -545,7 +581,7 @@ export class BulkEmailService {
                     ? recipients.length
                     : unifiedResponse.accepted + unifiedResponse.failed,
                 failedStudents: inProgress ? errors.length : unifiedResponse.failed + errors.length,
-                errors,
+                errors: [...errors, ...heldBack],
                 payload,
                 inProgress,
                 batchId: unifiedResponse.batchId,

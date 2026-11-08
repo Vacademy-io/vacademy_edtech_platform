@@ -45,6 +45,8 @@ import { buildCreatePayload, expandRecipients, interpretApiError } from './-util
 import type { FieldErrors, FormSectionId } from './-types';
 import { RecipientPreviewDialog } from '../-components/RecipientPreviewDialog';
 import { TestSendDialog } from '../-components/TestSendDialog';
+import { useAnnouncementEmailCost } from '../-hooks/useAnnouncementEmailCost';
+import { EmailCostEstimate } from '@/components/common/email-billing/EmailCostEstimate';
 
 export const Route = createLazyFileRoute('/announcement/create/')({
     component: () => (
@@ -330,6 +332,11 @@ function CreateAnnouncementPage() {
 
     // A test only covers the email channel; WhatsApp / push / in-app are not sent.
     const emailSelected = draft.mediums.includes('EMAIL');
+
+    // An email the institute cannot pay for is refused whole at delivery. Only a send that goes
+    // out now is held back here — credits may be added before a scheduled one runs.
+    const emailCost = useAnnouncementEmailCost(recipientsPreview, emailSelected, draft.htmlContent);
+    const creditBlocked = emailSelected && draft.scheduleType === 'IMMEDIATE' && !emailCost.allowed;
     const buildTestPayload = () => {
         const payload = buildPayload();
         return {
@@ -348,6 +355,12 @@ function CreateAnnouncementPage() {
     const handleCreate = async () => {
         setAttempted(true);
         setServerErrors({});
+
+        if (creditBlocked) {
+            toast.error('Not enough free emails or credits for this send. Add credits first.');
+            scrollToSection('delivery');
+            return;
+        }
 
         if (blockers.length > 0) {
             const firstBroken = FORM_SECTIONS.find(
@@ -390,6 +403,7 @@ function CreateAnnouncementPage() {
 
     const reviewBody = (
         <div className="space-y-6">
+            <EmailCostEstimate {...emailCost.estimateParams} enabled={emailSelected} />
             <ReviewStep
                 title={draft.title}
                 previewText={draft.previewText}
@@ -577,6 +591,11 @@ function CreateAnnouncementPage() {
                                     errors={errors}
                                     showErrors={attempted}
                                 />
+                                <EmailCostEstimate
+                                    {...emailCost.estimateParams}
+                                    enabled={emailSelected}
+                                    className="mt-4"
+                                />
                             </section>
                         </div>
 
@@ -706,7 +725,7 @@ function CreateAnnouncementPage() {
                             buttonType="primary"
                             scale="medium"
                             onClick={handleCreate}
-                            disable={submitting}
+                            disable={submitting || creditBlocked}
                             loadingText={t('actions.creating')}
                         >
                             <PaperPlaneTilt className="mr-1 size-4" />
@@ -737,7 +756,7 @@ function CreateAnnouncementPage() {
                         <MyButton
                             buttonType="primary"
                             scale="medium"
-                            disable={submitting}
+                            disable={submitting || creditBlocked}
                             onClick={() => {
                                 setReviewOpen(false);
                                 void handleCreate();

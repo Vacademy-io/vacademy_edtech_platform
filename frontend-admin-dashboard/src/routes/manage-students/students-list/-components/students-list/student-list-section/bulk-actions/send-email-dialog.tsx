@@ -39,6 +39,8 @@ import {
 } from '@/components/templates/TemplateSearchableSelect';
 import { bulkEmailService, type BulkEmailResult } from '@/services/bulkEmailService';
 import { isServerResolvedEmailVariable } from '@/lib/email-templates/server-resolved-variables';
+import { getCurrentInstituteId } from '@/lib/auth/instituteUtils';
+import { EmailCostEstimate } from '@/components/common/email-billing/EmailCostEstimate';
 import { useDialogStore } from '../../../../-hooks/useDialogStore';
 
 // Multi-step compose flow modelled on the audience-manager SendMessageDialog, but
@@ -133,6 +135,8 @@ export const SendEmailDialog = () => {
     // Send state
     const [isSending, setIsSending] = useState(false);
     const [sendResult, setSendResult] = useState<BulkEmailResult | null>(null);
+    // False when the email cost estimate says the institute cannot pay for this send.
+    const [emailAllowed, setEmailAllowed] = useState(true);
 
     // Placeholders present across subject + body (drives the mapping step)
     const variableKeys = useMemo(
@@ -302,8 +306,10 @@ export const SendEmailDialog = () => {
             } else if (result.success) {
                 toast.success(t('toasts.sendSuccess'));
             } else {
-                const validationError = result.errors?.find((e) => e.studentId === 'validation');
-                toast.error(validationError?.error ?? t('toasts.sendFailed'));
+                const reason = result.errors?.find(
+                    (e) => e.studentId === 'validation' || e.studentId === 'credits'
+                );
+                toast.error(reason?.error ?? t('toasts.sendFailed'));
             }
         } catch (err) {
             toast.error(err instanceof Error ? err.message : t('toasts.unexpectedError'));
@@ -558,8 +564,17 @@ export const SendEmailDialog = () => {
                         <XCircle className="size-12 text-danger-500" />
                     )}
                     <h3 className="text-lg font-semibold">
-                        {isSuccess ? t('reviewStep.emailSent') : t('reviewStep.sendCompleted')}
+                        {sendResult.insufficientCredits
+                            ? 'Not sent'
+                            : isSuccess
+                              ? t('reviewStep.emailSent')
+                              : t('reviewStep.sendCompleted')}
                     </h3>
+                    {sendResult.insufficientCredits && (
+                        <p className="max-w-sm text-center text-body text-danger-600">
+                            {sendResult.errors[0]?.error}
+                        </p>
+                    )}
                     <div className="w-full max-w-sm space-y-2 rounded-md border p-4 text-sm">
                         <div className="flex justify-between">
                             <span className="text-muted-foreground">
@@ -582,7 +597,9 @@ export const SendEmailDialog = () => {
                             </span>
                         </div>
                     </div>
-                    {sendResult.errors && sendResult.errors.length > 0 && (
+                    {!sendResult.insufficientCredits &&
+                        sendResult.errors &&
+                        sendResult.errors.length > 0 && (
                         <div className="max-h-32 w-full max-w-sm space-y-1 overflow-auto rounded-md border bg-muted/20 p-3 text-xs text-muted-foreground">
                             {sendResult.errors.slice(0, 10).map((e, idx) => (
                                 <div key={`${e.studentId}-${idx}`}>
@@ -660,7 +677,19 @@ export const SendEmailDialog = () => {
                     )}
                 </div>
 
-                <Button className="w-full" onClick={handleSend} disabled={isSending}>
+                {/* A multi-recipient email the institute cannot pay for is refused whole. */}
+                <EmailCostEstimate
+                    instituteId={getCurrentInstituteId() || ''}
+                    recipients={recipients.length}
+                    enabled={recipients.length > 1}
+                    onAllowedChange={setEmailAllowed}
+                />
+
+                <Button
+                    className="w-full"
+                    onClick={handleSend}
+                    disabled={isSending || !emailAllowed}
+                >
                     {isSending ? (
                         <>
                             <CircleNotch className="mr-2 size-4 animate-spin" />

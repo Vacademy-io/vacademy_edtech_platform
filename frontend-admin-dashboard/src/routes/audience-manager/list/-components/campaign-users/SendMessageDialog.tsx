@@ -59,6 +59,8 @@ import { toast } from 'sonner';
 import { useGetCampaignById } from '../../-hooks/useGetCampaignById';
 import { parseCustomFieldsFromJson } from '../../-utils/lead-bulk-import-utils';
 import { fetchCampaignLeads } from '../../-services/get-campaign-users';
+import { EmailCostEstimate } from '@/components/common/email-billing/EmailCostEstimate';
+import { INSUFFICIENT_EMAIL_CREDITS_MESSAGE } from '@/services/unified-send-service';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -144,6 +146,7 @@ function getStatusLabel(t: TFunction, status: string): string {
     const known: Record<string, string> = {
         SUCCESS: t('review.statusValues.success'),
         FAILED: t('review.statusValues.failed'),
+        INSUFFICIENT_CREDITS: 'Not sent — no credits',
     };
     return known[status] ?? status;
 }
@@ -233,6 +236,8 @@ export function SendMessageDialog({
     // Send state
     const [isSending, setIsSending] = useState(false);
     const [sendResult, setSendResult] = useState<SendAudienceMessageResponse | null>(null);
+    // False when the email cost estimate says the institute cannot pay for this send.
+    const [emailAllowed, setEmailAllowed] = useState(true);
 
     // Resolved recipient count: prefer the prop (may already be known from the lead table view),
     // else fetch a 1-row page from the leads endpoint to read totalElements.
@@ -563,7 +568,10 @@ export function SendMessageDialog({
             const failedCount = result.failed ?? 0;
             const acceptedCount = result.accepted ?? 0;
             const totalCount = result.recipient_count ?? acceptedCount + failedCount;
-            if (acceptedCount === 0) {
+            if (result.status === 'INSUFFICIENT_CREDITS') {
+                // Refused whole: nothing went out.
+                toast.error(INSUFFICIENT_EMAIL_CREDITS_MESSAGE, { duration: 8000 });
+            } else if (acceptedCount === 0) {
                 toast.error(t('toasts.noneSent'));
             } else if (failedCount > 0) {
                 toast.warning(
@@ -1002,6 +1010,11 @@ export function SendMessageDialog({
                     <h3 className="text-lg font-semibold">
                         {isSuccess ? t('review.messageSent') : t('review.sendCompleted')}
                     </h3>
+                    {sendResult.status === 'INSUFFICIENT_CREDITS' && (
+                        <p className="max-w-sm text-center text-body text-danger-600">
+                            {INSUFFICIENT_EMAIL_CREDITS_MESSAGE}
+                        </p>
+                    )}
                     <div className="w-full max-w-sm space-y-2 rounded-md border p-4 text-sm">
                         <div className="flex justify-between">
                             <span className="text-muted-foreground">{t('review.statusLabel')}</span>
@@ -1126,10 +1139,18 @@ export function SendMessageDialog({
                     )}
                 </div>
 
+                {/* A multi-recipient email the institute cannot pay for is refused whole. */}
+                <EmailCostEstimate
+                    instituteId={instituteId}
+                    recipients={targetCount ?? 0}
+                    enabled={channel === 'EMAIL' && (targetCount ?? 0) > 1}
+                    onAllowedChange={setEmailAllowed}
+                />
+
                 <Button
                     className="w-full"
                     onClick={handleSend}
-                    disabled={isSending}
+                    disabled={isSending || (channel === 'EMAIL' && !emailAllowed)}
                 >
                     {isSending ? (
                         <>
