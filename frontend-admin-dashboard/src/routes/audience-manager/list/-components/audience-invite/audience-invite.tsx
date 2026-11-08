@@ -54,7 +54,6 @@ import { OtherTerms, SystemTerms } from '@/routes/settings/-components/NamingSet
 import {
     buildCampaignTypeFilterOptions,
     buildDefaultCampaignTypeOptions,
-    filterByCampaignTypes,
 } from '../../-utils/campaign-types';
 import { MultiSelectFilter } from '@/components/shared/leads/multi-select-filter';
 import { useLeadTerminology } from '@/hooks/use-lead-terminology';
@@ -250,13 +249,20 @@ export const AudienceInvite = () => {
     const filteredCampaigns = useMemo(() => {
         if (!campaignsList?.content) return [];
         // Exact, case-insensitive type match: "Google Ads" picks GOOGLE ADS
-        // but not "GoogleAds Leads form", which is its own option.
-        return filterByCampaignTypes(campaignsList.content, typeFilters).filter(
-            (c: CampaignItem) => {
-                const s = c.status?.trim().toUpperCase();
-                return ['ACTIVE', 'INACTIVE', 'DRAFT'].includes(s);
+        // but not "GoogleAds Leads form", which is its own option. Inline rather
+        // than filterByCampaignTypes: that helper reads camelCase `campaignType`,
+        // this API returns snake_case `campaign_type`.
+        const wantedTypes = new Set(typeFilters.map((type) => type.trim().toUpperCase()));
+        return campaignsList.content.filter((c: CampaignItem) => {
+            if (
+                wantedTypes.size > 0 &&
+                !wantedTypes.has(c.campaign_type?.trim().toUpperCase() ?? '')
+            ) {
+                return false;
             }
-        );
+            const s = c.status?.trim().toUpperCase();
+            return ['ACTIVE', 'INACTIVE', 'DRAFT'].includes(s);
+        });
     }, [campaignsList?.content, typeFilters]);
 
     const totalFilteredPages = useMemo(() => {
