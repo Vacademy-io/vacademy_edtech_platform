@@ -97,7 +97,7 @@ class PlatformDocumentMailServiceTest {
         assertTrue(dto.getBody().contains("attached"));
         assertEquals(2, dto.getUsers().size(), "institute + billing email, de-duplicated");
         assertEquals("VT-2627-I00042.pdf", dto.getAttachmentName());
-        verify(notificationService, never()).sendHtmlEmailViaUnified(any(), any(), any(), any(), any(), any(), any());
+        verify(notificationService, never()).sendHtmlEmailViaUnified(any(), any(), any(), any(), any(), any(), any(), any());
     }
 
     @Test
@@ -110,7 +110,8 @@ class PlatformDocumentMailServiceTest {
         ArgumentCaptor<String> body = ArgumentCaptor.forClass(String.class);
         ArgumentCaptor<String> subject = ArgumentCaptor.forClass(String.class);
         verify(notificationService, times(2)).sendHtmlEmailViaUnified(anyString(), subject.capture(), body.capture(),
-                eq("inst-1"), eq("billing@vidyayatan.in"), eq("Vidyayatan Billing"), eq("UTILITY_EMAIL"));
+                eq("inst-1"), eq("billing@vidyayatan.in"), eq("Vidyayatan Billing"), eq("UTILITY_EMAIL"),
+                eq("AI_PLATFORM_INVOICE"));
         assertFalse(BRAND.matcher(subject.getValue() + body.getValue()).find());
         assertTrue(body.getValue().contains("https://admin.myschool.com/settings?selectedTab=aiSettings"));
         verify(notificationService, never()).sendAttachmentEmailViaUnified(any(), any());
@@ -141,7 +142,8 @@ class PlatformDocumentMailServiceTest {
         institute.setSetting(OWN_SENDER);
         mail.sendInvoiceEmail(invoice("NEUTRAL"));
         verify(notificationService, org.mockito.Mockito.atLeastOnce()).sendHtmlEmailViaUnified(any(), any(), any(),
-                eq("inst-1"), eq("billing@vacademy.io"), eq("Vacademy Billing"), eq("UTILITY_EMAIL"));
+                eq("inst-1"), eq("billing@vacademy.io"), eq("Vacademy Billing"), eq("UTILITY_EMAIL"),
+                eq("AI_PLATFORM_INVOICE"));
         assertNull(PlatformDocumentMailService.neutralText("Team VACADEMY"));
         assertNull(mail.supportEmailFor("help@vacademy.io", BrandMode.NEUTRAL));
         assertEquals("help@vacademy.io", mail.supportEmailFor("help@vacademy.io", BrandMode.VACADEMY));

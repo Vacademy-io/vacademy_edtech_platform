@@ -63,7 +63,7 @@ class AiPlansBillingMailerTest {
         ArgumentCaptor<String> subject = ArgumentCaptor.forClass(String.class);
         ArgumentCaptor<String> body = ArgumentCaptor.forClass(String.class);
         verify(notifications, times(2)).sendHtmlEmailViaUnified(anyString(), subject.capture(), body.capture(),
-                eq("i1"), eq("billing@vidyayatan.in"), eq("Billing Desk"), eq("UTILITY_EMAIL"));
+                eq("i1"), eq("billing@vidyayatan.in"), eq("Billing Desk"), eq("UTILITY_EMAIL"), eq("AI_PLAN_BILLING"));
         assertFalse(subject.getValue().toLowerCase().contains("vacademy"));
         assertFalse(body.getValue().toLowerCase().contains("vacademy"), body.getValue());
         assertFalse(body.getValue().contains("dash."), "no fallback admin link for NEUTRAL");
@@ -81,7 +81,7 @@ class AiPlansBillingMailerTest {
         cfg.setBillingFromEmail("billing@vacademy.io");
         assertEquals(2, mailer.send(mail("AI Pro")));
         verify(notifications, times(2)).sendHtmlEmailViaUnified(anyString(), anyString(), anyString(), eq("i1"),
-                eq("billing@vacademy.io"), anyString(), eq("UTILITY_EMAIL"));
+                eq("billing@vacademy.io"), anyString(), eq("UTILITY_EMAIL"), eq("AI_PLAN_BILLING"));
         org.mockito.Mockito.clearInvocations(notifications);
         // the institute's own brand-free UTILITY_EMAIL sender: sent with no override
         cfg.setBillingFromEmail(null);
@@ -89,7 +89,7 @@ class AiPlansBillingMailerTest {
                 + "{\"from\":\"Inst One <office@inst.test>\"}}}}}");
         assertEquals(2, mailer.send(mail("AI Pro")));
         verify(notifications, times(2)).sendHtmlEmailViaUnified(anyString(), anyString(), anyString(), eq("i1"),
-                isNull(), isNull(), eq("UTILITY_EMAIL"));
+                isNull(), isNull(), eq("UTILITY_EMAIL"), eq("AI_PLAN_BILLING"));
     }
 
     @Test
@@ -107,7 +107,7 @@ class AiPlansBillingMailerTest {
         ArgumentCaptor<String> subject = ArgumentCaptor.forClass(String.class);
         ArgumentCaptor<String> body = ArgumentCaptor.forClass(String.class);
         verify(notifications, atLeastOnce()).sendHtmlEmailViaUnified(anyString(), subject.capture(), body.capture(),
-                anyString(), isNull(), isNull(), anyString());
+                anyString(), isNull(), isNull(), anyString(), eq("AI_PLAN_BILLING"));
         assertTrue(subject.getValue().startsWith("Vacademy: "));
         assertTrue(body.getValue().contains("https://dash.vacademy.io/settings"));
         assertTrue(body.getValue().contains("billing@vacademy.io"));

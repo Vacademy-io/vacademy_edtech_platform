@@ -8,6 +8,10 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
+import vacademy.io.notification_service.features.email_billing.BlockedEmailStore;
+import vacademy.io.notification_service.features.email_billing.EmailBillingClass;
+import vacademy.io.notification_service.features.email_billing.EmailBillingClassifier;
+import vacademy.io.notification_service.features.email_billing.EmailBillingGate;
 import vacademy.io.notification_service.constants.NotificationConstants;
 import vacademy.io.notification_service.features.announcements.client.AdminCoreServiceClient;
 import vacademy.io.notification_service.features.announcements.client.AuthServiceClient;
@@ -62,6 +66,8 @@ public class AnnouncementDeliveryService {
     private final EmailService emailService;
     private final PushNotificationService pushNotificationService;
     private final UnifiedSendService unifiedSendService;
+    private final EmailBillingGate emailBillingGate;
+    private final BlockedEmailStore blockedEmailStore;
     private final UserAnnouncementPreferenceService userAnnouncementPreferenceService;
     private final InstituteInternalService instituteInternalService;
 
@@ -210,6 +216,24 @@ public class AnnouncementDeliveryService {
                     totalRecipients, estimatedMinutes, emailRateLimit);
         }
         
+        // Email billing: classified from the raw content, before {{password}} is filled in, so a
+        // credentials announcement stays free. One the institute cannot pay for is not sent at all.
+        final EmailBillingClass billingClass = EmailBillingClassifier.classify(
+                instituteId, null, "announcement-service", subject, content.getContent());
+        if (emailBillingGate.enforcedFor(instituteId, billingClass)) {
+            EmailBillingGate.Estimate estimate = emailBillingGate.estimate(instituteId, billingClass,
+                    (int) Math.min(totalRecipients, Integer.MAX_VALUE));
+            if (!estimate.allowed()) {
+                String error = "Not sent: this announcement needs " + estimate.credits()
+                        + " email credits and the institute has " + estimate.availableCredits() + " available";
+                int failed = recipientMessageRepository.failPendingByMedium(announcement.getId(), error,
+                        MessageStatus.PENDING, MessageStatus.FAILED, MediumType.EMAIL);
+                blockedEmailStore.notifyBlocked(instituteId);
+                log.warn("Announcement {} email not sent to {} recipient(s): {}", announcement.getId(), failed, error);
+                return;
+            }
+        }
+
         // Get rate limiter
         RateLimiter rateLimiter = getEmailRateLimiter();
 
@@ -336,7 +360,7 @@ public class AnnouncementDeliveryService {
                     // email medium config (populated from the template at announcement creation time).
                     // We do NOT pass templateName here because admin_core_service templates
                     // are in a different table than notification_service's notification_template.
-                    unifiedSendService.routeSync(UnifiedSendRequest.builder()
+                    UnifiedSendResponse sendResult = unifiedSendService.routeSync(UnifiedSendRequest.builder()
                             .instituteId(instituteId)
                             .channel("EMAIL")
                             .recipients(List.of(UnifiedSendRequest.Recipient.builder()
@@ -350,8 +374,22 @@ public class AnnouncementDeliveryService {
                                     .previewText(previewText)
                                     .source("announcement-service")
                                     .sourceId(announcement.getId())
+                                    .billingClass(billingClass.name())
                                     .build())
                             .build());
+
+                    // Not sent (bounced address, unsubscribed, or out of email credits): record why
+                    // instead of marking it delivered.
+                    UnifiedSendResponse.RecipientResult result = sendResult != null && sendResult.getResults() != null
+                            && !sendResult.getResults().isEmpty() ? sendResult.getResults().get(0) : null;
+                    if (result != null && !result.isSuccess()) {
+                        batchFailed++;
+                        message.setStatus(MessageStatus.FAILED);
+                        message.setErrorMessage(result.getError() != null ? result.getError() : result.getStatus());
+                        recipientMessageRepository.save(message);
+                        createEmailNotificationLog(announcement, message, userEmail, "FAILED", message.getErrorMessage(), resolvedFromAddress);
+                        continue;
+                    }
 
                     // Only mark DELIVERED after successful send
                     message.setStatus(MessageStatus.DELIVERED);

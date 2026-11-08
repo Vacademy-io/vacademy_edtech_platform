@@ -81,6 +81,8 @@ public class WebSecurityConfig {
             // use /notification-service/internal/v1/send. The controller further requires staff.
             "/notification-service/v1/send",
             "/notification-service/v1/send/**",
+            // Email usage, credits and held-back emails. The controller further requires staff.
+            "/notification-service/v1/email-billing/**",
             // Sending controls: per-institute quota status and the opt-out list (email addresses)
             // plus add/remove — admin data, must not sit under the broad v1 permitAll.
             "/notification-service/v1/email-sending/**",

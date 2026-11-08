@@ -3,9 +3,11 @@ package vacademy.io.notification_service.features.announcements.repository;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
+import org.springframework.transaction.annotation.Transactional;
 import vacademy.io.notification_service.features.announcements.entity.RecipientMessage;
 import vacademy.io.notification_service.features.announcements.enums.MediumType;
 import vacademy.io.notification_service.features.announcements.enums.MessageStatus;
@@ -42,6 +44,15 @@ public interface RecipientMessageRepository extends JpaRepository<RecipientMessa
     long countByAnnouncementId(String announcementId);
     
     long countByAnnouncementIdAndStatus(String announcementId, MessageStatus status);
+
+    /** Fails every still-pending EMAIL message of an announcement at once (e.g. the institute is out of credits). */
+    @Modifying
+    @Transactional
+    @Query("UPDATE RecipientMessage rm SET rm.status = :failed, rm.errorMessage = :error "
+            + "WHERE rm.announcementId = :announcementId AND rm.status = :pending AND rm.mediumType = :email")
+    int failPendingByMedium(@Param("announcementId") String announcementId, @Param("error") String error,
+            @Param("pending") MessageStatus pending, @Param("failed") MessageStatus failed,
+            @Param("email") MediumType email);
     
     long countByAnnouncementIdAndMediumType(String announcementId, MediumType mediumType);
     

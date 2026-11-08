@@ -121,6 +121,16 @@ public class NotificationService {
     public UnifiedSendResponse sendHtmlEmailViaUnified(
             String to, String subject, String body, String instituteId,
             String fromEmail, String fromName, String emailType) {
+        return sendHtmlEmailViaUnified(to, subject, body, instituteId, fromEmail, fromName, emailType, "html-email");
+    }
+
+    /**
+     * As above with the caller's source, which notification-service uses for CC rules and email
+     * billing (e.g. our own invoices to an institute are never charged to it).
+     */
+    public UnifiedSendResponse sendHtmlEmailViaUnified(
+            String to, String subject, String body, String instituteId,
+            String fromEmail, String fromName, String emailType, String source) {
 
         return sendUnified(UnifiedSendRequest.builder()
                 .instituteId(instituteId != null ? instituteId : "")
@@ -133,7 +143,7 @@ public class NotificationService {
                         .emailType(emailType != null ? emailType : "UTILITY_EMAIL")
                         .fromEmail(fromEmail)
                         .fromName(fromName)
-                        .source("html-email")
+                        .source(source)
                         .build())
                 .build());
     }

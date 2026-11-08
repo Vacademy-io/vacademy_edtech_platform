@@ -5,6 +5,11 @@ import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import vacademy.io.notification_service.features.email_billing.BlockedEmailStore;
+import vacademy.io.notification_service.features.email_billing.EmailBillingClass;
+import vacademy.io.notification_service.features.email_billing.EmailBillingClassifier;
+import vacademy.io.notification_service.features.email_billing.EmailBillingGate;
+import vacademy.io.notification_service.features.email_billing.EmailUnits;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.server.ResponseStatusException;
 import vacademy.io.notification_service.features.chatbot_flow.entity.NotificationTemplate;
@@ -43,6 +48,8 @@ public class UnifiedSendService implements SendChannelRouter {
     private final EmailCcResolver emailCcResolver;
     private final NotificationLogRepository notificationLogRepository;
     private final AdminCoreServiceClient adminCoreServiceClient;
+    private final EmailBillingGate emailBillingGate;
+    private final BlockedEmailStore blockedEmailStore;
 
     private static final int SYNC_THRESHOLD = 100;
 
@@ -64,6 +71,13 @@ public class UnifiedSendService implements SendChannelRouter {
         // threshold — a sync multi-recipient loop can exceed the caller's HTTP read
         // timeout while delivery keeps running here (caller sees a spurious failure).
         boolean forceAsync = Boolean.TRUE.equals(request.getForceAsync()) && recipientCount > 1;
+
+        // A multi-recipient email the institute cannot pay for is refused whole, before anything
+        // goes out or is queued: no half-sent campaign, and no thousands of blocked copies stored.
+        UnifiedSendResponse refused = refuseEmailWithoutCredits(request);
+        if (refused != null) {
+            return refused;
+        }
 
         if (recipientCount <= SYNC_THRESHOLD && !forceAsync) {
             return routeSync(request);
@@ -88,6 +102,87 @@ public class UnifiedSendService implements SendChannelRouter {
             default:
                 throw new IllegalArgumentException("Unsupported channel: " + channel);
         }
+    }
+
+    // ==================== Email billing ====================
+
+    /** Billing class of an EMAIL request, from the caller's explicit class, its source and the raw template. */
+    EmailBillingClass emailBillingClass(UnifiedSendRequest request, String templateSubject, String templateBody) {
+        UnifiedSendRequest.SendOptions o = request.getOptions();
+        return EmailBillingClassifier.classify(request.getInstituteId(),
+                o == null ? null : EmailBillingClass.parse(o.getBillingClass()),
+                o == null ? null : o.getSource(), templateSubject, templateBody);
+    }
+
+    /**
+     * Null when the send may go ahead; otherwise the response refusing it because the institute's
+     * free allowance and credits do not cover every recipient. Single sends are left to the
+     * per-email check in EmailService, which keeps the email for a later resend.
+     */
+    UnifiedSendResponse refuseEmailWithoutCredits(UnifiedSendRequest request) {
+        if (!"EMAIL".equalsIgnoreCase(request.getChannel()) || request.getRecipients().size() < 2) {
+            return null;
+        }
+        UnifiedSendRequest.SendOptions opts = request.getOptions() != null
+                ? request.getOptions() : UnifiedSendRequest.SendOptions.builder().build();
+        String subject = opts.getEmailSubject();
+        String body = opts.getEmailBody();
+        if ((subject == null || body == null) && request.getTemplateName() != null && !request.getTemplateName().isEmpty()) {
+            try {
+                Optional<NotificationTemplate> t = notificationTemplateRepository
+                        .findByInstituteIdAndNameAndChannelType(request.getInstituteId(), request.getTemplateName(), "EMAIL");
+                if (t.isPresent()) {
+                    if (subject == null) subject = t.get().getSubject();
+                    if (body == null) body = t.get().getContent();
+                }
+            } catch (Exception e) {
+                log.debug("Template lookup for the email credit check failed: {}", e.getMessage());
+            }
+        }
+        EmailBillingClass cls = emailBillingClass(request, subject, body);
+        if (!emailBillingGate.enforcedFor(request.getInstituteId(), cls)) {
+            return null;
+        }
+        List<String> copies = opts.getCc() != null && !opts.getCc().isEmpty() ? opts.getCc() : List.of();
+        if (copies.isEmpty()) {
+            EmailCcResolver.CopyRecipients resolved = emailCcResolver.resolve(request.getInstituteId(), opts.getSource());
+            if (!resolved.isEmpty()) {
+                copies = resolved.cc();
+            }
+        }
+        long units = 0;
+        for (UnifiedSendRequest.Recipient r : request.getRecipients()) {
+            if (r.getEmail() == null || r.getEmail().isEmpty()) {
+                continue;
+            }
+            long bytes = 0;
+            if (r.getAttachments() != null) {
+                for (UnifiedSendRequest.Attachment a : r.getAttachments()) {
+                    if (a.getContentBase64() != null) {
+                        bytes += a.getContentBase64().length() * 3L / 4;
+                    }
+                }
+            }
+            units += EmailUnits.of(copies, bytes);
+        }
+        EmailBillingGate.Estimate estimate = emailBillingGate.estimate(request.getInstituteId(), cls,
+                (int) Math.min(units, Integer.MAX_VALUE));
+        if (estimate.allowed()) {
+            return null;
+        }
+        blockedEmailStore.notifyBlocked(request.getInstituteId());
+        String error = "Not sent: these emails need " + estimate.credits() + " credits and the institute has "
+                + estimate.availableCredits() + " available. Add credits, then send again.";
+        log.warn("Refused email send of {} unit(s) for institute {}: {}", units, request.getInstituteId(), error);
+        int total = request.getRecipients().size();
+        List<UnifiedSendResponse.RecipientResult> results = total <= SYNC_THRESHOLD
+                ? request.getRecipients().stream().map(r -> UnifiedSendResponse.RecipientResult.builder()
+                        .email(r.getEmail()).success(false).status("BLOCKED_NO_CREDITS").error(error).build())
+                        .collect(Collectors.toList())
+                : List.of();
+        return UnifiedSendResponse.builder()
+                .total(total).accepted(0).failed(total)
+                .status("INSUFFICIENT_CREDITS").results(results).build();
     }
 
     // ==================== Attribution gating ====================
@@ -462,6 +557,9 @@ public class UnifiedSendService implements SendChannelRouter {
         final List<String> finalCopyRecipients = copyRecipients;
         final String finalCopyMode = copyMode;
 
+        // Decided once per request from the caller and the raw template ({{password}} etc.).
+        final EmailBillingClass billingClass = emailBillingClass(request, templateSubject, templateBody);
+
         // Logged source for plain (non-engine) sends. An ALLOWLIST, not a pass-through of
         // opts.source: EmailTrackingService lets users filter EMAIL rows by source, and announcement
         // sends already log their own 'announcement-service' row - passing every caller's source
@@ -559,9 +657,9 @@ public class UnifiedSendService implements SendChannelRouter {
                                     java.util.Base64.getDecoder().decode(att.getContentBase64()));
                         }
                     }
-                    emailService.sendAttachmentEmail(email, subject, plainLogSource, body,
+                    outcome = emailService.sendAttachmentEmail(email, subject, plainLogSource, body,
                             attachmentMap, request.getInstituteId(), emailType,
-                            finalCopyRecipients, finalCopyMode);
+                            finalCopyRecipients, finalCopyMode, billingClass);
                 } else if (isEngagementEngineSend(request)) {
                     // Engine sends carry attribution: source → notification_log.source,
                     // sourceId → correlation_id (action id), userId → user attribution
@@ -578,7 +676,7 @@ public class UnifiedSendService implements SendChannelRouter {
                 } else {
                     outcome = emailService.sendHtmlEmail(email, subject, plainLogSource, body,
                             request.getInstituteId(), opts.getFromEmail(), opts.getFromName(), emailType,
-                            null, null, finalCopyRecipients, finalCopyMode);
+                            null, null, finalCopyRecipients, finalCopyMode, billingClass);
                 }
 
                 // Sending controls decide the final status: an over-cap send is queued (still a
@@ -593,6 +691,9 @@ public class UnifiedSendService implements SendChannelRouter {
                     case SKIPPED_BLOCKED -> results.add(UnifiedSendResponse.RecipientResult.builder()
                             .email(email).success(false).status("SKIPPED_BLOCKED")
                             .error("Recipient address is blocklisted (bounced)").build());
+                    case SKIPPED_NO_CREDITS -> results.add(UnifiedSendResponse.RecipientResult.builder()
+                            .email(email).success(false).status("BLOCKED_NO_CREDITS")
+                            .error("Not sent: no free emails or credits left. Kept in Email usage to resend").build());
                     default -> results.add(UnifiedSendResponse.RecipientResult.builder()
                             .email(email).success(true).status("SENT").build());
                 }

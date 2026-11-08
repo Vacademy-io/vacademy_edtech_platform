@@ -122,6 +122,13 @@ public class UnifiedSendRequest {
          */
         private String ccMode;
 
+        /**
+         * Email billing class: FREE (OTP, password reset, login credentials), ESSENTIAL (payment
+         * receipts, invoices: charged, never blocked) or BILLABLE. Null lets notification-service
+         * decide from {@link #source} and the template.
+         */
+        private String billingClass;
+
         // General
         private String source;  // caller identifier for logging
         private String sourceId;

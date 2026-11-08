@@ -1,5 +1,7 @@
 package vacademy.io.notification_service.features.send.service;
 
+import vacademy.io.notification_service.features.email_billing.BlockedEmailStore;
+import vacademy.io.notification_service.features.email_billing.EmailBillingGate;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -50,7 +52,7 @@ class UnifiedSendMembershipPlaceholdersTest {
         EmailCcResolver ccResolver = mock(EmailCcResolver.class);
         when(ccResolver.resolve(any(), any())).thenReturn(new EmailCcResolver.CopyRecipients(List.of(), "BCC"));
         when(emailService.sendHtmlEmail(anyString(), anyString(), anyString(), anyString(), any(), any(), any(), any(),
-                any(), any(), any(), any())).thenReturn(EmailService.SendOutcome.SENT);
+                any(), any(), any(), any(), any())).thenReturn(EmailService.SendOutcome.SENT);
         service = new UnifiedSendService(
                 mock(WhatsAppService.class),
                 emailService,
@@ -62,7 +64,8 @@ class UnifiedSendMembershipPlaceholdersTest {
                 mock(UserAnnouncementPreferenceService.class),
                 ccResolver,
                 mock(NotificationLogRepository.class),
-                adminCore);
+                adminCore,
+                mock(EmailBillingGate.class), mock(BlockedEmailStore.class));
     }
 
     private String sentBody(String body, Map<String, String> callerVariables) {
@@ -76,7 +79,7 @@ class UnifiedSendMembershipPlaceholdersTest {
                 .build());
         ArgumentCaptor<String> sent = ArgumentCaptor.forClass(String.class);
         verify(emailService).sendHtmlEmail(eq(TO), anyString(), anyString(), sent.capture(), eq(INSTITUTE),
-                any(), any(), any(), any(), any(), any(), any());
+                any(), any(), any(), any(), any(), any(), any(), any());
         return sent.getValue();
     }
 

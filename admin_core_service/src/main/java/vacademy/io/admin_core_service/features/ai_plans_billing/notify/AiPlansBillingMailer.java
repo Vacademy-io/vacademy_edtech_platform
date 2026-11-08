@@ -43,6 +43,9 @@ import java.util.regex.Pattern;
 @Service
 public class AiPlansBillingMailer {
 
+    /** Our own billing mail to the institute: email billing never charges it (notification-service). */
+    static final String BILLING_SOURCE = "AI_PLAN_BILLING";
+
     public enum Kind {
         PAYMENT_LINK, RENEWAL_LINK, UPGRADE_LINK, REMINDER_DUE_SOON, REMINDER_DUE_TODAY, GRACE,
         PRE_DEBIT_NOTICE, DEBIT_FAILED, MANDATE_ACTIVE
@@ -122,7 +125,7 @@ public class AiPlansBillingMailer {
             int sent = 0;
             for (String email : to) {
                 notificationService.sendHtmlEmailViaUnified(email, subject, body, m.instituteId(), fromEmail, fromName,
-                        "UTILITY_EMAIL");
+                        "UTILITY_EMAIL", BILLING_SOURCE);
                 sent++;
             }
             return sent;

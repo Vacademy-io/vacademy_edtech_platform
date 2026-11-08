@@ -1,5 +1,7 @@
 package vacademy.io.notification_service.features.send;
 
+import vacademy.io.notification_service.features.email_billing.BlockedEmailStore;
+import vacademy.io.notification_service.features.email_billing.EmailBillingGate;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -64,7 +66,8 @@ class UnifiedSendTemplateHeaderTest {
                 mock(UserAnnouncementPreferenceService.class),
                 mock(EmailCcResolver.class),
                 mock(NotificationLogRepository.class),
-                mock(AdminCoreServiceClient.class));
+                mock(AdminCoreServiceClient.class),
+                mock(EmailBillingGate.class), mock(BlockedEmailStore.class));
 
         when(whatsAppService.sendWhatsappMessagesDetailed(anyString(), any(), any(), any(), any(), any(),
                 anyString(), any(), anyString(), any(), any(), any()))

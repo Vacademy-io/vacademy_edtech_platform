@@ -43,6 +43,12 @@ import java.util.Properties;
 import java.util.Set;
 import java.util.UUID;
 import java.time.LocalDateTime;
+import vacademy.io.notification_service.features.email_billing.BlockedEmailStore;
+import vacademy.io.notification_service.features.email_billing.EmailBillingClass;
+import vacademy.io.notification_service.features.email_billing.EmailBillingClassifier;
+import vacademy.io.notification_service.features.email_billing.EmailBillingGate;
+import vacademy.io.notification_service.features.email_billing.EmailUnits;
+import vacademy.io.notification_service.features.email_billing.EmailUsageStore;
 import vacademy.io.notification_service.features.email_sending_controls.dto.EmailSendingStatusDTO;
 import vacademy.io.notification_service.features.email_sending_controls.entity.DeferredEmail;
 import vacademy.io.notification_service.features.email_sending_controls.service.DeferredEmailService;
@@ -93,6 +99,11 @@ public class EmailService {
     private final DeferredEmailService deferredEmailService;
     private final EmailUnsubscribeService emailUnsubscribeService;
     private final UnsubscribeMailer unsubscribeMailer;
+    // Email billing: the gate stops BILLABLE mail once the institute is out of free allowance and
+    // credits, the usage store counts every send. Both are no-ops until switched on.
+    private final EmailBillingGate emailBillingGate;
+    private final EmailUsageStore emailUsageStore;
+    private final BlockedEmailStore blockedEmailStore;
 
     @Autowired
     public EmailService(JavaMailSender mailSender, InstituteInternalService internalService,
@@ -104,7 +115,13 @@ public class EmailService {
             EmailDailyQuotaService emailDailyQuotaService,
             DeferredEmailService deferredEmailService,
             EmailUnsubscribeService emailUnsubscribeService,
-            UnsubscribeMailer unsubscribeMailer) {
+            UnsubscribeMailer unsubscribeMailer,
+            EmailBillingGate emailBillingGate,
+            EmailUsageStore emailUsageStore,
+            BlockedEmailStore blockedEmailStore) {
+        this.emailBillingGate = emailBillingGate;
+        this.emailUsageStore = emailUsageStore;
+        this.blockedEmailStore = blockedEmailStore;
         this.emailDailyQuotaService = emailDailyQuotaService;
         this.deferredEmailService = deferredEmailService;
         this.emailUnsubscribeService = emailUnsubscribeService;
@@ -585,6 +602,13 @@ public class EmailService {
             JavaMailSender mailSenderToUse = config.getKey();
             String fromToUse = config.getValue();
 
+            EmailBillingClass billingClass = EmailBillingClassifier.classify(instituteId, null, "EMAIL_SERVICE");
+            if (!emailBillingGate.allows(instituteId, billingClass, 1)) {
+                blockedEmailStore.save(instituteId, to, null, null, subject, text, null, "EMAIL_SERVICE",
+                        null, null, null, null, 1);
+                return;
+            }
+
             // Use MimeMessage to support SES configuration set header
             MimeMessage message = new MimeMessage(Session.getInstance(new Properties()));
             message.setRecipient(Message.RecipientType.TO, new InternetAddress(to));
@@ -605,7 +629,8 @@ public class EmailService {
 
             String messageId = null;
             try { messageId = message.getMessageID(); } catch (Exception ignored) {}
-            saveEmailNotificationLog(to, subject, text, "EMAIL_SERVICE", messageId, null, fromToUse);
+            saveEmailNotificationLog(to, subject, text, "EMAIL_SERVICE", messageId, null, fromToUse, instituteId);
+            emailUsageStore.recordSent(instituteId, billingClass, 1);
 
         } catch (Exception e) {
             logger.error("Failed to send email", e);
@@ -713,6 +738,8 @@ public class EmailService {
 
                     // Preserve existing OTP behavior: sourceId = calling service identifier (replies to OTP emails are not expected).
                     saveEmailNotificationLog(to, emailSubject, emailBody, "OTP_SERVICE", service, null, fromToUse);
+                    emailUsageStore.recordSent(instituteId,
+                            EmailBillingClassifier.classify(instituteId, null, "OTP_SERVICE"), 1);
 
                 } catch (Exception e) {
                     logger.error("Error while sending OTP email", e);
@@ -861,7 +888,7 @@ public class EmailService {
     }
 
     /** What happened to one HTML send. Narrower overloads discard this. */
-    public enum SendOutcome { SENT, DEFERRED, SKIPPED_BLOCKED, SKIPPED_UNSUBSCRIBED }
+    public enum SendOutcome { SENT, DEFERRED, SKIPPED_BLOCKED, SKIPPED_UNSUBSCRIBED, SKIPPED_NO_CREDITS }
 
     /**
      * Widest overload: adds copy recipients ({@code cc} + {@code ccMode}) on top of the ledger
@@ -878,8 +905,19 @@ public class EmailService {
     public SendOutcome sendHtmlEmail(String to, String subject, String service, String body, String instituteId,
             String customFromEmail, String customFromName, String emailType,
             String correlationId, String userId, List<String> cc, String ccMode) {
+        return sendHtmlEmail(to, subject, service, body, instituteId, customFromEmail, customFromName, emailType,
+                correlationId, userId, cc, ccMode, null);
+    }
+
+    /**
+     * As above, with the email's billing class decided by the caller (UnifiedSendService knows the
+     * original caller and template). Null classifies it from {@code service}.
+     */
+    public SendOutcome sendHtmlEmail(String to, String subject, String service, String body, String instituteId,
+            String customFromEmail, String customFromName, String emailType,
+            String correlationId, String userId, List<String> cc, String ccMode, EmailBillingClass billingClass) {
         return doSendHtml(to, subject, service, body, instituteId, customFromEmail, customFromName, emailType,
-                correlationId, userId, cc, ccMode, false, null);
+                correlationId, userId, cc, ccMode, false, null, billingClass);
     }
 
     /**
@@ -891,7 +929,7 @@ public class EmailService {
             String customFromEmail, String customFromName, String emailType,
             String correlationId, String userId, List<String> cc, String ccMode, String inReplyTo) {
         return doSendHtml(to, subject, service, body, instituteId, customFromEmail, customFromName, emailType,
-                correlationId, userId, cc, ccMode, false, inReplyTo);
+                correlationId, userId, cc, ccMode, false, inReplyTo, null);
     }
 
     /**
@@ -901,7 +939,7 @@ public class EmailService {
     public SendOutcome sendDeferred(DeferredEmail d, List<String> cc) {
         return doSendHtml(d.getToEmail(), d.getSubject(), d.getService(), d.getBody(), d.getInstituteId(),
                 d.getCustomFromEmail(), d.getCustomFromName(), d.getEmailType(), d.getCorrelationId(), d.getUserId(),
-                cc, d.getCcMode(), true, null);
+                cc, d.getCcMode(), true, null, null);
     }
 
     /** True when this recipient opted out and the sender/type honours opt-outs. */
@@ -960,7 +998,7 @@ public class EmailService {
     private SendOutcome doSendHtml(String to, String subject, String service, String body, String instituteId,
             String customFromEmail, String customFromName, String emailType,
             String correlationId, String userId, List<String> cc, String ccMode, boolean fromQueue,
-            String inReplyTo) {
+            String inReplyTo, EmailBillingClass requestedBillingClass) {
         try {
             // Check if email is blocked (domain blocklist or bounced email blocklist)
             if (isEmailBlocked(to)) {
@@ -993,6 +1031,17 @@ public class EmailService {
 
             // Determine final from name (see resolveFromName for the bare-address fallback).
             final String finalFromName = resolveFromName(customFromEmail, customFromName, fromEmail);
+
+            // Email billing: stop it here when the institute is out of free allowance and credits,
+            // before a daily-cap slot is spent on it. Kept in email_blocked for a later resend.
+            final EmailBillingClass billingClass =
+                    EmailBillingClassifier.classify(instituteId, requestedBillingClass, service);
+            final int billingUnits = EmailUnits.of(cc, 0);
+            if (!emailBillingGate.allows(instituteId, billingClass, billingUnits)) {
+                blockedEmailStore.save(instituteId, to, cc, ccMode, subject, body, emailType, service,
+                        customFromEmail, customFromName, userId, null, billingUnits);
+                return SendOutcome.SKIPPED_NO_CREDITS;
+            }
 
             // Daily cap: reserve a slot or hand the email to the deferred queue. A weekend
             // pause is checked first — it is not "cap 0" (that means unlimited), and no slot
@@ -1058,6 +1107,7 @@ public class EmailService {
                     String messageId = null;
                     try { messageId = message.getMessageID(); } catch (Exception ignored) {}
                     saveEmailNotificationLog(to, emailSubject, emailBody, service != null ? service : "HTML_EMAIL_SERVICE", messageId, userId, finalFromEmail, instituteId, correlationId);
+                    emailUsageStore.recordSent(instituteId, billingClass, billingUnits);
 
                 } catch (Exception e) {
                     logger.error("Failed to send HTML email to: {}", to, e);
@@ -1098,11 +1148,22 @@ public class EmailService {
     public void sendAttachmentEmail(String to, String subject, String service, String body,
             Map<String, byte[]> attachments, String instituteId, String emailType,
             List<String> cc, String ccMode) {
+        sendAttachmentEmail(to, subject, service, body, attachments, instituteId, emailType, cc, ccMode, null);
+    }
+
+    /**
+     * As above, with the billing class decided by the caller (null classifies it from
+     * {@code service}). Returns SKIPPED_NO_CREDITS when email billing stopped it, else SENT
+     * (handed to the dispatcher) or SKIPPED_BLOCKED (bounced/blocklisted address).
+     */
+    public SendOutcome sendAttachmentEmail(String to, String subject, String service, String body,
+            Map<String, byte[]> attachments, String instituteId, String emailType,
+            List<String> cc, String ccMode, EmailBillingClass requestedBillingClass) {
         try {
             // Check if email is blocked (domain blocklist or bounced email blocklist)
             if (isEmailBlocked(to)) {
                 logger.info("Skipping attachment email for blocked email address: {}", to);
-                return;
+                return SendOutcome.SKIPPED_BLOCKED;
             }
 
             logger.info("Preparing to send email to: {} with subject: {}", to, subject);
@@ -1116,6 +1177,15 @@ public class EmailService {
                     ? subject
                     : "This is a very important email";
             final String emailBody = body;
+
+            final EmailBillingClass billingClass =
+                    EmailBillingClassifier.classify(instituteId, requestedBillingClass, service);
+            final int billingUnits = EmailUnits.of(cc, EmailUnits.attachmentBytes(attachments));
+            if (!emailBillingGate.allows(instituteId, billingClass, billingUnits)) {
+                blockedEmailStore.save(instituteId, to, cc, ccMode, subject, body, emailType, service,
+                        null, null, null, attachments, billingUnits);
+                return SendOutcome.SKIPPED_NO_CREDITS;
+            }
 
             final boolean includeSesHeader = shouldIncludeSesConfigurationHeader(instituteId);
 
@@ -1165,7 +1235,8 @@ public class EmailService {
 
                     String messageId = null;
                     try { messageId = message.getMessageID(); } catch (Exception ignored) {}
-                    saveEmailNotificationLog(to, emailSubject, emailBody, service != null ? service : "ATTACHMENT_EMAIL_SERVICE", messageId, null, fromToUse);
+                    saveEmailNotificationLog(to, emailSubject, emailBody, service != null ? service : "ATTACHMENT_EMAIL_SERVICE", messageId, null, fromToUse, instituteId);
+                    emailUsageStore.recordSent(instituteId, billingClass, billingUnits);
 
                 } catch (MessagingException e) {
                     logger.error("Error while preparing or sending the email", e);
@@ -1181,6 +1252,7 @@ public class EmailService {
                     throw new RuntimeException("Failed to send email with attachments", e);
                 }
             });
+            return SendOutcome.SENT;
 
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();

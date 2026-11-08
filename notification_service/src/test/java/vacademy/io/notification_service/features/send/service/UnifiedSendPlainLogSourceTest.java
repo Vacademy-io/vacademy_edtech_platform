@@ -1,5 +1,7 @@
 package vacademy.io.notification_service.features.send.service;
 
+import vacademy.io.notification_service.features.email_billing.BlockedEmailStore;
+import vacademy.io.notification_service.features.email_billing.EmailBillingGate;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -44,7 +46,7 @@ class UnifiedSendPlainLogSourceTest {
         EmailCcResolver ccResolver = mock(EmailCcResolver.class);
         when(ccResolver.resolve(any(), any())).thenReturn(new EmailCcResolver.CopyRecipients(List.of(), "BCC"));
         when(emailService.sendHtmlEmail(anyString(), anyString(), anyString(), anyString(), any(), any(), any(), any(),
-                any(), any(), any(), any())).thenReturn(EmailService.SendOutcome.SENT);
+                any(), any(), any(), any(), any())).thenReturn(EmailService.SendOutcome.SENT);
         service = new UnifiedSendService(
                 mock(WhatsAppService.class),
                 emailService,
@@ -56,7 +58,8 @@ class UnifiedSendPlainLogSourceTest {
                 mock(UserAnnouncementPreferenceService.class),
                 ccResolver,
                 mock(NotificationLogRepository.class),
-                mock(AdminCoreServiceClient.class));
+                mock(AdminCoreServiceClient.class),
+                mock(EmailBillingGate.class), mock(BlockedEmailStore.class));
     }
 
     private UnifiedSendRequest emailRequest(String source) {
@@ -73,7 +76,7 @@ class UnifiedSendPlainLogSourceTest {
         service.routeSync(emailRequest(optsSource));
         ArgumentCaptor<String> source = ArgumentCaptor.forClass(String.class);
         verify(emailService).sendHtmlEmail(eq(TO), anyString(), source.capture(), anyString(), eq(INSTITUTE),
-                any(), any(), any(), any(), any(), any(), any());
+                any(), any(), any(), any(), any(), any(), any(), any());
         return source.getValue();
     }
 

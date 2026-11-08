@@ -1,5 +1,7 @@
 package vacademy.io.notification_service.features.chatbot_flow;
 
+import vacademy.io.notification_service.features.email_billing.BlockedEmailStore;
+import vacademy.io.notification_service.features.email_billing.EmailBillingGate;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -100,7 +102,8 @@ class MessageOriginTest {
                 mock(PushNotificationService.class), mock(SendBatchRepository.class), new ObjectMapper(),
                 mock(BatchProcessorService.class), templates, mock(UserAnnouncementPreferenceService.class),
                 mock(EmailCcResolver.class), mock(NotificationLogRepository.class),
-                mock(AdminCoreServiceClient.class));
+                mock(AdminCoreServiceClient.class),
+                mock(EmailBillingGate.class), mock(BlockedEmailStore.class));
 
         service.send(UnifiedSendRequest.builder()
                 .instituteId(INSTITUTE)

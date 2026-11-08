@@ -143,6 +143,12 @@ public class NotificationService {
 
     // ==================== Unified Send Bridge ====================
 
+    /**
+     * Every email auth-service sends is account access (login details, password reset, invites,
+     * sign-up), which email billing never charges or holds back.
+     */
+    static final String BILLING_CLASS_ACCOUNT = "FREE";
+
     public UnifiedSendResponse sendUnified(UnifiedSendRequest request) {
         ResponseEntity<String> response = internalClientUtils.makeHmacRequest(
                 clientName, HttpMethod.POST.name(),
@@ -180,6 +186,7 @@ public class NotificationService {
                         .email(request.getTo()).build()))
                 .options(UnifiedSendRequest.SendOptions.builder()
                         .emailSubject(request.getSubject())
+                        .billingClass(BILLING_CLASS_ACCOUNT)
                         .emailBody(request.getBody())
                         .emailType(emailType)
                         .source(source)
@@ -197,6 +204,7 @@ public class NotificationService {
                         .email(request.getTo()).build()))
                 .options(UnifiedSendRequest.SendOptions.builder()
                         .emailSubject(request.getSubject())
+                        .billingClass(BILLING_CLASS_ACCOUNT)
                         .emailBody(request.getBody())
                         .emailType("UTILITY_EMAIL")
                         .fromEmail(fromEmail)
@@ -239,6 +247,7 @@ public class NotificationService {
                 .recipients(recipients)
                 .options(UnifiedSendRequest.SendOptions.builder()
                         .emailSubject(dto.getSubject())
+                        .billingClass(BILLING_CLASS_ACCOUNT)
                         .emailBody(dto.getBody())
                         .emailType("UTILITY_EMAIL")
                         .source(dto.getSource())

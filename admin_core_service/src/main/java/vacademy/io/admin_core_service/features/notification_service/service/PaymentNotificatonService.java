@@ -877,7 +877,7 @@ public class PaymentNotificatonService {
                 for (String email : to) {
                     notificationService.sendHtmlEmailViaUnified(email, subject, body, e.getInstituteId(),
                             StringUtils.hasText(e.getFromEmail()) ? e.getFromEmail() : null, e.getFromName(),
-                            "UTILITY_EMAIL");
+                            "UTILITY_EMAIL", source);
                 }
                 return to.size();
             }

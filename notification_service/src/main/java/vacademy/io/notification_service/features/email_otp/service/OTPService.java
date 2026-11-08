@@ -32,6 +32,14 @@ public class OTPService {
     @Autowired
     ProductConfigClient productConfigClient;
 
+    /**
+     * At most this many OTP emails to one address in {@link #OTP_WINDOW_MINUTES}. The public
+     * send-email-otp endpoint needs no login, so without it anyone could flood an inbox through
+     * our SES. Generous for a real user resending a code.
+     */
+    static final int MAX_OTP_EMAILS_PER_WINDOW = 5;
+    static final int OTP_WINDOW_MINUTES = 10;
+
     public static String generateOTP(int length) {
         ThreadLocalRandom random = ThreadLocalRandom.current();
         StringBuilder otp = new StringBuilder();
@@ -54,6 +62,11 @@ public class OTPService {
         // has no Origin and whose caller already resolved the institute.
         if (!StringUtils.hasText(instituteId)) {
             instituteId = originInstituteResolver.resolveInstituteId();
+        }
+        if (to != null && otpRepository.countRecentForEmail(to.trim(), OTP_WINDOW_MINUTES) >= MAX_OTP_EMAILS_PER_WINDOW) {
+            log.warn("OTP email to {} not sent: {} already sent in the last {} minutes", to,
+                    MAX_OTP_EMAILS_PER_WINDOW, OTP_WINDOW_MINUTES);
+            return false;
         }
         EmailOtp otp = createNewOTP(to, service);
         try {
