@@ -66,8 +66,7 @@ import {
     type PlatformFormField,
     type AudienceCustomField,
 } from '../-services/ad-platform-service';
-import { AUDIENCE_CAMPAIGNS_LIST } from '@/constants/urls';
-import authenticatedAxiosInstance from '@/lib/auth/axiosInstance';
+import { fetchAllCampaignsList } from '@/routes/audience-manager/list/-services/get-campaigns-list';
 import {
     buildCampaignTypeFilterOptions,
     buildDefaultCampaignTypeOptions,
@@ -90,12 +89,8 @@ function useAudienceList(instituteId: string) {
     return useQuery({
         queryKey: ['audience-list-for-integrations', instituteId],
         queryFn: async (): Promise<AudienceOption[]> => {
-            const res = await authenticatedAxiosInstance.post(AUDIENCE_CAMPAIGNS_LIST, {
-                institute_id: instituteId,
-                page: 0,
-                size: 200,
-            });
-            const items = res.data?.content ?? [];
+            const res = await fetchAllCampaignsList({ institute_id: instituteId });
+            const items = res?.content ?? [];
             return items.map(
                 (c: {
                     id?: string;
