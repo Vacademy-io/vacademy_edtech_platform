@@ -54,7 +54,9 @@ import { OtherTerms, SystemTerms } from '@/routes/settings/-components/NamingSet
 import {
     buildCampaignTypeFilterOptions,
     buildDefaultCampaignTypeOptions,
+    filterByCampaignTypes,
 } from '../../-utils/campaign-types';
+import { MultiSelectFilter } from '@/components/shared/leads/multi-select-filter';
 import { useLeadTerminology } from '@/hooks/use-lead-terminology';
 import { orderedTagEntries } from '../../-utils/campaign-tags';
 
@@ -99,7 +101,7 @@ export const AudienceInvite = () => {
     const [appliedSearch, setAppliedSearch] = useState('');
     const [statusFilter, setStatusFilter] = useState<StatusFilter>('ALL');
     const [subOrgFilter, setSubOrgFilter] = useState<string>('ALL');
-    const [typeFilter, setTypeFilter] = useState<string>('ALL');
+    const [typeFilters, setTypeFilters] = useState<string[]>([]);
     const [isDialogOpen, setIsDialogOpen] = useState(false);
     const [campaignBeingEdited, setCampaignBeingEdited] = useState<CampaignItem | null>(null);
     const [apiDialogCampaign, setApiDialogCampaign] = useState<CampaignItem | null>(null);
@@ -145,8 +147,8 @@ export const AudienceInvite = () => {
         if (s && VALID_STATUS.includes(s)) setStatusFilter(s as StatusFilter);
         const so = params.get('subOrg');
         if (so) setSubOrgFilter(so);
-        const ty = params.get('type');
-        if (ty) setTypeFilter(ty);
+        const ty = params.getAll('type').filter(Boolean);
+        if (ty.length) setTypeFilters(ty);
         if (p) {
             const n = parseInt(p, 10);
             if (!Number.isNaN(n) && n > 0) handlePageChange(n);
@@ -175,14 +177,14 @@ export const AudienceInvite = () => {
         else params.delete('status');
         if (subOrgFilter !== 'ALL') params.set('subOrg', subOrgFilter);
         else params.delete('subOrg');
-        if (typeFilter !== 'ALL') params.set('type', typeFilter);
-        else params.delete('type');
+        params.delete('type');
+        typeFilters.forEach((type) => params.append('type', type));
         if (page > 0) params.set('page', String(page));
         else params.delete('page');
         const qs = params.toString();
         const newUrl = `${window.location.pathname}${qs ? '?' + qs : ''}`;
         window.history.replaceState(null, '', newUrl);
-    }, [appliedSearch, statusFilter, subOrgFilter, typeFilter, page]);
+    }, [appliedSearch, statusFilter, subOrgFilter, typeFilters, page]);
 
     const handleStatusChange = (value: StatusFilter) => {
         handlePageChange(0);
@@ -194,9 +196,9 @@ export const AudienceInvite = () => {
         setSubOrgFilter(value);
     };
 
-    const handleTypeChange = (value: string) => {
+    const handleTypeChange = (values: string[]) => {
         handlePageChange(0);
-        setTypeFilter(value);
+        setTypeFilters(values);
     };
 
     const handleClearFilters = () => {
@@ -204,7 +206,7 @@ export const AudienceInvite = () => {
         setAppliedSearch('');
         setStatusFilter('ALL');
         setSubOrgFilter('ALL');
-        setTypeFilter('ALL');
+        setTypeFilters([]);
         handlePageChange(0);
     };
 
@@ -216,13 +218,12 @@ export const AudienceInvite = () => {
             campaign_name: appliedSearch || undefined,
             status: statusFilter !== 'ALL' ? statusFilter : undefined,
             sub_org_id: subOrgFilter !== 'ALL' ? subOrgFilter : undefined,
-            // Backend matches case-insensitively as a substring, so "Facebook"
-            // also finds lists saved as FACEBOOK.
-            campaign_type: typeFilter !== 'ALL' ? typeFilter : undefined,
+            // Source (campaign type) is multi-select, which the list API can't
+            // take, so it is applied client-side on the fetched page below.
             sort_by: 'created_at',
             sort_direction: 'DESC',
         }),
-        [instituteDetails?.id, appliedSearch, statusFilter, subOrgFilter, typeFilter]
+        [instituteDetails?.id, appliedSearch, statusFilter, subOrgFilter]
     );
 
     const { data: campaignsList, isLoading, isError } = useCampaignsList(campaignsPayload);
@@ -241,18 +242,22 @@ export const AudienceInvite = () => {
         () =>
             buildCampaignTypeFilterOptions(buildDefaultCampaignTypeOptions(tCampaignType), [
                 ...(allCampaignsList?.content ?? []).map((c) => c.campaign_type),
-                typeFilter !== 'ALL' ? typeFilter : undefined,
+                ...typeFilters,
             ]),
-        [tCampaignType, allCampaignsList?.content, typeFilter]
+        [tCampaignType, allCampaignsList?.content, typeFilters]
     );
 
     const filteredCampaigns = useMemo(() => {
         if (!campaignsList?.content) return [];
-        return campaignsList.content.filter((c: CampaignItem) => {
-            const s = c.status?.trim().toUpperCase();
-            return ['ACTIVE', 'INACTIVE', 'DRAFT'].includes(s);
-        });
-    }, [campaignsList?.content]);
+        // Exact, case-insensitive type match: "Google Ads" picks GOOGLE ADS
+        // but not "GoogleAds Leads form", which is its own option.
+        return filterByCampaignTypes(campaignsList.content, typeFilters).filter(
+            (c: CampaignItem) => {
+                const s = c.status?.trim().toUpperCase();
+                return ['ACTIVE', 'INACTIVE', 'DRAFT'].includes(s);
+            }
+        );
+    }, [campaignsList?.content, typeFilters]);
 
     const totalFilteredPages = useMemo(() => {
         if (!filteredCampaigns.length) return 1;
@@ -283,7 +288,10 @@ export const AudienceInvite = () => {
 
     const hasResults = paginatedCampaigns.length > 0;
     const hasActiveFilter =
-        !!appliedSearch || statusFilter !== 'ALL' || subOrgFilter !== 'ALL' || typeFilter !== 'ALL';
+        !!appliedSearch ||
+        statusFilter !== 'ALL' ||
+        subOrgFilter !== 'ALL' ||
+        typeFilters.length > 0;
 
     const kpis: {
         label: string;
@@ -420,19 +428,15 @@ export const AudienceInvite = () => {
                         ))}
                     </SelectContent>
                 </Select>
-                <Select value={typeFilter} onValueChange={handleTypeChange}>
-                    <SelectTrigger className="h-10 w-full sm:w-48">
-                        <SelectValue placeholder={t('typeFilter.placeholder', { term })} />
-                    </SelectTrigger>
-                    <SelectContent>
-                        <SelectItem value="ALL">{t('typeFilter.allTypes', { term })}</SelectItem>
-                        {typeFilterOptions.map((opt) => (
-                            <SelectItem key={opt.value} value={opt.value}>
-                                {opt.label}
-                            </SelectItem>
-                        ))}
-                    </SelectContent>
-                </Select>
+                <MultiSelectFilter
+                    label={t('typeFilter.allTypes', { term })}
+                    options={typeFilterOptions}
+                    selected={typeFilters}
+                    onChange={handleTypeChange}
+                    placeholder={t('toolbar.searchPlaceholder', { term })}
+                    widthClass="w-full sm:w-48"
+                    showSelectedLabel
+                />
                 {((accessibleSubOrgs?.length ?? 0) > 0 || subOrgFilter !== 'ALL') && (
                     <Select value={subOrgFilter} onValueChange={handleSubOrgChange}>
                         <SelectTrigger className="h-10 w-full sm:w-44">
