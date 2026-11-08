@@ -50,7 +50,8 @@ public class LeadReportSettingService {
                                  java.util.Set<String> connectedCallStatuses,
                                  java.util.Set<String> interestedStatusKeys,
                                  java.util.List<String> courseGroupOrder,
-                                 String admissionFieldId) {
+                                 String admissionFieldId,
+                                 boolean hideConvertedInAllLeads) {
     }
 
     public static final String DEFAULT_TIMEZONE = "Asia/Kolkata";
@@ -60,7 +61,8 @@ public class LeadReportSettingService {
             nullSafeSet(Set.of("COMPLETED")),
             nullSafeSet(Set.of("INTERESTED")),
             List.of(),
-            null);
+            null,
+            false);
 
     private final InstituteRepository instituteRepository;
     private final ObjectMapper objectMapper;
@@ -97,8 +99,18 @@ public class LeadReportSettingService {
             if (settingJson == null || settingJson.isBlank()) return DEFAULTS;
 
             JsonNode root = objectMapper.readTree(settingJson);
-            JsonNode reports = root.path("setting").path("LEAD_SETTING").path("data").path("reports");
-            if (!reports.isObject()) return DEFAULTS;
+            JsonNode leadSetting = root.path("setting").path("LEAD_SETTING").path("data");
+            // All Leads hides converted leads when this is on; the lead counts here follow it so
+            // the Overview total matches the All Leads count for the same dates.
+            boolean hideConverted = leadSetting.path("hideConvertedInAllLeads").asBoolean(false);
+            JsonNode reports = leadSetting.path("reports");
+            if (!reports.isObject()) {
+                return hideConverted
+                        ? new ReportSettings(DEFAULTS.timezone(), DEFAULTS.connectedCallStatuses(),
+                                DEFAULTS.interestedStatusKeys(), DEFAULTS.courseGroupOrder(),
+                                DEFAULTS.admissionFieldId(), true)
+                        : DEFAULTS;
+            }
 
             String timezone = validTimezoneOrDefault(reports.path("timezone"), instituteId);
 
@@ -121,7 +133,8 @@ public class LeadReportSettingService {
                     ? reports.path("admission_field_id").asText().trim()
                     : null;
 
-            return new ReportSettings(timezone, connected, interested, courseGroupOrder, admissionFieldId);
+            return new ReportSettings(timezone, connected, interested, courseGroupOrder, admissionFieldId,
+                    hideConverted);
         } catch (Exception e) {
             log.warn("Failed to read lead report settings for institute {} — using defaults: {}",
                     instituteId, e.getMessage());

@@ -74,25 +74,28 @@ public class LeadReportService {
         // Same lead set as the leads list: duplicates drop out where Lead Settings keeps them on
         // the Duplicate Leads tab, so the totals here match the list a drill-through opens.
         boolean excludeDuplicates = leadDeduplicationService.duplicatesTabOnly(instituteId);
+        // Converted leads drop out too where All Leads hides them (hideConvertedInAllLeads), so
+        // Total Leads here equals the All Leads count. The Converted KPI stays admissions-based.
+        boolean excludeConverted = settingService.get(instituteId).hideConvertedInAllLeads();
 
         LeadReportProjections.TotalsProjection totals =
                 audienceResponseRepository.findReportTotals(instituteId, range.from, range.to,
-                        scopeCsv, audienceFilter, sourceFilter, excludeDuplicates);
+                        scopeCsv, audienceFilter, sourceFilter, excludeDuplicates, excludeConverted);
         LeadReportProjections.ResponseStatsProjection response =
                 audienceResponseRepository.findReportResponseStats(instituteId, range.from, range.to, tatMinutesParam, tatRule,
-                        scopeCsv, audienceFilter, sourceFilter, excludeDuplicates);
+                        scopeCsv, audienceFilter, sourceFilter, excludeDuplicates, excludeConverted);
         List<LeadReportProjections.StatusCountProjection> statusRows =
                 audienceResponseRepository.findReportStatusBreakdown(instituteId, range.from, range.to,
-                        scopeCsv, audienceFilter, sourceFilter, excludeDuplicates);
+                        scopeCsv, audienceFilter, sourceFilter, excludeDuplicates, excludeConverted);
         List<LeadReportProjections.SourceCountProjection> sourceRows =
                 audienceResponseRepository.findReportSourceBreakdown(instituteId, range.from, range.to,
-                        scopeCsv, audienceFilter, sourceFilter, excludeDuplicates);
+                        scopeCsv, audienceFilter, sourceFilter, excludeDuplicates, excludeConverted);
         List<LeadReportProjections.TierCountProjection> tierRows =
                 audienceResponseRepository.findReportTierBreakdown(instituteId, range.from, range.to,
-                        scopeCsv, audienceFilter, sourceFilter, excludeDuplicates);
+                        scopeCsv, audienceFilter, sourceFilter, excludeDuplicates, excludeConverted);
         List<LeadReportProjections.DailyTrendProjection> trendRows =
                 audienceResponseRepository.findReportDailyTrend(instituteId, range.from, range.to,
-                        range.zone, scopeCsv, audienceFilter, sourceFilter, excludeDuplicates);
+                        range.zone, scopeCsv, audienceFilter, sourceFilter, excludeDuplicates, excludeConverted);
 
         long total = nz(totals != null ? totals.getTotalLeads() : null);
         // Converted = admissions in the window (per student x month, exactly as the Admissions,
@@ -191,6 +194,7 @@ public class LeadReportService {
                 .bySource(sourceBreakdown)
                 .byTier(tierBreakdown)
                 .trendByDay(trend)
+                .excludesConverted(excludeConverted)
                 .scopeCounsellorIds(trimToNull(teamId) != null && trimToNull(counsellorUserId) == null
                         && scopeCsv != null
                         ? java.util.Arrays.stream(scopeCsv.split(",")).filter(id -> !id.isBlank()).toList()
