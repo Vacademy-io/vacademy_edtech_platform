@@ -5,6 +5,8 @@ import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.server.ResponseStatusException;
 import vacademy.io.notification_service.features.chatbot_flow.entity.NotificationTemplate;
 import vacademy.io.notification_service.features.chatbot_flow.repository.NotificationTemplateRepository;
 import vacademy.io.notification_service.features.announcements.client.AdminCoreServiceClient;
@@ -780,6 +782,13 @@ public class UnifiedSendService implements SendChannelRouter {
         if (text == null || text.indexOf("{{") < 0) return text;
         String out = UNRESOLVED.matcher(text).replaceAll("");
         return out.replaceAll("(?i)(\\b(hi|hello|hey|dear)) ,", "$1,").replaceAll("  +", " ");
+    }
+
+    /** Institute that owns the batch, for the caller check on its status endpoint. */
+    public String getBatchInstituteId(String batchId) {
+        return sendBatchRepository.findById(batchId)
+                .map(SendBatch::getInstituteId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "BATCH_NOT_FOUND"));
     }
 
     public UnifiedSendResponse getBatchStatus(String batchId) {

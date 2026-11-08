@@ -75,6 +75,12 @@ public class WebSecurityConfig {
      */
     private static final String[] SECURED_PATHS = {
             "/notification-service/v1/send-email",
+            // Unified send (email, WhatsApp, push) as the institute, plus its batch / delivery
+            // status. Open, anyone could send as any institute through our SES and the
+            // institute's WhatsApp number. The admin dashboard calls it with a JWT; services
+            // use /notification-service/internal/v1/send. The controller further requires staff.
+            "/notification-service/v1/send",
+            "/notification-service/v1/send/**",
             // Sending controls: per-institute quota status and the opt-out list (email addresses)
             // plus add/remove — admin data, must not sit under the broad v1 permitAll.
             "/notification-service/v1/email-sending/**",
