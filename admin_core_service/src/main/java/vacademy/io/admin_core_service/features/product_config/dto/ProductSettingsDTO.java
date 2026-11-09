@@ -46,6 +46,13 @@ public class ProductSettingsDTO {
     /** The WhatsApp Business Account the template lives on. An id, not a secret. */
     private String whatsappWabaId;
 
+    /** Paid plans shown on the product's website, in order. */
+    private java.util.List<ProductPlanDTO> plans;
+    /** How long a plan and its credits last, in months. */
+    private Integer planValidityMonths;
+    /** Price of one extra credit after a plan's credits are used, in rupees. */
+    private java.math.BigDecimal extraCreditPriceInr;
+
     private String updatedBy;
     private String updatedAt;
 }
