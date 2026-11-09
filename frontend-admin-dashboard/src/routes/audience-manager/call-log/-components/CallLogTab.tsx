@@ -22,6 +22,7 @@
  */
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useDebounce } from 'use-debounce';
 import { useTranslation } from 'react-i18next';
 import type { TFunction } from 'i18next';
 import {
@@ -398,6 +399,12 @@ export default function CallLogTab({
     const [chip, setChip] = useState<'NONE' | 'MISSED' | 'CALLBACKS'>('NONE');
     const [page, setPage] = useState(0);
 
+    // The two text boxes feed the query only after typing pauses. Without this every
+    // key press fired metrics + search + counts (6 heavy SQL), so typing a 10 digit
+    // number cost 60 queries; on 7 Nov 2026 that load stalled admin-core.
+    const [debouncedLeadName] = useDebounce(leadName.trim(), 500);
+    const [debouncedNumber] = useDebounce(toNumber.trim(), 500);
+
     const filters: CallLogFilters = useMemo(
         () => ({
             direction: direction === ALL ? undefined : (direction as CallLogFilters['direction']),
@@ -405,14 +412,23 @@ export default function CallLogTab({
             providerType: providerType === ALL ? undefined : providerType,
             statuses: status === ALL ? undefined : [status],
             dispositionKeys: dispositionKeys.length ? dispositionKeys : undefined,
-            leadName: leadName.trim() || undefined,
-            toNumber: toNumber.trim() || undefined,
+            leadName: debouncedLeadName || undefined,
+            toNumber: debouncedNumber || undefined,
             missedInbound: chip === 'MISSED' || undefined,
             callbacksDue: chip === 'CALLBACKS' || undefined,
             sortBy: 'TIME',
             sortDirection: 'DESC',
         }),
-        [direction, callType, providerType, status, dispositionKeys, leadName, toNumber, chip]
+        [
+            direction,
+            callType,
+            providerType,
+            status,
+            dispositionKeys,
+            debouncedLeadName,
+            debouncedNumber,
+            chip,
+        ]
     );
 
     // Any filter / scope change resets to the first page.

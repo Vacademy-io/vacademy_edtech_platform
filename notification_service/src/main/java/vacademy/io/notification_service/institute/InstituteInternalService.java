@@ -1,6 +1,8 @@
 package vacademy.io.notification_service.institute;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.github.benmanes.caffeine.cache.Cache;
+import com.github.benmanes.caffeine.cache.Caffeine;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -9,6 +11,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import vacademy.io.common.core.internal_api_wrapper.InternalClientUtils;
 import vacademy.io.common.exceptions.VacademyException;
+
+import java.time.Duration;
 
 @Slf4j
 @Service
@@ -22,6 +26,47 @@ public class InstituteInternalService {
 
     @Value("${admin.core.service.baseurl}")
     private String adminCoreServerBaseUrl;
+
+    /**
+     * Raw institute JSON for the send path, kept for 10 seconds per pod.
+     * Every email used to call admin-core twice (sender config + theme or policy), so a
+     * slow admin-core made every email slow. A bulk batch sends many mails per second for
+     * one institute, so even 10 seconds removes almost all of those calls, while a change
+     * to sender, SMTP login, daily cap or send hour still applies within 10 seconds.
+     * Only successful bodies are kept, never a failure, and the raw JSON is cached (not
+     * the DTO) so a caller that changes its copy cannot change what the next caller reads.
+     */
+    private final Cache<String, String> sendPathBodies = Caffeine.newBuilder()
+            .expireAfterWrite(Duration.ofSeconds(10))
+            .maximumSize(1_000)
+            .build();
+
+    /**
+     * Same as {@link #getInstituteByInstituteId} but may answer from a 10 second cache.
+     * Use it only to read settings for sending (sender, theme, name). Code that reads
+     * settings in order to change and save them must call the uncached method, or it
+     * could save an old copy over a newer change.
+     */
+    public InstituteInfoDTO getInstituteByInstituteIdCached(String instituteId) {
+        if (instituteId == null || instituteId.isBlank()) {
+            return getInstituteByInstituteId(instituteId);
+        }
+        String cached = sendPathBodies.getIfPresent(instituteId);
+        if (cached != null) {
+            try {
+                return new ObjectMapper().readValue(cached, InstituteInfoDTO.class);
+            } catch (Exception e) {
+                sendPathBodies.invalidate(instituteId);
+            }
+        }
+        return getInstituteByInstituteId(instituteId);
+    }
+
+    public void evictCachedInstitute(String instituteId) {
+        if (instituteId != null) {
+            sendPathBodies.invalidate(instituteId);
+        }
+    }
 
     public InstituteInfoDTO getInstituteByInstituteId(String instituteId) {
         try {
@@ -46,6 +91,9 @@ public class InstituteInternalService {
                 ObjectMapper mapper = new ObjectMapper();
                 InstituteInfoDTO result = mapper.readValue(response.getBody(), InstituteInfoDTO.class);
                 log.info("Successfully parsed institute data for instituteId: {}", instituteId);
+                if (instituteId != null && response.getStatusCode().is2xxSuccessful()) {
+                    sendPathBodies.put(instituteId, response.getBody());
+                }
                 return result;
             } catch (Exception e) {
                 log.error("Failed to parse institute data for instituteId: {}. Response body: {}",
@@ -152,6 +200,7 @@ public class InstituteInternalService {
                 log.info("Response headers: {}", response.getHeaders());
 
                 if (response.getStatusCode().is2xxSuccessful()) {
+                    evictCachedInstitute(instituteId);
                     log.info("Successfully updated institute settings via admin-core-service for: {}", instituteId);
                     log.info("Database should now contain the updated EMAIL_SETTING data");
                     return true;

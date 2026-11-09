@@ -408,7 +408,7 @@ public class EmailService {
         JsonNode resolvedNode = null;
 
         if (StringUtils.hasText(instituteId)) {
-            InstituteInfoDTO institute = internalService.getInstituteByInstituteId(instituteId);
+            InstituteInfoDTO institute = internalService.getInstituteByInstituteIdCached(instituteId);
             try {
                 if (institute != null && institute.getSetting() != null) {
                     JsonNode settings = objectMapper.readTree(institute.getSetting());
@@ -670,7 +670,7 @@ public class EmailService {
             InstituteInfoDTO instituteInfoDTO = null;
 
             if (brand == null && instituteId != null && StringUtils.hasText(instituteId))
-                instituteInfoDTO = internalService.getInstituteByInstituteId(instituteId);
+                instituteInfoDTO = internalService.getInstituteByInstituteIdCached(instituteId);
 
             // default vacademy theme
             name = name == null ? "User" : name;
