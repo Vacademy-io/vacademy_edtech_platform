@@ -33,9 +33,10 @@ vi.mock('file-saver', () => ({
 
 const lookups: string[] = [];
 vi.mock('@/services/upload_file', () => ({
-    getPublicUrls: vi.fn(async (ids: string) => {
-        lookups.push(ids);
-        return ids.split(',').map((id) => ({ id, url: `https://media.test/${id}` }));
+    // getPublicUrl swallows errors and returns '' — 'missing' stands for that.
+    getPublicUrl: vi.fn(async (id: string) => {
+        lookups.push(id);
+        return id === 'missing' ? '' : `https://cdn.test/${id}`;
     }),
 }));
 
@@ -122,10 +123,31 @@ describe('downloadCheckedCopies', () => {
         expect(saved.blob).toBeNull();
     });
 
-    it('asks media for the URLs in small chunks', async () => {
+    it('fetches each copy from its public URL, the one "Open" uses', async () => {
+        await downloadCheckedCopies(
+            [copy('a', 'Asha', '56.pdf'), copy('b', 'Ravi', '57.pdf')],
+            'x.zip',
+            () => undefined
+        );
+        expect(lookups.sort()).toEqual(['a', 'b']);
+        const fetched = vi.mocked(fetch).mock.calls.map((c) => String(c[0])).sort();
+        expect(fetched).toEqual(['https://cdn.test/a', 'https://cdn.test/b']);
+    });
+
+    it('leaves out a copy whose URL cannot be found', async () => {
+        const result = await downloadCheckedCopies(
+            [copy('a', 'Asha', '56.pdf'), copy('missing', 'Ravi', '57.pdf')],
+            'x.zip',
+            () => undefined
+        );
+        expect(result).toEqual({ added: 1, failed: 1 });
+        expect(zip.entries).toEqual(['Asha - 56.pdf']);
+    });
+
+    it('handles a large batch', async () => {
         const many = Array.from({ length: 95 }, (_, i) => copy(`f${i}`, `S${i}`, `${i}.pdf`));
         await downloadCheckedCopies(many, 'x.zip', () => undefined);
-        expect(lookups.map((l) => l.split(',').length)).toEqual([40, 40, 15]);
+        expect(lookups).toHaveLength(95);
         expect(zip.entries).toHaveLength(95);
     });
 });
