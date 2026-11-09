@@ -19,6 +19,7 @@ import { DashboardLoader } from '@/components/core/dashboard-loader';
 import {
     completeSignup,
     consumeGoogleReturn,
+    fetchProductOffer,
     fetchSignupConfig,
     requestSignupOtp,
     signupErrorMessage,
@@ -81,6 +82,13 @@ const SignupSteps = ({
     product: SignupProductConfig;
 }) => {
     const { t } = useTranslation('evalezy');
+    // Credits shown only when the dashboard sets them; a failed read keeps the plain line.
+    const offer = useQuery({
+        queryKey: ['PRODUCT_OFFER', context.product],
+        queryFn: () => fetchProductOffer(context.product),
+        retry: false,
+        staleTime: 60_000,
+    });
     const google = useMemo(() => consumeGoogleReturn(), []);
     const [step, setStep] = useState<Step>(google?.signupToken ? 'details' : 'method');
     const [email, setEmail] = useState(google?.email ?? '');
@@ -140,7 +148,12 @@ const SignupSteps = ({
             subtitle={
                 step === 'details'
                     ? t('signup.detailsSubtitle', { days: product.trial_days })
-                    : t('signup.subtitle', { days: product.trial_days })
+                    : offer.data?.demo_credits != null
+                      ? t('signup.subtitleCredits', {
+                            days: product.trial_days,
+                            credits: offer.data.demo_credits,
+                        })
+                      : t('signup.subtitle', { days: product.trial_days })
             }
         >
             {(error || googleFailed) && (

@@ -24,6 +24,20 @@ export const fetchSignupConfig = async (product: string): Promise<SignupProductC
     return data;
 };
 
+/** The trial offer set on the health dashboard (public, no login). */
+export interface ProductOffer {
+    trial_days: number;
+    /** AI credits a new sign-up opens with; null = the platform's default. */
+    demo_credits: number | null;
+}
+
+export const fetchProductOffer = async (product: string): Promise<ProductOffer> => {
+    const { data } = await axios.get<ProductOffer>(
+        `${BASE_URL}/admin-core-service/public/product/v1/${encodeURIComponent(product)}/offer`
+    );
+    return data;
+};
+
 export interface SelfSignupDetails {
     signup_token: string;
     full_name: string;

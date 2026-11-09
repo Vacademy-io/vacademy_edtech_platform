@@ -4,6 +4,7 @@
         "closedBody": "Please log in, or contact us to get an account.",
         "title": "Start your free trial",
         "subtitle": "{{days}} days free. No card needed.",
+        "subtitleCredits": "{{days}} days free with {{credits}} AI credits (1 credit = 1 page checked). No card needed.",
         "detailsTitle": "About you and your institute",
         "detailsSubtitle": "One step left to start your {{days}}-day trial.",
         "google": "Continue with Google",

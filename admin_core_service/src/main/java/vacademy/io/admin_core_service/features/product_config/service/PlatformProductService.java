@@ -9,7 +9,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 import vacademy.io.common.exceptions.VacademyException;
+import vacademy.io.admin_core_service.features.product_config.dto.ProductPlanDTO;
 import vacademy.io.admin_core_service.features.product_config.dto.ProductSettingsDTO;
+import vacademy.io.admin_core_service.features.product_config.dto.PublicProductOfferDTO;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -46,6 +48,10 @@ public class PlatformProductService {
     private static final int MAX_DEMO_CREDITS = 100_000;
     private static final int MAX_ALERT_RECIPIENTS = 20;
     private static final Pattern PATH = Pattern.compile("^/[A-Za-z0-9/_-]*$");
+    private static final Pattern PRODUCT_KEY = Pattern.compile("^[A-Za-z0-9_-]{1,40}$");
+    private static final Pattern PLAN_KEY = Pattern.compile("^[a-z0-9-]{1,30}$");
+    private static final int MAX_PLANS = 6;
+    private static final int MAX_PLAN_NUMBER = 10_000_000;
 
     private final JdbcTemplate jdbcTemplate;
     private final ObjectMapper mapper = new ObjectMapper();
@@ -92,6 +98,11 @@ public class PlatformProductService {
                 ? emptyToNull(body.getSignupAlertLanguage()) : existing.getSignupAlertLanguage());
         row.put("whatsapp_waba_id", body.getWhatsappWabaId() != null
                 ? emptyToNull(body.getWhatsappWabaId()) : existing.getWhatsappWabaId());
+        row.put("plans", body.getPlans() != null ? cleanPlans(body.getPlans()) : existing.getPlans());
+        row.put("plan_validity_months", body.getPlanValidityMonths() != null
+                ? body.getPlanValidityMonths() : existing.getPlanValidityMonths());
+        row.put("extra_credit_price_inr", body.getExtraCreditPriceInr() != null
+                ? body.getExtraCreditPriceInr() : existing.getExtraCreditPriceInr());
         if (jdbcTemplate.update(UPDATE, toJson(row), actor, key) == 0) {
             throw new VacademyException(HttpStatus.NOT_FOUND, "No such product");
         }
@@ -120,6 +131,7 @@ public class PlatformProductService {
                         || HOSTS.matcher(b.getReturnHosts().trim().toLowerCase(Locale.ROOT)).matches(),
                 "Return hosts must be comma-separated hosts, like vacademy.io,evalezy.com");
         validateAlerts(b);
+        validatePlans(b);
     }
 
     private static void validateAlerts(ProductSettingsDTO b) {
@@ -148,6 +160,36 @@ public class PlatformProductService {
                 "The WhatsApp Business Account id must be digits");
     }
 
+    static void validatePlans(ProductSettingsDTO b) {
+        if (b.getPlans() != null) {
+            require(b.getPlans().size() <= MAX_PLANS, "At most " + MAX_PLANS + " plans");
+            java.util.Set<String> keys = new java.util.HashSet<>();
+            for (ProductPlanDTO plan : b.getPlans()) {
+                require(plan != null && plan.getKey() != null && PLAN_KEY.matcher(plan.getKey().trim()).matches(),
+                        "Plan id must be small letters, numbers or -, like starter");
+                require(keys.add(plan.getKey().trim()), "Two plans have the id " + plan.getKey().trim());
+                require(StringUtils.hasText(plan.getName()) && plan.getName().trim().length() <= 40,
+                        "Every plan needs a name of up to 40 characters");
+                require(plan.getPriceInr() != null && plan.getPriceInr() >= 0 && plan.getPriceInr() <= MAX_PLAN_NUMBER,
+                        "Plan price must be between 0 and " + MAX_PLAN_NUMBER);
+                require(plan.getCredits() != null && plan.getCredits() >= 0 && plan.getCredits() <= MAX_PLAN_NUMBER,
+                        "Plan credits must be between 0 and " + MAX_PLAN_NUMBER);
+                require(plan.getUsers() != null && plan.getUsers() >= 1 && plan.getUsers() <= 100_000,
+                        "Plan users must be at least 1");
+            }
+        }
+        require(b.getPlanValidityMonths() == null || (b.getPlanValidityMonths() >= 1 && b.getPlanValidityMonths() <= 60),
+                "Plan validity must be between 1 and 60 months");
+        require(b.getExtraCreditPriceInr() == null || (b.getExtraCreditPriceInr().signum() >= 0
+                        && b.getExtraCreditPriceInr().compareTo(java.math.BigDecimal.valueOf(1000)) <= 0),
+                "Extra credit price must be between 0 and 1000");
+    }
+
+    private static List<ProductPlanDTO> cleanPlans(List<ProductPlanDTO> plans) {
+        return plans.stream().map(p -> ProductPlanDTO.builder().key(p.getKey().trim()).name(p.getName().trim())
+                .priceInr(p.getPriceInr()).credits(p.getCredits()).users(p.getUsers()).build()).toList();
+    }
+
     /** Digits with the country code, the way numbers are stored and sent. */
     private static String phones(String list) {
         if (!StringUtils.hasText(list)) {
@@ -157,6 +199,24 @@ public class PlatformProductService {
                 .map(n -> n.replaceAll("[^0-9]", ""))
                 .filter(StringUtils::hasText)
                 .collect(java.util.stream.Collectors.joining(","));
+    }
+
+    /** The public part of a product's settings, for its website and sign-up page. */
+    public PublicProductOfferDTO publicOffer(String productKey) {
+        if (productKey == null || !PRODUCT_KEY.matcher(productKey).matches()) {
+            throw new VacademyException(HttpStatus.NOT_FOUND, "No such product");
+        }
+        ProductSettingsDTO p = get(productKey.toLowerCase(Locale.ROOT));
+        return PublicProductOfferDTO.builder()
+                .product(p.getProductKey())
+                .displayName(p.getDisplayName())
+                .trialDays(p.getTrialDays())
+                .demoCredits(p.getDemoCredits())
+                .selfSignupEnabled(Boolean.TRUE.equals(p.getSelfSignupEnabled()))
+                .plans(p.getPlans())
+                .planValidityMonths(p.getPlanValidityMonths())
+                .extraCreditPriceInr(p.getExtraCreditPriceInr())
+                .build();
     }
 
     /** What a new institute of this product opens with; null keeps the platform's default. */
