@@ -19,6 +19,7 @@
         "accounts": {
             "chipAria": "{{name}} — account options",
             "reconnectBadge": "Reconnect",
+            "syncErrorBadge": "Sync failed",
             "firstSync": "Fetching data…",
             "lastSynced": "Last synced {{time}}",
             "neverSynced": "Not synced yet",

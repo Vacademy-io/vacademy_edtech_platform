@@ -19,6 +19,7 @@
         "accounts": {
             "chipAria": "{{name}} — खाते के विकल्प",
             "reconnectBadge": "फिर से जोड़ें",
+            "syncErrorBadge": "सिंक विफल",
             "firstSync": "डेटा लाया जा रहा है…",
             "lastSynced": "आख़िरी सिंक {{time}}",
             "neverSynced": "अभी तक सिंक नहीं हुआ",

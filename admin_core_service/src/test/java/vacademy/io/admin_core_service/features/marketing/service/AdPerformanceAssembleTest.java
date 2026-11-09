@@ -3,15 +3,19 @@ package vacademy.io.admin_core_service.features.marketing.service;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import vacademy.io.admin_core_service.features.marketing.dto.AdPerformanceDTO;
+import vacademy.io.admin_core_service.features.marketing.entity.AdAccount;
 import vacademy.io.admin_core_service.features.marketing.service.AdPerformanceReportService.AttributionFact;
 import vacademy.io.admin_core_service.features.marketing.service.AdPerformanceReportService.SpendFact;
 
 import java.math.BigDecimal;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -94,5 +98,41 @@ class AdPerformanceAssembleTest {
         assertNull(dto.getCurrency());
         assertNull(dto.getSuggestion());
         assertEquals(3, dto.getDaily().size());
+    }
+
+    private static SpendFact spendIn(String currency, String platform, String amount) {
+        return new SpendFact("acc-" + platform, platform, platform, "c-" + platform, "Campaign", TO, currency,
+                new BigDecimal(amount), 10, 100, BigDecimal.ONE);
+    }
+
+    @Test
+    @DisplayName("Budget advice is given for one currency, never across currencies")
+    void noSuggestionAcrossCurrencies() {
+        List<AttributionFact> admissions = List.of(new AttributionFact("A", "META", TO, "c-META", 30));
+
+        AdPerformanceDTO sameCurrency = AdPerformanceReportService.assemble(FROM, TO,
+                List.of(spendIn("INR", "META", "300000.00"), spendIn("INR", "GOOGLE", "20000.00")), admissions);
+        assertNotNull(sameCurrency.getSuggestion());
+        assertEquals("META", sameCurrency.getSuggestion().getBestPlatform());
+
+        AdPerformanceDTO mixed = AdPerformanceReportService.assemble(FROM, TO,
+                List.of(spendIn("INR", "META", "300000.00"), spendIn("USD", "GOOGLE", "20000.00")), admissions);
+        assertTrue(mixed.isMixedCurrency());
+        assertNull(mixed.getSuggestion());
+    }
+
+    @Test
+    @DisplayName("Report cache version changes when a sync finishes or the account set changes")
+    void dataVersionTracksSyncs() {
+        AdAccount a = AdAccount.builder().id("a").status("ACTIVE").lastSyncedAt(Instant.ofEpochSecond(100)).build();
+        AdAccount b = AdAccount.builder().id("b").status("ACTIVE").build();
+        String version = AdPerformanceReportService.dataVersion(List.of(a, b));
+
+        assertEquals(version, AdPerformanceReportService.dataVersion(List.of(b, a)));
+        assertNotEquals(version, AdPerformanceReportService.dataVersion(List.of(a)));
+        AdAccount synced = AdAccount.builder().id("a").status("ACTIVE").lastSyncedAt(Instant.ofEpochSecond(200)).build();
+        assertNotEquals(version, AdPerformanceReportService.dataVersion(List.of(synced, b)));
+        AdAccount errored = AdAccount.builder().id("b").status("ERROR").build();
+        assertNotEquals(version, AdPerformanceReportService.dataVersion(List.of(a, errored)));
     }
 }

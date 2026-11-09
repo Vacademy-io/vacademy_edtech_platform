@@ -8,6 +8,7 @@ import vacademy.io.admin_core_service.features.marketing.entity.SocialAccount;
 import vacademy.io.common.exceptions.ForbiddenException;
 import vacademy.io.common.exceptions.VacademyException;
 
+import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -45,6 +46,11 @@ public final class SocialPostRules {
     public static final Duration SCHEDULE_GRACE = Duration.ofMinutes(1);
     /** Transient publish failures are retried until a target has this many attempts. */
     public static final int MAX_PUBLISH_ATTEMPTS = 3;
+
+    /** Instagram's Content Publishing API publishes JPEG photos only. */
+    static final Set<String> INSTAGRAM_IMAGE_EXTENSIONS = Set.of("jpg", "jpeg");
+    /** Google Business Profile photos: JPG or PNG. */
+    static final Set<String> GOOGLE_BUSINESS_IMAGE_EXTENSIONS = Set.of("jpg", "jpeg", "png");
 
     private static final Pattern HASHTAG = Pattern.compile("(?<![\\p{L}\\p{N}_&])#[\\p{L}\\p{N}_]+");
 
@@ -190,8 +196,10 @@ public final class SocialPostRules {
     /**
      * Full check before a post may be submitted, scheduled or published: structure plus at least
      * one account and every platform rule (Instagram needs media and a caption of at most 2,200
-     * characters / 30 hashtags; YouTube needs exactly one video; Google Business Profile takes
-     * no video and at most 1,500 characters; Facebook needs text, a link or media).
+     * characters / 30 hashtags, JPEG photos only; YouTube needs exactly one video and a
+     * description of at most 5,000 bytes; Google Business Profile takes no video, JPG/PNG photos
+     * and at most 1,500 characters; Facebook needs text, a link or media). A photo's format is
+     * read from its file name; a name without an extension is not checked.
      */
     public static void validateForPublishing(PostInput input, List<SocialAccount> accounts) {
         validateStructure(input);
@@ -223,6 +231,11 @@ public final class SocialPostRules {
                     if (countHashtags(caption) > INSTAGRAM_HASHTAGS_MAX) {
                         throw badRequest("Instagram allows at most " + INSTAGRAM_HASHTAGS_MAX + " hashtags.");
                     }
+                    SocialPostMediaDTO notJpeg = firstImageNotIn(media, INSTAGRAM_IMAGE_EXTENSIONS);
+                    if (notJpeg != null) {
+                        throw badRequest("Instagram needs JPEG photos. Save " + notJpeg.getName()
+                                + " as a JPG and upload it again.");
+                    }
                 }
                 case MarketingConstants.PLATFORM_GOOGLE_BUSINESS -> {
                     if (hasVideo) {
@@ -230,6 +243,11 @@ public final class SocialPostRules {
                     }
                     if (text.isEmpty()) {
                         throw badRequest("Google Business Profile needs some text.");
+                    }
+                    SocialPostMediaDTO unsupported = firstImageNotIn(media, GOOGLE_BUSINESS_IMAGE_EXTENSIONS);
+                    if (unsupported != null) {
+                        throw badRequest("Google Business Profile needs JPG or PNG photos. Save "
+                                + unsupported.getName() + " as a JPG and upload it again.");
                     }
                     if (length(text) > GOOGLE_BUSINESS_TEXT_MAX) {
                         throw badRequest("Google Business Profile text can be at most " + GOOGLE_BUSINESS_TEXT_MAX
@@ -243,10 +261,12 @@ public final class SocialPostRules {
                     if (youtubeTitle(input.title(), text).isEmpty()) {
                         throw badRequest("YouTube needs a title or some text.");
                     }
-                    String description = withLink(text, input.linkUrl());
-                    if (length(description) > YOUTUBE_DESCRIPTION_MAX) {
+                    String description = youtubeDescription(text, input.linkUrl());
+                    int bytes = utf8Length(description);
+                    if (bytes > YOUTUBE_DESCRIPTION_MAX) {
                         throw badRequest("YouTube description can be at most " + YOUTUBE_DESCRIPTION_MAX
-                                + " characters (it is " + length(description) + ", including the link).");
+                                + " bytes (it is " + bytes + ", including the link). Hindi and other non-Latin "
+                                + "scripts use up to 3 bytes per character.");
                     }
                 }
                 default -> throw badRequest("Posting to " + platform + " is not supported.");
@@ -340,6 +360,37 @@ public final class SocialPostRules {
         // YouTube rejects angle brackets in titles.
         t = t.replace("<", "").replace(">", "");
         return truncateCodePoints(t, YOUTUBE_TITLE_MAX).strip();
+    }
+
+    /**
+     * YouTube description: the text plus the link, without '<' and '>' (YouTube rejects them as
+     * invalidDescription). Its limit, {@value #YOUTUBE_DESCRIPTION_MAX}, is in UTF-8 bytes.
+     */
+    public static String youtubeDescription(String text, String link) {
+        return withLink(text, link).replace("<", "").replace(">", "");
+    }
+
+    public static int utf8Length(String text) {
+        return text == null ? 0 : text.getBytes(StandardCharsets.UTF_8).length;
+    }
+
+    /** Lower-case file extension of a media name ("photo.PNG" -> "png"), or null when it has none. */
+    static String extension(String name) {
+        if (name == null) return null;
+        String n = name.strip();
+        int dot = n.lastIndexOf('.');
+        if (dot < 0 || dot == n.length() - 1) return null;
+        String ext = n.substring(dot + 1).toLowerCase(Locale.ROOT);
+        return ext.length() <= 5 && ext.chars().allMatch(Character::isLetterOrDigit) ? ext : null;
+    }
+
+    private static SocialPostMediaDTO firstImageNotIn(List<SocialPostMediaDTO> media, Set<String> allowed) {
+        for (SocialPostMediaDTO m : media) {
+            if (!MarketingConstants.MEDIA_TYPE_IMAGE.equals(m.getType())) continue;
+            String ext = extension(m.getName());
+            if (ext != null && !allowed.contains(ext)) return m;
+        }
+        return null;
     }
 
     public static int countHashtags(String text) {

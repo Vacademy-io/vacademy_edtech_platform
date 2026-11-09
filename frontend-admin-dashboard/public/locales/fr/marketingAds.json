@@ -19,6 +19,7 @@
         "accounts": {
             "chipAria": "{{name}} — options du compte",
             "reconnectBadge": "Reconnecter",
+            "syncErrorBadge": "Échec de la synchro",
             "firstSync": "Récupération des données…",
             "lastSynced": "Dernière synchronisation {{time}}",
             "neverSynced": "Pas encore synchronisé",

@@ -126,6 +126,14 @@ export const EDITABLE: ReadonlySet<SocialPostStatus> = new Set([
     'FAILED',
 ]);
 
+/** Statuses a non-admin author may delete their own post in (DELETABLE_BY_AUTHOR). */
+export const AUTHOR_DELETABLE: ReadonlySet<SocialPostStatus> = new Set([
+    'DRAFT',
+    'NEEDS_APPROVAL',
+    'CANCELLED',
+    'FAILED',
+]);
+
 /** The first error worth showing for a failed / partial post. */
 export function postError(post: SocialPost): string | null {
     if (post.last_error) return post.last_error;
@@ -190,6 +198,43 @@ export function effectiveText(snapshot: ComposerSnapshot, platform: SocialPlatfo
     return override && override.trim() ? override : snapshot.body;
 }
 
+/** Characters as a person counts them (an emoji is one), like the server's length(). */
+export const charCount = (value: string): number => [...value].length;
+
+/** `text + "\n\n" + link` when both are present (SocialPostRules.withLink). */
+export function withLink(text: string, link: string): string {
+    const t = text.trim();
+    const l = link.trim();
+    if (!l) return t;
+    if (!t) return l;
+    return `${t}\n\n${l}`;
+}
+
+/** Instagram captions and YouTube descriptions carry the link as text. */
+const LINK_IN_TEXT: ReadonlySet<SocialPlatform> = new Set(['INSTAGRAM', 'YOUTUBE']);
+
+/**
+ * What the server measures against TEXT_LIMIT for a network: the trimmed text, plus the
+ * link on Instagram and YouTube.
+ */
+export function measuredText(snapshot: ComposerSnapshot, platform: SocialPlatform): string {
+    const text = effectiveText(snapshot, platform).trim();
+    return LINK_IN_TEXT.has(platform) ? withLink(text, snapshot.linkUrl) : text;
+}
+
+export const INSTAGRAM_HASHTAGS_MAX = 30;
+const HASHTAG = /(?<![\p{L}\p{N}_&])#[\p{L}\p{N}_]+/gu;
+
+export function countHashtags(value: string): number {
+    return value.match(HASHTAG)?.length ?? 0;
+}
+
+/** YouTube title as the server builds it: the title, else the start of the text, minus < >. */
+function youtubeTitle(title: string, text: string): string {
+    const source = title.trim() || [...text.trim().replace(/\s+/g, ' ')].slice(0, 90).join('');
+    return source.replace(/[<>]/g, '').trim();
+}
+
 /** One validation problem: an i18n key under `composer.issues.*` plus its values. */
 export interface ComposerIssue {
     key: string;
@@ -226,24 +271,28 @@ export function validateForPublish(snapshot: ComposerSnapshot): ComposerIssue[] 
         issues.push({ key: 'badLink' });
 
     for (const platform of platforms) {
-        const text = effectiveText(snapshot, platform);
-        if (text.length > TEXT_LIMIT[platform]) {
+        const text = effectiveText(snapshot, platform).trim();
+        const measured = measuredText(snapshot, platform);
+        if (charCount(measured) > TEXT_LIMIT[platform]) {
             issues.push({
-                key: 'tooLong',
+                key:
+                    LINK_IN_TEXT.has(platform) && snapshot.linkUrl.trim()
+                        ? 'tooLongWithLink'
+                        : 'tooLong',
                 values: { platform, max: String(TEXT_LIMIT[platform]) },
             });
         }
         if (platform === 'INSTAGRAM' && ready.length === 0) issues.push({ key: 'instagramMedia' });
+        if (platform === 'INSTAGRAM' && countHashtags(measured) > INSTAGRAM_HASHTAGS_MAX)
+            issues.push({ key: 'tooManyHashtags', values: { max: INSTAGRAM_HASHTAGS_MAX } });
         if (platform === 'YOUTUBE' && (videos !== 1 || images > 0))
             issues.push({ key: 'youtubeVideo' });
         if (platform === 'GOOGLE_BUSINESS' && videos > 0) issues.push({ key: 'googleNoVideo' });
-        if (
-            (platform === 'FACEBOOK' || platform === 'GOOGLE_BUSINESS') &&
-            !text.trim() &&
-            ready.length === 0
-        )
+        // Facebook takes text, a link or media; Google Business always needs text.
+        if (platform === 'FACEBOOK' && !text && !snapshot.linkUrl.trim() && ready.length === 0)
             issues.push({ key: 'needsText', values: { platform } });
-        if (platform === 'YOUTUBE' && !snapshot.title.trim() && !text.trim())
+        if (platform === 'GOOGLE_BUSINESS' && !text) issues.push({ key: 'googleNeedsText' });
+        if (platform === 'YOUTUBE' && !youtubeTitle(snapshot.title, text))
             issues.push({ key: 'youtubeTitle' });
     }
     if (snapshot.title.length > 255) issues.push({ key: 'titleTooLong' });

@@ -414,4 +414,53 @@ class SocialPostRulesTest {
         assertEquals(Map.of(PLATFORM_INSTAGRAM, "IG"), SocialPostJson.readOverrides(overrides));
         assertTrue(SocialPostJson.readOverrides(null).isEmpty());
     }
+
+    // ── formats and YouTube description bytes ────────────────────────────────
+
+    @Nested
+    @DisplayName("photo formats and YouTube description")
+    class FormatsAndYoutubeDescription {
+
+        private SocialPostMediaDTO named(String id, String name) {
+            return SocialPostMediaDTO.builder().fileId(id).type(MEDIA_TYPE_IMAGE).name(name).build();
+        }
+
+        @Test
+        @DisplayName("Instagram refuses PNG / WebP photos at save time; JPEG and unnamed files pass")
+        void instagramNeedsJpeg() {
+            List<SocialAccount> ig = List.of(account("a1", PLATFORM_INSTAGRAM));
+            assertBadRequest(() -> SocialPostRules.validateForPublishing(
+                    input(null, "Hi", null, List.of(named("f1", "poster.png")), null), ig), "Instagram needs JPEG");
+            assertBadRequest(() -> SocialPostRules.validateForPublishing(
+                    input(null, "Hi", null, List.of(named("f1", "a.jpg"), named("f2", "b.WEBP")), null), ig),
+                    "b.WEBP");
+            SocialPostRules.validateForPublishing(
+                    input(null, "Hi", null, List.of(named("f1", "a.JPG"), named("f2", "b.jpeg"), image("f3")), null), ig);
+            // Facebook takes PNG.
+            SocialPostRules.validateForPublishing(input(null, "Hi", null, List.of(named("f1", "poster.png")), null),
+                    List.of(account("a2", PLATFORM_FACEBOOK)));
+        }
+
+        @Test
+        @DisplayName("Google Business Profile takes JPG or PNG, not WebP")
+        void googleBusinessFormats() {
+            List<SocialAccount> gbp = List.of(account("a1", PLATFORM_GOOGLE_BUSINESS));
+            SocialPostRules.validateForPublishing(input(null, "Hi", null, List.of(named("f1", "a.png")), null), gbp);
+            assertBadRequest(() -> SocialPostRules.validateForPublishing(
+                    input(null, "Hi", null, List.of(named("f1", "a.webp")), null), gbp), "JPG or PNG");
+        }
+
+        @Test
+        @DisplayName("YouTube description drops angle brackets and is limited in UTF-8 bytes")
+        void youtubeDescriptionBytes() {
+            assertEquals("Marks  40% need retest", SocialPostRules.youtubeDescription("Marks < 40% need retest", null));
+            assertEquals("a3\n\nhttps://x.io", SocialPostRules.youtubeDescription("a<3", "https://x.io"));
+            List<SocialAccount> yt = List.of(account("a1", SOCIAL_PLATFORM_YOUTUBE));
+            // 1,700 Devanagari characters = 5,100 bytes: under 5,000 characters but over 5,000 bytes.
+            String hindi = "\u0915".repeat(1700);
+            assertBadRequest(() -> SocialPostRules.validateForPublishing(
+                    input("Title", hindi, null, List.of(video("v1")), null), yt), "5000 bytes");
+            SocialPostRules.validateForPublishing(input("Title", "\u0915".repeat(1600), null, List.of(video("v1")), null), yt);
+        }
+    }
 }

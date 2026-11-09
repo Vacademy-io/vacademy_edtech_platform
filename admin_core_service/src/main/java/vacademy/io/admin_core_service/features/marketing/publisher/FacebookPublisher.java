@@ -35,6 +35,7 @@ import java.util.List;
 public class FacebookPublisher implements SocialPublisher {
 
     private static final String LABEL = "Facebook";
+    private static final java.time.Duration VIDEO_RESPONSE_TIMEOUT = java.time.Duration.ofSeconds(120);
 
     private final MetaGraphClient graph;
     private final TokenEncryptionService tokenEncryptionService;
@@ -57,7 +58,9 @@ public class FacebookPublisher implements SocialPublisher {
             form.add("file_url", requireUrl(video));
             form.add("description", SocialPostRules.withLink(text, link));
             if (post.getTitle() != null && !post.getTitle().isBlank()) form.add("title", post.getTitle());
-            JsonNode res = graph.postForm(pageId + "/videos", form, token);
+            // Meta downloads the file before answering: allow longer than the default 30 s.
+            JsonNode res = SocialPublisherSupport.createOnce(
+                    () -> graph.postForm(pageId + "/videos", form, token, VIDEO_RESPONSE_TIMEOUT), LABEL, "the Page");
             String videoId = requireId(res, "id");
             return PublishResult.posted(videoId, permalink(videoId, token));
         }
@@ -68,7 +71,7 @@ public class FacebookPublisher implements SocialPublisher {
             form.add("url", requireUrl(images.get(0)));
             String caption = SocialPostRules.withLink(text, link);
             if (!caption.isEmpty()) form.add("caption", caption);
-            JsonNode res = graph.postForm(pageId + "/photos", form, token);
+            JsonNode res = create(pageId + "/photos", form, token);
             String postId = res.path("post_id").asText(null);
             String id = postId != null && !postId.isBlank() ? postId : requireId(res, "id");
             return PublishResult.posted(id, permalink(id, token));
@@ -89,7 +92,7 @@ public class FacebookPublisher implements SocialPublisher {
             for (int i = 0; i < photoIds.size(); i++) {
                 feed.add("attached_media[" + i + "]", "{\"media_fbid\":\"" + photoIds.get(i) + "\"}");
             }
-            JsonNode res = graph.postForm(pageId + "/feed", feed, token);
+            JsonNode res = create(pageId + "/feed", feed, token);
             String id = requireId(res, "id");
             return PublishResult.posted(id, permalink(id, token));
         }
@@ -101,9 +104,17 @@ public class FacebookPublisher implements SocialPublisher {
             throw new MarketingApiException("EMPTY_POST", "Facebook needs some text, a link or a photo/video.",
                     false, false);
         }
-        JsonNode res = graph.postForm(pageId + "/feed", feed, token);
+        JsonNode res = create(pageId + "/feed", feed, token);
         String id = requireId(res, "id");
         return PublishResult.posted(id, permalink(id, token));
+    }
+
+    /**
+     * The call that makes the post public. A timeout / 5xx there may still have created it, so it
+     * is not retried automatically (the unpublished multi-photo uploads before it are safe to redo).
+     */
+    private JsonNode create(String path, MultiValueMap<String, String> form, String token) {
+        return SocialPublisherSupport.createOnce(() -> graph.postForm(path, form, token), LABEL, "the Page");
     }
 
     /** Best effort: a post that went live must not fail because its link could not be read. */

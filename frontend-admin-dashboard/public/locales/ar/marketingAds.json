@@ -19,6 +19,7 @@
         "accounts": {
             "chipAria": "{{name}} — خيارات الحساب",
             "reconnectBadge": "إعادة الربط",
+            "syncErrorBadge": "فشلت المزامنة",
             "firstSync": "جارٍ جلب البيانات…",
             "lastSynced": "آخر مزامنة {{time}}",
             "neverSynced": "لم تتم المزامنة بعد",

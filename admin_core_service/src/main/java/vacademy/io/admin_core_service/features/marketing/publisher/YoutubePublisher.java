@@ -69,7 +69,7 @@ public class YoutubePublisher implements SocialPublisher {
 
         String title = SocialPostRules.youtubeTitle(post.getTitle(), text);
         if (title.isEmpty()) title = "Video";
-        String description = SocialPostRules.withLink(text, post.getLinkUrl());
+        String description = SocialPostRules.youtubeDescription(text, post.getLinkUrl());
 
         YoutubeUploadService.UploadResult result = uploadService.publishVideo(post.getInstituteId(),
                 video.fileId(), title, description, PRIVACY_PUBLIC, null);

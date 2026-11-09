@@ -1,8 +1,9 @@
 /**
  * One chip per connected ad account (platform icon + name). A chip opens a small menu
  * with the account's details and its own actions: sync, reconnect when it needs it, and
- * disconnect (confirmed). Accounts that need a fresh sign-in are drawn in warning tones;
- * accounts still on their first sync show a spinner.
+ * disconnect (confirmed). Accounts that need a fresh sign-in or whose last sync failed are
+ * drawn in warning tones; accounts still on their first sync show a spinner. An account in
+ * ERROR on a healthy connection keeps "Sync this" (a successful sync clears the error).
  */
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -43,6 +44,7 @@ import type { AdAccount } from '../../-marketing/types';
 import {
     accountFirstSyncPending,
     accountNeedsAttention,
+    accountNeedsReconnect,
     formatRelativeTime,
     formatTimestamp,
 } from './ad-performance-utils';
@@ -65,6 +67,7 @@ function AccountChip({ account }: { account: AdAccount }) {
     const [confirmOpen, setConfirmOpen] = useState(false);
 
     const attention = accountNeedsAttention(account);
+    const needsReconnect = accountNeedsReconnect(account);
     const firstSync = accountFirstSyncPending(account);
     const syncing = sync.isPending;
     const name = account.name || accountExternalLabel(account);
@@ -96,7 +99,9 @@ function AccountChip({ account }: { account: AdAccount }) {
                         {attention ? (
                             <span className="inline-flex items-center gap-1 text-caption font-medium text-warning-700">
                                 <WarningCircle size={14} weight="fill" />
-                                {t('ads.accounts.reconnectBadge')}
+                                {needsReconnect
+                                    ? t('ads.accounts.reconnectBadge')
+                                    : t('ads.accounts.syncErrorBadge')}
                             </span>
                         ) : firstSync || syncing ? (
                             <span className="inline-flex items-center gap-1 text-caption text-neutral-500">
@@ -136,16 +141,7 @@ function AccountChip({ account }: { account: AdAccount }) {
                         </p>
                     )}
                     <DropdownMenuSeparator />
-                    {attention ? (
-                        <DropdownMenuItem
-                            className="cursor-pointer gap-2"
-                            disabled={reconnect.isPending}
-                            onSelect={() => reconnect.mutate(adProviderFor(account.platform))}
-                        >
-                            <PlugsConnected size={16} className="text-warning-600" />
-                            {t('ads.accounts.reconnect')}
-                        </DropdownMenuItem>
-                    ) : (
+                    {!needsReconnect && (
                         <DropdownMenuItem
                             className="cursor-pointer gap-2"
                             disabled={syncing}
@@ -153,6 +149,18 @@ function AccountChip({ account }: { account: AdAccount }) {
                         >
                             <ArrowsClockwise size={16} className="text-neutral-500" />
                             {syncing ? t('ads.sync.syncing') : t('ads.accounts.syncThis')}
+                        </DropdownMenuItem>
+                    )}
+                    {/* ERROR on a healthy grant may still be lost access (permission denied),
+                        so Reconnect stays available next to Sync this. */}
+                    {attention && (
+                        <DropdownMenuItem
+                            className="cursor-pointer gap-2"
+                            disabled={reconnect.isPending}
+                            onSelect={() => reconnect.mutate(adProviderFor(account.platform))}
+                        >
+                            <PlugsConnected size={16} className="text-warning-600" />
+                            {t('ads.accounts.reconnect')}
                         </DropdownMenuItem>
                     )}
                     <DropdownMenuItem

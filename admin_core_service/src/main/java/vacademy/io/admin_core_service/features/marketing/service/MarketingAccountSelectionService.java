@@ -98,8 +98,9 @@ public class MarketingAccountSelectionService {
 
     // ── Options ──────────────────────────────────────────────────────────────
 
-    public ConnectOptionsResponse getOptions(String sessionKey, String instituteId) {
-        MarketingOAuthService.AuthorizedSession session = oauthService.requireAuthorizedSession(sessionKey, instituteId);
+    public ConnectOptionsResponse getOptions(String sessionKey, String instituteId, String userId) {
+        MarketingOAuthService.AuthorizedSession session =
+                oauthService.requireAuthorizedSession(sessionKey, instituteId, userId);
         List<ResolvedOption> options = resolveOptions(session);
         return ConnectOptionsResponse.builder()
                 .provider(session.provider())
@@ -111,7 +112,8 @@ public class MarketingAccountSelectionService {
 
     // ── Select ───────────────────────────────────────────────────────────────
 
-    public ConnectSelectResponse select(String sessionKey, String instituteId, List<String> externalIds) {
+    public ConnectSelectResponse select(String sessionKey, String instituteId, String userId,
+                                        List<String> externalIds) {
         Set<String> wanted = new LinkedHashSet<>();
         if (externalIds != null) {
             for (String id : externalIds) {
@@ -125,7 +127,8 @@ public class MarketingAccountSelectionService {
             throw new VacademyException(HttpStatus.BAD_REQUEST, "Select at most " + MAX_SELECTION + " accounts at a time.");
         }
 
-        MarketingOAuthService.AuthorizedSession session = oauthService.requireAuthorizedSession(sessionKey, instituteId);
+        MarketingOAuthService.AuthorizedSession session =
+                oauthService.requireAuthorizedSession(sessionKey, instituteId, userId);
         MarketingConnection connection = session.connection();
         List<ResolvedOption> options = resolveOptions(session);
 
@@ -549,14 +552,18 @@ public class MarketingAccountSelectionService {
         String title = textOr(location, "title", name);
         String locality = textOrNull(location.path("storefrontAddress"), "locality");
         JsonNode metadata = location.path("metadata");
-        boolean canPost = !metadata.has("hasVoiceOfMerchant") || metadata.path("hasVoiceOfMerchant").asBoolean(true);
+        // Google's JSON drops false booleans, so a missing field means false (unverified,
+        // suspended or duplicate listings). canOperateLocalPost is the field that governs posting.
+        boolean canPost = metadata.path("canOperateLocalPost").asBoolean(false)
+                || metadata.path("hasVoiceOfMerchant").asBoolean(false);
         ConnectOptionDTO dto = ConnectOptionDTO.builder()
                 .externalId(name)
                 .name(title)
                 .subtitle(locality != null ? locality : "Google Business Profile")
                 .kind(MarketingConstants.OPTION_KIND_GBP_LOCATION)
                 .selectable(canPost)
-                .warning(canPost ? null : "Verify this location on Google before posting to it")
+                .warning(canPost ? null
+                        : "This location isn't verified (or can't post) on Google yet. Verify it in Business Profile first")
                 .build();
         ResolvedOption option = new ResolvedOption(dto);
         option.platform = MarketingConstants.PLATFORM_GOOGLE_BUSINESS;

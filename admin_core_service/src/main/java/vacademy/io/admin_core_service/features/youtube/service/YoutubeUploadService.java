@@ -141,7 +141,9 @@ public class YoutubeUploadService {
                 Video videoMetadata = new Video();
                 VideoSnippet snippet = new VideoSnippet();
                 snippet.setTitle(truncate(title, 100));     // YouTube hard cap: 100 chars
-                snippet.setDescription(truncate(description, 5000));
+                // YouTube caps the description at 5000 UTF-8 bytes and rejects '<' / '>'.
+                snippet.setDescription(truncateUtf8(description == null ? null
+                        : description.replace("<", "").replace(">", ""), 5000));
                 snippet.setCategoryId(orDefault(defaults.getCategoryId(), DEFAULT_CATEGORY_ID));
                 snippet.setTags(tags);
                 if (defaults.getDefaultLanguage() != null && !defaults.getDefaultLanguage().isBlank()) {
@@ -294,6 +296,22 @@ public class YoutubeUploadService {
     private static String truncate(String s, int max) {
         if (s == null) return "";
         return s.length() <= max ? s : s.substring(0, max);
+    }
+
+    /** At most {@code maxBytes} UTF-8 bytes, cut on a code-point boundary (never half an emoji). */
+    static String truncateUtf8(String s, int maxBytes) {
+        if (s == null) return "";
+        if (s.getBytes(java.nio.charset.StandardCharsets.UTF_8).length <= maxBytes) return s;
+        int bytes = 0;
+        int i = 0;
+        while (i < s.length()) {
+            int cp = s.codePointAt(i);
+            int len = cp < 0x80 ? 1 : cp < 0x800 ? 2 : cp < 0x10000 ? 3 : 4;
+            if (bytes + len > maxBytes) break;
+            bytes += len;
+            i += Character.charCount(cp);
+        }
+        return s.substring(0, i);
     }
 
     private List<String> parseTags(String csv) {

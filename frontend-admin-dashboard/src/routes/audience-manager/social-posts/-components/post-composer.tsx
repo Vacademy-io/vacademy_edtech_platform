@@ -47,9 +47,10 @@ import type {
 } from '../../-marketing/types';
 import { MediaPicker } from './media-picker';
 import {
-    effectiveText,
+    charCount,
     isAccountUsable,
     localToIso,
+    measuredText,
     TEXT_LIMIT,
     toDayKey,
     toTimeKey,
@@ -185,16 +186,20 @@ export function PostComposer({
                 ]
               : [];
 
-    // Strictest limit among the networks that use the main text.
-    const bodyLimit = useMemo(() => {
-        const users = platforms.filter((p) => !(overridesOn && overrides[p]?.trim()));
-        if (users.length === 0) return null;
-        return users.reduce(
-            (best, p) =>
-                TEXT_LIMIT[p] < best.limit ? { platform: p, limit: TEXT_LIMIT[p] } : best,
-            { platform: users[0] as SocialPlatform, limit: TEXT_LIMIT[users[0] as SocialPlatform] }
+    // Tightest limit among the networks that use the main text, counted the way the server
+    // does: characters (an emoji is one), trimmed, plus the link on Instagram and YouTube.
+    const bodyLimit = platforms
+        .filter((p) => !(overridesOn && overrides[p]?.trim()))
+        .map((p) => ({
+            platform: p,
+            limit: TEXT_LIMIT[p],
+            used: charCount(measuredText(snapshot, p)),
+        }))
+        .reduce<{ platform: SocialPlatform; limit: number; used: number } | null>(
+            (best, cur) => (!best || cur.limit - cur.used < best.limit - best.used ? cur : best),
+            null
         );
-    }, [platforms, overridesOn, overrides]);
+    const bodyUsed = bodyLimit ? bodyLimit.used : charCount(body.trim());
 
     const numberFormat = useMemo(() => new Intl.NumberFormat(i18n.language), [i18n.language]);
     const label = (platform: SocialPlatform) => platformLabel(platform, t, 'social');
@@ -472,7 +477,7 @@ export function PostComposer({
                     <span
                         className={cn(
                             'text-caption tabular-nums',
-                            bodyLimit && body.length > bodyLimit.limit
+                            bodyLimit && bodyLimit.used > bodyLimit.limit
                                 ? 'text-danger-600'
                                 : 'text-neutral-500'
                         )}
@@ -480,11 +485,11 @@ export function PostComposer({
                     >
                         {bodyLimit
                             ? t('composer.counterWithLimit', {
-                                  used: numberFormat.format(body.length),
+                                  used: numberFormat.format(bodyUsed),
                                   max: numberFormat.format(bodyLimit.limit),
                                   platform: label(bodyLimit.platform),
                               })
-                            : t('composer.counter', { used: numberFormat.format(body.length) })}
+                            : t('composer.counter', { used: numberFormat.format(bodyUsed) })}
                     </span>
                 </div>
                 <Textarea
@@ -522,7 +527,7 @@ export function PostComposer({
                     <div className="flex flex-col gap-3">
                         {platforms.map((platform) => {
                             const text = overrides[platform] ?? '';
-                            const used = effectiveText(snapshot, platform).length;
+                            const used = charCount(measuredText(snapshot, platform));
                             const over = used > TEXT_LIMIT[platform];
                             const fieldId = `social-override-${platform}`;
                             return (

@@ -40,7 +40,7 @@ import {
     useRetrySocialPost,
 } from '../../-marketing/use-marketing';
 import type { SocialPlatform, SocialPost } from '../../-marketing/types';
-import { EDITABLE, postDate, postError, STATUS_TONE } from './social-utils';
+import { AUTHOR_DELETABLE, EDITABLE, postDate, postError, STATUS_TONE } from './social-utils';
 
 type ConfirmKind = 'postNow' | 'cancel' | 'delete' | null;
 
@@ -117,7 +117,9 @@ export function PostRow({
     const canCancel =
         ['DRAFT', 'NEEDS_APPROVAL', 'SCHEDULED'].includes(status) &&
         (isAdmin || (isOwn && (status === 'DRAFT' || status === 'NEEDS_APPROVAL')));
-    const canDelete = status !== 'PUBLISHING' && (isAdmin || isOwn);
+    // Authors may delete only their unpublished posts; the server refuses the rest.
+    const canDelete =
+        status !== 'PUBLISHING' && (isAdmin || (isOwn && AUTHOR_DELETABLE.has(status)));
 
     const subline =
         post.source === 'AGENT'

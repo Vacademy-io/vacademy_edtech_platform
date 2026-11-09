@@ -28,8 +28,10 @@ import java.util.List;
  *       {@code target.containerId} set) read {@code status_code}: FINISHED publishes, IN_PROGRESS
  *       stays pending, ERROR / EXPIRED fail.</li>
  * </ul>
- * An image container that is not ready yet at publish time (Meta error 9007) is also returned as
- * PENDING_CONTAINER so the next pass publishes it. The caption is the text plus the link (links
+ * An image container that is not ready yet at publish time (Meta error 9007), or whose
+ * media_publish failed transiently (timeout, 5xx, code 1/2: it may have gone live), is also
+ * returned as PENDING_CONTAINER, so the next pass reads its status_code (PUBLISHED = done) instead
+ * of building and publishing a second container. The caption is the text plus the link (links
  * are not clickable in Instagram captions).
  */
 @Component
@@ -132,6 +134,12 @@ public class InstagramPublisher implements SocialPublisher {
         } catch (MarketingApiException e) {
             String code = e.getPlatformCode();
             if (code != null && (code.equals(MEDIA_NOT_READY_CODE) || code.startsWith(MEDIA_NOT_READY_CODE + "/"))) {
+                return PublishResult.pendingContainer(containerId);
+            }
+            if (e.isTransientError()) {
+                // Outcome unknown: keep the container so the next pass checks whether it went live.
+                log.info("Instagram media_publish of container {} failed transiently ({}); checking it next pass",
+                        containerId, e.getPlatformCode());
                 return PublishResult.pendingContainer(containerId);
             }
             throw e;

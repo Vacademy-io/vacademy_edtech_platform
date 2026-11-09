@@ -109,7 +109,7 @@ Use-case text for each permission: one or two sentences, for example:
 
 ## 2. Google (Google Ads, YouTube Ads, Google Business Profile)
 
-All Google calls use our Cloud project **`vacademy-ads-reporting`** for Ads, plus the OAuth client already used for YouTube. Section 4 lists which client each flow uses.
+Google Ads and Business Profile sign-in must use a Web OAuth client in our Cloud project **`vacademy-ads-reporting`**, the project the API access is granted to (section 4.2). YouTube keeps its existing client.
 
 ### 2.1 Google Ads API access level
 
@@ -177,12 +177,12 @@ YouTube Ads spend is not a separate integration: YouTube in-stream ads are Googl
 
 | Item | Owner | Status |
 |---|---|---|
-| Meta Business Verification | Shreyash | Check |
-| Meta App Review submission | Shreyash | Not started |
-| Google Ads API Explorer → Basic | Shreyash | Explorer pending since 10-31 |
-| Google OAuth verification | Shreyash | Not started |
-| GBP API access form | Shreyash | Not started |
-| Privacy policy update (vacademy.io) | Shreyash | Not started |
+| Meta Business Verification | (assign) | Check |
+| Meta App Review submission | (assign) | Not started |
+| Google Ads API Explorer → Basic | (assign) | Explorer pending since 10-31 |
+| Google OAuth verification | (assign) | Not started |
+| GBP API access form | (assign) | Not started |
+| Privacy policy update (vacademy.io) | (assign) | Not started |
 
 ---
 
@@ -190,7 +190,42 @@ YouTube Ads spend is not a separate integration: YouTube in-stream ads are Googl
 
 Filled from the code in this release; see [ADS_AND_SOCIAL.md](ADS_AND_SOCIAL.md) for the full config list.
 
-<!-- CONFIG_TABLE -->
+### 4.1 Redirect URIs to register
+
+| Where | URI |
+|---|---|
+| Meta app → Facebook Login → Settings → **Valid OAuth Redirect URIs** | `https://backend-stage.vacademy.io/admin-core-service/v1/marketing/oauth/meta/callback` |
+| Google Cloud project **vacademy-ads-reporting** → Credentials → the **Web** OAuth client → **Authorized redirect URIs** | `https://backend-stage.vacademy.io/admin-core-service/v1/marketing/oauth/google/callback` |
+
+The existing Lead Ads callback (`/v1/oauth/meta/callback`) and YouTube callback stay as they are.
+
+### 4.2 Which Google OAuth client
+
+Since Google Ads API v25, the API access level belongs to the **Cloud project that owns the OAuth client** making the call, and GBP API quota is granted per project too. So the marketing Google flows must use a client from the project we get approved, **`vacademy-ads-reporting`**:
+
+1. In that project, create an OAuth client of type **Web application**. The existing one there is a Desktop client, used only by the local reporting scripts; Desktop clients can't take a web redirect URI. Add the redirect URI from 4.1.
+2. In the same project, enable **Google Ads API**, **My Business Account Management API**, **My Business Business Information API** and **Google My Business API**.
+3. Put the client id and secret in the GitHub secrets `MARKETING_GOOGLE_OAUTH_CLIENT_ID` / `MARKETING_GOOGLE_OAUTH_CLIENT_SECRET`.
+
+There is no fallback to the Google Meet / Workspace client (`GOOGLE_OAUTH_CLIENT_ID`). Until those secrets exist, connecting Google Ads or Business Profile answers "Google sign-in is not configured". Sharing the Meet client would merge both grants for a Google user, so disconnecting Meet would also revoke Ads and Business Profile access. The new client needs its own consent screen (adwords, business.manage, openid, email) and the redirect URI `/admin-core-service/v1/marketing/oauth/google/callback`.
+
+### 4.3 Secrets and properties
+
+| GitHub secret / env var | Property | Default | Needed for |
+|---|---|---|---|
+| `GOOGLE_ADS_DEVELOPER_TOKEN` | `marketing.google.ads.developer-token` | empty → Google Ads connect returns 503 "not configured" | Google Ads. Token from manager account 108-442-5700 → API Center |
+| `MARKETING_GOOGLE_OAUTH_CLIENT_ID` / `_SECRET` | `marketing.google.oauth.client-id` / `-secret` | empty → Google marketing connect returns 503 "not configured" (no fallback to the Meet client) | Google Ads + GBP sign-in (see 4.2) |
+| `META_APP_ID` / `META_APP_SECRET` (existing) | `meta.app.id` / `meta.app.secret` | — | All Meta flows (same Vacademy CRM app) |
+| `OAUTH_TOKEN_ENCRYPTION_KEY` (existing) | `oauth.token.encryption.key` | — | Encrypting every stored token |
+| `MARKETING_META_OAUTH_REDIRECT_URI` | `marketing.meta.oauth.redirect-uri` | the backend-stage URI in 4.1 | Only if the backend host changes |
+| `MARKETING_GOOGLE_OAUTH_REDIRECT_URI` | `marketing.google.oauth.redirect-uri` | the backend-stage URI in 4.1 | Only if the backend host changes |
+| `MARKETING_META_ADS_CONFIG_ID` / `MARKETING_META_SOCIAL_CONFIG_ID` | `marketing.meta.{ads,social}.config-id` | empty → classic `scope=` login | Only if we move to Facebook Login for Business configurations |
+| `MARKETING_META_GRAPH_VERSION` | `marketing.meta.graph-version` | `v23.0` | Bump when Meta deprecates it |
+| `GOOGLE_ADS_API_VERSION` | `marketing.google.ads.api-version` | `v26` | Bump when Google sunsets it (roughly yearly) |
+| `MARKETING_ADS_SYNC_ENABLED` / `_CRON` | `marketing.ads.sync.*` | on, every 6 h at :20 | Spend sync job |
+| `MARKETING_SOCIAL_PUBLISH_ENABLED` | `marketing.social.publish.enabled` | on | Scheduled post publishing |
+
+Only the first two rows need new GitHub secrets. Both are already wired into `.github/workflows/maven-publish-admin-core-service.yml`.
 
 ---
 

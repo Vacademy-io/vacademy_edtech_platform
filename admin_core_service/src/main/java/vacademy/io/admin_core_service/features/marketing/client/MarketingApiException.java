@@ -13,6 +13,14 @@ import vacademy.io.common.exceptions.VacademyException;
  */
 public class MarketingApiException extends VacademyException {
 
+    /** The connection could not be opened: the request never reached the platform (safe to retry). */
+    public static final String CONNECT_ERROR = "CONNECT_ERROR";
+    /**
+     * A create call (a post, a publish) failed in a way that does not tell whether the platform
+     * acted on it (timeout, dropped response, 5xx). Never retried automatically: it may be live.
+     */
+    public static final String OUTCOME_UNKNOWN = "OUTCOME_UNKNOWN";
+
     /** Platform error code, e.g. "190", "190/463", "DEVELOPER_TOKEN_NOT_APPROVED", "invalid_grant". */
     private final String platformCode;
     /** Worth retrying later (rate limit, 5xx, network). */

@@ -114,6 +114,29 @@ public class MetaGraphClient {
         return items;
     }
 
+    /**
+     * As {@link #postForm(String, MultiValueMap, String)} with a longer response timeout, for calls
+     * where Meta fetches a large file before answering (Page video upload by file_url).
+     */
+    public JsonNode postForm(String path, MultiValueMap<String, String> form, String accessToken,
+                             java.time.Duration responseTimeout) {
+        MultiValueMap<String, String> body = new LinkedMultiValueMap<>();
+        if (form != null) body.addAll(form);
+        body.set("access_token", accessToken);
+        URI uri = URI.create(graphBase() + "/" + stripSlash(path));
+        MarketingHttp.HttpResult result = MarketingHttp.exchange(
+                webClient.post().uri(uri)
+                        .httpRequest(r -> {
+                            if (r.getNativeRequest() instanceof reactor.netty.http.client.HttpClientRequest req) {
+                                req.responseTimeout(responseTimeout);
+                            }
+                        })
+                        .contentType(MediaType.APPLICATION_FORM_URLENCODED)
+                        .body(BodyInserters.fromFormData(body)),
+                objectMapper, PLATFORM_LABEL, responseTimeout.plusSeconds(15));
+        return checked(result);
+    }
+
     /** POST a form to a Graph path; the token goes in the form body (kept out of URLs and logs). */
     public JsonNode postForm(String path, MultiValueMap<String, String> form, String accessToken) {
         MultiValueMap<String, String> body = new LinkedMultiValueMap<>();

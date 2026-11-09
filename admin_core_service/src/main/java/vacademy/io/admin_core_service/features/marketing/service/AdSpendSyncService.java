@@ -42,6 +42,11 @@ import java.util.concurrent.RejectedExecutionException;
  * and clears an ERROR. An auth error sets ERROR "Reconnect Meta|Google" (and, when the grant itself
  * is dead, the connection RECONNECT_NEEDED and its other accounts ERROR). Any other permanent error
  * sets ERROR with the platform message; a transient error only records FAILED + the message.
+ * The outcome is written with targeted UPDATEs (never a whole-entity save), so a disconnect or a
+ * reconnect onto another grant that lands during the sync is kept. Every read of the account and
+ * its connection is made on the primary (read-write template): the replica can lag behind an
+ * account that was just connected. When a sync finishes the institute's cached performance report
+ * is dropped.
  */
 @Service
 @Slf4j
@@ -56,6 +61,13 @@ public class AdSpendSyncService implements AdSpendSyncTrigger {
 
     private static final String META_INSIGHT_FIELDS =
             "campaign_id,campaign_name,spend,impressions,clicks,actions,account_currency";
+    /**
+     * Every campaign.effective_status. An account broken down by level=campaign leaves out ARCHIVED
+     * and DELETED campaigns unless the filter names them, and their spend would then be missing
+     * while their leads still count.
+     */
+    static final List<String> META_CAMPAIGN_STATUSES =
+            List.of("ACTIVE", "PAUSED", "ARCHIVED", "DELETED", "IN_PROCESS", "WITH_ISSUES");
 
     private final AdAccountRepository adAccountRepository;
     private final AdSpendDailyRepository adSpendDailyRepository;
@@ -64,6 +76,7 @@ public class AdSpendSyncService implements AdSpendSyncTrigger {
     private final GoogleAdsApiClient googleAdsApiClient;
     private final TransactionTemplate writeTx;
     private final Executor syncExecutor;
+    private final AdPerformanceReportService reportService;
 
     /** Accounts syncing on this pod right now (another pod may still run one; upserts make that harmless). */
     private final Set<String> inFlight = ConcurrentHashMap.newKeySet();
@@ -80,7 +93,8 @@ public class AdSpendSyncService implements AdSpendSyncTrigger {
                               MetaGraphClient metaGraphClient,
                               GoogleAdsApiClient googleAdsApiClient,
                               PlatformTransactionManager transactionManager,
-                              @Qualifier(MarketingAsyncConfig.MARKETING_SYNC_EXECUTOR) Executor syncExecutor) {
+                              @Qualifier(MarketingAsyncConfig.MARKETING_SYNC_EXECUTOR) Executor syncExecutor,
+                              AdPerformanceReportService reportService) {
         this.adAccountRepository = adAccountRepository;
         this.adSpendDailyRepository = adSpendDailyRepository;
         this.connectionService = connectionService;
@@ -88,6 +102,7 @@ public class AdSpendSyncService implements AdSpendSyncTrigger {
         this.googleAdsApiClient = googleAdsApiClient;
         this.writeTx = new TransactionTemplate(transactionManager);
         this.syncExecutor = syncExecutor;
+        this.reportService = reportService;
     }
 
     /** Outcome of one sync run. {@code account} is the row as saved after the run (null if it vanished). */
@@ -127,7 +142,7 @@ public class AdSpendSyncService implements AdSpendSyncTrigger {
         if (adAccountId == null) return new SyncResult(null, false, 0, null);
         if (!inFlight.add(adAccountId)) {
             log.info("Ad spend sync for ad account {} is already running on this pod; skipping", adAccountId);
-            return new SyncResult(adAccountRepository.findById(adAccountId).orElse(null), false, 0, null);
+            return new SyncResult(loadAccount(adAccountId), false, 0, null);
         }
         try {
             return doSync(adAccountId, days);
@@ -139,18 +154,32 @@ public class AdSpendSyncService implements AdSpendSyncTrigger {
     // ── Sync ─────────────────────────────────────────────────────────────────
 
     private SyncResult doSync(String adAccountId, Integer days) {
-        AdAccount account = adAccountRepository.findById(adAccountId).orElse(null);
-        if (account == null) return new SyncResult(null, false, 0, null);
+        AdAccount account = loadAccount(adAccountId);
+        if (account == null) {
+            log.warn("Ad spend sync: ad account {} not found", adAccountId);
+            return new SyncResult(null, false, 0, null);
+        }
         if (MarketingConstants.STATUS_DISCONNECTED.equals(account.getStatus())) {
             return new SyncResult(account, false, 0, null);
         }
+        try {
+            return syncWindow(account, days);
+        } finally {
+            // Spend, status or last_synced_at may have changed: drop this pod's cached report.
+            reportService.evictInstitute(account.getInstituteId());
+        }
+    }
+
+    private SyncResult syncWindow(AdAccount account, Integer days) {
+        String adAccountId = account.getId();
 
         LocalDate today = LocalDate.now(zoneOf(account.getTimeZone()));
         int windowDays = account.getSyncedFrom() == null ? backfillDays
                 : days != null && days > 0 ? Math.min(days, MAX_WINDOW_DAYS) : refreshDays;
         LocalDate from = today.minusDays(Math.max(0, windowDays));
 
-        MarketingConnection connection = connectionService.findById(account.getConnectionId()).orElse(null);
+        MarketingConnection connection = writeTx.execute(
+                s -> connectionService.findById(account.getConnectionId()).orElse(null));
         try {
             List<AdSpendRowMapper.SpendRow> rows = MarketingConstants.PLATFORM_GOOGLE.equals(account.getPlatform())
                     ? fetchGoogle(account, connection, from, today)
@@ -196,8 +225,15 @@ public class AdSpendSyncService implements AdSpendSyncTrigger {
         String timeRange = "{\"since\":\"" + since + "\",\"until\":\"" + until + "\"}";
         return actId + "/insights?level=campaign&time_increment=1"
                 + "&time_range=" + MetaGraphClient.enc(timeRange)
+                + "&filtering=" + MetaGraphClient.enc(metaStatusFilter())
                 + "&fields=" + MetaGraphClient.enc(META_INSIGHT_FIELDS)
                 + "&limit=500";
+    }
+
+    static String metaStatusFilter() {
+        return "[{\"field\":\"campaign.effective_status\",\"operator\":\"IN\",\"value\":["
+                + String.join(",", META_CAMPAIGN_STATUSES.stream().map(v -> "\"" + v + "\"").toList())
+                + "]}]";
     }
 
     private List<AdSpendRowMapper.SpendRow> fetchGoogle(AdAccount account, MarketingConnection connection,
@@ -225,43 +261,38 @@ public class AdSpendSyncService implements AdSpendSyncTrigger {
     // ── Outcome bookkeeping ──────────────────────────────────────────────────
 
     private AdAccount recordSuccess(String adAccountId, LocalDate windowFrom) {
-        AdAccount fresh = adAccountRepository.findById(adAccountId).orElse(null);
-        if (fresh == null) return null;
-        fresh.setLastSyncedAt(Instant.now());
-        fresh.setLastSyncStatus(MarketingConstants.SYNC_STATUS_OK);
-        if (fresh.getSyncedFrom() == null || windowFrom.isBefore(fresh.getSyncedFrom())) {
-            fresh.setSyncedFrom(windowFrom);
-        }
-        if (!MarketingConstants.STATUS_DISCONNECTED.equals(fresh.getStatus())) {
-            fresh.setStatus(MarketingConstants.STATUS_ACTIVE);
-            fresh.setStatusDetail(null);
-        }
-        return adAccountRepository.save(fresh);
+        adAccountRepository.recordSyncSuccess(adAccountId, windowFrom);
+        return loadAccount(adAccountId);
     }
 
+    /**
+     * @param account the row the sync ran with: its connection is the one whose token was used, and
+     *                only that connection is marked broken by an auth error
+     */
     private AdAccount recordFailure(AdAccount account, MarketingApiException e) {
-        AdAccount fresh = adAccountRepository.findById(account.getId()).orElse(null);
-        if (fresh == null) return null;
-        fresh.setLastSyncStatus(MarketingConstants.SYNC_STATUS_FAILED);
-        boolean disconnected = MarketingConstants.STATUS_DISCONNECTED.equals(fresh.getStatus());
+        String id = account.getId();
+        String usedConnectionId = account.getConnectionId();
+        adAccountRepository.recordSyncFailed(id);
         if (e.isAuthError()) {
-            String reconnect = "Reconnect " + platformLabel(fresh.getPlatform());
-            if (!disconnected) {
-                fresh.setStatus(MarketingConstants.STATUS_ERROR);
-                fresh.setStatusDetail(isAccountScopedAuthError(e) ? reconnect + ": " + e.getMessage() : reconnect);
-            }
+            String reconnect = "Reconnect " + platformLabel(account.getPlatform());
+            adAccountRepository.recordSyncError(id, usedConnectionId,
+                    truncate(isAccountScopedAuthError(e) ? reconnect + ": " + e.getMessage() : reconnect, 2000));
             if (!isAccountScopedAuthError(e)) {
                 // The grant itself is unusable: every account on it needs the same reconnect.
-                connectionService.markReconnect(fresh.getConnectionId(), e.getMessage());
-                adAccountRepository.markErrorForConnection(fresh.getConnectionId(), reconnect);
+                connectionService.markReconnect(usedConnectionId, e.getMessage());
+                adAccountRepository.markErrorForConnection(usedConnectionId, reconnect);
             }
         } else if (e.isTransientError()) {
-            if (!disconnected) fresh.setStatusDetail(truncate(e.getMessage(), 2000));
-        } else if (!disconnected) {
-            fresh.setStatus(MarketingConstants.STATUS_ERROR);
-            fresh.setStatusDetail(truncate(e.getMessage(), 2000));
+            adAccountRepository.recordSyncDetail(id, usedConnectionId, truncate(e.getMessage(), 2000));
+        } else {
+            adAccountRepository.recordSyncError(id, usedConnectionId, truncate(e.getMessage(), 2000));
         }
-        return adAccountRepository.save(fresh);
+        return loadAccount(id);
+    }
+
+    /** The ad account read on the primary (read-write template), or null. */
+    private AdAccount loadAccount(String adAccountId) {
+        return writeTx.execute(s -> adAccountRepository.findById(adAccountId).orElse(null));
     }
 
     /** The user lost access to this one ad account; the grant still works for the others. */

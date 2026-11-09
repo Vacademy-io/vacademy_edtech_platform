@@ -10,6 +10,16 @@ public class CorsConfig implements WebMvcConfigurer {
 
     @Override
     public void addCorsMappings(CorsRegistry registry) {
+        // Marketing OAuth initiate sets an HttpOnly nonce cookie that binds the consent to this
+        // browser, so the dashboard calls it with credentials. A credentialed request needs the
+        // exact origin echoed back plus Allow-Credentials (never "*"). Registered before "/**":
+        // the first matching mapping wins. The endpoint still requires the JWT header, so
+        // credentials add nothing an attacker's page could use.
+        registry.addMapping("/admin-core-service/v1/marketing/oauth/initiate")
+                .allowedOriginPatterns("*")
+                .allowedMethods("POST", "OPTIONS")
+                .allowedHeaders("*")
+                .allowCredentials(true);
         registry.addMapping("/**")
                 .allowedOrigins("*") // Allow requests from any origin
                 .allowedMethods("*") // Allow any HTTP method (GET, POST, etc.)

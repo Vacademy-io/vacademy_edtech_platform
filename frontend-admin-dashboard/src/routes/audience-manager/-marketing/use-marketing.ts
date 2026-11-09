@@ -214,7 +214,40 @@ export function useDisconnectSocialAccount() {
     });
 }
 
-/** Post list for a window; polls while a post is being published. */
+/** How often to re-check while a scheduled post is coming due later on. */
+const DUE_POLL_MS = 60_000;
+/** Scheduled posts due within this window are polled like in-flight ones. */
+const DUE_SOON_MS = POLL_MS;
+/** How long past its time a SCHEDULED post keeps the fast cadence (job runs every 60 s). */
+const OVERDUE_FAST_MS = 5 * 60_000;
+
+/**
+ * Refetch cadence for a post list. Post now / Approve / Retry save the post as SCHEDULED
+ * (due now) and the server claims it a moment later, so the refetch right after the
+ * action often still sees SCHEDULED. Poll fast while a post is publishing or due, and
+ * slowly while a SCHEDULED post is still in the future (or long overdue), so it moves on
+ * screen when the scheduler picks it up.
+ */
+export function socialPostsRefetchInterval(
+    posts: SocialPost[] | undefined,
+    now = Date.now()
+): number | false {
+    if (!posts?.length) return false;
+    let hasScheduled = false;
+    for (const post of posts) {
+        if (IN_FLIGHT.has(post.status)) return POLL_MS;
+        if (post.status !== 'SCHEDULED') continue;
+        const due = post.scheduled_at ? Date.parse(post.scheduled_at) : NaN;
+        // A SCHEDULED post without a usable time is treated as due now. One that has been
+        // overdue for a while (the job is behind or skipping it) drops to the slow cadence.
+        if (Number.isNaN(due)) return POLL_MS;
+        if (due <= now + DUE_SOON_MS && due >= now - OVERDUE_FAST_MS) return POLL_MS;
+        hasScheduled = true;
+    }
+    return hasScheduled ? DUE_POLL_MS : false;
+}
+
+/** Post list for a window; polls while a post is being published or is coming due. */
 export const useSocialPosts = (params: ListSocialPostsParams, enabled = true) =>
     useQuery({
         queryKey: marketingKeys.socialPosts(params),
@@ -222,8 +255,7 @@ export const useSocialPosts = (params: ListSocialPostsParams, enabled = true) =>
         enabled,
         placeholderData: keepPreviousData,
         staleTime: 15_000,
-        refetchInterval: (query) =>
-            query.state.data?.some((post) => IN_FLIGHT.has(post.status)) ? POLL_MS : false,
+        refetchInterval: (query) => socialPostsRefetchInterval(query.state.data),
     });
 
 const SAVED_TOAST: Record<SocialPostAction, string> = {

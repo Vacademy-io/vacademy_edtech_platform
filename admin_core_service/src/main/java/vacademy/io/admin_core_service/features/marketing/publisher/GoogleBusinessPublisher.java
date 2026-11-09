@@ -75,13 +75,19 @@ public class GoogleBusinessPublisher implements SocialPublisher {
         String url = LOCAL_POSTS_BASE + stripSlashes(accountResource) + "/" + stripSlashes(locationResource)
                 + "/localPosts";
         JsonNode res;
+        // localPosts.create is not idempotent: a timeout / 5xx may still have created the post.
+        // The token is fetched outside createOnce: a failed token refresh never reached localPosts.
         try {
-            res = googleApiClient.postJson(url, body, tokenService.getAccessToken(connection));
+            String accessToken = tokenService.getAccessToken(connection);
+            res = SocialPublisherSupport.createOnce(() -> googleApiClient.postJson(url, body, accessToken),
+                    "Google Business Profile", "the Business Profile");
         } catch (MarketingApiException e) {
             if (!e.isAuthError()) throw e;
             // A cached token can be revoked early; mint a fresh one once before giving up.
             tokenService.evict(connection.getId());
-            res = googleApiClient.postJson(url, body, tokenService.getAccessToken(connection));
+            String freshToken = tokenService.getAccessToken(connection);
+            res = SocialPublisherSupport.createOnce(() -> googleApiClient.postJson(url, body, freshToken),
+                    "Google Business Profile", "the Business Profile");
         }
 
         String state = res.path("state").asText("");

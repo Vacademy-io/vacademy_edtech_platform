@@ -67,16 +67,13 @@ export function ConnectAccountsDialog({
     const options = useMemo(() => data?.options ?? [], [data]);
     const selectable = useMemo(() => options.filter((o) => o.selectable), [options]);
 
-    // Pre-tick everything new and selectable once the options arrive.
+    // Pre-tick everything selectable once the options arrive, including accounts that are
+    // already connected: select re-binds them to this sign-in, stores a fresh Page token
+    // and clears a RECONNECT_NEEDED / ERROR status (it is idempotent). The Reconnect
+    // buttons land here, so leaving them unticked would make reconnect a no-op.
     useEffect(() => {
         if (!data) return;
-        setSelected(
-            new Set(
-                data.options
-                    .filter((o) => o.selectable && !o.already_connected)
-                    .map((o) => o.external_id)
-            )
-        );
+        setSelected(new Set(data.options.filter((o) => o.selectable).map((o) => o.external_id)));
     }, [data]);
 
     const toggle = (externalId: string, checked: boolean) =>
@@ -110,6 +107,10 @@ export function ConnectAccountsDialog({
         : t('connect.dialogTitleGeneric');
 
     const canConnect = !!data && selected.size > 0 && !select.isPending;
+    // Every ticked option is already connected: this is a reconnect, so say so.
+    const reconnectOnly =
+        selected.size > 0 &&
+        options.every((o) => !selected.has(o.external_id) || o.already_connected);
 
     return (
         <MyDialog
@@ -137,7 +138,9 @@ export function ConnectAccountsDialog({
                     >
                         {select.isPending
                             ? t('connect.connecting')
-                            : t('connect.connectSelected', { count: selected.size })}
+                            : reconnectOnly
+                              ? t('connect.reconnectSelected', { count: selected.size })
+                              : t('connect.connectSelected', { count: selected.size })}
                     </MyButton>
                 </>
             }
@@ -225,7 +228,9 @@ export function ConnectAccountsDialog({
                                                         tone="success"
                                                         className="text-caption"
                                                     >
-                                                        {t('connect.alreadyConnected')}
+                                                        {checked
+                                                            ? t('connect.willRefresh')
+                                                            : t('connect.alreadyConnected')}
                                                     </StatusPill>
                                                 )}
                                             </span>

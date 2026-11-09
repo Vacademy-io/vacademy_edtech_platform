@@ -20,7 +20,13 @@ import vacademy.io.admin_core_service.features.marketing.entity.MarketingConnect
 import vacademy.io.admin_core_service.features.marketing.repository.MarketingConnectionRepository;
 import vacademy.io.common.exceptions.VacademyException;
 
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.security.SecureRandom;
 import java.time.LocalDateTime;
+import java.util.Base64;
+import java.util.HexFormat;
 import java.util.regex.Pattern;
 
 /**
@@ -33,6 +39,12 @@ import java.util.regex.Pattern;
  * the state AUTHORIZED for 30 minutes and 302s the browser to the dashboard with
  * {@code mkt_session} / {@code mkt_provider} (or {@code mkt_error}). The account picker then reads
  * the options through the session key. Tokens never reach the browser.
+ *
+ * <p>Browser binding (RFC 6749 §10.12): initiate also returns a random nonce that the controller
+ * sets as an HttpOnly cookie on the callback path; only its SHA-256 is stored on the state. The
+ * callback refuses a browser without the matching cookie, so a consent link the admin forwards (or
+ * an attacker sends) to someone else cannot attach that person's account to the admin's
+ * institute. The account picker additionally accepts only the admin who started the flow.
  */
 @Service
 @RequiredArgsConstructor
@@ -40,6 +52,10 @@ import java.util.regex.Pattern;
 public class MarketingOAuthService {
 
     private static final Pattern ERROR_CODE = Pattern.compile("^[a-z0-9_]{1,40}$");
+    private static final SecureRandom RANDOM = new SecureRandom();
+    /** Lifetime of a PENDING state and of its browser cookie. */
+    public static final int PENDING_TTL_MINUTES = 10;
+    private static final String BROWSER_COOKIE_PREFIX = "mkt_oauth_";
 
     private static final String META_ADS_SCOPES = "ads_read,business_management";
     private static final String META_SOCIAL_SCOPES = "pages_show_list,pages_read_engagement,pages_manage_posts,"
@@ -72,9 +88,18 @@ public class MarketingOAuthService {
     public record AuthorizedSession(OAuthConnectState state, String provider, MarketingConnection connection) {
     }
 
+    /** What initiate returns: the response body, and the nonce the controller sets as a cookie. */
+    public record Initiated(OauthInitiateResponse response, String browserNonce) {
+    }
+
+    /** Name of the cookie that binds the flow of {@code stateId} to the browser that started it. */
+    public static String browserCookieName(String stateId) {
+        return BROWSER_COOKIE_PREFIX + stateId;
+    }
+
     // ── Initiate ─────────────────────────────────────────────────────────────
 
-    public OauthInitiateResponse initiate(String instituteId, String provider, String requestedOrigin, String userId) {
+    public Initiated initiate(String instituteId, String provider, String requestedOrigin, String userId) {
         if (provider == null || !MarketingConstants.PROVIDERS.contains(provider)) {
             throw new VacademyException(HttpStatus.BAD_REQUEST,
                     "provider must be one of META_ADS, META_SOCIAL, GOOGLE_ADS, GOOGLE_BUSINESS");
@@ -89,12 +114,14 @@ public class MarketingOAuthService {
             throw new VacademyException(HttpStatus.SERVICE_UNAVAILABLE, GoogleAdsApiClient.DEVELOPER_TOKEN_MISSING);
         }
 
+        String browserNonce = newNonce();
         OAuthConnectState state = stateRepository.save(OAuthConnectState.builder()
                 .instituteId(instituteId)
                 .vendor(MarketingConstants.vendorFor(provider))
                 .initiatedBy(userId)
                 .frontendOrigin(redirectResolver.normalizeOrigin(requestedOrigin))
-                .expiresAt(LocalDateTime.now().plusMinutes(10))
+                .browserNonceHash(sha256Hex(browserNonce))
+                .expiresAt(LocalDateTime.now().plusMinutes(PENDING_TTL_MINUTES))
                 .sessionStatus(MarketingConstants.SESSION_PENDING)
                 .build());
 
@@ -108,22 +135,28 @@ public class MarketingOAuthService {
             default -> googleOAuthClient.buildAuthorizeUrl(state.getId(), GOOGLE_BUSINESS_SCOPES);
         };
         log.info("Marketing OAuth initiated: institute={} provider={} state={}", instituteId, provider, state.getId());
-        return OauthInitiateResponse.builder().oauthUrl(oauthUrl).sessionKey(state.getId()).build();
+        return new Initiated(OauthInitiateResponse.builder().oauthUrl(oauthUrl).sessionKey(state.getId()).build(),
+                browserNonce);
     }
 
     // ── Callbacks ────────────────────────────────────────────────────────────
 
-    /** Handles the Meta redirect; returns the dashboard URL to 302 to. Never throws. */
-    public String handleMetaCallback(String code, String stateId, String error) {
-        return handleCallback("META_", code, stateId, error);
+    /**
+     * Handles the Meta redirect; returns the dashboard URL to 302 to. Never throws.
+     *
+     * @param browserNonce value of the {@link #browserCookieName} cookie of this browser (null if absent)
+     */
+    public String handleMetaCallback(String code, String stateId, String error, String browserNonce) {
+        return handleCallback("META_", code, stateId, error, browserNonce);
     }
 
     /** Handles the Google redirect; returns the dashboard URL to 302 to. Never throws. */
-    public String handleGoogleCallback(String code, String stateId, String error) {
-        return handleCallback("GOOGLE_", code, stateId, error);
+    public String handleGoogleCallback(String code, String stateId, String error, String browserNonce) {
+        return handleCallback("GOOGLE_", code, stateId, error, browserNonce);
     }
 
-    private String handleCallback(String providerFamily, String code, String stateId, String error) {
+    private String handleCallback(String providerFamily, String code, String stateId, String error,
+                                  String browserNonce) {
         OAuthConnectState anyState = null;
         try {
             if (stateId != null && !stateId.isBlank()) {
@@ -148,6 +181,13 @@ public class MarketingOAuthService {
                 .filter(s -> MarketingConstants.SESSION_PENDING.equals(s.getSessionStatus()))
                 .orElse(null);
         if (state == null) {
+            return errorRedirect(base, provider, "invalid_state");
+        }
+        if (!browserMatches(state, browserNonce)) {
+            // Consent finished in a browser other than the one that started the flow (e.g. a
+            // forwarded consent link): never store that person's grant in this institute.
+            log.warn("Marketing OAuth {} callback from a browser that did not start state={}", provider, stateId);
+            markExpired(state);
             return errorRedirect(base, provider, "invalid_state");
         }
         if (code == null || code.isBlank()) {
@@ -221,15 +261,16 @@ public class MarketingOAuthService {
     // ── Session lookup for the account picker ────────────────────────────────
 
     /**
-     * The AUTHORIZED, unexpired state of {@code instituteId} and the connection it produced, or a
-     * 404 "Session not found or expired".
+     * The AUTHORIZED, unexpired state of {@code instituteId}, started by {@code userId}, and the
+     * connection it produced, or a 404 "Session not found or expired".
      */
-    public AuthorizedSession requireAuthorizedSession(String sessionKey, String instituteId) {
+    public AuthorizedSession requireAuthorizedSession(String sessionKey, String instituteId, String userId) {
         OAuthConnectState state = sessionKey == null ? null
                 : stateRepository.findValidById(sessionKey, LocalDateTime.now()).orElse(null);
         String provider = state == null ? null : MarketingConstants.providerFromVendor(state.getVendor());
         if (state == null || provider == null
                 || !instituteId.equals(state.getInstituteId())
+                || userId == null || !userId.equals(state.getInitiatedBy())
                 || !MarketingConstants.SESSION_AUTHORIZED.equals(state.getSessionStatus())) {
             throw new VacademyException(HttpStatus.NOT_FOUND, "Session not found or expired. Please connect again.");
         }
@@ -271,6 +312,31 @@ public class MarketingOAuthService {
             stateRepository.save(state);
         } catch (Exception e) {
             log.warn("Could not expire marketing OAuth state {}: {}", state.getId(), e.getClass().getSimpleName());
+        }
+    }
+
+    /** Constant-time check of the browser cookie against the hash stored at initiate. */
+    static boolean browserMatches(OAuthConnectState state, String browserNonce) {
+        String expected = state.getBrowserNonceHash();
+        if (expected == null || expected.isBlank() || browserNonce == null || browserNonce.isBlank()) {
+            return false;
+        }
+        return MessageDigest.isEqual(expected.getBytes(StandardCharsets.US_ASCII),
+                sha256Hex(browserNonce).getBytes(StandardCharsets.US_ASCII));
+    }
+
+    private static String newNonce() {
+        byte[] bytes = new byte[32];
+        RANDOM.nextBytes(bytes);
+        return Base64.getUrlEncoder().withoutPadding().encodeToString(bytes);
+    }
+
+    static String sha256Hex(String value) {
+        try {
+            MessageDigest digest = MessageDigest.getInstance("SHA-256");
+            return HexFormat.of().formatHex(digest.digest(value.getBytes(StandardCharsets.UTF_8)));
+        } catch (NoSuchAlgorithmException e) {
+            throw new IllegalStateException("SHA-256 is not available", e);
         }
     }
 

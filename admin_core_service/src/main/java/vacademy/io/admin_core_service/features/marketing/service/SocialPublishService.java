@@ -3,6 +3,8 @@ package vacademy.io.admin_core_service.features.marketing.service;
 import jakarta.annotation.PreDestroy;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.support.TransactionTemplate;
 import vacademy.io.admin_core_service.features.marketing.MarketingConstants;
 import vacademy.io.admin_core_service.features.marketing.client.MarketingApiException;
 import vacademy.io.admin_core_service.features.marketing.dto.SocialPostMediaDTO;
@@ -46,13 +48,21 @@ import java.util.concurrent.atomic.AtomicInteger;
  *       and a post-now thread never publish the same target twice. POSTED, PENDING_CONTAINER
  *       (Instagram video; checked again every minute, up to {@value #CONTAINER_MAX_POLLS}
  *       checks) or a failure: transient = back to PENDING with a 2^attempts-minute backoff (3
- *       attempts), auth = FAILED + account RECONNECT_NEEDED, otherwise FAILED.</li>
+ *       attempts), auth = FAILED + account RECONNECT_NEEDED, otherwise FAILED. "Transient" only
+ *       ever means the platform refused the request before acting on it: a create call whose
+ *       outcome is unknown (timeout, 5xx) fails as OUTCOME_UNKNOWN instead, so a post is never
+ *       published twice.</li>
  *   <li>When no target is pending the post rolls up to POSTED / PARTIAL / FAILED.</li>
  *   <li>The reaper fails targets left PUBLISHING without a container (a pod died mid-call) and
  *       finalises posts with nothing pending.</li>
  * </ol>
- * YouTube uploads (slow publishers) run only from the job, never from a request-triggered publish.
- * No database transaction is held across a platform call.
+ * YouTube uploads (slow publishers) run only from the job, never from a request-triggered publish,
+ * and only after every fast target of the pass was published, so one long upload never delays the
+ * other posts of the batch.
+ * No database transaction is held across a platform call. Every read that follows a claim is made
+ * on the primary (a read-write transaction): a read-only one would go to the replica, which can
+ * still show the row from before the claim. Outcomes are written with targeted UPDATEs
+ * ({@link SocialPostStateStore#saveTargetOutcome}), never by merging a whole entity.
  */
 @Service
 @Slf4j
@@ -78,6 +88,8 @@ public class SocialPublishService {
     private final MediaService mediaService;
     private final Map<String, SocialPublisher> publishers = new HashMap<>();
     private final ThreadPoolExecutor postNowExecutor;
+    /** Read-write, so the routing data source sends its reads to the primary. */
+    private final TransactionTemplate primaryTx;
 
     public SocialPublishService(SocialPostClaimDao claimDao,
                                 SocialPostStateStore stateStore,
@@ -85,13 +97,15 @@ public class SocialPublishService {
                                 SocialPostTargetRepository targetRepository,
                                 SocialAccountRepository accountRepository,
                                 MediaService mediaService,
-                                List<SocialPublisher> publisherBeans) {
+                                List<SocialPublisher> publisherBeans,
+                                PlatformTransactionManager transactionManager) {
         this.claimDao = claimDao;
         this.stateStore = stateStore;
         this.postRepository = postRepository;
         this.targetRepository = targetRepository;
         this.accountRepository = accountRepository;
         this.mediaService = mediaService;
+        this.primaryTx = new TransactionTemplate(transactionManager);
         for (SocialPublisher p : publisherBeans) publishers.put(p.platform(), p);
         AtomicInteger threadNo = new AtomicInteger();
         this.postNowExecutor = new ThreadPoolExecutor(1, 2, 60, TimeUnit.SECONDS,
@@ -109,20 +123,36 @@ public class SocialPublishService {
 
     // ── Entry points ─────────────────────────────────────────────────────────
 
-    /** One job pass: claim due posts, work every post with a due target, then reap. */
+    /**
+     * One job pass: claim due posts, publish every due fast target (Facebook, Instagram, Google
+     * Business Profile), reap, and only then run the slow (YouTube) uploads, so a long upload never
+     * holds back the other posts of the batch.
+     */
     public void runPublishCycle() {
         Set<String> postIds = new LinkedHashSet<>(claimDao.claimDuePosts(CLAIM_BATCH));
         postIds.addAll(targetRepository.findPostIdsWithDueTargets(Instant.now()));
+        Set<String> withSlowTargets = new LinkedHashSet<>();
         for (String postId : postIds) {
             try {
-                processPost(postId, true);
+                if (processPost(postId, false)) withSlowTargets.add(postId);
             } catch (Exception e) {
-                log.error("Social post {} publish pass failed", postId, e);
-                SentryLogger.logWarning("Social post publish pass failed: " + e.getMessage(),
-                        Map.of("feature", "marketing_social", "post_id", postId));
+                logPassFailure(postId, e);
             }
         }
         reap();
+        for (String postId : withSlowTargets) {
+            try {
+                processPost(postId, true);
+            } catch (Exception e) {
+                logPassFailure(postId, e);
+            }
+        }
+    }
+
+    private static void logPassFailure(String postId, Exception e) {
+        log.error("Social post {} publish pass failed", postId, e);
+        SentryLogger.logWarning("Social post publish pass failed: " + e.getMessage(),
+                Map.of("feature", "marketing_social", "post_id", postId));
     }
 
     /**
@@ -148,56 +178,92 @@ public class SocialPublishService {
 
     // ── Core ─────────────────────────────────────────────────────────────────
 
+    /** A post with its targets and their accounts, read on the primary. */
+    private record PostSnapshot(SocialPost post, List<SocialPostTarget> targets, Map<String, SocialAccount> accounts) {
+    }
+
+    /**
+     * Reads the post, its targets and their accounts in one read-write transaction, i.e. on the
+     * primary: this runs right after a claim committed there, and the replica may lag behind it.
+     */
+    private PostSnapshot loadOnPrimary(String postId) {
+        return primaryTx.execute(status -> {
+            SocialPost post = postRepository.findById(postId).orElse(null);
+            if (post == null) return null;
+            List<SocialPostTarget> targets = new ArrayList<>(targetRepository.findByPostId(postId));
+            Map<String, SocialAccount> accounts = new HashMap<>();
+            List<String> accountIds = targets.stream().map(SocialPostTarget::getSocialAccountId)
+                    .filter(Objects::nonNull).distinct().toList();
+            if (!accountIds.isEmpty()) {
+                for (SocialAccount a : accountRepository.findByIdIn(accountIds)) accounts.put(a.getId(), a);
+            }
+            return new PostSnapshot(post, targets, accounts);
+        });
+    }
+
     /**
      * Publishes every due target of a PUBLISHING post, then rolls the post up.
      *
-     * @param allowSlow false from request-triggered publishing: YouTube targets stay PENDING for
-     *                  the job
+     * @param allowSlow false for the fast pass and request-triggered publishing: YouTube targets
+     *                  stay PENDING for the job's slow pass
+     * @return true when a due slow (YouTube) target was left for a slow pass
      */
-    void processPost(String postId, boolean allowSlow) {
-        SocialPost post = postRepository.findById(postId).orElse(null);
+    boolean processPost(String postId, boolean allowSlow) {
+        PostSnapshot snapshot = loadOnPrimary(postId);
+        SocialPost post = snapshot == null ? null : snapshot.post();
         if (post == null || post.getDeletedAt() != null
                 || !MarketingConstants.POST_STATUS_PUBLISHING.equals(post.getStatus())) {
-            return;
+            log.info("Social post {} is not PUBLISHING (status {}); nothing to publish", postId,
+                    post == null ? "missing" : post.getStatus());
+            return false;
         }
-        List<SocialPostTarget> targets = targetRepository.findByPostId(postId);
-        Map<String, SocialAccount> accounts = new HashMap<>();
-        List<String> accountIds = targets.stream().map(SocialPostTarget::getSocialAccountId)
-                .filter(Objects::nonNull).distinct().toList();
-        if (!accountIds.isEmpty()) {
-            for (SocialAccount a : accountRepository.findByIdIn(accountIds)) accounts.put(a.getId(), a);
-        }
+        List<SocialPostTarget> targets = snapshot.targets();
+        // Fast targets first, so a post's own Facebook / Instagram target never waits for its upload.
+        targets.sort(Comparator.comparing(t -> isSlow(t.getPlatform())));
+        Map<String, SocialAccount> accounts = snapshot.accounts();
         PostMedia media = new PostMedia(SocialPostJson.readMedia(post.getMediaJson()));
         Map<String, String> overrides = SocialPostJson.readOverrides(post.getOverridesJson());
 
+        boolean slowLeft = false;
         Instant now = Instant.now();
         for (SocialPostTarget target : targets) {
             SocialPublisher publisher = publishers.get(target.getPlatform());
-            if (publisher != null && publisher.slow() && !allowSlow) continue;
             if (target.getNextAttemptAt() != null && target.getNextAttemptAt().isAfter(now)) continue;
+            if (publisher != null && publisher.slow() && !allowSlow) {
+                if (MarketingConstants.TARGET_STATUS_PENDING.equals(target.getStatus())) slowLeft = true;
+                continue;
+            }
 
-            boolean claimed;
+            // The claim returns the attempt count it wrote, straight from the primary.
+            Integer attempts;
             if (MarketingConstants.TARGET_STATUS_PENDING.equals(target.getStatus())) {
-                claimed = stateStore.claimTarget(target.getId());
+                attempts = stateStore.claimTarget(target.getId());
             } else if (MarketingConstants.TARGET_STATUS_PUBLISHING.equals(target.getStatus())
                     && target.getContainerId() != null) {
-                claimed = stateStore.leaseContainerPoll(target.getId(), CONTAINER_LEASE_SECONDS);
+                attempts = stateStore.leaseContainerPoll(target.getId(), CONTAINER_LEASE_SECONDS);
             } else {
-                claimed = false;
+                attempts = null;
             }
-            if (!claimed) continue;
+            if (attempts == null) continue;
 
-            SocialPostTarget fresh = targetRepository.findById(target.getId()).orElse(null);
-            if (fresh == null) continue;
-            publishTarget(post, fresh, accounts.get(fresh.getSocialAccountId()), publisher, media, overrides);
+            target.setStatus(MarketingConstants.TARGET_STATUS_PUBLISHING);
+            target.setAttempts(attempts);
+            publishTarget(post, target, accounts.get(target.getSocialAccountId()), publisher, media, overrides);
         }
         finalizeIfDone(postId);
+        return slowLeft;
+    }
+
+    private boolean isSlow(String platform) {
+        SocialPublisher publisher = publishers.get(platform);
+        return publisher != null && publisher.slow();
     }
 
     private void publishTarget(SocialPost post, SocialPostTarget target, SocialAccount account,
                                SocialPublisher publisher, PostMedia media, Map<String, String> overrides) {
         boolean containerPhase = target.getContainerId() != null;
         int attempts = target.getAttempts() == null ? 0 : target.getAttempts();
+        Integer resetAttempts = null;
         try {
             if (account == null || !Objects.equals(account.getInstituteId(), post.getInstituteId())) {
                 throw new MarketingApiException("ACCOUNT_MISSING",
@@ -219,11 +285,12 @@ public class SocialPublishService {
             if (result.isPendingContainer()) {
                 if (!containerPhase) {
                     // Container polls are counted from here (attempts = checks made so far).
+                    resetAttempts = 0;
                     target.setAttempts(0);
                 } else if (attempts >= CONTAINER_MAX_POLLS) {
                     fail(target, "Instagram is still processing the video after 30 minutes. "
                             + "Try a shorter video, then retry.");
-                    targetRepository.save(target);
+                    saveOutcome(post, target, null);
                     return;
                 }
                 target.setStatus(MarketingConstants.TARGET_STATUS_PUBLISHING);
@@ -245,10 +312,19 @@ public class SocialPublishService {
                     containerPhase, attempts);
         } catch (Exception e) {
             log.warn("Social post {} target {} failed unexpectedly", post.getId(), target.getId(), e);
+            // Not retried outside a container check: it may have failed after the platform posted.
             handleFailure(post, target, account, "Publishing failed unexpectedly ("
-                    + e.getClass().getSimpleName() + ").", true, false, containerPhase, attempts);
+                    + e.getClass().getSimpleName() + "). Check the account before retrying.",
+                    containerPhase, false, containerPhase, attempts);
         }
-        targetRepository.save(target);
+        saveOutcome(post, target, resetAttempts);
+    }
+
+    private void saveOutcome(SocialPost post, SocialPostTarget target, Integer resetAttempts) {
+        if (!stateStore.saveTargetOutcome(target, resetAttempts)) {
+            log.warn("Social post {} target {}: outcome {} not saved, the target changed meanwhile",
+                    post.getId(), target.getId(), target.getStatus());
+        }
     }
 
     private void handleFailure(SocialPost post, SocialPostTarget target, SocialAccount account, String message,

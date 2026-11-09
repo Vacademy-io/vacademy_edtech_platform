@@ -55,7 +55,6 @@ public class GoogleOAuthClient {
                 + "&response_type=code"
                 + "&access_type=offline"
                 + "&prompt=consent"
-                + "&include_granted_scopes=true"
                 + "&state=" + MarketingHttp.enc(state)
                 + "&scope=" + MarketingHttp.enc(scopes);
     }

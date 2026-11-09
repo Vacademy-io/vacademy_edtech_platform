@@ -69,6 +69,9 @@ export async function initiateMarketingOAuth(
         method: 'POST',
         url: `${OAUTH_BASE}/initiate`,
         params: instituteParams({ provider, frontendOrigin: window.location.origin }),
+        // The response sets an HttpOnly cookie that binds the consent to this browser; the
+        // OAuth callback refuses (invalid_state) without it. Only initiate sends credentials.
+        withCredentials: true,
     });
     return res.data;
 }

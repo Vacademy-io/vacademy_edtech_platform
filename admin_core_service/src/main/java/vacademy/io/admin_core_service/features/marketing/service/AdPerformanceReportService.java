@@ -46,8 +46,9 @@ import java.util.function.Supplier;
  *
  * <p>Load rules: both queries run in one read-only transaction (routed to the replica) with an 8s
  * statement timeout; aggregation is SQL + a small in-memory fold; results are cached 2 minutes per
- * (institute, from, to). The connected-account list is read fresh on every call so a sync or a
- * disconnect shows at once.
+ * (institute, from, to, data version). The connected-account list is read fresh on every call, and
+ * the data version is built from it (account ids, status, last_synced_at), so on every pod a
+ * finished sync, a connect or a disconnect misses the cache at once instead of serving old numbers.
  */
 @Service
 @Slf4j
@@ -114,11 +115,11 @@ public class AdPerformanceReportService {
                     "The date range can be at most " + MAX_RANGE_DAYS + " days");
         }
 
-        String key = instituteId + "|" + from + "|" + to + "|" + zone.getId();
-        AdPerformanceDTO core = cache.get(key, k -> compute(instituteId, zone, from, to));
-
         List<AdAccount> accounts = adAccountRepository.findByInstituteIdAndStatusNot(
                 instituteId, MarketingConstants.STATUS_DISCONNECTED);
+        String key = instituteId + "|" + from + "|" + to + "|" + zone.getId() + "|" + dataVersion(accounts);
+        AdPerformanceDTO core = cache.get(key, k -> compute(instituteId, zone, from, to));
+
         Map<String, MarketingConnection> connections = connectionService.findByIds(
                 accounts.stream().map(AdAccount::getConnectionId).toList());
         List<AdAccountDTO> accountDtos = accounts.stream()
@@ -143,7 +144,22 @@ public class AdPerformanceReportService {
                 .build();
     }
 
-    /** Drops cached reports of an institute (after a manual sync). */
+    /**
+     * Cache-key part that changes whenever the synced data can have changed: a sync stamps
+     * last_synced_at, and a connect / disconnect / error changes the account set or a status.
+     */
+    static String dataVersion(List<AdAccount> accounts) {
+        if (accounts == null || accounts.isEmpty()) return "0";
+        String joined = accounts.stream()
+                .map(a -> a.getId() + ":" + a.getStatus() + ":"
+                        + (a.getLastSyncedAt() == null ? "" : a.getLastSyncedAt().toEpochMilli()))
+                .sorted()
+                .reduce((x, y) -> x + "," + y)
+                .orElse("");
+        return accounts.size() + "-" + Integer.toHexString(joined.hashCode());
+    }
+
+    /** Drops this pod's cached reports of an institute (after a sync). */
     public void evictInstitute(String instituteId) {
         if (instituteId == null) return;
         String prefix = instituteId + "|";
@@ -366,7 +382,8 @@ public class AdPerformanceReportService {
                         .enquiries(unattributedEnquiries)
                         .admissions(unattributedAdmissions)
                         .build())
-                .suggestion(AdSuggestionCalculator.suggest(stats, last7))
+                // Spend in different currencies cannot be compared: no budget advice then.
+                .suggestion(spendByCurrency.size() > 1 ? null : AdSuggestionCalculator.suggest(stats, last7))
                 .build();
     }
 

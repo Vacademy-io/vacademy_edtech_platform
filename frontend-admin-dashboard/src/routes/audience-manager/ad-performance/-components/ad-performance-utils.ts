@@ -240,6 +240,16 @@ export function accountNeedsAttention(account: AdAccount): boolean {
     );
 }
 
+/**
+ * The grant itself is gone, so only a fresh sign-in helps. An account in ERROR on a
+ * healthy connection can still be synced (a successful sync clears ERROR).
+ */
+export function accountNeedsReconnect(account: AdAccount): boolean {
+    return (
+        account.connection_status === 'RECONNECT_NEEDED' || account.connection_status === 'REVOKED'
+    );
+}
+
 /** Connected but no data fetched yet: the first backfill is still running. */
 export function accountFirstSyncPending(account: AdAccount): boolean {
     return account.status === 'ACTIVE' && !account.last_synced_at;

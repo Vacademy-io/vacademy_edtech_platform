@@ -16,7 +16,9 @@ import java.time.Duration;
  * 32 MB buffer for large insight / searchStream payloads) and one blocking exchange that always
  * returns the status and the parsed body, so callers can read the platform error JSON on a 4xx.
  *
- * <p>Network failures become a transient {@link MarketingApiException}. Their message names only
+ * <p>Network failures become a transient {@link MarketingApiException}: {@code CONNECT_ERROR} when
+ * the connection could not even be opened (the request was never sent), else {@code NETWORK_ERROR}
+ * (a timeout or dropped response: the platform may have acted on it). Their message names only
  * the exception class: the reactor message contains the request URL, which can carry a token.
  */
 public final class MarketingHttp {
@@ -46,14 +48,25 @@ public final class MarketingHttp {
 
     public static HttpResult exchange(WebClient.RequestHeadersSpec<?> spec, ObjectMapper objectMapper,
                                       String platformLabel) {
+        return exchange(spec, objectMapper, platformLabel, Duration.ofSeconds(45));
+    }
+
+    /** As {@link #exchange(WebClient.RequestHeadersSpec, ObjectMapper, String)} with a longer overall wait. */
+    public static HttpResult exchange(WebClient.RequestHeadersSpec<?> spec, ObjectMapper objectMapper,
+                                      String platformLabel, Duration blockTimeout) {
         HttpResult result;
         try {
             result = spec.exchangeToMono(resp -> resp.bodyToMono(String.class)
                             .defaultIfEmpty("")
                             .map(body -> new HttpResult(resp.statusCode().value(),
                                     parse(objectMapper, body), snippet(body))))
-                    .block(Duration.ofSeconds(45));
+                    .block(blockTimeout);
         } catch (Exception e) {
+            if (isConnectFailure(e)) {
+                throw new MarketingApiException(MarketingApiException.CONNECT_ERROR,
+                        platformLabel + " could not be reached (" + e.getClass().getSimpleName()
+                                + "). Please try again shortly.", true, false);
+            }
             throw new MarketingApiException("NETWORK_ERROR",
                     platformLabel + " could not be reached (" + e.getClass().getSimpleName()
                             + "). Please try again shortly.", true, false);
@@ -63,6 +76,21 @@ public final class MarketingHttp {
                     platformLabel + " returned no response. Please try again shortly.", true, false);
         }
         return result;
+    }
+
+    /** True when the cause chain shows the connection was never established. */
+    static boolean isConnectFailure(Throwable e) {
+        int depth = 0;
+        for (Throwable t = e; t != null && depth < 10; t = t.getCause(), depth++) {
+            // io.netty.channel.ConnectTimeoutException extends java.net.ConnectException.
+            if (t instanceof java.net.ConnectException
+                    || t instanceof java.net.UnknownHostException
+                    || t instanceof java.nio.channels.UnresolvedAddressException) {
+                return true;
+            }
+            if (t.getCause() == t) break;
+        }
+        return false;
     }
 
     public static String enc(String value) {
