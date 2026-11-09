@@ -1,0 +1,159 @@
+{
+    "ads": {
+        "navTitle": "Performance publicitaire",
+        "title": "Tous les comptes publicitaires",
+        "subtitle": "Les dépenses de vos publicités Meta et Google à côté des demandes et des inscriptions qu’elles ont générées.",
+        "mixedCurrency": "Vos comptes publicitaires facturent dans plusieurs devises : les totaux de dépenses peuvent mélanger les devises (affichés en {{currency}}).",
+        "sync": {
+            "now": "Synchroniser",
+            "syncing": "Synchronisation…",
+            "lastSynced": "Dernière synchronisation {{time}}",
+            "never": "Pas encore synchronisé"
+        },
+        "states": {
+            "errorTitle": "Un problème est survenu",
+            "retry": "Réessayer",
+            "accountsError": "Impossible de charger vos comptes publicitaires.",
+            "reportError": "Impossible de charger la performance publicitaire pour cette période."
+        },
+        "accounts": {
+            "chipAria": "{{name}} — options du compte",
+            "reconnectBadge": "Reconnecter",
+            "firstSync": "Récupération des données…",
+            "lastSynced": "Dernière synchronisation {{time}}",
+            "neverSynced": "Pas encore synchronisé",
+            "reconnect": "Reconnecter",
+            "syncThis": "Synchroniser ce compte",
+            "disconnect": "Déconnecter",
+            "disconnectTitle": "Déconnecter {{name}} ?",
+            "disconnectBody": "Nous arrêterons de récupérer les dépenses de ce compte. Les dépenses déjà récupérées restent dans votre historique, et vous pourrez le reconnecter à tout moment.",
+            "keep": "Garder connecté"
+        },
+        "range": {
+            "7d": "7 derniers jours",
+            "30d": "30 derniers jours",
+            "season": "Saison",
+            "custom": "Personnalisé",
+            "from": "Du",
+            "to": "Au"
+        },
+        "kpi": {
+            "spend": "Dépenses totales",
+            "spendCaption_one": "Sur {{count}} compte publicitaire",
+            "spendCaption_many": "Sur {{count}} comptes publicitaires",
+            "spendCaption_other": "Sur {{count}} comptes publicitaires",
+            "enquiries": "Demandes",
+            "enquiriesCaption": "Arrivées dans le CRM des admissions",
+            "costPerEnquiry": "Coût par demande",
+            "costPerEnquiryCaption": "Toutes plateformes confondues",
+            "admissions": "Inscriptions",
+            "admissionsCaption": "Coût par inscription {{amount}}",
+            "admissionsCaptionEmpty": "Aucune inscription issue des publicités pour l’instant"
+        },
+        "chart": {
+            "title": {
+                "enquiries": "Demandes par jour",
+                "spend": "Dépenses par jour",
+                "admissions": "Inscriptions par jour"
+            },
+            "titleWeekly": {
+                "enquiries": "Demandes par semaine",
+                "spend": "Dépenses par semaine",
+                "admissions": "Inscriptions par semaine"
+            },
+            "metric": {
+                "enquiries": "Demandes",
+                "spend": "Dépenses",
+                "admissions": "Inscriptions"
+            },
+            "total": "Total",
+            "weekOf": "Semaine du {{day}}",
+            "emptyTitle": "Rien à afficher pour cette période",
+            "emptyHint": "Essayez une période plus longue, ou vérifiez que vos campagnes étaient actives.",
+            "syncingTitle": "Récupération de vos données publicitaires",
+            "syncingHint": "La première synchronisation d’un nouveau compte peut prendre quelques minutes. Cette page se met à jour toute seule."
+        },
+        "suggestion": {
+            "title": "Suggestion de l’agent",
+            "sentence": "{{best}} a le coût par inscription le plus bas ({{bestCost}}). Envisagez de transférer {{amount}} de {{worst}} vers cette plateforme cette semaine.",
+            "best": "Le plus bas",
+            "worst": "Le plus élevé",
+            "perAdmission": "{{amount}} / inscription",
+            "noAdmissions": "Aucune inscription pour l’instant",
+            "trackedNote": "Chaque demande est suivie jusqu’à l’inscription dans le CRM.",
+            "openManager": {
+                "META": "Ouvrir le Gestionnaire de publicités Meta",
+                "GOOGLE": "Ouvrir Google Ads",
+                "YOUTUBE": "Ouvrir Google Ads"
+            },
+            "adviceOnly": "Simple conseil — nous ne modifions jamais vos budgets.",
+            "empty": "Pas encore assez d’inscriptions pour comparer les canaux."
+        },
+        "table": {
+            "title": "Performance par plateforme",
+            "subtitleHint": "Cliquez sur une ligne pour voir ses campagnes.",
+            "account": "Compte publicitaire",
+            "spend": "Dépenses",
+            "clicks": "Clics",
+            "enquiries": "Demandes",
+            "costPerEnquiry": "Coût / demande",
+            "admissions": "Inscriptions",
+            "empty": "Aucune dépense ni demande issue des publicités sur cette période.",
+            "subtitle": {
+                "META": "Formulaires de prospects Facebook + Instagram",
+                "GOOGLE": "Search, Performance Max et Display",
+                "YOUTUBE": "In-stream · campagnes vidéo"
+            },
+            "otherCampaign": "Autre / non associé",
+            "otherCampaignHint": "Demandes que nous n’avons pas pu relier à une campagne",
+            "noCampaigns": "Aucune activité de campagne sur cette période.",
+            "showAll_one": "Afficher {{count}} campagne",
+            "showAll_many": "Afficher les {{count}} campagnes",
+            "showAll_other": "Afficher les {{count}} campagnes",
+            "showFewer": "Afficher moins",
+            "expandAria": "Afficher les campagnes {{platform}}",
+            "collapseAria": "Masquer les campagnes {{platform}}",
+            "notFromAds": "Hors publicités : {{enquiries}} demandes, {{admissions}} inscriptions"
+        },
+        "channel": {
+            "META": "Meta",
+            "SEARCH": "Search",
+            "PERFORMANCE_MAX": "Performance Max",
+            "DISPLAY": "Display",
+            "VIDEO": "Vidéo",
+            "DEMAND_GEN": "Demand Gen",
+            "DISCOVERY": "Discovery",
+            "SHOPPING": "Shopping",
+            "MULTI_CHANNEL": "Application",
+            "SMART": "Intelligente",
+            "LOCAL": "Locale",
+            "LOCAL_SERVICES": "Services locaux",
+            "HOTEL": "Hôtel",
+            "TRAVEL": "Voyage"
+        },
+        "empty": {
+            "title": "Connectez vos comptes publicitaires",
+            "body": "Voyez ce que vous dépensez en publicités Meta et Google à côté des demandes et des inscriptions que chacune apporte — et où votre prochaine roupie rapporte le plus. Nous lisons uniquement les dépenses ; nous ne modifions jamais vos campagnes.",
+            "meta": {
+                "hint": "Publicités Facebook et Instagram",
+                "point1": "Dépenses, clics et prospects de formulaires par campagne, chaque jour",
+                "point2": "Demandes des formulaires associées à leur campagne"
+            },
+            "google": {
+                "hint": "Search, Performance Max, Display et YouTube",
+                "point1": "Dépenses et clics quotidiens par campagne et par canal",
+                "point2": "Les campagnes vidéo YouTube apparaissent comme une plateforme à part"
+            },
+            "connect": "Connecter {{platform}}",
+            "opening": "Ouverture de la connexion…",
+            "youtubeNote": "Les publicités YouTube sont incluses avec Google Ads."
+        },
+        "reconnect": {
+            "title_one": "{{platform}} : {{count}} compte doit être reconnecté",
+            "title_many": "{{platform}} : {{count}} comptes doivent être reconnectés",
+            "title_other": "{{platform}} : {{count}} comptes doivent être reconnectés",
+            "hint": "Les dépenses ne se mettent plus à jour tant que vous ne vous reconnectez pas. Votre historique est conservé.",
+            "button": "Reconnecter"
+        }
+    }
+}

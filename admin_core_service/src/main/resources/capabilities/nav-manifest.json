@@ -795,6 +795,28 @@
             "ADMIN": true,
             "TEACHER": true
           }
+        },
+        {
+          "id": "ad-performance",
+          "label": "Ad Performance",
+          "route": "/audience-manager/ad-performance",
+          "order": 14,
+          "admin_only": true,
+          "default_visible": {
+            "ADMIN": true,
+            "TEACHER": false
+          }
+        },
+        {
+          "id": "social-posts",
+          "label": "Social Posts",
+          "route": "/audience-manager/social-posts",
+          "order": 15,
+          "admin_only": true,
+          "default_visible": {
+            "ADMIN": true,
+            "TEACHER": false
+          }
         }
       ]
     },

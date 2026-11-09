@@ -77,12 +77,62 @@ public class YoutubeUploadService {
             String description = defaults.getDescriptionTemplate() == null ? ""
                     : applyTemplate(defaults.getDescriptionTemplate(), session, schedule, recording);
 
-            // 3. Mint access token + open S3 stream.
-            String accessToken = oauthService.getValidAccessToken(job.getInstituteId());
-            String fileUrl = fileService.getPublicUrlForFileId(job.getRecordingFileId());
+            // 3. Upload (token, S3 stream, videos.insert) through the shared path.
+            UploadResult result = publishVideo(job.getInstituteId(), job.getRecordingFileId(), title, description,
+                    orDefault(job.getPrivacyStatus(), defaults.getPrivacyStatus()),
+                    parseTags(defaults.getTagsCsv()), defaults, "job=" + job.getId());
+
+            // 4. Mirror the YouTube link back onto the recording entry so
+            // the live-session UI can show it without an extra lookup.
+            if (result.success()) {
+                stampYoutubeUrlOnRecording(schedule, job.getRecordingId(), result.videoId(), result.videoUrl());
+            }
+            return result;
+        } catch (Exception e) {
+            log.warn("[YouTube Upload] Transient failure job={}: {}", job.getId(), e.getMessage());
+            return UploadResult.failure("TRANSIENT", e.getMessage());
+        }
+    }
+
+    /**
+     * Uploads one media-service file to the institute's connected YouTube channel and returns
+     * the video id/url, or a failure whose {@code errorCode} is the YouTube reason (e.g.
+     * {@code quotaExceeded}, {@code invalid_grant}), {@code FILE_NOT_FOUND} or {@code TRANSIENT}.
+     * Never throws. Category, language, embeddable/stats/kids flags, license and notify come from
+     * the institute's YouTube upload defaults.
+     *
+     * <p>Slow (streams the whole file): call it from a background worker, never inside an HTTP
+     * request.
+     *
+     * @param privacyStatus public | unlisted | private; null/blank = the institute default
+     * @param tags          video tags; null = the institute's default tags
+     */
+    public UploadResult publishVideo(String instituteId, String fileId, String title, String description,
+                                     String privacyStatus, List<String> tags) {
+        YoutubeUploadDefaults defaults;
+        try {
+            defaults = defaultsRepository.findById(instituteId).orElseGet(this::platformDefaults);
+        } catch (Exception e) {
+            log.warn("[YouTube Upload] Transient failure institute={}: {}", instituteId, e.getMessage());
+            return UploadResult.failure("TRANSIENT", e.getMessage());
+        }
+        return publishVideo(instituteId, fileId, title, description,
+                orDefault(privacyStatus, defaults.getPrivacyStatus()),
+                tags != null ? tags : parseTags(defaults.getTagsCsv()),
+                defaults, "institute=" + instituteId);
+    }
+
+    /** Body of {@link #publishVideo(String, String, String, String, String, List)}; logRef tags the log lines. */
+    private UploadResult publishVideo(String instituteId, String fileId, String title, String description,
+                                      String privacyStatus, List<String> tags,
+                                      YoutubeUploadDefaults defaults, String logRef) {
+        try {
+            // Mint access token + open S3 stream.
+            String accessToken = oauthService.getValidAccessToken(instituteId);
+            String fileUrl = fileService.getPublicUrlForFileId(fileId);
             if (fileUrl == null || fileUrl.isBlank()) {
                 return UploadResult.failure("FILE_NOT_FOUND",
-                        "Recording file not found in media service (fileId=" + job.getRecordingFileId() + ")");
+                        "Recording file not found in media service (fileId=" + fileId + ")");
             }
 
             try (InputStream stream = new URL(fileUrl).openStream()) {
@@ -93,7 +143,7 @@ public class YoutubeUploadService {
                 snippet.setTitle(truncate(title, 100));     // YouTube hard cap: 100 chars
                 snippet.setDescription(truncate(description, 5000));
                 snippet.setCategoryId(orDefault(defaults.getCategoryId(), DEFAULT_CATEGORY_ID));
-                snippet.setTags(parseTags(defaults.getTagsCsv()));
+                snippet.setTags(tags);
                 if (defaults.getDefaultLanguage() != null && !defaults.getDefaultLanguage().isBlank()) {
                     snippet.setDefaultLanguage(defaults.getDefaultLanguage());
                     snippet.setDefaultAudioLanguage(defaults.getDefaultLanguage());
@@ -101,7 +151,7 @@ public class YoutubeUploadService {
                 videoMetadata.setSnippet(snippet);
 
                 VideoStatus status = new VideoStatus();
-                status.setPrivacyStatus(orDefault(job.getPrivacyStatus(), defaults.getPrivacyStatus()));
+                status.setPrivacyStatus(privacyStatus);
                 status.setEmbeddable(defaults.isEmbeddable());
                 status.setPublicStatsViewable(defaults.isPublicStatsViewable());
                 status.setSelfDeclaredMadeForKids(defaults.isMadeForKids());
@@ -123,22 +173,18 @@ public class YoutubeUploadService {
                 Video result = request.execute();
                 String videoId = result.getId();
                 String videoUrl = "https://www.youtube.com/watch?v=" + videoId;
-                log.info("[YouTube Upload] Success job={} videoId={}", job.getId(), videoId);
-
-                // 4. Mirror the YouTube link back onto the recording entry so
-                // the live-session UI can show it without an extra lookup.
-                stampYoutubeUrlOnRecording(schedule, job.getRecordingId(), videoId, videoUrl);
+                log.info("[YouTube Upload] Success {} videoId={}", logRef, videoId);
 
                 return UploadResult.success(videoId, videoUrl, title);
             }
         } catch (GoogleJsonResponseException e) {
             String reason = extractReason(e);
-            log.warn("[YouTube Upload] Failure job={} status={} reason={} msg={}",
-                    job.getId(), e.getStatusCode(), reason, e.getMessage());
+            log.warn("[YouTube Upload] Failure {} status={} reason={} msg={}",
+                    logRef, e.getStatusCode(), reason, e.getMessage());
             return UploadResult.failure(reason == null ? "google_error_" + e.getStatusCode() : reason,
                     e.getDetails() != null ? e.getDetails().getMessage() : e.getMessage());
         } catch (Exception e) {
-            log.warn("[YouTube Upload] Transient failure job={}: {}", job.getId(), e.getMessage());
+            log.warn("[YouTube Upload] Transient failure {}: {}", logRef, e.getMessage());
             return UploadResult.failure("TRANSIENT", e.getMessage());
         }
     }

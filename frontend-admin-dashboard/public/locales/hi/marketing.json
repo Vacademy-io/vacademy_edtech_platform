@@ -1,0 +1,111 @@
+{
+    "common": {
+        "adPerformance": "सभी विज्ञापन खाते",
+        "socialPosts": "सोशल खाते और पोस्ट",
+        "cancel": "रद्द करें",
+        "close": "बंद करें",
+        "retry": "फिर से कोशिश करें",
+        "loading": "लोड हो रहा है…",
+        "connected": "कनेक्टेड",
+        "reconnect": "फिर से कनेक्ट करें",
+        "disconnect": "डिस्कनेक्ट करें",
+        "needsAttention": "ध्यान देने की ज़रूरत",
+        "syncNow": "अभी सिंक करें",
+        "syncing": "सिंक हो रहा है…",
+        "lastSynced": "पिछला सिंक {{time}}",
+        "neverSynced": "अभी तक सिंक नहीं हुआ",
+        "errorTitle": "कुछ गलत हो गया",
+        "errorHint": "यह लोड नहीं हो सका। कृपया फिर से कोशिश करें।",
+        "toasts": {
+            "failed": "कुछ गलत हो गया। कृपया फिर से कोशिश करें।",
+            "adAccountDisconnected": "विज्ञापन खाता डिस्कनेक्ट हो गया",
+            "adAccountSynced": "विज्ञापन खाता सिंक हो गया",
+            "syncFailed": "सिंक नहीं हो सका। कृपया फिर से कोशिश करें।",
+            "syncQueued_one": "{{count}} विज्ञापन खाता बैकग्राउंड में सिंक हो रहा है",
+            "syncQueued_other": "{{count}} विज्ञापन खाते बैकग्राउंड में सिंक हो रहे हैं",
+            "nothingToSync": "सिंक करने के लिए कोई सक्रिय विज्ञापन खाता नहीं है",
+            "socialAccountDisconnected": "खाता डिस्कनेक्ट हो गया",
+            "postDraftSaved": "ड्राफ़्ट सेव हो गया",
+            "postSubmitted": "मंज़ूरी के लिए भेजा गया",
+            "postScheduled": "पोस्ट शेड्यूल हो गई",
+            "postPublishing": "अभी पोस्ट हो रही है — इसमें एक मिनट लग सकता है",
+            "postSaveFailed": "पोस्ट सेव नहीं हो सकी",
+            "postApproved": "पोस्ट को मंज़ूरी मिल गई",
+            "postCancelled": "पोस्ट रद्द कर दी गई",
+            "postRetried": "विफल नेटवर्क पर फिर से कोशिश की जा रही है",
+            "postDeleted": "पोस्ट हटा दी गई",
+            "aiDraftFailed": "ड्राफ़्ट नहीं लिखा जा सका। कृपया फिर से कोशिश करें।"
+        }
+    },
+    "connect": {
+        "addAccount": "खाता जोड़ें",
+        "redirecting": "साइन-इन खुल रहा है…",
+        "startFailed": "कनेक्शन शुरू नहीं हो सका। कृपया फिर से कोशिश करें।",
+        "cancelled": "कनेक्शन रद्द किया गया",
+        "errors": {
+            "default": "खाता कनेक्ट नहीं हो सका ({{code}})। कृपया फिर से कोशिश करें।",
+            "no_refresh_token": "Google ने ऑफ़लाइन एक्सेस नहीं दिया। अपने Google खाते के थर्ड-पार्टी एक्सेस से Vacademy हटाएँ, फिर दोबारा कनेक्ट करें।",
+            "invalid_state": "यह साइन-इन लिंक समाप्त हो गया है। कृपया कनेक्शन फिर से शुरू करें।",
+            "missing_code": "साइन-इन पूरा नहीं हुआ। कृपया कनेक्शन फिर से शुरू करें।",
+            "token_exchange_failed": "हम साइन-इन पूरा नहीं कर सके। कृपया फिर से कोशिश करें।",
+            "userinfo_failed": "जिस खाते से आपने साइन इन किया, हम उसे पढ़ नहीं सके। कृपया फिर से कोशिश करें।",
+            "connect_failed": "हम खाता कनेक्ट करना पूरा नहीं कर सके। कृपया फिर से कोशिश करें।",
+            "server_error": "कनेक्ट करते समय कुछ गड़बड़ हो गई। कृपया कुछ मिनट बाद फिर से कोशिश करें।"
+        },
+        "dialogTitle": "{{provider}} कनेक्ट करें",
+        "dialogTitleGeneric": "खाते कनेक्ट करें",
+        "signedInAs": "{{name}} के रूप में साइन इन। चुनें कि क्या कनेक्ट करना है।",
+        "chooseHint": "चुनें कि क्या कनेक्ट करना है।",
+        "loadingOptions": "आपके खाते लोड हो रहे हैं…",
+        "loadFailed": "आपके खाते लोड नहीं हो सके",
+        "loadFailedHint": "कृपया कनेक्शन फिर से शुरू करें।",
+        "noSession": "यह साइन-इन सेशन समाप्त हो गया है। कृपया कनेक्शन फिर से शुरू करें।",
+        "noOptions": "इस लॉगिन के लिए कोई खाता नहीं मिला",
+        "noOptionsHint": "पक्का करें कि इस लॉगिन के पास उस खाते का एक्सेस है, फिर दोबारा कनेक्ट करें।",
+        "noneSelectable": "इस लॉगिन से इनमें से कुछ भी कनेक्ट नहीं किया जा सकता।",
+        "alreadyConnected": "पहले से कनेक्टेड",
+        "selectAll": "सभी चुनें",
+        "clearAll": "सभी हटाएँ",
+        "connecting": "कनेक्ट हो रहा है…",
+        "connectSelected_one": "{{count}} चुना हुआ कनेक्ट करें",
+        "connectSelected_other": "{{count}} चुने हुए कनेक्ट करें",
+        "connectedToast_one": "{{count}} खाता कनेक्ट हो गया",
+        "connectedToast_other": "{{count}} खाते कनेक्ट हो गए",
+        "upToDateToast": "आपके खाते अप-टू-डेट हैं",
+        "selectFailed": "चुने हुए खाते कनेक्ट नहीं हो सके",
+        "provider": {
+            "META_ADS": "Meta Ads",
+            "GOOGLE_ADS": "Google Ads",
+            "META_SOCIAL": "Facebook और Instagram",
+            "GOOGLE_BUSINESS": "Google Business Profile"
+        },
+        "menu": {
+            "adsTitle": "विज्ञापन खाता कनेक्ट करें",
+            "socialTitle": "सोशल खाता कनेक्ट करें",
+            "metaAds": "Meta Ads",
+            "metaAdsHint": "Facebook और Instagram विज्ञापन, लीड फ़ॉर्म सहित",
+            "googleAds": "Google Ads",
+            "googleAdsHint": "Search, Performance Max, Display और YouTube",
+            "youtubeAdsIncluded": "YouTube विज्ञापन Google Ads में शामिल हैं।",
+            "metaSocial": "Facebook और Instagram",
+            "metaSocialHint": "Facebook पेज और उनसे जुड़े Instagram बिज़नेस खाते",
+            "googleBusiness": "Google Business Profile",
+            "googleBusinessHint": "आपकी Google Search और Maps लिस्टिंग पर पोस्ट",
+            "youtube": "YouTube",
+            "youtubeHint": "सेटिंग्स → YouTube इंटीग्रेशन में कनेक्ट होता है"
+        }
+    },
+    "platform": {
+        "ads": {
+            "META": "Meta Ads",
+            "GOOGLE": "Google Ads",
+            "YOUTUBE": "YouTube Ads"
+        },
+        "social": {
+            "FACEBOOK": "Facebook",
+            "INSTAGRAM": "Instagram",
+            "GOOGLE_BUSINESS": "Google Business Profile",
+            "YOUTUBE": "YouTube"
+        }
+    }
+}

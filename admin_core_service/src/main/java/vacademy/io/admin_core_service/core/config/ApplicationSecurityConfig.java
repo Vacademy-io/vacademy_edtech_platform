@@ -102,6 +102,9 @@ public class ApplicationSecurityConfig {
             "/admin-core-service/api/v1/webhook/google/**",
             // Meta OAuth callback (Meta redirects without Vacademy JWT)
             "/admin-core-service/v1/oauth/meta/callback",
+            // Marketing (ad spend + social posting) OAuth callbacks; the oauth_connect_state id is the CSRF guard
+            "/admin-core-service/v1/marketing/oauth/meta/callback",
+            "/admin-core-service/v1/marketing/oauth/google/callback",
             // YouTube OAuth callback (Google redirects without Vacademy JWT; state token is the CSRF guard)
             "/admin-core-service/youtube/oauth/callback",
             "/admin-core-service/health/**",

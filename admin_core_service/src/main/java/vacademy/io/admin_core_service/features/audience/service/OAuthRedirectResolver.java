@@ -88,6 +88,17 @@ public class OAuthRedirectResolver {
         return origin + pathAndQuery;
     }
 
+    /**
+     * True when {@code origin} (normalized first) is on the same allowlist
+     * {@link #resolveRedirectBase} uses for {@code instituteId}. Lets other OAuth
+     * callbacks (e.g. marketing) send the browser back to a white-label origin
+     * without reusing the Meta default landing path.
+     */
+    public boolean isAllowedOrigin(String instituteId, String origin) {
+        String normalized = normalizeOrigin(origin);
+        return normalized != null && isOriginAllowed(instituteId, normalized);
+    }
+
     private boolean isOriginAllowed(String instituteId, String origin) {
         String host = hostOf(origin);
         if (host == null) return false;

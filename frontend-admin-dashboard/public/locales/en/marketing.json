@@ -1,0 +1,111 @@
+{
+    "common": {
+        "adPerformance": "All ad accounts",
+        "socialPosts": "Social accounts & posts",
+        "cancel": "Cancel",
+        "close": "Close",
+        "retry": "Try again",
+        "loading": "Loading…",
+        "connected": "Connected",
+        "reconnect": "Reconnect",
+        "disconnect": "Disconnect",
+        "needsAttention": "Needs attention",
+        "syncNow": "Sync now",
+        "syncing": "Syncing…",
+        "lastSynced": "Last synced {{time}}",
+        "neverSynced": "Not synced yet",
+        "errorTitle": "Something went wrong",
+        "errorHint": "We couldn’t load this. Please try again.",
+        "toasts": {
+            "failed": "Something went wrong. Please try again.",
+            "adAccountDisconnected": "Ad account disconnected",
+            "adAccountSynced": "Ad account synced",
+            "syncFailed": "Sync failed. Please try again.",
+            "syncQueued_one": "Syncing {{count}} ad account in the background",
+            "syncQueued_other": "Syncing {{count}} ad accounts in the background",
+            "nothingToSync": "No active ad accounts to sync",
+            "socialAccountDisconnected": "Account disconnected",
+            "postDraftSaved": "Draft saved",
+            "postSubmitted": "Sent for approval",
+            "postScheduled": "Post scheduled",
+            "postPublishing": "Posting now — this can take a minute",
+            "postSaveFailed": "Couldn’t save the post",
+            "postApproved": "Post approved",
+            "postCancelled": "Post cancelled",
+            "postRetried": "Retrying the failed networks",
+            "postDeleted": "Post deleted",
+            "aiDraftFailed": "Couldn’t write a draft. Please try again."
+        }
+    },
+    "connect": {
+        "addAccount": "Add account",
+        "redirecting": "Opening sign-in…",
+        "startFailed": "Couldn’t start the connection. Please try again.",
+        "cancelled": "Connection cancelled",
+        "errors": {
+            "default": "Couldn’t connect the account ({{code}}). Please try again.",
+            "no_refresh_token": "Google didn’t grant offline access. Remove Vacademy from your Google account’s third-party access, then connect again.",
+            "invalid_state": "This sign-in link expired. Please start the connection again.",
+            "missing_code": "The sign-in didn’t finish. Please start the connection again.",
+            "token_exchange_failed": "We couldn’t finish signing in. Please try again.",
+            "userinfo_failed": "We couldn’t read the account you signed in with. Please try again.",
+            "connect_failed": "We couldn’t finish connecting the account. Please try again.",
+            "server_error": "Something went wrong while connecting. Please try again in a few minutes."
+        },
+        "dialogTitle": "Connect {{provider}}",
+        "dialogTitleGeneric": "Connect accounts",
+        "signedInAs": "Signed in as {{name}}. Choose what to connect.",
+        "chooseHint": "Choose what to connect.",
+        "loadingOptions": "Loading your accounts…",
+        "loadFailed": "Couldn’t load your accounts",
+        "loadFailedHint": "Please start the connection again.",
+        "noSession": "This sign-in session has ended. Please start the connection again.",
+        "noOptions": "No accounts found for this login",
+        "noOptionsHint": "Make sure this login has access to the account you want, then connect again.",
+        "noneSelectable": "None of these can be connected with this login.",
+        "alreadyConnected": "Already connected",
+        "selectAll": "Select all",
+        "clearAll": "Clear all",
+        "connecting": "Connecting…",
+        "connectSelected_one": "Connect {{count}} selected",
+        "connectSelected_other": "Connect {{count}} selected",
+        "connectedToast_one": "{{count}} account connected",
+        "connectedToast_other": "{{count}} accounts connected",
+        "upToDateToast": "Your accounts are up to date",
+        "selectFailed": "Couldn’t connect the selected accounts",
+        "provider": {
+            "META_ADS": "Meta Ads",
+            "GOOGLE_ADS": "Google Ads",
+            "META_SOCIAL": "Facebook & Instagram",
+            "GOOGLE_BUSINESS": "Google Business Profile"
+        },
+        "menu": {
+            "adsTitle": "Connect an ad account",
+            "socialTitle": "Connect a social account",
+            "metaAds": "Meta Ads",
+            "metaAdsHint": "Facebook and Instagram ads, including lead forms",
+            "googleAds": "Google Ads",
+            "googleAdsHint": "Search, Performance Max, Display and YouTube",
+            "youtubeAdsIncluded": "YouTube Ads are included with Google Ads.",
+            "metaSocial": "Facebook & Instagram",
+            "metaSocialHint": "Facebook Pages and their linked Instagram business accounts",
+            "googleBusiness": "Google Business Profile",
+            "googleBusinessHint": "Posts on your Google Search and Maps listing",
+            "youtube": "YouTube",
+            "youtubeHint": "Connected in Settings → YouTube Integration"
+        }
+    },
+    "platform": {
+        "ads": {
+            "META": "Meta Ads",
+            "GOOGLE": "Google Ads",
+            "YOUTUBE": "YouTube Ads"
+        },
+        "social": {
+            "FACEBOOK": "Facebook",
+            "INSTAGRAM": "Instagram",
+            "GOOGLE_BUSINESS": "Google Business Profile",
+            "YOUTUBE": "YouTube"
+        }
+    }
+}

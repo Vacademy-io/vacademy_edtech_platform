@@ -166,6 +166,7 @@ import { Route as CallingCallQueueIndexRouteImport } from "./routes/calling/call
 import { Route as CallingAiAgentsIndexRouteImport } from "./routes/calling/ai-agents/index"
 import { Route as AutomationDashboardIndexRouteImport } from "./routes/automation/dashboard/index"
 import { Route as AutomationChatbotFlowsIndexRouteImport } from "./routes/automation/chatbot-flows/index"
+import { Route as AudienceManagerSocialPostsIndexRouteImport } from "./routes/audience-manager/social-posts/index"
 import { Route as AudienceManagerReportsIndexRouteImport } from "./routes/audience-manager/reports/index"
 import { Route as AudienceManagerRecentLeadsIndexRouteImport } from "./routes/audience-manager/recent-leads/index"
 import { Route as AudienceManagerOnboardingIndexRouteImport } from "./routes/audience-manager/onboarding/index"
@@ -176,6 +177,7 @@ import { Route as AudienceManagerLeadAgentIndexRouteImport } from "./routes/audi
 import { Route as AudienceManagerFollowUpsIndexRouteImport } from "./routes/audience-manager/follow-ups/index"
 import { Route as AudienceManagerCallLogIndexRouteImport } from "./routes/audience-manager/call-log/index"
 import { Route as AudienceManagerAiIntelligenceIndexRouteImport } from "./routes/audience-manager/ai-intelligence/index"
+import { Route as AudienceManagerAdPerformanceIndexRouteImport } from "./routes/audience-manager/ad-performance/index"
 import { Route as AssessmentQuestionPapersIndexRouteImport } from "./routes/assessment/question-papers/index"
 import { Route as AssessmentQuestionLibraryIndexRouteImport } from "./routes/assessment/question-library/index"
 import { Route as AssessmentEvaluationAiIndexRouteImport } from "./routes/assessment/evaluation-ai/index"
@@ -1453,6 +1455,16 @@ const AutomationChatbotFlowsIndexRoute =
   } as any).lazy(() =>
     import("./routes/automation/chatbot-flows/index.lazy").then((d) => d.Route),
   )
+const AudienceManagerSocialPostsIndexRoute =
+  AudienceManagerSocialPostsIndexRouteImport.update({
+    id: "/audience-manager/social-posts/",
+    path: "/audience-manager/social-posts/",
+    getParentRoute: () => rootRouteImport,
+  } as any).lazy(() =>
+    import("./routes/audience-manager/social-posts/index.lazy").then(
+      (d) => d.Route,
+    ),
+  )
 const AudienceManagerReportsIndexRoute =
   AudienceManagerReportsIndexRouteImport.update({
     id: "/audience-manager/reports/",
@@ -1546,6 +1558,16 @@ const AudienceManagerAiIntelligenceIndexRoute =
     getParentRoute: () => rootRouteImport,
   } as any).lazy(() =>
     import("./routes/audience-manager/ai-intelligence/index.lazy").then(
+      (d) => d.Route,
+    ),
+  )
+const AudienceManagerAdPerformanceIndexRoute =
+  AudienceManagerAdPerformanceIndexRouteImport.update({
+    id: "/audience-manager/ad-performance/",
+    path: "/audience-manager/ad-performance/",
+    getParentRoute: () => rootRouteImport,
+  } as any).lazy(() =>
+    import("./routes/audience-manager/ad-performance/index.lazy").then(
       (d) => d.Route,
     ),
   )
@@ -2772,6 +2794,7 @@ export interface FileRoutesByFullPath {
   "/assessment/evaluation-ai/": typeof AssessmentEvaluationAiIndexRoute
   "/assessment/question-library/": typeof AssessmentQuestionLibraryIndexRoute
   "/assessment/question-papers/": typeof AssessmentQuestionPapersIndexRoute
+  "/audience-manager/ad-performance/": typeof AudienceManagerAdPerformanceIndexRoute
   "/audience-manager/ai-intelligence/": typeof AudienceManagerAiIntelligenceIndexRoute
   "/audience-manager/call-log/": typeof AudienceManagerCallLogIndexRoute
   "/audience-manager/follow-ups/": typeof AudienceManagerFollowUpsIndexRoute
@@ -2782,6 +2805,7 @@ export interface FileRoutesByFullPath {
   "/audience-manager/onboarding/": typeof AudienceManagerOnboardingIndexRoute
   "/audience-manager/recent-leads/": typeof AudienceManagerRecentLeadsIndexRoute
   "/audience-manager/reports/": typeof AudienceManagerReportsIndexRoute
+  "/audience-manager/social-posts/": typeof AudienceManagerSocialPostsIndexRoute
   "/automation/chatbot-flows/": typeof AutomationChatbotFlowsIndexRoute
   "/automation/dashboard/": typeof AutomationDashboardIndexRoute
   "/calling/ai-agents/": typeof CallingAiAgentsIndexRoute
@@ -3075,6 +3099,7 @@ export interface FileRoutesByTo {
   "/assessment/evaluation-ai": typeof AssessmentEvaluationAiIndexRoute
   "/assessment/question-library": typeof AssessmentQuestionLibraryIndexRoute
   "/assessment/question-papers": typeof AssessmentQuestionPapersIndexRoute
+  "/audience-manager/ad-performance": typeof AudienceManagerAdPerformanceIndexRoute
   "/audience-manager/ai-intelligence": typeof AudienceManagerAiIntelligenceIndexRoute
   "/audience-manager/call-log": typeof AudienceManagerCallLogIndexRoute
   "/audience-manager/follow-ups": typeof AudienceManagerFollowUpsIndexRoute
@@ -3085,6 +3110,7 @@ export interface FileRoutesByTo {
   "/audience-manager/onboarding": typeof AudienceManagerOnboardingIndexRoute
   "/audience-manager/recent-leads": typeof AudienceManagerRecentLeadsIndexRoute
   "/audience-manager/reports": typeof AudienceManagerReportsIndexRoute
+  "/audience-manager/social-posts": typeof AudienceManagerSocialPostsIndexRoute
   "/automation/chatbot-flows": typeof AutomationChatbotFlowsIndexRoute
   "/automation/dashboard": typeof AutomationDashboardIndexRoute
   "/calling/ai-agents": typeof CallingAiAgentsIndexRoute
@@ -3381,6 +3407,7 @@ export interface FileRoutesById {
   "/assessment/evaluation-ai/": typeof AssessmentEvaluationAiIndexRoute
   "/assessment/question-library/": typeof AssessmentQuestionLibraryIndexRoute
   "/assessment/question-papers/": typeof AssessmentQuestionPapersIndexRoute
+  "/audience-manager/ad-performance/": typeof AudienceManagerAdPerformanceIndexRoute
   "/audience-manager/ai-intelligence/": typeof AudienceManagerAiIntelligenceIndexRoute
   "/audience-manager/call-log/": typeof AudienceManagerCallLogIndexRoute
   "/audience-manager/follow-ups/": typeof AudienceManagerFollowUpsIndexRoute
@@ -3391,6 +3418,7 @@ export interface FileRoutesById {
   "/audience-manager/onboarding/": typeof AudienceManagerOnboardingIndexRoute
   "/audience-manager/recent-leads/": typeof AudienceManagerRecentLeadsIndexRoute
   "/audience-manager/reports/": typeof AudienceManagerReportsIndexRoute
+  "/audience-manager/social-posts/": typeof AudienceManagerSocialPostsIndexRoute
   "/automation/chatbot-flows/": typeof AutomationChatbotFlowsIndexRoute
   "/automation/dashboard/": typeof AutomationDashboardIndexRoute
   "/calling/ai-agents/": typeof CallingAiAgentsIndexRoute
@@ -3688,6 +3716,7 @@ export interface FileRouteTypes {
     | "/assessment/evaluation-ai/"
     | "/assessment/question-library/"
     | "/assessment/question-papers/"
+    | "/audience-manager/ad-performance/"
     | "/audience-manager/ai-intelligence/"
     | "/audience-manager/call-log/"
     | "/audience-manager/follow-ups/"
@@ -3698,6 +3727,7 @@ export interface FileRouteTypes {
     | "/audience-manager/onboarding/"
     | "/audience-manager/recent-leads/"
     | "/audience-manager/reports/"
+    | "/audience-manager/social-posts/"
     | "/automation/chatbot-flows/"
     | "/automation/dashboard/"
     | "/calling/ai-agents/"
@@ -3991,6 +4021,7 @@ export interface FileRouteTypes {
     | "/assessment/evaluation-ai"
     | "/assessment/question-library"
     | "/assessment/question-papers"
+    | "/audience-manager/ad-performance"
     | "/audience-manager/ai-intelligence"
     | "/audience-manager/call-log"
     | "/audience-manager/follow-ups"
@@ -4001,6 +4032,7 @@ export interface FileRouteTypes {
     | "/audience-manager/onboarding"
     | "/audience-manager/recent-leads"
     | "/audience-manager/reports"
+    | "/audience-manager/social-posts"
     | "/automation/chatbot-flows"
     | "/automation/dashboard"
     | "/calling/ai-agents"
@@ -4296,6 +4328,7 @@ export interface FileRouteTypes {
     | "/assessment/evaluation-ai/"
     | "/assessment/question-library/"
     | "/assessment/question-papers/"
+    | "/audience-manager/ad-performance/"
     | "/audience-manager/ai-intelligence/"
     | "/audience-manager/call-log/"
     | "/audience-manager/follow-ups/"
@@ -4306,6 +4339,7 @@ export interface FileRouteTypes {
     | "/audience-manager/onboarding/"
     | "/audience-manager/recent-leads/"
     | "/audience-manager/reports/"
+    | "/audience-manager/social-posts/"
     | "/automation/chatbot-flows/"
     | "/automation/dashboard/"
     | "/calling/ai-agents/"
@@ -4593,6 +4627,7 @@ export interface RootRouteChildren {
   AssessmentEvaluationAiIndexRoute: typeof AssessmentEvaluationAiIndexRoute
   AssessmentQuestionLibraryIndexRoute: typeof AssessmentQuestionLibraryIndexRoute
   AssessmentQuestionPapersIndexRoute: typeof AssessmentQuestionPapersIndexRoute
+  AudienceManagerAdPerformanceIndexRoute: typeof AudienceManagerAdPerformanceIndexRoute
   AudienceManagerAiIntelligenceIndexRoute: typeof AudienceManagerAiIntelligenceIndexRoute
   AudienceManagerCallLogIndexRoute: typeof AudienceManagerCallLogIndexRoute
   AudienceManagerFollowUpsIndexRoute: typeof AudienceManagerFollowUpsIndexRoute
@@ -4603,6 +4638,7 @@ export interface RootRouteChildren {
   AudienceManagerOnboardingIndexRoute: typeof AudienceManagerOnboardingIndexRoute
   AudienceManagerRecentLeadsIndexRoute: typeof AudienceManagerRecentLeadsIndexRoute
   AudienceManagerReportsIndexRoute: typeof AudienceManagerReportsIndexRoute
+  AudienceManagerSocialPostsIndexRoute: typeof AudienceManagerSocialPostsIndexRoute
   AutomationChatbotFlowsIndexRoute: typeof AutomationChatbotFlowsIndexRoute
   AutomationDashboardIndexRoute: typeof AutomationDashboardIndexRoute
   CallingAiAgentsIndexRoute: typeof CallingAiAgentsIndexRoute
@@ -5905,6 +5941,13 @@ declare module "@tanstack/react-router" {
       preLoaderRoute: typeof AutomationChatbotFlowsIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    "/audience-manager/social-posts/": {
+      id: "/audience-manager/social-posts/"
+      path: "/audience-manager/social-posts"
+      fullPath: "/audience-manager/social-posts/"
+      preLoaderRoute: typeof AudienceManagerSocialPostsIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     "/audience-manager/reports/": {
       id: "/audience-manager/reports/"
       path: "/audience-manager/reports"
@@ -5973,6 +6016,13 @@ declare module "@tanstack/react-router" {
       path: "/audience-manager/ai-intelligence"
       fullPath: "/audience-manager/ai-intelligence/"
       preLoaderRoute: typeof AudienceManagerAiIntelligenceIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    "/audience-manager/ad-performance/": {
+      id: "/audience-manager/ad-performance/"
+      path: "/audience-manager/ad-performance"
+      fullPath: "/audience-manager/ad-performance/"
+      preLoaderRoute: typeof AudienceManagerAdPerformanceIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     "/assessment/question-papers/": {
@@ -7057,6 +7107,8 @@ const rootRouteChildren: RootRouteChildren = {
   AssessmentEvaluationAiIndexRoute: AssessmentEvaluationAiIndexRoute,
   AssessmentQuestionLibraryIndexRoute: AssessmentQuestionLibraryIndexRoute,
   AssessmentQuestionPapersIndexRoute: AssessmentQuestionPapersIndexRoute,
+  AudienceManagerAdPerformanceIndexRoute:
+    AudienceManagerAdPerformanceIndexRoute,
   AudienceManagerAiIntelligenceIndexRoute:
     AudienceManagerAiIntelligenceIndexRoute,
   AudienceManagerCallLogIndexRoute: AudienceManagerCallLogIndexRoute,
@@ -7068,6 +7120,7 @@ const rootRouteChildren: RootRouteChildren = {
   AudienceManagerOnboardingIndexRoute: AudienceManagerOnboardingIndexRoute,
   AudienceManagerRecentLeadsIndexRoute: AudienceManagerRecentLeadsIndexRoute,
   AudienceManagerReportsIndexRoute: AudienceManagerReportsIndexRoute,
+  AudienceManagerSocialPostsIndexRoute: AudienceManagerSocialPostsIndexRoute,
   AutomationChatbotFlowsIndexRoute: AutomationChatbotFlowsIndexRoute,
   AutomationDashboardIndexRoute: AutomationDashboardIndexRoute,
   CallingAiAgentsIndexRoute: CallingAiAgentsIndexRoute,

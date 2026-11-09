@@ -1,0 +1,168 @@
+{
+    "ads": {
+        "navTitle": "أداء الإعلانات",
+        "title": "كل الحسابات الإعلانية",
+        "subtitle": "إنفاقك على إعلانات Meta وGoogle بجانب الاستفسارات والقبولات التي جلبتها.",
+        "mixedCurrency": "تُصدر حساباتك الإعلانية فواتيرها بأكثر من عملة، لذلك قد تجمع إجماليات الإنفاق بين عملات مختلفة (معروضة بـ {{currency}}).",
+        "sync": {
+            "now": "زامِن الآن",
+            "syncing": "جارٍ المزامنة…",
+            "lastSynced": "آخر مزامنة {{time}}",
+            "never": "لم تتم المزامنة بعد"
+        },
+        "states": {
+            "errorTitle": "حدث خطأ ما",
+            "retry": "حاول مرة أخرى",
+            "accountsError": "تعذّر تحميل حساباتك الإعلانية.",
+            "reportError": "تعذّر تحميل أداء الإعلانات لهذه الفترة."
+        },
+        "accounts": {
+            "chipAria": "{{name}} — خيارات الحساب",
+            "reconnectBadge": "إعادة الربط",
+            "firstSync": "جارٍ جلب البيانات…",
+            "lastSynced": "آخر مزامنة {{time}}",
+            "neverSynced": "لم تتم المزامنة بعد",
+            "reconnect": "إعادة الربط",
+            "syncThis": "مزامنة هذا الحساب",
+            "disconnect": "فصل",
+            "disconnectTitle": "فصل {{name}}؟",
+            "disconnectBody": "سنتوقف عن جلب الإنفاق من هذا الحساب. يبقى الإنفاق الذي جُلب سابقًا في سجلّك، ويمكنك ربطه مجددًا في أي وقت.",
+            "keep": "إبقاؤه مربوطًا"
+        },
+        "range": {
+            "7d": "آخر 7 أيام",
+            "30d": "آخر 30 يومًا",
+            "season": "الموسم",
+            "custom": "مخصص",
+            "from": "من",
+            "to": "إلى"
+        },
+        "kpi": {
+            "spend": "إجمالي الإنفاق",
+            "spendCaption_zero": "عبر {{count}} حساب إعلاني",
+            "spendCaption_one": "عبر حساب إعلاني واحد",
+            "spendCaption_two": "عبر حسابين إعلانيين",
+            "spendCaption_few": "عبر {{count}} حسابات إعلانية",
+            "spendCaption_many": "عبر {{count}} حسابًا إعلانيًا",
+            "spendCaption_other": "عبر {{count}} حساب إعلاني",
+            "enquiries": "الاستفسارات",
+            "enquiriesCaption": "وصلت إلى نظام CRM للقبول",
+            "costPerEnquiry": "تكلفة الاستفسار",
+            "costPerEnquiryCaption": "لكل المنصات مجتمعة",
+            "admissions": "القبولات",
+            "admissionsCaption": "تكلفة القبول {{amount}}",
+            "admissionsCaptionEmpty": "لا قبولات من الإعلانات حتى الآن"
+        },
+        "chart": {
+            "title": {
+                "enquiries": "الاستفسارات حسب اليوم",
+                "spend": "الإنفاق حسب اليوم",
+                "admissions": "القبولات حسب اليوم"
+            },
+            "titleWeekly": {
+                "enquiries": "الاستفسارات حسب الأسبوع",
+                "spend": "الإنفاق حسب الأسبوع",
+                "admissions": "القبولات حسب الأسبوع"
+            },
+            "metric": {
+                "enquiries": "الاستفسارات",
+                "spend": "الإنفاق",
+                "admissions": "القبولات"
+            },
+            "total": "الإجمالي",
+            "weekOf": "أسبوع {{day}}",
+            "emptyTitle": "لا شيء لعرضه في هذه الفترة",
+            "emptyHint": "جرّب فترة أطول، أو تأكد من أن حملاتك كانت تعمل.",
+            "syncingTitle": "جارٍ جلب بيانات إعلاناتك",
+            "syncingHint": "قد تستغرق المزامنة الأولى لحساب جديد بضع دقائق. تتحدّث هذه الصفحة تلقائيًا."
+        },
+        "suggestion": {
+            "title": "اقتراح الوكيل",
+            "sentence": "{{best}} لديه أقل تكلفة للقبول ({{bestCost}}). فكّر في نقل {{amount}} من {{worst}} إليه هذا الأسبوع.",
+            "best": "الأقل",
+            "worst": "الأعلى",
+            "perAdmission": "{{amount}} / قبول",
+            "noAdmissions": "لا قبولات بعد",
+            "trackedNote": "يُتتبَّع كل استفسار حتى القبول في نظام CRM.",
+            "openManager": {
+                "META": "افتح مدير إعلانات Meta",
+                "GOOGLE": "افتح Google Ads",
+                "YOUTUBE": "افتح Google Ads"
+            },
+            "adviceOnly": "نصيحة فقط — لا نغيّر ميزانياتك أبدًا.",
+            "empty": "لا توجد قبولات كافية بعد لمقارنة القنوات."
+        },
+        "table": {
+            "title": "الأداء حسب المنصة",
+            "subtitleHint": "انقر على صف لعرض حملاته.",
+            "account": "الحساب الإعلاني",
+            "spend": "الإنفاق",
+            "clicks": "النقرات",
+            "enquiries": "الاستفسارات",
+            "costPerEnquiry": "التكلفة / استفسار",
+            "admissions": "القبولات",
+            "empty": "لا إنفاق ولا استفسارات من الإعلانات في هذه الفترة.",
+            "subtitle": {
+                "META": "نماذج العملاء المحتملين في Facebook وInstagram",
+                "GOOGLE": "Search وPerformance Max وDisplay",
+                "YOUTUBE": "داخل البث · حملات الفيديو"
+            },
+            "otherCampaign": "أخرى / غير مطابقة",
+            "otherCampaignHint": "استفسارات لم نتمكن من ربطها بحملة",
+            "noCampaigns": "لا نشاط للحملات في هذه الفترة.",
+            "showAll_zero": "عرض كل الحملات",
+            "showAll_one": "عرض حملة واحدة",
+            "showAll_two": "عرض الحملتين",
+            "showAll_few": "عرض كل الحملات الـ {{count}}",
+            "showAll_many": "عرض كل الحملات الـ {{count}}",
+            "showAll_other": "عرض كل الحملات الـ {{count}}",
+            "showFewer": "عرض أقل",
+            "expandAria": "عرض حملات {{platform}}",
+            "collapseAria": "إخفاء حملات {{platform}}",
+            "notFromAds": "ليست من الإعلانات: {{enquiries}} استفسارًا، {{admissions}} قبولًا"
+        },
+        "channel": {
+            "META": "Meta",
+            "SEARCH": "Search",
+            "PERFORMANCE_MAX": "Performance Max",
+            "DISPLAY": "Display",
+            "VIDEO": "فيديو",
+            "DEMAND_GEN": "Demand Gen",
+            "DISCOVERY": "Discovery",
+            "SHOPPING": "Shopping",
+            "MULTI_CHANNEL": "تطبيق",
+            "SMART": "ذكية",
+            "LOCAL": "محلية",
+            "LOCAL_SERVICES": "خدمات محلية",
+            "HOTEL": "فنادق",
+            "TRAVEL": "سفر"
+        },
+        "empty": {
+            "title": "اربط حساباتك الإعلانية",
+            "body": "شاهد ما تنفقه على إعلانات Meta وGoogle بجانب الاستفسارات والقبولات التي تجلبها كل منصة — وأين تعمل الروبية التالية بأفضل شكل. نقرأ الإنفاق فقط؛ ولا نغيّر حملاتك أبدًا.",
+            "meta": {
+                "hint": "إعلانات Facebook وInstagram",
+                "point1": "الإنفاق اليومي والنقرات والعملاء المحتملون من النماذج لكل حملة",
+                "point2": "استفسارات النماذج مطابقة لحملتها"
+            },
+            "google": {
+                "hint": "Search وPerformance Max وDisplay وYouTube",
+                "point1": "الإنفاق اليومي والنقرات لكل حملة وقناة",
+                "point2": "تظهر حملات فيديو YouTube كمنصة مستقلة"
+            },
+            "connect": "ربط {{platform}}",
+            "opening": "جارٍ فتح تسجيل الدخول…",
+            "youtubeNote": "إعلانات YouTube مضمّنة مع Google Ads."
+        },
+        "reconnect": {
+            "title_zero": "{{platform}}: لا حسابات تحتاج إلى إعادة الربط",
+            "title_one": "{{platform}}: حساب واحد يحتاج إلى إعادة الربط",
+            "title_two": "{{platform}}: حسابان يحتاجان إلى إعادة الربط",
+            "title_few": "{{platform}}: {{count}} حسابات تحتاج إلى إعادة الربط",
+            "title_many": "{{platform}}: {{count}} حسابًا يحتاج إلى إعادة الربط",
+            "title_other": "{{platform}}: {{count}} حساب يحتاج إلى إعادة الربط",
+            "hint": "يتوقف تحديث الإنفاق حتى تسجّل الدخول مجددًا. يُحتفظ بسجلّك.",
+            "button": "إعادة الربط"
+        }
+    }
+}

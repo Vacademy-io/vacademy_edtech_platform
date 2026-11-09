@@ -672,6 +672,20 @@ export const getSidebarItemsData = (): SidebarItemsType[] => [
                 subItemLink: '/audience-manager/reports?tab=utm',
                 subItemId: 'utm-campaigns',
             },
+            {
+                // Meta + Google ad spend next to the enquiries and admissions
+                // they produced; admin-only because it shows spend.
+                subItem: sidebarT('sidebar:adPerformance'),
+                subItemLink: '/audience-manager/ad-performance',
+                subItemId: 'ad-performance',
+                adminOnly: true,
+            },
+            {
+                subItem: sidebarT('sidebar:socialPosts'),
+                subItemLink: '/audience-manager/social-posts',
+                subItemId: 'social-posts',
+                adminOnly: true,
+            },
         ],
     },
     {

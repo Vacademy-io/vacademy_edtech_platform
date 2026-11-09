@@ -1,0 +1,156 @@
+{
+    "ads": {
+        "navTitle": "विज्ञापन प्रदर्शन",
+        "title": "सभी विज्ञापन खाते",
+        "subtitle": "आपके Meta और Google विज्ञापनों का खर्च, उनसे आई पूछताछ और एडमिशन के साथ।",
+        "mixedCurrency": "आपके विज्ञापन खाते एक से अधिक मुद्रा में बिल होते हैं, इसलिए कुल खर्च में मुद्राएँ मिली हो सकती हैं ({{currency}} में दिखाया गया)।",
+        "sync": {
+            "now": "अभी सिंक करें",
+            "syncing": "सिंक हो रहा है…",
+            "lastSynced": "आख़िरी सिंक {{time}}",
+            "never": "अभी तक सिंक नहीं हुआ"
+        },
+        "states": {
+            "errorTitle": "कुछ गलत हो गया",
+            "retry": "फिर से कोशिश करें",
+            "accountsError": "हम आपके विज्ञापन खाते लोड नहीं कर सके।",
+            "reportError": "हम इस अवधि का विज्ञापन प्रदर्शन लोड नहीं कर सके।"
+        },
+        "accounts": {
+            "chipAria": "{{name}} — खाते के विकल्प",
+            "reconnectBadge": "फिर से जोड़ें",
+            "firstSync": "डेटा लाया जा रहा है…",
+            "lastSynced": "आख़िरी सिंक {{time}}",
+            "neverSynced": "अभी तक सिंक नहीं हुआ",
+            "reconnect": "फिर से जोड़ें",
+            "syncThis": "यह खाता सिंक करें",
+            "disconnect": "डिस्कनेक्ट करें",
+            "disconnectTitle": "{{name}} को डिस्कनेक्ट करें?",
+            "disconnectBody": "हम इस खाते से खर्च लाना बंद कर देंगे। पहले से लाया गया खर्च आपके इतिहास में रहेगा, और आप इसे कभी भी फिर से जोड़ सकते हैं।",
+            "keep": "जुड़ा रहने दें"
+        },
+        "range": {
+            "7d": "पिछले 7 दिन",
+            "30d": "पिछले 30 दिन",
+            "season": "सत्र",
+            "custom": "कस्टम",
+            "from": "से",
+            "to": "तक"
+        },
+        "kpi": {
+            "spend": "कुल खर्च",
+            "spendCaption_one": "{{count}} विज्ञापन खाते में",
+            "spendCaption_other": "{{count}} विज्ञापन खातों में",
+            "enquiries": "पूछताछ",
+            "enquiriesCaption": "एडमिशन CRM में पहुँची",
+            "costPerEnquiry": "प्रति पूछताछ लागत",
+            "costPerEnquiryCaption": "सभी प्लेटफ़ॉर्म मिलाकर",
+            "admissions": "एडमिशन",
+            "admissionsCaption": "प्रति एडमिशन लागत {{amount}}",
+            "admissionsCaptionEmpty": "विज्ञापनों से अभी तक कोई एडमिशन नहीं"
+        },
+        "chart": {
+            "title": {
+                "enquiries": "दिन के अनुसार पूछताछ",
+                "spend": "दिन के अनुसार खर्च",
+                "admissions": "दिन के अनुसार एडमिशन"
+            },
+            "titleWeekly": {
+                "enquiries": "सप्ताह के अनुसार पूछताछ",
+                "spend": "सप्ताह के अनुसार खर्च",
+                "admissions": "सप्ताह के अनुसार एडमिशन"
+            },
+            "metric": {
+                "enquiries": "पूछताछ",
+                "spend": "खर्च",
+                "admissions": "एडमिशन"
+            },
+            "total": "कुल",
+            "weekOf": "{{day}} से शुरू सप्ताह",
+            "emptyTitle": "इस अवधि में दिखाने के लिए कुछ नहीं",
+            "emptyHint": "लंबी अवधि चुनें, या जाँचें कि आपके कैंपेन चल रहे थे।",
+            "syncingTitle": "आपका विज्ञापन डेटा लाया जा रहा है",
+            "syncingHint": "नए खाते के पहले सिंक में कुछ मिनट लग सकते हैं। यह पेज अपने-आप अपडेट हो जाएगा।"
+        },
+        "suggestion": {
+            "title": "एजेंट का सुझाव",
+            "sentence": "{{best}} की प्रति एडमिशन लागत सबसे कम है ({{bestCost}})। इस सप्ताह {{worst}} से {{amount}} इसमें लगाने पर विचार करें।",
+            "best": "सबसे कम",
+            "worst": "सबसे ज़्यादा",
+            "perAdmission": "{{amount}} / एडमिशन",
+            "noAdmissions": "अभी तक कोई एडमिशन नहीं",
+            "trackedNote": "हर पूछताछ को CRM में एडमिशन तक ट्रैक किया जाता है।",
+            "openManager": {
+                "META": "Meta Ads Manager खोलें",
+                "GOOGLE": "Google Ads खोलें",
+                "YOUTUBE": "Google Ads खोलें"
+            },
+            "adviceOnly": "केवल सलाह — हम आपका बजट कभी नहीं बदलते।",
+            "empty": "चैनलों की तुलना के लिए अभी पर्याप्त एडमिशन नहीं हैं।"
+        },
+        "table": {
+            "title": "प्लेटफ़ॉर्म के अनुसार प्रदर्शन",
+            "subtitleHint": "कैंपेन देखने के लिए किसी पंक्ति पर क्लिक करें।",
+            "account": "विज्ञापन खाता",
+            "spend": "खर्च",
+            "clicks": "क्लिक",
+            "enquiries": "पूछताछ",
+            "costPerEnquiry": "लागत / पूछताछ",
+            "admissions": "एडमिशन",
+            "empty": "इस अवधि में विज्ञापनों से कोई खर्च या पूछताछ नहीं।",
+            "subtitle": {
+                "META": "Facebook + Instagram लीड फ़ॉर्म",
+                "GOOGLE": "Search, Performance Max और Display",
+                "YOUTUBE": "इन-स्ट्रीम · वीडियो कैंपेन"
+            },
+            "otherCampaign": "अन्य / मेल नहीं खाया",
+            "otherCampaignHint": "वे पूछताछ जिन्हें हम किसी कैंपेन से नहीं जोड़ सके",
+            "noCampaigns": "इस अवधि में कोई कैंपेन गतिविधि नहीं।",
+            "showAll_one": "{{count}} कैंपेन दिखाएँ",
+            "showAll_other": "सभी {{count}} कैंपेन दिखाएँ",
+            "showFewer": "कम दिखाएँ",
+            "expandAria": "{{platform}} कैंपेन दिखाएँ",
+            "collapseAria": "{{platform}} कैंपेन छिपाएँ",
+            "notFromAds": "विज्ञापनों से नहीं: {{enquiries}} पूछताछ, {{admissions}} एडमिशन"
+        },
+        "channel": {
+            "META": "Meta",
+            "SEARCH": "Search",
+            "PERFORMANCE_MAX": "Performance Max",
+            "DISPLAY": "Display",
+            "VIDEO": "वीडियो",
+            "DEMAND_GEN": "Demand Gen",
+            "DISCOVERY": "Discovery",
+            "SHOPPING": "Shopping",
+            "MULTI_CHANNEL": "ऐप",
+            "SMART": "Smart",
+            "LOCAL": "लोकल",
+            "LOCAL_SERVICES": "Local Services",
+            "HOTEL": "होटल",
+            "TRAVEL": "ट्रैवल"
+        },
+        "empty": {
+            "title": "अपने विज्ञापन खाते जोड़ें",
+            "body": "देखें कि आप Meta और Google विज्ञापनों पर कितना खर्च करते हैं और हर एक से कितनी पूछताछ और एडमिशन आते हैं — और आपका अगला रुपया कहाँ सबसे ज़्यादा काम करेगा। हम केवल खर्च पढ़ते हैं; आपके कैंपेन कभी नहीं बदलते।",
+            "meta": {
+                "hint": "Facebook और Instagram विज्ञापन",
+                "point1": "हर कैंपेन का रोज़ का खर्च, क्लिक और लीड-फ़ॉर्म लीड",
+                "point2": "लीड-फ़ॉर्म पूछताछ उनके कैंपेन से मिलाई जाती है"
+            },
+            "google": {
+                "hint": "Search, Performance Max, Display और YouTube",
+                "point1": "हर कैंपेन और चैनल का रोज़ का खर्च और क्लिक",
+                "point2": "YouTube वीडियो कैंपेन अलग प्लेटफ़ॉर्म के रूप में दिखते हैं"
+            },
+            "connect": "{{platform}} जोड़ें",
+            "opening": "साइन-इन खुल रहा है…",
+            "youtubeNote": "YouTube Ads, Google Ads के साथ शामिल हैं।"
+        },
+        "reconnect": {
+            "title_one": "{{platform}}: {{count}} खाते को फिर से जोड़ना होगा",
+            "title_other": "{{platform}}: {{count}} खातों को फिर से जोड़ना होगा",
+            "hint": "जब तक आप फिर से साइन इन नहीं करते, खर्च अपडेट नहीं होगा। आपका इतिहास सुरक्षित रहेगा।",
+            "button": "फिर से जोड़ें"
+        }
+    }
+}

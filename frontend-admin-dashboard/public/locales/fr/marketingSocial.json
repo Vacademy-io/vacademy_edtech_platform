@@ -1,0 +1,229 @@
+{
+    "page": {
+        "title": "Comptes sociaux et publications",
+        "subtitle": "Planifiez, validez et publiez sur Facebook, Instagram, Google et YouTube depuis un seul endroit.",
+        "newPost": "Nouvelle publication",
+        "postsLabel": "Publications",
+        "scheduledThisMonth_one": "{{count}} programmée · ce mois-ci",
+        "scheduledThisMonth_many": "{{count}} programmées · ce mois-ci",
+        "scheduledThisMonth_other": "{{count}} programmées · ce mois-ci",
+        "scheduledInMonth_one": "{{count}} programmée · {{month}}",
+        "scheduledInMonth_many": "{{count}} programmées · {{month}}",
+        "scheduledInMonth_other": "{{count}} programmées · {{month}}"
+    },
+    "tabs": {
+        "calendar": "Calendrier",
+        "new": "Nouvelle publication",
+        "edit": "Modifier la publication"
+    },
+    "accounts": {
+        "title": "Comptes",
+        "connectedCount_one": "{{connected}} sur {{total}} connecté",
+        "connectedCount_many": "{{connected}} sur {{total}} connectés",
+        "connectedCount_other": "{{connected}} sur {{total}} connectés",
+        "allConnected": "Tous connectés",
+        "needAttention_one": "{{count}} à vérifier",
+        "needAttention_many": "{{count}} à vérifier",
+        "needAttention_other": "{{count}} à vérifier",
+        "connected": "Connecté",
+        "reconnect": "Reconnecter",
+        "reconnectAria": "Reconnecter {{name}}",
+        "connect": "Connecter",
+        "connectAria": "Connecter {{name}}",
+        "connectMore": "Connecter d’autres comptes",
+        "disconnect": "Déconnecter",
+        "menuAria": "Plus d’options pour {{name}}",
+        "manageYoutube": "Gérer dans les paramètres",
+        "followers_one": "{{formatted}} abonné",
+        "followers_many": "{{formatted}} abonnés",
+        "followers_other": "{{formatted}} abonnés",
+        "subtitle": {
+            "facebook": "Page · {{name}}",
+            "googleBusiness": "{{name}} · Fiche d’établissement",
+            "youtube": "{{name}} · Chaîne"
+        },
+        "notConnectedHint": {
+            "FACEBOOK": "Publiez sur votre Page Facebook",
+            "INSTAGRAM": "Nécessite un compte Instagram professionnel lié à une Page",
+            "GOOGLE_BUSINESS": "Actualités sur votre fiche Google Search et Maps",
+            "YOUTUBE": "Se connecte dans Paramètres → Intégration YouTube"
+        },
+        "emptyHint": "Connectez votre Page Facebook, Instagram, votre fiche Google Business Profile ou votre chaîne YouTube pour commencer à publier.",
+        "adminOnly": "Seuls les administrateurs de l’établissement peuvent connecter ou déconnecter des comptes.",
+        "loadFailed": "Impossible de charger vos comptes.",
+        "disconnectTitle": "Déconnecter {{name}} ?",
+        "disconnectBody": "Les publications programmées n’iront plus sur ce compte. Les publications déjà en ligne restent en place. Vous pouvez le reconnecter à tout moment."
+    },
+    "calendar": {
+        "prevMonth": "Mois précédent",
+        "nextMonth": "Mois suivant",
+        "today": "Ce mois-ci",
+        "filterLabel": "Filtrer les publications par statut",
+        "filters": {
+            "ALL": "Toutes",
+            "NEEDS_APPROVAL": "À valider",
+            "SCHEDULED": "Programmées",
+            "DRAFT": "Brouillons",
+            "POSTED": "Publiées",
+            "FAILED": "Échouées"
+        },
+        "loading": "Chargement des publications",
+        "loadFailed": "Impossible de charger vos publications.",
+        "empty": {
+            "title": "Rien de prévu en {{month}}",
+            "body": "Rédigez une publication une seule fois et envoyez-la sur tous les réseaux, maintenant ou à une date choisie.",
+            "cta": "Créer une publication",
+            "filteredTitle": "Aucune publication « {{status}} » ce mois-ci",
+            "showAll": "Afficher toutes les publications"
+        },
+        "untitled": "Publication sans titre",
+        "notScheduled": "Non programmée",
+        "byAgent": "Publication auto · rédigée par l’agent",
+        "byYou": "Créée par vous",
+        "byTeam": "Créée par votre équipe",
+        "view": "Voir",
+        "viewOn": "Voir sur {{name}}",
+        "tailored": "Adaptée à chaque réseau",
+        "media": "Médias joints",
+        "publishingHint": "Publication en cours. Les vidéos peuvent prendre quelques minutes ; cette liste se met à jour toute seule."
+    },
+    "status": {
+        "DRAFT": "Brouillon",
+        "NEEDS_APPROVAL": "À valider",
+        "SCHEDULED": "Programmée",
+        "PUBLISHING": "Publication en cours",
+        "POSTED": "Publiée",
+        "PARTIAL": "Publiée en partie",
+        "FAILED": "Échec",
+        "CANCELLED": "Annulée"
+    },
+    "targetStatus": {
+        "PENDING": "En attente",
+        "PUBLISHING": "En cours",
+        "POSTED": "Publiée",
+        "FAILED": "Échec",
+        "SKIPPED": "Ignorée"
+    },
+    "actions": {
+        "postNow": "Publier maintenant",
+        "approve": "Valider",
+        "edit": "Modifier",
+        "retry": "Réessayer",
+        "cancelPost": "Annuler la publication",
+        "delete": "Supprimer",
+        "keep": "Retour"
+    },
+    "confirm": {
+        "postNow": {
+            "title_one": "Publier maintenant sur {{count}} réseau ?",
+            "title_many": "Publier maintenant sur {{count}} réseaux ?",
+            "title_other": "Publier maintenant sur {{count}} réseaux ?",
+            "body": "La publication part immédiatement sur {{networks}}. Une publication en ligne ne peut être retirée que depuis chaque réseau.",
+            "confirm": "Publier maintenant"
+        },
+        "cancel": {
+            "title": "Annuler cette publication ?",
+            "body": "Elle ne sera pas publiée. Vous la retrouverez toujours dans « Toutes ».",
+            "confirm": "Annuler la publication"
+        },
+        "delete": {
+            "title": "Supprimer cette publication ?",
+            "body": "Elle sera retirée du calendrier. Ce qui est déjà publié reste sur {{networks}}.",
+            "confirm": "Supprimer"
+        }
+    },
+    "composer": {
+        "editing": "Vous modifiez une publication enregistrée.",
+        "editingScheduled": "Vous modifiez une publication programmée. L’enregistrer la renvoie en validation.",
+        "stopEditing": "Commencer une nouvelle publication",
+        "postTo": "Publier sur",
+        "noAccounts": {
+            "title": "Aucun compte prêt à publier",
+            "body": "Connectez un compte à gauche, ou reconnectez celui qui doit être vérifié."
+        },
+        "droppedTargets_one": "{{count}} compte de cette publication n’est plus connecté et a été retiré.",
+        "droppedTargets_many": "{{count}} comptes de cette publication ne sont plus connectés et ont été retirés.",
+        "droppedTargets_other": "{{count}} comptes de cette publication ne sont plus connectés et ont été retirés.",
+        "ai": {
+            "toggle": "Rédiger avec l’IA",
+            "briefLabel": "De quoi parle cette publication ?",
+            "briefPlaceholder": "ex. Inscriptions ouvertes pour la promotion 2027, cours d’essai gratuit samedi à 10 h",
+            "tone": "Ton",
+            "tones": {
+                "friendly": "Chaleureux",
+                "professional": "Professionnel",
+                "exciting": "Enthousiaste"
+            },
+            "write": "Rédiger le brouillon",
+            "writing": "Rédaction…",
+            "note": "L’IA remplit le titre, le texte et les versions par réseau. Vérifiez les faits, les dates et les tarifs avant de publier."
+        },
+        "title": "Titre",
+        "titlePlaceholder": "ex. Inscriptions ouvertes pour 2027",
+        "titleHint": "Pour le calendrier de votre équipe. Non affiché sur Facebook, Instagram ou Google.",
+        "titleYoutubeHint": "Sert aussi de titre à la vidéo YouTube ({{max}} premiers caractères).",
+        "body": "Texte de la publication",
+        "bodyPlaceholder": "Rédigez votre publication…",
+        "counter": "{{used}} caractères",
+        "counterWithLimit": "{{used}} / {{max}} · limite {{platform}}",
+        "overrides": {
+            "label": "Adapter le texte à chaque réseau",
+            "hint": "Laissez une case vide pour utiliser le texte principal sur ce réseau.",
+            "placeholder": "Utilise le texte principal"
+        },
+        "media": {
+            "label": "Photos ou vidéo",
+            "add": "Ajouter",
+            "hint": "Déposez des images ou une vidéo ici, ou utilisez Ajouter.",
+            "rules": "Jusqu’à 10 images, ou une vidéo. Instagram en exige au moins une ; YouTube exige une vidéo ; Google Business n’accepte que des images.",
+            "video": "Vidéo",
+            "uploading": "Envoi de {{name}}",
+            "remove": "Retirer {{name}}",
+            "uploadFailed": "Impossible d’envoyer {{name}}. Retirez-le et réessayez.",
+            "unsupported": "{{name}} n’est ni une image ni une vidéo.",
+            "imageTooBig": "{{name}} dépasse {{mb}} Mo.",
+            "videoTooBig": "{{name}} dépasse {{gb}} Go.",
+            "onlyFirst_one": "Seul le premier fichier a été ajouté (10 fichiers au maximum).",
+            "onlyFirst_many": "Seuls les {{count}} premiers fichiers ont été ajoutés (10 fichiers au maximum).",
+            "onlyFirst_other": "Seuls les {{count}} premiers fichiers ont été ajoutés (10 fichiers au maximum)."
+        },
+        "link": "Lien (facultatif)",
+        "schedule": {
+            "label": "Quand publier",
+            "date": "Date",
+            "time": "Heure",
+            "pickDate": "Choisir une date",
+            "clear": "Effacer",
+            "summary": "Publication prévue le {{when}}",
+            "hintAdmin": "Choisissez une date et une heure pour programmer, ou utilisez Publier maintenant.",
+            "hintStaff": "Facultatif. Proposez une heure ; un administrateur la valide."
+        },
+        "issues": {
+            "heading": "À corriger avant de publier",
+            "noAccount": "Choisissez au moins un compte.",
+            "empty": "Ajoutez un titre, du texte ou un média.",
+            "uploading": "Attendez la fin des envois.",
+            "uploadFailed": "Retirez les fichiers dont l’envoi a échoué.",
+            "tooManyMedia": "Utilisez {{max}} fichiers au maximum.",
+            "mixedMedia": "Utilisez des images ou une vidéo, pas les deux.",
+            "oneVideo": "Une seule vidéo par publication.",
+            "badLink": "Saisissez un lien complet commençant par https://",
+            "tooLong": "Le texte pour {{platform}} dépasse la limite de {{max}} caractères.",
+            "instagramMedia": "Instagram exige au moins une image ou une vidéo.",
+            "youtubeVideo": "YouTube exige exactement une vidéo et aucune image.",
+            "googleNoVideo": "Google Business Profile ne publie pas de vidéo. Utilisez uniquement des images ou du texte.",
+            "needsText": "{{platform}} a besoin d’un texte ou d’une image.",
+            "youtubeTitle": "Ajoutez un titre ou un texte pour la vidéo YouTube.",
+            "titleTooLong": "Le titre doit faire moins de 255 caractères.",
+            "scheduleIncomplete": "Choisissez une date et une heure, ou effacez la programmation.",
+            "schedulePast": "Cette heure est déjà passée. Choisissez une heure ultérieure.",
+            "scheduleRequired": "Choisissez une date et une heure pour programmer cette publication."
+        },
+        "saveDraft": "Enregistrer le brouillon",
+        "submit": "Envoyer en validation",
+        "schedulePost": "Programmer",
+        "postNow": "Publier maintenant",
+        "saving": "Enregistrement…",
+        "staffNote": "Un administrateur relit et programme votre publication."
+    }
+}

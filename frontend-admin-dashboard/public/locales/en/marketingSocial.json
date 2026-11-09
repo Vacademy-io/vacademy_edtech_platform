@@ -1,0 +1,221 @@
+{
+    "page": {
+        "title": "Social accounts & posts",
+        "subtitle": "Plan, approve and publish posts to Facebook, Instagram, Google and YouTube from one place.",
+        "newPost": "New post",
+        "postsLabel": "Posts",
+        "scheduledThisMonth_one": "{{count}} scheduled · this month",
+        "scheduledThisMonth_other": "{{count}} scheduled · this month",
+        "scheduledInMonth_one": "{{count}} scheduled · {{month}}",
+        "scheduledInMonth_other": "{{count}} scheduled · {{month}}"
+    },
+    "tabs": {
+        "calendar": "Post calendar",
+        "new": "New post",
+        "edit": "Edit post"
+    },
+    "accounts": {
+        "title": "Accounts",
+        "connectedCount_one": "{{connected}} of {{total}} connected",
+        "connectedCount_other": "{{connected}} of {{total}} connected",
+        "allConnected": "All connected",
+        "needAttention_one": "{{count}} needs attention",
+        "needAttention_other": "{{count}} need attention",
+        "connected": "Connected",
+        "reconnect": "Reconnect",
+        "reconnectAria": "Reconnect {{name}}",
+        "connect": "Connect",
+        "connectAria": "Connect {{name}}",
+        "connectMore": "Connect more",
+        "disconnect": "Disconnect",
+        "menuAria": "More options for {{name}}",
+        "manageYoutube": "Manage in Settings",
+        "followers_one": "{{formatted}} follower",
+        "followers_other": "{{formatted}} followers",
+        "subtitle": {
+            "facebook": "Page · {{name}}",
+            "googleBusiness": "{{name}} · Business listing",
+            "youtube": "{{name}} · Channel"
+        },
+        "notConnectedHint": {
+            "FACEBOOK": "Post to your Facebook Page",
+            "INSTAGRAM": "Needs an Instagram business account linked to a Page",
+            "GOOGLE_BUSINESS": "Updates on your Google Search and Maps listing",
+            "YOUTUBE": "Connected in Settings → YouTube Integration"
+        },
+        "emptyHint": "Connect your Facebook Page, Instagram, Google Business Profile or YouTube channel to start posting.",
+        "adminOnly": "Only institute admins can connect or disconnect accounts.",
+        "loadFailed": "We couldn’t load your accounts.",
+        "disconnectTitle": "Disconnect {{name}}?",
+        "disconnectBody": "Scheduled posts will no longer go to this account. Posts already published stay where they are. You can connect it again at any time."
+    },
+    "calendar": {
+        "prevMonth": "Previous month",
+        "nextMonth": "Next month",
+        "today": "This month",
+        "filterLabel": "Filter posts by status",
+        "filters": {
+            "ALL": "All",
+            "NEEDS_APPROVAL": "Needs approval",
+            "SCHEDULED": "Scheduled",
+            "DRAFT": "Drafts",
+            "POSTED": "Posted",
+            "FAILED": "Failed"
+        },
+        "loading": "Loading posts",
+        "loadFailed": "We couldn’t load your posts.",
+        "empty": {
+            "title": "Nothing planned for {{month}}",
+            "body": "Write a post once and send it to every network, now or on a schedule.",
+            "cta": "Create a post",
+            "filteredTitle": "No posts in “{{status}}” this month",
+            "showAll": "Show all posts"
+        },
+        "untitled": "Untitled post",
+        "notScheduled": "Not scheduled",
+        "byAgent": "Auto-post · written by the agent",
+        "byYou": "Created by you",
+        "byTeam": "Created by your team",
+        "view": "View",
+        "viewOn": "View on {{name}}",
+        "tailored": "Tailored per network",
+        "media": "Attached media",
+        "publishingHint": "Publishing now. Videos can take a few minutes; this list refreshes on its own."
+    },
+    "status": {
+        "DRAFT": "Draft",
+        "NEEDS_APPROVAL": "Needs approval",
+        "SCHEDULED": "Scheduled",
+        "PUBLISHING": "Publishing",
+        "POSTED": "Posted",
+        "PARTIAL": "Partly posted",
+        "FAILED": "Failed",
+        "CANCELLED": "Cancelled"
+    },
+    "targetStatus": {
+        "PENDING": "Waiting",
+        "PUBLISHING": "Publishing",
+        "POSTED": "Posted",
+        "FAILED": "Failed",
+        "SKIPPED": "Skipped"
+    },
+    "actions": {
+        "postNow": "Post now",
+        "approve": "Approve",
+        "edit": "Edit",
+        "retry": "Retry",
+        "cancelPost": "Cancel post",
+        "delete": "Delete",
+        "keep": "Go back"
+    },
+    "confirm": {
+        "postNow": {
+            "title_one": "Post to {{count}} network now?",
+            "title_other": "Post to {{count}} networks now?",
+            "body": "This publishes straight away to {{networks}}. Published posts can only be removed from each network itself.",
+            "confirm": "Post now"
+        },
+        "cancel": {
+            "title": "Cancel this post?",
+            "body": "It won’t be published. You can still find it under All.",
+            "confirm": "Cancel post"
+        },
+        "delete": {
+            "title": "Delete this post?",
+            "body": "It will be removed from the calendar. Anything already published stays on {{networks}}.",
+            "confirm": "Delete"
+        }
+    },
+    "composer": {
+        "editing": "You’re editing a saved post.",
+        "editingScheduled": "You’re editing a scheduled post. Saving sends it back for approval.",
+        "stopEditing": "Start a new post instead",
+        "postTo": "Post to",
+        "noAccounts": {
+            "title": "No accounts ready to post",
+            "body": "Connect an account on the left, or reconnect one that needs attention."
+        },
+        "droppedTargets_one": "{{count}} account from this post is no longer connected and was removed.",
+        "droppedTargets_other": "{{count}} accounts from this post are no longer connected and were removed.",
+        "ai": {
+            "toggle": "Write with AI",
+            "briefLabel": "What is this post about?",
+            "briefPlaceholder": "e.g. Admissions open for the 2027 batch, free demo class this Saturday at 10 am",
+            "tone": "Tone",
+            "tones": {
+                "friendly": "Friendly",
+                "professional": "Professional",
+                "exciting": "Exciting"
+            },
+            "write": "Write draft",
+            "writing": "Writing…",
+            "note": "AI fills in the title, text and per-network versions. Check facts, dates and fees before posting."
+        },
+        "title": "Title",
+        "titlePlaceholder": "e.g. Admissions open for 2027",
+        "titleHint": "For your team’s calendar. Not shown on Facebook, Instagram or Google.",
+        "titleYoutubeHint": "Also used as the YouTube video title (first {{max}} characters).",
+        "body": "Post text",
+        "bodyPlaceholder": "Write your post…",
+        "counter": "{{used}} characters",
+        "counterWithLimit": "{{used}} / {{max}} · {{platform}} limit",
+        "overrides": {
+            "label": "Tailor the text per network",
+            "hint": "Leave a box empty to use the main text for that network.",
+            "placeholder": "Uses the main text"
+        },
+        "media": {
+            "label": "Photos or video",
+            "add": "Add",
+            "hint": "Drop images or one video here, or use Add.",
+            "rules": "Up to 10 images, or one video. Instagram needs at least one; YouTube needs one video; Google Business takes images only.",
+            "video": "Video",
+            "uploading": "Uploading {{name}}",
+            "remove": "Remove {{name}}",
+            "uploadFailed": "Couldn’t upload {{name}}. Remove it and try again.",
+            "unsupported": "{{name}} isn’t an image or video.",
+            "imageTooBig": "{{name}} is larger than {{mb}} MB.",
+            "videoTooBig": "{{name}} is larger than {{gb}} GB.",
+            "onlyFirst_one": "Only the first file was added (10 files at most).",
+            "onlyFirst_other": "Only the first {{count}} files were added (10 files at most)."
+        },
+        "link": "Link (optional)",
+        "schedule": {
+            "label": "When to post",
+            "date": "Date",
+            "time": "Time",
+            "pickDate": "Pick a date",
+            "clear": "Clear",
+            "summary": "Goes out {{when}}",
+            "hintAdmin": "Pick a date and time to schedule, or use Post now.",
+            "hintStaff": "Optional. Suggest a time; an admin approves it."
+        },
+        "issues": {
+            "heading": "Fix these before posting",
+            "noAccount": "Choose at least one account.",
+            "empty": "Add a title, some text or media.",
+            "uploading": "Wait for uploads to finish.",
+            "uploadFailed": "Remove the files that failed to upload.",
+            "tooManyMedia": "Use at most {{max}} files.",
+            "mixedMedia": "Use either images or a video, not both.",
+            "oneVideo": "Use only one video per post.",
+            "badLink": "Enter a full link starting with https://",
+            "tooLong": "Text for {{platform}} is over its {{max}}-character limit.",
+            "instagramMedia": "Instagram needs at least one image or video.",
+            "youtubeVideo": "YouTube needs exactly one video and no images.",
+            "googleNoVideo": "Google Business Profile can’t post video. Use images or text only.",
+            "needsText": "{{platform}} needs some text or an image.",
+            "youtubeTitle": "Add a title or text for the YouTube video.",
+            "titleTooLong": "Keep the title under 255 characters.",
+            "scheduleIncomplete": "Pick both a date and a time, or clear the schedule.",
+            "schedulePast": "That time has already passed. Pick a later time.",
+            "scheduleRequired": "Pick a date and time to schedule this post."
+        },
+        "saveDraft": "Save draft",
+        "submit": "Submit for approval",
+        "schedulePost": "Schedule",
+        "postNow": "Post now",
+        "saving": "Saving…",
+        "staffNote": "An admin reviews and schedules your post."
+    }
+}
