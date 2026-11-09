@@ -4,6 +4,7 @@
         "closedBody": "Connectez-vous ou contactez-nous pour obtenir un compte.",
         "title": "Commencez votre essai gratuit",
         "subtitle": "{{days}} jours gratuits. Sans carte bancaire.",
+        "subtitleCredits": "{{days}} jours gratuits avec {{credits}} crédits IA (1 crédit = 1 page corrigée). Sans carte bancaire.",
         "detailsTitle": "Vous et votre établissement",
         "detailsSubtitle": "Plus qu’une étape pour démarrer votre essai de {{days}} jours.",
         "google": "Continuer avec Google",
