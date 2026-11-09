@@ -1,10 +1,8 @@
 import { BlobReader, BlobWriter, ZipWriter } from '@zip.js/zip.js';
-import { getPublicUrls } from '@/services/upload_file';
+import { getPublicUrl } from '@/services/upload_file';
 import { saveBlob } from '@/lib/save-blob';
 import type { CopyIntakeCheckedCopy } from '../../-services/copy-intake-services';
 
-/** File ids per media lookup: they travel in the query string. */
-const URL_CHUNK = 40;
 /** Copies fetched at once. Small on purpose: these are multi-MB scans. */
 const PARALLEL = 3;
 
@@ -32,19 +30,6 @@ const entryName = (copy: CopyIntakeCheckedCopy, taken: Set<string>) => {
     return name;
 };
 
-const resolveUrls = async (fileIds: string[]): Promise<Map<string, string>> => {
-    const urls = new Map<string, string>();
-    for (let i = 0; i < fileIds.length; i += URL_CHUNK) {
-        const details: unknown = await getPublicUrls(fileIds.slice(i, i + URL_CHUNK).join(','));
-        if (!Array.isArray(details)) continue;
-        for (const d of details as { id?: unknown; url?: unknown }[]) {
-            if (typeof d?.id === 'string' && typeof d?.url === 'string' && d.url)
-                urls.set(d.id, d.url);
-        }
-    }
-    return urls;
-};
-
 /**
  * Zip every checked copy in the browser and save it as one file. The copies
  * already exist in storage; nothing is rendered or zipped on the server. A copy
@@ -55,7 +40,6 @@ export const downloadCheckedCopies = async (
     zipName: string,
     onProgress: (done: number, total: number) => void
 ): Promise<CheckedCopiesDownloadResult> => {
-    const urls = await resolveUrls(copies.map((c) => c.evaluated_file_id));
     // Stored, not deflated: scans are already compressed, and no worker is needed to store bytes.
     const writer = new ZipWriter(new BlobWriter('application/zip'), {
         level: 0,
@@ -71,8 +55,11 @@ export const downloadCheckedCopies = async (
         while (next < copies.length) {
             const index = next++;
             const copy = copies[index]!;
-            const url = urls.get(copy.evaluated_file_id);
             try {
+                // The public (CDN) URL, the same one "Open" uses. Checked copies are
+                // written only to the public bucket, so get-details/ids — which signs
+                // a private-bucket URL — gave a 404 for every one of them.
+                const url = await getPublicUrl(copy.evaluated_file_id);
                 if (!url) throw new Error('no url');
                 const response = await fetch(url);
                 if (!response.ok) throw new Error(`HTTP ${response.status}`);
