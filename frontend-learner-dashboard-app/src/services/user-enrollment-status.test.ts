@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import authenticatedAxiosInstance from "@/lib/auth/axiosInstance";
+import { answeredEnrolments } from "./enrolled-courses";
 import { fetchEnrolledCoursePackages, fetchEnrolmentLookup } from "./user-enrollment-status";
 
 vi.mock("@/lib/auth/axiosInstance", () => ({ default: { post: vi.fn(), get: vi.fn() } }));
@@ -18,6 +19,30 @@ describe("fetchEnrolmentLookup", () => {
 
   beforeEach(() => {
     post.mockReset();
+  });
+
+  it("leaves a complete list for Home to read, with the fields a home card needs", async () => {
+    const id = nextInstitute();
+    post.mockResolvedValue(page([{ ...row, percentage_completed: 30, read_time_in_minutes: 5 }]) as never);
+    await fetchEnrolledCoursePackages(id);
+    expect(answeredEnrolments(id)).toMatchObject([{ percentage_completed: 30, read_time_in_minutes: 5 }]);
+  });
+
+  it("leaves the new list for Home when a caller re-reads after an enrolment", async () => {
+    const id = nextInstitute();
+    post.mockResolvedValue(page([]) as never);
+    await fetchEnrolledCoursePackages(id);
+    expect(answeredEnrolments(id)).toEqual([]);
+    post.mockResolvedValue(page([{ ...row, percentage_completed: 0 }]) as never);
+    await fetchEnrolledCoursePackages(id, { force: true });
+    expect(answeredEnrolments(id)).toMatchObject([{ percentage_completed: 0 }]);
+  });
+
+  it("leaves nothing for Home to read when part of the list failed", async () => {
+    const id = nextInstitute();
+    post.mockResolvedValueOnce(page([row]) as never).mockRejectedValueOnce(new Error("down"));
+    await fetchEnrolmentLookup(id);
+    expect(answeredEnrolments(id)).toBeNull();
   });
 
   it("leaves nothing for another reader to join while it is stalled", async () => {

@@ -51,6 +51,7 @@ const bucketsInFlight = new Map<string, Promise<CoursePackage[]>>();
 // of asking again. The widget itself always asks.
 const ANSWER_REUSE_MS = 30_000;
 const bucketAnswers = new Map<string, { at: number; rows: CoursePackage[] }>();
+const answerListeners = new Set<() => void>();
 
 const fetchBucket = (
   instituteId: string,
@@ -70,6 +71,7 @@ const fetchBucket = (
     .then((response) => {
       const rows = (response.data?.content ?? []) as CoursePackage[];
       bucketAnswers.set(`${instituteId}|${type}`, { at: Date.now(), rows });
+      answerListeners.forEach((listener) => listener());
       return rows;
     })
     .finally(() => bucketsInFlight.delete(key));
@@ -85,6 +87,42 @@ const recentBucket = (instituteId: string, type: "PROGRESS" | "COMPLETED", size:
     if (axios.isCancel(error)) return fetchBucket(instituteId, type, size);
     throw error;
   });
+};
+
+export interface EnrolmentAnswerRow {
+  percentage_completed?: number | string | null;
+  read_time_in_minutes?: number | null;
+}
+
+// The whole enrolment list as the course pages and the resume check last read it. A
+// learner who enrols in the app comes back through one of them, so what Home knows
+// follows without Home asking.
+const wholeLists = new Map<string, { at: number; rows: EnrolmentAnswerRow[] }>();
+
+export const noteEnrolmentList = (instituteId: string, rows: EnrolmentAnswerRow[]): void => {
+  wholeLists.set(instituteId, { at: Date.now(), rows });
+  answerListeners.forEach((listener) => listener());
+};
+
+export const subscribeToEnrolmentAnswers = (listener: () => void): (() => void) => {
+  answerListeners.add(listener);
+  return () => {
+    answerListeners.delete(listener);
+  };
+};
+
+/**
+ * The latest enrolment list already answered this visit, or null until there is one.
+ * Never asks for it: a dashboard that has not needed it yet stays unanswered.
+ */
+export const answeredEnrolments = (instituteId: string): EnrolmentAnswerRow[] | null => {
+  const progress = bucketAnswers.get(`${instituteId}|PROGRESS`);
+  const completed = bucketAnswers.get(`${instituteId}|COMPLETED`);
+  const whole = wholeLists.get(instituteId);
+  if (whole && (!progress || !completed || whole.at >= Math.min(progress.at, completed.at))) {
+    return whole.rows;
+  }
+  return progress && completed ? [...progress.rows, ...completed.rows] : null;
 };
 
 /**

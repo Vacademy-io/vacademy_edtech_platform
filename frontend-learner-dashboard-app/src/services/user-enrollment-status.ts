@@ -3,6 +3,7 @@ import { getTokenFromStorage } from "@/lib/auth/sessionUtility";
 import { TokenKey } from "@/constants/auth/tokens";
 import { BASE_URL, urlPublicCourseDetails } from "@/constants/urls";
 import authenticatedAxiosInstance from "@/lib/auth/axiosInstance";
+import { noteEnrolmentList } from "@/services/enrolled-courses";
 
 const LEARNER_INFO_URL = `${BASE_URL}/admin-core-service/learner/info/v1/details`;
 const USER_PLAN_URL = `${BASE_URL}/admin-core-service/v1/user-plan`;
@@ -183,6 +184,8 @@ const fetchEnrolledCoursePackagesUncached = async (
       byPackageSessionId.set(c.package_session_id, c);
     }
   }
+
+  if (complete) noteEnrolmentList(instituteId, Array.from(byPackageSessionId.values()));
 
   const courses = Array.from(byPackageSessionId.values()).map((c) => ({
     id: c.id,

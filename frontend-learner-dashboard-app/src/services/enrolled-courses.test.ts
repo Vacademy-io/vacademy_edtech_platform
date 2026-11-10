@@ -5,7 +5,13 @@ const post = vi.fn();
 vi.mock("@/lib/auth/axiosInstance", () => ({ default: { post: (...args: unknown[]) => post(...args) } }));
 vi.mock("@/constants/urls", () => ({ urlPublicCourseDetails: "/search" }));
 
-const { fetchEnrolledCourses, fetchEnrolledHasProgress } = await import("./enrolled-courses");
+const {
+  answeredEnrolments,
+  fetchEnrolledCourses,
+  fetchEnrolledHasProgress,
+  noteEnrolmentList,
+  subscribeToEnrolmentAnswers,
+} = await import("./enrolled-courses");
 
 // Every test starts past the window in which an earlier answer is reused.
 let now = 1_000_000;
@@ -22,6 +28,56 @@ const answer = (progress: unknown, completed: unknown) =>
     const value = body.type === "PROGRESS" ? progress : completed;
     return value instanceof Error ? Promise.reject(value) : Promise.resolve(value);
   });
+
+describe("answeredEnrolments", () => {
+  beforeEach(() => {
+    post.mockReset();
+    later();
+  });
+
+  it("asks for nothing and has nothing until a list has been read", () => {
+    expect(answeredEnrolments("inst-none")).toBeNull();
+    expect(post).not.toHaveBeenCalled();
+  });
+
+  it("answers once both pages of the widget's read have landed", async () => {
+    answer(page([{ id: "a", percentage_completed: 10 }]), page([{ id: "b", percentage_completed: 100 }]));
+    await fetchEnrolledCourses("inst-pages");
+    expect(answeredEnrolments("inst-pages")?.map((row) => row.percentage_completed)).toEqual([10, 100]);
+  });
+
+  it("follows a later whole list, with no request, so an in-app enrolment shows on Home", async () => {
+    answer(page([]), page([]));
+    await fetchEnrolledCourses("inst-enrols");
+    expect(answeredEnrolments("inst-enrols")).toEqual([]);
+    post.mockReset();
+    later();
+
+    const heard = vi.fn();
+    const stop = subscribeToEnrolmentAnswers(heard);
+    noteEnrolmentList("inst-enrols", [{ percentage_completed: 0 }]);
+    stop();
+
+    expect(heard).toHaveBeenCalledTimes(1);
+    expect(answeredEnrolments("inst-enrols")).toEqual([{ percentage_completed: 0 }]);
+    expect(post).not.toHaveBeenCalled();
+  });
+
+  it("prefers a newer read of the pages over an older whole list", async () => {
+    noteEnrolmentList("inst-newer", [{ percentage_completed: 0 }]);
+    later();
+    answer(page([{ id: "a", percentage_completed: 30 }]), page([]));
+    await fetchEnrolledCourses("inst-newer");
+    expect(answeredEnrolments("inst-newer")?.[0]?.percentage_completed).toBe(30);
+  });
+
+  it("does not reuse a whole list as the first-run check's answer", async () => {
+    noteEnrolmentList("inst-reuse", [{ percentage_completed: 50 }]);
+    answer(page([]), page([]));
+    await expect(fetchEnrolledHasProgress("inst-reuse")).resolves.toBe(false);
+    expect(post).toHaveBeenCalledTimes(2);
+  });
+});
 
 describe("fetchEnrolledHasProgress", () => {
   beforeEach(() => {

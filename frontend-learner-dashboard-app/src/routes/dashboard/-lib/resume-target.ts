@@ -6,6 +6,7 @@ import {
   type ListedItemDripRules,
 } from "@/utils/drip-conditions";
 import { calculateOverallCompletion } from "@/utils/study-library/overall-completion";
+import { coursePercentOf, type LessonCount } from "@/lib/learner-state/course-progress";
 
 /** What a dashboard hero needs to offer one lesson to pick up. */
 export interface ResumeTarget {
@@ -15,6 +16,10 @@ export interface ResumeTarget {
   chapterName?: string;
   /** When this device last opened it. Absent for a server-listed lesson. */
   updatedAt?: number;
+  /** Finished out of visible in its chapter, from the check's own answers. */
+  count?: LessonCount;
+  /** The course's percent from its enrolment row, clamped. Null: the row could not be read. */
+  coursePercent?: number | null;
   open: () => void;
 }
 
@@ -23,7 +28,8 @@ export interface EnrolledCourseRow {
   id: string;
   package_session_id: string;
   package_name?: string | null;
-  percentage_completed?: number | null;
+  /** Old rows can hold text or numbers far past 100: see coursePercentOf. */
+  percentage_completed?: number | string | null;
 }
 export interface EnrolmentResult {
   courses: EnrolledCourseRow[];
@@ -62,7 +68,11 @@ export interface ResumeChecks {
   liveChapters: (subjectId: string, packageSessionId: string) => Promise<LiveChapter[]>;
   liveSlides: (chapterId: string) => Promise<LiveSlide[]>;
   dripRules: (courseId: string, packageSessionId: string) => Promise<ResumeDripRules>;
+  /** The institute's "finished" line for a slide. Absent: no count is worked out. */
+  completionThreshold?: () => number;
 }
+
+export type VerifiedResume = ResumeEntry & { count?: LessonCount; coursePercent?: number | null };
 
 /** A device entry can also be dropped once the server confirms it no longer exists. */
 export interface DeviceResumeChecks extends ResumeChecks {
@@ -193,7 +203,88 @@ export function lessonClosedByDrip(
   );
 }
 
-const isFinished = (row: EnrolledCourseRow) => (row.percentage_completed ?? 0) >= 100;
+/**
+ * The chapter's lessons as the learner's outline lists them: drip "hide" removes
+ * one, a lock does not. Each lesson counts by state, so order and gaps cannot
+ * change the result, and a quiz is one lesson like any other. Old rows can hold
+ * text or huge numbers: anything unreadable is not finished, as the server reads it.
+ */
+export function countLessons(
+  chapterId: string,
+  chapters: LiveChapter[],
+  slides: LiveSlide[],
+  rules: ResumeDripRules | null,
+  threshold: number,
+  now: Date = new Date(),
+): LessonCount {
+  const percentage = (slide: LiveSlide) => {
+    const value = Number(slide.percentage_completed);
+    return Number.isFinite(value) ? value : 0;
+  };
+  const listed = slides.map((slide) => ({
+    id: slide.id,
+    percentage: percentage(slide),
+    rowCondition: slide.drip_condition || slide.drip_condition_json,
+  }));
+  const hiddenByDrip = (index: number) => {
+    if (!rules) return false;
+    const { courseCondition, ...shared } = rules;
+    try {
+      return evaluateListedItem(
+        "slide",
+        listed,
+        index,
+        { ...shared, now, courseCondition: courseCondition("slide") },
+        { [chapterId]: calculateOverallCompletion(slides) },
+      ).isHidden;
+    } catch {
+      return false;
+    }
+  };
+  const visible = slides.filter(
+    (slide, index) => slide.is_hidden !== true && !hiddenByDrip(index),
+  );
+  return {
+    done: visible.filter((slide) => percentage(slide) >= threshold).length,
+    total: visible.length,
+    partOfCourse: chapters.length > 1,
+  };
+}
+
+/** The count is extra: it can never cost the learner the resume answer itself. */
+function safeCount(
+  checks: ResumeChecks,
+  chapterId: string,
+  chapters: LiveChapter[],
+  slides: LiveSlide[],
+  rules: ResumeDripRules | null,
+): LessonCount | undefined {
+  if (!checks.completionThreshold) return undefined;
+  try {
+    return countLessons(chapterId, chapters, slides, rules, checks.completionThreshold());
+  } catch {
+    return undefined;
+  }
+}
+
+const isFinished = (row: EnrolledCourseRow) => Number(row.percentage_completed ?? 0) >= 100;
+
+/**
+ * The course percent to show for a lesson opened in `row`. A finished batch of a course
+ * the learner also holds unfinished in another batch shows the unfinished one furthest
+ * along, as the course list does, so a lesson offered to continue is never drawn as a
+ * finished course. Which batch the lesson opens in is not affected.
+ */
+function shownPercent(row: EnrolledCourseRow, rows: EnrolledCourseRow[]): number | null {
+  if (!isFinished(row)) return coursePercentOf(row.percentage_completed);
+  let furthest: number | null = null;
+  for (const other of rows) {
+    if (isFinished(other)) continue;
+    const percent = coursePercentOf(other.percentage_completed);
+    if (percent !== null && (furthest === null || percent > furthest)) furthest = percent;
+  }
+  return furthest;
+}
 
 async function findLesson(
   checks: ResumeChecks,
@@ -204,7 +295,7 @@ async function findLesson(
     chapterId: string;
     slideId: string;
   },
-): Promise<{ chapter?: LiveChapter; slide?: LiveSlide; closed: boolean }> {
+): Promise<{ chapter?: LiveChapter; slide?: LiveSlide; closed: boolean; count?: LessonCount }> {
   const [chapters, slides] = await Promise.all([
     checks.liveChapters(lesson.subjectId, lesson.batchId),
     checks.liveSlides(lesson.chapterId),
@@ -219,6 +310,7 @@ async function findLesson(
     chapter,
     slide,
     closed: !offerable || (rules ? lessonClosedByDrip(lesson, chapters, slides, rules) : false),
+    count: safeCount(checks, lesson.chapterId, chapters, slides, rules),
   };
 }
 
@@ -232,7 +324,7 @@ async function findLesson(
 export async function verifyResume(
   candidates: ResumeEntry[],
   checks: DeviceResumeChecks,
-): Promise<ResumeEntry | null> {
+): Promise<VerifiedResume | null> {
   if (candidates.length === 0) return null;
   const { courses, complete } = await checks.enrolledCourses();
 
@@ -247,7 +339,7 @@ export async function verifyResume(
 
     // Prefer the recorded batch; a learner may have moved to another one.
     const row = rows.find((r) => r.package_session_id === entry.sessionId) ?? rows[0]!;
-    const { chapter, slide, closed } = await findLesson(checks, {
+    const { chapter, slide, closed, count } = await findLesson(checks, {
       courseId: entry.courseId,
       subjectId: entry.subjectId,
       batchId: row.package_session_id,
@@ -266,6 +358,8 @@ export async function verifyResume(
       courseName: row.package_name || entry.courseName,
       sessionId: row.package_session_id,
       moduleId: chapter.moduleId,
+      count,
+      coursePercent: shownPercent(row, rows),
     };
   }
   return null;
@@ -279,6 +373,8 @@ export function serverLessons(slides: DashboardSlide[] | undefined): DashboardSl
 export interface VerifiedServerLesson {
   slide: DashboardSlide;
   courseName?: string;
+  count?: LessonCount;
+  coursePercent?: number | null;
 }
 
 /**
@@ -303,7 +399,7 @@ export async function verifyServerLessons(
     if (!row || isFinished(row)) continue;
     if (looked++ === MAX_RESUME_CANDIDATES) return null;
 
-    const { chapter, slide, closed } = await findLesson(checks, {
+    const { chapter, slide, closed, count } = await findLesson(checks, {
       courseId: lesson.package_id,
       subjectId: lesson.subject_id,
       batchId: row.package_session_id,
@@ -319,6 +415,8 @@ export async function verifyServerLessons(
         module_id: chapter.moduleId,
       },
       courseName: row.package_name || undefined,
+      count,
+      coursePercent: coursePercentOf(row.percentage_completed),
     };
   }
   return null;

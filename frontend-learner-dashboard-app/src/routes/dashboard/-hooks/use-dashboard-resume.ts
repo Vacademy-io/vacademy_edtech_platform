@@ -1,14 +1,14 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useQuery, useQueryClient, type QueryClient } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
 import { fetchSlidesByChapterId, type Slide } from "@/hooks/study-library/use-slides";
+import { getSlideCompletionThreshold } from "@/constants/study-library";
 import {
   clearResumeForCourse,
   listResumes,
   RESUME_ROUTE,
   resumeSearchParams,
   useResumeScope,
-  type ResumeEntry,
 } from "@/services/resume-thread";
 import { fetchModulesWithChapters } from "@/services/study-library/getModulesWithChapters";
 import { fetchEnrolmentLookup } from "@/services/user-enrollment-status";
@@ -33,6 +33,7 @@ import {
   type ResumeChecks,
   type ResumeDripRules,
   type ResumeTarget,
+  type VerifiedResume,
 } from "../-lib/resume-target";
 
 /** Matches useSlides, so a check's answer is as fresh as the lesson would accept. */
@@ -118,6 +119,17 @@ const enrolledCourses = (qc: QueryClient, instituteId: string) => async () => {
   if (!lookup.complete) qc.removeQueries({ queryKey, exact: true });
   return lookup;
 };
+
+/**
+ * The same bounded enrolment read as the resume check, for a caller that needs the
+ * answer it leaves behind and not the result. A failure simply leaves no answer.
+ */
+export function useEnrolmentAsker(instituteId: string | null | undefined): () => void {
+  const queryClient = useQueryClient();
+  return useCallback(() => {
+    if (instituteId) void enrolledCourses(queryClient, instituteId)().catch(() => undefined);
+  }, [queryClient, instituteId]);
+}
 
 function relativeRulesOf(configs: DripConditionJson[]) {
   return configs
@@ -225,12 +237,17 @@ export function useDashboardResume({
     liveChapters: liveChapters(queryClient),
     liveSlides: liveSlides(queryClient),
     dripRules: dripRules(queryClient, instituteId),
+    // The lesson count, from answers the check already has: no request of its own.
+    // Only a skin's hero shows it. It is worked out whatever the skin, because the
+    // skin class can land after this check starts, and keying the check on the
+    // skin would restart it after its wait is over and lose the resume point.
+    completionThreshold: getSlideCompletionThreshold,
   };
 
   const device = useQuery({
     queryKey: ["resume-check", owner, instituteId, latest?.slideId, latest?.updatedAt],
     enabled: enabled && Boolean(latest),
-    queryFn: (): Promise<ResumeEntry | null> => {
+    queryFn: (): Promise<VerifiedResume | null> => {
       // These start with the enrolment lookup, so the usual visit takes one round trip.
       void Promise.allSettled([
         checks.liveChapters(latest!.subjectId, latest!.sessionId),
@@ -295,6 +312,8 @@ export function useDashboardResume({
         courseName: verifiedEntry.courseName,
         chapterName: verifiedEntry.chapterName,
         updatedAt: verifiedEntry.updatedAt,
+        count: verifiedEntry.count,
+        coursePercent: verifiedEntry.coursePercent,
         open: () => {
           track("Resume Learning", {
             slideId: verifiedEntry.slideId,
@@ -323,6 +342,8 @@ export function useDashboardResume({
           slideId: lesson.slide.slide_id,
           slideTitle: lesson.slide.slide_title,
           courseName: lesson.courseName,
+          count: lesson.count,
+          coursePercent: lesson.coursePercent,
           open: () => openServerSlide(lesson.slide),
         }
       : null,

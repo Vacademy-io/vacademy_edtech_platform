@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 import type { ResumeEntry } from "@/services/resume-thread";
 import type { DashboardSlide } from "../-types/dashboard-data-types";
 import {
+  countLessons,
   isTestLikeSlide,
   lessonClosedByDrip,
   liveChaptersFrom,
@@ -202,6 +203,55 @@ describe("verifyResume", () => {
   });
 });
 
+describe("the course percent on a verified resume", () => {
+  const withPercent = (percentage_completed: EnrolledCourseRow["percentage_completed"]) =>
+    checks({ enrolledCourses: enrolled({ id: "c1", package_session_id: "ps1", percentage_completed }) });
+
+  it("comes from the enrolment row, not the chapter", async () => {
+    expect((await verifyResume([entry()], withPercent(40)))?.coursePercent).toBe(40);
+  });
+  it("is clamped, and null where the row cannot be read", async () => {
+    expect((await verifyResume([entry()], withPercent(null)))?.coursePercent).toBeNull();
+    expect((await verifyResume([entry()], withPercent("null")))?.coursePercent).toBeNull();
+    expect((await verifyResume([entry()], withPercent("-3")))?.coursePercent).toBe(0);
+  });
+  it("reads a row of the batch being resumed when there are two", async () => {
+    const c = checks({
+      enrolledCourses: enrolled(
+        { id: "c1", package_session_id: "ps9", percentage_completed: 90 },
+        { id: "c1", package_session_id: "ps1", percentage_completed: 15 },
+      ),
+    });
+    expect((await verifyResume([entry()], c))?.coursePercent).toBe(15);
+  });
+  it("never draws a finished batch while another batch of the course is unfinished", async () => {
+    const c = checks({
+      enrolledCourses: enrolled(
+        { id: "c1", package_session_id: "ps1", percentage_completed: 100 },
+        { id: "c1", package_session_id: "ps2", percentage_completed: 20 },
+        { id: "c1", package_session_id: "ps3", percentage_completed: "null" },
+      ),
+    });
+    const result = await verifyResume([entry()], c);
+    expect(result?.coursePercent).toBe(20);
+    // The lesson still opens in the batch it was recorded in.
+    expect(result?.sessionId).toBe("ps1");
+  });
+  it("claims nothing when the unfinished batch's percent cannot be read", async () => {
+    const c = checks({
+      enrolledCourses: enrolled(
+        { id: "c1", package_session_id: "ps1", percentage_completed: 100 },
+        { id: "c1", package_session_id: "ps2", percentage_completed: "null" },
+      ),
+    });
+    expect((await verifyResume([entry()], c))?.coursePercent).toBeNull();
+  });
+  it("still treats a finished row as finished, however it is held", async () => {
+    expect(await verifyResume([entry()], withPercent(119000))).toBeNull();
+    expect(await verifyResume([entry()], withPercent("100"))).toBeNull();
+  });
+});
+
 describe("liveChaptersFrom", () => {
   it("reads chapter fields on the row", () => {
     const rows = [{ module: { id: "m" }, chapters: [{ id: "a" }, { id: "b", is_hidden: true }] }];
@@ -280,6 +330,7 @@ describe("verifyServerLessons", () => {
     expect(result?.slide.slide_title).toBe("Title now");
     expect(result?.slide.module_id).toBe("mod1");
     expect(result?.courseName).toBe("Course one");
+    expect(result?.coursePercent).toBe(20);
   });
 
   it("passes over a course the learner does not hold in this institute", async () => {
@@ -503,5 +554,84 @@ describe("drip on an offered lesson", () => {
     const dripRules = vi.fn(async () => noDrip);
     await verifyResume([entry()], checks({ dripRules }));
     expect(dripRules).toHaveBeenCalledWith("c1", "ps1");
+  });
+});
+
+describe("countLessons", () => {
+  const chapters = (n: number): LiveChapter[] =>
+    Array.from({ length: n }, (_, i) => ({ chapterId: `ch${i}`, moduleId: "m", open: true }));
+  const slide = (id: string, pct: unknown, over: Partial<LiveSlide> = {}) =>
+    ({ id, percentage_completed: pct, ...over }) as LiveSlide;
+  const count = (slides: LiveSlide[], rules: ResumeDripRules | null = noDrip, nChapters = 1) =>
+    countLessons("ch0", chapters(nChapters), slides, rules, 80);
+
+  it("counts by each lesson's state, so a gap changes nothing", () => {
+    const inOrder = [slide("a", 100), slide("b", 100), slide("c", 0), slide("d", 0)];
+    const gaps = [slide("a", 0), slide("b", 100), slide("c", 0), slide("d", 100)];
+    expect(count(inOrder)).toEqual(count(gaps));
+    expect(count(gaps)).toMatchObject({ done: 2, total: 4 });
+  });
+
+  it("uses the institute's finished line, not 100", () => {
+    expect(count([slide("a", 80), slide("b", 79)])).toMatchObject({ done: 1, total: 2 });
+  });
+
+  it("reads dirty old values as not finished, and huge ones as finished", () => {
+    const dirty = [slide("a", "null"), slide("b", null), slide("c", undefined), slide("d", 119000)];
+    expect(count(dirty)).toMatchObject({ done: 1, total: 4 });
+  });
+
+  it("leaves hidden lessons out and keeps locked ones in", () => {
+    const list = [slide("a", 100, { is_hidden: true }), slide("b", 0, { is_locked: true }), slide("c", 0)];
+    expect(count(list)).toMatchObject({ done: 0, total: 2 });
+  });
+
+  it("leaves out a lesson drip hides, and counts one drip only locks", () => {
+    const rule = (behavior: string) =>
+      ({
+        target: "slide",
+        behavior,
+        is_enabled: true,
+        rules: [{ type: "date_based", params: { unlock_date: "2999-01-01T00:00:00Z" } }],
+      }) as never;
+    const withRule = (behavior: string): ResumeDripRules => ({
+      ...noDrip,
+      conditionFor: (_level, id) => (id === "b" ? rule(behavior) : null),
+    });
+    expect(count([slide("a", 0), slide("b", 0)], withRule("hide"))).toMatchObject({ total: 1 });
+    expect(count([slide("a", 0), slide("b", 0)], withRule("lock"))).toMatchObject({ total: 2 });
+  });
+
+  it("handles an empty chapter and a very long one", () => {
+    expect(count([])).toMatchObject({ done: 0, total: 0 });
+    const long = Array.from({ length: 951 }, (_, i) => slide(`s${i}`, i < 10 ? 100 : 0));
+    expect(count(long)).toMatchObject({ done: 10, total: 951 });
+  });
+
+  it("says when the chapter is only part of the course", () => {
+    expect(count([slide("a", 0)], noDrip, 1).partOfCourse).toBe(false);
+    expect(count([slide("a", 0)], noDrip, 2).partOfCourse).toBe(true);
+  });
+});
+
+describe("the count reaches the answer", () => {
+  it("comes back on a verified device entry", async () => {
+    const c = checks({ completionThreshold: () => 80 });
+    expect((await verifyResume([entry()], c))?.count?.total).toBeGreaterThan(0);
+  });
+  it("cannot cost the resume answer when it fails", async () => {
+    const c = checks({
+      completionThreshold: () => {
+        throw new Error("settings unreadable");
+      },
+    });
+    const result = await verifyResume([entry()], c);
+    expect(result?.slideId).toBe("s1");
+    expect(result?.count).toBeUndefined();
+  });
+  it("is absent without a threshold, and the answer stays the same", async () => {
+    const result = await verifyResume([entry()], checks());
+    expect(result?.slideId).toBe("s1");
+    expect(result?.count).toBeUndefined();
   });
 });

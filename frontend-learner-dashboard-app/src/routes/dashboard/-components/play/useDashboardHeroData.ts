@@ -294,6 +294,9 @@ function findImminentSession(
 export interface DashboardHeroData {
   /** "Good morning, Priya" — no trailing punctuation; skins add their own. */
   greeting: string;
+  /** The same greeting with no name, and the name it would use. */
+  plainGreeting: string;
+  firstName: string;
   /** The one streak value (server first); see useStreakState. */
   streak: number;
   streakState: StreakState;
@@ -364,6 +367,7 @@ export function useDashboardHeroData({
   const greeting = firstName
     ? t(`hero.greeting.${period}WithName`, { name: firstName })
     : t(`hero.greeting.${period}`);
+  const plainGreeting = t(`hero.greeting.${period}`);
 
   const streak = streakState.current;
   // Daily goal: while a plan runs, today's tasks done / scheduled (so the ring
@@ -407,6 +411,8 @@ export function useDashboardHeroData({
 
   return {
     greeting,
+    plainGreeting,
+    firstName,
     streak,
     streakState,
     goalPercent,
