@@ -35,8 +35,9 @@ import java.util.function.Predicate;
  *       call-number visibility, live activity, audience access), as are the legacy
  *       AUDIENCE_ROLE_ACCESS key and LIVE_SESSION_SETTING.roleVisibility (which live sessions each
  *       role sees); the display blobs gate each role's dashboard; ASSISTANT_TOOLS / MCP_SERVER_SETTING pick which
- *       roles get AI tools that write data, NAMING_SETTING renames the whole product, and
- *       USER_IDENTIFIER changes how every member logs in.</li>
+ *       roles get AI tools that write data, NAMING_SETTING renames the whole product,
+ *       USER_IDENTIFIER changes how every member logs in, and CLASSROOM_NOTIFY_SETTING decides
+ *       who receives classroom panel alerts.</li>
  *   <li>every other key: institute STAFF ({@link InstituteAccessValidator#requireInstituteStaff}).
  *       Not ADMIN-only on purpose: an admin can open the Settings page to a teacher or custom
  *       role (role display {@code ui.showSettings}), several settings are saved from
@@ -73,7 +74,10 @@ public class InstituteSettingAccessGuard {
             NAMING_SETTING_KEY,
             "ASSISTANT_TOOLS_SETTING",
             "MCP_SERVER_SETTING",
-            "USER_IDENTIFIER");
+            "USER_IDENTIFIER",
+            // Who gets classroom panel alert emails and when; recipients are also limited to
+            // ADMINs at send time.
+            "CLASSROOM_NOTIFY_SETTING");
 
     /** Per-custom-role display blobs ({@code CUSTOM_ROLE_DISPLAY_SETTINGS_<roleId>} and the like). */
     static final String CUSTOM_ROLE_DISPLAY_PREFIX = "CUSTOM_ROLE_DISPLAY_SETTINGS";

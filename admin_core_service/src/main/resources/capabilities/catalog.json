@@ -333,6 +333,23 @@
             ]
           },
           "setting_keys": []
+        },
+        {
+          "key": "lms.classroom_panels",
+          "label": "Classroom panels",
+          "description": "Interactive panels and TVs in classrooms: rooms, pairing, sign-in, usage and alerts.",
+          "default_on": true,
+          "governs": {
+            "nav": [],
+            "widgets": [],
+            "quick_actions": [],
+            "assistant_groups": [],
+            "setup_steps": [],
+            "routes": []
+          },
+          "setting_keys": [
+            "CLASSROOM_NOTIFY_SETTING"
+          ]
         }
       ]
     },
