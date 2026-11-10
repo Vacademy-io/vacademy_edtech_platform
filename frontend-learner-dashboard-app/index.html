@@ -310,9 +310,9 @@
          jQuery's UMD wrapper, beating the ES-module graph. -->
     <script src="/vendor/jquery.min.js"></script>
 
-    <!-- Eway eCrypt Library for Client-Side Encryption -->
-    <!-- Official Documentation: https://eway.io/api-v3/#client-side-encryption -->
-    <script src="https://secure.ewaypayments.com/scripts/eCrypt.min.js"></script>
+    <!-- Eway eCrypt (client-side card encryption) is NOT loaded here: it was a
+         render-blocking third-party script on every page. EwayCardForm loads
+         it on demand via loadEwayCrypt() in -utils/eway-encryption.ts. -->
 
     <title>Course Catalogue</title>
 

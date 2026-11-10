@@ -220,7 +220,13 @@ export default defineConfig({
         ),
     },
     plugins: [
-        TanStackRouterVite(),
+        // autoCodeSplitting: each route's component loads as its own chunk
+        // when that route is visited. Without it routeTree.gen imported all
+        // ~535 route files statically, so the first paint of ANY page (an ad
+        // landing page on a phone, say) waited on the entire app — ~6 MB
+        // compressed, ~21 MB of JS to parse. beforeLoad/loader/search stay in
+        // the route definition, so guards and redirects behave as before.
+        TanStackRouterVite({ autoCodeSplitting: true }),
         viteReact(),
         avatarkitWasm(),
         pruneFontFallbacks(),
@@ -286,35 +292,19 @@ export default defineConfig({
                 entryFileNames: `assets/[name]-[hash]${process.env.CF_PAGES_COMMIT_SHA ? '-' + process.env.CF_PAGES_COMMIT_SHA.slice(0, 8) : ''}.js`,
                 chunkFileNames: `assets/[name]-[hash]${process.env.CF_PAGES_COMMIT_SHA ? '-' + process.env.CF_PAGES_COMMIT_SHA.slice(0, 8) : ''}.js`,
                 assetFileNames: `assets/[name]-[hash]${process.env.CF_PAGES_COMMIT_SHA ? '-' + process.env.CF_PAGES_COMMIT_SHA.slice(0, 8) : ''}[extname]`,
-                // Conservative chunking strategy - only split truly independent heavy libs
+                // Only ONE manual group is left, and only because its evaluation
+                // order matters (below). Every other heavy library (excalidraw,
+                // mermaid, monaco, pdf viewer, xlsx, charts, icon sets, firebase,
+                // pyodide, …) used to have its own manual group too, and that is
+                // what put them on the first paint of every page: Rollup moves a
+                // manual group's dependencies INTO the group, so react/jsx-runtime
+                // landed in "excalidraw" and React in "charts", and the entry had
+                // to statically import (and evaluate) 4 MB of excalidraw and every
+                // other group just to get React. Rollup's own splitting keeps a
+                // library in the chunk of the route or lazy() that uses it and puts
+                // shared code in shared chunks, which is what the old groups were
+                // trying to achieve.
                 manualChunks: (id) => {
-
-                    // Firebase - can be safely split as it's dynamically imported
-                    if (id.includes('firebase/') || id.includes('@firebase/')) {
-                        return 'firebase';
-                    }
-
-                    // Excalidraw - huge, must be separate for lazy loading
-                    if (id.includes('@excalidraw/')) {
-                        return 'excalidraw';
-                    }
-
-                    // Monaco Editor - large, for code editor feature
-                    if (id.includes('@monaco-editor/') || id.includes('monaco-editor')) {
-                        return 'monaco-editor';
-                    }
-
-                    // PDF Viewer - large, for PDF viewing feature  
-                    if (id.includes('@react-pdf-viewer/')) {
-                        return 'pdf-viewer';
-                    }
-
-
-                    // Pyodide - Python runtime, for code execution
-                    if (id.includes('pyodide')) {
-                        return 'pyodide';
-                    }
-
                     // Quill editor - rich text editing.
                     // IMPORTANT: only match Quill *node_modules* — never src
                     // paths. The src/components/quill/* files transitively
@@ -336,49 +326,6 @@ export default defineConfig({
                     ) {
                         return 'quill-editor';
                     }
-
-                    // KaTeX - math rendering
-                    if (id.includes('katex')) {
-                        return 'katex';
-                    }
-
-                    // Charts libraries - for dashboard
-                    if (id.includes('recharts') ||
-                        id.includes('@nivo/') ||
-                        id.includes('@visx/')) {
-                        return 'charts';
-                    }
-
-                    // Huge Icon Libraries - Need to be split
-                    if (id.includes('react-icons')) {
-                        return 'react-icons';
-                    }
-                    if (id.includes('@phosphor-icons') || id.includes('phosphor-react')) {
-                        return 'phosphor-icons';
-                    }
-                    if (id.includes('@tabler/icons-react')) {
-                        return 'tabler-icons';
-                    }
-
-                    // Large Data Processing Libraries
-                    if (id.includes('country-state-city')) {
-                        return 'country-state-city';
-                    }
-                    if (id.includes('xlsx')) {
-                        return 'excel-processor';
-                    }
-                    if (id.includes('mermaid')) {
-                        return 'mermaid';
-                    }
-                    if (id.includes('lottie-react')) {
-                        return 'lottie';
-                    }
-                    if (id.includes('framer-motion')) {
-                        return 'framer-motion';
-                    }
-
-                    // Don't split React, Radix, or other core UI libs - keep them together
-                    // This prevents forwardRef and other React primitive issues
                 },
             },
         },

@@ -12,6 +12,7 @@ import {
 import {
   encryptCardData,
   isCryptoSupported,
+  loadEwayCrypt,
   sanitizeCardData,
   EwayCardData,
   formatEncryptionError,
@@ -84,8 +85,22 @@ export const EwayCardForm = ({
   const lastEncryptedRef = useRef<string>("");
   const encryptTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Check if crypto is supported
-  const cryptoSupported = isCryptoSupported();
+  // eCrypt loads on demand (see loadEwayCrypt). The unsupported warning
+  // shows only after a load actually failed, not while it is in flight.
+  const [cryptoSupported, setCryptoSupported] = useState(isCryptoSupported);
+  const [cryptoLoadFailed, setCryptoLoadFailed] = useState(false);
+  useEffect(() => {
+    if (cryptoSupported) return;
+    let active = true;
+    loadEwayCrypt().then((ok) => {
+      if (!active) return;
+      setCryptoSupported(ok);
+      setCryptoLoadFailed(!ok);
+    });
+    return () => {
+      active = false;
+    };
+  }, [cryptoSupported]);
 
   /**
    * Validate individual field (returns error string or undefined)
@@ -177,6 +192,13 @@ export const EwayCardForm = ({
     },
     [cryptoSupported, isConfigured, encryptionKey, isFormComplete]
   );
+
+  // A learner who finishes the form before eCrypt arrives would otherwise
+  // never get encrypted data: tryAutoEncrypt only runs on field edits.
+  useEffect(() => {
+    if (cryptoSupported) tryAutoEncrypt(cardData, cardType);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [cryptoSupported]);
 
   // Cleanup timeout on unmount
   useEffect(() => {
@@ -443,7 +465,7 @@ export const EwayCardForm = ({
       </div>
 
       {/* Browser Support Warning */}
-      {!cryptoSupported && (
+      {cryptoLoadFailed && (
         <div className="bg-red-50 p-3 rounded-md">
           <p className="text-sm text-red-800">
             ⚠️ {t("ewayCardForm.browserUnsupported")}

@@ -9,6 +9,7 @@ import { useProctoring } from "@/hooks/proctoring/useProctoring";
 import { AssessmentPreview } from "../questionLiveTest/assessment-preview";
 import { Preferences } from "@capacitor/preferences";
 import { useAssessmentStore } from "@/stores/assessment-store";
+import { usePreloadExamRoutes } from "@/hooks/use-preload-exam-routes";
 // import { enableProtection } from "@/constants/helper";
 
 interface AssessmentStartModalProps {
@@ -29,6 +30,7 @@ const AssessmentStartModal = ({ disabled }: AssessmentStartModalProps) => {
   // of "Start Assessment". Read from the same storage key the start flow uses.
   const [isManual, setIsManual] = useState(false);
   const navigate = useNavigate();
+  usePreloadExamRoutes();
 
   useEffect(() => {
     const loadEvaluationType = async () => {

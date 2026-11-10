@@ -36,6 +36,58 @@
  */
 import i18n from "@/i18n";
 
+const ECRYPT_SRC = "https://secure.ewaypayments.com/scripts/eCrypt.min.js";
+// eCrypt does not expose encryptValue when its script finishes: the script
+// ends with docReady(() => eCrypt.init()), which runs on a setTimeout (or at
+// window "load" if the page is still loading). Wait for init to land.
+const ECRYPT_INIT_TIMEOUT_MS = 15000;
+const ECRYPT_INIT_POLL_MS = 25;
+let eCryptLoad: Promise<boolean> | null = null;
+
+const waitForECryptInit = (): Promise<boolean> =>
+  new Promise((resolve) => {
+    const started = Date.now();
+    const check = () => {
+      if (isCryptoSupported()) return resolve(true);
+      if (Date.now() - started >= ECRYPT_INIT_TIMEOUT_MS) return resolve(false);
+      setTimeout(check, ECRYPT_INIT_POLL_MS);
+    };
+    check();
+  });
+
+/**
+ * Load Eway's eCrypt library on demand. It used to be a blocking <script> in
+ * index.html, so every visitor of every page (course pages, ad landing pages)
+ * waited on a third-party domain for a library only the eWay card form uses.
+ * Resolves true once window.eCrypt is usable, false if the script failed; a
+ * failed load is forgotten so the next call retries.
+ */
+export const loadEwayCrypt = (): Promise<boolean> => {
+  if (isCryptoSupported()) return Promise.resolve(true);
+  if (eCryptLoad) return eCryptLoad;
+  eCryptLoad = new Promise<boolean>((resolve) => {
+    // A tag already on the page (still loading, or loaded but init slow):
+    // wait for it rather than adding a second copy that would init twice.
+    if (document.querySelector(`script[src="${ECRYPT_SRC}"]`)) {
+      resolve(waitForECryptInit());
+      return;
+    }
+    const script = document.createElement("script");
+    script.src = ECRYPT_SRC;
+    script.async = true;
+    script.onload = () => resolve(waitForECryptInit());
+    script.onerror = () => {
+      script.remove();
+      resolve(false);
+    };
+    document.head.appendChild(script);
+  }).then((ok) => {
+    if (!ok) eCryptLoad = null;
+    return ok;
+  });
+  return eCryptLoad;
+};
+
 /**
  * Card data interface for encryption
  */
@@ -70,6 +122,7 @@ export const encryptCardData = async (
 ): Promise<EncryptedCardData> => {
   try {
     // ✅ Step 1: Verify Eway eCrypt library is loaded
+    await loadEwayCrypt();
     if (!window.eCrypt || typeof window.eCrypt.encryptValue !== "function") {
       throw new Error(
         "Eway eCrypt library not loaded. Please ensure the script is included: " +

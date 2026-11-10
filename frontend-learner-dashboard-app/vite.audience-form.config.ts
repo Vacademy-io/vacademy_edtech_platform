@@ -20,9 +20,10 @@ const SKIPPED_PLUGINS = /^(tanstack|avatarkit)/;
  * audience-form.html is a stub; its real markup is index.html with the main
  * entry swapped for the form entry. Deriving it keeps the branding, boot
  * splash and stale-chunk recovery scripts identical to the app's without a
- * second copy to drift. The payment SDKs (jQuery for MathQuill, eWay) are
- * dropped — the form uses neither. A missing marker fails the build rather
- * than shipping a page that would boot the whole app.
+ * second copy to drift. jQuery (for MathQuill) is dropped — the form does not
+ * use it. (eWay is no longer in index.html; EwayCardForm loads it on demand.)
+ * A missing marker fails the build rather than shipping a page that would
+ * boot the whole app.
  */
 const deriveFromIndexHtml = (): Plugin => ({
     name: "audience-form-html",
@@ -38,7 +39,6 @@ const deriveFromIndexHtml = (): Plugin => ({
             };
             swap(`<script type="module" src="/src/main.tsx"></script>`, `<script type="module" src="/src/audience-form-entry.tsx"></script>`);
             swap(`<script src="/vendor/jquery.min.js"></script>`, "");
-            swap(`<script src="https://secure.ewaypayments.com/scripts/eCrypt.min.js"></script>`, "");
             // An embedded form is never installed as an app; skip the per-host
             // manifest lookup the middleware would do for it.
             html = html.replace(`<link rel="manifest" href="/manifest.webmanifest" />`, "");

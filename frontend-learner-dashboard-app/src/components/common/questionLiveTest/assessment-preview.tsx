@@ -24,11 +24,13 @@ import { useImmersiveMode } from "@/hooks/use-immersive-mode";
 import { useIOSSafeAreaInsets } from "@/hooks/use-ios-safe-area-insets";
 import { useExamExperienceSettings } from "@/hooks/use-exam-experience-settings";
 import { useLiveTestStore } from "@/stores/live-test-store";
+import { usePreloadExamRoutes } from "@/hooks/use-preload-exam-routes";
 import { topSafeAreaInset, bottomSafeAreaInset } from "@/utils/safe-area";
 
 export function AssessmentPreview() {
   const { t } = useTranslation("questionTest");
   const router = useRouter();
+  usePreloadExamRoutes();
   const currentPath = router.state.location.pathname;
 
   const newPath = currentPath.replace(/\/[^/]+$/, "/LearnerLiveTest");
