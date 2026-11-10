@@ -66,14 +66,14 @@ export function TopBar({ brand, letter, inner, toolColor, raisedTools }: TopBarP
         'flex size-9 shrink-0 items-center justify-center rounded-lg border border-neutral-200 bg-white';
     const iconStyle = toolColor ? fg(toolColor) : undefined;
     return (
-        <div className="flex h-12 shrink-0 items-center gap-2 border-b border-neutral-200 bg-white px-2">
+        <span className="flex h-12 shrink-0 items-center gap-2 border-b border-neutral-200 bg-white px-2">
             <span className={tool} style={iconStyle}>
                 <SidebarSimple size={18} />
             </span>
             {inner ? (
                 <>
                     <span className={tool} style={iconStyle}>
-                        <ArrowLeft size={18} />
+                        <ArrowLeft size={18} className="rtl:-scale-x-100" />
                     </span>
                     <span className={tool} style={iconStyle}>
                         <House size={18} />
@@ -98,7 +98,7 @@ export function TopBar({ brand, letter, inner, toolColor, raisedTools }: TopBarP
                 className={cn(raisedTools && 'border border-neutral-200 shadow-sm')}
                 style={merge(bg(brand.tint100), fg(brand.solid))}
             />
-        </div>
+        </span>
     );
 }
 
@@ -125,7 +125,7 @@ export function BottomTabs({
     className,
 }: BottomTabsProps) {
     return (
-        <div
+        <span
             className={cn(
                 'absolute inset-x-0 bottom-0 flex h-20 items-center justify-around bg-white px-2',
                 wide ? 'border-t-2' : 'border-t border-neutral-200',
@@ -153,7 +153,7 @@ export function BottomTabs({
                     </span>
                 );
             })}
-        </div>
+        </span>
     );
 }
 
@@ -189,11 +189,11 @@ export function Screen({
     style?: CSSProperties;
 }) {
     return (
-        <div
+        <span
             className={cn('relative flex size-full flex-col overflow-hidden bg-white', className)}
             style={style}
         >
             {children}
-        </div>
+        </span>
     );
 }

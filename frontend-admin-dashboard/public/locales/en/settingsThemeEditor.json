@@ -75,7 +75,7 @@
     },
     "learnerUi": {
         "heading": "Learner app appearance",
-        "description": "Shape, spacing and surface style for the learner app. These apply to what your learners see — the admin dashboard is unaffected.",
+        "description": "How the learner app looks: its skin, corner shape, spacing and surfaces. Only your learners see these; the admin dashboard stays the same.",
         "corners": {
             "label": "Corner style",
             "help": "How rounded cards, buttons and inputs are. Avatars and pills stay circular.",
@@ -125,9 +125,17 @@
                 "default": "Clean and simple: white cards and one button in your brand colour. Fits any institute.",
                 "vibrant": "The default look with more colour: cards softly tinted in your brand colour. Friendly without being loud.",
                 "play": "Bold and game-like: a mascot, a big green Continue button and chunky shapes. Great for young learners.",
-                "cleanerPlay": "Like Play, but calmer: the mascot, warm colours and round pill buttons. Suits school learners of any age.",
+                "cleanerPlay": "Like Play, but calmer: the mascot, your brand colour with warm accents, and round pill buttons. Suits school learners of any age.",
                 "corporate": "Calm and professional: white cards raised on a light grey page. Suits working adults and staff training.",
                 "fun": "Bright and playful: every course gets its own colour, with big friendly buttons. Made for school learners."
+            },
+            "cue": {
+                "default": "Clean and white",
+                "vibrant": "Brand-tinted cards",
+                "play": "Mascot, lime button",
+                "cleanerPlay": "Mascot, pill buttons",
+                "corporate": "Grey page, raised cards",
+                "fun": "A colour per course"
             },
             "funFallback": "Older app versions show Cleaner Play until learners update."
         }

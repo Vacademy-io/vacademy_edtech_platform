@@ -27,14 +27,14 @@ export function CleanerPlayModel({ screen, brand, copy }: SkinModelProps) {
     return (
         <Screen>
             <TopBar brand={brand} letter={copy.name.charAt(0)} />
-            <div className="flex flex-col gap-4 px-7 pt-6">
-                <div
-                    className="rounded-xl border p-4"
+            <span className="flex flex-col gap-4 px-7 pt-6">
+                <span
+                    className="block rounded-xl border p-4"
                     style={merge(bg(brand.tint50), edge(brand.tint100))}
                 >
-                    <div className="flex items-center gap-3">
+                    <span className="flex items-center gap-3">
                         <Mascot className="h-28 w-20" />
-                        <div className="flex min-w-0 flex-1 flex-col gap-2">
+                        <span className="flex min-w-0 flex-1 flex-col gap-2">
                             <span
                                 className="text-2xl font-extrabold leading-tight"
                                 style={fg(CLEANER.ink)}
@@ -52,9 +52,9 @@ export function CleanerPlayModel({ screen, brand, copy }: SkinModelProps) {
                                 <span className="size-5 rounded-full border-4 border-stone-200" />
                                 <Bar className="h-2.5 w-14" style={bg(CLEANER.muted)} />
                             </span>
-                        </div>
-                    </div>
-                    <div
+                        </span>
+                    </span>
+                    <span
                         className="mt-4 flex h-20 items-center gap-4 rounded-full px-7 text-white"
                         style={bg(brand.solid)}
                     >
@@ -67,13 +67,13 @@ export function CleanerPlayModel({ screen, brand, copy }: SkinModelProps) {
                                 <Bar className="h-2.5 w-40 bg-white/80" />
                             </span>
                         </span>
-                    </div>
-                </div>
-                <div
+                    </span>
+                </span>
+                <span
                     className="flex flex-col gap-3 rounded-xl border bg-white p-4"
                     style={edge(CLEANER.line)}
                 >
-                    <div className="flex items-center gap-3">
+                    <span className="flex items-center gap-3">
                         <BookOpen size={30} weight="duotone" className="text-yellow-800" />
                         <span className="flex flex-1 flex-col gap-1.5">
                             <Bar className="h-4 w-36" style={bg(CLEANER.ink)} />
@@ -86,9 +86,9 @@ export function CleanerPlayModel({ screen, brand, copy }: SkinModelProps) {
                             <Sparkle size={12} weight="fill" />
                             <Bar className="h-2.5 w-12" style={bg(CLEANER.terracotta)} />
                         </span>
-                    </div>
+                    </span>
                     {[0, 1].map((i) => (
-                        <div
+                        <span
                             key={i}
                             className="flex items-center gap-3 rounded-xl border p-3"
                             style={edge(CLEANER.line)}
@@ -109,7 +109,7 @@ export function CleanerPlayModel({ screen, brand, copy }: SkinModelProps) {
                                 />
                                 <Bar className="h-2 w-36" style={bg(CLEANER.line)} />
                             </span>
-                        </div>
+                        </span>
                     ))}
                     <span
                         className="flex h-12 items-center justify-center gap-2 rounded-full border"
@@ -118,11 +118,11 @@ export function CleanerPlayModel({ screen, brand, copy }: SkinModelProps) {
                         <Play size={16} weight="fill" />
                         <Bar className="h-3 w-32" style={bg(CLEANER.ink)} />
                     </span>
-                </div>
-                <div className="rounded-xl border p-4" style={edge(CLEANER.line)}>
+                </span>
+                <span className="block rounded-xl border p-4" style={edge(CLEANER.line)}>
                     <span className="block h-32 rounded-xl" style={bg(CLEANER.sage)} />
-                </div>
-            </div>
+                </span>
+            </span>
             {tabs(0)}
         </Screen>
     );

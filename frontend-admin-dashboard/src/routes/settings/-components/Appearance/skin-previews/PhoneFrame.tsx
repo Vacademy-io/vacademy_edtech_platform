@@ -22,7 +22,7 @@ interface PhoneFrameProps {
 const FALLBACK_WIDTH = { sm: 150, lg: 300 } as const;
 
 export function PhoneFrame({ children, size, className }: PhoneFrameProps) {
-    const screenRef = useRef<HTMLDivElement>(null);
+    const screenRef = useRef<HTMLSpanElement>(null);
     const [width, setWidth] = useState<number>(FALLBACK_WIDTH[size]);
 
     useLayoutEffect(() => {
@@ -46,25 +46,29 @@ export function PhoneFrame({ children, size, className }: PhoneFrameProps) {
     };
 
     return (
-        <div
+        <span
             aria-hidden="true"
             className={cn(
-                'w-full bg-neutral-800 shadow-sm',
+                'block w-full bg-neutral-800 shadow-sm',
                 size === 'lg' ? 'rounded-3xl p-2' : 'rounded-2xl p-1',
                 className
             )}
         >
-            <div
+            <span
                 ref={screenRef}
                 className={cn(
-                    'aspect-[390/720] w-full overflow-hidden bg-white',
+                    'block aspect-[390/720] w-full overflow-hidden bg-white',
                     size === 'lg' ? 'rounded-2xl' : 'rounded-xl'
                 )}
             >
-                <div className="relative overflow-hidden" style={modelBox}>
+                <span
+                    className="relative block overflow-hidden"
+                    // design-lint-ignore: zooms the 390px model to the measured frame width
+                    style={modelBox}
+                >
                     {children}
-                </div>
-            </div>
-        </div>
+                </span>
+            </span>
+        </span>
     );
 }

@@ -58,9 +58,9 @@ interface ClassicProps {
 function Page({ look, children }: { look: ClassicLook; children: ReactNode }) {
     if (!look.canvas) return <>{children}</>;
     return (
-        <div className="flex flex-1 flex-col px-4 pt-4" style={bg(look.canvas)}>
-            <div className="flex flex-1 flex-col rounded-t-lg bg-white">{children}</div>
-        </div>
+        <span className="flex flex-1 flex-col px-4 pt-4" style={bg(look.canvas)}>
+            <span className="flex flex-1 flex-col rounded-t-lg bg-white">{children}</span>
+        </span>
     );
 }
 
@@ -70,8 +70,8 @@ export function ClassicHome({ brand, copy, look }: ClassicProps) {
         <Screen style={look.canvas ? bg(look.canvas) : undefined}>
             <TopBar brand={brand} letter={letter} toolColor={look.toolColor} />
             <Page look={look}>
-                <div className={cn('flex flex-col gap-4 pt-6', look.canvas ? 'px-3' : 'px-7')}>
-                    <div className="flex items-center gap-3">
+                <span className={cn('flex flex-col gap-4 pt-6', look.canvas ? 'px-3' : 'px-7')}>
+                    <span className="flex items-center gap-3">
                         {look.avatar ? (
                             <Avatar
                                 letter={letter}
@@ -87,9 +87,9 @@ export function ClassicHome({ brand, copy, look }: ClassicProps) {
                         >
                             {copy.greetingName}
                         </span>
-                    </div>
+                    </span>
                     <Bar className="h-2.5 w-44 bg-neutral-300" />
-                    <div
+                    <span
                         className={cn('flex flex-col gap-2.5 p-4', look.hero.className)}
                         style={look.hero.style}
                     >
@@ -103,12 +103,12 @@ export function ClassicHome({ brand, copy, look }: ClassicProps) {
                             <Play size={16} weight="fill" />
                             {copy.continueLabel}
                         </span>
-                    </div>
-                    <div
+                    </span>
+                    <span
                         className={cn('flex flex-col gap-3 p-4', look.card.className)}
                         style={look.card.style}
                     >
-                        <div className="flex items-center gap-3">
+                        <span className="flex items-center gap-3">
                             <span
                                 className="flex size-10 shrink-0 items-center justify-center rounded-lg"
                                 style={merge(bg(brand.tint100), fg(brand.solid))}
@@ -126,9 +126,9 @@ export function ClassicHome({ brand, copy, look }: ClassicProps) {
                                 <Sparkle size={12} weight="fill" />
                                 <Bar className="h-2 w-10" style={bg(brand.solid)} />
                             </span>
-                        </div>
+                        </span>
                         {[0, 1].map((i) => (
-                            <div key={i} className="flex items-center gap-3 py-1.5 ps-2">
+                            <span key={i} className="flex items-center gap-3 py-1.5 ps-2">
                                 <span
                                     className={cn(
                                         'flex size-6 shrink-0 items-center justify-center rounded-md text-xs font-bold',
@@ -147,23 +147,26 @@ export function ClassicHome({ brand, copy, look }: ClassicProps) {
                                     />
                                     <Bar className="h-2 w-36 bg-neutral-300" />
                                 </span>
-                                <CaretRight size={14} className="text-neutral-500" />
-                            </div>
+                                <CaretRight
+                                    size={14}
+                                    className="text-neutral-500 rtl:-scale-x-100"
+                                />
+                            </span>
                         ))}
                         <span className="flex h-10 items-center justify-center gap-2 rounded-lg border border-neutral-200 bg-white text-neutral-900 shadow-sm">
                             <Play size={14} weight="fill" />
                             <Bar className="h-3 w-28 bg-neutral-800" />
                         </span>
-                    </div>
-                    <div className={cn('p-4', look.card.className)} style={look.card.style}>
+                    </span>
+                    <span className={cn('block p-4', look.card.className)} style={look.card.style}>
                         <span
                             className="flex h-36 items-center justify-center rounded-lg text-white"
                             style={bg(brand.solid)}
                         >
                             <BookOpen size={40} weight="bold" />
                         </span>
-                    </div>
-                </div>
+                    </span>
+                </span>
             </Page>
         </Screen>
     );
@@ -179,7 +182,7 @@ function SlideButton({ next, muted }: { next?: boolean; muted?: boolean }) {
                 muted ? 'text-neutral-300' : 'text-neutral-700'
             )}
         >
-            <Icon size={16} />
+            <Icon size={16} className="rtl:-scale-x-100" />
         </span>
     );
 }
@@ -222,41 +225,44 @@ export function ClassicLesson({ brand, copy, look }: ClassicProps) {
                 toolColor={look.toolColor}
                 raisedTools={look.raisedTools}
             />
-            <div className={cn('px-6 py-3', look.canvas && 'mx-3 bg-white')}>
+            <span className={cn('block px-6 py-3', look.canvas && 'mx-3 bg-white')}>
                 <Bar className="h-2.5 w-56 bg-neutral-800" />
-            </div>
+            </span>
             {navTop ? (
-                <div className="mx-6 flex items-center gap-2 border-y border-neutral-100 py-2">
+                <span className="mx-6 flex items-center gap-2 border-y border-neutral-100 py-2">
                     <SlideButton muted />
                     <span className="flex flex-1 items-center justify-center gap-2">
                         <span className="text-xs font-semibold text-neutral-400">1 / 3</span>
                         <ToolChips />
                     </span>
                     <SlideButton next />
-                </div>
+                </span>
             ) : null}
-            <div className="mx-3 mt-2 flex h-80 flex-col gap-4 rounded-xl border-2 border-neutral-200 bg-white p-5">
-                <Bar className="h-4 w-full bg-neutral-500" />
-                <Bar className="h-4 w-4/5 bg-neutral-500" />
-                <Bar className="h-4 w-11/12 bg-neutral-300" />
-                <Bar className="h-4 w-2/3 bg-neutral-300" />
-            </div>
+            {/* Corporate keeps the slide on its white panel, a little past the card. */}
+            <span className={cn(look.canvas ? 'mx-3 block bg-white pb-16' : 'mx-3 mt-2')}>
+                <span className="flex h-80 flex-col gap-4 rounded-xl border-2 border-neutral-200 bg-white p-5">
+                    <Bar className="h-4 w-full bg-neutral-500" />
+                    <Bar className="h-4 w-4/5 bg-neutral-500" />
+                    <Bar className="h-4 w-11/12 bg-neutral-300" />
+                    <Bar className="h-4 w-2/3 bg-neutral-300" />
+                </span>
+            </span>
             {navTop ? (
                 look.tabs
             ) : (
-                <div className="absolute inset-x-0 bottom-0 flex flex-col gap-2 border-t border-neutral-200 bg-white px-3 pb-3 pt-2">
-                    <div className="flex items-center justify-between">
+                <span className="absolute inset-x-0 bottom-0 flex flex-col gap-2 border-t border-neutral-200 bg-white px-3 pb-3 pt-2">
+                    <span className="flex items-center justify-between">
                         <Bar className="h-2.5 w-48 bg-neutral-700" />
                         <span className="text-xs font-semibold text-neutral-500">1 / 4</span>
-                    </div>
-                    <div className="flex items-center gap-2 border-t border-neutral-100 pt-2">
+                    </span>
+                    <span className="flex items-center gap-2 border-t border-neutral-100 pt-2">
                         <SlideButton muted />
                         <span className="flex flex-1 justify-center gap-1">
                             <ToolChips />
                         </span>
                         <SlideButton next />
-                    </div>
-                </div>
+                    </span>
+                </span>
             )}
         </Screen>
     );
@@ -279,20 +285,24 @@ export function ClassicResult({
                 raisedTools={look.raisedTools}
             />
             {navTop ? (
-                <div className="mx-6 flex items-center gap-2 border-b border-neutral-100 py-2">
+                <span className="mx-6 flex items-center gap-2 border-b border-neutral-100 py-2">
                     <SlideButton />
                     <span className="flex flex-1 items-center justify-center gap-2">
                         <span className="text-xs font-semibold text-neutral-400">2 / 2</span>
                         <DoubtsChip />
                     </span>
                     <SlideButton next />
-                </div>
+                </span>
             ) : null}
             {celebration}
-            <div
-                className={cn('flex flex-col gap-4 px-7 pt-5', look.canvas && 'mx-3 bg-white px-4')}
+            <span
+                className={cn(
+                    'flex flex-col gap-4 px-7 pt-5',
+                    // Corporate's white panel runs down to the slide footer.
+                    look.canvas && 'mx-3 flex-1 bg-white px-4'
+                )}
             >
-                <div className="flex items-center gap-3">
+                <span className="flex items-center gap-3">
                     <Bar className="h-4 w-24 bg-neutral-900" />
                     <span className="rounded-full px-3 py-1.5" style={bg(brand.tint100)}>
                         <Bar className="h-2 w-14 bg-neutral-700" />
@@ -303,8 +313,8 @@ export function ClassicResult({
                     >
                         <Bar className="h-2.5 w-16 bg-neutral-800" />
                     </span>
-                </div>
-                <div
+                </span>
+                <span
                     className="flex flex-col gap-3 rounded-xl border p-5"
                     style={merge(bg(brand.tint50), edge(brand.tint200))}
                 >
@@ -335,8 +345,8 @@ export function ClassicResult({
                             <Bar className="h-2.5 w-14 bg-red-500" />
                         </span>
                     </span>
-                </div>
-                <div className="flex items-center gap-3 rounded-xl border border-green-200 bg-green-50 p-4">
+                </span>
+                <span className="flex items-center gap-3 rounded-xl border border-green-200 bg-green-50 p-4">
                     <Confetti size={26} className="text-yellow-600" />
                     <span className="flex flex-col gap-1.5">
                         <span className="text-base font-semibold text-green-800">
@@ -344,31 +354,31 @@ export function ClassicResult({
                         </span>
                         <Bar className="h-2.5 w-44 bg-green-600" />
                     </span>
-                </div>
-                <div className="flex flex-col gap-3 rounded-xl border border-neutral-200 bg-neutral-50 p-4">
+                </span>
+                <span className="flex flex-col gap-3 rounded-xl border border-neutral-200 bg-neutral-50 p-4">
                     <Bar className="h-2.5 w-20 bg-neutral-400" />
                     <Bar className="h-3 w-56 bg-neutral-700" />
                     <span className="rounded-lg border border-green-200 bg-green-50 p-3">
                         <Bar className="h-3 w-24 bg-neutral-700" />
                     </span>
-                </div>
-            </div>
+                </span>
+            </span>
             {navTop ? (
                 look.tabs
             ) : (
-                <div className="absolute inset-x-0 bottom-0 flex flex-col gap-2 border-t border-neutral-200 bg-white px-3 pb-3 pt-2">
-                    <div className="flex items-center justify-between">
+                <span className="absolute inset-x-0 bottom-0 flex flex-col gap-2 border-t border-neutral-200 bg-white px-3 pb-3 pt-2">
+                    <span className="flex items-center justify-between">
                         <Bar className="h-2.5 w-28 bg-neutral-700" />
                         <span className="text-xs font-semibold text-neutral-500">2 / 3</span>
-                    </div>
-                    <div className="flex items-center gap-2 border-t border-neutral-100 pt-2">
+                    </span>
+                    <span className="flex items-center gap-2 border-t border-neutral-100 pt-2">
                         <SlideButton />
                         <span className="flex flex-1 justify-center">
                             <DoubtsChip />
                         </span>
                         <SlideButton next />
-                    </div>
-                </div>
+                    </span>
+                </span>
             )}
         </Screen>
     );

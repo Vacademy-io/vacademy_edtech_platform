@@ -45,14 +45,16 @@ const COURSE = FUN.courses[1];
 function FunHome({ brand, copy }: Props) {
     return (
         <>
-            <div className="flex items-end justify-between px-5 pt-5">
-                <div className="min-w-0">
-                    <p className="text-sm font-bold" style={fg(FUN.muted)}>
+            <span className="flex items-end justify-between px-5 pt-5">
+                <span className="block min-w-0">
+                    <span className="block text-sm font-bold" style={fg(FUN.muted)}>
                         {copy.greeting}
-                    </p>
-                    <p className="truncate text-3xl font-black leading-tight">{copy.name}</p>
-                </div>
-                <div className="flex items-center gap-2">
+                    </span>
+                    <span className="block truncate text-3xl font-black leading-tight">
+                        {copy.name}
+                    </span>
+                </span>
+                <span className="flex items-center gap-2">
                     <span
                         className="flex h-10 items-center gap-1 rounded-full px-3 text-lg font-black"
                         style={merge(bg(FUN.streakBg), fg(FUN.streakText))}
@@ -64,18 +66,18 @@ function FunHome({ brand, copy }: Props) {
                         className="size-11 text-base font-black"
                         style={merge(bg(brand.funTint), fg(brand.funSolid))}
                     />
-                </div>
-            </div>
+                </span>
+            </span>
 
-            <div
-                className="relative mx-5 mt-4 overflow-hidden rounded-3xl p-5 text-white"
+            <span
+                className="relative mx-5 mt-4 block overflow-hidden rounded-3xl p-5 text-white"
                 style={bg(COURSE.solid)}
             >
                 <span
                     className="absolute -end-12 -top-14 size-44 rounded-full opacity-50"
                     style={bg(COURSE.light)}
                 />
-                <div className="relative flex items-start gap-3">
+                <span className="relative flex items-start gap-3">
                     <span className="flex flex-1 flex-col gap-2.5">
                         <Bar className="h-2.5 w-44 bg-white/70" />
                         <Bar className="h-5 w-40 bg-white" />
@@ -87,8 +89,8 @@ function FunHome({ brand, copy }: Props) {
                     >
                         <BookOpen size={28} weight="bold" />
                     </span>
-                </div>
-                <div className="relative mt-5 flex items-center gap-3">
+                </span>
+                <span className="relative mt-5 flex items-center gap-3">
                     <span
                         className="h-3.5 flex-1 overflow-hidden rounded-full"
                         style={bg(COURSE.light)}
@@ -99,7 +101,7 @@ function FunHome({ brand, copy }: Props) {
                         />
                     </span>
                     <span className="text-sm font-black">50%</span>
-                </div>
+                </span>
                 <span
                     className="relative mt-4 flex h-14 items-center justify-center gap-2 rounded-2xl bg-white text-lg font-black"
                     style={merge(fg(COURSE.solid), lip(COURSE.lip))}
@@ -107,9 +109,9 @@ function FunHome({ brand, copy }: Props) {
                     <Play size={18} weight="fill" />
                     {copy.continueLabel}
                 </span>
-            </div>
+            </span>
 
-            <div className="mx-5 mt-4 grid grid-cols-2 gap-3">
+            <span className="mx-5 mt-4 grid grid-cols-2 gap-3">
                 <span
                     className="flex items-center gap-3 rounded-2xl p-3"
                     style={bg(FUN.successTint)}
@@ -155,13 +157,13 @@ function FunHome({ brand, copy }: Props) {
                     </span>
                     <Bar className="h-3 w-28" style={bg(FUN.liveText)} />
                 </span>
-            </div>
+            </span>
 
-            <div className="mx-5 mt-5 flex items-center justify-between">
+            <span className="mx-5 mt-5 flex items-center justify-between">
                 <Bar className="h-4 w-32" style={bg(FUN.ink)} />
                 <Bar className="h-3 w-14" style={bg(brand.funSolid)} />
-            </div>
-            <div className="ms-5 mt-3 flex gap-3">
+            </span>
+            <span className="ms-5 mt-3 flex gap-3">
                 {FUN.courses.slice(0, 3).map((course, i) => (
                     <span
                         key={i}
@@ -200,7 +202,7 @@ function FunHome({ brand, copy }: Props) {
                         </span>
                     </span>
                 ))}
-            </div>
+            </span>
 
             <BottomTabs
                 active={0}
@@ -225,29 +227,33 @@ function LipButtons({
 }) {
     const BackIcon = back === 'retry' ? ArrowCounterClockwise : ArrowLeft;
     return (
-        <div className="flex gap-3">
+        <span className="flex gap-3">
             <span
                 className="flex h-14 w-28 items-center justify-center rounded-2xl border-2 bg-white"
                 style={merge(edge(FUN.lineButton), lip(FUN.lineButton), fg(FUN.ink))}
             >
-                <BackIcon size={22} weight="bold" />
+                <BackIcon
+                    size={22}
+                    weight="bold"
+                    className={back === 'previous' ? 'rtl:-scale-x-100' : undefined}
+                />
             </span>
             <span
                 className="flex h-14 flex-1 items-center justify-center gap-2 rounded-2xl text-lg font-black text-white"
                 style={merge(bg(brand.funSolid), lip(brand.funLip))}
             >
                 {label}
-                <ArrowRight size={20} weight="bold" />
+                <ArrowRight size={20} weight="bold" className="rtl:-scale-x-100" />
             </span>
-        </div>
+        </span>
     );
 }
 
 function FunLesson({ brand, copy }: Props) {
     return (
         <>
-            <div className="px-3 pt-2">
-                <div className="flex items-center gap-1.5">
+            <span className="block px-3 pt-2">
+                <span className="flex items-center gap-1.5">
                     <span
                         className="flex size-11 items-center justify-center"
                         style={fg(FUN.muted)}
@@ -260,16 +266,16 @@ function FunLesson({ brand, copy }: Props) {
                     <span className="pe-2 text-sm font-black" style={fg(FUN.muted)}>
                         3/5
                     </span>
-                </div>
+                </span>
                 <span
                     className="ms-2.5 mt-1 block h-3.5 overflow-hidden rounded-full"
                     style={bg(FUN.violetTrack)}
                 >
                     <span className="block h-full w-2/5 rounded-full" style={bg(COURSE.solid)} />
                 </span>
-            </div>
-            <div
-                className="relative mx-5 mt-4 h-48 shrink-0 overflow-hidden rounded-3xl"
+            </span>
+            <span
+                className="relative mx-5 mt-4 block h-48 shrink-0 overflow-hidden rounded-3xl"
                 style={bg(COURSE.solid)}
             >
                 <span
@@ -292,8 +298,8 @@ function FunLesson({ brand, copy }: Props) {
                 >
                     <span className="block h-full w-2/5 rounded-full" style={bg(FUN.highlight)} />
                 </span>
-            </div>
-            <div className="flex flex-col gap-2.5 px-5 pt-4">
+            </span>
+            <span className="flex flex-col gap-2.5 px-5 pt-4">
                 <Bar className="h-2.5 w-44" style={bg(COURSE.solid)} />
                 <Bar className="h-6 w-48" style={bg(FUN.ink)} />
                 <Bar className="mt-1 h-3 w-full" style={bg(FUN.lineButton)} />
@@ -305,14 +311,14 @@ function FunLesson({ brand, copy }: Props) {
                     <Bar className="h-5 w-40" style={bg(FUN.violetInk)} />
                     <Bar className="h-2.5 w-56" style={bg(FUN.muted)} />
                 </span>
-            </div>
-            <div
+            </span>
+            <span
                 className="absolute inset-x-0 bottom-0 flex flex-col gap-2.5 border-t-2 bg-white px-5 pb-6 pt-3"
                 style={edge(FUN.lineNav)}
             >
                 <Bar className="h-2.5 w-28" style={bg(FUN.muted)} />
                 <LipButtons brand={brand} label={copy.nextLabel} back="previous" />
-            </div>
+            </span>
         </>
     );
 }
@@ -325,14 +331,14 @@ function FunResult({ brand, copy }: Props) {
     ];
     return (
         <>
-            <div className="flex items-center gap-1 px-3 pt-2">
+            <span className="flex items-center gap-1 px-3 pt-2">
                 <span className="flex size-11 items-center justify-center" style={fg(FUN.muted)}>
                     <X size={22} weight="bold" />
                 </span>
                 <Bar className="h-3 w-56" style={bg(FUN.muted)} />
-            </div>
-            <div
-                className="relative mx-5 mt-1 overflow-hidden rounded-3xl px-5 pb-5 pt-5 text-center"
+            </span>
+            <span
+                className="relative mx-5 mt-1 block overflow-hidden rounded-3xl p-5 text-center"
                 style={bg(FUN.testTint)}
             >
                 <span
@@ -387,10 +393,12 @@ function FunResult({ brand, copy }: Props) {
                         60%
                     </text>
                 </svg>
-                <p className="relative mt-3 text-3xl font-black leading-tight">{copy.passed}</p>
+                <span className="relative mt-3 block text-3xl font-black leading-tight">
+                    {copy.passed}
+                </span>
                 <Bar className="relative mx-auto mt-2 h-3 w-40 bg-yellow-800" />
-            </div>
-            <div className="mx-5 mt-3 grid grid-cols-3 gap-2.5">
+            </span>
+            <span className="mx-5 mt-3 grid grid-cols-3 gap-2.5">
                 {tiles.map((tile, i) => (
                     <span
                         key={i}
@@ -403,8 +411,8 @@ function FunResult({ brand, copy }: Props) {
                         <Bar className="h-2 w-12" style={bg(tile.ink)} />
                     </span>
                 ))}
-            </div>
-            <div className="mx-5 mt-4 flex flex-col gap-2">
+            </span>
+            <span className="mx-5 mt-4 flex flex-col gap-2">
                 <Bar className="h-4 w-40" style={bg(FUN.ink)} />
                 {[true, false].map((right, i) => (
                     <span
@@ -427,10 +435,10 @@ function FunResult({ brand, copy }: Props) {
                         <Bar className={cn('h-3', right ? 'w-44' : 'w-52')} style={bg(FUN.ink2)} />
                     </span>
                 ))}
-            </div>
-            <div className="absolute inset-x-5 bottom-6">
+            </span>
+            <span className="absolute inset-x-5 bottom-6">
                 <LipButtons brand={brand} label={copy.nextLabel} back="retry" />
-            </div>
+            </span>
         </>
     );
 }

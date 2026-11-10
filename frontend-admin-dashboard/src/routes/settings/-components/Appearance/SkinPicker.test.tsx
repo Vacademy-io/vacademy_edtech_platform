@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { describe, expect, it, vi, afterEach } from 'vitest';
+import { describe, expect, it, vi, afterEach, beforeEach } from 'vitest';
 import { cleanup, fireEvent, render, screen, within } from '@testing-library/react';
 import { useState } from 'react';
 import type { StudentUiType } from '@/types/theme-role-settings';
@@ -12,7 +12,7 @@ vi.mock('react-i18next', () => ({
     }),
 }));
 
-const { SkinPicker } = await import('./SkinPicker');
+const { SkinPicker, skinPickerLayout } = await import('./SkinPicker');
 const { SKIN_MODELS, SKIN_ORDER, brandPalette } = await import('./skin-previews');
 
 const ALL_SKINS: StudentUiType[] = [
@@ -71,6 +71,23 @@ describe('skin models', () => {
                 unmount();
             }
         }
+    });
+
+    it('paints the brand colour into the model', () => {
+        const continueFill = (hex: string) => {
+            const Model = SKIN_MODELS.default;
+            const { unmount } = render(
+                <Model screen="home" brand={brandPalette(hex)} copy={copy} />
+            );
+            const fill = (screen.getByText('c') as HTMLElement).style.backgroundColor;
+            unmount();
+            return fill;
+        };
+        const blue = continueFill(BRAND);
+        const red = continueFill('#e11d48'); // design-lint-ignore: test data
+        expect(blue).toBeTruthy();
+        expect(red).toBeTruthy();
+        expect(blue).not.toBe(red);
     });
 
     it('keeps Fun brand text readable on its tint, even for a light brand', () => {
@@ -159,5 +176,73 @@ describe('SkinPicker', () => {
         for (const frame of document.querySelectorAll('[aria-hidden="true"]')) {
             expect(frame.closest('[role="radio"], [role="tabpanel"]')).toBeTruthy();
         }
+        // Every card and the big preview hide their drawing...
+        for (const skin of ALL_SKINS) {
+            expect(radio(skin).querySelector('[aria-hidden="true"] [style]')).toBeTruthy();
+        }
+        expect(panel().querySelector('[aria-hidden="true"] [style]')).toBeTruthy();
+        // ...and the panel says in words what the drawing shows.
+        const described = document.getElementById(panel().getAttribute('aria-describedby') ?? '');
+        expect(described?.textContent).toBe('learnerUi.skin.blurb.default');
+    });
+
+    it('describes each card with a short cue that stays out of its name', () => {
+        render(<Harness />);
+        const card = radio('corporate');
+        const cue = document.getElementById(card.getAttribute('aria-describedby') ?? '');
+        expect(cue?.textContent).toBe('learnerUi.skin.cue.corporate');
+        expect(cue?.getAttribute('aria-hidden')).toBe('true');
+    });
+
+    it('previews an unknown saved skin as Default without changing it', () => {
+        const onChange = vi.fn();
+        render(
+            <SkinPicker value={'retro' as StudentUiType} brandHex={BRAND} onChange={onChange} />
+        );
+        expect(
+            screen.getByRole('heading', {
+                name: 'learnerUi.skin.previewTitle(learnerUi.skin.default)',
+            })
+        ).toBeTruthy();
+        expect(screen.queryByText('learnerUi.skin.blurb.retro')).toBeNull();
+        expect(onChange).not.toHaveBeenCalled();
+    });
+});
+
+describe('SkinPicker layout follows its own width', () => {
+    let width = 0;
+    const original = Object.getOwnPropertyDescriptor(HTMLElement.prototype, 'clientWidth');
+
+    beforeEach(() => {
+        Object.defineProperty(HTMLElement.prototype, 'clientWidth', {
+            configurable: true,
+            get: () => width,
+        });
+    });
+
+    afterEach(() => {
+        cleanup();
+        if (original) Object.defineProperty(HTMLElement.prototype, 'clientWidth', original);
+    });
+
+    const root = () => screen.getByRole('radiogroup').parentElement as HTMLElement;
+
+    it('stacks the preview under the cards in a narrow column', () => {
+        width = 460; // e.g. beside the live preview in Student display settings
+        render(<Harness />);
+        expect(root().dataset.layout).toBe('stacked');
+        expect(root().className).toContain('flex-col');
+        expect(screen.getByRole('radiogroup').dataset.columns).toBe('3');
+    });
+
+    it('uses two columns on a phone and side by side on a wide page', () => {
+        expect(skinPickerLayout(0)).toEqual({ layout: 'stacked', columns: 2 });
+        expect(skinPickerLayout(320)).toEqual({ layout: 'stacked', columns: 2 });
+        expect(skinPickerLayout(700)).toEqual({ layout: 'side', columns: 2 });
+        expect(skinPickerLayout(975)).toEqual({ layout: 'side-wide', columns: 3 });
+        width = 975;
+        render(<Harness />);
+        expect(root().dataset.layout).toBe('side-wide');
+        expect(root().className).toContain('flex-row');
     });
 });

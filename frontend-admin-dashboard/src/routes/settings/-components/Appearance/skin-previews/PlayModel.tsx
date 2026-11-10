@@ -32,7 +32,7 @@ export function PlayModel({ screen, brand, copy }: SkinModelProps) {
                 copy={copy}
                 look={look}
                 celebration={
-                    <div
+                    <span
                         className="absolute inset-x-4 top-4 z-10 flex items-center gap-3 rounded-2xl px-4 py-3 text-white"
                         style={merge(bg(PLAY.success), lip(PLAY.successDeep))}
                     >
@@ -41,7 +41,7 @@ export function PlayModel({ screen, brand, copy }: SkinModelProps) {
                             <Bar className="h-4 w-44 bg-neutral-800" />
                             <Bar className="h-2.5 w-52 bg-neutral-700" />
                         </span>
-                    </div>
+                    </span>
                 }
             />
         );
@@ -49,14 +49,14 @@ export function PlayModel({ screen, brand, copy }: SkinModelProps) {
     return (
         <Screen>
             <TopBar brand={brand} letter={copy.name.charAt(0)} raisedTools />
-            <div className="flex flex-col gap-4 px-7 pt-6">
-                <div
-                    className="rounded-3xl border-2 p-4"
+            <span className="flex flex-col gap-4 px-7 pt-6">
+                <span
+                    className="block rounded-3xl border-2 p-4"
                     style={merge(bg(PLAY.highlight), edge(PLAY.highlightEdge))}
                 >
-                    <div className="flex items-center gap-3">
+                    <span className="flex items-center gap-3">
                         <Mascot className="h-28 w-20" />
-                        <div className="flex min-w-0 flex-1 flex-col gap-2">
+                        <span className="flex min-w-0 flex-1 flex-col gap-2">
                             <span
                                 className="text-2xl font-black leading-tight"
                                 style={fg(PLAY.ink)}
@@ -71,9 +71,9 @@ export function PlayModel({ screen, brand, copy }: SkinModelProps) {
                                 <span className="size-5 rounded-full border-4 border-blue-100" />
                                 <Bar className="h-2.5 w-14 bg-neutral-700" />
                             </span>
-                        </div>
-                    </div>
-                    <div
+                        </span>
+                    </span>
+                    <span
                         className="mt-4 flex h-24 items-center gap-4 rounded-3xl px-6 text-white"
                         style={merge(bg(PLAY.success), lip(PLAY.successDeep, 6))}
                     >
@@ -86,13 +86,13 @@ export function PlayModel({ screen, brand, copy }: SkinModelProps) {
                                 <Bar className="h-2.5 w-36 bg-neutral-700" />
                             </span>
                         </span>
-                    </div>
-                </div>
-                <div
+                    </span>
+                </span>
+                <span
                     className="flex flex-col gap-3 rounded-2xl border border-slate-200 p-4"
                     style={bg(PLAY.navySoft)}
                 >
-                    <div className="flex items-center gap-3">
+                    <span className="flex items-center gap-3">
                         <BookOpen size={30} weight="duotone" className="text-yellow-700" />
                         <span className="flex flex-1 flex-col gap-1.5">
                             <Bar className="h-4 w-36" style={bg(PLAY.navy)} />
@@ -105,9 +105,9 @@ export function PlayModel({ screen, brand, copy }: SkinModelProps) {
                             <Sparkle size={12} weight="fill" />
                             <Bar className="h-2.5 w-12" style={bg(PLAY.navy)} />
                         </span>
-                    </div>
+                    </span>
                     {[0, 1].map((i) => (
-                        <div key={i} className="flex items-center gap-3 rounded-xl bg-white p-3">
+                        <span key={i} className="flex items-center gap-3 rounded-xl bg-white p-3">
                             <span
                                 className={cn(
                                     'flex size-6 items-center justify-center rounded-md text-xs font-black',
@@ -125,7 +125,7 @@ export function PlayModel({ screen, brand, copy }: SkinModelProps) {
                                 />
                                 <Bar className="h-2 w-36 bg-neutral-300" />
                             </span>
-                        </div>
+                        </span>
                     ))}
                     <span
                         className="flex h-9 items-center justify-center gap-2"
@@ -134,14 +134,14 @@ export function PlayModel({ screen, brand, copy }: SkinModelProps) {
                         <Play size={16} weight="fill" />
                         <Bar className="h-3.5 w-36" style={bg(PLAY.ink)} />
                     </span>
-                </div>
-                <div
-                    className="rounded-3xl border p-4"
+                </span>
+                <span
+                    className="block rounded-3xl border p-4"
                     style={merge(bg(PLAY.infoSoft), edge(PLAY.infoSoftEdge))}
                 >
                     <span className="block h-32 rounded-2xl" style={bg(PLAY.infoSoftInk)} />
-                </div>
-            </div>
+                </span>
+            </span>
             {tabs(0)}
         </Screen>
     );
