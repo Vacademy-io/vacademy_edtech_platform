@@ -375,7 +375,9 @@ export type StudentUIType =
   | "vibrant"
   | "play"
   | "cleanerPlay"
-  | "corporate";
+  | "corporate"
+  /** Course colours, lip buttons and Nunito: the root carries ui-fun only. */
+  | "fun";
 
 export interface StudentUISettings {
   type: StudentUIType;

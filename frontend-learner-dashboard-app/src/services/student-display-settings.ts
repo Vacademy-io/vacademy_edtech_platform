@@ -538,7 +538,8 @@ export function applyUiSkinFromSettings(
       override === "vibrant" ||
       override === "play" ||
       override === "cleanerPlay" ||
-      override === "corporate"
+      override === "corporate" ||
+      override === "fun"
     ) {
       return; // QA override wins; __root's debug helpers manage it
     }
@@ -549,12 +550,14 @@ export function applyUiSkinFromSettings(
       "ui-vibrant",
       "ui-play",
       "ui-cleaner-play",
-      "ui-corporate"
+      "ui-corporate",
+      "ui-fun"
     );
     if (t === "vibrant") root.classList.add("ui-vibrant");
     else if (t === "play") root.classList.add("ui-play");
     else if (t === "cleanerPlay") root.classList.add("ui-cleaner-play");
     else if (t === "corporate") root.classList.add("ui-corporate");
+    else if (t === "fun") root.classList.add("ui-fun");
   } catch {
     // noop — never let skin application break a login flow
   }

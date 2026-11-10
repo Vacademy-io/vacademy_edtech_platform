@@ -67,6 +67,7 @@ import { useOfflineInit } from "@/hooks/offline/useOfflineInit";
 import { RevokedDeviceDialog } from "@/components/common/offline/revoked-device-dialog";
 import { useLiveTestStore } from "@/stores/live-test-store";
 import { resolveUiSkin } from "@/utils/institute-theme-roles";
+import { useFunSkinRuntime } from "@/components/design-system/fun/use-fun-skin-runtime";
 import { matchesCataloguePost } from "@/lib/catalogue-post-route";
 import { clearArrivalTokens, readArrivalTokens } from "@/lib/auth/arrival-tokens";
 import {
@@ -256,6 +257,8 @@ const isPublicRoute = (pathname: string): boolean => {
 };
 
 const RootComponent = () => {
+  // Fun skin only: its fonts and brand shades. Adds nothing for any other skin.
+  useFunSkinRuntime();
   const { setUpdateAvailable } = useUpdate();
   const { setOtaUpdate, setOtaDownloading, setOtaAutoUpdating } =
     useOtaUpdate();
@@ -431,12 +434,14 @@ const RootComponent = () => {
       "ui-vibrant",
       "ui-play",
       "ui-cleaner-play",
-      "ui-corporate"
+      "ui-corporate",
+      "ui-fun"
     );
       if (t === "vibrant") root.classList.add("ui-vibrant");
       else if (t === "play") root.classList.add("ui-play");
       else if (t === "cleanerPlay") root.classList.add("ui-cleaner-play");
       else if (t === "corporate") root.classList.add("ui-corporate");
+      else if (t === "fun") root.classList.add("ui-fun");
     };
 
     const DEBUG_KEY = "DEBUG_UI_TYPE";
@@ -447,7 +452,8 @@ const RootComponent = () => {
         override === "default" ||
         override === "play" ||
         override === "cleanerPlay" ||
-        override === "corporate"
+        override === "corporate" ||
+        override === "fun"
       ) {
         applyUiType(override);
       } else {
@@ -527,7 +533,7 @@ const RootComponent = () => {
         /* ignore */
       }
       if (
-        !["vibrant", "default", "play", "cleanerPlay", "corporate"].includes(
+        !["vibrant", "default", "play", "cleanerPlay", "corporate", "fun"].includes(
           override
         )
       ) {

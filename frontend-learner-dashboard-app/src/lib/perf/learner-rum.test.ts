@@ -114,6 +114,7 @@ describe("allowlisted dimensions", () => {
     const has = (name: string) => ({ contains: (c: string) => c === name });
     expect(skinClass(has("ui-corporate"))).toBe("corporate");
     expect(skinClass(has("ui-cleaner-play"))).toBe("cleanerPlay");
+    expect(skinClass(has("ui-fun"))).toBe("fun");
     expect(skinClass(has("ui-play"))).toBe("play");
     expect(skinClass(has("ui-vibrant"))).toBe("vibrant");
     expect(skinClass(has("anything"))).toBe("default");
