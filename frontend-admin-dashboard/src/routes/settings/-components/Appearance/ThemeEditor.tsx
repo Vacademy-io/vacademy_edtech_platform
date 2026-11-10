@@ -446,16 +446,31 @@ export const ThemeEditor = ({
         skin,
     ]);
 
+    /**
+     * Keeps STUDENT_DISPLAY_SETTINGS.ui.type in step for older learner apps. Best
+     * effort: the theme itself is saved by now, and if this fails an older app keeps
+     * the look it showed before. The remembered skin only moves on once this has
+     * gone through, so the next Save tries again.
+     */
+    const updateLegacySkin = async () => {
+        try {
+            const written = await keepLegacySkinReadable(skin, savedSkinRef.current);
+            savedSkinRef.current = skin;
+            if (written) onLegacySkinWritten?.(written);
+        } catch (error) {
+            console.error('Failed to update the skin older learner apps read', error);
+        }
+    };
+
     const handleSave = async () => {
         setIsSaving(true);
         try {
             const { brand: brandCode, theme } = buildDraft();
-            // First, so a learner app too old to know the chosen skin never reads a
-            // fallback that is out of step with it.
-            const legacyWritten = await keepLegacySkinReadable(skin, savedSkinRef.current);
-            if (legacyWritten) onLegacySkinWritten?.(legacyWritten);
             await saveThemeRoleSettings(theme);
-            savedSkinRef.current = skin;
+            // Only after the theme is saved: until roles.skin holds a skin, every
+            // learner app takes ui.type, so writing the fallback first and then
+            // failing would move the institute to a skin nobody chose.
+            await updateLegacySkin();
 
             // Persist the brand code onto the institute record — what every
             // other admin and every learner reads. Build the full update payload

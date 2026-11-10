@@ -5,11 +5,18 @@ import type { StudentDisplaySettingsData } from '@/types/student-display-setting
 import type { StudentUiType } from '@/types/theme-role-settings';
 
 const calls: string[] = [];
+let failTheme = false;
+let failDisplay = false;
 const saveThemeRoleSettings = vi.fn(async () => {
     calls.push('theme');
+    if (failTheme) throw new Error('theme save failed');
 });
 const saveStudentDisplaySettings = vi.fn(async (_settings: StudentDisplaySettingsData) => {
     calls.push('display');
+    if (failDisplay) throw new Error('display save failed');
+});
+const updateInstitute = vi.fn(async () => {
+    calls.push('institute');
 });
 let savedTheme: unknown = null;
 let legacyType: StudentUiType = 'default';
@@ -31,7 +38,7 @@ vi.mock('@/services/student-list-section/getInstituteDetails', () => ({
     useInstituteQuery: () => ({}),
 }));
 vi.mock('@/routes/dashboard/-services/dashboard-services', () => ({
-    handleUpdateInstituteDashboard: async () => {},
+    handleUpdateInstituteDashboard: async () => updateInstitute(),
 }));
 vi.mock('@/providers/theme/theme-provider', () => ({
     useTheme: () => ({
@@ -48,7 +55,8 @@ vi.mock('@tanstack/react-query', async (original) => ({
 vi.mock('react-i18next', () => ({
     useTranslation: () => ({ t: (key: string) => key, i18n: { language: 'en' } }),
 }));
-vi.mock('sonner', () => ({ toast: { success: () => {}, error: () => {} } }));
+const toastError = vi.fn();
+vi.mock('sonner', () => ({ toast: { success: () => {}, error: () => toastError() } }));
 
 const { ThemeEditor } = await import('./ThemeEditor');
 const { legacySkinFor } = await import('./legacy-skin');
@@ -75,8 +83,11 @@ async function openEditor() {
 }
 
 async function save(button: HTMLElement) {
+    const before = saveThemeRoleSettings.mock.calls.length;
     fireEvent.click(button);
-    await waitFor(() => expect(saveThemeRoleSettings).toHaveBeenCalled());
+    await waitFor(() => expect(saveThemeRoleSettings.mock.calls.length).toBe(before + 1));
+    // Save has finished once the button is back to its idle label.
+    await waitFor(() => expect(button.textContent).toBe('save.save'));
     return (saveThemeRoleSettings.mock.calls[0] as unknown as [{ roles: { skin?: string } }])[0];
 }
 
@@ -90,7 +101,11 @@ describe('ThemeEditor and the Fun skin', () => {
         saveThemeRoleSettings.mockClear();
         saveStudentDisplaySettings.mockClear();
         onLegacySkinWritten.mockClear();
+        updateInstitute.mockClear();
+        toastError.mockClear();
         calls.length = 0;
+        failTheme = false;
+        failDisplay = false;
     });
     afterEach(cleanup);
 
@@ -112,7 +127,7 @@ describe('ThemeEditor and the Fun skin', () => {
         );
     });
 
-    it('saves Fun with Play as the fallback older apps read, first', async () => {
+    it('saves Fun, then Play as the fallback older apps read', async () => {
         savedTheme = theme('default');
         legacyType = 'default';
         const button = await openEditor();
@@ -127,9 +142,51 @@ describe('ThemeEditor and the Fun skin', () => {
         expect(written.ui.type).toBe('play');
         // The rest of the blob goes back as the server had it.
         expect(written.otherSection).toEqual({ kept: true });
-        expect(calls).toEqual(['display', 'theme']);
+        // After the theme: until roles.skin holds a skin, every app takes ui.type.
+        expect(calls).toEqual(['theme', 'display', 'institute']);
         // A page holding its own copy of the setting hears what was written.
         expect(onLegacySkinWritten).toHaveBeenCalledWith('play');
+    });
+
+    it('writes no fallback when the theme save fails', async () => {
+        // An institute whose skin lives only in ui.type: a fallback written ahead of
+        // a failed theme save would move every learner to Play.
+        savedTheme = theme();
+        legacyType = 'vibrant';
+        failTheme = true;
+        const button = await openEditor();
+        await waitFor(() =>
+            expect(radio('learnerUi.skin.vibrant').getAttribute('aria-checked')).toBe('true')
+        );
+        pick('learnerUi.skin.fun');
+        await save(button);
+        expect(calls).toEqual(['theme']);
+        expect(saveStudentDisplaySettings).not.toHaveBeenCalled();
+        expect(onLegacySkinWritten).not.toHaveBeenCalled();
+        expect(toastError).toHaveBeenCalledTimes(1);
+    });
+
+    it('keeps the theme saved when the fallback write fails, and retries it', async () => {
+        savedTheme = theme('fun');
+        legacyType = 'play';
+        failDisplay = true;
+        const button = await openEditor();
+        pick('learnerUi.skin.corporate');
+        const saved = await save(button);
+        expect(saved.roles.skin).toBe('corporate');
+        // The rest of Save still runs and reports success.
+        expect(calls).toEqual(['theme', 'display', 'institute']);
+        expect(toastError).not.toHaveBeenCalled();
+        expect(onLegacySkinWritten).not.toHaveBeenCalled();
+        // The next Save still knows the institute left Fun and moves the fallback.
+        failDisplay = false;
+        await save(button);
+        expect(calls).toEqual(['theme', 'display', 'institute', 'theme', 'display', 'institute']);
+        const written = saveStudentDisplaySettings.mock.calls[1]![0] as unknown as {
+            ui: { type: string };
+        };
+        expect(written.ui.type).toBe('corporate');
+        expect(onLegacySkinWritten).toHaveBeenCalledWith('corporate');
     });
 
     it('writes nothing extra when the fallback is already Play', async () => {
