@@ -2,8 +2,9 @@ import { cn } from '@/lib/utils';
 
 /**
  * Segmented option picker with a live preview per option, used by the
- * Appearance tab's learner presentation axes (corners / density / gradient)
- * and the learner UI skin.
+ * Appearance tab's learner presentation axes (corners / density / gradient).
+ * The learner UI skin has its own picker (SkinPicker), whose previews are
+ * scale models of whole learner screens.
  *
  * The previews are pure markup driven by the option's own token values rather
  * than by the admin app's live CSS variables: these axes deliberately do NOT
@@ -112,40 +113,5 @@ export function GradientPreview({ from, to }: { from: string; to: string }) {
             className="size-10 rounded-md border border-neutral-300"
             style={{ /* design-lint-ignore: preview renders the institute's brand ramp stops */ backgroundImage: `linear-gradient(to bottom right, ${from}, ${to})` }}
         />
-    );
-}
-
-/** Skin preview: a miniature of the skin's signature surface treatment. */
-export function SkinPreview({
-    radiusPx,
-    accent,
-    bold,
-    elevated,
-}: {
-    radiusPx: number;
-    accent: string;
-    bold?: boolean;
-    /** Raised white surface with a soft layered shadow and a quiet edge —
-     *  the defining cue of the Corporate skin (layering, not outlines). */
-    elevated?: boolean;
-}) {
-    return (
-        <div className="flex w-full flex-col gap-1.5 px-1">
-            <div
-                className={cn(
-                    'h-4 w-full border bg-white',
-                    elevated ? 'border-neutral-200 shadow-sm' : 'border-neutral-300'
-                )}
-                style={{ /* design-lint-ignore: preview renders the skin's own radius */ borderRadius: `${radiusPx}px` }}
-            />
-            <div
-                className="h-3 w-2/3"
-                style={{ /* design-lint-ignore: preview renders the skin's own radius/accent */
-                    borderRadius: `${radiusPx}px`,
-                    backgroundColor: accent,
-                    boxShadow: bold ? `0 2px 0 rgba(0,0,0,0.18)` : undefined,
-                }}
-            />
-        </div>
     );
 }

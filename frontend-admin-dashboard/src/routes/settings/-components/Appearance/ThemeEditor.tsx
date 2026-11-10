@@ -28,9 +28,9 @@ import {
     CornerPreview,
     DensityPreview,
     GradientPreview,
-    SkinPreview,
     type AxisOption,
 } from './UiAxisPicker';
+import { SkinPicker } from './SkinPicker';
 import { navPresets } from '@/constants/themes/nav-presets';
 import {
     PRESET_THEMES,
@@ -117,51 +117,6 @@ const GRADIENT_OPTIONS = (
     ];
 };
 
-const SKIN_OPTIONS = (
-    t: TFunction,
-    brandHex: string
-): ReadonlyArray<AxisOption<StudentUiType>> => {
-    const ramp = rampHexFromHex(brandHex);
-    return [
-        {
-            value: 'default',
-            label: t('learnerUi.skin.default'),
-            description: t('common.defaultSuffix'),
-            preview: <SkinPreview radiusPx={8} accent={brandHex} />,
-        },
-        {
-            value: 'vibrant',
-            label: t('learnerUi.skin.vibrant'),
-            preview: <SkinPreview radiusPx={12} accent={ramp['300']} />,
-        },
-        {
-            value: 'play',
-            label: t('learnerUi.skin.play'),
-            preview: <SkinPreview radiusPx={20} accent={brandHex} bold />,
-        },
-        {
-            value: 'cleanerPlay',
-            label: t('learnerUi.skin.cleanerPlay'),
-            preview: <SkinPreview radiusPx={12} accent={ramp['200']} />,
-        },
-        {
-            value: 'corporate',
-            label: t('learnerUi.skin.corporate'),
-            // Modern B2B register: 10px geometry, a raised white surface with a
-            // soft shadow (layering rather than outlines), and a solid brand
-            // bar for the primary action. Matches the learner skin as revised
-            // on 2026-09-25 — the earlier 4px/slate preview described the old
-            // 2012-era direction.
-            preview: <SkinPreview radiusPx={10} accent={brandHex} elevated />,
-        },
-        {
-            // A colour per course and chunky lip buttons: round, bold, brand-led.
-            value: 'fun',
-            label: t('learnerUi.skin.fun'),
-            preview: <SkinPreview radiusPx={16} accent={brandHex} bold />,
-        },
-    ];
-};
 const CUSTOM_NAV_ID = 'custom';
 
 const buildNavColorFields = (
@@ -659,6 +614,13 @@ export const ThemeEditor = ({
                 <h2 className="mb-1 text-lg font-semibold">{t('learnerUi.heading')}</h2>
                 <p className="mb-4 text-sm text-neutral-500">{t('learnerUi.description')}</p>
 
+                {/* The skin is the biggest choice here; the axes below fine-tune it. */}
+                <div className="mb-8">
+                    <h3 className="mb-1 text-sm font-medium">{t('learnerUi.skin.label')}</h3>
+                    <p className="mb-3 text-xs text-neutral-500">{t('learnerUi.skin.help')}</p>
+                    <SkinPicker value={skin} onChange={setSkin} brandHex={brandHexForPreview} />
+                </div>
+
                 <div className="mb-6">
                     <h3 className="mb-1 text-sm font-medium">{t('learnerUi.corners.label')}</h3>
                     <p className="mb-3 text-xs text-neutral-500">
@@ -685,7 +647,7 @@ export const ThemeEditor = ({
                     />
                 </div>
 
-                <div className="mb-6">
+                <div>
                     <h3 className="mb-1 text-sm font-medium">{t('learnerUi.gradient.label')}</h3>
                     <p className="mb-3 text-xs text-neutral-500">
                         {t('learnerUi.gradient.help')}
@@ -695,17 +657,6 @@ export const ThemeEditor = ({
                         value={gradient}
                         onChange={setGradient}
                         options={GRADIENT_OPTIONS(t, brandHexForPreview)}
-                    />
-                </div>
-
-                <div>
-                    <h3 className="mb-1 text-sm font-medium">{t('learnerUi.skin.label')}</h3>
-                    <p className="mb-3 text-xs text-neutral-500">{t('learnerUi.skin.help')}</p>
-                    <UiAxisPicker
-                        ariaLabel={t('learnerUi.skin.label')}
-                        value={skin}
-                        onChange={setSkin}
-                        options={SKIN_OPTIONS(t, brandHexForPreview)}
                     />
                 </div>
             </section>

@@ -99,13 +99,37 @@
         },
         "skin": {
             "label": "Theme skin",
-            "help": "The overall visual language of the learner app.",
+            "help": "Pick how the learner app looks. Each card shows the learner home in that skin, in your brand colour.",
             "default": "Default",
             "vibrant": "Vibrant",
             "play": "Play",
             "cleanerPlay": "Cleaner Play",
             "corporate": "Corporate",
-            "fun": "Fun"
+            "fun": "Fun",
+            "model": {
+                "greeting": "Good morning",
+                "greetingName": "Good morning, {{name}}",
+                "name": "Asha",
+                "continue": "Continue",
+                "next": "Next",
+                "passed": "You passed!"
+            },
+            "previewTitle": "Preview: {{skin}}",
+            "screensLabel": "Screen to preview",
+            "screens": {
+                "home": "Home",
+                "lesson": "Lesson",
+                "result": "Quiz result"
+            },
+            "blurb": {
+                "default": "Clean and simple: white cards and one button in your brand colour. Fits any institute.",
+                "vibrant": "The default look with more colour: cards softly tinted in your brand colour. Friendly without being loud.",
+                "play": "Bold and game-like: a mascot, a big green Continue button and chunky shapes. Great for young learners.",
+                "cleanerPlay": "Like Play, but calmer: the mascot, warm colours and round pill buttons. Suits school learners of any age.",
+                "corporate": "Calm and professional: white cards raised on a light grey page. Suits working adults and staff training.",
+                "fun": "Bright and playful: every course gets its own colour, with big friendly buttons. Made for school learners."
+            },
+            "funFallback": "Older app versions show Cleaner Play until learners update."
         }
     }
 }

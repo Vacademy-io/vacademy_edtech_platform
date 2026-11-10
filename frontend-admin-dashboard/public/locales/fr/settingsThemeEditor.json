@@ -99,13 +99,37 @@
         },
         "skin": {
             "label": "Thème visuel",
-            "help": "Langage visuel global de l'application apprenant.",
+            "help": "Choisissez l'apparence de l'application apprenant. Chaque carte montre l'accueil de l'apprenant dans ce thème, avec votre couleur de marque.",
             "default": "Par défaut",
             "vibrant": "Vif",
             "play": "Play",
             "cleanerPlay": "Cleaner Play",
             "corporate": "Entreprise",
-            "fun": "Fun"
+            "fun": "Fun",
+            "model": {
+                "greeting": "Bonjour",
+                "greetingName": "Bonjour, {{name}}",
+                "name": "Léa",
+                "continue": "Continuer",
+                "next": "Suivant",
+                "passed": "Réussi !"
+            },
+            "previewTitle": "Aperçu : {{skin}}",
+            "screensLabel": "Écran à prévisualiser",
+            "screens": {
+                "home": "Accueil",
+                "lesson": "Leçon",
+                "result": "Résultat du quiz"
+            },
+            "blurb": {
+                "default": "Simple et net : des cartes blanches et un bouton à la couleur de votre marque. Convient à tout établissement.",
+                "vibrant": "L'apparence par défaut, en plus coloré : des cartes légèrement teintées de votre couleur de marque. Chaleureux sans être criard.",
+                "play": "Audacieux et ludique : une mascotte, un grand bouton vert Continuer et des formes épaisses. Idéal pour les jeunes apprenants.",
+                "cleanerPlay": "Comme Play, en plus calme : la mascotte, des couleurs chaudes et des boutons arrondis. Pour les élèves de tout âge.",
+                "corporate": "Sobre et professionnel : des cartes blanches en relief sur une page gris clair. Pour les adultes en activité et la formation du personnel.",
+                "fun": "Vif et joyeux : chaque cours a sa propre couleur, avec de grands boutons accueillants. Pensé pour les élèves."
+            },
+            "funFallback": "Les anciennes versions de l'application affichent Cleaner Play jusqu'à la mise à jour par les apprenants."
         }
     }
 }
