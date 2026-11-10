@@ -46,6 +46,8 @@ import type {
 import { LoadingState } from "@/components/design-system/states";
 import { requireListPage, type RequestStatus } from "@/lib/list-status";
 import { CustomTabProductPages } from "./CustomTabProductPages";
+import { useFunTheme } from "@/hooks/use-fun-theme";
+import { FunLearnHeader, FunLearnSearch, FunLearnSort } from "../-components/fun/FunLearn";
 
 // Only the "Live sessions" custom tab needs the live-class list; keep it out
 // of the Courses page chunk until then.
@@ -108,6 +110,7 @@ function mergeInstructorsFromCourses(
 
 const CourseCatalougePage: React.FC = () => {
   const { t } = useTranslation("study");
+  const isFun = useFunTheme();
   const [allowLeanersToCreateCourses, setAllowLeanersToCreateCourses] =
     useState<boolean>(false);
 
@@ -952,8 +955,36 @@ const CourseCatalougePage: React.FC = () => {
         onSkip={handleFilterWizardSkip}
       />
 
-      {/* Hero Section */}
-      <HeroSection allowLeanersToCreateCourses={allowLeanersToCreateCourses} />
+      {/* Hero Section. The Fun skin draws its own title, count and search; the
+          old header stays mounted (hidden) for the work it does on mount. */}
+      {isFun ? (
+        <>
+          <div hidden>
+            <HeroSection allowLeanersToCreateCourses={allowLeanersToCreateCourses} />
+          </div>
+          <FunLearnHeader
+            count={(() => {
+              if (statusByTab[selectedTab] !== "success") return null;
+              const page =
+                selectedTab === "ALL"
+                  ? allCourses
+                  : selectedTab === "PROGRESS"
+                    ? progressCourses
+                    : selectedTab === "COMPLETED"
+                      ? completedCourses
+                      : customCourses[selectedTab];
+              return page ? page.totalElements : null;
+            })()}
+          />
+          <FunLearnSearch
+            value={searchTerm}
+            onCommit={setSearchTerm}
+            trailing={<FunLearnSort sortOption={sortOption} onSortChange={setSortOption} />}
+          />
+        </>
+      ) : (
+        <HeroSection allowLeanersToCreateCourses={allowLeanersToCreateCourses} />
+      )}
 
       {/* Main Content Container */}
       <div className="mx-auto">
@@ -963,11 +994,11 @@ const CourseCatalougePage: React.FC = () => {
           className="w-full"
         >
           {/* Tab Navigation */}
-          <div className="bg-white dark:bg-neutral-900 border border-gray-200 dark:border-neutral-800 rounded-md mb-3">
+          <div className={isFun ? "fun-learn-tabs" : "bg-white dark:bg-neutral-900 border border-gray-200 dark:border-neutral-800 rounded-md mb-3"}>
             <div className="relative p-2 sm:p-3">
               <TabsList
                 ref={tabsListRef}
-                className={cn(
+                className={isFun ? "fun-learn-tablist" : cn(
                   "bg-muted/50 dark:bg-neutral-900 justify-start p-1 w-full gap-1 sm:w-auto sm:flex sm:flex-row rounded-full [.ui-play_&]:!bg-white [.ui-play_&]:border-2 [.ui-play_&]:border-primary-200 [.ui-play_&]:rounded-2xl [.ui-play_&]:p-1.5 [.ui-play_&]:gap-1.5 [.ui-play_&]:shadow-play-3-primary",
                   // More than three tabs don't fit a 3-column grid: phones scroll
                   // them sideways (arrows below), wider screens wrap them inside
@@ -990,7 +1021,7 @@ const CourseCatalougePage: React.FC = () => {
                   <TabsTrigger
                     key={tab.value}
                     value={tab.value}
-                    className={cn(
+                    className={isFun ? "fun-learn-tab" : cn(
                       visibleTabs.length > 3 && "shrink-0 flex-none",
                       "flex-1 sm:flex-none px-2.5 sm:px-4 py-1.5 text-xs sm:text-sm font-medium rounded-full transition-all duration-200 data-[state=active]:bg-primary-100 data-[state=active]:text-primary-700 data-[state=active]:font-semibold data-[state=active]:shadow-sm dark:data-[state=active]:bg-primary-900/40 dark:data-[state=active]:text-primary-200",
                       // Vibrant Styles - Flat Pastel
@@ -1013,13 +1044,13 @@ const CourseCatalougePage: React.FC = () => {
                     )}
                   >
                     <span className="inline-flex items-center gap-1.5">
-                      <span className="inline-flex shrink-0">
+                      {!isFun && <span className="inline-flex shrink-0">
                         {tab.value === "ALL" && <IconBooks size={14} />}
                         {tab.value === "PROGRESS" && <IconChartBar size={14} />}
                         {tab.value === "COMPLETED" && <IconCheck size={14} />}
                         {customTabs[tab.value] &&
                           React.createElement(CUSTOM_TAB_ICONS[customTabs[tab.value]!.type ?? "TAG"] ?? IconTag, { size: 14 })}
-                      </span>
+                      </span>}
                       <span className="truncate">
                         {tab.label ||
                           (tab.value === "ALL"
@@ -1033,7 +1064,7 @@ const CourseCatalougePage: React.FC = () => {
                               ? t("catalog.tab.inProgress")
                               : t("catalog.tab.completed"))}
                       </span>
-                      {count > 0 && (
+                      {count > 0 && !isFun && (
                         <span className="ms-0.5 hidden sm:inline-flex items-center justify-center min-w-5 h-5 px-1.5 rounded-full bg-neutral-200/80 text-caption font-semibold text-neutral-700 data-[state=active]:bg-primary-200 dark:bg-neutral-700 dark:text-neutral-200">
                           {count}
                         </span>

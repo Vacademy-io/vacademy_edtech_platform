@@ -82,8 +82,24 @@ import type { StudentCourseDetailsTabId } from "@/types/student-display-settings
 import { BatchChatPanel } from "@/components/chat/BatchChatPanel";
 import { CourseLeaderboard } from "./CourseLeaderboard";
 import { getFilePublicUrlQuery } from "@/services/file-url-cache";
-import { getLatestResume, useResumeScope } from "@/services/resume-thread";
+import { getLatestResume, getResumeForCourse, useResumeScope } from "@/services/resume-thread";
 import { useTranslation } from "react-i18next";
+import { useFunTheme } from "@/hooks/use-fun-theme";
+import { courseColourClass } from "@/components/design-system/fun/course-palette";
+import {
+  FunChapterHead,
+  FunLevelHead,
+  FunNoSlides,
+  FunOutlineTools,
+  FunRowsSkeleton,
+  FunSlideRow,
+} from "./fun/FunOutline";
+import {
+  chapterDoneCount,
+  pickCurrentSlideId,
+  slideKind,
+  slideRowState,
+} from "./fun/course-outline";
 
 // Course-structure data contract — shared with the other course-details view so
 // the two cannot drift on the server payload. Re-exported because existing call
@@ -1440,6 +1456,18 @@ export const CourseStructureDetails = ({
     resumeEntryRef.current = resumeEntry;
   }, [resumeEntry]);
 
+  // Fun skin: the outline draws its own rows (renderFunOutline below) from the
+  // same state, evaluations and handlers. Its "current" row is this device's
+  // resume point in the course, else the first unfinished slide that can open.
+  const isFun = useFunTheme();
+  const funResumeSlideId = useMemo(
+    () =>
+      isFun && searchParams.courseId
+        ? (getResumeForCourse(resumeScope, String(searchParams.courseId))?.slideId ?? null)
+        : null,
+    [isFun, resumeScope, searchParams.courseId],
+  );
+
   // Quiet "Continue" chip on the resume slide row
   const renderContinueChip = (slideId: string) => {
     if (!resumeEntry || resumeEntry.slideId !== slideId) return null;
@@ -1541,11 +1569,367 @@ export const CourseStructureDetails = ({
       ),
     );
 
+  // Chapters in outline order, without the ones a drip rule hides: the Fun
+  // cards number them through the whole course.
+  const funChapterOrder = isFun
+    ? (studyLibraryData ?? []).flatMap((subject: SubjectType) =>
+        (subjectModulesMap[subject.id] ?? []).flatMap((mod) =>
+          (mod.chapters ?? [])
+            .filter((ch) => !shouldFilterItem(chapterEvaluations[ch.id]))
+            .map((ch) => ch.id),
+        ),
+      )
+    : [];
+  const funChapterNumber = new Map(funChapterOrder.map((id, i) => [id, i + 1]));
+  const funCurrentSlideId = isFun
+    ? pickCurrentSlideId({
+        chapterOrder: funChapterOrder,
+        slidesByChapter: slidesMap,
+        canOpen: (slide, chapterId) => {
+          const chapterEval = chapterEvaluations[chapterId];
+          const slideEval = slideEvaluations[slide.id];
+          return (
+            !shouldFilterItem(chapterEval) &&
+            !isItemLocked(chapterEval) &&
+            !shouldFilterItem(slideEval) &&
+            !isItemLocked(slideEval)
+          );
+        },
+        threshold: getSlideCompletionThreshold(),
+        resumeSlideId: funResumeSlideId,
+      })
+    : null;
+
+  // One Fun slide row. `slideLocks` mirrors each depth's existing rule: depth 5
+  // and the flat depth-2 list read slide locks; depths 3 and 4 never did.
+  const renderFunSlideRow = (
+    subject: SubjectType,
+    mod: ModuleWithChapters,
+    ch: Chapter,
+    slide: Slide,
+    sIdx: number,
+    locked: boolean,
+    unlockMessage?: string | null,
+  ) => (
+    <FunSlideRow
+      key={slide.id}
+      title={slide.title}
+      index={sIdx + 1}
+      state={slideRowState(slide.percentage_completed, getSlideCompletionThreshold())}
+      kind={slideKind(slide)}
+      current={slide.id === funCurrentSlideId}
+      locked={locked}
+      unlockMessage={unlockMessage}
+      clickable={isSlideClickable() && !locked}
+      onOpen={() => {
+        handleSlideNavigation(subject.id, mod.module.id, ch.id, slide.id);
+      }}
+      meta={
+        getSlideMetaText(slide) ||
+        (slideKind(slide) === "quiz" ? "" : getSlideTypeDisplay(slide)) ||
+        ""
+      }
+      trailing={
+        <DownloadNodeButton
+          nodeId={slide.id}
+          nodeType="SLIDE"
+          packageSessionId={packageSessionId}
+          compact
+        />
+      }
+    />
+  );
+
+  const renderFunChapter = (
+    subject: SubjectType,
+    mod: ModuleWithChapters,
+    ch: Chapter,
+    chIdx: number,
+    opts: { slideLocks: boolean; hideLockedDownload: boolean },
+  ) => {
+    const chapterEval = chapterEvaluations[ch.id];
+    if (chapterEval && shouldFilterItem(chapterEval)) return null;
+    const isChapterLocked = !!(chapterEval && isItemLocked(chapterEval));
+    const isChapterOpen = openChapters.has(ch.id);
+    const status = slidesLoadingStatus[ch.id] || "idle";
+    const filtered = filterSlides(slidesMap[ch.id] ?? []);
+    const visible = opts.slideLocks
+      ? filtered.filter((slide) => {
+          const slideEval = slideEvaluations[slide.id];
+          return !(slideEval && shouldFilterItem(slideEval));
+        })
+      : filtered;
+    return (
+      <Collapsible
+        key={ch.id}
+        className="fun-ch"
+        open={isChapterOpen}
+        onOpenChange={() => {
+          if (isChapterLocked) return;
+          toggleChapter(ch.id);
+          getSlidesWithChapterId(ch.id);
+        }}
+      >
+        <CollapsibleTrigger disabled={isChapterLocked} className="fun-ch__head">
+          <FunChapterHead
+            index={funChapterNumber.get(ch.id) ?? chIdx + 1}
+            name={toTitleCase(ch.chapter_name)}
+            open={isChapterOpen}
+            locked={isChapterLocked}
+            unlockMessage={chapterEval?.unlockMessage}
+            doneCount={
+              slidesMap[ch.id] !== undefined
+                ? chapterDoneCount(slidesMap[ch.id], getSlideCompletionThreshold())
+                : null
+            }
+            percent={calculateChapterProgress(ch.id)}
+            trailing={
+              opts.hideLockedDownload && isChapterLocked ? null : (
+                <DownloadNodeButton
+                  nodeId={ch.id}
+                  nodeType="CHAPTER"
+                  packageSessionId={packageSessionId}
+                  compact
+                />
+              )
+            }
+          />
+        </CollapsibleTrigger>
+        <CollapsibleContent>
+          <div className="fun-ch__rows">
+            {status === "loading" ? (
+              <FunRowsSkeleton />
+            ) : status === "loaded" && visible.length === 0 ? (
+              <FunNoSlides />
+            ) : (
+              visible.map((slide, sIdx) => {
+                const slideEval = slideEvaluations[slide.id];
+                const slideLocked = opts.slideLocks && !!(slideEval && isItemLocked(slideEval));
+                return renderFunSlideRow(subject, mod, ch, slide, sIdx, slideLocked, slideEval?.unlockMessage);
+              })
+            )}
+          </div>
+        </CollapsibleContent>
+      </Collapsible>
+    );
+  };
+
+  const renderFunModule = (
+    subject: SubjectType,
+    mod: ModuleWithChapters,
+    index: number,
+    opts: { locks: boolean; nested: boolean },
+  ) => {
+    const moduleEval = opts.locks ? moduleEvaluations[mod.module.id] : undefined;
+    if (opts.locks && shouldFilterItem(moduleEval)) return null;
+    const isModuleLocked = opts.locks && isItemLocked(moduleEval);
+    const isModuleOpen = openModules.has(mod.module.id);
+    return (
+      <Collapsible
+        key={mod.module.id}
+        className={cn("fun-lv", opts.nested && "fun-lv--nested", isModuleLocked && "fun-lv--locked")}
+        open={isModuleOpen && !isModuleLocked}
+        onOpenChange={() => {
+          if (isModuleLocked) return;
+          toggleModule(mod.module.id);
+        }}
+      >
+        <CollapsibleTrigger disabled={isModuleLocked} className="fun-lv__head">
+          <FunLevelHead
+            level="module"
+            index={index}
+            name={opts.nested ? mod.module.module_name : toTitleCase(mod.module.module_name)}
+            open={isModuleOpen && !isModuleLocked}
+            locked={isModuleLocked}
+            unlockMessage={moduleEval?.unlockMessage}
+            percent={calculateModuleProgress(mod)}
+            childCount={(mod.chapters ?? []).length}
+            childTerm="chapters"
+            trailing={
+              isModuleLocked ? null : (
+                <DownloadNodeButton
+                  nodeId={mod.module.id}
+                  nodeType="MODULE"
+                  packageSessionId={packageSessionId}
+                  compact
+                />
+              )
+            }
+          />
+        </CollapsibleTrigger>
+        <CollapsibleContent>
+          <div className="fun-lv__body">
+            {(mod.chapters ?? []).map((ch, chIdx) =>
+              renderFunChapter(subject, mod, ch, chIdx, {
+                slideLocks: opts.locks,
+                hideLockedDownload: opts.locks,
+              }),
+            )}
+          </div>
+        </CollapsibleContent>
+      </Collapsible>
+    );
+  };
+
+  // The Fun outline: the existing outline's depths, evaluations and handlers,
+  // drawn with the skin's cards and rows (styles/fun/course.css).
+  const renderFunOutline = () => (
+    <div className="fun-outline">
+      <FunOutlineTools
+        search={searchQuery}
+        onSearch={setSearchQuery}
+        onlyUnfinished={onlyIncomplete}
+        onOnlyUnfinished={setOnlyIncomplete}
+        showExpand={!(courseStructure === 2 && chapterLevelIsPlaceholder)}
+        allExpanded={!!isAllExpanded}
+        onToggleExpand={isAllExpanded ? collapseAll : expandAll}
+        switchSlot={(props) => <Switch {...props} />}
+        download={
+          <DownloadNodeButton
+            nodeId={packageSessionId ?? ""}
+            nodeType="COURSE"
+            packageSessionId={packageSessionId}
+            compact
+          />
+        }
+      />
+      {isModulesLoading ? (
+        <FunRowsSkeleton rows={4} />
+      ) : courseStructure === 5 ? (
+        studyLibraryData?.map((subject: SubjectType, idx: number) => {
+          const subjectEval = subjectEvaluations[subject.id];
+          if (shouldFilterItem(subjectEval)) return null;
+          const isSubjectLocked = isItemLocked(subjectEval);
+          const isSubjectOpen = openSubjects.has(subject.id);
+          return (
+            <Collapsible
+              key={subject.id}
+              className={cn("fun-lv fun-lv--subject", isSubjectLocked && "fun-lv--locked")}
+              open={isSubjectOpen && !isSubjectLocked}
+              onOpenChange={() => {
+                if (isSubjectLocked) return;
+                toggleSubject(subject.id);
+              }}
+            >
+              <CollapsibleTrigger disabled={isSubjectLocked} className="fun-lv__head">
+                <FunLevelHead
+                  level="subject"
+                  index={idx + 1}
+                  name={toTitleCase(subject.subject_name)}
+                  open={isSubjectOpen && !isSubjectLocked}
+                  locked={isSubjectLocked}
+                  unlockMessage={subjectEval?.unlockMessage}
+                  percent={calculateSubjectProgress(subject.id)}
+                  childCount={(subjectModulesMap[subject.id] ?? []).length}
+                  childTerm="modules"
+                  trailing={
+                    isSubjectLocked ? null : (
+                      <DownloadNodeButton
+                        nodeId={subject.id}
+                        nodeType="SUBJECT"
+                        packageSessionId={packageSessionId}
+                        compact
+                      />
+                    )
+                  }
+                />
+              </CollapsibleTrigger>
+              <CollapsibleContent>
+                <div className="fun-lv__body">
+                  {(subjectModulesMap[subject.id] ?? []).map((mod, modIdx) =>
+                    renderFunModule(subject, mod, modIdx + 1, { locks: true, nested: true }),
+                  )}
+                </div>
+              </CollapsibleContent>
+            </Collapsible>
+          );
+        })
+      ) : courseStructure === 4 ? (
+        (() => {
+          const allModules: Array<{ subject: SubjectType; mod: ModuleWithChapters }> = [];
+          studyLibraryData?.forEach((subject: SubjectType) => {
+            (subjectModulesMap[subject.id] ?? []).forEach((mod) => allModules.push({ subject, mod }));
+          });
+          return allModules.map(({ subject, mod }, globalIdx) =>
+            renderFunModule(subject, mod, globalIdx + 1, { locks: false, nested: false }),
+          );
+        })()
+      ) : courseStructure === 3 || (courseStructure === 2 && !chapterLevelIsPlaceholder) ? (
+        (studyLibraryData ?? []).flatMap((subject: SubjectType) =>
+          (subjectModulesMap[subject.id] ?? []).flatMap((mod) =>
+            (mod.chapters ?? []).map((ch, chIdx) =>
+              renderFunChapter(subject, mod, ch, chIdx, { slideLocks: false, hideLockedDownload: false }),
+            ),
+          ),
+        )
+      ) : courseStructure === 2 && chapterLevelIsPlaceholder ? (
+        (() => {
+          const rows: Array<{
+            subject: SubjectType;
+            mod: ModuleWithChapters;
+            ch: Chapter;
+            slide: Slide;
+            chapterLocked: boolean;
+            chapterUnlockMessage?: string;
+          }> = [];
+          const chapterIds: string[] = [];
+          studyLibraryData?.forEach((subject: SubjectType) => {
+            (subjectModulesMap[subject.id] ?? []).forEach((mod) => {
+              (mod.chapters ?? []).forEach((ch) => {
+                const chapterEval = chapterEvaluations[ch.id];
+                if (chapterEval && shouldFilterItem(chapterEval)) return;
+                const chapterLocked = !!(chapterEval && isItemLocked(chapterEval));
+                chapterIds.push(ch.id);
+                filterSlides(slidesMap[ch.id] ?? []).forEach((slide) => {
+                  const slideEval = slideEvaluations[slide.id];
+                  if (slideEval && shouldFilterItem(slideEval)) return;
+                  rows.push({
+                    subject,
+                    mod,
+                    ch,
+                    slide,
+                    chapterLocked,
+                    ...(chapterEval?.unlockMessage && { chapterUnlockMessage: chapterEval.unlockMessage }),
+                  });
+                });
+              });
+            });
+          });
+          const stillLoading = chapterIds.some((id) => {
+            const status = slidesLoadingStatus[id] ?? "idle";
+            return status === "idle" || status === "loading";
+          });
+          if (rows.length === 0 && stillLoading) return <FunRowsSkeleton />;
+          if (rows.length === 0) return <FunNoSlides />;
+          return (
+            <div className="fun-ch fun-ch--flat">
+              <div className="fun-ch__rows">
+                {rows.map(({ subject, mod, ch, slide, chapterLocked, chapterUnlockMessage }, sIdx) => {
+                  const slideEval = slideEvaluations[slide.id];
+                  const locked = chapterLocked || !!(slideEval && isItemLocked(slideEval));
+                  return renderFunSlideRow(
+                    subject,
+                    mod,
+                    ch,
+                    slide,
+                    sIdx,
+                    locked,
+                    slideEval?.unlockMessage ?? chapterUnlockMessage,
+                  );
+                })}
+              </div>
+            </div>
+          );
+        })()
+      ) : null}
+    </div>
+  );
+
   const tabContent: Record<TabType, React.ReactNode> = {
     // All modes share ONE outline structure (owner decision 2026-06-11:
     // no mode-specific core views — play differs by color only). The
     // Duolingo path experiment lives unused in ./play/ChapterPathView.tsx.
-    [TabType.OUTLINE]: (
+    [TabType.OUTLINE]: isFun ? renderFunOutline() : (
       <div className="space-y-3">
         {/* Expand/Collapse Controls */}
         <div className="flex items-center justify-between border-b border-neutral-200 pb-2 gap-3 flex-wrap">
@@ -3994,19 +4378,31 @@ export const CourseStructureDetails = ({
       )}
 
       <PullToRefreshWrapper onRefresh={refreshData}>
-        <div className="flex size-full flex-col gap-stack rounded-lg bg-card pt-0 pb-3 text-neutral-700">
+        <div
+          className={
+            isFun
+              ? cn("fun-structure", courseColourClass(String(searchParams.courseId ?? "")))
+              : "flex size-full flex-col gap-stack rounded-lg bg-card pt-0 pb-3 text-neutral-700"
+          }
+        >
           <Tabs
             value={activeStructureTab}
             onValueChange={handleTabChange}
             className="w-full"
           >
             {renderTabs.length > 1 && (
-              <TabsList className="h-auto border-b border-neutral-200/80 bg-transparent p-0 flex flex-row flex-wrap items-center justify-start gap-2 w-full">
+              <TabsList
+                className={
+                  isFun
+                    ? "fun-tabs"
+                    : "h-auto border-b border-neutral-200/80 bg-transparent p-0 flex flex-row flex-wrap items-center justify-start gap-2 w-full"
+                }
+              >
                 {renderTabs.map((tab: { label: string; value: string }) => (
                   <TabsTrigger
                     key={tab.value}
                     value={tab.value}
-                    className={cn(
+                    className={isFun ? "fun-tab" : cn(
                       `inline-flex items-center data-[state=active]:text-primary data-[state=active]:border-primary hover:text-primary -mb-px px-3 whitespace-nowrap
                                     py-2 text-sm font-medium transition-all duration-200
                                     hover:bg-primary-50/60 focus-visible:ring-2 focus-visible:ring-primary-300 focus-visible:ring-offset-1
@@ -4026,9 +4422,13 @@ export const CourseStructureDetails = ({
             <TabsContent
               key={activeStructureTab}
               value={activeStructureTab}
-              className={`${
-                renderTabs.length > 1 ? "mt-3" : ""
-              } rounded-lg bg-white border border-neutral-200/60 p-3 md:p-4`}
+              className={
+                isFun
+                  ? "fun-tab-panel"
+                  : `${
+                      renderTabs.length > 1 ? "mt-3" : ""
+                    } rounded-lg bg-white border border-neutral-200/60 p-3 md:p-4`
+              }
             >
               {tabContent[activeStructureTab as TabType]}
             </TabsContent>

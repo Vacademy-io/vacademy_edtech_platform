@@ -45,6 +45,10 @@ import { getSlideCompletionThreshold } from "@/constants/study-library";
 import { getSlideTypeColors } from "./slide-type-colors";
 import { useTranslation } from "react-i18next";
 import i18n from "@/i18n";
+import { useFunTheme } from "@/hooks/use-fun-theme";
+import { courseColourClass } from "@/components/design-system/fun/course-palette";
+import { FunSlideRow } from "@/routes/study-library/courses/course-details/-components/fun/FunOutline";
+import { slideKind, slideRowState } from "@/routes/study-library/courses/course-details/-components/fun/course-outline";
 
 // Helper function to get responsive truncation length - kept for tooltip usage
 // const getResponsiveTruncationLength = () => {
@@ -652,10 +656,12 @@ export const ChapterSidebarSlides = () => {
   const { activeItem, setActiveItem, items, slideEvaluations } =
     useContentStore();
   const router = useRouter();
-  const { chapterId, sessionId } = router.state.location.search as {
+  const { chapterId, sessionId, courseId } = router.state.location.search as {
     chapterId?: string;
     sessionId?: string;
+    courseId?: string;
   };
+  const isFun = useFunTheme();
   const { slides: rawSlides, isLoading } = useSlides(chapterId || "");
 
   // Use items from store if available (filtered by drip conditions), otherwise use raw slides
@@ -726,7 +732,13 @@ export const ChapterSidebarSlides = () => {
     >
       {/* Background gradient */}
       <div className="absolute inset-0 bg-gradient-to-b from-transparent to-gray-50/30 pointer-events-none rounded-xl"></div>
-      <div className="relative flex w-full flex-col gap-1 text-gray-600">
+      <div
+        className={
+          isFun
+            ? `relative flex w-full flex-col gap-1 text-gray-600 fun-side-rows ${courseColourClass(courseId || "")}`
+            : "relative flex w-full flex-col gap-1 text-gray-600"
+        }
+      >
         {slides?.map((slide: Slide, index: number) => {
           const evaluation = slideEvaluations[slide.id];
           const assessmentId =
@@ -746,6 +758,62 @@ export const ChapterSidebarSlides = () => {
           const unlockMessage = assessmentLocked
             ? assessmentLockMessage(assessmentWindow, t)
             : (evaluation?.unlockMessage ?? undefined);
+
+          const openSlide = async () => {
+            if (locked) {
+              return;
+            }
+
+            setActiveItem(slide);
+
+            const currentSearch = router.state.location.search as Record<
+              string,
+              string
+            >;
+            const sessionId =
+              currentSearch.sessionId || (await getPackageSessionId());
+
+            const nextSearch = { ...currentSearch };
+            delete nextSearch.page;
+            delete nextSearch.t;
+            router.navigate({
+              to: router.state.location.pathname,
+              search: {
+                ...nextSearch,
+                slideId: slide.id,
+                sessionId: sessionId || "",
+              },
+              replace: true,
+            });
+          };
+
+          if (isFun) {
+            return (
+              <div key={slide.id} role="listitem" aria-current={slide.id === activeItem?.id ? "true" : undefined}>
+                <FunSlideRow
+                  title={slide.title || getSlideTypeDisplay(slide)}
+                  index={index + 1}
+                  state={slideRowState(slide.percentage_completed, getSlideCompletionThreshold())}
+                  kind={slideKind(slide)}
+                  current={slide.id === activeItem?.id}
+                  locked={locked}
+                  unlockMessage={unlockMessage}
+                  clickable={!locked}
+                  onOpen={openSlide}
+                  meta={slideKind(slide) === "quiz" ? "" : getSlideTypeDisplay(slide)}
+                  activeStyle
+                  trailing={
+                    <DownloadNodeButton
+                      nodeId={slide.id}
+                      nodeType="SLIDE"
+                      packageSessionId={sessionId}
+                      compact
+                    />
+                  }
+                />
+              </div>
+            );
+          }
 
           return (
             <SlideItem

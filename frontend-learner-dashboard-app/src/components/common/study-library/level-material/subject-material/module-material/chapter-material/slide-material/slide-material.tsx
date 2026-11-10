@@ -65,6 +65,13 @@ import { useVideoStuckMoment } from "@/components/chatbot/moments/use-video-stuc
 import { useAvailableTutor } from "@/components/chatbot/moments/tutor-moments";
 import { useMediaRefsStore } from "@/stores/mediaRefsStore";
 import { contentForSlide, type LoadedSlideContent } from "./slide-load-guard";
+import { useRouterState } from "@tanstack/react-router";
+import { useFunTheme } from "@/hooks/use-fun-theme";
+import {
+  FunLessonBottomBar,
+  FunLessonTopBar,
+} from "@/routes/study-library/courses/course-details/-components/fun/FunLesson";
+import { chapterMeanPercent } from "@/routes/study-library/courses/course-details/-components/fun/course-outline";
 
 /**
  * Where a citation deep link (?page / ?t on the slides route) asks a slide to
@@ -146,6 +153,10 @@ export const SlideMaterial = ({
   const { t, i18n } = useTranslation("studyContent");
   const { activeItem, items, setActiveItem, slideEvaluations } =
     useContentStore();
+  const isFun = useFunTheme();
+  const funCourseId = useRouterState({
+    select: (s) => (s.location.search as { courseId?: string }).courseId ?? "",
+  });
   // Course Pulse presence: keep the learner "present" on the open slide (incl. paused
   // video/audio) while the tab is visible; stops on leave so they go offline naturally.
   usePresenceHeartbeat(activeItem?.id);
@@ -244,6 +255,12 @@ export const SlideMaterial = ({
   // with N real slides shows N, not N+1.
   const realSlides = slidesList.filter((s) => s.source_type !== "FEEDBACK");
   const realIndex = realSlides.findIndex((s) => s.id === activeItem?.id);
+  // Fun skin: the chapter's progress as the viewer's sidebar computes it, and
+  // the next real slide's name for the phone bar.
+  const funChapterPercent =
+    isFun && realSlides.length > 0 ? chapterMeanPercent(realSlides) : null;
+  const funUpNext =
+    isFun && realIndex > -1 ? (realSlides[realIndex + 1]?.title ?? null) : null;
 
   // Check if prev/next slides are locked
   const prevSlide = currentIndex > 0 ? slidesList[currentIndex - 1] : null;
@@ -1575,6 +1592,38 @@ export const SlideMaterial = ({
     <div className="flex h-full w-full flex-col bg-white" ref={selectionRef} data-lesson-root>
       <SlideProtectionGuard />
       {/* Compact Header */}
+      {isFun ? (
+        <FunLessonTopBar
+          courseId={funCourseId}
+          heading={heading}
+          index={realSlides.length > 0 && realIndex > -1 ? realIndex + 1 : null}
+          total={realSlides.length}
+          chapterPercent={funChapterPercent}
+          canGoPrev={canGoPrev}
+          canGoNext={canGoNext}
+          onPrev={goToPrev}
+          onNext={goToNext}
+          showNav="wide"
+          tools={
+            <>
+              {manualCompletion &&
+                activeItem &&
+                MANUALLY_COMPLETABLE_SLIDE_TYPES.has(
+                  activeItem.source_type || ""
+                ) && (
+                  <MarkCompleteButton
+                    slideId={activeItem.id}
+                    slideType={activeItem.source_type as string}
+                    percentageCompleted={activeItem.percentage_completed || 0}
+                    context={completionContext ?? {}}
+                    compact
+                  />
+                )}
+              <AskDoubtButton />
+            </>
+          }
+        />
+      ) : (
       <div className="flex flex-shrink-0 items-center justify-between gap-2 border-b border-neutral-100 bg-white px-3 py-1.5 sm:px-4">
         <h3 className="text-xs sm:text-sm font-medium text-neutral-700 leading-tight truncate min-w-0 flex-1">
           {heading || "\u00A0"}
@@ -1634,6 +1683,7 @@ export const SlideMaterial = ({
           <AskDoubtButton />
         </div>
       </div>
+      )}
 
       {/* Play themes on mobile: inline slide nav right below the compact header.
           Sits in flex flow so it pushes the content down (no fixed-overlap).
@@ -1686,6 +1736,7 @@ export const SlideMaterial = ({
           "w-full flex-1 min-h-0 relative pb-16 sm:pb-0 [.ui-play_&]:pb-0 [.ui-cleaner-play_&]:pb-0",
           // Nothing else gives this area a height until the content arrives.
           showSkeleton && "min-h-reg-500",
+          isFun && "fun-lesson-content",
         )}
       >
         <div ref={contentAreaRef} className="h-full w-full">
@@ -1754,6 +1805,15 @@ export const SlideMaterial = ({
 
       {/* Mobile bottom navigation — default theme only. In the play themes the app
           bottom tab bar hides this, so we render the inline top version above. */}
+      {isFun ? (
+        <FunLessonBottomBar
+          upNext={funUpNext}
+          canGoPrev={canGoPrev}
+          canGoNext={canGoNext}
+          onPrev={goToPrev}
+          onNext={goToNext}
+        />
+      ) : (
       <div className="sm:hidden fixed bottom-0 start-0 end-0 z-40 [.ui-play_&]:hidden [.ui-cleaner-play_&]:hidden">
         <div className="pointer-events-none absolute -top-3 start-0 end-0 h-3 bg-gradient-to-t from-white to-transparent"></div>
         <div className="bg-white border-t border-neutral-100 shadow-[0_-2px_8px_-2px_rgba(0,0,0,0.08)] px-3 py-2 pb-[calc(env(safe-area-inset-bottom)+10px)]"> {/* design-lint-ignore: custom shadow, safe-area viewport math */}
@@ -1799,6 +1859,7 @@ export const SlideMaterial = ({
           </div>
         </div>
       </div>
+      )}
 
       <DoubtResolutionSidebar />
       <LessonNotesHost contentRef={contentAreaRef} />

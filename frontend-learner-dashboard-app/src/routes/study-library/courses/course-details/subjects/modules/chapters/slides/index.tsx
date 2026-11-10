@@ -6,6 +6,9 @@ import { SidebarProvider, useSidebar } from "@/components/ui/sidebar";
 import { useEffect, useState, useCallback, useMemo, useRef } from "react";
 import { useNavHeadingStore } from "@/stores/layout-container/useNavHeadingStore";
 import { toTitleCase } from "@/lib/utils";
+import { useFunTheme } from "@/hooks/use-fun-theme";
+import { courseColourClass } from "@/components/design-system/fun/course-palette";
+import { FunChapterCompleteBar } from "@/routes/study-library/courses/course-details/-components/fun/FunLesson";
 import { getTerminology } from "@/components/common/layout-container/sidebar/utils";
 import { ContentTerms, SystemTerms } from "@/types/naming-settings";
 import {
@@ -293,6 +296,7 @@ function Slides() {
     page: deepLinkPage,
     t: deepLinkTime,
   } = Route.useSearch();
+  const isFunSkin = useFunTheme();
 
   const { setOpen: setAppSidebarOpen } = useSidebar();
   const navigate = useNavigate();
@@ -1474,7 +1478,13 @@ function Slides() {
   ]);
 
   const SidebarComponent = (
-    <div className="flex flex-col h-full bg-white border-e border-gray-100">
+    <div
+      className={
+        isFunSkin
+          ? `flex flex-col h-full bg-white border-e border-gray-100 fun-lesson-side ${courseColourClass(courseId || "")}`
+          : "flex flex-col h-full bg-white border-e border-gray-100"
+      }
+    >
       {/* --- Header Section: Identity & Breadcrumbs ---
           One header, not two. This panel now replaces the app sidebar's own
           institute header (see mySidebar), so it carries both names: the
@@ -1981,7 +1991,13 @@ function Slides() {
         >
           <SidebarProvider defaultOpen={false}>
             {activeItem?.id === "feedback-slide" ? (
-              <FeedbackPage />
+              isFunSkin ? (
+                <div className="fun-feedback">
+                  <FeedbackPage />
+                </div>
+              ) : (
+                <FeedbackPage />
+              )
             ) : (
               <SlideMaterial
                 onNavigateToSlide={handleNavigateToSlide}
@@ -2024,7 +2040,13 @@ function Slides() {
       {chapterCompleteCta &&
         chapterComplete &&
         nextChapter &&
-        !chapterCtaDismissed && (
+        !chapterCtaDismissed && (isFunSkin ? (
+          <FunChapterCompleteBar
+            nextChapterName={toTitleCase(nextChapter.chapter.chapter_name)}
+            onNext={handleNextChapter}
+            onDismiss={() => setChapterCtaDismissed(true)}
+          />
+        ) : (
           <div className="fixed inset-x-0 bottom-0 z-30 border-t border-success-200 bg-success-50 px-4 py-3">
             <div className="mx-auto flex max-w-screen-lg items-center gap-3">
               <CheckCircle
@@ -2059,7 +2081,7 @@ function Slides() {
               </button>
             </div>
           </div>
-        )}
+        ))}
 
       {effectiveFocusMode && (
         <button

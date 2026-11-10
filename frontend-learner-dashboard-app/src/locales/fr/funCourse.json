@@ -1,1 +1,42 @@
-{}
+{
+  "learn": {
+    "count_one": "{{count}} {{course}}",
+    "count_many": "{{count}} {{courses}}",
+    "count_other": "{{count}} {{courses}}",
+    "searchLabel": "Rechercher dans vos {{courses}}",
+    "tabsLabel": "Listes de {{courses}}",
+    "retry": "Réessayer"
+  },
+  "course": {
+    "back": "Retour",
+    "progressLabel": "Progression du {{course}}",
+    "percentOfCourse": "{{percent}} % du {{course}}",
+    "sizeLabel": "Taille du {{course}}",
+    "countChip": "{{count}} {{term}}",
+    "views": "Vues du {{course}}",
+    "doneOf": "{{done}} sur {{total}} {{slides}} terminés",
+    "levelEyebrow": "{{level}} {{index}}",
+    "levelDone": "{{count}} {{term}} · Terminé",
+    "onlyUnfinished": "Non terminés seulement",
+    "expandAll": "Tout ouvrir",
+    "collapseAll": "Tout fermer",
+    "searchSlides": "Rechercher des {{slides}}",
+    "noSlides": "Pas encore de {{slides}} ici",
+    "continue": "Continuer",
+    "locked": "Verrouillé",
+    "quizTag": "Quiz",
+    "pickUpEyebrow": "Reprenez là où vous en étiez",
+    "pickUpCta": "Continuer",
+    "inProgress": "En cours",
+    "stateLabel": "{{state}} : {{title}}"
+  },
+  "lesson": {
+    "position": "{{index}} sur {{total}}",
+    "positionLabel": "{{slide}} {{index}} sur {{total}}",
+    "chapterProgress": "Progression du {{chapter}}",
+    "upNext": "À suivre : {{title}}",
+    "chapterComplete": "{{chapter}} terminé",
+    "dismiss": "Fermer",
+    "navLabel": "Navigation des {{slide}}"
+  }
+}

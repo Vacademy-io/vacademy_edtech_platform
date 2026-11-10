@@ -56,6 +56,16 @@ import { usePaymentStatusSync } from "../-hooks/use-payment-status-sync";
 import { useCourseDisplaySettings } from "../-hooks/use-course-display-settings";
 import { useEnrollmentActions } from "../-hooks/use-enrollment-actions";
 import { TutorEntryCard } from "@/components/tutor/TutorEntryCard";
+import { useFunTheme } from "@/hooks/use-fun-theme";
+import { FunCourseBand, FunCourseBandSkeleton } from "./fun/FunCourseBand";
+import { FunPickUpCard } from "./fun/FunPickUpCard";
+import {
+  courseHeaderPercent,
+  courseSizeCounts,
+  levelSessionLine,
+  plainText,
+  totalSlides,
+} from "./fun/course-outline";
 
 export type {
   ChapterType,
@@ -73,6 +83,7 @@ export const CourseDetailsPage = () => {
   );
 
   useCourseDetailsNavHeading();
+  const isFun = useFunTheme();
 
   const router = useRouter();
   const searchParams = router.state.location.search;
@@ -324,6 +335,14 @@ export const CourseDetailsPage = () => {
     });
   }, [selectedSession, selectedLevel, form]);
 
+  // Fun skin: the header band counts modules and chapters at every depth, from
+  // the outline the structure block loads (the stats above come from the form,
+  // whose subjects carry no modules below depth 5).
+  const [funStructureCounts, setFunStructureCounts] = useState<{
+    modules: number;
+    chapters: number;
+  } | null>(null);
+
   // Function to update module statistics for depth 5 courses
   const updateModuleStats = (
     modulesData: Record<string, Array<{ chapters?: Array<unknown> }>>,
@@ -347,6 +366,21 @@ export const CourseDetailsPage = () => {
         totalChapters,
       }));
     }
+  };
+
+  const funUpdateModuleStats = (
+    modulesData: Record<string, Array<{ chapters?: Array<unknown> }>>,
+  ) => {
+    updateModuleStats(modulesData);
+    let modules = 0;
+    let chapters = 0;
+    Object.values(modulesData).forEach((list) => {
+      modules += list.length;
+      list.forEach((mod) => {
+        chapters += mod.chapters?.length ?? 0;
+      });
+    });
+    setFunStructureCounts({ modules, chapters });
   };
 
   const slideCountQuery = useQuery({
@@ -470,12 +504,25 @@ export const CourseDetailsPage = () => {
     // Match the skeleton to the layout it resolves into — a full-page branded
     // spinner ahead of a title-plus-one-card page reads as a much heavier load
     // than it is, and makes the content visibly jump when it lands.
+    if (isFun) return <FunCourseBandSkeleton />;
     return contentOnly ? (
       <ContentOnlyCourseDetailsSkeleton />
     ) : (
       <CourseDetailsSkeleton />
     );
   }
+
+  // Fun skin header band: the batch's percent from any entry path, and the
+  // level counts the sidebar would show (placeholder levels dropped).
+  const funDepth =
+    courseStructureFromApi ?? stableCourseData?.courseData?.courseStructure ?? 5;
+  const funCourseData = isFun ? form.getValues("courseData") : null;
+  const funPreviewImage = funCourseData?.coursePreviewImageMediaId ?? "";
+  const funCourseId = String(searchParams.courseId ?? "");
+  const funSearchPercent =
+    typeof searchParams.percentageCompleted === "number"
+      ? searchParams.percentageCompleted
+      : null;
 
   return (
     <>
@@ -513,14 +560,60 @@ export const CourseDetailsPage = () => {
         courseTitle={form.getValues("courseData").title}
       />
 
-      <div className="min-h-screen bg-background relative w-full max-w-full">
+      <div
+        className={
+          isFun
+            ? "min-h-screen bg-background relative w-full max-w-full fun-course-page"
+            : "min-h-screen bg-background relative w-full max-w-full"
+        }
+      >
         {/* Course Header */}
-        <CourseHeader
-          courseData={form.getValues("courseData")}
-          showConfetti={showConfetti}
-          minimal={contentOnly}
-          hideTags={hideTags}
-        />
+        {isFun && funCourseData ? (
+          <>
+            <FunCourseBand
+              courseId={funCourseId}
+              title={funCourseData.title}
+              eyebrow={levelSessionLine(
+                levelOptions?.find((o) => o.value === selectedLevel)?.label,
+                sessionOptions?.find((o) => o.value === selectedSession)?.label,
+              )}
+              summary={contentOnly ? "" : plainText(funCourseData.description)}
+              imageUrl={/^https?:\/\//i.test(funPreviewImage) ? funPreviewImage : null}
+              counts={courseSizeCounts({
+                depth: funDepth,
+                subjects: getSubjectDetails(
+                  form.getValues(),
+                  selectedSession,
+                  selectedLevel,
+                ).length,
+                modules: funStructureCounts?.modules ?? moduleStats.totalModules,
+                chapters: funStructureCounts?.chapters ?? moduleStats.totalChapters,
+                slides: totalSlides(processedSlideCounts),
+              })}
+              percent={courseHeaderPercent(
+                courseDetailsData,
+                packageSessionIdForCurrentLevel,
+                funSearchPercent,
+              )}
+              hidePercent={hideProgressCard}
+            />
+            {!contentOnly && (
+              <CourseHeader
+                courseData={funCourseData}
+                minimal={false}
+                hideTags
+                mediaOnly
+              />
+            )}
+          </>
+        ) : (
+          <CourseHeader
+            courseData={form.getValues("courseData")}
+            showConfetti={showConfetti}
+            minimal={contentOnly}
+            hideTags={hideTags}
+          />
+        )}
 
         {/* Main Content Container */}
         <div className="relative z-10 w-full px-2 sm:px-0 py-2 lg:py-3">
@@ -613,7 +706,7 @@ export const CourseDetailsPage = () => {
                       courseData={stableCourseData}
                       packageSessionId={packageSessionIdForCurrentLevel || ""}
                       selectedTab={selectedTab}
-                      updateModuleStats={updateModuleStats}
+                      updateModuleStats={isFun ? funUpdateModuleStats : updateModuleStats}
                       isEnrolledInCourse={isEnrolledInCourse}
                       contentOnly={contentOnly}
                       chapterOpensFirstSlide={chapterOpensFirstSlide}
@@ -680,6 +773,7 @@ export const CourseDetailsPage = () => {
             {hasRightSidebar && (
               <div className="lg:col-span-1">
                 <div className="sticky top-24 self-start">
+                  {isFun && <FunPickUpCard courseId={funCourseId} />}
                   <CourseSidebar
                     hasRightSidebar={hasRightSidebar}
                     levelOptions={levelOptions}

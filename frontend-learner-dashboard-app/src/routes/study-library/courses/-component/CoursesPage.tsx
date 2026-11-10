@@ -13,6 +13,14 @@ import { ContentTerms, SystemTerms } from "@/types/naming-settings.ts";
 import { getStudentDisplaySettings } from "@/services/student-display-settings";
 import { LoadErrorState } from "@/components/design-system/states";
 import { resolveListView, type RequestStatus } from "@/lib/list-status";
+import { useFunTheme } from "@/hooks/use-fun-theme";
+import {
+    FunLearnEmpty,
+    FunLearnError,
+    FunLearnList,
+    FunLearnSkeleton,
+    FunLearnTools,
+} from "../-components/fun/FunLearnList";
 
 interface CoursesPageProps {
     courseData: CoursePackageResponse;
@@ -62,6 +70,7 @@ const CoursesPage: React.FC<CoursesPageProps> = ({
     onRetry,
 }) => {
     const { t } = useTranslation("study");
+    const isFun = useFunTheme();
     // Lower-cased at the call site (not in the catalog) so the composed
     // terminology reads naturally mid-sentence in English; a no-op for
     // scripts without case, such as Arabic and Hindi.
@@ -82,9 +91,14 @@ const CoursesPage: React.FC<CoursesPageProps> = ({
     const [isFilterOpen, setIsFilterOpen] = useState(false);
     // Institute setting: hide the instructor name block on each course card.
     const [hideInstructorName, setHideInstructorName] = useState(false);
+    // Fun skin rows: the institute's "hide progress" choice (courseDetails.hideProgressCard).
+    const [hideProgress, setHideProgress] = useState(false);
     useEffect(() => {
         getStudentDisplaySettings(false)
-            .then((s) => setHideInstructorName(s?.allCourses?.hideInstructorName ?? false))
+            .then((s) => {
+                setHideInstructorName(s?.allCourses?.hideInstructorName ?? false);
+                setHideProgress(s?.courseDetails?.hideProgressCard === true);
+            })
             .catch(() => setHideInstructorName(false));
     }, []);
 
@@ -207,6 +221,7 @@ const CoursesPage: React.FC<CoursesPageProps> = ({
                             ref={filterPanelRef}
                             className={cn(
                                 "w-full flex-shrink-0",
+                                isFun && "fun-learn-filters",
                                 // Hide the desktop column when filter is closed;
                                 // mobile Sheet trigger inside is already lg:hidden so unaffected
                                 !isFilterOpen && "lg:hidden"
@@ -262,6 +277,47 @@ const CoursesPage: React.FC<CoursesPageProps> = ({
 
                 {/* Main Content Area */}
                 <div className="flex-1 min-w-0">
+                    {isFun ? (
+                        <>
+                            <FunLearnTools
+                                showFilterToggle={showFilters}
+                                isFilterOpen={isFilterOpen}
+                                onFilterToggle={() => setIsFilterOpen((prev) => !prev)}
+                                activeFiltersCount={activeFiltersCount}
+                            />
+                            {listView === "loading" ? (
+                                <FunLearnSkeleton />
+                            ) : listView === "error" ? (
+                                <FunLearnError
+                                    title={t("catalog.loadError.title", { courses: coursesLower })}
+                                    onRetry={onRetry}
+                                />
+                            ) : listView === "empty" ? (
+                                <FunLearnEmpty
+                                    title={t(`${emptyCopyKey}.title`, { courses: coursesLower })}
+                                    description={t(`${emptyCopyKey}.description`, { courses: coursesLower })}
+                                />
+                            ) : (
+                                <>
+                                    <FunLearnList
+                                        courses={courseData.content}
+                                        selectedTab={selectedTab}
+                                        hideProgress={hideProgress}
+                                    />
+                                    {courseData.totalPages > 1 && (
+                                        <div className="flex justify-center mt-4 sm:mt-6">
+                                            <Pagination
+                                                currentPage={courseData.number + 1}
+                                                totalPages={courseData.totalPages}
+                                                onPageChange={(page) => handlePageChange(page - 1)}
+                                            />
+                                        </div>
+                                    )}
+                                </>
+                            )}
+                        </>
+                    ) : (
+                    <>
                     <SearchAndSortBar
                         searchTerm={searchTerm}
                         onSearchChange={onSearchChange}
@@ -429,6 +485,8 @@ const CoursesPage: React.FC<CoursesPageProps> = ({
                                 </div>
                             )}
                         </div>
+                    )}
+                    </>
                     )}
                 </div>
             </div>

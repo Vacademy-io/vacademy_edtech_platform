@@ -22,6 +22,9 @@ interface CourseHeaderProps {
   minimal?: boolean;
   /** Student Display Settings → courseDetails.hideTags: no tag chips above the title. */
   hideTags?: boolean;
+  /** Fun skin: its header band carries the title, so only the course's preview
+   *  video, image or banner is drawn here (nothing when there is none). */
+  mediaOnly?: boolean;
 }
 
 export const CourseHeader = ({
@@ -29,6 +32,7 @@ export const CourseHeader = ({
   showConfetti = false,
   minimal = false,
   hideTags = false,
+  mediaOnly = false,
 }: CourseHeaderProps) => {
   const { t } = useTranslation("courseDetailsA");
   const course = getTerminology(ContentTerms.Course, SystemTerms.Course);
@@ -56,6 +60,25 @@ export const CourseHeader = ({
     if (!el) return;
     setIsDescClamped(el.scrollHeight > el.clientHeight);
   }, [courseData.description]);
+
+  if (mediaOnly) {
+    if (!courseData.title || !hasRightMedia) return null;
+    return (
+      <div className="fun-course-media">
+        {hasVideo ? (
+          <VideoPlayer src={courseData.courseMediaId} />
+        ) : (
+          <img
+            src={hasMediaImage ? courseData.courseMediaId : courseData.courseBannerMediaId}
+            alt={toTitleCase(courseData.title)}
+            onError={(e) => {
+              e.currentTarget.style.display = "none";
+            }}
+          />
+        )}
+      </div>
+    );
+  }
 
   return (
     <div className="relative w-full bg-background">

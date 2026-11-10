@@ -1,1 +1,41 @@
-{}
+{
+  "learn": {
+    "count_one": "{{count}} {{course}}",
+    "count_other": "{{count}} {{courses}}",
+    "searchLabel": "Search your {{courses}}",
+    "tabsLabel": "{{course}} lists",
+    "retry": "Try again"
+  },
+  "course": {
+    "back": "Back",
+    "progressLabel": "{{course}} progress",
+    "percentOfCourse": "{{percent}}% of {{course}}",
+    "sizeLabel": "{{course}} size",
+    "countChip": "{{count}} {{term}}",
+    "views": "{{course}} views",
+    "doneOf": "{{done}} of {{total}} {{slides}} done",
+    "levelEyebrow": "{{level}} {{index}}",
+    "levelDone": "{{count}} {{term}} · Done",
+    "onlyUnfinished": "Only unfinished",
+    "expandAll": "Expand all",
+    "collapseAll": "Collapse all",
+    "searchSlides": "Search {{slides}}",
+    "noSlides": "No {{slides}} here yet",
+    "continue": "Continue",
+    "locked": "Locked",
+    "quizTag": "Quiz",
+    "pickUpEyebrow": "Pick up where you left off",
+    "pickUpCta": "Continue",
+    "inProgress": "In progress",
+    "stateLabel": "{{state}}: {{title}}"
+  },
+  "lesson": {
+    "position": "{{index}} of {{total}}",
+    "positionLabel": "{{slide}} {{index}} of {{total}}",
+    "chapterProgress": "{{chapter}} progress",
+    "upNext": "Up next: {{title}}",
+    "chapterComplete": "{{chapter}} complete",
+    "dismiss": "Dismiss",
+    "navLabel": "{{slide}} navigation"
+  }
+}
