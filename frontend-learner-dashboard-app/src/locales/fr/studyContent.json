@@ -29,7 +29,8 @@
         "quiz": "Quiz",
         "assignment": "Devoir",
         "scormModule": "Module SCORM",
-        "content": "Contenu"
+        "content": "Contenu",
+        "discussion": "Discussion"
     },
     "slideDetails": {
         "pageCount_one": "{{count}} page",
@@ -319,5 +320,128 @@
         "doneDescription": "Terminé",
         "unknownLabel": "Inconnu",
         "unknownDescription": "Statut inconnu"
+    },
+    "discussion": {
+        "eyebrow": "Discussion",
+        "you": "Vous",
+        "anonymousClassmate": "Camarade anonyme",
+        "teacher": "Enseignant",
+        "postedAnonymously": "publié anonymement",
+        "edited": "modifié",
+        "justNow": "à l'instant",
+        "pinned": "Épinglé par votre enseignant",
+        "status": {
+            "pending": "En attente de l'approbation de votre enseignant",
+            "hidden": "Masqué par votre enseignant"
+        },
+        "reactions": {
+            "HEART": "J'adore",
+            "HUG": "Je t'envoie un câlin",
+            "THANKS": "Merci",
+            "INSIGHT": "Éclairant",
+            "RELATE": "Je m'y retrouve",
+            "STRENGTH": "Tu vas y arriver",
+            "add": "Réagir",
+            "addAria": "Ajouter une réaction",
+            "chipAria": "{{label}}, {{count}}"
+        },
+        "menu": {
+            "more": "Plus d'options",
+            "edit": "Modifier",
+            "delete": "Supprimer",
+            "report": "Signaler",
+            "reported": "Signalé"
+        },
+        "delete": {
+            "titleResponse": "Supprimer votre réponse ?",
+            "titleComment": "Supprimer votre commentaire ?",
+            "body": "Elle sera retirée pour tout le monde. Cette action est irréversible.",
+            "cancel": "Conserver",
+            "confirm": "Supprimer"
+        },
+        "report": {
+            "title": "Signaler cette publication",
+            "body": "Votre enseignant y jettera un œil. L'auteur ne saura pas qui l'a signalée.",
+            "reasonLabel": "Dites à votre enseignant ce qui ne va pas (facultatif)",
+            "cancel": "Annuler",
+            "submit": "Signaler"
+        },
+        "edit": {
+            "label": "Modifier votre publication",
+            "save": "Enregistrer",
+            "approvalNote": "Votre enseignant vérifiera la modification avant que les autres la voient."
+        },
+        "reply": {
+            "action": "Répondre",
+            "label": "Répondre à {{name}}",
+            "placeholder": "Écrivez une réponse bienveillante…",
+            "placeholderOwn": "Complétez votre réponse ou répondez à votre enseignant…",
+            "submit": "Répondre"
+        },
+        "comments": {
+            "showMore_one": "Afficher {{count}} autre réponse",
+            "showMore_other": "Afficher {{count}} autres réponses"
+        },
+        "composer": {
+            "label": "Votre réponse",
+            "placeholder": "Prenez votre temps. Partagez autant ou aussi peu que vous le souhaitez.",
+            "submit": "Partager",
+            "addAnother": "Partager une autre pensée",
+            "cancel": "Annuler",
+            "anonymous": "Publier anonymement",
+            "anonymousHint": "Vos camarades ne verront pas votre nom. Votre enseignant, si.",
+            "charactersLeft_one": "{{formatted}} caractère restant",
+            "charactersLeft_other": "{{formatted}} caractères restants"
+        },
+        "audience": {
+            "OPEN": "Vos camarades et votre enseignant verront votre réponse",
+            "AFTER_REPLY": "Vous verrez les réponses de vos camarades après avoir partagé la vôtre",
+            "PRIVATE": "Seul votre enseignant verra votre réponse",
+            "approval": "Votre enseignant la vérifiera avant que les autres la voient"
+        },
+        "visibility": {
+            "OPEN": "Partagé avec votre classe",
+            "AFTER_REPLY": "Les réponses s'affichent après votre partage",
+            "PRIVATE": "Privé entre vous et votre enseignant"
+        },
+        "closed": {
+            "title": "Cette discussion est fermée",
+            "body": "Vous pouvez toujours lire les réponses ici."
+        },
+        "careNoteLabel": "Un mot de votre enseignant",
+        "sections": {
+            "yours_one": "Votre réponse",
+            "yours_other": "Vos réponses",
+            "class": "De votre classe",
+            "teacher": "De votre enseignant"
+        },
+        "gate": {
+            "title_one": "{{formatted}} camarade a partagé",
+            "title_other": "{{formatted}} camarades ont partagé",
+            "body": "Partagez la vôtre pour voir les leurs.",
+            "noneTitle": "Personne n'a encore partagé",
+            "noneBody": "Partagez la vôtre, et vous verrez les réponses de vos camarades au fur et à mesure."
+        },
+        "private": {
+            "title": "Votre réponse reste entre vous et votre enseignant",
+            "body": "Vos camarades ne voient pas les réponses privées. Votre enseignant peut vous répondre ici."
+        },
+        "empty": {
+            "title": "Soyez le premier à partager",
+            "body": "Les réponses de votre classe apparaîtront ici.",
+            "afterMineTitle": "Merci d'avoir partagé",
+            "afterMineBody": "Aucun camarade n'a encore partagé. Leurs réponses apparaîtront ici."
+        },
+        "participants_one": "{{formatted}} personne a partagé",
+        "participants_other": "{{formatted}} personnes ont partagé",
+        "loadError": "Impossible de charger cette discussion",
+        "errors": {
+            "generic": "Une erreur s'est produite. Veuillez réessayer."
+        },
+        "toast": {
+            "shared": "Merci d'avoir partagé",
+            "sentForReview": "Envoyé à votre enseignant pour vérification",
+            "reported": "Merci d'avoir prévenu votre enseignant"
+        }
     }
 }

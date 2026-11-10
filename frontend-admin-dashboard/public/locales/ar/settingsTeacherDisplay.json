@@ -125,6 +125,7 @@
                 "assignment": "واجب",
                 "jupyterNotebook": "دفتر Jupyter",
                 "scratch": "Scratch",
+                "discussion": "نقاش",
                 "audio": "صوت",
                 "scorm": "حزمة SCORM",
                 "assessment": "تقييم"

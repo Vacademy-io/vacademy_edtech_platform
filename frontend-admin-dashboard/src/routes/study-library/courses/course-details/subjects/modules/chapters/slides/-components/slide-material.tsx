@@ -74,6 +74,8 @@ import { ChatCircleDots } from '@phosphor-icons/react';
 import { useSidebar } from '@/components/ui/sidebar';
 import { JupyterNotebookSlide } from './jupyter-notebook-slide';
 import { ScratchProjectSlide } from './scratch-project-slide';
+import { DiscussionSlideEditor } from './discussion/discussion-slide-editor';
+import { DISCUSSION_DOC_TYPE } from './discussion/discussion-types';
 import { CodeEditorSlide } from './code-editor-slide';
 import { SplitScreenSlide } from './split-screen-slide';
 import { getTokenFromCookie, getTokenDecodedData, getUserRoles } from '@/lib/auth/sessionUtility';
@@ -2661,6 +2663,19 @@ export const SlideMaterial = ({
                 return;
             }
 
+            if (documentType === DISCUSSION_DOC_TYPE) {
+                // Question + settings live in document_slide.data (JSON). The editor keeps
+                // activeItem's data current, so the header Save Draft / Publish persist it.
+                setContent(
+                    <DiscussionSlideEditor
+                        key={`discussion-${activeItem.id}-${historyRestoreNonce}`}
+                        slide={activeItem}
+                        isEditable={!isLearnerView}
+                    />
+                );
+                return;
+            }
+
             if (documentType === 'SCRATCH') {
                 try {
                     // Fallback: first check data field, then published_data for published slides
@@ -3629,6 +3644,7 @@ export const SlideMaterial = ({
                 (activeItem?.document_slide?.type == 'CODE' ||
                     activeItem?.document_slide?.type == 'JUPYTER' ||
                     activeItem?.document_slide?.type == 'SCRATCH' ||
+                    activeItem?.document_slide?.type == DISCUSSION_DOC_TYPE ||
                     activeItem?.document_slide?.type?.startsWith('SPLIT_'))
             ) {
                 try {
@@ -3652,6 +3668,8 @@ export const SlideMaterial = ({
                                   ? 'Jupyter Notebook'
                                   : activeItem.document_slide.type === 'SCRATCH'
                                     ? 'Scratch Project'
+                                    : activeItem.document_slide.type === DISCUSSION_DOC_TYPE
+                                      ? 'Discussion'
                                     : activeItem.document_slide.type?.startsWith('SPLIT_')
                                       ? `Split Screen ${activeItem.document_slide.type.replace('SPLIT_', '')}`
                                       : 'Interactive Slide';
@@ -3688,6 +3706,8 @@ export const SlideMaterial = ({
                               ? 'Jupyter Notebook'
                               : activeItem.document_slide.type === 'SCRATCH'
                                 ? 'Scratch Project'
+                                : activeItem.document_slide.type === DISCUSSION_DOC_TYPE
+                                  ? 'Discussion'
                                 : activeItem.document_slide.type?.startsWith('SPLIT_')
                                   ? `Split Screen ${activeItem.document_slide.type.replace('SPLIT_', '')}`
                                   : 'Interactive Slide';
@@ -4011,6 +4031,7 @@ export const SlideMaterial = ({
                 (activeItem?.document_slide?.type === 'CODE' ||
                     activeItem?.document_slide?.type === 'JUPYTER' ||
                     activeItem?.document_slide?.type === 'SCRATCH' ||
+                    activeItem?.document_slide?.type === DISCUSSION_DOC_TYPE ||
                     activeItem?.document_slide?.type?.startsWith('SPLIT_'))
             ) {
                 // For interactive slides, check if we have valid data
@@ -4029,6 +4050,8 @@ export const SlideMaterial = ({
                               ? 'Jupyter Notebook'
                               : activeItem.document_slide.type === 'SCRATCH'
                                 ? 'Scratch Project'
+                                : activeItem.document_slide.type === DISCUSSION_DOC_TYPE
+                                  ? 'Discussion'
                                 : activeItem.document_slide.type?.startsWith('SPLIT_')
                                   ? `Split Screen ${activeItem.document_slide.type.replace('SPLIT_', '')}`
                                   : 'Interactive Slide';
@@ -4595,6 +4618,7 @@ export const SlideMaterial = ({
                                             activeItem?.document_slide?.type === 'CODE' ||
                                             activeItem?.document_slide?.type === 'JUPYTER' ||
                                             activeItem?.document_slide?.type === 'SCRATCH' ||
+                                            activeItem?.document_slide?.type === DISCUSSION_DOC_TYPE ||
                                             activeItem?.source_type === 'QUESTION' ||
                                             activeItem?.source_type === 'ASSIGNMENT' ||
                                             activeItem?.source_type === 'QUIZ' ||

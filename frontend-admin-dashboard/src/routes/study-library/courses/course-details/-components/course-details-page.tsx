@@ -14,6 +14,7 @@ import {
     Question,
     BookOpen,
     GameController,
+    ChatsCircle,
     ClipboardText,
     PresentationChart,
     FileText,
@@ -277,6 +278,11 @@ const getSlideTypeInfo = (sourceType: string | null | undefined) => {
             return {
                 icon: <GameController size={14} className="shrink-0 text-gray-500" />,
                 name: tSlideType('scratchProject'),
+            };
+        case 'DISCUSSION':
+            return {
+                icon: <ChatsCircle size={14} className="shrink-0 text-gray-500" />,
+                name: tSlideType('discussion'),
             };
         case 'QUESTION':
             return {

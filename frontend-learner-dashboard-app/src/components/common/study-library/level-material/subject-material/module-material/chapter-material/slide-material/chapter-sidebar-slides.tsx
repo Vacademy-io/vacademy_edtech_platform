@@ -26,7 +26,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { BookOpen, Code, GameController } from "@phosphor-icons/react";
+import { BookOpen, ChatsCircle, Code, GameController } from "@phosphor-icons/react";
 import { useDoubtSidebarStore } from "@/stores/study-library/doubt-sidebar-store";
 import { useEffect, useMemo, useState } from "react";
 import { getStudentDisplaySettings } from "@/services/student-display-settings";
@@ -163,6 +163,13 @@ export const getIcon = (slide: Slide, size?: string): React.ReactNode => {
           return <BookOpen className={`${iconClass} text-purple-500`} />;
         case "SCRATCH":
           return <GameController className={`${iconClass} text-orange-500`} />;
+        case "DISCUSSION":
+          return (
+            <ChatsCircle
+              className={`${iconClass} text-primary-500`}
+              weight="duotone"
+            />
+          );
         default:
           return (
             <FileText
@@ -236,6 +243,9 @@ export const getSlideTypeDisplay = (slide: Slide): string => {
           case "PPT":
           case "PPTX":
             baseType = i18n.t("studyContent:slideType.presentation");
+            break;
+          case "DISCUSSION":
+            baseType = i18n.t("studyContent:slideType.discussion");
             break;
           default:
             baseType = i18n.t("studyContent:slideType.document");

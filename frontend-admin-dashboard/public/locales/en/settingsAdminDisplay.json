@@ -115,6 +115,7 @@
         "assignment": "Assignment",
         "jupyterNotebook": "Jupyter Notebook",
         "scratch": "Scratch",
+        "discussion": "Discussion",
         "audio": "Audio",
         "scormPackage": "SCORM Package",
         "assessment": "Assessment",

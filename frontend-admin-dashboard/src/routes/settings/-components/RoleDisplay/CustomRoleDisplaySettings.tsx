@@ -2160,6 +2160,7 @@ export default function CustomRoleDisplaySettings({
                             ['assignment', t('courseContentTypes.assignment')],
                             ['jupyterNotebook', t('courseContentTypes.jupyterNotebook')],
                             ['scratch', t('courseContentTypes.scratch')],
+                            ['discussion', t('courseContentTypes.discussion')],
                             ['audio', t('courseContentTypes.audio')],
                             ['scorm', t('courseContentTypes.scorm')],
                             ['assessment', t('courseContentTypes.assessment')],
@@ -2186,6 +2187,7 @@ export default function CustomRoleDisplaySettings({
                                             jupyterNotebook:
                                                 prev.contentTypes?.jupyterNotebook ?? true,
                                             scratch: prev.contentTypes?.scratch ?? true,
+                                            discussion: prev.contentTypes?.discussion ?? true,
                                             ppt: prev.contentTypes?.ppt ?? true,
                                             audio: prev.contentTypes?.audio ?? true,
                                             scorm: prev.contentTypes?.scorm ?? true,
@@ -2226,6 +2228,7 @@ export default function CustomRoleDisplaySettings({
                                             jupyterNotebook:
                                                 prev.contentTypes?.jupyterNotebook ?? true,
                                             scratch: prev.contentTypes?.scratch ?? true,
+                                            discussion: prev.contentTypes?.discussion ?? true,
                                             ppt: prev.contentTypes?.ppt ?? true,
                                             audio: prev.contentTypes?.audio ?? true,
                                             scorm: prev.contentTypes?.scorm ?? true,
@@ -2270,6 +2273,7 @@ export default function CustomRoleDisplaySettings({
                                             jupyterNotebook:
                                                 prev.contentTypes?.jupyterNotebook ?? true,
                                             scratch: prev.contentTypes?.scratch ?? true,
+                                            discussion: prev.contentTypes?.discussion ?? true,
                                             ppt: prev.contentTypes?.ppt ?? true,
                                             audio: prev.contentTypes?.audio ?? true,
                                             scorm: prev.contentTypes?.scorm ?? true,

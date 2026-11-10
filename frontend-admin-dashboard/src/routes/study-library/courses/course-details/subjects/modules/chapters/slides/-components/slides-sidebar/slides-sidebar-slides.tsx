@@ -10,6 +10,7 @@ import {
     PlayCircle,
     ClipboardText,
     ListChecks,
+    ChatsCircle,
 } from '@phosphor-icons/react';
 import { Video, Sparkle } from '@phosphor-icons/react';
 import { ReactNode, useEffect, useMemo, useState } from 'react';
@@ -141,6 +142,8 @@ export const getIcon = (
             return <GameController className={`${iconClass} text-yellow-500`} />;
         case 'CODE':
             return <Code className={`${iconClass} text-green-500`} />;
+        case 'DISCUSSION':
+            return <ChatsCircle className={`${iconClass} text-primary-500`} />;
         case 'PRESENTATION':
             return <FileDoc className={`${iconClass} text-orange-500`} />;
         case 'AUDIO':

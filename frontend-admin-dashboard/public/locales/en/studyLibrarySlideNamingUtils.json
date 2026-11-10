@@ -4,6 +4,7 @@
         "presentation": "Presentation",
         "jupyterNotebook": "Jupyter Notebook",
         "scratchProject": "Scratch Project",
+        "discussion": "Discussion",
         "codeEditor": "Code Editor",
         "video": "Video",
         "audio": "Audio",

@@ -793,6 +793,10 @@ export const GET_CHAPTERS_WITH_SLIDES = `${BASE_URL}/admin-core-service/v1/study
 export const ADD_UPDATE_SPLIT_SCREEN_SLIDE = `${BASE_URL}/admin-core-service/slide/v1/add-update-video-slide`;
 export const GET_ALL_SLIDES = `${BASE_URL}/admin-core-service/v1/study-library/chapters-with-slides`;
 export const ADD_UPDATE_DOCUMENT_SLIDE = `${BASE_URL}/admin-core-service/slide/v1/add-update-document-slide`;
+// Discussion slides (document_slide.type 'DISCUSSION'): staff thread, posts and moderation.
+// Every call takes the instituteId query param (must match the clientId header).
+export const DISCUSSION_ADMIN_THREAD = `${BASE_URL}/admin-core-service/discussion/admin/v1/thread`;
+export const DISCUSSION_ADMIN_POSTS = `${BASE_URL}/admin-core-service/discussion/admin/v1/posts`;
 // Version history of slide content (trigger-written audit trail) + restore.
 export const GET_SLIDE_CONTENT_HISTORY = `${BASE_URL}/admin-core-service/slide/v1/content-history`;
 export const GET_SLIDE_CONTENT_HISTORY_DETAIL = `${BASE_URL}/admin-core-service/slide/v1/content-history/detail`;

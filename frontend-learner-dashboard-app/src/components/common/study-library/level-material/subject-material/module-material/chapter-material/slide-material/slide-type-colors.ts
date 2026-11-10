@@ -12,6 +12,7 @@
 
 import {
   BookOpen,
+  ChatsCircle,
   ChatText,
   Exam,
   FileDoc,
@@ -136,6 +137,10 @@ export const getSlideTypeColors = (
     case "AUDIO":
       return PALETTE.sky!;
     case "DOCUMENT":
+      // A discussion is a conversation, not a reading: it shares the
+      // "voice" hue with the feedback slide.
+      if (slide.document_slide?.type?.toUpperCase() === "DISCUSSION")
+        return PALETTE.pink!;
       return PALETTE.amber!;
     case "QUESTION":
       return PALETTE.purple!;
@@ -166,6 +171,8 @@ export function getSlideTypeIcon(slide: Slide): PhosphorIcon {
     case "HTML_VIDEO":
       return PlayCircle;
     case "DOCUMENT":
+      if (slide.document_slide?.type?.toUpperCase() === "DISCUSSION")
+        return ChatsCircle;
       // Guess PDF vs DOC by available fields; fall back to FileDoc.
       if (slide.document_slide?.type?.toLowerCase().includes("pdf"))
         return FilePdf;

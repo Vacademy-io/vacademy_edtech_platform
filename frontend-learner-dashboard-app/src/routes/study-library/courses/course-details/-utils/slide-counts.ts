@@ -21,6 +21,7 @@ const DISPLAY_NAMES: Record<string, string> = {
   JUPYTER: "Jupyter Notebook slides",
   SCRATCH_PROJECT: "Scratch Project slides",
   SCRATCH: "Scratch Project slides",
+  DISCUSSION: "Discussion slides",
   QUIZ: "Quiz slides",
   CODE_EDITOR: "Code Editor slides",
 };
@@ -38,6 +39,7 @@ const DISPLAY_NAME_KEYS: Record<string, string> = {
   JUPYTER: "slideCounts.jupyterNotebook",
   SCRATCH_PROJECT: "slideCounts.scratchProject",
   SCRATCH: "slideCounts.scratchProject",
+  DISCUSSION: "slideCounts.discussion",
   QUIZ: "slideCounts.quiz",
   CODE_EDITOR: "slideCounts.codeEditor",
 };

@@ -246,6 +246,7 @@ const ADMIN_DEFAULTS_BASE: Omit<DisplaySettingsData, 'sidebar'> = {
         assignment: true,
         jupyterNotebook: true,
         scratch: true,
+        discussion: true,
         ppt: true,
         audio: true,
         scorm: true,

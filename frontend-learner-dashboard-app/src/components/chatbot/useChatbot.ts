@@ -21,6 +21,7 @@ import { getTokenFromStorage } from "@/lib/auth/sessionUtility";
 import { TokenKey } from "@/constants/auth/tokens";
 import { enqueueMessage, peekQueue, dequeueMessage, QueuedMessage } from "@/services/offline-queue";
 import { useContentStore } from "@/stores/study-library/chapter-sidebar-store";
+import { readDiscussionPrompt } from "@/components/common/study-library/level-material/subject-material/module-material/chapter-material/slide-material/discussion/discussion-utils";
 import { useInstituteDetailsStore } from "@/stores/study-library/useInstituteDetails";
 import { useParentPortalStore } from "@/stores/parent-portal-store";
 import { useCourseDetailsStore } from "@/stores/study-library/useCourseDetailsStore";
@@ -330,7 +331,11 @@ export const useChatbot = () => {
             slideType = "CODE";
             slideContent = activeSlide.document_slide.published_data || "";
           } else slideType = "DOCUMENT";
-          if (activeSlide.document_slide) {
+          if (activeSlide.document_slide?.type === "DISCUSSION") {
+            // A discussion's data is JSON (question + moderation settings);
+            // the tutor only needs the question itself.
+            slideContent = readDiscussionPrompt(activeSlide.document_slide.published_data);
+          } else if (activeSlide.document_slide) {
             slideContent = activeSlide.document_slide.published_data || "";
           }
         } else if (activeSlide.source_type === "QUESTION") {

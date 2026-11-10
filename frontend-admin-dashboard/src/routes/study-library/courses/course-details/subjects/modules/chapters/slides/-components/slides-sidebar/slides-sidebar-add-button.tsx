@@ -36,7 +36,11 @@ import {
 } from '@/routes/study-library/courses/course-details/subjects/modules/chapters/slides/-hooks/use-slides';
 import { useContentStore } from '@/routes/study-library/courses/course-details/subjects/modules/chapters/slides/-stores/chapter-sidebar-store';
 import { useDialogStore } from '@/routes/study-library/courses/-stores/slide-add-dialogs-store';
-import { File, GameController, ClipboardText } from '@phosphor-icons/react';
+import { File, GameController, ClipboardText, ChatsCircle } from '@phosphor-icons/react';
+import {
+    DISCUSSION_DOC_TYPE,
+    createDefaultDiscussionDataJson,
+} from '../discussion/discussion-types';
 import { formatHTMLString } from '../slide-operations/formatHtmlString';
 import { EMPTY_LEXICAL_INNER } from '../lexical-editor/lexical-doc-marker';
 import { useInstituteDetailsStore } from '@/stores/students/students-list/useInstituteDetailsStore';
@@ -274,6 +278,12 @@ export const ChapterSidebarAddButton = () => {
                 description: t('menu.scratchProject.description'),
             },
             {
+                label: t('menu.discussion.label'),
+                value: 'discussion',
+                icon: <ChatsCircle className="size-4 text-primary-500" />,
+                description: t('menu.discussion.description'),
+            },
+            {
                 label: t('menu.quiz.label'),
                 value: 'quiz',
                 icon: <ClipboardText className="size-4 text-pink-500" />, // ✅ Changed to ListChecks
@@ -367,6 +377,8 @@ export const ChapterSidebarAddButton = () => {
                     return ct.jupyterNotebook !== false;
                 case 'scratch-project':
                     return ct.scratch !== false;
+                case 'discussion':
+                    return ct.discussion !== false;
                 case 'quiz':
                     return ct.quiz !== false;
                 case 'code-editor':
@@ -712,6 +724,47 @@ export const ChapterSidebarAddButton = () => {
                 } catch (err) {
                     console.error('Error creating Scratch project:', err);
                     toast.error(t('toasts.scratchCreateFailed'));
+                }
+                break;
+            }
+            case 'discussion': {
+                try {
+                    // A discussion is a DOCUMENT slide of type DISCUSSION whose data is the
+                    // question + per-discussion settings JSON (see discussion-types.ts).
+                    const slideId = crypto.randomUUID();
+                    const uniqueTitle = generateUniqueDocumentSlideTitle(
+                        items || [],
+                        DISCUSSION_DOC_TYPE
+                    );
+                    const slideStatus = getSlideStatusForUser();
+                    const discussionData = createDefaultDiscussionDataJson();
+                    const response = await addUpdateDocumentSlide({
+                        id: slideId,
+                        title: uniqueTitle,
+                        image_file_id: '',
+                        description: 'Discussion forum',
+                        slide_order: getNextSlideOrder(items || []),
+                        document_slide: {
+                            id: crypto.randomUUID(),
+                            type: DISCUSSION_DOC_TYPE,
+                            data: discussionData,
+                            title: uniqueTitle,
+                            cover_file_id: '',
+                            total_pages: 1,
+                            published_data: slideStatus === 'PUBLISHED' ? discussionData : null,
+                            published_document_total_pages: 1,
+                        },
+                        status: slideStatus,
+                        new_slide: true,
+                        notify: false,
+                    });
+
+                    if (response) {
+                        await reorderSlidesAfterNewSlide(slideId);
+                    }
+                } catch (err) {
+                    console.error('Error creating discussion:', err);
+                    toast.error(t('toasts.discussionCreateFailed'));
                 }
                 break;
             }

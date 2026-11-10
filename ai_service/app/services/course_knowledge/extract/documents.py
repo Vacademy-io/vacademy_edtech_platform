@@ -76,6 +76,17 @@ def project_segments(raw: Optional[str], doc_type: str) -> List[Segment]:
     return [Segment(text=f"{kind}: {name}", label=kind)]
 
 
+def discussion_segments(raw: Optional[str]) -> List[Segment]:
+    """DISCUSSION: only the teacher's question is lesson content.
+
+    The slide JSON also holds the forum's settings, which are not lesson text.
+    What learners post lives in discussion_post and is never indexed: it can be
+    personal, and the course AI must not repeat one learner's words to another.
+    """
+    data = _json_obj(raw) or {}
+    return html_segments(str(data.get("prompt_html") or ""))
+
+
 def drawing_segments(scene: Any) -> List[Segment]:
     """Excalidraw text elements in reading order (top to bottom, then left to right)."""
     elements = scene.get("elements") if isinstance(scene, dict) else None

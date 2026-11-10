@@ -135,6 +135,17 @@ export const ADD_UPDATE_DOCUMENT_ACTIVITY = `${BASE_URL}/admin-core-service/lear
 export const SLIDE_INTERACTION = `${BASE_URL}/admin-core-service/learner-tracking/v1/slide-interaction`;
 export const LEARNER_NOTES = `${BASE_URL}/admin-core-service/learner-notes/v1`;
 export const MARK_SLIDE_COMPLETION = `${BASE_URL}/admin-core-service/learner-tracking/v1/mark-slide-completion`;
+// Discussion slides (DOCUMENT type "DISCUSSION"): the thread, posts, reactions
+// and reports for the signed-in learner. The server enforces every setting.
+export const DISCUSSION_LEARNER_BASE = `${BASE_URL}/admin-core-service/discussion/learner/v1`;
+export const GET_DISCUSSION_THREAD = `${DISCUSSION_LEARNER_BASE}/thread`;
+export const DISCUSSION_POSTS = `${DISCUSSION_LEARNER_BASE}/posts`;
+export const DISCUSSION_POST = (postId: string) =>
+  `${DISCUSSION_POSTS}/${encodeURIComponent(postId)}`;
+export const DISCUSSION_POST_REACTIONS = (postId: string) =>
+  `${DISCUSSION_POST(postId)}/reactions`;
+export const DISCUSSION_POST_REPORT = (postId: string) =>
+  `${DISCUSSION_POST(postId)}/report`;
 export const SUBMIT_SLIDE_ANSWERS = `${BASE_URL}/admin-core-service/learner-tracking/activity-log/video-question-slide/add-or-update`;
 export const SUBMIT_ASSIGNMENT_SLIDE_ANSWERS = `${BASE_URL}/admin-core-service/learner-tracking/activity-log/assignment-slide/add-or-update-assignment-slide-activity-log`;
 export const GET_ASSIGNMENT_ACTIVITY_LOGS = `${BASE_URL}/admin-core-service/learner-tracking/activity-log/assignment-slide/assignment-slide-activity-logs`;

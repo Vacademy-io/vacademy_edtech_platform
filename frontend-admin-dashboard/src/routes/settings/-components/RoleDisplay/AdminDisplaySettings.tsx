@@ -2134,6 +2134,7 @@ export default function AdminDisplaySettings({ onDirtyChange }: RoleDisplayPanel
                             ['assignment', t('courseContentTypes.assignment')],
                             ['jupyterNotebook', t('courseContentTypes.jupyterNotebook')],
                             ['scratch', t('courseContentTypes.scratch')],
+                            ['discussion', t('courseContentTypes.discussion')],
                             ['audio', t('courseContentTypes.audio')],
                             ['scorm', t('courseContentTypes.scormPackage')],
                             ['assessment', t('courseContentTypes.assessment')],
@@ -2160,6 +2161,7 @@ export default function AdminDisplaySettings({ onDirtyChange }: RoleDisplayPanel
                                             jupyterNotebook:
                                                 prev.contentTypes?.jupyterNotebook ?? true,
                                             scratch: prev.contentTypes?.scratch ?? true,
+                                            discussion: prev.contentTypes?.discussion ?? true,
                                             ppt: prev.contentTypes?.ppt ?? true,
                                             audio: prev.contentTypes?.audio ?? true,
                                             scorm: prev.contentTypes?.scorm ?? true,
@@ -2200,6 +2202,7 @@ export default function AdminDisplaySettings({ onDirtyChange }: RoleDisplayPanel
                                             jupyterNotebook:
                                                 prev.contentTypes?.jupyterNotebook ?? true,
                                             scratch: prev.contentTypes?.scratch ?? true,
+                                            discussion: prev.contentTypes?.discussion ?? true,
                                             ppt: prev.contentTypes?.ppt ?? true,
                                             audio: prev.contentTypes?.audio ?? true,
                                             scorm: prev.contentTypes?.scorm ?? true,
@@ -2244,6 +2247,7 @@ export default function AdminDisplaySettings({ onDirtyChange }: RoleDisplayPanel
                                             jupyterNotebook:
                                                 prev.contentTypes?.jupyterNotebook ?? true,
                                             scratch: prev.contentTypes?.scratch ?? true,
+                                            discussion: prev.contentTypes?.discussion ?? true,
                                             ppt: prev.contentTypes?.ppt ?? true,
                                             audio: prev.contentTypes?.audio ?? true,
                                             scorm: prev.contentTypes?.scorm ?? true,

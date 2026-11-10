@@ -121,6 +121,7 @@ export interface CourseContentTypeSettings {
     assignment: boolean;
     jupyterNotebook: boolean;
     scratch: boolean;
+    discussion: boolean;
     ppt: boolean;
     audio: boolean;
     scorm: boolean;

@@ -47,6 +47,7 @@
         "presentation": "Presentation",
         "jupyterNotebook": "Jupyter Notebook",
         "scratchProject": "Scratch Project",
+        "discussion": "Discussion",
         "question": "Question",
         "quiz": "Quiz",
         "assignment": "Assignment",

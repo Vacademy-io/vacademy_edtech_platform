@@ -73,6 +73,7 @@
         "presentation": "Diapositives de présentation",
         "jupyterNotebook": "Diapositives de notebook Jupyter",
         "scratchProject": "Diapositives de projet Scratch",
+        "discussion": "Diapositives de discussion",
         "quiz": "Diapositives de quiz",
         "codeEditor": "Diapositives d'éditeur de code",
         "genericFallback": "Diapositives {{type}}"

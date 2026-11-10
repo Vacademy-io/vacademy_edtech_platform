@@ -76,6 +76,7 @@
     "presentation": "شرائح عرض تقديمي",
     "jupyterNotebook": "شرائح دفتر Jupyter",
     "scratchProject": "شرائح مشروع Scratch",
+    "discussion": "شرائح النقاش",
     "quiz": "شرائح اختبار قصير",
     "codeEditor": "شرائح محرر الكود",
     "genericFallback": "شرائح {{type}}"

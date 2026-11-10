@@ -72,6 +72,7 @@
     "presentation": "प्रेजेंटेशन स्लाइड",
     "jupyterNotebook": "Jupyter नोटबुक स्लाइड",
     "scratchProject": "Scratch प्रोजेक्ट स्लाइड",
+    "discussion": "चर्चा स्लाइड्स",
     "quiz": "क्विज़ स्लाइड",
     "codeEditor": "कोड एडिटर स्लाइड",
     "genericFallback": "{{type}} स्लाइड"

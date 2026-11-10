@@ -39,8 +39,13 @@ export function isOnlineOnlySlide(slide: Pick<Slide, "source_type" | "video_slid
   if (type === "DOCUMENT") {
     const docType = slide.document_slide?.type?.toUpperCase();
     // CODE/JUPYTER/SCRATCH embeds run in an execution environment, not a
-    // static downloadable file.
-    return docType === "CODE" || docType === "JUPYTER" || docType === "SCRATCH";
+    // static downloadable file. A DISCUSSION is a live thread on the server.
+    return (
+      docType === "CODE" ||
+      docType === "JUPYTER" ||
+      docType === "SCRATCH" ||
+      docType === "DISCUSSION"
+    );
   }
 
   return false;

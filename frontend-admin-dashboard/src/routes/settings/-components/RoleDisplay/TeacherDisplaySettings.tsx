@@ -2170,6 +2170,7 @@ export default function TeacherDisplaySettings({ onDirtyChange }: RoleDisplayPan
                                 t('cards.courseContentTypes.options.jupyterNotebook'),
                             ],
                             ['scratch', t('cards.courseContentTypes.options.scratch')],
+                            ['discussion', t('cards.courseContentTypes.options.discussion')],
                             ['audio', t('cards.courseContentTypes.options.audio')],
                             ['scorm', t('cards.courseContentTypes.options.scorm')],
                             ['assessment', t('cards.courseContentTypes.options.assessment')],
@@ -2196,6 +2197,7 @@ export default function TeacherDisplaySettings({ onDirtyChange }: RoleDisplayPan
                                             jupyterNotebook:
                                                 prev.contentTypes?.jupyterNotebook ?? true,
                                             scratch: prev.contentTypes?.scratch ?? true,
+                                            discussion: prev.contentTypes?.discussion ?? true,
                                             ppt: prev.contentTypes?.ppt ?? true,
                                             audio: prev.contentTypes?.audio ?? true,
                                             scorm: prev.contentTypes?.scorm ?? true,
@@ -2236,6 +2238,7 @@ export default function TeacherDisplaySettings({ onDirtyChange }: RoleDisplayPan
                                             jupyterNotebook:
                                                 prev.contentTypes?.jupyterNotebook ?? true,
                                             scratch: prev.contentTypes?.scratch ?? true,
+                                            discussion: prev.contentTypes?.discussion ?? true,
                                             ppt: prev.contentTypes?.ppt ?? true,
                                             audio: prev.contentTypes?.audio ?? true,
                                             scorm: prev.contentTypes?.scorm ?? true,
@@ -2280,6 +2283,7 @@ export default function TeacherDisplaySettings({ onDirtyChange }: RoleDisplayPan
                                             jupyterNotebook:
                                                 prev.contentTypes?.jupyterNotebook ?? true,
                                             scratch: prev.contentTypes?.scratch ?? true,
+                                            discussion: prev.contentTypes?.discussion ?? true,
                                             ppt: prev.contentTypes?.ppt ?? true,
                                             audio: prev.contentTypes?.audio ?? true,
                                             scorm: prev.contentTypes?.scorm ?? true,

@@ -37,6 +37,7 @@ import DeckPlayer from "./deck-player";
 import { CodeEditorSlide } from "./code-editor-slide";
 import { JupyterNotebookSlide } from "./jupyter-notebook-slide";
 import { ScratchProjectSlide } from "./scratch-project-slide";
+import { DiscussionSlide } from "./discussion/discussion-slide";
 import { SplitScreenVideoSlide } from "./split-screen-video-slide";
 import { useDoubtSidebarStore } from "@/stores/study-library/doubt-sidebar-store";
 import QuizViewer from "./quiz-viewer";
@@ -1337,6 +1338,14 @@ export const SlideMaterial = ({
                 </div>
               );
             }
+          } else if (activeItem.document_slide?.type === "DISCUSSION") {
+            // Discussion: the teacher's question, the learner's reply and the
+            // class's. Reads its batch / chapter ids from the route itself.
+            setContent(
+              <div className="h-full w-full animate-in fade-in duration-100 motion-reduce:animate-none">
+                <DiscussionSlide key={activeItem.id} slide={activeItem} />
+              </div>
+            );
           }
           break;
 
@@ -1610,7 +1619,9 @@ export const SlideMaterial = ({
             activeItem &&
             MANUALLY_COMPLETABLE_SLIDE_TYPES.has(
               activeItem.source_type || ""
-            ) && (
+            ) &&
+            // A discussion completes by posting a reply, not by hand.
+            activeItem.document_slide?.type !== "DISCUSSION" && (
               <MarkCompleteButton
                 slideId={activeItem.id}
                 slideType={activeItem.source_type as string}

@@ -24,6 +24,7 @@ export const SLIDE_TYPE_NAMES = {
     JUPYTER: 'Jupyter Notebook',
     SCRATCH: 'Scratch Project',
     CODE: 'Code Editor',
+    DISCUSSION: 'Discussion',
 
     // Video types
     VIDEO: 'Video',
@@ -49,6 +50,7 @@ const SLIDE_TYPE_NAME_KEYS: Record<keyof typeof SLIDE_TYPE_NAMES, string> = {
     JUPYTER: 'types.jupyterNotebook',
     SCRATCH: 'types.scratchProject',
     CODE: 'types.codeEditor',
+    DISCUSSION: 'types.discussion',
     VIDEO: 'types.video',
     AUDIO: 'types.audio',
     QUESTION: 'types.question',
@@ -85,6 +87,8 @@ export function getSlideTypeForNaming(slide: Partial<Slide>, t?: TFunction): str
                 return translateSlideType('SCRATCH', t);
             case 'CODE':
                 return translateSlideType('CODE', t);
+            case 'DISCUSSION':
+                return translateSlideType('DISCUSSION', t);
             default:
                 return translateSlideType('DOC', t);
         }
@@ -174,6 +178,9 @@ export function generateUniqueDocumentSlideTitle(
             break;
         case 'CODE':
             slideTypeKey = 'CODE';
+            break;
+        case 'DISCUSSION':
+            slideTypeKey = 'DISCUSSION';
             break;
         default:
             slideTypeKey = 'DOC';

@@ -140,6 +140,10 @@ def _document(ref: SlideRef, row: Optional[tuple]) -> None:
         ref.pointer_kind = "inline"
         ref.inline_segments = documents.code_segments(body)
         ref.extras["text_kind"] = "code"
+    elif dtype == "DISCUSSION":
+        ref.pointer_kind = "inline"
+        ref.inline_segments = documents.discussion_segments(body)
+        ref.extras["text_kind"] = "document"
     elif dtype in ("JUPYTER", "SCRATCH"):
         ref.pointer_kind = "none"
         ref.inline_segments = documents.project_segments(body, dtype)
