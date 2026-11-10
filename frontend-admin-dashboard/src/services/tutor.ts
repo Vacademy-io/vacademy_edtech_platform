@@ -518,7 +518,22 @@ export interface TutorOptions {
     avatars?: TutorAsset[];
     /** Credit rates that matter on the settings cards. */
     fees?: { voice: number; avatar: number; avatar_minute: number; live_minute: number };
+    /** What a blank engine / voice resolves to on the server (platform default). */
+    defaults?: { tts_provider?: string; tts_voice?: string };
 }
+
+/** A voice picked for one engine is not a voice of another: drop it when the engine changes. */
+export const voiceFitsProvider = (
+    options: TutorOptions | null,
+    provider: string | undefined,
+    voice: string | undefined
+): boolean => {
+    if (!voice || !provider) return true;
+    const list = options?.voices?.[provider];
+    // Catalogue not loaded (or Smallest unavailable): keep what the admin chose.
+    if (!list || list.length === 0) return true;
+    return list.some((v) => v.id === voice);
+};
 
 let optionsCache: { at: number; value: TutorOptions } | null = null;
 

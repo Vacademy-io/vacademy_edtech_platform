@@ -19,14 +19,28 @@ _DEFINITION_RE = re.compile(r"\b(means|is called|is defined|definition|refers to
 _SENTENCE_END = re.compile(r"(?<=[.!?…।])\s+|\n+")
 
 
-def tutor_segments(text_: str, max_chars: Optional[int] = None) -> List[Tuple[str, int, int]]:
+# The learner's name in a compiled line. A sentence carrying it is its own
+# segment, so only that sentence is voiced per learner; the rest of the line
+# is the same audio for everyone (prepared once, cost review 2026-11-10).
+NAME_TOKEN = "{student_name}"
+
+
+def tutor_segments(text_: str, max_chars: Optional[int] = None,
+                   isolate: Optional[str] = None) -> List[Tuple[str, int, int]]:
     """(segment, first sentence index, sentence count): sentences packed up to
-    `max_chars`, never cut mid-sentence, so the board can follow the words."""
+    `max_chars`, never cut mid-sentence, so the board can follow the words.
+    A sentence containing `isolate` is never packed with another one."""
     max_chars = max_chars or TUTOR_SEGMENT_MAX_CHARS
     sentences = [x.strip() for x in _SENTENCE_END.split((text_ or "").strip()) if x and x.strip()]
     out: List[Tuple[str, int, int]] = []
     buf, start, count = "", 0, 0
     for i, sent in enumerate(sentences):
+        if isolate and isolate in sent:
+            if buf:
+                out.append((buf, start, count))
+            out.append((sent, i, 1))
+            buf, start, count = "", 0, 0
+            continue
         if buf and len(buf) + 1 + len(sent) > max_chars:
             out.append((buf, start, count))
             buf, start, count = sent, i, 1

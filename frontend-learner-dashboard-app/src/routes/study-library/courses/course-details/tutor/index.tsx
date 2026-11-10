@@ -407,8 +407,14 @@ function TutorPage() {
         // does. Decided at the first segment of a turn and held for the turn.
         if (turnRouteRef.current.turn !== seg.turn) turnRouteRef.current = { turn: seg.turn, viaAvatar: avatarActiveRef.current };
         try {
-          if (turnRouteRef.current.viaAvatar) await avatar.speak(seg.buf);
-          else await audioPlayer.playAudio(seg.buf);
+          if (turnRouteRef.current.viaAvatar) {
+            try {
+              await avatar.speak(seg.buf);
+            } catch {
+              // The face could not reopen its session: this line on the speaker.
+              await audioPlayer.playAudio(seg.buf);
+            }
+          } else await audioPlayer.playAudio(seg.buf);
         } catch {
           /* autoplay blocked or decode error: keep going */
         }
@@ -520,6 +526,8 @@ function TutorPage() {
       else queueReveal(ops);
     },
     onAiText: (text, meta) => {
+      // Its audio follows: reopen a parked avatar session meanwhile.
+      if (voiceMode && speakOn && avatarActiveRef.current) avatar.wake();
       turnEndedRef.current = false;
       teacherTextRef.current = text;
       const turn = ++turnSeqRef.current;

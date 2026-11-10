@@ -23,6 +23,8 @@ declare module "@spatius/avatarkit" {
     getVolume(): number;
     initializeAudioContext?(): Promise<void> | void;
     start?(): Promise<void> | void;
+    /** End the motion session (metering stops); the view keeps rendering, start() reopens it. */
+    close?(): void;
     onConnectionState?: ((state: string) => void) | null;
     onConversationState?: ((state: ConversationState) => void) | null;
     onAnimationState?: ((type: string) => void) | null;

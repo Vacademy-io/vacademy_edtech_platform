@@ -156,7 +156,8 @@ def _warmup_topic(view: Dict[str, Any]) -> Optional[str]:
     return (topics[0].get("title") or "").strip() or None
 
 
-def spoken_lines(view: Dict[str, Any], lang: str, course_lang: str, natural: bool = False) -> List[str]:
+def spoken_lines(view: Dict[str, Any], lang: str, course_lang: str, natural: bool = False,
+                 keep_names: bool = False) -> List[str]:
     """Every line the teacher will say from a compiled plan in `lang`, plus
     the fixed lines the socket wraps them in. Lines that carry the learner's
     name are left to the live path.
@@ -165,7 +166,13 @@ def spoken_lines(view: Dict[str, Any], lang: str, course_lang: str, natural: boo
     prepared in each of its variants (prompts.tpl_all) — the socket picks one
     at random and only an exact standalone line hits the cache — plus the
     warm-up question, its fallbacks and the voice-coaching nudges. Without
-    it the list is exactly the single-variant one."""
+    it the list is exactly the single-variant one.
+
+    `keep_names` (what the warm-up uses): a narration with the learner's name
+    is kept as written; the warm-up prepares every sentence of it except the
+    one carrying the name, which is exactly what the lesson reuses (the
+    socket voices only that sentence per learner). Without it the line's
+    name-free rewrite is listed, as before."""
     lines: List[str] = []
 
     def alt(base: Optional[str], i18n: Optional[Dict[str, str]]) -> Optional[str]:
@@ -194,7 +201,7 @@ def spoken_lines(view: Dict[str, Any], lang: str, course_lang: str, natural: boo
             if say:
                 # A line with the learner's name is personal (synthesised live);
                 # its neutral form serves learners whose name is unknown.
-                lines.append(prompts.neutralize_name(say) if NAME_PLACEHOLDER in say else say)
+                lines.append(say if keep_names or NAME_PLACEHOLDER not in say else prompts.neutralize_name(say))
             chk = c.get("check") or {}
             if (chk.get("type") or "none") != "none":
                 p = alt(chk.get("prompt"), chk.get("prompt_i18n"))
@@ -229,7 +236,7 @@ def spoken_lines(view: Dict[str, Any], lang: str, course_lang: str, natural: boo
     seen, out = set(), []
     for ln in lines:
         ln = " ".join((ln or "").split())
-        if not ln or NAME_PLACEHOLDER in ln or ln in seen:
+        if not ln or (NAME_PLACEHOLDER in ln and not keep_names) or ln in seen:
             continue
         seen.add(ln)
         out.append(ln)
@@ -266,8 +273,10 @@ async def warm_plan(
         else:
             v = tutor_voice_for(provider, voice, lang)
         segments: List[str] = []
-        for line in spoken_lines(view, lang, course_lang, natural=natural):
-            segments.extend(seg for seg, _i, _n in tutor_segments(line))
+        for line in spoken_lines(view, lang, course_lang, natural=natural, keep_names=True):
+            # Same segmentation as the socket; the name sentence is live.
+            segments.extend(seg for seg, _i, _n in tutor_segments(line, isolate=NAME_PLACEHOLDER)
+                            if NAME_PLACEHOLDER not in seg)
         todo: List[Tuple[str, str, str]] = []
         for seg in dict.fromkeys(segments):
             pace = str(effective_pace(base_pace, "normal", seg))

@@ -121,27 +121,59 @@ def _apply(s: TutorSettings, d: Dict[str, Any]) -> None:
                           "mode": v.get("mode") if v.get("mode") in ("STRICT", "BLENDED") else "STRICT"}
 
 
+def _sets(d: Dict[str, Any], *keys: str) -> bool:
+    return any(k in d and d[k] not in (None, "") for k in keys)
+
+
 def resolve_settings(db: Session, *, package_id: str, institute_id: str) -> TutorSettings:
     s = TutorSettings()
+    # Which level (0 platform, 1 institute, 2 course) chose the engine and
+    # which chose the voice: a voice picked under an INHERITED engine may
+    # belong to a different one (see _reconcile_voice).
+    provider_level, voice_level = 0, -1
     try:
         s.tts_provider = str(get_platform_setting("tutor.voice.provider", default="sarvam", db=db) or "sarvam")
         s.tts_voice = get_platform_setting("tutor.voice.voice", default=None, db=db) or None
+        voice_level = 0 if s.tts_voice else -1
     except Exception:  # noqa: BLE001
         pass
-    try:
-        row = db.execute(text("SELECT setting_json FROM institutes WHERE id = :i"), {"i": institute_id}).first()
-        if row and row[0]:
-            _apply(s, _extract(row[0]))
-    except Exception:  # noqa: BLE001
-        logger.warning("institute tutor settings unreadable for %s", institute_id, exc_info=True)
-    try:
-        row = db.execute(text("SELECT course_setting FROM package WHERE id = :p"), {"p": package_id}).first()
-        if row and row[0]:
-            _apply(s, _extract(row[0]))
-    except Exception:  # noqa: BLE001
-        logger.warning("package tutor settings unreadable for %s", package_id, exc_info=True)
+    for level, sql, key, what in ((1, "SELECT setting_json FROM institutes WHERE id = :k", institute_id, "institute"),
+                                  (2, "SELECT course_setting FROM package WHERE id = :k", package_id, "package")):
+        try:
+            row = db.execute(text(sql), {"k": key}).first()
+            if row and row[0]:
+                d = _extract(row[0])
+                _apply(s, d)
+                if _sets(d, "ttsProvider", "tts_provider"):
+                    provider_level = level
+                if _sets(d, "ttsVoice", "tts_voice"):
+                    voice_level = level
+        except Exception:  # noqa: BLE001
+            logger.warning("%s tutor settings unreadable for %s", what, key, exc_info=True)
+    _reconcile_voice(s, voice_chosen_later=voice_level > provider_level)
     _enforce_registry(db, s, institute_id)
     return s
+
+
+def _reconcile_voice(s: TutorSettings, *, voice_chosen_later: bool) -> None:
+    """A course that saved only a voice ("dev") inherits the engine, and the
+    inherited engine may not be the one that voice belongs to (the admin card
+    showed Sarvam while the server default was Smallest). Every line then
+    failed on the inherited engine, fell back to a different Sarvam speaker,
+    was billed twice over in time and never reused prepared audio. When the
+    voice was chosen at a more specific level than the engine and its name
+    unmistakably belongs to another engine, that engine is used."""
+    if not voice_chosen_later or not s.tts_voice:
+        return
+    from ...voice_tts import engine_for_voice, smallest_voice_known
+    owner = engine_for_voice(s.tts_voice)
+    if not owner or owner == s.tts_provider:
+        return
+    if s.tts_provider == "smallest" and smallest_voice_known(s.tts_voice):
+        return
+    logger.info("tutor voice %s belongs to %s, not the inherited %s; using %s",
+                s.tts_voice, owner, s.tts_provider, owner)
+    s.tts_provider = owner
 
 
 def _enforce_registry(db: Session, s: TutorSettings, institute_id: str) -> None:

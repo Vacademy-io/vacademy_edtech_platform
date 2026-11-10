@@ -646,7 +646,16 @@ async def tutor_options(
         ORDER BY display_order, provider, name
     """)).fetchall()
     models = [{"model_id": r[0], "name": r[1], "provider": r[2], "tier": r[3], "is_free": bool(r[4])} for r in rows]
+    # What a blank engine / voice really resolves to on this server, so the
+    # settings card shows it (it used to assume Sarvam while the server spoke
+    # Smallest, and a Sarvam voice picked there never played).
+    try:
+        default_provider = str(get_platform_setting("tutor.voice.provider", default="sarvam", db=db) or "sarvam")
+        default_voice = str(get_platform_setting("tutor.voice.voice", default="", db=db) or "")
+    except Exception:  # noqa: BLE001
+        default_provider, default_voice = "sarvam", ""
     return {"voices": voices, "models": models, "smallest_available": smallest_available(),
+            "defaults": {"tts_provider": default_provider, "tts_voice": default_voice},
             "avatar_available": spatius_service.available(), "avatar_provider": "spatius" if spatius_service.available() else None,
             "avatars": avatars, "fees": _one_time_fees(db)}
 

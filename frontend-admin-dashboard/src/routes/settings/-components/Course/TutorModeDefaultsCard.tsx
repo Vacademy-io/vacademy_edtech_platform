@@ -23,6 +23,7 @@ import {
     TUTOR_VOICE_PACES,
     cloneTutorVoice,
     getTutorOptions,
+    voiceFitsProvider,
     type TutorModeSetting,
     type TutorOptions,
 } from '@/services/tutor';
@@ -208,9 +209,11 @@ export const TutorModeDefaultsCard: React.FC = () => {
                         <Label>Voice provider</Label>
                         <Select
                             value={value.ttsProvider ?? 'sarvam'}
-                            onValueChange={(v) =>
-                                update('ttsProvider', v as TutorModeSetting['ttsProvider'])
-                            }
+                            onValueChange={(v) => {
+                                update('ttsProvider', v as TutorModeSetting['ttsProvider']);
+                                if (!voiceFitsProvider(options, v, value.ttsVoice))
+                                    update('ttsVoice', '');
+                            }}
                         >
                             <SelectTrigger>
                                 <SelectValue />

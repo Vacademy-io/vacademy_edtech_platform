@@ -194,3 +194,36 @@ settings no longer works.
 Credits deducted: conversation (tutor and chatbot) 14.1, content (compiles and copilot
 slides) 21.2, images 17, transcription and OCR small. The tutor itself is still at test
 volume; the numbers in §4–§5 are per-unit projections, not observed totals.
+
+## 8. Live-lesson cost review (10 November 2026)
+
+Thirty days of production data. A paid voice hour is charged $1.80 (with the avatar) and cost
+about $0.73: the avatar about $0.43, teacher voice about $0.30, speech-to-text and the model
+about $0.02. Preparation, images and compiles record their vendor cost correctly
+(`ai_token_usage.total_price`) and are not part of this change. Three recurring costs were cut:
+
+1. **Avatar connected while nobody speaks.** Spatius meters the motion session for as long
+   as it is connected, silence included (spatius.ai/faq: "Close the Avatar session to stop
+   metering"). The learner's device now closes the session after 6 s with nothing to say
+   (`useSpatiusAvatar` `IDLE_PARK_MS`), keeps the face on screen, and reopens it when the
+   next teacher line arrives (`wake()` on `ai_text`). A reopen that fails plays that line on
+   the speaker instead of a silent face. Learners are still charged `tutor_avatar_minute`
+   per minute the face is on.
+2. **Narration with the learner's name was voiced live in full.** 196 of 633 compiled
+   concepts (32% of narration) say `{student_name}`, and the socket personalised the whole
+   line before voicing it, so none of it reused prepared audio. Now the sentence with the
+   name is its own segment (`tutor_segments(..., isolate=NAME_TOKEN)`): only that sentence
+   is voiced per learner, and the rest is the shared, prepared audio. The warm-up prepares
+   exactly those segments (`spoken_lines(keep_names=True)`) instead of a name-free rewrite
+   that no lesson ever spoke.
+3. **A voice saved without its engine never played.** A course saved voice "dev" (Sarvam)
+   while inheriting the engine. The settings card showed Sarvam as the default; the server's
+   default is Smallest when `SMALLEST_API_KEY` is set. Every line failed on Smallest, fell
+   back to Sarvam's default **male** speaker, and was never cached. `resolve_settings` now
+   uses the voice's own engine when the voice was chosen at a more specific level than the
+   engine (`_reconcile_voice`). The fallback keeps a Sarvam voice name, otherwise the
+   teacher's female default. `/tutor/options` returns the real defaults, and both settings
+   cards drop a voice that the newly picked engine does not have.
+
+Not changed: the learner's slower/faster setting. Only 1 of 206 saved learner states is not
+"normal", so voicing in the browser at another speed would save nothing.

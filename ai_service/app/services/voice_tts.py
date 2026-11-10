@@ -17,6 +17,7 @@ import asyncio
 import json
 import logging
 import os
+import re
 from typing import Any, Dict, List, Optional, Tuple
 
 from .sarvam_service import SarvamService
@@ -158,6 +159,32 @@ SARVAM_DEFAULT_FEMALE = "priya"
 def sarvam_speaker(voice: Optional[str], default: str = "shubh") -> str:
     v = (voice or "").strip().lower()
     return v if v in SARVAM_V3_SPEAKERS else default
+
+
+_LOCALE_VOICE = re.compile(r"^[a-z]{2}-[A-Z]{2}-")
+
+
+def engine_for_voice(voice: Optional[str]) -> Optional[str]:
+    """The engine a voice name unmistakably belongs to, or None when it could
+    be anyone's (a Smallest stock or cloned id). Used when a course saved a
+    voice without saving the engine it was picked for."""
+    v = (voice or "").strip()
+    if not v:
+        return None
+    if v.endswith("Neural"):
+        return "edge"
+    if "Chirp3-HD" in v or _LOCALE_VOICE.match(v):
+        return "google"
+    if v.lower() in SARVAM_V3_SPEAKERS:
+        return "sarvam"
+    return None
+
+
+def smallest_voice_known(voice: Optional[str]) -> bool:
+    """The voice is in the Smallest catalogue fetched this hour (False when
+    the catalogue has not been fetched — callers treat that as unknown)."""
+    v = (voice or "").strip()
+    return bool(v) and any(x.get("id") == v for x in _smallest_voice_cache.get("voices") or [])
 
 
 def default_voice_for(provider: str, language: str) -> str:
@@ -335,6 +362,7 @@ async def synthesize_speech(
     voice: Optional[str],
     provider: str,
     pace: Optional[float] = None,
+    fallback_voice: Optional[str] = None,
 ) -> Tuple[bytes, str, str]:
     """
     Speak `text` with `provider`. Returns (audio_bytes, mime_type, provider_used) —
@@ -342,6 +370,8 @@ async def synthesize_speech(
     covered the line, so metering records what actually ran. `pace` is a
     speed multiplier (0.5–2.0; 1.0 = normal) honoured by Sarvam and Edge;
     Google Chirp3-HD rejects a rate field, so it is ignored there.
+    `fallback_voice`: the Sarvam speaker for the fallback when `voice` is not
+    one (the tutor's teacher is female; the default speaker is male).
     """
     provider = (provider or "sarvam").strip().lower()
     engine = _ENGINES.get(provider, _sarvam)
@@ -359,9 +389,11 @@ async def synthesize_speech(
         logger.exception("TTS engine %s failed; falling back to Sarvam", provider)
 
     try:
-        # Second try on Sarvam with its default speaker: a bad voice name must
-        # degrade to a different voice, never to silence.
-        audio, mime = await _sarvam(text, language, "", pace)
+        # Second try on Sarvam: a bad voice name must degrade to a different
+        # voice, never to silence. A Sarvam voice name is kept (a Sarvam voice
+        # saved under another engine), else the caller's fallback speaker.
+        speaker = sarvam_speaker(voice, sarvam_speaker(fallback_voice, "shubh"))
+        audio, mime = await _sarvam(text, language, speaker, pace)
         return audio, mime, "sarvam"
     except Exception:
         logger.exception("Sarvam fallback failed too")
@@ -369,5 +401,5 @@ async def synthesize_speech(
 
 
 __all__ = ["SARVAM_DEFAULT_FEMALE", "SARVAM_V3_SPEAKERS", "SMALLEST_DEFAULT_VOICE", "TTS_PROVIDERS", "clone_voice_smallest",
-           "default_voice_for", "list_cloned_voices_smallest", "list_smallest_voices", "list_tts_providers",
-           "sarvam_speaker", "sarvam_voice_catalogue", "smallest_available", "smallest_speed_for_ratio", "synthesize_speech"]
+           "default_voice_for", "engine_for_voice", "list_cloned_voices_smallest", "list_smallest_voices", "list_tts_providers",
+           "sarvam_speaker", "sarvam_voice_catalogue", "smallest_available", "smallest_speed_for_ratio", "smallest_voice_known", "synthesize_speech"]

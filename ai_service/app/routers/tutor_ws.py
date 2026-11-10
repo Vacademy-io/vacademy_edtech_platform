@@ -153,7 +153,7 @@ LANG_TO_STT = tutor_langs.LOCALES
 # Pace, segmentation and cache keys are shared with the voice warm-up (runtime/speech.py).
 from ..services.tutor.runtime.speech import (  # noqa: E402
     DEFINITION_PACE, PACE_MULTIPLIER, PACE_ORDER, TUTOR_SEGMENT_MAX_CHARS, cache_key as _cache_key, spoken_form as _spoken_form, effective_pace,
-    step_pace as _step_pace, tutor_segments as _tutor_segments,
+    step_pace as _step_pace, tutor_segments as _tutor_segments, NAME_TOKEN,
 )
 QUESTION_BEAT_MS = 450
 # Silence recovery: a nudge (hint) after this long on an open question; the
@@ -550,7 +550,12 @@ async def tutor_socket(websocket: WebSocket, tutor_session_id: str) -> None:
                 voice = (tts_voice or SMALLEST_DEFAULT_VOICE).strip()
             else:
                 voice = tutor_langs.tutor_voice_for(tts_provider, tts_voice, lang)
-            for segment, first_idx, n_sent in _tutor_segments(text_):
+            # `text_` still carries {student_name}: the sentence with the name
+            # is its own segment (voiced for this learner), every other
+            # segment is the same audio for all learners — prepared at compile
+            # time or cached from an earlier lesson.
+            for segment, first_idx, n_sent in _tutor_segments(text_, isolate=NAME_TOKEN):
+                segment = _personalize(segment)
                 # The sentence(s) this audio segment speaks, with their index
                 # in the narration: the client reveals the board elements
                 # marked for those sentences as the segment starts playing.
@@ -576,7 +581,7 @@ async def tutor_socket(websocket: WebSocket, tutor_session_id: str) -> None:
                 if audio is None:
                     audio, _mime, provider_used = await synthesize_speech(
                         text=spoken, language=_lang_stt(), voice=voice, provider=tts_provider,
-                        pace=seg_pace,
+                        pace=seg_pace, fallback_voice=SARVAM_DEFAULT_FEMALE,
                     )
                     if audio:
                         _cache_put(key, audio)
@@ -598,6 +603,7 @@ async def tutor_socket(websocket: WebSocket, tutor_session_id: str) -> None:
 
         async def _say(text_: str, *, reason: str = "complete", meta: Optional[dict] = None, beat: bool = False) -> None:
             nonlocal speech_until
+            raw = text_
             text_ = _personalize(text_)
             transcript.append({"role": "teacher", "text": text_})
             svc.append_transcript(chat_session_id, "assistant", text_, meta)
@@ -606,7 +612,7 @@ async def tutor_socket(websocket: WebSocket, tutor_session_id: str) -> None:
             if beat and speak_enabled:
                 # A breath before a question, so it lands as a question.
                 await _send({"type": "beat", "ms": QUESTION_BEAT_MS})
-            await _speak(text_)
+            await _speak(raw)
             if speak_enabled and text_.strip():
                 # The client plays its queue in order: this line ends after the
                 # ones before it, and never before its own audio was sent.

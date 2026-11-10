@@ -56,6 +56,15 @@ const SLOW_FOR_MS = 4000;
 /** No frame at all for this long while visible: the face is stuck. */
 const FROZEN_MS = 3000;
 
+/**
+ * Spatius meters the motion session for as long as it is CONNECTED — the
+ * learner thinking, answering or reading the board included ("Close the
+ * Avatar session to stop metering", spatius.ai/faq). After this long with
+ * nothing to say the session is closed ("parked"); the face stays on screen
+ * and the next line reopens it (a new session, billed from 6 s).
+ */
+const IDLE_PARK_MS = 6000;
+
 const SLOW_DEVICE = "This device is too slow for the animated teacher, so the lesson continues with voice.";
 const NO_GPU = "This browser has graphics acceleration turned off, so the lesson continues with voice.";
 const SLOW_LOAD = "The animated teacher is taking too long to load, so the lesson continues with voice.";
@@ -195,6 +204,13 @@ export function useSpatiusAvatar(onDiag?: (d: AvatarDiag) => void) {
   /** Draw the face at this multiple of its card and let the browser scale it down (sharper on 1x screens). */
   const [supersample, setSupersample] = useState(1);
   const connectedRef = useRef(false);
+  /** The motion session was closed on purpose while idle (not a drop). */
+  const parkedRef = useRef(false);
+  const parkTimerRef = useRef<number | null>(null);
+  /** Segments being spoken right now: never park under one. */
+  const speakingRef = useRef(0);
+  /** One reconnect at a time (wake + speak may both ask). */
+  const connectingRef = useRef<Promise<boolean> | null>(null);
   const bootRef = useRef<AvatarBoot | null>(null);
   const kitRef = useRef<AvatarKit | null>(null);
   const viewRef = useRef<InstanceType<AvatarKit["AvatarView"]> | null>(null);
@@ -236,9 +252,35 @@ export function useSpatiusAvatar(onDiag?: (d: AvatarDiag) => void) {
     creepTimerRef.current = null;
   };
 
+  const cancelPark = () => {
+    if (parkTimerRef.current !== null) window.clearTimeout(parkTimerRef.current);
+    parkTimerRef.current = null;
+  };
+
+  /** Nothing said for IDLE_PARK_MS: close the motion session (the face keeps showing). */
+  const schedulePark = useCallback(() => {
+    cancelPark();
+    parkTimerRef.current = window.setTimeout(() => {
+      parkTimerRef.current = null;
+      const c = viewRef.current?.controller as { close?: () => void } | undefined;
+      if (!c || typeof c.close !== "function" || !connectedRef.current || speakingRef.current > 0 || connectingRef.current) return;
+      parkedRef.current = true;
+      connectedRef.current = false;
+      try {
+        c.close();
+      } catch {
+        /* already closed: the next line reconnects either way */
+      }
+    }, IDLE_PARK_MS);
+  }, []);
+
   const dispose = useCallback(() => {
     genRef.current++;
     stopTimers();
+    if (parkTimerRef.current !== null) window.clearTimeout(parkTimerRef.current);
+    parkTimerRef.current = null;
+    parkedRef.current = false;
+    speakingRef.current = 0;
     try {
       viewRef.current?.dispose();
     } catch {
@@ -407,6 +449,8 @@ export function useSpatiusAvatar(onDiag?: (d: AvatarDiag) => void) {
         // Connection-level errors end the motion session; the next segment reconnects.
         if (code.startsWith("websocket") || code === "sessionTimeout" || code === "networkLayerNotAvailable" || code === "serverError") {
           connectedRef.current = false;
+          // Our own idle close ending the socket is not a problem to show.
+          if (parkedRef.current) return;
         }
         setWarning(code || message);
       };
@@ -438,7 +482,9 @@ export function useSpatiusAvatar(onDiag?: (d: AvatarDiag) => void) {
     } catch {
       /* disposed */
     }
-  }, []);
+    // A hidden face speaks nothing (the speaker does): its session idles.
+    if (!shown && speakingRef.current === 0) schedulePark();
+  }, [schedulePark]);
 
   /**
    * Unlock audio and connect to the motion server. Works outside a tap when
@@ -453,8 +499,11 @@ export function useSpatiusAvatar(onDiag?: (d: AvatarDiag) => void) {
       await (view.initializeAudioContext?.() ?? c.initializeAudioContext?.());
       await (view.start?.() ?? c.start?.());
       connectedRef.current = true;
+      parkedRef.current = false;
       setActivated(true);
       setWarning(null);
+      // The opening may wait for the learner's tap: idle until then.
+      schedulePark();
       return true;
     } catch (e: unknown) {
       const code = String((e as { code?: string })?.code ?? "");
@@ -463,36 +512,64 @@ export function useSpatiusAvatar(onDiag?: (d: AvatarDiag) => void) {
       else if (code !== "audioContextNotInitialized") setWarning(code || (e instanceof Error ? e.message : "connect failed"));
       return false;
     }
-  }, []);
+  }, [schedulePark]);
 
-  /** Reconnect the motion session (after a drop or an idle timeout). */
-  const reconnect = useCallback(async () => {
+  /** Reconnect the motion session (after a drop, an idle timeout or a park); true when connected. */
+  const reconnect = useCallback(async (): Promise<boolean> => {
     const view = viewRef.current;
-    if (!view || connectedRef.current) return;
-    try {
-      await (view.start?.() ?? view.controller.start?.());
-      connectedRef.current = true;
-      setWarning(null);
-    } catch (e: unknown) {
-      console.warn("[tutor avatar] reconnect failed", e);
-    }
+    if (!view) return false;
+    if (connectedRef.current) return true;
+    if (connectingRef.current) return connectingRef.current;
+    const attempt = (async () => {
+      try {
+        await (view.start?.() ?? view.controller.start?.());
+        connectedRef.current = true;
+        parkedRef.current = false;
+        setWarning(null);
+        return true;
+      } catch (e: unknown) {
+        console.warn("[tutor avatar] reconnect failed", e);
+        return false;
+      } finally {
+        connectingRef.current = null;
+      }
+    })();
+    connectingRef.current = attempt;
+    return attempt;
   }, []);
 
-  /** Speak one segment through the avatar; resolves when its playback ends. */
+  /** A teacher line is on its way: reopen a parked session now so the face does not wait for it. */
+  const wake = useCallback(() => {
+    cancelPark();
+    if (parkedRef.current && viewRef.current) void reconnect();
+  }, [reconnect]);
+
+  /**
+   * Speak one segment through the avatar; resolves when its playback ends.
+   * Throws when the motion session cannot be (re)opened, so the caller plays
+   * the segment on the speaker instead of a silent face.
+   */
   const speak = useCallback(async (audio: ArrayBuffer) => {
     const view = viewRef.current;
     if (!view) return;
-    if (!ctxRef.current) ctxRef.current = new AudioContext();
-    if (!connectedRef.current) await reconnect();
-    const pcm = await toPcm16(ctxRef.current, audio);
-    const done = new Promise<void>((resolve) => {
-      idleWaitersRef.current.push(resolve);
-      // Never hang the lesson on a missing state event.
-      window.setTimeout(resolve, Math.max(2000, (pcm.byteLength / (TARGET_RATE * 2)) * 1000 + 1500));
-    });
-    view.controller.send(pcm, true);
-    await done;
-  }, [reconnect]);
+    cancelPark();
+    speakingRef.current += 1;
+    try {
+      if (!ctxRef.current) ctxRef.current = new AudioContext();
+      if (!connectedRef.current && !(await reconnect())) throw new Error("The teacher avatar is not connected");
+      const pcm = await toPcm16(ctxRef.current, audio);
+      const done = new Promise<void>((resolve) => {
+        idleWaitersRef.current.push(resolve);
+        // Never hang the lesson on a missing state event.
+        window.setTimeout(resolve, Math.max(2000, (pcm.byteLength / (TARGET_RATE * 2)) * 1000 + 1500));
+      });
+      view.controller.send(pcm, true);
+      await done;
+    } finally {
+      speakingRef.current = Math.max(0, speakingRef.current - 1);
+      if (speakingRef.current === 0) schedulePark();
+    }
+  }, [reconnect, schedulePark]);
 
   const interrupt = useCallback(() => {
     try {
@@ -521,6 +598,6 @@ export function useSpatiusAvatar(onDiag?: (d: AvatarDiag) => void) {
 
   return {
     ready, painted, progress, failed, softFailed, warning, activated, supersample,
-    mount, activate, speak, interrupt, dispose, retry, setShown,
+    mount, activate, speak, wake, interrupt, dispose, retry, setShown,
   };
 }

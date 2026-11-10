@@ -32,6 +32,7 @@ import {
     compileTutorPlans,
     getInstituteTutorDefaults,
     getTutorOptions,
+    voiceFitsProvider,
     getTutorPlans,
     getTutorSlidePlan,
     isTutorLanguage,
@@ -225,7 +226,12 @@ export const TutorModeTab: React.FC<TutorModeTabProps> = ({ packageId }) => {
     const inherited = useMemo(
         () => ({
             teacherName: institute?.teacherName || PLATFORM_DEFAULTS.teacherName,
-            ttsProvider: institute?.ttsProvider || PLATFORM_DEFAULTS.ttsProvider,
+            // The server's real default, not an assumed one: a voice picked
+            // under the wrong engine never plays (cost review 2026-11-10).
+            ttsProvider:
+                institute?.ttsProvider ||
+                (options?.defaults?.tts_provider as TutorModeSetting['ttsProvider']) ||
+                PLATFORM_DEFAULTS.ttsProvider,
             ttsVoice: institute?.ttsVoice || '',
             languages: institute?.languages?.length
                 ? institute.languages
@@ -239,7 +245,7 @@ export const TutorModeTab: React.FC<TutorModeTabProps> = ({ packageId }) => {
             teacherAvatarFileId: institute?.teacherAvatarFileId || '',
             avatarId: institute?.avatarProvider === 'spatius' ? institute?.avatarId || '' : '',
         }),
-        [institute]
+        [institute, options]
     );
     const rawLanguage = setting.languages?.[0] ?? inherited.languages[0];
     const effectiveLanguage: TutorLanguage = isTutorLanguage(rawLanguage) ? rawLanguage : 'en';
@@ -551,12 +557,18 @@ export const TutorModeTab: React.FC<TutorModeTabProps> = ({ packageId }) => {
                             <Label>{t('settingsCard.voiceProviderLabel')}</Label>
                             <Select
                                 value={selectValue(setting.ttsProvider)}
-                                onValueChange={(v) =>
-                                    update(
-                                        'ttsProvider',
-                                        fromSelect(v) as TutorModeSetting['ttsProvider']
+                                onValueChange={(v) => {
+                                    const next = fromSelect(v) as TutorModeSetting['ttsProvider'];
+                                    update('ttsProvider', next);
+                                    if (
+                                        !voiceFitsProvider(
+                                            options,
+                                            next || inherited.ttsProvider,
+                                            setting.ttsVoice
+                                        )
                                     )
-                                }
+                                        update('ttsVoice', '');
+                                }}
                             >
                                 <SelectTrigger>
                                     <SelectValue />
