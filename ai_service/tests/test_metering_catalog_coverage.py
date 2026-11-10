@@ -91,7 +91,7 @@ SEEDED_LATER_TOOL_KEYS = {k for _m, keys in SEEDED_LATER.values() for k in keys}
 # key > tool_key in resolution), so they need no tool_keys entry to be metered
 # correctly. tool_key -> the use_case the caller passes.
 #   cbe_answer_check: services/copy_check/cbe_sync.py charges with UC.EVALUATION.
-#   Also appended to the evaluation row's tool_keys by admin_core V656 (this test parses V586 only).
+#   Also appended to the evaluation row's tool_keys by admin_core V671 (this test parses V586 only).
 EXPLICIT_USE_CASE_TOOL_KEYS: Dict[str, str] = {
     "cbe_answer_check": "evaluation",
 }
