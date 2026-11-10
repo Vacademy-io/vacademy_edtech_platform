@@ -52,6 +52,8 @@ const bucketsInFlight = new Map<string, Promise<CoursePackage[]>>();
 const ANSWER_REUSE_MS = 30_000;
 const bucketAnswers = new Map<string, { at: number; rows: CoursePackage[] }>();
 const answerListeners = new Set<() => void>();
+// Moves on at every logout, so an answer for the learner before cannot land after it.
+let answersEpoch = 0;
 
 const fetchBucket = (
   instituteId: string,
@@ -62,7 +64,8 @@ const fetchBucket = (
   const key = `${instituteId}|${type}|${size}`;
   const inFlight = bucketsInFlight.get(key);
   if (inFlight) return inFlight;
-  const request = authenticatedAxiosInstance
+  const epoch = answersEpoch;
+  const request: Promise<CoursePackage[]> = authenticatedAxiosInstance
     .post(urlPublicCourseDetails, searchBody(type), {
       params: { instituteId, page: 0, size },
       headers: { accept: "*/*", "Content-Type": "application/json" },
@@ -70,11 +73,15 @@ const fetchBucket = (
     })
     .then((response) => {
       const rows = (response.data?.content ?? []) as CoursePackage[];
-      bucketAnswers.set(`${instituteId}|${type}`, { at: Date.now(), rows });
-      answerListeners.forEach((listener) => listener());
+      if (epoch === answersEpoch) {
+        bucketAnswers.set(`${instituteId}|${type}`, { at: Date.now(), rows });
+        answerListeners.forEach((listener) => listener());
+      }
       return rows;
     })
-    .finally(() => bucketsInFlight.delete(key));
+    .finally(() => {
+      if (bucketsInFlight.get(key) === request) bucketsInFlight.delete(key);
+    });
   bucketsInFlight.set(key, request);
   return request;
 };
@@ -99,8 +106,29 @@ export interface EnrolmentAnswerRow {
 // follows without Home asking.
 const wholeLists = new Map<string, { at: number; rows: EnrolmentAnswerRow[] }>();
 
-export const noteEnrolmentList = (instituteId: string, rows: EnrolmentAnswerRow[]): void => {
+/** Where the answers are now: pass it back to noteEnrolmentList with a list asked for here. */
+export const enrolmentAnswersEpoch = (): number => answersEpoch;
+
+/** Keeps a whole list, unless a logout came between asking for it and now. */
+export const noteEnrolmentList = (
+  instituteId: string,
+  rows: EnrolmentAnswerRow[],
+  askedAt: number = answersEpoch,
+): void => {
+  if (askedAt !== answersEpoch) return;
   wholeLists.set(instituteId, { at: Date.now(), rows });
+  answerListeners.forEach((listener) => listener());
+};
+
+/**
+ * Drops every answer kept for the learner who was signed in. These are keyed by
+ * institute only, so logout must call this (through clearUserScopedReadCaches).
+ */
+export const forgetEnrolmentAnswers = (): void => {
+  answersEpoch += 1;
+  bucketAnswers.clear();
+  wholeLists.clear();
+  bucketsInFlight.clear();
   answerListeners.forEach((listener) => listener());
 };
 

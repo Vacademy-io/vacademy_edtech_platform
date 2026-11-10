@@ -1,7 +1,11 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import authenticatedAxiosInstance from "@/lib/auth/axiosInstance";
 import { answeredEnrolments } from "./enrolled-courses";
-import { fetchEnrolledCoursePackages, fetchEnrolmentLookup } from "./user-enrollment-status";
+import {
+  clearUserScopedReadCaches,
+  fetchEnrolledCoursePackages,
+  fetchEnrolmentLookup,
+} from "./user-enrollment-status";
 
 vi.mock("@/lib/auth/axiosInstance", () => ({ default: { post: vi.fn(), get: vi.fn() } }));
 vi.mock("@/lib/auth/sessionUtility", () => ({ getTokenFromStorage: vi.fn() }));
@@ -36,6 +40,28 @@ describe("fetchEnrolmentLookup", () => {
     post.mockResolvedValue(page([{ ...row, percentage_completed: 0 }]) as never);
     await fetchEnrolledCoursePackages(id, { force: true });
     expect(answeredEnrolments(id)).toMatchObject([{ percentage_completed: 0 }]);
+  });
+
+  it("leaves nothing for the next learner once logout clears the caches", async () => {
+    const id = nextInstitute();
+    post.mockResolvedValue(page([{ ...row, percentage_completed: 62 }]) as never);
+    await fetchEnrolledCoursePackages(id);
+    expect(answeredEnrolments(id)).not.toBeNull();
+    clearUserScopedReadCaches();
+    expect(answeredEnrolments(id)).toBeNull();
+  });
+
+  it("keeps a list asked for before the logout from landing after it", async () => {
+    const id = nextInstitute();
+    const waiting: ((value: unknown) => void)[] = [];
+    post.mockImplementation(() => new Promise((resolve) => waiting.push(resolve)) as never);
+    const pending = fetchEnrolmentLookup(id);
+    await settle();
+    clearUserScopedReadCaches();
+    expect(waiting).toHaveLength(2);
+    waiting.forEach((release) => release(page([{ ...row, percentage_completed: 62 }])));
+    await expect(pending).resolves.toMatchObject({ complete: true });
+    expect(answeredEnrolments(id)).toBeNull();
   });
 
   it("leaves nothing for Home to read when part of the list failed", async () => {

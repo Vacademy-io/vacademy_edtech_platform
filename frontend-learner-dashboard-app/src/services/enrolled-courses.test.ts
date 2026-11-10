@@ -9,6 +9,8 @@ const {
   answeredEnrolments,
   fetchEnrolledCourses,
   fetchEnrolledHasProgress,
+  enrolmentAnswersEpoch,
+  forgetEnrolmentAnswers,
   noteEnrolmentList,
   subscribeToEnrolmentAnswers,
 } = await import("./enrolled-courses");
@@ -215,5 +217,46 @@ describe("request sharing", () => {
       fetchEnrolledCourses("inst", undefined, { all: true }),
     ]);
     expect(post).toHaveBeenCalledTimes(6);
+  });
+});
+
+describe("forgetEnrolmentAnswers (logout)", () => {
+  beforeEach(() => {
+    post.mockReset();
+    later();
+  });
+
+  it("drops the pages and the whole list, and tells the readers", async () => {
+    answer(page([{ id: "a", percentage_completed: 62 }]), page([{ id: "b", percentage_completed: 100 }]));
+    await fetchEnrolledCourses("inst-out");
+    noteEnrolmentList("inst-out", [{ percentage_completed: 62 }]);
+    const heard = vi.fn();
+    const stop = subscribeToEnrolmentAnswers(heard);
+    forgetEnrolmentAnswers();
+    stop();
+    expect(answeredEnrolments("inst-out")).toBeNull();
+    expect(heard).toHaveBeenCalledTimes(1);
+  });
+
+  it("lets nothing asked for before the logout land after it", async () => {
+    const waiting: ((value: unknown) => void)[] = [];
+    post.mockImplementation(() => new Promise((resolve) => waiting.push(resolve)));
+    const asked = enrolmentAnswersEpoch();
+    const pending = fetchEnrolledCourses("inst-late");
+    forgetEnrolmentAnswers();
+    expect(waiting).toHaveLength(2);
+    waiting.forEach((release) => release(page([{ id: "a", percentage_completed: 62 }])));
+    await expect(pending).resolves.toHaveLength(1);
+    noteEnrolmentList("inst-late", [{ percentage_completed: 62 }], asked);
+    expect(answeredEnrolments("inst-late")).toBeNull();
+  });
+
+  it("does not hand the next learner a request still running for the one before", async () => {
+    post.mockImplementation(() => new Promise(() => {}));
+    void fetchEnrolledCourses("inst-join");
+    forgetEnrolmentAnswers();
+    answer(page([{ id: "n", percentage_completed: 5 }]), page([]));
+    const next = await fetchEnrolledCourses("inst-join");
+    expect(next.map((course) => course.id)).toEqual(["n"]);
   });
 });

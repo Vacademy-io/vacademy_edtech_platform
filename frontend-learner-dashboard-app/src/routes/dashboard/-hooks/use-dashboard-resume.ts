@@ -238,9 +238,10 @@ export function useDashboardResume({
     liveSlides: liveSlides(queryClient),
     dripRules: dripRules(queryClient, instituteId),
     // The lesson count, from answers the check already has: no request of its own.
-    // Only a skin's hero shows it. It is worked out whatever the skin, because the
+    // Only a skin's hero shows it. It is offered whatever the skin, because the
     // skin class can land after this check starts, and keying the check on the
-    // skin would restart it after its wait is over and lose the resume point.
+    // skin would restart it after its wait is over and lose the resume point. It
+    // is only worked out when that hero asks, so other skins pay nothing for it.
     completionThreshold: getSlideCompletionThreshold,
   };
 
@@ -312,7 +313,7 @@ export function useDashboardResume({
         courseName: verifiedEntry.courseName,
         chapterName: verifiedEntry.chapterName,
         updatedAt: verifiedEntry.updatedAt,
-        count: verifiedEntry.count,
+        lessonCount: verifiedEntry.lessonCount,
         coursePercent: verifiedEntry.coursePercent,
         open: () => {
           track("Resume Learning", {
@@ -342,7 +343,7 @@ export function useDashboardResume({
           slideId: lesson.slide.slide_id,
           slideTitle: lesson.slide.slide_title,
           courseName: lesson.courseName,
-          count: lesson.count,
+          lessonCount: lesson.lessonCount,
           coursePercent: lesson.coursePercent,
           open: () => openServerSlide(lesson.slide),
         }

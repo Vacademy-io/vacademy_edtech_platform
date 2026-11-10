@@ -608,6 +608,13 @@ describe("countLessons", () => {
     expect(count(long)).toMatchObject({ done: 10, total: 951 });
   });
 
+  it("works out the chapter's completion and the course-wide rule once, not per lesson", () => {
+    const courseCondition = vi.fn(() => null);
+    const long = Array.from({ length: 50 }, (_, i) => slide(`s${i}`, 0));
+    count(long, { ...noDrip, courseCondition });
+    expect(courseCondition).toHaveBeenCalledTimes(1);
+  });
+
   it("says when the chapter is only part of the course", () => {
     expect(count([slide("a", 0)], noDrip, 1).partOfCourse).toBe(false);
     expect(count([slide("a", 0)], noDrip, 2).partOfCourse).toBe(true);
@@ -617,7 +624,16 @@ describe("countLessons", () => {
 describe("the count reaches the answer", () => {
   it("comes back on a verified device entry", async () => {
     const c = checks({ completionThreshold: () => 80 });
-    expect((await verifyResume([entry()], c))?.count?.total).toBeGreaterThan(0);
+    expect((await verifyResume([entry()], c))?.lessonCount?.()?.total).toBeGreaterThan(0);
+  });
+  it("is worked out only when asked for, and only once", async () => {
+    const completionThreshold = vi.fn(() => 80);
+    const result = await verifyResume([entry()], checks({ completionThreshold }));
+    expect(completionThreshold).not.toHaveBeenCalled();
+    const first = result?.lessonCount?.();
+    expect(result?.lessonCount?.()).toBe(first);
+    expect(first).toMatchObject({ done: 0, total: 1 });
+    expect(completionThreshold).toHaveBeenCalledTimes(1);
   });
   it("cannot cost the resume answer when it fails", async () => {
     const c = checks({
@@ -627,11 +643,24 @@ describe("the count reaches the answer", () => {
     });
     const result = await verifyResume([entry()], c);
     expect(result?.slideId).toBe("s1");
-    expect(result?.count).toBeUndefined();
+    expect(result?.lessonCount?.()).toBeUndefined();
   });
   it("is absent without a threshold, and the answer stays the same", async () => {
     const result = await verifyResume([entry()], checks());
     expect(result?.slideId).toBe("s1");
-    expect(result?.count).toBeUndefined();
+    expect(result?.lessonCount).toBeUndefined();
+  });
+  it("comes back on a verified server lesson too", async () => {
+    const lesson = {
+      package_id: "c1",
+      package_session_id: "ps1",
+      subject_id: "sub1",
+      chapter_id: "ch1",
+      slide_id: "s1",
+      slide_title: "One",
+      source_type: "VIDEO",
+    } as DashboardSlide;
+    const result = await verifyServerLessons([lesson], checks({ completionThreshold: () => 80 }));
+    expect(result?.lessonCount?.()).toMatchObject({ done: 0, total: 1 });
   });
 });

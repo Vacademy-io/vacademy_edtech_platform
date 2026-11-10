@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { contrastRatio, hslChannelsToHex } from "@/lib/colour/contrast";
-import { funBrandColours } from "./brand-colours";
+import { brandNearLiveRed, funBrandColours } from "./brand-colours";
 
 const WHITE = "#ffffff"; // design-lint-ignore: test data
 
@@ -35,5 +35,25 @@ describe("funBrandColours", () => {
   it("is null with no readable brand", () => {
     expect(funBrandColours(null)).toBeNull();
     expect(funBrandColours("nope")).toBeNull();
+  });
+});
+
+describe("brandNearLiveRed", () => {
+  it.each(["#E11D48", "#DC2626", "#F43F5E", "#EC4899", "#c91c44", "#BE123C"])( // design-lint-ignore: test data
+    "%s reads as the live red",
+    (brand: string) => {
+      expect(brandNearLiveRed(brand)).toBe(true);
+      expect(brandNearLiveRed(funBrandColours(brand)!.solid)).toBe(true);
+    },
+  );
+  it.each(["#2563EB", "#E8590C", "#0F8B8D", "#F59E0B", "#7c3aed", "#9ca3af", "#ffffff", "#000000"])( // design-lint-ignore: test data
+    "%s does not",
+    (brand: string) => {
+      expect(brandNearLiveRed(brand)).toBe(false);
+    },
+  );
+  it("reads nothing into a missing or unreadable brand", () => {
+    expect(brandNearLiveRed(null)).toBe(false);
+    expect(brandNearLiveRed("not a colour")).toBe(false);
   });
 });

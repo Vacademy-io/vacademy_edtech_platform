@@ -41,3 +41,35 @@ export function funBrandColours(brandHex: string | null | undefined): FunBrandCo
   if (contrastRatio(solid, tint) < BRAND_TEXT_CONTRAST) solid = readableBrand(solid, tint, BRAND_TEXT_CONTRAST);
   return { solid, tint, lip: mixHex(solid, DARKEN, LIP_TOWARD_DARK)! };
 }
+
+/** The live red (--fun-live in styles/fun/base.css). Keep the two in step. */
+export const FUN_LIVE_RED = "#e11d48"; // design-lint-ignore: mirrors a token
+const NEAR_LIVE_HUE_DEGREES = 25;
+const NEAR_LIVE_MIN_SATURATION = 0.3;
+
+function hueAndSaturation(hex: string): { hue: number; saturation: number } | null {
+  const rgb = hexToRgb(hex);
+  if (!rgb) return null;
+  const [r, g, b] = rgb.map((channel) => channel / 255) as [number, number, number];
+  const max = Math.max(r, g, b);
+  const min = Math.min(r, g, b);
+  const delta = max - min;
+  const lightness = (max + min) / 2;
+  if (delta === 0) return { hue: 0, saturation: 0 };
+  const saturation = delta / (1 - Math.abs(2 * lightness - 1));
+  const hue =
+    max === r ? ((g - b) / delta) % 6 : max === g ? (b - r) / delta + 2 : (r - g) / delta + 4;
+  return { hue: (hue * 60 + 360) % 360, saturation };
+}
+
+/**
+ * True when the brand reads as the same red or rose as a live class's Join button,
+ * so a card showing both must not tell them apart by colour alone.
+ */
+export function brandNearLiveRed(brandHex: string | null | undefined): boolean {
+  const brand = brandHex ? hueAndSaturation(brandHex) : null;
+  const live = hueAndSaturation(FUN_LIVE_RED);
+  if (!brand || !live || brand.saturation < NEAR_LIVE_MIN_SATURATION) return false;
+  const apart = Math.abs(brand.hue - live.hue);
+  return Math.min(apart, 360 - apart) <= NEAR_LIVE_HUE_DEGREES;
+}
