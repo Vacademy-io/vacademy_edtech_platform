@@ -69,7 +69,13 @@ export type UiCorners = 'sharp' | 'rounded' | 'pill';
 export type UiGradient = 'flat' | 'subtle' | 'full';
 
 /** Mirrors StudentUiType in types/student-display-settings.ts. */
-export type StudentUiType = 'default' | 'vibrant' | 'play' | 'cleanerPlay' | 'corporate';
+export type StudentUiType =
+    | 'default'
+    | 'vibrant'
+    | 'play'
+    | 'cleanerPlay'
+    | 'corporate'
+    | 'fun';
 
 /** What each axis falls back to when the institute has saved nothing. */
 export const UI_AXIS_DEFAULTS = {

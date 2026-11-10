@@ -13,6 +13,7 @@ import { useInstituteQuery } from '@/services/student-list-section/getInstituteD
 import { handleUpdateInstituteDashboard } from '@/routes/dashboard/-services/dashboard-services';
 import { getThemeRoleSettings, saveThemeRoleSettings } from '@/services/theme-role-settings';
 import { getStudentDisplaySettings } from '@/services/student-display-settings';
+import { keepLegacySkinReadable } from './legacy-skin';
 import type {
     NavRoleColors,
     ThemeRoleSettings,
@@ -153,6 +154,12 @@ const SKIN_OPTIONS = (
             // 2012-era direction.
             preview: <SkinPreview radiusPx={10} accent={brandHex} elevated />,
         },
+        {
+            // A colour per course and chunky lip buttons: round, bold, brand-led.
+            value: 'fun',
+            label: t('learnerUi.skin.fun'),
+            preview: <SkinPreview radiusPx={16} accent={brandHex} bold />,
+        },
     ];
 };
 const CUSTOM_NAV_ID = 'custom';
@@ -254,10 +261,16 @@ export interface ThemeEditorDraft {
 export const ThemeEditor = ({
     onSaved,
     onDraftChange,
+    onLegacySkinWritten,
 }: {
     onSaved?: () => void;
     /** Called with the unsaved theme after hydration and on every change. */
     onDraftChange?: (draft: ThemeEditorDraft) => void;
+    /**
+     * Called after Save rewrote STUDENT_DISPLAY_SETTINGS.ui.type, so a screen that
+     * holds its own copy of that setting can keep it in step.
+     */
+    onLegacySkinWritten?: (type: StudentUiType) => void;
 }) => {
     const { t } = useTranslation('settingsThemeEditor');
     const queryClient = useQueryClient();
@@ -283,6 +296,8 @@ export const ThemeEditor = ({
     // rather than state because it is only ever a seed for `skin` — it must not
     // re-render or re-trigger the hydration effect.
     const legacySkinRef = useRef<StudentUiType | null>(null);
+    // The skin THEME_SETTING held when this screen loaded. A ref for the same reason.
+    const savedSkinRef = useRef<StudentUiType | null>(null);
     const [isSaving, setIsSaving] = useState(false);
     // Drafts are only reported once the saved theme has loaded, so the live
     // preview never flashes the editor's built-in defaults.
@@ -312,6 +327,7 @@ export const ThemeEditor = ({
             if (cancelled) return;
             setHydrated(true);
             legacySkinRef.current = legacy?.ui?.type ?? null;
+            savedSkinRef.current = saved?.roles?.skin ?? null;
             setSecondaryOverride(saved?.roles?.secondary ?? null);
             setTertiaryOverride(saved?.roles?.tertiary ?? null);
             setBackgroundOverride(saved?.roles?.background ?? null);
@@ -434,7 +450,12 @@ export const ThemeEditor = ({
         setIsSaving(true);
         try {
             const { brand: brandCode, theme } = buildDraft();
+            // First, so a learner app too old to know the chosen skin never reads a
+            // fallback that is out of step with it.
+            const legacyWritten = await keepLegacySkinReadable(skin, savedSkinRef.current);
+            if (legacyWritten) onLegacySkinWritten?.(legacyWritten);
             await saveThemeRoleSettings(theme);
+            savedSkinRef.current = skin;
 
             // Persist the brand code onto the institute record — what every
             // other admin and every learner reads. Build the full update payload

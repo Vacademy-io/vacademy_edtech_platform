@@ -60,6 +60,7 @@ import {
     type FeedbackTrigger,
     type StudentDashboardWidgetConfig,
     type StudentProfileSettings,
+    type StudentUiType,
     RETIRED_WIDGET_IDS,
     WIDGET_LABELS,
 } from '@/types/student-display-settings';
@@ -191,6 +192,18 @@ export default function StudentDisplaySettings(): JSX.Element {
                 setLoadFailed(true);
             });
     }, []);
+
+    // The theme editor on this page has its own Save, which can rewrite ui.type
+    // (the fallback for learner apps that predate a skin). Keep this page's copy
+    // and its pristine copy in step, so this page's Save does not put the old
+    // value back and the change is not shown as unsaved.
+    const keepUiTypeInStep = (type: StudentUiType) => {
+        const withType = (s: StudentDisplaySettingsData) => ({ ...s, ui: { ...s.ui, type } });
+        setSettings((prev) => (prev ? withType(prev) : prev));
+        if (pristineSettingsRef.current) {
+            pristineSettingsRef.current = withType(pristineSettingsRef.current);
+        }
+    };
 
     const update = <K extends keyof StudentDisplaySettingsData>(
         key: K,
@@ -2232,7 +2245,10 @@ export default function StudentDisplaySettings(): JSX.Element {
                             fallback={<div className="text-sm text-danger-600">{t('loadError')}</div>}
                         >
                             <Suspense fallback={<div className="text-sm">{t('loading')}</div>}>
-                                <ThemeEditor onDraftChange={setThemeDraft} />
+                                <ThemeEditor
+                                    onDraftChange={setThemeDraft}
+                                    onLegacySkinWritten={keepUiTypeInStep}
+                                />
                             </Suspense>
                         </ThemeSectionBoundary>
                     </div>

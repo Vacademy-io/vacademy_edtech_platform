@@ -460,6 +460,29 @@ export async function fetchStudentDisplaySettingsForEdit(): Promise<StudentDispl
     return merged;
 }
 
+/**
+ * The setting exactly as the server holds it: no defaults filled in and no cache.
+ * Null when the institute has saved none. Throws when the read fails or the stored
+ * value is not an object, so a caller never writes on top of something it could
+ * not read.
+ */
+export async function fetchSavedStudentDisplaySettings(): Promise<Record<string, unknown> | null> {
+    const instituteId = getInstituteId();
+    if (!instituteId) throw new Error('No institute selected');
+    const res = await authenticatedAxiosInstance.get<{ data?: unknown } | '' | null>(
+        `${BASE_URL}/admin-core-service/institute/setting/v1/get`,
+        { params: { instituteId, settingKey: STUDENT_DISPLAY_SETTINGS_KEY } }
+    );
+    // A key never saved comes back as an empty body.
+    const body = res.data;
+    const data = body && typeof body === 'object' ? body.data : null;
+    if (data === null || data === undefined) return null;
+    if (typeof data !== 'object' || Array.isArray(data)) {
+        throw new Error('Unreadable student display settings');
+    }
+    return data as Record<string, unknown>;
+}
+
 export async function getStudentDisplaySettings(
     forceRefresh = false
 ): Promise<StudentDisplaySettingsData> {
