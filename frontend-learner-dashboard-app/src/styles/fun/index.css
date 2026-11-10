@@ -1,3 +1,6 @@
 /* Fun skin stylesheets, imported once from src/index.css. Every selector in
    these files starts with html.ui-fun, which only the Fun skin puts on <html>. */
 @import './base.css';
+@import './home.css';
+@import './course.css';
+@import './quiz.css';
