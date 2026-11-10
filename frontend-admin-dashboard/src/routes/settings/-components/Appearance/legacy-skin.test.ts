@@ -102,7 +102,7 @@ describe('choosing Fun writes only ui.type into what the server holds', () => {
         it(`with ${name}`, async () => {
             serverBody = clone(body);
             const written = await keepLegacySkinReadable('fun', 'default');
-            expect(written).toBe('play');
+            expect(written).toBe('cleanerPlay');
             // Read from the server right before the write, never from a cache.
             expect(order).toEqual(['get', 'post']);
             expect(get.mock.calls[0]![1]).toEqual({
@@ -111,14 +111,14 @@ describe('choosing Fun writes only ui.type into what the server holds', () => {
             const sent = lastWritten();
             if (held === null) {
                 // Nothing saved: no defaults, only the one field.
-                expect(sent).toEqual({ ui: { type: 'play' } });
+                expect(sent).toEqual({ ui: { type: 'cleanerPlay' } });
             } else {
                 // Field by field: everything but ui.type exactly as read.
                 const { ui: heldUi, ...heldRest } = held;
                 const { ui: sentUi, ...sentRest } = sent;
                 expect(differingPaths(heldRest, sentRest)).toEqual([]);
                 expect(differingPaths(heldUi ?? {}, sentUi)).toEqual(['type']);
-                expect((sentUi as { type: string }).type).toBe('play');
+                expect((sentUi as { type: string }).type).toBe('cleanerPlay');
             }
         });
     }
@@ -130,13 +130,13 @@ describe('choosing Fun writes only ui.type into what the server holds', () => {
         await keepLegacySkinReadable('fun', 'default');
         expect(get).toHaveBeenCalledTimes(2);
         expect(lastWritten()).toEqual({
-            ui: { type: 'play' },
+            ui: { type: 'cleanerPlay' },
             permissions: { canEditProfile: true },
         });
     });
 
     it('writes nothing when the server already holds the fallback', async () => {
-        serverBody = { data: { ui: { type: 'play' }, permissions: { canEditProfile: false } } };
+        serverBody = { data: { ui: { type: 'cleanerPlay' }, permissions: { canEditProfile: false } } };
         expect(await keepLegacySkinReadable('fun', null)).toBeNull();
         expect(post).not.toHaveBeenCalled();
     });
@@ -162,7 +162,7 @@ describe('leaving Fun', () => {
     });
 
     it('replaces only the fallback it wrote, keeping every other field', async () => {
-        const held = { ...fullSaved(), ui: { type: 'play' } };
+        const held = { ...fullSaved(), ui: { type: 'cleanerPlay' } };
         serverBody = { data: clone(held) };
         expect(await keepLegacySkinReadable('vibrant', 'fun')).toBe('vibrant');
         expect(differingPaths(held, lastWritten())).toEqual(['ui.type']);
@@ -180,9 +180,9 @@ describe('leaving Fun', () => {
             serverBody = body;
             expect(await keepLegacySkinReadable('corporate', 'fun')).toBeNull();
         }
-        // Moving to Play itself: the fallback already says so.
-        serverBody = { data: { ui: { type: 'play' } } };
-        expect(await keepLegacySkinReadable('play', 'fun')).toBeNull();
+        // Moving to Cleaner Play itself: the fallback already says so.
+        serverBody = { data: { ui: { type: 'cleanerPlay' } } };
+        expect(await keepLegacySkinReadable('cleanerPlay', 'fun')).toBeNull();
         expect(post).not.toHaveBeenCalled();
     });
 

@@ -6,11 +6,10 @@ import type { StudentDisplaySettingsData } from '@/types/student-display-setting
 import type { StudentUiType } from '@/types/theme-role-settings';
 
 /**
- * What a Fun choice leaves in ui.type for learner apps that predate it: Play, the
- * nearest look they know (solid colour blocks and chunky lip buttons). Cleaner Play
- * is deliberately calmer, with no bold colour blocks, so it is further from Fun.
+ * What a Fun choice leaves in ui.type for learner apps that predate it: Cleaner
+ * Play, the clean, rounded look closest to Fun that every such app knows.
  */
-const FUN_FALLBACK: StudentUiType = 'play';
+const FUN_FALLBACK: StudentUiType = 'cleanerPlay';
 
 /**
  * The value a learner app that predates the Fun skin should find in the

@@ -120,14 +120,14 @@ describe('ThemeEditor and the Fun skin', () => {
 
     it('shows a saved Fun skin as chosen', async () => {
         savedTheme = theme('fun');
-        legacyType = 'play';
+        legacyType = 'cleanerPlay';
         await openEditor();
         await waitFor(() =>
             expect(radio('learnerUi.skin.fun').getAttribute('aria-checked')).toBe('true')
         );
     });
 
-    it('saves Fun, then Play as the fallback older apps read', async () => {
+    it('saves Fun, then Cleaner Play as the fallback older apps read', async () => {
         savedTheme = theme('default');
         legacyType = 'default';
         const button = await openEditor();
@@ -139,18 +139,18 @@ describe('ThemeEditor and the Fun skin', () => {
             ui: { type: string };
             otherSection: unknown;
         };
-        expect(written.ui.type).toBe('play');
+        expect(written.ui.type).toBe('cleanerPlay');
         // The rest of the blob goes back as the server had it.
         expect(written.otherSection).toEqual({ kept: true });
         // After the theme: until roles.skin holds a skin, every app takes ui.type.
         expect(calls).toEqual(['theme', 'display', 'institute']);
         // A page holding its own copy of the setting hears what was written.
-        expect(onLegacySkinWritten).toHaveBeenCalledWith('play');
+        expect(onLegacySkinWritten).toHaveBeenCalledWith('cleanerPlay');
     });
 
     it('writes no fallback when the theme save fails', async () => {
         // An institute whose skin lives only in ui.type: a fallback written ahead of
-        // a failed theme save would move every learner to Play.
+        // a failed theme save would move every learner to Cleaner Play.
         savedTheme = theme();
         legacyType = 'vibrant';
         failTheme = true;
@@ -168,7 +168,7 @@ describe('ThemeEditor and the Fun skin', () => {
 
     it('keeps the theme saved when the fallback write fails, and retries it', async () => {
         savedTheme = theme('fun');
-        legacyType = 'play';
+        legacyType = 'cleanerPlay';
         failDisplay = true;
         const button = await openEditor();
         pick('learnerUi.skin.corporate');
@@ -189,9 +189,9 @@ describe('ThemeEditor and the Fun skin', () => {
         expect(onLegacySkinWritten).toHaveBeenCalledWith('corporate');
     });
 
-    it('writes nothing extra when the fallback is already Play', async () => {
+    it('writes nothing extra when the fallback is already Cleaner Play', async () => {
         savedTheme = theme('fun');
-        legacyType = 'play';
+        legacyType = 'cleanerPlay';
         const button = await openEditor();
         const saved = await save(button);
         expect(saved.roles.skin).toBe('fun');
@@ -201,7 +201,7 @@ describe('ThemeEditor and the Fun skin', () => {
 
     it('moves the fallback along when an institute leaves Fun', async () => {
         savedTheme = theme('fun');
-        legacyType = 'play';
+        legacyType = 'cleanerPlay';
         const button = await openEditor();
         pick('learnerUi.skin.default');
         const saved = await save(button);
@@ -241,8 +241,8 @@ describe('ThemeEditor and the Fun skin', () => {
 
 describe('legacySkinFor', () => {
     it('gives the nearest look an older app knows', () => {
-        expect(legacySkinFor('fun', null)).toBe('play');
-        expect(legacySkinFor('fun', 'fun')).toBe('play');
+        expect(legacySkinFor('fun', null)).toBe('cleanerPlay');
+        expect(legacySkinFor('fun', 'fun')).toBe('cleanerPlay');
         expect(legacySkinFor('corporate', 'fun')).toBe('corporate');
         expect(legacySkinFor('corporate', 'cleanerPlay')).toBeNull();
         expect(legacySkinFor('default', null)).toBeNull();
