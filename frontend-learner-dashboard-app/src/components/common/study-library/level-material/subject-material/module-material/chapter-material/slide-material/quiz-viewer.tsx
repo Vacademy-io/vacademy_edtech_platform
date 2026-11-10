@@ -38,6 +38,9 @@ import {
 } from "./quiz-session";
 import { QuizAttemptScreenGuard, QuizStartCard, QuizTimeUpCard } from "./quiz-start-card";
 import { QUESTION_SETTLE_MS } from "./press-settle";
+import { useFunTheme } from "@/hooks/use-fun-theme";
+import { FunQuizQuestion } from "./fun-quiz/FunQuizQuestion";
+import { FunQuizEmpty, FunQuizTimeWarning } from "./fun-quiz/FunQuizCards";
 
 interface Option {
   id: string;
@@ -93,6 +96,8 @@ interface QuizViewerProps {
   partialMarking?: boolean;
   passPercentage?: number | null;
   reAttemptCount?: number | null;
+  /** Fun skin only: the lesson viewer's Next, offered under the result. */
+  onNext?: () => void;
 }
 
 const getBaseQuestionTypeDescriptions = (t: TFunction): Record<string, string> => ({
@@ -215,8 +220,11 @@ export const QuizViewer: React.FC<QuizViewerProps> = ({
   partialMarking = false,
   passPercentage,
   reAttemptCount,
+  onNext,
 }) => {
   const { t } = useTranslation("libraryCommonB");
+  // The Fun skin draws its own question screen and result; every other skin is unchanged.
+  const isFun = useFunTheme();
   const timeLimitSeconds = timeLimitMinutes && timeLimitMinutes > 0 ? timeLimitMinutes * 60 : 0;
   const needsStart = quizNeedsStart(timeLimitMinutes, reAttemptCount);
   // Already submitted on this device. Read before the first paint so a finished
@@ -705,6 +713,7 @@ export const QuizViewer: React.FC<QuizViewerProps> = ({
   }, [answers, correctAnswers, currentQuestion]);
 
   if (!questions || questions.length === 0) {
+    if (isFun) return <FunQuizEmpty />;
     return (
       <div className="flex items-center justify-center h-64">
         <div className="text-center space-y-4">
@@ -857,6 +866,8 @@ export const QuizViewer: React.FC<QuizViewerProps> = ({
         ? (effectiveScoreCard.earned / effectiveScoreCard.totalMarks) * 100 >= passPercentage
         : null);
     return <QuizReview
+      title={title}
+      onNext={onNext}
       questions={questions}
       userAnswers={reconstructedAnswers}
       scoreCard={effectiveScoreCard}
@@ -1159,7 +1170,15 @@ export const QuizViewer: React.FC<QuizViewerProps> = ({
         if (!offlineQueued) {
           void refreshProgressAfterSubmit(chapterId);
         }
-        if (celebrateOnQuizComplete) {
+        // The Fun skin keeps the celebration for an attempt that did not miss the pass mark.
+        const funMissedPassMark =
+          isFun &&
+          passPercentage != null &&
+          (() => {
+            const card = computeScore(answers);
+            return card.totalMarks > 0 && (card.earned / card.totalMarks) * 100 < passPercentage;
+          })();
+        if (celebrateOnQuizComplete && !funMissedPassMark) {
           try {
             // Confetti: multi-wave, spread across screen with streamers and bursts
             const shoot = (opts: Partial<import("canvas-confetti").Options>) => confetti({
@@ -1528,6 +1547,50 @@ export const QuizViewer: React.FC<QuizViewerProps> = ({
         return typeof currentAnswer === "string" && currentAnswer.trim() !== "";
     }
   };
+
+  if (isFun) {
+    return (
+      <>
+        <QuizAttemptScreenGuard settleMs={QUESTION_SETTLE_MS} />
+        {showWarning && <FunQuizTimeWarning onDismiss={() => setShowWarning(false)} />}
+        <FunQuizQuestion
+          title={title}
+          current={current}
+          total={total}
+          questionId={currentQuestion.id}
+          questionType={questionType}
+          questionHtml={renderHtmlWithMath(getQuestionText())}
+          passageHtml={hasPassage ? renderHtmlWithMath(passageHtml) : undefined}
+          marks={currentQuestion.marks != null ? currentQuestion.marks : marksPerQuestion}
+          options={currentQuestion.options.map((option) => ({
+            id: option.id,
+            html: renderHtmlWithMath(option.text.content),
+          }))}
+          answer={answers[currentQuestion.id]}
+          numericError={numericErrors[currentQuestion.id] || undefined}
+          incorrectNotice={showIncorrectNotice}
+          answered={isAnswered()}
+          submitting={isSubmitting}
+          onSelect={handleOptionSelect}
+          onToggle={handleMultiOptionSelect}
+          onText={handleTextInput}
+          onNumeric={handleNumericInput}
+          onPrev={handlePrev}
+          onNext={handleNext}
+          timer={
+            session && timeLimitSeconds > 0 ? (
+              <QuizTimer
+                startedAt={session.startedAt}
+                totalSeconds={timeLimitSeconds}
+                onWarn={() => setShowWarning(true)}
+                onExpire={handleTimerExpire}
+              />
+            ) : undefined
+          }
+        />
+      </>
+    );
+  }
 
   return (
     <div className="w-full min-h-screen-80 bg-white rounded-xl shadow-lg p-4 sm:p-8">

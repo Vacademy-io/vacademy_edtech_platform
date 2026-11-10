@@ -10,6 +10,8 @@ import { SelectionAskZone } from "@/components/chatbot/moments/SelectionAskPill"
 import { readWhyWrongPart } from "@/components/chatbot/moments/tutor-moments";
 import { getTerminology } from "@/components/common/layout-container/sidebar/utils";
 import { RoleTerms, SystemTerms } from "@/types/naming-settings";
+import { useFunTheme } from "@/hooks/use-fun-theme";
+import { FunQuizResult, type FunAnswerPart, type FunReviewRow } from "./fun-quiz/FunQuizResult";
 
 interface Option {
   id: string;
@@ -62,6 +64,10 @@ interface QuizReviewProps {
   maxAttempts?: number | null;
   canReattempt?: boolean;
   attemptLogs?: QuizAttemptLog[];
+  /** Fun skin only: the quiz's title, shown above its result. */
+  title?: string;
+  /** Fun skin only: the lesson viewer's Next; without it the result offers a way back to the chapter. */
+  onNext?: () => void;
 }
 
 const getQuestionText = (q: Question) => {
@@ -203,8 +209,9 @@ const isAnswerMatch = (
 // Up to two decimals, no trailing zeros: 1, 0.5, 0.33.
 const formatMarks = (value: number): string => String(Math.round(value * 100) / 100);
 
-export const QuizReview: React.FC<QuizReviewProps> = ({ questions, userAnswers, onRestart, scoreCard, showCorrectAnswers = true, passed, passPercentage, partialMarking = false, marksPerQuestion = 1, defaultNegativeMarking = 0, attemptNumber, maxAttempts, canReattempt = true, attemptLogs }) => {
+export const QuizReview: React.FC<QuizReviewProps> = ({ questions, userAnswers, onRestart, scoreCard, showCorrectAnswers = true, passed, passPercentage, partialMarking = false, marksPerQuestion = 1, defaultNegativeMarking = 0, attemptNumber, maxAttempts, canReattempt = true, attemptLogs, title, onNext }) => {
   const { t } = useTranslation("libraryCommonA");
+  const isFun = useFunTheme();
   const [showFullPassageIdx, setShowFullPassageIdx] = useState<number | null>(null);
   const [showPastAttempts, setShowPastAttempts] = useState(false);
   const [selectedAttemptId, setSelectedAttemptId] = useState<string | null>(null);
@@ -513,6 +520,94 @@ export const QuizReview: React.FC<QuizReviewProps> = ({ questions, userAnswers, 
 
   // Helper to get option label (a), b), c), ...)
   const getOptionLabel = (idx: number) => String.fromCharCode(97 + idx) + ") ";
+
+  if (isFun) {
+    // The same per-question reading as the cards below, handed to the Fun result.
+    const escapeText = (value: string) => {
+      const div = document.createElement("div");
+      div.textContent = value;
+      return div.innerHTML;
+    };
+    const answerParts = (q: Question, value: string | number | (string | number)[] | undefined): FunAnswerPart[] => {
+      if (value === undefined || value === null || value === '' || (Array.isArray(value) && value.length === 0)) return [];
+      const isChoice = Array.isArray(q.options) && q.options.length > 1 && !!q.options[0]?.id;
+      return (Array.isArray(value) ? value : [value]).map((id) => {
+        const index = isChoice ? q.options.findIndex((opt) => opt.id === id) : -1;
+        return index >= 0
+          ? { letter: String.fromCharCode(65 + index), html: q.options[index]!.text.content }
+          : { html: escapeText(String(id)) };
+      });
+    };
+    const rows: FunReviewRow[] = questions.map((q, idx) => {
+      const userAnswer = isViewingPastAttempt
+        ? activeAttemptAnswers.get(q.id)
+        : (activeAttemptAnswers.get(q.id) ?? userAnswers[q.id]);
+      const correctAnswers = getCorrectAnswers(q);
+      const hasUserAnswer = !(
+        userAnswer === undefined ||
+        userAnswer === null ||
+        userAnswer === '' ||
+        (Array.isArray(userAnswer) && userAnswer.length === 0)
+      );
+      const isCorrect = hasUserAnswer && isAnswerMatch(q, userAnswer!, correctAnswers);
+      const partialShare = hasUserAnswer && !isCorrect ? partialShareFor(q, userAnswer!, correctAnswers) : 0;
+      const status: FunReviewRow["status"] = !hasUserAnswer
+        ? 'skipped'
+        : isCorrect
+          ? 'correct'
+          : partialShare > 0
+            ? 'partial'
+            : 'wrong';
+      const isChoice = Array.isArray(q.options) && q.options.length > 1 && !!q.options[0]?.id;
+      const correctInOrder = isChoice
+        ? q.options.filter((opt) => correctAnswers.map(String).includes(opt.id)).map((opt) => opt.id)
+        : correctAnswers;
+      const feedback = feedbackByQuestionId.get(q.id);
+      return {
+        id: q.id,
+        number: idx + 1,
+        questionHtml: getQuestionText(q),
+        status,
+        marks: questionMarksFor(q, status, partialShare),
+        partialShare,
+        yourAnswer: answerParts(q, userAnswer),
+        correctAnswer: answerParts(q, correctInOrder),
+        explanationHtml: getExplanationText(q),
+        feedback:
+          feedback && ((feedback.instructor_feedback ?? '').trim() !== '' || feedback.instructor_feedback_file_id)
+            ? { text: feedback.instructor_feedback ?? '', fileId: feedback.instructor_feedback_file_id ?? '' }
+            : null,
+      };
+    });
+    return (
+      <FunQuizResult
+        title={title}
+        score={effectiveScoreCardWithCounts}
+        passed={effectivePassed}
+        passPercentage={passPercentage}
+        attemptNumber={attemptNumber}
+        maxAttempts={maxAttempts}
+        canReattempt={canReattempt}
+        onRestart={onRestart}
+        onNext={onNext}
+        rows={rows}
+        showCorrectAnswers={showCorrectAnswers}
+        pastAttempts={(attemptLogs ?? []).map((log, i) => ({
+          id: log.id,
+          number: (attemptLogs?.length ?? 0) - i,
+          score: scoreByAttemptId.get(log.id) ?? null,
+          notes: feedbackCountByAttemptId.get(log.id) ?? 0,
+          endTime: log.end_time,
+          active: activeAttempt?.id === log.id,
+        }))}
+        onSelectAttempt={setSelectedAttemptId}
+        viewingPast={isViewingPastAttempt}
+        viewingPastHasData={activeAttemptHasData}
+        viewingPastEnd={activeAttempt?.end_time}
+        onBackToLatest={() => setSelectedAttemptId(null)}
+      />
+    );
+  }
 
   return (
     <div className="w-full min-h-screen-80 bg-white rounded-xl shadow-lg p-4 sm:p-8">

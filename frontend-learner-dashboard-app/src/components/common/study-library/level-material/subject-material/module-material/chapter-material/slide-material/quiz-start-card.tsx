@@ -6,6 +6,8 @@ import { formatNumber } from "@/lib/formatters";
 import { useQuizActiveStore } from "@/stores/study-library/quiz-active-store";
 import { createPressTracker, TAP_SETTLE_MS, waitForPressesToSettle } from "./press-settle";
 import { quizDescriptionText } from "./quiz-session";
+import { useFunTheme } from "@/hooks/use-fun-theme";
+import { FunQuizStartCard, FunQuizTimeUpCard } from "./fun-quiz/FunQuizCards";
 
 // Listens from page load: a press can begin before the screen it ends on exists.
 const presses = createPressTracker(window);
@@ -77,10 +79,30 @@ export const QuizStartCard: React.FC<QuizStartCardProps> = ({
   onStart,
 }) => {
   const { t } = useTranslation("libraryCommonB");
+  const isFun = useFunTheme();
   const timed = timeLimitMinutes != null && timeLimitMinutes > 0;
   const limited = maxAttempts != null;
   const about = quizDescriptionText(description);
   const nextAttempt = (usedAttempts ?? 0) + 1;
+
+  if (isFun) {
+    return (
+      <FunQuizStartCard
+        guard={<QuizAttemptScreenGuard />}
+        title={title}
+        about={about || undefined}
+        questionCount={questionCount}
+        timeLimitMinutes={timeLimitMinutes}
+        maxAttempts={maxAttempts}
+        usedAttempts={usedAttempts}
+        attemptsPending={attemptsPending}
+        passPercentage={passPercentage}
+        negativeMarking={negativeMarking}
+        canStart={canStart}
+        onStart={onStart}
+      />
+    );
+  }
 
   return (
     <div className="flex min-h-full w-full items-center justify-center overflow-y-auto bg-white p-4 sm:p-8">
@@ -155,6 +177,8 @@ export const QuizTimeUpCard: React.FC<{ failed: boolean; onRetry: () => void }> 
   onRetry,
 }) => {
   const { t } = useTranslation("libraryCommonB");
+  const isFun = useFunTheme();
+  if (isFun) return <FunQuizTimeUpCard failed={failed} onRetry={onRetry} />;
   return (
     <div className="flex min-h-full w-full items-center justify-center bg-white p-4 sm:p-8">
       <div className="w-full max-w-md text-center">
