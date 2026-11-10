@@ -3,6 +3,7 @@ package vacademy.io.auth_service.feature.panel.service;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import vacademy.io.auth_service.feature.institute_oauth.service.InstituteOAuthClientAccessGuard;
@@ -22,6 +23,8 @@ import vacademy.io.auth_service.feature.panel.repository.PanelRepository.DeviceR
 import vacademy.io.auth_service.feature.panel.repository.PanelRepository.NewDevice;
 import vacademy.io.auth_service.feature.panel.repository.PanelRepository.PairingRow;
 import vacademy.io.auth_service.feature.panel.repository.PanelRepository.RoomRow;
+import vacademy.io.auth_service.feature.panel.phase2.NoopPanelLicenceGate;
+import vacademy.io.auth_service.feature.panel.phase2.PanelLicenceGate;
 import vacademy.io.common.auth.model.CustomUserDetails;
 
 import java.time.Instant;
@@ -58,14 +61,25 @@ public class PanelPairingService {
     private final PanelTx tx;
     private final PanelInstituteDirectory directory;
     private final InstituteOAuthClientAccessGuard accessGuard;
+    private final PanelLicenceGate licence;
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     private volatile long pendingCount;
     private volatile long pendingCountReadAt;
 
+    /** Phase 1 wiring, for tests: the placeholder licence seam. */
     public PanelPairingService(PanelRepository repository, PanelProperties properties, PanelRateLimiter rateLimiter,
             PanelMaintenance maintenance, PanelDevices devices, PanelTx tx, PanelInstituteDirectory directory,
             InstituteOAuthClientAccessGuard accessGuard) {
+        this(repository, properties, rateLimiter, maintenance, devices, tx, directory, accessGuard,
+                new NoopPanelLicenceGate());
+    }
+
+    @Autowired
+    public PanelPairingService(PanelRepository repository, PanelProperties properties, PanelRateLimiter rateLimiter,
+            PanelMaintenance maintenance, PanelDevices devices, PanelTx tx, PanelInstituteDirectory directory,
+            InstituteOAuthClientAccessGuard accessGuard, PanelLicenceGate licence) {
+        this.licence = licence;
         this.repository = repository;
         this.properties = properties;
         this.rateLimiter = rateLimiter;
@@ -170,7 +184,7 @@ public class PanelPairingService {
         DeviceRow device = repository.findDevice(pairing.deviceId()).orElseThrow();
         return new PairPollResponse("CLAIMED", after, device.id(), secret, device.instituteId(),
                 device.instituteName(), device.themeCode(), new RoomRef(device.roomId(), device.roomName()),
-                device.claimedByName());
+                device.claimedByName(), device.installedByName());
     }
 
     public StatusResponse confirm(PairConfirmRequest body) {
@@ -180,7 +194,13 @@ public class PanelPairingService {
         }
         if (body.accept()) {
             if ("CLAIMED".equals(device.status())) {
-                repository.confirmDevice(device.id());
+                // Only the call that moved CLAIMED to ACTIVE tells the seat logic, in the same transaction.
+                tx.run(() -> {
+                    if (repository.confirmDevice(device.id()) == 1) {
+                        licence.onActivated(device);
+                    }
+                    return null;
+                });
             }
             return new StatusResponse("ACTIVE");
         }

@@ -82,6 +82,11 @@ public class PanelChallengeService {
         if (!"SIGN_IN".equals(purpose) && !"ATTACH_REMOTE".equals(purpose)) {
             throw PanelApiException.badRequest("Unknown purpose");
         }
+        if ("SIGN_IN".equals(purpose)) {
+            // Phase 2 approval, seat and version checks. Refused here too, so the panel shows why
+            // instead of a QR code that can only fail at approve.
+            sessions.requireCanStart(device);
+        }
         String attachSessionId = "ATTACH_REMOTE".equals(purpose) ? requireAttachSession(device, body.sessionToken())
                 : null;
         maintenance.maybePurge();
@@ -327,6 +332,8 @@ public class PanelChallengeService {
                 throw expired(HttpStatus.CONFLICT);
             }
         } else {
+            // Checked again at approve: the seat or approval can change while the QR is up.
+            sessions.requireCanStart(device);
             if (repository.approveChallenge(challenge.id(), "APPROVED", userId, ip) == 0) {
                 return lostApproveRace(challenge.id(), userId, deny);
             }

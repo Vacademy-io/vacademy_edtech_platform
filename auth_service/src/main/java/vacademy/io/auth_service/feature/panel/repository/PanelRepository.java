@@ -60,11 +60,37 @@ public class PanelRepository {
     public record RoomRow(String id, String instituteId, String name, String status, String deviceId) {
     }
 
+    /**
+     * The phase 2 columns follow db_now: approval_state (APPROVED, PENDING, REJECTED), the installer
+     * organisation that set the panel up and its name, the reported app channel and confirmed_at.
+     */
     public record DeviceRow(String id, String instituteId, String roomId, String roomName, String secretHash,
             String status, String instituteName, String themeCode, String approveBaseUrl, Timestamp brandingSyncedAt,
             boolean passwordLoginAllowed, String manufacturer, String model, Integer sdkInt, Integer webviewMajor,
             Integer appVersionCode, Timestamp lastSeenAt, String lastIp, String claimedByName, Timestamp claimedAt,
-            Timestamp dbNow) {
+            Timestamp dbNow, String approvalState, String installedByPartnerId, String installedByName,
+            String appChannel, Timestamp confirmedAt) {
+        /** Phase 1 shape, for tests: an APPROVED device with no installer and no channel. */
+        public DeviceRow(String id, String instituteId, String roomId, String roomName, String secretHash,
+                String status, String instituteName, String themeCode, String approveBaseUrl,
+                Timestamp brandingSyncedAt, boolean passwordLoginAllowed, String manufacturer, String model,
+                Integer sdkInt, Integer webviewMajor, Integer appVersionCode, Timestamp lastSeenAt, String lastIp,
+                String claimedByName, Timestamp claimedAt, Timestamp dbNow) {
+            this(id, instituteId, roomId, roomName, secretHash, status, instituteName, themeCode, approveBaseUrl,
+                    brandingSyncedAt, passwordLoginAllowed, manufacturer, model, sdkInt, webviewMajor, appVersionCode,
+                    lastSeenAt, lastIp, claimedByName, claimedAt, dbNow, "APPROVED", null, null, null, null);
+        }
+
+        /** This row with the values a panel just reported; a null keeps the stored value, as the write does. */
+        public DeviceRow withReported(Integer reportedVersionCode, Integer reportedWebviewMajor,
+                String reportedChannel) {
+            return new DeviceRow(id, instituteId, roomId, roomName, secretHash, status, instituteName, themeCode,
+                    approveBaseUrl, brandingSyncedAt, passwordLoginAllowed, manufacturer, model, sdkInt,
+                    reportedWebviewMajor != null ? reportedWebviewMajor : webviewMajor,
+                    reportedVersionCode != null ? reportedVersionCode : appVersionCode, lastSeenAt, lastIp,
+                    claimedByName, claimedAt, dbNow, approvalState, installedByPartnerId, installedByName,
+                    reportedChannel != null ? reportedChannel : appChannel, confirmedAt);
+        }
     }
 
     public record SessionRow(String id, String deviceId, String instituteId, String userId, String startedVia,
@@ -130,7 +156,8 @@ public class PanelRepository {
                 rs.getString("manufacturer"), rs.getString("model"), intOrNull(rs, "sdk_int"),
                 intOrNull(rs, "webview_major"), intOrNull(rs, "app_version_code"), rs.getTimestamp("last_seen_at"),
                 rs.getString("last_ip"), rs.getString("claimed_by_name"), rs.getTimestamp("claimed_at"),
-                rs.getTimestamp("db_now"));
+                rs.getTimestamp("db_now"), rs.getString("approval_state"), rs.getString("installed_by_partner_id"),
+                rs.getString("installed_by_name"), rs.getString("app_channel"), rs.getTimestamp("confirmed_at"));
     }
 
     private static final RowMapper<SessionRow> SESSION = (rs, n) -> new SessionRow(rs.getString("id"),
@@ -288,11 +315,18 @@ public class PanelRepository {
             d.id, d.institute_id, d.room_id, r.name AS room_name, d.secret_hash, d.status, d.institute_name,
             d.theme_code, d.approve_base_url, d.branding_synced_at, d.password_login_allowed, d.manufacturer,
             d.model, d.sdk_int, d.webview_major, d.app_version_code, d.last_seen_at, d.last_ip,
-            d.claimed_by_name, d.claimed_at, localtimestamp AS db_now
+            d.claimed_by_name, d.claimed_at, localtimestamp AS db_now, d.approval_state,
+            d.installed_by_partner_id, p.name AS installed_by_name, d.app_channel, d.confirmed_at
             """;
 
-    private static final String DEVICE_SELECT = "SELECT " + DEVICE_COLUMNS
-            + " FROM public.panel_device d JOIN public.classroom_room r ON r.id = d.room_id ";
+    /** The installer organisation's name, by primary key: no cost when the column is null. */
+    private static final String DEVICE_JOINS = """
+             FROM public.panel_device d
+             JOIN public.classroom_room r ON r.id = d.room_id
+             LEFT JOIN public.panel_partner p ON p.id = d.installed_by_partner_id
+            """;
+
+    private static final String DEVICE_SELECT = "SELECT " + DEVICE_COLUMNS + DEVICE_JOINS;
 
     public Optional<DeviceRow> findDevice(String id) {
         return first(jdbc.query(DEVICE_SELECT + "WHERE d.id = :id", params().addValue("id", id),
@@ -350,24 +384,37 @@ public class PanelRepository {
     }
 
     public int touchDeviceSeen(String id, String ip, Integer appVersion, Integer webview, int throttleSeconds) {
+        return touchDeviceSeen(id, ip, appVersion, webview, null, throttleSeconds);
+    }
+
+    /** A null channel keeps the stored one: phase 1 panels never report it. */
+    public int touchDeviceSeen(String id, String ip, Integer appVersion, Integer webview, String appChannel,
+            int throttleSeconds) {
         return jdbc.update("""
                 UPDATE public.panel_device
                 SET last_seen_at = now(), last_ip = :ip,
                     app_version_code = COALESCE(:version, app_version_code),
-                    webview_major = COALESCE(:webview, webview_major)
+                    webview_major = COALESCE(:webview, webview_major),
+                    app_channel = COALESCE(:channel, app_channel)
                 WHERE id = :id AND (last_seen_at IS NULL OR last_seen_at <= now() - :t * interval '1 second')
                 """, params().addValue("id", id).addValue("ip", ip).addValue("version", appVersion, Types.INTEGER)
-                .addValue("webview", webview, Types.INTEGER).addValue("t", throttleSeconds));
+                .addValue("webview", webview, Types.INTEGER).addValue("channel", appChannel, Types.VARCHAR)
+                .addValue("t", throttleSeconds));
     }
 
     public int updateDeviceVersions(String id, Integer appVersion, Integer webview) {
+        return updateDeviceVersions(id, appVersion, webview, null);
+    }
+
+    public int updateDeviceVersions(String id, Integer appVersion, Integer webview, String appChannel) {
         return jdbc.update("""
                 UPDATE public.panel_device
                 SET app_version_code = COALESCE(:version, app_version_code),
-                    webview_major = COALESCE(:webview, webview_major)
+                    webview_major = COALESCE(:webview, webview_major),
+                    app_channel = COALESCE(:channel, app_channel)
                 WHERE id = :id
                 """, params().addValue("id", id).addValue("version", appVersion, Types.INTEGER)
-                .addValue("webview", webview, Types.INTEGER));
+                .addValue("webview", webview, Types.INTEGER).addValue("channel", appChannel, Types.VARCHAR));
     }
 
     public int updateBranding(String id, PanelInstituteDirectory.Snapshot snapshot) {
@@ -408,6 +455,7 @@ public class PanelRepository {
                    WHERE c.session_id = s.id ORDER BY c.approved_at DESC NULLS LAST LIMIT 1) AS s_approved_ip
                 FROM public.panel_device d
                 JOIN public.classroom_room r ON r.id = d.room_id
+                LEFT JOIN public.panel_partner p ON p.id = d.installed_by_partner_id
                 LEFT JOIN public.panel_session s
                        ON s.device_id = d.id AND s.status = 'ACTIVE' AND s.expires_at > now()
                 LEFT JOIN public.users u ON u.id = s.user_id
@@ -470,6 +518,21 @@ public class PanelRepository {
                 UPDATE public.panel_session SET status = 'ENDED', ended_at = now(), end_reason = :reason, ended_by = :by
                 WHERE id = :id AND status = 'ACTIVE'
                 """, params().addValue("id", id).addValue("reason", reason).addValue("by", by));
+    }
+
+    /**
+     * endSession that also records active_until, the effective end of an IDLE sign-out: the panel
+     * waited idle_seconds with no input before it signed out, so the usage report stops counting
+     * there. Never earlier than created_at.
+     */
+    public int endSessionWithActiveUntil(String id, String reason, String by, int idleSeconds) {
+        return jdbc.update("""
+                UPDATE public.panel_session
+                SET status = 'ENDED', ended_at = now(), end_reason = :reason, ended_by = :by,
+                    active_until = GREATEST(created_at, now() - :idle * interval '1 second')
+                WHERE id = :id AND status = 'ACTIVE'
+                """, params().addValue("id", id).addValue("reason", reason).addValue("by", by)
+                .addValue("idle", idleSeconds));
     }
 
     public int endActiveSessionOfDevice(String deviceId, String reason, String by) {

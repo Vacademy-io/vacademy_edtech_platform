@@ -1,5 +1,6 @@
 package vacademy.io.auth_service.feature.panel.service;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -22,6 +23,9 @@ import vacademy.io.auth_service.feature.panel.repository.PanelRepository.DeviceL
 import vacademy.io.auth_service.feature.panel.repository.PanelRepository.DeviceRow;
 import vacademy.io.auth_service.feature.panel.repository.PanelRepository.RoomRow;
 import vacademy.io.auth_service.feature.panel.repository.PanelRepository.SessionRow;
+import vacademy.io.auth_service.feature.panel.phase2.NoopPanelLicenceGate;
+import vacademy.io.auth_service.feature.panel.phase2.PanelLicenceGate;
+import vacademy.io.auth_service.feature.panel.phase2.PanelLicenceGate.InstituteLicenceView;
 import vacademy.io.common.auth.model.CustomUserDetails;
 import vacademy.io.common.auth.repository.UserRoleRepository;
 
@@ -44,9 +48,19 @@ public class PanelAdminService {
     private final PanelDevices devices;
     private final PanelPairingService pairing;
     private final PanelTx tx;
+    private final PanelLicenceGate licence;
 
+    /** Phase 1 wiring, for tests: the placeholder licence seam. */
     public PanelAdminService(PanelRepository repository, InstituteOAuthClientAccessGuard accessGuard,
             UserRoleRepository userRoleRepository, PanelDevices devices, PanelPairingService pairing, PanelTx tx) {
+        this(repository, accessGuard, userRoleRepository, devices, pairing, tx, new NoopPanelLicenceGate());
+    }
+
+    @Autowired
+    public PanelAdminService(PanelRepository repository, InstituteOAuthClientAccessGuard accessGuard,
+            UserRoleRepository userRoleRepository, PanelDevices devices, PanelPairingService pairing, PanelTx tx,
+            PanelLicenceGate licence) {
+        this.licence = licence;
         this.repository = repository;
         this.accessGuard = accessGuard;
         this.userRoleRepository = userRoleRepository;
@@ -135,6 +149,10 @@ public class PanelAdminService {
                     throw new PanelApiException(HttpStatus.CONFLICT, "ROOM_HAS_DEVICE",
                             "Remove the panel from this room first");
                 }
+                if ("ARCHIVED".equals(status) && "ACTIVE".equals(room.status())) {
+                    // An archived room gives its seat back. It has no live device: the update above refuses that.
+                    licence.onRoomArchived(room.instituteId(), roomId, user.getUserId());
+                }
                 if (name != null) {
                     repository.renameRoom(roomId, name);
                 }
@@ -154,7 +172,8 @@ public class PanelAdminService {
     public List<DeviceRowResponse> listDevices(CustomUserDetails user, String instituteId) {
         return tx.run(() -> {
             accessGuard.requireInstituteAdmin(user, instituteId);
-            return repository.listDevices(instituteId, null).stream().map(PanelAdminService::deviceResponse).toList();
+            InstituteLicenceView seats = licence.view(instituteId);
+            return repository.listDevices(instituteId, null).stream().map(row -> deviceResponse(row, seats)).toList();
         });
     }
 
@@ -179,7 +198,8 @@ public class PanelAdminService {
                 if (body.passwordLoginAllowed() != null) {
                     repository.setPasswordLoginAllowed(deviceId, body.passwordLoginAllowed());
                 }
-                return deviceResponse(repository.listDevices(device.instituteId(), deviceId).get(0));
+                return deviceResponse(repository.listDevices(device.instituteId(), deviceId).get(0),
+                        licence.view(device.instituteId()));
             });
         } catch (DuplicateKeyException e) {
             throw PanelPairingService.roomOccupied(repository.findLiveDeviceInRoom(body.roomId()));
@@ -206,7 +226,8 @@ public class PanelAdminService {
         });
     }
 
-    private static DeviceRowResponse deviceResponse(DeviceListRow row) {
+    /** The phase 2 columns come from the row; licence_state from the institute's seat picture. */
+    static DeviceRowResponse deviceResponse(DeviceListRow row, InstituteLicenceView seats) {
         DeviceRow d = row.device();
         boolean online = d.lastSeenAt() != null
                 && d.dbNow().getTime() - d.lastSeenAt().getTime() < PanelTimers.DEVICE_ONLINE_MS;
@@ -219,6 +240,8 @@ public class PanelAdminService {
         return new DeviceRowResponse(d.id(), new RoomRef(d.roomId(), d.roomName()), d.status(), online,
                 d.lastSeenAt() == null ? null : d.lastSeenAt().toInstant().toString(), d.lastIp(), d.model(),
                 d.manufacturer(), d.sdkInt(), d.webviewMajor(), d.appVersionCode(), d.passwordLoginAllowed(),
-                d.claimedByName(), d.claimedAt().toInstant().toString(), current);
+                d.claimedByName(), d.claimedAt().toInstant().toString(), current,
+                d.approvalState() == null ? "APPROVED" : d.approvalState(), d.appChannel(), d.installedByName(),
+                seats == null ? null : seats.roomState(d.roomId()));
     }
 }

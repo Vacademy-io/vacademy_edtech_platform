@@ -1,11 +1,13 @@
 package vacademy.io.auth_service.feature.panel.service;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.stereotype.Service;
+import vacademy.io.auth_service.feature.panel.dto.PanelDtos.ActivityEvent;
 import vacademy.io.auth_service.feature.panel.dto.PanelDtos.EndedResponse;
 import vacademy.io.auth_service.feature.panel.dto.PanelDtos.LoginPasswordRequest;
 import vacademy.io.auth_service.feature.panel.dto.PanelDtos.MySessionResponse;
@@ -20,11 +22,23 @@ import vacademy.io.auth_service.feature.panel.dto.PanelDtos.SessionRefreshReques
 import vacademy.io.auth_service.feature.panel.dto.PanelDtos.SessionRefreshResponse;
 import vacademy.io.auth_service.feature.panel.dto.PanelDtos.SyncDevice;
 import vacademy.io.auth_service.feature.panel.dto.PanelDtos.SyncFlags;
+import vacademy.io.auth_service.feature.panel.dto.PanelDtos.SyncLicence;
 import vacademy.io.auth_service.feature.panel.dto.PanelDtos.SyncPolicy;
 import vacademy.io.auth_service.feature.panel.dto.PanelDtos.SyncRequest;
 import vacademy.io.auth_service.feature.panel.dto.PanelDtos.SyncResponse;
 import vacademy.io.auth_service.feature.panel.dto.PanelDtos.SyncSession;
+import vacademy.io.auth_service.feature.panel.dto.PanelDtos.SyncUpdate;
 import vacademy.io.auth_service.feature.panel.dto.PanelDtos.UserRef;
+import vacademy.io.auth_service.feature.panel.phase2.DefaultPanelApprovalGate;
+import vacademy.io.auth_service.feature.panel.phase2.NoopPanelActivityIngest;
+import vacademy.io.auth_service.feature.panel.phase2.NoopPanelLicenceGate;
+import vacademy.io.auth_service.feature.panel.phase2.NoopPanelReleaseOffer;
+import vacademy.io.auth_service.feature.panel.phase2.PanelActivityIngest;
+import vacademy.io.auth_service.feature.panel.phase2.PanelApprovalGate;
+import vacademy.io.auth_service.feature.panel.phase2.PanelCompat;
+import vacademy.io.auth_service.feature.panel.phase2.PanelLicenceGate;
+import vacademy.io.auth_service.feature.panel.phase2.PanelPhase2Properties;
+import vacademy.io.auth_service.feature.panel.phase2.PanelReleaseOffer;
 import vacademy.io.auth_service.feature.panel.repository.PanelRepository;
 import vacademy.io.auth_service.feature.panel.repository.PanelRepository.DeviceRow;
 import vacademy.io.auth_service.feature.panel.repository.PanelRepository.SessionRow;
@@ -33,6 +47,7 @@ import vacademy.io.common.auth.model.CustomUserDetails;
 import vacademy.io.common.auth.repository.UserRepository;
 import vacademy.io.common.exceptions.VacademyException;
 
+import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
 import java.util.Optional;
@@ -51,6 +66,9 @@ public class PanelSessionService {
     private static final int TOKEN_BYTES = 32;
     private static final int SESSION_INSERT_ATTEMPTS = 3;
     private static final Set<String> CLIENT_END_REASONS = Set.of("SIGN_OUT", "IDLE", "CLASS_END");
+    private static final Set<String> APP_CHANNELS = Set.of("PLAY", "DIRECT", "DEV");
+    /** The panel's "Still teaching?" countdown that follows idle_minutes before an IDLE sign-out. */
+    static final int IDLE_COUNTDOWN_S = 60;
 
     private final PanelRepository repository;
     private final PanelProperties properties;
@@ -61,10 +79,27 @@ public class PanelSessionService {
     private final PanelTx tx;
     private final UserRepository userRepository;
     private final AuthenticationManager authenticationManager;
+    private final PanelPhase2Properties phase2;
+    private final PanelActivityIngest activityIngest;
+    private final PanelLicenceGate licence;
+    private final PanelApprovalGate approval;
+    private final PanelReleaseOffer releases;
 
+    /** Phase 1 wiring, for tests: phase 2 switches off, placeholder seams, approval enforced. */
     public PanelSessionService(PanelRepository repository, PanelProperties properties, PanelDevices devices,
             PanelAccessPolicy policy, PanelTokenService tokens, PanelRateLimiter rateLimiter, PanelTx tx,
             UserRepository userRepository, AuthenticationManager authenticationManager) {
+        this(repository, properties, devices, policy, tokens, rateLimiter, tx, userRepository, authenticationManager,
+                PanelPhase2Properties.allOff(), new NoopPanelActivityIngest(), new NoopPanelLicenceGate(),
+                new DefaultPanelApprovalGate(new PanelCompat()), new NoopPanelReleaseOffer());
+    }
+
+    @Autowired
+    public PanelSessionService(PanelRepository repository, PanelProperties properties, PanelDevices devices,
+            PanelAccessPolicy policy, PanelTokenService tokens, PanelRateLimiter rateLimiter, PanelTx tx,
+            UserRepository userRepository, AuthenticationManager authenticationManager,
+            PanelPhase2Properties phase2, PanelActivityIngest activityIngest, PanelLicenceGate licence,
+            PanelApprovalGate approval, PanelReleaseOffer releases) {
         this.repository = repository;
         this.properties = properties;
         this.devices = devices;
@@ -74,17 +109,24 @@ public class PanelSessionService {
         this.tx = tx;
         this.userRepository = userRepository;
         this.authenticationManager = authenticationManager;
+        this.phase2 = phase2;
+        this.activityIngest = activityIngest;
+        this.licence = licence;
+        this.approval = approval;
+        this.releases = releases;
     }
 
     // ---------------------------------------------------------------- sync ---
 
     /** PK reads, and a write only when something is due or the slide changed. */
     public SyncResponse sync(SyncRequest body, String ip) {
-        DeviceRow device = devices.require(body.deviceId(), body.deviceSecret());
-        touchDevice(device, body, ip);
+        // The offer, the floor and the licence answer for what the panel reports now (for example
+        // the build it has just updated to), not for the row as it was before this sync wrote it.
+        DeviceRow device = touchDevice(devices.require(body.deviceId(), body.deviceSecret()), body, ip);
 
         SyncSession session = null;
         boolean phoneSeen = false;
+        Integer activityAck = null;
         if (body.sessionId() != null || body.sessionToken() != null) {
             Optional<SessionRow> row = findOwnedSession(device, body.sessionId(), body.sessionToken());
             if (row.isEmpty()) {
@@ -96,6 +138,7 @@ public class PanelSessionService {
                     session = new SyncSession("ENDED", endReason, 0, s.remoteNavCounter(), null, false);
                 } else {
                     writeSync(s, body);
+                    activityAck = ingestSync(device, s, body.activity());
                     phoneSeen = s.remoteSeenAt() != null && s.ageMs(s.remoteSeenAt()) < PanelTimers.PHONE_CONNECTED_MS;
                     session = new SyncSession("ACTIVE", null, s.expiresInSeconds(), s.remoteNavCounter(),
                             s.remoteNavAt() == null ? null : Long.valueOf(s.ageMs(s.remoteNavAt())), phoneSeen);
@@ -118,28 +161,55 @@ public class PanelSessionService {
             nextPoll = Math.min(nextPoll, PanelTimers.MEETING_SYNC_MS);
         }
 
+        // Licence and update offers are for the signed-out screens only: never shown during a class.
+        boolean signedIn = session != null && "ACTIVE".equals(session.status());
+        SyncLicence licenceBlock = signedIn ? null : licence.syncBlock(device);
+        SyncUpdate updateBlock = signedIn ? null : releases.syncBlock(device);
+        Integer required = releases.requiredVersionCode(device);
+
         return new SyncResponse(System.currentTimeMillis(),
                 new SyncDevice(device.status(), device.roomName(), device.instituteId(), device.instituteName(),
-                        device.themeCode(), approveBase(device), device.passwordLoginAllowed()),
+                        device.themeCode(), approveBase(device), device.passwordLoginAllowed(),
+                        device.approvalState()),
                 session, new SyncFlags(properties.isVoltLive(), properties.getBbbInAppMinWebview()),
                 new SyncPolicy(properties.getIdleMinutes(), properties.getSessionHours()),
-                properties.poll(nextPoll), properties.getMinAppVersionCode());
+                properties.poll(nextPoll), required == null ? properties.getMinAppVersionCode() : required,
+                licenceBlock, updateBlock, activityAck);
+    }
+
+    private Integer ingestSync(DeviceRow device, SessionRow session, List<ActivityEvent> events) {
+        if (events == null || events.isEmpty() || !phase2.isUsageRecording()) {
+            return null;
+        }
+        return activityIngest.ingestSync(device, session, events);
+    }
+
+    /** Session starts only: never from refresh, sync, the remote or ATTACH_REMOTE. */
+    void requireCanStart(DeviceRow device) {
+        approval.requireApproved(device);
+        licence.requireCanStart(device);
+        releases.requireNotBelowFloor(device);
     }
 
     public String approveBase(DeviceRow device) {
         return device.approveBaseUrl() == null ? properties.getApproveDefaultBaseUrl() : device.approveBaseUrl();
     }
 
-    private void touchDevice(DeviceRow device, SyncRequest body, String ip) {
+    /** Writes what the panel reported and answers the row as it now stands. */
+    private DeviceRow touchDevice(DeviceRow device, SyncRequest body, String ip) {
+        String channel = body.appChannel() != null && APP_CHANNELS.contains(body.appChannel()) ? body.appChannel()
+                : null;
         boolean seenDue = device.lastSeenAt() == null || device.dbNow().getTime()
                 - device.lastSeenAt().getTime() >= PanelTimers.LAST_SEEN_WRITE_S * 1000L;
         if (seenDue) {
-            repository.touchDeviceSeen(device.id(), ip, body.appVersionCode(), body.webviewMajor(),
+            repository.touchDeviceSeen(device.id(), ip, body.appVersionCode(), body.webviewMajor(), channel,
                     PanelTimers.LAST_SEEN_WRITE_S);
         } else if (changed(body.appVersionCode(), device.appVersionCode())
-                || changed(body.webviewMajor(), device.webviewMajor())) {
-            repository.updateDeviceVersions(device.id(), body.appVersionCode(), body.webviewMajor());
+                || changed(body.webviewMajor(), device.webviewMajor())
+                || (channel != null && !channel.equals(device.appChannel()))) {
+            repository.updateDeviceVersions(device.id(), body.appVersionCode(), body.webviewMajor(), channel);
         }
+        return device.withReported(body.appVersionCode(), body.webviewMajor(), channel);
     }
 
     private static boolean changed(Integer sent, Integer stored) {
@@ -264,12 +334,28 @@ public class PanelSessionService {
             if (body.sessionToken().length() <= PanelSecrets.MAX_TOKEN_LENGTH) {
                 repository.findSessionByRefreshHash(PanelSecrets.sha256Hex(body.sessionToken()))
                         .filter(s -> device.id().equals(s.deviceId()))
-                        .ifPresent(s -> repository.endSession(s.id(), body.reason(), null));
+                        .ifPresent(s -> endFromPanel(device, s, body));
             }
         } else {
             repository.endActiveSessionOfDevice(device.id(), body.reason(), null);
         }
         return new EndedResponse(true);
+    }
+
+    /**
+     * Activity first, so the events of the last minutes land before the session closes. With
+     * recording on, an IDLE end also records active_until, idle_minutes plus the countdown back.
+     */
+    private void endFromPanel(DeviceRow device, SessionRow session, SessionEndRequest body) {
+        if (phase2.isUsageRecording() && body.activity() != null && !body.activity().isEmpty()) {
+            activityIngest.ingestEnd(device, session, body.activity());
+        }
+        if (phase2.isUsageRecording() && "IDLE".equals(body.reason())) {
+            repository.endSessionWithActiveUntil(session.id(), body.reason(), null,
+                    properties.getIdleMinutes() * 60 + IDLE_COUNTDOWN_S);
+        } else {
+            repository.endSession(session.id(), body.reason(), null);
+        }
     }
 
     /**
@@ -317,6 +403,7 @@ public class PanelSessionService {
                     "Password sign-in is off for this panel");
         }
         properties.requireInstituteAllowed(device.instituteId());
+        requireCanStart(device);
         String username = body.username() == null ? "" : body.username();
         String password = body.password();
         if (username.isBlank() || password == null || username.length() > MAX_CREDENTIAL_LENGTH

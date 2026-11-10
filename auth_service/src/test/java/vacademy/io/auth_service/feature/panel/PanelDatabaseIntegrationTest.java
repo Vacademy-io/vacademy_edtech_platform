@@ -36,6 +36,16 @@ import vacademy.io.auth_service.feature.institute.InstituteInfoDTO;
 import vacademy.io.auth_service.feature.institute.InstituteInternalService;
 import vacademy.io.auth_service.feature.institute_oauth.service.InstituteOAuthClientAccessGuard;
 import vacademy.io.auth_service.feature.panel.dto.PanelDtos.*;
+import vacademy.io.auth_service.feature.panel.phase2.DefaultPanelApprovalGate;
+import vacademy.io.auth_service.feature.panel.phase2.usage.PanelActivityRecorder;
+import vacademy.io.auth_service.feature.panel.phase2.usage.PanelUsageRepository;
+import vacademy.io.auth_service.feature.panel.phase2.licence.PanelLicenceRepository;
+import vacademy.io.auth_service.feature.panel.phase2.licence.PanelLicenceService;
+import vacademy.io.auth_service.feature.panel.phase2.release.PanelReleaseRepository;
+import vacademy.io.auth_service.feature.panel.phase2.release.PanelReleaseService;
+import vacademy.io.auth_service.feature.panel.phase2.release.PanelReleaseSettings;
+import vacademy.io.auth_service.feature.panel.phase2.PanelCompat;
+import vacademy.io.auth_service.feature.panel.phase2.PanelPhase2Properties;
 import vacademy.io.auth_service.feature.panel.repository.PanelRepository;
 import vacademy.io.auth_service.feature.panel.service.PanelAccessPolicy;
 import vacademy.io.auth_service.feature.panel.service.PanelAdminService;
@@ -105,7 +115,11 @@ class PanelDatabaseIntegrationTest {
             PanelDevices.class, PanelTx.class, PanelInstituteDirectory.class, PanelPairingService.class,
             PanelChallengeService.class, PanelSessionService.class, PanelAdminService.class, PanelTokenService.class,
             PanelAccessPolicy.class, TrialAccessGuard.class, InstituteOAuthClientAccessGuard.class,
-            UserDetailsServiceImpl.class })
+            UserDetailsServiceImpl.class,
+            // Phase 2 seams. A chunk that replaces a placeholder swaps its class here.
+            PanelPhase2Properties.class, PanelCompat.class, PanelActivityRecorder.class, PanelUsageRepository.class,
+            PanelLicenceService.class, PanelLicenceRepository.class, DefaultPanelApprovalGate.class, PanelReleaseService.class,
+            PanelReleaseRepository.class, PanelReleaseSettings.class })
     static class Config {
         @Bean
         AuthenticationManager authenticationManager(UserDetailsServiceImpl userDetails) {
@@ -359,30 +373,134 @@ class PanelDatabaseIntegrationTest {
     }
 
     /**
-     * T61. Keeping the file validates. Removing it while V26 is the newest applied migration also
-     * validates, because Flyway reads that as a "future" migration; but it fails as soon as any later
-     * migration exists, which is why a rollback must keep the file.
+     * T61, for whichever migration is newest (V26 in phase 1, V27 since phase 2). Keeping the file
+     * validates. Removing it while it is the newest applied migration also validates, because Flyway
+     * reads that as a "future" migration; but it fails as soon as any later migration exists, which
+     * is why a rollback must keep the file.
      */
     @Test
-    void rollbackMustKeepTheMigrationFile(@TempDir Path withAll, @TempDir Path withoutV26, @TempDir Path withV27Only)
-            throws Exception {
+    void rollbackMustKeepTheMigrationFile(@TempDir Path withAll, @TempDir Path withoutNewest,
+            @TempDir Path withLaterOnly) throws Exception {
         Resource[] all = new PathMatchingResourcePatternResolver().getResources("classpath:db/migration/*.sql");
-        assertThat(all.length).isGreaterThanOrEqualTo(26);
+        assertThat(all.length).isGreaterThanOrEqualTo(27);
+        int newest = 0;
+        for (Resource resource : all) {
+            newest = Math.max(newest, version(resource.getFilename()));
+        }
+        assertThat(newest).isGreaterThanOrEqualTo(27);
         for (Resource resource : all) {
             byte[] content = resource.getContentAsByteArray();
             Files.write(withAll.resolve(resource.getFilename()), content);
-            if (!resource.getFilename().startsWith("V26__")) {
-                Files.write(withoutV26.resolve(resource.getFilename()), content);
-                Files.write(withV27Only.resolve(resource.getFilename()), content);
+            if (version(resource.getFilename()) != newest) {
+                Files.write(withoutNewest.resolve(resource.getFilename()), content);
+                Files.write(withLaterOnly.resolve(resource.getFilename()), content);
             }
         }
-        Files.writeString(withV27Only.resolve("V27__later.sql"), "SELECT 1;");
+        Files.writeString(withLaterOnly.resolve("V" + (newest + 1) + "__later.sql"), "SELECT 1;");
         Flyway.configure().dataSource(dataSource).locations("filesystem:" + withAll).load().validate();
-        Flyway.configure().dataSource(dataSource).locations("filesystem:" + withoutV26).load().validate();
-        assertThatThrownBy(() -> Flyway.configure().dataSource(dataSource).locations("filesystem:" + withV27Only)
+        Flyway.configure().dataSource(dataSource).locations("filesystem:" + withoutNewest).load().validate();
+        int expected = newest;
+        assertThatThrownBy(() -> Flyway.configure().dataSource(dataSource).locations("filesystem:" + withLaterOnly)
                 .load().validate())
                 .isInstanceOf(FlywayValidateException.class)
-                .hasMessageContaining("applied migration not resolved locally: 26");
+                .hasMessageContaining("applied migration not resolved locally: " + expected);
+    }
+
+    private static int version(String filename) {
+        return Integer.parseInt(filename.substring(1, filename.indexOf("__")));
+    }
+
+    // ------------------------------------------------- phase 2 contract (V27) ---
+
+    @Test
+    void v27AppliedWithEveryPhase2TableColumnAndIndex() {
+        assertThat(sql.queryForObject("SELECT success FROM flyway_schema_history WHERE version = '27'", Boolean.class)).isTrue();
+        List<String> tables = sql.queryForList("SELECT table_name FROM information_schema.tables WHERE table_schema = 'public' "
+                + "AND table_name LIKE 'panel_%'", String.class);
+        assertThat(tables).contains("panel_activity", "panel_licence_setting", "panel_licence_grant",
+                "panel_licence_template", "panel_licence_event", "panel_partner", "panel_partner_link",
+                "panel_partner_invite", "panel_app_release");
+        assertThat(columns("panel_session")).contains("active_until");
+        assertThat(columns("classroom_room")).contains("licensed_at", "licensed_by", "partner_id");
+        assertThat(columns("panel_device")).contains("approval_state", "installed_by_partner_id", "approved_by",
+                "approved_at", "app_channel");
+        List<String> indexes = sql.queryForList("SELECT indexname FROM pg_indexes WHERE schemaname = 'public'", String.class);
+        assertThat(indexes).contains("idx_panel_session_inst_created", "idx_panel_session_dev_created",
+                "uq_panel_activity_seq", "idx_panel_activity_inst_started", "idx_plg_institute", "idx_ple_inst_at",
+                "uq_panel_partner_inst", "uq_ppl_active", "uq_ppi_code", "uq_par_channel_code");
+        assertThat(sql.queryForObject("SELECT column_default FROM information_schema.columns WHERE table_schema = 'public' "
+                + "AND table_name = 'panel_device' AND column_name = 'approval_state'", String.class)).contains("APPROVED");
+        // Secrets stay varchar so JDBC parameters use the unique index.
+        assertThat(sql.queryForObject("SELECT data_type FROM information_schema.columns WHERE table_schema = 'public' "
+                + "AND table_name = 'panel_partner_invite' AND column_name = 'code_hash'", String.class))
+                .isEqualTo("character varying");
+    }
+
+    private List<String> columns(String table) {
+        return sql.queryForList("SELECT column_name FROM information_schema.columns WHERE table_schema = 'public' "
+                + "AND table_name = ?", String.class, table);
+    }
+
+    @Test
+    void phase1DevicesAreApprovedAndListedWithThePhase2Columns() {
+        Paired device = pairedDevice();
+        assertThat(sql.queryForObject("SELECT approval_state FROM panel_device WHERE id = ?", String.class, device.id()))
+                .isEqualTo("APPROVED");
+        sessions.sync(new SyncRequest(device.id(), device.secret(), null, null, 3, 67, false, null, null, null, "DIRECT"),
+                "5.5.5.5");
+        SyncResponse synced = sessions.sync(device.sync(null, null, false, null), "ip");
+        assertThat(synced.device().approvalState()).isEqualTo("APPROVED");
+        // Every switch is off: no licence, no update, no ack.
+        assertThat(synced.licence()).isNull();
+        assertThat(synced.update()).isNull();
+        assertThat(synced.activityAckedSeq()).isNull();
+        DeviceRowResponse row = admin.listDevices(as(user(institute, "ADMIN", "ACTIVE")), institute).get(0);
+        assertThat(row.approvalState()).isEqualTo("APPROVED");
+        assertThat(row.appChannel()).isEqualTo("DIRECT");
+        assertThat(row.installedBy()).isNull();
+        assertThat(row.licenceState()).isNull();
+        // An unknown channel is ignored, never stored.
+        sql.update("UPDATE panel_device SET last_seen_at = NULL WHERE id = ?", device.id());
+        sessions.sync(new SyncRequest(device.id(), device.secret(), null, null, 3, 67, false, null, null, null, "X"), "ip");
+        assertThat(sql.queryForObject("SELECT app_channel FROM panel_device WHERE id = ?", String.class, device.id()))
+                .isEqualTo("DIRECT");
+    }
+
+    @Test
+    void aPendingDeviceCannotStartASessionAndAnOldAppReadsPanelDisabled() {
+        Paired device = pairedDevice();
+        String teacher = teacher();
+        ChallengeResponse open = challenge(device);
+        sql.update("UPDATE panel_device SET approval_state = 'PENDING' WHERE id = ?", device.id());
+        // The approve re-checks: a QR that was up before the change cannot start a session.
+        assertThat(code(() -> approve(teacher, open))).isEqualTo("PANEL_DISABLED");
+        sql.update("UPDATE panel_device SET app_version_code = 2 WHERE id = ?", device.id());
+        assertThat(code(() -> challenge(device))).isEqualTo("PANEL_DISABLED");
+        sql.update("UPDATE panel_device SET app_version_code = 3 WHERE id = ?", device.id());
+        assertThat(code(() -> challenge(device))).isEqualTo("AWAITING_APPROVAL");
+        sql.update("UPDATE panel_device SET approval_state = 'APPROVED' WHERE id = ?", device.id());
+        signIn(device, teacher);
+    }
+
+    @Test
+    void endSessionWithActiveUntilTrimsTheIdleTailButNeverBeforeTheStart() {
+        Paired device = pairedDevice();
+        Signed signed = signIn(device, teacher());
+        String id = signed.approved().sessionId();
+        backdateSession(id, "created_at", "2 hours");
+        assertThat(repository.endSessionWithActiveUntil(id, "IDLE", null, 31 * 60)).isEqualTo(1);
+        assertThat(sql.queryForObject("SELECT ended_at - active_until BETWEEN interval '30 minutes 59 seconds' "
+                + "AND interval '31 minutes 1 second' FROM panel_session WHERE id = ?", Boolean.class, id)).isTrue();
+        Signed again = signIn(device, teacher());
+        String second = again.approved().sessionId();
+        assertThat(repository.endSessionWithActiveUntil(second, "IDLE", null, 31 * 60)).isEqualTo(1);
+        assertThat(sql.queryForObject("SELECT active_until = created_at FROM panel_session WHERE id = ?", Boolean.class,
+                second)).isTrue();
+        // With recording off (the default) the panel's IDLE end leaves active_until alone.
+        Signed third = signIn(device, teacher());
+        sessions.end(new SessionEndRequest(device.id(), device.secret(), third.redeemed().sessionToken(), "IDLE"));
+        assertThat(sessionColumn(third.approved().sessionId(), "active_until")).isNull();
+        assertThat(sessionColumn(third.approved().sessionId(), "end_reason")).isEqualTo("IDLE");
     }
 
     /** Token lookups must use their indexes with varchar parameters, as JDBC sends them. */
