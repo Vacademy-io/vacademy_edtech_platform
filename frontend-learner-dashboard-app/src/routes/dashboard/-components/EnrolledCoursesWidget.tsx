@@ -33,6 +33,8 @@ import { ContentTerms, SystemTerms } from "@/types/naming-settings";
 import LocalStorageUtils from "@/utils/localstorage";
 import { getStudentDisplaySettings } from "@/services/student-display-settings";
 import emptyLearning from "@/assets/cleaner-play/empty-learning.webp";
+import { useFunTheme } from "@/hooks/use-fun-theme";
+import { FunCourseTiles } from "./fun/FunCourseTiles";
 
 /**
  * How many courses get their own widget before the rest go behind "View all".
@@ -235,7 +237,12 @@ function useCourseThumbnails(courses: EnrolledCourse[]) {
  * other first-class widgets around them. The only wrapper is an unstyled
  * spacing div, which paints nothing.
  */
-export const EnrolledCoursesWidget: React.FC<{ className?: string }> = ({
+export const EnrolledCoursesWidget: React.FC<{ className?: string }> = (props) =>
+  // The Fun skin draws the courses as coloured tiles (FunCourseTiles); every other
+  // skin keeps this widget exactly as it was.
+  useFunTheme() ? <FunCourseTiles /> : <ClassicEnrolledCoursesWidget {...props} />;
+
+const ClassicEnrolledCoursesWidget: React.FC<{ className?: string }> = ({
   className,
 }) => {
   const { t } = useTranslation("dashboard");

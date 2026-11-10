@@ -1,1 +1,107 @@
-{}
+{
+  "header": {
+    "welcome": "स्वागत है, {{name}}",
+    "welcomePlain": "स्वागत है",
+    "profile": "प्रोफ़ाइल",
+    "streakUnit_one": "दिन से लगातार",
+    "streakUnit_other": "दिन से लगातार"
+  },
+  "hero": {
+    "continueLabel": "पढ़ाई जारी रखें",
+    "continue": "जारी रखें",
+    "count": "{{total}} में से {{done}} {{slides}} पूरे",
+    "percent": "{{percent}}%",
+    "percentOfCourse": "{{course}} का {{percent}}%",
+    "progressLabel": "{{course}} की प्रगति",
+    "startLabel": "अपना पहला {{course}} शुरू करें",
+    "startHere": "यहाँ से शुरू करें",
+    "start": "{{name}} शुरू करें",
+    "startPlain": "शुरू करें",
+    "coursesTitle": "जहाँ छोड़ा था, वहीं से शुरू करें",
+    "coursesBody": "आपके {{courses}} आपका इंतज़ार कर रहे हैं।",
+    "coursesCta": "{{courses}} पर जाएँ",
+    "nearlyThere": "बस थोड़ा और · {{percent}}%",
+    "loading": "लोड हो रहा है",
+    "errorTitle": "आपका होम लोड नहीं हो सका",
+    "errorBody": "अपना कनेक्शन जाँचें और फिर से कोशिश करें।",
+    "retry": "फिर से कोशिश करें",
+    "type": {
+      "VIDEO": "वीडियो",
+      "DOCUMENT": "पढ़ाई",
+      "PDF": "PDF",
+      "QUIZ": "क्विज़",
+      "ASSESSMENT": "टेस्ट",
+      "ASSIGNMENT": "असाइनमेंट",
+      "AUDIO": "ऑडियो",
+      "QUESTION": "प्रश्न",
+      "PRESENTATION": "स्लाइड"
+    }
+  },
+  "empty": {
+    "title": "अपना पहला {{course}} खोजें",
+    "body": "जब आप किसी {{course}} में शामिल होंगे, वह यहाँ अपने रंग में दिखेगा, शुरू करने के लिए तैयार।",
+    "browse": "{{courses}} देखें",
+    "waitTitle": "तब तक",
+    "tests": "अपने टेस्ट देखें",
+    "testsBody": "हो सकता है कोई टेस्ट आपका इंतज़ार कर रहा हो",
+    "profile": "अपनी प्रोफ़ाइल पूरी करें",
+    "profileBody": "अपनी फ़ोटो और जानकारी जोड़ें",
+    "ask": "किसी {{course}} का इंतज़ार है? {{institute}} से आपको जोड़ने के लिए कहें। वह यहाँ दिखेगा।",
+    "askPlain": "किसी {{course}} का इंतज़ार है? अपने संस्थान से आपको जोड़ने के लिए कहें। वह यहाँ दिखेगा।"
+  },
+  "done": {
+    "title": "आपने हर {{course}} पूरा कर लिया!",
+    "body": "{{total}} में से {{done}} {{courses}} पूरे। बहुत बढ़िया।",
+    "caughtUpTitle": "सब कुछ पूरा",
+    "caughtUpBody": "अभी कुछ भी अधूरा नहीं है। तैयार हों तो कुछ नया चुनें।",
+    "next": "आगे क्या",
+    "testsTitle_one": "{{count}} टेस्ट खुला है",
+    "testsTitle_other": "{{count}} टेस्ट खुले हैं",
+    "testsBody": "अभी याद ताज़ा है, एक टेस्ट दें",
+    "goTests": "टेस्ट पर जाएँ"
+  },
+  "live": {
+    "joinBy": "{{time}} तक जुड़ें",
+    "startedAt": "{{time}} पर शुरू हुई",
+    "join": "अभी जुड़ें",
+    "joinShort": "जुड़ें",
+    "startsIn_one": "{{count}} मिनट में शुरू",
+    "startsIn_other": "{{count}} मिनट में शुरू",
+    "dotLabel": ", एक क्लास अभी चल रही है"
+  },
+  "today": {
+    "label": "आज",
+    "tasks": "{{total}} में से {{done}}",
+    "tasksToday": "आज के काम",
+    "tasksLong": "{{total}} में से {{done}} काम",
+    "tasksLeft_one": "आज की योजना पूरी करने के लिए एक और",
+    "tasksLeft_other": "आज की योजना पूरी करने के लिए {{count}} और",
+    "tasksDone": "आज की योजना पूरी हुई",
+    "ringLabel": "आज {{total}} में से {{done}} काम पूरे",
+    "nextTask": "अगला काम",
+    "tests_one": "{{count}} टेस्ट",
+    "tests_other": "{{count}} टेस्ट",
+    "openNow": "अभी खुले हैं",
+    "testsLong_one": "{{count}} टेस्ट अभी खुला है",
+    "testsLong_other": "{{count}} टेस्ट अभी खुले हैं",
+    "testsEyebrow": "टेस्ट",
+    "testsSee": "टेस्ट में देखें",
+    "chipToday": "आज {{time}}",
+    "chipTomorrow": "कल {{time}}"
+  },
+  "tiles": {
+    "title": "आपके {{courses}}",
+    "otherTitle": "आपके दूसरे {{courses}}",
+    "lookBack": "दोहराएँ",
+    "seeAll": "सभी देखें",
+    "seeAllCount": "सभी {{count}} देखें",
+    "open": "{{course}} खोलें"
+  },
+  "fold": {
+    "more_one": "{{count}} और जारी है",
+    "more_other": "{{count}} और जारी हैं",
+    "inProgress_one": "{{count}} जारी है",
+    "inProgress_other": "{{count}} जारी हैं",
+    "seeAll": "सभी देखें"
+  }
+}

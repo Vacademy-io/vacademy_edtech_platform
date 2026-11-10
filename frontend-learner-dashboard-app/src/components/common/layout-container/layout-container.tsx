@@ -10,6 +10,7 @@ import { useChatbotContext } from "@/components/chatbot/useChatbotContext";
 import { usePlayTheme } from "@/hooks/use-play-theme";
 import { PlayBottomNav, PlayNavRail } from "./PlayBottomNav";
 import { useCleanerPlayTheme } from "@/hooks/use-cleaner-play-theme";
+import { useFunTheme } from "@/hooks/use-fun-theme";
 import { getStudentDisplaySettings } from "@/services/student-display-settings";
 import { useStudentLayout } from "@/hooks/use-student-layout";
 import { useRouterState } from "@tanstack/react-router";
@@ -81,6 +82,12 @@ export const LayoutContainer = ({
     // Institute layout (Settings → Student Display → Layout). Unconfigured =
     // today's behaviour: bottom bar on phones for the play skins only.
     const layout = useStudentLayout();
+    // Fun gets the play skins' default: the bottom bar on phones when the institute
+    // left navigation on "auto". Any placement it chose is kept as it is.
+    const isFunTheme = useFunTheme();
+    const funBottomBar =
+        isFunTheme && !layout.showBottomBar && layout.placement === "auto" && layout.device === "mobile";
+    const showBottomBar = layout.showBottomBar || funBottomBar;
     const pathname = useRouterState({ select: (s) => s.location.pathname });
     // A route-owned sidebar (course slides) is content navigation, never hidden.
     const hideAppSidebar = layout.hideSidebar && !sidebarComponent;
@@ -206,7 +213,7 @@ export const LayoutContainer = ({
                               : "mx-auto w-full max-w-screen-xl px-4 py-4 sm:px-6 lg:px-8 lg:py-6",
                         // Room for the bar (more for the floating bar and the
                         // raised center button, which both sit higher).
-                        layout.showBottomBar &&
+                        showBottomBar &&
                             (layout.bottomBar.style === "floating" ||
                             (layout.placement === "both" && layout.device !== "mobile")
                                 ? "pb-28"
@@ -245,7 +252,7 @@ export const LayoutContainer = ({
             )}
             {/* Bottom tab bar: play skins on phones by default, or wherever the
                 institute's layout puts it (skin-aware inside) */}
-            {layout.showBottomBar && (
+            {showBottomBar && (
                 <PlayBottomNav
                     showOnLargeScreens={layout.device !== "mobile"}
                     items={layout.bottomBar.items}

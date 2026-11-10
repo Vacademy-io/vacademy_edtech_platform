@@ -20,6 +20,8 @@ import { usePlayTheme } from "@/hooks/use-play-theme";
 import { useCleanerPlayTheme } from "@/hooks/use-cleaner-play-theme";
 import iconContinue from "@/assets/cleaner-play/icon-continue.webp";
 import emptyLearningIllustration from "@/assets/cleaner-play/empty-learning.webp";
+import { useFunTheme } from "@/hooks/use-fun-theme";
+import { FunContinueFold } from "./fun/FunContinueFold";
 
 // Skeleton mirroring the card layout to avoid layout shift while loading
 const ContinueLearningCardSkeleton = () => (
@@ -76,6 +78,12 @@ export const ContinueLearningCard = ({
     const slideTerm = getTerminology(ContentTerms.Slides, SystemTerms.Slides).toLocaleLowerCase();
     const coursesPluralTerm = getTerminologyPlural(ContentTerms.Course, SystemTerms.Course);
     const slidesPluralTerm = getTerminologyPlural(ContentTerms.Slides, SystemTerms.Slides);
+    const isFun = useFunTheme();
+
+    // Fun: the hero offers the first lesson; this folds the rest into one row.
+    if (isFun) {
+        return <FunContinueFold data={data} isLoading={isLoading} heroOffersResume={heroOffersResume} />;
+    }
 
     if (isLoading) {
         return <ContinueLearningCardSkeleton />;

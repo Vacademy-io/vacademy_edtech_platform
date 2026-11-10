@@ -9,6 +9,7 @@ import { getStudentDisplaySettings } from "@/services/student-display-settings";
 import type { SidebarItemsType } from "@/types/layout-container-types";
 import type { StudentSidebarTabConfig } from "@/types/student-display-settings";
 import { usePlayTheme } from "@/hooks/use-play-theme";
+import { useFunTheme } from "@/hooks/use-fun-theme";
 import { STUDENT_NAV_ICONS } from "@/constants/student-nav-icons";
 import {
   arrangeBottomBar,
@@ -253,6 +254,9 @@ export const PlayBottomNav: React.FC<PlayBottomNavProps> = ({
   // there) uses the brand primary, since the play-* tokens exist only under
   // .ui-play.
   const primaryTone = !isPlay;
+  // Fun restyles the bar from its own stylesheet (styles/fun/home.css): these
+  // classes are added only under that skin, so every other skin's bar is unchanged.
+  const isFun = useFunTheme();
   const currentRoute = router.state.location.pathname;
   // Every entry is a direct link here (no sub-item rows), so all compete.
   const navRoutes = items.filter((item) => !item.external).map((item) => item.to);
@@ -270,6 +274,7 @@ export const PlayBottomNav: React.FC<PlayBottomNavProps> = ({
     <nav
       className={cn(
         "fixed z-50",
+        isFun && !floating && "fun-nav",
         floating
           ? "inset-x-3 mx-auto max-w-md rounded-3xl border border-border bg-white/95 px-1 shadow-xl backdrop-blur-md"
           : "bottom-0 start-0 end-0 bg-white border-t border-border",
@@ -331,7 +336,11 @@ export const PlayBottomNav: React.FC<PlayBottomNavProps> = ({
             <NavEntry
               key={i}
               item={item}
-              className="group flex min-h-12 min-w-0 flex-1 flex-col items-center justify-center gap-0.5 py-1.5 transition-all duration-150"
+              className={cn(
+                "group flex min-h-12 min-w-0 flex-1 flex-col items-center justify-center gap-0.5 py-1.5 transition-all duration-150",
+                isFun && "fun-nav__item",
+                isFun && isActive && "fun-nav__item--active"
+              )}
             >
               <div
                 className={cn(

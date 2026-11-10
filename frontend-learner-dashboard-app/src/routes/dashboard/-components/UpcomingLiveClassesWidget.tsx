@@ -17,6 +17,7 @@ import { useCleanerPlayTheme } from "@/hooks/use-cleaner-play-theme";
 import iconLiveSessions from "@/assets/cleaner-play/icon-live-sessions.webp";
 import { getTerminologyPlural } from "@/components/common/layout-container/sidebar/utils";
 import { ContentTerms, SystemTerms } from "@/types/naming-settings";
+import { useFunTheme } from "@/hooks/use-fun-theme";
 
 interface UpcomingLiveClassesWidgetProps {
   liveSessions: SessionDetails[];
@@ -93,6 +94,10 @@ export function UpcomingLiveClassesWidget({
   const { t } = useTranslation("dashboard");
   const navigate = useNavigate();
   const isCleanerPlay = useCleanerPlayTheme();
+  // Fun: the next class is a Today card (and a live one sits above the hero), so
+  // this list would only repeat it.
+  const isFun = useFunTheme();
+  if (isFun) return null;
 
   if (isLoading) {
     return (

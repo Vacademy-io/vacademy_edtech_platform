@@ -81,6 +81,7 @@ import { Capacitor } from "@capacitor/core";
 import { Preferences } from "@capacitor/preferences";
 import type { Student } from "@/types/user/user-detail";
 import { X } from "@phosphor-icons/react";
+import { useFunTheme } from "@/hooks/use-fun-theme";
 
 // Local letter-based icon factory for tabs without predefined icons
 const createLetterIcon =
@@ -131,6 +132,8 @@ export const MySidebar = ({
   const { t: tEngagement } = useTranslation("dashboardEngagement");
   const navigate = useNavigate();
   const { state, isMobile, toggleSidebar } = useSidebar();
+  // Fun restyles the standard nav from styles/fun/home.css (a class added only there).
+  const isFunTheme = useFunTheme();
   const isAndroid = Capacitor.getPlatform() === 'android';
   const {
     sideBarState,
@@ -599,7 +602,7 @@ export const MySidebar = ({
           : undefined
       }
     >
-      <SidebarContent className={`sidebar-content flex flex-col bg-nav-surface dark:bg-neutral-900 py-1 transition-all  duration-200 ${isIOS ? 'mt-10' : ''} ease-in-out max-w-full w-full overflow-x-hidden`}>
+      <SidebarContent className={`sidebar-content flex flex-col bg-nav-surface dark:bg-neutral-900 py-1 transition-all  duration-200 ${isIOS ? 'mt-10' : ''} ease-in-out max-w-full w-full overflow-x-hidden${isFunTheme && !sidebarComponent ? " fun-sidebar" : ""}`}>
         {/* A custom sidebar that carries its own identity block (the slides
             viewer puts institute and course on one compact line) suppresses
             this one — two stacked headers, each with its own copy of the

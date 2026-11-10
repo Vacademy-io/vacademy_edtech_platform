@@ -101,6 +101,9 @@ import cleanerIconAssessments from "@/assets/cleaner-play/icon-assessments.webp"
 import cleanerIconLive from "@/assets/cleaner-play/icon-live-sessions.webp";
 import { usePlayTheme } from "@/hooks/use-play-theme";
 import { useCleanerPlayTheme } from "@/hooks/use-cleaner-play-theme";
+import { useFunTheme } from "@/hooks/use-fun-theme";
+import { FunHomeTop } from "./-components/fun/FunHomeTop";
+import { FunTodayCards, type FunTodayInput } from "./-components/fun/FunTodayCards";
 import { usePlayGamificationStore } from "@/stores/play-gamification-store";
 import {
   applyServerPoints,
@@ -287,6 +290,10 @@ export function DashboardComponent() {
   const { getUserTimezone } = useServerTime();
   const isPlayTheme = usePlayTheme();
   const isCleanerPlayTheme = useCleanerPlayTheme();
+  // The Fun skin draws its own home (FunHomeTop and the Fun branches of the widgets).
+  const isFunTheme = useFunTheme();
+  // Where the Fun greeting row is drawn (full width above the columns).
+  const [funHeaderSlot, setFunHeaderSlot] = useState<HTMLDivElement | null>(null);
   const { setData: setGamificationData } = usePlayGamificationStore();
   const { instituteId } = useInstituteFeatureStore();
   const queryClient = useQueryClient();
@@ -504,6 +511,14 @@ export function DashboardComponent() {
     });
   };
 
+  // Fun's error card: ask for the dashboard again, as the first load did.
+  const retryDashboard = () => {
+    setIsLoading(true);
+    fetchStaticData(setUsername, setTestAssignedCount, setHomeworkAssignedCount, setData)
+      .catch((error) => console.error("Error reloading dashboard:", error))
+      .finally(() => setIsLoading(false));
+  };
+
   useEffect(() => {
     // Student Display Settings: paint from cache, then correct from the server.
     //
@@ -617,7 +632,7 @@ export function DashboardComponent() {
     serverLoading: (isLoading && !data) || stillAskingOtherBatches,
     openServerSlide: handleResumeClick,
     track,
-    enabled: isPlayTheme || isCleanerPlayTheme || continueLearningOn || todayMounted,
+    enabled: isPlayTheme || isCleanerPlayTheme || isFunTheme || continueLearningOn || todayMounted,
   });
   // With Continue Learning off the hero has no band, so a finished day keeps
   // this smaller way back in. With it on, the band is the page's one offer.
@@ -1151,7 +1166,7 @@ export function DashboardComponent() {
           onResumeClick={handleResumeClick}
           isLoading={isLoading || stillAskingOtherBatches}
           hasAnyProgress={hasAnyProgress}
-          heroOffersResume={Boolean(isPlayTheme || isCleanerPlayTheme ? resumeTarget : bandTarget)}
+          heroOffersResume={Boolean(isPlayTheme || isCleanerPlayTheme || isFunTheme ? resumeTarget : bandTarget)}
         />
       ),
     },
@@ -1166,7 +1181,8 @@ export function DashboardComponent() {
       order: statCards.length
         ? Math.min(...statCards.map((w) => getWidgetOrder(w.id)))
         : Number.MAX_SAFE_INTEGER,
-      visible: statCards.length > 0,
+      // Fun: the open-tests count is a Today card and the courses are tiles.
+      visible: statCards.length > 0 && !isFunTheme,
       render: (
         <div
           className={cn(
@@ -1254,9 +1270,32 @@ export function DashboardComponent() {
     .filter((w) => w.visible && w.render)
     .sort((a, b) => a.order - b.order);
 
+  // The Fun skin's Today cards: which widgets they stand for, in their saved order.
+  const funToday: FunTodayInput = {
+    liveSessions: mergedLiveSessions,
+    showClass: isWidgetVisible("upcomingLiveClasses"),
+    showGoal: showGamification && showTodayTasks,
+    taskProgress: dailyTaskProgress,
+    nextTaskTitle: engagementFeed?.items?.[0]?.title ?? null,
+    showTests: isWidgetVisible("evaluationStat"),
+    testCount: testAssignedCount,
+    order: {
+      goal: getWidgetOrder("todayTasks"),
+      class: getWidgetOrder("upcomingLiveClasses"),
+      tests: getWidgetOrder("evaluationStat"),
+    },
+  };
+
   // RAIL column (lg:col-span-1): pins panel renders first (always on),
   // then the configurable rail widgets.
   const railWidgets = [
+    {
+      // Fun, lg and up: the Today cards lead the rail (under lg they follow the hero).
+      id: "funToday" as const,
+      order: Number.MIN_SAFE_INTEGER,
+      visible: isFunTheme && isLgScreen && !showForInstitutes([HOLISTIC_INSTITUTE_ID]),
+      render: <FunTodayCards {...funToday} variant="rail" />,
+    },
     {
       // lg and up: first in the rail (default order 0.5).
       id: "todayTasks" as const,
@@ -1322,7 +1361,7 @@ export function DashboardComponent() {
     // One task runner for the whole page, mounted ABOVE the Today module so a
     // resize that moves the module between slots never drops an open runner.
     <EngagementTaskHostProvider showGamification={showGamification}>
-    <div className="min-h-screen bg-background relative overflow-hidden w-full dashboard-container smooth-scroll">
+    <div className={`min-h-screen bg-background relative overflow-hidden w-full dashboard-container smooth-scroll${isFunTheme ? " fun-home" : ""}`}>
       <Helmet>
         <title>
           {typeof document !== "undefined" && document.title
@@ -1350,9 +1389,9 @@ export function DashboardComponent() {
         />
       )}
 
-      <div className="relative z-10 space-y-4 p-3 sm:p-4 lg:p-6 mx-auto w-full max-w-7xl animate-in fade-in duration-500">
-        {/* Header — default/vibrant only; the play / cleaner-play hero carries its own greeting */}
-        {!isPlayTheme && !isCleanerPlayTheme && (
+      <div className={`relative z-10 space-y-4 p-3 sm:p-4 lg:p-6 mx-auto w-full max-w-7xl animate-in fade-in duration-500${isFunTheme ? " fun-home__inner" : ""}`}>
+        {/* Header — default/vibrant only; the play / cleaner-play / fun hero carries its own greeting */}
+        {!isPlayTheme && !isCleanerPlayTheme && !(isFunTheme && !showForInstitutes([HOLISTIC_INSTITUTE_ID])) && (
           <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
             <div className="flex items-center space-x-3">
               {/* Corporate drops the letter-avatar: the account avatar already
@@ -1397,7 +1436,10 @@ export function DashboardComponent() {
         {!showForInstitutes([HOLISTIC_INSTITUTE_ID]) && (
           <>
             {/* Hero — owns the live-class banner and resume / first-run band */}
-            {isCleanerPlayTheme ? (
+            {isFunTheme ? (
+              // The Fun greeting row goes here, full width; its hero leads the main column.
+              <div ref={setFunHeaderSlot} className="fun-home__header-slot" />
+            ) : isCleanerPlayTheme ? (
               <CleanerPlayDashboardHero {...playHeroProps} />
             ) : isPlayTheme ? (
               <PlayDashboardHero {...playHeroProps} />
@@ -1420,7 +1462,7 @@ export function DashboardComponent() {
               />
             )}
 
-            <NotebookReviewLine />
+            {!isFunTheme && <NotebookReviewLine />}
 
             {/* Main 2/3 + 1/3 layout. The rail's third is only reserved when
                 the institute actually left rail widgets on — otherwise the
@@ -1447,6 +1489,29 @@ export function DashboardComponent() {
                   showRail && "lg:col-span-2"
                 )}
               >
+                {isFunTheme && (
+                  <>
+                    <FunHomeTop
+                      userName={username}
+                      liveSessions={mergedLiveSessions}
+                      hasAnyProgress={hasAnyProgress}
+                      studyLibraryLoaded={studyLibraryLoaded}
+                      onJoinSession={handleJoinSession}
+                      resume={resumeTarget}
+                      resumeResolving={resumeResolving}
+                      showGamification={showGamification}
+                      taskProgress={dailyTaskProgress}
+                      dashboardLoading={isLoading}
+                      dashboardAnswered={Boolean(data)}
+                      onRetry={retryDashboard}
+                      serverSlides={data?.slides}
+                      today={funToday}
+                      todayBelow={!isLgScreen}
+                      headerSlot={funHeaderSlot}
+                    />
+                    <NotebookReviewLine />
+                  </>
+                )}
                 {/* Without a rail, announcements lead the main column */}
                 {!hasRail && <DashboardPinsPanel maxPins={3} />}
                 {/* Knowledge-base study companions. Renders null when the learner
