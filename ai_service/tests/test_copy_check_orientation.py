@@ -204,3 +204,48 @@ def test_existing_rotate_flag_is_respected():
     out = fitz.open(stream=fixed, filetype="pdf")
     assert out[0].rotation == 0
     assert ori.detect_axis(_gray(ori.page_images(fixed)[0])) is False
+
+
+def test_borderline_sideways_page_stays_when_upright_reads_better(monkeypatch):
+    # 2026-11-10: an upright Hindi page measured 4.5x "sideways"; step 2 only
+    # offers 90 / 270, so a borderline page must also beat the page as uploaded.
+    page = _written_page()
+    monkeypatch.setattr(ori, "_scan_pages", lambda pdf_bytes, max_pages=ori.MAX_PAGES: [(page, True, 10.0)])
+    # direction: "A" then "B" -> 90; confirm: shown wins both orders ("A" then "B").
+    llm = _ScriptedLLM(["A", "B", "A", "B"])
+    assert asyncio.run(ori.plan_rotations(b"pdf", llm, "m")) == {}
+    assert llm.calls == 4
+
+
+def test_borderline_sideways_page_turns_when_turned_reads_better(monkeypatch):
+    page = ori.rotate_image(_written_page(), 90)
+    monkeypatch.setattr(ori, "_scan_pages", lambda pdf_bytes, max_pages=ori.MAX_PAGES: [(page, True, 10.0)])
+    # direction 270 ("B" then "A"); confirm: turned wins both orders ("B" then "A").
+    llm = _ScriptedLLM(["B", "A", "B", "A"])
+    assert asyncio.run(ori.plan_rotations(b"pdf", llm, "m")) == {0: 270}
+
+
+def test_borderline_page_does_not_follow_other_pages(monkeypatch):
+    sure = ori.rotate_image(_written_page(), 90)
+    unsure = _written_page(seed=5)
+    monkeypatch.setattr(ori, "_scan_pages", lambda pdf_bytes, max_pages=ori.MAX_PAGES: [
+        (sure, True, 500.0), (unsure, True, 9.0)])
+    sure_upright = ori._encode(ori.rotate_image(sure, 270))
+
+    class _ByPage:
+        """The sure page agrees on 270; the unsure page always answers "A",
+        so its two orders never agree and its direction stays undecided."""
+
+        async def chat_completion(self, messages, temperature, max_tokens, institute_id, model):
+            urls = [a["url"].split(",", 1)[1] for a in messages[0]["attachments"]]
+            if sure_upright in urls:
+                return {"content": '{"upright":"%s"}' % ("A" if urls[0] == sure_upright else "B")}
+            return {"content": '{"upright":"A"}'}
+
+    # Without the borderline rule the unsure page would follow page 1 to 270.
+    assert asyncio.run(ori.plan_rotations(b"pdf", _ByPage(), "m")) == {0: 270}
+
+
+def test_sideways_bar_is_eight_times():
+    assert ori.SIDEWAYS_MIN_RATIO == 8.0
+    assert ori.SURE_SIDEWAYS_RATIO > ori.SIDEWAYS_MIN_RATIO
