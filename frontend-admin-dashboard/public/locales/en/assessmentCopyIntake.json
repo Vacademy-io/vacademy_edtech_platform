@@ -40,6 +40,7 @@
         "actionFailed": "That did not work; try again"
     },
     "toasts": {
+        "languageConfirmed": "Checking the copy in {{language}}",
         "started_one": "{{count}} copy uploaded — reading the name and queuing the check",
         "started_other": "{{count}} copies uploaded — reading names and queuing the checks",
         "completed": "AI check finished: {{checked}} of {{total}} copies checked",
@@ -70,6 +71,8 @@
         "copies_other": "{{count}} copies"
     },
     "stats": {
+        "otherLanguage_one": "{{count}} copy is written in another language than the question paper. Check it in that language or skip it below.",
+        "otherLanguage_other": "{{count}} copies are written in another language than the question paper. Check them in that language or skip them below.",
         "total": "Copies",
         "checked": "Checked",
         "inProgress": "In progress",
@@ -83,6 +86,7 @@
         "FAILED": "Failed"
     },
     "itemStatus": {
+        "LANGUAGE_CONFIRM": "Needs your OK",
         "PENDING": "Waiting",
         "IDENTIFYING": "Reading name",
         "MATCHED": "Matched",
@@ -95,6 +99,7 @@
         "SKIPPED": "Skipped"
     },
     "table": {
+        "languageNote": "Written in {{language}}, but the question paper is in {{paper}}. Check it in {{language}}, or skip it.",
         "file": "File",
         "read": "Read from the sheet",
         "student": "Student",
@@ -107,6 +112,7 @@
         "noName": "No name found on the sheet"
     },
     "actions": {
+        "checkInLanguage": "Check in {{language}}",
         "pickStudent": "Pick student",
         "skip": "Skip",
         "retry": "Retry",

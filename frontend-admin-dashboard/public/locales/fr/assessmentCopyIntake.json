@@ -40,6 +40,7 @@
         "actionFailed": "Cela n'a pas fonctionné ; réessayez"
     },
     "toasts": {
+        "languageConfirmed": "Correction de la copie en {{language}}",
         "started_one": "{{count}} copie téléversée — lecture du nom et mise en file de la correction",
         "started_other": "{{count}} copies téléversées — lecture des noms et mise en file des corrections",
         "completed": "Correction IA terminée : {{checked}} copies sur {{total}} corrigées",
@@ -68,6 +69,8 @@
         "copies_other": "{{count}} copies"
     },
     "stats": {
+        "otherLanguage_one": "{{count}} copie est rédigée dans une autre langue que le sujet. Corrigez-la dans cette langue ou ignorez-la ci-dessous.",
+        "otherLanguage_other": "{{count}} copies sont rédigées dans une autre langue que le sujet. Corrigez-les dans cette langue ou ignorez-les ci-dessous.",
         "total": "Copies",
         "checked": "Corrigées",
         "inProgress": "En cours",
@@ -81,6 +84,7 @@
         "FAILED": "Échoué"
     },
     "itemStatus": {
+        "LANGUAGE_CONFIRM": "À confirmer",
         "PENDING": "En attente",
         "IDENTIFYING": "Lecture du nom",
         "MATCHED": "Associée",
@@ -93,6 +97,7 @@
         "SKIPPED": "Ignorée"
     },
     "table": {
+        "languageNote": "Rédigée en {{language}}, alors que le sujet est en {{paper}}. Corrigez-la en {{language}} ou ignorez-la.",
         "file": "Fichier",
         "read": "Lu sur la feuille",
         "student": "Élève",
@@ -105,6 +110,7 @@
         "noName": "Aucun nom trouvé sur la feuille"
     },
     "actions": {
+        "checkInLanguage": "Corriger en {{language}}",
         "pickStudent": "Choisir l'élève",
         "skip": "Ignorer",
         "retry": "Réessayer",

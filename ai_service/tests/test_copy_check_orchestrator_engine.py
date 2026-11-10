@@ -700,3 +700,51 @@ def test_api_copy_never_takes_the_structure_path(env, monkeypatch):
     env["grades"]["q5"] = {"marks_awarded": 0, "extracted_answer": "4 B. other", "answer_rows": ["p1_r4", "p1_r4"]}
     _run(_payload(questions=questions, billing_actor="apikey:key-1", page_count=1))
     assert env["graded"].count("q5") == 1
+
+
+def _detects(monkeypatch, detected):
+    from app.services.copy_check import answer_language
+
+    async def fake_samples(pdf_url, page_ids):
+        return {"p1": object()}
+
+    async def fake_detect(*args, **kwargs):
+        return detected
+
+    monkeypatch.setattr(answer_language, "sample_images", fake_samples)
+    monkeypatch.setattr(answer_language, "detect", fake_detect)
+
+
+def test_copy_in_another_language_than_the_paper_waits_for_the_teacher(env, monkeypatch):
+    from app.services.copy_check import answer_language
+    _detects(monkeypatch, answer_language.Detected("hi", 0.9, english_share=0.1))
+    _run(_payload(confirm_other_language=True))
+    failed = _posts(env, "failed")
+    assert failed and failed[0]["error_code"] == "language_needs_confirmation"
+    assert "[hi]" in failed[0]["error_message"]
+    assert env["graded"] == [] and _posts(env, "question") == [] and env["billed"] == []
+
+
+def test_confirmed_language_is_checked_without_asking_again(env, monkeypatch):
+    from app.services.copy_check import answer_language
+    _detects(monkeypatch, answer_language.Detected("hi", 0.9, english_share=0.1))
+    _run(_payload(exam_context={"answer_language": "hi"}, confirm_other_language=True))
+    assert _posts(env, "failed") == [] and _posts(env, "complete")
+
+
+def test_language_confirmation_switch_off_checks_as_before(env, monkeypatch):
+    from app.services.copy_check import answer_language
+    monkeypatch.setenv("COPY_CHECK_LANGUAGE_CONFIRM", "0")
+    _detects(monkeypatch, answer_language.Detected("hi", 0.9, english_share=0.1))
+    _run(_payload(confirm_other_language=True))
+    assert _posts(env, "failed") == [] and _posts(env, "complete")
+
+
+def test_callers_that_cannot_confirm_check_another_language_as_before(env, monkeypatch):
+    # Single-copy checks and partner API runs do not send confirm_other_language:
+    # a Hindi copy of an English paper is read in Hindi, as before this change.
+    from app.services.copy_check import answer_language
+    _detects(monkeypatch, answer_language.Detected("hi", 0.9, english_share=0.1))
+    _run(_payload())
+    _run(_payload(billing_actor="apikey:key-1", page_count=1, rate_snapshot=SNAPSHOT))
+    assert _posts(env, "failed") == [] and len(_posts(env, "complete")) == 2

@@ -71,6 +71,10 @@ public class CopyCheckOrchestratorService {
     @Autowired(required = false)
     private AdminCoreServiceClient adminCoreServiceClient;
 
+    /** Tells a Bulk AI check copy apart (confirm_other_language); null in unit tests. */
+    @Autowired(required = false)
+    private vacademy.io.assessment_service.features.assessment.copy_intake.repository.AiCopyIntakeItemRepository copyIntakeItemRepository;
+
     /**
      * How long a dispatch waits for the institute's template. The lookup shares
      * admin-core's 30 s client; a slow admin-core must cost a copy at most this,
@@ -305,12 +309,36 @@ public class CopyCheckOrchestratorService {
                 // The assessment's own template choice; dispatch resolves it (with the
                 // institute default) to OUTSIDE or nothing before sending.
                 .commentPlacement(typed ? null : CopyCommentPlacement.chosenOn(assessmentOf(process)))
-                .copyCheckSettings(CopyCheckConfig.on(assessmentOf(process)))
+                .copyCheckSettings(CopyCheckConfig.withAnswerLanguage(
+                        CopyCheckConfig.on(assessmentOf(process)), process.getAnswerLanguage()))
                 .build();
         if (gradeRequestEnricher != null) {
             gradeRequestEnricher.enrich(process, request);
         }
+        if (!typed && asksLanguageConfirmation(process)) {
+            request.setConfirmOtherLanguage(Boolean.TRUE);
+        }
         return request;
+    }
+
+    /**
+     * A Bulk AI check copy (its panel can show "Check in &lt;language&gt;") that has no
+     * confirmed language yet. Single-copy checks and partner API runs never ask; a
+     * failed lookup means no question, so the copy is checked as before.
+     */
+    boolean asksLanguageConfirmation(AiEvaluationProcess process) {
+        if (process == null || process.getId() == null || copyIntakeItemRepository == null
+                || process.getApiKeyId() != null
+                || (process.getAnswerLanguage() != null && !process.getAnswerLanguage().isBlank())) {
+            return false;
+        }
+        try {
+            return copyIntakeItemRepository.findFirstByProcessId(process.getId()).isPresent();
+        } catch (Exception e) {
+            log.info("[copy-check] intake lookup for process {} failed ({}); no language question",
+                    process.getId(), e.getClass().getSimpleName());
+            return false;
+        }
     }
 
     /**

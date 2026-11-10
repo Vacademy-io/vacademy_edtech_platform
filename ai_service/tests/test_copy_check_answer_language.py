@@ -169,3 +169,57 @@ def test_detect_never_raises_and_reads_as_before_on_failure():
     got = asyncio.run(al.detect(Boom(), "m", {"p1": img}, ["p1"]))
     assert got.code == "" and got.unsupported is None
     assert asyncio.run(al.detect(Boom(), "m", {}, ["p1"])).code == ""
+
+
+# ------------------------------------------------- copy vs paper language
+
+ENGLISH_PAPER = "Q1: Write an essay in about 500 words on any one of the following: Youth as the Architect of a New India."
+HINDI_PAPER = "Q1: निम्नलिखित में से किसी एक विषय पर लगभग 500 शब्दों में निबंध लिखिए: नया भारत (NEP 2020)"
+TRANSLATION_PAPER = ENGLISH_PAPER + "\n\nQ2: नीचे दिए गए अनुच्छेद का अंग्रेज़ी में अनुवाद कीजिए: भारत एक विशाल देश है।"
+
+
+def test_paper_scripts():
+    assert al.paper_scripts(ENGLISH_PAPER) == ["latin"]
+    assert al.paper_scripts(HINDI_PAPER) == ["devanagari"]      # "Q1", "NEP" do not count
+    assert set(al.paper_scripts(TRANSLATION_PAPER)) == {"latin", "devanagari"}
+    assert al.paper_scripts("") == [] and al.paper_scripts(None) == []
+
+
+def test_detection_keeps_the_english_share():
+    found = al.parse_detection('{"languages":[{"language":"English","share":0.9},{"language":"Hindi","share":0.1}]}')
+    assert found.code == "" and found.english_share == pytest.approx(0.9)
+    found = al.parse_detection('{"languages":[{"language":"Hindi","share":0.85},{"language":"English","share":0.15}]}')
+    assert found.code == "hi" and found.english_share == pytest.approx(0.15)
+
+
+def test_hindi_copy_of_an_english_paper_needs_confirmation():
+    found = al.mismatch(al.Detected("hi", 0.9, english_share=0.1), ENGLISH_PAPER)
+    assert found is not None and found.copy.code == "hi" and found.paper == "English"
+    message = al.mismatch_message(found)
+    assert "[hi]" in message and "Hindi" in message and "English" in message
+
+
+def test_any_other_language_needs_confirmation_too():
+    assert al.mismatch(al.Detected("", 0.0, english_share=0.95), HINDI_PAPER).copy.code == "en"
+    assert al.mismatch(al.Detected("ur", 0.8), HINDI_PAPER).copy.code == "ur"
+    assert al.mismatch(al.Detected("bn", 0.7), ENGLISH_PAPER).paper == "English"
+
+
+@pytest.mark.parametrize("detected, paper", [
+    (al.Detected("", 0.0, english_share=0.95), ENGLISH_PAPER),      # same language
+    (al.Detected("hi", 0.9), HINDI_PAPER),
+    (al.Detected("mr", 0.9), HINDI_PAPER),                         # same script: the paper decides
+    (al.Detected("hi", 0.6, english_share=0.4), TRANSLATION_PAPER),  # translation paper has both
+    (al.Detected("hi", 0.4, english_share=0.6), ENGLISH_PAPER),     # mixed copy: no clear language
+    (al.Detected("", 0.0), ENGLISH_PAPER),                          # detection failed / unknown
+    (al.Detected("hi", 0.9), ""),                                   # no paper text
+    (al.Detected("fr", 0.9), ENGLISH_PAPER),                        # Latin script: not told apart
+])
+def test_no_confirmation_when_it_is_not_clearly_another_language(detected, paper):
+    assert al.mismatch(detected, paper) is None
+
+
+def test_confirmation_can_be_switched_off(monkeypatch):
+    assert al.confirm_enabled()
+    monkeypatch.setenv("COPY_CHECK_LANGUAGE_CONFIRM", "0")
+    assert not al.confirm_enabled()

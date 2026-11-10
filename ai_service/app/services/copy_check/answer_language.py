@@ -156,6 +156,7 @@ class Detected:
     code: str            # the main language that is not English ("" = English / unknown)
     share: float
     unsupported: Language | None = None
+    english_share: float = 0.0   # share of the handwriting in English (0 when unknown)
 
 
 def detection_enabled() -> bool:
@@ -193,20 +194,21 @@ def parse_detection(content: str) -> Detected:
             share = 0.0
         if code:
             shares[code] = shares.get(code, 0.0) + max(0.0, min(1.0, share))
+    english = shares.get("en", 0.0)
     others = sorted(((s, c) for c, s in shares.items() if c != "en"), reverse=True)
     if not others or others[0][0] < DETECT_MIN_SHARE:
-        return Detected("", 0.0)
+        return Detected("", 0.0, english_share=english)
     share, code = others[0]
     lang = LANGUAGES[code]
     if not lang.supported:
         if share >= REFUSE_MIN_SHARE:
-            return Detected(code, share, unsupported=lang)
+            return Detected(code, share, unsupported=lang, english_share=english)
         # A little of an unreadable language: read the rest as before.
         supported = [(s, c) for s, c in others if LANGUAGES[c].supported and s >= DETECT_MIN_SHARE]
         if not supported:
-            return Detected("", 0.0)
+            return Detected("", 0.0, english_share=english)
         share, code = supported[0]
-    return Detected(code, share)
+    return Detected(code, share, english_share=english)
 
 
 async def sample_images(pdf_url: str, page_ids: list[str], dpi: int = 90) -> dict[str, Any]:
@@ -282,3 +284,95 @@ def with_detected(exam_context: Any, detected: Detected) -> Any:
     ctx = dict(exam_context) if isinstance(exam_context, dict) else {}
     ctx["answer_language"] = detected.code
     return ctx
+
+
+# ------------------------------------------------- copy vs paper language
+# 2026-11-10 (Evalezy): an English essay paper got a copy written in Hindi and
+# it was checked in Hindi without anyone being asked. A copy whose language
+# does not match the question paper now stops before it is read and waits for
+# the teacher to say "check it in <language>" (or skip it). The teacher's
+# answer comes back as exam_context.answer_language, and a declared language
+# skips detection, so the confirmed copy is never stopped twice.
+
+# The copy's main language must cover this share of the handwriting; a mixed
+# copy (a translation answered half in each language) is never stopped.
+MISMATCH_MIN_SHARE = 0.5
+# A script counts as the paper's when it is at least this share of its letters
+# (an English term inside a Hindi paper, or "Q1:" labels, do not count).
+PAPER_SCRIPT_MIN_SHARE = 0.1
+PAPER_SCRIPT_MIN_LETTERS = 8
+
+_SCRIPT_RANGES = (
+    ("devanagari", 0x0900, 0x097F), ("devanagari", 0xA8E0, 0xA8FF),
+    ("bengali", 0x0980, 0x09FF), ("gurmukhi", 0x0A00, 0x0A7F), ("gujarati", 0x0A80, 0x0AFF),
+    ("tamil", 0x0B80, 0x0BFF), ("telugu", 0x0C00, 0x0C7F),
+    ("arabic", 0x0600, 0x06FF), ("arabic", 0x0750, 0x077F), ("arabic", 0xFB50, 0xFDFF), ("arabic", 0xFE70, 0xFEFF),
+    ("han", 0x3400, 0x9FFF),
+)
+_SCRIPT_NAMES = {"latin": "English", "devanagari": "Hindi", "arabic": "Urdu", "bengali": "Bengali",
+                 "tamil": "Tamil", "telugu": "Telugu", "han": "Chinese", "gurmukhi": "Punjabi",
+                 "gujarati": "Gujarati"}
+
+
+def _script_of(ch: str) -> str:
+    cp = ord(ch)
+    for script, lo, hi in _SCRIPT_RANGES:
+        if lo <= cp <= hi:
+            return script
+    if ch.isascii() or 0x00C0 <= cp <= 0x024F:
+        return "latin"
+    return ""
+
+
+def paper_scripts(text: Any) -> list[str]:
+    """Scripts the question paper is printed in, most used first ([] = no text)."""
+    counts: dict[str, int] = {}
+    total = 0
+    for ch in str(text or ""):
+        if unicodedata.category(ch)[0] not in "LM":
+            continue
+        script = _script_of(ch)
+        if not script:
+            continue
+        counts[script] = counts.get(script, 0) + 1
+        total += 1
+    if not total:
+        return []
+    keep = [(n, sc) for sc, n in counts.items()
+            if n >= PAPER_SCRIPT_MIN_LETTERS and n >= PAPER_SCRIPT_MIN_SHARE * total]
+    return [sc for _n, sc in sorted(keep, reverse=True)]
+
+
+@dataclass(frozen=True)
+class Mismatch:
+    copy: Language          # what the copy is written in
+    paper: str              # the paper's language, for people ("English")
+
+
+def confirm_enabled() -> bool:
+    import os
+    return os.getenv("COPY_CHECK_LANGUAGE_CONFIRM", "1").strip().lower() not in ("0", "false", "no", "off")
+
+
+def mismatch(detected: Detected, paper_text: Any) -> Mismatch | None:
+    """The copy's language when it is clearly not the paper's, else None.
+    Nothing is decided without a paper text or a clear main language."""
+    scripts = paper_scripts(paper_text)
+    if not scripts:
+        return None
+    if detected.code and detected.share >= MISMATCH_MIN_SHARE:
+        copy = LANGUAGES.get(detected.code)
+    elif not detected.code and detected.english_share >= MISMATCH_MIN_SHARE:
+        copy = LANGUAGES["en"]
+    else:
+        return None
+    if copy is None or copy.script in scripts:
+        return None
+    return Mismatch(copy=copy, paper=_SCRIPT_NAMES.get(scripts[0], scripts[0]))
+
+
+def mismatch_message(found: Mismatch) -> str:
+    """The failure text; the dashboard reads the code in [brackets] to offer
+    "Check in <language>". Keep the shape."""
+    return (f"This copy is written in {found.copy.name} [{found.copy.code}] but the question paper is in "
+            f"{found.paper}. Confirm to check it in {found.copy.name}, or skip it.")

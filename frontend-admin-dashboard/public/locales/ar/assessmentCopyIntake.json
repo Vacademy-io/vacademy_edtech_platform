@@ -39,6 +39,7 @@
         "actionFailed": "لم ينجح ذلك؛ حاول مرة أخرى"
     },
     "toasts": {
+        "languageConfirmed": "جارٍ تصحيح الورقة بـ{{language}}",
         "started_one": "تم رفع ورقة واحدة — جارٍ قراءة الاسم ووضع التصحيح في الطابور",
         "started_other": "تم رفع {{count}} أوراق — جارٍ قراءة الأسماء ووضع التصحيحات في الطابور",
         "completed": "انتهى التصحيح: تم تصحيح {{checked}} من {{total}} ورقة",
@@ -67,6 +68,8 @@
         "copies_other": "{{count}} أوراق"
     },
     "stats": {
+        "otherLanguage_one": "{{count}} ورقة مكتوبة بلغة غير لغة ورقة الأسئلة. صحّحها بتلك اللغة أو تخطَّها أدناه.",
+        "otherLanguage_other": "{{count}} أوراق مكتوبة بلغة غير لغة ورقة الأسئلة. صحّحها بتلك اللغة أو تخطَّها أدناه.",
         "total": "الأوراق",
         "checked": "مصحَّحة",
         "inProgress": "قيد التنفيذ",
@@ -80,6 +83,7 @@
         "FAILED": "فشل"
     },
     "itemStatus": {
+        "LANGUAGE_CONFIRM": "بانتظار تأكيدك",
         "PENDING": "بانتظار",
         "IDENTIFYING": "قراءة الاسم",
         "MATCHED": "مطابَقة",
@@ -92,6 +96,7 @@
         "SKIPPED": "متخطاة"
     },
     "table": {
+        "languageNote": "الورقة مكتوبة بـ{{language}} بينما ورقة الأسئلة بـ{{paper}}. صحّحها بـ{{language}} أو تخطَّها.",
         "file": "الملف",
         "read": "المقروء من الورقة",
         "student": "الطالب",
@@ -104,6 +109,7 @@
         "noName": "لم يُعثر على اسم في الورقة"
     },
     "actions": {
+        "checkInLanguage": "صحّح بـ{{language}}",
         "pickStudent": "اختر الطالب",
         "skip": "تخطٍّ",
         "retry": "إعادة المحاولة",

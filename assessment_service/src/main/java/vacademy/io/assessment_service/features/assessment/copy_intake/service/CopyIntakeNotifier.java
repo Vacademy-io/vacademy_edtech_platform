@@ -6,7 +6,9 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 import vacademy.io.assessment_service.features.assessment.copy_intake.entity.AiCopyIntakeBatch;
+import vacademy.io.assessment_service.features.assessment.copy_intake.entity.AiCopyIntakeItem;
 import vacademy.io.assessment_service.features.assessment.copy_intake.repository.AiCopyIntakeBatchRepository;
+import vacademy.io.assessment_service.features.assessment.copy_intake.repository.AiCopyIntakeItemRepository;
 import vacademy.io.assessment_service.features.assessment.entity.Assessment;
 import vacademy.io.assessment_service.features.assessment.repository.AssessmentRepository;
 import vacademy.io.assessment_service.features.assessment.service.AssessmentWorkflowEventPublisher;
@@ -35,6 +37,10 @@ public class CopyIntakeNotifier {
     private final AssessmentWorkflowEventPublisher workflowEventPublisher;
     private final AssessmentRepository assessmentRepository;
     private final AiCopyIntakeBatchRepository batchRepository;
+    private final AiCopyIntakeItemRepository itemRepository;
+
+    /** ai_service's code for a copy written in another language than its paper (failure.py). */
+    public static final String LANGUAGE_CONFIRM_CODE = "language_needs_confirmation";
 
     @Value("${assessment.copy-intake.dashboard-base-url:https://dash.vacademy.io}")
     private String dashboardBaseUrl;
@@ -52,12 +58,20 @@ public class CopyIntakeNotifier {
         String name = assessment != null ? assessment.getName() : batch.getAssessmentId();
         boolean needsReview = AiCopyIntakeBatch.NEEDS_REVIEW.equals(batch.getStatus());
         int waiting = counts.waiting();
+        int otherLanguage = languageWaiting(batch.getId());
+        this.lastOtherLanguage = otherLanguage;
+        int failed = Math.max(0, counts.failed() - otherLanguage);
 
         String title = needsReview
                 ? "AI check finished - " + waiting + " " + (waiting == 1 ? "copy needs" : "copies need") + " your review"
-                : "AI check finished for " + name;
+                : otherLanguage > 0
+                        ? "AI check finished - " + otherLanguage + " " + (otherLanguage == 1 ? "copy needs" : "copies need")
+                                + " your confirmation"
+                        : "AI check finished for " + name;
         String summary = counts.completed() + " of " + batch.getTotalItems() + " copies checked"
-                + (counts.failed() > 0 ? ", " + counts.failed() + " failed" : "")
+                + (otherLanguage > 0 ? ", " + otherLanguage + " written in another language than the paper"
+                        + " (open the batch to check " + (otherLanguage == 1 ? "it" : "them") + " in that language or skip)" : "")
+                + (failed > 0 ? ", " + failed + " failed" : "")
                 + (counts.skipped() > 0 ? ", " + counts.skipped() + " skipped" : "")
                 + (waiting > 0 ? ", " + waiting + " waiting for a student to be chosen" : "")
                 + ".";
@@ -117,22 +131,44 @@ public class CopyIntakeNotifier {
         }
     }
 
+    /** Set by batchSettled for sendEmail, like lastCounts. */
+    private int lastOtherLanguage;
+
+    /** Copies that stopped because they are written in another language than the paper. */
+    private int languageWaiting(String batchId) {
+        try {
+            return (int) itemRepository.countByBatchIdAndStatusAndErrorMessageStartingWith(
+                    batchId, AiCopyIntakeItem.FAILED, LANGUAGE_CONFIRM_CODE);
+        } catch (Exception e) {
+            log.warn("[copy-intake] could not count other-language copies for batch {}: {}", batchId, e.getMessage());
+            return 0;
+        }
+    }
+
     private boolean sendEmail(AiCopyIntakeBatch batch, String assessmentName, String title, String summary, String link,
                               int waiting) {
         try {
             Map<String, Long> counts = StaffNoticeEmails.counts();
             counts.put(batch.isFromSubmissions() ? "Copies submitted" : "Copies uploaded", (long) batch.getTotalItems());
             counts.put("Checked by AI", (long) lastCounts.completed());
-            counts.put("Could not be checked", (long) lastCounts.failed());
+            int otherLanguage = lastOtherLanguage;
+            counts.put("Written in another language - waiting for you", (long) otherLanguage);
+            counts.put("Could not be checked", (long) Math.max(0, lastCounts.failed() - otherLanguage));
             counts.put("Skipped", (long) lastCounts.skipped());
             counts.put("Waiting for a student to be picked", (long) waiting);
+            String note = waiting > 0
+                    ? "Some copies could not be matched to a student automatically (no name on the sheet, or two students with that name). "
+                      + "Open the batch to pick the student for each; they will be checked right after."
+                    : null;
+            if (otherLanguage > 0) {
+                String lang = (otherLanguage == 1 ? "One copy is" : otherLanguage + " copies are")
+                        + " written in a different language from the question paper (for example Hindi on an English paper), "
+                        + "so they were not checked. Open the batch and press \"Check in <language>\" to check them in that "
+                        + "language, or skip them.";
+                note = note == null ? lang : note + " " + lang;
+            }
             String body = StaffNoticeEmails.aiCheckFinished(
-                    firstName(batch.getCreatedByName()), assessmentName, counts,
-                    waiting > 0
-                            ? "Some copies could not be matched to a student automatically (no name on the sheet, or two students with that name). "
-                              + "Open the batch to pick the student for each; they will be checked right after."
-                            : null,
-                    link);
+                    firstName(batch.getCreatedByName()), assessmentName, counts, note, link);
             NotificationToUserDTO to = NotificationToUserDTO.builder()
                     .userId(batch.getCreatedBy())
                     .channelId(batch.getCreatedByEmail())
