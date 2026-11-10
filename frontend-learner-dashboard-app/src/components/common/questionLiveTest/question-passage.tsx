@@ -8,6 +8,12 @@ interface QuestionPassageProps {
   /** `parent_rich_text.content` of the current question — the comprehension passage. */
   html?: string | null;
   className?: string;
+  /** Heading shown on the toggle (default: the "Passage" label). */
+  label?: string;
+  /** Passed to QuestionHtmlContent: false keeps "$3,200" as money, not LaTeX. */
+  dollarMath?: boolean;
+  /** Extra classes for the passage body (e.g. table styling); wide content then scrolls inside the passage. */
+  contentClassName?: string;
 }
 
 /**
@@ -19,7 +25,7 @@ interface QuestionPassageProps {
  * put the question back at the top of the screen, which matters most on a phone.
  * It opens by default on every new passage.
  */
-export function QuestionPassage({ html, className }: QuestionPassageProps) {
+export function QuestionPassage({ html, className, label, dollarMath, contentClassName }: QuestionPassageProps) {
   const { t } = useTranslation("questionTest");
   const [expanded, setExpanded] = useState(true);
 
@@ -43,7 +49,7 @@ export function QuestionPassage({ html, className }: QuestionPassageProps) {
         className="flex w-full items-center gap-2 px-4 py-3 text-start transition-colors hover:bg-neutral-100"
       >
         <span className="text-3xs font-bold uppercase tracking-wide text-neutral-500">
-          {t("questionPassage.label")}
+          {label ?? t("questionPassage.label")}
         </span>
         <span className="flex-1 text-caption text-neutral-400">
           {expanded ? "" : t("questionPassage.tapToRead")}
@@ -61,10 +67,16 @@ export function QuestionPassage({ html, className }: QuestionPassageProps) {
               tone was unreadable on the tinted surface. */}
           {/* Tailwind's reset strips <p> margins, which ran a multi-paragraph
               passage together into one wall of text. */}
-          <QuestionHtmlContent
-            html={html}
-            className="text-body leading-relaxed text-neutral-700 [&_img]:mx-auto [&_img]:h-auto [&_img]:max-w-full [&_p:last-child]:mb-0 [&_p]:mb-3"
-          />
+          <div className={cn(contentClassName && "overflow-x-auto")}>
+            <QuestionHtmlContent
+              html={html}
+              dollarMath={dollarMath}
+              className={cn(
+                "text-body leading-relaxed text-neutral-700 [&_img]:mx-auto [&_img]:h-auto [&_img]:max-w-full [&_p:last-child]:mb-0 [&_p]:mb-3",
+                contentClassName,
+              )}
+            />
+          </div>
         </div>
       )}
     </div>

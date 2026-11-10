@@ -92,6 +92,42 @@ class AnswerKeyStrippingTest {
         assertThat(out.get(2).path("video_slide").path("questions").get(0).path("id").asText()).isEqualTo("vq");
     }
 
+    /** A CBE question slide whose stored config predates the server-side secret split. */
+    private static final String CBE_SLIDE = """
+            [{"id":"c1","source_type":"QUESTION",
+              "question_slide":{"id":"cq","question_type":"CBE_RESPONSE","evaluation_secret_json":"{\\"gradingNotes\\":\\"KEYVALUE\\"}",
+                "explanation_text_data":{"id":"ce","type":"TEXT","content":"KEYVALUE"},
+                "auto_evaluation_json":"{\\"type\\":\\"CBE_RESPONSE\\",\\"data\\":{\\"version\\":1,\\"gradingNotes\\":\\"KEYVALUE\\",\\"parts\\":[{\\"id\\":\\"p1\\",\\"label\\":\\"(a)\\",\\"kind\\":\\"SPREADSHEET\\",\\"marks\\":4,\\"promptHtml\\":\\"<p>Prepare the SFP</p>\\",\\"template\\":{\\"sheet\\":{\\"sheets\\":[{\\"name\\":\\"Sheet1\\",\\"cells\\":{\\"A1\\":{\\"v\\":\\"Goodwill\\"}}}]}},\\"solution\\":{\\"html\\":\\"KEYVALUE\\"},\\"markingScheme\\":[{\\"id\\":\\"m1\\",\\"expected\\":\\"KEYVALUE\\"}],\\"solutionFileId\\":\\"KEYVALUE\\"}]}}"}}]
+            """;
+
+    @Test
+    @DisplayName("a CBE question slide keeps its learner-safe config (parts, prompts, templates), never its secret")
+    void cbeSlideKeepsItsRedactedConfig() throws Exception {
+        ObjectMapper lenient = new ObjectMapper()
+                .configure(com.fasterxml.jackson.databind.DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+        List<LearnerSlidesDetailDTO> dtos = lenient.readValue(CBE_SLIDE, new TypeReference<>() {
+        });
+        JsonNode out = stripper.strip(dtos);
+        assertThat(out.toString()).doesNotContain("KEYVALUE").doesNotContain("evaluation_secret_json");
+
+        JsonNode slide = out.get(0).path("question_slide");
+        assertThat(slide.path("auto_evaluation_json").isTextual()).isTrue();
+        JsonNode config = MAPPER.readTree(slide.path("auto_evaluation_json").asText());
+        JsonNode part = config.path("data").path("parts").get(0);
+        assertThat(part.path("promptHtml").asText()).isEqualTo("<p>Prepare the SFP</p>");
+        assertThat(part.path("template").path("sheet").path("sheets").get(0).path("cells").path("A1").path("v").asText())
+                .isEqualTo("Goodwill");
+        assertThat(part.has("solution")).isFalse();
+        assertThat(part.has("markingScheme")).isFalse();
+        assertThat(part.has("solutionFileId")).isFalse();
+        assertThat(config.path("data").has("gradingNotes")).isFalse();
+
+        // Through the learner switch (strip-answer-keys.learner=true) the same applies.
+        JsonNode viaMap = stripper.strip(List.of(Map.of("questionType", "MCQS",
+                "autoEvaluationJson", "{\"type\":\"CBE_RESPONSE\",\"data\":{\"parts\":[{\"id\":\"p\",\"solution\":\"KEYVALUE\"}]}}")));
+        assertThat(viaMap.toString()).doesNotContain("KEYVALUE").contains("CBE_RESPONSE");
+    }
+
     @Test
     void doesNotChangeTheObjectItWasGiven() throws Exception {
         List<LearnerSlidesDetailDTO> dtos = slideDtos();

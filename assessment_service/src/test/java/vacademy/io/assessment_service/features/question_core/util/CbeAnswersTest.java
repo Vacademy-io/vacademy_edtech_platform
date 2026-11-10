@@ -71,4 +71,43 @@ class CbeAnswersTest {
         assertThat(CbeAnswers.configSummary(CbeConfigRedactorTest.CBE))
                 .isEqualTo("(a) Spreadsheet (16 marks); (b) Document (4 marks)");
     }
+
+    /**
+     * Shared fixture with the learner app's types.test.ts: a template formula imported with no
+     * cached value, which the grid recomputes on load. Opening the question is not answering it.
+     */
+    private static final String FORMULA_TEMPLATE_CONFIG = "{\"type\":\"CBE_RESPONSE\",\"data\":{\"parts\":["
+            + "{\"id\":\"p1\",\"kind\":\"SPREADSHEET\",\"marks\":4,\"template\":{\"sheet\":{\"sheets\":[{\"name\":\"Sheet1\","
+            + "\"cells\":{\"A1\":{\"v\":\"Total\"},\"B5\":{\"f\":\"=SUM(B2:B4)\"}}}]}}}]}}";
+
+    @Test
+    void aRecomputedTemplateFormulaIsNotAnAnswer() throws Exception {
+        JsonNode config = CbeAnswers.configData(FORMULA_TEMPLATE_CONFIG);
+        JsonNode opened = json("{\"parts\":{\"p1\":{\"kind\":\"SPREADSHEET\",\"sheet\":{\"sheets\":[{\"name\":\"Sheet1\","
+                + "\"cells\":{\"A1\":{\"v\":\"Total\"},\"B5\":{\"f\":\"=sum(B2:B4) \",\"v\":0}}}]}}}}");
+        assertThat(CbeAnswers.isAnswered(opened, config)).isFalse();
+        assertThat(CbeAnswers.summary(opened, config)).isEqualTo("Part 1 Spreadsheet — 0 cells filled");
+
+        // Typing an input changes the template formula's value; only the input counts.
+        JsonNode typed = json("{\"parts\":{\"p1\":{\"kind\":\"SPREADSHEET\",\"sheet\":{\"sheets\":[{\"name\":\"Sheet1\","
+                + "\"cells\":{\"A1\":{\"v\":\"Total\"},\"B2\":{\"v\":7},\"B5\":{\"f\":\"=SUM(B2:B4)\",\"v\":7}}}]}}}}");
+        assertThat(CbeAnswers.isAnswered(typed, config)).isTrue();
+        assertThat(CbeAnswers.summary(typed, config)).isEqualTo("Part 1 Spreadsheet — 1 cell filled");
+
+        // Tabs match by name only (as in the learner app): a renamed tab has no template.
+        JsonNode renamed = json("{\"parts\":{\"p1\":{\"kind\":\"SPREADSHEET\",\"sheet\":{\"sheets\":[{\"name\":\"Answer\","
+                + "\"cells\":{\"A1\":{\"v\":\"Total\"}}}]}}}}");
+        assertThat(CbeAnswers.isAnswered(renamed, config)).isTrue();
+    }
+
+    @Test
+    void htmlToTextReadsRealTipTapTablesAndLists() {
+        String tiptap = "<p>Trial balance</p><table style=\"min-width: 50px\"><colgroup><col><col></colgroup><tbody>"
+                + "<tr><th colspan=\"1\" rowspan=\"1\"><p>Account</p></th><th colspan=\"1\" rowspan=\"1\"><p>$000</p></th></tr>"
+                + "<tr><td colspan=\"1\" rowspan=\"1\"><p>Cash</p></td><td colspan=\"1\" rowspan=\"1\"><p>1,200</p><p>(restated)</p></td></tr>"
+                + "</tbody></table><ul><li><p>First point</p></li><li><p>Second</p><ul><li><p>nested</p></li></ul></li></ul>"
+                + "<ol><li><p>Step one</p></li></ol>";
+        assertThat(CbeAnswers.htmlToText(tiptap)).isEqualTo(
+                "Trial balance\nAccount | $000\nCash | 1,200 (restated)\n- First point\n- Second\n- nested\n- Step one");
+    }
 }

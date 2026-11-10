@@ -7,6 +7,7 @@ import { Question } from '../types/question';
 import { Resizable } from 're-resizable';
 import { RefreshCw } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { parseCbeConfig, type CbePart } from '@/components/cbe/types';
 
 // Add answerSpacing parameter to your props
 interface QuestionComponentProps {
@@ -53,6 +54,11 @@ const parseTextAnswer = (question: Question): string => {
     return '';
 };
 
+/** "(a) Spreadsheet — 16 marks" (printable; no i18n, like the rest of this paper). */
+const cbePartHeading = (part: CbePart) =>
+    `${part.label ? `${part.label} ` : ''}${part.kind === 'SPREADSHEET' ? 'Spreadsheet' : 'Document'}` +
+    ` — ${part.marks} ${part.marks === 1 ? 'mark' : 'marks'}`;
+
 interface CodingTestCase {
     id?: string;
     stdin?: string;
@@ -91,6 +97,13 @@ export function QuestionComponent({
     const codingTestCases = (coding?.testCases ?? []).filter(
         (testCase) => showAnswers || testCase.visible
     );
+    // Spreadsheet & Written Response: scenario + requirements + where to answer;
+    // the config itself is never printed (a model answer only in answer keys).
+    const cbe =
+        question.question_type === 'CBE_RESPONSE'
+            ? (parseCbeConfig(question.evaluation_json)?.data ?? { version: 1, parts: [] })
+            : null;
+    const cbeScenario = cbe ? question.parent_rich_text?.content?.trim() : '';
     const [base64Images, setBase64Images] = useState<{ [key: string]: string }>({});
     const [selectedImage, setSelectedImage] = useState<string | null>(null);
     const [aspectRatios, setAspectRatios] = useState<{ [key: string]: number }>({});
@@ -329,6 +342,12 @@ export function QuestionComponent({
 
     return (
         <div className={`space-y-4 ${getFontSizeClass()}`} onClick={() => setSelectedImage(null)}>
+            {cbeScenario && (
+                <div className="space-y-1 rounded-sm border border-neutral-300 p-3">
+                    <p className="text-xs font-semibold uppercase text-neutral-600">Scenario</p>
+                    <div dangerouslySetInnerHTML={{ __html: cbeScenario }} />
+                </div>
+            )}
             <div className="flex items-start justify-between gap-4">
                 <div className="text-slate-800">
                     <p className="flex gap-x-1 font-bold">
@@ -462,6 +481,72 @@ export function QuestionComponent({
                     );
                 })}
             </div>
+
+            {cbe && (
+                <div className="space-y-3 pl-4">
+                    {cbe.parts.length === 0 ? (
+                        <p className="text-xs italic text-neutral-600">
+                            Answer in the spreadsheet / document response area.
+                        </p>
+                    ) : (
+                        cbe.parts.map((part) => (
+                            <div key={part.id} className="space-y-1">
+                                <p className="font-semibold">{cbePartHeading(part)}</p>
+                                {part.promptHtml?.trim() && (
+                                    <div dangerouslySetInnerHTML={{ __html: part.promptHtml }} />
+                                )}
+                                <p className="text-xs italic text-neutral-600">
+                                    {part.kind === 'SPREADSHEET'
+                                        ? 'Answer in the spreadsheet response area.'
+                                        : 'Answer in the document response area.'}
+                                </p>
+                                {showAnswers && (part.markingScheme?.length ?? 0) > 0 && (
+                                    <table className="w-full border-collapse text-xs">
+                                        <thead>
+                                            <tr className="bg-neutral-100 text-left">
+                                                <th className="border border-neutral-300 px-2 py-1">
+                                                    Marking scheme
+                                                </th>
+                                                <th className="w-14 border border-neutral-300 px-2 py-1 text-right">
+                                                    Marks
+                                                </th>
+                                                <th className="border border-neutral-300 px-2 py-1">
+                                                    Expected
+                                                </th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {(part.markingScheme ?? []).map((line) => (
+                                                <tr key={line.id} className="align-top">
+                                                    <td className="border border-neutral-300 px-2 py-1">
+                                                        {line.label}
+                                                        {line.guidance && (
+                                                            <span className="block text-neutral-500">
+                                                                {line.guidance}
+                                                            </span>
+                                                        )}
+                                                    </td>
+                                                    <td className="border border-neutral-300 px-2 py-1 text-right">
+                                                        {line.marks}
+                                                    </td>
+                                                    <td className="border border-neutral-300 px-2 py-1">
+                                                        {line.expected ?? '—'}
+                                                        {line.cellRef && (
+                                                            <span className="block text-neutral-500">
+                                                                {line.cellRef}
+                                                            </span>
+                                                        )}
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                )}
+                            </div>
+                        ))
+                    )}
+                </div>
+            )}
 
             {coding && (
                 <div className="space-y-2 pl-4">

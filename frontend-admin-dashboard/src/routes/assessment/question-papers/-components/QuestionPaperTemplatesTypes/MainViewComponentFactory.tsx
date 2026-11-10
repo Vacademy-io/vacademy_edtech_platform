@@ -11,6 +11,7 @@ import { OneWordQuestionPaperTemplateMainView } from './OneWordType/OneWordQuest
 import { LongAnswerQuestionPaperTemplateMainView } from './LongAnswerType/LongAnswerQuestionPaperTemplateMainView';
 import { TrueFalseQuestionPaperTemplateMainView } from './TrueFalse/TrueFalseQuestionPaperTemplateMainView';
 import { CodingQuestionPaperTemplateMainView } from './Coding/CodingQuestionPaperTemplateMainView';
+import { CbeResponseQuestionPaperTemplateMainView } from './CbeResponse/CbeResponseQuestionPaperTemplateMainView';
 
 type MainViewComponentType = QuestionType;
 
@@ -27,6 +28,7 @@ const MainViewComponentsMap: Record<MainViewComponentType, MainViewComponent> = 
     LONG_ANSWER: LongAnswerQuestionPaperTemplateMainView,
     TRUE_FALSE: TrueFalseQuestionPaperTemplateMainView,
     CODING: CodingQuestionPaperTemplateMainView,
+    CBE_RESPONSE: CbeResponseQuestionPaperTemplateMainView,
 };
 
 export const MainViewComponentFactory = (params: {

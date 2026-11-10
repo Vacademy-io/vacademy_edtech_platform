@@ -40,5 +40,10 @@
     },
     "errors": {
         "saveFailed": "Failed to save questions."
+    },
+    "cbeAiNotice": {
+        "title_one": "{{count}} spreadsheet & written question is marked by AI",
+        "title_other": "{{count}} spreadsheet & written questions are marked by AI",
+        "body": "Spreadsheet & written answers are marked by AI. Turn on 'Evaluate submissions with AI' in Basic Info, or run 'Evaluate with AI' on each submission."
     }
 }

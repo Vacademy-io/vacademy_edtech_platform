@@ -98,6 +98,7 @@
         "@excalidraw/random-username": "^1.2.0",
         "@ffmpeg/ffmpeg": "^0.12.15",
         "@ffmpeg/util": "^0.12.2",
+        "@fortune-sheet/react": "1.0.4",
         "@headlessui/react": "^2.2.4",
         "@hookform/resolvers": "^3.9.1",
         "@isoterik/react-word-cloud": "^1.2.0",

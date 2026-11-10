@@ -38,7 +38,8 @@
         "NUMERIC": "संख्यात्मक",
         "ONE_WORD": "एक शब्द",
         "LONG_ANSWER": "दीर्घ उत्तर",
-        "CODING": "कोडिंग"
+        "CODING": "कोडिंग",
+        "CBE_RESPONSE": "स्प्रेडशीट और लिखित"
     },
     "source": {
         "MANUAL": "हाथ से लिखा",

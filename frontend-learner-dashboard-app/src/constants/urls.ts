@@ -152,6 +152,9 @@ export const GET_ASSIGNMENT_ACTIVITY_LOGS = `${BASE_URL}/admin-core-service/lear
 export const SUBMIT_QUESTION_SLIDE_ANSWERS = `${BASE_URL}/admin-core-service/learner-tracking/activity-log/question-slide/add-or-update-question-slide-activity-log`;
 export const PRESENCE_HEARTBEAT = `${BASE_URL}/admin-core-service/learner-tracking/activity-log/v1/presence-heartbeat`;
 export const GET_QUESTION_SLIDE_ACTIVITY_LOGS = `${BASE_URL}/admin-core-service/learner-tracking/activity-log/question-slide/question-slide-activity-logs`;
+// Spreadsheet & Written Response (CBE_RESPONSE) question slide: instant AI check (docs/CBE_RESPONSE_QUESTION.md §5.2).
+export const CBE_QUESTION_SLIDE_SUBMIT = `${BASE_URL}/admin-core-service/learner-tracking/activity-log/question-slide/cbe/submit`;
+export const CBE_QUESTION_SLIDE_MY_ATTEMPTS = `${BASE_URL}/admin-core-service/learner-tracking/activity-log/question-slide/cbe/my-attempts`;
 export const INIT_STUDY_LIBRARY = `${BASE_URL}/admin-core-service/v1/learner-study-library/init-details`;
 export const MODULES_WITH_CHAPTERS = `${BASE_URL}/admin-core-service/open/v1/learner-study-library/modules-with-chapters`;
 export const MODULES_WITH_CHAPTERS_PRIVATE = `${BASE_URL}/admin-core-service/v1/learner-study-library/modules-with-chapters`;

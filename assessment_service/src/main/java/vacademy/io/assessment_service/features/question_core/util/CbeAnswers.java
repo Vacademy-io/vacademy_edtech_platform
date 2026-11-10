@@ -8,6 +8,8 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * Read-only helpers for a CBE_RESPONSE learner answer (docs/CBE_RESPONSE_QUESTION.md §4):
@@ -94,9 +96,9 @@ public final class CbeAnswers {
                     return true;
                 }
                 if (part.has("html")) {
-                    String text = htmlToText(part.path("html").asText(""));
-                    String templateText = htmlToText(template.path("html").asText(""));
-                    if (!text.isBlank() && !text.equals(templateText)) return true;
+                    String text = flatText(part.path("html").asText(""));
+                    String templateText = flatText(template.path("html").asText(""));
+                    if (!text.isEmpty() && !text.equals(templateText)) return true;
                 }
             }
             return false;
@@ -118,7 +120,7 @@ public final class CbeAnswers {
                 JsonNode tab = tabs.get(i);
                 JsonNode cells = tab.path("cells");
                 if (!cells.isObject()) continue;
-                JsonNode templateCells = templateCellsFor(templateSheet, tab.path("name").asText(null), i);
+                JsonNode templateCells = templateCellsFor(templateSheet, tab.path("name").asText(null));
                 Iterator<Map.Entry<String, JsonNode>> it = cells.fields();
                 while (it.hasNext()) {
                     Map.Entry<String, JsonNode> cell = it.next();
@@ -134,15 +136,17 @@ public final class CbeAnswers {
         return count;
     }
 
-    private static JsonNode templateCellsFor(JsonNode templateSheet, String tabName, int index) {
+    private static JsonNode templateCellsFor(JsonNode templateSheet, String tabName) {
         if (templateSheet == null || !templateSheet.path("sheets").isArray()) return null;
         JsonNode tabs = templateSheet.path("sheets");
+        // Matched by tab name only, like the learner app (no index fallback): a renamed or
+        // new tab has no template, so all of its content counts.
         if (tabName != null) {
             for (JsonNode tab : tabs) {
                 if (tabName.equals(tab.path("name").asText(null))) return tab.path("cells");
             }
         }
-        return index < tabs.size() ? tabs.get(index).path("cells") : null;
+        return null;
     }
 
     private static boolean cellHasContent(JsonNode cell) {
@@ -154,9 +158,22 @@ public final class CbeAnswers {
         return !(v.isTextual() && v.asText().isBlank());
     }
 
-    private static boolean sameContent(JsonNode a, JsonNode b) {
-        return a.path("v").asText("").equals(b.path("v").asText(""))
-                && a.path("f").asText("").equals(b.path("f").asText(""));
+    /**
+     * Same rule as the learner app's {@code sameCellContent} (components/cbe/types.ts): when
+     * either cell has a formula, compare the trimmed formulas case-insensitively and ignore
+     * {@code v} (the grid recomputes a template formula's value on load, so a changed value
+     * alone is not the learner's work); otherwise compare the trimmed value text.
+     */
+    static boolean sameContent(JsonNode a, JsonNode b) {
+        String fa = textOf(a.path("f"));
+        String fb = textOf(b.path("f"));
+        if (!fa.isEmpty() || !fb.isEmpty()) return fa.equalsIgnoreCase(fb);
+        return textOf(a.path("v")).equals(textOf(b.path("v")));
+    }
+
+    private static String textOf(JsonNode node) {
+        if (node == null || node.isMissingNode() || node.isNull()) return "";
+        return node.asText("").trim();
     }
 
     private static JsonNode templateFor(JsonNode configData, String partId) {
@@ -222,7 +239,7 @@ public final class CbeAnswers {
                 } else {
                     String text = htmlToText(part.path("html").asText(""));
                     String flat = text.replaceAll("\\s+", " ").trim();
-                    if (flat.isEmpty() || text.equals(htmlToText(template.path("html").asText("")))) {
+                    if (flat.isEmpty() || flat.equals(flatText(template.path("html").asText("")))) {
                         lines.add(label + " Document — not answered");
                     } else {
                         if (flat.length() > DOCUMENT_EXCERPT_CHARS) {
@@ -266,6 +283,11 @@ public final class CbeAnswers {
         }
     }
 
+    /** Document text with all whitespace collapsed (the learner app's htmlToPlainText rule). */
+    private static String flatText(String html) {
+        return htmlToText(html).replaceAll("\\s+", " ").trim();
+    }
+
     /**
      * HTML → plain text that keeps the structure a reader (or the AI) needs: paragraphs,
      * line breaks and list items on their own lines (no blank lines), table cells separated by " | ".
@@ -274,6 +296,7 @@ public final class CbeAnswers {
         if (html == null || html.isBlank()) return "";
         String s = html;
         s = s.replaceAll("(?is)<(script|style)[^>]*>.*?</\\1>", "");
+        s = unwrapCellAndListParagraphs(s);
         s = s.replaceAll("(?i)<br\\s*/?>", "\n");
         s = s.replaceAll("(?i)<li[^>]*>", "\n- ");
         s = s.replaceAll("(?i)</t[dh]>", " | ");
@@ -289,5 +312,30 @@ public final class CbeAnswers {
             out.append(trimmed).append('\n');
         }
         return out.toString().replaceAll("\n{2,}", "\n").trim();
+    }
+
+    private static final Pattern TABLE_CELL =
+            Pattern.compile("(?is)(<t[dh](?:\\s[^>]*)?>)(.*?)(</t[dh]>)");
+
+    /**
+     * TipTap (the admin RichTextEditor and the CBE DocumentEditor) always writes
+     * {@code <td><p>x</p></td>} and {@code <li><p>x</p></li>}. Left alone, the block rules
+     * below put every cell and every list marker on its own line, so a table row would no
+     * longer read "a | b". Paragraphs (and line breaks) inside a cell become spaces; the
+     * first paragraph of a list item joins its marker.
+     */
+    private static String unwrapCellAndListParagraphs(String html) {
+        Matcher m = TABLE_CELL.matcher(html);
+        StringBuilder sb = new StringBuilder();
+        while (m.find()) {
+            String inner = m.group(2)
+                    .replaceAll("(?i)</?p(?:\\s[^>]*)?>", " ")
+                    .replaceAll("(?i)<br\\s*/?>", " ");
+            m.appendReplacement(sb, Matcher.quoteReplacement(m.group(1) + inner + m.group(3)));
+        }
+        m.appendTail(sb);
+        return sb.toString()
+                .replaceAll("(?i)(<li(?:\\s[^>]*)?>)\\s*<p(?:\\s[^>]*)?>", "$1")
+                .replaceAll("(?i)</p>\\s*(</li>)", "$1");
     }
 }

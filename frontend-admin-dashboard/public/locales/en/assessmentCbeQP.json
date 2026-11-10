@@ -1,0 +1,139 @@
+{
+    "emptyState": "No questions yet.",
+    "questionNumber": "Question {{number}}",
+    "documentEditorName": "document editor",
+    "survey": {
+        "notSupported": "Spreadsheet & written response questions can't be used in surveys."
+    },
+    "scenario": {
+        "title": "Scenario (shown on the left)",
+        "hint": "The case study learners read beside their answer. Optional — without it the answer area takes the full width.",
+        "placeholder": "Paste or write the scenario…"
+    },
+    "requirements": {
+        "title": "Requirements",
+        "titleNumbered": "Requirements · {{title}}",
+        "hint": "What the learner must do. Shown above the answer parts.",
+        "placeholder": "e.g. Prepare the consolidated statement of financial position as at 31 March…"
+    },
+    "parts": {
+        "title": "Answer parts",
+        "hint": "Each part is a spreadsheet or a written document. The question is worth the sum of the part marks.",
+        "total_one": "Total: {{count}} mark",
+        "total_other": "Total: {{count}} marks",
+        "addSpreadsheet": "Add spreadsheet part",
+        "addDocument": "Add document part",
+        "empty": "No answer parts yet. Add a spreadsheet or document part."
+    },
+    "part": {
+        "kind": {
+            "SPREADSHEET": "Spreadsheet",
+            "DOCUMENT": "Document"
+        },
+        "summary_one": "{{label}} {{kind}} · {{count}} mark",
+        "summary_other": "{{label}} {{kind}} · {{count}} marks",
+        "schemeBadge_one": "{{count}} scheme line",
+        "schemeBadge_other": "{{count}} scheme lines",
+        "label": "Label",
+        "marks": "Marks",
+        "marksRequired": "Give this part more than 0 marks.",
+        "prompt": "Requirement for this part",
+        "promptHint": "Optional. Shown above this part's answer area.",
+        "promptPlaceholder": "e.g. (a) Prepare the consolidated statement of financial position…",
+        "moveUp": "Move part up",
+        "moveDown": "Move part down",
+        "delete": "Delete part",
+        "deleteTitle": "Delete part {{label}}?",
+        "deleteBody": "Its starting template, solution and marking scheme are removed too.",
+        "deleteCancel": "Cancel",
+        "deleteConfirm": "Delete part",
+        "tabs": {
+            "template": "Starting template",
+            "solution": "Solution",
+            "scheme_one": "Marking scheme ({{count}})",
+            "scheme_other": "Marking scheme ({{count}})"
+        }
+    },
+    "template": {
+        "sheetHint": "What learners see when they start: headings, labels, given figures. Build it in the grid or import an Excel file.",
+        "docHint": "Optional text learners start from (headings, a table to fill in).",
+        "import": "Import .xlsx",
+        "clear": "Clear template",
+        "gridLabel": "Starting template for part {{label}}",
+        "docLabel": "Starting text for part {{label}}",
+        "docPlaceholder": "Headings or a table learners start from…"
+    },
+    "solution": {
+        "sheetHint": "The model answer the AI marks against. Import the solution workbook (every tab is kept) or build it in the grid. A \"Marks\" column fills the marking scheme.",
+        "docHint": "The model answer the AI marks against: the points a full-mark answer makes.",
+        "import": "Import solution .xlsx",
+        "uploading": "Saving the original file…",
+        "fileAttached": "Original workbook attached",
+        "gridLabel": "Solution for part {{label}}",
+        "docLabel": "Solution for part {{label}}",
+        "docPlaceholder": "The points a full-mark answer makes…"
+    },
+    "scheme": {
+        "hint": "One line per mark-earning item. The AI marks each line and gives own-figure credit.",
+        "extract": "Re-read from solution",
+        "extractNone": "The solution has no \"Marks\" column to read lines from.",
+        "addLine": "Add line",
+        "removeLine": "Remove line",
+        "empty": "No marking-scheme lines. Import a solution with a \"Marks\" column or add lines.",
+        "columns": {
+            "label": "Line",
+            "marks": "Marks",
+            "expected": "Expected",
+            "cellRef": "Cell",
+            "guidance": "Guidance"
+        },
+        "placeholders": {
+            "label": "e.g. Goodwill",
+            "expected": "3,200",
+            "cellRef": "Sheet1!B7",
+            "guidance": "W4: 3,800 − 600 impairment"
+        },
+        "sumMatches": "Scheme lines add up to {{total}} — matches the part marks.",
+        "sumMismatch": "Scheme lines add up to {{total}}, but the part is worth {{marks}}."
+    },
+    "import": {
+        "reading": "Reading…",
+        "wrongType": "Choose an Excel file (.xlsx).",
+        "tooLarge": "That workbook is over 5 MB. Remove unused tabs and try again.",
+        "failed": "Couldn't read that workbook. Check it opens in Excel and try again.",
+        "templateDone_one": "Template imported ({{count}} tab).",
+        "templateDone_other": "Template imported ({{count}} tabs).",
+        "solutionDone_one": "Solution imported — {{count}} scheme line worth {{marks}} marks.",
+        "solutionDone_other": "Solution imported — {{count}} scheme lines worth {{marks}} marks.",
+        "solutionNoScheme": "Solution imported. No \"Marks\" column found — add the marking scheme lines yourself.",
+        "uploadFailed": "The solution was imported, but the original file couldn't be saved."
+    },
+    "gradingNotes": {
+        "title": "Grading notes",
+        "hint": "Instructions for the AI marker, e.g. \"Apply the own-figure rule. Accept ±1 rounding.\" Never shown to learners.",
+        "placeholder": "Apply the own-figure rule. Accept ±1 rounding."
+    },
+    "secret": {
+        "loading": "Loading the saved solution and marking scheme…",
+        "failedTitle": "Couldn't load the saved solution",
+        "failedBody": "The solution, marking scheme and grading notes stay as saved; changes you make elsewhere are saved without touching them.",
+        "retry": "Try again"
+    },
+    "validation": {
+        "noParts": "Add at least one answer part.",
+        "partMarks": "Part {{label}} needs more than 0 marks.",
+        "noSolution": "Part {{label}} has no solution or marking scheme — the AI will have little to mark against.",
+        "schemeMismatch": "Part {{label}}: the marking scheme adds up to {{scheme}}, the part is worth {{marks}}.",
+        "uncomputedSolution": "Part {{label}}: some solution formulas have no value yet, so the AI cannot see those figures. Open each solution tab so it recalculates before you save, or save the workbook in Excel and import it again."
+    },
+    "summary": {
+        "scenario": "Scenario: {{text}}",
+        "noRequirements": "No requirements yet",
+        "part_one": "{{label}} {{kind}} · {{count}} mark",
+        "part_other": "{{label}} {{kind}} · {{count}} marks",
+        "schemeLines_one": "{{count}} line",
+        "schemeLines_other": "{{count}} lines",
+        "total_one": "{{count}} mark",
+        "total_other": "{{count}} marks"
+    }
+}

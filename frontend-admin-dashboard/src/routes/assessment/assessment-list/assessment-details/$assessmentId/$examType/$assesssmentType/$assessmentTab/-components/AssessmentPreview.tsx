@@ -9,6 +9,7 @@ import {
 } from '@/routes/assessment/create-assessment/$assessmentId/$examtype/-services/assessment-services';
 import { DashboardLoader } from '@/components/core/dashboard-loader';
 import { MyButton } from '@/components/design-system/button';
+import { commitCbeEditors } from '@/components/cbe/commit-registry';
 import {
     copyToClipboard,
     getAssessmentJoinLink,
@@ -421,7 +422,11 @@ const AssessmentPreview = ({ handleCloseDialog }: { handleCloseDialog: () => voi
                         buttonType="primary"
                         layoutVariant="default"
                         className="px-5 text-sm sm:!min-w-0"
-                        onClick={form.handleSubmit(onSubmit, onInvalid)}
+                        onClick={(event) => {
+                            // Save the CBE spreadsheet cell being typed in before the form is read.
+                            commitCbeEditors();
+                            void form.handleSubmit(onSubmit, onInvalid)(event);
+                        }}
                     >
                         {t('actions.save')}
                     </MyButton>
@@ -550,9 +555,16 @@ const AssessmentPreview = ({ handleCloseDialog }: { handleCloseDialog: () => voi
                                                                                       ? t(
                                                                                             'questionTypes.mcqMultipleCorrect'
                                                                                         )
-                                                                                      : t(
-                                                                                            'questionTypes.mcqMultipleCorrect'
-                                                                                        )}
+                                                                                      : getValues(
+                                                                                              `sections.${selectedSectionIndex}.questions.${index}.questionType`
+                                                                                          ) ===
+                                                                                          'CBE_RESPONSE'
+                                                                                        ? t(
+                                                                                              'questionTypes.cbeResponse'
+                                                                                          )
+                                                                                        : t(
+                                                                                              'questionTypes.mcqMultipleCorrect'
+                                                                                          )}
                                                                             </h1>
                                                                             <SortableDragHandle
                                                                                 variant="outline"

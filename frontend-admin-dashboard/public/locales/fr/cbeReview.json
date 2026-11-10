@@ -1,0 +1,35 @@
+{
+    "answer": {
+        "empty": "Aucune réponse.",
+        "noSheet": "Rien n'a été saisi dans le tableur.",
+        "noText": "Aucune réponse rédigée.",
+        "unknownPart": "Partie {{number}}"
+    },
+    "solution": {
+        "heading": "Corrigé et barème",
+        "none": "Aucun corrigé enregistré pour cette partie.",
+        "noScheme": "Aucune ligne de barème.",
+        "gradingNotes": "Notes de correction :"
+    },
+    "scheme": {
+        "line": "Ligne",
+        "marks": "Points",
+        "expected": "Attendu",
+        "cell": "Cellule",
+        "guidance": "Indications"
+    },
+    "evaluation": {
+        "marks": "{{marks}} / {{max}} points",
+        "criteria": "Ligne",
+        "reason": "Motif",
+        "lineMarks": "Points",
+        "pending": "Vérification en cours…",
+        "failed": "La vérification par l'IA a échoué pour cette tentative.",
+        "noCredits": "Non vérifié — l'établissement n'avait plus de crédits IA."
+    },
+    "slide": {
+        "heading": "Réponses tableur et rédigées",
+        "attempt": "Tentative {{number}}",
+        "evaluation": "Vérification IA"
+    }
+}

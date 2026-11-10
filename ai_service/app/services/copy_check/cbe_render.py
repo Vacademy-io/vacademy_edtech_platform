@@ -468,6 +468,11 @@ class _HtmlText(HTMLParser):
         self.row: Optional[list[str]] = None
         self.cell: Optional[list[str]] = None
         self.skip = 0
+        # True between a list marker and the item's first text: TipTap writes
+        # <li><p>x</p></li>, and the <p> must not push the text off its marker.
+        self.li_open = False
+        # True when a block inside a list item (its <p>) has just ended the line.
+        self.li_block_closed = False
 
     def _emit(self, s: str) -> None:
         if self.cell is not None:
@@ -498,7 +503,8 @@ class _HtmlText(HTMLParser):
         elif tag == "br":
             self._emit("\n")
         elif tag in _BLOCK_TAGS:
-            self._emit("\n")
+            if not self.li_open:
+                self._emit("\n")
         elif tag in ("ul", "ol"):
             self.lists.append([tag, 0])
         elif tag == "li":
@@ -508,7 +514,11 @@ class _HtmlText(HTMLParser):
                 if self.lists[-1][0] == "ol":
                     marker = f"{self.lists[-1][1]}. "
             indent = "  " * max(0, len(self.lists) - 1)
-            self._emit("\n" + indent + marker)
+            # The previous item's closing </p> already ended the line.
+            lead = "" if self.cell is None and self.li_block_closed else "\n"
+            self.li_block_closed = False
+            self._emit(lead + indent + marker)
+            self.li_open = True
         elif tag == "table":
             self._close_row()
             self.out.append("\n")
@@ -533,15 +543,29 @@ class _HtmlText(HTMLParser):
             self._close_row()
             self.out.append("\n")
         elif tag in ("ul", "ol"):
+            self.li_open = False
             if self.lists:
                 self.lists.pop()
-            self._emit("\n")
+            if not (self.li_block_closed and self.lists):
+                # (a nested list whose last item already ended its line adds no blank line)
+                self.li_block_closed = False
+                self._emit("\n")
         elif tag in _BLOCK_TAGS:
-            self._emit("\n")
+            if not self.li_open:
+                self._emit("\n")
+                if self.lists:
+                    self.li_block_closed = True
 
     def handle_data(self, data: str) -> None:
         if self.skip:
             return
+        if self.li_open:
+            if not data.strip():
+                return
+            data = data.lstrip()
+            self.li_open = False
+        if data.strip():
+            self.li_block_closed = False
         self._emit(re.sub(r"\s+", " ", data))
 
     def text(self) -> str:
@@ -563,13 +587,18 @@ def _tidy(text: str) -> str:
     return out.strip()
 
 
+_HAS_TAG = re.compile(r"<\s*/?\s*(?:[a-zA-Z][a-zA-Z0-9-]*)(?:\s[^<>]*)?/?\s*>|<!--")
+
+
 def html_to_text(raw: Any) -> str:
     """Document HTML as text: paragraphs and line breaks kept, lists as
     "- " / "1. " items, tables as `| a | b |` rows."""
     if raw is None:
         return ""
     text = str(raw)
-    if "<" not in text:
+    # Only real markup goes through the parser: plain text that merely contains "<"
+    # ("cost<budget", already-decoded entities) must keep its lines and every word.
+    if not _HAS_TAG.search(text):
         return _tidy(_html.unescape(text))
     try:
         parser = _HtmlText()

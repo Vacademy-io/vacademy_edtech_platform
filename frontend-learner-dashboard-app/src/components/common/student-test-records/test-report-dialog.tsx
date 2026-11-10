@@ -20,6 +20,8 @@ import {
 } from "@/constants/helper";
 import { AttemptPapersCard } from "./attempt-papers-card";
 import { ResponseBreakdownComponent } from "./response-breakdown-component";
+import { reportQuestionTypeLabel } from "./cbe-review";
+import { ReviewAiFeedback } from "./review-ai-feedback";
 import { MarksBreakdownComponent } from "./marks-breakdown-component";
 import { Crown } from "@/svgs";
 import { useEffect, useState, useRef } from "react";
@@ -862,7 +864,7 @@ export const TestReportDialog = ({
                               {t("testReportDialog.questionNumber", { number: index + 1 })}
                             </CardTitle>
                             <Badge variant="secondary" className="text-xs">
-                              {review.question_type}
+                              {reportQuestionTypeLabel(review.question_type, t)}
                             </Badge>
                           </div>
                           <div className="text-sm text-slate-700 leading-relaxed">
@@ -929,6 +931,9 @@ export const TestReportDialog = ({
                           </div>
                         </div>
                       )}
+
+                      {/* AI feedback + criteria breakdown (AI-graded answers) */}
+                      <ReviewAiFeedback review={review} t={t} />
 
                       {/* Evaluator feedback — remark left by the teacher */}
                       {review.evaluator_feedback && (

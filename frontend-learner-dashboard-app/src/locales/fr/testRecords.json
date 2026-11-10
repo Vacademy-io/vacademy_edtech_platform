@@ -261,5 +261,17 @@
         "viewEvaluatedCopy": "Voir la copie évaluée",
         "close": "Fermer",
         "evaluatedFileName": "Fichier évalué.pdf"
+    },
+    "cbeReview": {
+        "typeLabel": "Tableur et rédaction",
+        "kindSpreadsheet": "Tableur",
+        "kindDocument": "Document",
+        "marks_one": "{{count}} point",
+        "marks_many": "{{count}} points",
+        "marks_other": "{{count}} points",
+        "noAnswerForPart": "Aucune réponse pour cette partie.",
+        "noSolutionForPart": "Aucun corrigé pour cette partie.",
+        "expected": "attendu {{value}}",
+        "solutionAfterRelease": "Le corrigé type sera disponible après la publication des résultats."
     }
 }

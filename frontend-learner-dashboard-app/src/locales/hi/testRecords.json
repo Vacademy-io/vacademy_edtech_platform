@@ -257,5 +257,16 @@
     "viewEvaluatedCopy": "मूल्यांकित प्रति देखें",
     "close": "बंद करें",
     "evaluatedFileName": "मूल्यांकित फ़ाइल.pdf"
+  },
+  "cbeReview": {
+    "typeLabel": "स्प्रेडशीट और लिखित",
+    "kindSpreadsheet": "स्प्रेडशीट",
+    "kindDocument": "दस्तावेज़",
+    "marks_one": "{{count}} अंक",
+    "marks_other": "{{count}} अंक",
+    "noAnswerForPart": "इस भाग का कोई उत्तर नहीं।",
+    "noSolutionForPart": "इस भाग का कोई आदर्श हल नहीं।",
+    "expected": "अपेक्षित {{value}}",
+    "solutionAfterRelease": "परिणाम जारी होने के बाद आदर्श हल उपलब्ध होगा।"
   }
 }

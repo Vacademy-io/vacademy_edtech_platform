@@ -1,5 +1,7 @@
 import { isQuillContentEmpty } from '@/routes/assessment/question-papers/-utils/helper';
 import { z } from 'zod';
+import { cbeConfigFormSchema, cbeSecretStatusFormSchema } from '@/routes/assessment/question-papers/-utils/cbe-question';
+import { validateCbeQuestion } from '@/routes/assessment/question-papers/-utils/upload-question-paper-form-schema';
 
 export const sectionsEditQuestionFormSchema = z.object({
     sections: z.array(
@@ -110,8 +112,15 @@ export const sectionsEditQuestionFormSchema = z.object({
                                 evaluationMode: z.enum(['AUTO', 'MANUAL']).default('AUTO'),
                             })
                             .optional(),
+                        // CBE_RESPONSE (Spreadsheet & Written Response): kept whole.
+                        cbeConfig: cbeConfigFormSchema,
+                        cbeSecretStatus: cbeSecretStatusFormSchema,
                     })
                     .superRefine((question, ctx) => {
+                        if (question.questionType === 'CBE_RESPONSE') {
+                            validateCbeQuestion(question, ctx, 'EXAM');
+                            return;
+                        }
                         // Validate based on question type
                         if (question.questionType === 'MCQS') {
                             // Validate singleChoiceOptions when type is MCQS

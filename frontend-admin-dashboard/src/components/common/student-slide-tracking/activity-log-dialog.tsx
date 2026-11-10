@@ -47,6 +47,9 @@ import AiInsightsPanel from './ai-insights-panel';
 import { AssignmentAiEvaluator } from './assignment-ai-evaluator';
 import type { AssignmentAiEvaluation } from '@/services/study-library/slide-operations/assignment-ai-evaluation';
 import { getInstituteId } from '@/constants/helper';
+import { CbeSlideAttempts, type CbeSlideAttemptRow } from '@/components/common/cbe-review/cbe-slide-attempts';
+import { parseCbeConfig } from '@/components/cbe/types';
+import { parseCbeSlideResponse } from '@/routes/assessment/question-papers/-utils/cbe-question';
 
 interface AssignmentFileInfo {
     fileId: string;
@@ -1086,7 +1089,32 @@ export const ActivityLogDialog = ({
             }));
         }
         if (activeItem?.source_type === 'QUESTION') {
-            transformedContent = activityLogs.content.map((item: ActivityContent) => ({
+            transformedContent = activityLogs.content.map((item: ActivityContent) => {
+                // Spreadsheet & Written Response: {type, answer, evaluation} — shown as
+                // cards under the table, not as a selected-options string.
+                const cbeAttempt = parseCbeSlideResponse(item.question_slides[0]?.response_json);
+                if (cbeAttempt) {
+                    return {
+                        activityId: item.id,
+                        activityDate: formatDateTime(item.start_time_in_millis).split(',')[0],
+                        attemptNumber: item.question_slides[0]?.attempt_number,
+                        startTime: formatDateTime(item.start_time_in_millis).split(',')[1],
+                        endTime: formatDateTime(item.end_time_in_millis).split(',')[1],
+                        duration: `${(
+                            (item.end_time_in_millis - item.start_time_in_millis) /
+                            1000 /
+                            60
+                        ).toFixed(2)} mins`,
+                        questionName: '',
+                        response:
+                            cbeAttempt.evaluation?.marks_awarded != null
+                                ? `${cbeAttempt.evaluation.marks_awarded} / ${cbeAttempt.evaluation.max_marks ?? '—'}`
+                                : '—',
+                        responseStatus: item.question_slides[0]?.response_status,
+                        cbeAttempt,
+                    };
+                }
+                return {
                 activityDate: formatDateTime(item.start_time_in_millis).split(',')[0],
                 attemptNumber: item.question_slides[0]?.attempt_number,
                 startTime: formatDateTime(item.start_time_in_millis).split(',')[1],
@@ -1107,7 +1135,8 @@ export const ActivityLogDialog = ({
                           .join(',')
                     : '',
                 responseStatus: item.question_slides[0]?.response_status,
-            }));
+                };
+            });
         }
 
         if (activeItem?.source_type === 'QUIZ') {
@@ -1641,6 +1670,29 @@ export const ActivityLogDialog = ({
                                             />
                                         </div>
                                     )}
+                                    <CbeSlideAttempts
+                                        rows={(
+                                            tableData.content as Array<{
+                                                activityId?: string;
+                                                attemptNumber?: number;
+                                                activityDate?: string;
+                                                responseStatus?: string;
+                                                cbeAttempt?: CbeSlideAttemptRow['attempt'] | null;
+                                            }>
+                                        )
+                                            .filter((row) => row.cbeAttempt)
+                                            .map((row, i) => ({
+                                                key: row.activityId ?? `cbe-${i}`,
+                                                attemptNumber: row.attemptNumber,
+                                                activityDate: row.activityDate,
+                                                responseStatus: row.responseStatus,
+                                                attempt: row.cbeAttempt as CbeSlideAttemptRow['attempt'],
+                                            }))}
+                                        config={parseCbeConfig(
+                                            (activeItem?.question_slide as { cbeConfig?: unknown } | null)
+                                                ?.cbeConfig
+                                        )}
+                                    />
                                 </div>
                             )}
 

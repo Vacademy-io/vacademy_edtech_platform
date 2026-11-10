@@ -103,7 +103,10 @@ export const MultipleCorrectQuestionPaperTemplateMainView = ({
                             <SelectField
                                 label={t('settings.questionType')}
                                 name={`sections.${selectedSectionIndex}.questions.${currentQuestionIndex}.questionType`}
-                                options={QUESTION_TYPES.map((option, index) => ({
+                                options={QUESTION_TYPES.filter(
+                                    // No CBE editor here (homework / quiz slides).
+                                    (option) => option.code !== 'CBE_RESPONSE'
+                                ).map((option, index) => ({
                                     value: option.code,
                                     label: option.display,
                                     _id: index,

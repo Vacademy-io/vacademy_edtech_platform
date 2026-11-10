@@ -3,7 +3,15 @@ import { z } from 'zod';
 import sectionDetailsSchema from '../../-utils/section-details-schema';
 import { FormProvider, useFieldArray, useForm } from 'react-hook-form';
 import { MyButton } from '@/components/design-system/button';
-import { Plus, Clock, ListPlus, Timer, ArrowRight, WarningCircle } from '@phosphor-icons/react';
+import {
+    Plus,
+    Clock,
+    Info,
+    ListPlus,
+    Timer,
+    ArrowRight,
+    WarningCircle,
+} from '@phosphor-icons/react';
 import { Accordion } from '@/components/ui/accordion';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
@@ -204,6 +212,19 @@ const Step2AddingQuestions: React.FC<StepContentProps> = ({
     const omrModeFromStep1 = useBasicInfoStore((state) => state.omrMode);
     const isOmrMode = omrModeFromStep1 ?? assessmentDetails[0]?.saved_data?.omr_mode === true;
     const watchedSections = watch('section');
+    // Spreadsheet & Written Response answers are only ever marked by AI (then
+    // reviewed by a teacher). Remind the admin when Step 1's AI evaluation is off.
+    const aiEvaluationFromStep1 = useBasicInfoStore((state) => state.aiEvaluationEnabled);
+    const isAiEvaluationOn =
+        aiEvaluationFromStep1 ?? assessmentDetails[0]?.saved_data?.ai_evaluation_enabled === true;
+    const cbeQuestionCount = (watchedSections ?? []).reduce(
+        (count, section) =>
+            count +
+            (section.adaptive_marking_for_each_question ?? []).filter(
+                (question) => question.questionType === 'CBE_RESPONSE'
+            ).length,
+        0
+    );
     const nonMcqsCount = isOmrMode
         ? (watchedSections ?? []).reduce(
               (count, section) =>
@@ -489,6 +510,20 @@ const Step2AddingQuestions: React.FC<StepContentProps> = ({
                                 <div>
                                     <p className="font-semibold">{t('omrWarning.title')}</p>
                                     <p>{t('omrWarning.body', { count: nonMcqsCount })}</p>
+                                </div>
+                            </div>
+                        )}
+                        {cbeQuestionCount > 0 && !isAiEvaluationOn && (
+                            <div
+                                role="status"
+                                className="flex items-start gap-2 rounded-md border border-info-200 bg-info-50 p-3 text-sm text-info-700"
+                            >
+                                <Info size={18} className="mt-px shrink-0" />
+                                <div>
+                                    <p className="font-semibold">
+                                        {t('cbeAiNotice.title', { count: cbeQuestionCount })}
+                                    </p>
+                                    <p>{t('cbeAiNotice.body')}</p>
                                 </div>
                             </div>
                         )}

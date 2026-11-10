@@ -34,6 +34,7 @@ import {
   LEARNER_OPTION_DISTRIBUTION_URL,
   EXPORT_ASSESSMENT_REPORT,
 } from "@/constants/urls";
+import { reportQuestionTypeLabel } from "./cbe-review";
 import {
   renderStudentResponse,
   renderCorrectAnswer,
@@ -1023,7 +1024,7 @@ export function ComparisonDashboard({
                           variant="outline"
                           className="text-3xs font-medium uppercase tracking-wide text-muted-foreground"
                         >
-                          {review.question_type}
+                          {reportQuestionTypeLabel(review.question_type, t)}
                         </Badge>
                         <MarksStatusIndicator
                           mark={review.mark}

@@ -3,6 +3,7 @@ import { cn } from "@/lib/utils";
 import { useAssessmentStore } from "@/stores/assessment-store";
 import { QuestionDto } from "@/types/assessment";
 import { QuestionHtmlContent } from "./question-html-content";
+import { questionTypeLabel } from "./question-type-label";
 import {
   getQuestionStatus,
   getQuestionStatusLabel,
@@ -77,7 +78,7 @@ export function QuestionListView({ onSelect }: QuestionListViewProps) {
                 <QuestionHtmlContent html={question.question.content} inline />
               </span>
               <span className="mt-1 block text-3xs font-semibold uppercase tracking-wide text-neutral-400">
-                {question.question_type}
+                {questionTypeLabel(question.question_type, t)}
               </span>
             </span>
           </button>

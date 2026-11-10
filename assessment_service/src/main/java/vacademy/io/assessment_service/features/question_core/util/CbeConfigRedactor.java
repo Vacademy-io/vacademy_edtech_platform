@@ -81,6 +81,64 @@ public final class CbeConfigRedactor {
         }
     }
 
+    /**
+     * Saving over a stored CBE question: every secret key the incoming config leaves out
+     * ({@code data.gradingNotes}, or a part's {@code solution} / {@code markingScheme} /
+     * {@code solutionFileId}, matched to the stored part by {@code id}) is copied from the
+     * stored config. A config the editor loaded redacted (a caller the read path did not
+     * count as staff) therefore cannot wipe the solution when it is saved back; a key the
+     * client does send, even as null, is taken as the client's decision. Mirrors admin_core
+     * CbeConfigSecrets.split/overlay for question slides.
+     *
+     * @return {@code incoming} unchanged (same instance) when nothing was missing, either side
+     * is unreadable, or the incoming JSON is not a CBE config.
+     */
+    public static String keepStoredSecrets(String stored, String incoming) {
+        if (stored == null || stored.isBlank() || incoming == null || incoming.isBlank()) return incoming;
+        try {
+            JsonNode in = MAPPER.readTree(incoming);
+            JsonNode base = MAPPER.readTree(stored);
+            if (!(in instanceof ObjectNode) || base == null || !base.isObject()) return incoming;
+            if (!CBE_TYPE.equalsIgnoreCase(in.path("type").asText(""))) return incoming;
+            JsonNode inData = in.get("data");
+            JsonNode baseData = base.get("data");
+            if (!(inData instanceof ObjectNode inDataObj) || baseData == null || !baseData.isObject()) return incoming;
+            boolean changed = false;
+            if (!inDataObj.has(SECRET_DATA_KEY) && baseData.has(SECRET_DATA_KEY)) {
+                inDataObj.set(SECRET_DATA_KEY, baseData.get(SECRET_DATA_KEY));
+                changed = true;
+            }
+            JsonNode inParts = inDataObj.get("parts");
+            JsonNode baseParts = baseData.get("parts");
+            if (inParts != null && inParts.isArray() && baseParts != null && baseParts.isArray()) {
+                for (JsonNode part : inParts) {
+                    if (!(part instanceof ObjectNode partObj)) continue;
+                    String id = partObj.path("id").asText("");
+                    if (id.isBlank()) continue;
+                    JsonNode storedPart = null;
+                    for (JsonNode candidate : baseParts) {
+                        if (id.equals(candidate.path("id").asText(null))) {
+                            storedPart = candidate;
+                            break;
+                        }
+                    }
+                    if (storedPart == null) continue;
+                    for (String key : SECRET_PART_KEYS) {
+                        if (!partObj.has(key) && storedPart.has(key)) {
+                            partObj.set(key, storedPart.get(key));
+                            changed = true;
+                        }
+                    }
+                }
+            }
+            if (!changed) return incoming;
+            log.info("[CBE] save carried a config without some secret keys; kept the stored ones");
+            return MAPPER.writeValueAsString(in);
+        } catch (Exception e) {
+            return incoming;
+        }
+    }
+
     public static boolean isCbe(String questionType) {
         return CBE_TYPE.equalsIgnoreCase(questionType);
     }

@@ -38,7 +38,8 @@
         "NUMERIC": "Numeric",
         "ONE_WORD": "One word",
         "LONG_ANSWER": "Long answer",
-        "CODING": "Coding"
+        "CODING": "Coding",
+        "CBE_RESPONSE": "Spreadsheet & written"
     },
     "source": {
         "MANUAL": "Written by hand",

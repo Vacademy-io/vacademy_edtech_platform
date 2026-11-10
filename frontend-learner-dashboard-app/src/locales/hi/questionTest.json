@@ -168,7 +168,17 @@
         "ofTotal": "में से {{total}}",
         "codingMissingConfig": "कोडिंग प्रश्न में सेटिंग्स नहीं हैं।",
         "answerOptionsAriaLabel": "उत्तर विकल्प",
-        "unsupportedType": "इस प्रकार का प्रश्न यहां नहीं दिखाया जा सकता।"
+        "unsupportedType": "इस प्रकार का प्रश्न यहां नहीं दिखाया जा सकता।",
+        "types": {
+            "MCQS": "एकल विकल्प",
+            "MCQM": "बहु विकल्प",
+            "TRUE_FALSE": "सही / गलत",
+            "ONE_WORD": "एक शब्द",
+            "LONG_ANSWER": "विस्तृत उत्तर",
+            "NUMERIC": "संख्यात्मक",
+            "CODING": "कोडिंग",
+            "CBE_RESPONSE": "स्प्रेडशीट और लिखित"
+        }
     },
     "questionList": {
         "itemAriaLabel": "प्रश्न {{number}}, {{status}}"
@@ -251,5 +261,63 @@
     "viewToggle": {
         "grid": "ग्रिड व्यू",
         "list": "लिस्ट व्यू"
+    },
+    "cbe": {
+        "scenarioLabel": "परिदृश्य",
+        "requirementsLabel": "आवश्यकताएँ",
+        "desktopNotice": "इस प्रश्न में एक स्प्रेडशीट भरनी है। इसे लैपटॉप या डेस्कटॉप पर हल करना बेहतर है।",
+        "resizeLabel": "परिदृश्य और उत्तर पैनल का आकार बदलें",
+        "resizeValue": "परिदृश्य चौड़ाई का {{pct}}%",
+        "pasteBlocked": "उत्तर क्षेत्र के बाहर से पेस्ट करने की अनुमति नहीं है। अपने उत्तर के भीतर कॉपी और पेस्ट काम करता है।",
+        "missingConfig": "इस प्रश्न का उत्तर सेटअप उपलब्ध नहीं है। कृपया अपने प्रशिक्षक को बताएँ।",
+        "kit": {
+            "kindSpreadsheet": "स्प्रेडशीट",
+            "kindDocument": "दस्तावेज़",
+            "marks_one": "{{count}} अंक",
+            "marks_other": "{{count}} अंक",
+            "partAnswer": "{{tab}} का उत्तर",
+            "noParts": "इस प्रश्न में कोई उत्तर भाग नहीं है।",
+            "sizeTooLarge": "आपका उत्तर सहेजने के लिए बहुत बड़ा है ({{max}} में से {{size}})। अनावश्यक पंक्तियाँ, टैब या पेस्ट की गई सामग्री हटाएँ।",
+            "sizeNearLimit": "आपका उत्तर आकार सीमा के करीब है ({{max}} में से {{size}})।",
+            "spreadsheetLoadFailed": "स्प्रेडशीट लोड नहीं हो सकी।",
+            "documentLoadFailed": "दस्तावेज़ संपादक लोड नहीं हो सका।",
+            "tryAgain": "फिर से प्रयास करें",
+            "documentPlaceholder": "अपना उत्तर यहाँ लिखें…",
+            "writtenAnswer": "लिखित उत्तर",
+            "spreadsheetAnswer": "स्प्रेडशीट उत्तर",
+            "noSpreadsheetAnswer": "कोई स्प्रेडशीट उत्तर नहीं।",
+            "noWrittenAnswer": "कोई लिखित उत्तर नहीं।",
+            "emptyTab": "यह टैब खाली है।",
+            "rowHeader": "पंक्ति",
+            "tools": {
+                "spreadsheetToolbar": "स्प्रेडशीट फ़ॉर्मेटिंग",
+                "textToolbar": "टेक्स्ट फ़ॉर्मेटिंग",
+                "undo": "पूर्ववत करें",
+                "redo": "फिर से करें",
+                "bold": "बोल्ड",
+                "italic": "इटैलिक",
+                "underline": "रेखांकित",
+                "alignLeft": "बाएँ संरेखित करें",
+                "alignCentre": "बीच में संरेखित करें",
+                "alignRight": "दाएँ संरेखित करें",
+                "thousands": "हज़ार विभाजक (#,##0)",
+                "moreDecimals": "अधिक दशमलव",
+                "fewerDecimals": "कम दशमलव",
+                "percent": "प्रतिशत",
+                "topBorder": "ऊपरी बॉर्डर",
+                "bottomBorder": "निचला बॉर्डर",
+                "clearBorders": "बॉर्डर हटाएँ",
+                "mergeCells": "सेल मिलाएँ",
+                "unmergeCells": "सेल अलग करें",
+                "bulletList": "बुलेट सूची",
+                "numberedList": "क्रमांकित सूची",
+                "insertTable": "तालिका डालें",
+                "addRowBelow": "नीचे पंक्ति जोड़ें",
+                "addColumnRight": "दाईं ओर कॉलम जोड़ें",
+                "deleteRow": "पंक्ति हटाएँ",
+                "deleteColumn": "कॉलम हटाएँ",
+                "deleteTable": "तालिका हटाएँ"
+            }
+        }
     }
 }

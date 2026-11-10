@@ -82,4 +82,34 @@ public class CbeConfigRedactorTest {
         node.fieldNames().forEachRemaining(names::add);
         return names;
     }
+
+    @Test
+    void savingARedactedConfigKeepsTheStoredSecrets() throws Exception {
+        // The editor loaded the redacted config, fixed a typo and saved it back.
+        String edited = CbeConfigRedactor.redact(CBE).replace("Prepare the SFP", "Prepare the consolidated SFP");
+        JsonNode out = MAPPER.readTree(CbeConfigRedactor.keepStoredSecrets(CBE, edited));
+        JsonNode p1 = out.path("data").path("parts").get(0);
+        assertThat(p1.path("promptHtml").asText()).isEqualTo("<p>Prepare the consolidated SFP</p>");
+        assertThat(p1.path("solution").path("sheet").isObject()).isTrue();
+        assertThat(p1.path("markingScheme").get(0).path("expected").asText()).isEqualTo("3,200");
+        assertThat(p1.path("solutionFileId").asText()).isEqualTo("media-1");
+        assertThat(out.path("data").path("parts").get(1).path("solution").path("html").asText())
+                .isEqualTo("<p>IAS 38 prohibits</p>");
+        assertThat(out.path("data").path("gradingNotes").asText()).isEqualTo("Apply the own-figure rule.");
+    }
+
+    @Test
+    void aSecretTheClientSendsWinsAndOtherJsonIsUntouched() throws Exception {
+        String cleared = CBE.replace("\"solutionFileId\":\"media-1\"", "\"solutionFileId\":null")
+                .replace("\"gradingNotes\":\"Apply the own-figure rule.\"", "\"gradingNotes\":\"New notes\"");
+        String out = CbeConfigRedactor.keepStoredSecrets(CBE, cleared);
+        assertThat(out).isSameAs(cleared);
+        assertThat(CbeConfigRedactor.keepStoredSecrets(CBE, CODING)).isSameAs(CODING);
+        assertThat(CbeConfigRedactor.keepStoredSecrets("not json", CBE)).isSameAs(CBE);
+        assertThat(CbeConfigRedactor.keepStoredSecrets(null, CBE)).isSameAs(CBE);
+        // A part the stored config does not have keeps what it was sent with.
+        String newPart = CbeConfigRedactor.redact(CBE).replace("\"id\":\"p2\"", "\"id\":\"p9\"");
+        JsonNode merged = MAPPER.readTree(CbeConfigRedactor.keepStoredSecrets(CBE, newPart));
+        assertThat(merged.path("data").path("parts").get(1).has("solution")).isFalse();
+    }
 }

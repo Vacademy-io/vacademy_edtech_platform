@@ -17,6 +17,7 @@ import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { StatusChips } from '@/components/design-system/chips';
 import { parseHtmlToString } from '@/components/common/export-offline/utils/utils';
 import { CodingAnswerReview } from './coding-answer-review';
+import { CbeAnswerReview } from './cbe-answer-review';
 import { AssessmentReportStudentInterface } from '@/types/assessments/assessment-overview';
 import { AssessmentTestReport } from '@/types/assessments/assessment-data-report';
 import { Clock } from '@phosphor-icons/react';
@@ -424,6 +425,16 @@ export const TestReportDialog = ({
                                                                     review.correct_options
                                                                 }
                                                             />
+                                                        ) : review.question_type ===
+                                                          'CBE_RESPONSE' ? (
+                                                            <CbeAnswerReview
+                                                                studentResponse={
+                                                                    review.student_response_options
+                                                                }
+                                                                correctOptions={
+                                                                    review.correct_options
+                                                                }
+                                                            />
                                                         ) : (
                                                             renderOptions(
                                                                 review.student_response_options as unknown
@@ -460,6 +471,7 @@ export const TestReportDialog = ({
                                             </div>
                                         </div>
                                         {review.question_type !== 'CODING' &&
+                                            review.question_type !== 'CBE_RESPONSE' &&
                                             review.answer_status !== 'CORRECT' && (
                                             <div className="flex w-full items-center gap-6 text-subtitle">
                                                 <div>{t('review.correctAnswer')}</div>

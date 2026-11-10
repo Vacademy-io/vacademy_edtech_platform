@@ -14,5 +14,8 @@
     "readingSkills": "مهارات القراءة",
     "comprehensionSingleCorrect": "استيعاب اختيار من متعدد (إجابة واحدة صحيحة)",
     "comprehensionMultipleCorrect": "استيعاب اختيار من متعدد (إجابات متعددة صحيحة)",
-    "comprehensionNumeric": "استيعاب رقمي"
+    "comprehensionNumeric": "استيعاب رقمي",
+    "cbeSection": "اختبار حاسوبي (CBE)",
+    "cbeResponse": "جدول بيانات وإجابة مكتوبة",
+    "cbeTitleType": "جدول بيانات ومكتوب"
 }

@@ -35,5 +35,10 @@
     },
     "errors": {
         "saveFailed": "प्रश्न सहेजने में विफल।"
+    },
+    "cbeAiNotice": {
+        "title_one": "{{count}} स्प्रेडशीट और लिखित प्रश्न AI से जाँचा जाता है",
+        "title_other": "{{count}} स्प्रेडशीट और लिखित प्रश्न AI से जाँचे जाते हैं",
+        "body": "स्प्रेडशीट और लिखित उत्तर AI से जाँचे जाते हैं। मूल जानकारी में 'Evaluate submissions with AI' चालू करें, या हर सबमिशन पर 'Evaluate with AI' चलाएँ।"
     }
 }

@@ -1,0 +1,175 @@
+{
+    "emptyState": "لا توجد أسئلة بعد.",
+    "questionNumber": "السؤال {{number}}",
+    "documentEditorName": "محرر المستندات",
+    "survey": {
+        "notSupported": "لا يمكن استخدام أسئلة جدول البيانات والإجابة المكتوبة في الاستبيانات."
+    },
+    "scenario": {
+        "title": "السيناريو (يظهر على اليسار)",
+        "hint": "دراسة الحالة التي يقرأها المتعلم بجانب إجابته. اختياري — بدونه تأخذ منطقة الإجابة العرض الكامل.",
+        "placeholder": "الصق السيناريو أو اكتبه…"
+    },
+    "requirements": {
+        "title": "المطلوب",
+        "titleNumbered": "المطلوب · {{title}}",
+        "hint": "ما يجب على المتعلم فعله. يظهر فوق أجزاء الإجابة.",
+        "placeholder": "مثال: أعد قائمة المركز المالي الموحدة كما في 31 مارس…"
+    },
+    "parts": {
+        "title": "أجزاء الإجابة",
+        "hint": "كل جزء جدول بيانات أو مستند مكتوب. درجة السؤال هي مجموع درجات الأجزاء.",
+        "total_zero": "المجموع: {{count}} درجات",
+        "total_one": "المجموع: {{count}} درجة",
+        "total_two": "المجموع: {{count}} درجات",
+        "total_few": "المجموع: {{count}} درجات",
+        "total_many": "المجموع: {{count}} درجات",
+        "total_other": "المجموع: {{count}} درجات",
+        "addSpreadsheet": "إضافة جزء جدول بيانات",
+        "addDocument": "إضافة جزء مستند",
+        "empty": "لا توجد أجزاء إجابة بعد. أضف جزء جدول بيانات أو مستند."
+    },
+    "part": {
+        "kind": {
+            "SPREADSHEET": "جدول بيانات",
+            "DOCUMENT": "مستند"
+        },
+        "summary_zero": "{{label}} {{kind}} · {{count}} درجات",
+        "summary_one": "{{label}} {{kind}} · {{count}} درجة",
+        "summary_two": "{{label}} {{kind}} · {{count}} درجات",
+        "summary_few": "{{label}} {{kind}} · {{count}} درجات",
+        "summary_many": "{{label}} {{kind}} · {{count}} درجات",
+        "summary_other": "{{label}} {{kind}} · {{count}} درجات",
+        "schemeBadge_zero": "{{count}} بنود تصحيح",
+        "schemeBadge_one": "{{count}} بند تصحيح",
+        "schemeBadge_two": "{{count}} بنود تصحيح",
+        "schemeBadge_few": "{{count}} بنود تصحيح",
+        "schemeBadge_many": "{{count}} بنود تصحيح",
+        "schemeBadge_other": "{{count}} بنود تصحيح",
+        "label": "التسمية",
+        "marks": "الدرجات",
+        "marksRequired": "امنح هذا الجزء أكثر من 0 درجة.",
+        "prompt": "المطلوب في هذا الجزء",
+        "promptHint": "اختياري. يظهر فوق منطقة إجابة هذا الجزء.",
+        "promptPlaceholder": "مثال: (a) أعد قائمة المركز المالي الموحدة…",
+        "moveUp": "تحريك الجزء لأعلى",
+        "moveDown": "تحريك الجزء لأسفل",
+        "delete": "حذف الجزء",
+        "deleteTitle": "حذف الجزء {{label}}؟",
+        "deleteBody": "سيتم حذف قالبه الابتدائي وحله ومخطط تصحيحه أيضًا.",
+        "deleteCancel": "إلغاء",
+        "deleteConfirm": "حذف الجزء",
+        "tabs": {
+            "template": "القالب الابتدائي",
+            "solution": "الحل",
+            "scheme_zero": "مخطط التصحيح ({{count}})",
+            "scheme_one": "مخطط التصحيح ({{count}})",
+            "scheme_two": "مخطط التصحيح ({{count}})",
+            "scheme_few": "مخطط التصحيح ({{count}})",
+            "scheme_many": "مخطط التصحيح ({{count}})",
+            "scheme_other": "مخطط التصحيح ({{count}})"
+        }
+    },
+    "template": {
+        "sheetHint": "ما يراه المتعلم عند البدء: العناوين والتسميات والأرقام المعطاة. أنشئه في الشبكة أو استورد ملف Excel.",
+        "docHint": "نص ابتدائي اختياري (عناوين، جدول للتعبئة).",
+        "import": "استيراد ‎.xlsx",
+        "clear": "مسح القالب",
+        "gridLabel": "القالب الابتدائي للجزء {{label}}",
+        "docLabel": "النص الابتدائي للجزء {{label}}",
+        "docPlaceholder": "عناوين أو جدول يبدأ منه المتعلم…"
+    },
+    "solution": {
+        "sheetHint": "الإجابة النموذجية التي يصحح الذكاء الاصطناعي على أساسها. استورد مصنف الحل (تُحفظ كل الأوراق) أو أنشئه في الشبكة. عمود \"Marks\" يملأ مخطط التصحيح.",
+        "docHint": "الإجابة النموذجية التي يصحح الذكاء الاصطناعي على أساسها: النقاط التي تذكرها الإجابة الكاملة.",
+        "import": "استيراد الحل ‎.xlsx",
+        "uploading": "جارٍ حفظ الملف الأصلي…",
+        "fileAttached": "المصنف الأصلي مرفق",
+        "gridLabel": "حل الجزء {{label}}",
+        "docLabel": "حل الجزء {{label}}",
+        "docPlaceholder": "النقاط التي تذكرها الإجابة الكاملة…"
+    },
+    "scheme": {
+        "hint": "بند لكل عنصر يستحق درجة. يصحح الذكاء الاصطناعي كل بند ويمنح الدرجة عند نقل خطأ سابق بطريقة صحيحة.",
+        "extract": "إعادة القراءة من الحل",
+        "extractNone": "لا يحتوي الحل على عمود \"Marks\" للقراءة منه.",
+        "addLine": "إضافة بند",
+        "removeLine": "حذف البند",
+        "empty": "لا توجد بنود تصحيح. استورد حلًا فيه عمود \"Marks\" أو أضف بنودًا.",
+        "columns": {
+            "label": "البند",
+            "marks": "الدرجات",
+            "expected": "المتوقع",
+            "cellRef": "الخلية",
+            "guidance": "إرشادات"
+        },
+        "placeholders": {
+            "label": "مثال: الشهرة",
+            "expected": "3,200",
+            "cellRef": "Sheet1!B7",
+            "guidance": "W4: 3,800 − 600 انخفاض قيمة"
+        },
+        "sumMatches": "مجموع بنود التصحيح {{total}} — يطابق درجات الجزء.",
+        "sumMismatch": "مجموع بنود التصحيح {{total}}، لكن الجزء يساوي {{marks}}."
+    },
+    "import": {
+        "reading": "جارٍ القراءة…",
+        "wrongType": "اختر ملف Excel ‏(‎.xlsx).",
+        "tooLarge": "حجم هذا المصنف أكبر من 5 ميغابايت. احذف الأوراق غير المستخدمة وحاول مجددًا.",
+        "failed": "تعذرت قراءة هذا المصنف. تأكد أنه يفتح في Excel وحاول مجددًا.",
+        "templateDone_zero": "تم استيراد القالب ({{count}} أوراق).",
+        "templateDone_one": "تم استيراد القالب ({{count}} ورقة).",
+        "templateDone_two": "تم استيراد القالب ({{count}} أوراق).",
+        "templateDone_few": "تم استيراد القالب ({{count}} أوراق).",
+        "templateDone_many": "تم استيراد القالب ({{count}} أوراق).",
+        "templateDone_other": "تم استيراد القالب ({{count}} أوراق).",
+        "solutionDone_zero": "تم استيراد الحل — {{count}} بنود تصحيح بقيمة {{marks}} درجات.",
+        "solutionDone_one": "تم استيراد الحل — {{count}} بند تصحيح بقيمة {{marks}} درجات.",
+        "solutionDone_two": "تم استيراد الحل — {{count}} بنود تصحيح بقيمة {{marks}} درجات.",
+        "solutionDone_few": "تم استيراد الحل — {{count}} بنود تصحيح بقيمة {{marks}} درجات.",
+        "solutionDone_many": "تم استيراد الحل — {{count}} بنود تصحيح بقيمة {{marks}} درجات.",
+        "solutionDone_other": "تم استيراد الحل — {{count}} بنود تصحيح بقيمة {{marks}} درجات.",
+        "solutionNoScheme": "تم استيراد الحل. لم يُعثر على عمود \"Marks\" — أضف بنود التصحيح بنفسك.",
+        "uploadFailed": "تم استيراد الحل، لكن تعذر حفظ الملف الأصلي."
+    },
+    "gradingNotes": {
+        "title": "ملاحظات التصحيح",
+        "hint": "تعليمات للمصحح الآلي، مثل \"طبّق قاعدة نقل الخطأ. اقبل فرق تقريب ±1.\" لا تظهر للمتعلمين أبدًا.",
+        "placeholder": "طبّق قاعدة نقل الخطأ. اقبل فرق تقريب ±1."
+    },
+    "secret": {
+        "loading": "جارٍ تحميل الحل ومخطط التصحيح المحفوظين…",
+        "failedTitle": "تعذر تحميل الحل المحفوظ",
+        "failedBody": "يبقى الحل ومخطط التصحيح وملاحظات التصحيح كما حُفظت؛ تُحفظ تعديلاتك الأخرى دون المساس بها.",
+        "retry": "إعادة المحاولة"
+    },
+    "validation": {
+        "noParts": "أضف جزء إجابة واحدًا على الأقل.",
+        "partMarks": "يحتاج الجزء {{label}} إلى أكثر من 0 درجة.",
+        "noSolution": "لا يحتوي الجزء {{label}} على حل أو مخطط تصحيح — سيكون لدى الذكاء الاصطناعي القليل ليصحح على أساسه.",
+        "schemeMismatch": "الجزء {{label}}: مجموع مخطط التصحيح {{scheme}} والجزء يساوي {{marks}}.",
+        "uncomputedSolution": "الجزء {{label}}: بعض صيغ الحل ليس لها قيمة بعد، لذلك لا يرى الذكاء الاصطناعي هذه الأرقام. افتح كل علامة تبويب في الحل لتُعاد حسابها قبل الحفظ، أو احفظ المصنف في Excel واستورده مرة أخرى."
+    },
+    "summary": {
+        "scenario": "السيناريو: {{text}}",
+        "noRequirements": "لا يوجد مطلوب بعد",
+        "part_zero": "{{label}} {{kind}} · {{count}} درجات",
+        "part_one": "{{label}} {{kind}} · {{count}} درجة",
+        "part_two": "{{label}} {{kind}} · {{count}} درجات",
+        "part_few": "{{label}} {{kind}} · {{count}} درجات",
+        "part_many": "{{label}} {{kind}} · {{count}} درجات",
+        "part_other": "{{label}} {{kind}} · {{count}} درجات",
+        "schemeLines_zero": "{{count}} بنود",
+        "schemeLines_one": "{{count}} بند",
+        "schemeLines_two": "{{count}} بنود",
+        "schemeLines_few": "{{count}} بنود",
+        "schemeLines_many": "{{count}} بنود",
+        "schemeLines_other": "{{count}} بنود",
+        "total_zero": "{{count}} درجات",
+        "total_one": "{{count}} درجة",
+        "total_two": "{{count}} درجات",
+        "total_few": "{{count}} درجات",
+        "total_many": "{{count}} درجات",
+        "total_other": "{{count}} درجات"
+    }
+}

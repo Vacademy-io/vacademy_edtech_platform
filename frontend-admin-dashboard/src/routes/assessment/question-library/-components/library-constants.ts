@@ -7,6 +7,7 @@ export const QUESTION_TYPES = [
     'NUMERIC',
     'ONE_WORD',
     'LONG_ANSWER',
+    'CBE_RESPONSE',
 ] as const;
 
 export const PAGE_SIZE = 20;

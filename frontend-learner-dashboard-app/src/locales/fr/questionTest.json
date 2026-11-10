@@ -169,7 +169,17 @@
         "ofTotal": "sur {{total}}",
         "codingMissingConfig": "La question de programmation n'a pas de configuration.",
         "answerOptionsAriaLabel": "Options de réponse",
-        "unsupportedType": "Ce type de question ne peut pas être affiché ici."
+        "unsupportedType": "Ce type de question ne peut pas être affiché ici.",
+        "types": {
+            "MCQS": "Choix unique",
+            "MCQM": "Choix multiple",
+            "TRUE_FALSE": "Vrai / Faux",
+            "ONE_WORD": "Un mot",
+            "LONG_ANSWER": "Réponse longue",
+            "NUMERIC": "Numérique",
+            "CODING": "Programmation",
+            "CBE_RESPONSE": "Tableur et rédaction"
+        }
     },
     "questionList": {
         "itemAriaLabel": "Question {{number}}, {{status}}"
@@ -253,5 +263,64 @@
     "viewToggle": {
         "grid": "Vue grille",
         "list": "Vue liste"
+    },
+    "cbe": {
+        "scenarioLabel": "Énoncé",
+        "requirementsLabel": "Travail demandé",
+        "desktopNotice": "Cette question comporte un tableur à remplir. Il est préférable d'y répondre sur un ordinateur portable ou de bureau.",
+        "resizeLabel": "Redimensionner les volets de l'énoncé et de la réponse",
+        "resizeValue": "Énoncé : {{pct}} % de la largeur",
+        "pasteBlocked": "Le collage depuis l'extérieur de la zone de réponse n'est pas autorisé. Le copier-coller à l'intérieur de votre réponse fonctionne.",
+        "missingConfig": "La configuration de réponse de cette question est manquante. Veuillez prévenir votre formateur.",
+        "kit": {
+            "kindSpreadsheet": "Tableur",
+            "kindDocument": "Document",
+            "marks_one": "{{count}} point",
+            "marks_many": "{{count}} points",
+            "marks_other": "{{count}} points",
+            "partAnswer": "Réponse {{tab}}",
+            "noParts": "Cette question n'a aucune partie de réponse.",
+            "sizeTooLarge": "Votre réponse est trop volumineuse pour être enregistrée ({{size}} sur {{max}}). Supprimez les lignes, onglets ou contenus collés inutiles.",
+            "sizeNearLimit": "Votre réponse approche de la taille maximale ({{size}} sur {{max}}).",
+            "spreadsheetLoadFailed": "Le tableur n'a pas pu être chargé.",
+            "documentLoadFailed": "L'éditeur de texte n'a pas pu être chargé.",
+            "tryAgain": "Réessayer",
+            "documentPlaceholder": "Rédigez votre réponse ici…",
+            "writtenAnswer": "Réponse rédigée",
+            "spreadsheetAnswer": "Réponse dans le tableur",
+            "noSpreadsheetAnswer": "Aucune réponse dans le tableur.",
+            "noWrittenAnswer": "Aucune réponse rédigée.",
+            "emptyTab": "Cet onglet est vide.",
+            "rowHeader": "Ligne",
+            "tools": {
+                "spreadsheetToolbar": "Mise en forme du tableur",
+                "textToolbar": "Mise en forme du texte",
+                "undo": "Annuler",
+                "redo": "Rétablir",
+                "bold": "Gras",
+                "italic": "Italique",
+                "underline": "Souligné",
+                "alignLeft": "Aligner à gauche",
+                "alignCentre": "Centrer",
+                "alignRight": "Aligner à droite",
+                "thousands": "Séparateur de milliers (#,##0)",
+                "moreDecimals": "Plus de décimales",
+                "fewerDecimals": "Moins de décimales",
+                "percent": "Pourcentage",
+                "topBorder": "Bordure supérieure",
+                "bottomBorder": "Bordure inférieure",
+                "clearBorders": "Effacer les bordures",
+                "mergeCells": "Fusionner les cellules",
+                "unmergeCells": "Annuler la fusion",
+                "bulletList": "Liste à puces",
+                "numberedList": "Liste numérotée",
+                "insertTable": "Insérer un tableau",
+                "addRowBelow": "Ajouter une ligne en dessous",
+                "addColumnRight": "Ajouter une colonne à droite",
+                "deleteRow": "Supprimer la ligne",
+                "deleteColumn": "Supprimer la colonne",
+                "deleteTable": "Supprimer le tableau"
+            }
+        }
     }
 }

@@ -113,7 +113,8 @@
         "correctAnswerHeading": "الإجابة الصحيحة",
         "studentAnswerHeading": "إجابة الطالب",
         "feedbackHeading": "الملاحظات",
-        "gradingBreakdownHeading": "تفاصيل التصحيح"
+        "gradingBreakdownHeading": "تفاصيل التصحيح",
+        "scenarioHeading": "السيناريو"
     },
     "table": {
         "criteria": "المعيار",

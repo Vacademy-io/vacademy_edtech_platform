@@ -25,6 +25,13 @@ import {
 } from './assessment-details-interface';
 import { sectionsEditQuestionFormType } from '../-components/AssessmentPreview';
 import { MyQuestion } from '@/types/assessments/question-paper-form';
+import {
+    buildCbeEvaluationJson,
+    CBE_RESPONSE_TYPE,
+    cbeConfigFromEvaluationJson,
+    cbeQuestionMark,
+    isCbeQuestionType,
+} from '@/routes/assessment/question-papers/-utils/cbe-question';
 import { BatchDetailsInterface, StudentLeaderboard } from '@/types/assessment-overview';
 import {
     ASSESSMENT_STATUS_STUDENT_ATTEMPTED_COLUMNS_EXTERNAL_WIDTH,
@@ -603,6 +610,17 @@ export function transformSectionsAndQuestionsData(
             } else if (markingJson.type === 'NUMERIC') {
                 baseQuestion.validAnswers = validAnswers;
             }
+            if (isCbeQuestionType(markingJson.type) || isCbeQuestionType(question.question_type)) {
+                // Spreadsheet & Written Response: the whole config from the
+                // evaluation JSON; the scenario is the passage already mapped above.
+                const cbeConfig = cbeConfigFromEvaluationJson(question.evaluation_json);
+                return {
+                    ...baseQuestion,
+                    questionType: 'CBE_RESPONSE',
+                    questionMark: baseQuestion.questionMark || cbeQuestionMark(cbeConfig),
+                    cbeConfig,
+                };
+            }
             return baseQuestion;
         }),
     }));
@@ -660,12 +678,17 @@ export function transformSectionQuestions(questions: AssessmentSectionQuestionIn
                 .map((opt, idx) => (opt.isSelected ? idx.toString() : null))
                 .filter((idx) => idx !== null); // Remove null values
 
-            const auto_evaluation_json = JSON.stringify({
-                type: question.questionType === 'MCQS' ? 'MCQS' : 'MCQM',
-                data: {
-                    correctOptionIds,
-                },
-            });
+            const isCbe = isCbeQuestionType(question.questionType);
+            const auto_evaluation_json = isCbe
+                ? // Spreadsheet & Written Response: the FULL config; assessment_service
+                  // redacts it for learners.
+                  buildCbeEvaluationJson(question.cbeConfig)
+                : JSON.stringify({
+                      type: question.questionType === 'MCQS' ? 'MCQS' : 'MCQM',
+                      data: {
+                          correctOptionIds,
+                      },
+                  });
 
             return {
                 id: null,
@@ -678,7 +701,7 @@ export function transformSectionQuestions(questions: AssessmentSectionQuestionIn
                 media_id: String(question?.imageDetails?.map((img) => img.imageName).join(',')), // Assuming no direct mapping for media_id
                 created_at: null,
                 updated_at: null,
-                question_response_type: null, // Assuming no direct mapping for response type
+                question_response_type: isCbe ? CBE_RESPONSE_TYPE : null,
                 question_type: question.questionType,
                 access_level: null, // Assuming no direct mapping for access level
                 auto_evaluation_json, // Add auto_evaluation_json
@@ -691,7 +714,19 @@ export function transformSectionQuestions(questions: AssessmentSectionQuestionIn
                 default_question_time_mins:
                     Number(question.questionDuration.hrs || 0) * 60 +
                     Number(question.questionDuration.min || 0),
-                options, // Use the mapped options
+                options: isCbe ? [] : options, // Use the mapped options
+                // The CBE scenario (left pane) is the question's passage.
+                ...(isCbe
+                    ? {
+                          parent_rich_text: question.parentRichTextContent
+                              ? {
+                                    id: null,
+                                    type: 'HTML',
+                                    content: question.parentRichTextContent,
+                                }
+                              : null,
+                      }
+                    : {}),
                 errors: [], // Assuming no errors are provided
                 warnings: [], // Assuming no warnings are provided
             };

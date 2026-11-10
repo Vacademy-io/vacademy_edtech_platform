@@ -168,7 +168,17 @@
         "ofTotal": "of {{total}}",
         "codingMissingConfig": "Coding question is missing configuration.",
         "answerOptionsAriaLabel": "Answer options",
-        "unsupportedType": "This question type cannot be displayed here."
+        "unsupportedType": "This question type cannot be displayed here.",
+        "types": {
+            "MCQS": "Single choice",
+            "MCQM": "Multiple choice",
+            "TRUE_FALSE": "True / False",
+            "ONE_WORD": "One word",
+            "LONG_ANSWER": "Long answer",
+            "NUMERIC": "Numeric",
+            "CODING": "Coding",
+            "CBE_RESPONSE": "Spreadsheet & written"
+        }
     },
     "questionList": {
         "itemAriaLabel": "Question {{number}}, {{status}}"
@@ -251,5 +261,63 @@
     "viewToggle": {
         "grid": "Grid view",
         "list": "List view"
+    },
+    "cbe": {
+        "scenarioLabel": "Scenario",
+        "requirementsLabel": "Requirements",
+        "desktopNotice": "This question has a spreadsheet to fill in. It is best attempted on a laptop or desktop.",
+        "resizeLabel": "Resize scenario and answer panes",
+        "resizeValue": "Scenario {{pct}}% of the width",
+        "pasteBlocked": "Pasting from outside the answer area is not allowed. Copy and paste within your answer works.",
+        "missingConfig": "This question is missing its answer setup. Please tell your instructor.",
+        "kit": {
+            "kindSpreadsheet": "Spreadsheet",
+            "kindDocument": "Document",
+            "marks_one": "{{count}} mark",
+            "marks_other": "{{count}} marks",
+            "partAnswer": "{{tab}} answer",
+            "noParts": "This question has no answer parts.",
+            "sizeTooLarge": "Your answer is too large to save ({{size}} of {{max}}). Remove unused rows, tabs or pasted content.",
+            "sizeNearLimit": "Your answer is close to the size limit ({{size}} of {{max}}).",
+            "spreadsheetLoadFailed": "The spreadsheet could not be loaded.",
+            "documentLoadFailed": "The document editor could not be loaded.",
+            "tryAgain": "Try again",
+            "documentPlaceholder": "Write your answer here…",
+            "writtenAnswer": "Written answer",
+            "spreadsheetAnswer": "Spreadsheet answer",
+            "noSpreadsheetAnswer": "No spreadsheet answer.",
+            "noWrittenAnswer": "No written answer.",
+            "emptyTab": "This tab is empty.",
+            "rowHeader": "Row",
+            "tools": {
+                "spreadsheetToolbar": "Spreadsheet formatting",
+                "textToolbar": "Text formatting",
+                "undo": "Undo",
+                "redo": "Redo",
+                "bold": "Bold",
+                "italic": "Italic",
+                "underline": "Underline",
+                "alignLeft": "Align left",
+                "alignCentre": "Align centre",
+                "alignRight": "Align right",
+                "thousands": "Thousands separator (#,##0)",
+                "moreDecimals": "More decimals",
+                "fewerDecimals": "Fewer decimals",
+                "percent": "Percent",
+                "topBorder": "Top border",
+                "bottomBorder": "Bottom border",
+                "clearBorders": "Clear borders",
+                "mergeCells": "Merge cells",
+                "unmergeCells": "Unmerge cells",
+                "bulletList": "Bulleted list",
+                "numberedList": "Numbered list",
+                "insertTable": "Insert table",
+                "addRowBelow": "Add row below",
+                "addColumnRight": "Add column right",
+                "deleteRow": "Delete row",
+                "deleteColumn": "Delete column",
+                "deleteTable": "Delete table"
+            }
+        }
     }
 }

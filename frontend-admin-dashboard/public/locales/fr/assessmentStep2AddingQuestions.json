@@ -35,5 +35,10 @@
     },
     "errors": {
         "saveFailed": "Échec de l'enregistrement des questions."
+    },
+    "cbeAiNotice": {
+        "title_one": "{{count}} question tableur et rédigée est notée par l’IA",
+        "title_other": "{{count}} questions tableur et rédigées sont notées par l’IA",
+        "body": "Les réponses tableur et rédigées sont notées par l’IA. Activez « Évaluer les soumissions avec l’IA » dans Infos de base, ou lancez « Évaluer avec l’IA » sur chaque soumission."
     }
 }

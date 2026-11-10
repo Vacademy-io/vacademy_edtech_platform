@@ -18,7 +18,8 @@ import {
     AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
 import { QuestionPaperUpload } from './QuestionPaperUpload';
-import { Code, X } from '@phosphor-icons/react';
+import { Code, Table, X } from '@phosphor-icons/react';
+import { useRouterState } from '@tanstack/react-router';
 import useDialogStore from '../-global-states/question-paper-dialogue-close';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -33,14 +34,24 @@ export function QuestionTypeSelection({
     setCurrentQuestionIndex,
     isDirectAdd = true,
     handleSelect,
+    examType,
 }: QuestionPaperHeadingInterface) {
     const { t } = useTranslation('assessmentQuestionTypeSelection');
+    // Spreadsheet & Written Response (CBE) is graded by AI against a solution: not
+    // offered in surveys, nor in homework (its editors only handle MCQs).
+    const pathname = useRouterState({ select: (state) => state.location.pathname });
+    const offerCbe = examType !== 'SURVEY' && !pathname.startsWith('/homework-creation');
     const { setIsManualQuestionPaperDialogOpen } = useDialogStore();
     const [questionType, setQuestionType] = useState<QuestionTypeList>(QuestionTypeList.MCQS);
     console.log(questionType);
     const CodingIcon = (
         <div className="flex size-10 items-center justify-center rounded-md bg-orange-100">
             <Code size={22} className="text-orange-500" weight="bold" />
+        </div>
+    );
+    const CbeIcon = (
+        <div className="flex size-10 items-center justify-center rounded-md bg-success-50">
+            <Table size={22} className="text-success-600" weight="bold" />
         </div>
     );
     const QuestionType: React.FC<QuestionTypeProps> = ({
@@ -115,6 +126,19 @@ export function QuestionTypeSelection({
                         text={t('questionTypes.coding')}
                     ></QuestionType>
                 </div>
+                {offerCbe && (
+                    <>
+                        <div className="border"></div>
+                        <div className="flex flex-col gap-4">
+                            <div className="text-subtitle font-semibold">{t('sections.cbe')}</div>
+                            <QuestionType
+                                type={QuestionTypeList.CBE_RESPONSE}
+                                icon={CbeIcon}
+                                text={t('questionTypes.cbeResponse')}
+                            ></QuestionType>
+                        </div>
+                    </>
+                )}
                 <div className="border"></div>
                 <div className="flex flex-col gap-4">
                     <div className="text-subtitle font-semibold">{t('sections.optionBased')}</div>

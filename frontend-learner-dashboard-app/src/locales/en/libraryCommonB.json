@@ -305,5 +305,52 @@
       "endedHint": "There is nothing more to play. You can leave this page.",
       "notStartedHint": "It will begin on its own when the class starts."
     }
+  },
+  "cbeSlide": {
+    "typeLabel": "Spreadsheet & written response",
+    "totalMarks_one": "{{count}} mark",
+    "totalMarks_other": "{{count}} marks",
+    "desktopNotice": "This question has a spreadsheet to fill in. It is best attempted on a laptop or desktop.",
+    "scenario": "Scenario",
+    "requirements": "Requirements",
+    "submit": "Submit for checking",
+    "checkingButton": "Checking…",
+    "checking": "Checking your answer…",
+    "checkingHint": "This can take up to two minutes. Please keep this page open.",
+    "showLastResult": "Show last result",
+    "tryAgain": "Try again",
+    "checksLeft_one": "{{count}} AI check left of {{max}}",
+    "checksLeft_other": "{{count}} AI checks left of {{max}}",
+    "noChecksLeft": "You have used all AI checks for this question. Your last result is shown above.",
+    "yourResult": "Your result",
+    "marksOf": "{{marks}} / {{max}} marks",
+    "verdict": {
+      "correct": "Correct",
+      "partial": "Partly correct",
+      "wrong": "Needs work",
+      "unattempted": "Not attempted"
+    },
+    "breakdown": "Marks by line",
+    "columns": {
+      "line": "Line",
+      "marks": "Marks",
+      "reason": "Why"
+    },
+    "modelSolution": "Model solution",
+    "kindSpreadsheet": "Spreadsheet",
+    "kindDocument": "Document",
+    "missingConfig": "This question is missing its answer setup. Please tell your instructor.",
+    "notice": {
+      "noCredits": "AI checking is unavailable right now (institute credits). Your answer has been saved.",
+      "failed": "Your answer is saved, but the AI check did not finish. Please try again.",
+      "network": "We couldn't reach the server. Your answer is still here — please try again.",
+      "noAttempts": "You have no AI checks left for this question.",
+      "tooLarge": "Your answer is too large to submit (over 300 KB). Remove unused rows, tabs or pasted content.",
+      "empty": "Fill in your answer before submitting."
+    },
+    "checkingElapsed": "({{seconds}} s)",
+    "loadFailed": "Couldn't load your previous attempt. Submitting is paused until it loads, so you don't use a check by mistake.",
+    "retryLoad": "Retry",
+    "resultAnnouncement": "Result: {{result}}"
   }
 }

@@ -18,7 +18,8 @@
     },
     "questionTypes": {
         "mcqSingleCorrect": "MCQ (Single Correct)",
-        "mcqMultipleCorrect": "MCQ (Multiple Correct)"
+        "mcqMultipleCorrect": "MCQ (Multiple Correct)",
+        "cbeResponse": "Spreadsheet & Written Response"
     },
     "emptyStates": {
         "noQuestions": "No Question Exists."

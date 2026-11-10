@@ -12,6 +12,13 @@ import { TokenKey } from '@/constants/auth/tokens';
 import { QuestionType, QUESTION_TYPES } from '@/constants/dummy-data';
 import { getInstituteId } from '@/constants/helper';
 import { renderLatexDelimiters } from '@/lib/latex-delimiters';
+import {
+    buildCbeEvaluationJson,
+    CBE_RESPONSE_TYPE,
+    cbeConfigFromEvaluationJson,
+    cbeQuestionMark,
+    isCbeQuestionType,
+} from './cbe-question';
 // function defined locally below to avoid circular dependency
 // import { formatTimeStudyLibraryInSeconds } from '@/routes/study-library/courses/course-details/subjects/modules/chapters/slides/-helper/helper';
 
@@ -230,7 +237,9 @@ export function transformQuestionPaperDataAI(data: MyQuestionPaperFormInterface)
                 media_id: null, // Assuming no direct mapping for media_id
                 created_at: null,
                 updated_at: null,
-                question_response_type: null, // Assuming no direct mapping for response type
+                question_response_type: isCbeQuestionType(question.questionType)
+                    ? CBE_RESPONSE_TYPE
+                    : null,
                 question_type: questionTypeForBackend,
                 access_level: null, // Assuming no direct mapping for access level
                 auto_evaluation_json, // Add auto_evaluation_json
@@ -420,7 +429,9 @@ export function transformQuestionPaperData(data: MyQuestionPaperFormInterface) {
                 media_id: null, // Assuming no direct mapping for media_id
                 created_at: null,
                 updated_at: null,
-                question_response_type: null, // Assuming no direct mapping for response type
+                question_response_type: isCbeQuestionType(question.questionType)
+                    ? CBE_RESPONSE_TYPE
+                    : null,
                 question_type: questionTypeForBackend,
                 access_level: null, // Assuming no direct mapping for access level
                 auto_evaluation_json, // Add auto_evaluation_json
@@ -522,7 +533,9 @@ export function convertQuestionsDataToResponse(questions: MyQuestion[], key: str
             media_id: null,
             created_at: null,
             updated_at: null,
-            question_response_type: null,
+            question_response_type: isCbeQuestionType(question.questionType)
+                ? CBE_RESPONSE_TYPE
+                : null,
             // CMCQS/CMCQM/CNUMERIC are form-only types; the backend rejects them.
             question_type: getQuestionType(question.questionType),
             access_level: null,
@@ -656,6 +669,10 @@ export const transformResponseDataToMyQuestionsSchema = (data: QuestionResponse[
                 codingConfig = undefined;
             }
         }
+        // Spreadsheet & Written Response: the whole config (full on admin reads).
+        const cbeConfig = isCbeQuestionType(item.question_type)
+            ? cbeConfigFromEvaluationJson(item.auto_evaluation_json)
+            : undefined;
         const baseQuestion: MyQuestion = {
             id: item.id || '',
             questionId: item.id || item.preview_id || undefined,
@@ -666,7 +683,7 @@ export const transformResponseDataToMyQuestionsSchema = (data: QuestionResponse[
                     item.explanation_text?.content || item.explanation_text_data?.content
                 ) || '',
             questionType: item.question_type,
-            questionMark: marksFromSourceMeta(item),
+            questionMark: cbeConfig ? cbeQuestionMark(cbeConfig) : marksFromSourceMeta(item),
             questionPenalty: '',
             questionDuration: {
                 hrs: String(Math.floor((item.default_question_time_mins ?? 0) / 60)), // Extract hours
@@ -709,6 +726,7 @@ export const transformResponseDataToMyQuestionsSchema = (data: QuestionResponse[
             status: item.status,
             canSkip: item.can_skip,
             codingConfig,
+            ...(cbeConfig ? { cbeConfig } : {}),
             tags: item.subject_tags ?? [], // Subject tags: marker-pre-filled on parse, saved tags on edit/read-back
         };
 
@@ -782,6 +800,11 @@ export const transformResponseDataToMyQuestionsSchemaSingleQuestion = (item: Que
             codingConfig = undefined;
         }
     }
+    // Spreadsheet & Written Response. On a question slide this is the redacted
+    // config; the editor fetches the secret separately (cbeSecretStatus).
+    const cbeConfig = isCbeQuestionType(item.question_type)
+        ? cbeConfigFromEvaluationJson(item.auto_evaluation_json)
+        : undefined;
     const baseQuestion: MyQuestion = {
         id: item.id || '',
         questionId: item.id || item.preview_id || undefined,
@@ -791,7 +814,7 @@ export const transformResponseDataToMyQuestionsSchemaSingleQuestion = (item: Que
                 item.explanation_text?.content || item.explanation_text_data?.content
             ) || '',
         questionType: item.question_type,
-        questionMark: marksFromSourceMeta(item),
+        questionMark: cbeConfig ? cbeQuestionMark(cbeConfig) : marksFromSourceMeta(item),
         questionPenalty: '',
         questionDuration: {
             hrs: String(Math.floor((item.default_question_time_mins ?? 0) / 60)), // Extract hours
@@ -832,6 +855,7 @@ export const transformResponseDataToMyQuestionsSchemaSingleQuestion = (item: Que
         parentRichTextContent: renderLatexDelimiters(item.parent_rich_text?.content) || null,
         subjectiveAnswerText,
         codingConfig,
+        ...(cbeConfig ? { cbeConfig } : {}),
     };
 
     if (item.question_type === 'MCQS') {
@@ -1052,6 +1076,10 @@ export function getEvaluationJSON(
                 type: 'CODING',
                 data: question.codingConfig ?? {},
             });
+        case 'CBE_RESPONSE':
+            // The FULL config (solution, marking scheme, grading notes included):
+            // assessment_service redacts it from every learner-facing payload.
+            return buildCbeEvaluationJson(question.cbeConfig);
         default:
             return '';
     }

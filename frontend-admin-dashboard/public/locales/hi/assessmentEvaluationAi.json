@@ -109,7 +109,8 @@
         "correctAnswerHeading": "सही उत्तर",
         "studentAnswerHeading": "छात्र का उत्तर",
         "feedbackHeading": "फीडबैक",
-        "gradingBreakdownHeading": "ग्रेडिंग विवरण"
+        "gradingBreakdownHeading": "ग्रेडिंग विवरण",
+        "scenarioHeading": "परिदृश्य"
     },
     "table": {
         "criteria": "मानदंड",

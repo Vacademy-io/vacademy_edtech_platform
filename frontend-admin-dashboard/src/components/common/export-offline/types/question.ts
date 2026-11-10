@@ -36,6 +36,8 @@ export interface Question {
      * answer-key exports (QuestionComponent's `showAnswers` mode).
      */
     explanation_text?: string;
+    /** Passage; the scenario of a Spreadsheet & Written Response (CBE) question. */
+    parent_rich_text?: { content?: string | null } | null;
 }
 
 export type CustomFieldType = 'blank' | 'blocks' | 'input' | 'checkbox';

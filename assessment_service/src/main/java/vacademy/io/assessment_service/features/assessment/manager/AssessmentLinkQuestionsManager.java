@@ -238,21 +238,22 @@ public class AssessmentLinkQuestionsManager {
         return sectionRepository.save(section);
     }
 
-    private static final Set<String> STAFF_AUTHORITIES = Set.of("ADMIN", "EVALUATOR", "TEACHER", "CREATOR");
+    private static final Set<String> LEARNER_AUTHORITIES = Set.of("STUDENT", "PARENT", "GUARDIAN");
 
     /**
-     * Staff of the institute in the request's clientId: a known staff role, or any
-     * custom role on a user who is not a STUDENT there (custom staff roles must keep
-     * the full config - the assessment editor loads and re-saves it from here).
-     * Deliberately no root-user bypass: on prod nearly every learner is a "root" user.
+     * Staff of the institute in the request's clientId: at least one role outside the
+     * learner roles (STUDENT / PARENT / GUARDIAN), even when STUDENT is held as well -
+     * institutes enrol staff as learners to test courses, and a custom staff role must
+     * keep the full config because the assessment editor loads and re-saves it from here
+     * (same rule as admin_core AuthoringAnswerAccess). Deliberately no root-user bypass:
+     * on prod nearly every learner is a "root" user.
      */
     static boolean hasStaffAuthority(CustomUserDetails user) {
         if (user == null || user.getAuthorities() == null) return false;
         Set<String> authorities = new HashSet<>();
-        user.getAuthorities().forEach(a -> authorities.add(a.getAuthority() == null ? "" : a.getAuthority().toUpperCase()));
+        user.getAuthorities().forEach(a -> authorities.add(a.getAuthority() == null ? "" : a.getAuthority().trim().toUpperCase()));
         authorities.remove("");
-        if (authorities.stream().anyMatch(STAFF_AUTHORITIES::contains)) return true;
-        return !authorities.isEmpty() && !authorities.contains("STUDENT");
+        return authorities.stream().anyMatch(a -> !LEARNER_AUTHORITIES.contains(a));
     }
 
     public Map<String, List<AssessmentQuestionPreviewDto>> getQuestionsOfSection(CustomUserDetails user, String assessmentId, String sectionIds) {

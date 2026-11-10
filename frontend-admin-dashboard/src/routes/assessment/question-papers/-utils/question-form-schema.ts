@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { isQuillContentEmpty } from './helper';
+import { cbeConfigFormSchema, cbeSecretStatusFormSchema } from './cbe-question';
 
 export const questionsFormSchema = z.object({
     questionId: z.string().optional(),
@@ -93,4 +94,7 @@ export const questionsFormSchema = z.object({
             evaluationMode: z.enum(['AUTO', 'MANUAL']).default('AUTO'),
         })
         .optional(),
+    // CBE_RESPONSE (Spreadsheet & Written Response): kept whole, see cbe-question.ts.
+    cbeConfig: cbeConfigFormSchema,
+    cbeSecretStatus: cbeSecretStatusFormSchema,
 });

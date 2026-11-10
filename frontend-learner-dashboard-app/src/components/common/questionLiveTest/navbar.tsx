@@ -64,6 +64,8 @@ import type {
 } from "@react-pdf-viewer/core";
 import { PdfViewerComponent } from "../study-library/level-material/subject-material/module-material/chapter-material/slide-material/pdf-viewer-component";
 import { getServerStartEndTime } from "./page";
+import { encodeQuestionResponse } from "@/lib/assessment-response";
+import { commitCbeEditors } from "@/components/cbe/commit-registry";
 
 /** Save-state pill shown beside the assessment name. */
 function AutoSaveStatus({
@@ -215,11 +217,6 @@ export function Navbar({
           ? (state.sectionTimers?.[idx]?.timeLeft || 0) - section.duration * 60
           : 0,
         questions: section.question_preview_dto_list?.map((question) => {
-          const rawAnswer = state.answers?.[question.question_id];
-          const normalizedAnswer = Array.isArray(rawAnswer)
-            ? rawAnswer[0]
-            : rawAnswer;
-
           const baseQuestionData = {
             questionId: question.question_id,
             questionDurationLeftInSeconds:
@@ -235,48 +232,19 @@ export function Navbar({
 
           // Submit the response payload whenever the assessment is AUTO, OR
           // it's MANUAL but no PDF was uploaded (e.g. CODING-only assessment).
-          const codingAnswer = state.codingAnswers?.[question.question_id];
+          // CODING and CBE answers exist only on screen, never on the uploaded
+          // paper, so they always go — leaving them out would overwrite the
+          // autosaved attempt with no answer.
           const includeResponse =
-            evaluationType !== "MANUAL" || !pdfFile;
+            evaluationType !== "MANUAL" ||
+            !pdfFile ||
+            question.question_type === "CODING" ||
+            question.question_type === "CBE_RESPONSE";
           if (includeResponse) {
-            let responseData: Record<string, unknown>;
-            if (question.question_type === "CODING") {
-              responseData = {
-                type: "CODING",
-                language: codingAnswer?.language || "",
-                sourceCode: codingAnswer?.sourceCode || "",
-                verdict: codingAnswer?.verdict || "",
-                passedCount: codingAnswer?.passedCount ?? 0,
-                totalCount: codingAnswer?.totalCount ?? 0,
-                score: codingAnswer?.score ?? 0,
-                totalTimeMs: codingAnswer?.totalTimeMs ?? 0,
-                peakMemoryKb: codingAnswer?.peakMemoryKb ?? 0,
-                testCaseResults: codingAnswer?.testCaseResults ?? [],
-                pasteAttemptCount: codingAnswer?.pasteAttemptCount ?? 0,
-              };
-            } else if (question.question_type === "NUMERIC") {
-              responseData = {
-                type: "NUMERIC",
-                validAnswer:
-                  normalizedAnswer !== undefined &&
-                  normalizedAnswer !== null &&
-                  !isNaN(parseFloat(normalizedAnswer))
-                    ? parseFloat(normalizedAnswer)
-                    : null,
-              };
-            } else if (
-              ["ONE_WORD", "LONG_ANSWER"].includes(question.question_type)
-            ) {
-              responseData = {
-                type: question.question_type,
-                answer: normalizedAnswer || "",
-              };
-            } else {
-              responseData = {
-                type: question.question_type,
-                optionIds: rawAnswer || [],
-              };
-            }
+            // One encoder for every type (lib/assessment-response.ts), shared
+            // with the 60 s autosave — an unknown type used to fall into an
+            // optionIds branch here and lose its answer.
+            const responseData = encodeQuestionResponse(question, state);
             return { ...baseQuestionData, responseData };
           } else {
             return baseQuestionData;
@@ -443,7 +411,9 @@ export function Navbar({
       (tabSwitchCount >= 3 || proctorAutoSubmitRequested)
     ) {
       setShowSubmitModal(true);
-      handleSubmit();
+      // Next tick, outside React's effect phase: the CBE commit inside
+      // handleSubmit needs flushSync, which React ignores during effects.
+      window.setTimeout(() => void handleSubmit(), 0);
     }
   }, [tabSwitchCount, proctorAutoSubmitRequested, evaluationType, assessment]);
 
@@ -536,7 +506,8 @@ export function Navbar({
 
     hasAutoSubmittedRef.current = true;
     setShowTimesUpModal(true);
-    void handleSubmit();
+    // Next tick for the same reason as the proctoring auto-submit above.
+    window.setTimeout(() => void handleSubmit(), 0);
   }, [entireTestTimer, evaluationType, isSubmitted, assessment, playMode]);
 
   const formatTime = (timeInSeconds: number) => {
@@ -554,6 +525,9 @@ export function Navbar({
   // const isAllTimeUp = entireTestTimer === 0;
 
   const handleSubmit = async () => {
+    // Save a spreadsheet cell still being typed in and the grid's debounced
+    // change before reading the store (time-up / proctoring submits too).
+    commitCbeEditors();
     const state = useAssessmentStore.getState();
     const attemptId = state.assessment?.attempt_id;
 
@@ -729,8 +703,11 @@ export function Navbar({
         ? "border-warning-200 bg-warning-50 text-warning-700"
         : "border-neutral-200 bg-neutral-100 text-neutral-800";
 
+  // CODING and CBE (spreadsheet / written) are answered on screen, never on paper.
   const isManualUpload =
-    evaluationType === "MANUAL" && currentQuestion?.question_type !== "CODING";
+    evaluationType === "MANUAL" &&
+    currentQuestion?.question_type !== "CODING" &&
+    currentQuestion?.question_type !== "CBE_RESPONSE";
   // Tools live in the header on desktop and in the footer's tool menu on a
   // phone, where header width is reserved for the timer and Submit.
   const showHeaderTools = !isCompact;

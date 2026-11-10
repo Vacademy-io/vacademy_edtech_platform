@@ -1,6 +1,7 @@
 package vacademy.io.assessment_service.features.question_bank.manager;
 
 
+import vacademy.io.assessment_service.features.question_core.util.CbeConfigRedactor;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.extern.slf4j.Slf4j;
@@ -380,7 +381,14 @@ public class AddQuestionPaperFromImportManager {
             question.setExplanationTextData(AssessmentRichTextData.fromDTO(questionRequest.getExplanationText()));
         }
         if (questionRequest.getAutoEvaluationJson() != null) {
-            question.setAutoEvaluationJson((questionRequest.getAutoEvaluationJson()));
+            String autoEvaluationJson = questionRequest.getAutoEvaluationJson();
+            // A CBE config the editor loaded redacted must not wipe the stored solution,
+            // marking scheme, solution file or grading notes when it is saved back.
+            if (existingQuestion != null && CbeConfigRedactor.isCbe(questionRequest.getQuestionType())) {
+                autoEvaluationJson = CbeConfigRedactor.keepStoredSecrets(
+                        existingQuestion.getAutoEvaluationJson(), autoEvaluationJson);
+            }
+            question.setAutoEvaluationJson(autoEvaluationJson);
         }
         if (questionRequest.getMediaId() != null) {
             question.setMediaId((questionRequest.getMediaId()));

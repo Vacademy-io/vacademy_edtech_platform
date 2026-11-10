@@ -46,7 +46,8 @@
         "NUMERIC": "رقمي",
         "ONE_WORD": "كلمة واحدة",
         "LONG_ANSWER": "إجابة طويلة",
-        "CODING": "برمجة"
+        "CODING": "برمجة",
+        "CBE_RESPONSE": "جدول بيانات ومكتوب"
     },
     "source": {
         "MANUAL": "مكتوب يدويًا",

@@ -63,6 +63,8 @@ export interface SavedData {
     duration_distribution: 'ASSESSMENT' | 'QUESTION' | 'SECTION';
     /** OMR sheet (pen & paper) mode; the backend sends a Boolean (null on older assessments). */
     omr_mode: boolean | null;
+    /** Step 1 "Evaluate submissions with AI" toggle. */
+    ai_evaluation_enabled?: boolean | null;
     boundation_end_date: string;
     assessment_url: string;
     duration: number;

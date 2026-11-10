@@ -14,9 +14,11 @@ import { ExpandableParagraph } from "./otherQuestionTypes/paragraph";
 import { OneWordInput } from "./otherQuestionTypes/OneWordInput";
 import { LongAnswerInput } from "./otherQuestionTypes/LongAnswerInput";
 import { CodingQuestionDisplay } from "./otherQuestionTypes/CodingQuestionDisplay";
+import { CbeQuestionDisplay } from "./otherQuestionTypes/CbeQuestionDisplay";
 import { QuestionHtmlContent } from "./question-html-content";
 import { QuestionPassage } from "./question-passage";
 import { useLiveTestUi } from "./live-test-ui-context";
+import { questionTypeLabel } from "./question-type-label";
 
 const OPTION_LETTERS = "abcdefghijklmnopqrstuvwxyz";
 
@@ -190,12 +192,14 @@ export function QuestionDisplay() {
   };
 
   const isMultiSelect = currentQuestion.question_type === QUESTION_TYPES.MCQM;
+  const typeLabel = questionTypeLabel(currentQuestion.question_type, t);
 
-  return (
-    <div className="mx-auto w-full max-w-4xl">
-      {/* Question header — number on the left, marking scheme on the right, so
-          both survive a narrow phone without the stem shifting around. */}
-      <div className="mb-4 flex flex-wrap items-center gap-2 md:mb-5">
+  const isCbe = currentQuestion.question_type === QUESTION_TYPES.CBE_RESPONSE;
+
+  // Question header — number on the left, marking scheme on the right, so
+  // both survive a narrow phone without the stem shifting around.
+  const header = (
+      <div className={cn("flex flex-wrap items-center gap-2", !isCbe && "mb-4 md:mb-5")}>
         <span className="text-title font-bold text-neutral-900">
           {t("common.questionNumber", {
             number:
@@ -217,7 +221,7 @@ export function QuestionDisplay() {
             </span>
           )}
         <span className="flex-1" />
-        <MetaChip>{currentQuestion.question_type}</MetaChip>
+        <MetaChip>{typeLabel}</MetaChip>
         {settings.showMarkingScheme && totalMark > 0 && (
           <MetaChip tone="positive">+{totalMark}</MetaChip>
         )}
@@ -225,6 +229,25 @@ export function QuestionDisplay() {
           <MetaChip tone="negative">−{negativeMark}</MetaChip>
         )}
       </div>
+  );
+
+  // Spreadsheet & Written Response takes the whole question area as a split
+  // screen (scenario | requirements + workspace); page.tsx drops its padding
+  // and scroller for it on desktop.
+  if (isCbe) {
+    return (
+      <CbeQuestionDisplay
+        key={currentQuestion.question_id}
+        question={currentQuestion}
+        header={header}
+        intro={<ExpandableParagraph />}
+      />
+    );
+  }
+
+  return (
+    <div className="mx-auto w-full max-w-4xl">
+      {header}
 
       <ExpandableParagraph />
 

@@ -112,4 +112,18 @@ public interface QuestionSlideTrackedRepository extends JpaRepository<QuestionSl
             """, nativeQuery = true)
     Optional<QuestionSlideTracked> findLatestCbeSubmission(@Param("userId") String userId,
             @Param("slideId") String slideId);
+
+    /** The learner's latest graded CBE submission on this slide (a later one may have failed). */
+    @Query(value = """
+            SELECT t.*
+            FROM question_slide_tracked t
+            JOIN activity_log al ON al.id = t.activity_id
+            WHERE al.user_id = :userId
+              AND al.slide_id = :slideId
+              AND t.response_status = 'EVALUATED'
+            ORDER BY t.created_at DESC, t.attempt_number DESC
+            LIMIT 1
+            """, nativeQuery = true)
+    Optional<QuestionSlideTracked> findLatestEvaluatedCbeSubmission(@Param("userId") String userId,
+            @Param("slideId") String slideId);
 }

@@ -5,7 +5,8 @@
         "optionBased": "قائم على الخيارات",
         "mathBased": "قائم على الرياضيات",
         "writingSkills": "مهارات الكتابة",
-        "readingSkills": "مهارات القراءة"
+        "readingSkills": "مهارات القراءة",
+        "cbe": "اختبار حاسوبي (CBE)"
     },
     "questionTypes": {
         "mcqSingle": "أسئلة اختيار من متعدد (إجابة صحيحة واحدة)",
@@ -17,7 +18,8 @@
         "singleWord": "كلمة واحدة",
         "comprehensionMcqSingle": "أسئلة اختيار من متعدد للفهم (إجابة صحيحة واحدة)",
         "comprehensionMcqMultiple": "أسئلة اختيار من متعدد للفهم (إجابات صحيحة متعددة)",
-        "comprehensionNumeric": "سؤال عددي للفهم"
+        "comprehensionNumeric": "سؤال عددي للفهم",
+        "cbeResponse": "جدول بيانات وإجابة مكتوبة"
     },
     "dialog": {
         "title": "إنشاء ورقة أسئلة يدويًا"

@@ -103,6 +103,8 @@ export enum QUESTION_TYPES {
   FILL_IN_THE_BLANK = "FILL_IN_THE_BLANK",
   NUMERIC = "NUMERIC",
   CODING = "CODING",
+  /** Spreadsheet & Written Response (docs/CBE_RESPONSE_QUESTION.md). */
+  CBE_RESPONSE = "CBE_RESPONSE",
 };
 
 export interface RichText {

@@ -110,7 +110,8 @@
         "correctAnswerHeading": "Bonne réponse",
         "studentAnswerHeading": "Réponse de l'élève",
         "feedbackHeading": "Commentaires",
-        "gradingBreakdownHeading": "Détail de la notation"
+        "gradingBreakdownHeading": "Détail de la notation",
+        "scenarioHeading": "Mise en situation"
     },
     "table": {
         "criteria": "Critère",

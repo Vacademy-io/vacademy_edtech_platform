@@ -30,7 +30,15 @@ type SectionFormType = z.infer<typeof sectionDetailsSchema>;
 const PAGE_SIZE = 20;
 
 const DIFFICULTIES = ['EASY', 'MEDIUM', 'HARD'];
-const QUESTION_TYPES = ['MCQS', 'MCQM', 'TRUE_FALSE', 'ONE_WORD', 'LONG_ANSWER', 'NUMERIC'];
+const QUESTION_TYPES = [
+    'MCQS',
+    'MCQM',
+    'TRUE_FALSE',
+    'ONE_WORD',
+    'LONG_ANSWER',
+    'NUMERIC',
+    'CBE_RESPONSE',
+];
 
 /** Rich text arrives as HTML; the picker only needs a readable one-liner. */
 const plainText = (html: string | null | undefined): string => {

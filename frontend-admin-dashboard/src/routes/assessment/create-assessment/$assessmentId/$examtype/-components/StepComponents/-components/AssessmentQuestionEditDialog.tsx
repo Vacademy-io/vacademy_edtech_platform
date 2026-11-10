@@ -8,6 +8,7 @@ import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import { PencilSimpleLine } from '@phosphor-icons/react';
 import { MyButton } from '@/components/design-system/button';
+import { commitCbeEditors } from '@/components/cbe/commit-registry';
 import { MyDialog } from '@/components/design-system/dialog';
 import { DashboardLoader } from '@/components/core/dashboard-loader';
 import { getInstituteId } from '@/constants/helper';
@@ -203,6 +204,8 @@ export const QuestionEditor = ({
             <form
                 onSubmit={async (event) => {
                     event.preventDefault();
+                    // A CBE spreadsheet cell still being typed in goes into the form first.
+                    commitCbeEditors();
                     // Validate only the question: the paper-level fields of this
                     // shared schema (title, upload) are meaningless for one
                     // question and must not block the save.

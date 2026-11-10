@@ -1,5 +1,6 @@
 import { parseHtmlToString } from "@/lib/utils";
 import type { TFunction } from "i18next";
+import { CbeCorrectAnswer, CbeStudentResponse } from "./cbe-review";
 
 interface QuestionOption {
   id: string;
@@ -120,6 +121,16 @@ export const renderStudentResponse = (
           );
         }
         return <p>{t("questionResponseRenderer.noOptionsSelected")}</p>;
+
+      case "CBE_RESPONSE":
+        // Per part, read-only: never dump the answer JSON.
+        return (
+          <CbeStudentResponse
+            studentResponse={responseData}
+            correctOptions={review.correct_options}
+            t={t}
+          />
+        );
 
       case "CODING": {
         const r = responseData.responseData || {};
@@ -366,6 +377,10 @@ export const renderCorrectAnswer = (
           );
         }
         return <p>{t("questionResponseRenderer.noCorrectOptionsProvided")}</p>;
+
+      case "CBE_RESPONSE":
+        // Model solution once released; the server strips it until then.
+        return <CbeCorrectAnswer correctOptions={correctData} t={t} />;
 
       case "CODING": {
         const tcs = (correctData.data?.testCases || []) as Array<{

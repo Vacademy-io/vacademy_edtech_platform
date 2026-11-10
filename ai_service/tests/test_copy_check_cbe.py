@@ -25,7 +25,7 @@ from app.services.copy_check.rubric import RubricResolver, RubricSnapshot
 
 
 # ---------------------------------------------------------------------------
-# Fixtures: the Tamarind consolidated SFP example from the contract
+# Fixtures: the Parent consolidated SFP example from the contract
 # ---------------------------------------------------------------------------
 
 def _sheet(cells, name="Sheet1", more=None):
@@ -81,7 +81,7 @@ def _q(answer=ANSWER, config=CONFIG, max_marks=6):
     return {
         "question_id": "q_cbe",
         "question_type": "CBE_RESPONSE",
-        "question_text": "Scenario: Tamarind acquired 80% of Sapling.\n\nRequirement: answer (a) and (b).",
+        "question_text": "Scenario: Parent acquired 80% of Sapling.\n\nRequirement: answer (a) and (b).",
         "max_marks": max_marks,
         "student_answer": json.dumps(answer) if not isinstance(answer, str) else answer,
         "model_answer": json.dumps(config) if not isinstance(config, str) else config,
@@ -147,6 +147,35 @@ def test_document_html_keeps_paragraphs_lists_and_tables():
             "<p>end &amp; done</p>")
     assert c.html_to_text(html) == (
         "Intro text\n\n- one\n- two\n  1. a\n\n| Item | $000 |\n| PPE | 76,700 |\n\nend & done")
+
+
+def test_document_html_reads_real_tiptap_lists_and_tables():
+    # TipTap wraps every list item and table cell in a <p>.
+    html = ("<p>Points:</p><ul><li><p>IAS 38 prohibits</p></li><li><p>Second</p>"
+            "<ul><li><p>nested</p></li></ul></li><li><p>Third</p></li></ul>"
+            "<ol><li><p>Step one</p></li><li><p>Step two</p></li></ol>"
+            "<table><colgroup><col><col></colgroup><tbody><tr><th><p>Account</p></th><th><p>$000</p></th></tr>"
+            "<tr><td><p>Cash</p></td><td><p>1,200</p></td></tr></tbody></table>")
+    assert c.html_to_text(html) == (
+        "Points:\n\n- IAS 38 prohibits\n- Second\n  - nested\n- Third\n\n1. Step one\n2. Step two\n\n"
+        "| Account | $000 |\n| Cash | 1,200 |")
+
+
+def test_plain_text_with_a_less_than_sign_is_not_parsed_as_html():
+    text = "Scenario line 1\ncost<budget and a<b\nline 3 &amp; more"
+    assert c.html_to_text(text) == "Scenario line 1\ncost<budget and a<b\nline 3 & more"
+
+
+def test_sync_question_text_is_converted_from_html_once():
+    q = cbe_sync.build_question({
+        "source_id": "s1", "max_marks": 4, "config": {"type": "CBE_RESPONSE", "data": {"parts": []}},
+        "answer": {"parts": {}},
+        "scenario_text": "<p>P acquired S.</p><table><tr><td><p>Cash</p></td><td><p>100</p></td></tr></table>",
+        "question_text": "<p>Prepare the SFP where cost &lt; budget.</p><ul><li><p>Show workings</p></li></ul>",
+    })
+    assert q["question_text"] == (
+        "Scenario:\nP acquired S.\n\n| Cash | 100 |\n\n"
+        "Requirement:\nPrepare the SFP where cost < budget.\n\n- Show workings")
 
 
 def test_whole_question_answer_and_solution():
@@ -287,7 +316,7 @@ def test_cbe_prompt_has_fence_solution_scheme_and_rules():
     assert "B7 = 3,800 [=Workings!B2]" in fenced
     assert "3,200" not in fenced
     assert "Marking scheme:" in prompt and "(a) Goodwill" in prompt
-    assert "Tamarind acquired 80%" in prompt
+    assert "Parent acquired 80%" in prompt
     assert "Maximum marks 6.0" in prompt
 
     system = t.CBE_GRADING_SYSTEM
@@ -371,7 +400,7 @@ def test_typed_lane_grades_cbe_and_skips_blank_answers():
 
 def _body(**over):
     body = {"institute_id": "inst", "user_id": "learner-1", "source_id": "slide-1",
-            "question_text": "<p>Answer (a) and (b).</p>", "scenario_text": "<p>Tamarind acquired 80%.</p>",
+            "question_text": "<p>Answer (a) and (b).</p>", "scenario_text": "<p>Parent acquired 80%.</p>",
             "config": CONFIG, "answer": ANSWER, "max_marks": 6}
     body.update(over)
     return body
@@ -427,7 +456,7 @@ def test_sync_success_grades_and_charges_once(client):
     assert charge["model"] == "eval-model"
     assert charge["grader"].prompt_tokens == 1000
     # the scenario reached the model
-    assert "Tamarind acquired 80%" in state["llm"].calls[0]["messages"][1]["content"]
+    assert "Parent acquired 80%" in state["llm"].calls[0]["messages"][1]["content"]
 
 
 def test_sync_402_when_credits_short_and_no_model_call(client):

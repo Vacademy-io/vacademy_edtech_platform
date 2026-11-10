@@ -257,6 +257,13 @@ export default defineConfig(({ mode }) => {
                     interop: 'esModule',
                     manualChunks(id) {
                         if (id.includes('node_modules')) {
+                            // CBE spreadsheet grid. Before the React rule: the path
+                            // `@fortune-sheet/react/` contains "/react/" and would put the
+                            // whole grid in the eagerly loaded react-vendor chunk. Left to
+                            // Rollup, it stays in the lazy fortune-workbook chunk (a named
+                            // chunk would also pull in deps other routes share, e.g. uuid).
+                            if (id.includes('/@fortune-sheet/')) return undefined;
+
                             // Core React
                             if (id.includes('/react/') || id.includes('/react-dom/'))
                                 return 'react-vendor';
@@ -499,6 +506,7 @@ export default defineConfig(({ mode }) => {
                 'src/components/shared/whatsapp/**/*.test.{ts,tsx}',
                 'src/components/common/study-library/add-course/**/*.test.{ts,tsx}',
                 'src/components/common/payments/**/*.test.{ts,tsx}',
+                'src/components/cbe/**/*.test.{ts,tsx}',
             ],
         },
         server: {

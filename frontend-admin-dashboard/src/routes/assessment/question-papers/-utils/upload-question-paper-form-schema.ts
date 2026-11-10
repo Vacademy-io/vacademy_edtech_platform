@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { isQuillContentEmpty } from './helper';
+import { cbeConfigFormSchema, cbeSecretStatusFormSchema, validateCbeConfig } from './cbe-question';
 
 // Helper function to validate single choice questions (MCQS, CMCQS)
 const validateSingleChoiceQuestion = (question: any, ctx: z.RefinementCtx, examType: string, optionsPath: string, optionsName: string) => {
@@ -193,6 +194,23 @@ const validateNumericTypeConstraints = (question: any, ctx: z.RefinementCtx) => 
     }
 };
 
+// Spreadsheet & Written Response: at least one part, every part worth marks.
+// A missing solution / marking scheme only warns (shown in the editor).
+export const validateCbeQuestion = (question: any, ctx: z.RefinementCtx, examType: string) => {
+    if (examType === 'SURVEY') return;
+    const { errors } = validateCbeConfig(question.cbeConfig);
+    errors.forEach((issue) => {
+        ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message:
+                issue.code === 'noParts'
+                    ? 'Add at least one answer part'
+                    : `Part ${'label' in issue ? issue.label : ''} needs marks greater than 0`,
+            path: ['cbeConfig'],
+        });
+    });
+};
+
 // Main validation function that routes to specific validators
 const validateQuestionByType = (question: any, ctx: z.RefinementCtx, examType: string) => {
     switch (question.questionType) {
@@ -222,6 +240,9 @@ const validateQuestionByType = (question: any, ctx: z.RefinementCtx, examType: s
             break;
         case 'LONG_ANSWER':
             validateSubjectiveQuestion(question, ctx, examType, 'LONG_ANSWER');
+            break;
+        case 'CBE_RESPONSE':
+            validateCbeQuestion(question, ctx, examType);
             break;
     }
 
@@ -381,6 +402,9 @@ export const uploadQuestionPaperFormSchema = (examType?: string) => {
                         evaluationMode: z.enum(['AUTO', 'MANUAL']).default('AUTO'),
                     })
                     .optional(),
+                // CBE_RESPONSE (Spreadsheet & Written Response): kept whole, see cbe-question.ts.
+                cbeConfig: cbeConfigFormSchema,
+                cbeSecretStatus: cbeSecretStatusFormSchema,
             })
             .superRefine((question, ctx) => {
                 validateQuestionByType(question, ctx, examType || 'EXAM');

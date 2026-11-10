@@ -7,6 +7,13 @@ import {
   type QuestionDto,
 } from "../types/assessment";
 import { safeParse } from "@/lib/storage";
+import {
+  CBE_QUESTION_TYPE,
+  isCbeAnswerEmpty,
+  parseCbeConfig,
+  type CbeAnswer,
+  type CbeConfig,
+} from "@/components/cbe/types";
 
 const LEGACY_STATE_KEY_PREFIX = "ASSESSMENT_STATE_";
 
@@ -39,6 +46,9 @@ const purgeOtherAssessmentStates = async (keepKey: string) => {
   );
 };
 
+/** Marks a snapshot saved without `assessment` because storage was full. */
+const SLIM_SNAPSHOT_FLAG = "__slimSnapshot";
+
 // Logged once per page load; saveState runs every few seconds.
 let localSaveSkippedLogged = false;
 
@@ -66,8 +76,14 @@ export const removePersistedAssessmentState = async (attemptId: string) => {
 export const hasAnswerFor = (
   questionId: string,
   answers: Record<string, string[]>,
-  codingAnswers: Record<string, { sourceCode?: string }>
+  codingAnswers: Record<string, { sourceCode?: string }>,
+  cbeAnswers?: Record<string, CbeAnswer>,
+  /** The question's CBE config, so content identical to its template does not count. */
+  cbeConfig?: CbeConfig | null
 ): boolean => {
+  const cbe = cbeAnswers?.[questionId];
+  if (cbe && !isCbeAnswerEmpty(cbe, cbeConfig)) return true;
+
   const coding = codingAnswers?.[questionId];
   if (coding?.sourceCode && coding.sourceCode.trim().length > 0) return true;
 
@@ -77,6 +93,24 @@ export const hasAnswerFor = (
   return answer.some(
     (value) => value !== null && value !== undefined && String(value).trim() !== ""
   );
+};
+
+/** The learner-safe CBE config of a question in the loaded paper, or null. */
+export const cbeConfigOf = (
+  assessment: AssessmentPreviewData | null | undefined,
+  questionId: string
+): CbeConfig | null => {
+  for (const section of assessment?.section_dtos ?? []) {
+    const question = section.question_preview_dto_list?.find(
+      (q) => q.question_id === questionId
+    );
+    if (question) {
+      return question.question_type === CBE_QUESTION_TYPE
+        ? parseCbeConfig(question.evaluation_json)
+        : null;
+    }
+  }
+  return null;
 };
 
 interface PdfFile {
@@ -129,6 +163,10 @@ interface AssessmentStore {
   questionStates: Record<string, QuestionState>;
   answers: Record<string, string[]>;
   codingAnswers: Record<string, CodingAnswerData>;
+  /** CBE_RESPONSE answers by question id (contract §4 `answer`). */
+  cbeAnswers: Record<string, CbeAnswer>;
+  /** Blocked pastes (text not copied inside the CBE workspace) by question id. */
+  cbePasteAttempts: Record<string, number>;
   sectionTimers: Record<number, SectionTimer>;
   questionTimers: Record<string, number>;
   setAssessment: (assessment: AssessmentPreviewData) => void;
@@ -138,6 +176,8 @@ interface AssessmentStore {
   setAnswer: (questionId: string, answerId: string[]) => void;
   setCodingAnswer: (questionId: string, data: CodingAnswerData) => void;
   incrementCodingPasteAttempt: (questionId: string) => void;
+  setCbeAnswer: (questionId: string, answer: CbeAnswer) => void;
+  incrementCbePasteAttempt: (questionId: string) => void;
   markForReview: (questionId: string) => void;
   clearResponse: (questionId: string) => void;
   updateSectionTimer: (sectionIndex: number, timeLeft: number) => void;
@@ -182,6 +222,8 @@ export const useAssessmentStore = create<AssessmentStore>((set, get) => ({
   questionStates: {},
   answers: {},
   codingAnswers: {},
+  cbeAnswers: {},
+  cbePasteAttempts: {},
   sectionTimers: {},
   questionTimers: {},
   questionStartTime: {},
@@ -197,6 +239,8 @@ export const useAssessmentStore = create<AssessmentStore>((set, get) => ({
       questionStates: {},
       answers: {},
       codingAnswers: {},
+      cbeAnswers: {},
+      cbePasteAttempts: {},
       sectionTimers: {},
       questionTimers: {},
       questionStartTime: {},
@@ -245,7 +289,11 @@ export const useAssessmentStore = create<AssessmentStore>((set, get) => ({
             isAnswered: hasAnswerFor(
               question.question_id,
               state.answers,
-              state.codingAnswers
+              state.codingAnswers,
+              state.cbeAnswers,
+              question.question_type === CBE_QUESTION_TYPE
+                ? parseCbeConfig(question.evaluation_json)
+                : null
             ),
             isVisited: previous?.isVisited ?? false,
             isMarkedForReview: previous?.isMarkedForReview ?? false,
@@ -360,6 +408,31 @@ export const useAssessmentStore = create<AssessmentStore>((set, get) => ({
       },
     })),
 
+  setCbeAnswer: (questionId, answer) =>
+    set((state) => ({
+      cbeAnswers: { ...state.cbeAnswers, [questionId]: answer },
+      questionStates: {
+        ...state.questionStates,
+        [questionId]: {
+          ...state.questionStates[questionId],
+          // Typing into the workspace means the learner is on this question.
+          isVisited: true,
+          isAnswered: !isCbeAnswerEmpty(
+            answer,
+            cbeConfigOf(state.assessment, questionId)
+          ),
+        },
+      },
+    })),
+
+  incrementCbePasteAttempt: (questionId) =>
+    set((state) => ({
+      cbePasteAttempts: {
+        ...state.cbePasteAttempts,
+        [questionId]: (state.cbePasteAttempts[questionId] || 0) + 1,
+      },
+    })),
+
   incrementCodingPasteAttempt: (questionId) =>
     set((state) => {
       const existing = state.codingAnswers[questionId];
@@ -407,16 +480,23 @@ export const useAssessmentStore = create<AssessmentStore>((set, get) => ({
     })),
 
   clearResponse: (questionId) =>
-    set((state) => ({
-      answers: { ...state.answers, [questionId]: [] },
-      questionStates: {
-        ...state.questionStates,
-        [questionId]: {
-          ...state.questionStates[questionId],
-          isAnswered: false,
+    set((state) => {
+      // Dropping the entry (not storing an empty one) puts the CBE workspace
+      // back on each part's starting template.
+      const cbeAnswers = { ...state.cbeAnswers };
+      delete cbeAnswers[questionId];
+      return {
+        answers: { ...state.answers, [questionId]: [] },
+        cbeAnswers,
+        questionStates: {
+          ...state.questionStates,
+          [questionId]: {
+            ...state.questionStates[questionId],
+            isAnswered: false,
+          },
         },
-      },
-    })),
+      };
+    }),
 
   updateSectionTimer: (sectionIndex, timeLeft) =>
     set((state) => {
@@ -658,6 +738,10 @@ export const useAssessmentStore = create<AssessmentStore>((set, get) => ({
       questionStates: state.questionStates,
       answers: state.answers,
       codingAnswers: state.codingAnswers,
+      // Spreadsheet answers can be large (capped at 300 KB each); if they push
+      // the snapshot past the storage quota, see the fallbacks below.
+      cbeAnswers: state.cbeAnswers,
+      cbePasteAttempts: state.cbePasteAttempts,
       sectionTimers: state.sectionTimers,
       questionTimers: state.questionTimers,
       entireTestTimer: state.entireTestTimer,
@@ -687,10 +771,24 @@ export const useAssessmentStore = create<AssessmentStore>((set, get) => ({
       try {
         await purgeOtherAssessmentStates(key);
         await Storage.set({ key, value });
-      } catch (retryError) {
-        if (!localSaveSkippedLogged) {
-          localSaveSkippedLogged = true;
-          console.warn("saveState: storage full, local snapshot skipped", retryError);
+      } catch {
+        // Never leave the OLDER snapshot behind: a reload would restore its
+        // stale answers and the next server autosave would overwrite newer
+        // work with them. Try a slim snapshot without the paper (loadState
+        // re-reads it from "Assessment_questions"); failing that, drop it.
+        try {
+          const { assessment: _paper, ...slim } = dataToSave;
+          void _paper;
+          await Storage.set({
+            key,
+            value: JSON.stringify({ ...slim, [SLIM_SNAPSHOT_FLAG]: true }),
+          });
+        } catch (slimError) {
+          await Storage.remove({ key }).catch(() => undefined);
+          if (!localSaveSkippedLogged) {
+            localSaveSkippedLogged = true;
+            console.warn("saveState: storage full, local snapshot dropped", slimError);
+          }
         }
       }
     }
@@ -731,6 +829,14 @@ export const useAssessmentStore = create<AssessmentStore>((set, get) => ({
       null
     );
     if (!parsedState) return;
+
+    // A slim snapshot (saved when storage was full) has no paper: take it
+    // from the attempt's stored question payload.
+    if (parsedState[SLIM_SNAPSHOT_FLAG]) {
+      delete parsedState[SLIM_SNAPSHOT_FLAG];
+      if (!parsedAssessment) return;
+      parsedState.assessment = parsedAssessment;
+    }
 
     set(parsedState);
   },

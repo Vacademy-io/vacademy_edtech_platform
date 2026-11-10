@@ -19,7 +19,6 @@ import vacademy.io.admin_core_service.features.learner_tracking.entity.QuestionS
 import vacademy.io.admin_core_service.features.learner_tracking.repository.ActivityLogRepository;
 import vacademy.io.admin_core_service.features.learner_tracking.repository.QuestionSlideTrackedRepository;
 import vacademy.io.admin_core_service.features.learner_tracking.service.LearnerTrackingAsyncService;
-import vacademy.io.admin_core_service.features.learner_tracking.util.RichTextForAI;
 import vacademy.io.admin_core_service.features.slide.cbe.CbeConfigSecrets;
 import vacademy.io.admin_core_service.features.slide.entity.QuestionSlide;
 import vacademy.io.admin_core_service.features.slide.entity.Slide;
@@ -37,7 +36,6 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import java.util.regex.Pattern;
 
 /**
  * Spreadsheet &amp; Written Response ({@code CBE_RESPONSE}) question slides: the learner
@@ -66,11 +64,13 @@ public class CbeSlideSubmitService {
 
     public static final String ERROR_NO_CREDITS = "NO_CREDITS";
     public static final String ERROR_FAILED = "EVALUATION_FAILED";
+    /** ai_service found nothing beyond the starting template: not graded, no attempt used. */
+    public static final String ERROR_UNATTEMPTED = "UNATTEMPTED";
 
-    private static final Pattern BLOCK_END = Pattern.compile("(?i)(<br\\s*/?>|</(p|div|li|tr|h[1-6]|table|ul|ol)>)");
-    private static final Pattern CELL_END = Pattern.compile("(?i)</(td|th)>");
-    /** Survives RichTextForAI, which collapses every other whitespace character. */
-    private static final String LINE = " ";
+    /** The evaluation a learner may see (contract section 5.2); anything else ai_service adds stays out. */
+    private static final List<String> EVALUATION_FIELDS =
+            List.of("marks_awarded", "max_marks", "verdict", "feedback");
+    private static final List<String> CRITERION_FIELDS = List.of("criteria_name", "marks", "max_marks", "reason");
 
     /** The outcome of a submit: the HTTP status to answer with and the body. */
     public record Outcome(int httpStatus, CbeAttemptResponse body) {
@@ -129,6 +129,11 @@ public class CbeSlideSubmitService {
         if (answer == null || !answer.isObject() || !answer.path("parts").isObject()) {
             throw new InvalidRequestException("answer.parts is required");
         }
+        // Before an attempt is reserved: an empty answer is never an AI check (and so can
+        // never unlock the model solution).
+        if (!hasAnyContent(answer)) {
+            throw new InvalidRequestException("Write an answer before submitting");
+        }
         String userId = user.getUserId();
         String slideId = request.getSlideId();
 
@@ -160,9 +165,17 @@ public class CbeSlideSubmitService {
         int httpStatus = 200;
         try {
             Map<String, Object> graded = gradingClient.grade(body);
-            evaluation = objectMapper.valueToTree(graded);
-            marks = number(evaluation.get("marks_awarded"));
-            status = STATUS_EVALUATED;
+            JsonNode reply = objectMapper.valueToTree(graded);
+            if (ERROR_UNATTEMPTED.equalsIgnoreCase(reply.path("verdict").asText(""))) {
+                // Nothing beyond the starting template: ai_service did not grade or charge.
+                status = STATUS_FAILED;
+                errorCode = ERROR_UNATTEMPTED;
+                message = "Your answer is the same as the starting template. Add your work, then submit.";
+            } else {
+                evaluation = learnerEvaluation(reply);
+                marks = number(evaluation.get("marks_awarded"));
+                status = STATUS_EVALUATED;
+            }
         } catch (CbeGradingClient.NoCreditsException e) {
             log.info("[cbe-submit] institute {} out of AI credits; answer saved ungraded (slide {}, user {})",
                     access.instituteId(), slideId, userId);
@@ -199,9 +212,16 @@ public class CbeSlideSubmitService {
         response.setMarks(finalMarks);
         response.setSubmittedAtMillis(System.currentTimeMillis());
         response.setEvaluation(finalEvaluation);
-        response.setSolution(prepared.solution());
+        // The model solution is only revealed once the learner has had at least one graded AI
+        // check; an answer saved during a credit refusal or grading failure must not unlock it.
+        if (checksUsed > 0) {
+            response.setSolution(prepared.solution());
+        }
         response.setMessage(message);
         response.setErrorCode(finalError);
+        if (!STATUS_EVALUATED.equals(finalStatus)) {
+            response.setLastEvaluated(transactionTemplate.execute(tx -> lastEvaluated(userId, slideId)));
+        }
         return new Outcome(httpStatus, response);
     }
 
@@ -217,10 +237,13 @@ public class CbeSlideSubmitService {
                 request.getPackageSessionId(), request.getChapterId());
         String fullConfig = CbeConfigSecrets.merge(question.getAutoEvaluationJson(),
                 question.getEvaluationSecretJson());
+        // The requirement and scenario go to ai_service as the editor's HTML: its
+        // cbe_render.html_to_text is the one HTML-to-text step (paragraphs, lists, TipTap
+        // tables as "| a | b |" rows), so nothing is converted twice.
         return new Prepared(access, maxAttempts(question), maxMarks(fullConfig, question),
                 readTree(fullConfig),
-                plainTextKeepingLines(question.getTextData() == null ? null : question.getTextData().getContent()),
-                plainTextKeepingLines(question.getParentRichText() == null ? null
+                htmlOrEmpty(question.getTextData() == null ? null : question.getTextData().getContent()),
+                htmlOrEmpty(question.getParentRichText() == null ? null
                         : question.getParentRichText().getContent()),
                 CbeConfigSecrets.solutionForLearner(question.getEvaluationSecretJson()));
     }
@@ -341,14 +364,18 @@ public class CbeSlideSubmitService {
             response.setSubmittedAtMillis(latest.getCreatedAt() == null ? null : latest.getCreatedAt().getTime());
             if (stored != null) {
                 response.setAnswer(nullIfMissing(stored.get("answer")));
-                response.setEvaluation(nullIfMissing(stored.get("evaluation")));
+                JsonNode evaluation = nullIfMissing(stored.get("evaluation"));
+                response.setEvaluation(evaluation == null ? null : learnerEvaluation(evaluation));
                 JsonNode error = stored.get("error");
                 if (error != null && error.isTextual()) {
                     response.setErrorCode(error.asText());
                 }
             }
+            if (!STATUS_EVALUATED.equals(latest.getResponseStatus())) {
+                response.setLastEvaluated(lastEvaluated(userId, slideId));
+            }
         });
-        if (submissions > 0) {
+        if (checksUsed > 0) {
             response.setSolution(CbeConfigSecrets.solutionForLearner(question.getEvaluationSecretJson()));
         }
         return response;
@@ -397,28 +424,90 @@ public class CbeSlideSubmitService {
         return root.toString();
     }
 
-    /** HTML to text for the model, keeping paragraphs and table rows on their own lines. */
-    static String plainTextKeepingLines(String html) {
-        if (!StringUtils.hasText(html)) {
-            return "";
+    private static String htmlOrEmpty(String html) {
+        return StringUtils.hasText(html) ? html : "";
+    }
+
+    /**
+     * True when at least one part has a non-empty cell (value or formula) or document text.
+     * The template is not compared here; ai_service does that and answers UNATTEMPTED.
+     */
+    static boolean hasAnyContent(JsonNode answer) {
+        JsonNode parts = answer == null ? null : answer.path("parts");
+        if (parts == null || !parts.isObject()) {
+            return false;
         }
-        String marked = CELL_END.matcher(html).replaceAll(" | ");
-        marked = BLOCK_END.matcher(marked).replaceAll("$1" + LINE);
-        String text = RichTextForAI.toPlainText(marked);
-        StringBuilder out = new StringBuilder();
-        for (String line : text.split(LINE)) {
-            String trimmed = line.trim();
-            if (trimmed.endsWith("|")) {
-                trimmed = trimmed.substring(0, trimmed.length() - 1).trim();
-            }
-            if (!trimmed.isEmpty()) {
-                if (out.length() > 0) {
-                    out.append('\n');
+        for (JsonNode part : parts) {
+            JsonNode tabs = part.path("sheet").path("sheets");
+            if (tabs.isArray()) {
+                for (JsonNode tab : tabs) {
+                    for (JsonNode cell : tab.path("cells")) {
+                        if (hasText(cell.path("f")) || hasText(cell.path("v"))) {
+                            return true;
+                        }
+                    }
                 }
-                out.append(trimmed);
+            }
+            JsonNode html = part.path("html");
+            if (html.isTextual() && StringUtils.hasText(html.asText()
+                    .replaceAll("(?is)<(script|style)[^>]*>.*?</\\1>", " ")
+                    .replaceAll("<[^>]*>", " ")
+                    .replaceAll("(?i)&(nbsp|#160|#xa0);", " "))) {
+                return true;
             }
         }
-        return out.toString();
+        return false;
+    }
+
+    private static boolean hasText(JsonNode node) {
+        if (node == null || node.isMissingNode() || node.isNull()) {
+            return false;
+        }
+        return !node.isTextual() || StringUtils.hasText(node.asText());
+    }
+
+    /**
+     * Only what the contract (section 5.2) gives the learner: marks_awarded, max_marks,
+     * verdict, feedback and criteria_breakdown[] (criteria_name, marks, max_marks, reason).
+     * ai_service also returns its billing figure (credits_charged) and the model's
+     * confidence, which are never stored on the attempt or shown to a learner.
+     */
+    ObjectNode learnerEvaluation(JsonNode reply) {
+        ObjectNode out = objectMapper.createObjectNode();
+        for (String field : EVALUATION_FIELDS) {
+            if (reply.has(field)) {
+                out.set(field, reply.get(field));
+            }
+        }
+        if (reply.path("criteria_breakdown").isArray()) {
+            var rows = out.putArray("criteria_breakdown");
+            for (JsonNode criterion : reply.get("criteria_breakdown")) {
+                ObjectNode row = rows.addObject();
+                for (String field : CRITERION_FIELDS) {
+                    if (criterion.has(field)) {
+                        row.set(field, criterion.get(field));
+                    }
+                }
+            }
+        }
+        return out;
+    }
+
+    /** The learner's latest graded check on this slide, or null when there is none. */
+    private CbeAttemptResponse.LastEvaluated lastEvaluated(String userId, String slideId) {
+        return trackedRepository.findLatestEvaluatedCbeSubmission(userId, slideId).map(row -> {
+            JsonNode stored = readTree(row.getResponseJson());
+            JsonNode evaluation = stored == null ? null : nullIfMissing(stored.get("evaluation"));
+            if (evaluation == null) {
+                return null;
+            }
+            CbeAttemptResponse.LastEvaluated last = new CbeAttemptResponse.LastEvaluated();
+            last.setAttemptNumber(row.getAttemptNumber());
+            last.setMarks(row.getMarks());
+            last.setEvaluation(learnerEvaluation(evaluation));
+            last.setSubmittedAtMillis(row.getCreatedAt() == null ? null : row.getCreatedAt().getTime());
+            return last;
+        }).orElse(null);
     }
 
     private JsonNode readTree(String json) {

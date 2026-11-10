@@ -64,6 +64,7 @@ export function ResponseBreakdownComponent({
 
 import { parseHtmlToString } from "@/lib/utils";
 import type { TFunction } from "i18next";
+import { CbeCorrectAnswer, CbeStudentResponse } from "./cbe-review";
 
 // Function to render student response based on question type
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -107,6 +108,15 @@ export const renderStudentResponse = (review: any, t: TFunction) => {
           return <p>{responseData.responseData.optionIds.join(", ")}</p>;
         }
         return <p>{t("questionResponseRenderer.noOptionsSelected")}</p>;
+
+      case "CBE_RESPONSE":
+        return (
+          <CbeStudentResponse
+            studentResponse={responseData}
+            correctOptions={review.correct_options}
+            t={t}
+          />
+        );
 
       default:
         if (Array.isArray(review.student_response_options)) {
@@ -161,6 +171,9 @@ export const renderCorrectAnswer = (review: any, t: TFunction) => {
           return <p>{correctData.data.correctOptionIds.join(", ")}</p>;
         }
         return <p>{t("questionResponseRenderer.noCorrectOptionsProvided")}</p>;
+
+      case "CBE_RESPONSE":
+        return <CbeCorrectAnswer correctOptions={correctData} t={t} />;
 
       default:
         if (Array.isArray(review.correct_options)) {

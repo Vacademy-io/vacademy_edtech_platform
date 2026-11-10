@@ -172,7 +172,17 @@
         "ofTotal": "من {{total}}",
         "codingMissingConfig": "سؤال البرمجة يفتقر إلى الإعدادات.",
         "answerOptionsAriaLabel": "خيارات الإجابة",
-        "unsupportedType": "لا يمكن عرض هذا النوع من الأسئلة هنا."
+        "unsupportedType": "لا يمكن عرض هذا النوع من الأسئلة هنا.",
+        "types": {
+            "MCQS": "اختيار واحد",
+            "MCQM": "اختيار متعدد",
+            "TRUE_FALSE": "صح / خطأ",
+            "ONE_WORD": "كلمة واحدة",
+            "LONG_ANSWER": "إجابة مطوّلة",
+            "NUMERIC": "رقمي",
+            "CODING": "برمجة",
+            "CBE_RESPONSE": "جدول بيانات وإجابة كتابية"
+        }
     },
     "questionList": {
         "itemAriaLabel": "السؤال {{number}}، {{status}}"
@@ -259,5 +269,67 @@
     "viewToggle": {
         "grid": "عرض شبكي",
         "list": "عرض قائمة"
+    },
+    "cbe": {
+        "scenarioLabel": "الحالة",
+        "requirementsLabel": "المطلوب",
+        "desktopNotice": "يتضمن هذا السؤال جدول بيانات يجب تعبئته. يُفضَّل الإجابة عنه على حاسوب محمول أو مكتبي.",
+        "resizeLabel": "تغيير حجم لوحتي الحالة والإجابة",
+        "resizeValue": "الحالة {{pct}}% من العرض",
+        "pasteBlocked": "لا يُسمح باللصق من خارج منطقة الإجابة. النسخ واللصق داخل إجابتك متاحان.",
+        "missingConfig": "إعداد الإجابة لهذا السؤال مفقود. يُرجى إبلاغ المدرّس.",
+        "kit": {
+            "kindSpreadsheet": "جدول بيانات",
+            "kindDocument": "مستند",
+            "marks_zero": "{{count}} درجة",
+            "marks_one": "درجة واحدة",
+            "marks_two": "درجتان",
+            "marks_few": "{{count}} درجات",
+            "marks_many": "{{count}} درجة",
+            "marks_other": "{{count}} درجة",
+            "partAnswer": "إجابة {{tab}}",
+            "noParts": "لا يحتوي هذا السؤال على أجزاء للإجابة.",
+            "sizeTooLarge": "إجابتك أكبر من أن تُحفظ ({{size}} من {{max}}). احذف الصفوف أو الأوراق أو المحتوى الملصق غير الضروري.",
+            "sizeNearLimit": "إجابتك تقترب من الحد الأقصى للحجم ({{size}} من {{max}}).",
+            "spreadsheetLoadFailed": "تعذّر تحميل جدول البيانات.",
+            "documentLoadFailed": "تعذّر تحميل محرر المستند.",
+            "tryAgain": "حاول مرة أخرى",
+            "documentPlaceholder": "اكتب إجابتك هنا…",
+            "writtenAnswer": "الإجابة الكتابية",
+            "spreadsheetAnswer": "إجابة جدول البيانات",
+            "noSpreadsheetAnswer": "لا توجد إجابة في جدول البيانات.",
+            "noWrittenAnswer": "لا توجد إجابة كتابية.",
+            "emptyTab": "هذه الورقة فارغة.",
+            "rowHeader": "الصف",
+            "tools": {
+                "spreadsheetToolbar": "تنسيق جدول البيانات",
+                "textToolbar": "تنسيق النص",
+                "undo": "تراجع",
+                "redo": "إعادة",
+                "bold": "غامق",
+                "italic": "مائل",
+                "underline": "تسطير",
+                "alignLeft": "محاذاة لليسار",
+                "alignCentre": "توسيط",
+                "alignRight": "محاذاة لليمين",
+                "thousands": "فاصل الآلاف (#,##0)",
+                "moreDecimals": "زيادة المنازل العشرية",
+                "fewerDecimals": "تقليل المنازل العشرية",
+                "percent": "نسبة مئوية",
+                "topBorder": "حد علوي",
+                "bottomBorder": "حد سفلي",
+                "clearBorders": "مسح الحدود",
+                "mergeCells": "دمج الخلايا",
+                "unmergeCells": "إلغاء دمج الخلايا",
+                "bulletList": "قائمة نقطية",
+                "numberedList": "قائمة مرقمة",
+                "insertTable": "إدراج جدول",
+                "addRowBelow": "إضافة صف أسفل",
+                "addColumnRight": "إضافة عمود يمينًا",
+                "deleteRow": "حذف الصف",
+                "deleteColumn": "حذف العمود",
+                "deleteTable": "حذف الجدول"
+            }
+        }
     }
 }

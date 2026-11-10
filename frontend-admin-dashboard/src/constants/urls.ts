@@ -804,6 +804,10 @@ export const RESTORE_SLIDE_CONTENT_HISTORY = `${BASE_URL}/admin-core-service/sli
 export const UPDATE_SLIDE_STATUS = `${BASE_URL}/admin-core-service/slide/v1/update-status`;
 export const UPDATE_SLIDE_ORDER = `${BASE_URL}/admin-core-service/slide/v1/update-slide-order`;
 export const UPDATE_QUESTION_ORDER = `${BASE_URL}/admin-core-service/slide/question-slide/add-or-update`;
+// Spreadsheet & Written Response (CBE) question slide: solution, marking scheme and
+// grading notes for the editor (staff only). GET .../{slideId}/evaluation-secret
+export const getQuestionSlideEvaluationSecretUrl = (slideId: string) =>
+    `${BASE_URL}/admin-core-service/slide/question-slide/v1/${encodeURIComponent(slideId)}/evaluation-secret`;
 export const UPDATE_ASSIGNMENT_ORDER = `${BASE_URL}/admin-core-service/slide/assignment-slide/add-or-update`;
 export const ADD_UPDATE_QUIZ_SLIDE = `${BASE_URL}/admin-core-service/slide/quiz-slide/add-or-update`;
 export const ADD_UPDATE_ASSIGNMENT_SLIDE = `${BASE_URL}/admin-core-service/slide/assignment-slide/add-or-update`;

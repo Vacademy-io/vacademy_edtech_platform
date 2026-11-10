@@ -27,6 +27,7 @@ class AssessmentLinkQuestionsManagerCbeStaffTest {
         assertThat(AssessmentLinkQuestionsManager.hasStaffAuthority(user(true, "STUDENT"))).isFalse();
         assertThat(AssessmentLinkQuestionsManager.hasStaffAuthority(user(true))).isFalse();
         assertThat(AssessmentLinkQuestionsManager.hasStaffAuthority(null)).isFalse();
+        assertThat(AssessmentLinkQuestionsManager.hasStaffAuthority(user(false, "STUDENT", "PARENT", "guardian"))).isFalse();
     }
 
     @Test
@@ -35,5 +36,8 @@ class AssessmentLinkQuestionsManagerCbeStaffTest {
         assertThat(AssessmentLinkQuestionsManager.hasStaffAuthority(user(false, "teacher"))).isTrue();
         assertThat(AssessmentLinkQuestionsManager.hasStaffAuthority(user(false, "STUDENT", "EVALUATOR"))).isTrue();
         assertThat(AssessmentLinkQuestionsManager.hasStaffAuthority(user(false, "ASSESSMENT MANAGER"))).isTrue();
+        // A custom staff role on a user also enrolled as a learner (to test courses) is staff:
+        // otherwise the editor loads a redacted config and saving it wipes the solution.
+        assertThat(AssessmentLinkQuestionsManager.hasStaffAuthority(user(false, "STUDENT", "COUNSELLOR"))).isTrue();
     }
 }

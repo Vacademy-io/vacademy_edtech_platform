@@ -6,6 +6,12 @@ interface QuestionHtmlContentProps {
   html: string;
   className?: string;
   inline?: boolean;
+  /**
+   * Treat `$…$` / `$$…$$` as LaTeX (default true). Turn off for money-heavy
+   * text such as accounting scenarios, where "$3,200 … $1,100" would otherwise
+   * be typeset as one italic formula. `\(…\)`, `\[…\]` and math spans still render.
+   */
+  dollarMath?: boolean;
 }
 
 const decodeHtml = (input: string): string => {
@@ -25,8 +31,13 @@ const decodeHtml = (input: string): string => {
   return once;
 };
 
-const renderLatexDelimiters = (text: string): string => {
-  const pattern = /(\\\[(.+?)\\\]|\\\((.+?)\\\)|\$\$(.+?)\$\$|\$(.+?)\$)/gs;
+const LATEX_PATTERN = /(\\\[(.+?)\\\]|\\\((.+?)\\\)|\$\$(.+?)\$\$|\$(.+?)\$)/gs;
+// Same five groups (the replacer reads them by position) but the dollar
+// alternative can never match: `(?!)` always fails.
+const LATEX_PATTERN_NO_DOLLAR = /(\\\[(.+?)\\\]|\\\((.+?)\\\)|(?!)()())/gs;
+
+const renderLatexDelimiters = (text: string, dollarMath = true): string => {
+  const pattern = dollarMath ? LATEX_PATTERN : LATEX_PATTERN_NO_DOLLAR;
 
   return text.replace(
     pattern,
@@ -53,7 +64,7 @@ const renderLatexDelimiters = (text: string): string => {
   );
 };
 
-const renderHtmlWithMath = (html: string): string => {
+const renderHtmlWithMath = (html: string, dollarMath = true): string => {
   if (!html) return "";
 
   const decoded = html.includes("&lt;") ? decodeHtml(html) : html;
@@ -106,12 +117,12 @@ const renderHtmlWithMath = (html: string): string => {
     textNodes.forEach((textNode) => {
       const value = textNode.nodeValue || "";
       if (
-        !(value.includes("$") || value.includes("\\(") || value.includes("\\["))
+        !((dollarMath && value.includes("$")) || value.includes("\\(") || value.includes("\\["))
       ) {
         return;
       }
 
-      const rendered = renderLatexDelimiters(value);
+      const rendered = renderLatexDelimiters(value, dollarMath);
       if (rendered === value) return;
 
       const span = doc.createElement("span");
@@ -129,8 +140,9 @@ export function QuestionHtmlContent({
   html,
   className = "",
   inline = false,
+  dollarMath = true,
 }: QuestionHtmlContentProps) {
-  const renderedHtml = useMemo(() => renderHtmlWithMath(html), [html]);
+  const renderedHtml = useMemo(() => renderHtmlWithMath(html, dollarMath), [html, dollarMath]);
 
   if (inline) {
     return (

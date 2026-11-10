@@ -19,6 +19,7 @@ import { SubjectTagInput } from './SubjectTagInput';
 import { getTokenDecodedData, getTokenFromCookie } from '@/lib/auth/sessionUtility';
 import { TokenKey } from '@/constants/auth/tokens';
 import { MyButton } from '@/components/design-system/button';
+import { commitCbeEditors } from '@/components/cbe/commit-registry';
 import {
     getIdByLevelName,
     getIdBySubjectName,
@@ -46,6 +47,11 @@ import {
 import { QuestionType } from '@/constants/dummy-data';
 import { cn } from '@/lib/utils';
 import { QuestionTypeSelection } from './QuestionTypeSelection';
+import {
+    cbeQuestionMark,
+    isCbeQuestionType,
+    makeDefaultCbeConfig,
+} from '../-utils/cbe-question';
 import { DialogClose } from '@radix-ui/react-dialog';
 
 export function QuestionPaperTemplate({
@@ -235,6 +241,13 @@ export function QuestionPaperTemplate({
             questionPoints: '',
             reattemptCount: '',
             timestamp: '',
+            // Spreadsheet & Written Response starts with one spreadsheet part (a), 10 marks.
+            ...(isCbeQuestionType(newQuestionType)
+                ? (() => {
+                      const cbeConfig = makeDefaultCbeConfig();
+                      return { cbeConfig, questionMark: cbeQuestionMark(cbeConfig) };
+                  })()
+                : {}),
         });
         // Set current question index to the newly added question (last question)
         setCurrentQuestionIndex(questions.length);
@@ -351,6 +364,8 @@ export function QuestionPaperTemplate({
     }, [examType, form]);
 
     const handleTriggerForm = () => {
+        // A spreadsheet cell still being typed in (CBE question) goes into the form first.
+        commitCbeEditors();
         form.trigger();
         if (stopOnMissingNumericAnswer(form.getValues('questions') as MyQuestion[])) return;
 
@@ -460,10 +475,13 @@ export function QuestionPaperTemplate({
                                     className="min-w-24 sm:min-w-24"
                                     onClick={
                                         isViewMode
-                                            ? () =>
+                                            ? () => {
+                                                  // Save the CBE cell being typed in before reading the form.
+                                                  commitCbeEditors();
                                                   handleSaveClick(
                                                       form.getValues() as MyQuestionPaperFormInterface
-                                                  )
+                                                  );
+                                              }
                                             : handleTriggerForm
                                     }
                                 >
@@ -506,6 +524,7 @@ export function QuestionPaperTemplate({
                                             setCurrentQuestionIndex={setCurrentQuestionIndex}
                                             isDirectAdd={false}
                                             handleSelect={handleAddNewQuestion}
+                                            examType={examType}
                                         ></QuestionTypeSelection>
                                     </AlertDialogContent>
                                 </AlertDialog>

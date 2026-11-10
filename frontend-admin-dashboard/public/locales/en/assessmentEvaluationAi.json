@@ -109,7 +109,8 @@
         "correctAnswerHeading": "Correct Answer",
         "studentAnswerHeading": "Student's Answer",
         "feedbackHeading": "Feedback",
-        "gradingBreakdownHeading": "Grading Breakdown"
+        "gradingBreakdownHeading": "Grading Breakdown",
+        "scenarioHeading": "Scenario"
     },
     "table": {
         "criteria": "Criteria",

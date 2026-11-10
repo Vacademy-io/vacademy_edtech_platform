@@ -18,7 +18,8 @@
     },
     "questionTypes": {
         "mcqSingleCorrect": "اختيار من متعدد (إجابة واحدة صحيحة)",
-        "mcqMultipleCorrect": "اختيار من متعدد (إجابات متعددة صحيحة)"
+        "mcqMultipleCorrect": "اختيار من متعدد (إجابات متعددة صحيحة)",
+        "cbeResponse": "جدول بيانات وإجابة مكتوبة"
     },
     "emptyStates": {
         "noQuestions": "لا يوجد أي سؤال."

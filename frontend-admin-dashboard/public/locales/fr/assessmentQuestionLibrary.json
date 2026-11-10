@@ -38,7 +38,8 @@
         "NUMERIC": "Numérique",
         "ONE_WORD": "Un mot",
         "LONG_ANSWER": "Réponse longue",
-        "CODING": "Code"
+        "CODING": "Code",
+        "CBE_RESPONSE": "Tableur et rédaction"
     },
     "source": {
         "MANUAL": "Saisie manuelle",

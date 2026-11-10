@@ -8,10 +8,18 @@ import {
   type CodingResponsePayload,
   type ResponseData,
   decodeAnswer,
+  decodeCbeAnswer,
+  decodeCbePasteAttempts,
   decodeCodingAnswer,
-  encodeResponseData,
+  encodeQuestionResponse,
   responseHasAnswer,
 } from '@/lib/assessment-response';
+import {
+  CBE_QUESTION_TYPE,
+  parseCbeConfig,
+  type CbeAnswer,
+  type CbeConfig,
+} from '@/components/cbe/types';
 
 interface StoredData {
   assessment?: {
@@ -28,6 +36,8 @@ interface StoredData {
   questionStates?: Record<string, { isMarkedForReview: boolean; isVisited: boolean }>;
   answers?: Record<string, string[]>;
   codingAnswers?: Record<string, CodingResponsePayload>;
+  cbeAnswers?: Record<string, CbeAnswer>;
+  cbePasteAttempts?: Record<string, number>;
 }
 
 interface SectionDTO {
@@ -115,11 +125,7 @@ const formatStoredAssessmentData = (storedData: StoredData): FormattedData | nul
         // Encode by question type. Previously every answer was written into
         // `optionIds` regardless of type, so a LONG_ANSWER/ONE_WORD/NUMERIC
         // answer went out in a field the restore path never reads back.
-        responseData: encodeResponseData(
-          question.question_type,
-          storedData.answers?.[question.question_id],
-          storedData.codingAnswers?.[question.question_id]
-        ),
+        responseData: encodeQuestionResponse(question, storedData),
       })) || [],
       };
     }) || [],
@@ -321,6 +327,17 @@ export const storeFormattedData = async (
       return;
     }
 
+    // CBE configs by question id, so restored content that only repeats a
+    // part's starting template is not counted as an answer.
+    const cbeConfigs = new Map<string, CbeConfig | null>();
+    for (const section of preview_response.section_dtos ?? []) {
+      for (const q of section.question_preview_dto_list ?? []) {
+        if (q?.question_type === CBE_QUESTION_TYPE) {
+          cbeConfigs.set(q.question_id, parseCbeConfig(q.evaluation_json));
+        }
+      }
+    }
+
     useAssessmentStore.setState({
       assessment: preview_response,
       currentSection: 0,
@@ -328,7 +345,10 @@ export const storeFormattedData = async (
       questionStates: Object.fromEntries(
         restoredSections.flatMap((section: Section) =>
           (section.questions ?? []).map((question: Question) => {
-            const answered = responseHasAnswer(question.responseData);
+            const answered = responseHasAnswer(
+              question.responseData,
+              cbeConfigs.get(question.questionId)
+            );
             return [
               question.questionId,
               {
@@ -359,6 +379,22 @@ export const storeFormattedData = async (
           (section.questions ?? []).flatMap((question: Question) => {
             const coding = decodeCodingAnswer(question.responseData);
             return coding ? [[question.questionId, coding] as const] : [];
+          })
+        )
+      ),
+      cbeAnswers: Object.fromEntries(
+        restoredSections.flatMap((section: Section) =>
+          (section.questions ?? []).flatMap((question: Question) => {
+            const cbe = decodeCbeAnswer(question.responseData);
+            return cbe ? [[question.questionId, cbe] as const] : [];
+          })
+        )
+      ),
+      cbePasteAttempts: Object.fromEntries(
+        restoredSections.flatMap((section: Section) =>
+          (section.questions ?? []).flatMap((question: Question) => {
+            const count = decodeCbePasteAttempts(question.responseData);
+            return count > 0 ? [[question.questionId, count] as const] : [];
           })
         )
       ),

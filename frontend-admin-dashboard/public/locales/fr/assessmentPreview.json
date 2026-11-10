@@ -18,7 +18,8 @@
     },
     "questionTypes": {
         "mcqSingleCorrect": "QCM (réponse unique)",
-        "mcqMultipleCorrect": "QCM (réponses multiples)"
+        "mcqMultipleCorrect": "QCM (réponses multiples)",
+        "cbeResponse": "Tableur et réponse rédigée"
     },
     "emptyStates": {
         "noQuestions": "Aucune question n'existe."

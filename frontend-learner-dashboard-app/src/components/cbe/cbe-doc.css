@@ -1,0 +1,72 @@
+/*
+ * Rich-text answer styling for the CBE document editor / view. Plain CSS on
+ * the design tokens (no Tailwind typography plugin in either app).
+ */
+.cbe-doc {
+  color: hsl(var(--foreground));
+  line-height: 1.6;
+  overflow-wrap: anywhere;
+}
+.cbe-doc p {
+  margin: 0 0 0.5rem;
+}
+.cbe-doc ul,
+.cbe-doc ol {
+  margin: 0 0 0.5rem;
+  padding-left: 1.5rem;
+}
+.cbe-doc ul {
+  list-style: disc;
+}
+.cbe-doc ol {
+  list-style: decimal;
+}
+.cbe-doc li > p {
+  margin: 0;
+}
+.cbe-doc h1,
+.cbe-doc h2,
+.cbe-doc h3 {
+  font-weight: 600;
+  margin: 0.75rem 0 0.5rem;
+}
+.cbe-doc table {
+  border-collapse: collapse;
+  width: 100%;
+  margin: 0.5rem 0 0.75rem;
+  table-layout: fixed;
+}
+.cbe-doc th,
+.cbe-doc td {
+  border: 1px solid hsl(var(--border));
+  padding: 0.25rem 0.5rem;
+  vertical-align: top;
+  min-width: 3rem;
+  position: relative;
+}
+.cbe-doc th {
+  background: hsl(var(--muted));
+  font-weight: 600;
+  text-align: left;
+}
+.cbe-doc .selectedCell::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: hsl(var(--primary-100) / 0.6);
+  pointer-events: none;
+}
+.cbe-doc .tableWrapper {
+  overflow-x: auto;
+}
+.cbe-doc .ProseMirror {
+  outline: none;
+  min-height: inherit;
+}
+.cbe-doc p.is-editor-empty:first-child::before {
+  content: attr(data-placeholder);
+  color: hsl(var(--muted-foreground));
+  float: left;
+  height: 0;
+  pointer-events: none;
+}

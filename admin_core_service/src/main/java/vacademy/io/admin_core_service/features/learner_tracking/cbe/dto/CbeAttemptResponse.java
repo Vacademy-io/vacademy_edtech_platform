@@ -35,7 +35,22 @@ public class CbeAttemptResponse {
     /** Why there is no evaluation, for the learner. */
     @JsonInclude(JsonInclude.Include.NON_NULL)
     private String message;
-    /** NO_CREDITS | EVALUATION_FAILED when the answer was saved without a grade. */
+    /** NO_CREDITS | EVALUATION_FAILED | UNATTEMPTED when the answer was saved without a grade. */
     @JsonInclude(JsonInclude.Include.NON_NULL)
     private String errorCode;
+    /**
+     * The learner's latest graded check when this attempt is not graded itself (credit
+     * refusal, failure, still running), so the paid-for result stays visible. Null otherwise.
+     */
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    private LastEvaluated lastEvaluated;
+
+    @Data
+    @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
+    public static class LastEvaluated {
+        private Integer attemptNumber;
+        private Double marks;
+        private JsonNode evaluation;
+        private Long submittedAtMillis;
+    }
 }

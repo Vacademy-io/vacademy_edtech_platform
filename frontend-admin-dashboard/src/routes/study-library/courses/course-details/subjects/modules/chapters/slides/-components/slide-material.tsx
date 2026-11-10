@@ -15,6 +15,7 @@ const PDFViewer = React.lazy(() =>
 );
 import { ActivityStatsSidebar } from './stats-dialog/activity-sidebar';
 import { useContentStore } from '@/routes/study-library/courses/course-details/subjects/modules/chapters/slides/-stores/chapter-sidebar-store';
+import { commitCbeEditors } from '@/components/cbe/commit-registry';
 import { EmptySlideMaterial } from '@/assets/svgs';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -3449,7 +3450,9 @@ export const SlideMaterial = ({
 
             if (activeItem?.source_type === 'QUESTION') {
                 const convertedData = convertToQuestionBackendSlideFormat({
-                    activeItem,
+                    // A caller may pass a fresher copy of this slide (Save draft
+                    // commits an open spreadsheet cell into the store first).
+                    activeItem: slide?.id === activeItem.id ? slide : activeItem,
                     status,
                     notify: false,
                     newSlide: false,
@@ -4024,6 +4027,15 @@ export const SlideMaterial = ({
     };
 
     const handleSaveDraftClick = async () => {
+        // A question slide's spreadsheet (CBE) may still hold a cell being typed
+        // in: commit it (editor → form → store) and save that fresh copy, since
+        // `activeItem` here is this render's snapshot.
+        commitCbeEditors();
+        const storeItem = useContentStore.getState().activeItem;
+        const slideToSave =
+            activeItem?.source_type === 'QUESTION' && storeItem?.id === activeItem.id
+                ? storeItem
+                : activeItem;
         try {
             // Special handling for interactive slides (CODE, JUPYTER, SCRATCH, SPLIT)
             if (
@@ -4071,7 +4083,7 @@ export const SlideMaterial = ({
             // editor-readability heuristic before clearing the browser draft.
             if (customSaveFunction && activeItem) {
                 console.log('🔄 Using custom save function for non-admin');
-                await customSaveFunction(activeItem);
+                await customSaveFunction(slideToSave ?? activeItem);
                 const editorReadable =
                     !isEditableDocSlide ||
                     (!checkIsHtmlEmpty(getCurrentEditorHTMLContent()) &&
@@ -4091,7 +4103,7 @@ export const SlideMaterial = ({
             // throwing, so "didn't throw" is NOT success — the outcome ref is.
             // Clearing after a refused save deletes the browser's only copy of
             // edits the DB never received (draft gone + DB stale = silent loss).
-            await SaveDraft(activeItem);
+            await SaveDraft(slideToSave);
             if (!isEditableDocSlide || lastSaveDraftOutcomeRef.current === 'success') {
                 clearLocalDraft(activeItem?.id);
             }
@@ -4722,7 +4734,11 @@ export const SlideMaterial = ({
                                                 buttonType="primary"
                                                 scale="medium"
                                                 layoutVariant="default"
-                                                onClick={() => setIsPublishDialogOpen(true)}
+                                                onClick={() => {
+                                                    // Commit an open CBE cell so the dialog publishes it.
+                                                    commitCbeEditors();
+                                                    setIsPublishDialogOpen(true);
+                                                }}
                                             >
                                                 <span className="hidden sm:inline">{t('ui.publish')}</span>
                                                 <span className="text-xs sm:hidden">{t('ui.publishShort')}</span>

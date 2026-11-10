@@ -110,7 +110,7 @@ Rules:
 | Surface | Learner-safe config | Secret |
 |---|---|---|
 | Assessment | `question.auto_evaluation_json` (full) | same JSON — **redacted** in every learner-facing response (attempt start/preview, learner report until the attempt's report is RELEASED) |
-| Question slide | `question_slide.auto_evaluation_json` = **already redacted** config | new column `question_slide.evaluation_secret_json` (= `{ parts: [{id, solution, markingScheme, solutionFileId}], gradingNotes }`), never included in the 13 native slide JSON queries; admin reads it via a dedicated admin endpoint |
+| Question slide | `question_slide.auto_evaluation_json` = **already redacted** config (the learner answer-key stripper `AnswerKeyStripper` keeps it on CBE nodes, redacted again) | new column `question_slide.evaluation_secret_json` (= `{ parts: [{id, solution, markingScheme, solutionFileId}], gradingNotes }`), never included in the 13 native slide JSON queries; admin reads it via a dedicated admin endpoint |
 
 ## 4. Learner answer (`responseData`)
 
@@ -129,6 +129,13 @@ Inside the attempt JSON (assessments) and `question_slide_tracked.response_json`
 ```
 
 "Answered" = at least one part has a non-empty cell (beyond the template) or non-blank text.
+The rule is the same in the learner app (`isCbeAnswerEmpty`) and assessment_service
+(`CbeAnswers.isAnswered` / `summary`):
+- a cell is the template's own when, if either cell has a non-blank `f`, the trimmed formulas
+  match case-insensitively (`v` is ignored: the grid recomputes a template formula on load and
+  when the learner types inputs); otherwise when the trimmed `v` text matches;
+- answer tabs are matched to template tabs **by name only** (a renamed / new tab has no template);
+- document text is compared with all whitespace collapsed.
 
 ## 5. Grading
 
@@ -141,7 +148,8 @@ Inside the attempt JSON (assessments) and `question_slide_tracked.response_json`
 - `CopyCheckOrchestratorService` sends, for CBE questions:
   `question_type="CBE_RESPONSE"`, `student_answer` = JSON string of `responseData.answer`,
   `model_answer` = JSON string of the **full** config `data` (with secrets),
-  `question_text` = scenario + question text (HTML stripped to text, line breaks kept).
+  `question_text` = scenario + question text (HTML stripped to text, line breaks kept; TipTap's
+  `<p>` inside `<td>` / `<li>` is unwrapped so a table row stays one "a | b" line).
 - ai_service renders both to an LLM-readable form (§5.3), derives the rubric from
   `markingScheme` (one criterion per line, `criteria_name = "<part label> <line label>"`,
   `max_marks = line marks`; a part with no scheme = one criterion worth the part's marks),
@@ -165,7 +173,17 @@ Inside the attempt JSON (assessments) and `question_slide_tracked.response_json`
   "solution": { "parts": [ { "id": "…", "solution": …, "markingScheme": [ … ] } ] } }
 // 402 = institute out of AI credits (answer is still saved; evaluation null)
 // 409 = no attempts left
+// 400 = the answer has no non-empty part (refused before an attempt is reserved)
 ```
+
+- `evaluation` carries exactly `marks_awarded`, `max_marks`, `verdict`, `feedback` and
+  `criteria_breakdown[]` (`criteria_name`, `marks`, `max_marks`, `reason`); admin_core drops
+  everything else ai_service returns (`credits_charged`, `confidence`) before storing or replying.
+- ai_service verdict `UNATTEMPTED` (nothing beyond the template; free) is **not** a graded check:
+  saved as `EVALUATION_FAILED` with `error_code: "UNATTEMPTED"`, no attempt used, no solution.
+- When the reply (submit or my-attempts) is not itself graded, it also carries
+  `last_evaluated: {attempt_number, marks, evaluation, submitted_at_millis}` = the learner's latest
+  `EVALUATED` attempt, so a later refused / failed / running check never hides a paid-for result.
 
 - Attempts: `question_slide.re_attempt_count` if > 0, else **3** AI checks per learner per slide.
 - Stores the answer + evaluation in `question_slide_tracked` (`response_json`, `marks`,
@@ -173,7 +191,10 @@ Inside the attempt JSON (assessments) and `question_slide_tracked.response_json`
   slide 100% complete exactly like other question slides (submitting = completion).
 - Calls ai_service `POST /ai-service/copy-check/v1/grade-cbe-sync` (internal auth, same as other
   admin_core → ai_service calls) with `{institute_id, user_id, source_id: slide_id,
-  question_text, scenario_text, config (full, with secrets), answer, max_marks}`; ai_service
+  question_text, scenario_text, config (full, with secrets), answer, max_marks}`;
+  `question_text` / `scenario_text` are the editor's **HTML as stored** (ai_service's
+  `cbe_render.html_to_text` is the only HTML-to-text step; text with no real tag is read as plain
+  text); ai_service
   checks credits first, grades with the same renderer/prompt as §5.3, charges tool key
   `cbe_answer_check`, returns the evaluation. Timeout 120 s.
 
@@ -205,7 +226,9 @@ it matches; written parts are marked on the points in the scheme, not on length.
 - `CbeResponse/` MainView: scenario (existing passage editor), question text, parts list
   (add Spreadsheet / Document part; label; marks; prompt; starting template — build in the grid
   or import .xlsx; solution — build in the grid or import .xlsx (multi-sheet kept); marking
-  scheme table auto-extracted from the solution's "Marks" column, editable; grading notes).
+  scheme table auto-extracted from the solution's "Marks" column, editable; grading notes). A scheme
+  line whose figure was a formula with no cached value gets its `expected` from the recalculated
+  solution cell on save; while solution formulas still have no value the editor warns.
 - PPTView: compact summary (parts, kinds, marks).
 - Review: AI-evaluation review page and admin test-report dialog render the answer read-only.
 
@@ -246,6 +269,17 @@ Fortune-sheet is only ever loaded via `React.lazy` so it never enters the main b
   evaluation off. With AI evaluation on, any paper containing a CBE question is held (CBE is in
   `AI_GRADED_TYPES`), exactly like LONG_ANSWER. Billing: one CBE question = one typed question at the
   dashboard typed rate.
+- Staff (`AssessmentLinkQuestionsManager.hasStaffAuthority`) = at least one authority outside
+  STUDENT / PARENT / GUARDIAN, even when STUDENT is also held (same rule as admin_core
+  `AuthoringAnswerAccess`).
+- Saving over a stored CBE question (`AddQuestionPaperFromImportManager.initializeQuestion`): a secret
+  key the incoming config leaves out (`data.gradingNotes`, or a part's `solution` / `markingScheme` /
+  `solutionFileId`, matched by part `id`) is kept from the stored config
+  (`CbeConfigRedactor.keepStoredSecrets`), so a redacted read saved back cannot wipe the solution; a key
+  that is sent (even `null`) is the client's decision.
+- Manual (PDF upload) submit: the learner app keeps on-screen CBE / CODING answers as
+  `sections[].questions[].responseData` in `json_content`; the manual DTOs ignore unknown fields
+  (the raw JSON is stored verbatim).
 - Redaction (`question_core/util/CbeConfigRedactor`): learner start/preview/restart question lists; learner
   survey report; `questions-of-sections` (+ `/full`) for callers without a staff role (the learner app calls
   this admin endpoint for its test report); the report review `correct_options` until the attempt is

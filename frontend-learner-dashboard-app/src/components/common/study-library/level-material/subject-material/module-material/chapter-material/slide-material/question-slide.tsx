@@ -21,6 +21,7 @@ import { useResolvedPackageSessionId } from "@/hooks/study-library/useResolvedPa
 import { refreshProgressAfterSubmit } from "@/utils/study-library/tracking/refreshProgressAfterSubmit";
 import { toast } from "sonner";
 import { trackOrQueue, isNetworkError } from "@/lib/offline/events/track-or-queue";
+import CbeQuestionSlide from "./cbe-question-slide";
 
 interface Option {
     id: string;
@@ -73,7 +74,7 @@ interface QuestionResponseMap {
     };
 }
 
-const QuestionSlide = ({ questionData, onSubmit }: QuestionSlideProps) => {
+const ChoiceOrTextQuestionSlide = ({ questionData, onSubmit }: QuestionSlideProps) => {
     const { t } = useTranslation("libraryCommonB");
     const router = useRouter();
     const queryClient = useQueryClient();
@@ -1084,5 +1085,18 @@ const QuestionSlide = ({ questionData, onSubmit }: QuestionSlideProps) => {
         </div>
     );
 };
+
+/**
+ * Spreadsheet & Written Response (CBE_RESPONSE) has its own workspace, AI
+ * check and result panel, so it is routed to a separate component instead of
+ * threading through every type switch above. Different component types keep
+ * the two hook sets apart when the learner moves between slides.
+ */
+const QuestionSlide = (props: QuestionSlideProps) =>
+    props.questionData?.question_type === "CBE_RESPONSE" ? (
+        <CbeQuestionSlide questionData={props.questionData} />
+    ) : (
+        <ChoiceOrTextQuestionSlide {...props} />
+    );
 
 export default QuestionSlide;

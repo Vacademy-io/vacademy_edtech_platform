@@ -309,5 +309,54 @@
             "endedHint": "Il n’y a plus rien à lire. Vous pouvez quitter cette page.",
             "notStartedHint": "La lecture démarrera d’elle-même au début du cours."
         }
+    },
+    "cbeSlide": {
+        "typeLabel": "Tableur et réponse rédigée",
+        "totalMarks_one": "{{count}} point",
+        "totalMarks_many": "{{count}} points",
+        "totalMarks_other": "{{count}} points",
+        "desktopNotice": "Cette question comporte un tableur à remplir. Il est préférable d'y répondre sur un ordinateur portable ou de bureau.",
+        "scenario": "Énoncé",
+        "requirements": "Travail demandé",
+        "submit": "Soumettre pour correction",
+        "checkingButton": "Correction…",
+        "checking": "Correction de votre réponse…",
+        "checkingHint": "Cela peut prendre jusqu'à deux minutes. Gardez cette page ouverte.",
+        "showLastResult": "Afficher le dernier résultat",
+        "tryAgain": "Réessayer",
+        "checksLeft_one": "{{count}} correction IA restante sur {{max}}",
+        "checksLeft_many": "{{count}} corrections IA restantes sur {{max}}",
+        "checksLeft_other": "{{count}} corrections IA restantes sur {{max}}",
+        "noChecksLeft": "Vous avez utilisé toutes les corrections IA pour cette question. Votre dernier résultat est affiché ci-dessus.",
+        "yourResult": "Votre résultat",
+        "marksOf": "{{marks}} / {{max}} points",
+        "verdict": {
+            "correct": "Correct",
+            "partial": "Partiellement correct",
+            "wrong": "À retravailler",
+            "unattempted": "Non traité"
+        },
+        "breakdown": "Points par ligne",
+        "columns": {
+            "line": "Ligne",
+            "marks": "Points",
+            "reason": "Justification"
+        },
+        "modelSolution": "Corrigé type",
+        "kindSpreadsheet": "Tableur",
+        "kindDocument": "Document",
+        "missingConfig": "La configuration de réponse de cette question est manquante. Veuillez prévenir votre formateur.",
+        "notice": {
+            "noCredits": "La correction par IA est indisponible pour le moment (crédits de l'établissement). Votre réponse a été enregistrée.",
+            "failed": "Votre réponse est enregistrée, mais la correction par IA n'a pas abouti. Veuillez réessayer.",
+            "network": "Impossible de joindre le serveur. Votre réponse est conservée — veuillez réessayer.",
+            "noAttempts": "Il ne vous reste aucune correction IA pour cette question.",
+            "tooLarge": "Votre réponse est trop volumineuse pour être soumise (plus de 300 Ko). Supprimez les lignes, onglets ou contenus collés inutiles.",
+            "empty": "Complétez votre réponse avant de la soumettre."
+        },
+        "checkingElapsed": "({{seconds}} s)",
+        "loadFailed": "Impossible de charger votre tentative précédente. La soumission est suspendue jusqu'à son chargement, pour ne pas utiliser une correction par erreur.",
+        "retryLoad": "Réessayer",
+        "resultAnnouncement": "Résultat : {{result}}"
     }
 }

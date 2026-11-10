@@ -15,6 +15,11 @@ import {
     encodeAllowedFileTypes,
 } from '../-form-schemas/assignmentFormSchema';
 import { parseHtmlToString } from '@/lib/utils';
+import {
+    buildCbeSlideFields,
+    CBE_RESPONSE_TYPE,
+    isCbeQuestionType,
+} from '@/routes/assessment/question-papers/-utils/cbe-question';
 import type { TFunction } from 'i18next';
 
 // Convert a UTC ISO timestamp from the backend ("2026-03-25T09:00:00Z")
@@ -628,20 +633,31 @@ export function convertToQuestionSlideFormat(question: MyQuestion, sourceId?: st
         question?.subjectiveAnswerText
     );
 
+    // Spreadsheet & Written Response (docs/CBE_RESPONSE_QUESTION.md §3, slide row):
+    // auto_evaluation_json holds the redacted config, the solution / marking
+    // scheme / grading notes go in evaluation_secret_json — and only when the
+    // editor holds them, so a secret that failed to load is never overwritten.
+    const cbe = isCbeQuestionType(question?.questionType)
+        ? buildCbeSlideFields(question?.cbeConfig, question?.cbeSecretStatus)
+        : null;
+
     return {
         id: sourceId ? sourceId : crypto.randomUUID(),
         parent_rich_text: generateTextBlock(question?.parentRichTextContent || ''),
         text_data: generateTextBlock(question?.questionName || ''),
         explanation_text_data: generateTextBlock(question?.explanation || ''),
         media_id: '',
-        question_response_type: 'OPTION',
+        question_response_type: cbe ? CBE_RESPONSE_TYPE : 'OPTION',
         question_type: question?.questionType,
         access_level: 'PUBLIC',
-        auto_evaluation_json: auto_evaluation_json,
+        auto_evaluation_json: cbe ? cbe.auto_evaluation_json : auto_evaluation_json,
+        ...(cbe?.evaluation_secret_json !== undefined
+            ? { evaluation_secret_json: cbe.evaluation_secret_json }
+            : {}),
         evaluation_type: 'AUTO',
         default_question_time_mins: parseInt(question?.questionDuration?.min || '0'),
         re_attempt_count: question?.reattemptCount || '',
-        points: '0',
+        points: cbe ? cbe.points : '0',
         options: options?.map((opt, idx) => ({
             id: opt?.id || '',
             preview_id: opt?.id || idx,

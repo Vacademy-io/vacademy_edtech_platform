@@ -5,7 +5,8 @@
         "optionBased": "Option Based",
         "mathBased": "Math Based",
         "writingSkills": "Writing Skills",
-        "readingSkills": "Reading Skills"
+        "readingSkills": "Reading Skills",
+        "cbe": "Computer-based exam (CBE)"
     },
     "questionTypes": {
         "mcqSingle": "Multiple Choice Questions (Single correct)",
@@ -17,7 +18,8 @@
         "singleWord": "Single Word",
         "comprehensionMcqSingle": "Comprehension Multiple Choice Questions (Single correct)",
         "comprehensionMcqMultiple": "Comprehension Multiple Choice Questions (Multiple correct)",
-        "comprehensionNumeric": "Comprehension Numeric"
+        "comprehensionNumeric": "Comprehension Numeric",
+        "cbeResponse": "Spreadsheet & Written Response"
     },
     "dialog": {
         "title": "Create Question Paper Manually"

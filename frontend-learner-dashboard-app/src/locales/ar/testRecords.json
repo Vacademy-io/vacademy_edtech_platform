@@ -273,5 +273,20 @@
         "viewEvaluatedCopy": "عرض النسخة المُقيَّمة",
         "close": "إغلاق",
         "evaluatedFileName": "الملف المُقيَّم.pdf"
+    },
+    "cbeReview": {
+        "typeLabel": "جدول بيانات وإجابة كتابية",
+        "kindSpreadsheet": "جدول بيانات",
+        "kindDocument": "مستند",
+        "marks_zero": "{{count}} درجة",
+        "marks_one": "درجة واحدة",
+        "marks_two": "درجتان",
+        "marks_few": "{{count}} درجات",
+        "marks_many": "{{count}} درجة",
+        "marks_other": "{{count}} درجة",
+        "noAnswerForPart": "لا توجد إجابة لهذا الجزء.",
+        "noSolutionForPart": "لا يوجد حل نموذجي لهذا الجزء.",
+        "expected": "المتوقع {{value}}",
+        "solutionAfterRelease": "سيتوفر الحل النموذجي بعد إعلان النتائج."
     }
 }

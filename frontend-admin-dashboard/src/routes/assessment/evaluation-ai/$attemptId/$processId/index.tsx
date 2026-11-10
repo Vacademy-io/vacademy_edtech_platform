@@ -47,7 +47,14 @@ import LatexRenderer from '../../-components/latex-renderer';
 import {
     getAssessmentTotalMarks,
     getAttemptDetails,
+    viewStudentReport,
 } from '@/routes/assessment/assessment-list/assessment-details/$assessmentId/$examType/$assesssmentType/$assessmentTab/-services/assessment-details-services';
+import { CbeAnswerView, CbeSolutionView } from '@/components/common/cbe-review';
+import {
+    cbeConfigFromEvaluationJson,
+    isCbeQuestionType,
+    parseCbeAnswer,
+} from '@/routes/assessment/question-papers/-utils/cbe-question';
 
 import { getPublicUrl } from '@/services/upload_file';
 import SimplePDFViewer from '@/components/common/simple-pdf-viewer';
@@ -383,6 +390,27 @@ function RouteComponent() {
 
     const allSectionQuestions = questionsData ? Object.values(questionsData).flat() : [];
 
+    // Spreadsheet & Written Response: the grader keeps a text rendering of the
+    // answer; the learner's sheet/document itself comes from the attempt report.
+    const hasCbeQuestion = allSectionQuestions.some((q: any) => isCbeQuestionType(q?.question_type));
+    const { data: cbeAnswersByQuestion } = useQuery({
+        queryKey: ['CBE_ATTEMPT_ANSWERS', assessmentId, attemptId],
+        enabled: hasCbeQuestion && !!assessmentId && !!attemptId,
+        staleTime: 5 * 60 * 1000,
+        queryFn: async () => {
+            const report = await viewStudentReport(assessmentId ?? '', attemptId, instituteId);
+            const byId: Record<string, unknown> = {};
+            Object.values(report?.all_sections ?? {}).forEach((rows) => {
+                (rows as Array<{ question_id?: string; student_response_options?: unknown }>).forEach(
+                    (row) => {
+                        if (row?.question_id) byId[row.question_id] = row.student_response_options;
+                    }
+                );
+            });
+            return byId;
+        },
+    });
+
     // Total score counts only successfully-graded questions; questions the AI
     // couldn't grade (FAILED) are excluded until the teacher grades them.
     const totalScore =
@@ -693,6 +721,7 @@ function RouteComponent() {
                                     onToggle={() => toggleQuestion(question.question_id)}
                                     questionDetails={questionDetails}
                                     currentRubricVersion={progress?.rubric_version}
+                                    cbeResponse={cbeAnswersByQuestion?.[question.question_id]}
                                 />
                             );
                         })
@@ -797,6 +826,8 @@ interface QuestionCardProps {
     onToggle: () => void;
     questionDetails?: any;
     currentRubricVersion?: number | null;
+    /** CBE_RESPONSE: the learner's raw response for this question (attempt report). */
+    cbeResponse?: unknown;
 }
 
 function QuestionCard({
@@ -806,6 +837,7 @@ function QuestionCard({
     onToggle,
     questionDetails,
     currentRubricVersion,
+    cbeResponse,
 }: QuestionCardProps) {
     const { t } = useTranslation('assessmentEvaluationAi');
     const queryClient = useQueryClient();
@@ -844,6 +876,12 @@ function QuestionCard({
     // Parse evaluation_json to get correct option IDs
     const evaluationJson = questionDetails?.evaluation_json
         ? JSON.parse(questionDetails.evaluation_json)
+        : null;
+    // Spreadsheet & Written Response: answer + model solution rendered as sheets/documents.
+    const isCbe = isCbeQuestionType(questionDetails?.question_type);
+    const cbeConfig = isCbe ? cbeConfigFromEvaluationJson(evaluationJson) : undefined;
+    const cbeAnswer = isCbe
+        ? parseCbeAnswer(cbeResponse) ?? parseCbeAnswer(question.extracted_answer)
         : null;
     const correctOptionIds = evaluationJson?.data?.correctOptionIds || [];
 
@@ -1126,8 +1164,41 @@ function QuestionCard({
                             </div>
                         )}
 
+                    {/* Scenario of a CBE question (the passage) */}
+                    {isCbe && questionDetails?.parent_rich_text?.content && (
+                        <div>
+                            <h4 className="mb-2 text-xs font-semibold uppercase text-neutral-500">
+                                {t('details.scenarioHeading')}
+                            </h4>
+                            <TipTapEditor
+                                value={questionDetails.parent_rich_text.content}
+                                onChange={() => {}}
+                                editable={false}
+                            />
+                        </div>
+                    )}
+
+                    {/* Student's Answer: CBE as the learner's sheets / documents */}
+                    {isCbe && (cbeAnswer || question.extracted_answer) && (
+                        <div>
+                            <h4 className="mb-2 text-xs font-semibold uppercase text-neutral-500">
+                                {t('details.studentAnswerHeading')}
+                            </h4>
+                            <Card className="rounded-sm p-4">
+                                {cbeAnswer ? (
+                                    <CbeAnswerView answer={cbeAnswer} config={cbeConfig} />
+                                ) : (
+                                    <p className="whitespace-pre-wrap font-mono text-sm text-neutral-700">
+                                        {question.extracted_answer}
+                                    </p>
+                                )}
+                            </Card>
+                        </div>
+                    )}
+                    {isCbe && cbeConfig && <CbeSolutionView config={cbeConfig} />}
+
                     {/* Student's Answer */}
-                    {question.extracted_answer && (
+                    {!isCbe && question.extracted_answer && (
                         <div>
                             <h4 className="mb-2 text-xs font-semibold uppercase text-neutral-500">
                                 {t('details.studentAnswerHeading')}

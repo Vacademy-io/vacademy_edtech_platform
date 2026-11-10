@@ -25,6 +25,8 @@ import authenticatedAxiosInstance from "@/lib/auth/axiosInstance";
 import { ASSESSMENT_SAVE } from "@/constants/urls";
 import { toast } from "sonner";
 import { safeParse } from "@/lib/storage";
+import { encodeQuestionResponse } from "@/lib/assessment-response";
+import { QUESTION_TYPES } from "@/types/assessment";
 import { ProctorLayer } from "@/components/common/proctoring/ProctorLayer";
 import {
   LOCAL_SAVE_INTERVAL_MS,
@@ -108,52 +110,9 @@ export const formatDataFromStore = async (
         ? section.duration * 60 - sectionTimeLeftSeconds
         : 0,
       questions: section.question_preview_dto_list?.map((question) => {
-        const rawAnswer = state.answers?.[question.question_id];
-        const normalizedAnswer = Array.isArray(rawAnswer)
-          ? rawAnswer[0]
-          : rawAnswer;
-        const codingAnswer = state.codingAnswers?.[question.question_id];
-
-        let responseData: Record<string, unknown> = {
-          type: question.question_type,
-        };
-        if (question.question_type === "CODING") {
-          responseData = {
-            type: "CODING",
-            language: codingAnswer?.language || "",
-            sourceCode: codingAnswer?.sourceCode || "",
-            verdict: codingAnswer?.verdict || "",
-            passedCount: codingAnswer?.passedCount ?? 0,
-            totalCount: codingAnswer?.totalCount ?? 0,
-            score: codingAnswer?.score ?? 0,
-            totalTimeMs: codingAnswer?.totalTimeMs ?? 0,
-            peakMemoryKb: codingAnswer?.peakMemoryKb ?? 0,
-            testCaseResults: codingAnswer?.testCaseResults ?? [],
-            pasteAttemptCount: codingAnswer?.pasteAttemptCount ?? 0,
-          };
-        } else if (question.question_type === "NUMERIC") {
-          responseData = {
-            type: "NUMERIC",
-            validAnswer:
-              normalizedAnswer !== undefined &&
-              normalizedAnswer !== null &&
-              !isNaN(parseFloat(normalizedAnswer))
-                ? parseFloat(normalizedAnswer)
-                : null,
-          };
-        } else if (
-          ["ONE_WORD", "LONG_ANSWER"].includes(question.question_type)
-        ) {
-          responseData = {
-            type: question.question_type,
-            answer: normalizedAnswer || "",
-          };
-        } else {
-          responseData = {
-            type: question.question_type,
-            optionIds: rawAnswer || [],
-          };
-        }
+        // One encoder for every type (lib/assessment-response.ts) — shared
+        // with the submit in navbar.tsx and the restart payload.
+        const responseData = encodeQuestionResponse(question, state);
 
         return {
           questionId: question.question_id,
@@ -412,6 +371,32 @@ function LiveTestShell() {
   useImmersiveMode(hideAppChrome);
   useIOSSafeAreaInsets();
 
+  // Spreadsheet & Written Response questions own the whole question area as a
+  // split screen with their own scrolling panes (desktop only; phones stack).
+  const isCbeQuestion =
+    currentQuestion?.question_type === QUESTION_TYPES.CBE_RESPONSE;
+  const cbeSplitScreen = isCbeQuestion && !isCompact;
+
+  // Give the spreadsheet the room: collapse the desktop rail while a CBE
+  // question is open (the header toggle still brings it back), and reopen it
+  // afterwards only if it was this effect that closed it.
+  const railCollapsedForCbeRef = useRef(false);
+  useEffect(() => {
+    if (isCompact) return;
+    if (isCbeQuestion) {
+      if (isRailOpen) {
+        railCollapsedForCbeRef.current = true;
+        setRailOpen(false);
+      }
+    } else if (railCollapsedForCbeRef.current) {
+      railCollapsedForCbeRef.current = false;
+      setRailOpen(true);
+    }
+    // Only on entering / leaving a CBE question — not when the learner
+    // reopens the rail by hand.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isCbeQuestion, isCompact]);
+
   const showPalette = settings.questionPalette.enabled;
   // The header's panel toggle brings a collapsed rail back (see Navbar).
   const showDesktopPalette = showPalette && !isCompact && isRailOpen;
@@ -454,10 +439,13 @@ function LiveTestShell() {
             <main
               ref={questionScrollRef}
               className={cn(
-                "h-full overflow-auto overscroll-contain px-4 py-5 md:px-8 md:py-7",
+                cbeSplitScreen
+                  ? // The CBE split view scrolls its two panes itself.
+                    "h-full overflow-hidden"
+                  : "h-full overflow-auto overscroll-contain px-4 py-5 md:px-8 md:py-7",
                 // Room to scroll the last option out from behind an open tool
                 // panel — it is docked over the canvas, not stacked below it.
-                toolPanel && "pb-tool-dock",
+                toolPanel && !cbeSplitScreen && "pb-tool-dock",
               )}
             >
               <QuestionDisplay />

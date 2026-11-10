@@ -18,7 +18,8 @@
     },
     "questionTypes": {
         "mcqSingleCorrect": "MCQ (एकल सही उत्तर)",
-        "mcqMultipleCorrect": "MCQ (एकाधिक सही उत्तर)"
+        "mcqMultipleCorrect": "MCQ (एकाधिक सही उत्तर)",
+        "cbeResponse": "स्प्रेडशीट और लिखित उत्तर"
     },
     "emptyStates": {
         "noQuestions": "कोई प्रश्न मौजूद नहीं है।"

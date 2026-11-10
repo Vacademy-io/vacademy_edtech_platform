@@ -257,5 +257,16 @@
     "viewEvaluatedCopy": "View Evaluated Copy",
     "close": "Close",
     "evaluatedFileName": "Evaluated File.pdf"
+  },
+  "cbeReview": {
+    "typeLabel": "Spreadsheet & written",
+    "kindSpreadsheet": "Spreadsheet",
+    "kindDocument": "Document",
+    "marks_one": "{{count}} mark",
+    "marks_other": "{{count}} marks",
+    "noAnswerForPart": "No answer for this part.",
+    "noSolutionForPart": "No model solution for this part.",
+    "expected": "expected {{value}}",
+    "solutionAfterRelease": "Model solution available after results are released."
   }
 }
